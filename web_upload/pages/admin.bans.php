@@ -252,7 +252,7 @@ echo '<div id="admin-page-content">';
         {
             $page = intval($_GET['papage']);
         }
-        $protestsarchiv = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_protests` WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
+        $protestsarchiv = $GLOBALS['db']->GetAll("SELECT p.*, (SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = p.archivedby) AS archivedby FROM `" . DB_PREFIX . "_protests` p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
         $protestsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM `" . DB_PREFIX . "_protests` WHERE archiv > '0' ORDER BY pid DESC");
         $page_count = $protestsarchiv_count['count'];
         $PageStart = intval(($page-1) * $ItemsPerPage);
@@ -560,7 +560,7 @@ echo '<div id="admin-page-content">';
             {
                 $page = intval($_GET['sapage']);
             }
-            $submissionsarchiv = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_submissions` WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
+            $submissionsarchiv = $GLOBALS['db']->GetAll("SELECT s.*, (SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = s.archivedby) AS archivedby FROM `" . DB_PREFIX . "_submissions` s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
             $submissionsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM `" . DB_PREFIX . "_submissions` WHERE archiv > '0' ORDER BY subid DESC");
             $page_count = $submissionsarchiv_count['count'];
             $PageStart = intval(($page-1) * $ItemsPerPage);

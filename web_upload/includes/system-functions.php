@@ -323,7 +323,9 @@ function SubMenu($el)
 	$first = true;
 	foreach($el AS $e)
 	{
-		$output .= "<a class=\"nav_link\" ".($first?'style="border-left: 0px; "':'')."href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
+        preg_match('/.*?&c=(.*)/', html_entity_decode($e['url']), $matches);
+        $c = $matches[1];
+		$output .= "<a class=\"nav_link".($first?" first":"").($_GET['c']==$c?" active":"")."\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
 		$first = false;
 	}
 	$GLOBALS['NavRewrite'] = $output;

@@ -88,9 +88,9 @@
 	{
 		"en"			"Please type the reason for ban in chat and press enter. Type '!noreason' to abort."
 		"nl"			"Typ alstublieft de reden voor de ban in chat and druk op enter. Typ '!noreason' om the annuleren."
-		"fr"			"Prière d'ecrire la raison du ban dans le chat et appuyez sur la touche Enter. Tapez '!noreason' pour annuler."
+		"fr"			"Prière d'ecrire la raison du ban dans le chat. Tapez '!noreason' pour annuler."
 		"pl"			"Proszę wpisać powód bana w czacie oraz potwierdzić przyciskiem Enter. Wpisz !noreason by anulować."
-		"de"			"Bitte schreiben Sie den Grund für den Ban in den Chat und drücken Sie die Eingabe Taste. Schreiben Sie '!noreason' um abzubrechen."
+		"de"			"Bitte schreiben Sie den Grund für den Ban in den Chat. Schreiben Sie '!noreason' um abzubrechen."
 		"ru"			"Пожалуйста, введите причину блокировке в зоне чата и нажмите Enter. наберите '!noreason' для предотвращения процедуры."
 	}
 	"Chat Reason Aborted"

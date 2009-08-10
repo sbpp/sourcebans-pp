@@ -8,28 +8,49 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(28/07/09): Version 1.4.4
+-----------------------
+01. * Added 'Archived by' field to submission and protest archive
+02. * Added immunity check for webbans
+03. * Now underline the active subnavi link
+04. + Added status indication to ViewCommunityProfile
+05. + Added playername to exported ban files
+06. + Changed every javascript 'top.location' to 'window.location' for frame support
+07. ! Fixed bans added while database was unavailable aren't added afterwards
+08. ! Fixed root permission checkbox doesn't uncheck all webpermissions
+09. ! Fixed old server permissions aren't removed, if server has been deleted
+10. ! Fixed permission problem with adding new admins having no webgroup, but a serveradmingroup
+11. ! Fixed some security problems, added more logging
+12. ! Fixed name field being blank if admin has been deleted
+13. ! Fixed submission/protest archive pagination
+14. ! Fixed rcon panel doesn't show a message if server unavailable
+15. ! Fixed comments not showing line breaks
+16. ! Fixed temporary bans aren't removed for TF2 bans if unbanned from webpanel
+17. - Removed unnecessary files
+18. ? Updated IpToCountry.csv for country lookup
+
 (25/06/09): Version 1.4.3
 -----------------------
-+ Paginated Submission/Protest (archive)
-+ Added password check on email change
-+ Improved siteloading speed for adminlist, banlist and banadministration
-+ Now supporting as many reasons one likes - paginated those menus
-+ Hiding "bans by admin" search when hiding admin names is enabled on banlist
-+ Added compileflag to show debugmessages
-+ Updated Polish Translations submitted by `Zuko
-! Fixed L4D kicking/banning from servers page
-! Fixed bans don't get written to the database, if admin isn't in the database
-! Fixed "SetPackPosition" error
-! Fixed "Banned by" admin name always showing own name in protest email
-! Fixed too short server hostnames on serverlist
-! Fixed unbanned bans showing up as "Expired"
-! Fixed adding <br /> tags to ban/unban reasons
-! Fixed 'rcon' column in 'sb_servers' doesn't have default value
-! Fixed admins with " ' " in name cause error
-! Fixed long words break the submission page
-! Fixed not showing old message when editing comment in textarea
-! Fixed some random autoquoting problems with IIS in the installer
-! Fixed playernames with quotation marks in it show a backslash on the dashboard if banned ingame
+01. + Paginated Submission/Protest (archive)
+02. + Added password check on email change
+03. + Improved siteloading speed for adminlist, banlist and banadministration
+04. + Now supporting as many reasons one likes - paginated those menus
+05. + Hiding "bans by admin" search when hiding admin names is enabled on banlist
+06. + Added compileflag to show debugmessages
+07. + Updated Polish Translations submitted by `Zuko
+08. ! Fixed L4D kicking/banning from servers page
+09. ! Fixed bans don't get written to the database, if admin isn't in the database
+10. ! Fixed "SetPackPosition" error
+11. ! Fixed "Banned by" admin name always showing own name in protest email
+12. ! Fixed too short server hostnames on serverlist
+13. ! Fixed unbanned bans showing up as "Expired"
+14. ! Fixed adding <br /> tags to ban/unban reasons
+15. ! Fixed 'rcon' column in 'sb_servers' doesn't have default value
+16. ! Fixed admins with " ' " in name cause error
+17. ! Fixed long words break the submission page
+18. ! Fixed not showing old message when editing comment in textarea
+19. ! Fixed some random autoquoting problems with IIS in the installer
+20. ! Fixed playernames with quotation marks in it show a backslash on the dashboard if banned ingame
 
 (30/03/09): Version 1.4.2
 -----------------------
