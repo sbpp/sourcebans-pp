@@ -91,7 +91,13 @@
           {/if}
         </td>
 		{if !$hideadminname}
-        <td height="16" class="listtable_1">{$ban.admin|escape:'html'}</td>
+        <td height="16" class="listtable_1">
+        {if !empty($ban.admin)}
+            {$ban.admin|escape:'html'}
+        {else}
+            <i><font color="#677882">Admin deleted</font></i>
+        {/if}
+        </td>
 		{/if}
         <td width="20%" height="16" align="center" class="{$ban.class}">{$ban.banlength}</td>
 			</tr>
@@ -116,7 +122,7 @@
                 </td>
                 <!-- ###############[ Start Admin Controls ]################## -->
                 {if $view_bans}
-                <td width="30%" rowspan="{if $ban.unbanned}14{else}11{/if}" class="listtable_2 opener">
+                <td width="30%" rowspan="{if $ban.unbanned}14{else}12{/if}" class="listtable_2 opener">
                   <div class="ban-edit">
                     <ul>
 					  {if $ban.unbanned && $ban.reban_link != false}
@@ -145,7 +151,7 @@
                   </div>
                 </td>
                 {else}
-                <td width="30%" rowspan="12" class="listtable_2 opener">
+                <td width="30%" rowspan="{if $ban.unbanned}13{else}11{/if}" class="listtable_2 opener">
                   <div class="ban-edit">
                     <ul>
                       <li>{$ban.demo_link}</li>
@@ -202,7 +208,13 @@
 					        </tr>
 							 <tr align="left">
 					            <td width="20%" height="16" class="listtable_1">Unbanned by Admin</td>
-					            <td height="16" class="listtable_1">{$ban.removedby}</td>
+					            <td height="16" class="listtable_1">
+                                    {if !empty($ban.removedby)}
+										{$ban.removedby|escape:'html'}
+									{else}
+										<i><font color="#677882">Admin deleted.</font></i>
+									{/if}
+                                </td>
 					        </tr>
 							{/if}
 					        <tr align="left">
@@ -223,7 +235,11 @@
 							<tr align="left">
 								<td width="20%" height="16" class="listtable_1">Banned by Admin</td>
 								<td height="16" class="listtable_1">
-									{$ban.admin|escape:'html'}
+									{if !empty($ban.admin)}
+										{$ban.admin|escape:'html'}
+									{else}
+										<i><font color="#677882">Admin deleted.</font></i>
+									{/if}
 								</td>
 							</tr>
 							{/if}
@@ -254,7 +270,7 @@
 							{if $view_comments}
 							<tr align="left">
 								<td width="20%" height="16" class="listtable_1">Comments</td>
-								<td height="60" class="listtable_1">
+								<td height="60" class="listtable_1" colspan="2">
 								{if $ban.commentdata != "None"}
 								<table width="100%" border="0">
 									{foreach from=$ban.commentdata item=commenta}
@@ -267,7 +283,11 @@
 									 {/if}
 									  <tr>
 										<td>
-											<b>{$commenta.comname}</b>
+											{if !empty($commenta.comname)}
+                                                <b>{$commenta.comname|escape:'html'}</b>
+                                            {else}
+                                                <i><font color="#677882">Admin deleted</font></i>
+                                            {/if}
 										</td>
 										<td align="right">
 											<b>{$commenta.added}</b>
@@ -279,14 +299,14 @@
 										{/if}
 									  </tr>
 									  <tr>
-										<td colspan='2'>
+										<td colspan='3'>
 											{$commenta.commenttxt}
 										</td>
 									  </tr>
-									  {if $commenta.editname != ''}
+									  {if !empty($commenta.edittime)}
 									  <tr>
 										<td colspan='3'>
-											<span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {$commenta.editname}</span>
+											<span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {if !empty($commenta.editname)}{$commenta.editname}{else}<i><font color="#677882">Admin deleted</font></i>{/if}</span>
 										</td>
 									  </tr>
 									  {/if}

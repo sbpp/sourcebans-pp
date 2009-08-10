@@ -130,15 +130,6 @@ This page will list all of the requirements to run the SourceBans web interface,
 	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
   </tr>
    <tr>
-  <td width="33%" height="16" class="listtable_1">Query Cache Writable (/includes/querycache)</td>
-	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">Yes</td>
-	<?php if(is_writable("../includes/querycache"))
-		$class = "green";
-	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../includes/querycache")?"Yes":"No";?></td> 
-  </tr>
-   <tr>
   <td width="33%" height="16" class="listtable_1">Demo Folder Writable (/demos)</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<td width="22%" height="16" class="listtable_1">Yes</td>

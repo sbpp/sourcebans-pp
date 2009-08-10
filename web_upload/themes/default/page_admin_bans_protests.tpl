@@ -27,7 +27,7 @@
 				<tr id="pid_{$protest.pid}a" >
 					<td colspan="3" align="center" id="ban_details_{$protest.pid}">
 						<div class="opener2">
-							<table width="80%" cellspacing="0" cellpadding="0" class="listtable">
+							<table width="90%" cellspacing="0" cellpadding="0" class="listtable">
           						<tr>
             						<td height="16" align="left" class="listtable_top" colspan="3">
 										<b>Bandetails</b>
@@ -104,7 +104,7 @@
           						</tr>
                       <tr align="left">
                         <td width="20%" height="16" class="listtable_1">Comments</td>
-                        <td height="60" class="listtable_1">
+                        <td height="60" class="listtable_1" colspan="3">
                         {if $protest.commentdata != "None"}
                         <table width="100%" border="0">
                           {foreach from=$protest.commentdata item=commenta}
@@ -117,7 +117,12 @@
                             {/if}
                             <tr>
                             <td>
-                              <b>{$commenta.comname}</b></td><td align="right"><b>{$commenta.added}</b>
+                                {if !empty($commenta.comname)}
+                                    <b>{$commenta.comname|escape:'html'}</b>
+                                {else}
+                                    <i><font color="#677882">Admin deleted</font></i>
+                                {/if}
+                            </td><td align="right"><b>{$commenta.added}</b>
                             </td>
                             {if $commenta.editcomlink != ""}
                             <td align="right">
@@ -130,10 +135,10 @@
                               {$commenta.commenttxt}
                             </td>
                             </tr>
-                            {if $commenta.editname != ''}
+                            {if !empty($commenta.edittime)}
                             <tr>
                             <td colspan="3">
-                              <span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {$commenta.editname}</span>
+                              <span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {if !empty($commenta.editname)}{$commenta.editname}{else}<i><font color="#677882">Admin deleted</font></i>{/if}</span>
                             </td>
                             </tr>
                             {/if}

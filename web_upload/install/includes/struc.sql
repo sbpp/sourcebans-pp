@@ -123,6 +123,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_protests` (
   `reason` text NOT NULL,
   `email` varchar(128) NOT NULL,
   `archiv` tinyint(1) default '0',
+  `archivedby` INT(11) NULL,
   `pip` varchar(64) NOT NULL,
   PRIMARY KEY  (`pid`),
   KEY `bid` (`bid`)
@@ -177,6 +178,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_submissions` (
   `subname` varchar(128) default NULL,
   `sip` varchar(64) default NULL,
   `archiv` tinyint(1) default '0',
+  `archivedby` INT(11) NULL,
   `server` tinyint(3) default NULL,
   PRIMARY KEY  (`subid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;

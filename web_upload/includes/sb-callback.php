@@ -71,7 +71,6 @@ $xajax->registerFunction("ServerHostPlayers");
 $xajax->registerFunction("ServerHostPlayers_list");
 $xajax->registerFunction("ServerPlayers");
 $xajax->registerFunction("LostPassword");
-
 $xajax->registerFunction("RefreshServer");
 
 global $userbank;
@@ -376,7 +375,7 @@ function RemoveSubmission($sid, $archiv)
 	}
 	$sid = (int)$sid;
 	if($archiv == "1") { // move submission to archiv
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '1' WHERE subid = $sid");
+		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE subid = $sid");
 		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0'");
 		$objResponse->addScript("$('subcount').setHTML('" . $query['cnt'] . "');");
 
@@ -407,7 +406,7 @@ function RemoveSubmission($sid, $archiv)
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem deleting the submission from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == "2") { // restore the submission
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '0' WHERE subid = $sid");
+		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '0', archivedby = NULL WHERE subid = $sid");
 		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0'");
 		$objResponse->addScript("$('subcountarchiv').setHTML('" . $query['cnt'] . "');");
 
@@ -452,7 +451,7 @@ function RemoveProtest($pid, $archiv)
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem deleting the protest from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == '1') { // move protest to archiv
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '1' WHERE pid = $pid");
+		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE pid = $pid");
 		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0'");
 		$objResponse->addScript("$('protcount').setHTML('" . $query['cnt'] . "');");
 		$objResponse->addScript("SlideUp('pid_$pid');");
@@ -461,12 +460,12 @@ function RemoveProtest($pid, $archiv)
 		if($query1)
 		{
 			$objResponse->addScript("ShowBox('Protest Archived', 'The selected protest has been moved to the archive.', 'green', 'index.php?p=admin&c=bans', true);");
-			$log = new CSystemLog("m", "Protest Deleted", "Protest (" . $pid . ") has been moved to the archiv.");
+			$log = new CSystemLog("m", "Protest Archived", "Protest (" . $pid . ") has been moved to the archive.");
 		}
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem moving the protest to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == '2') { // restore protest
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '0' WHERE pid = $pid");
+		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '0', archivedby = NULL WHERE pid = $pid");
 		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '1'");
 		$objResponse->addScript("$('protcountarchiv').setHTML('" . $query['cnt'] . "');");
 		$objResponse->addScript("SlideUp('apid_$pid');");
@@ -1394,7 +1393,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 														{name: "Kick", callback: function(){KickPlayerConfirm("'.$sid.'", "'.$player["name"].'", 0);}},
 														{name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.$player["name"].'"}},
 														{separator: true},
-														'.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){xajax_ViewCommunityProfile("'.$sid.'", "'.$player["name"].'")}},':'').'
+														'.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile("'.$sid.'", "'.$player["name"].'")}},':'').'
 														{name: "Send Message", callback: function(){OpenMessageBox("'.$sid.'", "'.$player["name"].'", "1")}}
 														]);');
 							}
@@ -2764,6 +2763,7 @@ function ViewCommunityProfile($sid, $name)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".$name.", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".$name."\'s Profile\" target=\"_blank\">here</a>.</b>';");
 		$objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/', 'Community_".$steam."');");
 	} else {
 		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".$name.". Player not on the server anymore!', 'red', '', true);");

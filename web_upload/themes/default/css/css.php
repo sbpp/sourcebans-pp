@@ -475,7 +475,7 @@ a.nav_link:visited {
 a.nav_link:hover {
 	}
 
-#nav a:hover {
+#nav a:hover, #nav a.first:hover {
 	color : #eee; 
 	background-color: #333;  
 	border: 1px solid #c24733;
@@ -484,6 +484,13 @@ a.nav_link:hover {
 #nav a {
 	color : #eee; 
 	border-left: 1px solid #bbb;
+}
+#nav a.first {
+    border-left: 0px none;
+}
+
+#nav a.active {
+    text-decoration: underline;
 }
 
 #search {
