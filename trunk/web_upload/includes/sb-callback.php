@@ -616,13 +616,13 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 	if((empty($ip)))
 	{
 		$error++;
-		$objResponse->addAssign("address.msg", "innerHTML", "You must type a the server address.");
+		$objResponse->addAssign("address.msg", "innerHTML", "You must type the server address.");
 		$objResponse->addScript("$('address.msg').setStyle('display', 'block');");
 	}
 	else
 	{
 		$objResponse->addAssign("address.msg", "innerHTML", "");
-		if(strlen($ip) > 15)
+		if(!validate_ip($ip) && !is_string($ip))
 		{
 			$error++;
 			$objResponse->addAssign("address.msg", "innerHTML", "You must type a valid IP.");
@@ -635,7 +635,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 	if((empty($port)))
 	{
 		$error++;
-		$objResponse->addAssign("port.msg", "innerHTML", "You must type a the server port.");
+		$objResponse->addAssign("port.msg", "innerHTML", "You must type the server port.");
 		$objResponse->addScript("$('port.msg').setStyle('display', 'block');");
 	}
 	else
@@ -1764,10 +1764,10 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 			$message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
 
 			mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
-			$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2' WHERE subid = '" . (int)$fromsub . "'");
+			$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
 		}
 
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3' WHERE SteamId = ?;", array($steam));
+	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
 
 	$kickit = isset($GLOBALS['config']['config.enablekickit']) && $GLOBALS['config']['config.enablekickit'] == "1";
 	if ($kickit)
@@ -2245,7 +2245,7 @@ function AddComment($bid, $ctype, $ctext, $page)
 
 	$ctext = trim($ctext);
 
-	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comments(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,NOW())");
+	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comments(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())");
 	$GLOBALS['db']->Execute($pre,array($bid,
 									   $ctype,
 									   $_COOKIE['aid'],
@@ -2260,7 +2260,7 @@ function AddComment($bid, $ctype, $ctext, $page)
 
 	$objResponse->addScript("ShowBox('Comment Added', 'The comment has been successfully published', 'green', 'index.php$redir');");
 	$objResponse->addScript("TabToReload();");
-	//$log = new CSystemLog("m", "Comment Added", "User #".$_COOKIE['aid']." added a comment for ban #".$bid);
+	$log = new CSystemLog("m", "Comment Added", $username." added a comment for ban #".(int)$bid);
 	return $objResponse;
 }
 
@@ -2281,7 +2281,7 @@ function EditComment($cid, $ctype, $ctext, $page)
 
 	$ctext = trim($ctext);
 
-	$pre = $GLOBALS['db']->Prepare("UPDATE ".DB_PREFIX."_comments SET `commenttxt` = ?, `editaid` = ?, `edittime`= NOW() WHERE cid = '".$cid."'");
+	$pre = $GLOBALS['db']->Prepare("UPDATE ".DB_PREFIX."_comments SET `commenttxt` = ?, `editaid` = ?, `edittime`= UNIX_TIMESTAMP() WHERE cid = '".$cid."'");
 	$GLOBALS['db']->Execute($pre,array($ctext,
 									   $_COOKIE['aid']));
 
@@ -2294,7 +2294,7 @@ function EditComment($cid, $ctype, $ctext, $page)
 
 	$objResponse->addScript("ShowBox('Comment Edited', 'The comment #".$cid." has been successfully edited', 'green', 'index.php$redir');");
 	$objResponse->addScript("TabToReload();");
-	//$log = new CSystemLog("m", "Comment Edited", "User #".$_COOKIE['aid']." edited comment #".$cid);
+	$log = new CSystemLog("m", "Comment Edited", $username." edited comment #".(int)$cid);
 	return $objResponse;
 }
 
@@ -2322,7 +2322,7 @@ function RemoveComment($cid, $ctype, $page)
 	if($res)
 	{
 		$objResponse->addScript("ShowBox('Comment Deleted', 'The selected comment has been deleted from the database', 'green', 'index.php$redir', true);");
-		//$log = new CSystemLog("m", "Comment Deleted", "Comment (" . $cid . ") has been deleted");
+		$log = new CSystemLog("m", "Comment Deleted", $username." deleted comment #".(int)$cid);
 	}
 	else
 		$objResponse->addScript("ShowBox('Error', 'There was a problem deleting the comment from the database. Check the logs for more info', 'red', 'index.php$redir', true);");

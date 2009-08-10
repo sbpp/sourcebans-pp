@@ -410,10 +410,7 @@ while (!$res->EOF)
 		$data['ureason'] = stripslashes($res->fields['unban_reason']);
 
 		$removedby = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = '".$res->fields['RemovedBy']."'");
-		if($removedby)
-			$data['removedby'] = $removedby[0];
-		else
-			$data['removedby'] = "<i>admin deleted</i>";
+		$data['removedby'] = $removedby[0];
 	}
 	else
 	{
@@ -526,11 +523,11 @@ while (!$res->EOF)
 				}
 
 				$cdata['comname'] = $commentres->fields['comname'];
-				$cdata['added'] = SBDate($dateformat,strtotime($commentres->fields['added']));
+				$cdata['added'] = SBDate($dateformat, $commentres->fields['added']);
 				$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
 
 				if(!empty($commentres->fields['edittime'])) {
-					$cdata['edittime'] = SBDate($dateformat,strtotime($commentres->fields['edittime']));
+					$cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
 					$cdata['editname'] = $commentres->fields['editname'];
 				}
 				else {
@@ -642,10 +639,10 @@ if(isset($_GET["comment"])) {
 	{
 		$coment = array();
 		$coment['comname'] = $cotherdata->fields['comname'];
-		$coment['added'] = SBDate($dateformat,strtotime($cotherdata->fields['added']));
+		$coment['added'] = SBDate($dateformat, $cotherdata->fields['added']);
 		$coment['commenttxt'] = str_replace("\n", "<br />", $cotherdata->fields['commenttxt']);
 		if($cotherdata->fields['editname']!="") {
-			$coment['edittime'] = SBDate($dateformat,strtotime($cotherdata->fields['edittime']));
+			$coment['edittime'] = SBDate($dateformat, $cotherdata->fields['edittime']);
 			$coment['editname'] = $cotherdata->fields['editname'];
 		}
 		else {

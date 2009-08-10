@@ -263,12 +263,33 @@ define('SB_BANS_PER_PAGE', $GLOBALS['config']['banlist.bansperpage']);
 define('MIN_PASS_LENGTH', $GLOBALS['config']['config.password.minlength']);
 $dateformat = !empty($GLOBALS['config']['config.dateformat'])?$GLOBALS['config']['config.dateformat']:"m-d-y H:i";
 
-if(empty($GLOBALS['config']['config.timezone']))
+if(version_compare(PHP_VERSION, "5") != -1)
 {
-	define('SB_TIMEZONE', 0);
-} else {
-	define('SB_TIMEZONE', $GLOBALS['config']['config.timezone']);
+    $offset = (empty($GLOBALS['config']['config.timezone'])?0:$GLOBALS['config']['config.timezone'])*3600;
+    date_default_timezone_set("GMT");
+    $abbrarray = timezone_abbreviations_list();
+    $abbrstop = false;
+    foreach ($abbrarray as $abbr) {
+        if($abbrstop) break;
+        foreach ($abbr as $city) {
+            if ($city['offset'] == $offset && $city['dst'] == $GLOBALS['config']['config.summertime']) {
+                date_default_timezone_set($city['timezone_id']);
+                $abbrstop = true;
+                break;
+            }
+        }
+    }
 }
+else 
+{
+    if(empty($GLOBALS['config']['config.timezone']))
+    {
+        define('SB_TIMEZONE', 0);
+    } else {
+        define('SB_TIMEZONE', $GLOBALS['config']['config.timezone']);
+    }
+}
+
 // if(empty($GLOBALS['config']['config.timezone']))
 // {
 	// date_default_timezone_set("Europe/London");

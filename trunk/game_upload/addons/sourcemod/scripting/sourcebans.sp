@@ -409,6 +409,9 @@ public Action:CommandBan(client, args)
 		reason[0] = '\0';
 	}
 	
+	g_BanTarget[client] = target;
+	g_BanTime[client] = time;
+	
 	if(!PlayerStatus[target])
 	{
 		// The target has not been banned verify. It must be completed before you can ban anyone.
@@ -539,11 +542,11 @@ public Action:CommandUnban(client, args)
 	WritePackString(dataPack, adminAuth);
 	
 	decl String:query[200];
-	if (strncmp(arg, "STEAM_0:", 8) == 0)
+	if (strncmp(arg, "STEAM_", 6) == 0)
 	{
-		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 0 AND authid = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP() AND RemoveType IS NULL)", DatabasePrefix, arg);
+		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 0 AND authid = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, arg);
 	} else {
-		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 1 AND ip     = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP() AND RemoveType IS NULL)", DatabasePrefix, arg);
+		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 1 AND ip     = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, arg);
 	}
 	SQL_TQuery(Database, SelectUnbanCallback, query, dataPack);
 	return Plugin_Handled;
@@ -1183,7 +1186,7 @@ public SelectUnbanCallback(Handle:owner, Handle:hndl, const String:error[], any:
 	}
 	
 	// There is ban
-	if(SQL_FetchRow(hndl))
+	if(hndl != INVALID_HANDLE && SQL_FetchRow(hndl))
 	{
 		// Get the values from the existing ban record
 		new bid = SQL_FetchInt(hndl, 0);
