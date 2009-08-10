@@ -1,0 +1,40 @@
+body {
+  font-size: 12px;
+  font-family: Verdana,Arial,Tahoma,Trebuchet MS,Sans-Serif,Georgia,Courier,Times New Roman,Serif;
+}
+h1 { display: none; }
+h2 {
+  margin: 0;
+  font-size: 36px;
+  font-weight: normal;
+}
+p { margin: 0; }
+
+.mainwrapper {
+  top: 50%;
+  left: 50%;
+  width: 714px;
+  height: 469px;
+  padding: 82px 46px 49px 40px;
+  position: absolute;
+  margin-top: -300px;
+  margin-left: -400px;
+  background-image: url("../images/source/installer.jpg");
+}
+.step {
+  width: 714px;
+  height: 350px;
+  position: absolute;
+}
+.buttons {
+  width: 714px;
+  bottom: 58px;
+  position: absolute;
+  text-align: center;
+}
+
+.license {
+  width: 100%;
+  height: 100%;
+}
+#back, #next { font-size: 16px; }
