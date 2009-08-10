@@ -28,6 +28,10 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 		{
 			$result = $GLOBALS['db']->Execute("TRUNCATE TABLE `".DB_PREFIX."_log`");
 		}
+        else
+        {
+            $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
+        }
 	}
 	
 	// search

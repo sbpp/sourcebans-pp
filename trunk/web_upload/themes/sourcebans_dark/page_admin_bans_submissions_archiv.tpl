@@ -32,7 +32,7 @@
 			<tr id="asid_{$sub.subid}a">
 				<td colspan="3">
 					<div class="opener4" width="100%" align="center">
-						<table width="80%" cellspacing="0" cellpadding="0" class="listtable">
+						<table width="90%" cellspacing="0" cellpadding="0" class="listtable">
           					<tr>
             					<td height="16" align="left" class="listtable_top" colspan="3">
 									<b>Ban Details</b>            
@@ -42,7 +42,7 @@
 									<td height="16" align="left" class="listtable_1" colspan="2">
 										<b>Archived because {$sub.archive}</b>
 									</td>
-									<td width="30%" rowspan="10" class="listtable_2">
+									<td width="30%" rowspan="11" class="listtable_2">
 									<div class="ban-edit">
 					                    <ul>
 					                      <li>{$sub.demo}</li>		
@@ -105,42 +105,57 @@
             					<td width="20%" height="16" class="listtable_1">Submitter IP</td>
             					<td height="" class="listtable_1">{$sub.ip}</td>
       						</tr>
+                            <tr align="left">
+            					<td width="20%" height="16" class="listtable_1">Archived by</td>
+            					<td height="" class="listtable_1">
+                                {if !empty($sub.archivedby)}
+                                    {$sub.archivedby}
+                                {else}
+                                    <i><font color="#677882">Admin deleted.</font></i>
+                                {/if}
+                                </td>
+      						</tr>
 							<tr align="left">
 									<td width="20%" height="16" class="listtable_1">Comments</td>
-									<td height="60" class="listtable_1">
+									<td height="60" class="listtable_1" colspan="3">
 									{if $sub.commentdata != "None"}
 									<table width="100%" border="0">
 										{foreach from=$sub.commentdata item=commenta}
-										 {if $commenta.morecom}
-										  <tr>
-											<td colspan='3'>
-												<hr>
-											</td>
-										  </tr>
-										 {/if}
-										  <tr>
-											<td>
-												<b>{$commenta.comname}</b></td><td align="right"><b>{$commenta.added}</b>
-											</td>
-											{if $commenta.editcomlink != ""}
-											<td align="right">
-												{$commenta.editcomlink} {$commenta.delcomlink}
-											</td>
-											{/if}
-										  </tr>
-										  <tr>
-											<td colspan='2'>
-												{$commenta.commenttxt}
-											</td>
-										  </tr>
-										  {if $commenta.editname != ''}
-										  <tr>
-											<td colspan='3'>
-												<span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {$commenta.editname}</span>
-											</td>
-										  </tr>
-										  {/if}
-										  {/foreach}
+                                            {if $commenta.morecom}
+                                            <tr>
+                                            <td colspan="3">
+                                              <hr />
+                                            </td>
+                                            </tr>
+                                            {/if}
+                                            <tr>
+                                            <td>
+                                                {if !empty($commenta.comname)}
+                                                    <b>{$commenta.comname|escape:'html'}</b>
+                                                {else}
+                                                    <i><font color="#677882">Admin deleted</font></i>
+                                                {/if}
+                                            </td><td align="right"><b>{$commenta.added}</b>
+                                            </td>
+                                            {if $commenta.editcomlink != ""}
+                                            <td align="right">
+                                              {$commenta.editcomlink} {$commenta.delcomlink}
+                                            </td>
+                                            {/if}
+                                            </tr>
+                                            <tr>
+                                            <td colspan="2" style="word-break: break-all;word-wrap: break-word;">
+                                              {$commenta.commenttxt}
+                                            </td>
+                                            </tr>
+                                            {if !empty($commenta.edittime)}
+                                            <tr>
+                                            <td colspan="3">
+                                              <span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {if !empty($commenta.editname)}{$commenta.editname}{else}<i><font color="#677882">Admin deleted</font></i>{/if}</span>
+                                            </td>
+                                            </tr>
+                                            {/if}
+                                          {/foreach}
 									</table>
 									{/if}
 									{if $sub.commentdata == "None"}

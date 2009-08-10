@@ -83,8 +83,8 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 // ---------------------------------------------------
 #define('SB_SVN', true);
 if(!defined('SB_VERSION')){
-	define('SB_VERSION', '1.4.3');
-	define('SB_REV', '$Rev: 271 $');
+	define('SB_VERSION', '1.4.4');
+	define('SB_REV', '$Rev: 294 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
@@ -115,7 +115,6 @@ if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE") 
 // ---------------------------------------------------
 include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
 include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
-$ADODB_CACHE_DIR = INCLUDES_PATH  . "/querycache"; 
 $GLOBALS['db'] = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 $GLOBALS['log'] = new CSystemLog();
 

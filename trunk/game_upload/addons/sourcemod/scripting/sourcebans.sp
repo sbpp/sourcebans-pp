@@ -17,7 +17,7 @@
 #include <adminmenu>
 #include "dbi.inc"
 
-#define SB_VERSION "1.4.3"
+#define SB_VERSION "1.4.4"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -129,6 +129,7 @@ public OnPluginStart()
 	LoadTranslations("common.phrases");
 	LoadTranslations("plugin.basecommands");
 	LoadTranslations("sourcebans.phrases");
+	LoadTranslations("basebans.phrases");
 	loadAdmins = loadGroups = loadOverrides = false;
 	
 	CvarHostIp = FindConVar("hostip");
@@ -662,9 +663,9 @@ public OnAdminMenuReady(Handle:topmenu)
 							"sm_ban",		// The command to be finally called (Override checks)
 							ADMFLAG_BAN);		// What flag do we need to see the menu option
 		decl String:temp[125];
-        Format(temp, 125, "Result of AddToTopMenu: %d", res);
-        LogToFile(logFile, temp);
-        LogToFile(logFile, "Added Ban option to admin menu");
+		Format(temp, 125, "Result of AddToTopMenu: %d", res);
+		LogToFile(logFile, temp);
+		LogToFile(logFile, "Added Ban option to admin menu");
 #else
 		AddToTopMenu(hTopMenu,
 							"sm_ban", 		// Name
@@ -692,8 +693,8 @@ public AdminMenu_Ban(Handle:topmenu,
 #endif
 	if (action == TopMenuAction_DisplayOption)	// We are only being displayed, We only need to show the option name
 	{
-		//Format(buffer, maxlength, "%T", "Ban player", param);
-		Format(buffer, maxlength, "Ban player", param);	// Show the menu option
+		Format(buffer, maxlength, "%T", "Ban player", param);
+		//Format(buffer, maxlength, "Ban player", param);	// Show the menu option
 #if defined DEBUG
 	LogToFile(logFile, "AdminMenu_Ban() -> Formatted the Ban option text");
 #endif
@@ -730,21 +731,12 @@ public ReasonSelected(Handle:menu, MenuAction:action, param1, param2)
 		if(g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
 			PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));	
 
-	} else if (action == MenuAction_Cancel && param2 == MenuCancel_Disconnected) {
-
-		new Handle:Pack = PlayerDataPack[param1];
-
-		if(Pack != INVALID_HANDLE)
+	} 
+	else if (action == MenuAction_Cancel && param2 == MenuCancel_Disconnected) 
+	{
+		if(PlayerDataPack[param1] != INVALID_HANDLE)
 		{
-			SetPackPosition(Pack, 40);
-			new Handle:ReasonPack = Handle:ReadPackCell(Pack);
-
-			if(ReasonPack != INVALID_HANDLE)
-			{
-				CloseHandle(ReasonPack);
-			}
-
-			CloseHandle(Pack);
+			CloseHandle(PlayerDataPack[param1]);
 			PlayerDataPack[param1] = INVALID_HANDLE;
 		}
 
@@ -866,9 +858,9 @@ stock DisplayBanTargetMenu(client)
 	new Handle:menu = CreateMenu(MenuHandler_BanPlayerList);// Create a new menu, pass it the handler.
 	
 	decl String:title[100];
-	//Format(title, sizeof(title), "%T:", "Ban player", client);
+	Format(title, sizeof(title), "%T:", "Ban player", client);
 	
-	Format(title, sizeof(title), "Ban player", client);	// Create the title of the menu
+	//Format(title, sizeof(title), "Ban player", client);	// Create the title of the menu
 	SetMenuTitle(menu, title);				// Set the title
 	SetMenuExitBackButton(menu, true);			// Yes we want back/exit
 	
@@ -889,8 +881,8 @@ stock DisplayBanTimeMenu(client)
 	new Handle:menu = CreateMenu(MenuHandler_BanTimeList);
 	
 	decl String:title[100];
-	//Format(title, sizeof(title), "%T:", "Ban player", client);
-	Format(title, sizeof(title), "Ban player", client);
+	Format(title, sizeof(title), "%T:", "Ban player", client);
+	//Format(title, sizeof(title), "Ban player", client);
 	SetMenuTitle(menu, title);
 	SetMenuExitBackButton(menu, true);
 	
@@ -1346,9 +1338,9 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 		SQL_FetchString(hndl, 5, ip, sizeof(ip));
 		SQL_FetchString(hndl, 6, adminAuth, sizeof(adminAuth));
 		SQL_FetchString(hndl, 7, adminIp, sizeof(adminIp));
-		SQL_EscapeString(Database, name, banName, sizeof(banName));
-		SQL_EscapeString(Database, reason, banReason, sizeof(banReason));
-		if(startTime + time * 60 > GetTime())
+		SQL_EscapeString(SQLiteDB, name, banName, sizeof(banName));
+		SQL_EscapeString(SQLiteDB, reason, banReason, sizeof(banReason));
+		if(startTime + time * 60 > GetTime() || time == 0)
 		{
 			// This ban is still valid and should be entered into the db
 			if( serverID == -1 )
@@ -1363,7 +1355,7 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 			{
 				FormatEx(query, sizeof(query), 
 						"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
-						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						%d)", 
 						DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 			}
@@ -1372,7 +1364,7 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 			ResetPack(authPack);
 			SQL_TQuery(Database, AddedFromSQLiteCallback, query, authPack);
 		} else {
-			// The ban is no longer valid and shuld be deleted from the queue
+			// The ban is no longer valid and should be deleted from the queue
 			FormatEx(query, sizeof(query), "DELETE FROM queue WHERE steam_id = '%s'", auth);
 			SQL_TQuery(SQLiteDB, ErrorCheckCallback, query);
 		}

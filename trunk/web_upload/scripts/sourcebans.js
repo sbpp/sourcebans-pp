@@ -1319,7 +1319,7 @@ function BanFriendsProcess(fid, name)
 function OpenMessageBox(sid, name, popup)
 {
 	if(popup==1) {
-		ShowBox('Send Message', '<b>Please type the message you want to send to <br>\''+name+'\'.</b><br><textarea rows="3" cols="40" name="ingamemsg" id="ingamemsg" style="overflow:auto;"></textarea><br><div id="ingamemsg.msg" class="badentry"></div>', 'blue', '', true);
+		ShowBox('Send Message', '<b>Please type the message you want to send to <br>\''+name+'\'.</b><br>You need to have basechat.smx enabled as we use<br><i>&lt;sm_psay&gt;</i>.<br><textarea rows="3" cols="40" name="ingamemsg" id="ingamemsg" style="overflow:auto;"></textarea><br><div id="ingamemsg.msg" class="badentry"></div>', 'blue', '', true);
 		$('dialog-control').setHTML('<input type="button" onclick="OpenMessageBox(\''+sid+'\', \''+name+'\', \'0\');" name="ingmsg" class="btn ok" onmouseover="ButtonOver(\'ingmsg\')" onmouseout="ButtonOver(\'ingmsg\')" id="ingmsg" value="Send Message" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(popup==0) {
 		message = $('ingamemsg').value;
@@ -1374,4 +1374,11 @@ function selectLengthTypeReason(length, type, reason)
 			break;
 		}
 	}
+}
+
+function ViewCommunityProfile(sid, name)
+{
+    ShowBox('View Community Profile', 'Generating Community Profile link for "'+name+'", please wait...', 'blue', '', true);
+    $('dialog-control').setStyle('display', 'none');
+    xajax_ViewCommunityProfile(sid, name);
 }
