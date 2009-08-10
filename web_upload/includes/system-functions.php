@@ -325,7 +325,7 @@ function SubMenu($el)
 	{
         preg_match('/.*?&c=(.*)/', html_entity_decode($e['url']), $matches);
         $c = $matches[1];
-		$output .= "<a class=\"nav_link".($first?" first":"").($_GET['c']==$c?" active":"")."\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
+		$output .= "<a class=\"nav_link".($first?" first":"").(isset($_GET['c'])&&$_GET['c']==$c?" active":"")."\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
 		$first = false;
 	}
 	$GLOBALS['NavRewrite'] = $output;
@@ -748,8 +748,9 @@ function ShowBox_ajx($title, $msg, $color, $redir="", $noclose=false, &$response
 function PruneBans()
 {
 	$res = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_bans` SET `RemovedBy` = 0, `RemoveType` = \'E\', `RemovedOn` = UNIX_TIMESTAMP() WHERE `length` != 0 and `ends` < UNIX_TIMESTAMP() and `RemoveType` IS NULL');
-	$prot = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '3' WHERE archiv = '0' AND bid IN((SELECT bid FROM `".DB_PREFIX."_bans` WHERE `RemoveType` = 'E'))");
-	return $res?true:false;
+	$prot = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '3', archivedby = ".($userbank->GetAid()<0?0:$userbank->GetAid())." WHERE archiv = '0' AND bid IN((SELECT bid FROM `".DB_PREFIX."_bans` WHERE `RemoveType` = 'E'))");
+	$submission = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_submissions` SET archiv = \'3\', archivedby = '.($userbank->GetAid()<0?0:$userbank->GetAid()).' WHERE archiv = \'0\' AND (SteamId IN((SELECT authid FROM `'.DB_PREFIX.'_bans` WHERE `type` = 0 AND `RemoveType` IS NULL)) OR sip IN((SELECT ip FROM `'.DB_PREFIX.'_bans` WHERE `type` = 1 AND `RemoveType` IS NULL)))');
+    return $res?true:false;
 }
 
 
@@ -965,16 +966,31 @@ function checkMultiplePlayers($sid, $steamids)
 
 function SBDate($format, $timestamp="")
 {
-	if($GLOBALS['config']['config.summertime'] == "1") {
-		$summertime = 3600;
-	} else {
-		$summertime = 0;
-	}
-	if(empty($timestamp)) {
-		$timestamp = time() + SB_TIMEZONE*60*60 + $summertime;
-	} else {
-		$timestamp = $timestamp + SB_TIMEZONE*60*60 + $summertime;
-	}
+    if(version_compare(PHP_VERSION, "5") != -1)
+    {
+        if($GLOBALS['config']['config.summertime'] == "1")
+        {
+            $str = date("r", $timestamp);
+            $date = new DateTime($str);
+            $date->modify("+1 hour");
+            return $date->format($format);
+        }
+        else if(empty($timestamp))
+            return date($format);
+    }
+    else
+    {
+        if($GLOBALS['config']['config.summertime'] == "1") {
+            $summertime = 3600;
+        } else {
+            $summertime = 0;
+        }
+        if(empty($timestamp)) {
+            $timestamp = time() + SB_TIMEZONE*3600 + $summertime;
+        } else {
+            $timestamp = $timestamp + SB_TIMEZONE*3600 + $summertime;
+        }
+    }
 	return date($format, $timestamp);
 }
 
@@ -1031,6 +1047,7 @@ function GetCommunityName($steamid)
 	$raw = file_get_contents(($result["Location"]!=""?$result["Location"]:"http://steamcommunity.com/profiles/".$friendid."/")."?xml=1");
 	if(strstr($raw, "</profile>")) {
 		$raw = str_replace("&", "", $raw);
+        $raw = strip_31_ascii($raw);
 		$raw = utf8_encode($raw);
 		$xml = simplexml_load_string($raw);
 		$result = $xml->xpath('/profile/steamID');

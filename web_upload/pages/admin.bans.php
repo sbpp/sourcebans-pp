@@ -201,11 +201,11 @@ echo '<div id="admin-page-content">';
 					}
 
 					$cdata['comname'] = $commentres->fields['comname'];
-					$cdata['added'] = SBDate($dateformat,strtotime($commentres->fields['added']));
+					$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
 					$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
 
 					if(!empty($commentres->fields['edittime'])) {
-						$cdata['edittime'] = SBDate($dateformat,strtotime($commentres->fields['edittime']));
+						$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
 						$cdata['editname'] = $commentres->fields['editname'];
 					}
 					else {
@@ -363,11 +363,11 @@ echo '<div id="admin-page-content">';
 					}
 
 					$cdata['comname'] = $commentres->fields['comname'];
-					$cdata['added'] = SBDate($dateformat,strtotime($commentres->fields['added']));
+					$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
 					$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
 
 					if(!empty($commentres->fields['edittime'])) {
-						$cdata['edittime'] = SBDate($dateformat,strtotime($commentres->fields['edittime']));
+						$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
 						$cdata['editname'] = $commentres->fields['editname'];
 					}
 					else {
@@ -521,11 +521,11 @@ echo '<div id="admin-page-content">';
 							}
 
 							$cdata['comname'] = $commentres->fields['comname'];
-							$cdata['added'] = SBDate($dateformat,strtotime($commentres->fields['added']));
+							$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
 							$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
 
 							if(!empty($commentres->fields['edittime'])) {
-								$cdata['edittime'] = SBDate($dateformat,strtotime($commentres->fields['edittime']));
+								$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
 								$cdata['editname'] = $commentres->fields['editname'];
 							}
 							else {
@@ -662,11 +662,11 @@ echo '<div id="admin-page-content">';
 							}
 
 							$cdata['comname'] = $commentres->fields['comname'];
-							$cdata['added'] = SBDate($dateformat,strtotime($commentres->fields['added']));
+							$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
 							$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
 
 							if(!empty($commentres->fields['edittime'])) {
-								$cdata['edittime'] = SBDate($dateformat,strtotime($commentres->fields['edittime']));
+								$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
 								$cdata['editname'] = $commentres->fields['editname'];
 							}
 							else {

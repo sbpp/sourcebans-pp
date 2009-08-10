@@ -53,7 +53,6 @@ window.addEvent('domready', function() {
 		className: 'perm'
 	});
 }); 
-$('nav').setHTML('<?php echo $GLOBALS['NavRewrite']; ?>');	
 $('content_title').setHTML('<?php echo $GLOBALS['TitleRewrite'] ?>');
 </script>
 <!--[if lt IE 7]>
