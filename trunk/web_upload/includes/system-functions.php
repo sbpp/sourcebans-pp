@@ -681,7 +681,7 @@ function FetchIp($ip)
 
 	if (!$handle)
 		return "zz";
-		
+
 	$row = 1;
 	while (($buffer = fgets($handle, 4096)) !== FALSE) {
 	  $array[$row] = substr($buffer, 1, strpos($buffer, ",") - 1);
@@ -747,6 +747,8 @@ function ShowBox_ajx($title, $msg, $color, $redir="", $noclose=false, &$response
 
 function PruneBans()
 {
+	global $userbank;
+
 	$res = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_bans` SET `RemovedBy` = 0, `RemoveType` = \'E\', `RemovedOn` = UNIX_TIMESTAMP() WHERE `length` != 0 and `ends` < UNIX_TIMESTAMP() and `RemoveType` IS NULL');
 	$prot = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '3', archivedby = ".($userbank->GetAid()<0?0:$userbank->GetAid())." WHERE archiv = '0' AND bid IN((SELECT bid FROM `".DB_PREFIX."_bans` WHERE `RemoveType` = 'E'))");
 	$submission = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_submissions` SET archiv = \'3\', archivedby = '.($userbank->GetAid()<0?0:$userbank->GetAid()).' WHERE archiv = \'0\' AND (SteamId IN((SELECT authid FROM `'.DB_PREFIX.'_bans` WHERE `type` = 0 AND `RemoveType` IS NULL)) OR sip IN((SELECT ip FROM `'.DB_PREFIX.'_bans` WHERE `type` = 1 AND `RemoveType` IS NULL)))');
@@ -1014,7 +1016,7 @@ function SteamIDToFriendID($authid)
 */
 function FriendIDToSteamID($friendid)
 {
-	
+
 	$steamid = $GLOBALS['db']->GetRow("SELECT CONCAT(\"STEAM_0:\", (CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2, \":\", CAST(((CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) - ((CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2)) / 2 AS UNSIGNED)) AS steam_id;");
 	return $steamid['steam_id'];
 }
@@ -1091,7 +1093,7 @@ function SendRconSilent($rcon, $sid)
 function in_array_dim($needle, $array)
 {
 	foreach($array as $secarray)
-	{	
+	{
 		foreach($secarray as $part)
 		{
 			if($part == $needle)
