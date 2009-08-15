@@ -67,9 +67,9 @@ CREATE TABLE IF NOT EXISTS `{prefix}_comments` (
   `type` varchar(1) NOT NULL,
   `aid` int(6) NOT NULL,
   `commenttxt` longtext NOT NULL,
-  `added` datetime NOT NULL,
+  `added` int(11) NOT NULL,
   `editaid` int(6) default NULL,
-  `edittime` datetime default NULL,
+  `edittime` int(11) default NULL,
   KEY `cid` (`cid`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
