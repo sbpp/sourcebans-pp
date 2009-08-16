@@ -301,6 +301,17 @@ window.addEvent('domready', function() {
         x_ServerPlayers(parseInt(el.id.substring(11)), setServerPlayers);
     }
   });
+  $$('form').each(function(el) {
+    el.addEvent('submit', function(e) {
+      e.stop();
+      
+      this.set('send', {
+        onComplete: function(res) { 
+          
+        }
+      }).send();
+    });
+  });
   $$('.back').each(function(el) {
     el.addEvent('click', function(e) {
       e.stop();
@@ -370,6 +381,10 @@ window.addEvent('domready', function() {
   });
   if($$('div.opener').length  > 0)
     InitAccordion('tr.opener',   'div.opener', 'mainwrapper');
+  if($$('div.opener2').length > 0)
+    InitAccordion('tr.opener2', 'div.opener2', 'mainwrapper');
+  if($$('div.opener3').length > 0)
+    InitAccordion('tr.opener3', 'div.opener3', 'mainwrapper');
   if($$('tr.sea_open').length > 0)
     InitAccordion('tr.sea_open', 'form.panel', 'mainwrapper');
   if($chk($('action_select')))

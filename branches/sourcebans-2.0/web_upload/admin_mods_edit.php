@@ -24,12 +24,12 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($mods[$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $id          = $_GET['id'];
+  $mod         = $mods[$_GET['id']];
   
-  $page->assign('mod_name',    $mods[$id]['name']);
-  $page->assign('mod_folder',  $mods[$id]['folder']);
-  $page->assign('mod_icon',    $mods[$id]['icon']);
-  $page->assign('mod_enabled', $mods[$id]['enabled'] == 1);
+  $page->assign('mod_name',    $mod['name']);
+  $page->assign('mod_folder',  $mod['folder']);
+  $page->assign('mod_icon',    $mod['icon']);
+  $page->assign('mod_enabled', $mod['enabled'] == 1);
   $page->display('page_admin_mods_edit');
 }
 catch(Exception $e)

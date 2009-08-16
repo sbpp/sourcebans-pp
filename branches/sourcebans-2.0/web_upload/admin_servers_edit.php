@@ -24,24 +24,24 @@ try
   $mods_reader         = new ModsReader();
   $servers_reader      = new ServersReader();
   
-  $groups_reader->type = SERVER_ADMIN_GROUPS;
-  $server_admin_groups = $groups_reader->executeCached(ONE_MINUTE  * 5);
+  $groups_reader->type = SERVER_GROUPS;
+  $server_groups       = $groups_reader->executeCached(ONE_MINUTE  * 5);
   $mods                = $mods_reader->executeCached(ONE_DAY);
   $servers             = $servers_reader->executeCached(ONE_MINUTE * 5);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($servers[$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $id                  = $_GET['id'];
+  $server              = $servers[$_GET['id']];
   
-  $page->assign('server_ip',           $servers[$id]['ip']);
-  $page->assign('server_port',         $servers[$id]['port']);
-  $page->assign('server_rcon',         $servers[$id]['rcon']);
-  $page->assign('server_mod',          $servers[$id]['mod_id']);
-  $page->assign('server_enabled',      $servers[$id]['enabled']);
-  $page->assign('server_groups',       $servers[$id]['groups']);
-  $page->assign('mods',                $mods);
-  $page->assign('server_admin_groups', $server_admin_groups);
+  $page->assign('server_ip',      $server['ip']);
+  $page->assign('server_port',    $server['port']);
+  $page->assign('server_rcon',    $server['rcon']);
+  $page->assign('server_mod',     $server['mod_id']);
+  $page->assign('server_enabled', $server['enabled']);
+  $page->assign('server_groups',  $server['groups']);
+  $page->assign('mods',           $mods);
+  $page->assign('server_groups',  $server_groups);
   $page->display('page_admin_servers_edit');
 }
 catch(Exception $e)

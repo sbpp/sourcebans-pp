@@ -2,8 +2,8 @@ var step = 1;
 
 window.addEvent('domready', function() {
   $$('.step').each(function(el) {
-    if(el.id != 'step-1')
-      el.set('opacity', 0);
+    if(el.id != 'step-' + step)
+      el.fade('hide');
   });
   
   $('back').addEvent('click', function(e) {

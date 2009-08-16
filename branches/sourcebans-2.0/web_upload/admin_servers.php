@@ -36,7 +36,7 @@ try
   $mods_reader         = new ModsReader();
   $servers_reader      = new ServersReader();
   
-  $groups_reader->type = SERVER_ADMIN_GROUPS;
+  $groups_reader->type = SERVER_GROUPS;
   $counts              = $counts_reader->executeCached(ONE_MINUTE  * 5);
   $groups              = $groups_reader->executeCached(ONE_MINUTE  * 5);
   $mods                = $mods_reader->executeCached(ONE_DAY);
@@ -49,7 +49,7 @@ try
   $page->assign('permission_edit_servers',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_SERVERS')));
   $page->assign('permission_import_servers', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_SERVERS')));
   $page->assign('permission_list_servers',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_SERVERS')));
-  $page->assign('server_admin_groups',       $groups);
+  $page->assign('server_groups',             $groups);
   $page->assign('mods',                      $mods);
   $page->assign('servers',                   $servers);
   $page->assign('server_count',              $counts['servers']);

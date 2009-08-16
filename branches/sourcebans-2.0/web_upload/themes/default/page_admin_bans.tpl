@@ -30,7 +30,7 @@
                 <p>{$lang_help_desc}</p>
                 <label for="name">{help_icon title="$lang_name" desc="Type the nickname of the person that you are banning."}{$lang_name}</label>
                 <input class="submit-fields" {nid id="name"} />
-                <div id="name.msg" class="badentry"></div>
+                <div class="badentry" id="name.msg"></div>
                 <label for="type">{help_icon title="Ban Type" desc="Choose whether to ban by Steam ID or IP address."}Ban Type</label>
                 <select class="submit-fields" {nid id="type"}>
                   <option value="{$smarty.const.STEAM_BAN_TYPE}">Steam ID</option>
@@ -38,10 +38,10 @@
                 </select>
                 <label for="steam">{help_icon title="Steam ID" desc="The Steam ID of the person to ban."}Steam ID</label>
                 <input class="submit-fields" {nid id="steam"} />
-                <div id="steam.msg" class="badentry"></div>
+                <div class="badentry" id="steam.msg"></div>
                 <label for="ip">{help_icon title="$lang_ip_address" desc="Type the IP address of the person you want to ban."}{$lang_ip_address}</label>
                 <input class="submit-fields" {nid id="ip"} />
-                <div id="ip.msg" class="badentry"></div>
+                <div class="badentry" id="ip.msg"></div>
                 <label for="reason">{help_icon title="$lang_reason" desc="Explain in detail, why this ban is being made."}{$lang_reason}</label>
                 <select class="submit-fields" {nid id="reason"}>
                   <option value=""> -- Select Reason -- </option>
@@ -67,7 +67,7 @@
                   <option value="other">Other Reason</option>
                 </select>
                 <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5" style="display: none;"></textarea>
-                <div id="reason.msg" class="badentry"></div>
+                <div class="badentry" id="reason.msg"></div>
                 <label for="length">{help_icon title="$lang_length" desc="Select how long you want to ban this person for."}{$lang_length}</label>
                 <select class="submit-fields" {nid id="length"}>
                   <option value="0">{$lang_permanent}</option>
@@ -127,7 +127,7 @@
                 <p>{$lang_help_desc}</p>
                 <label for="file">{help_icon title="$lang_file" desc="Select the banned_user.cfg or banned_ip.cfg file to upload and add bans."}{$lang_file}</label>
                 <input class="submit-fields" {nid id="file"} type="file" />
-                <div id="file.msg" class="badentry"></div>
+                <div class="badentry" id="file.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="import" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -402,7 +402,6 @@
                   {/foreach}
                 </table>
               </div>
-              <script>InitAccordion('tr.opener2', 'div.opener2', 'mainwrapper');</script>
             </div>
             {/if}
             {if $permission_submissions}
@@ -565,7 +564,6 @@
                   {/foreach}
                 </table>
               </div>
-              <script>InitAccordion('tr.opener3', 'div.opener3', 'mainwrapper');</script>
             </div>
             {/if}
           </div>

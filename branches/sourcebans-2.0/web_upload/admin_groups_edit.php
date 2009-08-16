@@ -13,24 +13,32 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    // Parse flags depending on group type
+    // Parse flags and overrides depending on group type
     switch($_POST['type'])
     {
-      case SERVER_ADMIN_GROUPS:
+      case SERVER_GROUPS:
         // If flag array contains root flag, only pass root flag, otherwise create flag string
-        $flags = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
+        $flags     = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
+        $overrides = array();
+        
+        foreach($_POST['override_name'] as $id => $name)
+          $overrides[] = array('name'   => $name,
+                               'access' => $_POST['override_access'][$id],
+                               'type'   => $_POST['override_type'][$id]);
+        
         break;
-      case WEB_ADMIN_GROUPS:
+      case WEB_GROUPS:
         // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
-        $flags = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
+        $flags     = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
+        $overrides = null;
     }
     
-    GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $_POST['overrides']);
+    GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
     
     Util::redirect();
   }
   
-  if(!isset($_GET['type']) || !in_array($_GET['type'], array(SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)))
+  if(!isset($_GET['type']) || !in_array($_GET['type'], array(SERVER_GROUPS, WEB_GROUPS)))
     throw new Exception('Invalid group type specified.');
   
   $groups_reader       = new GroupsReader();
@@ -40,18 +48,18 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($groups[$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $id                  = $_GET['id'];
+  $group               = $groups[$_GET['id']];
   
-  $page->assign('group_name', $groups[$id]['name']);
+  $page->assign('group_name', $group['name']);
   
   switch($groups_reader->type)
   {
-    case SERVER_ADMIN_GROUPS:
-      $flags           = $groups[$id]['flags'];
+    case SERVER_GROUPS:
+      $flags           = $group['flags'];
       $permission_root = strpos($flags, SM_ROOT) !== false;
       
-      $page->assign('group_immunity',               $groups[$id]['immunity']);
-      $page->assign('group_overrides',              $groups[$id]['overrides']);
+      $page->assign('group_immunity',               $group['immunity']);
+      $page->assign('group_overrides',              $group['overrides']);
       $page->assign('group_permission_reservation', $permission_root || strpos($flags, SM_RESERVATION) !== false);
       $page->assign('group_permission_generic',     $permission_root || strpos($flags, SM_GENERIC)     !== false);
       $page->assign('group_permission_kick',        $permission_root || strpos($flags, SM_KICK)        !== false);
@@ -75,8 +83,8 @@ try
       $page->assign('group_permission_root',        $permission_root);
       
       break;
-    case WEB_ADMIN_GROUPS:
-      $flags                       = $groups[$id]['flags'];
+    case WEB_GROUPS:
+      $flags                       = $group['flags'];
       $permission_owner            = in_array('ADMIN_OWNER',                                 $flags);
       $permission_add_admins       = $permission_owner || in_array('ADMIN_ADD_ADMINS',       $flags);
       $permission_delete_admins    = $permission_owner || in_array('ADMIN_DELETE_ADMINS',    $flags);

@@ -18,7 +18,7 @@ class GroupsReader extends SBReader
      */
     switch($this->type)
     {
-      case SERVER_ADMIN_GROUPS:
+      case SERVER_GROUPS:
         $groups = $db->GetAssoc('SELECT    sg.id, sg.name, sg.flags, sg.immunity, COUNT(ag.admin_id) AS admin_count
                                  FROM      ' . Env::get('prefix') . '_srvgroups        AS sg
                                  LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
@@ -35,7 +35,7 @@ class GroupsReader extends SBReader
                                              array($id));
         
         break;
-      case WEB_ADMIN_GROUPS:
+      case WEB_GROUPS:
         $groups = $db->GetAssoc('SELECT    wg.id, wg.name, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS flags,
                                            (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_admins WHERE group_id = wg.id) AS admin_count
                                  FROM      ' . Env::get('prefix') . '_groups             AS wg

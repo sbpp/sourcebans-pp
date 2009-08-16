@@ -24,14 +24,14 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($bans['list'][$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $id          = $_GET['id'];
+  $ban         = $bans['list'][$_GET['id']];
   
-  $page->assign('ban_name',   $bans['list'][$id]['name']);
-  $page->assign('ban_type',   $bans['list'][$id]['type']);
-  $page->assign('ban_steam',  $bans['list'][$id]['steam']);
-  $page->assign('ban_ip',     $bans['list'][$id]['ip']);
-  $page->assign('ban_length', $bans['list'][$id]['length']);
-  $page->assign('ban_reason', $bans['list'][$id]['reason']);
+  $page->assign('ban_name',   $ban['name']);
+  $page->assign('ban_type',   $ban['type']);
+  $page->assign('ban_steam',  $ban['steam']);
+  $page->assign('ban_ip',     $ban['ip']);
+  $page->assign('ban_length', $ban['length']);
+  $page->assign('ban_reason', $ban['reason']);
   $page->display('page_admin_bans_edit');
 }
 catch(Exception $e)

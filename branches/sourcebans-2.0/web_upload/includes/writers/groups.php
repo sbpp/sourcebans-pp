@@ -6,7 +6,7 @@ class GroupsWriter
   /**
    * Adds a group
    *
-   * @param  integer $type     The type of the group (SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)
+   * @param  integer $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
    * @param  string  $name     The name of the group
    * @param  mixed   $flags    The access flags of the group
    * @param  integer $immunity The immunity level of the group
@@ -20,7 +20,7 @@ class GroupsWriter
     
     if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUPS')))
       throw new Exception('Access Denied.');
-    if(!in_array($type, array(SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)))
+    if(!in_array($type, array(SERVER_GROUPS, WEB_GROUPS)))
       throw new Exception('Invalid group type supplied.');
     if(empty($name)     || !is_string($name))
       throw new Exception('Invalid group name supplied.');
@@ -29,7 +29,7 @@ class GroupsWriter
     
     switch($type)
     {
-      case SERVER_ADMIN_GROUPS:
+      case SERVER_GROUPS:
         $db->Execute('INSERT INTO ' . Env::get('prefix') . '_srvgroups (name, flags, immunity)
                       VALUES      (?, ?, ?)',
                       array($name, $flags, $immunity));
@@ -45,7 +45,7 @@ class GroupsWriter
         }
         
         break;
-      case WEB_ADMIN_GROUPS:
+      case WEB_GROUPS:
         $db->Execute('INSERT INTO ' . Env::get('prefix') . '_groups (name)
                       VALUES      (?)',
                       array($name));
@@ -68,7 +68,7 @@ class GroupsWriter
    * Deletes a group
    *
    * @param integer $id   The id of the group to delete
-   * @param integer $type The type of the group to delete (SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)
+   * @param integer $type The type of the group to delete (SERVER_GROUPS, WEB_GROUPS)
    */
   public static function delete($id, $type)
   {
@@ -80,7 +80,7 @@ class GroupsWriter
     
     switch($type)
     {
-      case SERVER_ADMIN_GROUPS:
+      case SERVER_GROUPS:
         $db->Execute('DELETE sg, ag
                       FROM   ' . Env::get('prefix') . '_srvgroups        AS sg,
                              ' . Env::get('prefix') . '_admins_srvgroups AS ag
@@ -88,7 +88,7 @@ class GroupsWriter
                         AND  sg.id = ?',
                       array($id));
         break;
-      case WEB_ADMIN_GROUPS:
+      case WEB_GROUPS:
         $db->Execute('UPDATE ' . Env::get('prefix') . '_admins
                       SET    group_id = NULL
                       WHERE  group_id = ?',
@@ -112,7 +112,7 @@ class GroupsWriter
    * Edits a group
    *
    * @param integer $id        The id of the group to edit
-   * @param integer $type      The type of the group (SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)
+   * @param integer $type      The type of the group (SERVER_GROUPS, WEB_GROUPS)
    * @param string  $name      The name of the group
    * @param mixed   $flags     The access flags of the group
    * @param integer $immunity  The immunity level of the group
@@ -128,7 +128,7 @@ class GroupsWriter
     
     switch($type)
     {
-      case SERVER_ADMIN_GROUPS:
+      case SERVER_GROUPS:
         $db->Execute('UPDATE ' . Env::get('prefix') . '_srvgroups
                       SET    name     = ?,
                              flags    = ?,
@@ -150,7 +150,7 @@ class GroupsWriter
         }
         
         break;
-      case WEB_ADMIN_GROUPS:
+      case WEB_GROUPS:
         $db->Execute('UPDATE ' . Env::get('prefix') . '_groups
                       SET    name  = ?
                       WHERE  id    = ?',
@@ -198,7 +198,7 @@ class GroupsWriter
       // SourceMod
       case 'admin_groups.cfg':
         foreach($reader->Values['Groups'] as $name => $group)
-          self::add(SERVER_ADMIN_GROUPS,
+          self::add(SERVER_GROUPS,
                     $name,
                     isset($group['flags'])    ? $group['flags']    : '',
                     isset($group['immunity']) ? $group['immunity'] : 0);
@@ -207,7 +207,7 @@ class GroupsWriter
       // Mani Admin Plugin
       case 'clients.txt':
         foreach($reader->Values['clients.txt']['groups'] as $name => $group)
-          self::add(SERVER_ADMIN_GROUPS, $name);
+          self::add(SERVER_GROUPS, $name);
         
         break;
       default:

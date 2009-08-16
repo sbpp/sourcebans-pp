@@ -27,13 +27,13 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins[$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $id            = $_GET['id'];
+  $admin         = $admins[$_GET['id']];
   
-  $page->assign('admin_name',             $admins[$id]['name']);
-  $page->assign('admin_type',             $admins[$id]['auth']);
-  $page->assign('admin_identity',         $admins[$id]['identity']);
-  $page->assign('admin_email',            $admins[$id]['email']);
-  $page->assign('permission_change_pass', $userbank->HasAccess(array('ADMIN_OWNER')) || $id == $userbank->GetID());
+  $page->assign('admin_name',             $admin['name']);
+  $page->assign('admin_type',             $admin['auth']);
+  $page->assign('admin_identity',         $admin['identity']);
+  $page->assign('admin_email',            $admin['email']);
+  $page->assign('permission_change_pass', $userbank->HasAccess(array('ADMIN_OWNER')) || $_GET['id'] == $userbank->GetID());
   $page->display('page_admin_admins_editdetails');
 }
 catch(Exception $e)

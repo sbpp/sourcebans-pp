@@ -430,7 +430,7 @@ class SB_API
   /**
    * Adds a group
    *
-   * @param  integer $type     The type of the group (SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)
+   * @param  integer $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
    * @param  string  $name     The name of the group
    * @param  integer $flags    The access flags of the group
    * @param  integer $immunity The immunity level of the group
@@ -458,7 +458,7 @@ class SB_API
    * Edits a group
    *
    * @param integer $id       The id of the group to edit
-   * @param integer $type     The type of the group (SERVER_ADMIN_GROUPS, WEB_ADMIN_GROUPS)
+   * @param integer $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
    * @param string  $name     The name of the group
    * @param integer $flags    The access flags of the group
    * @param integer $immunity The immunity level of the group

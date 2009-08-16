@@ -15,26 +15,26 @@
               <h3>{$lang_edit_groups|ucwords}</h3>
               <p>{$lang_help_desc}</p>
               <p>Choose the new groups that you want <strong>{$admin_name}</strong> to appear in.</p>
-              <label>{help_icon title="$lang_server_admin_groups" desc="Choose the groups you want this admin to appear in for server admin permissions"}{$lang_server_admin_groups}</label>
+              <label>{help_icon title="$lang_server_groups" desc="Choose the groups you want this admin to appear in for server admin permissions"}{$lang_server_groups}</label>
               <table width="90%" cellspacing="0" cellpadding="4" align="center">
-                {foreach from=$server_admin_groups item=group key=group_id}
+                {foreach from=$server_groups item=group key=group_id}
                 <tr>
                   <td class="tablerow1" colspan="2">{$group.name}</td>
                   <td align="center" class="tablerow1"><input name="srv_groups[]" type="checkbox" value="{$group_id}" /></td>
                 </tr>
                 {/foreach}
               </table>
-              <div id="srv_group.msg" class="badentry"></div>
-              <label for="web_group">{help_icon title="$lang_web_admin_group" desc="Choose the group you want this admin to appear in for web permissions"}{$lang_web_admin_group}</label>
+              <div class="badentry" id="srv_groups.msg"></div>
+              <label for="web_group">{help_icon title="$lang_web_group" desc="Choose the group you want this admin to appear in for web permissions"}{$lang_web_group}</label>
               <select class="submit-fields" {nid id="web_group"}>
                 <option value="-1">{$lang_none}</option>
                 <optgroup label="{$lang_groups}">
-                  {foreach from=$web_admin_groups item=group key=group_id}
+                  {foreach from=$web_groups item=group key=group_id}
                   <option{if $group_id == $admin_web_group} selected="selected"{/if} value="{$group_id}">{$group.name|escape}</option>
                   {/foreach}
                 </optgroup>
               </select>
-              <div id="web_group.msg" class="badentry"></div>
+              <div class="badentry" id="web_group.msg"></div>
               <div class="center">
                 <input class="btn ok" type="submit" value="{$lang_save}" />
                 <input class="back btn cancel" type="button" value="{$lang_back}" />

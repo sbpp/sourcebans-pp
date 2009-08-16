@@ -69,11 +69,14 @@ th a:hover { border-bottom: #FFF dotted 1px; }
 
 .inputbox {
   width: 200px;
-  border: 1px solid #000000;
   font-size: 14px;
   padding-left: 2px;
-  background-color: rgb(215, 215, 215);
 }
+.inputbox, .sea_inputbox {
+  border: 1px solid #000000;
+  background-color: #D7D7D7;
+}
+.sea_inputbox { font-size: 12px; }
 
 .dbg.b {
   font-size: 12px;
@@ -81,26 +84,18 @@ th a:hover { border-bottom: #FFF dotted 1px; }
 }
 
 /** ================ Permissions ================ **/
-.tablerow1, .tablerow2 {
+.tablerow1, .tablerow2 { border-color: #FFF #C1BEBE #C1BEBE #FFF; }
+.tablerow1, .tablerow2, .tablerow4 {
   padding: 6px;
-  border-color: #FFF rgb(193, 190, 190) rgb(193, 190, 190) #FFF;
   border-style: solid;
   border-width: 1px;
 }
 .tablerow1 { background-color: #EAEDF0; }
-.tablerow2 {
-  background-color: rgb(236, 213, 216);
-  background-image: url("images/table_highlight_red.gif");
-}
-
+.tablerow2 { background: #ECD5D8 url("images/table_highlight_red.gif"); }
 .tablerow4 {
   color: #FFF;
-  padding: 6px;
-  border-color: #FFF rgb(209, 220, 235) rgb(209, 220, 235) #FFF;
-  border-style: solid;
-  border-width: 1px;
-  background-color: #C0CBDA;
-  background-image: url("images/table_highlight.gif");
+  background: #C0CBDA url("images/table_highlight.gif");
+  border-color: #FFF #D1DCEB #D1DCEB #FFF;
 }
 
 div.permissions {
@@ -496,6 +491,7 @@ img.tips { vertical-align: bottom; }
   background-image: url("images/detail_head.gif");
 }
 .front-module-line, .admin-row { border-bottom: 1px solid #CCC; }
+.admin-row { padding: 3px; }
 
 /** ================ Footer ================ **/
 .footer a {

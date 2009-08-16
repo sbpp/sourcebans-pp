@@ -1,20 +1,43 @@
 <?php
+// Global defines
 define('BASE_PATH', dirname(__FILE__) . '/../');
 define('LIB_DIR',   BASE_PATH . 'includes/libs/');
 
-define('FILE_UPLOADS',     ini_get('file_uploads'));
-define('MYSQL_VERSION',    mysql_get_client_info());
-define('REGISTER_GLOBALS', ini_get('register_globals'));
-define('SAFE_MODE',        ini_get('safe_mode'));
-define('WRITABLE_CACHE',   is_writable(BASE_PATH . 'file_cache'));
-define('WRITABLE_CONFIG',  is_writable(BASE_PATH . 'config.php'));
-define('WRITABLE_DEMOS',   is_writable(BASE_PATH . 'demos'));
-define('WRITABLE_GAMES',   is_writable(BASE_PATH . 'images/games'));
-define('WRITABLE_MAPS',    is_writable(BASE_PATH . 'images/maps'));
-define('WRITABLE_THEMES',  is_writable(BASE_PATH . 'themes_c'));
 
+// Global includes
 require_once LIB_DIR . 'adodb/adodb-exceptions.inc.php';
 require_once LIB_DIR . 'adodb/adodb.inc.php';
+
+
+// List of paths that need to be writable
+$writable = array(
+  'cache'  => BASE_PATH . 'file_cache',
+  'config' => BASE_PATH . 'config.php',
+  'demos'  => BASE_PATH . 'demos',
+  'games'  => BASE_PATH . 'images/games',
+  'maps'   => BASE_PATH . 'images/maps',
+  'themes' => BASE_PATH . 'themes_c'
+);
+
+// If a path is not writable, attempt to make it writable
+foreach($writable as $path)
+  if(!is_writable($path))
+    chmod($path, 0755);
+
+
+// Server settings
+define('FILE_UPLOADS',      ini_get('file_uploads')     == 1);
+define('MYSQL_VERSION',     mysql_get_client_info());
+define('MYSQL_VERSION_REQ', '5.0');
+define('PHP_VERSION_REQ',   '5.0');
+define('REGISTER_GLOBALS',  ini_get('register_globals') == 1);
+define('SAFE_MODE',         ini_get('safe_mode')        == 1);
+define('WRITABLE_CACHE',    is_writable($writable['cache']));
+define('WRITABLE_CONFIG',   is_writable($writable['config']));
+define('WRITABLE_DEMOS',    is_writable($writable['demos']));
+define('WRITABLE_GAMES',    is_writable($writable['games']));
+define('WRITABLE_MAPS',     is_writable($writable['maps']));
+define('WRITABLE_THEMES',   is_writable($writable['themes']));
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -23,7 +46,7 @@ require_once LIB_DIR . 'adodb/adodb.inc.php';
     <title>Installation | SourceBans</title>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="author" content="InterWave Studios" />
-    <meta name="copyright" content="SourceBans © 2007-2009 InterWaveStudios.com. All rights reserved." />
+    <meta name="copyright" content="SourceBans Â© 2007-2009 InterWaveStudios.com. All rights reserved." />
     <meta name="description" content="Global admin and ban management for the Source engine" />
     <link href="../images/favicon.ico" rel="shortcut icon" />
     <link href="style.css" rel="stylesheet" type="text/css" />
@@ -102,8 +125,153 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
    6. The rights granted under, and the subject matter referenced, in this License were drafted utilizing the terminology of the Berne Convention for the Protection of Literary and Artistic Works (as amended on September 28, 1979), the Rome Convention of 1961, the WIPO Copyright Treaty of 1996, the WIPO Performances and Phonograms Treaty of 1996 and the Universal Copyright Convention (as revised on July 24, 1971). These rights and subject matter take effect in the relevant jurisdiction in which the License terms are sought to be enforced according to the corresponding provisions of the implementation of those treaty provisions in the applicable national law. If the standard suite of rights granted under applicable copyright law includes additional rights not granted under this License, such additional rights are deemed to be included in the License; this License is not intended to restrict the license of any rights under applicable law.</textarea>
       </div>
       <div class="step" id="step-2">
-        <h2>Step 2: Database Information</h2>
-        <p>Please enter your database details into the following boxes.</p>
+        <h2>Step 2: System Requirements</h2>
+        <p></p>
+        <h3>PHP Requirements</h3>
+        <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top: 3px;">
+          <tr>
+            <th>Setting</th>
+            <th width="25%">Required</th>
+            <th width="25%">Your Value</th>
+          </tr>
+          <tr>
+            <td class="listtable_1">PHP Version</td>
+            <td class="listtable_1"><?php echo PHP_VERSION_REQ; ?></td>
+            <td class="<?php if(version_compare(PHP_VERSION, PHP_VERSION_REQ, '>=')): ?>green<?php else: ?>red<?php endif; ?>"><?php echo PHP_VERSION; ?></td>
+          </tr>
+          <tr>
+            <td class="listtable_1">File Uploads</td>
+            <td class="listtable_1">On</td>
+            <?php if(FILE_UPLOADS): ?>
+            <td class="green">On</td>
+            <?php else: ?>
+            <td class="red">Off</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Register Globals</td>
+            <td class="listtable_1">Off</td>
+            <?php if(REGISTER_GLOBALS): ?>
+            <td class="red">On</td>
+            <?php else: ?>
+            <td class="green">Off</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Safe Mode</td>
+            <td class="listtable_1">Off</td>
+            <?php if(SAFE_MODE): ?>
+            <td class="red">On</td>
+            <?php else: ?>
+            <td class="green">Off</td>
+            <?php endif; ?>
+          </tr>
+        </table>
+        <h3>MySQL Requirements</h3>
+        <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top: 3px;">
+          <tr>
+            <th>Setting</th>
+            <th width="25%">Required</th>
+            <th width="25%">Your Value</th>
+          </tr>
+          <tr>
+            <td class="listtable_1">MySQL Version</td>
+            <td class="listtable_1"><?php echo MYSQL_VERSION_REQ; ?></td>
+            <td class="<?php if(version_compare(MYSQL_VERSION, MYSQL_VERSION_REQ, '>=')): ?>green<?php else: ?>red<?php endif; ?>"><?php echo MYSQL_VERSION; ?></td>
+          </tr>
+        </table>
+        <h3>File System Requirements</h3>
+        <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top: 3px;">
+          <tr>
+            <th>Setting</th>
+            <th width="25%">Required</th>
+            <th width="25%">Your Value</th>
+          </tr>
+          <tr>
+            <td class="listtable_1">Query Cache Writable (/file_cache)</td>
+            <td class="listtable_1">Yes</td>
+            <?php if(WRITABLE_CACHE): ?>
+            <td class="green">Yes</td>
+            <?php else: ?>
+            <td class="red">No</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Demo Folder Writable (/demos)</td>
+            <td class="listtable_1">Yes</td>
+            <?php if(WRITABLE_DEMOS): ?>
+            <td class="green">Yes</td>
+            <?php else: ?>
+            <td class="red">No</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Compiled Themes Writable (/themes_c)</td>
+            <td class="listtable_1">Yes</td>
+            <?php if(WRITABLE_THEMES): ?>
+            <td class="green">Yes</td>
+            <?php else: ?>
+            <td class="red">No</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Mod Icon Folder Writable (/images/games)</td>
+            <td class="listtable_1">Yes</td>
+            <?php if(WRITABLE_GAMES): ?>
+            <td class="green">Yes</td>
+            <?php else: ?>
+            <td class="red">No</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Map Image Folder Writable (/images/maps)</td>
+            <td class="listtable_1">Yes</td>
+            <?php if(WRITABLE_MAPS): ?>
+            <td class="green">Yes</td>
+            <?php else: ?>
+            <td class="red">No</td>
+            <?php endif; ?>
+          </tr>
+          <tr>
+            <td class="listtable_1">Config File Writable (/config.php)</td>
+            <td class="listtable_1">Yes</td>
+            <?php if(WRITABLE_CONFIG): ?>
+            <td class="green">Yes</td>
+            <?php else: ?>
+            <td class="red">No</td>
+            <?php endif; ?>
+          </tr>
+        </table>
+      </div>
+      <div class="step" id="step-3">
+        <h2>Step 3: Database Information</h2>
+        <p>Please enter your database details into the following fields.</p>
+        <form action="index.php" method="post">
+          <div>
+            <label for="host">Host:</label>
+            <input id="host" name="host" value="localhost" />
+          </div>
+          <div>
+            <label for="port">Port:</label>
+            <input id="port" name="port" value="3306" />
+          </div>
+          <div>
+            <label for="username">Username:</label>
+            <input id="username" name="username" />
+          </div>
+          <div>
+            <label for="password">Password:</label>
+            <input id="password" name="password" type="password" />
+          </div>
+          <div>
+            <label for="name">Database Name:</label>
+            <input id="name" name="name" />
+          </div>
+          <div>
+            <label for="prefix">Table Prefix:</label>
+            <input id="prefix" name="prefix" value="sb" />
+          </div>
+        </form>
       </div>
       <div class="buttons">
         <input disabled="disabled" id="back" type="button" value="&lt;&lt; Back" />

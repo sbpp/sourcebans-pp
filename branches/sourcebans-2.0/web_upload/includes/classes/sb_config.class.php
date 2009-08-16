@@ -96,21 +96,21 @@ class SBConfig
     define('IP_FORMAT',     '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
     define('STEAM_FORMAT',  '^STEAM_[0-9]:[0-9]:[0-9]+$');
     define('STATUS_PARSE',  '/#[ ]*([0-9]+) "(.+)" (STEAM_[0-9]:[0-9]:[0-9]+)[ ]{1,2}([0-9]+[:[0-9]+) ([0-9]+)[ ]([0-9]+) ([a-zA-Z]+) ([0-9.:]+)/');
-    define('LOGIN_COOKIE_LIFETIME',  ONE_WEEK * 2);
+    define('LOGIN_COOKIE_LIFETIME', ONE_WEEK * 2);
     
-    define('BAN_COMMENTS',           'B');
-    define('PROTEST_COMMENTS',       'P');
-    define('SUBMISSION_COMMENTS',    'S');
-    define('STEAM_BAN_TYPE',         0);
-    define('IP_BAN_TYPE',            1);
-    define('SERVER_ADMIN_GROUPS',    'srv');
-    define('WEB_ADMIN_GROUPS',       'web');
-    define('ERROR_LOG_TYPE',         'e');
-    define('INFO_LOG_TYPE',          'm');
-    define('WARNING_LOG_TYPE',       'w');
-    define('STEAM_AUTH_TYPE',        'steam');	// Steam ID based authentication
-    define('IP_AUTH_TYPE',           'ip');			// IP address based authentication
-    define('NAME_AUTH_TYPE',         'name');		// Name based authentication
+    define('BAN_COMMENTS',        'B');
+    define('PROTEST_COMMENTS',    'P');
+    define('SUBMISSION_COMMENTS', 'S');
+    define('STEAM_BAN_TYPE',      0);
+    define('IP_BAN_TYPE',         1);
+    define('SERVER_GROUPS',       'srv');
+    define('WEB_GROUPS',          'web');
+    define('ERROR_LOG_TYPE',      'e');
+    define('INFO_LOG_TYPE',       'm');
+    define('WARNING_LOG_TYPE',    'w');
+    define('STEAM_AUTH_TYPE',     'steam');	// Steam ID based authentication
+    define('IP_AUTH_TYPE',        'ip');			// IP address based authentication
+    define('NAME_AUTH_TYPE',      'name');		// Name based authentication
     
     // Server admin flags
     define('SM_RESERVATION', 'a');

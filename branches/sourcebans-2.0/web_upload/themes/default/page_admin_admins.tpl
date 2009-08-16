@@ -9,6 +9,9 @@
               {if $permission_import_admins}
               <li id="tab-import"><a href="#import">{$lang_import_admins}</a></li>
               {/if}
+              {if $permission_list_overrides}
+              <li id="tab-overrides"><a href="#overrides">Overrides</a></li>
+              {/if}
               {if $permission_list_actions}
               <li id="tab-actions"><a href="#actions">{$lang_actions_log}</a></li>
               {/if}
@@ -39,14 +42,14 @@
                             <tr>
                               <td class="listtable_1" width="8%" align="center"><input id="name_" name="type" type="radio" value="name" /></td>
                               <td class="listtable_1" width="26%">{$lang_name}</td>
-                              <td class="listtable_1" width="66%"><input id="nick" value="" onmouseup="$('name_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 249px;" /></td>
+                              <td class="listtable_1" width="66%"><input id="nick" value="" onmouseup="$('name_').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
                             </tr>
                             <tr>
                               <td align="center" class="listtable_1"><input id="steam_" type="radio" name="type" value="steam" /></td>
                               <td class="listtable_1">Steam ID</td>
                               <td class="listtable_1">
-                                <input id="steamid" onmouseup="$('steam_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 145px;" />
-                                <select id="steam_match" onmouseup="$('steam_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 100px;">
+                                <input id="steamid" onmouseup="$('steam_').checked = true" class="sea_inputbox" style="width: 145px;" />
+                                <select id="steam_match" onmouseup="$('steam_').checked = true" class="sea_inputbox" style="width: 100px;">
                                   <option label="exact" value="0">Exact Match</option>
                                   <option label="partial" value="1">Partial Match</option>
                                 </select>
@@ -54,10 +57,10 @@
                             </tr>
                             <tr>
                               <td align="center" class="listtable_1"><input id="srvadmgroup_" type="radio" name="type" value="srvadmgroup" /></td>
-                              <td class="listtable_1">{$lang_server_admin_group}</td>
+                              <td class="listtable_1">{$lang_server_group}</td>
                               <td class="listtable_1">
-                                <select id="srvadmgroup" onmouseup="$('srvadmgroup_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
-                                  {foreach from=$server_admin_groups item=group key=group_id}
+                                <select id="srvadmgroup" onmouseup="$('srvadmgroup_').checked = true" class="sea_inputbox" style="width: 251px;">
+                                  {foreach from=$server_groups item=group key=group_id}
                                   <option value="{$group_id}">{$group.name}</option>
                                   {/foreach}
                                 </select>
@@ -65,10 +68,10 @@
                             </tr>
                             <tr>
                               <td align="center" class="listtable_1"><input id="webadmgroup_" type="radio" name="type" value="webadmgroup" /></td>
-                              <td class="listtable_1">{$lang_web_admin_group}</td>
+                              <td class="listtable_1">{$lang_web_group}</td>
                               <td class="listtable_1">
-                                <select id="webadmgroup" onmouseup="$('webadmgroup_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
-                                  {foreach from=$web_admin_groups item=group key=group_id}
+                                <select id="webadmgroup" onmouseup="$('webadmgroup_').checked = true" class="sea_inputbox" style="width: 251px;">
+                                  {foreach from=$web_groups item=group key=group_id}
                                   <option value="{$group_id}">{$group.name}</option>
                                   {/foreach}
                                 </select>
@@ -78,10 +81,28 @@
                               <td class="listtable_1" align="center"><input id="admsrvflags_" name="type" type="radio" value="admsrvflags" /></td>
                               <td class="listtable_1">{$lang_server_permissions}</td>
                               <td class="listtable_1">
-                                <select id="admsrvflag" name="admsrvflag" size="5" multiple="multiple" onmouseup="$('admsrvflags_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
-                                  {foreach from=$admin_server_flags item=flag}
-                                  <option value="{$flag.flag}">{$flag.name}</option>
-                                  {/foreach}
+                                <select id="admsrvflag" name="admsrvflag" size="5" multiple="multiple" onmouseup="$('admsrvflags_').checked = true" class="sea_inputbox" style="width: 251px;">
+                                  <option value="{$smarty.const.SM_ROOT}">Root (Full Server Access)</option>
+                                  <option value="{$smarty.const.SM_RESERVATION}">{$lang_reservation_desc}</option>
+                                  <option value="{$smarty.const.SM_GENERIC}">{$lang_generic_desc}</option>
+                                  <option value="{$smarty.const.SM_KICK}">{$lang_kick_desc}</option>
+                                  <option value="{$smarty.const.SM_BAN}">{$lang_ban_desc}</option>
+                                  <option value="{$smarty.const.SM_UNBAN}">{$lang_unban_desc}</option>
+                                  <option value="{$smarty.const.SM_SLAY}">{$lang_slay_desc}</option>
+                                  <option value="{$smarty.const.SM_CHANGEMAP}">{$lang_changemap_desc}</option>
+                                  <option value="{$smarty.const.SM_CVAR}">{$lang_cvar_desc}</option>
+                                  <option value="{$smarty.const.SM_CONFIG}">{$lang_config_desc}</option>
+                                  <option value="{$smarty.const.SM_CHAT}">{$lang_chat_desc}</option>
+                                  <option value="{$smarty.const.SM_VOTE}">{$lang_vote_desc}</option>
+                                  <option value="{$smarty.const.SM_PASSWORD}">{$lang_password_desc}</option>
+                                  <option value="{$smarty.const.SM_RCON}">{$lang_rcon_desc}</option>
+                                  <option value="{$smarty.const.SM_CHEATS}">{$lang_cheats_desc}</option>
+                                  <option value="{$smarty.const.SM_CUSTOM1}">{$lang_custom1_desc}</option>
+                                  <option value="{$smarty.const.SM_CUSTOM2}">{$lang_custom2_desc}</option>
+                                  <option value="{$smarty.const.SM_CUSTOM3}">{$lang_custom3_desc}</option>
+                                  <option value="{$smarty.const.SM_CUSTOM4}">{$lang_custom4_desc}</option>
+                                  <option value="{$smarty.const.SM_CUSTOM5}">{$lang_custom5_desc}</option>
+                                  <option value="{$smarty.const.SM_CUSTOM6}">{$lang_custom6_desc}</option>
                                 </select>
                               </td>
                             </tr>
@@ -89,10 +110,41 @@
                               <td class="listtable_1" align="center"><input id="admwebflags_" name="type" type="radio" value="admwebflags" /></td>
                               <td class="listtable_1">{$lang_web_permissions}</td>
                               <td class="listtable_1">
-                                <select id="admwebflag" name="admwebflag" size="5" multiple="multiple" onmouseup="$('admwebflags_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
-                                  {foreach from=$admin_web_flags item=flag}
-                                  <option value="{$flag.flag}">{$flag.name}</option>
-                                  {/foreach}
+                                <select id="admwebflag" name="admwebflag" size="5" multiple="multiple" onmouseup="$('admwebflags_').checked = true" class="sea_inputbox" style="width: 251px;">
+                                  <option value="ADMIN_OWNER">Owner (Full Web Access)</option>
+                                  <option value="ADMIN_LIST_ADMINS">{$lang_list_admins}</option>
+                                  <option value="ADMIN_ADD_ADMINS">{$lang_add_admins}</option>
+                                  <option value="ADMIN_EDIT_ADMINS">{$lang_edit_admins}</option>
+                                  <option value="ADMIN_DELETE_ADMINS">{$lang_delete_admins}</option>
+                                  <option value="ADMIN_IMPORT_ADMINS">{$lang_import_admins}</option>
+                                  <option value="ADMIN_LIST_GROUPS">{$lang_list_groups}</option>
+                                  <option value="ADMIN_ADD_GROUPS">{$lang_add_groups}</option>
+                                  <option value="ADMIN_EDIT_GROUPS">{$lang_edit_groups}</option>
+                                  <option value="ADMIN_DELETE_GROUPS">{$lang_delete_groups}</option>
+                                  <option value="ADMIN_IMPORT_GROUPS">{$lang_import_groups}</option>
+                                  <option value="ADMIN_LIST_MODS">{$lang_list_mods}</option>
+                                  <option value="ADMIN_ADD_MODS">{$lang_add_mods}</option>
+                                  <option value="ADMIN_EDIT_MODS">{$lang_edit_mods}</option>
+                                  <option value="ADMIN_DELETE_MODS">{$lang_delete_mods}</option>
+                                  <option value="ADMIN_LIST_SERVERS">{$lang_list_servers}</option>
+                                  <option value="ADMIN_ADD_SERVERS">{$lang_add_servers}</option>
+                                  <option value="ADMIN_EDIT_SERVERS">{$lang_edit_servers}</option>
+                                  <option value="ADMIN_DELETE_SERVERS">{$lang_delete_servers}</option>
+                                  <option value="ADMIN_IMPORT_SERVERS">{$lang_import_servers}</option>
+                                  <option value="ADMIN_ADD_BANS">{$lang_add_bans}</option>
+                                  <option value="ADMIN_EDIT_OWN_BANS">{$lang_edit_own_bans}</option>
+                                  <option value="ADMIN_EDIT_GROUP_BANS">{$lang_edit_group_bans}</option>
+                                  <option value="ADMIN_EDIT_ALL_BANS">{$lang_edit_all_bans}</option>
+                                  <option value="ADMIN_UNBAN_OWN_BANS">{$lang_unban_own_bans}</option>
+                                  <option value="ADMIN_UNBAN_GROUP_BANS">{$lang_unban_group_bans}</option>
+                                  <option value="ADMIN_UNBAN_ALL_BANS">{$lang_unban_all_bans}</option>
+                                  <option value="ADMIN_DELETE_BANS">{$lang_delete_bans}</option>
+                                  <option value="ADMIN_IMPORT_BANS">{$lang_import_bans}</option>
+                                  <option value="ADMIN_BAN_PROTESTS">{$lang_ban_protests}</option>
+                                  <option value="ADMIN_BAN_SUBMISSIONS">{$lang_ban_submissions}</option>
+                                  <option value="ADMIN_NOTIFY_PROT">{$lang_notify_protests}</option>
+                                  <option value="ADMIN_NOTIFY_SUB">{$lang_notify_submissions}</option>
+                                  <option value="ADMIN_SETTINGS">{$lang_settings}</option>
                                 </select>
                               </td>
                             </tr>
@@ -100,7 +152,7 @@
                               <td class="listtable_1" align="center"><input id="server_" name="type" type="radio" value="server" /></td>
                               <td class="listtable_1">{$lang_server}</td>
                               <td class="listtable_1">
-                                <select id="server" onmouseup="$('server_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
+                                <select id="server" onmouseup="$('server_').checked = true" class="sea_inputbox" style="width: 251px;">
                                   {foreach from=$servers item=server key=server_id}
                                   <option id="host_{$server_id}" value="{$server_id}">Querying Server Data...</option>
                                   {/foreach}
@@ -137,15 +189,21 @@
                 <tr>
                   <th class="icon"><input {nid id="admins_select"} type="checkbox" value="-1" /></th>
                   <th><a href="{$active}{build_query sort=name}">{$lang_name}</a></th>
-                  <th width="30%"><a href="{$active}{build_query sort=srv_groups}">{$lang_server_admin_group}</a></th>
-                  <th width="30%"><a href="{$active}{build_query sort=web_group}">{$lang_web_admin_group}</a></th>
+                  <th width="30%"><a href="{$active}{build_query sort=srv_groups}">{$lang_server_group}</a></th>
+                  <th width="30%"><a href="{$active}{build_query sort=web_group}">{$lang_web_group}</a></th>
                 </tr>
                 {foreach from=$admins item=admin key=admin_id}
                 <tr class="opener tbl_out">
                   <td class="listtable_1 icon"><input name="admins[]" type="checkbox" value="{$admin_id}" /></td>
-                  <td class="admin-row" style="padding: 3px;">{$admin.name} (<a href="banlist.php?search={$admin_id}&amp;type=admin" title="Show bans">{$admin.ban_count} bans</a> | <a href="banlist.php?search={$admin_id}&amp;type=nodemo" title="Show bans without demo">{$admin.nodemo_count} w.d.</a>)</td>
-                  <td class="admin-row" style="padding: 3px;">{', '|implode:$admin.srv_groups|default:$lang_none}</td>
-                  <td class="admin-row" style="padding: 3px;">{$admin.web_group|default:$lang_none}</td>
+                  <td class="admin-row">{$admin.name} (<a href="banlist.php?search={$admin_id}&amp;type=admin" title="Show bans">{$admin.ban_count} bans</a> | <a href="banlist.php?search={$admin_id}&amp;type=nodemo" title="Show bans without demo">{$admin.nodemo_count} w.d.</a>)</td>
+                  <td class="admin-row">
+                    {foreach from=$admin.srv_groups item=group_id name=server_groups}
+                    {$server_groups[$group_id].name}{if !$smarty.foreach.server_groups.last}, {/if}
+                    {foreachelse}
+                    {$lang_none}
+                    {/foreach}
+                  </td>
+                  <td class="admin-row">{$admin.web_group|default:$lang_none}</td>
                 </tr>
                 <tr>
                   <td colspan="4">
@@ -348,13 +406,14 @@
               <select id="action_select">
                 <option value="0">{$lang_action}</option>
                 <option value="delete">{$lang_delete}</option>
+                <option value="email">Send e-mail</option>
                 <optgroup label="Add to server admin group">
-                  {foreach from=$server_admin_groups item=group key=group_id}
+                  {foreach from=$server_groups item=group key=group_id}
                   <option value="{$group_id}">{$group.name}</option>
                   {/foreach}
                 </optgroup>
                 <optgroup label="Set web admin group">
-                  {foreach from=$web_admin_groups item=group key=group_id}
+                  {foreach from=$web_groups item=group key=group_id}
                   <option value="{$group_id}">{$group.name}</option>
                   {/foreach}
                 </optgroup>
@@ -413,11 +472,11 @@
                 </div>
                 <h3>{$lang_groups}</h3>
                 <div>
-                  <label for="srv_group">{help_icon title="$lang_server_admin_group" desc="<strong>Custom Permisions:</strong><br />Select this to choose custom permissions for this admin.<br /><br /><strong>New Group:</strong><br />Select this to choose custom permissions and then save the permissions as a new group.<br /><br /><strong>Groups:</strong><br />Select a pre-made group to add the admin to."}{$lang_server_admin_group}</label>
-                  <select class="submit-fields" {nid id="srv_group"}>
+                  <label for="srv_groups">{help_icon title="$lang_server_groups" desc="<strong>Custom Permisions:</strong><br />Select this to choose custom permissions for this admin.<br /><br /><strong>New Group:</strong><br />Select this to choose custom permissions and then save the permissions as a new group.<br /><br /><strong>Groups:</strong><br />Select a pre-made group to add the admin to."}{$lang_server_groups}</label>
+                  <select class="submit-fields" {nid id="srv_groups"}>
                     <option value="0">{$lang_none}</option>
                     <optgroup label="{$lang_groups}">
-                      {foreach from=$server_admin_groups item=group key=group_id}
+                      {foreach from=$server_groups item=group key=group_id}
                       <option value="{$group_id}">{$group.name|escape}</option>
                       {/foreach}
                     </optgroup>
@@ -425,17 +484,17 @@
                 </div>
                 <div class="badentry" id="srv_groups.msg"></div>
                 <div>
-                  <label for="web_group">{help_icon title="$lang_web_admin_group" desc="<strong>Custom Permisions:</strong><br />Select this to choose custom permissions for this admin.<br /><br /><strong>New Group:</strong><br />Select this to choose cusrom permissions and then save the permissions as a new group.<br /><br /><strong>Groups:</strong><br />Select a pre-made group to add the admin to."}{$lang_web_admin_group}</label>
+                  <label for="web_group">{help_icon title="$lang_web_group" desc="<strong>Custom Permisions:</strong><br />Select this to choose custom permissions for this admin.<br /><br /><strong>New Group:</strong><br />Select this to choose cusrom permissions and then save the permissions as a new group.<br /><br /><strong>Groups:</strong><br />Select a pre-made group to add the admin to."}{$lang_web_group}</label>
                   <select class="submit-fields" {nid id="web_group"}>
                     <option value="0">{$lang_none}</option>
                     <optgroup label="{$lang_groups}">
-                      {foreach from=$web_admin_groups item=group key=group_id}
+                      {foreach from=$web_groups item=group key=group_id}
                       <option value="{$group_id}">{$group.name|escape}</option>
                       {/foreach}
                     </optgroup>
                   </select>
                 </div>
-                <div id="web_group.msg" class="badentry"></div>
+                <div class="badentry" id="web_group.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="add" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -451,9 +510,50 @@
                 <p>{$lang_help_desc}</p>
                 <label for="file">{help_icon title="$lang_file" desc="Select the admins.cfg file to upload and add admins."}{$lang_file}</label>
                 <input class="submit-fields" {nid id="file"} type="file" />
-                <div id="file.msg" class="badentry"></div>
+                <div class="badentry" id="file.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="import" />
+                  <input class="btn ok" type="submit" value="{$lang_save}" />
+                  <input class="back btn cancel" type="button" value="{$lang_back}" />
+                </div>
+              </fieldset>
+            </form>
+            {/if}
+            {if $permission_list_overrides}
+            <form action="{$active}" enctype="multipart/form-data" id="pane-overrides" method="post">
+              <fieldset>
+                <h3>Overrides</h3>
+                <table align="center" cellspacing="0" cellpadding="4" id="overrides" width="90%">
+                  <tr>
+                    <td class="tablerow4">{$lang_type}</td>
+                    <td class="tablerow4">{$lang_name}</td>
+                    <td class="tablerow4">Flags</td>
+                  </tr>
+                  {foreach from=$overrides item=override}
+                  <tr>
+                    <td class="tablerow1">
+                      <select name="override_type[]">
+                        <option{if $override.type == "command"} selected="selected"{/if} value="command">{$lang_command}</option>
+                        <option{if $override.type == "group"} selected="selected"{/if} value="group">{$lang_group}</option>
+                      </select>
+                    </td>
+                    <td class="tablerow1"><input name="override_name[]" value="{$override.name}" /></td>
+                  <td class="tablerow1"><input name="override_flags[]" value="{$override.flags}" /></td>
+                  </tr>
+                  {/foreach}
+                  <tr>
+                    <td class="tablerow1">
+                      <select name="override_type[]">
+                        <option value="command">{$lang_command}</option>
+                        <option value="group">{$lang_group}</option>
+                      </select>
+                    </td>
+                    <td class="tablerow1"><input name="override_name[]" /></td>
+                  <td class="tablerow1"><input name="override_flags[]" /></td>
+                  </tr>
+                </table>
+                <div class="center">
+                  <input name="action" type="hidden" value="overrides" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
                   <input class="back btn cancel" type="button" value="{$lang_back}" />
                 </div>

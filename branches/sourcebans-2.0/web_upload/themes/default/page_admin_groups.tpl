@@ -28,8 +28,8 @@
                   <td colspan="4">
                     <table width="100%" cellpadding="0" cellspacing="0" class="front-module-header">
                       <tr>
-                        <td>{$lang_server_admin_groups}</td>
-                        <td class="right">{$lang_total}: {$server_admin_group_count}</td>
+                        <td>{$lang_server_groups}</td>
+                        <td class="right">{$lang_total}: {$server_group_count}</td>
                       </tr>
                     </table>
                   </td>
@@ -39,13 +39,13 @@
                   <th width="25%">{$lang_admins_in_group}</th>
                   <th width="30%">{$lang_action}</th>
                 </tr>
-                {foreach from=$server_admin_groups item=group key=group_id}
+                {foreach from=$server_groups item=group key=group_id}
                 <tr class="opener tbl_out">
                   <td style="border-bottom: solid 1px #ccc">{$group.name}</td>
                   <td style="border-bottom: solid 1px #ccc">{$group.admin_count}</td>
                   <td style="border-bottom: solid 1px #ccc">
                     {if $permission_edit_groups}
-                    <a href="admin_groups_edit.php?type={$smarty.const.SERVER_ADMIN_GROUPS}&amp;id={$group_id}">{$lang_edit}</a>
+                    <a href="admin_groups_edit.php?type={$smarty.const.SERVER_GROUPS}&amp;id={$group_id}">{$lang_edit}</a>
                     {/if}
                     {if $permission_edit_groups && $permission_delete_groups}
                     -
@@ -146,8 +146,8 @@
                   <td colspan="4">
                     <table width="100%" cellpadding="0" cellspacing="0" class="front-module-header">
                       <tr>
-                        <td>{$lang_web_admin_groups}</td>
-                        <td class="right">{$lang_total}: {$web_admin_group_count}</td>
+                        <td>{$lang_web_groups}</td>
+                        <td class="right">{$lang_total}: {$web_group_count}</td>
                       </tr>
                     </table>
                   </td>
@@ -157,13 +157,13 @@
                   <th width="25%">{$lang_admins_in_group}</th>
                   <th width="30%">{$lang_action}</th>
                 </tr>
-                {foreach from=$web_admin_groups item=group key=group_id}
+                {foreach from=$web_groups item=group key=group_id}
                 <tr class="opener tbl_out">
                   <td style="border-bottom: solid 1px #ccc">{$group.name}</td>
                   <td style="border-bottom: solid 1px #ccc">{$group.admin_count}</td>
                   <td style="border-bottom: solid 1px #ccc">
                     {if $permission_edit_groups}
-                    <a href="admin_groups_edit.php?type={$smarty.const.WEB_ADMIN_GROUPS}&amp;id={$group_id}">{$lang_edit}</a>
+                    <a href="admin_groups_edit.php?type={$smarty.const.WEB_GROUPS}&amp;id={$group_id}">{$lang_edit}</a>
                     {/if}
                     {if $permission_delete_groups}
                     - <a href="#" onclick="DeleteGroup({$group_id}, '{$group.name}', 'web');">{$lang_delete}</a>
@@ -295,15 +295,15 @@
                 <h3>{$lang_add_group|ucwords}</h3>
                 <label for="name">{help_icon title="$lang_name" desc="Type the name of the new group you want to create."}{$lang_name}</label>
                 <input class="submit-fields" {nid id="name"} />
-                <div id="name.msg" class="badentry"></div>
+                <div class="badentry" id="name.msg"></div>
                 <label for="type">{help_icon title="$lang_type" desc="This defines the type of group you are about to create. This helps identify and catagorize the groups list."}{$lang_type}</label>
                 <select class="submit-fields group_type_select" {nid id="type"}>
                   <option value="0">Please Select...</option>
-                  <option value="{$smarty.const.SERVER_ADMIN_GROUPS}">{$lang_server_admin_group}</option>
-                  <option value="{$smarty.const.WEB_ADMIN_GROUPS}">{$lang_web_admin_group}</option>
+                  <option value="{$smarty.const.SERVER_GROUPS}">{$lang_server_group}</option>
+                  <option value="{$smarty.const.WEB_GROUPS}">{$lang_web_group}</option>
                 </select>
-                <div id="type.msg" class="badentry"></div>
-                <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.SERVER_ADMIN_GROUPS}" width="90%">
+                <div class="badentry" id="type.msg"></div>
+                <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.SERVER_GROUPS}" width="90%">
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_name}</td>
                     <td class="tablerow4">Flag</td>
@@ -472,7 +472,7 @@
                     <td align="center" class="tablerow1"><input maxlength="3" {nid id="immunity"} style="width: 25px; text-align: center;" value="0" /></td>
                   </tr>
                 </table>
-                <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.WEB_ADMIN_GROUPS}" width="90%">
+                <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.WEB_GROUPS}" width="90%">
                   <tr>
                     <td colspan="2" class="tablerow2">Owner (Full Web Access)</td>
                     <td align="center" class="tablerow2"><input id="permission_owner" name="web_flags[]" type="checkbox" value="ADMIN_OWNER" /></td>
@@ -671,7 +671,6 @@
                   <input class="btn ok" type="submit" value="{$lang_save}" />
                   <input class="back btn cancel" type="button" value="{$lang_back}" />
                 </div>
-                <script>InitAccordion('tr.opener2', 'div.opener2', 'mainwrapper');</script>
               </fieldset>
             </form>
             {/if}

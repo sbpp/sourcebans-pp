@@ -1,30 +1,66 @@
 body {
+  color: #FFF;
   font-size: 12px;
   font-family: Verdana,Arial,Tahoma,Trebuchet MS,Sans-Serif,Georgia,Courier,Times New Roman,Serif;
 }
 h1 { display: none; }
 h2 {
+  color: #4D4D4D;
   margin: 0;
   font-size: 36px;
   font-weight: normal;
 }
+h3 {
+  clear: both;
+  color: #000;
+  border: 1px solid #DDD;
+  margin: 5px 0;
+  padding: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #EAEAEA;
+  border-left-width: 5px;
+}
+input { color: #000; }
+label {
+  clear: both;
+  float: left;
+  width: 150px;
+  text-align: right;
+  margin-right: 40px;
+}
 p { margin: 0; }
+th {
+  color: #FFF;
+  border: 1px solid #FFF;
+  padding: 2px 4px;
+  font-size: 10px;
+  text-align: left;
+  font-family: verdana, tahoma, arial;
+  border-width: 1px 1px 0 0;
+  background-color: #DFE3E9;
+  background-image: url("../themes/default/images/detail_head.gif");
+}
 
 .mainwrapper {
   top: 50%;
   left: 50%;
   width: 714px;
   height: 469px;
-  padding: 82px 46px 49px 40px;
+  padding: 55px 46px 36px 40px;
   position: absolute;
   margin-top: -300px;
   margin-left: -400px;
-  background-image: url("../images/source/installer.jpg");
+  background-image: url("images/bg.png");
 }
 .step {
   width: 714px;
   height: 350px;
   position: absolute;
+}
+.step input {
+  width: 200px;
+  border: 1px solid #000;
 }
 .buttons {
   width: 714px;
@@ -38,3 +74,27 @@ p { margin: 0; }
   height: 100%;
 }
 #back, #next { font-size: 16px; }
+
+table.listtable {
+  color: #444;
+  border: 1px solid #DDD;
+  font-size: 10px;
+  font-family: verdana, tahoma, arial;
+  background-color: #FFF;
+}
+td.listtable_1 {
+  border: 1px solid #DDD;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-family: verdana, tahoma, arial;
+  border-width: 0 0 1px 1px;
+}
+.green, .red {
+ border: #DDD solid;
+ padding: 2px 4px;
+ font-size: 10px;
+ font-family: verdana, tahoma, arial;
+ border-width: 0px 0px 1px 1px;
+}
+.green { background-color: #8bd659; }
+.red { background-color: #d65959; }

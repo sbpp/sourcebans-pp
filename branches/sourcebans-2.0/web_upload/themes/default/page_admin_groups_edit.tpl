@@ -16,10 +16,10 @@
               <p>{$lang_help_desc}</p>
               <label for="name">{help_icon title="$lang_name" desc="Type the name of the new group you want to create."}{$lang_name}</label>
               <input class="submit-fields" {nid id="name"} value="{$group_name}" />
-              <div id="name.msg" class="badentry"></div>
-              {if $smarty.get.type == $smarty.const.SERVER_ADMIN_GROUPS}
+              <div class="badentry" id="name.msg"></div>
+              {if $smarty.get.type == $smarty.const.SERVER_GROUPS}
               <label for="permissions">{help_icon title="$lang_server_permissions" desc="Choose the group's permissions here."}{$lang_server_permissions}</label>
-              <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.SERVER_ADMIN_GROUPS}" width="90%">
+              <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.SERVER_GROUPS}" width="90%">
                 <tr>
                   <td colspan="2" class="tablerow4">{$lang_name}</td>
                   <td class="tablerow4">Flag</td>
@@ -229,9 +229,9 @@
                 </tr>
               </table>
               {/if}
-              {if $smarty.get.type == $smarty.const.WEB_ADMIN_GROUPS}
+              {if $smarty.get.type == $smarty.const.WEB_GROUPS}
               <label for="permissions">{help_icon title="$lang_web_permissions" desc="Choose the group's permissions here."}{$lang_web_permissions}</label>
-              <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.WEB_ADMIN_GROUPS}" width="90%">
+              <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.WEB_GROUPS}" width="90%">
                 <tr>
                   <td colspan="2" class="tablerow2">Owner (Full Web Access)</td>
                   <td align="center" class="tablerow2"><input{if $group_permission_owner} checked="checked"{/if} id="permission_owner" name="web_flags[]" type="checkbox" value="ADMIN_OWNER" /></td>

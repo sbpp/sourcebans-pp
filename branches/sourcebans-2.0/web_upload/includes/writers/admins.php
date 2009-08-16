@@ -178,10 +178,10 @@ class AdminsWriter
       // SourceMod
       case 'admins.cfg':
         $groups_reader       = new GroupsReader();
-        $groups_reader->type = SERVER_ADMIN_GROUPS;
-        $server_admin_groups = $groups_reader->executeCached(ONE_MINUTE * 5);
+        $groups_reader->type = SERVER_GROUPS;
+        $server_groups       = $groups_reader->executeCached(ONE_MINUTE * 5);
         
-        foreach($server_admin_groups as $group_id => $group)
+        foreach($server_groups as $group_id => $group)
           $group_list[$group['name']] = $group_id;
         
         foreach($reader->Values['Admins'] as $name => $admin)

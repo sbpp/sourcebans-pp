@@ -6,10 +6,10 @@ class ModsWriter
   /**
    * Adds a mod
    *
-   * @param  string  $name    The name of the mod
-   * @param  string  $icon    The icon of the mod
-   * @param  string  $folder  The folder of the mod
-   * @param  bool    $enabled Whether or not the mod is enabled
+   * @param  string $name    The name of the mod
+   * @param  string $folder  The folder of the mod
+   * @param  string $icon    The icon of the mod
+   * @param  bool   $enabled Whether or not the mod is enabled
    * @return The id of the added mod
    */
   public static function add($name, $folder, $icon, $enabled = true)
@@ -71,8 +71,8 @@ class ModsWriter
    *
    * @param integer $id      The id of the mod to edit
    * @param string  $name    The name of the mod
-   * @param string  $icon    The icon of the mod
    * @param string  $folder  The folder of the mod
+   * @param string  $icon    The icon of the mod
    * @param bool    $enabled Whether or not the mod is enabled
    */
   public static function edit($id, $name, $folder, $icon, $enabled)

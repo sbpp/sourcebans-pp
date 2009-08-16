@@ -13,37 +13,37 @@
                         <tr>
                           <td class="listtable_1 center" width="8%"><input id="name" name="type" type="radio" value="name" /></td>
                           <td class="listtable_1" width="26%">{$lang_name}</td>
-                          <td class="listtable_1" width="66%"><input name="search" onmouseup="$('name').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 249px;" /></td>
+                          <td class="listtable_1" width="66%"><input name="search" onmouseup="$('name').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
                         </tr>
                         <tr>
                           <td class="listtable_1 center"><input id="steam" name="type" type="radio" value="steam" /></td>
                           <td class="listtable_1">Steam ID</td>
-                          <td class="listtable_1"><input name="search" onmouseup="$('steam').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 249px;" /></td>
+                          <td class="listtable_1"><input name="search" onmouseup="$('steam').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
                         </tr>
                         <tr>
                           <td class="listtable_1 center"><input id="ip" name="type" type="radio" value="ip" /></td>
                           <td class="listtable_1">{$lang_ip_address}</td>
-                          <td class="listtable_1"><input name="search" onmouseup="$('ip').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 249px;" /></td>
+                          <td class="listtable_1"><input name="search" onmouseup="$('ip').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
                         </tr>
                         <tr>
                           <td class="listtable_1 center"><input id="reason" name="type" type="radio" value="reason" /></td>
                           <td class="listtable_1">{$lang_reason}</td>
-                          <td class="listtable_1"><input name="search" onmouseup="$('reason').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 249px;" /></td>
+                          <td class="listtable_1"><input name="search" onmouseup="$('reason').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
                         </tr>
                         <tr>
                           <td class="listtable_1 center"><input id="date" name="type" type="radio" value="date" /></td>
                           <td class="listtable_1">{$lang_date}</td>
                           <td class="listtable_1">
-                            <input id="day" value="DD" onmouseup="$('date').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 79px;" />
-                            <input id="month" value="MM" onmouseup="$('date').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 79px;" />
-                            <input id="year" value="YY" onmouseup="$('date').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 79px;" />
+                            <input id="day" value="DD" onmouseup="$('date').checked = true" class="sea_inputbox" style="width: 79px;" />
+                            <input id="month" value="MM" onmouseup="$('date').checked = true" class="sea_inputbox" style="width: 79px;" />
+                            <input id="year" value="YY" onmouseup="$('date').checked = true" class="sea_inputbox" style="width: 79px;" />
                           </td>
                         </tr>
                         <tr>
                           <td class="listtable_1 center"><input id="admin" name="type" type="radio" value="admin" /></td>
                           <td class="listtable_1">{$lang_admin}</td>
                           <td class="listtable_1">
-                            <select name="search" onmouseup="$('admin').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
+                            <select name="search" onmouseup="$('admin').checked = true" class="sea_inputbox" style="width: 251px;">
                               <option value="0">CONSOLE</option>
                               {foreach from=$admins item=admin key=admin_id}
                               <option value="{$admin_id}">{$admin.name|escape}</option>
@@ -55,7 +55,7 @@
                           <td class="listtable_1 center"><input id="server" name="type" type="radio" value="server" /></td>
                           <td class="listtable_1">{$lang_server}</td>
                           <td class="listtable_1">
-                            <select name="search" onmouseup="$('server').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215); width: 251px;">
+                            <select name="search" onmouseup="$('server').checked = true" class="sea_inputbox" style="width: 251px;">
                               <option value="0">SourceBans</option>
                               {foreach from=$servers item=server key=server_id}
                               <option id="host_{$server_id}" value="{$server_id}">Querying Server Data...</option>

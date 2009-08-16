@@ -20,11 +20,11 @@ try
         // Parse flags depending on group type
         switch($_POST['type'])
         {
-          case SERVER_ADMIN_GROUPS:
+          case SERVER_GROUPS:
             // If flag array contains root flag, only pass root flag, otherwise create flag string
             $flags = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
             break;
-          case WEB_ADMIN_GROUPS:
+          case WEB_GROUPS:
             // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
             $flags = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
         }
@@ -40,13 +40,13 @@ try
   
   $groups_reader       = new GroupsReader();
   
-  $groups_reader->type = SERVER_ADMIN_GROUPS;
-  $server_admin_groups = $groups_reader->executeCached(ONE_MINUTE * 5);
+  $groups_reader->type = SERVER_GROUPS;
+  $server_groups = $groups_reader->executeCached(ONE_MINUTE * 5);
   
-  $groups_reader->type = WEB_ADMIN_GROUPS;
-  $web_admin_groups    = $groups_reader->executeCached(ONE_MINUTE * 5);
+  $groups_reader->type = WEB_GROUPS;
+  $web_groups    = $groups_reader->executeCached(ONE_MINUTE * 5);
   
-  foreach($server_admin_groups as &$group)
+  foreach($server_groups as &$group)
   {
     $permission_root                      = strpos($group['flags'],                     SM_ROOT)        !== false;
     $group['permission_reservation']      = $permission_root || strpos($group['flags'], SM_RESERVATION) !== false;
@@ -72,7 +72,7 @@ try
     $group['permission_root']             = $permission_root;
   }
   
-  foreach($web_admin_groups as &$group)
+  foreach($web_groups as &$group)
   {
     $permission_owner                     = in_array('ADMIN_OWNER',                                 $group['flags']);
     $group['permission_add_admins']       = $permission_owner || in_array('ADMIN_ADD_ADMINS',       $group['flags']);
@@ -116,10 +116,10 @@ try
   $page->assign('permission_edit_groups',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUPS')));
   $page->assign('permission_import_groups', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_GROUPS')));
   $page->assign('permission_list_groups',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_GROUPS')));
-  $page->assign('server_admin_group_count', count($server_admin_groups));
-  $page->assign('server_admin_groups',      $server_admin_groups);
-  $page->assign('web_admin_group_count',    count($web_admin_groups));
-  $page->assign('web_admin_groups',         $web_admin_groups);
+  $page->assign('server_group_count',       count($server_groups));
+  $page->assign('server_groups',            $server_groups);
+  $page->assign('web_group_count',          count($web_groups));
+  $page->assign('web_groups',               $web_groups);
   $page->display('page_admin_groups');
 }
 catch(Exception $e)

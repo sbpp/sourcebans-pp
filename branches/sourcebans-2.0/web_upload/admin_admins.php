@@ -4,8 +4,10 @@ require_once READERS_DIR . 'actions.php';
 require_once READERS_DIR . 'admins.php';
 require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'groups.php';
+require_once READERS_DIR . 'overrides.php';
 require_once READERS_DIR . 'servers.php';
 require_once WRITERS_DIR . 'admins.php';
+require_once WRITERS_DIR . 'overrides.php';
 
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
@@ -37,6 +39,7 @@ try
   $admins_reader        = new AdminsReader();
   $counts_reader        = new CountsReader();
   $groups_reader        = new GroupsReader();
+  $overrides_reader     = new OverridesReader();
   $servers_reader       = new ServersReader();
   
   $limit                = 25;
@@ -51,16 +54,17 @@ try
   if(isset($_GET['type']))
     $admins_reader->type   = $_GET['type'];
   
-  $actions              = $actions_reader->executeCached(ONE_MINUTE * 5);
-  $admins               = $admins_reader->executeCached(ONE_MINUTE  * 5);
-  $counts               = $counts_reader->executeCached(ONE_MINUTE  * 5);
-  $servers              = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $actions              = $actions_reader->executeCached(ONE_MINUTE   * 5);
+  $admins               = $admins_reader->executeCached(ONE_MINUTE    * 5);
+  $counts               = $counts_reader->executeCached(ONE_MINUTE    * 5);
+  $overrides            = $overrides_reader->executeCached(ONE_MINUTE * 5);
+  $servers              = $servers_reader->executeCached(ONE_MINUTE   * 5);
   
-  $groups_reader->type  = WEB_ADMIN_GROUPS;
-  $web_admin_groups     = $groups_reader->executeCached(ONE_MINUTE  * 5);
+  $groups_reader->type  = SERVER_GROUPS;
+  $server_groups        = $groups_reader->executeCached(ONE_MINUTE    * 5);
   
-  $groups_reader->type  = SERVER_ADMIN_GROUPS;
-  $server_admin_groups  = $groups_reader->executeCached(ONE_MINUTE  * 5);
+  $groups_reader->type  = WEB_GROUPS;
+  $web_groups           = $groups_reader->executeCached(ONE_MINUTE    * 5);
   
   $admins_start         = ($admins_reader->page - 1) * $limit;
   $admins_end           = $admins_start              + $limit;
@@ -125,22 +129,24 @@ try
     $admin['permission_settings']         = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_SETTINGS'),         $id);
   }
   
-  $page->assign('permission_clear_actions', $userbank->HasAccess(array('ADMIN_OWNER')));
-  $page->assign('permission_list_actions',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ACTIONS')));
-  $page->assign('permission_add_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS')));
-  $page->assign('permission_delete_admins', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS')));
-  $page->assign('permission_edit_admins',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')));
-  $page->assign('permission_import_admins', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_ADMINS')));
-  $page->assign('permission_list_admins',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS')));
-  $page->assign('actions',                  $actions);
-  $page->assign('admins',                   $admins);
-  $page->assign('servers',                  $servers);
-  $page->assign('server_admin_groups',      $server_admin_groups);
-  $page->assign('web_admin_groups',         $web_admin_groups);
-  $page->assign('end',                      $admins_end);
-  $page->assign('start',                    $admins_start);
-  $page->assign('total',                    $counts['admins']);
-  $page->assign('total_pages',              $pages);
+  $page->assign('permission_clear_actions',  $userbank->HasAccess(array('ADMIN_OWNER')));
+  $page->assign('permission_list_actions',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ACTIONS')));
+  $page->assign('permission_add_admins',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS')));
+  $page->assign('permission_delete_admins',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS')));
+  $page->assign('permission_edit_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')));
+  $page->assign('permission_import_admins',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_ADMINS')));
+  $page->assign('permission_list_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS')));
+  $page->assign('permission_list_overrides', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_OVERRIDES')));
+  $page->assign('actions',                   $actions);
+  $page->assign('admins',                    $admins);
+  $page->assign('overrides',                 $overrides);
+  $page->assign('servers',                   $servers);
+  $page->assign('server_groups',             $server_groups);
+  $page->assign('web_groups',                $web_groups);
+  $page->assign('end',                       $admins_end);
+  $page->assign('start',                     $admins_start);
+  $page->assign('total',                     $counts['admins']);
+  $page->assign('total_pages',               $pages);
   $page->display('page_admin_admins');
 }
 catch(Exception $e)

@@ -25,7 +25,7 @@ class AdminsReader extends SBReader
      */
     $admins = $db->GetAssoc('SELECT    ad.id, ad.name, ad.auth, ad.identity, ad.password, ad.group_id, ad.email, ad.language, ad.theme,
                                        ad.srv_password, ad.validate, ad.lastvisit, wg.name AS web_group, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS web_flags,
-                                       GROUP_CONCAT(DISTINCT sg.name ORDER BY sg.name) AS srv_groups, GROUP_CONCAT(DISTINCT sg.flags SEPARATOR "") AS srv_flags, IFNULL(MAX(sg.immunity), 0) AS srv_immunity,
+                                       GROUP_CONCAT(DISTINCT sg.id ORDER BY sg.id) AS srv_groups, GROUP_CONCAT(DISTINCT sg.flags SEPARATOR "") AS srv_flags, IFNULL(MAX(sg.immunity), 0) AS srv_immunity,
                                        (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans       WHERE admin_id    = ad.id)                                                                                           AS ban_count,
                                        (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans AS ba WHERE ba.admin_id = ad.id AND NOT EXISTS (SELECT ban_id FROM ' . Env::get('prefix') . '_demos WHERE ban_id = ba.id)) AS nodemo_count
                              FROM      ' . Env::get('prefix') . '_admins             AS ad

@@ -13,8 +13,8 @@
  * =============================================================================
  */
 
-include '../init.php';
-include CLASS_DIR . 'updater.class.php';
+require_once '../init.php';
+require_once CLASS_DIR . 'updater.class.php';
 
 $page = new Page('Updater', false);
 $page->assign('current_version', SBUpdater::getCurrentVersion());
