@@ -12,7 +12,10 @@
  * =============================================================================
  */
 
+#include <sourcemod>
 #include <sourcebans>
+
+//#define _DEBUG
 
 public Plugin:myinfo =
 {
@@ -23,6 +26,10 @@ public Plugin:myinfo =
 	url         = "http://www.sourcebans.net"
 };
 
+
+/**
+ * Globals
+ */
 enum ConfigState
 {
 	ConfigState_None = 0,
@@ -36,7 +43,6 @@ new ConfigState:g_iConfigState;
 new g_iConnectLock   = 0;
 new g_iSequence      = 0;
 new g_iServerPort;
-new bool:g_bReloaded = false;
 new Handle:g_hConfigParser;
 new Handle:g_hDatabase;
 new Handle:g_hBanReasons;
@@ -51,6 +57,10 @@ new String:g_sConfigFile[PLATFORM_MAX_PATH];
 new String:g_sDatabasePrefix[16];
 new String:g_sServerIp[16];
 
+
+/**
+ * Plugin Forwards
+ */
 public OnPluginStart()
 {
 	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
@@ -80,8 +90,10 @@ public OnPluginStart()
 																													iIp         & 0x000000FF);
 	
 	// Store server IP and port locally
-	SetTrieString(g_hSettings, "ServerIP",   g_sServerIp);
-	SetTrieValue(g_hSettings,  "ServerPort", g_iServerPort);
+	SetTrieString(g_hSettings, "ServerIP",     g_sServerIp);
+	SetTrieValue(g_hSettings,  "ServerPort",   g_iServerPort);
+	// Store whether the admins plugin is enabled or disabled
+	SetTrieValue(g_hSettings,  "EnableAdmins", LibraryExists("sb_admins"));
 }
 
 public OnMapStart()
@@ -95,9 +107,7 @@ public OnMapStart()
 
 public OnMapEnd()
 {
-	/**
-	 * Clean up on map end just so we can start a fresh connection when we need it later.
-	 */
+	// Clean up on map end just so we can start a fresh connection when we need it later.
 	if(g_hDatabase)
 	{
 		CloseHandle(g_hDatabase);
@@ -105,22 +115,50 @@ public OnMapEnd()
 	}
 }
 
+public OnLibraryAdded(const String:name[])
+{
+	if(StrEqual(name, "sb_admins"))
+		SetTrieValue(g_hSettings, "EnableAdmins", true);
+}
+
+public OnLibraryRemoved(const String:name[])
+{
+	if(StrEqual(name, "sb_admins"))
+		SetTrieValue(g_hSettings, "EnableAdmins", false);
+}
+
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+#else
+public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
+#endif
 {
 	CreateNative("SB_Connect",          Native_Connect);
 	CreateNative("SB_GetSettingCell",   Native_GetSettingCell);
 	CreateNative("SB_GetSettingString", Native_GetSettingString);
 	CreateNative("SB_Reload",           Native_Reload);
 	RegPluginLibrary("sourcebans");
+	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 	return APLRes_Success;
+	#else
+	return true;
+	#endif
 }
 
+
+/**
+ * Commands
+ */
 public Action:Command_Reload(client, args)
 {
 	SB_Reload();
 	return Plugin_Handled;
 }
 
+
+/**
+ * Config Parser
+ */
 public SMCResult:ReadConfig_EndSection(Handle:smc)
 {
 	return SMCParse_Continue;
@@ -136,13 +174,12 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 		case ConfigState_Config:
 		{
 			// If value is an integer
-			if(!strcmp("Addban",           key, false) ||
-				 !strcmp("LocalBackup",      key, false) ||
-				 !strcmp("ProcessQueueTime", key, false) ||
-				 !strcmp("Unban",            key, false))
+			if(StrEqual("Addban",           key, false) ||
+				 StrEqual("ProcessQueueTime", key, false) ||
+				 StrEqual("Unban",            key, false))
 				SetTrieValue(g_hSettings,  key, StringToInt(value));
 			// If value is a float
-			else if(!strcmp("RetryTime",   key, false))
+			else if(StrEqual("RetryTime",   key, false))
 				SetTrieValue(g_hSettings,  key, StringToFloat(value));
 			// If value is a string
 			else
@@ -154,9 +191,9 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 			PushArrayString(g_hBanReasons,     value);
 		case ConfigState_Times:
 		{
-			if(!strcmp("flags",       key, false))
+			if(StrEqual("flags",       key, false))
 				PushArrayString(g_hBanTimesFlags,  value);
-			else if(!strcmp("length", key, false))
+			else if(StrEqual("length", key, false))
 				PushArrayString(g_hBanTimesLength, value);
 		}
 	}
@@ -165,20 +202,23 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 
 public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt_quotes)
 {
-	if(!strcmp("Config",              name, false))
+	if(StrEqual("Config",              name, false))
 		g_iConfigState = ConfigState_Config;
-	else if(!strcmp("BanTimes",       name, false))
-		g_iConfigState = ConfigState_Times;
-	else if(!strcmp("BanReasons",     name, false))
+	else if(StrEqual("BanReasons",     name, false))
 		g_iConfigState = ConfigState_Reasons;
-	else if(!strcmp("HackingReasons", name, false))
+	else if(StrEqual("BanTimes",       name, false))
+		g_iConfigState = ConfigState_Times;
+	else if(StrEqual("HackingReasons", name, false))
 		g_iConfigState = ConfigState_Hacking;
 	else if(g_iConfigState == ConfigState_Times)
 		PushArrayString(g_hBanTimes, name);
-	
 	return SMCParse_Continue;
 }
 
+
+/**
+ * Query Callbacks
+ */
 public Query_ServerSelect(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	if(error[0])
@@ -186,28 +226,24 @@ public Query_ServerSelect(Handle:owner, Handle:hndl, const String:error[], any:d
 		LogError("%T (%s)", "Failed to query database", LANG_SERVER, error);
 		return;
 	}
-	if(SQL_GetRowCount(hndl))
+	if(SQL_FetchRow(hndl))
 	{
-		SQL_FetchRow(hndl);
 		// Store server ID locally
 		SetTrieValue(g_hSettings, "ServerID", SQL_FetchInt(hndl, 0));
 		
-		// Call SB_OnReload forward
-		g_bReloaded = true;
-		
-		Call_StartForward(g_hOnReload);
+		Call_StartForward(g_hOnConnect);
+		Call_PushCell(g_hDatabase);
 		Call_Finish();
+		return;
 	}
-	else
-	{
-		decl String:sFolder[32], String:sQuery[256];
-		GetGameFolderName(sFolder, sizeof(sFolder));
-		
-		Format(sQuery, sizeof(sQuery), "INSERT INTO %s_servers (ip, port, mod_id) \
-																		VALUES      ('%s', %i, (SELECT id FROM %s_mods WHERE folder = '%s'))",
-																		g_sDatabasePrefix, g_sServerIp, g_iServerPort, g_sDatabasePrefix, sFolder);
-		SQL_TQuery(g_hDatabase, Query_ServerInsert, sQuery);
-	}
+	
+	decl String:sFolder[32], String:sQuery[256];
+	GetGameFolderName(sFolder, sizeof(sFolder));
+	
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_servers (ip, port, mod_id) \
+																	VALUES      ('%s', %i, (SELECT id FROM %s_mods WHERE folder = '%s'))",
+																	g_sDatabasePrefix, g_sServerIp, g_iServerPort, g_sDatabasePrefix, sFolder);
+	SQL_TQuery(g_hDatabase, Query_ServerInsert, sQuery);
 }
 
 public Query_ServerInsert(Handle:owner, Handle:hndl, const String:error[], any:data)
@@ -221,10 +257,8 @@ public Query_ServerInsert(Handle:owner, Handle:hndl, const String:error[], any:d
 	// Store server ID locally
 	SetTrieValue(g_hSettings, "ServerID", SQL_GetInsertId(owner));
 	
-	// Call SB_OnReload forward
-	g_bReloaded = true;
-	
-	Call_StartForward(g_hOnReload);
+	Call_StartForward(g_hOnConnect);
+	Call_PushCell(g_hDatabase);
 	Call_Finish();
 }
 
@@ -234,15 +268,17 @@ public Query_ErrorCheck(Handle:owner, Handle:hndl, const String:error[], any:dat
 		LogError("%T (%s)", "Failed to query database", LANG_SERVER, error);
 }
 
+
+/**
+ * Connect Callback
+ */
 public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	#if defined _DEBUG
 	PrintToServer("OnDatabaseConnect(%x,%x,%d) ConnectLock=%d", owner, hndl, data, g_iConnectLock);
 	#endif
 	
-	/**
-	 * If this happens to be an old connection request, ignore it.
-	 */
+	// If this happens to be an old connection request, ignore it.
 	if(data != g_iConnectLock || g_hDatabase)
 	{
 		if(hndl)
@@ -254,10 +290,8 @@ public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 	g_iConnectLock = 0;
 	g_hDatabase    = hndl;
 	
-	/**
-	 * See if the connection is valid.  If not, don't un-mark the caches
-	 * as needing rebuilding, in case the next connection request works.
-	 */
+	// See if the connection is valid.  If not, don't un-mark the caches
+	// as needing rebuilding, in case the next connection request works.
 	if(!g_hDatabase)
 	{
 		LogError("%T (%s)", "Could not connect to database", LANG_SERVER, error);
@@ -268,19 +302,19 @@ public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 	SQL_TQuery(g_hDatabase, Query_ErrorCheck, "SET NAMES 'UTF8'");
 	
 	// Select server from the database
-	decl String:sQuery[1024];
+	decl String:sQuery[96];
 	Format(sQuery, sizeof(sQuery), "SELECT id \
 																	FROM   %s_servers \
 																	WHERE  ip   = '%s' \
 																	  AND  port = %i",
 																	g_sDatabasePrefix, g_sServerIp, g_iServerPort);
 	SQL_TQuery(g_hDatabase, Query_ServerSelect, sQuery);
-	
-	Call_StartForward(g_hOnConnect);
-	Call_PushCell(g_hDatabase);
-	Call_Finish();
 }
 
+
+/**
+ * Natives
+ */
 public Native_Connect(Handle:plugin, numParams)
 {
 	g_iConnectLock = ++g_iSequence;
@@ -319,10 +353,7 @@ public Native_GetSettingString(Handle:plugin, numParams)
 public Native_Reload(Handle:plugin, numParams)
 {
 	if(!FileExists(g_sConfigFile))
-	{
-		SetFailState("%sFATAL *** ERROR *** can not find %s", SB_PREFIX, g_sConfigFile);
-		return;
-	}
+		SetFailState("%sFile not found: %s", SB_PREFIX, g_sConfigFile);
 	
 	// Empty ban reason and ban time arrays
 	ClearArray(g_hBanReasons);
@@ -353,9 +384,6 @@ public Native_Reload(Handle:plugin, numParams)
 	SetTrieValue(g_hSettings,  "BanTimesLength", g_hBanTimesLength);
 	SetTrieValue(g_hSettings,  "HackingReasons", g_hHackingReasons);
 	
-	if(g_bReloaded)
-	{
-		Call_StartForward(g_hOnReload);
-		Call_Finish();
-	}
+	Call_StartForward(g_hOnReload);
+	Call_Finish();
 }

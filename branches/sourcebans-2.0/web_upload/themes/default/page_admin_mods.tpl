@@ -21,10 +21,10 @@
               <h3>{$lang_mods} ({$mod_count})</h3>
               <table width="100%" cellpadding="1">
                 <tr>
-                  <td class="front-module-header">{$lang_name}</td>
-                  <td class="front-module-header" width="150">{$lang_folder}</td>
-                  <td class="front-module-header" width="35">{$lang_icon}</td>
-                  <td class="front-module-header" width="150">{$lang_action}</td>
+                  <th>{$lang_name}</td>
+                  <th width="150">{$lang_folder}</td>
+                  <th width="35">{$lang_icon}</td>
+                  <th width="150">{$lang_action}</td>
                 </tr>
                 {foreach from=$mods item=mod key=mod_id}
                 <tr>
@@ -60,7 +60,7 @@
                 <div class="badentry" id="folder.msg"></div>
                 <label for="icon">{help_icon title="$lang_icon" desc="Click here to upload an icon to associate with this mod."}{$lang_icon}</label>
                 <input class="submit-fields" {nid id="icon"} type="file" />
-                <div id="icon.msg" style="color: #CC0000;"></div>
+                <div class="badentry" id="icon.msg"></div>
                 <div class="center">
                   <input class="btn ok" type="submit" value="{$lang_save}" />
                   <input class="back btn cancel" type="button" value="{$lang_back}" />

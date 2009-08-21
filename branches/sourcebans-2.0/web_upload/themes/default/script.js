@@ -306,8 +306,8 @@ window.addEvent('domready', function() {
       e.stop();
       
       this.set('send', {
-        onComplete: function(res) { 
-          
+        onComplete: function(res) {
+          alert('Loc: ' + this.getHeader('Location'));
         }
       }).send();
     });
@@ -439,6 +439,14 @@ window.addEvent('domready', function() {
     });
     
     $('enable_smtp').fireEvent('change');
+  }
+  if($chk($('override_name')))
+  {
+    $('override_name').addEvent('keydown', function(e) {
+      var el = this.getParent().getParent();
+      if(this.value == '' && el == el.getParent().getLast('tr'))
+        el.clone().inject(el.getParent());
+    });
   }
   if($chk($('permission_owner')))
   {

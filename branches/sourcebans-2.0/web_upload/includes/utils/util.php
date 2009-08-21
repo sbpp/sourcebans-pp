@@ -327,6 +327,7 @@ class Util
   public static function redirect($url = '')
   {
     header('Location: ' . empty($url) ? $_SERVER['HTTP_REFERER'] : $url);
+    exit;
   }
   
   

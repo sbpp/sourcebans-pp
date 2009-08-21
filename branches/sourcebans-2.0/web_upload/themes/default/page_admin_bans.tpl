@@ -108,10 +108,10 @@
                     <option value="518400">12 {$lang_months}</option>
                   </optgroup>
                 </select>
-                <div id="length.msg"></div>
+                <div class="badentry" id="length.msg"></div>
                 <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo}</label>
                 <input class="submit-fields" {nid id="demo"} type="file" />
-                <div id="demo.msg" style="color: #CC0000;"></div>
+                <div class="badentry" id="demo.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="add" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />

@@ -27,10 +27,10 @@
               {/if}
               <table width="100%" cellpadding="1">
                 <tr>
-                  <td class="front-module-header" width="48%"><strong>{$lang_hostname}</strong></td>
-                  <td class="front-module-header" width="6%"><strong>{$lang_players}</strong></td>
-                  <td class="front-module-header" width="5%"><strong>Mod</strong></td>
-                  <td class="front-module-header"><strong>{$lang_action}</strong></td>
+                  <th width="48%">{$lang_hostname}</td>
+                  <th width="6%">{$lang_players}</td>
+                  <th width="5%">Mod</td>
+                  <th>{$lang_action}</td>
                 </tr>
                 {foreach from=$servers item=server key=server_id}
                 <tr>

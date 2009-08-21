@@ -3,12 +3,8 @@
 #endif
 #define _sourcebans_included
 
-#include <sourcemod>
-
 #define SB_PREFIX		"[SourceBans] "
 #define SB_VERSION	"2.0.0"
-
-//#define _DEBUG
 
 public SharedPlugin:__pl_sourcebans = 
 {
@@ -19,6 +15,7 @@ public SharedPlugin:__pl_sourcebans =
 
 public __pl_sourcebans_SetNTVOptional()
 {
+	MarkNativeAsOptional("SB_GetAdminId");
 	MarkNativeAsOptional("SB_Reload");
 }
 
@@ -45,6 +42,14 @@ forward SB_OnReload();
  * @noreturn		
  *********************************************************/
 native SB_Connect();
+
+/*********************************************************
+ * Get SourceBans admin id from client
+ *
+ * @param 	client	The index of the client
+ * @return	value		The admin id of the client
+ *********************************************************/
+native SB_GetAdminId(client);
 
 /*********************************************************
  * Get setting from SourceBans config

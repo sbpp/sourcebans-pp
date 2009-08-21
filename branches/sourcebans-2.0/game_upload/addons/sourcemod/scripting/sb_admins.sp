@@ -12,7 +12,10 @@
  * =============================================================================
  */
 
+#include <sourcemod>
 #include <sourcebans>
+
+//#define _DEBUG
 
 public Plugin:myinfo =
 {
@@ -23,16 +26,24 @@ public Plugin:myinfo =
 	url         = "http://www.sourcebans.net"
 };
 
-//new g_iAdminId[MAXPLAYERS + 1];
-new g_iPlayerSeq[MAXPLAYERS + 1];				/** Player-specific sequence numbers */
-new g_iRebuildCachePart[3] = {0};				/** Cache part sequence numbers */
+
+/**
+ * Globals
+ */
+new g_iAdminId[MAXPLAYERS + 1];
+new g_iPlayerSeq[MAXPLAYERS + 1];				// Player-specific sequence numbers
+new g_iRebuildCachePart[3] = {0};				// Cache part sequence numbers
 new g_iSequence            = 0;
 new g_iServerId;
-new bool:g_bPlayerAuth[MAXPLAYERS + 1];	/** Whether a player has been "pre-authed" */
+new bool:g_bPlayerAuth[MAXPLAYERS + 1];	// Whether a player has been "pre-authed"
 new Handle:g_hDatabase;
 new String:g_sDatabasePrefix[16];
 new String:g_sServerIp[16];
 
+
+/**
+ * Plugin Forwards
+ */
 public OnPluginStart()
 {
 	LoadTranslations("common.phrases");
@@ -40,38 +51,79 @@ public OnPluginStart()
 	LoadTranslations("sqladmins.phrases");
 }
 
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+#else
+public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
+#endif
+{
+	CreateNative("SB_GetAdminId", Native_GetAdminId);
+	RegPluginLibrary("sb_admins");
+	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+	return APLRes_Success;
+	#else
+	return true;
+	#endif
+}
+
 public OnRebuildAdminCache(AdminCachePart:part)
 {
-	/**
-	 * Mark this part of the cache as being rebuilt.  This is used by the 
-	 * callback system to determine whether the results should still be 
-	 * used.
-	 */
+	// Mark this part of the cache as being rebuilt.  This is used by the 
+	// callback system to determine whether the results should still be 
+	// used.
 	new iSequence               = ++g_iSequence;
 	g_iRebuildCachePart[_:part] = iSequence;
 	
-	/**
-	 * If we don't have a database connection, we can't do any lookups just yet.
-	 */
+	// If we don't have a database connection, we can't do any lookups just yet.
 	if(!g_hDatabase)
 	{
-		/**
-		 * Ask for a new connection if we need it.
-		 */
+		// Ask for a new connection if we need it.
 		SB_Connect();
 		return;
 	}
 	
-	if(part      == AdminCache_Overrides)
-		SB_FetchOverrides(iSequence);
+	if(part      == AdminCache_Admins)
+		SB_FetchAdmins();
 	else if(part == AdminCache_Groups)
 		SB_FetchGroups(iSequence);
-	else if(part == AdminCache_Admins)
-		SB_FetchAdmins();
+	else if(part == AdminCache_Overrides)
+		SB_FetchOverrides(iSequence);
 }
 
+public Action:OnLogAction(Handle:source, Identity:ident, client, target, const String:message[])
+{
+	if(!g_hDatabase)
+		return Plugin_Continue;
+	
+	decl String:sAdminIp[16] = "", String:sAuth[20] = "", String:sEscapedMessage[256], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16] = "", String:sName[MAX_NAME_LENGTH + 1] = "", String:sQuery[512];
+	new iAdminId = SB_GetAdminId(client);
+	if(target > 0 && IsClientInGame(target))
+	{
+		GetClientAuthString(target, sAuth, sizeof(sAuth));
+		GetClientIP(target,         sIp,   sizeof(sIp));
+		GetClientName(target,       sName, sizeof(sName));
+	}
+	if(client > 0 && IsClientInGame(client))
+		GetClientIP(client, sAdminIp, sizeof(sAdminIp));
+	else
+		sAdminIp = g_sServerIp;
+	
+	SQL_EscapeString(g_hDatabase, message, sEscapedMessage, sizeof(sEscapedMessage));
+	SQL_EscapeString(g_hDatabase, sName,   sEscapedName,    sizeof(sEscapedName));
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_actions (name, steam, ip, message, server_id, admin_id, admin_ip, time) \
+																	VALUES      (NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP())",
+																	g_sDatabasePrefix, sEscapedName, sAuth, sIp, sEscapedMessage, g_iServerId, g_sDatabasePrefix, iAdminId, sAdminIp);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	return Plugin_Handled;
+}
+
+
+/**
+ * Client Forwards
+ */
 public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 {
+	g_iAdminId[client]    = 0;
 	g_iPlayerSeq[client]  = 0;
 	g_bPlayerAuth[client] = false;
 	return true;
@@ -79,6 +131,7 @@ public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 
 public OnClientDisconnect(client)
 {
+	g_iAdminId[client]    = 0;
 	g_iPlayerSeq[client]  = 0;
 	g_bPlayerAuth[client] = false;
 }
@@ -87,117 +140,82 @@ public Action:OnClientPreAdminCheck(client)
 {
 	g_bPlayerAuth[client] = true;
 	
-	/**
-	 * Play nice with other plugins.  If there's no database, don't delay the 
-	 * connection process.  Unfortunately, we can't attempt anything else and 
-	 * we just have to hope either the database is waiting or someone will type 
-	 * sm_reloadadmins.
-	 */
+	// Play nice with other plugins.  If there's no database, don't delay the 
+	// connection process.  Unfortunately, we can't attempt anything else and 
+	// we just have to hope either the database is waiting or someone will type 
+	// sm_reloadadmins.
 	if(!g_hDatabase)
 		return Plugin_Continue;
 	
-	/**
-	 * Similarly, if the cache is in the process of being rebuilt, don't delay 
-	 * the client's normal connection flow.  The database will soon auth the client 
-	 * normally.
-	 */
+	// Similarly, if the cache is in the process of being rebuilt, don't delay 
+	// the client's normal connection flow.  The database will soon auth the client 
+	// normally.
 	if(g_iRebuildCachePart[_:AdminCache_Admins])
 		return Plugin_Continue;
 	
-	/**
-	 * If someone has already assigned an admin ID (bad bad bad), don't 
-	 * bother waiting.
-	 */
+	// If someone has already assigned an admin ID (bad bad bad), don't 
+	// bother waiting.
 	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
 		return Plugin_Continue;
 	
 	SB_FetchAdmin(client);
-	
 	return Plugin_Handled;
 }
 
-public Action:OnLogAction(Handle:source, Identity:ident, client, target, const String:message[])
-{
-	if(!g_hDatabase)
-		return Plugin_Continue;
-	
-	decl String:sAdminAuth[20] = "", String:sAdminIp[16] = "", String:sAuth[20] = "", String:sEscapedMessage[256], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16] = "", String:sName[MAX_NAME_LENGTH + 1] = "", String:sQuery[512];
-	if(target > 0 && IsClientInGame(target))
-	{
-		GetClientAuthString(target, sAuth, sizeof(sAuth));
-		GetClientIP(target,         sIp,   sizeof(sIp));
-		GetClientName(target,       sName, sizeof(sName));
-	}
-	if(client > 0 && IsClientInGame(client))
-	{
-		GetClientAuthString(client, sAdminAuth, sizeof(sAdminAuth));
-		GetClientIP(client,         sAdminIp,   sizeof(sAdminIp));
-	}
-	else
-		strcopy(sAdminIp, sizeof(sAdminIp), g_sServerIp);
-	
-	SQL_EscapeString(g_hDatabase, message, sEscapedMessage, sizeof(sEscapedMessage));
-	SQL_EscapeString(g_hDatabase, sName,   sEscapedName,    sizeof(sEscapedName));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_actions (name, steam, ip, message, server_id, admin_id, admin_ip, time) \
-																	VALUES      (NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, (SELECT id FROM %s_admins WHERE identity REGEXP '^STEAM_[0-9]:%s$'), '%s', UNIX_TIMESTAMP())",
-																	g_sDatabasePrefix, sEscapedName, sAuth, sIp, sEscapedMessage, g_iServerId, g_sDatabasePrefix, sAdminAuth[8], sAdminIp);
-	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
-	return Plugin_Handled;
-}
 
+/**
+ * SourceBans Forwards
+ */
 public SB_OnConnect(Handle:database)
 {
+	g_iServerId = SB_GetSettingCell("ServerID");
 	g_hDatabase = database;
 	
-	/**
-	 * See if we need to get any of the cache stuff now.
-	 */
+	// See if we need to get any of the cache stuff now.
 	new iSequence;
-	if((iSequence = g_iRebuildCachePart[_:AdminCache_Overrides]))
-		SB_FetchOverrides(iSequence);
-	if((iSequence = g_iRebuildCachePart[_:AdminCache_Groups]))
-		SB_FetchGroups(iSequence);
 	if((iSequence = g_iRebuildCachePart[_:AdminCache_Admins]))
 		SB_FetchAdmins();
+	if((iSequence = g_iRebuildCachePart[_:AdminCache_Groups]))
+		SB_FetchGroups(iSequence);
+	if((iSequence = g_iRebuildCachePart[_:AdminCache_Overrides]))
+		SB_FetchOverrides(iSequence);
 }
 
 public SB_OnReload()
 {
 	SB_GetSettingString("DatabasePrefix", g_sDatabasePrefix, sizeof(g_sDatabasePrefix));
 	SB_GetSettingString("ServerIP",       g_sServerIp,       sizeof(g_sServerIp));
-	g_iServerId = SB_GetSettingCell("ServerID");
 }
 
-public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:data)
+
+/**
+ * Query Callbacks
+ */
+public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	new Handle:hPack = data;
-	ResetPack(hPack);
+	ResetPack(pack);
 	
-	new iClient = ReadPackCell(hPack);
+	new iClient   = ReadPackCell(pack),
+			iSequence = ReadPackCell(pack);
 	
-	/**
-	 * Check if this is the latest result request.
-	 */
-	new iSequence = ReadPackCell(hPack);
+	// Check if this is the latest result request.
 	if(g_iPlayerSeq[iClient] != iSequence)
 	{
-		/* Discard everything, since we're out of sequence. */
-		CloseHandle(hPack);
+		// Discard everything, since we're out of sequence.
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * If we need to use the results, make sure they succeeded.
-	 */
+	// If we need to use the results, make sure they succeeded.
 	if(!hndl)
 	{
 		decl String:sQuery[256];
-		ReadPackString(hPack, sQuery, sizeof(sQuery));
+		ReadPackString(pack, sQuery, sizeof(sQuery));
 		LogError("SQL error receiving admin: %s", error);
 		LogError("Query dump: %s", sQuery);
 		RunAdminCacheChecks(iClient);
 		NotifyPostAdminCheck(iClient);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
@@ -206,22 +224,15 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:data)
 	{
 		RunAdminCacheChecks(iClient);
 		NotifyPostAdminCheck(iClient);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	decl String:sName[MAX_NAME_LENGTH + 1];
-	decl String:sType[8];
-	decl String:sIdentity[65];
-	decl String:sPassword[65];
-	new AdminId:iAdmin, iAdminId;
-	
-	/**
-	 * Cache admin info -- [0] = db id, [1] = cache id, [2] = groups
-	 */
+	// Cache admin info -- [0] = db id, [1] = cache id, [2] = groups
 	decl iLookup[iAccounts][3];
 	new iAdmins = 0;
 	
+	decl iAdminId, AdminId:iAdmin, String:sIdentity[65],String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[8];
 	while(SQL_FetchRow(hndl))
 	{
 		iAdminId = SQL_FetchInt(hndl, 0);
@@ -230,7 +241,7 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:data)
 		SQL_FetchString(hndl, 3, sIdentity, sizeof(sIdentity));
 		SQL_FetchString(hndl, 4, sPassword, sizeof(sPassword));
 		
-		/* For dynamic admins we clear anything already in the cache. */
+		// For dynamic admins we clear anything already in the cache.
 		if((iAdmin = FindAdminByIdentity(sType, sIdentity)) != INVALID_ADMIN_ID)
 			RemoveAdmin(iAdmin);
 		
@@ -250,14 +261,12 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:data)
 		PrintToServer("Found SQL admin (%i,%s,%s,%s,%s):%i:%i", iAdminId, sType, sIdentity, sPassword, sName, iAdmin, iLookup[iAdmins - 1][2]);
 		#endif
 		
-		/* See if this admin wants a password */
+		// See if this admin wants a password
 		if(sPassword[0])
 			SetAdminPassword(iAdmin, sPassword);
 	}
 	
-	/**
-	 * Try binding the admin.
-	 */
+	// Try binding the admin.
 	RunAdminCacheChecks(iClient);
 	iAdmin      = GetUserAdmin(iClient);
 	iAdminId    = 0;
@@ -273,24 +282,22 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:data)
 		}
 	}
 	
+	g_iAdminId[iClient] = iAdminId;
+	
 	#if defined _DEBUG
 	PrintToServer("Binding client (%i, %i) resulted in: (%i, %i, %i)", iClient, iSequence, iAdminId, iAdmin, iGroups);
 	#endif
 	
-	/**
-	 * If we can't verify that we assigned a database admin, or the admin has no 
-	 * groups, don't bother doing anything.
-	 */
+	// If we can't verify that we assigned a database admin, or the admin has no 
+	// groups, don't bother doing anything.
 	if(!iAdminId || !iGroups)
 	{
 		NotifyPostAdminCheck(iClient);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * The admin has groups -- we need to fetch them!
-	 */
+	// The admin has groups -- we need to fetch them!
 	decl String:sQuery[256];
 	Format(sQuery, sizeof(sQuery), "SELECT    sg.name \
 																	FROM      %s_srvgroups         AS sg \
@@ -300,61 +307,52 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:data)
 																		AND     gs.server_id = %i",
 																	g_sDatabasePrefix, g_sDatabasePrefix, g_sDatabasePrefix, iAdminId, g_iServerId);
 	
-	ResetPack(hPack);
-	WritePackCell(hPack,   iClient);
-	WritePackCell(hPack,   iSequence);
-	WritePackCell(hPack,   _:iAdmin);
-	WritePackString(hPack, sQuery);
+	ResetPack(pack);
+	WritePackCell(pack,   iClient);
+	WritePackCell(pack,   iSequence);
+	WritePackCell(pack,   _:iAdmin);
+	WritePackString(pack, sQuery);
 	
-	SQL_TQuery(owner, OnReceiveAdminGroups, sQuery, hPack, DBPrio_High);
+	SQL_TQuery(owner, OnReceiveAdminGroups, sQuery, pack, DBPrio_High);
 }
 
-public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any:data)
+public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	new Handle:hPack = data;
-	ResetPack(hPack);
+	ResetPack(pack);
 	
-	new iClient   = ReadPackCell(hPack);
-	new iSequence = ReadPackCell(hPack);
+	new iClient   = ReadPackCell(pack),
+			iSequence = ReadPackCell(pack);
 	
-	/**
-	 * Make sure it's the same client.
-	 */
+	// Make sure it's the same client.
 	if(g_iPlayerSeq[iClient] != iSequence)
 	{
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	new AdminId:iAdmin = AdminId:ReadPackCell(hPack);
+	new AdminId:iAdmin = AdminId:ReadPackCell(pack);
 	
-	/**
-	 * Someone could have sneakily changed the admin id while we waited.
-	 */
+	// Someone could have sneakily changed the admin id while we waited.
 	if(GetUserAdmin(iClient) != iAdmin)
 	{
 		NotifyPostAdminCheck(iClient);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * See if we got results.
-	 */
+	// See if we got results.
 	if(!hndl)
 	{
 		decl String:sQuery[256];
-		ReadPackString(hPack, sQuery, sizeof(sQuery));
+		ReadPackString(pack, sQuery, sizeof(sQuery));
 		LogError("SQL error receiving admin: %s", error);
 		LogError("Query dump: %s", sQuery);
 		NotifyPostAdminCheck(iClient);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	decl String:sName[33];
-	new GroupId:iGroup;
-	
+	decl GroupId:iGroup, String:sName[33];
 	while(SQL_FetchRow(hndl))
 	{
 		SQL_FetchString(hndl, 0, sName, sizeof(sName));
@@ -369,48 +367,37 @@ public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 		AdminInheritGroup(iAdmin, iGroup);
 	}
 	
-	/**
-	 * We're DONE! Omg.
-	 */
+	// We're DONE! Omg.
 	NotifyPostAdminCheck(iClient);
-	CloseHandle(hPack);
+	CloseHandle(pack);
 }
 
-public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:data)
+public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	new Handle:hPack = data;
-	ResetPack(hPack);
+	ResetPack(pack);
 	
-	/**
-	 * Check if this is the latest result request.
-	 */
-	new iSequence = ReadPackCell(hPack);
+	// Check if this is the latest result request.
+	new iSequence = ReadPackCell(pack);
 	if(g_iRebuildCachePart[_:AdminCache_Groups] != iSequence)
 	{
-		/* Discard everything, since we're out of sequence. */
-		CloseHandle(hPack);
+		// Discard everything, since we're out of sequence.
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * If we need to use the results, make sure they succeeded.
-	 */
+	// If we need to use the results, make sure they succeeded.
 	if(!hndl)
 	{
 		decl String:sQuery[256];
-		ReadPackString(hPack, sQuery, sizeof(sQuery));
+		ReadPackString(pack, sQuery, sizeof(sQuery));
 		LogError("SQL error receiving groups: %s", error);
 		LogError("Query dump: %s", sQuery);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * Now start fetching groups.
-	 */
-	decl String:sName[33];
-	decl String:sFlags[33];
-	new iImmunity;
+	// Now start fetching groups.
+	decl iImmunity, String:sFlags[33], String:sName[33];
 	while(SQL_FetchRow(hndl))
 	{
 		SQL_FetchString(hndl, 0, sName, sizeof(sName));
@@ -421,12 +408,12 @@ public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:data
 		PrintToServer("Adding group (%i, %s, %s)", iImmunity, sFlags, sName);
 		#endif
 		
-		/* Find or create the group */
+		// Find or create the group
 		new GroupId:iGroup;
 		if((iGroup = FindAdmGroup(sName)) == INVALID_GROUP_ID)
 			iGroup = CreateAdmGroup(sName);
 		
-		/* Add flags from the database to the group */
+		// Add flags from the database to the group
 		decl AdminFlag:iFlag;
 		for(new i = 0, iLen = strlen(sFlags); i < iLen; i++)
 		{
@@ -437,9 +424,7 @@ public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:data
 		SetAdmGroupImmunityLevel(iGroup, iImmunity);
 	}
 	
-	/**
-	 * It's time to get the group override list.
-	 */
+	// It's time to get the group override list.
 	decl String:sQuery[384];
 	Format(sQuery, sizeof(sQuery), "SELECT    sg.name, go.type, go.name, go.access \
 																	FROM      %s_srvgroups_overrides AS go \
@@ -449,50 +434,39 @@ public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:data
 																	ORDER BY  sg.id DESC",
 																	g_sDatabasePrefix, g_sDatabasePrefix, g_sDatabasePrefix, g_iServerId);
 	
-	ResetPack(hPack);
-	WritePackCell(hPack,   iSequence);
-	WritePackString(hPack, sQuery);
+	ResetPack(pack);
+	WritePackCell(pack,   iSequence);
+	WritePackString(pack, sQuery);
 	
-	SQL_TQuery(owner, OnReceiveGroupOverrides, sQuery, hPack, DBPrio_High);
+	SQL_TQuery(owner, OnReceiveGroupOverrides, sQuery, pack, DBPrio_High);
 }
 
-public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], any:data)
+public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	new Handle:hPack = data;
-	ResetPack(hPack);
+	ResetPack(pack);
 	
-	/**
-	 * Check if this is the latest result request.
-	 */
-	new iSequence = ReadPackCell(hPack);
+	// Check if this is the latest result request.
+	new iSequence = ReadPackCell(pack);
 	if(g_iRebuildCachePart[_:AdminCache_Groups] != iSequence)
 	{
-		/* Discard everything, since we're out of sequence. */
-		CloseHandle(hPack);
+		// Discard everything, since we're out of sequence.
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * If we need to use the results, make sure they succeeded.
-	 */
+	// If we need to use the results, make sure they succeeded.
 	if(!hndl)
 	{
 		decl String:sQuery[384];
-		ReadPackString(hPack, sQuery, sizeof(sQuery));		
+		ReadPackString(pack, sQuery, sizeof(sQuery));		
 		LogError("SQL error receiving group overrides: %s", error);
 		LogError("Query dump: %s", sQuery);
-		CloseHandle(hPack);	
+		CloseHandle(pack);	
 		return;
 	}
 	
-	/**
-	 * Fetch the overrides.
-	 */
-	decl String:sName[80];
-	decl String:sType[16];
-	decl String:sCommand[64];
-	decl String:sAccess[16];
-	new GroupId:iGroup;
+	// Fetch the overrides.
+	decl GroupId:iGroup, OverrideRule:iRule, OverrideType:iType, String:sAccess[16], String:sCommand[64], String:sName[80], String:sType[16];
 	while(SQL_FetchRow(hndl))
 	{
 		SQL_FetchString(hndl, 0, sName,    sizeof(sName));
@@ -500,20 +474,15 @@ public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], 
 		SQL_FetchString(hndl, 2, sCommand, sizeof(sCommand));
 		SQL_FetchString(hndl, 3, sAccess,  sizeof(sAccess));
 		
-		/* Find the group. This is actually faster than doing the ID lookup. */
+		// Find the group. This is actually faster than doing the ID lookup.
 		if((iGroup = FindAdmGroup(sName)) == INVALID_GROUP_ID)
 		{
-			/* Oh well, just ignore it. */
+			// Oh well, just ignore it.
 			continue;
 		}
 		
-		new OverrideType:iType = Override_Command;
-		if(StrEqual(sType, "group"))
-			iType = Override_CommandGroup;
-		
-		new OverrideRule:iRule = Command_Deny;
-		if(StrEqual(sAccess, "allow"))
-			iRule = Command_Allow;
+		iRule = StrEqual(sAccess, "allow") ? Command_Allow         : Command_Deny;
+		iType = StrEqual(sType,   "group") ? Override_CommandGroup : Override_Command;
 		
 		#if defined _DEBUG
 		PrintToServer("AddAdmGroupCmdOverride(%i, %s, %i, %i)", iGroup, sCommand, iType, iRule);
@@ -522,9 +491,7 @@ public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], 
 		AddAdmGroupCmdOverride(iGroup, sCommand, iType, iRule);
 	}
 	
-	/**
-	 * It's time to get the group immunity list.
-	 */
+	// It's time to get the group immunity list.
 	decl String:sQuery[384];
 	Format(sQuery, sizeof(sQuery), "SELECT    sg1.name, sg2.name \
 																	FROM      %s_srvgroups_immunity AS gi \
@@ -534,44 +501,39 @@ public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], 
 																	WHERE     gs.server_id = %i",
 																	g_sDatabasePrefix, g_sDatabasePrefix, g_sDatabasePrefix, g_sDatabasePrefix, g_iServerId);
 	
-	ResetPack(hPack);
-	WritePackCell(hPack,   iSequence);
-	WritePackString(hPack, sQuery);
+	ResetPack(pack);
+	WritePackCell(pack,   iSequence);
+	WritePackString(pack, sQuery);
 	
-	SQL_TQuery(owner, OnReceiveGroupImmunity, sQuery, hPack, DBPrio_High);
+	SQL_TQuery(owner, OnReceiveGroupImmunity, sQuery, pack, DBPrio_High);
 }
 
-public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], any:data)
+public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	new Handle:hPack = data;
-	ResetPack(hPack);
+	ResetPack(pack);
 	
-	/**
-	 * Check if this is the latest result request.
-	 */
-	new iSequence = ReadPackCell(hPack);
+	// Check if this is the latest result request.
+	new iSequence = ReadPackCell(pack);
 	if(g_iRebuildCachePart[_:AdminCache_Groups] != iSequence)
 	{
-		/* Discard everything, since we're out of sequence. */
-		CloseHandle(hPack);
+		// Discard everything, since we're out of sequence.
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * If we need to use the results, make sure they succeeded.
-	 */
+	// If we need to use the results, make sure they succeeded.
 	if(!hndl)
 	{
 		decl String:sQuery[384];
-		ReadPackString(hPack, sQuery, sizeof(sQuery));		
+		ReadPackString(pack, sQuery, sizeof(sQuery));		
 		LogError("SQL error receiving group immunity: %s", error);
 		LogError("Query dump: %s", sQuery);
-		CloseHandle(hPack);	
+		CloseHandle(pack);	
 		return;
 	}
 	
-	/* We're done with the pack forever. */
-	CloseHandle(hPack);
+	// We're done with the pack forever.
+	CloseHandle(pack);
 	
 	while(SQL_FetchRow(hndl))
 	{
@@ -591,47 +553,38 @@ public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], a
 		#endif
 	}
 	
-	/* Clear the sequence so another connect doesn't refetch */
+	// Clear the sequence so another connect doesn't refetch
 	g_iRebuildCachePart[_:AdminCache_Groups] = 0;
 }
 
-public OnReceiveOverrides(Handle:owner, Handle:hndl, const String:error[], any:data)
+public OnReceiveOverrides(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	new Handle:hPack = data;
-	ResetPack(hPack);
+	ResetPack(pack);
 	
-	/**
-	 * Check if this is the latest result request.
-	 */
-	new iSequence = ReadPackCell(hPack);
+	// Check if this is the latest result request.
+	new iSequence = ReadPackCell(pack);
 	if(g_iRebuildCachePart[_:AdminCache_Overrides] != iSequence)
 	{
-		/* Discard everything, since we're out of sequence. */
-		CloseHandle(hPack);
+		// Discard everything, since we're out of sequence.
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * If we need to use the results, make sure they succeeded.
-	 */
-	if(hndl == INVALID_HANDLE)
+	// If we need to use the results, make sure they succeeded.
+	if(!hndl)
 	{
 		decl String:sQuery[256];
-		ReadPackString(hPack, sQuery, sizeof(sQuery));
+		ReadPackString(pack, sQuery, sizeof(sQuery));
 		LogError("SQL error receiving overrides: %s", error);
 		LogError("Query dump: %s", sQuery);
-		CloseHandle(hPack);
+		CloseHandle(pack);
 		return;
 	}
 	
-	/**
-	 * We're done with you, now.
-	 */
-	CloseHandle(hPack);
+	// We're done with you, now.
+	CloseHandle(pack);
 	
-	decl String:sType[64];
-	decl String:sName[64];
-	decl String:sFlags[32];
+	decl String:sFlags[32], String:sName[64], String:sType[64];
 	while(SQL_FetchRow(hndl))
 	{
 		SQL_FetchString(hndl, 0, sType, sizeof(sType));
@@ -648,7 +601,7 @@ public OnReceiveOverrides(Handle:owner, Handle:hndl, const String:error[], any:d
 			AddCommandOverride(sName, Override_CommandGroup, ReadFlagString(sFlags));
 	}
 	
-	/* Clear the sequence so another connect doesn't refetch */
+	// Clear the sequence so another connect doesn't refetch
 	g_iRebuildCachePart[_:AdminCache_Overrides] = 0;
 }
 
@@ -658,46 +611,45 @@ public Query_ErrorCheck(Handle:owner, Handle:hndl, const String:error[], any:dat
 		LogError("%T (%s)", "Failed to query database", LANG_SERVER, error);
 }
 
+
+/**
+ * Natives
+ */
+public Native_GetAdminId(Handle:plugin, numParams)
+{
+	new iClient = GetNativeCell(1);
+	return iClient && IsClientInGame(iClient) ? g_iAdminId[iClient] : 0;
+}
+
+
+/**
+ * Stocks
+ */
 stock SB_FetchAdmin(iClient)
 {
-	decl String:sName[MAX_NAME_LENGTH + 1];
-	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1];
-	decl String:sAuth[20];
-	decl String:sIp[16];
-	
-	/**
-	 * Get authentication information from the client.
-	 */
+	decl String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[768];
+	// Get authentication information from the client.
 	GetClientName(iClient, sName, sizeof(sName));
 	GetClientIP(iClient,   sIp,   sizeof(sIp));
-	// Format client IP for range matching
-	ReplaceString(sIp, sizeof(sIp), ".",  "\\.");
-	ReplaceString(sIp, sizeof(sIp), ".0", "..{1,3}");
 	
 	sAuth[0] = '\0';
-	if(GetClientAuthString(iClient, sAuth, sizeof(sAuth)) && !strcmp(sAuth, "STEAM_ID_LAN"))
+	if(GetClientAuthString(iClient, sAuth, sizeof(sAuth)) && StrEqual(sAuth, "STEAM_ID_LAN"))
 		sAuth[0] = '\0';
 	
+	// Construct the query using the information the client gave us.
 	SQL_EscapeString(g_hDatabase, sName, sEscapedName, sizeof(sEscapedName));
-	
-	/**
-	 * Construct the query using the information the client gave us.
-	 */
-	decl String:sQuery[512];
 	Format(sQuery, sizeof(sQuery), "SELECT    ad.id, ad.name, ad.auth, ad.identity, ad.srv_password, COUNT(ag.group_id) \
 																	FROM      %s_admins            AS ad \
 																	LEFT JOIN %s_admins_srvgroups  AS ag ON ag.admin_id = ad.id \
 																	LEFT JOIN %s_servers_srvgroups AS gs ON gs.group_id = ag.group_id \
-																	WHERE     ((ad.auth    = '%s' AND ad.identity REGEXP '^STEAM_[0-9]:%s$') \
-																						 OR (ad.auth = '%s' AND ad.identity REGEXP '^%s$') \
-																						 OR (ad.auth = '%s' AND ad.identity = '%s')) \
+																	WHERE     ((ad.auth = '%s' AND ad.identity REGEXP '^STEAM_[0-9]:%s$') \
+																		 OR      (ad.auth = '%s' AND '%s' REGEXP REPLACE(REPLACE(ad.identity, '.', '\\.') , '.0', '..{1,3}')) \
+																		 OR      (ad.auth = '%s' AND ad.identity = '%s')) \
 																		AND     gs.server_id = %i \
 																	GROUP BY  ad.id",
 																	g_sDatabasePrefix, g_sDatabasePrefix, g_sDatabasePrefix, AUTHMETHOD_STEAM, sAuth[8], AUTHMETHOD_IP, sIp, AUTHMETHOD_NAME, sEscapedName, g_iServerId);
 	
-	/**
-	 * Send the actual query.
-	 */	
+	// Send the actual query.
 	g_iPlayerSeq[iClient] = ++g_iSequence;
 	
 	new Handle:hPack = CreateDataPack();
@@ -720,23 +672,20 @@ stock SB_FetchAdmins()
 			SB_FetchAdmin(i);
 	}
 	
-	/**
-	 * This round of updates is done.  Go in peace.
-	 */
+	// This round of updates is done.  Go in peace.
 	g_iRebuildCachePart[_:AdminCache_Admins] = 0;
 }
 
 stock SB_FetchGroups(iSequence)
 {
 	decl String:sQuery[192];
-	new Handle:hPack = CreateDataPack();
-	
 	Format(sQuery, sizeof(sQuery), "SELECT    sg.name, sg.flags, sg.immunity \
 																	FROM      %s_srvgroups         AS sg \
 																	LEFT JOIN %s_servers_srvgroups AS gs ON gs.group_id = sg.id \
 																	WHERE     gs.server_id = %i",
 																	g_sDatabasePrefix, g_sDatabasePrefix, g_iServerId);
 	
+	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iSequence);
 	WritePackString(hPack, sQuery);
 	
@@ -746,12 +695,11 @@ stock SB_FetchGroups(iSequence)
 stock SB_FetchOverrides(iSequence)
 {
 	decl String:sQuery[64];
-	new Handle:hPack = CreateDataPack();
-	
 	Format(sQuery, sizeof(sQuery), "SELECT type, name, flags \
 																	FROM   %s_overrides",
 																	g_sDatabasePrefix);
 	
+	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iSequence);
 	WritePackString(hPack, sQuery);
 	

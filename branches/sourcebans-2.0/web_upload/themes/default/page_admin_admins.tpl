@@ -548,7 +548,7 @@
                         <option value="group">{$lang_group}</option>
                       </select>
                     </td>
-                    <td class="tablerow1"><input name="override_name[]" /></td>
+                    <td class="tablerow1"><input id="override_name" name="override_name[]" /></td>
                   <td class="tablerow1"><input name="override_flags[]" /></td>
                   </tr>
                 </table>

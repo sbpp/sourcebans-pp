@@ -97,7 +97,7 @@
               <div class="badentry" id="length.msg"></div>
               <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo}</label>
               <input class="submit-fields" {nid id="demo"} type="file" />
-              <div id="demo.msg" style="color: #CC0000;">{$ban_demo}</div>
+              <div class="badentry" id="demo.msg">{$ban_demo}</div>
               <div class="center">
                 <input name="id" type="hidden" value="{$smarty.get.id}" />
                 <input class="btn ok" type="submit" value="{$lang_save}" />
