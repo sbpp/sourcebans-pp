@@ -24,9 +24,7 @@ class BansReader extends SBReader
     $geoip   = geoip_open(LIB_DIR . 'geoip/GeoIP.dat', GEOIP_STANDARD);
     $where   = 1;
     
-    /**
-     * Filter bans
-     */
+    // Filter bans
     if(!empty($this->search) && !empty($this->type))
     {
       $search = $this->search;
@@ -86,24 +84,20 @@ class BansReader extends SBReader
       }
     }
     
-    /**
-     * Hide inactive bans
-     */
+    // Hide inactive bans
     if($this->hideinactive)
       $where .= ' AND (ends - created = 0 OR ends > UNIX_TIMESTAMP()) AND unban_admin_id IS NULL';
     
-    /**
-     * Fetch bans
-     */
+    // Fetch bans
     $ban_count = $db->GetOne('SELECT COUNT(*)
-                              FROM   ' . Env::get('prefix') . '_bans AS ban
+                              FROM   ' . Env::get('prefix') . '_bans AS ba
                               WHERE  ' . $where);
     $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.created, ba.ends, ba.ends - ba.created AS length, ba.reason, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id,
                                           ba.unban_reason, ba.unban_time, se.ip AS server_ip, se.port AS server_port, IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, mo.name AS mod_name, mo.icon AS mod_icon,
                                           76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam)             AS ban_count,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                AS block_count,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id AND type = "B") AS demo_count
+                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
+                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                     AS block_count,
+                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id    AND type = "B")   AS demo_count
                                 FROM      ' . Env::get('prefix') . '_bans    AS ba
                                 LEFT JOIN ' . Env::get('prefix') . '_admins  AS ad ON ad.id = ba.admin_id
                                 LEFT JOIN ' . Env::get('prefix') . '_admins  AS un ON un.id = ba.unban_admin_id
@@ -113,39 +107,29 @@ class BansReader extends SBReader
                                 ORDER BY  ' . $this->sort        .
                                 ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    /**
-     * Process bans
-     */
+    // Process bans
     foreach($ban_list as $id => &$ban)
     {
-      /**
-       * If ban contains an IP address, fetch country information
-       */
+      // If ban contains an IP address, fetch country information
       if(!empty($ban['ip']))
       {
         $ban['country_code'] = geoip_country_code_by_addr($geoip, $ban['ip']);
         $ban['country_name'] = geoip_country_name_by_addr($geoip, $ban['ip']);
       }
       
-      /**
-       * Check if ban has been either unbanned or expired
-       */
+      // Check if ban has been either unbanned or expired
       if(!empty($ban['unban_admin_id']))
         $ban['status'] = $phrases['unbanned'];
       else if($ban['length'] && $ban['ends'] < time())
         $ban['status'] = $phrases['expired'];
       
-      /**
-       * Fetch comments for this ban
-       */
+      // Fetch comments for this ban
       $comments_reader         = new CommentsReader();
       $comments_reader->ban_id = $id;
       $comments_reader->type   = BAN_COMMENTS;
       $ban['comments']         = $comments_reader->executeCached(ONE_DAY);
       
-      /**
-       * Format additional ban information
-       */
+      // Format additional ban information
       $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length']) : $phrases['permanent']);
     }
     

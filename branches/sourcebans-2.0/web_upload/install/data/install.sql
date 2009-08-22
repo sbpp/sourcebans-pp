@@ -4,9 +4,9 @@
 
 CREATE TABLE {prefix}_actions (
   id int(10) unsigned NOT NULL auto_increment,
-  name varchar(64) NOT NULL,
-  steam varchar(32) NOT NULL,
-  ip varchar(15) NOT NULL,
+  name varchar(64) default NULL,
+  steam varchar(32) default NULL,
+  ip varchar(15) default NULL,
   message varchar(255) NOT NULL,
   server_id smallint(5) unsigned NOT NULL,
   admin_id smallint(5) unsigned default NULL,
@@ -64,9 +64,9 @@ CREATE TABLE {prefix}_admins_srvgroups (
 CREATE TABLE {prefix}_bans (
   id mediumint(8) unsigned NOT NULL auto_increment,
   type tinyint(1) NOT NULL default '0',
-  steam varchar(32) NOT NULL,
-  ip varchar(15) NOT NULL,
-  name varchar(64) NOT NULL,
+  steam varchar(32) default NULL,
+  ip varchar(15) default NULL,
+  name varchar(64) default NULL,
   created int(10) unsigned NOT NULL,
   ends int(10) unsigned NOT NULL,
   reason varchar(255) NOT NULL,

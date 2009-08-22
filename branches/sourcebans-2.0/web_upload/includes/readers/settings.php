@@ -10,9 +10,7 @@ class SettingsReader extends SBReader
   {
     $db       = Env::get('db');
     
-    /**
-     * Fetch settings
-     */
+    // Fetch settings
     $settings = $db->GetAssoc('SELECT name, value
                                FROM   ' . Env::get('prefix') . '_settings');
     

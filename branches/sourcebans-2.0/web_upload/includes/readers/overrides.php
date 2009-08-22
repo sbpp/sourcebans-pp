@@ -10,9 +10,7 @@ class OverridesReader extends SBReader
   {
     $db        = Env::get('db');
     
-    /**
-     * Fetch overrides
-     */
+    // Fetch overrides
     $overrides = $db->GetAssoc('SELECT type, name, flags
                                 FROM   ' . Env::get('prefix') . '_overrides');
     

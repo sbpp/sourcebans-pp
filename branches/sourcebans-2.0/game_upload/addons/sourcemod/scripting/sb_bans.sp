@@ -44,6 +44,7 @@ new g_iProcessQueueTime;
 new g_iServerId;
 new bool:g_bEnableAddBan;
 new bool:g_bEnableUnban;
+new bool:g_bOwnReason[MAXPLAYERS + 1];
 new bool:g_bPlayerStatus[MAXPLAYERS + 1];
 new Float:g_fRetryTime;
 new Handle:g_hDatabase;
@@ -67,16 +68,19 @@ new String:g_sWebsite[256];
 public OnPluginStart()
 {
 	RegAdminCmd("sm_ban",    Command_Ban,    ADMFLAG_BAN,   "sm_ban <#userid|name> <minutes|0> [reason]");
-	RegAdminCmd("sm_unban",  Command_Unban,  ADMFLAG_UNBAN, "sm_unban <steamid|ip>");
-	RegAdminCmd("sm_addban", Command_AddBan, ADMFLAG_RCON,  "sm_addban <time> <steamid> [reason]");
 	RegAdminCmd("sm_banip",  Command_BanIp,  ADMFLAG_BAN,   "sm_banip <ip|#userid|name> <time> [reason]");
+	RegAdminCmd("sm_addban", Command_AddBan, ADMFLAG_RCON,  "sm_addban <time> <steamid> [reason]");
+	RegAdminCmd("sm_unban",  Command_Unban,  ADMFLAG_UNBAN, "sm_unban <steamid|ip>");
+	
+	RegConsoleCmd("say",      Command_Say);
+	RegConsoleCmd("say_team", Command_Say);
 	
 	LoadTranslations("common.phrases");
 	LoadTranslations("sourcebans.phrases");
 	LoadTranslations("basebans.phrases");
 	
-	g_hHackingMenu  = CreateMenu(MenuHandler_Reason);
-	g_hReasonMenu   = CreateMenu(MenuHandler_Reason);
+	g_hHackingMenu = CreateMenu(MenuHandler_Reason);
+	g_hReasonMenu  = CreateMenu(MenuHandler_Reason);
 	
 	// Account for late loading
 	new Handle:hTopMenu;
@@ -85,7 +89,7 @@ public OnPluginStart()
 	
 	// Connect to local database
 	decl String:sError[256];
-	g_hSQLiteDB = SQLite_UseDatabase("sourcemod-local", sError, sizeof(sError));
+	g_hSQLiteDB    = SQLite_UseDatabase("sourcemod-local", sError, sizeof(sError));
 	if(sError[0])
 	{
 		LogError("%T (%s)", "Could not connect to database", LANG_SERVER, sError);
@@ -93,7 +97,7 @@ public OnPluginStart()
 	}
 	
 	// Create local bans table
-	SQL_FastQuery(g_hSQLiteDB, "CREATE TABLE IF NOT EXISTS sb_bans (type INTEGER, steam TEXT PRIMARY KEY ON CONFLICT REPLACE, ip TEXT, name TEXT, created INTEGER, length INTEGER, reason TEXT, admin_id TEXT, admin_ip TEXT, queued BOOLEAN, time INTEGER)");
+	SQL_FastQuery(g_hSQLiteDB, "CREATE TABLE IF NOT EXISTS sb_bans (type INTEGER, steam TEXT PRIMARY KEY ON CONFLICT REPLACE, ip TEXT, name TEXT, created INTEGER, ends INTEGER, reason TEXT, admin_id TEXT, admin_ip TEXT, queued BOOLEAN, time INTEGER)");
 	
 	// Process temporary bans every minute
 	CreateTimer(60.0, Timer_ProcessTemp);
@@ -102,8 +106,8 @@ public OnPluginStart()
 public OnAdminMenuReady(Handle:topmenu)
 {
 	// Block us from being called twice
-	//if(topmenu == g_hTopMenu)
-	//	return;
+	if(topmenu == g_hTopMenu)
+		return;
 	
 	// Save the handle
 	g_hTopMenu = topmenu;
@@ -155,7 +159,7 @@ public OnClientAuthorized(client, const String:auth[])
 	decl String:sIp[16], String:sQuery[256];
 	GetClientIP(client, sIp, sizeof(sIp));
 	
-	Format(sQuery, sizeof(sQuery), "SELECT type, steam, ip, name, created, ends - created, reason, admin_id, admin_ip \
+	Format(sQuery, sizeof(sQuery), "SELECT type, steam, ip, name, created, (ends - created) / 60, reason, admin_id, admin_ip \
 																	FROM   %s_bans \
 																	WHERE  ((type = %i AND steam REGEXP '^STEAM_[0-9]:%s$') OR (type = %i AND '%s' REGEXP REPLACE(REPLACE(ip, '.', '\\.') , '.0', '..{1,3}'))) \
 																		AND  (ends - created = 0 OR ends > UNIX_TIMESTAMP()) \
@@ -167,33 +171,23 @@ public OnClientAuthorized(client, const String:auth[])
 public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 {
 	g_bPlayerStatus[client] = false;
+	// If there is no SQLite database connection, allow player to connect
 	if(!g_hSQLiteDB)
 		return true;
 	
 	decl String:sIp[16], String:sQuery[256];
 	GetClientIP(client, sIp, sizeof(sIp));
-	Format(sQuery, sizeof(sQuery), "SELECT steam, ip, name, reason, length \
+	Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																	FROM   sb_bans \
-																	WHERE  '%s' REGEXP REPLACE(REPLACE(ip, '.', '\\.') , '.0', '..{1,3}') \
-																		AND  time < %i",
-																	sIp, GetTime());
+																	WHERE  ip          = '%s' \
+																		AND  ends        > %i \
+																		AND  time + 300 <= %i",
+																	sIp, GetTime(), GetTime());
 	
 	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
+	// If query failed or no active ban was found, allow player to connect
 	if(!hQuery || !SQL_FetchRow(hQuery))
 		return true;
-	
-	Format(sQuery, sizeof(sQuery), "UPDATE sb_bans \
-																	SET    time = time + 5 \
-																	WHERE  '%s' REGEXP REPLACE(REPLACE(ip, '.', '\\.') , '.0', '..{1,3}')",
-																	sIp);
-	SQL_FastQuery(g_hSQLiteDB, sQuery);
-	
-	decl String:sAuth[20], String:sName[MAX_NAME_LENGTH + 1], String:sReason[128];
-	SQL_FetchString(hQuery, 0, sAuth,   sizeof(sAuth));
-	SQL_FetchString(hQuery, 1, sIp,     sizeof(sIp));
-	SQL_FetchString(hQuery, 2, sName,   sizeof(sName));
-	SQL_FetchString(hQuery, 3, sReason, sizeof(sReason));
-	PrintBanInformation(client, sAuth, sIp, sName, sReason, SQL_FetchInt(hQuery, 4));
 	
 	Format(rejectmsg, maxlen, "%t", "Banned Check Site", g_sWebsite);
 	return false;
@@ -259,7 +253,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	SQL_EscapeString(g_hDatabase, reason, sEscapedReason, sizeof(sEscapedReason));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, ip, name, created, ends, reason, server_id, admin_id, admin_ip) \
 																	VALUES      (%i, '%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i, '%s', %i, NULLIF(%i, 0), '%s')",
-																	g_sDatabasePrefix, DEFAULT_BAN_TYPE, sAuth, sIp, sEscapedName, time * 60, sEscapedReason, g_iServerId, g_sDatabasePrefix, iAdminId, sAdminIp);
+																	g_sDatabasePrefix, DEFAULT_BAN_TYPE, sAuth, sIp, sEscapedName, time * 60, sEscapedReason, g_iServerId, iAdminId, sAdminIp);
 	SQL_TQuery(g_hDatabase, Query_BanInsert, sQuery, hPack, DBPrio_High);
 	
 	LogAction(admin, client, "\"%L\" banned \"%L\" (minutes \"%i\") (reason \"%s\")", admin, client, time, reason);
@@ -295,7 +289,7 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 	
 	if(flags      & BANFLAG_AUTHID || ((flags & BANFLAG_AUTO) && bSteam))
 	{
-		Format(sQuery, sizeof(sQuery), "SELECT id \
+		Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																		FROM   %s_bans \
 																		WHERE  type  = %i \
 																		  AND  steam REGEXP '^STEAM_[0-9]:%s$' \
@@ -308,7 +302,7 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 	}
 	else if(flags & BANFLAG_IP     || ((flags & BANFLAG_AUTO) && !bSteam))
 	{
-		Format(sQuery, sizeof(sQuery), "SELECT id \
+		Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																		FROM   %s_bans \
 																		WHERE  type = %i \
 																		  AND  ip   = '%s' \
@@ -330,7 +324,7 @@ public Action:OnRemoveBan(const String:identity[], flags, const String:command[]
 	WritePackString(hPack, identity);
 	
 	if(flags      & BANFLAG_AUTHID)
-		Format(sQuery, sizeof(sQuery), "SELECT admin_id \
+		Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																		FROM   %s_bans \
 																		WHERE  type  = %i \
 																			AND  steam REGEXP '^STEAM_[0-9]:%s$' \
@@ -338,7 +332,7 @@ public Action:OnRemoveBan(const String:identity[], flags, const String:command[]
 																			AND  unban_admin_id IS NULL",
 																		g_sDatabasePrefix, STEAM_BAN_TYPE, identity[8]);
 	else if(flags & BANFLAG_IP)
-		Format(sQuery, sizeof(sQuery), "SELECT admin_id \
+		Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																		FROM   %s_bans \
 																		WHERE  type = %i \
 																			AND  ip   = '%s' \
@@ -540,6 +534,37 @@ public Action:Command_Unban(client, args)
 	return Plugin_Handled;
 }
 
+public Action:Command_Say(client, args)
+{
+	// If this client is not typing their own reason to ban someone, ignore
+	if(!g_bOwnReason[client])
+		return Plugin_Continue;
+	
+	decl String:sText[192];
+	new iStart = 0;
+	if (GetCmdArgString(sText, sizeof(sText)) < 1)
+		return Plugin_Continue;
+	
+	if(sText[strlen(sText) - 1] == '"')
+	{
+		sText[strlen(sText) - 1] = '\0';
+		iStart = 1;
+	}
+	if(StrEqual(sText[iStart], "!noreason"))
+	{
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Chat Reason Aborted");
+		return Plugin_Handled;
+	}
+	if(g_iBanTarget[client] != -1)
+	{
+		decl String:sKickMessage[128];
+		Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
+		BanClient(g_iBanTarget[client], g_iBanTime[client], BANFLAG_AUTO, sText[iStart], sKickMessage, "sm_ban", client);
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
 
 /**
  * Timers
@@ -559,28 +584,32 @@ public Action:Timer_ClientRecheck(Handle:timer, any:client)
 
 public Action:Timer_ProcessQueue(Handle:timer, any:data)
 {
-	new Handle:hQuery = SQL_Query(g_hSQLiteDB, "SELECT type, steam, ip, name, created, length, reason, admin_id, admin_ip \
+	if(!g_hSQLiteDB)
+		return;
+	
+	new Handle:hQuery = SQL_Query(g_hSQLiteDB, "SELECT type, steam, ip, name, created, ends, reason, admin_id, admin_ip \
 																							FROM   sb_bans \
 																							WHERE  queued = 1");
 	if(!hQuery)
 		return;
 	
-	decl iAdmin, iStart, iTime, iType, String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1],
+	decl iAdminId, iCreated, iEnds, iType, String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1],
 			 String:sEscapedReason[256], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[768], String:sReason[128];
 	while(SQL_FetchRow(hQuery))
 	{
-		iType  = SQL_FetchInt(hQuery, 0);
-		SQL_FetchString(hQuery,  1, sAuth,    sizeof(sAuth));
-		SQL_FetchString(hQuery,  2, sIp,      sizeof(sIp));
-		SQL_FetchString(hQuery,  3, sName,    sizeof(sName));
-		iStart = SQL_FetchInt(hQuery, 4);
-		iTime  = SQL_FetchInt(hQuery, 5);
-		SQL_FetchString(hQuery,  6, sReason,  sizeof(sReason));
-		iAdmin = SQL_FetchInt(hQuery, 7);
-		SQL_FetchString(hQuery,  8, sAdminIp, sizeof(sAdminIp));
+		iType    = SQL_FetchInt(hQuery, 0);
+		SQL_FetchString(hQuery, 1, sAuth,    sizeof(sAuth));
+		SQL_FetchString(hQuery, 2, sIp,      sizeof(sIp));
+		SQL_FetchString(hQuery, 3, sName,    sizeof(sName));
+		iCreated = SQL_FetchInt(hQuery, 4);
+		iEnds    = SQL_FetchInt(hQuery, 5);
+		SQL_FetchString(hQuery, 6, sReason,  sizeof(sReason));
+		iAdminId = SQL_FetchInt(hQuery, 7);
+		SQL_FetchString(hQuery, 8, sAdminIp, sizeof(sAdminIp));
 		SQL_EscapeString(g_hSQLiteDB, sName,   sEscapedName,   sizeof(sEscapedName));
 		SQL_EscapeString(g_hSQLiteDB, sReason, sEscapedReason, sizeof(sEscapedReason));
-		if(iStart + iTime * 60 <= GetTime())
+		
+		if(iEnds <= GetTime())
 		{
 			DeleteLocalBan(iType == STEAM_BAN_TYPE ? sAuth : sIp);
 			continue;
@@ -590,20 +619,23 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		WritePackString(hPack, iType == STEAM_BAN_TYPE ? sAuth : sIp);
 		
 		Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, ip, name, created, ends, reason, server_id, admin_id, admin_ip) \
-																		VALUES      (%i, '%s', '%s', '%s', %i, %i, '%s', %i, '%s', %i)",
-																		g_sDatabasePrefix, iType, sAuth, sIp, sEscapedName, iStart, iStart + iTime * 60, sEscapedReason, g_iServerId, g_sDatabasePrefix, iAdmin, sAdminIp);
+																		VALUES      (%i, NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), %i, %i, '%s', %i, NULLIF(%i, 0), '%s')",
+																		g_sDatabasePrefix, iType, sAuth, sIp, sEscapedName, iCreated, iEnds, sEscapedReason, g_iServerId, iAdminId, sAdminIp);
 		SQL_TQuery(g_hDatabase, Query_AddedFromQueue, sQuery, hPack);
 	}
 }
 
 public Action:Timer_ProcessTemp(Handle:timer)
 {
-	// Delete temporary bans that were added over 5 minutes ago
+	if(!g_hSQLiteDB)
+		return;
+	
+	// Delete temporary bans that expired or were added over 5 minutes ago
 	decl String:sQuery[128];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
-																	WHERE       time + 300 <= %i \
-																		AND       queued      = 0",
-																	GetTime());
+																	WHERE       (ends <= %i OR time + 300 > %i) \
+																		AND       queued = 0",
+																	GetTime(), GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
 }
 
@@ -632,7 +664,7 @@ public MenuHandler_Target(Handle:menu, MenuAction:action, param1, param2)
 	{
 		decl iTarget, String:sInfo[32];
 		GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
-		if((iTarget = GetClientOfUserId(StringToInt(sInfo))) == 0)
+		if(!(iTarget = GetClientOfUserId(StringToInt(sInfo))))
 			PrintToChat(param1, "%s%t", "Player no longer available", SB_PREFIX);
 		else if(!CanUserTarget(param1, iTarget))
 			PrintToChat(param1, "%s%t", "Unable to target",           SB_PREFIX);
@@ -664,19 +696,30 @@ public MenuHandler_Time(Handle:menu, MenuAction:action, param1, param2)
 
 public MenuHandler_Reason(Handle:menu, MenuAction:action, param1, param2)
 {
+	if(action == MenuAction_Cancel)
+		DisplayBanTimeMenu(param1);
 	if(action != MenuAction_Select)
 		return;
 	
-	decl String:sInfo[64], String:sKickMessage[128];
-	Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
+	decl String:sInfo[64];
 	GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 	if(StrEqual(sInfo, "Hacking") && menu == g_hReasonMenu)
 	{
 		DisplayMenu(g_hHackingMenu, param1, MENU_TIME_FOREVER);
 		return;
 	}
+	if(StrEqual(sInfo, "Own Reason"))
+	{
+		g_bOwnReason[param1] = true;
+		PrintToChat(param1, "%s%t", SB_PREFIX, "Chat Reason");
+		return;
+	}
 	if(g_iBanTarget[param1] != -1)
+	{
+		decl String:sKickMessage[128];
+		Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
 		BanClient(g_iBanTarget[param1], g_iBanTime[param1], BANFLAG_AUTO, sInfo, sKickMessage, "sm_ban", param1);
+	}
 	
 	g_iBanTarget[param1] = -1;
 	g_iBanTime[param1]   = -1;
@@ -688,10 +731,11 @@ public MenuHandler_Reason(Handle:menu, MenuAction:action, param1, param2)
  */
 public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sAdminIp[16], String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sReason[128];
 	ResetPack(pack);
+	
+	decl String:sAdminIp[16], String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
-	new iTime    = ReadPackCell(pack);
+	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sAuth,      sizeof(sAuth));
 	ReadPackString(pack, sIp,        sizeof(sIp));
 	ReadPackString(pack, sName,      sizeof(sName));
@@ -699,25 +743,23 @@ public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp,   sizeof(sAdminIp));
 	
-	InsertLocalBan(STEAM_BAN_TYPE, sAuth, sIp, sName, GetTime(), iTime, sReason, iAdminId, sAdminIp, !!error[0]);
+	InsertLocalBan(STEAM_BAN_TYPE, sAuth, sIp, sName, GetTime(), iLength, sReason, iAdminId, sAdminIp, !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the ban into the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
-		else
-			PrintToServer("%sFailed to ban %s.",       SB_PREFIX, sAuth);
+		ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
 		return;
 	}
 }
 
 public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sAdminIp[16], String:sEscapedReason[256], String:sIp[16], String:sQuery[512], String:sReason[128];
 	ResetPack(pack);
+	
+	decl String:sAdminIp[16], String:sEscapedReason[256], String:sIp[16], String:sQuery[512], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
-	new iTime    = ReadPackCell(pack);
+	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sIp,      sizeof(sIp));
 	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
@@ -727,58 +769,51 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to retrieve the IP ban from the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sIp);
-		else
-			PrintToServer("%sFailed to ban %s.",           SB_PREFIX, sIp);
+		ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sIp);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
-		else
-			PrintToServer("%s%s is already banned.",       SB_PREFIX, sIp);
+		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
 		return;
 	}
 	
 	SQL_EscapeString(g_hDatabase, sReason, sEscapedReason, sizeof(sEscapedReason));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, ip, name, created, ends, reason, server_id, admin_id, admin_ip) \
-																	VALUES      (%i, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i, '%s', %i, %i, '%s')",
-																	g_sDatabasePrefix, IP_BAN_TYPE, sIp, iTime * 60, sEscapedReason, g_iServerId, g_sDatabasePrefix, iAdminId, sAdminIp);
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, ip, created, ends, reason, server_id, admin_id, admin_ip) \
+																	VALUES      (%i, '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i, '%s', %i,NULLIF(%i, 0), '%s')",
+																	g_sDatabasePrefix, IP_BAN_TYPE, sIp, iLength * 60, sEscapedReason, g_iServerId, iAdminId, sAdminIp);
 	SQL_TQuery(g_hDatabase, Query_BanIpInsert, sQuery, pack, DBPrio_High);
 }
 
 public Query_BanIpInsert(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sAdminIp[30], String:sIp[16], String:sReason[128];
 	ResetPack(pack);
+	
+	decl String:sAdminIp[30], String:sIp[16], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
-	new iTime    = ReadPackCell(pack);
+	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sIp,      sizeof(sIp));
 	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	
-	InsertLocalBan(IP_BAN_TYPE, "", sIp, "", GetTime(), iTime, sReason, iAdminId, sAdminIp, !!error[0]);
+	InsertLocalBan(IP_BAN_TYPE, "", sIp, "", GetTime(), iLength, sReason, iAdminId, sAdminIp, !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the IP ban into the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to ban %s.",       SB_PREFIX, sIp);
-		else
-			PrintToServer("%sFailed to ban %s.",             SB_PREFIX, sIp);
+		ReplyToCommand(iAdmin, "%sFailed to ban %s.",       SB_PREFIX, sIp);
 		return;
 	}
 }
 
 public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sAdminIp[20], String:sAuth[20], String:sEscapedReason[256], String:sQuery[512], String:sReason[128];
 	ResetPack(pack);
+	
+	decl String:sAdminIp[20], String:sAuth[20], String:sEscapedReason[256], String:sQuery[512], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
-	new iTime    = ReadPackCell(pack);
+	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sAuth,      sizeof(sAuth));
 	ReadPackString(pack, sReason,    sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
@@ -788,56 +823,49 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 	{
 		LogError("Failed to retrieve the ID ban from the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sAuth);
-		else
-			PrintToServer("%sFailed to ban %s.",           SB_PREFIX, sAuth);
+		ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sAuth);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%s%s is already banned.", SB_PREFIX, sAuth);
-		else
-			PrintToServer("%s%s is already banned.",       SB_PREFIX, sAuth);
+		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sAuth);
 		return;
 	}
 	
 	SQL_EscapeString(g_hDatabase, sReason, sEscapedReason, sizeof(sEscapedReason));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, name, created, ends, reason, server_id, admin_id, admin_ip) \
-																	VALUES      (%i, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i, '%s', NULLIF(%i, 0), '%s', %i, ' ')",
-																	g_sDatabasePrefix, STEAM_BAN_TYPE, sAuth, iTime * 60, sEscapedReason, g_iServerId, g_sDatabasePrefix, iAdminId, sAdminIp);
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, created, ends, reason, server_id, admin_id, admin_ip) \
+																	VALUES      (%i, '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i, '%s', %i, NULLIF(%i, 0), '%s')",
+																	g_sDatabasePrefix, STEAM_BAN_TYPE, sAuth, iLength * 60, sEscapedReason, g_iServerId, iAdminId, sAdminIp);
 	SQL_TQuery(g_hDatabase, Query_AddBanInsert, sQuery, pack, DBPrio_High);
 }
 
 public Query_AddBanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sAdminIp[20], String:sAuth[20], String:sReason[128];
 	ResetPack(pack);
+	
+	decl String:sAdminIp[20], String:sAuth[20], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
-	new iTime    = ReadPackCell(pack);
+	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sAuth,    sizeof(sAuth));
 	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	
-	InsertLocalBan(STEAM_BAN_TYPE, sAuth, "", "", GetTime(), iTime, sReason, iAdminId, sAdminIp, !!error[0]);
+	InsertLocalBan(STEAM_BAN_TYPE, sAuth, "", "", GetTime(), iLength, sReason, iAdminId, sAdminIp, !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the ID ban into the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
-		else
-			PrintToServer("%sFailed to ban %s.",       SB_PREFIX, sAuth);
+		ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
 		return;
 	}
 }
 
 public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sIdentity[20], String:sQuery[512];
 	ResetPack(pack);
+	
+	decl String:sIdentity[20], String:sQuery[512];
 	new iAdmin = ReadPackCell(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
 	
@@ -845,22 +873,15 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to retrieve the ban from the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to unban %s.",          SB_PREFIX, sIdentity);
-		else
-			PrintToServer("%sFailed to unban %s.",                SB_PREFIX, sIdentity);
+		ReplyToCommand(iAdmin, "%sFailed to unban %s.",          SB_PREFIX, sIdentity);
 		return;
 	}
 	if(!SQL_GetRowCount(hndl))
 	{
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sNo active bans found for %s.", SB_PREFIX, sIdentity);
-		else
-			PrintToServer("%sNo active bans found for %s.",       SB_PREFIX, sIdentity);
+		ReplyToCommand(iAdmin, "%sNo active bans found for %s.", SB_PREFIX, sIdentity);
 		return;
 	}
 	
-	iAdmin = SQL_FetchInt(hndl, 0);
 	if(strncmp(sIdentity, "STEAM_", 6) == 0)
 		Format(sQuery, sizeof(sQuery), "UPDATE   %s_bans \
 																		SET      unban_admin_id = %i, \
@@ -869,7 +890,7 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 																			AND    steam          REGEXP '^STEAM_[0-9]:%s$' \
 																		ORDER BY created DESC \
 																		LIMIT    1",
-																		g_sDatabasePrefix, iAdmin, STEAM_BAN_TYPE, sIdentity[8]);
+																		g_sDatabasePrefix, GetAdminId(iAdmin), STEAM_BAN_TYPE, sIdentity[8]);
 	else
 		Format(sQuery, sizeof(sQuery), "UPDATE   %s_bans \
 																		SET      unban_admin_id = %i, \
@@ -878,7 +899,7 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 																			AND    ip             = '%s' \
 																		ORDER BY created DESC \
 																		LIMIT    1",
-																		g_sDatabasePrefix, iAdmin, IP_BAN_TYPE, sIdentity);
+																		g_sDatabasePrefix, GetAdminId(iAdmin), IP_BAN_TYPE, sIdentity);
 	
 	SQL_TQuery(g_hDatabase, Query_UnbanUpdate, sQuery, pack, DBPrio_High);
 	
@@ -887,8 +908,9 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 
 public Query_UnbanUpdate(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	decl String:sIdentity[20];
 	ResetPack(pack);
+	
+	decl String:sIdentity[20];
 	new iAdmin = ReadPackCell(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
 	
@@ -896,10 +918,7 @@ public Query_UnbanUpdate(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to unban the ban from the database: %s", error);
 		
-		if(iAdmin && IsClientInGame(iAdmin))
-			PrintToChat(iAdmin, "%sFailed to unban %s.",       SB_PREFIX, sIdentity);
-		else
-			PrintToServer("%sFailed to unban %s.",             SB_PREFIX, sIdentity);
+		ReplyToCommand(iAdmin, "%sFailed to unban %s.", SB_PREFIX, sIdentity);
 	}
 }
 
@@ -919,7 +938,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:clie
 		return;
 	}
 	
-	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[512], String:sReason[128];
+	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16], String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[512], String:sReason[128];
 	GetClientAuthString(client, sAuth, sizeof(sAuth));
 	GetClientIP(client,         sIp,   sizeof(sIp));
 	GetClientName(client,       sName, sizeof(sName));
@@ -930,16 +949,26 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:clie
 																	g_sDatabasePrefix, g_sDatabasePrefix, STEAM_BAN_TYPE, sAuth[8], IP_BAN_TYPE, sIp, sEscapedName, g_iServerId);
 	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery, client, DBPrio_High);
 	
-	new iType    = SQL_FetchInt(hndl,  0);
+	new iType    = SQL_FetchInt(hndl, 0);
 	SQL_FetchString(hndl, 1, sAuth,    sizeof(sAuth));
 	SQL_FetchString(hndl, 2, sIp,      sizeof(sIp));
 	SQL_FetchString(hndl, 3, sName,    sizeof(sName));
-	new iCreated = SQL_FetchInt(hndl,  4);
-	new iLength  = SQL_FetchInt(hndl,  5);
+	new iCreated = SQL_FetchInt(hndl, 4);
+	new iLength  = SQL_FetchInt(hndl, 5);
 	SQL_FetchString(hndl, 6, sReason,  sizeof(sReason));
-	new iAdminId = SQL_FetchInt(hndl,  7);
+	new iAdminId = SQL_FetchInt(hndl, 7);
 	SQL_FetchString(hndl, 8, sAdminIp, sizeof(sAdminIp));
-	PrintBanInformation(client, sAuth, sIp, sName, sReason, iLength);
+	
+	SecondsToString(sLength, sizeof(sLength), iLength);
+	PrintToConsole(client, "===============================================");
+	PrintToConsole(client, "%sYou are banned from this server.", SB_PREFIX);
+	PrintToConsole(client, "%sYou have %s left on your ban.",    SB_PREFIX, sLength);
+	PrintToConsole(client, "%sName:       %s",                   SB_PREFIX, sName);
+	PrintToConsole(client, "%sSteam ID:   %s",                   SB_PREFIX, sAuth);
+	PrintToConsole(client, "%sIP address: %s",                   SB_PREFIX, sIp);
+	PrintToConsole(client, "%sReason:     %s",                   SB_PREFIX, sReason);
+	PrintToConsole(client, "%sYou can protest your ban at %s.",  SB_PREFIX, g_sWebsite);
+	PrintToConsole(client, "===============================================");
 	
 	InsertLocalBan(iType, sAuth, sIp, sName, iCreated, iLength, sReason, iAdminId, sAdminIp);
 	KickClient(client, "%t", "Banned Check Site", g_sWebsite);
@@ -974,9 +1003,9 @@ DeleteLocalBan(const String:sIdentity[])
 	
 	decl String:sQuery[64];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
-																	WHERE       steam REGEXP '^STEAM_[0-9]:%s$' \
-																		 OR       '%s'  REGEXP REPLACE(REPLACE(ip, '.', '\\.') , '.0', '..{1,3}')",
-																	sIdentity[8], sIdentity);
+																	WHERE       (type = %i AND steam = '%s') \
+																		 OR       (type = %i AND ip    = '%s')",
+																	STEAM_BAN_TYPE, sIdentity, IP_BAN_TYPE, sIdentity);
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
 }
 
@@ -1026,25 +1055,10 @@ InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sNa
 	SQL_EscapeString(g_hSQLiteDB, sName,   sEscapedName,   sizeof(sEscapedName));
 	SQL_EscapeString(g_hSQLiteDB, sReason, sEscapedReason, sizeof(sEscapedReason));
 	
-	Format(sQuery, sizeof(sQuery), "INSERT INTO sb_bans (type, steam, ip, name, created, length, reason, admin_id, admin_ip, queued, time) \
+	Format(sQuery, sizeof(sQuery), "INSERT INTO sb_bans (type, steam, ip, name, created, ends, reason, admin_id, admin_ip, queued, time) \
 																	VALUES      (%i, '%s', '%s', '%s', %i, %i, '%s', '%s', '%s', %i, %i)", 
-																	iType, sAuth, sIp, sEscapedName, iCreated, iLength, sEscapedReason, iAdminId, sAdminIp, bQueued ? 1 : 0, GetTime());
+																	iType, sAuth, sIp, sEscapedName, iCreated, iCreated + iLength * 60, sEscapedReason, iAdminId, sAdminIp, bQueued ? 1 : 0, GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
-}
-
-PrintBanInformation(iClient, const String:sAuth[], const String:sIp[], const String:sName[], const String:sReason[], iLength)
-{
-	decl String:sLength[64];
-	SecondsToString(sLength, sizeof(sLength), iLength);
-	PrintToConsole(iClient, "===============================================");
-	PrintToConsole(iClient, "%sYou are banned from this server.", SB_PREFIX);
-	PrintToConsole(iClient, "%sYou have %s left on your ban.",    SB_PREFIX, sLength);
-	PrintToConsole(iClient, "%sName:       %s",                   SB_PREFIX, sName);
-	PrintToConsole(iClient, "%sSteam ID:   %s",                   SB_PREFIX, sAuth);
-	PrintToConsole(iClient, "%sIP address: %s",                   SB_PREFIX, sIp);
-	PrintToConsole(iClient, "%sReason:     %s",                   SB_PREFIX, sReason);
-	PrintToConsole(iClient, "%sYou can protest your ban at %s.",  SB_PREFIX, g_sWebsite);
-	PrintToConsole(iClient, "===============================================");
 }
 
 SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)

@@ -10,9 +10,7 @@ class QuotesReader extends SBReader
   {
     $db     = Env::get('db');
     
-    /**
-     * Fetch quotes
-     */
+    // Fetch quotes
     $quotes = $db->GetAll('SELECT name, text
                            FROM   ' . Env::get('prefix') . '_quotes');
     

@@ -41,7 +41,7 @@
 	}
 	"Chat Reason"
 	{
-		"nl"			"Typ alstublieft de reden voor de ban in chat and druk op enter. Typ '!noreason' om the annuleren."
+		"nl"			"Typ alstublieft de reden voor de ban in chat and druk op enter. Typ '!noreason' om te annuleren."
 	}
 	"Chat Reason Aborted"
 	{

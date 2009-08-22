@@ -15,9 +15,7 @@ class BlocksReader extends SBReader
     $config = Env::get('config');
     $db     = Env::get('db');
     
-    /**
-     * Fetch blocks
-     */
+    // Fetch blocks
     $blocks = $db->GetAll('SELECT    bl.ban_id, bl.name, bl.time, ba.steam 
                            FROM      ' . Env::get('prefix') . '_blocks AS bl
                            LEFT JOIN ' . Env::get('prefix') . '_bans   AS ba ON ba.id = bl.ban_id

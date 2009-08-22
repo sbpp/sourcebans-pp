@@ -17,9 +17,7 @@ class ProtestsReader extends SBReader
     $config   = Env::get('config');
     $db       = Env::get('db');
     
-    /**
-     * Fetch protests
-     */
+    // Fetch protests
     $protests = $db->GetAssoc('SELECT    pr.id, pr.ban_id, pr.reason, pr.email, pr.time, ba.server_id, ba.steam AS ban_steam, ba.ip AS ban_ip, ba.name AS ban_name,
                                          ba.created AS ban_created, ba.ends AS ban_ends, ba.ends - ba.created AS ban_length, ba.reason AS ban_reason, ad.name AS ban_admin_name
                                FROM      ' . Env::get('prefix') . '_protests AS pr
@@ -31,14 +29,10 @@ class ProtestsReader extends SBReader
                                ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                array($this->archive ? 1 : 0));
     
-    /**
-     * Process protests
-     */
+    // Process protests
     foreach($protests as $id => &$protest)
     {
-      /**
-       * Fetch comments for this protest
-       */
+      // Fetch comments for this protest
       $comments_reader        = new CommentsReader();
       $comments_reader->bid   = $id;
       $comments_reader->type  = PROTEST_COMMENTS;

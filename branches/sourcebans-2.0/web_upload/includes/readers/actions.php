@@ -15,9 +15,7 @@ class ActionsReader extends SBReader
     $config  = Env::get('config');
     $db      = Env::get('db');
     
-    /**
-     * Fetch actions
-     */
+    // Fetch actions
     $actions = $db->GetAssoc('SELECT    ac.id, ac.name, ac.steam, ac.ip, ac.message, ac.admin_ip, ac.time, se.ip AS server_ip, se.port AS server_port,
                                         IFNULL(ad.name, "CONSOLE") AS admin_name, mo.name AS mod_name, mo.icon AS mod_icon,
                                         76561197960265728 + CAST(SUBSTR(ac.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ac.steam, 11) * 2 AS UNSIGNED) AS community_id

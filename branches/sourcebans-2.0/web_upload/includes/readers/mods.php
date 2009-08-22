@@ -12,9 +12,7 @@ class ModsReader extends SBReader
   {
     $db   = Env::get('db');
     
-    /**
-     * Fetch mods
-     */
+    // Fetch mods
     $mods = $db->GetAssoc('SELECT   id, name, folder, icon, enabled
                            FROM     ' . Env::get('prefix') . '_mods
                            ORDER BY ' . $this->sort);

@@ -10,9 +10,7 @@ class PluginsReader extends SBReader
   {
     $db      = Env::get('db');
     
-    /**
-     * Fetch plugins
-     */
+    // Fetch plugins
     $plugins = $db->GetAssoc('SELECT name, enabled
                               FROM   ' . Env::get('prefix') . '_plugins');
     

@@ -33,9 +33,7 @@ try
   $languages = array();
   $themes    = array();
   
-  /**
-   * Parse languages
-   */
+  // Parse languages
   foreach(glob(LANGUAGES_DIR . '*.lang') as $language)
   {
     $code                          = pathinfo(LANGUAGES_DIR . $language, PATHINFO_FILENAME);
@@ -46,9 +44,7 @@ try
     $languages[]                   = array('code' => $code,
                                            'name' => $translations['info']['name']);
   }
-  /**
-   * Parse themes
-   */
+  // Parse themes
   foreach(scandir(THEMES_DIR) as $theme)
   {
     $file = THEMES_DIR . $theme . '/theme.info';
@@ -59,9 +55,7 @@ try
     $themes[] = array('dir'  => $theme,
                       'name' => $info['name']);
   }
-  /**
-   * Sort languages and themes by name
-   */
+  // Sort languages and themes by name
   Util::array_qsort($languages, 'name');
   Util::array_qsort($themes,    'name');
   

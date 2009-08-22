@@ -10,9 +10,7 @@ class CountsReader extends SBReader
   {
     $db     = Env::get('db');
     
-    /**
-     * Fetch counts
-     */
+    // Fetch counts
     $counts = $db->GetRow('SELECT (SELECT COUNT(id)     FROM ' . Env::get('prefix') . '_admins)                         AS admins,
                                   (SELECT COUNT(id)     FROM ' . Env::get('prefix') . '_bans)                           AS bans,
                                   (SELECT COUNT(ban_id) FROM ' . Env::get('prefix') . '_blocks)                         AS blocks,

@@ -14,9 +14,7 @@ class CommentsReader extends SBReader
   {
     $db       = Env::get('db');
     
-    /**
-     * Fetch comments
-     */
+    // Fetch comments
 		$comments = $db->GetAssoc('SELECT   co.id, co.admin_id, co.message, co.time, co.edit_time,
                                         (SELECT name FROM ' . Env::get('prefix') . '_admins WHERE id = co.admin_id)      AS admin_name,
                                         (SELECT name FROM ' . Env::get('prefix') . '_admins WHERE id = co.edit_admin_id) AS edit_admin_name

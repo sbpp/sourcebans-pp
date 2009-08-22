@@ -112,7 +112,7 @@ public Action:OnLogAction(Handle:source, Identity:ident, client, target, const S
 	SQL_EscapeString(g_hDatabase, sName,   sEscapedName,    sizeof(sEscapedName));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_actions (name, steam, ip, message, server_id, admin_id, admin_ip, time) \
 																	VALUES      (NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP())",
-																	g_sDatabasePrefix, sEscapedName, sAuth, sIp, sEscapedMessage, g_iServerId, g_sDatabasePrefix, iAdminId, sAdminIp);
+																	g_sDatabasePrefix, sEscapedName, sAuth, sIp, sEscapedMessage, g_iServerId, iAdminId, sAdminIp);
 	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
 	return Plugin_Handled;
 }
@@ -195,10 +195,8 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
-	new iClient   = ReadPackCell(pack),
-			iSequence = ReadPackCell(pack);
-	
 	// Check if this is the latest result request.
+	new iClient = ReadPackCell(pack), iSequence = ReadPackCell(pack);
 	if(g_iPlayerSeq[iClient] != iSequence)
 	{
 		// Discard everything, since we're out of sequence.
@@ -207,7 +205,7 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	}
 	
 	// If we need to use the results, make sure they succeeded.
-	if(!hndl)
+	if(error[0])
 	{
 		decl String:sQuery[256];
 		ReadPackString(pack, sQuery, sizeof(sQuery));
@@ -320,19 +318,16 @@ public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 {
 	ResetPack(pack);
 	
-	new iClient   = ReadPackCell(pack),
-			iSequence = ReadPackCell(pack);
-	
 	// Make sure it's the same client.
+	new iClient = ReadPackCell(pack), iSequence = ReadPackCell(pack);
 	if(g_iPlayerSeq[iClient] != iSequence)
 	{
 		CloseHandle(pack);
 		return;
 	}
 	
-	new AdminId:iAdmin = AdminId:ReadPackCell(pack);
-	
 	// Someone could have sneakily changed the admin id while we waited.
+	new AdminId:iAdmin = AdminId:ReadPackCell(pack);
 	if(GetUserAdmin(iClient) != iAdmin)
 	{
 		NotifyPostAdminCheck(iClient);
@@ -341,7 +336,7 @@ public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	}
 	
 	// See if we got results.
-	if(!hndl)
+	if(error[0])
 	{
 		decl String:sQuery[256];
 		ReadPackString(pack, sQuery, sizeof(sQuery));
@@ -386,7 +381,7 @@ public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:pack
 	}
 	
 	// If we need to use the results, make sure they succeeded.
-	if(!hndl)
+	if(error[0])
 	{
 		decl String:sQuery[256];
 		ReadPackString(pack, sQuery, sizeof(sQuery));
@@ -455,7 +450,7 @@ public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], 
 	}
 	
 	// If we need to use the results, make sure they succeeded.
-	if(!hndl)
+	if(error[0])
 	{
 		decl String:sQuery[384];
 		ReadPackString(pack, sQuery, sizeof(sQuery));		
@@ -522,7 +517,7 @@ public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], a
 	}
 	
 	// If we need to use the results, make sure they succeeded.
-	if(!hndl)
+	if(error[0])
 	{
 		decl String:sQuery[384];
 		ReadPackString(pack, sQuery, sizeof(sQuery));		
@@ -571,7 +566,7 @@ public OnReceiveOverrides(Handle:owner, Handle:hndl, const String:error[], any:p
 	}
 	
 	// If we need to use the results, make sure they succeeded.
-	if(!hndl)
+	if(error[0])
 	{
 		decl String:sQuery[256];
 		ReadPackString(pack, sQuery, sizeof(sQuery));
@@ -689,6 +684,10 @@ stock SB_FetchGroups(iSequence)
 	WritePackCell(hPack,   iSequence);
 	WritePackString(hPack, sQuery);
 	
+	#if defined _DEBUG
+	PrintToServer("Sending groups query: %s", sQuery);
+	#endif
+	
 	SQL_TQuery(g_hDatabase, OnReceiveGroups, sQuery, hPack, DBPrio_High);
 }
 
@@ -702,6 +701,10 @@ stock SB_FetchOverrides(iSequence)
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iSequence);
 	WritePackString(hPack, sQuery);
+	
+	#if defined _DEBUG
+	PrintToServer("Sending overrides query: %s", sQuery);
+	#endif
 	
 	SQL_TQuery(g_hDatabase, OnReceiveOverrides, sQuery, hPack, DBPrio_High);
 }

@@ -19,9 +19,7 @@ class ServerQueryReader extends SBReader
   {
     $server_query = new CServerQuery($this->ip, $this->port);
     
-    /**
-     * Fetch server info, players or rules
-     */
+    // Fetch server info, players or rules
     switch($this->type)
     {
       case SERVER_INFO:

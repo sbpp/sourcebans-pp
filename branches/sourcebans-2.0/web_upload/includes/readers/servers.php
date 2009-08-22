@@ -13,9 +13,7 @@ class ServersReader extends SBReader
   {
     $db      = Env::get('db');
     
-    /**
-     * Fetch servers
-     */
+    // Fetch servers
     $servers = $db->GetAssoc('SELECT    se.id, se.ip, se.port, se.rcon, se.mod_id, se.enabled, mo.name AS mod_name, mo.folder AS mod_folder, mo.icon AS mod_icon,
                                         GROUP_CONCAT(DISTINCT sg.group_id ORDER BY sg.group_id) AS groups
                               FROM      ' . Env::get('prefix') . '_servers           AS se
@@ -23,9 +21,7 @@ class ServersReader extends SBReader
                               LEFT JOIN ' . Env::get('prefix') . '_mods              AS mo ON mo.id        = se.mod_id
                               GROUP BY  id');
     
-    /**
-     * Parse server groups and fetch server info, players and rules
-     */
+    // Parse server groups and fetch server info, players and rules
     foreach($servers as &$server)
     {
       $server_query_reader       = new ServerQueryReader();

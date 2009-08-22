@@ -71,9 +71,7 @@ try
   $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
   $logs          = $logs_reader->executeCached(ONE_MINUTE   * 5);
   
-  /**
-   * Parse languages
-   */
+  // Parse languages
   foreach(glob(LANGUAGES_DIR . '*.lang') as $language)
   {
     $code                          = pathinfo(LANGUAGES_DIR . $language, PATHINFO_FILENAME);
@@ -84,9 +82,7 @@ try
     $languages[]                   = array('code' => $code,
                                            'name' => $translations['info']['name']);
   }
-  /**
-   * Parse themes
-   */
+  // Parse themes
   foreach(scandir(THEMES_DIR) as $theme)
   {
     $file = THEMES_DIR . $theme . '/theme.info';
@@ -105,9 +101,7 @@ try
     $theme_name    = $info['name'];
     $theme_version = $info['version'];
   }
-  /**
-   * Sort languages and themes by name
-   */
+  // Sort languages and themes by name
   Util::array_qsort($languages, 'name');
   Util::array_qsort($themes,    'name');
   

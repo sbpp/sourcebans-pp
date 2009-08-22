@@ -40,9 +40,10 @@ enum ConfigState
 }
 
 new ConfigState:g_iConfigState;
-new g_iConnectLock   = 0;
-new g_iSequence      = 0;
+new g_iConnectLock    = 0;
+new g_iSequence       = 0;
 new g_iServerPort;
+new bool:g_bConnected = false;
 new Handle:g_hConfigParser;
 new Handle:g_hDatabase;
 new Handle:g_hBanReasons;
@@ -63,7 +64,7 @@ new String:g_sServerIp[16];
  */
 public OnPluginStart()
 {
-	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sb_version", SB_VERSION, "Advanced admin and ban management for the Source engine", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	RegAdminCmd("sb_reload", Command_Reload, ADMFLAG_RCON, "Reload SourceBans config and ban reason menu options");
 	
 	LoadTranslations("common.phrases");
@@ -102,17 +103,8 @@ public OnMapStart()
 	SB_Reload();
 	
 	// Connect to database
-	SB_Connect();
-}
-
-public OnMapEnd()
-{
-	// Clean up on map end just so we can start a fresh connection when we need it later.
-	if(g_hDatabase)
-	{
-		CloseHandle(g_hDatabase);
-		g_hDatabase = INVALID_HANDLE;
-	}
+	if(!g_bConnected)
+		SB_Connect();
 }
 
 public OnLibraryAdded(const String:name[])
@@ -288,6 +280,7 @@ public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 	}
 	
 	g_iConnectLock = 0;
+	g_bConnected   = true;
 	g_hDatabase    = hndl;
 	
 	// See if the connection is valid.  If not, don't un-mark the caches

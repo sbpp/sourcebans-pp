@@ -12,15 +12,11 @@ class TranslationsReader extends SBReader
   {
     $db           = Env::get('db');
     
-    /**
-     * If specified language does not exist, fall back to English
-     */
+    // If specified language does not exist, fall back to English
     if(!file_exists(LANGUAGES_DIR . $this->language . '.lang'))
       $this->language = 'en';
     
-    /**
-     * Fetch translations
-     */
+    // Fetch translations
     $translations = Util::parse_ini_file(LANGUAGES_DIR . $this->language . '.lang');
     
     SBPlugins::call('OnGetTranslations', &$translations, $this->language);

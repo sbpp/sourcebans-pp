@@ -16,9 +16,7 @@ class SubmissionsReader extends SBReader
     $config      = Env::get('config');
     $db          = Env::get('db');
     
-    /**
-     * Fetch submissions
-     */
+    // Fetch submissions
     $submissions = $db->GetAssoc('SELECT    id, name, steam, ip, reason, server_id, subname, subemail, subip, time
                                   FROM      ' . Env::get('prefix') . '_submissions
                                   WHERE     archived = ?
@@ -26,14 +24,10 @@ class SubmissionsReader extends SBReader
                                   ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                   array($this->archive ? 1 : 0));
     
-    /**
-     * Process submissions
-     */
+    // Process submissions
     foreach($submissions as $id => &$submission)
     {
-      /**
-       * Fetch comments for this submission
-       */
+      // Fetch comments for this submission
       $comments_reader        = new CommentsReader();
       $comments_reader->bid   = $id;
       $comments_reader->type  = SUBMISSION_COMMENTS;

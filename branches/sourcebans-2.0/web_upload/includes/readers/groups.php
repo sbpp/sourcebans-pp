@@ -13,9 +13,7 @@ class GroupsReader extends SBReader
   {
     $db = Env::get('db');
     
-    /**
-     * Fetch groups, depending on type
-     */
+    // Fetch groups, depending on type
     switch($this->type)
     {
       case SERVER_GROUPS:
@@ -25,9 +23,7 @@ class GroupsReader extends SBReader
                                  GROUP BY  ag.group_id
                                  ORDER BY  ' . $this->sort);
         
-        /**
-         * Fetch group overrides
-         */
+        // Fetch group overrides
         foreach($groups as $id => &$group)
           $group['overrides'] = $db->GetAll('SELECT type, name, access
                                              FROM   ' . Env::get('prefix') . '_srvgroups_overrides
@@ -44,9 +40,7 @@ class GroupsReader extends SBReader
                                  GROUP BY  id
                                  ORDER BY  ' . $this->sort);
         
-        /**
-         * Parse group flags
-         */
+        // Parse group flags
         foreach($groups as &$group)
           $group['flags'] = explode(',', $group['flags']);
         

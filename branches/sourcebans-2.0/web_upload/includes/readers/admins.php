@@ -20,9 +20,7 @@ class AdminsReader extends SBReader
     if($this->server_id > 0)
       $where = 'gs.server_id = ' . $this->server_id;
     
-    /**
-     * Fetch admins
-     */
+    // Fetch admins
     $admins = $db->GetAssoc('SELECT    ad.id, ad.name, ad.auth, ad.identity, ad.password, ad.group_id, ad.email, ad.language, ad.theme,
                                        ad.srv_password, ad.validate, ad.lastvisit, wg.name AS web_group, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS web_flags,
                                        GROUP_CONCAT(DISTINCT sg.id ORDER BY sg.id) AS srv_groups, GROUP_CONCAT(DISTINCT sg.flags SEPARATOR "") AS srv_flags, IFNULL(MAX(sg.immunity), 0) AS srv_immunity,
@@ -40,21 +38,15 @@ class AdminsReader extends SBReader
                              ORDER BY  ' . $this->sort        .
                              ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    /**
-     * Process admins
-     */
+    // Process admins
     foreach($admins as &$admin)
     {
-      /**
-       * Remove duplicate server flags
-       */
+      // Remove duplicate server flags
       $srv_flags           = str_split($admin['srv_flags']);
       sort($srv_flags);
       $admin['srv_flags']  = preg_replace('/(.)\1+/i', '$1', implode($srv_flags));
       
-      /**
-       * Split up server admin groups and web admin flags
-       */
+      // Split up server admin groups and web admin flags
       $admin['srv_groups'] = empty($admin['srv_groups']) ? array() : explode(',', $admin['srv_groups']);
       $admin['web_flags']  = empty($admin['web_flags'])  ? array() : explode(',', $admin['web_flags']);
     }

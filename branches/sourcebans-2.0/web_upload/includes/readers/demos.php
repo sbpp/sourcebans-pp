@@ -13,9 +13,7 @@ class DemosReader extends SBReader
   {
     $db   = Env::get('db');
     
-    /**
-     * Fetch demo
-     */
+    // Fetch demo
     $demo = $db->GetAssoc('SELECT filename
                            FROM   ' . Env::get('prefix') . '_demos
                            WHERE  ban_id = ?
