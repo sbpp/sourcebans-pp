@@ -4,13 +4,15 @@
  *
  * @author InterWave Studios
  * @version 2.0.0
- * @copyright SourceBans (C)2009 InterWaveStudios.com.  All rights reserved.
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
  * @version $Id: sourcebans.sp 178 2008-12-01 15:10:00Z tsunami $
  * =============================================================================
  */
+
+#pragma semicolon 1
 
 #include <sourcemod>
 #include <sourcebans>

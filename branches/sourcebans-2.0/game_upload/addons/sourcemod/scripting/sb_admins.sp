@@ -4,13 +4,15 @@
  *
  * @author InterWave Studios
  * @version 2.0.0
- * @copyright SourceBans (C)2009 InterWaveStudios.com.  All rights reserved.
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
  * @version $Id: sourcebans.sp 178 2008-12-01 15:10:00Z tsunami $
  * =============================================================================
  */
+
+#pragma semicolon 1
 
 #include <sourcemod>
 #include <sourcebans>
@@ -46,6 +48,12 @@ new String:g_sServerIp[16];
  */
 public OnPluginStart()
 {
+	RegAdminCmd("sb_addadmin",       Command_AddAdmin,       ADMFLAG_ROOT, "Adds an admin to SourceBans");
+	RegAdminCmd("sb_deladmin",       Command_DelAdmin,       ADMFLAG_ROOT, "Removes an admin from SourceBans");
+	RegAdminCmd("sb_addgroup",       Command_AddGroup,       ADMFLAG_ROOT, "Adds a group to SourceBans");
+	RegAdminCmd("sb_delgroup",       Command_DelGroup,       ADMFLAG_ROOT, "Removes a group from SourceBans");
+	RegAdminCmd("sb_setadmingroups", Command_SetAdminGroups, ADMFLAG_ROOT, "Sets an admin's groups in SourceBans");
+	
 	LoadTranslations("common.phrases");
 	LoadTranslations("sourcebans.phrases");
 	LoadTranslations("sqladmins.phrases");
@@ -189,9 +197,454 @@ public SB_OnReload()
 
 
 /**
+ * Commands
+ */
+public Action:Command_AddAdmin(client, args)
+{
+	if(args < 4)
+	{
+		ReplyToCommand(client, "%sUsage: sb_addadmin <name> <authtype> <identity> <flags> [immunity] [password]", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	if(!g_hDatabase)
+	{
+		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	decl String:sFlags[33], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
+	GetCmdArg(1, sName,     sizeof(sName));
+	GetCmdArg(2, sType,     sizeof(sType));
+	GetCmdArg(3, sIdentity, sizeof(sIdentity));
+	GetCmdArg(4, sFlags,    sizeof(sFlags));
+	
+	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
+	{
+		ReplyToCommand(client, "%s%t", "Invalid authtype", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	new iImmunity;
+	if(args >= 5)
+	{
+		decl String:sArg[32];
+		GetCmdArg(5, sArg, sizeof(sArg));
+		if(!StringToIntEx(sArg, iImmunity))
+		{
+			ReplyToCommand(client, "%s%t", "Invalid immunity", SB_PREFIX);
+			return Plugin_Handled;
+		}
+	}
+	if(args >= 6)
+		GetCmdArg(6, sPassword, sizeof(sPassword));
+	else
+		sPassword[0] = '\0';
+	
+	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack,   client);
+	WritePackString(hPack, sName);
+	WritePackString(hPack, sType);
+	WritePackString(hPack, sIdentity);
+	WritePackString(hPack, sFlags);
+	WritePackCell(hPack,   iImmunity);
+	WritePackString(hPack, sPassword);
+	
+	decl String:sEscapedIdentity[129], String:sQuery[128];
+	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
+	Format(sQuery, sizeof(sQuery), "SELECT 1 \
+																	FROM   %s_admins \
+																	WHERE  auth     = '%s' \
+																		AND  identity = '%s'",
+																	g_sDatabasePrefix, sType, sEscapedIdentity);
+	SQL_TQuery(g_hDatabase, Query_AddAdmin, sQuery, hPack);
+	return Plugin_Handled;
+}
+
+public Action:Command_DelAdmin(client, args)
+{
+	if(args < 2)
+	{
+		ReplyToCommand(client, "%sUsage: sb_deladmin <authtype> <identity>", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	if(!g_hDatabase)
+	{
+		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	decl String:sIdentity[65], String:sType[16];
+	GetCmdArg(1, sType, sizeof(sType));
+	GetCmdArg(2, sIdentity, sizeof(sIdentity));
+	
+	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
+	{
+		ReplyToCommand(client, "%s%t", "Invalid authtype", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack,   client);
+	WritePackString(hPack, sType);
+	WritePackString(hPack, sIdentity);
+	
+	decl String:sEscapedIdentity[129], String:sQuery[256];
+	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
+	Format(sQuery, sizeof(sQuery), "SELECT id \
+																	FROM   %s_admins \
+																	WHERE  auth     = '%s' \
+																		AND  identity = '%s'",
+																	g_sDatabasePrefix, sType, sEscapedIdentity);
+	SQL_TQuery(g_hDatabase, Query_DelAdmin, sQuery, hPack);
+	return Plugin_Handled;
+}
+
+public Action:Command_AddGroup(client, args)
+{
+	if(args < 2)
+	{
+		ReplyToCommand(client, "%sUsage: sb_addgroup <name> <flags> [immunity]", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	if(!g_hDatabase)
+	{
+		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	decl String:sFlags[33], String:sName[MAX_NAME_LENGTH + 1];
+	GetCmdArg(1, sName,  sizeof(sName));
+	GetCmdArg(2, sFlags, sizeof(sFlags));
+	
+	new iImmunity;
+	if(args >= 3)
+	{
+		decl String:sArg[32];
+		GetCmdArg(3, sArg, sizeof(sArg));
+		if(!StringToIntEx(sArg, iImmunity))
+		{
+			ReplyToCommand(client, "%s%t", "Invalid immunity", SB_PREFIX);
+			return Plugin_Handled;
+		}
+	}
+	
+	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack,   client);
+	WritePackString(hPack, sName);
+	WritePackString(hPack, sFlags);
+	WritePackCell(hPack,   iImmunity);
+	
+	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
+	SQL_EscapeString(g_hDatabase, sName, sEscapedName, sizeof(sEscapedName));
+	Format(sQuery, sizeof(sQuery), "SELECT 1 \
+																	FROM   %s_srvgroups \
+																	WHERE  name = '%s'",
+																	g_sDatabasePrefix, sEscapedName);
+	SQL_TQuery(g_hDatabase, Query_AddGroup, sQuery, hPack);
+	return Plugin_Handled;
+}
+
+public Action:Command_DelGroup(client, args)
+{
+	if(args < 1)
+	{
+		ReplyToCommand(client, "%sUsage: sb_delgroup <name>", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	if(!g_hDatabase)
+	{
+		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	decl String:sName[MAX_NAME_LENGTH + 1];
+	new iStart = 0;
+	GetCmdArgString(sName, sizeof(sName));
+	
+	// Strip quotes in case the user tries to use them
+	if(sName[strlen(sName) - 1] == '"')
+	{
+		sName[strlen(sName) - 1] = '\0';
+		iStart = 1;
+	}
+	
+	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack, client);
+	
+	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
+	SQL_EscapeString(g_hDatabase, sName[iStart], sEscapedName, sizeof(sEscapedName));
+	Format(sQuery, sizeof(sQuery), "SELECT id \
+																	FROM   %s_srvgroups \
+																	WHERE  name = '%s'",
+																	g_sDatabasePrefix, sEscapedName);
+	SQL_TQuery(g_hDatabase, Query_DelGroup, sQuery, hPack);
+	return Plugin_Handled;
+}
+
+public Action:Command_SetAdminGroups(client, args)
+{
+	if(args < 2)
+	{
+		ReplyToCommand(client, "%sUsage: sb_setadmingroups <authtype> <identity> [group1] ... [group N]", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	if(!g_hDatabase)
+	{
+		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	decl String:sIdentity[65], String:sType[16];
+	GetCmdArg(1, sType, sizeof(sType));
+	GetCmdArg(2, sIdentity, sizeof(sIdentity));
+	
+	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
+	{
+		ReplyToCommand(client, "%s%t", "Invalid authtype", SB_PREFIX);
+		return Plugin_Handled;
+	}
+	
+	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack, client);
+	// Store amount of passed groups
+	WritePackCell(hPack, args - 2);
+	
+	// Get group names from command argument string
+	decl String:sName[65];
+	for(new i = 3; i <= args; i++)
+	{
+		GetCmdArg(i, sName, sizeof(sName));
+		WritePackString(hPack, sName);
+	}
+	
+	decl String:sEscapedIdentity[129], String:sQuery[256];
+	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
+	Format(sQuery, sizeof(sQuery), "SELECT id \
+																	FROM   %s_admins \
+																	WHERE  auth     = '%s' \
+																		AND  identity = '%s'",
+																	g_sDatabasePrefix, sType, sEscapedIdentity);
+	SQL_TQuery(g_hDatabase, Query_SetAdminGroups, sQuery, hPack);
+	return Plugin_Handled;
+}
+
+
+/**
  * Query Callbacks
  */
-public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
+public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	
+	new iAdmin = ReadPackCell(pack);
+	
+	if(error[0])
+	{
+		LogError("Failed to retrieve the admin from the database: %s", error);
+		
+		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		return;
+	}
+	if(SQL_GetRowCount(hndl))
+	{
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin already exists");
+		return;
+	}
+	
+	decl String:sFlags[33], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
+	ReadPackString(pack, sName,     sizeof(sName));
+	ReadPackString(pack, sType,     sizeof(sType));
+	ReadPackString(pack, sIdentity, sizeof(sIdentity));
+	ReadPackString(pack, sFlags,    sizeof(sFlags));
+	new iImmunity = ReadPackCell(pack);
+	ReadPackString(pack, sPassword, sizeof(sPassword));
+	
+	decl String:sEscapedFlags[65], String:sEscapedIdentity[129], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedPassword[129], String:sQuery[256];
+	SQL_EscapeString(g_hDatabase, sFlags,    sEscapedFlags,    sizeof(sEscapedFlags));
+	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
+	SQL_EscapeString(g_hDatabase, sName,     sEscapedName,     sizeof(sEscapedName));
+	SQL_EscapeString(g_hDatabase, sPassword, sEscapedPassword, sizeof(sEscapedPassword));
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_admins (name, auth, identity, password, srv_flags, immunity) \
+																	VALUES ('%s', '%s', '%s', '%s', '%s', %i)",
+																	g_sDatabasePrefix, sEscapedName, sType, sEscapedIdentity, sEscapedPassword, sEscapedFlags, iImmunity);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery, pack);
+	
+	ReplyToCommand(iAdmin, "%s%t", "SQL Admin added", SB_PREFIX);
+}
+
+public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	
+	new iAdmin = ReadPackCell(pack);
+	
+	if(error[0])
+	{
+		LogError("Failed to retrieve the admin from the database: %s", error);
+		
+		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		return;
+	}
+	if(!SQL_FetchRow(hndl))
+	{
+		ReplyToCommand(iAdmin, "%s%t", "SQL Admin not found", SB_PREFIX);
+		return;
+	}
+	
+	decl String:sQuery[64];
+	new iAdminId = SQL_FetchInt(hndl, 0);
+	
+	// Delete group bindings
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_admins_srvgroups \
+																	WHERE       admin_id = %i",
+																	g_sDatabasePrefix, iAdminId);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_admins \
+																	WHERE       id = %i",
+																	g_sDatabasePrefix, iAdminId);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	ReplyToCommand(iAdmin, "%s%t", "SQL Admin deleted", SB_PREFIX);
+}
+
+public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	
+	decl String:sFlags[33], String:sName[MAX_NAME_LENGTH + 1];
+	new iAdmin    = ReadPackCell(pack);
+	ReadPackString(pack, sName,     sizeof(sName));
+	ReadPackString(pack, sFlags,    sizeof(sFlags));
+	new iImmunity = ReadPackCell(pack);
+	
+	if(error[0])
+	{
+		LogError("Failed to retrieve the group from the database: %s", error);
+		
+		ReplyToCommand(iAdmin, "%sFailed to retrieve the group.", SB_PREFIX);
+		return;
+	}
+	if(SQL_GetRowCount(hndl))
+	{
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group already exists");
+		return;
+	}
+	
+	decl String:sEscapedFlags[65], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
+	SQL_EscapeString(g_hDatabase, sFlags, sEscapedFlags, sizeof(sEscapedFlags));
+	SQL_EscapeString(g_hDatabase, sFlags, sEscapedName,  sizeof(sEscapedName));
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_srvgroups (name, flags, immunity) \
+																	VALUES ('%s', '%s', %i)",
+																	g_sDatabasePrefix, sEscapedName, sEscapedFlags, iImmunity);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group added");
+}
+
+public Query_DelGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	
+	decl String:sQuery[128];
+	new iAdmin = ReadPackCell(pack);
+	
+	if(error[0])
+	{
+		LogError("Failed to retrieve the group from the database: %s", error);
+		
+		ReplyToCommand(iAdmin, "%sFailed to retrieve the group.", SB_PREFIX);
+		return;
+	}
+	if(!SQL_FetchRow(hndl))
+	{
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group not found");
+		return;
+	}
+	
+	new iGroupId = SQL_FetchInt(hndl, 0);
+	
+	// Delete admin inheritance for this group
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_admins_srvgroups \
+																	WHERE       group_id = %i",
+																	g_sDatabasePrefix, iGroupId);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	// Delete group overrides
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_srvgroups_overrides \
+																	WHERE       group_id = %i",
+																	g_sDatabasePrefix, iGroupId);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	// Delete immunity
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_srvgroups_immunity \
+																	WHERE       group_id = %i \
+																		 OR       other_id = %i",
+																	g_sDatabasePrefix, iGroupId, iGroupId);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	// Finally delete the group
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_srvgroups \
+																	WHERE       id = %i",
+																	g_sDatabasePrefix, iGroupId);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group deleted");
+}
+
+public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	
+	new iAdmin = ReadPackCell(pack);
+	
+	if(error[0])
+	{
+		LogError("Failed to retrieve the admin from the database: %s", error);
+		
+		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		return;
+	}
+	if(!SQL_FetchRow(hndl))
+	{
+		ReplyToCommand(iAdmin, "%s%t", "SQL Admin not found", SB_PREFIX);
+		return;
+	}
+	
+	decl String:sQuery[256];
+	new iAdminId = SQL_FetchInt(hndl, 0);
+	
+	// First delete all of the user's existing groups.
+	Format(sQuery, sizeof(sQuery), "DELETE FROM %s_admins_srvgroups \
+																	WHERE       admin_id = %i",
+																	g_sDatabasePrefix, iAdmin);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	
+	new iCount = ReadPackCell(pack);
+	if(!iCount)
+	{
+		ReplyToCommand(iAdmin, "%s%t", "SQL Admin groups reset", SB_PREFIX);
+		return;
+	}
+	
+	decl String:sName[65];
+	new iOrder = 0;
+	while(iOrder < iCount)
+	{
+		ReadPackString(pack, sName, sizeof(sName));
+		Format(sQuery, sizeof(sQuery), "INSERT INTO %s_admins_srvgroups (admin_id, group_id, inherit_order) \
+																		VALUES      (%i, (SELECT id FROM %s_srvgroups WHERE name = '%s'), %i)",
+																		g_sDatabasePrefix, iAdminId, g_sDatabasePrefix, sName, ++iOrder);
+		SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
+	}
+	
+	if(iOrder     == 1)
+		ReplyToCommand(iAdmin, "%s%t", "Added group to user",  SB_PREFIX);
+	else if(iOrder > 1)
+		ReplyToCommand(iAdmin, "%s%t", "Added groups to user", SB_PREFIX, iOrder);
+}
+
+public Query_SelectAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
@@ -311,10 +764,10 @@ public OnReceiveAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	WritePackCell(pack,   _:iAdmin);
 	WritePackString(pack, sQuery);
 	
-	SQL_TQuery(owner, OnReceiveAdminGroups, sQuery, pack, DBPrio_High);
+	SQL_TQuery(owner, Query_SelectAdminGroups, sQuery, pack, DBPrio_High);
 }
 
-public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
+public Query_SelectAdminGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
@@ -367,7 +820,7 @@ public OnReceiveAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	CloseHandle(pack);
 }
 
-public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
+public Query_SelectGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
@@ -433,10 +886,10 @@ public OnReceiveGroups(Handle:owner, Handle:hndl, const String:error[], any:pack
 	WritePackCell(pack,   iSequence);
 	WritePackString(pack, sQuery);
 	
-	SQL_TQuery(owner, OnReceiveGroupOverrides, sQuery, pack, DBPrio_High);
+	SQL_TQuery(owner, Query_SelectGroupOverrides, sQuery, pack, DBPrio_High);
 }
 
-public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], any:pack)
+public Query_SelectGroupOverrides(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
@@ -500,10 +953,10 @@ public OnReceiveGroupOverrides(Handle:owner, Handle:hndl, const String:error[], 
 	WritePackCell(pack,   iSequence);
 	WritePackString(pack, sQuery);
 	
-	SQL_TQuery(owner, OnReceiveGroupImmunity, sQuery, pack, DBPrio_High);
+	SQL_TQuery(owner, Query_SelectGroupImmunity, sQuery, pack, DBPrio_High);
 }
 
-public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], any:pack)
+public Query_SelectGroupImmunity(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
@@ -532,8 +985,7 @@ public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], a
 	
 	while(SQL_FetchRow(hndl))
 	{
-		decl String:sGroup1[33];
-		decl String:sGroup2[33];
+		decl String:sGroup1[33], String:sGroup2[33];
 		new GroupId:iGroup1, GroupId:iGroup2;
 		
 		SQL_FetchString(hndl, 0, sGroup1, sizeof(sGroup1));
@@ -552,7 +1004,7 @@ public OnReceiveGroupImmunity(Handle:owner, Handle:hndl, const String:error[], a
 	g_iRebuildCachePart[_:AdminCache_Groups] = 0;
 }
 
-public OnReceiveOverrides(Handle:owner, Handle:hndl, const String:error[], any:pack)
+public Query_SelectOverrides(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
@@ -622,7 +1074,7 @@ public Native_GetAdminId(Handle:plugin, numParams)
  */
 stock SB_FetchAdmin(iClient)
 {
-	decl String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[768];
+	decl String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1];
 	// Get authentication information from the client.
 	GetClientName(iClient, sName, sizeof(sName));
 	GetClientIP(iClient,   sIp,   sizeof(sIp));
@@ -632,6 +1084,7 @@ stock SB_FetchAdmin(iClient)
 		sAuth[0] = '\0';
 	
 	// Construct the query using the information the client gave us.
+	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[768];
 	SQL_EscapeString(g_hDatabase, sName, sEscapedName, sizeof(sEscapedName));
 	Format(sQuery, sizeof(sQuery), "SELECT    ad.id, ad.name, ad.auth, ad.identity, ad.srv_password, COUNT(ag.group_id) \
 																	FROM      %s_admins            AS ad \
@@ -656,7 +1109,7 @@ stock SB_FetchAdmin(iClient)
 	PrintToServer("Sending admin query: %s", sQuery);
 	#endif
 	
-	SQL_TQuery(g_hDatabase, OnReceiveAdmin, sQuery, hPack, DBPrio_High);
+	SQL_TQuery(g_hDatabase, Query_SelectAdmin, sQuery, hPack, DBPrio_High);
 }
 
 stock SB_FetchAdmins()
@@ -688,7 +1141,7 @@ stock SB_FetchGroups(iSequence)
 	PrintToServer("Sending groups query: %s", sQuery);
 	#endif
 	
-	SQL_TQuery(g_hDatabase, OnReceiveGroups, sQuery, hPack, DBPrio_High);
+	SQL_TQuery(g_hDatabase, Query_SelectGroups, sQuery, hPack, DBPrio_High);
 }
 
 stock SB_FetchOverrides(iSequence)
@@ -706,5 +1159,5 @@ stock SB_FetchOverrides(iSequence)
 	PrintToServer("Sending overrides query: %s", sQuery);
 	#endif
 	
-	SQL_TQuery(g_hDatabase, OnReceiveOverrides, sQuery, hPack, DBPrio_High);
+	SQL_TQuery(g_hDatabase, Query_SelectOverrides, sQuery, hPack, DBPrio_High);
 }

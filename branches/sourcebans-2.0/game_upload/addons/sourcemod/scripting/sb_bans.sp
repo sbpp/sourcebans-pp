@@ -4,13 +4,15 @@
  *
  * @author InterWave Studios
  * @version 2.0.0
- * @copyright SourceBans (C)2009 InterWaveStudios.com.  All rights reserved.
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
  * @version $Id: sourcebans.sp 178 2008-12-01 15:10:00Z tsunami $
  * =============================================================================
  */
+
+#pragma semicolon 1
 
 #include <sourcemod>
 #include <sourcebans>
@@ -208,34 +210,43 @@ public OnClientDisconnect(client)
  */
 public Action:OnBanClient(client, time, flags, const String:reason[], const String:kick_message[], const String:command[], any:admin)
 {
-	decl String:sAdminIp[16], String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1];
-	new iAdminId = GetAdminId(admin);
-	GetClientAuthString(client, sAuth, sizeof(sAuth));
-	GetClientIP(client,         sIp,   sizeof(sIp));
-	GetClientName(client,       sName, sizeof(sName));
+	decl iType, String:sAdminIp[16], String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1];
+	new iAdminId    = GetAdminId(admin),
+			bool:bSteam = GetClientAuthString(client, sAuth, sizeof(sAuth));
+	GetClientIP(client,   sIp,   sizeof(sIp));
+	GetClientName(client, sName, sizeof(sName));
 	
-	if(!admin)
-		sAdminIp = g_sServerIp;
+	// Set type depending on passed flags
+	if(flags      & BANFLAG_AUTHID || ((flags & BANFLAG_AUTO) && bSteam))
+		iType = STEAM_BAN_TYPE;
+	else if(flags & BANFLAG_IP)
+		iType = IP_BAN_TYPE;
+	// If no valid flag was passed, block banning
 	else
+		return Plugin_Handled;
+	
+	if(admin)
 		GetClientIP(admin, sAdminIp, sizeof(sAdminIp));
+	else
+		sAdminIp = g_sServerIp;
 	if(!g_hDatabase)
 	{
-		InsertLocalBan(DEFAULT_BAN_TYPE, sAuth, sIp, sName, GetTime(), time, reason, iAdminId, sAdminIp, true);
+		InsertLocalBan(iType, sAuth, sIp, sName, GetTime(), time, reason, iAdminId, sAdminIp, true);
 		return Plugin_Handled;
 	}
-	if(!time)
-	{
-		if(reason[0])
-			ShowActivity2(admin, SB_PREFIX, "%t", "Permabanned player reason", sName, reason);
-		else
-			ShowActivity2(admin, SB_PREFIX, "%t", "Permabanned player",        sName);
-	}
-	else
+	if(time)
 	{
 		if(reason[0])
 			ShowActivity2(admin, SB_PREFIX, "%t", "Banned player reason",      sName, time, reason);
 		else
 			ShowActivity2(admin, SB_PREFIX, "%t", "Banned player",             sName, time);
+	}
+	else
+	{
+		if(reason[0])
+			ShowActivity2(admin, SB_PREFIX, "%t", "Permabanned player reason", sName, reason);
+		else
+			ShowActivity2(admin, SB_PREFIX, "%t", "Permabanned player",        sName);
 	}
 	
 	new Handle:hPack = CreateDataPack();
@@ -253,7 +264,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	SQL_EscapeString(g_hDatabase, reason, sEscapedReason, sizeof(sEscapedReason));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, ip, name, created, ends, reason, server_id, admin_id, admin_ip) \
 																	VALUES      (%i, '%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i, '%s', %i, NULLIF(%i, 0), '%s')",
-																	g_sDatabasePrefix, DEFAULT_BAN_TYPE, sAuth, sIp, sEscapedName, time * 60, sEscapedReason, g_iServerId, iAdminId, sAdminIp);
+																	g_sDatabasePrefix, iType, sAuth, sIp, sEscapedName, time * 60, sEscapedReason, g_iServerId, iAdminId, sAdminIp);
 	SQL_TQuery(g_hDatabase, Query_BanInsert, sQuery, hPack, DBPrio_High);
 	
 	LogAction(admin, client, "\"%L\" banned \"%L\" (minutes \"%i\") (reason \"%s\")", admin, client, time, reason);
@@ -266,10 +277,10 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 	new iAdminId    = GetAdminId(admin),
 			bool:bSteam = strncmp(identity, "STEAM_", 6) == 0;
 	
-	if(!admin)
-		sAdminIp = g_sServerIp;
-	else
+	if(admin)
 		GetClientIP(admin, sAdminIp, sizeof(sAdminIp));
+	else
+		sAdminIp = g_sServerIp;
 	if(!g_hDatabase)
 	{
 		if(bSteam)
@@ -540,9 +551,11 @@ public Action:Command_Say(client, args)
 	if(!g_bOwnReason[client])
 		return Plugin_Continue;
 	
+	g_bOwnReason[client] = false;
+	
 	decl String:sText[192];
 	new iStart = 0;
-	if (GetCmdArgString(sText, sizeof(sText)) < 1)
+	if(GetCmdArgString(sText, sizeof(sText)) < 1)
 		return Plugin_Continue;
 	
 	if(sText[strlen(sText) - 1] == '"')
