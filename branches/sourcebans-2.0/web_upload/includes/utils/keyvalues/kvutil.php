@@ -22,40 +22,27 @@
  */
 
 /**
- * Final Class: eKVSegType
- * Enumeration for Segment Types
- * @final
- */
-final class eKVSegType
-{
-  const Root = 0;
-  const Teir = 1;
-  const String = 2;
-  const Comment = 3;
-  const Entity = 4;
-  
-  final function __construct()
-  {
-  }
-}
-
-/**
  * Class: KVReader
  * Used to read Valve Config key files for parsing
  * and write new config file based on an associative array
- * @property mixed	$Values		Array of recursive keys, values, and sections in the config
+ * @property mixed  $Values  Array of recursive keys, values, and sections in the config
  */
 class KVReader
 {
   public $Values = array();
   private $fs;
   private $file;
+  const SEG_ROOT = 0;
+  const SEG_TEIR = 1;
+  const SEG_STRING = 2;
+  const SEG_COMMENT = 3;
+  const SEG_ENTITY = 4;
 
   /**
    * Function: __construct
    * Constructor for KVReader to initilaize and/or read Valve Config Keys
-   * @param String	$iFile	File to read and/or write to
-   * @param Bool		$iNoErr	Ignore Exception error on reading file in case file doesn't exist (default = false)
+   * @param String   $iFile    File to read and/or write to
+   * @param Bool     $iNoErr   Ignore Exception error on reading file in case file doesn't exist (default = false)
    * @return void
    */
   public function __construct($iFile, $iNoErr = false)
@@ -83,7 +70,7 @@ class KVReader
       fclose($this->fs);
     }
   }
-  
+
   /**
    * function: saveConfig
    * @return Bool	True if sucessful, false if failed
@@ -108,50 +95,53 @@ class KVReader
   /**
    * Private function: WriteSegment
    * Used to recusivly take the array values and export to the file stream
-   * @param Array		$iArray		Array to process, if array contains sub arrarys, it will call itself
-   * @param Int		$iTeirNum	Teir number to indicate indentation from the root. Start at 0
-   * @return bool		True if sucsessful, false if failed
+   * @param Array   $iArray     Array to process, if array contains sub arrarys, it will call itself
+   * @param Int     $iTeirNum   Teir number to indicate indentation from the root. Start at 0
+   * @return bool               True if sucsessful, false if failed
    */
   private function writeSegment($iArray, $iTeirNum)
   {
     $indent = str_repeat(chr(9), $iTeirNum);
-    
+
     foreach ($iArray as $key => $value)
     {
       if (is_string($value))
       {
         if (defined('KVREADER_DEBUG'))
           echo "Teir:$iTeirNum  Key:$key  Value:$value  <br />";
-        
+
         $data = $indent . '"' . $key . '"' . chr(9) . '"' . $value . "\"\n";
         fwrite($this->fs, $data);
       }
-      
+
       if (is_array($value))
       {
         if (defined('KVREADER_DEBUG'))
           echo "Teir:$iTeirNum  Section:$key  <br />";
-        
-        $data = ($iTeirNum > 0 ? "\n" : "") . $indent . '"' . $key . "\"\n$indent{\n";
+
+        if ($iTeirNum > 0)
+          $key = '"' . $key . '"';
+
+        $data = ($iTeirNum > 0 ? "\n" : "") . $indent . "$key\n$indent{\n";
         fwrite($this->fs, $data);
-        
+
         $this->writeSegment($value, ($iTeirNum + 1));
-        
+
         fwrite($this->fs, $indent . "}\n");
       }
     }
-    
+
     return true;
   }
-  
+
   /**
    * Private function: readSegment
    * Recursivly parses text in the file stream and stores into an associative array
-   * @param Enum:eKVSegType	$iSegType	ENum: eKVSegType, detmines how the segment is processes/parsed
-   * @param String			$iQualifier	Ending character or double character that ends a segment
-   * @return Mixed			Array or String depending on the Segment Type
+   * @param Integer $iSegType    ENum: Segment Type, detmines how the segment is processes/parsed
+   * @param String  $iQualifier  Ending character or double character that ends a segment
+   * @return Mixed               Array or String depending on the Segment Type
    */
-  private function readSegment($iSegType = eKVSegType::Root, $iQualifier = null)
+  private function readSegment($iSegType = self::SEG_ROOT, $iQualifier = null)
   {
     if (!$this->fs)
       return null;
@@ -160,55 +150,50 @@ class KVReader
     $ret = null;
     $segArray = array();
 
-    if ($iSegType == eKVSegType::String)
+    if ($iSegType == self::SEG_STRING)
       $ret = "";
 
     while (!feof($this->fs))
     {
-      if ($iSegType == eKVSegType::Root)
-        $iSegType = eKVSegType::Entity;
+      if ($iSegType == self::SEG_ROOT && empty($segArray))
+        $iSegType = self::SEG_ENTITY;
 
       $last = $byte;
       $byte = fread($this->fs, 1);
 
-      if ($iSegType == eKVSegType::Entity && $byte == "{")
+      if ($iSegType == self::SEG_ENTITY && $byte == "{")
       {
         $segArray[] = $ret;
-        $ret = null;
-        $iSegType = eKVSegType::Root;
+        $iSegType = self::SEG_ROOT;
       }
 
-      if ($iSegType != eKVSegType::Entity && $iSegType != eKVSegType::String && $iSegType != eKVSegType::Comment)
+      if ($iSegType != self::SEG_ENTITY && $iSegType != self::SEG_STRING && $iSegType != self::SEG_COMMENT)
       {
         if ($byte == "{")
         {
-          $ret = $this->readSegment(eKVSegType::Teir, "}");
+          $ret = $this->readSegment(self::SEG_TEIR, "}");
           $segArray[] = $ret;
         }
 
         if ($byte == "/" && $last == "/")
-          $this->readSegment(eKVSegType::Comment, chr(13));
+          $this->readSegment(self::SEG_COMMENT, chr(13));
 
         if ($byte == "*" && $last == "/")
-          $this->readSegment(eKVSegType::Comment, "*/");
+          $this->readSegment(self::SEG_COMMENT, "*/");
 
         if ($byte == '"' || $byte == "'")
         {
-          $ret = $this->readSegment(eKVSegType::String, $byte);
+          $ret = $this->readSegment(self::SEG_STRING, $byte);
           $segArray = array_merge($segArray, array($ret));
         }
       }
 
       if ($byte == $iQualifier || ($last . $byte) == $iQualifier)
       {
-        if ($iSegType == eKVSegType::Teir || $iSegType == eKVSegType::Root)
+        if ($iSegType == self::SEG_TEIR || $iSegType == self::SEG_ROOT)
         {
           $ret = null;
           $keyArray = array();
-
-        echo (ftell($this->fs) . " - KEYS - ");
-        echo (var_dump($segArray) . "<br />");
-
 
           for ($lp = 0; $lp < count($segArray); $lp++)
           {
@@ -229,20 +214,26 @@ class KVReader
         break;
       }
 
-      if ($iSegType == eKVSegType::String || $iSegType == eKVSegType::Entity)
+      if ($iSegType == self::SEG_STRING || $iSegType == self::SEG_ENTITY)
         $ret .= $byte;
     }
 
     if (defined('KVREADER_DEBUG'))
     {
       echo (ftell($this->fs) . " - Type:$iSegType Qual:$iQualifier - ");
-      echo (var_dump($ret) . "<br />");
+
+      if ($iSegType == 0 OR $iSegType == 1)
+        echo var_dump($segArray);
+      else
+        echo var_dump($ret);
+
+      echo "<br />";
     }
 
     switch ($iSegType)
     {
-      case eKVSegType::Teir:
-      case eKVSegType::Root:
+      case self::SEG_TEIR:
+      case self::SEG_ROOT:
         return $segArray;
       default:
         return $ret;
