@@ -4,9 +4,8 @@ require_once '../init.php';
 require_once LIB_DIR   . 'sajax/sajax.php';
 require_once UTILS_DIR . 'sajax.php';
 
-if(isset($_POST['func'])):
-  echo sAJAX::call($_POST['func'], isset($_POST['args']) ? json_decode(stripslashes($_POST['args'])) : null);
-else:
+if(isset($_POST['func']))
+  exit(sAJAX::call($_POST['func'], isset($_POST['args']) ? json_decode(stripslashes($_POST['args'])) : null));
 ?>
 function sajax_call(func, args)
 {
@@ -24,11 +23,6 @@ function sajax_call(func, args)
   }).post({'func': func, 'args': JSON.encode(data)});
 }
 
-<?php
-  foreach(sAJAX::getFunctions() as $func):
-?>
+<?php foreach(sAJAX::getFunctions() as $func): ?>
 function x_<?php echo $func; ?>() { sajax_call('<?php echo $func; ?>', x_<?php echo $func; ?>.arguments); }
-<?php 
-  endforeach;
-endif;
-?>
+<?php endforeach; ?>

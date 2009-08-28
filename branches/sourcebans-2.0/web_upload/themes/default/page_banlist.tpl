@@ -109,7 +109,7 @@
                   <td class="listtable_1 icon"><input name="bans[]" type="checkbox" value="{$ban_id}" /></td>
                   <td class="listtable_1 date">
                     <img alt="{$ban.mod_name|escape}" class="icon" src="images/games/{$ban.mod_icon}" title="{$ban.mod_name|escape}" />
-                    <img alt="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" class="icon" src="images/country/{if empty($ban.country_code)}unknown{else}{$ban.country_code}{/if}.gif" title="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" />
+                    <img alt="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" class="icon" src="images/countries/{if empty($ban.country_code)}unknown{else}{$ban.country_code}{/if}.gif" title="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" />
                   </td>
                   <td class="listtable_1 date">{$ban.created|date_format:$date_format}</td>
                   <td class="listtable_1">

@@ -15,16 +15,26 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'add':
-        BansWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['length'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason']);
-        break;
-      case 'import':
-        BansWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+      switch($_POST['action'])
+      {
+        case 'add':
+          BansWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['length'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason']);
+          break;
+        case 'import':
+          BansWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $counts_reader               = new CountsReader();

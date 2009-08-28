@@ -13,12 +13,19 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    if($_POST['password'] != $_POST['password_confirm'])
-        throw new Exception('The passwords don\'t match.');
-    
-    AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password']);
-    
-    Util::redirect();
+    try
+    {
+      if($_POST['password'] != $_POST['password_confirm'])
+          throw new Exception('The passwords don\'t match.');
+      
+      AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $admins_reader = new AdminsReader();

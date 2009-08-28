@@ -11,7 +11,6 @@
 
 /**
  * This class contains general Utils for SourceBans
- * 
  */
 class Util
 {

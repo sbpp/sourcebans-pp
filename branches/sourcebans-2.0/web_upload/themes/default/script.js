@@ -116,12 +116,12 @@ function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, cl
 
 function UnbanBan(id, name)
 {
-  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning "' + name + '":</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea><br><div id="ureason.msg" class="badentry"></div>');
+  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning "' + name + '":</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea>');
 }
 
 function UnbanBans(ids)
 {
-  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning these players:</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea><br><div id="ureason.msg" class="badentry"></div>');
+  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning these players:</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea>');
 }
 
 
@@ -307,7 +307,7 @@ window.addEvent('domready', function() {
       
       this.set('send', {
         onComplete: function(res) {
-          alert('Loc: ' + this.getHeader('Location'));
+          alert(res);
         }
       }).send();
     });

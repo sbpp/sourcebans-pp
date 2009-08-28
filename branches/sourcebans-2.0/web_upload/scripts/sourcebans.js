@@ -59,6 +59,26 @@ function SlideUp(id)
   });
 }
 
+function SubmitForm(el, cb_complete)
+{
+  new Element('iframe', {
+    'name': 'submit_form',
+    'events': {
+      'load': function() {
+        if(typeof(cb_complete) == 'function')
+          cb_complete(this.get('text'));
+        
+        this.dispose();
+      }
+    },
+    'styles': {
+      'display': 'none'
+    }
+  });
+  
+  $(el).set('target', 'submit_form').submit();
+}
+
 function UpdateCheckBox(objCheckbox)
 {
   // Other Arguments is individual items not available in the range

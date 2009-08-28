@@ -13,29 +13,36 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    // Parse flags and overrides depending on group type
-    switch($_POST['type'])
+    try
     {
-      case SERVER_GROUPS:
-        // If flag array contains root flag, only pass root flag, otherwise create flag string
-        $flags     = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
-        $overrides = array();
-        
-        foreach($_POST['override_name'] as $id => $name)
-          $overrides[] = array('name'   => $name,
-                               'access' => $_POST['override_access'][$id],
-                               'type'   => $_POST['override_type'][$id]);
-        
-        break;
-      case WEB_GROUPS:
-        // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
-        $flags     = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
-        $overrides = null;
+      // Parse flags and overrides depending on group type
+      switch($_POST['type'])
+      {
+        case SERVER_GROUPS:
+          // If flag array contains root flag, only pass root flag, otherwise create flag string
+          $flags     = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
+          $overrides = array();
+          
+          foreach($_POST['override_name'] as $id => $name)
+            $overrides[] = array('name'   => $name,
+                                 'access' => $_POST['override_access'][$id],
+                                 'type'   => $_POST['override_type'][$id]);
+          
+          break;
+        case WEB_GROUPS:
+          // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
+          $flags     = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
+          $overrides = null;
+      }
+      
+      GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
     }
-    
-    GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   if(!isset($_GET['type']) || !in_array($_GET['type'], array(SERVER_GROUPS, WEB_GROUPS)))

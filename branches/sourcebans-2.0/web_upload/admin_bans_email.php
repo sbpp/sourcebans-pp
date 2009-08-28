@@ -10,9 +10,16 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    Util::mail($_POST['email'], 'noreply@' . $_SERVER['HTTP_HOST'], $_POST['subject'], $_POST['message']);
-    
-    Util::redirect();
+    try
+    {
+      Util::mail($_POST['email'], 'noreply@' . $_SERVER['HTTP_HOST'], $_POST['subject'], $_POST['message']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $page->display('page_admin_bans_email');

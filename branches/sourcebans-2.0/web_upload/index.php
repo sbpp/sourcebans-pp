@@ -4,14 +4,6 @@ require_once WRITERS_DIR . 'bans.php';
 
 $config = Env::get('config');
 
-if($_SERVER['REQUEST_METHOD'] == 'POST')
-{
-  if(isset($_POST['id'], $_POST['ureason']))
-  {
-    BansWriter::unban($_POST['id'], $_POST['ureason']);
-  }
-}
-
 switch($config['config.defaultpage'])
 {
   case 1:

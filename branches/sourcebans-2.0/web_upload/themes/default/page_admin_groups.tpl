@@ -295,14 +295,12 @@
                 <h3>{$lang_add_group|ucwords}</h3>
                 <label for="name">{help_icon title="$lang_name" desc="Type the name of the new group you want to create."}{$lang_name}</label>
                 <input class="submit-fields" {nid id="name"} />
-                <div class="badentry" id="name.msg"></div>
                 <label for="type">{help_icon title="$lang_type" desc="This defines the type of group you are about to create. This helps identify and catagorize the groups list."}{$lang_type}</label>
                 <select class="submit-fields group_type_select" {nid id="type"}>
                   <option value="0">Please Select...</option>
                   <option value="{$smarty.const.SERVER_GROUPS}">{$lang_server_group}</option>
                   <option value="{$smarty.const.WEB_GROUPS}">{$lang_web_group}</option>
                 </select>
-                <div class="badentry" id="type.msg"></div>
                 <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.SERVER_GROUPS}" width="90%">
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_name}</td>
@@ -681,7 +679,6 @@
                 <p>{$lang_help_desc}</p>
                 <label for="file">{help_icon title="$lang_file" desc="Select the admin_groups.cfg file to upload and add groups."}{$lang_file}</label>
                 <input class="submit-fields" {nid id="file"} type="file" />
-                <div class="badentry" id="file.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="import" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />

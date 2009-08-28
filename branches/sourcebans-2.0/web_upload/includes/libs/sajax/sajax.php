@@ -3,7 +3,6 @@
   {
     private static $functions = array();
     
-    
     public static function call($func, $args)
     {
       if(!in_array($func, self::$functions))
@@ -12,12 +11,10 @@
       return json_encode(call_user_func_array($func, $args));
     }
     
-    
     public static function getFunctions()
     {
       return self::$functions;
     }
-    
     
     public static function register($func)
     {
@@ -26,6 +23,5 @@
       
       self::$functions[] = $func;
     }
-    
   }
 ?>

@@ -16,7 +16,6 @@
               <p>{$lang_help_desc}</p>
               <label for="name">{help_icon title="$lang_name" desc="Type the name of the new group you want to create."}{$lang_name}</label>
               <input class="submit-fields" {nid id="name"} value="{$group_name}" />
-              <div class="badentry" id="name.msg"></div>
               {if $smarty.get.type == $smarty.const.SERVER_GROUPS}
               <label for="permissions">{help_icon title="$lang_server_permissions" desc="Choose the group's permissions here."}{$lang_server_permissions}</label>
               <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.SERVER_GROUPS}" width="90%">

@@ -12,7 +12,16 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['text']);
+    try
+    {
+      CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['text']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $page->display('page_comments_add');

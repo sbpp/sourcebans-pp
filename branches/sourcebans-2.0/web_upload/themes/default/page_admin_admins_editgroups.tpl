@@ -24,7 +24,6 @@
                 </tr>
                 {/foreach}
               </table>
-              <div class="badentry" id="srv_groups.msg"></div>
               <label for="web_group">{help_icon title="$lang_web_group" desc="Choose the group you want this admin to appear in for web permissions"}{$lang_web_group}</label>
               <select class="submit-fields" {nid id="web_group"}>
                 <option value="-1">{$lang_none}</option>
@@ -34,7 +33,6 @@
                   {/foreach}
                 </optgroup>
               </select>
-              <div class="badentry" id="web_group.msg"></div>
               <div class="center">
                 <input class="btn ok" type="submit" value="{$lang_save}" />
                 <input class="back btn cancel" type="button" value="{$lang_back}" />

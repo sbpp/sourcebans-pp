@@ -135,12 +135,6 @@ select.submit-fields { width: 277px; }
   background-color: #F1E8E6;
 }
 
-.badentry {
-  color: #CC0000;
-  width: 195px;
-  display: none;
-}
-
 /* ================ Popup Boxes ============== */
 #dialog {
   top: 50%;

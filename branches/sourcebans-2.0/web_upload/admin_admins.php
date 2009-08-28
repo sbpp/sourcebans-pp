@@ -20,19 +20,29 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'add':
-        if($_POST['password'] != $_POST['password_confirm'])
-          throw new Exception('Passwords don\'t match');
-        
-        AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
-        break;
-      case 'import':
-        AdminsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+      switch($_POST['action'])
+      {
+        case 'add':
+          if($_POST['password'] != $_POST['password_confirm'])
+            throw new Exception('Passwords don\'t match');
+          
+          AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
+          break;
+        case 'import':
+          AdminsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $actions_reader       = new ActionsReader();

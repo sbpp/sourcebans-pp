@@ -16,19 +16,29 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'add':
-        if($_POST['rcon'] != $_POST['rcon_confirm'])
-            throw new Exception('The passwords don\'t match.');
-        
-        ServersWriter::add($_POST['ip'], $_POST['port'], $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
-        break;
-      case 'import':
-        ServersWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+      switch($_POST['action'])
+      {
+        case 'add':
+          if($_POST['rcon'] != $_POST['rcon_confirm'])
+              throw new Exception('The passwords don\'t match.');
+          
+          ServersWriter::add($_POST['ip'], $_POST['port'], $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
+          break;
+        case 'import':
+          ServersWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $counts_reader       = new CountsReader();

@@ -54,13 +54,10 @@
                 <p>{$lang_help_desc}</p>
                 <label for="name">{help_icon title="$lang_name" desc="Type the name of the mod you are adding."}{$lang_name}</label>
                 <input class="submit-fields" {nid id="name"} />
-                <div class="badentry" id="name.msg"></div>
                 <label for="folder">{help_icon title="$lang_folder" desc="Type the folder of this mod. For example, Counter-Strike: Source's folder is 'cstrike'"}{$lang_folder}</label>
                 <input class="submit-fields" {nid id="folder"} />
-                <div class="badentry" id="folder.msg"></div>
                 <label for="icon">{help_icon title="$lang_icon" desc="Click here to upload an icon to associate with this mod."}{$lang_icon}</label>
                 <input class="submit-fields" {nid id="icon"} type="file" />
-                <div class="badentry" id="icon.msg"></div>
                 <div class="center">
                   <input class="btn ok" type="submit" value="{$lang_save}" />
                   <input class="back btn cancel" type="button" value="{$lang_back}" />

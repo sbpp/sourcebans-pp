@@ -12,7 +12,16 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    ProtestsWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['email']);
+    try
+    {
+      ProtestsWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['email']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $page->display('page_protestban');

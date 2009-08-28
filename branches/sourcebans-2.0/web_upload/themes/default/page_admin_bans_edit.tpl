@@ -16,7 +16,6 @@
               <p>{$lang_help_desc}</p>
               <label for="name">{help_icon title="$lang_name" desc="This is the name of the player that was banned."}{$lang_name}</label>
               <input class="submit-fields" {nid id="name"} value="{$ban_name}" />
-              <div class="badentry" id="name.msg"></div>
               <label for="type">{help_icon title="Ban Type" desc="Choose whether to ban by Steam ID or IP address."}Ban Type</label>
               <select class="submit-fields" {nid id="type"}>
                 <option value="{$smarty.const.STEAM_BAN_TYPE}">Steam ID</option>
@@ -24,10 +23,8 @@
               </select>
               <label for="steam">{help_icon title="Steam ID" desc="This is the Steam ID of the player that is banned"}Steam ID</label>
               <input class="submit-fields" {nid id="steam"} value="{$ban_steam}" />
-              <div class="badentry" id="steam.msg"></div>
               <label for="ip">{help_icon title="$lang_ip_address" desc="This is the IP of the player that is banned"}{$lang_ip_address}</label>
               <input class="submit-fields" {nid id="ip"} value="{$ban_ip}" />
-              <div class="badentry" id="ip.msg"></div>
               <label for="reason">{help_icon title="$lang_reason" desc="The reason that this player was banned."}{$lang_reason}</label>
               <select class="submit-fields" {nid id="reason"}>
                 <option value=""> -- Select Reason -- </option>
@@ -53,7 +50,6 @@
                 <option value="other">Other Reason</option>
               </select>
               <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5" style="display: none;">{$ban_reason}</textarea>
-              <div class="badentry" id="reason.msg"></div>
               <label for="length">{help_icon title="$lang_length" desc="Select how long you want to ban this person for."}{$lang_length}</label>
               <select class="inputbox" {nid id="length"}>
                 <option value="0">{$lang_permanent}</option>
@@ -94,10 +90,8 @@
                   <option{if $ban_length == 518400} selected="selected"{/if} value="518400">12 {$lang_months}</option>
                 </optgroup>
               </select>
-              <div class="badentry" id="length.msg"></div>
               <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo}</label>
               <input class="submit-fields" {nid id="demo"} type="file" />
-              <div class="badentry" id="demo.msg">{$ban_demo}</div>
               <div class="center">
                 <input name="id" type="hidden" value="{$smarty.get.id}" />
                 <input class="btn ok" type="submit" value="{$lang_save}" />

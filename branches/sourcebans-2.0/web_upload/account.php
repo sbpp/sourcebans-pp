@@ -12,22 +12,32 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'email':
-        AdminsWriter::edit($userbank->GetID(), null, null, null, $_POST['email'], null, null, null, null, null, null);
-        break;
-      case 'password':
-        AdminsWriter::edit($userbank->GetID(), null, null, null, null, $userbank->encrypt_password($_POST['password']), null, null, null, null, null);
-        break;
-      case 'settings':
-        AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, null, null, null, $_POST['theme'], $_POST['language']);
-        break;
-      case 'srvpassword':
-        AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword'], null, null, null, null);
+      switch($_POST['action'])
+      {
+        case 'email':
+          AdminsWriter::edit($userbank->GetID(), null, null, null, $_POST['email'], null, null, null, null, null, null);
+          break;
+        case 'password':
+          AdminsWriter::edit($userbank->GetID(), null, null, null, null, $userbank->encrypt_password($_POST['password']), null, null, null, null, null);
+          break;
+        case 'settings':
+          AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, null, null, null, $_POST['theme'], $_POST['language']);
+          break;
+        case 'srvpassword':
+          AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword'], null, null, null, null);
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $languages = array();

@@ -13,7 +13,16 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    SubmissionsWriter::add($_POST['name'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['server'], $_POST['subname'], $_POST['subemail']);
+    try
+    {
+      SubmissionsWriter::add($_POST['name'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['server'], $_POST['subname'], $_POST['subemail']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $servers_reader = new ServersReader();

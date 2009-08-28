@@ -14,13 +14,23 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'add':
-        ModsWriter::add($_POST['name'], $_POST['folder'], $_POST['icon'], isset($_POST['enabled']));
+      switch($_POST['action'])
+      {
+        case 'add':
+          ModsWriter::add($_POST['name'], $_POST['folder'], $_POST['icon'], isset($_POST['enabled']));
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $counts_reader = new CountsReader();

@@ -430,7 +430,6 @@
                   <input class="submit-fields" {nid id="name"} />
                   <span class="mandatory">*</span>
                 </div>
-                <div class="badentry" id="name.msg"></div>
                 <div>
                   <label for="auth">{help_icon title="$lang_type" desc="This is the admin's authentication type."}{$lang_type}</label>
                   <select class="submit-fields" {nid id="auth"}>
@@ -440,28 +439,23 @@
                   </select>
                   <span class="mandatory">*</span>
                 </div>
-                <div class="badentry" id="type.msg">Invalid type supplied.</div>
                 <div>
                   <label for="identity">{help_icon title="Identity" desc="This is the admin's identity. This must be set so that admins can use their admin rights ingame."}Identity</label>
                   <input class="submit-fields" {nid id="identity"} value="STEAM_" />
                   <span class="mandatory">*</span>
                 </div>
-                <div class="badentry" id="identity.msg"></div>
                 <div>
                   <label for="email">{help_icon title="$lang_email_address" desc="Set the admin's e-mail address. This will be used for sending out any automated messages from the system, and for use when you forget your password."}{$lang_email_address}</label>
                   <input class="submit-fields" {nid id="email"} />
                 </div>
-                <div class="badentry" id="email.msg"></div>
                 <div>
                   <label for="password">{help_icon title="$lang_password" desc="The password the admin will need to access the admin panel."}{$lang_password}</label>
                   <input class="submit-fields" {nid id="password"} type="password" />
                 </div>
-                <div class="badentry" id="password.msg"></div>
                 <div>
                   <label for="password_confirm">{help_icon title="$lang_confirm_password" desc="$lang_confirm_password_desc"}{$lang_confirm_password}</label>
                   <input class="submit-fields" {nid id="password_confirm"} type="password" />
                 </div>
-                <div class="badentry" id="password_confirm.msg"></div>
                 <div>
                   <label for="srv_password">{help_icon title="Server Admin Password" desc="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Use as admin password?</label>
                   <input {nid id="srv_password"} type="checkbox" />
@@ -482,7 +476,6 @@
                     </optgroup>
                   </select>
                 </div>
-                <div class="badentry" id="srv_groups.msg"></div>
                 <div>
                   <label for="web_group">{help_icon title="$lang_web_group" desc="<strong>Custom Permisions:</strong><br />Select this to choose custom permissions for this admin.<br /><br /><strong>New Group:</strong><br />Select this to choose cusrom permissions and then save the permissions as a new group.<br /><br /><strong>Groups:</strong><br />Select a pre-made group to add the admin to."}{$lang_web_group}</label>
                   <select class="submit-fields" {nid id="web_group"}>
@@ -494,7 +487,6 @@
                     </optgroup>
                   </select>
                 </div>
-                <div class="badentry" id="web_group.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="add" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -510,7 +502,6 @@
                 <p>{$lang_help_desc}</p>
                 <label for="file">{help_icon title="$lang_file" desc="Select the admins.cfg file to upload and add admins."}{$lang_file}</label>
                 <input class="submit-fields" {nid id="file"} type="file" />
-                <div class="badentry" id="file.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="import" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />

@@ -14,28 +14,38 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'add':
-        // Parse flags depending on group type
-        switch($_POST['type'])
-        {
-          case SERVER_GROUPS:
-            // If flag array contains root flag, only pass root flag, otherwise create flag string
-            $flags = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
-            break;
-          case WEB_GROUPS:
-            // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
-            $flags = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
-        }
-        
-        GroupsWriter::add($_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $_POST['overrides']);
-        break;
-      case 'import':
-        GroupsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+      switch($_POST['action'])
+      {
+        case 'add':
+          // Parse flags depending on group type
+          switch($_POST['type'])
+          {
+            case SERVER_GROUPS:
+              // If flag array contains root flag, only pass root flag, otherwise create flag string
+              $flags = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
+              break;
+            case WEB_GROUPS:
+              // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
+              $flags = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
+          }
+          
+          GroupsWriter::add($_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $_POST['overrides']);
+          break;
+        case 'import':
+          GroupsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $groups_reader       = new GroupsReader();

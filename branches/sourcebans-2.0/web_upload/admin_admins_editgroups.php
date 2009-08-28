@@ -14,9 +14,16 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, null, $_POST['srv_group'], $_POST['web_group']);
-    
-    Util::redirect();
+    try
+    {
+      AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, null, $_POST['srv_group'], $_POST['web_group']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $admins_reader       = new AdminsReader();

@@ -18,22 +18,18 @@
                 <label for="ip">{help_icon title="$lang_ip_address" desc="This is the IP address to your server. You can also type a domain, if you have one setup."}{$lang_ip_address}</label>
                 <input class="submit-fields" {nid id="ip"} value="{$server_ip}" />
               </div>
-              <div class="badentry" id="ip.msg"></div>
               <div>
                 <label for="port">{help_icon title="$lang_port" desc="This is the port that the server is running off. &lt;br /&gt;&lt;br /&gt;&lt;em&gt;Default: 27015&lt;/em&gt;"}{$lang_port}</label>
                 <input class="submit-fields" {nid id="port"} value="{if empty($server_port)}27015{else}{$server_port}{/if}" />
               </div>
-              <div class="badentry" id="port.msg"></div>
               <div>
                 <label for="rcon">{help_icon title="RCON Password" desc="This is your server's RCON password. This can be found in your server.cfg file next to &lt;em&gt;rcon_password&lt;/em&gt;.&lt;br /&gt;&lt;br /&gt;This will be used to allow admins to administrate the server through the web interface."}RCON Password</label>
                 <input class="submit-fields" {nid id="rcon"} type="password" value="{if !empty($server_rcon)}xxxxxxxxxx{/if}" />
               </div>
-              <div class="badentry" id="rcon.msg"></div>
               <div>
                 <label for="rcon_confirm">{help_icon title="RCON Password (Confirm)" desc="Please re-type your rcon password to avoid 'typos'."}RCON Password (Confirm)</label>
                 <input class="submit-fields" {nid id="rcon_confirm"} type="password" value="{if !empty($server_rcon)}xxxxxxxxxx{/if}" />
               </div>
-              <div class="badentry" id="rcon_confirm.msg"></div>
               <div>
                 <label for="mod">{help_icon title="Server Mod" desc="Select the mod that your server is currently running."}Server Mod</label>
                 <select class="submit-fields" {nid id="mod"}>
@@ -42,7 +38,6 @@
                   {/foreach}
                 </select>
               </div>
-              <div class="badentry" id="mod.msg"></div>
               <div>
                 <label for="enabled">{help_icon title="$lang_enabled" desc="Enables the server to be shown on the public servers list."}{$lang_enabled}</label>
                 <input{if $server_enabled} checked="checked"{/if} {nid id="enabled"} type="checkbox" /> 

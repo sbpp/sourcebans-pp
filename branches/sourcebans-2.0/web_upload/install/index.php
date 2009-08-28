@@ -1,13 +1,5 @@
 <?php
-// Global defines
-define('BASE_PATH', dirname(__FILE__) . '/../');
-define('LIB_DIR',   BASE_PATH . 'includes/libs/');
-
-
-// Global includes
-require_once LIB_DIR . 'adodb/adodb-exceptions.inc.php';
-require_once LIB_DIR . 'adodb/adodb.inc.php';
-
+require_once 'init.php';
 
 // List of paths that need to be writable
 $writable = array(
@@ -51,7 +43,7 @@ define('WRITABLE_THEMES',   is_writable($writable['themes']));
     <link href="../images/favicon.ico" rel="shortcut icon" />
     <link href="style.css" rel="stylesheet" type="text/css" />
     <script src="../scripts/mootools.js" type="text/javascript"></script>
-    <script src="script.js" type="text/javascript"></script>
+    <script src="script.php" type="text/javascript"></script>
   </head>
   <body>
     <h1>SourceBans Installation</h1>
@@ -245,37 +237,81 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
       </div>
       <div class="step" id="step-3">
         <h2>Step 3: Database Information</h2>
-        <p>Please enter your database details into the following fields.</p>
         <form action="index.php" method="post">
-          <div>
-            <label for="host">Host:</label>
-            <input id="host" name="host" value="localhost" />
-          </div>
-          <div>
-            <label for="port">Port:</label>
-            <input id="port" name="port" value="3306" />
-          </div>
-          <div>
-            <label for="username">Username:</label>
-            <input id="username" name="username" />
-          </div>
-          <div>
-            <label for="password">Password:</label>
-            <input id="password" name="password" type="password" />
-          </div>
-          <div>
-            <label for="name">Database Name:</label>
-            <input id="name" name="name" />
-          </div>
-          <div>
-            <label for="prefix">Table Prefix:</label>
-            <input id="prefix" name="prefix" value="sb" />
-          </div>
+          <fieldset>
+            <p>Please enter your database details into the following fields.</p>
+            <div>
+              <label for="db_host">Host:</label>
+              <input id="db_host" name="db_host" value="localhost" />
+            </div>
+            <div>
+              <label for="db_port">Port:</label>
+              <input id="db_port" name="db_port" value="3306" />
+            </div>
+            <div>
+              <label for="db_user">Username:</label>
+              <input id="db_user" name="db_user" />
+            </div>
+            <div>
+              <label for="db_pass">Password:</label>
+              <input id="db_pass" name="db_pass" type="password" />
+            </div>
+            <div>
+              <label for="db_name">Database Name:</label>
+              <input id="db_name" name="db_name" />
+            </div>
+            <div>
+              <label for="db_prefix">Table Prefix:</label>
+              <input id="db_prefix" name="db_prefix" value="sb" />
+            </div>
+          </fieldset>
+        </form>
+      </div>
+      <div class="step" id="step-4">
+        <h2>Step 4: Owner Information</h2>
+        <form action="index.php" method="post">
+          <fieldset>
+            <p>Please enter your admin details into the following fields.</p>
+            <div>
+              <label for="username">Username:</label>
+              <input id="username" name="username" />
+            </div>
+            <div>
+              <label for="password">Password:</label>
+              <input id="password" name="password" type="password" />
+            </div>
+            <div>
+              <label for="confirm_password">Confirm Password:</label>
+              <input id="confirm_password" name="confirm_password" type="password" />
+            </div>
+            <div>
+              <label for="email">E-mail Address:</label>
+              <input id="email" name="email" />
+            </div>
+            <div>
+              <label for="auth">Authentication Type:</label>
+              <select class="submit-fields" id="auth" name="auth">
+                <option value="steam">Steam ID</option>
+                <option value="ip">IP Address</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+            <div>
+              <label for="identity">Identity:</label>
+              <input class="submit-fields" id="identity" name="identity" value="STEAM_" />
+            </div>
+          </fieldset>
         </form>
       </div>
       <div class="buttons">
-        <input disabled="disabled" id="back" type="button" value="&lt;&lt; Back" />
+        <input id="back" type="button" value="&lt;&lt; Back" />
         <input id="next" type="button" value="Next &gt;&gt;" />
+      </div>
+      <div class="languages">
+        <p>Choose Language:</p>
+        <a href="?language=en"><img alt="English" src="../images/countries/us.gif" title="English" /></a>
+        <a href="?language=nl"><img alt="Dutch" src="../images/countries/nl.gif" title="Dutch" /></a>
+        <a href="?language=de"><img alt="German" src="../images/countries/de.gif" title="German" /></a>
       </div>
     </div>
   </body>

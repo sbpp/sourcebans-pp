@@ -12,7 +12,16 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    CommentsWriter::edit($_POST['id'], $_POST['message']);
+    try
+    {
+      CommentsWriter::edit($_POST['id'], $_POST['message']);
+    }
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $comments_reader = new CommentsReader();

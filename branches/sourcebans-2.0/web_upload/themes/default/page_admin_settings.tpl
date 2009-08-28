@@ -22,7 +22,6 @@
                   <label for="password_minlength">{help_icon title="Min password length" desc="Define the shortest length a password can be."}Min password length</label>
                   <input class="submit-fields" {nid id="password_minlength"} value="{$config_min_password}" />
                 </div>
-                <div class="badentry" id="password_minlength.msg"></div>
                 <div>
                   <label for="dateformat">{help_icon title="Date format" desc="Here you can change the date format, displayed in the banlist and other pages."}Date format</label>
                   <input class="submit-fields" {nid id="dateformat"} value="{$config_dateformat}" />
@@ -84,13 +83,11 @@
                   <label for="intro_title">{help_icon title="Intro Title" desc="Set the title for the dashboard introduction."}Intro Title</label>
                   <input class="submit-fields" {nid id="intro_title"} value="{$config_dash_title}" />
                 </div>
-                <div class="badentry" id="intro_title.msg"></div>
                 <div>
                   <label for="intro_text">{help_icon title="Intro Text" desc="Set the text for the dashboard introduction."}Intro Text</label>
                   <textarea cols="80" {nid id="intro_text"} rows="20">{$config_dash_text}</textarea>
                   <a class="toggle_mce" href="#" rel="intro_text">Enable/Disable WYSIWYG editor</a>
                 </div>
-                <div class="badentry" id="intro_text.msg"></div>
                 <div>
                   <label for="log_nopopup">{help_icon title="Disable Log Popup" desc="Check this box to disable the log info popup and use a direct link."}Disable Log Popup</label>
                   <input{if $config_nopopup} checked="checked"{/if} {nid id="log_nopopup"} type="checkbox" value="1" />
@@ -124,7 +121,6 @@
                   <label for="bansperpage">{help_icon title="Items per page" desc="Choose how many items to show on each page."}Items Per Page</label>
                   <input class="submit-fields" {nid id="bansperpage"} value="{$config_bansperpage}" />
                 </div>
-                <div class="badentry" id="bansperpage.msg"></div>
                 <div>
                   <label for="export_public">{help_icon title="Enable Public Bans Export" desc="Check this box to enable the entire ban list to be publically downloaded and shared."}Enable Public Bans Export</label>
                   <input{if $config_exportpublic} checked="checked"{/if} {nid id="export_public"} type="checkbox" value="1" />
@@ -133,7 +129,6 @@
                   <label for="hide_adminname">{help_icon title="Hide Admin Name" desc="Check this box, if you want to hide the name of the admin on the ban list."}Hide Admin Name</label>
                   <input{if $config_hideadminname} checked="checked"{/if} {nid id="hide_adminname"} type="checkbox" value="1" />
                 </div>
-                <div class="badentry" id="hide_adminname.msg"></div>
                 <h3>E-mail Settings</h3>
                 <div>
                   <label for="enable_smtp">{help_icon title="Enable SMTP" desc="Check this box to enable SMTP "}Enable SMTP</label>

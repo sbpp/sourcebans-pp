@@ -81,6 +81,9 @@ public OnPluginStart()
 	LoadTranslations("sourcebans.phrases");
 	LoadTranslations("basebans.phrases");
 	
+	// Hook player_connect event to prevent connection spamming from people that are banned
+	HookEvent("player_connect", Event_PlayerConnect, EventHookMode_Pre);
+	
 	g_hHackingMenu = CreateMenu(MenuHandler_Reason);
 	g_hReasonMenu  = CreateMenu(MenuHandler_Reason);
 	
@@ -173,22 +176,10 @@ public OnClientAuthorized(client, const String:auth[])
 public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 {
 	g_bPlayerStatus[client] = false;
-	// If there is no SQLite database connection, allow player to connect
-	if(!g_hSQLiteDB)
-		return true;
 	
-	decl String:sIp[16], String:sQuery[256];
+	decl String:sIp[16];
 	GetClientIP(client, sIp, sizeof(sIp));
-	Format(sQuery, sizeof(sQuery), "SELECT 1 \
-																	FROM   sb_bans \
-																	WHERE  ip          = '%s' \
-																		AND  ends        > %i \
-																		AND  time + 300 <= %i",
-																	sIp, GetTime(), GetTime());
-	
-	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
-	// If query failed or no active ban was found, allow player to connect
-	if(!hQuery || !SQL_FetchRow(hQuery))
+	if(!HasLocalBan(sIp))
 		return true;
 	
 	Format(rejectmsg, maxlen, "%t", "Banned Check Site", g_sWebsite);
@@ -576,6 +567,35 @@ public Action:Command_Say(client, args)
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
+}
+
+
+/**
+ * Events
+ */
+public Action:Event_PlayerConnect(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	if(dontBroadcast)
+		return Plugin_Continue;
+	
+	decl String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1];
+	new iIndex  = GetEventInt(event, "index"),
+			iUserId = GetEventInt(event, "userid");
+	GetEventString(event, "address",   sIp,   sizeof(sIp));
+	GetEventString(event, "name",      sName, sizeof(sName));
+	GetEventString(event, "networkid", sAuth, sizeof(sAuth));
+	// If the player is not banned, allow the event to continue
+	if(!HasLocalBan(sIp))
+		return Plugin_Continue;
+	
+	new Handle:hEvent = CreateEvent("player_connect");
+	SetEventInt(hEvent, "index", iIndex);
+	SetEventInt(hEvent, "userid", iUserId);
+	SetEventString(hEvent, "address",   sIp);
+	SetEventString(hEvent, "name",      sName);
+	SetEventString(hEvent, "networkid", sAuth);
+	FireEvent(hEvent, true);
+	return Plugin_Handled;
 }
 
 
@@ -1060,6 +1080,23 @@ GetAdminId(client)
 {
 	// If admins are enabled, return their admin id, otherwise return 0
 	return SB_GetSettingCell("EnableAdmins") ? SB_GetAdminId(client) : 0;
+}
+
+bool:HasLocalBan(const String:sIdentity[])
+{
+	if(!g_hSQLiteDB)
+		return false;
+	
+	decl String:sQuery[256];
+	Format(sQuery, sizeof(sQuery), "SELECT 1 \
+																	FROM   sb_bans \
+																	WHERE  (steam = '%s' OR ip = '%s') \
+																		AND  ends        > %i \
+																		AND  time + 300 <= %i",
+																	sIdentity, sIdentity, GetTime(), GetTime());
+	
+	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
+	return hQuery && SQL_FetchRow(hQuery);
 }
 
 InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sName[], iCreated, iLength, const String:sReason[], iAdminId, const String:sAdminIp[], bool:bQueued = false)

@@ -15,51 +15,61 @@ try
     throw new Exception('Access Denied');
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
-    switch($_POST['action'])
+    try
     {
-      case 'settings':
-        $settings = array('config.debug'          => isset($_POST['debug'])          ? 1 : 0,
-                          'config.enableprotest'  => isset($_POST['enable_protest']) ? 1 : 0,
-                          'email.smtp'            => isset($_POST['enable_smtp'])    ? 1 : 0,
-                          'config.enablesubmit'   => isset($_POST['enable_submit'])  ? 1 : 0,
-                          'config.exportpublic'   => isset($_POST['export_public'])  ? 1 : 0,
-                          'banlist.hideadminname' => isset($_POST['hide_adminname']) ? 1 : 0,
-                          'dash.lognopopup'       => isset($_POST['log_nopopup'])    ? 1 : 0,
-                          'config.summertime'     => isset($_POST['summertime'])     ? 1 : 0);
-        
-        if(isset($_POST['bansperpage'])        && !empty($_POST['bansperpage'])        && is_numeric($_POST['bansperpage']))
-          $settings['banlist.bansperpage']       = $_POST['bansperpage'];
-        if(isset($_POST['dateformat'])         && !empty($_POST['dateformat'])         && is_string($_POST['dateformat']))
-          $settings['config.dateformat']         = $_POST['dateformat'];
-        if(isset($_POST['default_page'])       && !empty($_POST['default_page'])       && is_numeric($_POST['default_page']))
-          $settings['config.defaultpage']        = $_POST['default_page'];
-        if(isset($_POST['intro_text'])         && !empty($_POST['intro_text'])         && is_string($_POST['intro_text']))
-          $settings['dash.intro.text']           = $_POST['intro_text'];
-        if(isset($_POST['intro_title'])        && !empty($_POST['intro_title'])        && is_string($_POST['intro_title']))
-          $settings['dash.intro.title']          = $_POST['intro_title'];
-        if(isset($_POST['logo'])               && !empty($_POST['logo'])               && is_string($_POST['logo']))
-          $settings['template.logo']             = $_POST['logo'];
-        if(isset($_POST['password_minlength']) && !empty($_POST['password_minlength']) && is_numeric($_POST['password_minlength']))
-          $settings['config.password.minlength'] = $_POST['password_minlength'];
-        if(isset($_POST['smtp_host'])          && !empty($_POST['smtp_host'])          && is_string($_POST['smtp_host']))
-          $settings['email.host']                = $_POST['smtp_host'];
-        if(isset($_POST['smtp_password'])      && !empty($_POST['smtp_password'])      && is_string($_POST['smtp_password']))
-          $settings['email.password']            = $_POST['smtp_password'];
-        if(isset($_POST['smtp_port'])          && !empty($_POST['smtp_port'])          && is_string($_POST['smtp_port']))
-          $settings['email.port']                = $_POST['smtp_port'];
-        if(isset($_POST['smtp_secure'])        && is_string($_POST['smtp_secure']))
-          $settings['email.secure']              = $_POST['smtp_secure'];
-        if(isset($_POST['smtp_username'])      && !empty($_POST['smtp_username'])      && is_string($_POST['smtp_username']))
-          $settings['email.username']            = $_POST['smtp_username'];
-        if(isset($_POST['timezone'])           && !empty($_POST['timezone'])           && is_numeric($_POST['timezone']))
-          $settings['config.timezone']           = $_POST['timezone'];
-        if(isset($_POST['title'])              && !empty($_POST['title'])              && is_string($_POST['title']))
-          $settings['template.title']            = $_POST['title'];
-        
-        SettingsWriter::update($settings);
+      switch($_POST['action'])
+      {
+        case 'settings':
+          $settings = array('config.debug'          => isset($_POST['debug'])          ? 1 : 0,
+                            'config.enableprotest'  => isset($_POST['enable_protest']) ? 1 : 0,
+                            'email.smtp'            => isset($_POST['enable_smtp'])    ? 1 : 0,
+                            'config.enablesubmit'   => isset($_POST['enable_submit'])  ? 1 : 0,
+                            'config.exportpublic'   => isset($_POST['export_public'])  ? 1 : 0,
+                            'banlist.hideadminname' => isset($_POST['hide_adminname']) ? 1 : 0,
+                            'dash.lognopopup'       => isset($_POST['log_nopopup'])    ? 1 : 0,
+                            'config.summertime'     => isset($_POST['summertime'])     ? 1 : 0);
+          
+          if(isset($_POST['bansperpage'])        && !empty($_POST['bansperpage'])        && is_numeric($_POST['bansperpage']))
+            $settings['banlist.bansperpage']       = $_POST['bansperpage'];
+          if(isset($_POST['dateformat'])         && !empty($_POST['dateformat'])         && is_string($_POST['dateformat']))
+            $settings['config.dateformat']         = $_POST['dateformat'];
+          if(isset($_POST['default_page'])       && !empty($_POST['default_page'])       && is_numeric($_POST['default_page']))
+            $settings['config.defaultpage']        = $_POST['default_page'];
+          if(isset($_POST['intro_text'])         && !empty($_POST['intro_text'])         && is_string($_POST['intro_text']))
+            $settings['dash.intro.text']           = $_POST['intro_text'];
+          if(isset($_POST['intro_title'])        && !empty($_POST['intro_title'])        && is_string($_POST['intro_title']))
+            $settings['dash.intro.title']          = $_POST['intro_title'];
+          if(isset($_POST['logo'])               && !empty($_POST['logo'])               && is_string($_POST['logo']))
+            $settings['template.logo']             = $_POST['logo'];
+          if(isset($_POST['password_minlength']) && !empty($_POST['password_minlength']) && is_numeric($_POST['password_minlength']))
+            $settings['config.password.minlength'] = $_POST['password_minlength'];
+          if(isset($_POST['smtp_host'])          && !empty($_POST['smtp_host'])          && is_string($_POST['smtp_host']))
+            $settings['email.host']                = $_POST['smtp_host'];
+          if(isset($_POST['smtp_password'])      && !empty($_POST['smtp_password'])      && is_string($_POST['smtp_password']))
+            $settings['email.password']            = $_POST['smtp_password'];
+          if(isset($_POST['smtp_port'])          && !empty($_POST['smtp_port'])          && is_string($_POST['smtp_port']))
+            $settings['email.port']                = $_POST['smtp_port'];
+          if(isset($_POST['smtp_secure'])        && is_string($_POST['smtp_secure']))
+            $settings['email.secure']              = $_POST['smtp_secure'];
+          if(isset($_POST['smtp_username'])      && !empty($_POST['smtp_username'])      && is_string($_POST['smtp_username']))
+            $settings['email.username']            = $_POST['smtp_username'];
+          if(isset($_POST['timezone'])           && !empty($_POST['timezone'])           && is_numeric($_POST['timezone']))
+            $settings['config.timezone']           = $_POST['timezone'];
+          if(isset($_POST['title'])              && !empty($_POST['title'])              && is_string($_POST['title']))
+            $settings['template.title']            = $_POST['title'];
+          
+          SettingsWriter::update($settings);
+          break;
+        default:
+          throw new Exception('Invalid action specified.');
+      }
     }
-    
-    Util::redirect();
+    catch(Exception $e)
+    {
+      exit(json_encode(array(
+        'error' => $e->getMessage()
+      )));
+    }
   }
   
   $admins_reader = new AdminsReader();

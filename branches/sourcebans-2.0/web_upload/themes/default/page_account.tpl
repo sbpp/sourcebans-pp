@@ -216,14 +216,11 @@
                 <h3>{$lang_change_password|ucwords}</h3>
                 <label for="password_current">{help_icon title="$lang_current_password" desc="$lang_current_password_desc"}{$lang_current_password}</label>
                 <input class="submit-fields" id="password_current" name="current" type="password" />
-                <div class="badentry" id="password_current.msg"></div>
                 <br /><br />
                 <label for="password">{help_icon title="$lang_new_password" desc="$lang_new_password_desc<br /><br /><em>Min Length: $min_pass_len</em>"}{$lang_new_password}</label>
                 <input class="submit-fields" {nid id="password"} type="password" />
-                <div class="badentry" id="password.msg"></div>
                 <label for="password_confirm">{help_icon title="$lang_confirm_password" desc="$lang_confirm_password_desc"}{$lang_confirm_password}</label>
                 <input class="submit-fields" {nid id="password_confirm"} type="password" />
-                <div class="badentry" id="password_confirm.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="password" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -236,10 +233,8 @@
                 <h3>{$lang_change_server_password|ucwords}</h3>
                 <label for="srvpassword">{help_icon title="$lang_new_password" desc="$lang_new_password_desc<br /><br /><em>Min Length: 0</em>"}{$lang_new_password}</label>
                 <input class="submit-fields" {nid id="srvpassword"} type="password" />
-                <div class="badentry" id="srvpassword.msg"></div>
                 <label for="srvpassword_confirm">{help_icon title="$lang_confirm_password" desc="$lang_confirm_password_desc"}{$lang_confirm_password}</label>
                 <input class="submit-fields" {nid id="srvpassword_confirm"} type="password" />
-                <div class="badentry" id="srvpassword_confirm.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="srvpassword" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -254,10 +249,8 @@
                 <input class="submit-fields" {nid id="email_current"} readonly="readonly" value="{$user_email}" />
                 <label for="email">{help_icon title="$lang_new_email" desc="$lang_new_email_desc"}{$lang_new_email}</label>
                 <input class="submit-fields" {nid id="email"} />
-                <div class="badentry" id="email.msg"></div>
                 <label for="email_confirm">{help_icon title="$lang_confirm_email" desc="$lang_confirm_email_desc"}{$lang_confirm_email}</label>
                 <input class="submit-fields" {nid id="email_confirm"} />
-                <div class="badentry" id="email_confirm.msg"></div>
                 <div class="center">
                   <input name="action" type="hidden" value="email" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
