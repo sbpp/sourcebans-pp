@@ -648,6 +648,7 @@ function SecondsToString($sec, $textual=true)
 	}
 }
 
+// unused, as loading too slowly.
 function CreateHostnameCache()
 {
 	require_once INCLUDES_PATH.'/CServerInfo.php';

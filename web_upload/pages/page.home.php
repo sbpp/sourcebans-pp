@@ -23,8 +23,10 @@ $res = $GLOBALS['db']->Execute("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.
 								FROM ".DB_PREFIX."_banlog AS bl
 								LEFT JOIN ".DB_PREFIX."_bans AS b ON b.bid = bl.bid
 								ORDER BY time DESC LIMIT 10");
-$hostnames = CreateHostnameCache();
+
+$GLOBALS['server_qry'] = "";
 $stopped = array();
+$blcount = 0;
 while (!$res->EOF)
 {
 	$info = array();
@@ -33,7 +35,7 @@ while (!$res->EOF)
 	$info['short_name'] = trunc($info['name'], 40, false);
 	$info['auth'] = $res->fields['authid'];
 	$info['ip'] = $res->fields['ip'];
-	$info['server'] = addslashes($hostnames[$res->fields['sid']]);
+	$info['server'] = "block_".$res->fields['sid']."_$blcount";
 	if($res->fields['type'] == 1)
 	{
 		$info['search_link'] = "index.php?p=banlist&advSearch=" . $info['ip'] . "&advType=ip&Submit";
@@ -43,8 +45,12 @@ while (!$res->EOF)
 	$info['link_url'] = "window.location = '" . $info['search_link'] . "';";
 	$info['name'] = htmlspecialchars(addslashes($info['name']), ENT_QUOTES, 'UTF-8');
 	$info['popup'] = "ShowBox('Blocked player: " . $info['name'] . "', '" . $info['name'] . " tried to enter<br />" . $info['server'] . "<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
-		array_push($stopped,$info);
+		
+    $GLOBALS['server_qry'] .= "xajax_ServerHostProperty(".$res->fields['sid'].", 'block_".$res->fields['sid']."_$blcount', 'title', 100);";
+        
+    array_push($stopped,$info);
 	$res->MoveNext();
+    ++$blcount;
 }
 
 $res = $GLOBALS['db']->Execute("SELECT count(bid) FROM ".DB_PREFIX."_bans");

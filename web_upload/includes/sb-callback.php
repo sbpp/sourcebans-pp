@@ -68,6 +68,7 @@ if(isset($_COOKIE['aid'], $_COOKIE['password']) && check_login($_COOKIE['aid'], 
 
 $xajax->registerFunction("Plogin");
 $xajax->registerFunction("ServerHostPlayers");
+$xajax->registerFunction("ServerHostProperty");
 $xajax->registerFunction("ServerHostPlayers_list");
 $xajax->registerFunction("ServerPlayers");
 $xajax->registerFunction("LostPassword");
@@ -1447,6 +1448,31 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 	return $objResponse;
 }
 
+function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
+{
+    $objResponse = new xajaxResponse();
+	global $userbank;
+	require INCLUDES_PATH.'/CServerInfo.php';
+	
+	$sid = (int)$sid;
+    $obId = htmlspecialchars($obId);
+    $obProp = htmlspecialchars($obProp);
+    $trunchostname = (int)$trunchostname;
+
+	$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+	if(!isset($res[0]) && !isset($res[1]))
+		return $objResponse;
+	$info = array();
+	$sinfo = new CServerInfo($res[0],$res[1]);
+	$info = $sinfo->getInfo();
+    
+    if(!empty($info['hostname'])) {
+        $objResponse->addAssign("$obId", "$obProp", addslashes(trunc($info['hostname'], $trunchostname, false)));
+    } else {
+        $objResponse->addAssign("$obId", "$obProp", "Error connecting (" . $res[0] . ":" . $res[1]. ")");
+    }
+    return $objResponse;
+}
 
 function ServerHostPlayers_list($sid, $type="servers", $obId="")
 {
