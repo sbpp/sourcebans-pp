@@ -187,7 +187,7 @@
                   <td align="center" class="tablerow1"><input {nid id="immunity"} maxlength="3" style="width: 25px; text-align: center;" value="{$group_immunity}" /></td>
                 </tr>
               </table>
-              <label for="overrides">{help_icon title="Overrides" desc="Choose the group's overrides here."}Overrides</label>
+              <label for="overrides">{help_icon title="Overrides" desc="Choose the group's overrides here."}Overrides (<a id="add_override" href="#">Add</a>)</label>
               <table align="center" cellspacing="0" cellpadding="4" id="overrides" width="90%">
                 <tr>
                   <td class="tablerow4">{$lang_type}</td>

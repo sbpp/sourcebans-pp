@@ -29,7 +29,7 @@ CREATE TABLE {prefix}_admins (
   auth enum('steam','name','ip') NOT NULL,
   identity varchar(64) NOT NULL,
   password varchar(64) default NULL,
-  group_id smallint(5) unsigned default NULL,
+  group_id tinyint(3) unsigned default NULL,
   email varchar(128) default NULL,
   language varchar(2) NOT NULL default 'en',
   theme varchar(32) NOT NULL default 'default',
@@ -49,8 +49,8 @@ CREATE TABLE {prefix}_admins (
 --
 
 CREATE TABLE {prefix}_admins_srvgroups (
-  admin_id int(10) unsigned NOT NULL,
-  group_id int(10) unsigned NOT NULL,
+  admin_id smallint(5) unsigned NOT NULL,
+  group_id smallint(5) unsigned NOT NULL,
   inherit_order int(10) NOT NULL,
   PRIMARY KEY  (admin_id,group_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
@@ -282,8 +282,8 @@ CREATE TABLE {prefix}_servers (
 --
 
 CREATE TABLE {prefix}_servers_srvgroups (
-  server_id int(10) NOT NULL,
-  group_id int(10) NOT NULL,
+  server_id smallint(5) NOT NULL,
+  group_id smallint(5) NOT NULL,
   PRIMARY KEY  (server_id,group_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -321,8 +321,8 @@ CREATE TABLE {prefix}_srvgroups (
 --
 
 CREATE TABLE {prefix}_srvgroups_immunity (
-  group_id int(10) unsigned NOT NULL,
-  other_id int(10) unsigned NOT NULL,
+  group_id smallint(5) unsigned NOT NULL,
+  other_id smallint(5) unsigned NOT NULL,
   PRIMARY KEY  (group_id,other_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
@@ -333,7 +333,7 @@ CREATE TABLE {prefix}_srvgroups_immunity (
 --
 
 CREATE TABLE {prefix}_srvgroups_overrides (
-  group_id int(10) unsigned NOT NULL,
+  group_id smallint(5) unsigned NOT NULL,
   type enum('command','group') NOT NULL,
   name varchar(32) NOT NULL,
   access enum('allow','deny') NOT NULL,

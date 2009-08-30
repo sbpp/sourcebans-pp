@@ -16,6 +16,10 @@ try
     try
     {
       BansWriter::edit($_POST['id'], $_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['length'], $_POST['reason']);
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

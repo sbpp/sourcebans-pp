@@ -15,6 +15,7 @@ try
     try
     {
       ProtestsWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['email']);
+      exit;
     }
     catch(Exception $e)
     {

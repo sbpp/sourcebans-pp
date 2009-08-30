@@ -16,6 +16,10 @@ try
     try
     {
       ModsWriter::edit($_POST['id'], $_POST['name'], $_POST['folder'], $_POST['icon'], isset($_POST['enabled']));
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

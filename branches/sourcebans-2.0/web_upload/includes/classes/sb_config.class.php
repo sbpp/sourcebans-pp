@@ -142,16 +142,17 @@ class SBConfig
    */
   private static function generic_requires()
   {
-    require_once LIB_DIR   . 'adodb/adodb-exceptions.inc.php';
-    require_once LIB_DIR   . 'adodb/adodb.inc.php';
-    require_once LIB_DIR   . 'PHPMailer/class.phpmailer.php';
-    require_once LIB_DIR   . 'smarty/Smarty.class.php';
-    require_once LIB_DIR   . 'utf8/utf8.php';
-    require_once CLASS_DIR . 'page.class.php';
-    require_once CLASS_DIR . 'plugins.class.php';
-    require_once CLASS_DIR . 'tabs.class.php';
-    require_once CLASS_DIR . 'sbdebug.class.php';
-    require_once BASE_PATH . 'config.php';
+    require_once BASE_PATH   . 'config.php';
+    require_once LIB_DIR     . 'adodb/adodb-exceptions.inc.php';
+    require_once LIB_DIR     . 'adodb/adodb.inc.php';
+    require_once LIB_DIR     . 'PHPMailer/class.phpmailer.php';
+    require_once LIB_DIR     . 'smarty/Smarty.class.php';
+    require_once LIB_DIR     . 'utf8/utf8.php';
+    require_once CLASS_DIR   . 'page.class.php';
+    require_once CLASS_DIR   . 'plugins.class.php';
+    require_once CLASS_DIR   . 'tabs.class.php';
+    require_once CLASS_DIR   . 'sb_debug.class.php';
+    require_once WRITERS_DIR . 'logs.php';
   }
   
   
@@ -160,65 +161,47 @@ class SBConfig
    */
   private static function setup_globals()
   {
-    /**
-     * Set up global variables
-     */
+    // Set up global variables
     Env::set('active',   basename($_SERVER['PHP_SELF']));
     Env::set('prefix',   DB_PREFIX);
     
-    /**
-     * Set up database connection
-     */
+    // Set up database connection
     $GLOBALS['ADODB_FETCH_MODE'] = ADODB_FETCH_ASSOC;
     $db               = NewADOConnection('mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
     $db->Execute('SET NAMES "UTF8"');
     Env::set('db',       $db);
     
-    /**
-     * Set up caching
-     */
+    // Set up caching
     require_once CLASS_DIR   . 'filecache.class.php';
     Env::set('sbcache',  new SBFileCache(CACHE_DIR, new SBGZCompressor(1)));
     
-    /**
-     * Fetch settings
-     */
+    // Fetch settings
     require_once READERS_DIR . 'settings.php';
     $settings = new SettingsReader();
     $config   = $settings->executeCached(ONE_DAY);
     Env::set('config',   $config);
     
-    /**
-     * Set timezone
-     */
+    // Set timezone
     $timezone = $config['config.timezone'] + $config['config.summertime'];
     putenv('TZ=GMT' . ($timezone >= 0 ? '+' : '') . $timezone);
     
-    /**
-     * Set up user manager
-     */
+    // Set up user manager
     require_once UTILS_DIR   . 'users/userbank.php';
     $userbank = new CUserManager();
     Env::set('userbank', $userbank);
     
-    /**
-     * Fetch translations
-     */
+    // Fetch translations
     require_once READERS_DIR . 'translations.php';
     $translations_reader           = new TranslationsReader();
     $translations_reader->language = $userbank->is_logged_in() ? $userbank->GetProperty('language') : $config['config.language'];
     $translations                  = $translations_reader->executeCached(ONE_DAY);
     Env::set('phrases',  $translations['phrases']);
     
-    /**
-     * Set ADODB language
-     */
+    // Set ADODB language
     if(file_exists(LIB_DIR . 'adodb/lang/adodb-' . $translations_reader->language . '.inc.php'))
-      $ADODB_LANG = $translations_reader->language;
+      $GLOBALS['ADODB_LANG'] = $translations_reader->language;
     
-    /**
-     * Fetch quotes
-     */
+    // Fetch quotes
     require_once READERS_DIR . 'quotes.php';
     $quotes   = new QuotesReader();
     Env::set('quotes',   $quotes->executeCached(ONE_DAY));

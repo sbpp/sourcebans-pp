@@ -4,15 +4,26 @@ require_once 'init.php';
 $userbank = Env::get('userbank');
 
 if($userbank->is_admin())
-  header('Location: admin.php');
+  Util::redirect('admin.php');
 if($userbank->is_logged_in())
-  header('Location: account.php');
+  Util::redirect('account.php');
 if($_SERVER['REQUEST_METHOD'] == 'POST')
 {
-  if($userbank->login($_POST['username'], $_POST['password'], isset($_POST['remember'])))
-    header('Location: admin.php');
-  else
-    header('Location: login.php');
+  try
+  {
+    if(!$userbank->login($_POST['username'], $_POST['password'], isset($_POST['remember'])))
+      throw new Exception('Invalid username or password specified.');
+    
+    exit(json_encode(array(
+      'redirect' => $userbank->is_admin() ? 'admin.php' : 'account.php'
+    )));
+  }
+  catch(Exception $e)
+  {
+    exit(json_encode(array(
+      'error' => $e->getMessage()
+    )));
+  }
 }
 else
 {

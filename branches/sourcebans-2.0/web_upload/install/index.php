@@ -21,7 +21,7 @@ foreach($writable as $path)
 define('FILE_UPLOADS',      ini_get('file_uploads')     == 1);
 define('MYSQL_VERSION',     mysql_get_client_info());
 define('MYSQL_VERSION_REQ', '5.0');
-define('PHP_VERSION_REQ',   '5.0');
+define('PHP_VERSION_REQ',   '5.2');
 define('REGISTER_GLOBALS',  ini_get('register_globals') == 1);
 define('SAFE_MODE',         ini_get('safe_mode')        == 1);
 define('WRITABLE_CACHE',    is_writable($writable['cache']));
@@ -281,8 +281,8 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
               <input id="password" name="password" type="password" />
             </div>
             <div>
-              <label for="confirm_password">Confirm Password:</label>
-              <input id="confirm_password" name="confirm_password" type="password" />
+              <label for="password_confirm">Confirm Password:</label>
+              <input id="password_confirm" name="password_confirm" type="password" />
             </div>
             <div>
               <label for="email">E-mail Address:</label>
@@ -302,6 +302,10 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
             </div>
           </fieldset>
         </form>
+      </div>
+      <div class="step" id="step-5">
+        <h2>Installation Complete</h2>
+        <p>Please delete the install folder and navigate to <a href="../index.php">your SourceBans install</a>.
       </div>
       <div class="buttons">
         <input id="back" type="button" value="&lt;&lt; Back" />

@@ -70,47 +70,59 @@ function RestoreSubmission(id, name)
   ShowBox('error', 'Restore Submission', 'Are you sure you want to restore the ban submission for "' + name + '" from the archive?');
 }
 
-function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, close)
+function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, time, redirect)
 {
-  // type = error, info, ok
-  $('dialog-title').set('text',  title);
-  $('dialog-text').set('html',   text);
-  if(txt_submit.length > 0)
+  if(txt_submit)
   {
-    $('dialog-submit').setStyle('display', 'block');
-    $('dialog-submit').set('value', txt_submit);
-    $('dialog-submit').addEvent('click', function(e) {
-      if(typeof(cb_submit) == 'function')
-        cb_submit();
-      else
-        $('dialog').submit();
+    $('dialog-submit').set({
+      'events': {
+        'click': function(e) {
+          if(typeof(cb_submit) == 'function')
+            cb_submit();
+          else
+            $('dialog').submit();
+        }
+      },
+      'styles': {
+        'display': 'block'
+      },
+      'value': txt_submit
     });
   }
   else
     $('dialog-submit').setStyle('display', 'none');
-  if(txt_back.length   > 0)
+  if(txt_back)
   {
-    $('dialog-back').setStyle('display', 'block');
-    $('dialog-back').set('value',   txt_back);
-    $('dialog-back').addEvent('click', function(e) {
-      if(typeof(cb_back) == 'function')
-        cb_back();
-      else
-        $('dialog').fade('out');
+    $('dialog-back').set({
+      'events': {
+        'click': function(e) {
+          if(typeof(cb_back) == 'function')
+            cb_back();
+          else
+            $('dialog').fade('out');
+        }
+      },
+      'styles': {
+        'display': 'block'
+      },
+      'value': txt_back
     });
   }
   else
     $('dialog-back').setStyle('display', 'none');
   
-  $('dialog').setProperty('class', 'dialog-' + type);
-  $('dialog').fade('in');
+  $('dialog-title').set('text', title);
+  $('dialog-text').set('html',  text);
+  $('dialog').set('class', 'dialog-' + type).fade('in');
   
-  if(close)
+  if(time)
   {
-    if(redir)
-      setTimeout('window.location = "' + redir + '"', 5000);
+    if(redirect)
+      (function() {
+        window.location = redirect;
+      }).delay(time);
     else
-      setTimeout('$("dialog").fade("out");', 5000);
+      $('dialog-back').fireEvent('click').delay(time);
   }
 }
 
@@ -128,6 +140,21 @@ function UnbanBans(ids)
 /*
  * sAJAX Callbacks
  */
+function handleFormSubmit(res)
+{
+  if(!res)
+    return;
+  
+  res = JSON.decode(res);
+  if(res.error)
+  {
+    ShowBox('error', 'Error', res.error);
+    return;
+  }
+  if(res.redirect)
+    window.location = res.redirect;
+}
+
 function kickPlayer(res)
 {
   if(res.error)
@@ -157,17 +184,30 @@ function setServerInfo(res)
 {
   if(res.error)
   {
-    $('host_' + res.id).set('text', res.error).setStyle('fontWeight', 'bold');
+    $('host_' + res.id).set({
+      'text': res.error,
+      'styles': {
+        'font-weight': 'bold'
+      }
+    });
     if($chk($('players_' + res.id)))
-	  $('players_' + res.id).set('text', 'N/A');
+      $('players_' + res.id).set('text', 'N/A');
     if($chk($('map_'     + res.id)))
-	  $('map_'     + res.id).set('text', 'N/A');
+      $('map_'     + res.id).set('text', 'N/A');
     if($chk($('mapimg_'  + res.id)))
-	  $('mapimg_'  + res.id).set('src', 'images/maps/unknown.jpg').set('alt', 'Unknown').set('title', 'Unknown');
+      $('mapimg_'  + res.id).set({
+        'alt': 'Unknown',
+        'src': 'images/maps/unknown.jpg',
+        'title': 'Unknown'
+      });
     if($chk($('vac_'     + res.id)))
-	  $('vac_'     + res.id).setStyle('display', 'none');
+      $('vac_'     + res.id).setStyle('display', 'none');
     if($chk($('os_'      + res.id)))
-	  $('os_'      + res.id).set('src', 'images/server_small.png').set('alt', 'U').set('title', 'Unknown');
+      $('os_'      + res.id).set({
+        'alt': 'Unknown',
+        'src': 'images/server_small.png',
+        'title': 'Unknown'
+      });
     return;
   }
   if($chk($('players_' + res.id)) && res.maxplayers > 0)
@@ -175,7 +215,11 @@ function setServerInfo(res)
   if($chk($('map_'     + res.id)) && res.map)
     $('map_'     + res.id).set('text', res.map);
   if($chk($('mapimg_'  + res.id)) && res.map_image != '')
-    $('mapimg_'  + res.id).set('src', res.map_image).set('alt', res.map).set('title', res.map);
+    $('mapimg_'  + res.id).set({
+      'alt': res.map,
+      'src': res.map_image,
+      'title': res.map
+    });
   if($chk($('vac_'     + res.id)) && res.secure)
     $('vac_'     + res.id).setStyle('display', 'block');
   if($chk($('os_'      + res.id)) && res.os)
@@ -183,12 +227,23 @@ function setServerInfo(res)
     $('os_'      + res.id).set('src', 'images/' + res.os + '.png');
     
     if(res.os == 'l')
-      $('os_'    + res.id).set('alt', 'Linux').set('title', 'Linux');
+      $('os_'    + res.id).set({
+        'alt': 'Linux',
+        'title': 'Linux'
+      });
     if(res.os == 'w')
-      $('os_'    + res.id).set('alt', 'Windows').set('title', 'Windows');
+      $('os_'    + res.id).set({
+        'alt': 'Windows',
+        'title': 'Windows'
+      });
   }
   
-  $('host_'      + res.id).set('html', res.hostname).setStyle('fontWeight', 'normal');
+  $('host_'      + res.id).set({
+    'html': res.hostname,
+    'styles': {
+      'font-weight': 'normal'
+    }
+  });
 }
 
 function setServerPlayers(res)
@@ -251,19 +306,19 @@ SWFAddress.addEventListener(SWFAddressEvent.CHANGE, function(e) {
   var active = window.location.hash.substring(1) || undefined;
   
   $$('*').each(function(el) {
-    if(typeof(el.id) == 'string')
+    if(typeof(el.id) != 'string')
+      return;
+    
+    // If tab was found, remove "active" class
+    if(!el.id.indexOf('tab-'))
+      el.removeClass('active');
+    // If pane was found, hide it
+    if(!el.id.indexOf('pane-'))
     {
-      // If tab was found, remove "active" class
-      if(!el.id.indexOf('tab-'))
-        el.removeClass('active');
-      // If pane was found, hide it
-      if(!el.id.indexOf('pane-'))
-      {
-        el.setStyle('display', 'none');
-        
-        if(!active)
-          active = el.id.substring(5);
-      }
+      el.setStyle('display', 'none');
+      
+      if(!active)
+        active = el.id.substring(5);
     }
   });
   
@@ -289,27 +344,22 @@ SWFAddress.addEventListener(SWFAddressEvent.CHANGE, function(e) {
 
 window.addEvent('domready', function() {
   $$('*').each(function(el) {
-    if(typeof(el.id) == 'string')
-    {
-      if(!el.id.indexOf('expires_'))
-        x_BanExpires.periodical(1000, el, parseInt(el.id.substring(8)), el.get('title'), updateBanExpires);
-      if(!el.id.indexOf('server_admins_'))
-        x_ServerAdmins(parseInt(el.id.substring(14)),  setServerAdmins);
-      if(!el.id.indexOf('host_'))
-        x_ServerInfo(parseInt(el.id.substring(5)),     setServerInfo);
-      if(!el.id.indexOf('playerlist_'))
-        x_ServerPlayers(parseInt(el.id.substring(11)), setServerPlayers);
-    }
+    if(typeof(el.id) != 'string')
+      return;
+    
+    if(!el.id.indexOf('expires_'))
+      x_BanExpires.periodical(1000, el, parseInt(el.id.substring(8)), el.get('title'), updateBanExpires);
+    if(!el.id.indexOf('server_admins_'))
+      x_ServerAdmins(parseInt(el.id.substring(14)),  setServerAdmins);
+    if(!el.id.indexOf('host_'))
+      x_ServerInfo(parseInt(el.id.substring(5)),     setServerInfo);
+    if(!el.id.indexOf('playerlist_'))
+      x_ServerPlayers(parseInt(el.id.substring(11)), setServerPlayers);
   });
-  $$('form').each(function(el) {
+  $$('form[method=post]').each(function(el) {
     el.addEvent('submit', function(e) {
       e.stop();
-      
-      this.set('send', {
-        onComplete: function(res) {
-          alert(res);
-        }
-      }).send();
+      SubmitForm(this, handleFormSubmit);
     });
   });
   $$('.back').each(function(el) {
@@ -330,7 +380,7 @@ window.addEvent('domready', function() {
   });
   $$('.connect').each(function(el) {
     el.addEvent('click', function(e) {
-      window.location = 'steam://connect/' + this.getAttribute('rel');
+      window.location = 'steam://connect/' + this.get('rel');
     });
   });
   $$('.group_type_select').each(function(el) {
@@ -346,14 +396,14 @@ window.addEvent('domready', function() {
   });
   $$('.refresh').each(function(el) {
     el.addEvent('click', function(e) {
-      var id = parseInt(this.getAttribute('rel'));
+      var id = parseInt(this.get('rel'));
       x_ServerInfo(id,    setServerInfo);
       x_ServerPlayers(id, setServerPlayers);
     });
   });
   $$('.select_theme').each(function(el) {
     el.addEvent('click', function(e) {
-      x_SelectTheme(this.getAttribute('rel'));
+      x_SelectTheme(this.get('rel'));
     });
   });
   $$('.tbl_out').each(function(el) {
@@ -375,22 +425,30 @@ window.addEvent('domready', function() {
   $$('.toggle_mce').each(function(el) {
     el.addEvent('click', function(e) {
       e.stop();
-      var id = this.getAttribute('rel');
+      var id = this.get('rel');
       tinyMCE.execCommand(tinyMCE.getInstanceById(id) == null ? 'mceAddControl' : 'mceRemoveControl', false, id);
     });
   });
   if($$('div.opener').length  > 0)
-    InitAccordion('tr.opener',   'div.opener', 'mainwrapper');
+    InitAccordion('tr.opener',   'div.opener',  'mainwrapper');
   if($$('div.opener2').length > 0)
-    InitAccordion('tr.opener2', 'div.opener2', 'mainwrapper');
+    InitAccordion('tr.opener2',  'div.opener2', 'mainwrapper');
   if($$('div.opener3').length > 0)
-    InitAccordion('tr.opener3', 'div.opener3', 'mainwrapper');
+    InitAccordion('tr.opener3',  'div.opener3', 'mainwrapper');
   if($$('tr.sea_open').length > 0)
-    InitAccordion('tr.sea_open', 'form.panel', 'mainwrapper');
+    InitAccordion('tr.sea_open', 'form.panel',  'mainwrapper');
   if($chk($('action_select')))
   {
     $('action_select').addEvent('change', function(e) {
       alert(this.value);
+    });
+  }
+  if($chk($('add_override')))
+  {
+    $('add_override').addEvent('click', function(e) {
+      e.stop();
+      var el = $('overrides').getLast('tr');
+      el.clone().inject(el.getParent());
     });
   }
   if($chk($('admins_select')))
@@ -439,14 +497,6 @@ window.addEvent('domready', function() {
     });
     
     $('enable_smtp').fireEvent('change');
-  }
-  if($chk($('override_name')))
-  {
-    $('override_name').addEvent('keydown', function(e) {
-      var el = this.getParent().getParent();
-      if(this.value == '' && el == el.getParent().getLast('tr'))
-        el.clone().inject(el.getParent());
-    });
   }
   if($chk($('permission_owner')))
   {
@@ -513,10 +563,8 @@ window.addEvent('domready', function() {
   if($chk($('reason_other')))
   {
     $('reason').addEvent('change', function(e) {
-      $('reason_other').setStyle('display', $('reason').value == 'other' ? 'block' : 'none');
-    });
-    
-    $('reason').fireEvent('change');
+      $('reason_other').setStyle('display', this.value == 'other' ? 'block' : 'none');
+    }).fireEvent('change');
   }
   if($chk($('relver')))
     x_Version(setVersion);

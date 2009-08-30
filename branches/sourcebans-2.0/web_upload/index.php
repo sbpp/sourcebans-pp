@@ -1,6 +1,5 @@
 <?php
 require_once 'init.php';
-require_once WRITERS_DIR . 'bans.php';
 
 $config = Env::get('config');
 

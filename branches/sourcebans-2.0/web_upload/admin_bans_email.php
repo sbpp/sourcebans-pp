@@ -13,6 +13,10 @@ try
     try
     {
       Util::mail($_POST['email'], 'noreply@' . $_SERVER['HTTP_HOST'], $_POST['subject'], $_POST['message']);
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

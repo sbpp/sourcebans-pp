@@ -323,9 +323,9 @@ class Util
   /**
    * Redirects to the given page
    */
-  public static function redirect($url = '')
+  public static function redirect($url = null)
   {
-    header('Location: ' . empty($url) ? $_SERVER['HTTP_REFERER'] : $url);
+    header('Location: ' . (empty($url) ? $_SERVER['HTTP_REFERER'] : $url));
     exit;
   }
   

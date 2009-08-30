@@ -25,7 +25,13 @@
             <tr class="tbl_out" onclick="window.location = 'banlist.php#^{$smarty.foreach.ban.index}';">
               <td class="listtable_1 center"><img alt="{$ban.mod_name|escape}" class="icon" src="images/games/{$ban.mod_icon}" title="{$ban.mod_name|escape}" /></td>
               <td class="listtable_1 center">{$ban.created|date_format:$date_format}</td>
-              <td class="listtable_1">{$ban.name|utf8_truncate:25|escape}</td>
+              <td class="listtable_1">
+                {if empty($ban.name)}
+                <em class="not_applicable">no nickname present</em>
+                {else}
+                {$ban.name|utf8_truncate:25|escape}
+                {/if}
+              </td>
               <td class="listtable_1{if !empty($ban.status)}_unbanned{/if}">{$ban.length|strtok:','}{if !empty($ban.status)} (<abbr title="{$ban.status}">{$ban.status|utf8_truncate:1:''}</abbr>){/if}</td>
             </tr>
             {/foreach}

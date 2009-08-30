@@ -16,6 +16,7 @@ $userbank = Env::get('userbank');
 
 if($userbank->is_logged_in())
 {
+  sAJAX::register('AddServerGroup');
   sAJAX::register('ApplyTheme');
   sAJAX::register('ClearCache');
   sAJAX::register('KickPlayer');
@@ -23,6 +24,7 @@ if($userbank->is_logged_in())
   sAJAX::register('SendRCON');
   sAJAX::register('ServerAdmins');
   sAJAX::register('SelectTheme');
+  sAJAX::register('SetWebGroup');
   sAJAX::register('Version');
 }
 
@@ -30,6 +32,54 @@ sAJAX::register('BanExpires');
 sAJAX::register('SearchBans');
 sAJAX::register('ServerInfo');
 sAJAX::register('ServerPlayers');
+
+function AddServerGroup($admins, $id)
+{
+  try
+  {
+    $userbank = Env::get('userbank');
+    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
+      throw new Exception('Access Denied.');
+    
+    require_once WRITERS_DIR . 'admins.php';
+    
+    foreach($admins as $admin)
+      AdminsWriter::addServerGroup($admin, $id);
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'id'    => $id,
+      'name'  => $name,
+      'error' => $e->getMessage()
+    );
+  }
+}
+
+function SetServerGroup($admins, $id)
+{
+  try
+  {
+    $userbank = Env::get('userbank');
+    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
+      throw new Exception('Access Denied.');
+    
+    require_once WRITERS_DIR . 'admins.php';
+    
+    foreach($admins as $admin)
+      AdminsWriter::edit($admin, array(
+        'group_id' => $id
+      ));
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'id'    => $id,
+      'name'  => $name,
+      'error' => $e->getMessage()
+    );
+  }
+}
 
 function BanExpires($id, $ends)
 {

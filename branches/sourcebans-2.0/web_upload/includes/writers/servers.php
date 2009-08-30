@@ -31,7 +31,7 @@ class ServersWriter
                   VALUES      (?, ?, ?, ?)',
                   array($ip, $port, $rcon, $mod));
     
-    $id             = $db->Insert_ID();
+    $id       = $db->Insert_ID();
     
     if(is_array($groups) && !empty($groups))
     {

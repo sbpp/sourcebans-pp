@@ -66,16 +66,18 @@ function SubmitForm(el, cb_complete)
     'events': {
       'load': function() {
         if(typeof(cb_complete) == 'function')
-          cb_complete(this.get('text'));
+          cb_complete(this.contentWindow.document.body.innerHTML);
         
+        $('ajax-indicator').setStyle('display', 'none');
         this.dispose();
       }
     },
     'styles': {
       'display': 'none'
     }
-  });
+  }).inject(el);
   
+  $('ajax-indicator').setStyle('display', 'block');
   $(el).set('target', 'submit_form').submit();
 }
 

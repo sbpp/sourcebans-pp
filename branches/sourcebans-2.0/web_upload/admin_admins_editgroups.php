@@ -17,6 +17,10 @@ try
     try
     {
       AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, null, $_POST['srv_group'], $_POST['web_group']);
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

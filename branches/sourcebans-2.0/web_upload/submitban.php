@@ -16,6 +16,7 @@ try
     try
     {
       SubmissionsWriter::add($_POST['name'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['server'], $_POST['subname'], $_POST['subemail']);
+      exit;
     }
     catch(Exception $e)
     {

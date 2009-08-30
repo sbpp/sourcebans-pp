@@ -26,7 +26,7 @@ try
       {
         case 'add':
           if($_POST['password'] != $_POST['password_confirm'])
-            throw new Exception('Passwords don\'t match');
+            throw new Exception('The passwords don\'t match.');
           
           AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
           break;
@@ -36,6 +36,10 @@ try
         default:
           throw new Exception('Invalid action specified.');
       }
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

@@ -15,6 +15,10 @@ try
     try
     {
       CommentsWriter::edit($_POST['id'], $_POST['message']);
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

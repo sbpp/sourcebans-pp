@@ -24,6 +24,10 @@ try
         default:
           throw new Exception('Invalid action specified.');
       }
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

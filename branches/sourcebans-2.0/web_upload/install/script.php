@@ -43,7 +43,7 @@ window.addEvent('domready', function() {
     if($chk($('step-'  + (step + 1))))
       $('next').disabled = false;
     
-    if(step != 3)
+    if(step != 4)
       $('next').set('value', 'Next >>');
   }).disabled = true;
   $('next').addEvent('click', function(e) {
@@ -54,7 +54,7 @@ window.addEvent('domready', function() {
     if(!$chk($('step-' + (step + 1))))
       this.disabled      = true;
     
-    if(step == 3)
-      this.set('value', 'Install');
+    if(step == 4)
+      this.set('value', 'Finish');
   }).disabled = false;
 });

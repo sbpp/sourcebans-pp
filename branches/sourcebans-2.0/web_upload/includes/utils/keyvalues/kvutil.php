@@ -5,17 +5,17 @@
  * @todo Add response codes to file error exception
  * @todo Make accessors to parse and wrtie via strings and not just files.
  * Constant: KVREADER_DEBUG	bool	Used to turn on debuging
- * <code>define("KVREADER_DEBUG", true);</code>
+ * <code>define('KVREADER_DEBUG', true);</code>
  * 
  * To use KVReader to read a config:
  * <code>
- * $reader = new KVReader("config.cfg");
+ * $reader = new KVReader('config.cfg');
  * echo var_dump($reader->Values);
  * </code>
  * 
  * To write a new config from a confile file that may or may not exist:
  * <code>
- * $reader = new KVReader("config.cfg", true);
+ * $reader = new KVReader('config.cfg', true);
  * // make changes to $reader->Values
  * $reader->saveConfig();
  * </code>
@@ -40,61 +40,38 @@ class KVReader
 
   /**
    * Function: __construct
-   * Constructor for KVReader to initilaize and/or read Valve Config Keys
-   * @param String   $iFile    File to read and/or write to
+   * Constructor for KVReader to initiliaze and/or read Valve Config Keys
+   * @param String   $sFile    File to read and/or write to
    * @param Bool     $iNoErr   Ignore Exception error on reading file in case file doesn't exist (default = false)
    * @return void
    */
-  public function __construct($iFile, $iNoErr = false)
+  public function __construct($sFile)
   {
-    $this->file = $iFile;
+    $this->file = $sFile;
 
-    try
-    {
-      if (!$this->fs = @fopen($this->file, "r"))
-        throw new Exception('File could not be found and/or opened!');
-    } 
+    if (!$this->fs = @fopen($this->file, 'r'))
+      throw new Exception('File could not be found and/or opened!');
 
-    catch (Exception $err)
-    {
-      if ($iNoErr)
-        return;
-      
-      echo '<h3>Exception: </h3>', '<b>Class Name:</b>' . get_class($this) . '<br />', '<b>Error message:</b> ' . $err->getMessage() . ' <b>Code:</b> ' . $err->getCode() . '<br />', '<b>File and line:</b> ' . $err->getFile() . '(' . $err->getLine() . ')<br />';
-    }
+    $this->Values = $this->readSegment();
 
-    if ($this->fs)
-    {
-      $this->Values = $this->readSegment();
-
-      fclose($this->fs);
-    }
+    fclose($this->fs);
   }
 
   /**
-   * function: saveConfig
+   * Function: saveConfig
    * @return Bool	True if sucessful, false if failed
    */
   public function saveConfig()
   {
-    try
-    {
-      if (!$this->fs = fopen($this->file, "w+"))
-        throw new Exception('File could not be found and/or opened for writing!');
-    } 
-
-    catch (Exception $err)
-    {
-      echo '<h3>Exception: </h3>', '<b>Class Name:</b>' . get_class($this) . '<br />', '<b>Error message:</b> ' . $err->getMessage() . ' <b>Code:</b> ' . $err->getCode() . '<br />', '<b>File and line:</b> ' . $err->getFile() . '(' . $err->getLine() . ')<br />';
-      return false;
-    }
+    if (!$this->fs = fopen($this->file, 'w+'))
+      throw new Exception('File could not be found and/or opened for writing!');
 
     return $this->writeSegment($this->Values, 0);
   }
   
   /**
    * Private function: WriteSegment
-   * Used to recusivly take the array values and export to the file stream
+   * Used to recusively take the array values and export to the file stream
    * @param Array   $iArray     Array to process, if array contains sub arrarys, it will call itself
    * @param Int     $iTeirNum   Teir number to indicate indentation from the root. Start at 0
    * @return bool               True if sucsessful, false if failed
@@ -122,7 +99,7 @@ class KVReader
         if ($iTeirNum > 0)
           $key = '"' . $key . '"';
 
-        $data = ($iTeirNum > 0 ? "\n" : "") . $indent . "$key\n$indent{\n";
+        $data = ($iTeirNum > 0 ? "\n" : '') . $indent . "$key\n$indent{\n";
         fwrite($this->fs, $data);
 
         $this->writeSegment($value, ($iTeirNum + 1));
@@ -151,7 +128,7 @@ class KVReader
     $segArray = array();
 
     if ($iSegType == self::SEG_STRING)
-      $ret = "";
+      $ret = '';
 
     while (!feof($this->fs))
     {
@@ -161,7 +138,7 @@ class KVReader
       $last = $byte;
       $byte = fread($this->fs, 1);
 
-      if ($iSegType == self::SEG_ENTITY && $byte == "{")
+      if ($iSegType == self::SEG_ENTITY && $byte == '{')
       {
         $segArray[] = $ret;
         $iSegType = self::SEG_ROOT;
@@ -169,19 +146,19 @@ class KVReader
 
       if ($iSegType != self::SEG_ENTITY && $iSegType != self::SEG_STRING && $iSegType != self::SEG_COMMENT)
       {
-        if ($byte == "{")
+        if ($byte == '{')
         {
-          $ret = $this->readSegment(self::SEG_TEIR, "}");
+          $ret = $this->readSegment(self::SEG_TEIR, '}');
           $segArray[] = $ret;
         }
 
-        if ($byte == "/" && $last == "/")
+        if ($byte == '/' && $last == '/')
           $this->readSegment(self::SEG_COMMENT, chr(13));
 
-        if ($byte == "*" && $last == "/")
-          $this->readSegment(self::SEG_COMMENT, "*/");
+        if ($byte == '*' && $last == '/')
+          $this->readSegment(self::SEG_COMMENT, '*/');
 
-        if ($byte == '"' || $byte == "'")
+        if ($byte == '"' || $byte == '\'')
         {
           $ret = $this->readSegment(self::SEG_STRING, $byte);
           $segArray = array_merge($segArray, array($ret));
@@ -222,12 +199,12 @@ class KVReader
     {
       echo (ftell($this->fs) . " - Type:$iSegType Qual:$iQualifier - ");
 
-      if ($iSegType == 0 OR $iSegType == 1)
+      if ($iSegType == 0 || $iSegType == 1)
         echo var_dump($segArray);
       else
         echo var_dump($ret);
 
-      echo "<br />";
+      echo '<br />';
     }
 
     switch ($iSegType)

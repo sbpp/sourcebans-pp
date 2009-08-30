@@ -15,6 +15,10 @@ try
     try
     {
       CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['text']);
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {
