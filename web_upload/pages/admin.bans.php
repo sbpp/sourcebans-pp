@@ -64,10 +64,10 @@ if(isset($_POST['action']) && $_POST['action'] == "importBans")
 
 if(isset($_GET["rebanid"]))
 {
-	echo '<script type="text/javascript">xajax_PrepareReban("'.$_GET["rebanid"].'");</script>';
+	echo '<script type="text/javascript">xajax_PrepareReban("'.(int)$_GET["rebanid"].'");</script>';
 }
 if((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pName']) && isset($_GET['sid'])) {
-	echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_PasteBan('".$_GET['sid']."', '".$_GET['pName']."');</script>";
+	echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_PasteBan('".(int)$_GET['sid']."', '".$_GET['pName']."');</script>";
 }
 
 echo '<div id="admin-page-content">';
@@ -145,7 +145,7 @@ echo '<div id="admin-page-content">';
 		$protest_list = array();
 		foreach($protests as $prot)
 		{
-			$prot['reason'] = wordwrap($prot['reason'], 55, "<br />\n", true);
+			$prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 			$protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
 							    				FROM ".DB_PREFIX."_bans AS ba
 							    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
@@ -166,13 +166,13 @@ echo '<div id="admin-page-content">';
 	            $prot['ends'] = 'never';
 			else
 				$prot['ends'] = SBDate($dateformat, $protestb['ends']);
-				$prot['ban_reason'] = $protestb['reason'];
+            $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
 
-				$prot['admin'] = $protestb[11];
-				if(!$protestb[12])
-					$prot['server'] = "Web Ban";
-				else
-					$prot['server'] = $protestb[12];
+            $prot['admin'] = $protestb[11];
+            if(!$protestb[12])
+                $prot['server'] = "Web Ban";
+            else
+                $prot['server'] = $protestb[12];
 			$prot['datesubmitted'] = SBDate($dateformat, $prot['datesubmitted']);
 			//COMMENT STUFF
 			//-----------------------------------
@@ -202,7 +202,8 @@ echo '<div id="admin-page-content">';
 
 					$cdata['comname'] = $commentres->fields['comname'];
 					$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
-					$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+                    $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
+					$cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
 					if(!empty($commentres->fields['edittime'])) {
 						$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
@@ -297,7 +298,7 @@ echo '<div id="admin-page-content">';
 		$protest_list_archiv = array();
 		foreach($protestsarchiv as $prot)
 		{
-			$prot['reason'] = wordwrap($prot['reason'], 55, "<br />\n", true);
+			$prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 
 			if($prot['archiv'] != "2") {
 				$protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
@@ -319,12 +320,12 @@ echo '<div id="admin-page-content">';
 			            $prot['ends'] = 'never';
 					else
 						$prot['ends'] = SBDate($dateformat, $protestb['ends']);
-						$prot['ban_reason'] = $protestb['reason'];
-						$prot['admin'] = $protestb[11];
-						if(!$protestb[12])
-							$prot['server'] = "Web Ban";
-						else
-							$prot['server'] = $protestb[12];
+                    $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
+                    $prot['admin'] = $protestb[11];
+                    if(!$protestb[12])
+                        $prot['server'] = "Web Ban";
+                    else
+                        $prot['server'] = $protestb[12];
 					if($prot['archiv'] == "1")
 						$prot['archive'] = "protest has been archived.";
 					else if($prot['archiv'] == "3")
@@ -364,7 +365,8 @@ echo '<div id="admin-page-content">';
 
 					$cdata['comname'] = $commentres->fields['comname'];
 					$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
-					$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+					$cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
+					$cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
 					if(!empty($commentres->fields['edittime'])) {
 						$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
@@ -470,8 +472,8 @@ echo '<div id="admin-page-content">';
 			$submission_list = array();
 			foreach($submissions AS $sub)
 			{
-                $sub['name'] = wordwrap($sub['name'], 55, "<br />", true);
-                $sub['reason'] = wordwrap($sub['reason'], 55, "<br />", true);
+                $sub['name'] = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
+                $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
             
 				$dem = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos
 												WHERE demtype = \"S\" AND demid = " .(int)$sub['subid']);
@@ -522,7 +524,8 @@ echo '<div id="admin-page-content">';
 
 							$cdata['comname'] = $commentres->fields['comname'];
 							$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
-							$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+							$cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
+                            $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
 							if(!empty($commentres->fields['edittime'])) {
 								$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
@@ -607,8 +610,8 @@ echo '<div id="admin-page-content">';
 			$submission_list_archiv = array();
 			foreach($submissionsarchiv AS $sub)
 			{
-                $sub['name'] = wordwrap($sub['name'], 55, "<br />", true);
-                $sub['reason'] = wordwrap($sub['reason'], 55, "<br />", true);
+                $sub['name'] = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
+                $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
             
 				$dem = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos
 												WHERE demtype = \"S\" AND demid = " .(int)$sub['subid']);
@@ -663,7 +666,8 @@ echo '<div id="admin-page-content">';
 
 							$cdata['comname'] = $commentres->fields['comname'];
 							$cdata['added'] = SBDate($dateformat,$commentres->fields['added']);
-							$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+							$cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
+                            $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
 							if(!empty($commentres->fields['edittime'])) {
 								$cdata['edittime'] = SBDate($dateformat,$commentres->fields['edittime']);
