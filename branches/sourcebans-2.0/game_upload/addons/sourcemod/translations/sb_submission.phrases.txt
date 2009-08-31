@@ -19,4 +19,8 @@
 		"#format"		"{1:s}"
 		"en"			"Remember to visit our website ({1}) and upload the demo."
 	}
+	"Select player"
+	{
+		"en"			"Select Player:"
+	}
 }
