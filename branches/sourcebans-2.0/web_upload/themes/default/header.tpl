@@ -61,26 +61,26 @@
         <div id="head-userbox">
           {$lang_welcome}
           {if $logged_in}
-          {$username} (<a href="logout.php">{$lang_logout}</a>)
-          <br /><a href="account.php">{$lang_your_account}</a>
+          {$username} (<a href="{build_url _=logout.php}">{$lang_logout}</a>)
+          <br /><a href="{build_url _=account.php}">{$lang_your_account}</a>
           {else}
-          (<a href="login.php">{$lang_login}</a>)
+          (<a href="{build_url _=login.php}">{$lang_login}</a>)
           {/if}
         </div>
       </div>
       <div id="tabsWrapper">
         <ul id="tabs">
-          <li{if $active == "dashboard.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="dashboard.php" title="{$lang_dashboard|ucwords} :: {$lang_dashboard_desc}">{$lang_dashboard|ucwords}</a></span></li>
-          <li{if $active == "banlist.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="banlist.php" title="{$lang_ban_list|ucwords} :: {$lang_ban_list_desc}">{$lang_ban_list|ucwords}</a></span></li>
-          <li{if $active == "servers.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="servers.php" title="{$lang_servers|ucwords} :: {$lang_servers_desc}">{$lang_servers|ucwords}</a></span></li>
+          <li{if $active == "dashboard.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=dashboard.php}" title="{$lang_dashboard|ucwords} :: {$lang_dashboard_desc}">{$lang_dashboard|ucwords}</a></span></li>
+          <li{if $active == "banlist.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=banlist.php}" title="{$lang_ban_list|ucwords} :: {$lang_ban_list_desc}">{$lang_ban_list|ucwords}</a></span></li>
+          <li{if $active == "servers.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=servers.php}" title="{$lang_servers|ucwords} :: {$lang_servers_desc}">{$lang_servers|ucwords}</a></span></li>
           {if $enable_submit}
-          <li{if $active == "submitban.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="submitban.php" title="{$lang_submit_ban|ucwords} :: {$lang_submit_ban_desc}">{$lang_submit_ban|ucwords}</a></span></li>
+          <li{if $active == "submitban.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=submitban.php}" title="{$lang_submit_ban|ucwords} :: {$lang_submit_ban_desc}">{$lang_submit_ban|ucwords}</a></span></li>
           {/if}
           {if $enable_protest}
-          <li{if $active == "protestban.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="protestban.php" title="{$lang_protest_ban|ucwords} :: {$lang_protest_ban_desc}">{$lang_protest_ban|ucwords}</a></span></li>
+          <li{if $active == "protestban.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=protestban.php}" title="{$lang_protest_ban|ucwords} :: {$lang_protest_ban_desc}">{$lang_protest_ban|ucwords}</a></span></li>
           {/if}
           {if $logged_in}
-          <li{if $active == "admin.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="admin.php" title="{$lang_administration|ucwords} :: {$lang_administration_desc}">{$lang_administration|ucwords}</a></span></li>
+          <li{if $active == "admin.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=admin.php}" title="{$lang_administration|ucwords} :: {$lang_administration_desc}">{$lang_administration|ucwords}</a></span></li>
           {/if}
           {foreach from=$tabs item=tab}
           <li{if $active == $tab.url} class="active"{/if}><span class="tabfill"><a class="tips" href="{$tab.url}" title="{$tab.name} :: {$tab.desc}">{$tab.name}</a></span></li>
@@ -88,22 +88,22 @@
         </ul>
         <ul id="nav">
           {if $user_permission_admins}
-          <li><a href="admin_admins.php">{$lang_admins}</a></li>
+          <li><a href="{build_url _=admin_admins.php}">{$lang_admins}</a></li>
           {/if}
           {if $user_permission_bans}
-          <li><a href="admin_bans.php">{$lang_bans}</a></li>
+          <li><a href="{build_url _=admin_bans.php}">{$lang_bans}</a></li>
           {/if}
           {if $user_permission_groups}
-          <li><a href="admin_groups.php">{$lang_groups}</a></li>
+          <li><a href="{build_url _=admin_groups.php}">{$lang_groups}</a></li>
           {/if}
           {if $user_permission_mods}
-          <li><a href="admin_mods.php">{$lang_mods}</a></li>
+          <li><a href="{build_url _=admin_mods.php}">{$lang_mods}</a></li>
           {/if}
           {if $user_permission_servers}
-          <li><a href="admin_servers.php">{$lang_servers}</a></li>
+          <li><a href="{build_url _=admin_servers.php}">{$lang_servers}</a></li>
           {/if}
           {if $user_permission_settings}
-          <li><a href="admin_settings.php">{$lang_settings}</a></li>
+          <li><a href="{build_url _=admin_settings.php}">{$lang_settings}</a></li>
           {/if}
         </ul>
         <form action="banlist.php" id="search" method="get">
@@ -115,7 +115,7 @@
       <div id="innerwrapper">
         <h2 id="content_title">{$page_title}</h2>
         <div id="breadcrumb">
-          » <a href="index.php">Home</a>
+          » <a href="{build_url _=index.php}">Home</a>
           {foreach from=$breadcrumb_links item=link}
           » <a href="{$link.href}">{$link.title}</a>
           {/foreach}

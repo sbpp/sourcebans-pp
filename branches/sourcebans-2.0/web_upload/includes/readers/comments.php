@@ -23,7 +23,7 @@ class CommentsReader extends SBReader
                                ORDER BY ' . $this->sort,
                                array($this->ban_id, $this->type));
     
-    SBPlugins::call('OnGetComments', &$comments, $this->ban_id, $this->type);
+    list($comments) = SBPlugins::call('OnGetComments', $comments, $this->ban_id, $this->type);
     
     return $comments;
   }

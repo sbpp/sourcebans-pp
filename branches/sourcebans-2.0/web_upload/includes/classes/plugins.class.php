@@ -38,18 +38,21 @@ class SBPlugins
    */
   public static function call()
   {
-    $args = func_get_args();
-    $hook = array_shift($args);
-    $ret  = true;
+    $args     = func_get_args();
+    $hook     = array_shift($args);
+    
+    $ref_args = array();
+    foreach($args as &$arg)
+      $ref_args[] = &$arg;
     
     // Loop through all plugins and call the hook when it's enabled
     foreach(self::$plugins as $class => $plugin)
     {
-      if(is_callable(array($class, $hook)) && $plugin['enabled'] && !call_user_func_array(array($class, $hook), $args))
-        $ret = false;
+      if(is_callable(array($class, $hook)) && $plugin['enabled'])
+        call_user_func_array(array($class, $hook), $ref_args);
     }
     
-    return $ret;
+    return $ref_args;
   }
   
   

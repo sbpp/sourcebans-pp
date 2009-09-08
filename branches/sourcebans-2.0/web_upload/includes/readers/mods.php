@@ -17,7 +17,7 @@ class ModsReader extends SBReader
                            FROM     ' . Env::get('prefix') . '_mods
                            ORDER BY ' . $this->sort);
     
-    SBPlugins::call('OnGetMods', &$mods);
+    list($mods) = SBPlugins::call('OnGetMods', $mods);
     
     return $mods;
   }

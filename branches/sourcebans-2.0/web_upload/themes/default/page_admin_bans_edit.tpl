@@ -49,7 +49,7 @@
                 </optgroup>
                 <option value="other">Other Reason</option>
               </select>
-              <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5" style="display: none;">{$ban_reason}</textarea>
+              <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5">{$ban_reason}</textarea>
               <label for="length">{help_icon title="$lang_length" desc="Select how long you want to ban this person for."}{$lang_length}</label>
               <select class="inputbox" {nid id="length"}>
                 <option value="0">{$lang_permanent}</option>

@@ -135,7 +135,7 @@ class BansReader extends SBReader
     
     geoip_close($geoip);
     
-    SBPlugins::call('OnGetBans', &$ban_list, &$ban_count, $this->type, $this->search, $this->hideinactive);
+    list($ban_list, $ban_count) = SBPlugins::call('OnGetBans', $ban_list, $ban_count, $this->type, $this->search, $this->hideinactive);
     
     return array('count' => $ban_count,
                  'list'  => $ban_list);

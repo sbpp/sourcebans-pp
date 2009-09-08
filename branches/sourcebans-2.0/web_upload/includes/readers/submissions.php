@@ -34,7 +34,7 @@ class SubmissionsReader extends SBReader
       $submission['comments'] = $comments_reader->executeCached(ONE_DAY);
     }
     
-    SBPlugins::call('OnGetSubmissions', &$submissions);
+    list($submissions) = SBPlugins::call('OnGetSubmissions', $submissions);
     
     return $submissions;
   }

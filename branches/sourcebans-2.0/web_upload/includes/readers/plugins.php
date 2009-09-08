@@ -14,7 +14,7 @@ class PluginsReader extends SBReader
     $plugins = $db->GetAssoc('SELECT name, enabled
                               FROM   ' . Env::get('prefix') . '_plugins');
     
-    SBPlugins::call('OnGetPlugins', &$plugins);
+    list($plugins) = SBPlugins::call('OnGetPlugins', $plugins);
     
     return $plugins;
   }

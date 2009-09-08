@@ -16,7 +16,7 @@
                 <input class="btn ok" type="submit" value="{$lang_login}" />
               </div>
               <div id="loginOtherlinks">
-                <a href="index.php">Back to the homepage</a> - <a href="lostpassword.php">Lost your password?</a>
+                <a href="{build_url _=index.php}">Back to the homepage</a> - <a href="{build_url _=lostpassword.php}">Lost your password?</a>
               </div>
             </fieldset>
           </form>

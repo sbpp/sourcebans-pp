@@ -19,7 +19,7 @@ class TranslationsReader extends SBReader
     // Fetch translations
     $translations = Util::parse_ini_file(LANGUAGES_DIR . $this->language . '.lang');
     
-    SBPlugins::call('OnGetTranslations', &$translations, $this->language);
+    list($translations) = SBPlugins::call('OnGetTranslations', $translations, $this->language);
     
     return $translations;
   }

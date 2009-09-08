@@ -22,7 +22,7 @@ class LogsReader extends SBReader
                              ORDER BY  ' . $this->sort        .
                              ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    SBPlugins::call('OnGetLogs', &$logs);
+    list($logs) = SBPlugins::call('OnGetLogs', $logs);
     
     return $logs;
   }

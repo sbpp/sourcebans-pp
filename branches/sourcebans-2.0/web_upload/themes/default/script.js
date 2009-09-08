@@ -481,6 +481,23 @@ window.addEvent('domready', function() {
       ShowBox('error', 'Clear Logs', 'Are you sure you want to delete all of the log entries?');
       //x_ClearLogs();
     });
+  if($chk($('context-menu')))
+  {
+    var contextmenu = new MooMenu('context-menu');
+    
+    document.body.addEvent('click', function(e) {
+      contextmenu.hide();
+    });
+    
+    $$('td').each(function(el) {
+      el.addEvent('contextmenu', function(e) {
+        e.stop();
+        
+        if($$('input[checked]').length > 0)
+          contextmenu.show(e.page.y, e.page.x);
+      });
+    });
+  }
   if($chk($('demo_howto')))
     $('demo_howto').addEvent('click', function(e) {
       e.stop();

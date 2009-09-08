@@ -144,7 +144,8 @@ class BansWriter
         foreach($lines as $line)
         {
           $ban = explode(' ', $line);
-          self::add(BAN_IP_TYPE,
+          self::add('',
+                    BAN_IP_TYPE,
                     '',
                     $ban[2],
                     $ban[1],
@@ -159,7 +160,8 @@ class BansWriter
         foreach($lines as $line)
         {
           $ban = explode(' ', $line);
-          self::add(BAN_STEAM_TYPE,
+          self::add('',
+                    BAN_STEAM_TYPE,
                     $ban[2],
                     '',
                     $ban[1],

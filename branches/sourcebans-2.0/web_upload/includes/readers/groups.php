@@ -47,7 +47,7 @@ class GroupsReader extends SBReader
         break;
     }
     
-    SBPlugins::call('OnGetGroups', &$groups, $this->type);
+    list($groups) = SBPlugins::call('OnGetGroups', $groups, $this->type);
     
     return $groups;
   }

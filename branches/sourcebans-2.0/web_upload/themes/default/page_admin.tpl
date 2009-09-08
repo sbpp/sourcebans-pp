@@ -1,22 +1,22 @@
           <h3>Please select an option to administer.</h3>
           <ul class="admin">
             {if $user_permission_admins}
-            <li><a class="admins" href="admin_admins.php">{$lang_admins}</a></li>
+            <li><a class="admins" href="{build_url _=admin_admins.php}">{$lang_admins}</a></li>
             {/if}
             {if $user_permission_bans}
-            <li><a class="bans" href="admin_bans.php">{$lang_bans}</a></li>
+            <li><a class="bans" href="{build_url _=admin_bans.php}">{$lang_bans}</a></li>
             {/if}
             {if $user_permission_groups}
-            <li><a class="groups" href="admin_groups.php">{$lang_groups}</a></li>
+            <li><a class="groups" href="{build_url _=admin_groups.php}">{$lang_groups}</a></li>
             {/if}
             {if $user_permission_mods}
-            <li><a class="mods" href="admin_mods.php">{$lang_mods}</a></li>
+            <li><a class="mods" href="{build_url _=admin_mods.php}">{$lang_mods}</a></li>
             {/if}
             {if $user_permission_servers}
-            <li><a class="servers" href="admin_servers.php">{$lang_servers}</a></li>
+            <li><a class="servers" href="{build_url _=admin_servers.php}">{$lang_servers}</a></li>
             {/if}
             {if $user_permission_settings}
-            <li><a class="settings" href="admin_settings.php">{$lang_settings}</a></li>
+            <li><a class="settings" href="{build_url _=admin_settings.php}">{$lang_settings}</a></li>
             {/if}
           </ul>
           <table width="100%" cellpadding="3" cellspacing="0">

@@ -1,6 +1,6 @@
           <h3>{$lang_protest_ban|ucwords}</h3>
           <p>
-            Before you proceed make sure you first check our ban list and search it by clicking <a href="banlist.php">here</a> if you are listed and for what reason.
+            Before you proceed make sure you first check our ban list and search it by clicking <a href="{build_url _=banlist.php}">here</a> if you are listed and for what reason.
             If you do find yourself listed on the ban list and find the reason for this to be untrue you can write a protest.
           </p>
           <form action="{$active}" id="protest-main" method="post">

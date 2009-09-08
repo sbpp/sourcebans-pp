@@ -43,7 +43,7 @@ class ServersReader extends SBReader
     
     Util::array_qsort($servers, $this->sort);
     
-    SBPlugins::call('OnGetServers', &$servers);
+    list($servers) = SBPlugins::call('OnGetServers', $servers);
     
     return $servers;
   }

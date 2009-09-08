@@ -33,7 +33,7 @@
                   <td style="border-bottom: solid 1px #ccc"><img alt="{$mod.name|escape}" class="icon" src="images/games/{$mod.icon}" title="{$mod.name|escape}" /></td>
                   <td style="border-bottom: solid 1px #ccc">
                     {if $permission_edit_mods}
-                    <a href="admin_mods_edit.php?id={$mod_id}">{$lang_edit}</a>
+                    <a href="{build_url _=admin_mods_edit.php id=$mod_id}">{$lang_edit}</a>
                     {/if}
                     {if $permission_edit_mods && $permission_delete_mods}
                     -

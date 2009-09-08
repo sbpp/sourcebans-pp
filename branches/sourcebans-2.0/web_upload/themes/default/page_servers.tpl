@@ -1,15 +1,15 @@
             <h3>{$lang_servers_list}</h3>
             <table class="listtable servers">
               <tr>
-                <th class="nobold icon"><a href="{$active}{build_query sort=mod_name}">MOD</a></th>
-                <th class="nobold icon"><a href="{$active}{build_query sort=os}">OS</a></th>
-                <th class="nobold icon"><a href="{$active}{build_query sort=secure}">VAC</a></th>
-                <th><a href="{$active}{build_query sort=hostname}">{$lang_hostname}</a></th>
-                <th class="left info"><a href="{$active}{build_query sort=numplayers}">{$lang_players}</a></th>
-                <th class="left info"><a href="{$active}{build_query sort=map}">{$lang_map}</a></th>
+                <th class="nobold icon"><a href="{build_query sort=mod_name}">MOD</a></th>
+                <th class="nobold icon"><a href="{build_query sort=os}">OS</a></th>
+                <th class="nobold icon"><a href="{build_query sort=secure}">VAC</a></th>
+                <th><a href="{build_query sort=hostname}">{$lang_hostname}</a></th>
+                <th class="left info"><a href="{build_query sort=numplayers}">{$lang_players}</a></th>
+                <th class="left info"><a href="{build_query sort=map}">{$lang_map}</a></th>
               </tr>
               {foreach from=$servers item=server key=server_id name=server}
-              <tr class="opener tbl_out"{if $active != "servers.php"} onclick="window.location = 'servers.php#^{$smarty.foreach.server.index}';"{/if}>
+              <tr class="opener tbl_out"{if $active != "servers.php"} onclick="window.location = '{build_url _=servers.php}#^{$smarty.foreach.server.index}';"{/if}>
                 <td class="listtable_1 icon"><img alt="{$server.mod_name|escape}" class="icon" src="images/games/{$server.mod_icon}" title="{$server.mod_name|escape}" /></td>
                 <td class="listtable_1 icon"><img alt="{$lang_unknown}" class="icon" id="os_{$server_id}" src="images/server_small.png" title="{$lang_unknown}" /></td>
                 <td class="listtable_1 icon"><img alt="Valve Anti-Cheat" class="icon" id="vac_{$server_id}" src="images/shield.png" style="display: none;" title="Valve Anti-Cheat" /></td>

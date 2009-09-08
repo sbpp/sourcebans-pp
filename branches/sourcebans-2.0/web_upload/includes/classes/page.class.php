@@ -151,7 +151,7 @@ class Page extends Smarty
     $userbank = Env::get('userbank');
     $quote    = $quotes[array_rand($quotes)];
     
-    SBPlugins::call('OnDisplayPage', $file, &$this);
+    SBPlugins::call('OnDisplayPage', $file, $this);
     
     // Assign global variables
     parent::assign('active',                   Env::get('active'));

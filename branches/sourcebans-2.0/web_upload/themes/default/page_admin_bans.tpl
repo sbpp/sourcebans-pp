@@ -12,7 +12,7 @@
               {if $permission_submissions}
               <li id="tab-submissions"><a href="#submissions/current">{$lang_ban_submissions}</a></li>
               {/if}
-              <li><a href="banlist.php">{$lang_ban_list}</a></li>
+              <li><a href="{build_url _=banlist.php}">{$lang_ban_list}</a></li>
               {foreach from=$admin_tabs item=tab}
               <li{if !empty($tab.id)} id="tab-{$tab.id}"{/if}><a href="{$tab.url}">{$tab.name}</a></li>
               {/foreach}
@@ -63,7 +63,7 @@
                   </optgroup>
                   <option value="other">Other Reason</option>
                 </select>
-                <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5" style="display: none;"></textarea>
+                <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5"></textarea>
                 <label for="length">{help_icon title="$lang_length" desc="Select how long you want to ban this person for."}{$lang_length}</label>
                 <select class="submit-fields" {nid id="length"}>
                   <option value="0">{$lang_permanent}</option>
@@ -155,7 +155,7 @@
                       <a href="#" onclick="ArchiveProtest({$protest_id}, '{$protest.steam}');">{$lang_to_archive}</a> -
                       <a href="#" onclick="DeleteProtest({$protest_id}, '{$protest.steam}');">{$lang_delete}</a> -
                       {/if}
-                      <a href="admin_bans_email.php?email={$protest.email}">{$lang_contact}</a>
+                      <a href="{build_url _=admin_bans_email.php email=$protest.email}">{$lang_contact}</a>
                     </td>
                   </tr>
                   <tr id="pid_{$protest_id}a">
@@ -284,7 +284,7 @@
                       <a href="#" onclick="RestoreProtest({$protest_id}, '{$protest.steam}');">{$lang_restore}</a> -
                       <a href="#" onclick="DeleteProtest({$protest_id}, '{$protest.steam}');">{$lang_delete}</a> -
                       {/if}
-                      <a href="admin_bans_email.php?email={$protest.email}">{$lang_contact}</a>
+                      <a href="{build_url _=admin_bans_email.php email=$protest.email}">{$lang_contact}</a>
                     </td>
                   </tr>
                   <tr id="pid_{$protest_id}a">
@@ -424,7 +424,7 @@
                       <a href="#" onclick="ArchiveSubmission({$sub_id}, '{$sub.steam}');">{$lang_to_archive}</a> -
                       <a href="#" onclick="DeleteSubmission({$sub_id}, '{$sub.steam}');">{$lang_delete}</a> -
                       {/if}
-                      <a href="admin_bans_email.php?email={$sub.email}">{$lang_contact}</a>
+                      <a href="{build_url _=admin_bans_email.php email=$sub.email}">{$lang_contact}</a>
                     </td>
                   </tr>
                   <tr id="sid_{$sub_id}a">
@@ -503,7 +503,7 @@
                       <a href="#" onclick="RestoreSubmission({$sub_id}, '{$sub.steam}');">{$lang_restore}</a> -
                       <a href="#" onclick="DeleteSubmission({$sub_id}, '{$sub.steam}');">{$lang_delete}</a> -
                       {/if}
-                      <a href="admin_bans_email.php?email={$sub.email}">{$lang_contact}</a>
+                      <a href="{build_url _=admin_bans_email.php email=$sub.email}">{$lang_contact}</a>
                     </td>
                   </tr>
                   <tr id="sid_{$sub_id}a">

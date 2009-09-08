@@ -172,10 +172,10 @@ class AdminsWriter
     if(!file_exists($tmp_name))
       throw new Exception('File does not exist.');
     
-    $reader   = new KVReader($tmp_name);
     switch(basename($file))
     {
       // SourceMod
+      case 'admins_simple.ini':
       case 'admins.cfg':
         $groups_reader       = new GroupsReader();
         $groups_reader->type = SERVER_GROUPS;
@@ -184,18 +184,56 @@ class AdminsWriter
         foreach($server_groups as $group_id => $group)
           $group_list[$group['name']] = $group_id;
         
-        foreach($reader->Values['Admins'] as $name => $admin)
-          self::add($name,
-                    $admin['auth'],
-                    $admin['identity'],
-                    '',
-                    isset($admin['password']) ? CUserManager::encrypt_password($admin['password']) : '',
-                    isset($admin['password']),
-                    isset($admin['group'])    ? array($group_list[$admin['group']])                : array());
+        if(basename($file) == 'admins.cfg')
+        {
+          $reader = new KVReader($tmp_name);
+          
+          foreach($reader->Values['Admins'] as $name => $admin)
+            self::add($name,
+                      $admin['auth'],
+                      $admin['identity'],
+                      '',
+                      isset($admin['password']) ? CUserManager::encrypt_password($admin['password']) : '',
+                      isset($admin['password']),
+                      isset($admin['group'])    ? array($group_list[$admin['group']])                : array());
+        }
+        else
+        {
+          preg_match_all('~"(.+?)"[ \t]*"(.+?)"([ \t]*"(.+?)")?~', file_get_contents($tmp_file), $admins);
+          
+          for($i = 0; $i < count($admins[0]); $i++)
+          {
+            list($identity, $flags, $password) = array($admins[1][$i], $admins[2][$i], $admins[4][$i]);
+            
+            // Parse authentication type depending on identity
+            if(preg_match(STEAM_FORMAT, $identity))
+              $auth = STEAM_AUTH_TYPE;
+            else if($identity{0} == '!' && preg_match(IP_FORMAT, $identity))
+              $auth = IP_AUTH_TYPE;
+            else
+              $auth = NAME_AUTH_TYPE;
+            
+            // Parse flags
+            if($flags{0} == '@')
+              $group = substr($flags, 1);
+            else if(strpos($flags, ':') !== false)
+              list($immunity, $flags) = explode(':', $flags);
+            
+            self::add($identity,
+                      $auth,
+                      $identity,
+                      '',
+                      $password,
+                      !empty($password),
+                      isset($group) ? array($group_list[$group]) : array());
+          }
+        }
         
         break;
       // Mani Admin Plugin
       case 'clients.txt':
+        $reader = new KVReader($tmp_name);
+        
         foreach($reader->Values['clients.txt']['players'] as $name => $admin)
           self::add($name, STEAM_AUTH_TYPE, $admin['steam']);
         

@@ -14,7 +14,7 @@ class QuotesReader extends SBReader
     $quotes = $db->GetAll('SELECT name, text
                            FROM   ' . Env::get('prefix') . '_quotes');
     
-    SBPlugins::call('OnGetQuotes', &$quotes);
+    list($quotes) = SBPlugins::call('OnGetQuotes', $quotes);
     
     return $quotes;
   }

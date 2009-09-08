@@ -78,31 +78,31 @@
             {eval var=$lang_displaying_results}
             {if $total_pages > 1}
             {if $smarty.get.page > 1}
-            | <strong><a href="{$active}{build_query page=$smarty.get.page-1}"><img alt="{$lang_prev|ucfirst}" src="images/left.gif" style="vertical-align: middle" title="{$lang_prev|ucfirst}" /> {$lang_prev}</a></strong>
+            | <strong><a href="{build_query page=$smarty.get.page-1}"><img alt="{$lang_prev|ucfirst}" src="images/left.gif" style="vertical-align: middle" title="{$lang_prev|ucfirst}" /> {$lang_prev}</a></strong>
             {/if}
             {if $smarty.get.page < $total_pages}
-            | <strong><a href="{$active}{if !empty($smarty.get.page)}{build_query page=$smarty.get.page+1}{else}{build_query page=2}{/if}">{$lang_next} <img alt="{$lang_next|ucfirst}" src="images/right.gif" style="vertical-align: middle" title="{$lang_next|ucfirst}" /></a></strong>
+            | <strong><a href="{if !empty($smarty.get.page)}{build_query page=$smarty.get.page+1}{else}{build_query page=2}{/if}">{$lang_next} <img alt="{$lang_next|ucfirst}" src="images/right.gif" style="vertical-align: middle" title="{$lang_next|ucfirst}" /></a></strong>
             {/if}
-            <select onchange="SetContent('content', '{$active}?page=' + this.options[this.selectedIndex].value);">
+            <select onchange="window.location = '{build_query page=''}' + this.options[this.selectedIndex].value;">
               {section loop=$total_pages name=page}
               <option{if $smarty.get.page == $smarty.section.page.iteration} selected="selected"{/if} value="{$smarty.section.page.iteration}">{$smarty.section.page.iteration}</option>
               {/section}
             </select>
             {/if}
           </div>
-          <a href="{$active}{if isset($smarty.get.hideinactive)}{build_query hideinactive=false}{else}{build_query hideinactive='true'}{/if}">{if isset($smarty.get.hideinactive)}{$lang_show_inactive}{else}{$lang_hide_inactive}{/if}</a>
+          <a href="{if isset($smarty.get.hideinactive)}{build_query hideinactive=null}{else}{build_query hideinactive='true'}{/if}">{if isset($smarty.get.hideinactive)}{$lang_show_inactive}{else}{$lang_hide_inactive}{/if}</a>
           <form action="{$active}" id="banlist" method="post">
             <fieldset>
               <table width="100%" cellspacing="0" cellpadding="0" class="listtable flCenter">
                 <tr>
                   <th class="icon"><input {nid id="bans_select"} type="checkbox" value="-1" /></th>
-                  <th class="date"><a href="{$active}{build_query sort=mod_name}">MOD</a>{if $smarty.get.sort == "mod_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}/<a href="{$active}{build_query sort=country_name}">{$lang_country}</a>{if $smarty.get.sort == "country_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
-                  <th class="date"><a href="{$active}{build_query sort=created}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == "created"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
-                  <th><a href="{$active}{build_query sort=name}">{$lang_name}</a>{if $smarty.get.sort == "name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th class="date"><a href="{build_query sort=mod_name}">MOD</a>{if $smarty.get.sort == "mod_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}/<a href="{build_query sort=country_name}">{$lang_country}</a>{if $smarty.get.sort == "country_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th class="date"><a href="{build_query sort=created}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == "created"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th><a href="{build_query sort=name}">{$lang_name}</a>{if $smarty.get.sort == "name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
                   {if !$hide_adminname}
-                  <th width="11%"><a href="{$active}{build_query sort=admin_name}">{$lang_admin}</a>{if $smarty.get.sort == "admin_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th width="11%"><a href="{build_query sort=admin_name}">{$lang_admin}</a>{if $smarty.get.sort == "admin_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
                   {/if}
-                  <th class="length"><a href="{$active}{build_query sort=length}">{$lang_length}</a>{if $smarty.get.sort == "length"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th class="length"><a href="{build_query sort=length}">{$lang_length}</a>{if $smarty.get.sort == "length"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
                 </tr>
                 {foreach from=$bans item=ban key=ban_id}
                 <tr class="opener tbl_out">
@@ -140,10 +140,10 @@
                               {if !empty($ban.status)}
                               <li><a href="#" onclick="RebanBan({$ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_reban|ucwords}" class="icon" src="images/forbidden.gif" title="{$lang_reban|ucwords}" /> {$lang_reban|ucwords}</a></li>
                               {/if}
-                              <li><a href="{if $ban.demo_count}getdemo.php?id={$ban_id}&amp;type={$smarty.const.BAN_COMMENTS}{else}#{/if}"><img alt="{$lang_demo}" class="icon" src="images/demo.gif" title="{$lang_demo}" /> {if $ban.demo_count}Review Demo{else}No Demos{/if}</a></li>
-                              <li><a href="comments_add.php?id={$ban_id}&amp;type=B"><img alt="{$lang_add_comment|ucwords}" class="icon" src="images/details.gif" title="{$lang_add_comment|ucwords}" /> {$lang_add_comment|ucwords}</a></li>
+                              <li><a href="{if $ban.demo_count}{build_url _=getdemo.php id=$ban_id} type=$smarty.const.BAN_COMMENTS}{else}#{/if}"><img alt="{$lang_demo}" class="icon" src="images/demo.gif" title="{$lang_demo}" /> {if $ban.demo_count}Review Demo{else}No Demos{/if}</a></li>
+                              <li><a href="{build_url _=comments_add.php id=$ban_id type=B}"><img alt="{$lang_add_comment|ucwords}" class="icon" src="images/details.gif" title="{$lang_add_comment|ucwords}" /> {$lang_add_comment|ucwords}</a></li>
                               {if $permission_edit_all_bans || ($permission_edit_own_bans && $ban.admin_id == $smarty.cookies.sb_admin_id)}
-                              <li><a href="admin_bans_edit.php?id={$ban_id}"><img alt="{$lang_edit_ban|ucwords}" src="images/edit.gif" class="icon" title="{$lang_edit_ban|ucwords}" /> {$lang_edit_ban|ucwords}</a></li>
+                              <li><a href="{build_url _=admin_bans_edit.php id=$ban_id}"><img alt="{$lang_edit_ban|ucwords}" src="images/edit.gif" class="icon" title="{$lang_edit_ban|ucwords}" /> {$lang_edit_ban|ucwords}</a></li>
                               {/if}
                               {if empty($ban.status) && ($permission_unban_all_bans || ($permission_unban_own_bans && $ban.admin_id == $smarty.cookies.sb_admin_id))}
                               <li><a href="#" onclick="UnbanBan({$ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_unban|ucwords}" class="icon" src="images/locked.gif" title="{$lang_unban|ucwords}" /> {$lang_unban|ucwords}</a></li>
@@ -234,7 +234,7 @@
                         {/if}
                         <tr>
                           <td class="listtable_1">{$lang_total_bans}</td>
-                          <td class="listtable_1">{$ban.ban_count} <a href="{$active}?search={$ban.steam}&amp;type=steamid">({$lang_search|strtolower})</a></td>
+                          <td class="listtable_1">{$ban.ban_count} <a href="{build_query search=$ban.steam type=steamid}">({$lang_search|strtolower})</a></td>
                         </tr>
                         {if $permission_list_comments}
                         <tr>
@@ -280,10 +280,9 @@
                 </tr>
                 {/foreach}
               </table>
-              <select id="action_select">
-                <option value="0">{$lang_action}</option>
-                <option value="unban">{$lang_unban}</option>
-                <option value="delete">{$lang_delete}</option>
-              </select>
+              <ul id="context-menu">
+                <li><a href="#">{$lang_unban}</a></li>
+                <li><a href="#">{$lang_delete}</a></li>
+              </ul>
             </fieldset>
           </form>

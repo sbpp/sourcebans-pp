@@ -656,6 +656,8 @@ img.tips { vertical-align: bottom; }
 }
 #pane-protests-current h3, #pane-protests-archive h3, #pane-submissions-current h3, #pane-submissions-archive h3 { margin-top: 0; }
 
+#reason_other { display: none; }
+
 /** ================ Permissions ================ **/
 #permis-drop {
   float: right;
@@ -1000,6 +1002,43 @@ div.playerlist_menu .head {
   background-position: center right;
 }
 #theme-list ul li.active a:hover { background-image: url("images/admin/rightarrow.png"); }
+
+/** ================ Context Menu ================ **/
+#context-menu {
+  position: absolute;
+  visibility: hidden;
+}
+#context-menu, #context-menu ul {
+  width: 150px;
+  border: 1px solid;
+  margin: 0;
+  display: block;
+  padding: 0;
+  z-index: 40;
+  border-color: #DDD #777 #777 #DDD;
+  list-style-type: none;
+  background-color: #FFF;
+}
+#context-menu a {
+  border: 1px solid #FFF;
+  display: block;
+  padding: 0 2px;
+  font-size: 0.9em;
+}
+#context-menu a:hover {
+  border-color: #808080;
+  background-color: #EEE;
+}
+#context-menu li {
+  margin: 1px;
+  position: relative;
+}
+#context-menu ul {
+  top: -2px;
+  left: 148px;
+  position: absolute;
+  visibility: hidden;
+}
 
 /** ================ AJAX indicator ================ **/
 #ajax-indicator {

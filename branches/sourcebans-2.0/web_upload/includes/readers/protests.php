@@ -39,7 +39,7 @@ class ProtestsReader extends SBReader
       $protest['comments']    = $comments_reader->executeCached(ONE_DAY);
     }
     
-    SBPlugins::call('OnGetProtests', &$protests);
+    list($protests) = SBPlugins::call('OnGetProtests', $protests);
     
     return $protests;
   }

@@ -21,7 +21,7 @@ class CountsReader extends SBReader
                                   (SELECT COUNT(id)     FROM ' . Env::get('prefix') . '_submissions WHERE archived = 0) AS submissions,
                                   (SELECT COUNT(id)     FROM ' . Env::get('prefix') . '_submissions WHERE archived = 1) AS archived_submissions');
     
-    SBPlugins::call('OnGetCounts', &$counts);
+    list($counts) = SBPlugins::call('OnGetCounts', $counts);
     
     return $counts;
   }

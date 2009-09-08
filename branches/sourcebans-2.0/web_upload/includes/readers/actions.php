@@ -26,7 +26,7 @@ class ActionsReader extends SBReader
                               ORDER BY  ' . $this->sort        .
                               ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    SBPlugins::call('OnGetActions', &$actions);
+    list($actions) = SBPlugins::call('OnGetActions', $actions);
     
     return $actions;
   }

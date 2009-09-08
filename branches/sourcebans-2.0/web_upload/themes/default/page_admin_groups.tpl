@@ -45,7 +45,7 @@
                   <td style="border-bottom: solid 1px #ccc">{$group.admin_count}</td>
                   <td style="border-bottom: solid 1px #ccc">
                     {if $permission_edit_groups}
-                    <a href="admin_groups_edit.php?type={$smarty.const.SERVER_GROUPS}&amp;id={$group_id}">{$lang_edit}</a>
+                    <a href="{build_url _=admin_groups_edit.php id=$group_id type=$smarty.const.SERVER_GROUPS}">{$lang_edit}</a>
                     {/if}
                     {if $permission_edit_groups && $permission_delete_groups}
                     -
@@ -163,7 +163,7 @@
                   <td style="border-bottom: solid 1px #ccc">{$group.admin_count}</td>
                   <td style="border-bottom: solid 1px #ccc">
                     {if $permission_edit_groups}
-                    <a href="admin_groups_edit.php?type={$smarty.const.WEB_GROUPS}&amp;id={$group_id}">{$lang_edit}</a>
+                    <a href="{build_url _=admin_groups_edit.php id=$group_id type=$smarty.const.WEB_GROUPS}">{$lang_edit}</a>
                     {/if}
                     {if $permission_delete_groups}
                     - <a href="#" onclick="DeleteGroup({$group_id}, '{$group.name}', 'web');">{$lang_delete}</a>

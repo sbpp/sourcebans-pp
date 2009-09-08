@@ -14,7 +14,7 @@ class PermissionsReader extends SBReader
     $permissions = $db->GetAssoc('SELECT id, name
                                   FROM   ' . Env::get('prefix') . '_permissions');
     
-    SBPlugins::call('OnGetPermissions', &$permissions);
+    list($permissions) = SBPlugins::call('OnGetPermissions', $permissions);
     
     return $permissions;
   }

@@ -652,6 +652,14 @@ class SB_API
     return SBPlugins::call(func_get_args());
   }
   
+  /*
+   * Returns the list of plugins
+   */
+  public static function getPlugins()
+  {
+    return SBPlugins::getPlugins();
+  }
+  
   
   /**
    * Adds a protest

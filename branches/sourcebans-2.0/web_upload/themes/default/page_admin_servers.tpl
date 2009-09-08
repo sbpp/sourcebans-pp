@@ -23,7 +23,7 @@
             <div id="pane-list">
               <h3>{$lang_servers} (<span id="srvcount">{$server_count}</span>)</h3>
               {if $permission_config}
-              <p>To view the database config file you need to upload to your game server, click <a href="admin_servers_config.php">here</a>.</p>
+              <p>To view the database config file you need to upload to your game server, click <a href="{build_url _=admin_servers_config.php}">here</a>.</p>
               {/if}
               <table width="100%" cellpadding="1">
                 <tr>
@@ -39,11 +39,11 @@
                   <td style="border-bottom: solid 1px #ccc"><img src="images/games/{$server.mod_icon}" alt="{$server.mod_name|escape}" title="{$server.mod_name|escape}" /></td>
                   <td style="border-bottom: solid 1px #ccc">
                     {if $permission_rcon}
-                    <a href="admin_servers_rcon.php?id={$server_id}">RCON</a> -
+                    <a href="{build_url _=admin_servers_rcon.php id=$server_id}">RCON</a> -
                     {/if}
-                    <a href="admin_servers_admins.php?id={$server_id}">{$lang_admins}</a>
+                    <a href="{build_url _=admin_servers_admins.php id=$server_id}">{$lang_admins}</a>
                     {if $permission_edit_servers}
-                    - <a href="admin_servers_edit.php?id={$server_id}">{$lang_edit}</a>
+                    - <a href="{build_url _=admin_servers_edit.php id=$server_id}">{$lang_edit}</a>
                     {/if}
                     {if $permission_delete_servers}
                     - <a href="#" onclick="DeleteServer({$server_id});">{$lang_delete}</a>

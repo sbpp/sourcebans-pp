@@ -95,6 +95,39 @@ function UpdateCheckBox(objCheckbox)
 }
 
 
+var MooMenu = new Class({
+  initialize: function(id) {
+    this.menu = $(id);
+    
+    this.menu.fade('hide').getChildren('li').each(function(el) {
+      var submenu = el.getChildren('ul')[0];
+      if(!submenu)
+        return;
+      
+      el.addClass('submenu').addEvents({
+        'mouseout':  function(e) {
+          submenu.fade('hide');
+        },
+        'mouseover': function(e) {
+          submenu.fade('show');
+        }
+      });
+      
+      new MooMenu(submenu);
+    });
+  },
+  hide: function() {
+    this.menu.fade('hide');
+  },
+  show: function(top, left) {
+    this.menu.setStyles({
+      'top': top,
+      'left': left
+    }).fade('in');
+  }
+});
+
+
 Accordion.implement({
   hideAll: function() {
     var obj       = {};

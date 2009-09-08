@@ -285,7 +285,7 @@
               <div id="banlist-nav">
                 {eval var=$lang_displaying_results}
                 {if $total_pages > 1}
-                <select onchange="window.location = 'admin_settings.php?page=' + this.options[this.selectedIndex].value;">
+                <select onchange="window.location = '{build_url _=admin_settings.php page=''}' + this.options[this.selectedIndex].value;">
                   {section loop=$total_pages name=page}
                   <option{if $smarty.get.page == $smarty.section.page.iteration} selected="selected"{/if} value="{$smarty.section.page.iteration}">{$smarty.section.page.iteration}</option>
                   {/section}

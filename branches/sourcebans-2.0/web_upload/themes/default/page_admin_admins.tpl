@@ -173,12 +173,12 @@
                 {eval var=$lang_displaying_results}
                 {if $total_pages > 1}
                 {if $smarty.get.page > 1}
-                | <strong><a href="{$active}{build_query page=$smarty.get.page-1}"><img alt="{$lang_prev|ucfirst}" src="images/left.gif" style="vertical-align: middle;" title="{$lang_prev|ucfirst}" /> {$lang_prev}</a></strong>
+                | <strong><a href="{build_query page=$smarty.get.page-1}"><img alt="{$lang_prev|ucfirst}" src="images/left.gif" style="vertical-align: middle;" title="{$lang_prev|ucfirst}" /> {$lang_prev}</a></strong>
                 {/if}
                 {if $smarty.get.page < $total_pages}
-                | <strong><a href="{$active}{if isset($smarty.get.page)}{build_query page=$smarty.get.page+1}{else}{build_query page=2}{/if}">{$lang_next} <img alt="{$lang_next|ucfirst}" src="images/right.gif" style="vertical-align: middle;" title="{$lang_next|ucfirst}" /></a></strong>
+                | <strong><a href="{if isset($smarty.get.page)}{build_query page=$smarty.get.page+1}{else}{build_query page=2}{/if}">{$lang_next} <img alt="{$lang_next|ucfirst}" src="images/right.gif" style="vertical-align: middle;" title="{$lang_next|ucfirst}" /></a></strong>
                 {/if}
-                <select onchange="SetContent('content', 'admin_admins.php?page=' + this.options[this.selectedIndex].value);">
+                <select onchange="window.location = '{build_query page=''}' + this.options[this.selectedIndex].value;">
                   {section loop=$total_pages name=page}
                   <option{if $smarty.get.page == $smarty.section.page.iteration} selected="selected"{/if} value="{$smarty.section.page.iteration}">{$smarty.section.page.iteration}</option>
                   {/section}
@@ -188,14 +188,14 @@
               <table width="99%" cellspacing="0" cellpadding="0" align="center">
                 <tr>
                   <th class="icon"><input {nid id="admins_select"} type="checkbox" value="-1" /></th>
-                  <th><a href="{$active}{build_query sort=name}">{$lang_name}</a></th>
-                  <th width="30%"><a href="{$active}{build_query sort=srv_groups}">{$lang_server_group}</a></th>
-                  <th width="30%"><a href="{$active}{build_query sort=web_group}">{$lang_web_group}</a></th>
+                  <th><a href="{build_query sort=name}">{$lang_name}</a></th>
+                  <th width="30%"><a href="{build_query sort=srv_groups}">{$lang_server_group}</a></th>
+                  <th width="30%"><a href="{build_query sort=web_group}">{$lang_web_group}</a></th>
                 </tr>
                 {foreach from=$admins item=admin key=admin_id}
                 <tr class="opener tbl_out">
                   <td class="listtable_1 icon"><input name="admins[]" type="checkbox" value="{$admin_id}" /></td>
-                  <td class="admin-row">{$admin.name} (<a href="banlist.php?search={$admin_id}&amp;type=admin" title="Show bans">{$admin.ban_count} bans</a> | <a href="banlist.php?search={$admin_id}&amp;type=nodemo" title="Show bans without demo">{$admin.nodemo_count} w.d.</a>)</td>
+                  <td class="admin-row">{$admin.name} (<a href="{build_url _=banlist.php search=$admin_id type=admin}" title="Show bans">{$admin.ban_count} bans</a> | <a href="{build_url _=banlist.php search=$admin_id type=nodemo}" title="Show bans without demo">{$admin.nodemo_count} w.d.</a>)</td>
                   <td class="admin-row">
                     {foreach from=$admin.srv_groups item=group_id name=server_groups}
                     {$server_groups[$group_id].name}{if !$smarty.foreach.server_groups.last}, {/if}
@@ -386,8 +386,8 @@
                           <td width="30%" valign="top">
                             <ul class="ban-edit">
                               {if $permission_edit_admins}
-                              <li><a href="admin_admins_editdetails.php?id={$admin_id}"><img alt="{$lang_edit_details|ucwords}" class="icon" src="images/details.png" title="{$lang_edit_details|ucwords}" /> {$lang_edit_details|ucwords}</a></li>
-                              <li><a href="admin_admins_editgroups.php?id={$admin_id}"><img alt="{$lang_edit_groups|ucwords}" class="icon" src="images/groups.png" title="{$lang_edit_groups|ucwords}" /> {$lang_edit_groups|ucwords}</a></li>
+                              <li><a href="{build_url _=admin_admins_editdetails.php id=$admin_id}"><img alt="{$lang_edit_details|ucwords}" class="icon" src="images/details.png" title="{$lang_edit_details|ucwords}" /> {$lang_edit_details|ucwords}</a></li>
+                              <li><a href="{build_url _=admin_admins_editgroups.php id=$admin_id}"><img alt="{$lang_edit_groups|ucwords}" class="icon" src="images/groups.png" title="{$lang_edit_groups|ucwords}" /> {$lang_edit_groups|ucwords}</a></li>
                               {/if}
                               {if $permission_delete_admins}
                               <li><a href="#" onclick="DeleteAdmin({$admin_id}, '{$admin.name}');"><img alt="{$lang_delete_admin|ucwords}" class="icon" src="images/delete.png" title="{$lang_delete_admin|ucwords}" /> {$lang_delete_admin|ucwords}</a></li>
@@ -403,21 +403,27 @@
                 </tr>
                 {/foreach}
               </table>
-              <select id="action_select">
-                <option value="0">{$lang_action}</option>
-                <option value="delete">{$lang_delete}</option>
-                <option value="email">Send e-mail</option>
-                <optgroup label="Add to server admin group">
-                  {foreach from=$server_groups item=group key=group_id}
-                  <option value="{$group_id}">{$group.name}</option>
-                  {/foreach}
-                </optgroup>
-                <optgroup label="Set web admin group">
-                  {foreach from=$web_groups item=group key=group_id}
-                  <option value="{$group_id}">{$group.name}</option>
-                  {/foreach}
-                </optgroup>
-              </select>
+              <ul id="context-menu">
+                <li><a href="#">{$lang_delete}</a></li>
+                <li><a href="#">Send e-mail</a></li>
+                <li>
+                  <a href="#">Add to server group</a>
+                  <ul>
+                    {foreach from=$server_groups item=group key=group_id}
+                    <li><a href="#">{$group.name}</a></li>
+                    {/foreach}
+                  </ul>
+                </li>
+                <li>
+                  <a href="#">Set web group</a>
+                  <ul>
+                    {foreach from=$web_groups item=group key=group_id}
+                    <li><a href="#">{$group.name}</a></li>
+                    {/foreach}
+                    <li><a href="#">{$lang_none|strtolower}</a></li>
+                  </ul>
+                </li>
+              </ul>
             </div>
             {/if}
             {if $permission_add_admins}
