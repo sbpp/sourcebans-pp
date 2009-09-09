@@ -51,21 +51,18 @@ class SB_API
    * Adds an admin
    *
    * @param  string  $name         The name of the admin
-   * @param  string  $steam        The Steam ID of the admin
+   * @param  string  $auth         The authentication type of the admin (STEAM_AUTH_TYPE, IP_AUTH_TYPE, NAME_AUTH_TYPE)
+   * @param  string  $identity     The identity of the admin
    * @param  string  $email        The e-mail address of the admin
    * @param  string  $password     The password of the admin
    * @param  bool    $srv_password Whether or not the password should be used as server password
-   * @param  integer $immunity     The immunity level of the admin
-   * @param  string  $srv_flags    The server access flags of the admin
-   * @param  integer $web_flags    The web access flags of the admin
-   * @param  integer $srv_group    The server admin group of the admin
+   * @param  array   $srv_groups   The list of server admin groups of the admin
    * @param  integer $web_group    The web admin group of the admin
-   * @param  string  $language     The language setting of the admin
    * @return The id of the added admin
    */
-  public static function addAdmin($name, $steam, $email, $password, $srv_password = false, $srv_flags = '', $web_flags = 0, $srv_group = -2, $web_group = -2)
+  public static function addAdmin($name, $auth, $identity, $email, $password, $srv_password = false, $srv_groups = array(), $web_group = null)
   {
-    return AdminsWriter::add($name, $steam, $email, $password, $srv_password, $srv_flags, $web_flags, $srv_group, $web_group);
+    return AdminsWriter::add($name, $steam, $email, $password, $srv_password, $srv_groups, $web_group);
   }
   
   
@@ -85,20 +82,19 @@ class SB_API
    *
    * @param integer $id           The id of the admin to edit
    * @param string  $name         The name of the admin
-   * @param string  $steam        The Steam ID of the admin
+   * @param string  $auth         The authentication type of the admin (STEAM_AUTH_TYPE, IP_AUTH_TYPE, NAME_AUTH_TYPE)
+   * @param string  $identity     The identity of the admin
    * @param string  $email        The e-mail address of the admin
    * @param string  $password     The password of the admin
    * @param bool    $srv_password Whether or not the password should be used as server password
-   * @param integer $immunity     The immunity level of the admin
-   * @param string  $srv_flags    The server access flags of the admin
-   * @param integer $web_flags    The web access flags of the admin
-   * @param integer $srv_group    The server admin group of the admin
+   * @param array   $srv_groups   The list of server admin groups of the admin
    * @param integer $web_group    The web admin group of the admin
+   * @param string  $theme        The theme setting of the admin
    * @param string  $language     The language setting of the admin
    */
-  public static function editAdmin($id, $name, $steam, $email, $password, $srv_password, $srv_flags, $web_flags, $srv_group, $web_group)
+  public static function editAdmin($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language)
   {
-    AdminsWriter::edit($id, $name, $steam, $email, $password, $srv_password, $srv_flags, $web_flags, $srv_group, $web_group);
+    AdminsWriter::edit($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language);
   }
   
   
@@ -190,18 +186,18 @@ class SB_API
   /**
    * Adds a ban
    *
-   * @param  string  $name   The name of the banned player
    * @param  integer $type   The type of the ban (STEAM_BAN_TYPE, IP_BAN_TYPE)
    * @param  string  $steam  The Steam ID of the banned player
    * @param  string  $ip     The IP address of the banned player
+   * @param  string  $name   The name of the banned player
    * @param  integer $length The length of the admin in minutes
    * @param  string  $reason The reason of the ban
    * @param  integer $server The server id on which the ban was performed, or 0 for a web ban
    * @return The id of the added ban
    */
-  public static function addBan($name, $type, $steam, $ip, $length, $reason)
+  public static function addBan($type, $steam, $ip, $name, $length, $reason, $server = 0)
   {
-    return BansWriter::add($name, $type, $steam, $ip, $length, $reason);
+    return BansWriter::add($type, $steam, $ip, $name, $length, $reason, $server);
   }
   
   
@@ -220,16 +216,16 @@ class SB_API
    * Edits a ban
    *
    * @param integer $id     The id of the ban to edit
-   * @param string  $name   The name of the banned player
    * @param integer $type   The type of the ban
    * @param string  $steam  The Steam ID of the banned player
    * @param string  $ip     The IP address of the banned player
+   * @param string  $name   The name of the banned player
    * @param integer $length The length of the ban in minutes
    * @param string  $reason The reason of the ban
    */
-  public static function editBan($id, $name, $type, $steam, $ip, $length, $reason)
+  public static function editBan($id, $type, $steam, $ip, $name, $length, $reason)
   {
-    BansWriter::edit($id, $name, $type, $steam, $ip, $length, $reason);
+    BansWriter::edit($id, $type, $steam, $ip, $name, $length, $reason);
   }
   
   
@@ -332,14 +328,14 @@ class SB_API
   /**
    * Adds a comment
    *
-   * @param  integer $ban_id The id of the ban/protest/submission to comment to
-   * @param  integer $type   The type of the comment (BAN_COMMENTS, PROTEST_COMMENTS, SUBMISSION_COMMENTS)
-   * @param  string  $text   The text of the comment
+   * @param  integer $ban_id  The id of the ban/protest/submission to comment to
+   * @param  integer $type    The type of the comment (BAN_TYPE, PROTEST_TYPE, SUBMISSION_TYPE)
+   * @param  string  $message The message of the comment
    * @return The id of the added comment
    */
-  public static function addComment($ban_id, $type, $text)
+  public static function addComment($ban_id, $type, $message)
   {
-    return CommentsWriter::add($ban_id, $type, $text);
+    return CommentsWriter::add($ban_id, $type, $message);
   }
   
   
@@ -357,12 +353,12 @@ class SB_API
   /**
    * Edits a comment
    *
-   * @param integer $id   The id of the comment to edit
-   * @param string  $text The text of the comment
+   * @param integer $id      The id of the comment to edit
+   * @param string  $message The message of the comment
    */
-  public static function editComment($id, $text)
+  public static function editComment($id, $message)
   {
-    CommentsWriter::edit($id, $text);
+    CommentsWriter::edit($id, $message);
   }
   
   
@@ -386,7 +382,7 @@ class SB_API
    * Returns a list of comments
    *
    * @param integer $ban_id The id of the ban/protest/submission to return the comments from
-   * @param integer $type   The type of the comments to return (BAN_COMMENTS, PROTEST_COMMENTS, SUBMISSION_COMMENTS)
+   * @param integer $type   The type of the comments to return (BAN_TYPE, PROTEST_TYPE, SUBMISSION_TYPE)
    */
   public static function getComments($ban_id, $type)
   {
@@ -430,15 +426,16 @@ class SB_API
   /**
    * Adds a group
    *
-   * @param  integer $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
-   * @param  string  $name     The name of the group
-   * @param  integer $flags    The access flags of the group
-   * @param  integer $immunity The immunity level of the group
+   * @param  integer $type      The type of the group (SERVER_GROUPS, WEB_GROUPS)
+   * @param  string  $name      The name of the group
+   * @param  mixed   $flags     The access flags of the group
+   * @param  integer $immunity  The immunity level of the group
+   * @param  array   $overrides The overrides of the group
    * @return The id of the added group
    */
-  public static function addGroup($type, $name, $flags, $immunity = 0)
+  public static function addGroup($type, $name, $flags, $immunity = 0, $overrides = array())
   {
-    return GroupsWriter::add($type, $name, $flags, $immunity);
+    return GroupsWriter::add($type, $name, $flags, $immunity, $overrides);
   }
   
   
@@ -446,7 +443,7 @@ class SB_API
    * Deletes a group
    *
    * @param integer $id   The id of the group to delete
-   * @param integer $type The type of the group to delete
+   * @param integer $type The type of the group to delete (SERVER_GROUPS, WEB_GROUPS)
    */
   public static function deleteGroup($id, $type)
   {
@@ -457,22 +454,24 @@ class SB_API
   /**
    * Edits a group
    *
-   * @param integer $id       The id of the group to edit
-   * @param integer $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
-   * @param string  $name     The name of the group
-   * @param integer $flags    The access flags of the group
-   * @param integer $immunity The immunity level of the group
+   * @param integer $id        The id of the group to edit
+   * @param integer $type      The type of the group (SERVER_GROUPS, WEB_GROUPS)
+   * @param string  $name      The name of the group
+   * @param mixed   $flags     The access flags of the group
+   * @param integer $immunity  The immunity level of the group
+   * @param array   $overrides The overrides of the group
    */
-  public static function editGroup($id, $type, $name, $flags, $immunity)
+  public static function editGroup($id, $type, $name, $flags, $immunity, $overrides)
   {
-    GroupsWriter::edit($id, $type, $name, $flags, $immunity);
+    GroupsWriter::edit($id, $type, $name, $flags, $immunity, $overrides);
   }
   
   
   /**
    * Returns a group
    *
-   * @param integer $id The id of the group to return
+   * @param integer $type The type of the group (SERVER_GROUPS, WEB_GROUPS)
+   * @param integer $id   The id of the group to return
    */
   public static function getGroup($type, $id)
   {
@@ -574,15 +573,15 @@ class SB_API
   /**
    * Adds a mod
    *
-   * @param  string  $name    The name of the mod
-   * @param  string  $icon    The icon of the mod
-   * @param  string  $folder  The folder of the mod
-   * @param  bool    $enabled Whether or not the mod is enabled
+   * @param  string $name    The name of the mod
+   * @param  string $folder  The folder of the mod
+   * @param  string $icon    The icon of the mod
+   * @param  bool   $enabled Whether or not the mod is enabled
    * @return The id of the added mod
    */
-  public static function addMod($name, $icon, $folder, $enabled = true)
+  public static function addMod($name, $folder, $icon, $enabled = true)
   {
-    return ModsWriter::add($name, $icon, $folder, $enabled);
+    return ModsWriter::add($name, $folder, $icon, $enabled);
   }
   
   
@@ -602,13 +601,13 @@ class SB_API
    *
    * @param integer $id      The id of the mod to edit
    * @param string  $name    The name of the mod
-   * @param string  $icon    The icon of the mod
    * @param string  $folder  The folder of the mod
+   * @param string  $icon    The icon of the mod
    * @param bool    $enabled Whether or not the mod is enabled
    */
-  public static function editMod($id, $name, $icon, $folder, $enabled)
+  public static function editMod($id, $name, $folder, $icon, $enabled)
   {
-    ModsWriter::edit($id, $name, $icon, $folder, $enabled);
+    ModsWriter::edit($id, $name, $folder, $icon, $enabled);
   }
   
   
@@ -643,9 +642,9 @@ class SB_API
   /*
    * Calls a hook on the enabled plugins
    *
-   * @param  string $hook   The hook to call
-   * @param  mixed  $args[] The arguments to pass to the hook
-   * @return true to let the original function continue, false to block it
+   * @param  string $hook     The hook to call
+   * @param  mixed  $args[]   The arguments to pass to the hook
+   * @return array  $ref_args The referenced arguments to pass back to the calling function
    */
   public static function callHook()
   {
@@ -665,16 +664,16 @@ class SB_API
    * Adds a protest
    *
    * @param  string  $name   The name of the banned player
-   * @param  integer $type   The type of the ban
+   * @param  integer $type   The type of the ban (STEAM_BAN_TYPE, IP_BAN_TYPE)
    * @param  string  $steam  The Steam ID of the banned player
    * @param  string  $ip     The IP address of the banned player
    * @param  string  $reason The reason of the protest
    * @param  string  $email  The e-mail address of the protester
    * @return The id of the added protest
    */
-  public static function addProtest($identity, $reason, $email)
+  public static function addProtest($name, $type, $steam, $ip, $reason, $email)
   {
-    return ProtestsWriter::add($identity, $reason, $email);
+    return ProtestsWriter::add($name, $type, $steam, $ip, $reason, $email);
   }
   
   
@@ -741,22 +740,6 @@ class SB_API
   public static function restoreProtest($id)
   {
     ProtestsWriter::restore($id);
-  }
-  
-  
-  /**
-   * Returns a quote
-   *
-   * @param integer $id The id of the quote to return
-   */
-  public static function getQuote($id)
-  {
-    $quotes = self::getQuotes();
-    
-    if(!isset($quotes[$id]))
-      throw new Exception('Invalid ID specified.');
-    
-    return $quotes[$id];
   }
   
   

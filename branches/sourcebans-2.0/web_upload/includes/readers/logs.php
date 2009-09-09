@@ -20,7 +20,7 @@ class LogsReader extends SBReader
                              FROM      ' . Env::get('prefix') . '_log    AS lo
                              LEFT JOIN ' . Env::get('prefix') . '_admins AS ad ON ad.id = lo.admin_id
                              ORDER BY  ' . $this->sort        .
-                             ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+                             ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     list($logs) = SBPlugins::call('OnGetLogs', $logs);
     

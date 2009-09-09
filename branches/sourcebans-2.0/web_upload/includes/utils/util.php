@@ -15,47 +15,9 @@
 class Util
 {
   /**
-   * Checks the input variable to see if it is a valid Integer
-   *
-   * @param mixed $str This is the variable to check
-   * @param bool $allowNull Should we allow the int to be null
-   * @param bool $allowNegative Allow the integer to be negative?
-   * @param bool $allowZero Allow the integer to be zero?
-   * @param bool $allowPositive Allow the int to be positive
-   * @throws SBValidationException when the given string isnt a valid integer
-   * @static 
-   */
-  public static function validateInt(&$str, $allowNull = false, $allowNegative = false, $allowZero = false, $allowPositive = true)
-  {
-    /*require_once SHARE_DIR . 'exceptions/exception.sbvalidation.php';
-  
-    if(is_null($str)) {
-      if(!$allowNull) {
-        throw new SBValidationException('Integer is null when not allowed to be');
-      }
-    } else {
-      $str = (int)$str;
-      if($str < 0) {
-        if(!$allowNegative) {
-          throw new SBValidationException('Integer is negative when not allowed to be');
-        }
-      } else if(!$str) {
-        if(!$allowZero) {
-          throw new SBValidationException('Integer is zero when not allowed to be');
-        }
-      } else {
-        if(!$allowPositive) {
-          throw new SBValidationException('Integer is positive when not allowed to be');
-        }
-      }
-    }*/
-  }
-  
-  
-  /**
    * Searches an array recursively
    *
-   * @param mixed $needle The value to find
+   * @param mixed $needle   The value to find
    * @param array $haystack The array to search in
    */
   public static function array_search_recursive($needle, $haystack)
@@ -81,56 +43,56 @@ class Util
   /**
    * This will sort a collection based on the collection(array()) values
    *
-   * @param array $array The array to sort
+   * @param array   $array The array to sort
    * @param integer $column the column to sort by
    * @param integer $order The order to sort the array
-   * @param unknown_type $first
-   * @param unknown_type $last
-   * @static 
+   * @param integer $first
+   * @param integer $last
    * @author Luman (http://snipplr.com/users/luman)
    */
-  public static function array_qsort(&$array, $column=0, $order=SORT_ASC, $first=0, $last= -2)
-  {   
+  public static function array_qsort(&$array, $column = 0, $order = SORT_ASC, $first = 0, $last = -2)
+  {
     $keys = array_keys($array);
-    if($last == -2) $last = count($array) - 1;
-    if($last > $first)
+    if($last == -2)
+      $last = count($array) - 1;
+    if($last <= $first)
+      return;
+    
+    $alpha     = $first;
+    $omega     = $last;
+    $key_alpha = $keys[$alpha];
+    $key_omega = $keys[$omega];
+    $guess     = $array[$key_alpha][$column];
+    while($omega >= $alpha)
     {
-      $alpha     = $first;
-      $omega     = $last;
-      $key_alpha = $keys[$alpha];
-      $key_omega = $keys[$omega];
-      $guess     = $array[$key_alpha][$column];
-      while($omega >= $alpha)
+      if($order == SORT_ASC)
       {
-        if($order == SORT_ASC)
-        {
-          while($array[$key_alpha][$column] < $guess) { $key_alpha = $keys[++$alpha]; }
-          while($array[$key_omega][$column] > $guess) { $key_omega = $keys[--$omega]; }
-        }
-        else
-        {
-          while($array[$key_alpha][$column] > $guess) { $key_alpha = $keys[++$alpha]; }
-          while($array[$key_omega][$column] < $guess) { $key_omega = $keys[--$omega]; }
-        }
-        if($alpha > $omega) break;
-        $temporary = $array[$key_alpha];
-        $array[$key_alpha] = $array[$key_omega];
-        $key_alpha = $keys[++$alpha];
-        $array[$key_omega] = $temporary;
-        if(--$omega > 0)
-          $key_omega = $keys[$omega];
+        while($array[$key_alpha][$column] < $guess) { $key_alpha = $keys[++$alpha]; }
+        while($array[$key_omega][$column] > $guess) { $key_omega = $keys[--$omega]; }
       }
-      self::array_qsort($array, $column, $order, $first, $omega);
-      self::array_qsort($array, $column, $order, $alpha, $last);
+      else
+      {
+        while($array[$key_alpha][$column] > $guess) { $key_alpha = $keys[++$alpha]; }
+        while($array[$key_omega][$column] < $guess) { $key_omega = $keys[--$omega]; }
+      }
+      if($alpha > $omega) break;
+      $temporary = $array[$key_alpha];
+      $array[$key_alpha] = $array[$key_omega];
+      $key_alpha = $keys[++$alpha];
+      $array[$key_omega] = $temporary;
+      if(--$omega)
+        $key_omega = $keys[$omega];
     }
+    self::array_qsort($array, $column, $order, $first, $omega);
+    self::array_qsort($array, $column, $order, $alpha, $last);
   }
   
   
   /**
    * Converts seconds into string format
    *
-   * @param integer $sec the amount of seconds
-   * @param bool $textual Should we show Mo, Wk, etc or just 00:00:00
+   * @param integer $sec     the amount of seconds
+   * @param bool    $textual Should we show Mo, Wk, etc or just 00:00:00
    * @return string
    */
   public static function SecondsToString($sec, $textual = true)
@@ -142,7 +104,7 @@ class Util
       $ret  = '';
       for($i = 0; $i < count($div); $i++)
       {
-        if(($cou = round($sec / $div[$i])) > 0)
+        if(($cou = round($sec / $div[$i])))
         {
           $ret .= $cou . ' ' . $desc[$i] . ', ';
           $sec %= $div[$i];
@@ -165,9 +127,11 @@ class Util
   /**
    * Truncate string if too long
    *
-   * @param string $text The string to truncate
-   * @param integer $len The maximum length before truncating
-   * @param bool $byword Truncate to the last space
+   * @param string  $string      The string to truncate
+   * @param integer $length      The maximum length before truncating
+   * @param string  $etc         The string to append
+   * @param bool    $break_words Truncate to the last space
+   * @param bool    $middle      Truncate in the middle of the string
    * @return string
    */
   public static function trunc($string, $length = 80, $etc = '...', $break_words = false, $middle = false) 
@@ -182,10 +146,10 @@ class Util
     
     if(!$break_words && !$middle)
       $string = preg_replace('/\s+?(\S+)?$/', '', utf8_substr($string, 0, $length + 1));
-    if(!$middle)
-      return utf8_substr($string, 0, $length)     . $etc;
-    else
+    if($middle)
       return utf8_substr($string, 0, $length / 2) . $etc . utf8_substr($string, -$length / 2);
+    else
+      return utf8_substr($string, 0, $length)     . $etc;
   }
   
   
@@ -233,7 +197,7 @@ class Util
   /**
    * Formats a size in English units
    *
-   * @param integer $size The size in bytes
+   * @param integer $size  The size in bytes
    * @param integer $round The amount of decimals to round to
    * @return string
    */
@@ -259,7 +223,7 @@ class Util
     $mail   = new PHPMailer(true);
     
     // If SMTP is enabled
-    if($config['email.smtp'] == 1)
+    if($config['email.smtp'])
     {
       $mail->IsSMTP();
       $mail->Host = $config['email.host'];
@@ -321,11 +285,13 @@ class Util
   
   
   /**
-   * Redirects to the given page
+   * Redirects to the given URL
+   *
+   * @param string $url The URL to redirect to, or null to redirect to the previous page
    */
   public static function redirect($url = null)
   {
-    header('Location: ' . (empty($url) ? $_SERVER['HTTP_REFERER'] : $url));
+    header('Location: ' . (is_null($url) ? $_SERVER['HTTP_REFERER'] : $url));
     exit;
   }
   

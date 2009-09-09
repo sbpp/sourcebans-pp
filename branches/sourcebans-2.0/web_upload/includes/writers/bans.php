@@ -6,44 +6,44 @@ class BansWriter
   /**
    * Adds a ban
    *
-   * @param  string  $name   The name of the banned player
    * @param  integer $type   The type of the ban (STEAM_BAN_TYPE, IP_BAN_TYPE)
    * @param  string  $steam  The Steam ID of the banned player
    * @param  string  $ip     The IP address of the banned player
-   * @param  integer $length The length of the ban in minutes
+   * @param  string  $name   The name of the banned player
    * @param  string  $reason The reason of the ban
+   * @param  integer $length The length of the ban in minutes
    * @param  integer $server The server id on which the ban was performed, or 0 for a web ban
    * @return The id of the added ban
    */
-  public static function add($name, $type, $steam, $ip, $length, $reason, $server = 0)
+  public static function add($type, $steam, $ip, $name, $reason, $length, $server = 0)
   {
     $db       = Env::get('db');
     $userbank = Env::get('userbank');
     
     if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS')))
       throw new Exception('Access Denied.');
-    if(empty($name)   || !is_string($name))
-      throw new Exception('Invalid name supplied.');
     if(!is_numeric($type))
       throw new Exception('Invalid ban type supplied.');
     if($type == STEAM_BAN_TYPE && !preg_match(STEAM_FORMAT, $steam))
       throw new Exception('Invalid Steam ID supplied.');
     if($type == IP_BAN_TYPE    && !preg_match(IP_FORMAT,    $ip))
       throw new Exception('Invalid IP address supplied.');
-    if(!is_numeric($length))
-      throw new Exception('Invalid ban length supplied.');
+    if(empty($name)   || !is_string($name))
+      throw new Exception('Invalid name supplied.');
     if(empty($reason) || !is_string($reason))
       throw new Exception('Invalid ban reason supplied.');
+    if(!is_numeric($length))
+      throw new Exception('Invalid ban length supplied.');
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_bans (name, type, steam, ip, created, ends, reason, server_id, admin_id, admin_ip)
-                  VALUES      (?, ?, ?, ?, UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + ?, ?, ?, ?, ?)',
-                  array($name, $type, $steam, $ip, $length * 60, $reason, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
+    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_bans (type, steam, ip, name, reason, length, server_id, admin_id, admin_ip, time)
+                  VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
+                  array($type, $steam, $ip, $name, $reason, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
     $id          = $db->Insert_ID();
     $bans_reader = new BansReader();
     $bans_reader->removeCacheFile();
     
-    SBPlugins::call('OnAddBan', $id, $name, $type, $steam, $ip, $length, $reason, $server);
+    SBPlugins::call('OnAddBan', $id, $type, $steam, $ip, $name, $reason, $length, $server);
     
     return $id;
   }
@@ -79,14 +79,14 @@ class BansWriter
    * Edits a ban
    *
    * @param integer $id     The id of the ban to edit
-   * @param string  $name   The name of the banned player
    * @param integer $type   The type of the ban (STEAM_BAN_TYPE, IP_BAN_TYPE)
    * @param string  $steam  The Steam ID of the banned player
    * @param string  $ip     The IP address of the banned player
-   * @param integer $length The length of the ban in minutes
+   * @param string  $name   The name of the banned player
    * @param string  $reason The reason of the ban
+   * @param integer $length The length of the ban in minutes
    */
-  public static function edit($id, $name, $type, $steam, $ip, $length, $reason)
+  public static function edit($id, $type, $steam, $ip, $name, $reason, $length)
   {
     $db       = Env::get('db');
     $userbank = Env::get('userbank');
@@ -97,25 +97,25 @@ class BansWriter
       throw new Exception('Access Denied.');
     if(empty($id)     || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
-    if(!is_null($name)   && is_string($name))
-      $ban['name']   = $name;
     if(!is_null($type)   && is_numeric($type))
       $ban['type']   = $type;
     if(!is_null($steam)  && is_string($steam))
       $ban['steam']  = $steam;
     if(!is_null($ip)     && is_string($ip))
       $ban['ip']     = $ip;
-    if(!is_null($length) && is_numeric($length))
-      $ban['ends']   = 'created + ' . $length; // Add created to length
+    if(!is_null($name)   && is_string($name))
+      $ban['name']   = $name;
     if(!is_null($reason) && is_string($reason))
       $ban['reason'] = $reason;
+    if(!is_null($length) && is_numeric($length))
+      $ban['length'] = $length;
     
     $db->AutoExecute(Env::get('prefix') . '_bans', $ban, 'UPDATE', 'id = ' . $id);
     
     $bans_reader = new BansReader();
     $bans_reader->removeCacheFile();
     
-    SBPlugins::call('OnEditBan', $id, $name, $type, $steam, $ip, $length, $reason);
+    SBPlugins::call('OnEditBan', $id, $type, $steam, $ip, $name, $reason, $length);
   }
   
   

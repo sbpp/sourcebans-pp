@@ -17,7 +17,7 @@ class AdminsReader extends SBReader
     $config = Env::get('config');
     $where  = 1;
     
-    if($this->server_id > 0)
+    if($this->server_id)
       $where = 'gs.server_id = ' . $this->server_id;
     
     // Fetch admins
@@ -36,7 +36,7 @@ class AdminsReader extends SBReader
                              WHERE     ' . $where             . '
                              GROUP BY  id, name, auth, identity, password, group_id, email, language, theme, srv_password, validate, lastvisit, web_group
                              ORDER BY  ' . $this->sort        .
-                             ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+                             ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     // Process admins
     foreach($admins as &$admin)

@@ -15,7 +15,7 @@ class SubmissionsWriter
    * @param  integer $server   The server id on which the player was playing
    * @return The id of the added submission
    */
-  public static function add($name, $steam, $ip, $reason, $server, $subname, $subemail)
+  public static function add($steam, $ip, $name, $reason, $subname, $subemail, $server)
   {
     $db       = Env::get('db');
     $userbank = Env::get('userbank');

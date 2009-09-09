@@ -29,7 +29,7 @@ try
   
   $page->assign('dashboard_text',  $config['dash.intro.text']);
   $page->assign('dashboard_title', $config['dash.intro.title']);
-  $page->assign('log_nopopup',     $config['dash.lognopopup'] == 1);
+  $page->assign('log_nopopup',     $config['dash.lognopopup']);
   $page->assign('bans',            $bans['list']);
   $page->assign('blocks',          $blocks);
   $page->assign('servers',         $servers);

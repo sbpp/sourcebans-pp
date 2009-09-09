@@ -45,6 +45,8 @@ class GroupsReader extends SBReader
           $group['flags'] = explode(',', $group['flags']);
         
         break;
+      default:
+        throw new Exception('Invalid group type specified.');
     }
     
     list($groups) = SBPlugins::call('OnGetGroups', $groups, $this->type);

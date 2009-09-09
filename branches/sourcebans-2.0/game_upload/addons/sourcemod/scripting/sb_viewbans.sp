@@ -392,7 +392,7 @@ stock RequestBanInformation(iTarget, bool:bOnConnect, iClient = 0)
 	// Get the steamid and format the query.
 	decl String:sAuth[20], String:sQuery[256];
 	GetClientAuthString(iTarget, sAuth, sizeof(sAuth));
-	Format(sQuery, sizeof(sQuery), "SELECT id, steam, name, created, ends, ends - created AS length, reason, admin_id, unban_admin_id, RemoveType \
+	Format(sQuery, sizeof(sQuery), "SELECT id, steam, name, reason, length, admin_id, unban_admin_id, time \
 																	FROM   %s_bans \
 																	WHERE  steam REGEXP '^STEAM_[0-9]:%s$'",
 																	g_sDatabasePrefix, sAuth[8]);

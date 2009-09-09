@@ -14,7 +14,7 @@ try
   {
     try
     {
-      CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['text']);
+      CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['message']);
       
       exit(json_encode(array(
         'redirect' => Env::get('active')

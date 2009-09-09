@@ -24,7 +24,7 @@ class ActionsReader extends SBReader
                               LEFT JOIN ' . Env::get('prefix') . '_servers AS se ON se.id = ac.server_id
                               LEFT JOIN ' . Env::get('prefix') . '_mods    AS mo ON mo.id = se.mod_id
                               ORDER BY  ' . $this->sort        .
-                              ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+                              ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     list($actions) = SBPlugins::call('OnGetActions', $actions);
     

@@ -9,7 +9,7 @@ class BansReader extends SBReader
   public $limit        = 0;
   public $page         = 1;
   public $search;
-  public $sort         = 'created DESC';
+  public $sort         = 'time DESC';
   public $type;
   
   public function prepare()
@@ -40,7 +40,7 @@ class BansReader extends SBReader
           $date  = explode(',', $search);
           $time  = mktime(0,  0,  0,  $date[1], $date[0], $date[2]);
           $time2 = mktime(23, 59, 59, $date[1], $date[0], $date[2]);
-          $where = 'created > ' . $time . ' AND created < ' . $time2;
+          $where = 'time > ' . $time . ' AND time < ' . $time2;
           break;
         // Ban
         case 'id':
@@ -86,14 +86,14 @@ class BansReader extends SBReader
     
     // Hide inactive bans
     if($this->hideinactive)
-      $where .= ' AND (ends - created = 0 OR ends > UNIX_TIMESTAMP()) AND unban_admin_id IS NULL';
+      $where .= ' AND (length = 0 OR time + length * 60 > UNIX_TIMESTAMP()) AND unban_admin_id IS NULL';
     
     // Fetch bans
     $ban_count = $db->GetOne('SELECT COUNT(*)
                               FROM   ' . Env::get('prefix') . '_bans AS ba
                               WHERE  ' . $where);
-    $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.created, ba.ends, ba.ends - ba.created AS length, ba.reason, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id,
-                                          ba.unban_reason, ba.unban_time, se.ip AS server_ip, se.port AS server_port, IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, mo.name AS mod_name, mo.icon AS mod_icon,
+    $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.reason, ba.length, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id, ba.unban_reason, ba.unban_time, ba.time,
+                                          se.ip AS server_ip, se.port AS server_port, IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, mo.name AS mod_name, mo.icon AS mod_icon,
                                           76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                     AS block_count,
@@ -105,7 +105,7 @@ class BansReader extends SBReader
                                 LEFT JOIN ' . Env::get('prefix') . '_mods    AS mo ON mo.id = se.mod_id
                                 WHERE     ' . $where             . '
                                 ORDER BY  ' . $this->sort        .
-                                ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+                                ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     // Process bans
     foreach($ban_list as $id => &$ban)
@@ -120,17 +120,17 @@ class BansReader extends SBReader
       // Check if ban has been either unbanned or expired
       if(!empty($ban['unban_admin_id']))
         $ban['status'] = $phrases['unbanned'];
-      else if($ban['length'] && $ban['ends'] < time())
+      else if($ban['length'] && $ban['time'] + $ban['length'] * 60 < time())
         $ban['status'] = $phrases['expired'];
       
       // Fetch comments for this ban
       $comments_reader         = new CommentsReader();
       $comments_reader->ban_id = $id;
-      $comments_reader->type   = BAN_COMMENTS;
+      $comments_reader->type   = BAN_TYPE;
       $ban['comments']         = $comments_reader->executeCached(ONE_DAY);
       
       // Format additional ban information
-      $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length']) : $phrases['permanent']);
+      $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length'] * 60) : $phrases['permanent']);
     }
     
     geoip_close($geoip);

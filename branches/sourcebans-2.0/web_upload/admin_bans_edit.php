@@ -15,7 +15,7 @@ try
   {
     try
     {
-      BansWriter::edit($_POST['id'], $_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['length'], $_POST['reason']);
+      BansWriter::edit($_POST['id'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
       
       exit(json_encode(array(
         'redirect' => Env::get('active')

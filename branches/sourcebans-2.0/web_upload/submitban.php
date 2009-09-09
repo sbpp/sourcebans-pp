@@ -15,8 +15,15 @@ try
   {
     try
     {
-      SubmissionsWriter::add($_POST['name'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['server'], $_POST['subname'], $_POST['subemail']);
-      exit;
+      $id = SubmissionsWriter::add($_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'], $_POST['subname'], $_POST['subemail'], $_POST['server']);
+      
+      // If a demo was uploaded, add it
+      if(isset($_FILES['demo']))
+        DemosWriter::add($id, SUBMISSION_TYPE, $_FILES['demo']['name'], $_FILES['demo']['tmp_name']);
+      
+      exit(json_encode(array(
+        'redirect' => Env::get('active')
+      )));
     }
     catch(Exception $e)
     {

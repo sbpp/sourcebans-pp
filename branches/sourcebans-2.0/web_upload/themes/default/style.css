@@ -1004,10 +1004,6 @@ div.playerlist_menu .head {
 #theme-list ul li.active a:hover { background-image: url("images/admin/rightarrow.png"); }
 
 /** ================ Context Menu ================ **/
-#context-menu {
-  position: absolute;
-  visibility: hidden;
-}
 #context-menu, #context-menu ul {
   width: 150px;
   border: 1px solid;
@@ -1015,6 +1011,8 @@ div.playerlist_menu .head {
   display: block;
   padding: 0;
   z-index: 40;
+  position: absolute;
+  visibility: hidden;
   border-color: #DDD #777 #777 #DDD;
   list-style-type: none;
   background-color: #FFF;
@@ -1033,11 +1031,14 @@ div.playerlist_menu .head {
   margin: 1px;
   position: relative;
 }
+#context-menu li.submenu > a {
+  background-image: url("http://projects.interwavestudios.com/images/sub.gif");
+  background-repeat: no-repeat;
+  background-position: right center;
+}
 #context-menu ul {
   top: -2px;
   left: 148px;
-  position: absolute;
-  visibility: hidden;
 }
 
 /** ================ AJAX indicator ================ **/

@@ -7,7 +7,7 @@ class CommentsWriter
    * Adds a comment
    *
    * @param  integer $ban_id  The id of the ban/protest/submission to comment to
-   * @param  integer $type    The type of the comment (BAN_COMMENTS, PROTEST_COMMENTS, SUBMISSION_COMMENTS)
+   * @param  integer $type    The type of the comment (BAN_TYPE, PROTEST_TYPE, SUBMISSION_TYPE)
    * @param  string  $message The message of the comment
    * @return The id of the added comment
    */

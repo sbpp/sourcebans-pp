@@ -67,15 +67,15 @@ CREATE TABLE {prefix}_bans (
   steam varchar(32) default NULL,
   ip varchar(15) default NULL,
   name varchar(64) default NULL,
-  created int(10) unsigned NOT NULL,
-  ends int(10) unsigned NOT NULL,
   reason varchar(255) NOT NULL,
+  length mediumint(8) unsigned NOT NULL,
   server_id smallint(5) unsigned NOT NULL,
   admin_id smallint(5) unsigned default NULL,
   admin_ip varchar(15) NOT NULL,
   unban_admin_id smallint(5) unsigned default NULL,
   unban_reason varchar(255) default NULL,
   unban_time int(10) unsigned default NULL,
+  time int(10) unsigned NOT NULL,
   PRIMARY KEY  (id),
   KEY server_id (server_id),
   KEY admin_id (admin_id),
@@ -125,9 +125,11 @@ CREATE TABLE {prefix}_comments (
 --
 
 CREATE TABLE {prefix}_demos (
+  id int(10) unsigned NOT NULL auto_increment,
   ban_id mediumint(8) unsigned NOT NULL,
   type varchar(1) NOT NULL,
   filename varchar(255) NOT NULL,
+  PRIMARY KEY  (id),
   KEY ban_id (ban_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 

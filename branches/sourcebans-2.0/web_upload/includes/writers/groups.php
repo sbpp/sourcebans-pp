@@ -6,7 +6,7 @@ class GroupsWriter
   /**
    * Adds a group
    *
-   * @param  integer $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
+   * @param  string  $type     The type of the group (SERVER_GROUPS, WEB_GROUPS)
    * @param  string  $name     The name of the group
    * @param  mixed   $flags    The access flags of the group
    * @param  integer $immunity The immunity level of the group
@@ -20,9 +20,7 @@ class GroupsWriter
     
     if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUPS')))
       throw new Exception('Access Denied.');
-    if(!in_array($type, array(SERVER_GROUPS, WEB_GROUPS)))
-      throw new Exception('Invalid group type supplied.');
-    if(empty($name)     || !is_string($name))
+    if(empty($name) || !is_string($name))
       throw new Exception('Invalid group name supplied.');
     if(!is_numeric($immunity))
       throw new Exception('Invalid group immunity supplied.');
@@ -53,12 +51,16 @@ class GroupsWriter
         
         if(is_array($flags) && !empty($flags))
           self::setFlags($id, $flags);
+        
+        break;
+      default:
+        throw new Exception('Invalid group type specified.');
     }
     
     $groups_reader = new GroupsReader();
     $groups_reader->removeCacheFile();
     
-    SBPlugins::call('OnAddGroup', $id, $type, $name, $flags, $immunity);
+    SBPlugins::call('OnAddGroup', $id, $type, $name, $flags, $immunity, $overrides);
     
     return $id;
   }
@@ -68,7 +70,7 @@ class GroupsWriter
    * Deletes a group
    *
    * @param integer $id   The id of the group to delete
-   * @param integer $type The type of the group to delete (SERVER_GROUPS, WEB_GROUPS)
+   * @param string  $type The type of the group to delete (SERVER_GROUPS, WEB_GROUPS)
    */
   public static function delete($id, $type)
   {
@@ -99,6 +101,9 @@ class GroupsWriter
                       WHERE  wg.id = gp.group_id
                         AND  wg.id = ?',
                       array($id));
+        break;
+      default:
+        throw new Exception('Invalid group type specified.');
     }
     
     $groups_reader = new GroupsReader();
@@ -112,7 +117,7 @@ class GroupsWriter
    * Edits a group
    *
    * @param integer $id        The id of the group to edit
-   * @param integer $type      The type of the group (SERVER_GROUPS, WEB_GROUPS)
+   * @param string  $type      The type of the group (SERVER_GROUPS, WEB_GROUPS)
    * @param string  $name      The name of the group
    * @param mixed   $flags     The access flags of the group
    * @param integer $immunity  The immunity level of the group
@@ -164,12 +169,16 @@ class GroupsWriter
           
           self::setFlags($id, $flags);
         }
+        
+        break;
+      default:
+        throw new Exception('Invalid group type specified.');
     }
     
     $groups_reader = new GroupsReader();
     $groups_reader->removeCacheFile();
     
-    SBPlugins::call('OnEditGroup', $id, $type, $name, $flags, $immunity);
+    SBPlugins::call('OnEditGroup', $id, $type, $name, $flags, $immunity, $overrides);
   }
   
   

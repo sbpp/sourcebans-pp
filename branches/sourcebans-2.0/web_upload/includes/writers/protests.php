@@ -7,7 +7,7 @@ class ProtestsWriter
    * Adds a protest
    *
    * @param  string  $name   The name of the banned player
-   * @param  integer $type   The type of the ban
+   * @param  integer $type   The type of the ban (STEAM_BAN_TYPE, IP_BAN_TYPE)
    * @param  string  $steam  The Steam ID of the banned player
    * @param  string  $ip     The IP address of the banned player
    * @param  string  $reason The reason of the protest

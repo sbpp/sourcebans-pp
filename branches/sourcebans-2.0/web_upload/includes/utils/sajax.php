@@ -242,7 +242,7 @@ function ServerInfo($id)
       'maxplayers' => $server_info['maxplayers'],
       'map'        => $server_info['map'],
       'os'         => $server_info['os'],
-      'secure'     => $server_info['secure'] == 1,
+      'secure'     => $server_info['secure'],
       'map_image'  => file_exists(BASE_PATH . $map_image) ? $map_image : null
     );
   }

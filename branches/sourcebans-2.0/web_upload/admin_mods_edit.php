@@ -40,7 +40,7 @@ try
   $page->assign('mod_name',    $mod['name']);
   $page->assign('mod_folder',  $mod['folder']);
   $page->assign('mod_icon',    $mod['icon']);
-  $page->assign('mod_enabled', $mod['enabled'] == 1);
+  $page->assign('mod_enabled', $mod['enabled']);
   $page->display('page_admin_mods_edit');
 }
 catch(Exception $e)

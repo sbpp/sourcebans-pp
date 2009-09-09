@@ -31,12 +31,12 @@ try
   $comments_reader = new CommentsReader();
   $comments        = $comments_reader->executeCached(ONE_MINUTE * 5);
   
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']))
+  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($comments[$_GET['id']]))
     throw new Exception('Invalid ID specified.');
-  else
-    $id = $_GET['id'];
   
-  $page->assign('comment_message', $comments[$id]['message']);
+  $comment         = $comments[$_GET['id']];
+  
+  $page->assign('comment_message', $comment['message']);
   $page->assign('comments',        $comments);
   $page->display('page_comments_edit');
 }

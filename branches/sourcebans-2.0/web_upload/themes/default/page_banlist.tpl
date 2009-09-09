@@ -97,7 +97,7 @@
                 <tr>
                   <th class="icon"><input {nid id="bans_select"} type="checkbox" value="-1" /></th>
                   <th class="date"><a href="{build_query sort=mod_name}">MOD</a>{if $smarty.get.sort == "mod_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}/<a href="{build_query sort=country_name}">{$lang_country}</a>{if $smarty.get.sort == "country_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
-                  <th class="date"><a href="{build_query sort=created}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == "created"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th class="date"><a href="{build_query sort=time}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == "time"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
                   <th><a href="{build_query sort=name}">{$lang_name}</a>{if $smarty.get.sort == "name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
                   {if !$hide_adminname}
                   <th width="11%"><a href="{build_query sort=admin_name}">{$lang_admin}</a>{if $smarty.get.sort == "admin_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
@@ -111,7 +111,7 @@
                     <img alt="{$ban.mod_name|escape}" class="icon" src="images/games/{$ban.mod_icon}" title="{$ban.mod_name|escape}" />
                     <img alt="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" class="icon" src="images/countries/{if empty($ban.country_code)}unknown{else}{$ban.country_code}{/if}.gif" title="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" />
                   </td>
-                  <td class="listtable_1 date">{$ban.created|date_format:$date_format}</td>
+                  <td class="listtable_1 date">{$ban.time|date_format:$date_format}</td>
                   <td class="listtable_1">
                     {if empty($ban.name)}
                     <em class="not_applicable">no nickname present</em>
@@ -140,8 +140,8 @@
                               {if !empty($ban.status)}
                               <li><a href="#" onclick="RebanBan({$ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_reban|ucwords}" class="icon" src="images/forbidden.gif" title="{$lang_reban|ucwords}" /> {$lang_reban|ucwords}</a></li>
                               {/if}
-                              <li><a href="{if $ban.demo_count}{build_url _=getdemo.php id=$ban_id} type=$smarty.const.BAN_COMMENTS}{else}#{/if}"><img alt="{$lang_demo}" class="icon" src="images/demo.gif" title="{$lang_demo}" /> {if $ban.demo_count}Review Demo{else}No Demos{/if}</a></li>
-                              <li><a href="{build_url _=comments_add.php id=$ban_id type=B}"><img alt="{$lang_add_comment|ucwords}" class="icon" src="images/details.gif" title="{$lang_add_comment|ucwords}" /> {$lang_add_comment|ucwords}</a></li>
+                              <li><a href="{if $ban.demo_count}{build_url _=getdemo.php id=$ban_id type=$smarty.const.BAN_TYPE}{else}#{/if}"><img alt="{$lang_demo}" class="icon" src="images/demo.gif" title="{$lang_demo}" /> {if $ban.demo_count}Review Demo{else}No Demos{/if}</a></li>
+                              <li><a href="{build_url _=comments_add.php id=$ban_id type=$smarty.const.BAN_TYPE}"><img alt="{$lang_add_comment|ucwords}" class="icon" src="images/details.gif" title="{$lang_add_comment|ucwords}" /> {$lang_add_comment|ucwords}</a></li>
                               {if $permission_edit_all_bans || ($permission_edit_own_bans && $ban.admin_id == $smarty.cookies.sb_admin_id)}
                               <li><a href="{build_url _=admin_bans_edit.php id=$ban_id}"><img alt="{$lang_edit_ban|ucwords}" src="images/edit.gif" class="icon" title="{$lang_edit_ban|ucwords}" /> {$lang_edit_ban|ucwords}</a></li>
                               {/if}
@@ -186,19 +186,19 @@
                         </tr>
                         <tr>
                           <td class="listtable_1">{$lang_invoked_on}</td>
-                          <td class="listtable_1">{$ban.created|date_format:$date_format}</td>
+                          <td class="listtable_1">{$ban.time|date_format:$date_format}</td>
                         </tr>
                         <tr>
                           <td class="listtable_1">{$lang_length}</td>
-                          <td class="listtable_1">{$ban.length} ({if !empty($ban.status)}{$ban.status}{else}<span id="expires_{$ban_id}" title="{$ban.ends}"></span>{/if})</td>
+                          <td class="listtable_1">{$ban.length} ({if !empty($ban.status)}{$ban.status}{else}<span id="expires_{$ban_id}" title="{$ban.time+$ban.length*60}"></span>{/if})</td>
                         </tr>
                         <tr>
                           <td class="listtable_1">{$lang_expires_on}</td>
                           <td class="listtable_1">
-                            {if $ban.length == $lang_permanent}
-                            <em class="not_applicable">{$lang_not_applicable}.</em>
+                            {if $ban.length}
+                            {$ban.time+$ban.length*60|date_format:$date_format}
                             {else}
-                            {$ban.ends|date_format:$date_format}
+                            <em class="not_applicable">{$lang_not_applicable}.</em>
                             {/if}
                           </td>
                         </tr>

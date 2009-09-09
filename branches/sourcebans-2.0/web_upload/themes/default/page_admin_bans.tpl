@@ -185,15 +185,15 @@
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_invoked_on}</td>
-                            <td class="listtable_1">{$protest.created|date_format:$date_format}</td>
+                            <td class="listtable_1">{$protest.ban_time|date_format:$date_format}</td>
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_expires_on}</td>
                             <td class="listtable_1">
-                              {if $protest.ends == $protest.created}
-                              <em class="not_applicable">{$lang_not_applicable}.</em>
+                              {if $protest.ban_length}
+                              {$protest.ban_time+$protest.ban_length*60|date_format:$date_format}
                               {else}
-                              {$protest.ends|date_format:$date_format}
+                              <em class="not_applicable">{$lang_not_applicable}.</em>
                               {/if}
                             </td>
                           </tr>
@@ -203,7 +203,7 @@
                           </tr>
                           <tr>
                             <td class="listtable_1">{$lang_admin}</td>
-                            <td class="listtable_1">{$protest.ban_admin_name}</td>
+                            <td class="listtable_1">{$protest.admin_name}</td>
                           </tr>
                           <tr>
                             <td class="listtable_1">{$lang_server}</td>
@@ -239,7 +239,7 @@
                                 </tr>
                                 <tr>
                                   <td colspan="2">
-                                    {$comment.commenttxt}
+                                    {$comment.message}
                                   </td>
                                 </tr>
                                 {if !empty($comment.edit_admin_name)}
@@ -314,15 +314,15 @@
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_invoked_on}</td>
-                            <td class="listtable_1">{$protest.date}</td>
+                            <td class="listtable_1">{$protest.ban_time|date_format:$date_format}</td>
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_expires_on}</td>
                             <td class="listtable_1">
-                              {if $protest.ends == $protest.created}
-                              <em class="not_applicable">{$lang_not_applicable}.</em>
+                              {if $protest.ban_length}
+                              {$protest.ban_time+$protest.ban_length*60|date_format:$date_format}
                               {else}
-                              {$protest.ends|date_format:$date_format}
+                              <em class="not_applicable">{$lang_not_applicable}.</em>
                               {/if}
                             </td>
                           </tr>
@@ -332,7 +332,7 @@
                           </tr>
                           <tr>
                             <td class="listtable_1">{$lang_admin}</td>
-                            <td class="listtable_1">{$protest.admin}</td>
+                            <td class="listtable_1">{$protest.admin_name}</td>
                           </tr>
                           <tr>
                             <td class="listtable_1">{$lang_server}</td>

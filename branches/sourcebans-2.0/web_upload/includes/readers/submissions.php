@@ -21,7 +21,7 @@ class SubmissionsReader extends SBReader
                                   FROM      ' . Env::get('prefix') . '_submissions
                                   WHERE     archived = ?
                                   ORDER BY  ' . $this->sort        .
-                                  ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
+                                  ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                   array($this->archive ? 1 : 0));
     
     // Process submissions
@@ -30,7 +30,7 @@ class SubmissionsReader extends SBReader
       // Fetch comments for this submission
       $comments_reader        = new CommentsReader();
       $comments_reader->bid   = $id;
-      $comments_reader->type  = SUBMISSION_COMMENTS;
+      $comments_reader->type  = SUBMISSION_TYPE;
       $submission['comments'] = $comments_reader->executeCached(ONE_DAY);
     }
     

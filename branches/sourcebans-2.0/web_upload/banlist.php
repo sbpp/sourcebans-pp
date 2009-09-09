@@ -45,14 +45,14 @@ try
   $page->assign('permission_edit_all_bans',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ALL_BANS')));
   $page->assign('permission_edit_group_bans',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUP_BANS')));
   $page->assign('permission_edit_own_bans',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_OWN_BANS')));
-  $page->assign('permission_export_bans',      $userbank->HasAccess(array('ADMIN_OWNER')) || $config['config.exportpublic'] == 1);
+  $page->assign('permission_export_bans',      $userbank->HasAccess(array('ADMIN_OWNER')) || $config['config.exportpublic']);
   $page->assign('permission_list_admins',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS')));
   $page->assign('permission_unban_all_bans',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_ALL_BANS')));
   $page->assign('permission_unban_group_bans', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_GROUP_BANS')));
   $page->assign('permission_unban_own_bans',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_OWN_BANS')));
   $page->assign('permission_edit_comments',    $userbank->HasAccess(array('ADMIN_OWNER')));
   $page->assign('permission_list_comments',    $userbank->is_admin());
-  $page->assign('hide_adminname',              $config['banlist.hideadminname'] == 1);
+  $page->assign('hide_adminname',              $config['banlist.hideadminname']);
   $page->assign('admins',                      $admins);
   $page->assign('bans',                        $bans['list']);
   $page->assign('servers',                     $servers);

@@ -72,7 +72,7 @@ class Page extends Smarty
     $userbank              = Env::get('userbank');
     
     $this->compile_dir     = BASE_PATH  . 'themes_c';
-    $this->debugging       = (defined('DEBUG_MODE') && DEBUG_MODE) || $config['config.debug'] == 1;
+    $this->debugging       = (defined('DEBUG_MODE') && DEBUG_MODE) || $config['config.debug'];
     $this->error_reporting = E_ALL & ~E_NOTICE;
     $this->full_page       = $full_page;
     $this->page_title      = $title;
@@ -139,27 +139,30 @@ class Page extends Smarty
   }
   
   /**
-   * This is tha main function that will build the page using the class functions
+   * This is the main function that will build the page using the class functions
    *
-   * @param string $template This is the page content template that we want to include
+   * @param string $file This is the template file that we want to include
    */
   public function display($file)
   {
-    $config   = Env::get('config');
-    $phrases  = Env::get('phrases');
-    $quotes   = Env::get('quotes');
-    $userbank = Env::get('userbank');
-    $quote    = $quotes[array_rand($quotes)];
+    $config     = Env::get('config');
+    $phrases    = Env::get('phrases');
+    $quotes     = Env::get('quotes');
+    $userbank   = Env::get('userbank');
+    $quote      = $quotes[array_rand($quotes)];
     
-    SBPlugins::call('OnDisplayPage', $file, $this);
+    list($page) = SBPlugins::call('OnDisplayPage', $this, $file);
+    
+    foreach(get_object_vars($page) as $key => $value)
+      $this->$key = $value;
     
     // Assign global variables
     parent::assign('active',                   Env::get('active'));
     parent::assign('admin_panes',              $this->panes);
     parent::assign('admin_tabs',               $this->tabs);
     parent::assign('date_format',              $config['config.dateformat']);
-    parent::assign('enable_protest',           $config['config.enableprotest'] == 1);
-    parent::assign('enable_submit',            $config['config.enablesubmit']  == 1);
+    parent::assign('enable_protest',           $config['config.enableprotest']);
+    parent::assign('enable_submit',            $config['config.enablesubmit']);
     parent::assign('logged_in',                $userbank->is_logged_in());
     parent::assign('page_title',               $this->page_title);
     parent::assign('quote_name',               $quote['name']);

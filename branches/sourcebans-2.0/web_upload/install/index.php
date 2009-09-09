@@ -18,12 +18,12 @@ foreach($writable as $path)
 
 
 // Server settings
-define('FILE_UPLOADS',      ini_get('file_uploads')     == 1);
+define('FILE_UPLOADS',      ini_get('file_uploads'));
 define('MYSQL_VERSION',     mysql_get_client_info());
 define('MYSQL_VERSION_REQ', '5.0');
 define('PHP_VERSION_REQ',   '5.2');
-define('REGISTER_GLOBALS',  ini_get('register_globals') == 1);
-define('SAFE_MODE',         ini_get('safe_mode')        == 1);
+define('REGISTER_GLOBALS',  ini_get('register_globals'));
+define('SAFE_MODE',         ini_get('safe_mode'));
 define('WRITABLE_CACHE',    is_writable($writable['cache']));
 define('WRITABLE_CONFIG',   is_writable($writable['config']));
 define('WRITABLE_DEMOS',    is_writable($writable['demos']));

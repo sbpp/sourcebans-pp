@@ -18,15 +18,15 @@ class ProtestsReader extends SBReader
     $db       = Env::get('db');
     
     // Fetch protests
-    $protests = $db->GetAssoc('SELECT    pr.id, pr.ban_id, pr.reason, pr.email, pr.time, ba.server_id, ba.steam AS ban_steam, ba.ip AS ban_ip, ba.name AS ban_name,
-                                         ba.created AS ban_created, ba.ends AS ban_ends, ba.ends - ba.created AS ban_length, ba.reason AS ban_reason, ad.name AS ban_admin_name
+    $protests = $db->GetAssoc('SELECT    pr.id, pr.ban_id, pr.reason, pr.email, pr.time, ba.steam AS ban_steam, ba.ip AS ban_ip, ba.name AS ban_name,
+                                         ba.reason AS ban_reason, ba.length AS ban_length, ba.server_id, ba.time AS ban_time, ad.name AS admin_name
                                FROM      ' . Env::get('prefix') . '_protests AS pr
                                LEFT JOIN ' . Env::get('prefix') . '_bans     AS ba ON ba.id = pr.ban_id
                                LEFT JOIN ' . Env::get('prefix') . '_admins   AS ad ON ad.id = ba.admin_id
                                LEFT JOIN ' . Env::get('prefix') . '_servers  AS se ON se.id = ba.server_id
                                WHERE     archived = ?
                                ORDER BY  ' . $this->sort        .
-                               ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
+                               ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                array($this->archive ? 1 : 0));
     
     // Process protests
@@ -35,7 +35,7 @@ class ProtestsReader extends SBReader
       // Fetch comments for this protest
       $comments_reader        = new CommentsReader();
       $comments_reader->bid   = $id;
-      $comments_reader->type  = PROTEST_COMMENTS;
+      $comments_reader->type  = PROTEST_TYPE;
       $protest['comments']    = $comments_reader->executeCached(ONE_DAY);
     }
     

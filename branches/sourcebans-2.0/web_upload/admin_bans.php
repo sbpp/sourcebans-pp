@@ -4,6 +4,7 @@ require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'protests.php';
 require_once READERS_DIR . 'submissions.php';
 require_once WRITERS_DIR . 'bans.php';
+require_once WRITERS_DIR . 'demos.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -20,7 +21,12 @@ try
       switch($_POST['action'])
       {
         case 'add':
-          BansWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['length'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason']);
+          $id = BansWriter::add($_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
+          
+          // If a demo was uploaded, add it
+          if(isset($_FILES['demo']))
+            DemosWriter::add($id, BAN_TYPE, $_FILES['demo']['name'], $_FILES['demo']['tmp_name']);
+          
           break;
         case 'import':
           BansWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);

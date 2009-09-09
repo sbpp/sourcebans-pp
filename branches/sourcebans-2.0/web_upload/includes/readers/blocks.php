@@ -20,7 +20,7 @@ class BlocksReader extends SBReader
                            FROM      ' . Env::get('prefix') . '_blocks AS bl
                            LEFT JOIN ' . Env::get('prefix') . '_bans   AS ba ON ba.id = bl.ban_id
                            ORDER BY  ' . $this->sort        .
-                           ($this->limit > 0 ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+                           ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     list($blocks) = SBPlugins::call('OnGetBlocks', $blocks);
     

@@ -16,7 +16,7 @@ class AdminsWriter
    * @param  integer $web_group    The web admin group of the admin
    * @return The id of the added admin
    */
-  public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = false, $srv_groups = array(), $web_group = -1)
+  public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = false, $srv_groups = array(), $web_group = null)
   {
     $db       = Env::get('db');
     $userbank = Env::get('userbank');
@@ -100,6 +100,8 @@ class AdminsWriter
    * @param bool    $srv_password Whether or not the password should be used as server password
    * @param array   $srv_groups   The list of server admin groups of the admin
    * @param integer $web_group    The web admin group of the admin
+   * @param string  $theme        The theme setting of the admin
+   * @param string  $language     The language setting of the admin
    */
   public static function edit($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language)
   {

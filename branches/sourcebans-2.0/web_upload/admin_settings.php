@@ -120,14 +120,14 @@ try
   Util::array_qsort($themes,    'name');
   
   $page->assign('permission_clear_logs', $userbank->HasAccess(array('ADMIN_OWNER')));
-  $page->assign('config_debug',          $config['config.debug']          == 1);
-  $page->assign('config_enableprotest',  $config['config.enableprotest']  == 1);
-  $page->assign('config_enablesmtp',     $config['email.smtp']            == 1);
-  $page->assign('config_enablesubmit',   $config['config.enablesubmit']   == 1);
-  $page->assign('config_exportpublic',   $config['config.exportpublic']   == 1);
-  $page->assign('config_hideadminname',  $config['banlist.hideadminname'] == 1);
-  $page->assign('config_nopopup',        $config['dash.lognopopup']       == 1);
-  $page->assign('config_summertime',     $config['config.summertime']     == 1);
+  $page->assign('config_debug',          $config['config.debug']);
+  $page->assign('config_enableprotest',  $config['config.enableprotest']);
+  $page->assign('config_enablesmtp',     $config['email.smtp']);
+  $page->assign('config_enablesubmit',   $config['config.enablesubmit']);
+  $page->assign('config_exportpublic',   $config['config.exportpublic']);
+  $page->assign('config_hideadminname',  $config['banlist.hideadminname']);
+  $page->assign('config_nopopup',        $config['dash.lognopopup']);
+  $page->assign('config_summertime',     $config['config.summertime']);
   $page->assign('config_bansperpage',    $config['banlist.bansperpage']);
   $page->assign('config_dash_text',      $config['dash.intro.text']);
   $page->assign('config_dash_title',     $config['dash.intro.title']);

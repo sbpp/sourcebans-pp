@@ -13,7 +13,7 @@ class ServersWriter
    * @param  array   $groups The list of server groups to add the server to
    * @return The id of the added server
    */
-  public static function add($ip, $port, $rcon, $mod, $enabled = true, $groups = array())
+  public static function add($ip, $port, $rcon, $mod, $groups = array())
   {
     $db       = Env::get('db');
     $userbank = Env::get('userbank');
@@ -45,7 +45,7 @@ class ServersWriter
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
     
-    SBPlugins::call('OnAddServer', $id, $ip, $port, $rcon, $mod, $enabled, $groups);
+    SBPlugins::call('OnAddServer', $id, $ip, $port, $rcon, $mod, $groups);
     
     return $id;
   }
@@ -90,7 +90,7 @@ class ServersWriter
    * @param integer $mod    The id of the server mod
    * @param array   $groups The list of servers groups to add the server to
    */
-  public static function edit($id, $ip, $port, $rcon, $mod, $enabled, $groups)
+  public static function edit($id, $ip, $port, $rcon, $mod, $groups)
   {
     $db       = Env::get('db');
     $userbank = Env::get('userbank');
@@ -130,7 +130,7 @@ class ServersWriter
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
     
-    SBPlugins::call('OnEditServer', $id, $ip, $port, $rcon, $mod, $enabled, $groups);
+    SBPlugins::call('OnEditServer', $id, $ip, $port, $rcon, $mod, $groups);
   }
   
   

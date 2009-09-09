@@ -493,8 +493,10 @@ window.addEvent('domready', function() {
       el.addEvent('contextmenu', function(e) {
         e.stop();
         
-        if($$('input[checked]').length > 0)
-          contextmenu.show(e.page.y, e.page.x);
+        // Check row's checkbox
+        this.getParent().getChildren('td')[0].getChildren('input')[0].checked = true;
+        // Show custom context menu
+        contextmenu.show(e.page.y, e.page.x);
       });
     });
   }

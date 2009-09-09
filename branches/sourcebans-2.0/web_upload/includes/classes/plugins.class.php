@@ -30,11 +30,9 @@ class SBPlugins
   /*
    * Calls a hook on the enabled plugins
    *
-   * TODO: HOOK_CONTINUE to continue, HOOK_HANDLED to return highest value, HOOK_STOP to stop when false is returned
-   *
-   * @param  string $hook   The hook to call
-   * @param  mixed  $args[] The arguments to pass to the hook
-   * @return true to let the original function continue, false to block it
+   * @param  string $hook     The hook to call
+   * @param  mixed  $args[]   The arguments to pass to the hook
+   * @return array  $ref_args The referenced arguments to pass back to the calling function
    */
   public static function call()
   {
@@ -102,7 +100,7 @@ class SBPlugins
     $plugins        = $plugins_reader->executeCached(ONE_DAY);
     
     if(isset($plugins[$class]))
-      self::$plugins[$class]['enabled'] = ($plugins[$class] == 1);
+      self::$plugins[$class]['enabled'] = $plugins[$class];
     else
       PluginsWriter::add($class);
   }

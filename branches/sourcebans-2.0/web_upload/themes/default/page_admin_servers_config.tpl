@@ -23,12 +23,12 @@
 	"sourcebans"
 	{{/literal}
 		"driver"		"mysql"
-		"host"			"{$db_host}"
-		"database"		"{$db_name}"
-		"user"			"{$db_user}"
-		"pass"			"{$db_pass}"
+		"host"			"{if $smarty.const.DB_HOST == 'localhost'}{$smarty.server.SERVER_ADDR}{else}{$smarty.const.DB_HOST}{/if}"
+		"database"		"{$smarty.const.DB_NAME}"
+		"user"			"{$smarty.const.DB_USER}"
+		"pass"			"{$smarty.const.DB_PASS}"
 		//"timeout"		"0"
-		"port"			"{$db_port}"
+		"port"			"{$smarty.const.DB_PORT}"
 	{literal}}
 	
 	"storage-local"
