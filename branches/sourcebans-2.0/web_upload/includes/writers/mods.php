@@ -14,11 +14,9 @@ class ModsWriter
    */
   public static function add($name, $folder, $icon, $enabled = true)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_MODS')))
-      throw new Exception('Access Denied.');
     if(empty($name)   || !is_string($name))
       throw new Exception('Invalid name supplied.');
     if(empty($folder) || !is_string($folder))
@@ -47,11 +45,9 @@ class ModsWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_MODS')))
-      throw new Exception('Access Denied.');
     if(empty($id)     || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
@@ -77,11 +73,9 @@ class ModsWriter
    */
   public static function edit($id, $name, $folder, $icon, $enabled)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_MODS')))
-      throw new Exception('Access Denied.');
     if(empty($id)     || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(empty($name)   || !is_string($name))

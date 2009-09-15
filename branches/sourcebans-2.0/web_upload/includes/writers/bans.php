@@ -18,10 +18,9 @@ class BansWriter
   public static function add($type, $steam, $ip, $name, $reason, $length, $server = 0)
   {
     $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS')))
-      throw new Exception('Access Denied.');
     if(!is_numeric($type))
       throw new Exception('Invalid ban type supplied.');
     if($type == STEAM_BAN_TYPE && !preg_match(STEAM_FORMAT, $steam))
@@ -56,11 +55,9 @@ class BansWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER','ADMIN_DELETE_BANS')))
-      throw new Exception('Access Denied.');
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
@@ -88,13 +85,11 @@ class BansWriter
    */
   public static function edit($id, $type, $steam, $ip, $name, $reason, $length)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    $ban      = array();
+    $ban     = array();
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ALL_BANS', 'ADMIN_EDIT_GROUP_BANS', 'ADMIN_EDIT_OWN_BANS')))
-      throw new Exception('Access Denied.');
     if(empty($id)     || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(!is_null($type)   && is_numeric($type))
@@ -127,10 +122,9 @@ class BansWriter
    */
   public static function import($file, $tmp_name = '')
   {
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_BANS')))
-      throw new Exception('Access Denied.');
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
@@ -184,11 +178,9 @@ class BansWriter
    */
   public static function reban($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS')))
-      throw new Exception('Access Denied.');
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
@@ -216,10 +208,9 @@ class BansWriter
   public static function unban($id, $reason)
   {
     $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_ALL_BANS', 'ADMIN_UNBAN_GROUP_BANS', 'ADMIN_UNBAN_OWN_BANS')))
-      throw new Exception('Access Denied.');
     if(empty($id)     || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(empty($reason) || !is_string($reason))

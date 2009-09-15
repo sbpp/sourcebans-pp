@@ -473,7 +473,7 @@
                 <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.WEB_GROUPS}" width="90%">
                   <tr>
                     <td colspan="2" class="tablerow2">Owner (Full Web Access)</td>
-                    <td align="center" class="tablerow2"><input id="permission_owner" name="web_flags[]" type="checkbox" value="ADMIN_OWNER" /></td>
+                    <td align="center" class="tablerow2"><input id="permission_owner" name="web_flags[]" type="checkbox" value="OWNER" /></td>
                   </tr>
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_admins}</td>
@@ -482,27 +482,27 @@
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_list_admins}</td>
-                    <td align="center" class="tablerow1"><input id="permission_list_admins" name="web_flags[]" type="checkbox" value="ADMIN_LIST_ADMINS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_list_admins" name="web_flags[]" type="checkbox" value="LIST_ADMINS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_add_admins}</td>
-                    <td align="center" class="tablerow1"><input id="permission_add_admins" name="web_flags[]" type="checkbox" value="ADMIN_ADD_ADMINS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_add_admins" name="web_flags[]" type="checkbox" value="ADD_ADMINS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_admins}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_admins" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_ADMINS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_admins" name="web_flags[]" type="checkbox" value="EDIT_ADMINS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_delete_admins}</td>
-                    <td align="center" class="tablerow1"><input id="permission_delete_admins" name="web_flags[]" type="checkbox" value="ADMIN_DELETE_ADMINS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_delete_admins" name="web_flags[]" type="checkbox" value="DELETE_ADMINS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_import_admins}</td>
-                    <td align="center" class="tablerow1"><input id="permission_import_admins" name="web_flags[]" type="checkbox" value="ADMIN_IMPORT_ADMINS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_import_admins" name="web_flags[]" type="checkbox" value="IMPORT_ADMINS" /></td>
                   </tr>
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_groups}</td>
@@ -511,27 +511,27 @@
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_list_groups}</td>
-                    <td align="center" class="tablerow1"><input id="permission_list_groups" name="web_flags[]" type="checkbox" value="ADMIN_LIST_GROUPS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_list_groups" name="web_flags[]" type="checkbox" value="LIST_GROUPS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_add_groups}</td>
-                    <td align="center" class="tablerow1"><input id="permission_add_groups" name="web_flags[]" type="checkbox" value="ADMIN_ADD_GROUPS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_add_groups" name="web_flags[]" type="checkbox" value="ADD_GROUPS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_groups}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_groups" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_GROUPS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_groups" name="web_flags[]" type="checkbox" value="EDIT_GROUPS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_delete_groups}</td>
-                    <td align="center" class="tablerow1"><input id="permission_delete_groups" name="web_flags[]" type="checkbox" value="ADMIN_DELETE_GROUPS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_delete_groups" name="web_flags[]" type="checkbox" value="DELETE_GROUPS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_import_groups}</td>
-                    <td align="center" class="tablerow1"><input id="permission_import_groups" name="web_flags[]" type="checkbox" value="ADMIN_IMPORT_GROUPS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_import_groups" name="web_flags[]" type="checkbox" value="IMPORT_GROUPS" /></td>
                   </tr>
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_mods}</td>
@@ -540,22 +540,22 @@
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_list_mods}</td>
-                    <td align="center" class="tablerow1"><input id="permission_list_mods" name="web_flags[]" type="checkbox" value="ADMIN_LIST_MODS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_list_mods" name="web_flags[]" type="checkbox" value="LIST_MODS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_add_mods}</td>
-                    <td align="center" class="tablerow1"><input id="permission_add_mods" name="web_flags[]" type="checkbox" value="ADMIN_ADD_MODS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_add_mods" name="web_flags[]" type="checkbox" value="ADD_MODS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_mods}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_mods" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_MODS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_mods" name="web_flags[]" type="checkbox" value="EDIT_MODS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_delete_mods}</td>
-                    <td align="center" class="tablerow1"><input id="permission_delete_mods" name="web_flags[]" type="checkbox" value="ADMIN_DELETE_MODS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_delete_mods" name="web_flags[]" type="checkbox" value="DELETE_MODS" /></td>
                   </tr>
                   <tr class="tablerow4">
                     <td colspan="2" class="tablerow4">{$lang_servers}</td>
@@ -564,27 +564,27 @@
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_list_servers}</td>
-                    <td align="center" class="tablerow1"><input id="permission_list_servers" name="web_flags[]" type="checkbox" value="ADMIN_LIST_SERVERS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_list_servers" name="web_flags[]" type="checkbox" value="LIST_SERVERS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_add_servers}</td>
-                    <td align="center" class="tablerow1"><input id="permission_add_servers" name="web_flags[]" type="checkbox" value="ADMIN_ADD_SERVERS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_add_servers" name="web_flags[]" type="checkbox" value="ADD_SERVERS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_servers}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_servers" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_SERVERS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_servers" name="web_flags[]" type="checkbox" value="EDIT_SERVERS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_delete_servers}</td>
-                    <td align="center" class="tablerow1"><input id="permission_delete_servers" name="web_flags[]" type="checkbox" value="ADMIN_DELETE_SERVERS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_delete_servers" name="web_flags[]" type="checkbox" value="DELETE_SERVERS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_import_servers}</td>
-                    <td align="center" class="tablerow1"><input id="permission_import_servers" name="web_flags[]" type="checkbox" value="ADMIN_IMPORT_SERVERS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_import_servers" name="web_flags[]" type="checkbox" value="IMPORT_SERVERS" /></td>
                   </tr>
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_bans}</td>
@@ -593,57 +593,57 @@
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_add_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_add_bans" name="web_flags[]" type="checkbox" value="ADMIN_ADD_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_add_bans" name="web_flags[]" type="checkbox" value="ADD_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_own_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_own_bans" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_OWN_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_own_bans" name="web_flags[]" type="checkbox" value="EDIT_OWN_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_group_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_group_bans" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_GROUP_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_group_bans" name="web_flags[]" type="checkbox" value="EDIT_GROUP_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_edit_all_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_edit_all_bans" name="web_flags[]" type="checkbox" value="ADMIN_EDIT_ALL_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_edit_all_bans" name="web_flags[]" type="checkbox" value="EDIT_ALL_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_unban_own_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_unban_own_bans" name="web_flags[]" type="checkbox" value="ADMIN_UNBAN_OWN_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_unban_own_bans" name="web_flags[]" type="checkbox" value="UNBAN_OWN_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_unban_group_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_unban_group_bans" name="web_flags[]" type="checkbox" value="ADMIN_UNBAN_GROUP_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_unban_group_bans" name="web_flags[]" type="checkbox" value="UNBAN_GROUP_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_unban_all_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_unban_all_bans" name="web_flags[]" type="checkbox" value="ADMIN_UNBAN_ALL_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_unban_all_bans" name="web_flags[]" type="checkbox" value="UNBAN_ALL_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_delete_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_delete_bans" name="web_flags[]" type="checkbox" value="ADMIN_DELETE_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_delete_bans" name="web_flags[]" type="checkbox" value="DELETE_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_import_bans}</td>
-                    <td align="center" class="tablerow1"><input id="permission_import_bans" name="web_flags[]" type="checkbox" value="ADMIN_IMPORT_BANS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_import_bans" name="web_flags[]" type="checkbox" value="IMPORT_BANS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_ban_protests}</td>
-                    <td align="center" class="tablerow1"><input id="permission_ban_protests" name="web_flags[]" type="checkbox" value="ADMIN_BAN_PROTESTS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_ban_protests" name="web_flags[]" type="checkbox" value="BAN_PROTESTS" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td width="15%">&nbsp;</td>
                     <td class="tablerow1">{$lang_ban_submissions}</td>
-                    <td align="center" class="tablerow1"><input id="permission_ban_submissions" name="web_flags[]" type="checkbox" value="ADMIN_BAN_SUBMISSIONS" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_ban_submissions" name="web_flags[]" type="checkbox" value="BAN_SUBMISSIONS" /></td>
                   </tr>
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_email_notifications}</td>
@@ -652,16 +652,16 @@
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_notify_protests}</td>
-                    <td align="center" class="tablerow1"><input id="permission_notify_prot" name="web_flags[]" type="checkbox" value="ADMIN_NOTIFY_PROT" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_notify_prot" name="web_flags[]" type="checkbox" value="NOTIFY_PROT" /></td>
                   </tr>
                   <tr class="tablerow1">
                     <td>&nbsp;</td>
                     <td class="tablerow1">{$lang_notify_submissions}</td>
-                    <td align="center" class="tablerow1"><input id="permission_notify_sub" name="web_flags[]" type="checkbox" value="ADMIN_NOTIFY_SUB" /></td>
+                    <td align="center" class="tablerow1"><input id="permission_notify_sub" name="web_flags[]" type="checkbox" value="NOTIFY_SUB" /></td>
                   </tr>
                   <tr>
                     <td colspan="2" class="tablerow4">{$lang_settings}</td>
-                    <td align="center" class="tablerow4"><input id="permission_settings" name="web_flags[]" type="checkbox" value="ADMIN_SETTINGS" /></td>
+                    <td align="center" class="tablerow4"><input id="permission_settings" name="web_flags[]" type="checkbox" value="SETTINGS" /></td>
                   </tr>
                 </table>
                 <div class="center">

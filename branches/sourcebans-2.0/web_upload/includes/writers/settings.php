@@ -10,11 +10,7 @@ class SettingsWriter
    */
   public static function update($settings = array())
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->hasAccess(array('ADMIN_OWNER', 'ADMIN_SETTINGS')))
-      throw new Exception('Access Denied');
+    $db = Env::get('db');
     
     $db->Execute('REPLACE INTO ' . Env::get('prefix') . '_settings (name, value)
                   VALUES       ("' . implode('", ?), ("', array_keys($settings)) . '", ?)',

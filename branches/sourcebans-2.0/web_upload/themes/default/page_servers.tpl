@@ -12,7 +12,7 @@
               <tr class="opener tbl_out"{if $active != "servers.php"} onclick="window.location = '{build_url _=servers.php}#^{$smarty.foreach.server.index}';"{/if}>
                 <td class="listtable_1 icon"><img alt="{$server.mod_name|escape}" class="icon" src="images/games/{$server.mod_icon}" title="{$server.mod_name|escape}" /></td>
                 <td class="listtable_1 icon"><img alt="{$lang_unknown}" class="icon" id="os_{$server_id}" src="images/server_small.png" title="{$lang_unknown}" /></td>
-                <td class="listtable_1 icon"><img alt="Valve Anti-Cheat" class="icon" id="vac_{$server_id}" src="images/shield.png" style="display: none;" title="Valve Anti-Cheat" /></td>
+                <td class="listtable_1 icon"><img alt="Valve Anti-Cheat" class="icon" id="vac_{$server_id}" src="images/shield.png" title="Valve Anti-Cheat" /></td>
                 <td class="listtable_1" id="host_{$server_id}">{if isset($server.hostname)}{$server.hostname}{else}Error connecting ({$server.ip}:{$server.port}){/if}</td>
                 <td class="listtable_1" id="players_{$server_id}">{if isset($server.numplayers)}{$server.numplayers}/{$server.maxplayers}{else}N/A{/if}</td>
                 <td class="listtable_1" id="map_{$server_id}">{if isset($server.map)}{$server.map}{else}N/A{/if}</td>

@@ -90,8 +90,13 @@
                   <option{if $ban_length == 518400} selected="selected"{/if} value="518400">12 {$lang_months}</option>
                 </optgroup>
               </select>
-              <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo}</label>
-              <input class="submit-fields" {nid id="demo"} type="file" />
+              <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo} (<a href="#" id="add_demo">{$lang_add}</a>)</label>
+              {foreach from=$ban_demos item=demo key=demo_id}
+              <div id="demo_{$demo_id}">
+                <input class="submit-fields" readonly="readonly" value="{$demo}" /> (<a class="delete_demo" href="#" rel="{$demo_id}">{$lang_delete}</a>)
+              </div>
+              {/foreach}
+              <input class="submit-fields" name="demo[]" id="demo" type="file" />
               <div class="center">
                 <input name="id" type="hidden" value="{$smarty.get.id}" />
                 <input class="btn ok" type="submit" value="{$lang_save}" />

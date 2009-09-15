@@ -47,11 +47,8 @@ class ProtestsWriter
    */
   public static function archive($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')))
-      throw new Exception('Access Denied.');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_protests
                   SET    archiv = 1
@@ -72,11 +69,8 @@ class ProtestsWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')))
-      throw new Exception('Access Denied.');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_protests
                   WHERE       pid = ?',
@@ -96,11 +90,8 @@ class ProtestsWriter
    */
   public static function restore($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')))
-      throw new Exception('Access Denied.');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_protests
                   SET    archiv = 0

@@ -1,6 +1,7 @@
 <?php
 require_once READER;
 require_once READERS_DIR . 'comments.php';
+require_once READERS_DIR . 'demos.php';
 require_once LIB_DIR     . 'geoip/geoip.inc.php';
 
 class BansReader extends SBReader
@@ -128,6 +129,12 @@ class BansReader extends SBReader
       $comments_reader->ban_id = $id;
       $comments_reader->type   = BAN_TYPE;
       $ban['comments']         = $comments_reader->executeCached(ONE_DAY);
+      
+      // Fetch demos for this ban
+      $demos_reader            = new DemosReader();
+      $demos_reader->ban_id    = $id;
+      $demos_reader->type      = BAN_TYPE;
+      $ban['demos']            = $demos_reader->executeCached(ONE_DAY);
       
       // Format additional ban information
       $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length'] * 60) : $phrases['permanent']);

@@ -18,11 +18,9 @@ class AdminsWriter
    */
   public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = false, $srv_groups = array(), $web_group = null)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS')))
-      throw new Exception('Access Denied.');
     if(empty($name)          || !is_string($name))
       throw new Exception('Invalid name supplied.');
     if(empty($auth)          || !is_string($auth))
@@ -66,11 +64,9 @@ class AdminsWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS')))
-      throw new Exception('Access Denied.');
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
@@ -105,15 +101,13 @@ class AdminsWriter
    */
   public static function edit($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language)
   {
-    $db       = Env::get('db');
-    $plugins  = Env::get('plugins');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
+    $plugins = Env::get('plugins');
     
-    $admin    = array();
+    $admin   = array();
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
-      throw new Exception('Access Denied.');
-    if(empty($id)       || !is_numeric($id))
+    if(empty($id)              || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(!is_null($name)         && is_string($name))
       $admin['name']         = $name;
@@ -165,10 +159,8 @@ class AdminsWriter
   {
     require_once UTILS_DIR . 'keyvalues/kvutil.php';
     
-    $userbank = Env::get('userbank');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_ADMINS')))
-      throw new Exception('Access Denied.');
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))

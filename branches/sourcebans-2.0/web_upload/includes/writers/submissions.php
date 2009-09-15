@@ -17,11 +17,8 @@ class SubmissionsWriter
    */
   public static function add($steam, $ip, $name, $reason, $subname, $subemail, $server)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db = Env::get('db');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
-      throw new Exception('Access Denied.');
     if(empty($steam)    && empty($ip))
       throw new Exception('You must supply a Steam ID or IP address.');
     if(empty($name)     || !is_string($name))
@@ -56,11 +53,7 @@ class SubmissionsWriter
    */
   public static function archive($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
-      throw new Exception('Access Denied.');
+    $db = Env::get('db');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_submissions
                   SET    archived = 1
@@ -81,19 +74,15 @@ class SubmissionsWriter
    */
   public static function ban($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
-      throw new Exception('Access Denied.');
-    
     require_once WRITERS_DIR . 'bans.php';
     
-    $sub      = $db->GetRow('SELECT name, steam, ip, reason
-                             FROM   ' . Env::get('prefix') . '_submissions
-                             WHERE  archived = 0
-                               AND  id       = ?',
-                             array($id));
+    $db  = Env::get('db');
+    
+    $sub = $db->GetRow('SELECT name, steam, ip, reason
+                        FROM   ' . Env::get('prefix') . '_submissions
+                        WHERE  archived = 0
+                          AND  id       = ?',
+                        array($id));
     
     if(!$db->RecordCount())
       throw new Exception('Invalid ID specified.');
@@ -110,11 +99,7 @@ class SubmissionsWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
-      throw new Exception('Access Denied.');
+    $db = Env::get('db');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_submissions
                   WHERE       id  = ?',
@@ -134,11 +119,7 @@ class SubmissionsWriter
    */
   public static function restore($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
-      throw new Exception('Access Denied.');
+    $db = Env::get('db');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_submissions
                   SET    archived = 0

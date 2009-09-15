@@ -91,11 +91,11 @@ class Util
   /**
    * Converts seconds into string format
    *
-   * @param integer $sec     the amount of seconds
+   * @param integer $secs    the amount of seconds
    * @param bool    $textual Should we show Mo, Wk, etc or just 00:00:00
    * @return string
    */
-  public static function SecondsToString($sec, $textual = true)
+  public static function SecondsToString($secs, $textual = true)
   {
     if($textual)
     {
@@ -104,19 +104,19 @@ class Util
       $ret  = '';
       for($i = 0; $i < count($div); $i++)
       {
-        if(($cou = round($sec / $div[$i])))
+        if(($cou = round($secs / $div[$i])))
         {
-          $ret .= $cou . ' ' . $desc[$i] . ', ';
-          $sec %= $div[$i];
+          $ret  .= $cou . ' ' . $desc[$i] . ', ';
+          $secs %= $div[$i];
         }
       }
-      $ret  = substr($ret, 0, strlen($ret) - 2);
+      $ret  = substr($ret, 0, -2);
     }
     else
     {
-      $hours = floor($sec / 60 / 60);
-      $sec  -= $hours * 60 * 60;
-      $mins  = floor($sec / 60);
+      $hours = floor($secs / 60 / 60);
+      $secs -= $hours * 60 * 60;
+      $mins  = floor($secs / 60);
       $secs %= 60;
       $ret   = $hours . ':' . $mins . ':' . $secs;
     }
@@ -310,6 +310,18 @@ class Util
     foreach(scandir($page->compile_dir) as $file)
       if(is_file($page->compile_dir . '/' . $file))
         unlink($page->compile_dir . '/' . $file);
+  }
+  
+  
+  /**
+   * Generates a random string to use as the salt
+   *
+   * @param  integer $length The length of the salt
+   * @return string of random chars in the length specified
+   */
+  public static function generate_salt($length = 5)
+  {
+    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
   }
 }
 ?>

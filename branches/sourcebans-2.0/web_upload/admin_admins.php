@@ -16,8 +16,8 @@ $page     = new Page($phrases['admins']);
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS', 'ADMIN_DELETE_ADMINS', 'ADMIN_EDIT_ADMINS', 'ADMIN_LIST_ADMINS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'ADD_ADMINS', 'DELETE_ADMINS', 'EDIT_ADMINS', 'LIST_ADMINS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -25,12 +25,17 @@ try
       switch($_POST['action'])
       {
         case 'add':
+          if(!$userbank->HasAccess(array('OWNER', 'ADD_ADMINS')))
+            throw new Exception($phrases['access_denied']);
           if($_POST['password'] != $_POST['password_confirm'])
             throw new Exception('The passwords don\'t match.');
           
           AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
           break;
         case 'import':
+          if(!$userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS')))
+            throw new Exception($phrases['access_denied']);
+          
           AdminsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
@@ -108,49 +113,49 @@ try
     $admin['permission_custom4']          = $userbank->HasAccess(SM_ROOT . SM_CUSTOM4,                           $id);
     $admin['permission_custom5']          = $userbank->HasAccess(SM_ROOT . SM_CUSTOM5,                           $id);
     $admin['permission_custom6']          = $userbank->HasAccess(SM_ROOT . SM_CUSTOM6,                           $id);
-    $admin['permission_add_admins']       = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS'),       $id);
-    $admin['permission_delete_admins']    = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS'),    $id);
-    $admin['permission_edit_admins']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS'),      $id);
-    $admin['permission_import_admins']    = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_ADMINS'),    $id);
-    $admin['permission_list_admins']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS'),      $id);
-    $admin['permission_add_groups']       = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUPS'),       $id);
-    $admin['permission_delete_groups']    = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_GROUPS'),    $id);
-    $admin['permission_edit_groups']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUPS'),      $id);
-    $admin['permission_import_groups']    = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_GROUPS'),    $id);
-    $admin['permission_list_groups']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_GROUPS'),      $id);
-    $admin['permission_add_mods']         = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_MODS'),         $id);
-    $admin['permission_delete_mods']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_MODS'),      $id);
-    $admin['permission_edit_mods']        = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_MODS'),        $id);
-    $admin['permission_list_mods']        = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_MODS'),        $id);
-    $admin['permission_add_servers']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_SERVERS'),      $id);
-    $admin['permission_delete_servers']   = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_SERVERS'),   $id);
-    $admin['permission_edit_servers']     = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_SERVERS'),     $id);
-    $admin['permission_list_servers']     = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_SERVERS'),     $id);
-    $admin['permission_add_bans']         = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS'),         $id);
-    $admin['permission_add_group_bans']   = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUP_BANS'),   $id);
-    $admin['permission_delete_bans']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_BANS'),      $id);
-    $admin['permission_edit_all_bans']    = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ALL_BANS'),    $id);
-    $admin['permission_edit_own_bans']    = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_OWN_BANS'),    $id);
-    $admin['permission_edit_group_bans']  = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUP_BANS'),  $id);
-    $admin['permission_import_bans']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_BANS'),      $id);
-    $admin['permission_unban_all_bans']   = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_ALL_BANS'),   $id);
-    $admin['permission_unban_group_bans'] = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_GROUP_BANS'), $id);
-    $admin['permission_unban_own_bans']   = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_OWN_BANS'),   $id);
-    $admin['permission_ban_protests']     = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS'),     $id);
-    $admin['permission_ban_submissions']  = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS'),  $id);
-    $admin['permission_notify_prot']      = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_NOTIFY_PROT'),      $id);
-    $admin['permission_notify_sub']       = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_NOTIFY_SUB'),       $id);
-    $admin['permission_settings']         = $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_SETTINGS'),         $id);
+    $admin['permission_add_admins']       = $userbank->HasAccess(array('OWNER', 'ADD_ADMINS'),       $id);
+    $admin['permission_delete_admins']    = $userbank->HasAccess(array('OWNER', 'DELETE_ADMINS'),    $id);
+    $admin['permission_edit_admins']      = $userbank->HasAccess(array('OWNER', 'EDIT_ADMINS'),      $id);
+    $admin['permission_import_admins']    = $userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS'),    $id);
+    $admin['permission_list_admins']      = $userbank->HasAccess(array('OWNER', 'LIST_ADMINS'),      $id);
+    $admin['permission_add_groups']       = $userbank->HasAccess(array('OWNER', 'ADD_GROUPS'),       $id);
+    $admin['permission_delete_groups']    = $userbank->HasAccess(array('OWNER', 'DELETE_GROUPS'),    $id);
+    $admin['permission_edit_groups']      = $userbank->HasAccess(array('OWNER', 'EDIT_GROUPS'),      $id);
+    $admin['permission_import_groups']    = $userbank->HasAccess(array('OWNER', 'IMPORT_GROUPS'),    $id);
+    $admin['permission_list_groups']      = $userbank->HasAccess(array('OWNER', 'LIST_GROUPS'),      $id);
+    $admin['permission_add_mods']         = $userbank->HasAccess(array('OWNER', 'ADD_MODS'),         $id);
+    $admin['permission_delete_mods']      = $userbank->HasAccess(array('OWNER', 'DELETE_MODS'),      $id);
+    $admin['permission_edit_mods']        = $userbank->HasAccess(array('OWNER', 'EDIT_MODS'),        $id);
+    $admin['permission_list_mods']        = $userbank->HasAccess(array('OWNER', 'LIST_MODS'),        $id);
+    $admin['permission_add_servers']      = $userbank->HasAccess(array('OWNER', 'ADD_SERVERS'),      $id);
+    $admin['permission_delete_servers']   = $userbank->HasAccess(array('OWNER', 'DELETE_SERVERS'),   $id);
+    $admin['permission_edit_servers']     = $userbank->HasAccess(array('OWNER', 'EDIT_SERVERS'),     $id);
+    $admin['permission_list_servers']     = $userbank->HasAccess(array('OWNER', 'LIST_SERVERS'),     $id);
+    $admin['permission_add_bans']         = $userbank->HasAccess(array('OWNER', 'ADD_BANS'),         $id);
+    $admin['permission_add_group_bans']   = $userbank->HasAccess(array('OWNER', 'ADD_GROUP_BANS'),   $id);
+    $admin['permission_delete_bans']      = $userbank->HasAccess(array('OWNER', 'DELETE_BANS'),      $id);
+    $admin['permission_edit_all_bans']    = $userbank->HasAccess(array('OWNER', 'EDIT_ALL_BANS'),    $id);
+    $admin['permission_edit_own_bans']    = $userbank->HasAccess(array('OWNER', 'EDIT_OWN_BANS'),    $id);
+    $admin['permission_edit_group_bans']  = $userbank->HasAccess(array('OWNER', 'EDIT_GROUP_BANS'),  $id);
+    $admin['permission_import_bans']      = $userbank->HasAccess(array('OWNER', 'IMPORT_BANS'),      $id);
+    $admin['permission_unban_all_bans']   = $userbank->HasAccess(array('OWNER', 'UNBAN_ALL_BANS'),   $id);
+    $admin['permission_unban_group_bans'] = $userbank->HasAccess(array('OWNER', 'UNBAN_GROUP_BANS'), $id);
+    $admin['permission_unban_own_bans']   = $userbank->HasAccess(array('OWNER', 'UNBAN_OWN_BANS'),   $id);
+    $admin['permission_ban_protests']     = $userbank->HasAccess(array('OWNER', 'BAN_PROTESTS'),     $id);
+    $admin['permission_ban_submissions']  = $userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS'),  $id);
+    $admin['permission_notify_prot']      = $userbank->HasAccess(array('OWNER', 'NOTIFY_PROT'),      $id);
+    $admin['permission_notify_sub']       = $userbank->HasAccess(array('OWNER', 'NOTIFY_SUB'),       $id);
+    $admin['permission_settings']         = $userbank->HasAccess(array('OWNER', 'SETTINGS'),         $id);
   }
   
-  $page->assign('permission_clear_actions',  $userbank->HasAccess(array('ADMIN_OWNER')));
-  $page->assign('permission_list_actions',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ACTIONS')));
-  $page->assign('permission_add_admins',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS')));
-  $page->assign('permission_delete_admins',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS')));
-  $page->assign('permission_edit_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')));
-  $page->assign('permission_import_admins',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_ADMINS')));
-  $page->assign('permission_list_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS')));
-  $page->assign('permission_list_overrides', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_OVERRIDES')));
+  $page->assign('permission_clear_actions',  $userbank->HasAccess(array('OWNER')));
+  $page->assign('permission_list_actions',   $userbank->HasAccess(array('OWNER', 'LIST_ACTIONS')));
+  $page->assign('permission_add_admins',     $userbank->HasAccess(array('OWNER', 'ADD_ADMINS')));
+  $page->assign('permission_delete_admins',  $userbank->HasAccess(array('OWNER', 'DELETE_ADMINS')));
+  $page->assign('permission_edit_admins',    $userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')));
+  $page->assign('permission_import_admins',  $userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS')));
+  $page->assign('permission_list_admins',    $userbank->HasAccess(array('OWNER', 'LIST_ADMINS')));
+  $page->assign('permission_list_overrides', $userbank->HasAccess(array('OWNER', 'LIST_OVERRIDES')));
   $page->assign('actions',                   $actions);
   $page->assign('admins',                    $admins);
   $page->assign('overrides',                 $overrides);

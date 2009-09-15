@@ -6,6 +6,7 @@ access                 = Access
 access_denied          = Zugriff verweigert
 action                 = Aktion
 actions_log            = Aktions Log
+add                    = Hinzufügen
 add_admin              = Admin hinzufügen
 add_admins             = Admins hinzufügen
 add_ban                = Ban hinzufügen

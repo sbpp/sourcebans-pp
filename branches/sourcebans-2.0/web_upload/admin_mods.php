@@ -10,8 +10,8 @@ $page     = new Page($phrases['mods']);
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_MODS', 'ADMIN_DELETE_MODS', 'ADMIN_EDIT_MODS', 'ADMIN_LIST_MODS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'ADD_MODS', 'DELETE_MODS', 'EDIT_MODS', 'LIST_MODS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -19,6 +19,9 @@ try
       switch($_POST['action'])
       {
         case 'add':
+          if(!$userbank->HasAccess(array('OWNER', 'ADD_MODS')))
+            throw new Exception($phrases['access_denied']);
+          
           ModsWriter::add($_POST['name'], $_POST['folder'], $_POST['icon'], isset($_POST['enabled']));
           break;
         default:
@@ -43,10 +46,10 @@ try
   $counts        = $counts_reader->executeCached(ONE_MINUTE * 5);
   $mods          = $mods_reader->executeCached(ONE_DAY);
   
-  $page->assign('permission_add_mods',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_MODS')));
-  $page->assign('permission_delete_mods', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_MODS')));
-  $page->assign('permission_edit_mods',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_MODS')));
-  $page->assign('permission_list_mods',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_MODS')));
+  $page->assign('permission_add_mods',    $userbank->HasAccess(array('OWNER', 'ADD_MODS')));
+  $page->assign('permission_delete_mods', $userbank->HasAccess(array('OWNER', 'DELETE_MODS')));
+  $page->assign('permission_edit_mods',   $userbank->HasAccess(array('OWNER', 'EDIT_MODS')));
+  $page->assign('permission_list_mods',   $userbank->HasAccess(array('OWNER', 'LIST_MODS')));
   $page->assign('mods',                   $mods);
   $page->assign('mod_count',              $counts['mods']);
   $page->display('page_admin_mods');

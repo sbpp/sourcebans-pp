@@ -8,8 +8,8 @@ $page    = new Page(ucwords($phrases['protest_ban']));
 
 try
 {
-  if($config['config.enablesubmit'] != 1)
-    throw new Exception('Access Denied');
+  if(!$config['config.enablesubmit'])
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try

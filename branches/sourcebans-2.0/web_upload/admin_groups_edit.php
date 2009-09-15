@@ -3,14 +3,14 @@ require_once 'init.php';
 require_once READERS_DIR . 'groups.php';
 require_once WRITERS_DIR . 'groups.php';
 
-$userbank = Env::get('userbank');
 $phrases  = Env::get('phrases');
+$userbank = Env::get('userbank');
 $page     = new Page(ucwords($phrases['edit_group']));
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUPS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'EDIT_GROUPS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -20,19 +20,26 @@ try
       {
         case SERVER_GROUPS:
           // If flag array contains root flag, only pass root flag, otherwise create flag string
-          $flags     = in_array(SM_ROOT,       $_POST['srv_flags']) ? SM_ROOT              : implode($_POST['srv_flags']);
+          $flags     = in_array(SM_ROOT, $_POST['srv_flags']) ? SM_ROOT        : implode($_POST['srv_flags']);
           $overrides = array();
           
           foreach($_POST['override_name'] as $id => $name)
-            $overrides[] = array('name'   => $name,
-                                 'access' => $_POST['override_access'][$id],
-                                 'type'   => $_POST['override_type'][$id]);
+          {
+            if(!empty($name))
+              $overrides[] = array('name'   => $name,
+                                   'access' => $_POST['override_access'][$id],
+                                   'type'   => $_POST['override_type'][$id]);
+          }
           
           break;
         case WEB_GROUPS:
           // If flag array contains owner flag, only pass owner flag, otherwise pass entire flag array
-          $flags     = in_array('ADMIN_OWNER', $_POST['web_flags']) ? array('ADMIN_OWNER') : $_POST['web_flags'];
+          $flags     = in_array('OWNER', $_POST['web_flags']) ? array('OWNER') : $_POST['web_flags'];
           $overrides = null;
+          
+          break;
+        default:
+          throw new Exception('Invalid group type specified.');
       }
       
       GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
@@ -96,40 +103,40 @@ try
       break;
     case WEB_GROUPS:
       $flags                       = $group['flags'];
-      $permission_owner            = in_array('ADMIN_OWNER',                                 $flags);
-      $permission_add_admins       = $permission_owner || in_array('ADMIN_ADD_ADMINS',       $flags);
-      $permission_delete_admins    = $permission_owner || in_array('ADMIN_DELETE_ADMINS',    $flags);
-      $permission_edit_admins      = $permission_owner || in_array('ADMIN_EDIT_ADMINS',      $flags);
-      $permission_import_admins    = $permission_owner || in_array('ADMIN_IMPORT_ADMINS',    $flags);
-      $permission_list_admins      = $permission_owner || in_array('ADMIN_LIST_ADMINS',      $flags);
-      $permission_add_groups       = $permission_owner || in_array('ADMIN_ADD_GROUPS',       $flags);
-      $permission_delete_groups    = $permission_owner || in_array('ADMIN_DELETE_GROUPS',    $flags);
-      $permission_edit_groups      = $permission_owner || in_array('ADMIN_EDIT_GROUPS',      $flags);
-      $permission_import_groups    = $permission_owner || in_array('ADMIN_IMPORT_GROUPS',    $flags);
-      $permission_list_groups      = $permission_owner || in_array('ADMIN_LIST_GROUPS',      $flags);
-      $permission_add_mods         = $permission_owner || in_array('ADMIN_ADD_MODS',         $flags);
-      $permission_delete_mods      = $permission_owner || in_array('ADMIN_DELETE_MODS',      $flags);
-      $permission_edit_mods        = $permission_owner || in_array('ADMIN_EDIT_MODS',        $flags);
-      $permission_list_mods        = $permission_owner || in_array('ADMIN_LIST_MODS',        $flags);
-      $permission_add_servers      = $permission_owner || in_array('ADMIN_ADD_SERVERS',      $flags);
-      $permission_delete_servers   = $permission_owner || in_array('ADMIN_DELETE_SERVERS',   $flags);
-      $permission_edit_servers     = $permission_owner || in_array('ADMIN_EDIT_SERVERS',     $flags);
-      $permission_import_servers   = $permission_owner || in_array('ADMIN_IMPORT_SERVERS',   $flags);
-      $permission_list_servers     = $permission_owner || in_array('ADMIN_LIST_SERVERS',     $flags);
-      $permission_add_bans         = $permission_owner || in_array('ADMIN_ADD_BANS',         $flags);
-      $permission_delete_bans      = $permission_owner || in_array('ADMIN_DELETE_BANS',      $flags);
-      $permission_edit_all_bans    = $permission_owner || in_array('ADMIN_EDIT_ALL_BANS',    $flags);
-      $permission_edit_group_bans  = $permission_owner || in_array('ADMIN_EDIT_GROUP_BANS',  $flags);
-      $permission_edit_own_bans    = $permission_owner || in_array('ADMIN_EDIT_OWN_BANS',    $flags);
-      $permission_import_bans      = $permission_owner || in_array('ADMIN_IMPORT_BANS',      $flags);
-      $permission_unban_all_bans   = $permission_owner || in_array('ADMIN_UNBAN_ALL_BANS',   $flags);
-      $permission_unban_group_bans = $permission_owner || in_array('ADMIN_UNBAN_GROUP_BANS', $flags);
-      $permission_unban_own_bans   = $permission_owner || in_array('ADMIN_UNBAN_OWN_BANS',   $flags);
-      $permission_ban_protests     = $permission_owner || in_array('ADMIN_BAN_PROTESTS',     $flags);
-      $permission_ban_submissions  = $permission_owner || in_array('ADMIN_BAN_SUBMISSIONS',  $flags);
-      $permission_notify_prot      = $permission_owner || in_array('ADMIN_NOTIFY_PROT',      $flags);
-      $permission_notify_sub       = $permission_owner || in_array('ADMIN_NOTIFY_SUB',       $flags);
-      $permission_settings         = $permission_owner || in_array('ADMIN_SETTINGS',         $flags);
+      $permission_owner            = in_array('OWNER',                                 $flags);
+      $permission_add_admins       = $permission_owner || in_array('ADD_ADMINS',       $flags);
+      $permission_delete_admins    = $permission_owner || in_array('DELETE_ADMINS',    $flags);
+      $permission_edit_admins      = $permission_owner || in_array('EDIT_ADMINS',      $flags);
+      $permission_import_admins    = $permission_owner || in_array('IMPORT_ADMINS',    $flags);
+      $permission_list_admins      = $permission_owner || in_array('LIST_ADMINS',      $flags);
+      $permission_add_groups       = $permission_owner || in_array('ADD_GROUPS',       $flags);
+      $permission_delete_groups    = $permission_owner || in_array('DELETE_GROUPS',    $flags);
+      $permission_edit_groups      = $permission_owner || in_array('EDIT_GROUPS',      $flags);
+      $permission_import_groups    = $permission_owner || in_array('IMPORT_GROUPS',    $flags);
+      $permission_list_groups      = $permission_owner || in_array('LIST_GROUPS',      $flags);
+      $permission_add_mods         = $permission_owner || in_array('ADD_MODS',         $flags);
+      $permission_delete_mods      = $permission_owner || in_array('DELETE_MODS',      $flags);
+      $permission_edit_mods        = $permission_owner || in_array('EDIT_MODS',        $flags);
+      $permission_list_mods        = $permission_owner || in_array('LIST_MODS',        $flags);
+      $permission_add_servers      = $permission_owner || in_array('ADD_SERVERS',      $flags);
+      $permission_delete_servers   = $permission_owner || in_array('DELETE_SERVERS',   $flags);
+      $permission_edit_servers     = $permission_owner || in_array('EDIT_SERVERS',     $flags);
+      $permission_import_servers   = $permission_owner || in_array('IMPORT_SERVERS',   $flags);
+      $permission_list_servers     = $permission_owner || in_array('LIST_SERVERS',     $flags);
+      $permission_add_bans         = $permission_owner || in_array('ADD_BANS',         $flags);
+      $permission_delete_bans      = $permission_owner || in_array('DELETE_BANS',      $flags);
+      $permission_edit_all_bans    = $permission_owner || in_array('EDIT_ALL_BANS',    $flags);
+      $permission_edit_group_bans  = $permission_owner || in_array('EDIT_GROUP_BANS',  $flags);
+      $permission_edit_own_bans    = $permission_owner || in_array('EDIT_OWN_BANS',    $flags);
+      $permission_import_bans      = $permission_owner || in_array('IMPORT_BANS',      $flags);
+      $permission_unban_all_bans   = $permission_owner || in_array('UNBAN_ALL_BANS',   $flags);
+      $permission_unban_group_bans = $permission_owner || in_array('UNBAN_GROUP_BANS', $flags);
+      $permission_unban_own_bans   = $permission_owner || in_array('UNBAN_OWN_BANS',   $flags);
+      $permission_ban_protests     = $permission_owner || in_array('BAN_PROTESTS',     $flags);
+      $permission_ban_submissions  = $permission_owner || in_array('BAN_SUBMISSIONS',  $flags);
+      $permission_notify_prot      = $permission_owner || in_array('NOTIFY_PROT',      $flags);
+      $permission_notify_sub       = $permission_owner || in_array('NOTIFY_SUB',       $flags);
+      $permission_settings         = $permission_owner || in_array('SETTINGS',         $flags);
       
       $page->assign('group_permission_add_admins',       $permission_add_admins);
       $page->assign('group_permission_delete_admins',    $permission_delete_admins);

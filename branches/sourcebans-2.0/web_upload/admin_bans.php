@@ -12,8 +12,8 @@ $page     = new Page($phrases['bans']);
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS', 'ADMIN_EDIT_ALL_BANS', 'ADMIN_EDIT_GROUP_BANS', 'ADMIN_EDIT_OWN_BANS', 'ADMIN_BAN_PROTESTS', 'ADMIN_BAN_SUBMISSIONS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS', 'EDIT_ALL_BANS', 'EDIT_GROUP_BANS', 'EDIT_OWN_BANS', 'BAN_PROTESTS', 'BAN_SUBMISSIONS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -21,14 +21,20 @@ try
       switch($_POST['action'])
       {
         case 'add':
+          if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS')))
+            throw new Exception($phrases['access_denied']);
+          
           $id = BansWriter::add($_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
           
-          // If a demo was uploaded, add it
-          if(isset($_FILES['demo']))
-            DemosWriter::add($id, BAN_TYPE, $_FILES['demo']['name'], $_FILES['demo']['tmp_name']);
+          // If one or more demos were uploaded, add them
+          foreach($_FILES['demo'] as $demo)
+            DemosWriter::add($id, BAN_TYPE, $demo['name'], $demo['tmp_name']);
           
           break;
         case 'import':
+          if(!$userbank->HasAccess(array('OWNER', 'IMPORT_BANS')))
+            throw new Exception($phrases['access_denied']);
+          
           BansWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
@@ -60,12 +66,12 @@ try
   $archived_protests           = $protests_reader->executeCached(ONE_MINUTE    * 5);
   $archived_submissions        = $submissions_reader->executeCached(ONE_MINUTE * 5);
   
-  $page->assign('permission_add_bans',        $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS')));
-  $page->assign('permission_edit_bans',       $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ALL_BANS', 'ADMIN_EDIT_GROUP_BANS', 'ADMIN_EDIT_OWN_BANS')));
-  $page->assign('permission_import_bans',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_BANS')));
+  $page->assign('permission_add_bans',        $userbank->HasAccess(array('OWNER', 'ADD_BANS')));
+  $page->assign('permission_edit_bans',       $userbank->HasAccess(array('OWNER', 'EDIT_ALL_BANS', 'EDIT_GROUP_BANS', 'EDIT_OWN_BANS')));
+  $page->assign('permission_import_bans',     $userbank->HasAccess(array('OWNER', 'IMPORT_BANS')));
   $page->assign('permission_list_comments',   $userbank->is_admin());
-  $page->assign('permission_protests',        $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')));
-  $page->assign('permission_submissions',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')));
+  $page->assign('permission_protests',        $userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')));
+  $page->assign('permission_submissions',     $userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')));
   $page->assign('protests',                   $protests);
   $page->assign('submissions',                $submissions);
   $page->assign('archived_protests',          $archived_protests);

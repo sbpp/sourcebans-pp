@@ -14,10 +14,9 @@ class CommentsWriter
   public static function add($ban_id, $type, $message)
   {
     $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
     
-    if(!$userbank->is_admin())
-      throw new Exception('Access Denied.');
     if(empty($ban_id)  || !is_numeric($ban_id))
       throw new Exception('Invalid ban ID supplied.');
     if(empty($type)    || !is_string($type))
@@ -48,18 +47,16 @@ class CommentsWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER')))
-      throw new Exception('Access Denied.');
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
-    $comment               = $db->GetRow('SELECT ban_id, type
-                                          FROM   ' . Env::get('prefix') . '_comments
-                                          WHERE  id = ?',
-                                          array($id));
+    $comment = $db->GetRow('SELECT ban_id, type
+                            FROM   ' . Env::get('prefix') . '_comments
+                            WHERE  id = ?',
+                            array($id));
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_comments
                   WHERE       id = ?',
@@ -83,10 +80,9 @@ class CommentsWriter
   public static function edit($id, $message)
   {
     $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
     
-    if(!$userbank->is_admin())
-      throw new Exception('Access Denied.');
     if(empty($id)      || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(empty($message) || !is_string($message))

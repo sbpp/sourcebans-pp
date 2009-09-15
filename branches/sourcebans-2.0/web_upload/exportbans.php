@@ -2,10 +2,11 @@
 require_once 'init.php';
 
 $config   = Env::get('config');
+$phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
 
-if(!$userbank->HasAccess(array('ADMIN_OWNER')) && !$config['config.exportpublic'])
-  throw new Exception('Access Denied.');
+if(!$userbank->HasAccess(array('OWNER')) && !$config['config.exportpublic'])
+  throw new Exception($phrases['access_denied']);
 
 require_once READERS_DIR . 'bans.php';
 

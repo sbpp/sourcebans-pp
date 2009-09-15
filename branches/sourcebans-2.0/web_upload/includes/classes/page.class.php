@@ -163,7 +163,8 @@ class Page extends Smarty
     parent::assign('date_format',              $config['config.dateformat']);
     parent::assign('enable_protest',           $config['config.enableprotest']);
     parent::assign('enable_submit',            $config['config.enablesubmit']);
-    parent::assign('logged_in',                $userbank->is_logged_in());
+    parent::assign('is_admin',                 $userbank->is_admin());
+    parent::assign('is_logged_in',             $userbank->is_logged_in());
     parent::assign('page_title',               $this->page_title);
     parent::assign('quote_name',               $quote['name']);
     parent::assign('quote_text',               $quote['text']);
@@ -172,12 +173,12 @@ class Page extends Smarty
     parent::assign('styles',                   $this->styles);
     parent::assign('tabs',                     Tabs::getTabs());
     parent::assign('theme_dir',                $config['config.theme']);
-    parent::assign('user_permission_admins',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS',  'ADMIN_DELETE_ADMINS',  'ADMIN_EDIT_ADMINS',     'ADMIN_LIST_ADMINS')));
-    parent::assign('user_permission_bans',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS',    'ADMIN_EDIT_ALL_BANS',  'ADMIN_EDIT_GROUP_BANS', 'ADMIN_EDIT_OWN_BANS', 'ADMIN_LIST_BANS', 'ADMIN_BAN_PROTESTS', 'ADMIN_BAN_SUBMISSIONS')));
-    parent::assign('user_permission_groups',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUPS',  'ADMIN_DELETE_GROUPS',  'ADMIN_EDIT_GROUPS',     'ADMIN_LIST_GROUPS')));
-    parent::assign('user_permission_mods',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_MODS',    'ADMIN_DELETE_MODS',    'ADMIN_EDIT_MODS',       'ADMIN_LIST_MODS')));
-    parent::assign('user_permission_servers',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_SERVERS', 'ADMIN_DELETE_SERVERS', 'ADMIN_EDIT_SERVERS',    'ADMIN_LIST_SERVERS')));
-    parent::assign('user_permission_settings', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_SETTINGS')));
+    parent::assign('user_permission_admins',   $userbank->HasAccess(array('OWNER', 'ADD_ADMINS',  'DELETE_ADMINS',  'EDIT_ADMINS',     'LIST_ADMINS')));
+    parent::assign('user_permission_bans',     $userbank->HasAccess(array('OWNER', 'ADD_BANS',    'EDIT_ALL_BANS',  'EDIT_GROUP_BANS', 'EDIT_OWN_BANS', 'LIST_BANS', 'BAN_PROTESTS', 'BAN_SUBMISSIONS')));
+    parent::assign('user_permission_groups',   $userbank->HasAccess(array('OWNER', 'ADD_GROUPS',  'DELETE_GROUPS',  'EDIT_GROUPS',     'LIST_GROUPS')));
+    parent::assign('user_permission_mods',     $userbank->HasAccess(array('OWNER', 'ADD_MODS',    'DELETE_MODS',    'EDIT_MODS',       'LIST_MODS')));
+    parent::assign('user_permission_servers',  $userbank->HasAccess(array('OWNER', 'ADD_SERVERS', 'DELETE_SERVERS', 'EDIT_SERVERS',    'LIST_SERVERS')));
+    parent::assign('user_permission_settings', $userbank->HasAccess(array('OWNER', 'SETTINGS')));
     parent::assign('username',                 $userbank->GetProperty('name'));
     
     // Assign language phrases

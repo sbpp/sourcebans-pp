@@ -1,13 +1,14 @@
 <?php
 require_once 'init.php';
 
+$phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
 $page     = new Page('Email');
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS', 'ADMIN_BAN_SUBMISSIONS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS', 'BAN_SUBMISSIONS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try

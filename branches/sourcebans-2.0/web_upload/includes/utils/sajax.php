@@ -37,9 +37,11 @@ function AddServerGroup($admins, $id)
 {
   try
   {
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
-      throw new Exception('Access Denied.');
+    
+    if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
+      throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'admins.php';
     
@@ -60,9 +62,11 @@ function SetServerGroup($admins, $id)
 {
   try
   {
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
-      throw new Exception('Access Denied.');
+    
+    if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
+      throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'admins.php';
     
@@ -96,9 +100,11 @@ function KickPlayer($id, $name)
 {
   try
   {
+    $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
+    
     if(!$userbank->HasAccess(SM_ROOT . SM_KICK))
-      throw new Exception('Access Denied.');
+      throw new Exception($phrases['access_denied']);
     
     require_once READERS_DIR . 'servers.php';
     require_once UTILS_DIR   . 'servers/server_rcon.php';

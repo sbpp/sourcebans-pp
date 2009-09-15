@@ -10,8 +10,8 @@ $page     = new Page(ucwords($phrases['edit_groups']));
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -44,11 +44,11 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins[$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $id                  = $_GET['id'];
+  $admin               = $admins[$_GET['id']];
   
-  $page->assign('admin_name',      $admins[$id]['name']);
-  $page->assign('admin_srv_group', $admins[$id]['srv_groups']);
-  $page->assign('admin_web_group', $admins[$id]['group_id']);
+  $page->assign('admin_name',      $admin['name']);
+  $page->assign('admin_srv_group', $admin['srv_groups']);
+  $page->assign('admin_web_group', $admin['group_id']);
   $page->assign('server_groups',   $server_groups);
   $page->assign('web_groups',      $web_groups);
   $page->display('page_admin_admins_editgroups');

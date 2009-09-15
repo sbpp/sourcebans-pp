@@ -28,7 +28,7 @@ function SetupAdmin($username, $password, $confirm_password, $email, $auth, $ide
     
     require_once BASE_PATH . 'api.php';
     
-    $web_group = GroupsWriter::add(WEB_GROUPS, 'Owner', array('ADMIN_OWNER'));
+    $web_group = GroupsWriter::add(WEB_GROUPS, 'Owner', array('OWNER'));
     AdminsWriter::add($username, $auth, $identity, $email, $password, array(), $web_group);
   }
   catch(Exception $e)

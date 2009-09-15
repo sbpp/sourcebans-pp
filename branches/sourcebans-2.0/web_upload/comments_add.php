@@ -2,14 +2,14 @@
 require_once 'init.php';
 require_once WRITERS_DIR . 'comments.php';
 
-$userbank = Env::get('userbank');
 $phrases  = Env::get('phrases');
+$userbank = Env::get('userbank');
 $page     = new Page(ucwords($phrases['add_comment']));
 
 try
 {
   if(!$userbank->is_admin())
-    throw new Exception('Access Denied');
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try

@@ -41,12 +41,23 @@ h1 {
   background-image: url("images/head_logo.png");
 }
 h1 span { display: none; }
+h3 {
+  clear: both;
+  border: 1px solid #DDD;
+  margin: 5px 0;
+  padding: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #EAEAEA;
+  border-left-width: 5px;
+}
+h4 { margin: 0; }
 img { border-style: none; }
 label {
   clear: both;
   float: left;
   width: 200px;
-  margin-right: 3px;
+  margin: 5px 3px 0 0;
 }
 p { margin-top: 0; }
 table {
@@ -116,7 +127,6 @@ div.permissions {
 #content input, #content select, #content textarea { margin: 3px 0; }
 #admin-page-content label {
   color: #0B1B51;
-  margin: 3px;
   font-weight: bold;
 }
 
@@ -331,32 +341,18 @@ td.dialog-topleft, td.dialog-topright, td.dialog-bottomright, td.dialog-bottomle
   text-decoration: none;
 }
 
-h3 {
-  clear: both;
-  border: 1px solid #DDD;
-  margin: 5px 0;
-  padding: 5px;
-  font-size: 12px;
-  font-weight: bold;
-  background-color: #EAEAEA;
-  border-left-width: 5px;
-}
-h4 { margin: 0; }
-
 /** ================ ToolTips ================ **/
 img.tips { vertical-align: bottom; }
-.perm-tip { width: 210px; }
-.tip { width: 139px; }
 
-.perm-text, .tip-text {
+.tip { width: 139px; }
+.tip-text {
   color: #FFF;
   padding: 4px 8px 8px;
   font-size: 11px;
   background-position: bottom right;
 }
-.perm-text, .perm-title { background-image: url("images/tooltip_sqr.png"); }
 .tip-text, .tip-title { background-image: url("images/tooltip.png"); }
-.perm-title, .tip-title {
+.tip-title {
   color: #B80202;
   padding: 8px 8px 4px;
   font-size: 14px;
@@ -440,29 +436,9 @@ img.tips { vertical-align: bottom; }
 
 .cancel { background-image: url("images/admin/cancel.gif"); }
 .connect { background-image: url("images/connect.gif"); }
-.login { background-image: url("images/login.gif"); }
 .ok { background-image: url("images/admin/ok.gif"); }
 .refresh { background-image: url("images/refresh.png"); }
 .save { background-image: url("images/admin/save.gif"); }
-
-.msg-button {
-  top: 85px;
-  left: 480px;
-  float: right;
-  position: absolute;
-}
-.msgbox-border {
-  top: 250px;
-  width: 520px;
-  margin: auto 210px;
-  padding: 15px;
-  overflow: hidden;
-  position: fixed !important;
-  position: absolute;
-  <!--[if !IE 6]>
-  background: url("images/msg-bubble.png") no-repeat center;
-  <![endif]-->
-}
 
 .msg-error {
   color: #E80909;
@@ -523,50 +499,33 @@ img.tips { vertical-align: bottom; }
 #login {
   width: 400px;
   border: 1px solid #AAA9A9;
-  height: 260px;
   margin: 30px auto;
   padding: 12px;
 }
+#login label { float: none; }
 
-#lostpassword {
-  width: 400px;
-  height: 260px;
-  margin: 30px auto;
-  padding: 12px;
-}
-
-#loginLogo {
-  height: 60px;
-  text-align: center;
-}
-  
 #loginUsernameDiv,
 #loginPasswordDiv,
 #loginRememberMe,
 #loginSubmit { padding: 6px 0; }
 
+#loginRememberMe { float: left; }
+#loginSubmit {
+  float: right;
+  text-align: right;
+}
+
+#loginOtherlinks {
+  padding: 8px 0;
+  border-top: 1px solid #AAA9A9;
+  margin-top: 50px;
+  text-align: center;
+}
+
 .loginmedium {
   width: 394px;
   height: 22px;
   font-size: 18px;
-}
-
-#loginSubmit { text-align: right; }
-  
-#loginbutton {
-  color: #FFF;
-  border: 2px outset #999;
-  padding: 5px 10px;
-  font-size: 14px;
-  font-weight: 700;
-  background-color: #000;
-}
-  
-#loginOtherlinks {
-  padding: 8px 0;
-  border-top: 1px solid #AAA9A9;
-  margin-top: 26px;
-  text-align: center;
 }
 
 /** ================ Admin ================ **/
@@ -626,7 +585,7 @@ img.tips { vertical-align: bottom; }
 #admin-page-menu ul li a {
   height: 20px;
   display: block;
-  padding: 2px 5px 1px 5px;
+  padding: 2px 5px 1px;
   border-left: 5px solid #DDD;
   border-bottom: 1px solid #DDD;
   text-decoration: none;
@@ -635,10 +594,8 @@ img.tips { vertical-align: bottom; }
   color: #333;
   border: 1px solid #C24733;
   padding: 2px 5px 1px 5px;
-  border-left: 5px solid #C24733;
-  background-color: #F1E8E6;
-  background-repeat: no-repeat;
-  background-position: center right;
+  background: #F1E8E6 no-repeat center right;
+  border-left-width: 5px;
 }
 #admin-page-menu ul li.active a:hover { background-image: url("images/admin/rightarrow.png"); }
 
@@ -657,52 +614,6 @@ img.tips { vertical-align: bottom; }
 #pane-protests-current h3, #pane-protests-archive h3, #pane-submissions-current h3, #pane-submissions-archive h3 { margin-top: 0; }
 
 #reason_other { display: none; }
-
-/** ================ Permissions ================ **/
-#permis-drop {
-  float: right;
-  width: 676px;
-  border: 1px solid #DDD;
-  height: 100%;
-  margin: 0 auto 0 auto;
-  padding: 7px;
-  overflow: hidden;
-}
-
-.permis-container {
-  width: 690px;
-  float: none;
-  height: 100%;
-  overflow: hidden;
-}
-.permis-container ul {
-  margin: 0;
-  padding: 10px;
-  list-style-type: none;
-}
-.permis-container ul li {
-  float: left;
-  text-align: center;
-  margin-right: 2px;
-}
-.permis-container ul li a {
-  width: 100px;
-  height: 37px;
-  border: 1px solid #DDD;
-  display: block;
-  padding: 7px 5px 1px 5px;
-  margin-right: 20px;
-  margin-bottom: 20px;
-  vertical-align: middle; 
-  text-decoration: none;
-}
-.permis-container ul li a:hover {
-  color: #333;
-  border: 1px solid #C24733;
-  cursor: move;
-  padding: 8px 4px 0 6px;
-  background-color: #F1E8E6;
-}
 
 /** ================ Dashboard ================ **/
 #front-servers { margin: 13px; }
@@ -725,7 +636,6 @@ img.tips { vertical-align: bottom; }
   margin-bottom: 3px;
   background-color: #eaeaea;
 }
-.fmsd { font-size: 10px; }
 
 /** ================ Banlist ================ **/
 .tbl_hover {
@@ -739,18 +649,6 @@ table.listtable {
   font-size: 10px;
   font-family: verdana, tahoma, arial;
   background-color: #FFF;
-}
-table.listtable2 {
-  color: #000000;
-  border: 1px solid #C5C5C5;
-  font-size: 10px;
-  font-family: verdana, tahoma, arial;
-}
-table.listtable3 {
-  color: #000000;
-  font-size: 11px;
-  font-family: verdana, tahoma, arial;
-  border-style: none;
 }
 
 td.listtable_1, td.listtable_1_unbanned, td.listtable_2 {
@@ -772,8 +670,8 @@ td.listtable_2 { background-color: #efefef; }
 .ban-edit li a {
   height: 20px;
   display: block;
-  padding: 2px 5px 1px 5px;
-  border-bottom: 1px solid #DDDDDD;
+  padding: 2px 5px 1px;
+  border-bottom: 1px solid #DDD;
   text-decoration: none;
 }
 .ban-edit li a:hover {
@@ -932,9 +830,14 @@ div.playerlist_menu .head {
 }
 #protest-main { background-image: url("images/protest-ban.jpg"); }
 #submit-main { background-image: url("images/submit-ban.jpg"); }
-#protest-main fieldset, #submit-main fieldset { width: 480px; }
+#protest-main fieldset, #submit-main fieldset { width: 500px; }
 
-.mandatory { color: #FF0000; }
+.mandatory {
+  top: 8px;
+  color: #FF0000;
+  position: relative;
+  vertical-align: top;
+}
 
 /** ================ Theme Page CSS ================ **/
 .largetitle {
@@ -958,7 +861,7 @@ div.playerlist_menu .head {
   clear: none;
   float: left;
   width: 250px;
-  border: 3px solid #ccc;
+  border: 3px solid #CCC;
   height: 170px;
   margin-top: 10px;
 }
@@ -1046,17 +949,16 @@ div.playerlist_menu .head {
   top: 50%;
   left: 50%;
   width: 200px;
-  border: 1px solid #DDDDDD;
+  border: 1px solid #DDD;
   filter: alpha(opacity=75);
   display: none;
   opacity: 0.75;
   padding: 0.6em;
   z-index: 1;
   position: absolute;
-  margin-top: -15px;
   text-align: center;
   font-weight: bold;
-  margin-left: -100px;
+  margin: -15px 0 0 -100px;
   background-color: #EAEAEA;
 }
 #ajax-indicator span {
@@ -1064,4 +966,4 @@ div.playerlist_menu .head {
   padding-left: 26px;
   vertical-align: bottom;
 }
-html>body #ajax-indicator { position: fixed; }
+html > body #ajax-indicator { position: fixed; }

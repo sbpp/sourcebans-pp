@@ -1,13 +1,14 @@
 <?php
 require_once 'init.php';
 
+$phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
 $page     = new Page('Server RCON');
 
 try
 {
   if(!$userbank->HasAccess(SM_RCON . SM_ROOT))
-    throw new Exception('Access Denied');
+    throw new Exception($phrases['access_denied']);
   
   $page->display('page_admin_servers_rcon');
 }

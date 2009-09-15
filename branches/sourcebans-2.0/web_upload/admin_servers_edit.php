@@ -5,14 +5,14 @@ require_once READERS_DIR . 'mods.php';
 require_once READERS_DIR . 'servers.php';
 require_once WRITERS_DIR . 'servers.php';
 
-$userbank = Env::get('userbank');
 $phrases  = Env::get('phrases');
+$userbank = Env::get('userbank');
 $page     = new Page(ucwords($phrases['edit_server']));
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_SERVERS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'EDIT_SERVERS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try

@@ -3,14 +3,14 @@ require_once 'init.php';
 require_once READERS_DIR . 'mods.php';
 require_once WRITERS_DIR . 'mods.php';
 
-$userbank = Env::get('userbank');
 $phrases  = Env::get('phrases');
+$userbank = Env::get('userbank');
 $page     = new Page(ucwords($phrases['edit_mod']));
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_MODS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'EDIT_MODS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try

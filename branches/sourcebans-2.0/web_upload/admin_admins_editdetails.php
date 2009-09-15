@@ -9,8 +9,8 @@ $page     = new Page(ucwords($phrases['edit_details']));
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -44,7 +44,7 @@ try
   $page->assign('admin_type',             $admin['auth']);
   $page->assign('admin_identity',         $admin['identity']);
   $page->assign('admin_email',            $admin['email']);
-  $page->assign('permission_change_pass', $userbank->HasAccess(array('ADMIN_OWNER')) || $_GET['id'] == $userbank->GetID());
+  $page->assign('permission_change_pass', $userbank->HasAccess(array('OWNER')) || $_GET['id'] == $userbank->GetID());
   $page->display('page_admin_admins_editdetails');
 }
 catch(Exception $e)

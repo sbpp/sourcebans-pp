@@ -3,13 +3,14 @@ require_once 'init.php';
 require_once READERS_DIR . 'comments.php';
 require_once WRITERS_DIR . 'comments.php';
 
+$phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
 $page     = new Page('Edit Comment');
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try

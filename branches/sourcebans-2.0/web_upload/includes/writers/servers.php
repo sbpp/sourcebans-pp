@@ -15,11 +15,9 @@ class ServersWriter
    */
   public static function add($ip, $port, $rcon, $mod, $groups = array())
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_SERVERS')))
-      throw new Exception('Access Denied.');
     if(empty($ip)   || !is_string($ip))
       throw new Exception('Invalid IP address supplied.');
     if(empty($port) || !is_numeric($port))
@@ -58,11 +56,9 @@ class ServersWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_SERVERS')))
-      throw new Exception('Access Denied.');
     if(empty($id)   || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
@@ -92,11 +88,9 @@ class ServersWriter
    */
   public static function edit($id, $ip, $port, $rcon, $mod, $groups)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_SERVERS')))
-      throw new Exception('Access Denied.');
     if(empty($id)   || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(empty($ip)   || !is_string($ip))
@@ -142,20 +136,16 @@ class ServersWriter
    */
   public static function import($file, $tmp_name = '')
   {
-    $userbank = Env::get('userbank');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_SERVERS')))
-      throw new Exception('Access Denied.');
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
       throw new Exception('File does not exist.');
-    
-    if(pathinfo($name, PATHINFO_EXTENSION) != 'sslf')
+    if(pathinfo($file, PATHINFO_EXTENSION) != 'sslf')
       throw new Exception('Unsupported file format.');
     
-    $contents = file($tmp_name);
-    preg_match_all('Server=([a-zA-Z0-9]+) ([0-9\.]+):([0-9]+)', $contents, $servers);
+    preg_match_all('Server=([a-zA-Z0-9]+) ([0-9\.]+):([0-9]+)', file_get_contents($tmp_name), $servers);
     
     foreach($servers as $server)
       self::add($server[1], $server[2], '', 0);

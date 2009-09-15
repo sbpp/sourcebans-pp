@@ -11,8 +11,8 @@ $page     = new Page(ucwords($phrases['settings']));
 
 try
 {
-  if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_SETTINGS')))
-    throw new Exception('Access Denied');
+  if(!$userbank->HasAccess(array('OWNER', 'SETTINGS')))
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -119,7 +119,7 @@ try
   Util::array_qsort($languages, 'name');
   Util::array_qsort($themes,    'name');
   
-  $page->assign('permission_clear_logs', $userbank->HasAccess(array('ADMIN_OWNER')));
+  $page->assign('permission_clear_logs', $userbank->HasAccess(array('OWNER')));
   $page->assign('config_debug',          $config['config.debug']);
   $page->assign('config_enableprotest',  $config['config.enableprotest']);
   $page->assign('config_enablesmtp',     $config['email.smtp']);

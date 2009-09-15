@@ -13,6 +13,13 @@
  */
 
 /**
+ * Global Variables
+ */
+var demo;
+var override;
+
+
+/**
  * Global Functions
  */
 function ArchiveProtest(id, name)
@@ -220,8 +227,8 @@ function setServerInfo(res)
       'src': res.map_image,
       'title': res.map
     });
-  if($chk($('vac_'     + res.id)) && res.secure)
-    $('vac_'     + res.id).setStyle('display', 'block');
+  if($chk($('vac_'     + res.id)))
+    $('vac_'     + res.id).setStyle('display', res.secure ? 'block' : 'none');
   if($chk($('os_'      + res.id)) && res.os)
   {
     $('os_'      + res.id).set('src', 'images/' + res.os + '.png');
@@ -380,6 +387,7 @@ window.addEvent('domready', function() {
   });
   $$('.connect').each(function(el) {
     el.addEvent('click', function(e) {
+      e.stop();
       window.location = 'steam://connect/' + this.get('rel');
     });
   });
@@ -396,6 +404,8 @@ window.addEvent('domready', function() {
   });
   $$('.refresh').each(function(el) {
     el.addEvent('click', function(e) {
+      e.stop();
+      
       var id = parseInt(this.get('rel'));
       x_ServerInfo(id,    setServerInfo);
       x_ServerPlayers(id, setServerPlayers);
@@ -403,6 +413,7 @@ window.addEvent('domready', function() {
   });
   $$('.select_theme').each(function(el) {
     el.addEvent('click', function(e) {
+      e.stop();
       x_SelectTheme(this.get('rel'));
     });
   });
@@ -418,17 +429,19 @@ window.addEvent('domready', function() {
   });
   $$('.tips').each(function(el) {
     var title = el.get('title').split(' :: ');
-    el.set('fade', {duration: 300});
-    el.store('tip:text',  title[1]);
-    el.store('tip:title', title[0]);
+    el.set('fade', {
+      duration: 300
+    }).store('tip:text',  title[1]).store('tip:title', title[0]);
   });
   $$('.toggle_mce').each(function(el) {
     el.addEvent('click', function(e) {
       e.stop();
+      
       var id = this.get('rel');
-      tinyMCE.execCommand(tinyMCE.getInstanceById(id) == null ? 'mceAddControl' : 'mceRemoveControl', false, id);
+      tinyMCE.execCommand(tinyMCE.getInstanceById(id) ? 'mceRemoveControl' : 'mceAddControl', false, id);
     });
   });
+  
   if($$('div.opener').length  > 0)
     InitAccordion('tr.opener',   'div.opener',  'mainwrapper');
   if($$('div.opener2').length > 0)
@@ -437,18 +450,29 @@ window.addEvent('domready', function() {
     InitAccordion('tr.opener3',  'div.opener3', 'mainwrapper');
   if($$('tr.sea_open').length > 0)
     InitAccordion('tr.sea_open', 'form.panel',  'mainwrapper');
+  
   if($chk($('action_select')))
   {
     $('action_select').addEvent('change', function(e) {
       alert(this.value);
     });
   }
+  if($chk($('add_demo')))
+  {
+    demo = $('demo').clone();
+    
+    $('add_demo').addEvent('click', function(e) {
+      e.stop();
+      demo.clone().inject($('demo').removeProperties('id'), 'after').set('id', 'demo');
+    });
+  }
   if($chk($('add_override')))
   {
+    override = $('override').clone();
+    
     $('add_override').addEvent('click', function(e) {
       e.stop();
-      var el = $('overrides').getLast('tr');
-      el.clone().inject(el.getParent());
+      override.clone().inject($('override').removeProperties('id'), 'after').set('id', 'override');
     });
   }
   if($chk($('admins_select')))
@@ -513,9 +537,7 @@ window.addEvent('domready', function() {
       $('smtp_username').set('disabled', !this.checked);
       $('smtp_password').set('disabled', !this.checked);
       $('smtp_secure').set('disabled',   !this.checked);
-    });
-    
-    $('enable_smtp').fireEvent('change');
+    }).fireEvent('change');
   }
   if($chk($('permission_owner')))
   {
@@ -564,18 +586,17 @@ window.addEvent('domready', function() {
     }).toBottom();
     
     $('rcon_cmd').addEvent('keydown', function(e) {
-      if(e.key == 'enter')
+      if(e.key != 'enter')
+        return;
+      if(this.value == 'clr')
       {
-        if(this.value == 'clr')
-        {
-          $('rcon').empty();
-          this.value    = '';
-        }
-        else
-        {
-          this.disabled = $('rcon_btn').disabled = true;
-          this.value    = 'Executing, Please Wait...';
-        }
+        $('rcon').empty();
+        this.value    = '';
+      }
+      else
+      {
+        this.disabled = $('rcon_btn').disabled = true;
+        this.value    = 'Executing, Please Wait...';
       }
     });
   }
@@ -588,10 +609,10 @@ window.addEvent('domready', function() {
   if($chk($('relver')))
     x_Version(setVersion);
   
-  $('dialog').fade('hide');
-  
-  new Drag('dialog', {handle: 'dialog-title'});
-  new Tips('.tips', {
+  new Drag('dialog', {
+    handle: 'dialog-title'
+  });
+  new Tips('.tips',  {
     onHide: function(tip) {
       tip.fade('out');
     },

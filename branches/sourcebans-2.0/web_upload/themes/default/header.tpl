@@ -60,7 +60,7 @@
         <a href="index.php" id="head-logo"><h1><span>SourceBans</span></h1></a>
         <div id="head-userbox">
           {$lang_welcome}
-          {if $logged_in}
+          {if $is_logged_in}
           {$username} (<a href="{build_url _=logout.php}">{$lang_logout}</a>)
           <br /><a href="{build_url _=account.php}">{$lang_your_account}</a>
           {else}
@@ -79,7 +79,7 @@
           {if $enable_protest}
           <li{if $active == "protestban.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=protestban.php}" title="{$lang_protest_ban|ucwords} :: {$lang_protest_ban_desc}">{$lang_protest_ban|ucwords}</a></span></li>
           {/if}
-          {if $logged_in}
+          {if $is_admin}
           <li{if $active == "admin.php"} class="active"{/if}><span class="tabfill"><a class="tips" href="{build_url _=admin.php}" title="{$lang_administration|ucwords} :: {$lang_administration_desc}">{$lang_administration|ucwords}</a></span></li>
           {/if}
           {foreach from=$tabs item=tab}

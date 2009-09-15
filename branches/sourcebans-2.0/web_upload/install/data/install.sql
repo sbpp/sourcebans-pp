@@ -370,22 +370,22 @@ CREATE TABLE {prefix}_submissions (
 -- Dumping data for table 'sb_mods'
 --
 
-INSERT INTO {prefix}_mods (id, name, folder, icon, enabled) VALUES
-(1, 'Half-Life 2 Deathmatch', 'hl2mp', 'hl2dm.png', 1),
-(2, 'Counter-Strike: Source', 'cstrike', 'csource.png', 1),
-(3, 'Day of Defeat: Source', 'dod', 'dods.png', 1),
-(4, 'Insurgency: Source', 'insurgency', 'ins.gif', 1),
-(5, 'Dystopia', 'dystopia_v1', 'dys.gif', 1),
-(6, 'Hidden: Source', 'hidden', 'hidden.png', 1),
-(7, 'Half-Life 2 Capture the Flag', 'hl2ctf', 'hl2ctf.png', 1),
-(8, 'Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif', 1),
-(9, 'Perfect Dark: Source', 'pdark', 'pdark.gif', 1),
-(10, 'The Ship', 'ship', 'ship.gif', 1),
-(11, 'Fortress Forever', 'FortressForever', 'hl2-fortressforever.gif', 1),
-(12, 'Team Fortress 2', 'tf', 'tf2.gif', 1),
-(13, 'Zombie Panic: Source', 'zps', 'zps.gif', 1),
-(14, 'Garry''s Mod', 'garrysmod', 'gmod.png', 1),
-(15, 'Left 4 Dead', 'left4dead', 'l4d.png', 1);
+INSERT INTO {prefix}_mods (name, folder, icon) VALUES
+('Half-Life 2 Deathmatch', 'hl2mp', 'hl2dm.png'),
+('Counter-Strike: Source', 'cstrike', 'csource.png'),
+('Day of Defeat: Source', 'dod', 'dods.png'),
+('Insurgency: Source', 'insurgency', 'ins.gif'),
+('Dystopia', 'dystopia_v1', 'dys.gif'),
+('Hidden: Source', 'hidden', 'hidden.png'),
+('Half-Life 2 Capture the Flag', 'hl2ctf', 'hl2ctf.png'),
+('Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif'),
+('Perfect Dark: Source', 'pdark', 'pdark.gif'),
+('The Ship', 'ship', 'ship.gif'),
+('Fortress Forever', 'FortressForever', 'hl2-fortressforever.gif'),
+('Team Fortress 2', 'tf', 'tf2.gif'),
+('Zombie Panic: Source', 'zps', 'zps.gif'),
+('Garry''s Mod', 'garrysmod', 'gmod.png'),
+('Left 4 Dead', 'left4dead', 'l4d.png');
 
 -- --------------------------------------------------------
 
@@ -393,38 +393,38 @@ INSERT INTO {prefix}_mods (id, name, folder, icon, enabled) VALUES
 -- Dumping data for table 'sb_permissions'
 --
 
-INSERT INTO {prefix}_permissions (id, name) VALUES
-(1, 'ADMIN_OWNER'),
-(2, 'ADMIN_ADD_ADMINS'),
-(3, 'ADMIN_DELETE_ADMINS'),
-(4, 'ADMIN_EDIT_ADMINS'),
-(5, 'ADMIN_LIST_ADMINS'),
-(6, 'ADMIN_ADD_BANS'),
-(7, 'ADMIN_DELETE_BANS'),
-(8, 'ADMIN_EDIT_ALL_BANS'),
-(9, 'ADMIN_EDIT_GROUP_BANS'),
-(10, 'ADMIN_EDIT_OWN_BANS'),
-(11, 'ADMIN_IMPORT_BANS'),
-(12, 'ADMIN_UNBAN_ALL_BANS'),
-(13, 'ADMIN_UNBAN_GROUP_BANS'),
-(14, 'ADMIN_UNBAN_OWN_BANS'),
-(15, 'ADMIN_BAN_PROTESTS'),
-(16, 'ADMIN_BAN_SUBMISSIONS'),
-(17, 'ADMIN_NOTIFY_PROT'),
-(18, 'ADMIN_NOTIFY_SUB'),
-(19, 'ADMIN_ADD_GROUPS'),
-(20, 'ADMIN_DELETE_GROUPS'),
-(21, 'ADMIN_EDIT_GROUPS'),
-(22, 'ADMIN_LIST_GROUPS'),
-(23, 'ADMIN_ADD_MODS'),
-(24, 'ADMIN_DELETE_MODS'),
-(25, 'ADMIN_EDIT_MODS'),
-(26, 'ADMIN_LIST_MODS'),
-(27, 'ADMIN_ADD_SERVERS'),
-(28, 'ADMIN_DELETE_SERVERS'),
-(29, 'ADMIN_EDIT_SERVERS'),
-(30, 'ADMIN_LIST_SERVERS'),
-(31, 'ADMIN_SETTINGS');
+INSERT INTO {prefix}_permissions (name) VALUES
+('OWNER'),
+('ADD_ADMINS'),
+('DELETE_ADMINS'),
+('EDIT_ADMINS'),
+('LIST_ADMINS'),
+('ADD_BANS'),
+('DELETE_BANS'),
+('EDIT_ALL_BANS'),
+('EDIT_GROUP_BANS'),
+('EDIT_OWN_BANS'),
+('IMPORT_BANS'),
+('UNBAN_ALL_BANS'),
+('UNBAN_GROUP_BANS'),
+('UNBAN_OWN_BANS'),
+('BAN_PROTESTS'),
+('BAN_SUBMISSIONS'),
+('NOTIFY_PROT'),
+('NOTIFY_SUB'),
+('ADD_GROUPS'),
+('DELETE_GROUPS'),
+('EDIT_GROUPS'),
+('LIST_GROUPS'),
+('ADD_MODS'),
+('DELETE_MODS'),
+('EDIT_MODS'),
+('LIST_MODS'),
+('ADD_SERVERS'),
+('DELETE_SERVERS'),
+('EDIT_SERVERS'),
+('LIST_SERVERS'),
+('SETTINGS');
 
 -- --------------------------------------------------------
 

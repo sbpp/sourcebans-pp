@@ -14,8 +14,8 @@ class DemosWriter
    */
   public static function add($ban_id, $type, $filename, $tmp_name)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     if(empty($ban_id)   || !is_numeric($ban_id))
       throw new Exception('Invalid ban ID supplied.');
@@ -23,6 +23,8 @@ class DemosWriter
       throw new Exception('Invalid type supplied.');
     if(empty($filename) || !is_string($filename))
       throw new Exception('Invalid filename supplied.');
+    if(!in_array(pathinfo($filename, PATHINFO_EXTENSION), array('dem', 'rar', 'zip')))
+      throw new Exception('Unsupported file format.');
     if(!move_uploaded_file($tmp_name, DEMOS_DIR . $type . $ban_id . '_' . $filename))
       throw new Exception('Unable to upload demo.');
     
@@ -47,12 +49,10 @@ class DemosWriter
    */
   public static function delete($id)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_BANS')))
-      throw new Exception('Access Denied.');
-    if(empty($id)     || !is_numeric($id))
+    if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_demos

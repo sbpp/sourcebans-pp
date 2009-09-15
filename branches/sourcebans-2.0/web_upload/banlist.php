@@ -39,18 +39,18 @@ try
   if($bans_end > $bans['count'])
     $bans_end = $bans['count'];
   
-  $page->assign('permission_add_bans',         $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS')));
-  $page->assign('permission_bans',             $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_BANS', 'ADMIN_EDIT_ALL_BANS', 'ADMIN_EDIT_GROUP_BANS', 'ADMIN_EDIT_OWN_BANS', 'ADMIN_UNBAN_ALL_BANS', 'ADMIN_UNBAN_GROUP_BANS', 'ADMIN_UNBAN_OWN_BANS')));
-  $page->assign('permission_delete_bans',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_BANS')));
-  $page->assign('permission_edit_all_bans',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ALL_BANS')));
-  $page->assign('permission_edit_group_bans',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUP_BANS')));
-  $page->assign('permission_edit_own_bans',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_OWN_BANS')));
-  $page->assign('permission_export_bans',      $userbank->HasAccess(array('ADMIN_OWNER')) || $config['config.exportpublic']);
-  $page->assign('permission_list_admins',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS')));
-  $page->assign('permission_unban_all_bans',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_ALL_BANS')));
-  $page->assign('permission_unban_group_bans', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_GROUP_BANS')));
-  $page->assign('permission_unban_own_bans',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_OWN_BANS')));
-  $page->assign('permission_edit_comments',    $userbank->HasAccess(array('ADMIN_OWNER')));
+  $page->assign('permission_add_bans',         $userbank->HasAccess(array('OWNER', 'ADD_BANS')));
+  $page->assign('permission_bans',             $userbank->HasAccess(array('OWNER', 'DELETE_BANS', 'EDIT_ALL_BANS', 'EDIT_GROUP_BANS', 'EDIT_OWN_BANS', 'UNBAN_ALL_BANS', 'UNBAN_GROUP_BANS', 'UNBAN_OWN_BANS')));
+  $page->assign('permission_delete_bans',      $userbank->HasAccess(array('OWNER', 'DELETE_BANS')));
+  $page->assign('permission_edit_all_bans',    $userbank->HasAccess(array('OWNER', 'EDIT_ALL_BANS')));
+  $page->assign('permission_edit_group_bans',  $userbank->HasAccess(array('OWNER', 'EDIT_GROUP_BANS')));
+  $page->assign('permission_edit_own_bans',    $userbank->HasAccess(array('OWNER', 'EDIT_OWN_BANS')));
+  $page->assign('permission_export_bans',      $userbank->HasAccess(array('OWNER')) || $config['config.exportpublic']);
+  $page->assign('permission_list_admins',      $userbank->HasAccess(array('OWNER', 'LIST_ADMINS')));
+  $page->assign('permission_unban_all_bans',   $userbank->HasAccess(array('OWNER', 'UNBAN_ALL_BANS')));
+  $page->assign('permission_unban_group_bans', $userbank->HasAccess(array('OWNER', 'UNBAN_GROUP_BANS')));
+  $page->assign('permission_unban_own_bans',   $userbank->HasAccess(array('OWNER', 'UNBAN_OWN_BANS')));
+  $page->assign('permission_edit_comments',    $userbank->HasAccess(array('OWNER')));
   $page->assign('permission_list_comments',    $userbank->is_admin());
   $page->assign('hide_adminname',              $config['banlist.hideadminname']);
   $page->assign('admins',                      $admins);

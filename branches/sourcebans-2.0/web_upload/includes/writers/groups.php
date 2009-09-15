@@ -15,11 +15,9 @@ class GroupsWriter
    */
   public static function add($type, $name, $flags = '', $immunity = 0, $overrides = array())
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUPS')))
-      throw new Exception('Access Denied.');
     if(empty($name) || !is_string($name))
       throw new Exception('Invalid group name supplied.');
     if(!is_numeric($immunity))
@@ -57,7 +55,8 @@ class GroupsWriter
         throw new Exception('Invalid group type specified.');
     }
     
-    $groups_reader = new GroupsReader();
+    $groups_reader      = new GroupsReader();
+    $group_reader->type = $type;
     $groups_reader->removeCacheFile();
     
     SBPlugins::call('OnAddGroup', $id, $type, $name, $flags, $immunity, $overrides);
@@ -74,11 +73,8 @@ class GroupsWriter
    */
   public static function delete($id, $type)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_GROUPS')))
-      throw new Exception('Access Denied.');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     switch($type)
     {
@@ -106,7 +102,8 @@ class GroupsWriter
         throw new Exception('Invalid group type specified.');
     }
     
-    $groups_reader = new GroupsReader();
+    $groups_reader      = new GroupsReader();
+    $group_reader->type = $type;
     $groups_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteGroup', $id, $type);
@@ -125,11 +122,8 @@ class GroupsWriter
    */
   public static function edit($id, $type, $name, $flags, $immunity, $overrides)
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUPS')))
-      throw new Exception('Access Denied.');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     switch($type)
     {
@@ -175,7 +169,8 @@ class GroupsWriter
         throw new Exception('Invalid group type specified.');
     }
     
-    $groups_reader = new GroupsReader();
+    $groups_reader      = new GroupsReader();
+    $group_reader->type = $type;
     $groups_reader->removeCacheFile();
     
     SBPlugins::call('OnEditGroup', $id, $type, $name, $flags, $immunity, $overrides);
@@ -183,7 +178,7 @@ class GroupsWriter
   
   
   /**
-   * Imports one or more groups
+   * Imports one or more server groups
    *
    * @param string $file     The file to import from
    * @param string $tmp_name Optional temporary filename
@@ -192,10 +187,8 @@ class GroupsWriter
   {
     require_once UTILS_DIR . 'keyvalues/kvutil.php';
     
-    $userbank = Env::get('userbank');
+    $phrases = Env::get('phrases');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_GROUPS')))
-      throw new Exception('Access Denied.');
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
@@ -222,6 +215,10 @@ class GroupsWriter
       default:
         throw new Exception('Unsupported file format.');
     }
+    
+    $groups_reader      = new GroupsReader();
+    $group_reader->type = SERVER_GROUPS;
+    $groups_reader->removeCacheFile();
   }
   
   

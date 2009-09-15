@@ -5,14 +5,29 @@
           </p>
           <form action="{$active}" id="protest-main" method="post">
             <fieldset>
-              <label for="steam">Steam ID <span class="mandatory">*</span>:</label>
-              <input class="submit-fields" maxlength="64" {nid id="steam"} value="STEAM_" />
-              <label for="name">{$lang_name} <span class="mandatory">*</span>:</label>
-              <input class="submit-fields" maxlength="70" {nid id="name"} />
-              <label for="reason">Reason why you should be unbanned (be as descriptive as possible) <span class="mandatory">*</span>:</label>
-              <textarea class="submit-fields" {nid id="reason"} rows="5"></textarea>
-              <label for="email">{$lang_email_address} <span class="mandatory">*</span>:</label>
-              <input class="submit-fields" maxlength="70" {nid id="email"} />
+              <div>
+                <label for="steam">Steam ID:</label>
+                <input class="submit-fields" maxlength="32" {nid id="steam"} value="STEAM_" />
+              </div>
+              <div>
+                <label for="ip">{$lang_ip_address}:</label>
+                <input class="submit-fields" maxlength="15" {nid id="ip"} value="{$smarty.server.REMOTE_ADDR}" />
+              </div>
+              <div>
+                <label for="name">{$lang_name}:</label>
+                <input class="submit-fields" maxlength="64" {nid id="name"} />
+                <span class="mandatory">*</span>
+              </div>
+              <div>
+                <label for="reason">Reason why you should be unbanned (be as descriptive as possible):</label>
+                <textarea class="submit-fields" {nid id="reason"} rows="5"></textarea>
+                <span class="mandatory">*</span>
+              </div>
+              <div>
+                <label for="email">{$lang_email_address}:</label>
+                <input class="submit-fields" maxlength="128" {nid id="email"} />
+                <span class="mandatory">*</span>
+              </div>
               <span class="mandatory">*</span> = {$lang_mandatory}
               <input class="btn ok" type="submit" value="{$lang_submit}" />
             </fieldset>

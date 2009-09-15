@@ -1,11 +1,11 @@
           <form action="{$active}" id="login" method="post">
             <fieldset>
               <div id="loginUsernameDiv">
-                <label for="username">{$lang_username}:</label><br />
+                <label for="username">{$lang_username}:</label>
                 <input class="loginmedium" {nid id="username"} />
               </div>
               <div id="loginPasswordDiv">
-                <label for="password">{$lang_password}:</label><br />
+                <label for="password">{$lang_password}:</label>
                 <input class="loginmedium" {nid id="password"} type="password" />
               </div>
               <div id="loginRememberMe">

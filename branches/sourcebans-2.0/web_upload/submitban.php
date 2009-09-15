@@ -9,17 +9,17 @@ $page    = new Page(ucwords($phrases['submit_ban']));
 
 try
 {
-  if($config['config.enablesubmit'] != 1)
-    throw new Exception('Access Denied');
+  if(!$config['config.enablesubmit'])
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
     {
       $id = SubmissionsWriter::add($_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'], $_POST['subname'], $_POST['subemail'], $_POST['server']);
       
-      // If a demo was uploaded, add it
-      if(isset($_FILES['demo']))
-        DemosWriter::add($id, SUBMISSION_TYPE, $_FILES['demo']['name'], $_FILES['demo']['tmp_name']);
+      // If one or more demos were uploaded, add them
+      foreach($_FILES['demo'] as $demo)
+        DemosWriter::add($id, SUBMISSION_TYPE, $demo['name'], $demo['tmp_name']);
       
       exit(json_encode(array(
         'redirect' => Env::get('active')

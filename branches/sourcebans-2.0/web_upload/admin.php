@@ -2,14 +2,14 @@
 require_once 'init.php';
 require_once READERS_DIR . 'counts.php';
 
-$userbank = Env::get('userbank');
 $phrases  = Env::get('phrases');
+$userbank = Env::get('userbank');
 $page     = new Page($phrases['administration']);
 
 try
 {
   if(!$userbank->is_admin())
-    throw new Exception('Access Denied');
+    throw new Exception($phrases['access_denied']);
   
   $counts_reader = new CountsReader();
   

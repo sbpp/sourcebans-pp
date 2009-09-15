@@ -9,7 +9,7 @@ $page     = new Page(ucwords($phrases['your_account']));
 try
 {
   if(!$userbank->is_logged_in())
-    throw new Exception('Access Denied');
+    throw new Exception($phrases['access_denied']);
   if($_SERVER['REQUEST_METHOD'] == 'POST')
   {
     try
@@ -102,38 +102,38 @@ try
   $page->assign('permission_custom4',          $userbank->HasAccess(SM_ROOT . SM_CUSTOM4));
   $page->assign('permission_custom5',          $userbank->HasAccess(SM_ROOT . SM_CUSTOM5));
   $page->assign('permission_custom6',          $userbank->HasAccess(SM_ROOT . SM_CUSTOM6));
-  $page->assign('permission_add_admins',       $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_ADMINS')));
-  $page->assign('permission_delete_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS')));
-  $page->assign('permission_edit_admins',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ADMINS')));
-  $page->assign('permission_import_admins',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_ADMINS')));
-  $page->assign('permission_list_admins',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_ADMINS')));
-  $page->assign('permission_add_groups',       $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_GROUPS')));
-  $page->assign('permission_delete_groups',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_GROUPS')));
-  $page->assign('permission_edit_groups',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUPS')));
-  $page->assign('permission_import_groups',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_GROUPS')));
-  $page->assign('permission_list_groups',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_GROUPS')));
-  $page->assign('permission_add_mods',         $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_MODS')));
-  $page->assign('permission_delete_mods',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_MODS')));
-  $page->assign('permission_edit_mods',        $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_MODS')));
-  $page->assign('permission_list_mods',        $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_MODS')));
-  $page->assign('permission_add_servers',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_SERVERS')));
-  $page->assign('permission_delete_servers',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_SERVERS')));
-  $page->assign('permission_edit_servers',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_SERVERS')));
-  $page->assign('permission_list_servers',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_LIST_SERVERS')));
-  $page->assign('permission_add_bans',         $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_ADD_BANS')));
-  $page->assign('permission_delete_bans',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_BANS')));
-  $page->assign('permission_edit_all_bans',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_ALL_BANS')));
-  $page->assign('permission_edit_group_bans',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_GROUP_BANS')));
-  $page->assign('permission_edit_own_bans',    $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_EDIT_OWN_BANS')));
-  $page->assign('permission_import_bans',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_IMPORT_BANS')));
-  $page->assign('permission_unban_all_bans',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_ALL_BANS')));
-  $page->assign('permission_unban_group_bans', $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_GROUP_BANS')));
-  $page->assign('permission_unban_own_bans',   $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_UNBAN_OWN_BANS')));
-  $page->assign('permission_ban_protests',     $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')));
-  $page->assign('permission_ban_submissions',  $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')));
-  $page->assign('permission_notify_prot',      $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_NOTIFY_PROT')));
-  $page->assign('permission_notify_sub',       $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_NOTIFY_SUB')));
-  $page->assign('permission_settings',         $userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_SETTINGS')));
+  $page->assign('permission_add_admins',       $userbank->HasAccess(array('OWNER', 'ADD_ADMINS')));
+  $page->assign('permission_delete_admins',    $userbank->HasAccess(array('OWNER', 'DELETE_ADMINS')));
+  $page->assign('permission_edit_admins',      $userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')));
+  $page->assign('permission_import_admins',    $userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS')));
+  $page->assign('permission_list_admins',      $userbank->HasAccess(array('OWNER', 'LIST_ADMINS')));
+  $page->assign('permission_add_groups',       $userbank->HasAccess(array('OWNER', 'ADD_GROUPS')));
+  $page->assign('permission_delete_groups',    $userbank->HasAccess(array('OWNER', 'DELETE_GROUPS')));
+  $page->assign('permission_edit_groups',      $userbank->HasAccess(array('OWNER', 'EDIT_GROUPS')));
+  $page->assign('permission_import_groups',    $userbank->HasAccess(array('OWNER', 'IMPORT_GROUPS')));
+  $page->assign('permission_list_groups',      $userbank->HasAccess(array('OWNER', 'LIST_GROUPS')));
+  $page->assign('permission_add_mods',         $userbank->HasAccess(array('OWNER', 'ADD_MODS')));
+  $page->assign('permission_delete_mods',      $userbank->HasAccess(array('OWNER', 'DELETE_MODS')));
+  $page->assign('permission_edit_mods',        $userbank->HasAccess(array('OWNER', 'EDIT_MODS')));
+  $page->assign('permission_list_mods',        $userbank->HasAccess(array('OWNER', 'LIST_MODS')));
+  $page->assign('permission_add_servers',      $userbank->HasAccess(array('OWNER', 'ADD_SERVERS')));
+  $page->assign('permission_delete_servers',   $userbank->HasAccess(array('OWNER', 'DELETE_SERVERS')));
+  $page->assign('permission_edit_servers',     $userbank->HasAccess(array('OWNER', 'EDIT_SERVERS')));
+  $page->assign('permission_list_servers',     $userbank->HasAccess(array('OWNER', 'LIST_SERVERS')));
+  $page->assign('permission_add_bans',         $userbank->HasAccess(array('OWNER', 'ADD_BANS')));
+  $page->assign('permission_delete_bans',      $userbank->HasAccess(array('OWNER', 'DELETE_BANS')));
+  $page->assign('permission_edit_all_bans',    $userbank->HasAccess(array('OWNER', 'EDIT_ALL_BANS')));
+  $page->assign('permission_edit_group_bans',  $userbank->HasAccess(array('OWNER', 'EDIT_GROUP_BANS')));
+  $page->assign('permission_edit_own_bans',    $userbank->HasAccess(array('OWNER', 'EDIT_OWN_BANS')));
+  $page->assign('permission_import_bans',      $userbank->HasAccess(array('OWNER', 'IMPORT_BANS')));
+  $page->assign('permission_unban_all_bans',   $userbank->HasAccess(array('OWNER', 'UNBAN_ALL_BANS')));
+  $page->assign('permission_unban_group_bans', $userbank->HasAccess(array('OWNER', 'UNBAN_GROUP_BANS')));
+  $page->assign('permission_unban_own_bans',   $userbank->HasAccess(array('OWNER', 'UNBAN_OWN_BANS')));
+  $page->assign('permission_ban_protests',     $userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')));
+  $page->assign('permission_ban_submissions',  $userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')));
+  $page->assign('permission_notify_prot',      $userbank->HasAccess(array('OWNER', 'NOTIFY_PROT')));
+  $page->assign('permission_notify_sub',       $userbank->HasAccess(array('OWNER', 'NOTIFY_SUB')));
+  $page->assign('permission_settings',         $userbank->HasAccess(array('OWNER', 'SETTINGS')));
   $page->display('page_account');
 }
 catch(Exception $e)
