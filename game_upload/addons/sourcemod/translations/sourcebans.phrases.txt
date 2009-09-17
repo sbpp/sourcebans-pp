@@ -9,6 +9,8 @@
 		"pl"			"Zostałeś zbanowany na tym serwerze, odwiedź {1} aby poznać szczegóły"
 		"de"			"Sie wurden von diesem Server gebannt, weitere Informationen auf {1}"
 		"ru"			"Вы не можете дабавить блокировку из сервера, посетите {1} для добавление блокировки"
+		"da"			"Du er blevet udlukket fra denne server, check {1} for mere info"
+		"no"			"Du har blitt stengt ute fra denne serveren, sjekk {1} for mer info."
 	}
 	"DB Connect Fail"
 	{
@@ -18,6 +20,8 @@
 		"pl"			"Błąd połączenia z bazą danych. Skontaktuj się z adminem serwera."
 		"de"			"Datenbankverbindung fehlgeschlagen. Bitte kontaktieren Sie den Serveradministrator."
 		"ru"			"Подключение к базе данных провалено. Свяжитесь с оператором сервера."
+		"da"			"Database tilslutningen fejlede. Kontakt venligst server bestyrren."
+		"no"			"Kommunikasjon med databasen feilet. Vennligst kontakt serveradmin."
 	}
 	"Not In Game"
 	{
@@ -27,6 +31,8 @@
 		"pl"			"Gracz nie znajduje się w grze, odwiedź panel www aby go zbanować."
 		"de"			"Der Spieler ist nicht im Spiel. Bitte benutzen Sie das Webpanel um ihn zu bannen."
 		"ru"			"Игрок вне игры, попробуйте заблокировать его через интернет страницу."
+		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
+		"no"			"Spilleren er ikke på serveren, vennligst besøk web panelet for og stenge han ute."
 	}
 	"Ban Not Verified"
 	{
@@ -36,6 +42,8 @@
 		"pl"			"Gracz nie został jeszcze zweryfikowany. Spróbuj ponownie za 30 sekund."
 		"de"			"Dieser Spieler wurde noch nicht verifiziert. Bitte warten Sie 30 Sekunden und versuchen Sie es nochmal."
 		"ru"			"Этот игрок еще не подтвержден. Пожалуйста, выждите 30 секунд перед повторной попыткой."
+		"da"			"Denne spiller er ikke blevet identificeret. Vent venligst 30 sekunder før du prøver igen."
+		"no"			"Denne spilleren har ikke blitt indentifisert. Vennligst vent 30 sekunder før du prøver igjen."
 	}
 	"Can Not Unban"
 	{
@@ -46,6 +54,8 @@
 		"pl"			"Nie możesz odbanować z serwera, odwiedź {1} by zdjąć bana."
 		"de"			"Sie können nicht vom Server aus entbannen, entbannen Sie auf {1} ."
 		"ru"			"Вы не можете разблокировать игрока через сервер, посетите {1} для разблокирования."
+		"da"			"Du kan ikke fjerne udelukkelserne inde fra serveren, besøg {1} for at fjerne udelukkelsen."
+		"no"			"Du kan ikke fjerne utestengelsen inne fra serveren, besøk {1} for og fjerne utestengelsen."
 	}
 	"Can Not Add Ban"
 	{
@@ -56,6 +66,8 @@
 		"pl"			"Nie możesz dodać bana z serwera, odwiedź {1} by dodać bana."
 		"de"			"Sie können keinen Ban vom Server aus hinzufügen, bannen Sie auf {1} ."
 		"ru"			"Вы не можете дабавить блокировку из сервера, посетите {1} для разблокирования."
+		"da"			"Du kan ikke tilføje en udelukkelse fra serveren, besøg {1} for at tilføje en udelukkelse."
+		"no"			"Du kan ikke legge til en utestengelse fra serveren, besøk {1} for og legge til en utestengelse."
 	}
 	"Check Menu"
 	{
@@ -65,6 +77,8 @@
 		"pl"			"Sprawdź menu aby wybrać powód bana."
 		"de"			"Bitte benutzen Sie das Menü um einen Grund für den Ban auszuwählen."
 		"ru"			"Выберите причину блокировки из меню."
+		"da"			"Check venligst menuen for en grund til udelukkelse"
+		"no"			"Venligst sjekk menyen for en grunn til utestengelse"
 	}
 	"Include Reason"
 	{
@@ -74,6 +88,8 @@
 		"pl"			"Proszę dodać powód bana."
 		"de"			"Bitte geben Sie einen Grund für den Ban an."
 		"ru"			"Пожалуйста, добавьте причину блокирования клиента."
+		"da"			"Indkludere venligst en grund for at udelukke klienten."
+		"no"			"Inkluder vennligst en grunn for og utelukke klienten."
 	}
 	"Ban Fail"
 	{
@@ -83,6 +99,8 @@
 		"pl"			"Błąd przy dodawaniu bana, spróbuj ponownie."
 		"de"			"Es ist ein Fehler beim bannen des Spielers aufgetreten, bitte versuchen Sie es erneut."
 		"ru"			"Блокировка игрока провалена, попытайтесь еще раз."
+		"da"			"Fejlede udelukkelsen, prøv venligst igen."
+		"no"			"Utestengelse feilet, vennligst prøv igjen."
 	}
 	"Chat Reason"
 	{
@@ -92,6 +110,8 @@
 		"pl"			"Proszę wpisać powód bana w czacie oraz potwierdzić przyciskiem Enter. Wpisz !noreason by anulować."
 		"de"			"Bitte schreiben Sie den Grund für den Ban in den Chat. Schreiben Sie '!noreason' um abzubrechen."
 		"ru"			"Пожалуйста, введите причину блокировке в зоне чата и нажмите Enter. наберите '!noreason' для предотвращения процедуры."
+		"da"			"Skriv venligst din grund for udelukkelsen ind i chatten og tryk enter. Skriv '!noreason' for at annullere."
+		"no"			"Vennligst skriv din grunn for utestengelse i chaten og trykk enter. Skriv 'noreason' for og annulere."
 	}
 	"Chat Reason Aborted"
 	{
@@ -101,5 +121,7 @@
 		"pl"			"Procedura banowania została pomyślnie zatrzymana."
 		"de"			"Der Banvorgang wurde erfolgreich angehalten."
 		"ru"			"Процедура блокировки предотвращенa успешно."
+		"da"			"Udelukkelses proceduren blev stoppet med success"
+		"no"			"Utestengelses prossedyren ble stoppet vellykket."
 	}
 }
