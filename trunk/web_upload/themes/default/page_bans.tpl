@@ -57,7 +57,7 @@
 <div id="banlist-nav"> 
 {$ban_nav}
 </div>
-<a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}" title="{$hidetext} inactive">{$hidetext} inactive</a>
+<a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a>
 <div id="banlist">
 	<table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
 		<tr>
