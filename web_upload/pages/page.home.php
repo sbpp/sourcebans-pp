@@ -44,7 +44,7 @@ while (!$res->EOF)
 	}
 	$info['link_url'] = "window.location = '" . $info['search_link'] . "';";
 	$info['name'] = htmlspecialchars(addslashes($info['name']), ENT_QUOTES, 'UTF-8');
-	$info['popup'] = "ShowBox('Blocked player: " . $info['name'] . "', '" . $info['name'] . " tried to enter<br />" . $info['server'] . "<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
+	$info['popup'] = "ShowBox('Blocked player: " . $info['name'] . "', '" . $info['name'] . " tried to enter<br />' + document.getElementById('".$info['server']."').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
 		
     $GLOBALS['server_qry'] .= "xajax_ServerHostProperty(".$res->fields['sid'].", 'block_".$res->fields['sid']."_$blcount', 'title', 100);";
         
