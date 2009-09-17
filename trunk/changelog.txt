@@ -8,6 +8,23 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(17/09/09): Version 1.4.5
+-----------------------
+01. + Improved Dashboard loading time. Loading blocked servername through ajax
+02. + Now moving submissions for newly banned players to archive
+03. + Improved Archivedby usage
+04. + Enabled logging for comments
+05. ! Fixed security vulnerabilities for code execution. Thanks Twelve-60!
+06. ! Fixed XSS vulnerability. Thanks Dr. Hydralisk!
+07. ! Fixed Deleting a ban does not delete demo on unix
+08. ! Fixed unbanning check query (plugin)
+09. ! Fixed sm_ban doesn't popup the reason menu (plugin)
+10. ! Fixed server adding doesn't accept domain
+11. ! Fixed times being 2 hours behind
+12. ! Fixed showing html code if unbanning admin has been deleted on banlist
+13. ! Fixed some PHP Notices
+14. ? Added more map images
+
 (29/07/09): Version 1.4.4
 -----------------------
 01. * Added 'Archived by' field to submission and protest archive

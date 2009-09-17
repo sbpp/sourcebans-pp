@@ -1,4 +1,4 @@
-** Readme **
+﻿** Readme **
 
 SourceBans | Global admin and ban management for the Source engine
 
@@ -11,6 +11,9 @@ Authors: Interwave Studios Development Team
 Website: www.sourcebans.net
 
 Install help: http://www.sourcebans.net/manual
+
+Having troubles?
+FAQ: http://www.sourcebans.net/faq
 
 Prerequisites
  * Webserver

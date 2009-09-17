@@ -17,7 +17,7 @@ define('theme_name', "SourceBans Default Theme");
 define('theme_author', "InterWave Studios Development Team");
 
 // Set the version of the theme here
-define('theme_version', "1.4.4");
+define('theme_version', "1.4.5");
 
 // Set the link of the theme here
 define('theme_link', "http://www.sourcebans.net");
