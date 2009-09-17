@@ -54,6 +54,11 @@ class DemosWriter
     
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
+      
+    $name = $db->GetRow('SELECT filename FROM ' . Env::get('prefix') . '_demos
+                  WHERE       id = ?',
+                  array($id));
+    unlink(DEMOS_DIR . md5($id . $name['filename']));
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_demos
                   WHERE       id = ?',

@@ -1,5 +1,6 @@
 <?php
 require_once READERS_DIR . 'admins.php';
+require_once READERS_DIR . 'counts.php';
 
 class AdminsWriter
 {
@@ -42,6 +43,9 @@ class AdminsWriter
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
     
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
+    
     if(is_array($srv_groups) && !empty($srv_groups))
     {
       $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_admins_srvgroups (admin_id, group_id, inherit_order)
@@ -71,14 +75,18 @@ class AdminsWriter
       throw new Exception('Invalid ID supplied.');
     
     $db->Execute('DELETE ad, ag
-                  FROM   ' . Env::get('prefix') . '_admins           AS ad,
+                  FROM   ' . Env::get('prefix') . '_admins           AS ad
+                  LEFT JOIN
                          ' . Env::get('prefix') . '_admins_srvgroups AS ag
-                  WHERE  ad.id = ag.admin_id
-                    AND  ad.id = ?',
+                  ON     ag.admin_id = ad.id 
+                  WHERE  ad.id = ?',
                   array($id));
     
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteAdmin', $id);
   }
@@ -118,7 +126,7 @@ class AdminsWriter
     if(!is_null($email)        && is_string($email))
       $admin['email']        = $email;
     if(!is_null($password)     && is_string($password))
-      $admin['password']     = $password;
+      $admin['password']     = $userbank->encrypt_password($password);
     if(!is_null($srv_password) && is_bool($srv_password) && $srv_password)
       $admin['srv_password'] = $password;
     if(!is_null($language)     && is_string($language))
@@ -144,6 +152,9 @@ class AdminsWriter
     
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnEditAdmin', $id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language);
   }

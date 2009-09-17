@@ -312,16 +312,42 @@ class Util
         unlink($page->compile_dir . '/' . $file);
   }
   
+
+  /**
+   * Validates a SteamID
+   */
+  public static function validate_steam($steam)
+  {
+    return preg_match(STEAM_FORMAT, $steam) ? true : false;
+  }
+  
   
   /**
-   * Generates a random string to use as the salt
-   *
-   * @param  integer $length The length of the salt
-   * @return string of random chars in the length specified
+   * Validates an IP
    */
-  public static function generate_salt($length = 5)
+  public static function validate_ip($ip)
   {
-    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
+    return preg_match(IP_FORMAT, $ip) ? true : false;
+  }
+  
+  /**
+   * Validates an E-Mail address
+   */
+  public static function validate_email($email)
+  {
+    return preg_match(EMAIL_FORMAT, $email) ? true : false;
+  }
+  
+  /**
+   * Checks a filename for the right extenstion
+   */
+  public static function checkExt($filename, $ext)
+  {
+    $name = strtolower($filename);
+    if(substr($name, strlen($name) -3, 3) == $ext)
+      return true;
+    else
+      return false;
   }
 }
 ?>

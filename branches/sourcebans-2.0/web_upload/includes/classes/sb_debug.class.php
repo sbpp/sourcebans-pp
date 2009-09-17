@@ -4,7 +4,7 @@
  * SBDebug is used to extend Exception for logging and trace is used to log messages to a file
  * 
  * This class uses DEBUG_FILE and DEBUG_LOGLEVEL contsants for the purpose of logging categories
- * infromation to a logfile.  These constants can be definded in sourcebans root directory in
+ * information to a logfile.  These constants can be definded in sourcebans root directory in
  * config.php.  It is not reqired to be defined and therefor will act as a normal Exception class.
  * <code>
  * define("DEBUG_FILE", '/home/myuser/public_html/sourcebans/themes_c/sbdebug.log');

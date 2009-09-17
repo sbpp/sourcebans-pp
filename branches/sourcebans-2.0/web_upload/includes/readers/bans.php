@@ -10,7 +10,8 @@ class BansReader extends SBReader
   public $limit        = 0;
   public $page         = 1;
   public $search;
-  public $sort         = 'time DESC';
+  public $sort         = 'time';
+  public $order        = 'DESC';
   public $type;
   
   public function prepare()
@@ -104,8 +105,7 @@ class BansReader extends SBReader
                                 LEFT JOIN ' . Env::get('prefix') . '_admins  AS un ON un.id = ba.unban_admin_id
                                 LEFT JOIN ' . Env::get('prefix') . '_servers AS se ON se.id = ba.server_id
                                 LEFT JOIN ' . Env::get('prefix') . '_mods    AS mo ON mo.id = se.mod_id
-                                WHERE     ' . $where             . '
-                                ORDER BY  ' . $this->sort        .
+                                WHERE     ' . $where             . ' ORDER BY ba.id DESC' .
                                 ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     // Process bans
@@ -139,6 +139,13 @@ class BansReader extends SBReader
       // Format additional ban information
       $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length'] * 60) : $phrases['permanent']);
     }
+    
+    if ('DESC' == strtoupper($this->order))
+      $order = SORT_DESC;
+    else
+      $order = SORT_ASC;
+    
+    Util::array_qsort(&$ban_list, $this->sort, $order);
     
     geoip_close($geoip);
     

@@ -25,6 +25,27 @@ class PluginsWriter
     SBPlugins::call('OnAddPlugin', $plugin);
   }
   
+  /**
+   * Deletes a plugin
+   *
+   * @param string $plugin The class name of the plugin to add
+   */
+  public static function delete($plugin)
+  {
+    if(empty($plugin) || !is_string($plugin))
+      throw new Exception('Invalid plugin name supplied.');
+    
+    $db = Env::get('db');
+    
+    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_plugins WHERE name = ?',
+                  array($plugin));
+    
+    $plugins_reader = new PluginsReader();
+    $plugins_reader->removeCacheFile();
+    
+    SBPlugins::call('OnDeletePlugin', $plugin);
+  }
+  
   
   /**
    * Disables a plugin

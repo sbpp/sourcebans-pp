@@ -1,5 +1,6 @@
 <?php
 require_once READERS_DIR . 'servers.php';
+require_once READERS_DIR . 'counts.php';
 
 class ServersWriter
 {
@@ -43,6 +44,9 @@ class ServersWriter
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
     
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
+    
     SBPlugins::call('OnAddServer', $id, $ip, $port, $rcon, $mod, $groups);
     
     return $id;
@@ -61,16 +65,20 @@ class ServersWriter
     
     if(empty($id)   || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
-    
+
     $db->Execute('DELETE se, gs
-                  FROM   ' . Env::get('prefix') . '_servers           AS se,
+                  FROM   ' . Env::get('prefix') . '_servers           AS se
+                  LEFT JOIN 
                          ' . Env::get('prefix') . '_servers_srvgroups AS gs
-                  WHERE  se.id = gs.server_id
-                    AND  se.id = ?',
+                  ON     gs.server_id = se.id
+                  WHERE  se.id = ?',
                   array($id));
     
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteServer', $id);
   }

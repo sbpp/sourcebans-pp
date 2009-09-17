@@ -92,10 +92,10 @@ class SBConfig
     define('ONE_WEEK',      ONE_DAY    * 7);
     define('ONE_YEAR',      ONE_WEEK   * 52);
     define('URL_FORMAT',    '/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i');
-    define('EMAIL_FORMAT',  '/^( [a-zA-Z0-9] )+( [a-zA-Z0-9\._-] )*@( [a-zA-Z0-9_-] )+( [a-zA-Z0-9\._-] +)+$/');
+    define('EMAIL_FORMAT',  '/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/');
     define('IP_FORMAT',     '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
-    define('STEAM_FORMAT',  '^STEAM_[0-9]:[0-9]:[0-9]+$');
-    define('STATUS_PARSE',  '/#[ ]*([0-9]+) "(.+)" (STEAM_[0-9]:[0-9]:[0-9]+)[ ]{1,2}([0-9]+[:[0-9]+) ([0-9]+)[ ]([0-9]+) ([a-zA-Z]+) ([0-9.:]+)/');
+    define('STEAM_FORMAT',  '/^STEAM_[0-9]:[0-9]:[0-9]+$/');
+    define('STATUS_PARSE',  '/#[ ]*([0-9 ]+) "(.+)" (STEAM_[0-9]:[0-9]:[0-9]+)[ ]{1,2}([0-9]+[:[0-9]+) ([0-9]+)[ ]([0-9]+) ([a-zA-Z]+) ([0-9.:]+)/');
     define('LOGIN_COOKIE_LIFETIME', ONE_WEEK * 2);
     
     define('STEAM_AUTH_TYPE',  'steam');	// Steam ID based authentication

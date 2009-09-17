@@ -72,6 +72,14 @@ class SBPlugins
     foreach(glob(PLUGINS_DIR . '*.php') as $plugin)
       require_once $plugin;
     
+    // Remove deleted plugins from database
+    $plugins_writer = new PluginsWriter();
+    $plugins_reader = new PluginsReader();
+    $pluginsInDB    = $plugins_reader->executeCached(ONE_DAY);
+    foreach($pluginsInDB as $class => $enabled)
+      if(!class_exists($class))
+        $plugins_writer->delete($class);
+    
     self::call('OnInit');
   }
   

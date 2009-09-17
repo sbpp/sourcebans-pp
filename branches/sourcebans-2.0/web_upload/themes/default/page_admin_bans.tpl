@@ -420,7 +420,7 @@
                     <td style="border-bottom: solid 1px #ccc">{$sub.steam}</td>
                     <td style="border-bottom: solid 1px #ccc">
                       <a href="#" onclick="BanSubmission({$sub_id});">{$lang_to_ban}</a> -
-                      {if $permissions_edit_bans}
+                      {if $permission_edit_bans}
                       <a href="#" onclick="ArchiveSubmission({$sub_id}, '{$sub.steam}');">{$lang_to_archive}</a> -
                       <a href="#" onclick="DeleteSubmission({$sub_id}, '{$sub.steam}');">{$lang_delete}</a> -
                       {/if}
@@ -428,7 +428,7 @@
                     </td>
                   </tr>
                   <tr id="sid_{$sub_id}a">
-                    <td colspan="2">
+                    <td colspan="3">
                       <div class="opener3" width="100%" align="center">
                         <table width="80%" cellspacing="0" cellpadding="0" class="listtable">
                           <tr>
@@ -499,7 +499,7 @@
                     <td style="border-bottom: solid 1px #ccc">{$sub.steam}</td>
                     <td style="border-bottom: solid 1px #ccc">
                       <a href="#" onclick="BanSubmission({$sub_id});">{$lang_to_ban}</a> -
-                      {if $permissions_edit_bans}
+                      {if $permission_edit_bans}
                       <a href="#" onclick="RestoreSubmission({$sub_id}, '{$sub.steam}');">{$lang_restore}</a> -
                       <a href="#" onclick="DeleteSubmission({$sub_id}, '{$sub.steam}');">{$lang_delete}</a> -
                       {/if}
@@ -507,7 +507,7 @@
                     </td>
                   </tr>
                   <tr id="sid_{$sub_id}a">
-                    <td colspan="2">
+                    <td colspan="3">
                       <div class="opener3" width="100%" align="center">
                         <table width="80%" cellspacing="0" cellpadding="0" class="listtable">
                           <tr>

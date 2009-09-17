@@ -144,6 +144,10 @@ select.submit-fields { width: 277px; }
   border: 1px solid #C24733;
   background-color: #F1E8E6;
 }
+.error-field {
+  border: 1px solid #C24733 !important;
+  background-color: #F1E8E6 !important;
+}
 
 /* ================ Popup Boxes ============== */
 #dialog {

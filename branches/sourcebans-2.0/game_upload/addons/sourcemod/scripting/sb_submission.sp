@@ -79,7 +79,7 @@ new String:g_sWebsite[256];
  */
 public OnPluginStart()
 {
-	RegConsoleCmd("sm_submitban", Command_SubmitBan, "sb_submitban <#userid|name> [reason]");
+	RegConsoleCmd("sm_submitban", Command_SubmitBan, "sm_submitban <#userid|name> [reason]");
 	RegConsoleCmd("say", Command_Say);
 	RegConsoleCmd("say_team", Command_Say);
 	

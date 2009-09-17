@@ -24,74 +24,78 @@ var override;
  */
 function ArchiveProtest(id, name)
 {
-  ShowBox('error', 'Archive Protest', 'Are you sure you want to archive the ban protest for "' + name + '"?');
+  ShowBox('error', 'Archive Protest',    'Are you sure you want to archive the ban protest for "'    + name + '"?', 'Yes', 'No', function(){ x_ArchiveProtest(id, name, showConfirmation); });
 }
 
 function ArchiveSubmission(id, name)
 {
-  ShowBox('error', 'Archive Submission', 'Are you sure you want to archive the ban submission for "' + name + '"?');
+  ShowBox('error', 'Archive Submission', 'Are you sure you want to archive the ban submission for "' + name + '"?', 'Yes', 'No', function(){ x_ArchiveSubmission(id, name, showConfirmation); });
 }
 
 function DeleteAdmin(id, name)
 {
-  ShowBox('error', 'Delete Admin',      'Are you sure you want to delete "'                        + name + '"?');
+  ShowBox('error', 'Delete Admin',       'Are you sure you want to delete "'                         + name + '"?', 'Yes', 'No', function(){ x_DeleteAdmin(id, name, showConfirmation); });
 }
 
 function DeleteBan(id, name)
 {
-  ShowBox('error', 'Delete Ban',        'Are you sure you want to delete the ban for "'            + name + '"?');
+  ShowBox('error', 'Delete Ban',         'Are you sure you want to delete the ban for "'             + name + '"?', 'Yes', 'No', function(){ x_DeleteBan(id, name, showConfirmation); });
 }
 
-function DeleteGroup(id, type, name)
+function DeleteGroup(id, name, type)
 {
-  ShowBox('error', 'Delete Group',      'Are you sure you want to delete the group: "'             + name + '"?');
+  ShowBox('error', 'Delete Group',       'Are you sure you want to delete the group: "'              + name + '"?', 'Yes', 'No', function(){ x_DeleteGroup(id, name, type, showConfirmation); });
 }
 
 function DeleteMod(id, name)
 {
-  ShowBox('error', 'Delete Mod',        'Are you sure you want to delete "'                        + name + '"?');
+  ShowBox('error', 'Delete Mod',         'Are you sure you want to delete the mod: "'                + name + '"?', 'Yes', 'No', function(){ x_DeleteMod(id, name, showConfirmation); });
 }
 
 function DeleteProtest(id, name)
 {
-  ShowBox('error', 'Delete Protest',    'Are you sure you want to delete the ban protest for "'    + name + '"?');
+  ShowBox('error', 'Delete Protest',     'Are you sure you want to delete the ban protest for "'     + name + '"?', 'Yes', 'No', function(){ x_DeleteProtest(id, name, showConfirmation); });
 }
 
 function DeleteServer(id, name)
 {
-  ShowBox('error', 'Delete Server',     'Are you sure you want to delete the server: "'            + name + '"?');
+  ShowBox('error', 'Delete Server',      'Are you sure you want to delete the server: "'             + name + '"?', 'Yes', 'No', function(){ x_DeleteServer(id, name, showConfirmation); });
 }
 
 function DeleteSubmission(id, name)
 {
-  ShowBox('error', 'Delete Submission', 'Are you sure you want to delete the ban submission for "' + name + '"?');
+  ShowBox('error', 'Delete Submission',  'Are you sure you want to delete the ban submission for "'  + name + '"?', 'Yes', 'No', function(){ x_DeleteSubmission(id, name, showConfirmation); });
 }
 
 function RestoreProtest(id, name)
 {
-  ShowBox('error', 'Restore Protest', 'Are you sure you want to restore the ban protest for "' + name + '" from the archive?');
+  ShowBox('error', 'Restore Protest',    'Are you sure you want to restore the ban protest for "'    + name + '" from the archive?', 'Yes', 'No', function(){ x_RestoreProtest(id, name, showConfirmation); });
 }
 
 function RestoreSubmission(id, name)
 {
-  ShowBox('error', 'Restore Submission', 'Are you sure you want to restore the ban submission for "' + name + '" from the archive?');
+  ShowBox('error', 'Restore Submission', 'Are you sure you want to restore the ban submission for "' + name + '" from the archive?', 'Yes', 'No', function(){ x_RestoreSubmission(id, name, showConfirmation); });
 }
 
 function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, time, redirect)
 {
   if(txt_submit)
   {
+    $('dialog-submit').removeEvents('click');
     $('dialog-submit').set({
       'events': {
         'click': function(e) {
+          e.stop();
           if(typeof(cb_submit) == 'function')
             cb_submit();
+          else if(redirect)
+            window.location = redirect;
           else
-            $('dialog').submit();
+            $('dialog').fade('out');
         }
       },
       'styles': {
-        'display': 'block'
+        'display': 'inline'
       },
       'value': txt_submit
     });
@@ -100,9 +104,11 @@ function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, ti
     $('dialog-submit').setStyle('display', 'none');
   if(txt_back)
   {
+    $('dialog-back').removeEvents('click');
     $('dialog-back').set({
       'events': {
         'click': function(e) {
+          e.stop();
           if(typeof(cb_back) == 'function')
             cb_back();
           else
@@ -110,7 +116,7 @@ function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, ti
         }
       },
       'styles': {
-        'display': 'block'
+        'display': 'inline'
       },
       'value': txt_back
     });
@@ -135,12 +141,12 @@ function ShowBox(type, title, text, txt_submit, txt_back, cb_submit, cb_back, ti
 
 function UnbanBan(id, name)
 {
-  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning "' + name + '":</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea>');
+  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning "' + name + '":</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea>', 'Unban', 'Back');
 }
 
 function UnbanBans(ids)
 {
-  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning these players:</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea>');
+  ShowBox('info', 'Unban Reason', '<p>Please give the reason for unbanning these players:</p><textarea cols="40" id="ureason" name="ureason" rows="3"></textarea>', 'Unban', 'Back');
 }
 
 
@@ -305,6 +311,26 @@ function updateBanExpires(res)
   $('expires_' + res.id).set('text', res.expires);
 }
 
+function showConfirmation(res)
+{
+  if(res.error)
+  {
+    ShowBox('error', 'Error', res.message + res.error, 'Ok');
+    return;
+  }
+    ShowBox('ok', res.headline, res.message, 'Ok', false, false, false, 5000, res.redirect);
+}
+
+function clearCache(res)
+{
+  if(res.error)
+  {
+    ShowBox('error', 'Error', res.error, 'Ok');
+    return;
+  }
+  $('clear_cache.msg').set('html', '<span style="color:green;">Cache cleared</span>');
+}
+
 
 /**
  * Global Events
@@ -354,8 +380,8 @@ window.addEvent('domready', function() {
     if(typeof(el.id) != 'string')
       return;
     
-    if(!el.id.indexOf('expires_'))
-      x_BanExpires.periodical(1000, el, parseInt(el.id.substring(8)), el.get('title'), updateBanExpires);
+    //if(!el.id.indexOf('expires_'))
+     // x_BanExpires.periodical(1000, el, [parseInt(el.id.substring(8)), parseInt(el.get('title')), updateBanExpires]);
     if(!el.id.indexOf('server_admins_'))
       x_ServerAdmins(parseInt(el.id.substring(14)),  setServerAdmins);
     if(!el.id.indexOf('host_'))
@@ -494,16 +520,17 @@ window.addEvent('domready', function() {
   if($chk($('clear_actions')))
     $('clear_actions').addEvent('click', function(e) {
       e.stop();
-      ShowBox('error', 'Clear Actions', 'Are you sure you want to delete all of the actions?');
-      //x_ClearActions();
+      ShowBox('error', 'Clear Actions', 'Are you sure you want to delete all of the actions?', 'Yes', 'No', function() { x_ClearActions(showConfirmation); });
     });
   if($chk($('clear_cache')))
-    $('clear_cache').addEvent('click', x_ClearCache);
+    $('clear_cache').addEvent('click', function(e) {
+      e.stop();
+      x_ClearCache(clearCache);
+    });
   if($chk($('clear_logs')))
     $('clear_logs').addEvent('click', function(e) {
       e.stop();
-      ShowBox('error', 'Clear Logs', 'Are you sure you want to delete all of the log entries?');
-      //x_ClearLogs();
+      ShowBox('error', 'Clear Logs', 'Are you sure you want to delete all of the log entries?', 'Yes', 'No', function() { x_ClearLogs(showConfirmation); });
     });
   if($chk($('context-menu')))
   {
@@ -608,6 +635,60 @@ window.addEvent('domready', function() {
   }
   if($chk($('relver')))
     x_Version(setVersion);
+  // Handle Submission Form
+  if($chk($('submit_submission')))
+  {    
+    $('submit_submission').addEvent('click', function(e) {
+      e.stop();
+      // input check
+      var errors = "";
+      if(!$chk($('name').value)) {
+        errors += '* Please type the name of the player.<br />';
+        $('name').addClass('error-field');
+      } else {
+        $('name').removeClass('error-field');
+      }
+      if(!$chk($('reason').value)) {
+        errors += '* Please type a descriptive reason.<br />';
+        $('reason').addClass('error-field');
+      } else {
+        $('reason').removeClass('error-field');
+      }
+      if(!$chk($('subname').value)) {
+        errors += '* Please type your name.<br />';
+        $('subname').addClass('error-field');
+      } else {
+        $('subname').removeClass('error-field');
+      }
+      if(!$chk($('subemail').value)) {
+        errors += '* Please type your email address, so we can contact you if there are any questions.<br />';
+        $('subemail').addClass('error-field');
+      } else {
+        $('subemail').removeClass('error-field');
+      }
+      if($('server').options[0].selected == true) {
+        errors += '* Please choose a server.<br />';
+        $('server').addClass('error-field');
+      } else {
+        $('server').removeClass('error-field');
+      }        
+
+      if(errors.length > 0)
+      {
+        ShowBox('error', 'Missing input', errors, 'Ok');
+        return;
+      }
+
+      if(($('steam').value == 'STEAM_' || $('steam').value == '') && $('ip').value == '') {
+        ShowBox('info', 'No details given', 'You didn\'t type the SteamID or the IP of the player.<br \>That\'s fine, but remember we\'re possibly not able to identify the player for banning.', 'Ok', 'Wait', function() { 
+          $('dialog').fade('out'); 
+          SubmitForm($('submit-main'), handleFormSubmit); 
+        });
+        return;
+      }
+      SubmitForm($('submit-main'), handleFormSubmit);
+    });
+  }
   
   new Drag('dialog', {
     handle: 'dialog-title'

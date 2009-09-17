@@ -2,6 +2,7 @@
 require_once 'init.php';
 require_once READERS_DIR . 'servers.php';
 require_once WRITERS_DIR . 'submissions.php';
+require_once WRITERS_DIR . 'demos.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');

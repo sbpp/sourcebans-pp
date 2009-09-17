@@ -1,5 +1,6 @@
 <?php
 require_once READERS_DIR . 'mods.php';
+require_once READERS_DIR . 'counts.php';
 
 class ModsWriter
 {
@@ -32,6 +33,9 @@ class ModsWriter
     $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();
     
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
+    
     SBPlugins::call('OnAddMod', $id, $name, $folder, $icon, $enabled);
     
     return $id;
@@ -57,6 +61,9 @@ class ModsWriter
     
     $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteMod', $id);
   }
@@ -95,6 +102,9 @@ class ModsWriter
     
     $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnEditMod', $id, $name, $folder, $icon, $enabled);
   }

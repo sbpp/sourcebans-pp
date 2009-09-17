@@ -88,7 +88,7 @@ abstract class SBReader
   {
     $sbcache = Env::get('sbcache');
     $key     = $this->getUniqueKey();
-    $data    = $sbcache->fetch($key, $age);
+    $data    = $sbcache->fetch($key, $age, get_class($this));
     
     return $data === false ? null : $data;
   }
@@ -105,7 +105,7 @@ abstract class SBReader
     $sbcache = Env::get('sbcache');
     $key     = $this->getUniqueKey();
     $data    = serialize($data); // Since SBCache objects can only take strings
-    $result  = $sbcache->store($key, $data);
+    $result  = $sbcache->store($key, $data, get_class($this));
     
     //if($result === false)
     //  throw new SteambansException('The cache object failed');
@@ -117,11 +117,15 @@ abstract class SBReader
    * Used for flushing the cache to get instant update
    * REMEMBER THAT THIS WILL ONLY REMOVE THE LOCAL SERVER CACHE, SO ONLY THE MIRROR YOU ARE ON WILL REMOVE ITS CACHE
    */
-  public function removeCacheFile()
+  public function removeCacheFile($allFromClass = true)
   {
     $sbcache = Env::get('sbcache');
     $key     = $this->getUniqueKey();
-    $sbcache->delete($key);
+    if($allFromClass===true) {
+      $sbcache->deleteAllFromClass($key, get_class($this));
+    } else {
+      $sbcache->delete($key, get_class($this));
+    }
   }
   
   

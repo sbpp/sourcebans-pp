@@ -96,13 +96,13 @@
               <table width="100%" cellspacing="0" cellpadding="0" class="listtable flCenter">
                 <tr>
                   <th class="icon"><input {nid id="bans_select"} type="checkbox" value="-1" /></th>
-                  <th class="date"><a href="{build_query sort=mod_name}">MOD</a>{if $smarty.get.sort == "mod_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}/<a href="{build_query sort=country_name}">{$lang_country}</a>{if $smarty.get.sort == "country_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
-                  <th class="date"><a href="{build_query sort=time}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == "time"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
-                  <th><a href="{build_query sort=name}">{$lang_name}</a>{if $smarty.get.sort == "name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th class="date"><a href="{if $smarty.get.sort == "mod_name" && $smarty.get.order == "desc"}{build_query sort=mod_name order=asc}{else}{build_query sort=mod_name order=desc}{/if}">MOD</a>{if $smarty.get.sort == "mod_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}/<a href="{if $smarty.get.sort == "country_name" && $smarty.get.order == "desc"}{build_query sort=country_name order=asc}{else}{build_query sort=country_name order=desc}{/if}">{$lang_country}</a>{if $smarty.get.sort == "country_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
+                  <th class="date"><a href="{if $smarty.get.sort == "time" && $smarty.get.order == "desc"}{build_query sort=time order=asc}{else}{build_query sort=time order=desc}{/if}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == time"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
+                  <th><a href="{if $smarty.get.sort == "name" && $smarty.get.order == "desc"}{build_query sort=name order=asc}{else}{build_query sort=name order=desc}{/if}">{$lang_name}</a>{if $smarty.get.sort == "name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
                   {if !$hide_adminname}
-                  <th width="11%"><a href="{build_query sort=admin_name}">{$lang_admin}</a>{if $smarty.get.sort == "admin_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th width="11%"><a href="{if $smarty.get.sort == "admin_name" && $smarty.get.order == "desc"}{build_query sort=admin_name order=asc}{else}{build_query sort=admin_name order=desc}{/if}">{$lang_admin}</a>{if $smarty.get.sort == "admin_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
                   {/if}
-                  <th class="length"><a href="{build_query sort=length}">{$lang_length}</a>{if $smarty.get.sort == "length"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"><span>Sort desc</div>{/if}</th>
+                  <th class="length"><a href="{if $smarty.get.sort == "length" && $smarty.get.order == "desc"}{build_query sort=length order=asc}{else}{build_query sort=length order=desc}{/if}">{$lang_length}</a>{if $smarty.get.sort == "length"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
                 </tr>
                 {foreach from=$bans item=ban key=ban_id}
                 <tr class="opener tbl_out">
@@ -241,14 +241,15 @@
                           <td class="listtable_1" width="20%">{$lang_comments}</td>
                           <td class="listtable_1" height="60">
                             <table width="100%">
-                              {foreach from=$ban.comments item=comment name=comment}
+                              {foreach from=$ban.comments item=comment key=comment_id name=comment}
                               <tr>
-                                <td><strong>{$comment.name}</strong></td>
+                                <td><strong>{$comment.admin_name}</strong></td>
                                 <td align="right"><strong>{$comment.time|date_format:$date_format}</strong></td>
                                 {if $edit_comments || $comment.admin_id == $smarty.cookies.sb_admin_id}
                                 <td align="right">
                                   {$comment.editcomlink}
-                                  <a href="#" class="tip" title="<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment" onclick="DeleteComment('{$comment.cid}', 'B', '-1');"><img src="images/delete.gif" alt="Delete Comment" style="vertical-align: middle" /></a>
+                                  <a href="comments_edit.php?id={$comment_id}" class="tips" title="<img src='images/edit.gif' border='0' alt='' style='vertical-align:middle' /> :: Edit Comment"><img src='images/edit.gif' border='0' alt='' style='vertical-align:middle' /></a>
+                                  <a href="#" class="tips" title="<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment" onclick="DeleteComment('{$comment_id}', 'B', '-1');"><img src="images/delete.gif" alt="Delete Comment" style="vertical-align: middle" /></a>
                                 </td>
                                 {/if}
                               </tr>
@@ -257,7 +258,7 @@
                                   {$comment.message}
                                 </td>
                               </tr>
-                              {if !empty($comment.edit_name)}
+                              {if !empty($comment.edit_admin_name)}
                               <tr>
                                 <td colspan="3" style="font-size: 6pt; color: grey;">
                                   last edit {$comment.edit_time|date_format:$date_format} by {$comment.edit_admin_name}

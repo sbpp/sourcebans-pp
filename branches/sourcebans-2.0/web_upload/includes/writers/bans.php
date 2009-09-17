@@ -1,5 +1,6 @@
 <?php
 require_once READERS_DIR . 'bans.php';
+require_once READERS_DIR . 'counts.php';
 
 class BansWriter
 {
@@ -38,9 +39,12 @@ class BansWriter
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $steam, $ip, $name, $reason, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
-    $id          = $db->Insert_ID();
-    $bans_reader = new BansReader();
+    $id              = $db->Insert_ID();
+    $bans_reader     = new BansReader();
     $bans_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnAddBan', $id, $type, $steam, $ip, $name, $reason, $length, $server);
     
@@ -65,8 +69,11 @@ class BansWriter
                   WHERE       id = ?',
                   array($id));
     
-    $bans_reader = new BansReader();
+    $bans_reader     = new BansReader();
     $bans_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteBan', $id);
   }
@@ -192,7 +199,7 @@ class BansWriter
                     AND  unban_admin_id IS NOT NULL',
                   array($id));
     
-    $bans_reader = new BansReader();
+    $bans_reader     = new BansReader();
     $bans_reader->removeCacheFile();
     
     SBPlugins::call('OnReban', $id);

@@ -46,7 +46,7 @@
                     - <a href="{build_url _=admin_servers_edit.php id=$server_id}">{$lang_edit}</a>
                     {/if}
                     {if $permission_delete_servers}
-                    - <a href="#" onclick="DeleteServer({$server_id});">{$lang_delete}</a>
+                    - <a href="#" onclick="DeleteServer({$server_id}, $('host_{$server_id}').get('text'));">{$lang_delete}</a>
                     {/if}
                   </td>
                 </tr>

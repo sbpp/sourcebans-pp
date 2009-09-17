@@ -1,5 +1,6 @@
 <?php
 require_once READERS_DIR . 'groups.php';
+require_once READERS_DIR . 'counts.php';
 
 class GroupsWriter
 {
@@ -59,6 +60,9 @@ class GroupsWriter
     $group_reader->type = $type;
     $groups_reader->removeCacheFile();
     
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
+    
     SBPlugins::call('OnAddGroup', $id, $type, $name, $flags, $immunity, $overrides);
     
     return $id;
@@ -80,10 +84,11 @@ class GroupsWriter
     {
       case SERVER_GROUPS:
         $db->Execute('DELETE sg, ag
-                      FROM   ' . Env::get('prefix') . '_srvgroups        AS sg,
+                      FROM   ' . Env::get('prefix') . '_srvgroups        AS sg
+                      LEFT JOIN
                              ' . Env::get('prefix') . '_admins_srvgroups AS ag
-                      WHERE  sg.id = ag.group_id
-                        AND  sg.id = ?',
+                      ON     ag.group_id = sg.id
+                      WHERE  sg.id = ?',
                       array($id));
         break;
       case WEB_GROUPS:
@@ -92,10 +97,11 @@ class GroupsWriter
                       WHERE  group_id = ?',
                       array($id));
         $db->Execute('DELETE wg, gp
-                      FROM   ' . Env::get('prefix') . '_groups             AS wg,
+                      FROM   ' . Env::get('prefix') . '_groups             AS wg
+                      LEFT JOIN
                              ' . Env::get('prefix') . '_groups_permissions AS gp
-                      WHERE  wg.id = gp.group_id
-                        AND  wg.id = ?',
+                      ON     gp.group_id = wg.id
+                      WHERE  wg.id = ?',
                       array($id));
         break;
       default:
@@ -105,6 +111,9 @@ class GroupsWriter
     $groups_reader      = new GroupsReader();
     $group_reader->type = $type;
     $groups_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteGroup', $id, $type);
   }
@@ -172,6 +181,9 @@ class GroupsWriter
     $groups_reader      = new GroupsReader();
     $group_reader->type = $type;
     $groups_reader->removeCacheFile();
+    
+    $counts_reader   = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnEditGroup', $id, $type, $name, $flags, $immunity, $overrides);
   }

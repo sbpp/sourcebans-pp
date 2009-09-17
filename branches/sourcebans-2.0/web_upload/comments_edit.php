@@ -17,8 +17,24 @@ try
     {
       CommentsWriter::edit($_POST['id'], $_POST['message']);
       
+      switch($_POST['type'])
+      {
+        case BAN_COMMENTS:
+          $redirect = 'banlist.php';
+          break;
+        case PROTEST_COMMENTS:
+          $redirect = 'admin_bans.php#protests/current';
+          break;
+        case SUBMISSION_COMMENTS:
+          $redirect = 'admin_bans.php#submissions/current';
+          break;
+        default:
+          $redirect = Env::get('active');
+          break;
+      }
+      
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => $redirect
       )));
     }
     catch(Exception $e)
@@ -38,6 +54,7 @@ try
   $comment         = $comments[$_GET['id']];
   
   $page->assign('comment_message', $comment['message']);
+  $page->assign('comment_type',    $comments[$id]['type']);
   $page->assign('comments',        $comments);
   $page->display('page_comments_edit');
 }

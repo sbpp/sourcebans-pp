@@ -61,28 +61,28 @@ class SBFileCache extends SBCache
    * Although these functions may causes SteambansCachingExceptions, it could be because of file locks, so we should ignore
    * them for now
    */
-  public function add($key, $data)
+  public function add($key, $data, $uniqueIdentifer = "")
   {
     //try {
-      return $this->set($key, $data, false);
+      return $this->set($key, $data, false, $uniqueIdentifer);
     //} catch (SteambansCachingException $e) {
     //  return true;
     //}
   }
   
-  public function store($key, $data)
+  public function store($key, $data, $uniqueIdentifer = "")
   {
     //try {
-      return $this->set($key, $data, true);
+      return $this->set($key, $data, true, $uniqueIdentifer);
     //} catch (SteambansCachingException $e) {
     //  return true;
     //}
   }
   
-  public function fetch($key, $ttl = null)
+  public function fetch($key, $ttl = null, $uniqueIdentifer = "")
   {
     //try {
-      return $this->get($key, $ttl);
+      return $this->get($key, $ttl, $uniqueIdentifer);
     //} catch (SteambansCachingException $e) {
     //  return false;
     //}
@@ -94,7 +94,7 @@ class SBFileCache extends SBCache
    * @returns false if data already exists and overwrite is false
    * @throws SteambansCachingException if something goes wrong
    */
-  private function set($key, $data, $overwrite)
+  private function set($key, $data, $overwrite, $uniqueIdentifer)
   {
     // Invalid key
     SBCache::validKey($key);
@@ -104,7 +104,7 @@ class SBFileCache extends SBCache
     //  throw new SteambansCachingException('The key is too large to be saved by the SBFileCache');
     
     // Attempt to save this data to a file
-    $key_hash = substr(md5($key), 0, $this->dir_length) . strlen($key);
+    $key_hash = substr(md5($uniqueIdentifer), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
     
     // This gives us the file to save to
     $cnt = 0;
@@ -163,7 +163,7 @@ class SBFileCache extends SBCache
     }
   }
   
-  private function get($key, $ttl = null)
+  private function get($key, $ttl = null, $uniqueIdentifer)
   {
     if(is_null($ttl))
       $ttl = 0;
@@ -176,8 +176,8 @@ class SBFileCache extends SBCache
     //  throw new SteambansCachingException('The key is too large to be opened by the SBFileCache');
     
     // Attempt to get this data from the file
-    $key_hash = substr(md5($key), 0, $this->dir_length) . strlen($key);
-  
+    $key_hash = substr(md5($uniqueIdentifer), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
+
     // This gives us the file to read from
     $cnt = 0;
     $file_name = $this->tmp_dir . $key_hash;
@@ -222,7 +222,7 @@ class SBFileCache extends SBCache
     return false;
   }
   
-  public function delete($key)
+  public function delete($key, $uniqueIdentifer = "")
   {
     // Invalid key
     SBCache::validKey($key);
@@ -232,7 +232,7 @@ class SBFileCache extends SBCache
     // throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
     
     // Attempt to find this data file
-    $key_hash = substr(md5($key), 0, $this->dir_length) . strlen($key);
+    $key_hash = substr(md5($uniqueIdentifer), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
     
     // This gives us the file to read from
     $cnt = 0;
@@ -264,7 +264,28 @@ class SBFileCache extends SBCache
     // Didn't find any appropriate file but it doesnt really matter
   }
   
-  
+  public function deleteAllFromClass($key, $uniqueIdentifer)
+  {
+    // Invalid key
+    SBCache::validKey($key);
+        
+    // Key too long
+    // if(strlen($key) > $this->max_key_length)
+    // throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
+    
+    $cachefiles = dir(substr($this->tmp_dir, 0, strlen($this->tmp_dir)-1));
+    while (false !== ($file_name = $cachefiles->read())) {
+      // Ignore dirs
+      if(!is_file($cachefiles->path."/".$file_name))
+        continue;
+        
+      if (substr(md5($uniqueIdentifer), 0, 3) == substr($file_name, 0, 3)) {
+        // Data file exists
+        // Delete the file
+        @unlink($cachefiles->path."/".$file_name);
+      }
+    }
+  }
   
   /**
    * This opens up the file and obtains the key from the header of the file

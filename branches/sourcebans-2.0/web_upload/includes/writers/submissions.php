@@ -1,5 +1,6 @@
 <?php
 require_once READERS_DIR . 'submissions.php';
+require_once READERS_DIR . 'counts.php';
 
 class SubmissionsWriter
 {
@@ -18,19 +19,23 @@ class SubmissionsWriter
   public static function add($steam, $ip, $name, $reason, $subname, $subemail, $server)
   {
     $db = Env::get('db');
-    
-    if(empty($steam)    && empty($ip))
-      throw new Exception('You must supply a Steam ID or IP address.');
+    if(!empty($steam) && $steam != 'STEAM_' && !Util::validate_steam($steam))
+      throw new Exception('Invalid SteamID supplied.');
+    if(!empty($ip) && !Util::validate_ip($ip))
+      throw new Exception('Invalid IP address supplied.');
     if(empty($name)     || !is_string($name))
       throw new Exception('Invalid player name supplied.');
     if(empty($reason)   || !is_string($reason))
       throw new Exception('Invalid ban reason supplied.');
     if(empty($subname)  || !is_string($subname))
       throw new Exception('Invalid name supplied.');
-    if(empty($subemail) || !is_string($subemail))
-      throw new Exception('Invalid e-mail address supplied.');
+    if(empty($subemail) || !is_string($subemail) || !Util::validate_email($subemail))
+      throw new Exception('Invalid e-mail address supplied. '.$subemail);
     if(empty($server)   || !is_numeric($server))
       throw new Exception('Invalid server ID supplied.');
+    
+    if($steam == 'STEAM_')
+      $steam = '';
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_submissions (name, steam, ip, reason, server_id, subname, subemail, subip, time)
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
@@ -39,6 +44,9 @@ class SubmissionsWriter
     $id                 = $db->Insert_ID();
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
+    
+    $counts_reader      = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnAddSubmission', $id, $steam, $ip, $name, $reason, $subname, $subemail, $server);
     
@@ -62,6 +70,9 @@ class SubmissionsWriter
     
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
+    
+    $counts_reader      = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnArchiveSubmission', $id);
   }
@@ -88,7 +99,7 @@ class SubmissionsWriter
       throw new Exception('Invalid ID specified.');
     
     BansWriter::add($sub['name'], STEAM_BAN_TYPE, $sub['steam'], $sub['ip'], 0, $sub['reason']);
-    self::delete($id);
+    self::archive($id);
   }
   
   
@@ -107,6 +118,9 @@ class SubmissionsWriter
     
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
+    
+    $counts_reader      = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteSubmission', $id);
   }
@@ -128,6 +142,9 @@ class SubmissionsWriter
     
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
+    
+    $counts_reader      = new CountsReader();
+    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnRestoreSubmission', $id);
   }

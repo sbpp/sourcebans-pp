@@ -93,6 +93,7 @@ edit                   = Edit
 edit_admins            = Edit admins
 edit_all_bans          = Edit all bans
 edit_ban               = Edit ban
+edit_comment           = Edit comment
 edit_details           = Edit details
 edit_group             = Edit group
 edit_groups            = Edit groups
@@ -119,6 +120,8 @@ hide_inactive          = Hide inactive
 hostname               = Hostname
 hour                   = hour
 hours                  = hours
+how_to_desc            = How To Record A Demo
+how_to_record          = While you are spectating the offending player, press the ` key on your keyboard. Then type record [demoname] and hit enter. Also type sb_status for extra information in SteamBans servers. The file will be in your mod folder.
 icon                   = Icon
 immunity_level         = Immunity Level
 import_admins          = Import admins
@@ -202,8 +205,8 @@ submission_information = Submission Information
 submit                 = Submit
 submit_ban             = Submit ban
 submit_ban_desc        = You can submit a demo or screenshot of a suspected cheater here. It will then be up for review by one of the admins.
-submit_ban_intro       = <p>Here you will be able to submit a ban for a player who is breaking the rules of the gameserver. When submitting a ban we request you to fill out all the fields to be as descriptive as possible in your comments. This will ensure that your ban submission is processed much faster.</p>\r\n<p>For a short explanation on how to create a demo, click <a id="demo_howto" href="#">here</a>.</p>
-submit_ban_outro       = <h4>What happens if someone gets banned?</h4>\r\n<p>If someone gets banned, the specific Steam ID will be included in this SourceBans database and everytime this player tries to connect to one of our servers he/she will be blocked and will receive a message that they are blocked by SourceBans.</p>
+submit_ban_intro       = <p>Here you will be able to submit a ban for a player who is breaking the rules of the gameserver. When submitting a ban we request you to fill out all the fields to be as descriptive as possible in your comments. This will ensure that your ban submission is processed much faster.</p><p>For a short explanation on how to create a demo, click <a id="demo_howto" href="#">here</a>.</p>
+submit_ban_outro       = <h4>What happens if someone gets banned?</h4><p>If someone gets banned, the specific Steam ID will be included in this SourceBans database and everytime this player tries to connect to one of our servers he/she will be blocked and will receive a message that they are blocked by SourceBans.</p>
 submitted_on           = Submitted on
 summer_time            = Summer time
 system_log             = System Log

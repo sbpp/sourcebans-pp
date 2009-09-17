@@ -1,6 +1,7 @@
 <?php
 require_once 'init.php';
 require_once READERS_DIR . 'logs.php';
+require_once WRITERS_DIR . 'plugins.php';
 require_once READERS_DIR . 'translations.php';
 require_once WRITERS_DIR . 'settings.php';
 
@@ -59,6 +60,15 @@ try
             $settings['template.title']            = $_POST['title'];
           
           SettingsWriter::update($settings);
+          break;
+        case 'plugins':
+          $plugins        = SBPlugins::getPlugins();
+          $plugins_writer = new PluginsWriter();
+          foreach($plugins as $class => $info)
+            if($_POST[$class] == 1)
+              $plugins_writer->enable($class);
+            else
+              $plugins_writer->disable($class);
           break;
         default:
           throw new Exception('Invalid action specified.');

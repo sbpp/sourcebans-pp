@@ -26,6 +26,8 @@ try
     $bans_reader->search = $_GET['search'];
   if(isset($_GET['sort']) && is_string($_GET['sort']))
     $bans_reader->sort   = $_GET['sort'];
+  if(isset($_GET['order']) && is_string($_GET['order']))
+    $bans_reader->order  = $_GET['order'];
   if(isset($_GET['type']))
     $bans_reader->type   = $_GET['type'];
   
