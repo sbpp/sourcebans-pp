@@ -130,7 +130,7 @@ else if(isset($_GET['a']) && $_GET['a'] == "delete")
 		$bid = intval($bid);
 		$demres = $GLOBALS['db']->Execute("SELECT filename FROM `".DB_PREFIX."_demos` WHERE `demid` = ?",
 									array( $bid ));
-		@unlink(SB_DEMOS."\\".$demres->fields["filename"]);
+		@unlink(SB_DEMOS."/".$demres->fields["filename"]);
 		$blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `".DB_PREFIX."_banlog` WHERE bid=? AND (UNIX_TIMESTAMP() - time <= 300)",array($bid));
 		$steam = $GLOBALS['db']->GetRow("SELECT b.name, CONCAT( 'STEAM_1:', SUBSTR( b.authid, 9 ) ) AS authid_l4d, 
 										CONCAT( 'STEAM_0:', SUBSTR( b.authid, 9 ) ) AS authid, b.created, b.sid, b.RemoveType, b.ip, b.type, m.modfolder, UNIX_TIMESTAMP() AS now
