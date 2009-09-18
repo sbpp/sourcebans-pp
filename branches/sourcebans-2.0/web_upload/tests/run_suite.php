@@ -1,47 +1,49 @@
 <?php
-require_once "tests/test_helpers.class.php";
-require_once "tests/test_suite.class.php";
+require_once dirname(__FILE__) . '/../init.php';
+require_once BASE_PATH . 'tests/test_helpers.class.php';
+require_once BASE_PATH . 'tests/test_suite.class.php';
 $arrSuites = array();
 
+/* ===== API suite ===== */
+require_once BASE_PATH . 'api.php';
+SB_API::clearCache();
 
-/* ===== Database Suite ===== */
-$dataBaseSuite = new CTestSuite("database_tests");
-$arrSuites[] = &$dataBaseSuite;
+$apiSuite = new CTestSuite('api');
+$apiSuite->addTest('api.admins');
+$apiSuite->addTest('api.bans');
+$apiSuite->addTest('api.comments');
+$apiSuite->addTest('api.groups');
+$apiSuite->addTest('api.mods');
+$apiSuite->addTest('api.protests');
+$apiSuite->addTest('api.servers');
+$apiSuite->addTest('api.submissions');
+$apiSuite->addTest('api.translations');
 
-$test = include "unit_tests/database.language.php";
-$dataBaseSuite->addTest($test);
-
-/* ===== Database Suite ===== */
-
-
-
-
+$arrSuites[] = &$apiSuite;
+/* ===== API suite ===== */
 
 
 /* ================================ */
-/* == DONT CHANGE BELOW HERE! == */
+/* === DON'T CHANGE BELOW HERE! === */
 /* ================================ */
-function findSuite($name)
-{
-	global $arrSuites; 
-	foreach( $arrSuites as &$s )
-	{
-		if( $s->getName() == $name )
-			return $s;
-	}
-	return -1;
-}
+if(!empty($argv[1]))
+  $suiteName = $argv[1];
 
-if( $argv[1] != "" )
+while(true)
 {
-	$runSuite = findSuite($argv[1]);
-	if( $runSuite != -1 )
-		$runSuite->runTests();
+  if(!isset($suiteName))
+  {
+    fwrite(STDOUT, 'Suite name: ');
+    $suiteName = trim(fgets(STDIN));
+  }
+  
+  foreach($arrSuites as &$suite)
+  {
+    if($suite->getName() == $suiteName)
+      $suite->runTests();
+  }
+  
+  fwrite(STDOUT, 'Invalid suite name specified.' . PHP_EOL . PHP_EOL);
+  unset($suiteName);
 }
-else
-{
-	echo "useage: run_suite.php [suite name]\n";
-	exit(2);
-}
-
 ?>

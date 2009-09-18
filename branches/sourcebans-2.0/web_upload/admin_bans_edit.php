@@ -22,7 +22,7 @@ try
         DemosWriter::add($_POST['id'], BAN_TYPE, $demo['name'], $demo['tmp_name']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => 'admin_bans.php'
       )));
     }
     catch(Exception $e)

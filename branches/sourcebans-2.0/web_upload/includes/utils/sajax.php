@@ -71,44 +71,6 @@ function AddServerGroup($admins, $id)
   }
 }
 
-function SetWebGroup($admins, $id)
-{
-  try
-  {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
-      throw new Exception($phrases['access_denied']);
-    
-    require_once WRITERS_DIR . 'admins.php';
-    
-    foreach($admins as $admin)
-      AdminsWriter::edit($admin, array(
-        'group_id' => $id
-      ));
-  }
-  catch(Exception $e)
-  {
-    return array(
-      'id'    => $id,
-      'name'  => $name,
-      'error' => $e->getMessage()
-    );
-  }
-}
-
-function BanExpires($id, $ends)
-{
-  $phrases = Env::get('phrases');
-  $secs    = $ends - time();
-  
-  return array(
-    'id'      => $id,
-    'expires' => $secs <= 0 ? $phrases['expired'] : Util::SecondsToString($secs)
-  );
-}
-
 function ArchiveProtest($id, $name)
 {
   try
@@ -116,19 +78,19 @@ function ArchiveProtest($id, $name)
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
     
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')))
+    if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'protests.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     ProtestsWriter::archive($id);
+    
     return array(
       'headline' => 'Protest archived',
       'message' => "The protest for '$name' has been moved to the archive.",
-      'redirect' => 'admin_bans.php'
+      'redirect' => 'bans.php'
     );
   }
   catch(Exception $e)
@@ -146,19 +108,20 @@ function ArchiveSubmission($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'submissions.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     SubmissionsWriter::archive($id);
+    
     return array(
       'headline' => 'Submission archived',
       'message' => "The submission for '$name' has been moved to the archive.",
-      'redirect' => 'admin_bans.php'
+      'redirect' => 'bans.php'
     );
   }
   catch(Exception $e)
@@ -170,25 +133,100 @@ function ArchiveSubmission($id, $name)
   }
 }
 
+function BanExpires($id, $ends)
+{
+  $phrases = Env::get('phrases');
+  $secs    = $ends - time();
+  
+  return array(
+    'id'      => $id,
+    'expires' => $secs <= 0 ? $phrases['expired'] : Util::SecondsToString($secs)
+  );
+}
+
+function ClearActions()
+{
+  try
+  {
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
+    
+    if(!$userbank->HasAccess(array('OWNER')))
+      throw new Exception($phrases['access_denied']);
+    
+    require_once WRITERS_DIR . 'actions.php';
+    
+    ActionsWriter::clear();
+    
+    return array(
+      'headline' => 'Actions cleared',
+      'message' => 'The actions has been successfully cleared.',
+      'redirect' => 'admins.php'
+    );
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'message' => 'There was an error clearing the actions: ',
+      'error' => $e->getMessage()
+    );
+  }
+}
+
+function ClearCache()
+{
+  Util::clearCache();
+}
+
+function ClearLogs()
+{
+  try
+  {
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
+    
+    if(!$userbank->HasAccess(array('OWNER')))
+      throw new Exception($phrases['access_denied']);
+    
+    require_once WRITERS_DIR . 'logs.php';
+    
+    LogsWriter::clear();
+    
+    return array(
+      'headline' => 'Logs cleared',
+      'message' => 'The logs has been successfully cleared.',
+      'redirect' => 'settings.php'
+    );
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'message' => 'There was an error clearing the logs: ',
+      'error' => $e->getMessage()
+    );
+  }
+}
+
 function DeleteAdmin($id, $name)
 {
   try
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_ADMINS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'DELETE_ADMINS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'admins.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     AdminsWriter::delete($id);
+    
     return array(
       'headline' => 'Admin deleted',
       'message' => "The admin '$name' has been deleted.",
-      'redirect' => 'admin_admins.php'
+      'redirect' => 'admins.php'
     );
   }
   catch(Exception $e)
@@ -206,21 +244,22 @@ function DeleteBan($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_BANS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'DELETE_BANS')))
       throw new Exception($phrases['access_denied']);
     
     require_once READERS_DIR . 'bans.php';
     require_once WRITERS_DIR . 'bans.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     $bans_reader = new BansReader();
     $bans        = $bans_reader->executeCached(ONE_MINUTE * 5);
     
-    $identity = ($bans['list'][$id]['type']==0?$bans['list'][$id]['steam']:$bans['list'][$id]['ip']);
+    $identity = ($bans['list'][$id]['type'] == STEAM_BAN_TYPE ? $bans['list'][$id]['steam'] : $bans['list'][$id]['ip']);
     
     BansWriter::delete($id);
+    
     return array(
       'headline' => 'Ban deleted',
       'message' => "The ban for '$name' (".$identity.") has been deleted.",
@@ -242,19 +281,20 @@ function DeleteMod($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_MODS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'DELETE_MODS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'mods.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     ModsWriter::delete($id);
+    
     return array(
       'headline' => 'Mod deleted',
       'message' => "The mod '$name' has been successfully deleted.",
-      'redirect' => 'admin_mods.php'
+      'redirect' => 'mods.php'
     );
   }
   catch(Exception $e)
@@ -272,20 +312,20 @@ function DeleteGroup($id, $name, $type)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_GROUPS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'DELETE_GROUPS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'groups.php';
     
-    $id = (int)$id;
-    $type = substr($type,0,3);
     $name = addslashes(htmlspecialchars($name));
     
     GroupsWriter::delete($id, $type);
+    
     return array(
       'headline' => 'Group deleted',
       'message' => "The group '$name' has been successfully deleted.",
-      'redirect' => 'admin_groups.php'
+      'redirect' => 'groups.php'
     );
   }
   catch(Exception $e)
@@ -303,19 +343,20 @@ function DeleteProtest($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTESTS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'protests.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     ProtestsWriter::delete($id);
+    
     return array(
       'headline' => 'Protest deleted',
       'message' => "The protest for '$name' has been successfully deleted.",
-      'redirect' => 'admin_bans.php'
+      'redirect' => 'bans.php'
     );
   }
   catch(Exception $e)
@@ -333,19 +374,20 @@ function DeleteServer($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_DELETE_SERVERS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'DELETE_SERVERS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'servers.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     ServersWriter::delete($id);
+    
     return array(
       'headline' => 'Server deleted',
       'message' => "The server '$name' has been successfully deleted.",
-      'redirect' => 'admin_servers.php'
+      'redirect' => 'servers.php'
     );
   }
   catch(Exception $e)
@@ -363,19 +405,20 @@ function DeleteSubmission($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'submissions.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     SubmissionsWriter::delete($id);
+    
     return array(
       'headline' => 'Submission deleted',
       'message' => "The submission for '$name' has been successfully deleted.",
-      'redirect' => 'admin_bans.php'
+      'redirect' => 'bans.php'
     );
   }
   catch(Exception $e)
@@ -393,19 +436,20 @@ function RestoreProtest($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_PROTEST')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTEST')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'protests.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     ProtestsWriter::restore($id);
+    
     return array(
       'headline' => 'Protest restored',
       'message' => "The protest for '$name' has been successfully restored from the archive.",
-      'redirect' => 'admin_bans.php'
+      'redirect' => 'bans.php'
     );
   }
   catch(Exception $e)
@@ -423,19 +467,20 @@ function RestoreSubmission($id, $name)
   {
     $phrases  = Env::get('phrases');
     $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER', 'ADMIN_BAN_SUBMISSIONS')))
+    
+    if(!$userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')))
       throw new Exception($phrases['access_denied']);
     
     require_once WRITERS_DIR . 'submissions.php';
     
-    $id = (int)$id;
     $name = addslashes(htmlspecialchars($name));
     
     SubmissionsWriter::restore($id);
+    
     return array(
       'headline' => 'Submission restored',
       'message' => "The submission for '$name' has been successfully restored from the archive.",
-      'redirect' => 'admin_bans.php'
+      'redirect' => 'bans.php'
     );
   }
   catch(Exception $e)
@@ -473,8 +518,9 @@ function KickPlayer($id, $name)
     if(!$server_rcon->Auth())
     {
       require_once WRITERS_DIR . 'servers.php';
-      $servers_writer = new ServersWriter();
-      $servers_writer->edit($id, $servers[$id]['ip'], $servers[$id]['port'], '', $servers[$id]['mod_id']);
+      
+      ServersWriter::edit($id, null, null, '');
+      
       throw new Exception('Invalid RCON password.');
     }
     
@@ -518,15 +564,15 @@ function ServerAdmins($id)
     $admins_reader  = new AdminsReader();
     $servers_reader = new ServersReader();
     
-    $admin_list     = array();
+    $list     = array();
     $server_admins  = array();
     $admins         = $admins_reader->executeCached(ONE_MINUTE  * 5);
     $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
     
-    foreach($admins as $admin_id => $admin)
-      $admin_list[$admin['identity']] = $admin_id;
+    foreach($admins as $id => $admin)
+      $list[$admin['identity']] = $id;
     
-    $authids        = array_keys($admin_list);
+    $authids        = array_keys($list);
     
     if(!isset($servers[$id]))
       throw new Exception('Invalid ID specified.');
@@ -536,8 +582,9 @@ function ServerAdmins($id)
     if(!$server_rcon->Auth())
     {
       require_once WRITERS_DIR . 'servers.php';
-      $servers_writer = new ServersWriter();
-      $servers_writer->edit($id, $servers[$id]['ip'], $servers[$id]['port'], '', $servers[$id]['mod_id']);
+      
+      ServersWriter::edit($id, null, null, '');
+      
       throw new Exception('Invalid RCON password.');
     }
     
@@ -545,7 +592,7 @@ function ServerAdmins($id)
     
     foreach($players[3] AS $authid)
       if(in_array($authid, $authids))
-        $server_admins[$admin_list[$authid]] = array('name'  => $players[2][$i],
+        $server_admins[$list[$authid]] = array('name'  => $players[2][$i],
                                                      'steam' => $players[3][$i],
                                                      'ip'    => strtok($players[8][$i], ':'),
                                                      'time'  => $players[4][$i],
@@ -646,6 +693,31 @@ function ServerPlayers($id)
   }
 }
 
+function SetWebGroup($admins, $id)
+{
+  try
+  {
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
+    
+    if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
+      throw new Exception($phrases['access_denied']);
+    
+    require_once WRITERS_DIR . 'admins.php';
+    
+    foreach($admins as $admin)
+      AdminsWriter::edit($admin, null, null, null, null, null, null, null, $id);
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'id'    => $id,
+      'name'  => $name,
+      'error' => $e->getMessage()
+    );
+  }
+}
+
 function Version()
 {
   try
@@ -663,84 +735,6 @@ function Version()
   catch(Exception $e)
   {
     return array(
-      'error' => $e->getMessage()
-    );
-  }
-}
-
-function ClearCache()
-{
-  try
-  {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER')))
-      throw new Exception($phrases['access_denied']);
-      
-    Util::ClearCache();
-    return array(
-      'message' => 'Cache cleared.'
-    );
-  }
-  catch(Exception $e)
-  {
-    return array(
-      'error' => $e->getMessage()
-    );
-  }
-}
-
-function ClearLogs()
-{
-  try
-  {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER')))
-      throw new Exception($phrases['access_denied']);
-    
-    require_once WRITERS_DIR . 'logs.php';
-    
-    $logs_writer = new LogsWriter();
-    $logs_writer->clear();
-    return array(
-      'headline' => 'Logs cleared',
-      'message' => 'The logs has been successfully cleared.',
-      'redirect' => 'admin_settings.php'
-    );
-  }
-  catch(Exception $e)
-  {
-    return array(
-      'message' => 'There was an error clearing the logs: ',
-      'error' => $e->getMessage()
-    );
-  }
-}
-
-function ClearActions()
-{
-  try
-  {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
-    if(!$userbank->HasAccess(array('ADMIN_OWNER')))
-      throw new Exception($phrases['access_denied']);
-    
-    require_once WRITERS_DIR . 'actions.php';
-    
-    $actions_writer = new ActionsWriter();
-    $actions_writer->clear();
-    return array(
-      'headline' => 'Actions cleared',
-      'message' => 'The actions has been successfully cleared.',
-      'redirect' => 'admin_admins.php'
-    );
-  }
-  catch(Exception $e)
-  {
-    return array(
-      'message' => 'There was an error clearing the actions: ',
       'error' => $e->getMessage()
     );
   }

@@ -4,8 +4,6 @@ require_once READERS_DIR . 'server_query.php';
 
 class ServersReader extends SBReader
 {
-  public $sort = 'mod_name';
-  
   public function prepare()
   {  }
   
@@ -19,7 +17,8 @@ class ServersReader extends SBReader
                               FROM      ' . Env::get('prefix') . '_servers           AS se
                               LEFT JOIN ' . Env::get('prefix') . '_servers_srvgroups AS sg ON sg.server_id = se.id
                               LEFT JOIN ' . Env::get('prefix') . '_mods              AS mo ON mo.id        = se.mod_id
-                              GROUP BY  id');
+                              GROUP BY  id
+                              ORDER BY  mod_name');
     
     // Parse server groups and fetch server info, players and rules
     foreach($servers as &$server)
@@ -40,8 +39,6 @@ class ServersReader extends SBReader
       
       $server['groups']          = explode(',', $server['groups']);
     }
-    
-    Util::array_qsort($servers, $this->sort);
     
     list($servers) = SBPlugins::call('OnGetServers', $servers);
     

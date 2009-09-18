@@ -17,16 +17,16 @@ try
       switch($_POST['action'])
       {
         case 'email':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, $_POST['email'], null, null, null, null, null, null);
+          AdminsWriter::edit($userbank->GetID(), null, null, null, $_POST['email']);
           break;
         case 'password':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, null, $userbank->encrypt_password($_POST['password']), null, null, null, null, null);
+          AdminsWriter::edit($userbank->GetID(), null, null, null, null, $userbank->encrypt_password($_POST['password']));
           break;
         case 'settings':
           AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, null, null, null, $_POST['theme'], $_POST['language']);
           break;
         case 'srvpassword':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword'], null, null, null, null);
+          AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword']);
           break;
         default:
           throw new Exception('Invalid action specified.');
@@ -65,7 +65,7 @@ try
     if(!file_exists($file))
       continue;
     
-    $info     = Util::parse_ini_file($file);
+    $info     = parse_ini_file($file);
     $themes[] = array('dir'  => $theme,
                       'name' => $info['name']);
   }

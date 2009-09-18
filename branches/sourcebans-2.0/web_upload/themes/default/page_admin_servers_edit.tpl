@@ -44,7 +44,7 @@
               </div>
               <div>
                 <label for="groups">{help_icon title="$lang_server_groups" desc="Choose a group to add this server to. Server groups are used for adding admins to specific sets of servers."}{$lang_server_groups}</label>
-                {foreach from=$server_groups item=group key=group_id}
+                {foreach from=$groups item=group key=group_id}
                 <div class="srv_group">
                   <label align="right" for="group_{$group_id}">{$group.name}</label>
                   <input{if in_array($group_id, $server_groups)} checked="checked"{/if} id="group_{$group_id}" name="groups[]" type="checkbox" value="{$group_id}" />

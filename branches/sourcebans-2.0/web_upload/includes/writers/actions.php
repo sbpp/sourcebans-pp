@@ -8,11 +8,7 @@ class ActionsWriter
    */
   public static function clear()
   {
-    $db       = Env::get('db');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('ADMIN_OWNER')))
-      throw new Exception('Access Denied.');
+    $db = Env::get('db');
     
     $db->Execute('TRUNCATE TABLE ' . Env::get('prefix') . '_actions');
     

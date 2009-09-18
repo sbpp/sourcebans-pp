@@ -9,8 +9,6 @@
  * $Id$
  */
 
-require_once UTILS;
-
 /**
  * This class will allow us to read data from different places, and cache them to speed up the next read.
  * 
@@ -117,15 +115,15 @@ abstract class SBReader
    * Used for flushing the cache to get instant update
    * REMEMBER THAT THIS WILL ONLY REMOVE THE LOCAL SERVER CACHE, SO ONLY THE MIRROR YOU ARE ON WILL REMOVE ITS CACHE
    */
-  public function removeCacheFile($allFromClass = true)
+  public function removeCacheFile($allFromClass = false)
   {
     $sbcache = Env::get('sbcache');
     $key     = $this->getUniqueKey();
-    if($allFromClass===true) {
+    
+    if($allFromClass)
       $sbcache->deleteAllFromClass($key, get_class($this));
-    } else {
+    else
       $sbcache->delete($key, get_class($this));
-    }
   }
   
   
@@ -136,7 +134,7 @@ abstract class SBReader
    */
   private function getAlphabeticalArguments()
   {
-    //Gets the currently setup arguments sorted by key
+    // Gets the currently setup arguments sorted by key
     $args = get_object_vars($this);
     unset($args['prepared']);
     ksort($args);

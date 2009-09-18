@@ -11,8 +11,9 @@ class SettingsReader extends SBReader
     $db       = Env::get('db');
     
     // Fetch settings
-    $settings = $db->GetAssoc('SELECT name, value
-                               FROM   ' . Env::get('prefix') . '_settings');
+    $settings = $db->GetAssoc('SELECT   name, value
+                               FROM     ' . Env::get('prefix') . '_settings
+                               ORDER BY name');
     
     list($settings) = SBPlugins::call('OnGetSettings', $settings);
     

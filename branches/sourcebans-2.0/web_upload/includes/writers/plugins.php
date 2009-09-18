@@ -28,7 +28,7 @@ class PluginsWriter
   /**
    * Deletes a plugin
    *
-   * @param string $plugin The class name of the plugin to add
+   * @param string $plugin The class name of the plugin to delete
    */
   public static function delete($plugin)
   {
@@ -37,7 +37,8 @@ class PluginsWriter
     
     $db = Env::get('db');
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_plugins WHERE name = ?',
+    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_plugins
+                  WHERE       name = ?',
                   array($plugin));
     
     $plugins_reader = new PluginsReader();

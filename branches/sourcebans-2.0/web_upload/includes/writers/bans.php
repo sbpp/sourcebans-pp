@@ -39,12 +39,12 @@ class BansWriter
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $steam, $ip, $name, $reason, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
-    $id              = $db->Insert_ID();
-    $bans_reader     = new BansReader();
+    $id            = $db->Insert_ID();
+    $bans_reader   = new BansReader();
     $bans_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader = new CountsReader();
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnAddBan', $id, $type, $steam, $ip, $name, $reason, $length, $server);
     
@@ -69,11 +69,11 @@ class BansWriter
                   WHERE       id = ?',
                   array($id));
     
-    $bans_reader     = new BansReader();
+    $bans_reader   = new BansReader();
     $bans_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader = new CountsReader();
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteBan', $id);
   }
@@ -90,14 +90,14 @@ class BansWriter
    * @param string  $reason The reason of the ban
    * @param integer $length The length of the ban in minutes
    */
-  public static function edit($id, $type, $steam, $ip, $name, $reason, $length)
+  public static function edit($id, $type = null, $steam = null, $ip = null, $name = null, $reason = null, $length = null)
   {
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
     
     $ban     = array();
     
-    if(empty($id)     || !is_numeric($id))
+    if(empty($id)        || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(!is_null($type)   && is_numeric($type))
       $ban['type']   = $type;
@@ -199,7 +199,7 @@ class BansWriter
                     AND  unban_admin_id IS NOT NULL',
                   array($id));
     
-    $bans_reader     = new BansReader();
+    $bans_reader = new BansReader();
     $bans_reader->removeCacheFile();
     
     SBPlugins::call('OnReban', $id);

@@ -181,8 +181,8 @@
                       <span class="underline">{$plugin.name} <strong>{$plugin.version}</strong></span>
                       <div style="text-align: justify">{$plugin.desc}</div>
                     </td>
-                    <td class="center listtable_1"><input{if $plugin.enabled} checked="checked"{/if} name="{$class}" type="radio" value="1" /></td>
-                    <td class="center listtable_1"><input{if !$plugin.enabled} checked="checked"{/if} name="{$class}" type="radio" value="0" /></td>
+                    <td class="center listtable_1"><input{if $plugin.enabled} checked="checked"{/if} name="plugins[{$class}]" type="radio" value="1" /></td>
+                    <td class="center listtable_1"><input{if !$plugin.enabled} checked="checked"{/if} name="plugins[{$class}]" type="radio" value="0" /></td>
                   </tr>
                   {/foreach}
                 </table>

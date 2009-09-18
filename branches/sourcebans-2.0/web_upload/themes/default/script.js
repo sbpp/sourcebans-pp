@@ -381,7 +381,7 @@ window.addEvent('domready', function() {
       return;
     
     //if(!el.id.indexOf('expires_'))
-     // x_BanExpires.periodical(1000, el, [parseInt(el.id.substring(8)), parseInt(el.get('title')), updateBanExpires]);
+    //  x_BanExpires.periodical(1000, el, [parseInt(el.id.substring(8)), parseInt(el.get('title')), updateBanExpires]);
     if(!el.id.indexOf('server_admins_'))
       x_ServerAdmins(parseInt(el.id.substring(14)),  setServerAdmins);
     if(!el.id.indexOf('host_'))
@@ -524,7 +524,6 @@ window.addEvent('domready', function() {
     });
   if($chk($('clear_cache')))
     $('clear_cache').addEvent('click', function(e) {
-      e.stop();
       x_ClearCache(clearCache);
     });
   if($chk($('clear_logs')))
@@ -635,60 +634,6 @@ window.addEvent('domready', function() {
   }
   if($chk($('relver')))
     x_Version(setVersion);
-  // Handle Submission Form
-  if($chk($('submit_submission')))
-  {    
-    $('submit_submission').addEvent('click', function(e) {
-      e.stop();
-      // input check
-      var errors = "";
-      if(!$chk($('name').value)) {
-        errors += '* Please type the name of the player.<br />';
-        $('name').addClass('error-field');
-      } else {
-        $('name').removeClass('error-field');
-      }
-      if(!$chk($('reason').value)) {
-        errors += '* Please type a descriptive reason.<br />';
-        $('reason').addClass('error-field');
-      } else {
-        $('reason').removeClass('error-field');
-      }
-      if(!$chk($('subname').value)) {
-        errors += '* Please type your name.<br />';
-        $('subname').addClass('error-field');
-      } else {
-        $('subname').removeClass('error-field');
-      }
-      if(!$chk($('subemail').value)) {
-        errors += '* Please type your email address, so we can contact you if there are any questions.<br />';
-        $('subemail').addClass('error-field');
-      } else {
-        $('subemail').removeClass('error-field');
-      }
-      if($('server').options[0].selected == true) {
-        errors += '* Please choose a server.<br />';
-        $('server').addClass('error-field');
-      } else {
-        $('server').removeClass('error-field');
-      }        
-
-      if(errors.length > 0)
-      {
-        ShowBox('error', 'Missing input', errors, 'Ok');
-        return;
-      }
-
-      if(($('steam').value == 'STEAM_' || $('steam').value == '') && $('ip').value == '') {
-        ShowBox('info', 'No details given', 'You didn\'t type the SteamID or the IP of the player.<br \>That\'s fine, but remember we\'re possibly not able to identify the player for banning.', 'Ok', 'Wait', function() { 
-          $('dialog').fade('out'); 
-          SubmitForm($('submit-main'), handleFormSubmit); 
-        });
-        return;
-      }
-      SubmitForm($('submit-main'), handleFormSubmit);
-    });
-  }
   
   new Drag('dialog', {
     handle: 'dialog-title'

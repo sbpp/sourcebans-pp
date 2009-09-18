@@ -30,7 +30,7 @@ class Util
     {
       if(is_array($val) && $subPath = array_search_recursive($needle, $val))
         return array_merge($path, array($key), $subPath);
-      elseif($val == $needle)
+      else if($val == $needle)
       {
         $path[] = $key;
         return $path;
@@ -43,48 +43,18 @@ class Util
   /**
    * This will sort a collection based on the collection(array()) values
    *
-   * @param array   $array The array to sort
-   * @param integer $column the column to sort by
-   * @param integer $order The order to sort the array
-   * @param integer $first
-   * @param integer $last
-   * @author Luman (http://snipplr.com/users/luman)
+   * @param array   $array  The array to sort
+   * @param mixed   $column The column to sort by
+   * @param integer $order  The order to sort the array (SORT_ASC, SORT_DESC)
    */
-  public static function array_qsort(&$array, $column = 0, $order = SORT_ASC, $first = 0, $last = -2)
+  public static function array_qsort(&$array, $column = 0, $order = SORT_ASC)
   {
-    $keys = array_keys($array);
-    if($last == -2)
-      $last = count($array) - 1;
-    if($last <= $first)
-      return;
+    if($order == SORT_DESC)
+      $code = "return !strnatcmp(\$a['" . $column . "'], \$b['" . $column . "']);";
+    else
+      $code = "return strnatcmp(\$a['" . $column . "'], \$b['" . $column . "']);";
     
-    $alpha     = $first;
-    $omega     = $last;
-    $key_alpha = $keys[$alpha];
-    $key_omega = $keys[$omega];
-    $guess     = $array[$key_alpha][$column];
-    while($omega >= $alpha)
-    {
-      if($order == SORT_ASC)
-      {
-        while($array[$key_alpha][$column] < $guess) { $key_alpha = $keys[++$alpha]; }
-        while($array[$key_omega][$column] > $guess) { $key_omega = $keys[--$omega]; }
-      }
-      else
-      {
-        while($array[$key_alpha][$column] > $guess) { $key_alpha = $keys[++$alpha]; }
-        while($array[$key_omega][$column] < $guess) { $key_omega = $keys[--$omega]; }
-      }
-      if($alpha > $omega) break;
-      $temporary = $array[$key_alpha];
-      $array[$key_alpha] = $array[$key_omega];
-      $key_alpha = $keys[++$alpha];
-      $array[$key_omega] = $temporary;
-      if(--$omega)
-        $key_omega = $keys[$omega];
-    }
-    self::array_qsort($array, $column, $order, $first, $omega);
-    self::array_qsort($array, $column, $order, $alpha, $last);
+    uasort($array, create_function('$a, $b', $code));
   }
   
   
@@ -304,50 +274,16 @@ class Util
     $page = new Page();
     
     foreach(scandir(CACHE_DIR) as $file)
+    {
       if(is_file(CACHE_DIR . $file))
         unlink(CACHE_DIR . $file);
+    }
     
     foreach(scandir($page->compile_dir) as $file)
+    {
       if(is_file($page->compile_dir . '/' . $file))
         unlink($page->compile_dir . '/' . $file);
-  }
-  
-
-  /**
-   * Validates a SteamID
-   */
-  public static function validate_steam($steam)
-  {
-    return preg_match(STEAM_FORMAT, $steam) ? true : false;
-  }
-  
-  
-  /**
-   * Validates an IP
-   */
-  public static function validate_ip($ip)
-  {
-    return preg_match(IP_FORMAT, $ip) ? true : false;
-  }
-  
-  /**
-   * Validates an E-Mail address
-   */
-  public static function validate_email($email)
-  {
-    return preg_match(EMAIL_FORMAT, $email) ? true : false;
-  }
-  
-  /**
-   * Checks a filename for the right extenstion
-   */
-  public static function checkExt($filename, $ext)
-  {
-    $name = strtolower($filename);
-    if(substr($name, strlen($name) -3, 3) == $ext)
-      return true;
-    else
-      return false;
+    }
   }
 }
 ?>

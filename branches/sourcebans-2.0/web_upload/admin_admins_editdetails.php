@@ -21,7 +21,7 @@ try
       AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => 'admin_admins.php'
       )));
     }
     catch(Exception $e)

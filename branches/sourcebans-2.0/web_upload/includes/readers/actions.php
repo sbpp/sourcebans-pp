@@ -5,7 +5,7 @@ class ActionsReader extends SBReader
 {
   public $limit = 0;
   public $page  = 1;
-  public $sort  = 'time';
+  public $sort  = 'time DESC';
   
   public function prepare()
   {  }

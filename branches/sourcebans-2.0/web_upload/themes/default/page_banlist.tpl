@@ -96,20 +96,68 @@
               <table width="100%" cellspacing="0" cellpadding="0" class="listtable flCenter">
                 <tr>
                   <th class="icon"><input {nid id="bans_select"} type="checkbox" value="-1" /></th>
-                  <th class="date"><a href="{if $smarty.get.sort == "mod_name" && $smarty.get.order == "desc"}{build_query sort=mod_name order=asc}{else}{build_query sort=mod_name order=desc}{/if}">MOD</a>{if $smarty.get.sort == "mod_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}/<a href="{if $smarty.get.sort == "country_name" && $smarty.get.order == "desc"}{build_query sort=country_name order=asc}{else}{build_query sort=country_name order=desc}{/if}">{$lang_country}</a>{if $smarty.get.sort == "country_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
-                  <th class="date"><a href="{if $smarty.get.sort == "time" && $smarty.get.order == "desc"}{build_query sort=time order=asc}{else}{build_query sort=time order=desc}{/if}">{$lang_date}/{$lang_time}</a>{if $smarty.get.sort == time"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
-                  <th><a href="{if $smarty.get.sort == "name" && $smarty.get.order == "desc"}{build_query sort=name order=asc}{else}{build_query sort=name order=desc}{/if}">{$lang_name}</a>{if $smarty.get.sort == "name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
+                  <th class="date">
+                    {if $sort != "mod_name"}
+                    <a href="{build_query sort=mod_name}">MOD</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=mod_name}">MOD</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=mod_name}">MOD</a>
+                    {/if}
+                    /
+                    {if $sort != "country_name"}
+                    <a href="{build_query sort=country_name}">{$lang_country}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=country_name}">{$lang_country}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=country_name}">{$lang_country}</a>
+                    {/if}
+                  </th>
+                  <th class="date">
+                    {if $sort != "time"}
+                    <a href="{build_query sort=time}">{$lang_date}/{$lang_time}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=time}">{$lang_date}/{$lang_time}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=time}">{$lang_date}/{$lang_time}</a>
+                    {/if}
+                  </th>
+                  <th>
+                    {if $sort != "name"}
+                    <a href="{build_query sort=name}">{$lang_name}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=name}">{$lang_name}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=name}">{$lang_name}</a>
+                    {/if}
+                  </th>
                   {if !$hide_adminname}
-                  <th width="11%"><a href="{if $smarty.get.sort == "admin_name" && $smarty.get.order == "desc"}{build_query sort=admin_name order=asc}{else}{build_query sort=admin_name order=desc}{/if}">{$lang_admin}</a>{if $smarty.get.sort == "admin_name"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
+                  <th width="11%">
+                    {if $sort != "admin_name"}
+                    <a href="{build_query sort=admin_name}">{$lang_admin}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=admin_name}">{$lang_admin}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=admin_name}">{$lang_admin}</a>
+                    {/if}
+                  </th>
                   {/if}
-                  <th class="length"><a href="{if $smarty.get.sort == "length" && $smarty.get.order == "desc"}{build_query sort=length order=asc}{else}{build_query sort=length order=desc}{/if}">{$lang_length}</a>{if $smarty.get.sort == "length"} <div class="sort_{if $smarty.get.order == "desc"}asc{else}desc{/if}"></div>{/if}</th>
+                  <th class="length">
+                    {if $sort != "length"}
+                    <a href="{build_query sort=length}">{$lang_length}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=length}">{$lang_length}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=length}">{$lang_length}</a>
+                    {/if}
+                  </th>
                 </tr>
                 {foreach from=$bans item=ban key=ban_id}
                 <tr class="opener tbl_out">
                   <td class="listtable_1 icon"><input name="bans[]" type="checkbox" value="{$ban_id}" /></td>
                   <td class="listtable_1 date">
                     <img alt="{$ban.mod_name|escape}" class="icon" src="images/games/{$ban.mod_icon}" title="{$ban.mod_name|escape}" />
-                    <img alt="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" class="icon" src="images/countries/{if empty($ban.country_code)}unknown{else}{$ban.country_code}{/if}.gif" title="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" />
+                    <img alt="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" class="icon" src="images/countries/{if empty($ban.country_code)}unknown{else}{$ban.country_code|strtolower}{/if}.gif" title="{if empty($ban.country_code)}{$lang_unknown}{else}{$ban.country_name|escape}{/if}" />
                   </td>
                   <td class="listtable_1 date">{$ban.time|date_format:$date_format}</td>
                   <td class="listtable_1">
@@ -133,7 +181,13 @@
                         </tr>
                         <tr>
                           <td class="listtable_1" width="20%">{$lang_name}</td>
-                          <td class="listtable_1">{$ban.name|escape}</td>
+                          <td class="listtable_1">
+                            {if empty($ban.name)}
+                            <em class="not_applicable">no nickname present</em>
+                            {else}
+                            {$ban.name|escape}
+                            {/if}
+                          </td>
                           {if $permission_bans} 
                           <td width="30%" rowspan="12" class="listtable_2 opener">
                             <ul class="ban-edit">

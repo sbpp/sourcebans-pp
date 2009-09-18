@@ -32,8 +32,10 @@ class DemosWriter
                   VALUES      (?, ?, ?)',
                   array($ban_id, $type, $filename));
     
-    $id           = $db->Insert_ID();
-    $demos_reader = new DemosReader();
+    $id                   = $db->Insert_ID();
+    $demos_reader         = new DemosReader();
+    $demos_reader->ban_id = $ban_id;
+    $demos_reader->type   = $type;
     $demos_reader->removeCacheFile();
     
     SBPlugins::call('OnAddDemo', $id, $ban_id, $type, $filename);
@@ -54,17 +56,24 @@ class DemosWriter
     
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
-      
-    $name = $db->GetRow('SELECT filename FROM ' . Env::get('prefix') . '_demos
-                  WHERE       id = ?',
-                  array($id));
-    unlink(DEMOS_DIR . md5($id . $name['filename']));
+    
+    $demo = $db->GetRow('SELECT ban_id, type, filename
+                         FROM   ' . Env::get('prefix') . '_demos
+                         WHERE  id = ?',
+                         array($id));
+    
+    if(empty($demo))
+      throw new Exception('Invalid ID supplied.');
+    
+    unlink(DEMOS_DIR . $demo['type'] . $demo['ban_id'] . '_' . $demo['filename']));
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_demos
                   WHERE       id = ?',
                   array($id));
     
-    $demos_reader = new DemosReader();
+    $demos_reader         = new DemosReader();
+    $demos_reader->ban_id = $demo['ban_id'];
+    $demos_reader->type   = $demo['type'];
     $demos_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteDemo', $id);

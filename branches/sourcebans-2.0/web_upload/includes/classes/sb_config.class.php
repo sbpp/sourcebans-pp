@@ -79,7 +79,6 @@ class SBConfig
     define('READERS_DIR',   INCLUDES_PATH . 'readers/');
     define('UTILS_DIR',     INCLUDES_PATH . 'utils/');
     define('WRITERS_DIR',   INCLUDES_PATH . 'writers/');
-    define('UTILS',         INCLUDES_PATH . 'utils/util.php');
     define('READER',        CLASS_DIR     . 'reader.class.php');
     
     define('IN_SB',         true);
@@ -92,7 +91,7 @@ class SBConfig
     define('ONE_WEEK',      ONE_DAY    * 7);
     define('ONE_YEAR',      ONE_WEEK   * 52);
     define('URL_FORMAT',    '/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i');
-    define('EMAIL_FORMAT',  '/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/');
+    define('EMAIL_FORMAT',  '/^([a-zA-Z0-9])+([a-zA-Z0-9\._\-\+])*@([a-zA-Z0-9_\-])+([a-zA-Z0-9\._\-]+)+$/');
     define('IP_FORMAT',     '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
     define('STEAM_FORMAT',  '/^STEAM_[0-9]:[0-9]:[0-9]+$/');
     define('STATUS_PARSE',  '/#[ ]*([0-9 ]+) "(.+)" (STEAM_[0-9]:[0-9]:[0-9]+)[ ]{1,2}([0-9]+[:[0-9]+) ([0-9]+)[ ]([0-9]+) ([a-zA-Z]+) ([0-9.:]+)/');
@@ -142,7 +141,6 @@ class SBConfig
    */
   private static function generic_requires()
   {
-    require_once BASE_PATH   . 'config.php';
     require_once LIB_DIR     . 'adodb/adodb-exceptions.inc.php';
     require_once LIB_DIR     . 'adodb/adodb.inc.php';
     require_once LIB_DIR     . 'PHPMailer/class.phpmailer.php';
@@ -152,7 +150,9 @@ class SBConfig
     require_once CLASS_DIR   . 'plugins.class.php';
     require_once CLASS_DIR   . 'tabs.class.php';
     require_once CLASS_DIR   . 'sb_debug.class.php';
+    require_once UTILS_DIR   . 'util.php';
     require_once WRITERS_DIR . 'logs.php';
+    require_once BASE_PATH   . 'config.php';
   }
   
   

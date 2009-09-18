@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'groups.php';
-require_once READERS_DIR . 'counts.php';
 
 class GroupsWriter
 {
@@ -60,9 +59,6 @@ class GroupsWriter
     $group_reader->type = $type;
     $groups_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
-    
     SBPlugins::call('OnAddGroup', $id, $type, $name, $flags, $immunity, $overrides);
     
     return $id;
@@ -83,12 +79,10 @@ class GroupsWriter
     switch($type)
     {
       case SERVER_GROUPS:
-        $db->Execute('DELETE sg, ag
-                      FROM   ' . Env::get('prefix') . '_srvgroups        AS sg
-                      LEFT JOIN
-                             ' . Env::get('prefix') . '_admins_srvgroups AS ag
-                      ON     ag.group_id = sg.id
-                      WHERE  sg.id = ?',
+        $db->Execute('DELETE    sg, ag
+                      FROM      ' . Env::get('prefix') . '_srvgroups        AS sg
+                      LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
+                      WHERE     sg.id = ?',
                       array($id));
         break;
       case WEB_GROUPS:
@@ -96,12 +90,10 @@ class GroupsWriter
                       SET    group_id = NULL
                       WHERE  group_id = ?',
                       array($id));
-        $db->Execute('DELETE wg, gp
-                      FROM   ' . Env::get('prefix') . '_groups             AS wg
-                      LEFT JOIN
-                             ' . Env::get('prefix') . '_groups_permissions AS gp
-                      ON     gp.group_id = wg.id
-                      WHERE  wg.id = ?',
+        $db->Execute('DELETE    wg, gp
+                      FROM      ' . Env::get('prefix') . '_groups             AS wg
+                      LEFT JOIN ' . Env::get('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
+                      WHERE     wg.id = ?',
                       array($id));
         break;
       default:
@@ -111,9 +103,6 @@ class GroupsWriter
     $groups_reader      = new GroupsReader();
     $group_reader->type = $type;
     $groups_reader->removeCacheFile();
-    
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteGroup', $id, $type);
   }
@@ -129,21 +118,24 @@ class GroupsWriter
    * @param integer $immunity  The immunity level of the group
    * @param array   $overrides The overrides of the group
    */
-  public static function edit($id, $type, $name, $flags, $immunity, $overrides)
+  public static function edit($id, $type = null, $name = null, $flags = null, $immunity = null, $overrides = null)
   {
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
     
+    $group   = array();
+    
     switch($type)
     {
       case SERVER_GROUPS:
-        $db->Execute('UPDATE ' . Env::get('prefix') . '_srvgroups
-                      SET    name     = ?,
-                             flags    = ?,
-                             immunity = ?
-                      WHERE  id       = ?',
-                      array($name, $flags, $immunity, $id));
-        
+        if(empty($id)           || !is_numeric($id))
+          throw new Exception('Invalid ID supplied.');
+        if(!is_null($name)      && is_string($name))
+          $group['name']     = $name;
+        if(!is_null($flags)     && is_string($flags))
+          $group['flags']    = $flags;
+        if(!is_null($immunity)  && is_numeric($immunity))
+          $group['immunity'] = $immunity;
         if(!is_null($overrides) && is_array($overrides))
         {
           $db->Execute('DELETE FROM ' . Env::get('prefix') . '_srvgroups_overrides
@@ -157,13 +149,14 @@ class GroupsWriter
             $db->Execute($query, array($id, $override['type'], $override['name'], $override['access']));
         }
         
+        $db->AutoExecute(Env::get('prefix') . '_srvgroups', $group, 'UPDATE', 'id = ' . $id);
+        
         break;
       case WEB_GROUPS:
-        $db->Execute('UPDATE ' . Env::get('prefix') . '_groups
-                      SET    name  = ?
-                      WHERE  id    = ?',
-                      array($name, $id));
-        
+        if(empty($id)       || !is_numeric($id))
+          throw new Exception('Invalid ID supplied.');
+        if(!is_null($name)  && is_string($name))
+          $group['name'] = $name;
         if(!is_null($flags) && is_array($flags))
         {
           $db->Execute('DELETE FROM ' . Env::get('prefix') . '_groups_permissions
@@ -173,6 +166,8 @@ class GroupsWriter
           self::setFlags($id, $flags);
         }
         
+        $db->AutoExecute(Env::get('prefix') . '_groups',    $group, 'UPDATE', 'id = ' . $id);
+        
         break;
       default:
         throw new Exception('Invalid group type specified.');
@@ -181,9 +176,6 @@ class GroupsWriter
     $groups_reader      = new GroupsReader();
     $group_reader->type = $type;
     $groups_reader->removeCacheFile();
-    
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnEditGroup', $id, $type, $name, $flags, $immunity, $overrides);
   }
@@ -206,7 +198,7 @@ class GroupsWriter
     if(!file_exists($tmp_name))
       throw new Exception('File does not exist.');
     
-    $reader   = new KVReader($tmp_name);
+    $reader  = new KVReader($tmp_name);
     switch(basename($file))
     {
       // SourceMod
@@ -227,10 +219,6 @@ class GroupsWriter
       default:
         throw new Exception('Unsupported file format.');
     }
-    
-    $groups_reader      = new GroupsReader();
-    $group_reader->type = SERVER_GROUPS;
-    $groups_reader->removeCacheFile();
   }
   
   
@@ -252,8 +240,10 @@ class GroupsWriter
     $permissions        = $permissions_reader->executeCached(ONE_MINUTE * 5);
     
     foreach($permissions as $permission_id => $permission_name)
+    {
       if(in_array($permission_name, $flags))
         $db->Execute($query, array($id, $permission_id));
+    }
   }
 }
 ?>

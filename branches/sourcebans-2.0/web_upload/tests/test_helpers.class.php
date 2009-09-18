@@ -11,27 +11,25 @@
 
 /**
  * This class is the main interface that every test needs to
- * impliment!
+ * implement!
  */
- interface ITest
- {	
-	public function RunTest();
- }
- 
- class CTest
- {
-	public $testName = "";
-	
-	public function __construct($name)
-	{
-		$this->testName;
-	}
-	
-	public function GetName()
-	{
-		return $this->testName;
-	}
- }
- 
- ?>
- 
+interface ITest
+{
+  public function runTest();
+}
+
+class CTest
+{
+  private $testName;
+  
+  public function __construct($name)
+  {
+    $this->testName = $name;
+  }
+  
+  public function getName()
+  {
+    return $this->testName;
+  }
+}
+?>

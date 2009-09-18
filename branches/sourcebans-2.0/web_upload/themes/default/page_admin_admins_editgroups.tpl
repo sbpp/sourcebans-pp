@@ -20,7 +20,7 @@
                 {foreach from=$server_groups item=group key=group_id}
                 <tr>
                   <td class="tablerow1" colspan="2">{$group.name}</td>
-                  <td align="center" class="tablerow1"><input name="srv_groups[]" type="checkbox" value="{$group_id}" /></td>
+                  <td align="center" class="tablerow1"><input{if in_array($group_id, $admin_srv_groups)} checked="checked"{/if} name="srv_groups[]" type="checkbox" value="{$group_id}" /></td>
                 </tr>
                 {/foreach}
               </table>
@@ -34,6 +34,7 @@
                 </optgroup>
               </select>
               <div class="center">
+                <input name="id" type="hidden" value="{$smarty.get.id}" />
                 <input class="btn ok" type="submit" value="{$lang_save}" />
                 <input class="back btn cancel" type="button" value="{$lang_back}" />
               </div>

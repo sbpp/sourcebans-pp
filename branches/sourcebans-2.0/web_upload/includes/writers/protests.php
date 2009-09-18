@@ -24,7 +24,7 @@ class ProtestsWriter
                               OR  (type = ? AND ip    = ?)',
                            array(STEAM_BAN_TYPE, $steam, IP_BAN_TYPE, $ip));
     
-    if(!$db->RecordCount())
+    if(is_null($ban_id))
       throw new Exception('This Steam ID or IP address is not banned.');
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_protests (ban_id, reason, email, ip, time)
@@ -36,7 +36,7 @@ class ProtestsWriter
     $protests_reader->removeCacheFile();
     
     $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnAddProtest', $id, $type, $steam, $ip, $reason, $email);
     
@@ -55,15 +55,15 @@ class ProtestsWriter
     $phrases = Env::get('phrases');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_protests
-                  SET    archiv = 1
-                  WHERE  pid    = ?',
+                  SET    archived = 1
+                  WHERE  id       = ?',
                   array($id));
     
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
     
     $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnArchiveProtest', $id);
   }
@@ -80,14 +80,14 @@ class ProtestsWriter
     $phrases = Env::get('phrases');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_protests
-                  WHERE       pid = ?',
+                  WHERE       id = ?',
                   array($id));
     
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
     
     $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteProtest', $id);
   }
@@ -104,15 +104,15 @@ class ProtestsWriter
     $phrases = Env::get('phrases');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_protests
-                  SET    archiv = 0
-                  WHERE  pid    = ?',
+                  SET    archived = 0
+                  WHERE  id       = ?',
                   array($id));
     
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
     
     $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnRestoreProtest', $id);
   }

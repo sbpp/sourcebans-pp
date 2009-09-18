@@ -19,8 +19,9 @@ class AdminsWriter
    */
   public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = false, $srv_groups = array(), $web_group = null)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
     
     if(empty($name)          || !is_string($name))
       throw new Exception('Invalid name supplied.');
@@ -37,14 +38,14 @@ class AdminsWriter
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_admins (name, auth, identity, password, group_id, email, srv_password)
                   VALUES      (?, ?, ?, ?, ?, ?, ?)',
-                  array($name, $auth, $identity, empty($password) ? null : CUserManager::encrypt_password($password), $web_group, $email, $srv_password ? $password : null));
+                  array($name, $auth, $identity, empty($password) ? null : $userbank->encrypt_password($password), $web_group, $email, $srv_password ? $password : null));
     
     $id            = $db->Insert_ID();
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader = new CountsReader();
+    $counts_reader->removeCacheFile();
     
     if(is_array($srv_groups) && !empty($srv_groups))
     {
@@ -74,19 +75,17 @@ class AdminsWriter
     if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
-    $db->Execute('DELETE ad, ag
-                  FROM   ' . Env::get('prefix') . '_admins           AS ad
-                  LEFT JOIN
-                         ' . Env::get('prefix') . '_admins_srvgroups AS ag
-                  ON     ag.admin_id = ad.id 
-                  WHERE  ad.id = ?',
+    $db->Execute('DELETE    ad, ag
+                  FROM      ' . Env::get('prefix') . '_admins           AS ad
+                  LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.admin_id = ad.id 
+                  WHERE     ad.id = ?',
                   array($id));
     
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
+    $counts_reader = new CountsReader();
+    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteAdmin', $id);
   }
@@ -107,13 +106,14 @@ class AdminsWriter
    * @param string  $theme        The theme setting of the admin
    * @param string  $language     The language setting of the admin
    */
-  public static function edit($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language)
+  public static function edit($id, $name = null, $auth = null, $identity = null, $email = null, $password = null, $srv_password = null, $srv_groups = null, $web_group = null, $theme = null, $language = null)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
-    $plugins = Env::get('plugins');
+    $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
+    $plugins  = Env::get('plugins');
+    $userbank = Env::get('userbank');
     
-    $admin   = array();
+    $admin    = array();
     
     if(empty($id)              || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
@@ -127,8 +127,8 @@ class AdminsWriter
       $admin['email']        = $email;
     if(!is_null($password)     && is_string($password))
       $admin['password']     = $userbank->encrypt_password($password);
-    if(!is_null($srv_password) && is_bool($srv_password) && $srv_password)
-      $admin['srv_password'] = $password;
+    if(!is_null($srv_password) && is_bool($srv_password))
+      $admin['srv_password'] = $srv_password ? $password : null;
     if(!is_null($language)     && is_string($language))
       $admin['language']     = $language;
     if(!is_null($theme)        && is_string($theme))
@@ -152,9 +152,6 @@ class AdminsWriter
     
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
-    
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile(true);
     
     SBPlugins::call('OnEditAdmin', $id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language);
   }
@@ -198,9 +195,9 @@ class AdminsWriter
                       $admin['auth'],
                       $admin['identity'],
                       '',
-                      isset($admin['password']) ? CUserManager::encrypt_password($admin['password']) : '',
+                      isset($admin['password']) ? $admin['password']                  : '',
                       isset($admin['password']),
-                      isset($admin['group'])    ? array($group_list[$admin['group']])                : array());
+                      isset($admin['group'])    ? array($group_list[$admin['group']]) : array());
         }
         else
         {

@@ -3,7 +3,6 @@ require_once READER;
 
 class GroupsReader extends SBReader
 {
-  public $sort = 'name';
   public $type;
   
   public function prepare()
@@ -21,7 +20,7 @@ class GroupsReader extends SBReader
                                  FROM      ' . Env::get('prefix') . '_srvgroups        AS sg
                                  LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
                                  GROUP BY  ag.group_id
-                                 ORDER BY  ' . $this->sort);
+                                 ORDER BY  name');
         
         // Fetch group overrides
         foreach($groups as $id => &$group)
@@ -38,7 +37,7 @@ class GroupsReader extends SBReader
                                  LEFT JOIN ' . Env::get('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
                                  LEFT JOIN ' . Env::get('prefix') . '_permissions        AS pe ON pe.id       = gp.permission_id
                                  GROUP BY  id
-                                 ORDER BY  ' . $this->sort);
+                                 ORDER BY  name');
         
         // Parse group flags
         foreach($groups as &$group)

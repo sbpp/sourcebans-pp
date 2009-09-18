@@ -16,10 +16,10 @@ try
   {
     try
     {
-      AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, null, $_POST['srv_group'], $_POST['web_group']);
+      AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, $_POST['srv_groups'], $_POST['web_group']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => 'admin_admins.php'
       )));
     }
     catch(Exception $e)
@@ -46,11 +46,11 @@ try
   
   $admin               = $admins[$_GET['id']];
   
-  $page->assign('admin_name',      $admin['name']);
-  $page->assign('admin_srv_group', $admin['srv_groups']);
-  $page->assign('admin_web_group', $admin['group_id']);
-  $page->assign('server_groups',   $server_groups);
-  $page->assign('web_groups',      $web_groups);
+  $page->assign('admin_name',       $admin['name']);
+  $page->assign('admin_srv_groups', $admin['srv_groups']);
+  $page->assign('admin_web_group',  $admin['group_id']);
+  $page->assign('server_groups',    $server_groups);
+  $page->assign('web_groups',       $web_groups);
   $page->display('page_admin_admins_editgroups');
 }
 catch(Exception $e)

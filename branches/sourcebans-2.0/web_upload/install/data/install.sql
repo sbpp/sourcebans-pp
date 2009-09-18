@@ -371,21 +371,22 @@ CREATE TABLE {prefix}_submissions (
 --
 
 INSERT INTO {prefix}_mods (name, folder, icon) VALUES
-('Half-Life 2 Deathmatch', 'hl2mp', 'hl2dm.png'),
 ('Counter-Strike: Source', 'cstrike', 'csource.png'),
 ('Day of Defeat: Source', 'dod', 'dods.png'),
-('Insurgency: Source', 'insurgency', 'ins.gif'),
 ('Dystopia', 'dystopia_v1', 'dys.gif'),
-('Hidden: Source', 'hidden', 'hidden.png'),
-('Half-Life 2 Capture the Flag', 'hl2ctf', 'hl2ctf.png'),
-('Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif'),
-('Perfect Dark: Source', 'pdark', 'pdark.gif'),
-('The Ship', 'ship', 'ship.gif'),
-('Fortress Forever', 'FortressForever', 'hl2-fortressforever.gif'),
-('Team Fortress 2', 'tf', 'tf2.gif'),
-('Zombie Panic: Source', 'zps', 'zps.gif'),
+('Fortress Forever', 'FortressForever', 'fortressforever.gif'),
 ('Garry''s Mod', 'garrysmod', 'gmod.png'),
-('Left 4 Dead', 'left4dead', 'l4d.png');
+('Half-Life 2 Capture the Flag', 'hl2ctf', 'hl2ctf.png'),
+('Half-Life 2 Deathmatch', 'hl2mp', 'hl2dm.png'),
+('Hidden: Source', 'hidden', 'hidden.png'),
+('Insurgency', 'insurgency', 'ins.gif'),
+('Left 4 Dead', 'left4dead', 'l4d.png'),
+('Perfect Dark: Source', 'pdark', 'pdark.gif'),
+('Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif'),
+('SourceForts', 'sourceforts', 'sourceforts.gif'),
+('Team Fortress 2', 'tf', 'tf2.gif'),
+('The Ship', 'ship', 'ship.gif'),
+('Zombie Panic: Source', 'zps', 'zps.gif');
 
 -- --------------------------------------------------------
 

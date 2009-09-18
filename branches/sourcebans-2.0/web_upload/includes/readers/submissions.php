@@ -1,5 +1,7 @@
 <?php
 require_once READER;
+require_once READERS_DIR . 'comments.php';
+require_once READERS_DIR . 'demos.php';
 
 class SubmissionsReader extends SBReader
 {
@@ -13,14 +15,13 @@ class SubmissionsReader extends SBReader
   
   public function &execute()
   {
-    $config      = Env::get('config');
     $db          = Env::get('db');
     
     // Fetch submissions
-    $submissions = $db->GetAssoc('SELECT    id, name, steam, ip, reason, server_id, subname, subemail, subip, time
-                                  FROM      ' . Env::get('prefix') . '_submissions
-                                  WHERE     archived = ?
-                                  ORDER BY  ' . $this->sort        .
+    $submissions = $db->GetAssoc('SELECT   id, name, steam, ip, reason, server_id, subname, subemail, subip, time
+                                  FROM     ' . Env::get('prefix') . '_submissions
+                                  WHERE    archived = ?
+                                  ORDER BY ' . $this->sort        .
                                   ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                   array($this->archive ? 1 : 0));
     
@@ -28,10 +29,16 @@ class SubmissionsReader extends SBReader
     foreach($submissions as $id => &$submission)
     {
       // Fetch comments for this submission
-      $comments_reader        = new CommentsReader();
-      $comments_reader->bid   = $id;
-      $comments_reader->type  = SUBMISSION_TYPE;
-      $submission['comments'] = $comments_reader->executeCached(ONE_DAY);
+      $comments_reader         = new CommentsReader();
+      $comments_reader->ban_id = $id;
+      $comments_reader->type   = SUBMISSION_TYPE;
+      $submission['comments']  = $comments_reader->executeCached(ONE_DAY);
+      
+      // Fetch demos for this submission
+      $demos_reader            = new DemosReader();
+      $demos_reader->ban_id    = $id;
+      $demos_reader->type      = SUBMISSION_TYPE;
+      $submission['demos']     = $demos_reader->executeCached(ONE_DAY);
     }
     
     list($submissions) = SBPlugins::call('OnGetSubmissions', $submissions);

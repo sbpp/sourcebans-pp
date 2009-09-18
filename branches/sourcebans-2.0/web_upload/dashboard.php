@@ -19,13 +19,22 @@ try
   $bans_reader->limit   = 10;
   $blocks_reader->limit = 10;
   
-  if(isset($_GET['sort']) && is_string($_GET['sort']))
-    $servers_reader->sort = $_GET['sort'];
-  
   $bans                 = $bans_reader->executeCached(ONE_MINUTE    * 5);
   $blocks               = $blocks_reader->executeCached(ONE_MINUTE  * 5);
   $counts               = $counts_reader->executeCached(ONE_MINUTE  * 5);
   $servers              = $servers_reader->executeCached(ONE_MINUTE * 5);
+  
+  if(isset($_GET['sort'])  && is_string($_GET['sort']))
+    $sort  = $_GET['sort'];
+  else
+    $sort  = 'mod_name';
+  
+  if(isset($_GET['order']) && is_string($_GET['order']))
+    $order = $_GET['order'];
+  else
+    $order = SORT_ASC;
+  
+  Util::array_qsort($servers, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC);
   
   $page->assign('dashboard_text',  $config['dash.intro.text']);
   $page->assign('dashboard_title', $config['dash.intro.title']);
@@ -33,6 +42,8 @@ try
   $page->assign('bans',            $bans['list']);
   $page->assign('blocks',          $blocks);
   $page->assign('servers',         $servers);
+  $page->assign('order',           $order);
+  $page->assign('sort',            $sort);
   $page->assign('total_bans',      $counts['bans']);
   $page->assign('total_blocks',    $counts['blocks']);
   $page->display('page_dashboard');

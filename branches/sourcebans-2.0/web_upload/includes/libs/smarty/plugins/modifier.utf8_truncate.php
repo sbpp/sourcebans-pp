@@ -4,8 +4,6 @@
  * @package Smarty
  * @subpackage plugins
  */
-require_once UTILS;
-
 
 /**
  * Smarty UTF-8 truncate modifier plugin

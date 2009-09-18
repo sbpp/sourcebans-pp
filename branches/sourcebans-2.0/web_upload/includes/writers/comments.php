@@ -28,10 +28,10 @@ class CommentsWriter
                   VALUES      (?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $ban_id, $userbank->GetID(), $message));
     
-    $id                    = $db->Insert_ID();
-    $comments_reader       = new CommentsReader();
-    $comments_reader->bid  = $ban_id;
-    $comments_reader->type = $type;
+    $id                      = $db->Insert_ID();
+    $comments_reader         = new CommentsReader();
+    $comments_reader->ban_id = $ban_id;
+    $comments_reader->type   = $type;
     $comments_reader->removeCacheFile();
     
     SBPlugins::call('OnAddComment', $id, $ban_id, $type, $message);
@@ -58,13 +58,16 @@ class CommentsWriter
                             WHERE  id = ?',
                             array($id));
     
+    if(empty($comment))
+      throw new Exception('Invalid ID supplied.');
+    
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_comments
                   WHERE       id = ?',
                   array($id));
     
-    $comments_reader       = new CommentsReader();
-    $comments_reader->bid  = $comment['ban_id'];
-    $comments_reader->type = $comment['type'];
+    $comments_reader         = new CommentsReader();
+    $comments_reader->ban_id = $comment['ban_id'];
+    $comments_reader->type   = $comment['type'];
     $comments_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteComment', $id);
@@ -100,9 +103,9 @@ class CommentsWriter
                   WHERE  id            = ?',
                   array($message, $userbank->GetID(), $id));
     
-    $comments_reader       = new CommentsReader();
-    $comments_reader->bid  = $comment['ban_id'];
-    $comments_reader->type = $comment['type'];
+    $comments_reader         = new CommentsReader();
+    $comments_reader->ban_id = $comment['ban_id'];
+    $comments_reader->type   = $comment['type'];
     $comments_reader->removeCacheFile();
     
     SBPlugins::call('OnEditComment', $id, $message);

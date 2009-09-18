@@ -144,10 +144,6 @@ select.submit-fields { width: 277px; }
   border: 1px solid #C24733;
   background-color: #F1E8E6;
 }
-.error-field {
-  border: 1px solid #C24733 !important;
-  background-color: #F1E8E6 !important;
-}
 
 /* ================ Popup Boxes ============== */
 #dialog {
@@ -698,11 +694,9 @@ td.listtable_2 { background-color: #efefef; }
 }
 
 .sort_asc, .sort_desc {
-  width: 8px;
-  height: 8px;
-  display: inline-block;
+  background: no-repeat 100% 50%;
+  padding-right: 16px;
 }
-.sort_asc span, .sort_desc span { display: none; }
 .sort_asc { background-image: url("http://projects.interwavestudios.com/images/sort_asc.png"); }
 .sort_desc { background-image: url("http://projects.interwavestudios.com/images/sort_desc.png"); }
 
@@ -966,7 +960,7 @@ div.playerlist_menu .head {
   background-color: #EAEAEA;
 }
 #ajax-indicator span {
-  background: transparent url("images/loading.gif") no-repeat 0% 40%;
+  background: url("images/loading.gif") no-repeat 0% 40%;
   padding-left: 26px;
   vertical-align: bottom;
 }

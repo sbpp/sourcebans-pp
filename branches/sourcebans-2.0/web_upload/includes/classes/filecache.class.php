@@ -26,11 +26,11 @@ class SBGZCompressor implements SBCompressor
   }
 }
 
+
 /**
  * Implementation of a file cacher that can save key -> value pairs on to hard disk space as files
  * This uses the functions defined by the SBCache interface which gives us a lot of flexibility with caching without having to change much code
  */
-
 class SBFileCache extends SBCache
 {
   private $tmp_dir;
@@ -42,10 +42,10 @@ class SBFileCache extends SBCache
   
   public function __construct($tmp_dir, $compressor = null, $dir_length = 24, $max_data_length = 5242880, $max_key_length = 10240)
   {
+    $this->compressor      = $compressor;
     $this->max_data_length = $max_data_length;
-    $this->max_key_length = $max_key_length;
-    $this->compressor = $compressor;
-  
+    $this->max_key_length  = $max_key_length;
+    
     if(file_exists($tmp_dir))
       $this->tmp_dir = $tmp_dir;
     //else
@@ -61,40 +61,40 @@ class SBFileCache extends SBCache
    * Although these functions may causes SteambansCachingExceptions, it could be because of file locks, so we should ignore
    * them for now
    */
-  public function add($key, $data, $uniqueIdentifer = "")
+  public function add($key, $data, $uniqueIdentifier = '')
   {
     //try {
-      return $this->set($key, $data, false, $uniqueIdentifer);
+      return $this->set($key, $data, false, $uniqueIdentifier);
     //} catch (SteambansCachingException $e) {
     //  return true;
     //}
   }
   
-  public function store($key, $data, $uniqueIdentifer = "")
+  public function store($key, $data, $uniqueIdentifier = '')
   {
     //try {
-      return $this->set($key, $data, true, $uniqueIdentifer);
+      return $this->set($key, $data, true, $uniqueIdentifier);
     //} catch (SteambansCachingException $e) {
     //  return true;
     //}
   }
   
-  public function fetch($key, $ttl = null, $uniqueIdentifer = "")
+  public function fetch($key, $ttl = null, $uniqueIdentifier = '')
   {
     //try {
-      return $this->get($key, $ttl, $uniqueIdentifer);
+      return $this->get($key, $ttl, $uniqueIdentifier);
     //} catch (SteambansCachingException $e) {
     //  return false;
     //}
   }
-
+  
   /**
    * Will sort out setting a key value by writing a file to disk
    * @returns true if it succeeds
    * @returns false if data already exists and overwrite is false
    * @throws SteambansCachingException if something goes wrong
    */
-  private function set($key, $data, $overwrite, $uniqueIdentifer)
+  private function set($key, $data, $overwrite, $uniqueIdentifier)
   {
     // Invalid key
     SBCache::validKey($key);
@@ -104,7 +104,7 @@ class SBFileCache extends SBCache
     //  throw new SteambansCachingException('The key is too large to be saved by the SBFileCache');
     
     // Attempt to save this data to a file
-    $key_hash = substr(md5($uniqueIdentifer), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
+    $key_hash = substr(md5($uniqueIdentifier), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
     
     // This gives us the file to save to
     $cnt = 0;
@@ -163,7 +163,7 @@ class SBFileCache extends SBCache
     }
   }
   
-  private function get($key, $ttl = null, $uniqueIdentifer)
+  private function get($key, $ttl = null, $uniqueIdentifier)
   {
     if(is_null($ttl))
       $ttl = 0;
@@ -176,7 +176,7 @@ class SBFileCache extends SBCache
     //  throw new SteambansCachingException('The key is too large to be opened by the SBFileCache');
     
     // Attempt to get this data from the file
-    $key_hash = substr(md5($uniqueIdentifer), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
+    $key_hash = substr(md5($uniqueIdentifier), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
 
     // This gives us the file to read from
     $cnt = 0;
@@ -222,17 +222,17 @@ class SBFileCache extends SBCache
     return false;
   }
   
-  public function delete($key, $uniqueIdentifer = "")
+  public function delete($key, $uniqueIdentifier = '')
   {
     // Invalid key
     SBCache::validKey($key);
-        
+    
     // Key too long
     //if(strlen($key) > $this->max_key_length)
-    // throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
+    //  throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
     
     // Attempt to find this data file
-    $key_hash = substr(md5($uniqueIdentifer), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
+    $key_hash = substr(md5($uniqueIdentifier), 0, 3) . substr(md5($key), 0, $this->dir_length - 3) . strlen($key);
     
     // This gives us the file to read from
     $cnt = 0;
@@ -264,25 +264,26 @@ class SBFileCache extends SBCache
     // Didn't find any appropriate file but it doesnt really matter
   }
   
-  public function deleteAllFromClass($key, $uniqueIdentifer)
+  public function deleteAllFromClass($key, $uniqueIdentifier)
   {
     // Invalid key
     SBCache::validKey($key);
-        
+    
     // Key too long
-    // if(strlen($key) > $this->max_key_length)
-    // throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
+    //if(strlen($key) > $this->max_key_length)
+    //  throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
     
     $cachefiles = dir(substr($this->tmp_dir, 0, strlen($this->tmp_dir)-1));
-    while (false !== ($file_name = $cachefiles->read())) {
+    while(false !== ($file_name = $cachefiles->read())) {
       // Ignore dirs
-      if(!is_file($cachefiles->path."/".$file_name))
+      if(!is_file($cachefiles->path . '/' . $file_name))
         continue;
-        
-      if (substr(md5($uniqueIdentifer), 0, 3) == substr($file_name, 0, 3)) {
+      
+      if(substr(md5($uniqueIdentifier), 0, 3) == substr($file_name, 0, 3))
+      {
         // Data file exists
         // Delete the file
-        @unlink($cachefiles->path."/".$file_name);
+        @unlink($cachefiles->path . '/' . $file_name);
       }
     }
   }
@@ -310,7 +311,7 @@ class SBFileCache extends SBCache
       return $key_data;
     }
     //else
-    // throw new SteambansException('You have got the regular expression wrong for file ' . $file_name);
+    //  throw new SteambansException('You have got the regular expression wrong for file ' . $file_name);
   }
 }
 ?>

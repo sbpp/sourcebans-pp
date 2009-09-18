@@ -62,13 +62,14 @@ try
           SettingsWriter::update($settings);
           break;
         case 'plugins':
-          $plugins        = SBPlugins::getPlugins();
-          $plugins_writer = new PluginsWriter();
-          foreach($plugins as $class => $info)
-            if($_POST[$class] == 1)
-              $plugins_writer->enable($class);
+          foreach($_POST['plugins'] as $plugin => $enabled)
+          {
+            if($enabled)
+              PluginsWriter::enable($plugin);
             else
-              $plugins_writer->disable($class);
+              PluginsWriter::disable($plugin);
+          }
+          
           break;
         default:
           throw new Exception('Invalid action specified.');
@@ -113,7 +114,7 @@ try
     if(!file_exists($file))
       continue;
     
-    $info     = Util::parse_ini_file($file);
+    $info     = parse_ini_file($file);
     $themes[] = array('dir'  => $theme,
                       'name' => $info['name']);
     
@@ -160,7 +161,7 @@ try
   $page->assign('theme_link',            $theme_link);
   $page->assign('theme_name',            $theme_name);
   $page->assign('theme_version',         $theme_version);
-  $page->assign('total_pages',           $page_numbers);
+  $page->assign('total_pages',           $pages);
   $page->display('page_admin_settings');
 }
 catch(Exception $e)

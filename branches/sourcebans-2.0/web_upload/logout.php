@@ -1,6 +1,8 @@
 <?php
 require_once 'init.php';
 
-CUserManager::logout();
+$userbank = Env::get('userbank');
+$userbank->logout();
+
 Util::redirect('index.php');
 ?>

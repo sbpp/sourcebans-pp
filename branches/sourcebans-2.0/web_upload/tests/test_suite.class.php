@@ -8,57 +8,60 @@
  * @package SourceBans
  * $Id$
  */
- 
+
 class CTestSuite
 {
-	private $m_pTests = array();
-	private $m_szSuiteName = "";
-	private $m_error = 0;
-	
-	public function __construct( $name )
-	{
-		$this->m_szSuiteName = $name;
-	}
-	
-	public function getName()
-	{
-		return $this->m_szSuiteName;
-	}
-	
-	public function addTest(&$pTest)
-	{
-		$this->m_pTests[] = $pTest;
-	}
-	
-	public function runTests()
-	{
-		echo "=== Starting Suite: " . $this->m_szSuiteName . " - " . count($this->m_pTests) . " tests  ===\n";
-		foreach( $this->m_pTests as $test)
-		{
-			$startTime = microtime(true);
-			$testName = $test->GetName();
-			echo "-- Starting test: " . $testName . " --\n";
-			$result = $test->RunTest();
-			$endTime = microtime(true);
-			
-			$resStr = "Success";
-			if( !$result )
-			{
-				$this->m_error++;
-				$resStr = "Failed";
-			}
-			
-			echo "-- Finished test: " . $testName;
-			echo " [" . $resStr . " - ";
-			
-			echo  number_format($endTime - $startTime,3) . "ms] --\n";
-		}
-		echo "=== Finished Suite: " . $this->m_szSuiteName . " ===\n";
-		
-		if($this->m_error > 0)
-			exit(1); // exit code 1 - causes fail
-		else
-			exit(0); // exit code 0 - causes success
-	}
+  private $name;
+  private $tests = array();
+  
+  public function __construct($name)
+  {
+    $this->name = $name;
+  }
+  
+  public function getName()
+  {
+    return $this->name;
+  }
+  
+  public function addTest($file)
+  {
+    $test          = include 'unit_tests/' . $file . '.php';
+    $this->tests[] = &$test;
+  }
+  
+  public function runTests()
+  {
+    $error = null;
+    $total_time = 0;
+    fwrite(STDOUT, PHP_EOL . 'Starting suite: ' . $this->name . ' (' . count($this->tests) . ' tests)' . PHP_EOL);
+    
+    foreach($this->tests as $test)
+    {
+      $start = microtime(true);
+      $name = $test->getName();
+      fwrite(STDOUT, PHP_EOL . '- Starting test: ' . $name . PHP_EOL);
+      
+      try
+      {
+        $test->runTest();
+      }
+      catch(Exception $e)
+      {
+        $error = trim($e->getMessage());
+        fwrite(STDERR, '  - Error: ' . $error . PHP_EOL);
+      }
+      
+      $time = microtime(true) - $start;
+      fwrite(STDOUT, '- Finished test: ' . $name);
+      fwrite(STDOUT, ' [' . number_format($time, 3) . 's]' . PHP_EOL);
+      
+      $total_time += $time;
+    }
+    
+    fwrite(STDOUT, PHP_EOL . 'Finished suite: ' . $this->name);
+    fwrite(STDOUT, ' [' . number_format($total_time, 3) . 's]' . PHP_EOL);
+    exit(empty($error) ? 0 : 1);
+  }
 }
 ?>

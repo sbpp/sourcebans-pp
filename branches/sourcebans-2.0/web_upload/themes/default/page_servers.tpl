@@ -1,12 +1,60 @@
             <h3>{$lang_servers_list}</h3>
             <table class="listtable servers">
               <tr>
-                <th class="nobold icon"><a href="{build_query sort=mod_name}">MOD</a></th>
-                <th class="nobold icon"><a href="{build_query sort=os}">OS</a></th>
-                <th class="nobold icon"><a href="{build_query sort=secure}">VAC</a></th>
-                <th><a href="{build_query sort=hostname}">{$lang_hostname}</a></th>
-                <th class="left info"><a href="{build_query sort=numplayers}">{$lang_players}</a></th>
-                <th class="left info"><a href="{build_query sort=map}">{$lang_map}</a></th>
+                <th class="nobold icon">
+                  {if $sort != "mod_name"}
+                  <a href="{build_query sort=mod_name}">MOD</a>
+                  {elseif $order == "desc"}
+                  <a class="sort_desc" href="{build_query order=asc sort=mod_name}">MOD</a>
+                  {else}
+                  <a class="sort_asc" href="{build_query order=desc sort=mod_name}">MOD</a>
+                  {/if}
+                </th>
+                <th class="nobold icon">
+                  {if $sort != "os"}
+                  <a href="{build_query sort=os}">OS</a>
+                  {elseif $order == "desc"}
+                  <a class="sort_desc" href="{build_query order=asc sort=os}">OS</a>
+                  {else}
+                  <a class="sort_asc" href="{build_query order=desc sort=os}">OS</a>
+                  {/if}
+                </th>
+                <th class="nobold icon">
+                  {if $sort != "secure"}
+                  <a href="{build_query sort=secure}">VAC</a>
+                  {elseif $order == "desc"}
+                  <a class="sort_desc" href="{build_query order=asc sort=secure}">VAC</a>
+                  {else}
+                  <a class="sort_asc" href="{build_query order=desc sort=secure}">VAC</a>
+                  {/if}
+                </th>
+                <th>
+                  {if $sort != "hostname"}
+                  <a href="{build_query sort=hostname}">{$lang_hostname}</a>
+                  {elseif $order == "desc"}
+                  <a class="sort_desc" href="{build_query order=asc sort=hostname}">{$lang_hostname}</a>
+                  {else}
+                  <a class="sort_asc" href="{build_query order=desc sort=hostname}">{$lang_hostname}</a>
+                  {/if}
+                </th>
+                <th class="left info">
+                  {if $sort != "numplayers"}
+                  <a href="{build_query sort=numplayers}">{$lang_players}</a>
+                  {elseif $order == "desc"}
+                  <a class="sort_desc" href="{build_query order=asc sort=numplayers}">{$lang_players}</a>
+                  {else}
+                  <a class="sort_asc" href="{build_query order=desc sort=numplayers}">{$lang_players}</a>
+                  {/if}
+                </th>
+                <th class="left info">
+                  {if $sort != "map"}
+                  <a href="{build_query sort=map}">{$lang_map}</a>
+                  {elseif $order == "desc"}
+                  <a class="sort_desc" href="{build_query order=asc sort=map}">{$lang_map}</a>
+                  {else}
+                  <a class="sort_asc" href="{build_query order=desc sort=map}">{$lang_map}</a>
+                  {/if}
+                </th>
               </tr>
               {foreach from=$servers item=server key=server_id name=server}
               <tr class="opener tbl_out"{if $active != "servers.php"} onclick="window.location = '{build_url _=servers.php}#^{$smarty.foreach.server.index}';"{/if}>

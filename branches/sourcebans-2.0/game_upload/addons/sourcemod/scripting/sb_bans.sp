@@ -102,7 +102,7 @@ public OnPluginStart()
 	}
 	
 	// Create local bans table
-	SQL_FastQuery(g_hSQLiteDB, "CREATE TABLE IF NOT EXISTS sb_bans (type INTEGER, steam TEXT PRIMARY KEY ON CONFLICT REPLACE, ip TEXT, name TEXT, created INTEGER, ends INTEGER, reason TEXT, admin_id TEXT, admin_ip TEXT, queued BOOLEAN, time INTEGER)");
+	SQL_FastQuery(g_hSQLiteDB, "CREATE TABLE IF NOT EXISTS sb_bans (type INTEGER, steam TEXT PRIMARY KEY ON CONFLICT REPLACE, ip TEXT, name TEXT, reason TEXT, length INTEGER, admin_id INTEGER, admin_ip TEXT, queued BOOLEAN, time INTEGER, insert_time INTEGER)");
 	
 	// Process temporary bans every minute
 	CreateTimer(60.0, Timer_ProcessTemp);
@@ -222,7 +222,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 		sAdminIp = g_sServerIp;
 	if(!g_hDatabase)
 	{
-		InsertLocalBan(iType, sAuth, sIp, sName, GetTime(), time, reason, iAdminId, sAdminIp, true);
+		InsertLocalBan(iType, sAuth, sIp, sName, reason, time, iAdminId, sAdminIp, GetTime(), true);
 		return Plugin_Handled;
 	}
 	if(time)
@@ -275,9 +275,9 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 	if(!g_hDatabase)
 	{
 		if(bSteam)
-			InsertLocalBan(STEAM_BAN_TYPE, identity, "", "", GetTime(), time, reason, iAdminId, sAdminIp, true);
+			InsertLocalBan(STEAM_BAN_TYPE, identity, "", "", reason, time, iAdminId, sAdminIp, GetTime(), true);
 		else
-			InsertLocalBan(IP_BAN_TYPE,    "", identity, "", GetTime(), time, reason, iAdminId, sAdminIp, true);
+			InsertLocalBan(IP_BAN_TYPE,    "", identity, "", reason, time, iAdminId, sAdminIp, GetTime(), true);
 		return Plugin_Handled;
 	}
 	
@@ -620,13 +620,13 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 	if(!g_hSQLiteDB)
 		return;
 	
-	new Handle:hQuery = SQL_Query(g_hSQLiteDB, "SELECT type, steam, ip, name, created, ends, reason, admin_id, admin_ip \
+	new Handle:hQuery = SQL_Query(g_hSQLiteDB, "SELECT type, steam, ip, name, reason, length, admin_id, admin_ip, time \
 																							FROM   sb_bans \
 																							WHERE  queued = 1");
 	if(!hQuery)
 		return;
 	
-	decl iAdminId, iCreated, iEnds, iType, String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1],
+	decl iAdminId, iTime, iLength, iType, String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1],
 			 String:sEscapedReason[256], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[768], String:sReason[128];
 	while(SQL_FetchRow(hQuery))
 	{
@@ -634,15 +634,15 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		SQL_FetchString(hQuery, 1, sAuth,    sizeof(sAuth));
 		SQL_FetchString(hQuery, 2, sIp,      sizeof(sIp));
 		SQL_FetchString(hQuery, 3, sName,    sizeof(sName));
-		iCreated = SQL_FetchInt(hQuery, 4);
-		iEnds    = SQL_FetchInt(hQuery, 5);
-		SQL_FetchString(hQuery, 6, sReason,  sizeof(sReason));
-		iAdminId = SQL_FetchInt(hQuery, 7);
-		SQL_FetchString(hQuery, 8, sAdminIp, sizeof(sAdminIp));
+		SQL_FetchString(hQuery, 4, sReason,  sizeof(sReason));
+		iLength  = SQL_FetchInt(hQuery, 5);
+		iAdminId = SQL_FetchInt(hQuery, 6);
+		SQL_FetchString(hQuery, 7, sAdminIp, sizeof(sAdminIp));
+		iTime    = SQL_FetchInt(hQuery, 8);
 		SQL_EscapeString(g_hSQLiteDB, sName,   sEscapedName,   sizeof(sEscapedName));
 		SQL_EscapeString(g_hSQLiteDB, sReason, sEscapedReason, sizeof(sEscapedReason));
 		
-		if(iEnds <= GetTime())
+		if(iTime + iLength * 60 <= GetTime())
 		{
 			DeleteLocalBan(iType == STEAM_BAN_TYPE ? sAuth : sIp);
 			continue;
@@ -653,7 +653,7 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		
 		Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, ip, name, reason, length, server_id, admin_id, admin_ip, time) \
 																		VALUES      (%i, NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, %i, NULLIF(%i, 0), '%s', %i)",
-																		g_sDatabasePrefix, iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength, g_iServerId, iAdminId, sAdminIp, iCreated);
+																		g_sDatabasePrefix, iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength, g_iServerId, iAdminId, sAdminIp, iTime);
 		SQL_TQuery(g_hDatabase, Query_AddedFromQueue, sQuery, hPack);
 	}
 }
@@ -666,7 +666,7 @@ public Action:Timer_ProcessTemp(Handle:timer)
 	// Delete temporary bans that expired or were added over 5 minutes ago
 	decl String:sQuery[128];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
-																	WHERE       (ends <= %i OR time + 300 > %i) \
+																	WHERE       (time + length * 60 <= %i OR insert_time + 300 > %i) \
 																		AND       queued = 0",
 																	GetTime(), GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
@@ -776,7 +776,7 @@ public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp,   sizeof(sAdminIp));
 	
-	InsertLocalBan(STEAM_BAN_TYPE, sAuth, sIp, sName, GetTime(), iLength, sReason, iAdminId, sAdminIp, !!error[0]);
+	InsertLocalBan(STEAM_BAN_TYPE, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the ban into the database: %s", error);
@@ -830,7 +830,7 @@ public Query_BanIpInsert(Handle:owner, Handle:hndl, const String:error[], any:pa
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	
-	InsertLocalBan(IP_BAN_TYPE, "", sIp, "", GetTime(), iLength, sReason, iAdminId, sAdminIp, !!error[0]);
+	InsertLocalBan(IP_BAN_TYPE, "", sIp, "", sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the IP ban into the database: %s", error);
@@ -884,7 +884,7 @@ public Query_AddBanInsert(Handle:owner, Handle:hndl, const String:error[], any:p
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	
-	InsertLocalBan(STEAM_BAN_TYPE, sAuth, "", "", GetTime(), iLength, sReason, iAdminId, sAdminIp, !!error[0]);
+	InsertLocalBan(STEAM_BAN_TYPE, sAuth, "", "", sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the ID ban into the database: %s", error);
@@ -1004,7 +1004,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:clie
 	PrintToConsole(client, "%sYou can protest your ban at %s.",  SB_PREFIX, g_sWebsite);
 	PrintToConsole(client, "===============================================");
 	
-	InsertLocalBan(iType, sAuth, sIp, sName, iCreated, iLength, sReason, iAdminId, sAdminIp);
+	InsertLocalBan(iType, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, iTime);
 	KickClient(client, "%t", "Banned Check Site", g_sWebsite);
 }
 
@@ -1092,23 +1092,23 @@ bool:HasLocalBan(const String:sIdentity[])
 	Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																	FROM   sb_bans \
 																	WHERE  (steam = '%s' OR ip = '%s') \
-																		AND  ends        > %i \
-																		AND  time + 300 <= %i",
+																		AND  time + length * 60 > %i \
+																		AND  insert_time + 300 <= %i",
 																	sIdentity, sIdentity, GetTime(), GetTime());
 	
 	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
 	return hQuery && SQL_FetchRow(hQuery);
 }
 
-InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sName[], iCreated, iLength, const String:sReason[], iAdminId, const String:sAdminIp[], bool:bQueued = false)
+InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sName[], const String:sReason[], iLength, iAdminId, const String:sAdminIp[], iTime, bool:bQueued = false)
 {
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[512];
 	SQL_EscapeString(g_hSQLiteDB, sName,   sEscapedName,   sizeof(sEscapedName));
 	SQL_EscapeString(g_hSQLiteDB, sReason, sEscapedReason, sizeof(sEscapedReason));
 	
-	Format(sQuery, sizeof(sQuery), "INSERT INTO sb_bans (type, steam, ip, name, created, ends, reason, admin_id, admin_ip, queued, time) \
-																	VALUES      (%i, '%s', '%s', '%s', %i, %i, '%s', '%s', '%s', %i, %i)", 
-																	iType, sAuth, sIp, sEscapedName, iCreated, iCreated + iLength * 60, sEscapedReason, iAdminId, sAdminIp, bQueued ? 1 : 0, GetTime());
+	Format(sQuery, sizeof(sQuery), "INSERT INTO sb_bans (type, steam, ip, name, reason, length, admin_id, admin_ip, queued, time, insert_time) \
+																	VALUES      (%i, '%s', '%s', '%s', '%s', %i, %i, '%s', %i, %i, %i)",
+																	iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength, iAdminId, sAdminIp, bQueued ? 1 : 0, iTime, GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
 }
 

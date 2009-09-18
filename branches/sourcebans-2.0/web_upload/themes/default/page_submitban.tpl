@@ -48,8 +48,8 @@
               </div>
               <p>Note: Only DEM, <a href="http://www.rarlab.com">RAR</a> or <a href="http://www.winzip.com">ZIP</a> allowed.</p>
               <span class="mandatory">*</span> = {$lang_mandatory}
-              <input class="btn ok" type="button" {nid id="submit_submission"} value="{$lang_submit}" />
+              <input class="btn ok" type="submit" value="{$lang_submit}" />
             </fieldset>
-            <h4>What happens if someone gets banned?</h4>
-            <p>If someone gets banned, the specific Steam ID will be included in this SourceBans database and everytime this player tries to connect to one of our servers he/she will be blocked and will receive a message that they are blocked by SourceBans.</p>
           </form>
+          <h4>What happens if someone gets banned?</h4>
+          <p>If someone gets banned, the specific Steam ID will be included in this SourceBans database and everytime this player tries to connect to one of our servers he/she will be blocked and will receive a message that they are blocked by SourceBans.</p>

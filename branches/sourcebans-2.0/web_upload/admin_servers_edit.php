@@ -17,10 +17,10 @@ try
   {
     try
     {
-      ServersWriter::edit($_POST['id'], $_POST['name'], $_POST['icon'], $_POST['folder'], isset($_POST['enabled']), $_POST['groups']);
+      ServersWriter::edit($_POST['id'], $_POST['ip'], $_POST['port'], $_POST['rcon'] == 'xxxxxxxxxx' ? null : $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => 'admins_servers.php'
       )));
     }
     catch(Exception $e)
@@ -36,7 +36,7 @@ try
   $servers_reader      = new ServersReader();
   
   $groups_reader->type = SERVER_GROUPS;
-  $server_groups       = $groups_reader->executeCached(ONE_MINUTE  * 5);
+  $groups              = $groups_reader->executeCached(ONE_MINUTE  * 5);
   $mods                = $mods_reader->executeCached(ONE_DAY);
   $servers             = $servers_reader->executeCached(ONE_MINUTE * 5);
   
@@ -51,8 +51,8 @@ try
   $page->assign('server_mod',     $server['mod_id']);
   $page->assign('server_enabled', $server['enabled']);
   $page->assign('server_groups',  $server['groups']);
+  $page->assign('groups',         $groups);
   $page->assign('mods',           $mods);
-  $page->assign('server_groups',  $server_groups);
   $page->display('page_admin_servers_edit');
 }
 catch(Exception $e)

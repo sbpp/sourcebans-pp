@@ -23,6 +23,6 @@ catch(Exception $e)
   $page    = new Page($phrases['error']);
   
   $page->assign('error', $e->getMessage());
-  $page->display('page_error.tpl');
+  $page->display('page_error');
 }
 ?>

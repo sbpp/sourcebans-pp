@@ -3,8 +3,6 @@ require_once READER;
 
 class ModsReader extends SBReader
 {
-  public $sort = 'name';
-  
   public function prepare()
   {  }
   
@@ -15,7 +13,7 @@ class ModsReader extends SBReader
     // Fetch mods
     $mods = $db->GetAssoc('SELECT   id, name, folder, icon, enabled
                            FROM     ' . Env::get('prefix') . '_mods
-                           ORDER BY ' . $this->sort);
+                           ORDER BY name');
     
     list($mods) = SBPlugins::call('OnGetMods', $mods);
     

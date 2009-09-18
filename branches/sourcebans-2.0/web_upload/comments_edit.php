@@ -54,7 +54,7 @@ try
   $comment         = $comments[$_GET['id']];
   
   $page->assign('comment_message', $comment['message']);
-  $page->assign('comment_type',    $comments[$id]['type']);
+  $page->assign('comment_type',    $comment['type']);
   $page->assign('comments',        $comments);
   $page->display('page_comments_edit');
 }

@@ -188,9 +188,33 @@
               <table width="99%" cellspacing="0" cellpadding="0" align="center">
                 <tr>
                   <th class="icon"><input {nid id="admins_select"} type="checkbox" value="-1" /></th>
-                  <th><a href="{build_query sort=name}">{$lang_name}</a></th>
-                  <th width="30%"><a href="{build_query sort=srv_groups}">{$lang_server_group}</a></th>
-                  <th width="30%"><a href="{build_query sort=web_group}">{$lang_web_group}</a></th>
+                  <th>
+                    {if $sort != "name"}
+                    <a href="{build_query sort=name}">{$lang_name}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=name}">{$lang_name}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=name}">{$lang_name}</a>
+                    {/if}
+                  </th>
+                  <th width="30%">
+                    {if $sort != "srv_groups"}
+                    <a href="{build_query sort=srv_groups}">{$lang_server_groups}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=srv_groups}">{$lang_server_groups}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=srv_groups}">{$lang_server_groups}</a>
+                    {/if}
+                  </th>
+                  <th width="30%">
+                    {if $sort != "web_group"}
+                    <a href="{build_query sort=web_group}">{$lang_web_group}</a>
+                    {elseif $order == "desc"}
+                    <a class="sort_desc" href="{build_query order=asc sort=web_group}">{$lang_web_group}</a>
+                    {else}
+                    <a class="sort_asc" href="{build_query order=desc sort=web_group}">{$lang_web_group}</a>
+                    {/if}
+                  </th>
                 </tr>
                 {foreach from=$admins item=admin key=admin_id}
                 <tr class="opener tbl_out">

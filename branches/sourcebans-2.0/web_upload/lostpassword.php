@@ -66,7 +66,7 @@ try
                     SET    password = ?,
                            validate = NULL
                     WHERE  email    = ?',
-                    array(CUserManager::encrypt_password($password), $_POST['email']));
+                    array($userbank->encrypt_password($password), $_POST['email']));
       
       $page->assign('password', $password);
       

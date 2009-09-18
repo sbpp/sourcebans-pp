@@ -45,7 +45,7 @@ try
       GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => 'admin_groups.php'
       )));
     }
     catch(Exception $e)
@@ -67,8 +67,6 @@ try
     throw new Exception('Invalid ID specified.');
   
   $group               = $groups[$_GET['id']];
-  
-  $page->assign('group_name', $group['name']);
   
   switch($groups_reader->type)
   {
@@ -181,6 +179,7 @@ try
       $page->assign('group_permission_owner',            $permission_owner);
   }
   
+  $page->assign('group_name', $group['name']);
   $page->display('page_admin_groups_edit');
 }
 catch(Exception $e)

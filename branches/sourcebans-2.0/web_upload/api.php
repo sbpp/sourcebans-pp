@@ -60,9 +60,9 @@ class SB_API
    * @param  integer $web_group    The web admin group of the admin
    * @return The id of the added admin
    */
-  public static function addAdmin($name, $auth, $identity, $email, $password, $srv_password = false, $srv_groups = array(), $web_group = null)
+  public static function addAdmin($name, $auth, $identity, $email = '', $password = '', $srv_password = false, $srv_groups = array(), $web_group = null)
   {
-    return AdminsWriter::add($name, $steam, $email, $password, $srv_password, $srv_groups, $web_group);
+    return AdminsWriter::add($name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group);
   }
   
   
@@ -92,7 +92,7 @@ class SB_API
    * @param string  $theme        The theme setting of the admin
    * @param string  $language     The language setting of the admin
    */
-  public static function editAdmin($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language)
+  public static function editAdmin($id, $name = null, $auth = null, $identity = null, $email = null, $password = null, $srv_password = null, $srv_groups = null, $web_group = null, $theme = null, $language = null)
   {
     AdminsWriter::edit($id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language);
   }
@@ -179,7 +179,7 @@ class SB_API
     $admins_reader->type   = $type;
     $admins                = $admins_reader->executeCached(ONE_MINUTE * 5);
     
-    return $bans;
+    return $admins;
   }
   
   
@@ -190,14 +190,14 @@ class SB_API
    * @param  string  $steam  The Steam ID of the banned player
    * @param  string  $ip     The IP address of the banned player
    * @param  string  $name   The name of the banned player
-   * @param  integer $length The length of the admin in minutes
    * @param  string  $reason The reason of the ban
+   * @param  integer $length The length of the ban in minutes
    * @param  integer $server The server id on which the ban was performed, or 0 for a web ban
    * @return The id of the added ban
    */
-  public static function addBan($type, $steam, $ip, $name, $length, $reason, $server = 0)
+  public static function addBan($type, $steam, $ip, $name, $reason, $length, $server = 0)
   {
-    return BansWriter::add($type, $steam, $ip, $name, $length, $reason, $server);
+    return BansWriter::add($type, $steam, $ip, $name, $reason, $length, $server);
   }
   
   
@@ -220,12 +220,12 @@ class SB_API
    * @param string  $steam  The Steam ID of the banned player
    * @param string  $ip     The IP address of the banned player
    * @param string  $name   The name of the banned player
-   * @param integer $length The length of the ban in minutes
    * @param string  $reason The reason of the ban
+   * @param integer $length The length of the ban in minutes
    */
-  public static function editBan($id, $type, $steam, $ip, $name, $length, $reason)
+  public static function editBan($id, $type = null, $steam = null, $ip = null, $name = null, $reason = null, $length = null)
   {
-    BansWriter::edit($id, $type, $steam, $ip, $name, $length, $reason);
+    BansWriter::edit($id, $type, $steam, $ip, $name, $reason, $length);
   }
   
   
@@ -461,7 +461,7 @@ class SB_API
    * @param integer $immunity  The immunity level of the group
    * @param array   $overrides The overrides of the group
    */
-  public static function editGroup($id, $type, $name, $flags, $immunity, $overrides)
+  public static function editGroup($id, $type, $name = null, $flags = null, $immunity = null, $overrides = null)
   {
     GroupsWriter::edit($id, $type, $name, $flags, $immunity, $overrides);
   }
@@ -487,16 +487,13 @@ class SB_API
   /**
    * Returns a list of groups
    *
-   * @param integer $limit The amount of groups to return per page, or 0 for all the groups
-   * @param integer $page  The page to return
+   * @param integer $type The type of the groups (SERVER_GROUPS, WEB_GROUPS)
    */
-  public static function getGroups($type, $limit = 0, $page = 1)
+  public static function getGroups($type)
   {
-    $groups_reader        = new GroupsReader();
-    $groups_reader->limit = $limit;
-    $groups_reader->page  = $page;
-    $groups_reader->type  = $type;
-    $groups               = $groups_reader->executeCached(ONE_MINUTE * 5);
+    $groups_reader       = new GroupsReader();
+    $groups_reader->type = $type;
+    $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
     
     return $groups;
   }
@@ -605,7 +602,7 @@ class SB_API
    * @param string  $icon    The icon of the mod
    * @param bool    $enabled Whether or not the mod is enabled
    */
-  public static function editMod($id, $name, $folder, $icon, $enabled)
+  public static function editMod($id, $name = null, $folder = null, $icon = null, $enabled = null)
   {
     ModsWriter::edit($id, $name, $folder, $icon, $enabled);
   }
@@ -769,16 +766,17 @@ class SB_API
   /**
    * Adds a server
    *
-   * @param  string  $ip     The IP address of the server
-   * @param  integer $port   The port number of the server
-   * @param  string  $rcon   The RCON password of the server
-   * @param  integer $mod    The id of the server mod
-   * @param  array   $groups The list of server groups to add the server to
+   * @param  string  $ip      The IP address of the server
+   * @param  integer $port    The port number of the server
+   * @param  string  $rcon    The RCON password of the server
+   * @param  integer $mod     The id of the server mod
+   * @param  bool    $enabled Whether or not the server is enabled
+   * @param  array   $groups  The list of server groups to add the server to
    * @return The id of the added server
    */
-  public static function addServer($ip, $port, $rcon, $mod, $groups = array())
+  public static function addServer($ip, $port, $rcon, $mod, $enabled = true, $groups = array())
   {
-    return ServersWriter::add($ip, $port, $rcon, $mod, $groups);
+    return ServersWriter::add($ip, $port, $rcon, $mod, $enabled, $groups);
   }
   
   
@@ -796,16 +794,17 @@ class SB_API
   /**
    * Edits a server
    *
-   * @param integer $id     The id of the server to edit
-   * @param string  $ip     The IP address of the server
-   * @param integer $port   The port number of the server
-   * @param string  $rcon   The RCON password of the server
-   * @param integer $mod    The id of the server mod
-   * @param array   $groups The list of servers groups to add the server to
+   * @param integer $id      The id of the server to edit
+   * @param string  $ip      The IP address of the server
+   * @param integer $port    The port number of the server
+   * @param string  $rcon    The RCON password of the server
+   * @param integer $mod     The id of the server mod
+   * @param bool    $enabled Whether or not the server is enabled
+   * @param array   $groups  The list of servers groups to add the server to
    */
-  public static function editServer($id, $ip, $port, $rcon, $mod, $groups)
+  public static function editServer($id, $ip = null, $port = null, $rcon = null, $mod = null, $enabled = null, $groups = null)
   {
-    ServersWriter::edit($id, $ip, $port, $rcon, $mod, $groups);
+    ServersWriter::edit($id, $ip, $port, $rcon, $mod, $enabled, $groups);
   }
   
   
@@ -991,7 +990,7 @@ class SB_API
    * @param  integer $server   The server id on which the player was playing
    * @return The id of the added submission
    */
-  public static function addSubmission($steam, $ip, $name, $reason, $subname, $subemail, $server)
+  public static function addSubmission($steam, $ip, $name, $reason, $subname, $subemail, $server = 0)
   {
     return SubmissionsWriter::add($steam, $ip, $name, $reason, $subname, $subemail, $server);
   }
@@ -1011,11 +1010,12 @@ class SB_API
   /**
    * Bans a submission
    *
-   * @param integer $id The id of the submission to ban
+   * @param  integer $id The id of the submission to ban
+   * @return The id of the added ban
    */
   public static function banSubmission($id)
   {
-    SubmissionsWriter::ban($id);
+    return SubmissionsWriter::ban($id);
   }
   
   

@@ -99,14 +99,16 @@ class BansReader extends SBReader
                                           76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                     AS block_count,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id    AND type = "B")   AS demo_count
+                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id    AND type = ?)     AS demo_count
                                 FROM      ' . Env::get('prefix') . '_bans    AS ba
                                 LEFT JOIN ' . Env::get('prefix') . '_admins  AS ad ON ad.id = ba.admin_id
                                 LEFT JOIN ' . Env::get('prefix') . '_admins  AS un ON un.id = ba.unban_admin_id
                                 LEFT JOIN ' . Env::get('prefix') . '_servers AS se ON se.id = ba.server_id
                                 LEFT JOIN ' . Env::get('prefix') . '_mods    AS mo ON mo.id = se.mod_id
-                                WHERE     ' . $where             . ' ORDER BY ba.id DESC' .
-                                ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+                                WHERE     ' . $where             . '
+                                ORDER BY  ' . $this->sort        . ' ' . $this->order .
+                                ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
+                                array(BAN_TYPE));    
     
     // Process bans
     foreach($ban_list as $id => &$ban)
@@ -139,13 +141,6 @@ class BansReader extends SBReader
       // Format additional ban information
       $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length'] * 60) : $phrases['permanent']);
     }
-    
-    if ('DESC' == strtoupper($this->order))
-      $order = SORT_DESC;
-    else
-      $order = SORT_ASC;
-    
-    Util::array_qsort(&$ban_list, $this->sort, $order);
     
     geoip_close($geoip);
     

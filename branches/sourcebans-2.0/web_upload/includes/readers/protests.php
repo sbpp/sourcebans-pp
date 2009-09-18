@@ -33,10 +33,10 @@ class ProtestsReader extends SBReader
     foreach($protests as $id => &$protest)
     {
       // Fetch comments for this protest
-      $comments_reader        = new CommentsReader();
-      $comments_reader->bid   = $id;
-      $comments_reader->type  = PROTEST_TYPE;
-      $protest['comments']    = $comments_reader->executeCached(ONE_DAY);
+      $comments_reader         = new CommentsReader();
+      $comments_reader->ban_id = $id;
+      $comments_reader->type   = PROTEST_TYPE;
+      $protest['comments']     = $comments_reader->executeCached(ONE_DAY);
     }
     
     list($protests) = SBPlugins::call('OnGetProtests', $protests);

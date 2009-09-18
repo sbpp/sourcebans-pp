@@ -11,8 +11,8 @@ class OverridesReader extends SBReader
     $db        = Env::get('db');
     
     // Fetch overrides
-    $overrides = $db->GetAssoc('SELECT type, name, flags
-                                FROM   ' . Env::get('prefix') . '_overrides');
+    $overrides = $db->GetAll('SELECT type, name, flags
+                              FROM   ' . Env::get('prefix') . '_overrides');
     
     list($overrides) = SBPlugins::call('OnGetOverrides', $overrides);
     
