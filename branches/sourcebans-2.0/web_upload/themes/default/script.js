@@ -181,6 +181,25 @@ function kickPlayer(res)
   ShowBox('ok', 'Kicked ' + res.name + '.', 'Successfully kicked ' + res.name + '.', 'Ok', '', function() { $('dialog').fade('out'); });
 }
 
+function setSelectTheme(res)
+{
+  if(res.error)
+  {
+    ShowBox('error', res.error, 'Ok', '', function(){ $('dialog').fade('out'); });
+    return;
+  }
+  
+  $('theme_author').set('text',  res.author);
+  $('theme_link').set('text',    res.link);
+  $('theme_name').set('text',    res.name);
+  $('theme_version').set('text', res.version);
+  $('current-theme-screenshot').set({
+    'alt': res.name,
+    'src': 'themes/' + res.theme + '/screenshot.jpg',
+    'title': res.name
+  });
+}
+
 function setServerAdmins(res)
 {
   if(!res.admins.length)
@@ -440,7 +459,7 @@ window.addEvent('domready', function() {
   $$('.select_theme').each(function(el) {
     el.addEvent('click', function(e) {
       e.stop();
-      x_SelectTheme(this.get('rel'));
+      x_SelectTheme(this.get('rel'), setSelectTheme);
     });
   });
   $$('.tbl_out').each(function(el) {
@@ -599,7 +618,7 @@ window.addEvent('domready', function() {
       }.bind(this));
     });
   }
-  if($chk($('rcon')))
+  if($chk($('rcon')) && $chk($('rcon_confirm')))
   {
     MarkPasswordField($('rcon'));
     MarkPasswordField($('rcon_confirm'));

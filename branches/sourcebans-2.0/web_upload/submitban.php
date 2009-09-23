@@ -6,7 +6,7 @@ require_once WRITERS_DIR . 'demos.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
-$page    = new Page(ucwords($phrases['submit_ban']));
+$page    = new Page(ucwords($phrases['submit_ban']), !isset($_GET['nofullpage']));
 
 try
 {
@@ -35,7 +35,8 @@ try
   }
   
   $servers_reader = new ServersReader();
-  $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
+  
+  $servers        = $servers_reader->executeCached(ONE_MINUTE);
   
   $page->assign('servers', $servers);
   $page->display('page_submitban');

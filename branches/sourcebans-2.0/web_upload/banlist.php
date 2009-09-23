@@ -7,7 +7,7 @@ require_once READERS_DIR . 'servers.php';
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['ban_list']));
+$page     = new Page(ucwords($phrases['ban_list']), !isset($_GET['nofullpage']));
 
 try
 {
@@ -20,20 +20,20 @@ try
   
   if(isset($_GET['hideinactive']))
     $bans_reader->hideinactive = true;
+  if(isset($_GET['order']) && is_string($_GET['order']))
+    $bans_reader->order  = ($_GET['order'] == 'desc' ? SORT_DESC : SORT_ASC);
   if(isset($_GET['page'])  && is_numeric($_GET['page']) && $_GET['page'] > 1)
     $bans_reader->page   = $_GET['page'];
   if(isset($_GET['search']))
     $bans_reader->search = $_GET['search'];
   if(isset($_GET['sort'])  && is_string($_GET['sort']))
     $bans_reader->sort   = $_GET['sort'];
-  if(isset($_GET['order']) && is_string($_GET['order']))
-    $bans_reader->order  = strtoupper($_GET['order']);
   if(isset($_GET['type']))
     $bans_reader->type   = $_GET['type'];
   
-  $admins             = $admins_reader->executeCached(ONE_MINUTE  * 5);
-  $bans               = $bans_reader->executeCached(ONE_MINUTE    * 5);
-  $servers            = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $admins             = $admins_reader->executeCached(ONE_MINUTE * 5);
+  $bans               = $bans_reader->executeCached(ONE_MINUTE   * 5);
+  $servers            = $servers_reader->executeCached(ONE_MINUTE);
   
   $bans_start         = ($bans_reader->page - 1) * $limit;
   $bans_end           = $bans_start              + $limit;
@@ -59,7 +59,7 @@ try
   $page->assign('bans',                        $bans['list']);
   $page->assign('servers',                     $servers);
   $page->assign('end',                         $bans_end);
-  $page->assign('order',                       strtolower($bans_reader->order));
+  $page->assign('order',                       $bans_reader->order == SORT_DESC ? 'desc' : 'asc');
   $page->assign('sort',                        $bans_reader->sort);
   $page->assign('start',                       $bans_start);
   $page->assign('total',                       $bans['count']);

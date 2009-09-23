@@ -4,7 +4,7 @@ require_once READERS_DIR . 'admins.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page('Server Admins');
+$page     = new Page(ucwords($phrases['server_admins']), !isset($_GET['nofullpage']));
 
 try
 {
@@ -18,8 +18,7 @@ try
   $admins_reader->server_id = $_GET['id'];
   $admins                   = $admins_reader->executeCached(ONE_MINUTE * 5);
   
-  $page->assign('admins',      $admins);
-  $page->assign('admin_count', count($admins));
+  $page->assign('admins', $admins);
   $page->display('page_admin_servers_admins');
 }
 catch(Exception $e)

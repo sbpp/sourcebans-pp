@@ -4,7 +4,7 @@ require_once 'init.php';
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['your_account']));
+$page     = new Page(ucwords($phrases['your_account']), !isset($_GET['nofullpage']));
 
 try
 {

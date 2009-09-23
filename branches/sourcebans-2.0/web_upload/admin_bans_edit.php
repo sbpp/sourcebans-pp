@@ -5,7 +5,7 @@ require_once WRITERS_DIR . 'bans.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['edit_ban']));
+$page     = new Page(ucwords($phrases['edit_ban']), !isset($_GET['nofullpage']));
 
 try
 {

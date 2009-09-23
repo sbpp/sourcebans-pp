@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'mods.php';
-require_once READERS_DIR . 'counts.php';
 
 class ModsWriter
 {
@@ -10,10 +9,9 @@ class ModsWriter
    * @param  string $name    The name of the mod
    * @param  string $folder  The folder of the mod
    * @param  string $icon    The icon of the mod
-   * @param  bool   $enabled Whether or not the mod is enabled
    * @return The id of the added mod
    */
-  public static function add($name, $folder, $icon, $enabled = true)
+  public static function add($name, $folder, $icon)
   {
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
@@ -25,18 +23,15 @@ class ModsWriter
     if(empty($icon)   || !is_string($icon))
       throw new Exception('Invalid icon filename supplied.');
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_mods (name, folder, icon, enabled)
-                  VALUES      (?, ?, ?, ?)',
-                  array($name, $folder, $icon, $enabled ? 1 : 0));
+    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_mods (name, folder, icon)
+                  VALUES      (?, ?, ?)',
+                  array($name, $folder, $icon));
     
     $id            = $db->Insert_ID();
     $mods_reader   = new ModsReader();
     $mods_reader->removeCacheFile();
     
-    $counts_reader = new CountsReader();
-    $counts_reader->removeCacheFile();
-    
-    SBPlugins::call('OnAddMod', $id, $name, $folder, $icon, $enabled);
+    SBPlugins::call('OnAddMod', $id, $name, $folder, $icon);
     
     return $id;
   }
@@ -52,7 +47,7 @@ class ModsWriter
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
     
-    if(empty($id)     || !is_numeric($id))
+    if(empty($id) || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_mods
@@ -61,9 +56,6 @@ class ModsWriter
     
     $mods_reader   = new ModsReader();
     $mods_reader->removeCacheFile();
-    
-    $counts_reader = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteMod', $id);
   }
@@ -76,9 +68,8 @@ class ModsWriter
    * @param string  $name    The name of the mod
    * @param string  $folder  The folder of the mod
    * @param string  $icon    The icon of the mod
-   * @param bool    $enabled Whether or not the mod is enabled
    */
-  public static function edit($id, $name = null, $folder = null, $icon = null, $enabled = null)
+  public static function edit($id, $name = null, $folder = null, $icon = null)
   {
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
@@ -87,21 +78,19 @@ class ModsWriter
     
     if(empty($id)         || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
-    if(!is_null($name)    && is_string($name))
-      $mod['name']    = $name;
-    if(!is_null($folder)  && is_string($folder))
-      $mod['folder']  = $folder;
-    if(!is_null($icon)    && is_string($icon))
-      $mod['icon']    = $icon;
-    if(!is_null($enabled) && is_bool($enabled))
-      $mod['enabled'] = $enabled ? 1 : 0;
+    if(!is_null($name)   && is_string($name))
+      $mod['name']   = $name;
+    if(!is_null($folder) && is_string($folder))
+      $mod['folder'] = $folder;
+    if(!is_null($icon)   && is_string($icon))
+      $mod['icon']   = $icon;
     
     $db->AutoExecute(Env::get('prefix') . '_mods', $mod, 'UPDATE', 'id = ' . $id);
     
     $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();
     
-    SBPlugins::call('OnEditMod', $id, $name, $folder, $icon, $enabled);
+    SBPlugins::call('OnEditMod', $id, $name, $folder, $icon);
   }
 }
 ?>

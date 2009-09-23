@@ -12,7 +12,7 @@ require_once WRITERS_DIR . 'overrides.php';
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page($phrases['admins']);
+$page     = new Page($phrases['admins'], !isset($_GET['nofullpage']));
 
 try
 {
@@ -64,6 +64,8 @@ try
   $limit                = 25;
   $admins_reader->limit = $limit;
   
+  if(isset($_GET['order']) && is_string($_GET['order']))
+    $admins_reader->order  = ($_GET['order'] == 'desc' ? SORT_DESC : SORT_ASC);
   if(isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 1)
     $admins_reader->page   = $_GET['page'];
   if(isset($_GET['search']))
@@ -77,7 +79,7 @@ try
   $admins               = $admins_reader->executeCached(ONE_MINUTE    * 5);
   $counts               = $counts_reader->executeCached(ONE_MINUTE    * 5);
   $overrides            = $overrides_reader->executeCached(ONE_MINUTE * 5);
-  $servers              = $servers_reader->executeCached(ONE_MINUTE   * 5);
+  $servers              = $servers_reader->executeCached(ONE_MINUTE);
   
   $groups_reader->type  = SERVER_GROUPS;
   $server_groups        = $groups_reader->executeCached(ONE_MINUTE    * 5);

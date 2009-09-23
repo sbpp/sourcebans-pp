@@ -3,7 +3,7 @@ require_once 'init.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page('Email');
+$page     = new Page($phrases['email'], !isset($_GET['nofullpage']));
 
 try
 {

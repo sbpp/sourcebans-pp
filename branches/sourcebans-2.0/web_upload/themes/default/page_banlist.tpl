@@ -301,9 +301,8 @@
                                 <td align="right"><strong>{$comment.time|date_format:$date_format}</strong></td>
                                 {if $edit_comments || $comment.admin_id == $smarty.cookies.sb_admin_id}
                                 <td align="right">
-                                  {$comment.editcomlink}
-                                  <a href="comments_edit.php?id={$comment_id}" class="tips" title="<img src='images/edit.gif' border='0' alt='' style='vertical-align:middle' /> :: Edit Comment"><img src='images/edit.gif' border='0' alt='' style='vertical-align:middle' /></a>
-                                  <a href="#" class="tips" title="<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment" onclick="DeleteComment('{$comment_id}', 'B', '-1');"><img src="images/delete.gif" alt="Delete Comment" style="vertical-align: middle" /></a>
+                                  <a href="{build_url _=comments_edit.php id=$comment_id}" class="tips" title="<img src='images/edit.gif' alt='' style='vertical-align:middle' /> :: {$lang_edit_comment|ucwords}"><img src='images/edit.gif' alt='' style='vertical-align:middle' /></a>
+                                  <a href="#" class="tips" title="<img src='images/delete.gif' alt='' style='vertical-align:middle' /> :: {$lang_delete_comment|ucwords}" onclick="DeleteComment('{$comment_id}', '{$smarty.const.BAN_TYPE}', '-1');"><img src="images/delete.gif" alt="{$lang_delete_comment|ucwords}" style="vertical-align: middle" /></a>
                                 </td>
                                 {/if}
                               </tr>

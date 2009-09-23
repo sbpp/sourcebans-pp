@@ -18,7 +18,7 @@
           <div id="admin-page-content">
             {if $permission_list_mods}
             <div id="pane-list">
-              <h3>{$lang_mods} ({$mod_count})</h3>
+              <h3>{$lang_mods} (<span id="mod_count">{$mods|@count}</span>)</h3>
               <table width="100%" cellpadding="1">
                 <tr>
                   <th>{$lang_name}</td>

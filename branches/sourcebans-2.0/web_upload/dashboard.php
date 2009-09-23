@@ -7,7 +7,7 @@ require_once READERS_DIR . 'servers.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
-$page    = new Page(ucwords($phrases['dashboard']));
+$page    = new Page($phrases['dashboard'], !isset($_GET['nofullpage']));
 
 try
 {
@@ -19,20 +19,13 @@ try
   $bans_reader->limit   = 10;
   $blocks_reader->limit = 10;
   
-  $bans                 = $bans_reader->executeCached(ONE_MINUTE    * 5);
-  $blocks               = $blocks_reader->executeCached(ONE_MINUTE  * 5);
-  $counts               = $counts_reader->executeCached(ONE_MINUTE  * 5);
-  $servers              = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $bans                 = $bans_reader->executeCached(ONE_MINUTE   * 5);
+  $blocks               = $blocks_reader->executeCached(ONE_MINUTE * 5);
+  $counts               = $counts_reader->executeCached(ONE_MINUTE * 5);
+  $servers              = $servers_reader->executeCached(ONE_MINUTE);
   
-  if(isset($_GET['sort'])  && is_string($_GET['sort']))
-    $sort  = $_GET['sort'];
-  else
-    $sort  = 'mod_name';
-  
-  if(isset($_GET['order']) && is_string($_GET['order']))
-    $order = $_GET['order'];
-  else
-    $order = SORT_ASC;
+  $order                = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
+  $sort                 = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'mod_name';
   
   Util::array_qsort($servers, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC);
   

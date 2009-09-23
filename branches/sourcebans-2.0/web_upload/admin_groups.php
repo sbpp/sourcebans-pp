@@ -6,7 +6,7 @@ require_once READERS_DIR . 'permissions.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page($phrases['groups']);
+$page     = new Page($phrases['groups'], !isset($_GET['nofullpage']));
 
 try
 {
@@ -139,9 +139,7 @@ try
   $page->assign('permission_edit_groups',   $userbank->HasAccess(array('OWNER', 'EDIT_GROUPS')));
   $page->assign('permission_import_groups', $userbank->HasAccess(array('OWNER', 'IMPORT_GROUPS')));
   $page->assign('permission_list_groups',   $userbank->HasAccess(array('OWNER', 'LIST_GROUPS')));
-  $page->assign('server_group_count',       count($server_groups));
   $page->assign('server_groups',            $server_groups);
-  $page->assign('web_group_count',          count($web_groups));
   $page->assign('web_groups',               $web_groups);
   $page->display('page_admin_groups');
 }

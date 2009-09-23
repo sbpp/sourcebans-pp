@@ -6,7 +6,7 @@ $db       = Env::get('db');
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page('Lost Password');
+$page     = new Page('Lost Password', !isset($_GET['nofullpage']));
 
 try
 {

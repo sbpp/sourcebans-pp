@@ -7,7 +7,7 @@ require_once WRITERS_DIR . 'servers.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['edit_server']));
+$page     = new Page(ucwords($phrases['edit_server']), !isset($_GET['nofullpage']));
 
 try
 {
@@ -36,9 +36,9 @@ try
   $servers_reader      = new ServersReader();
   
   $groups_reader->type = SERVER_GROUPS;
-  $groups              = $groups_reader->executeCached(ONE_MINUTE  * 5);
+  $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
   $mods                = $mods_reader->executeCached(ONE_DAY);
-  $servers             = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $servers             = $servers_reader->executeCached(ONE_MINUTE);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($servers[$_GET['id']]))
     throw new Exception('Invalid ID specified.');

@@ -3,7 +3,7 @@ require_once 'init.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page('Database Config');
+$page     = new Page('Database Config', !isset($_GET['nofullpage']));
 
 try
 {

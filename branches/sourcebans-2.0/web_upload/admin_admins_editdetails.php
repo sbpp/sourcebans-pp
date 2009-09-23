@@ -5,7 +5,7 @@ require_once WRITERS_DIR . 'admins.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['edit_details']));
+$page     = new Page(ucwords($phrases['edit_details']), !isset($_GET['nofullpage']));
 
 try
 {

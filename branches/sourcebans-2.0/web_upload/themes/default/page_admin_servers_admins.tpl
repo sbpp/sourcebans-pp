@@ -11,7 +11,7 @@
             </div>
           </div>
           <div id="admin-page-content">
-            <h3>Admins on this server ({$admin_count})</h3>
+            <h3>Admins on this server ({$admins|@count})</h3>
             <table cellpadding="1" cellspacing="1" id="server_admins_{$smarty.get.id}" width="100%">
               <tr>
                 <th width="50%">{$lang_name}</th>

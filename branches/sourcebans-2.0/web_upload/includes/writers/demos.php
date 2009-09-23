@@ -65,7 +65,7 @@ class DemosWriter
     if(empty($demo))
       throw new Exception('Invalid ID supplied.');
     
-    unlink(DEMOS_DIR . $demo['type'] . $demo['ban_id'] . '_' . $demo['filename']));
+    unlink(DEMOS_DIR . $demo['type'] . $demo['ban_id'] . '_' . $demo['filename']);
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_demos
                   WHERE       id = ?',

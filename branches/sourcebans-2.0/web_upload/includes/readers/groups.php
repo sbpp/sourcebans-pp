@@ -31,9 +31,9 @@ class GroupsReader extends SBReader
         
         break;
       case WEB_GROUPS:
-        $groups = $db->GetAssoc('SELECT    wg.id, wg.name, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS flags,
-                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_admins WHERE group_id = wg.id) AS admin_count
+        $groups = $db->GetAssoc('SELECT    wg.id, wg.name, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS flags, COUNT(ad.id) AS admin_count
                                  FROM      ' . Env::get('prefix') . '_groups             AS wg
+                                 LEFT JOIN ' . Env::get('prefix') . '_admins             AS ad ON ad.group_id = wg.id
                                  LEFT JOIN ' . Env::get('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
                                  LEFT JOIN ' . Env::get('prefix') . '_permissions        AS pe ON pe.id       = gp.permission_id
                                  GROUP BY  id

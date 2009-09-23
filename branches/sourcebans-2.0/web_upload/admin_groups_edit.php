@@ -5,7 +5,7 @@ require_once WRITERS_DIR . 'groups.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['edit_group']));
+$page     = new Page(ucwords($phrases['edit_group']), !isset($_GET['nofullpage']));
 
 try
 {
@@ -56,7 +56,7 @@ try
     }
   }
   
-  if(!isset($_GET['type']) || !in_array($_GET['type'], array(SERVER_GROUPS, WEB_GROUPS)))
+  if(!isset($_GET['type']))
     throw new Exception('Invalid group type specified.');
   
   $groups_reader       = new GroupsReader();
@@ -68,7 +68,7 @@ try
   
   $group               = $groups[$_GET['id']];
   
-  switch($groups_reader->type)
+  switch($_GET['type'])
   {
     case SERVER_GROUPS:
       $flags           = $group['flags'];

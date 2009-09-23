@@ -4,7 +4,7 @@ require_once READERS_DIR . 'counts.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page($phrases['administration']);
+$page     = new Page($phrases['administration'], !isset($_GET['nofullpage']));
 
 try
 {

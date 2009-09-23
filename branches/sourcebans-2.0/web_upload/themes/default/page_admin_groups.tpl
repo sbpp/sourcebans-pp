@@ -29,7 +29,7 @@
                     <table width="100%" cellpadding="0" cellspacing="0" class="front-module-header">
                       <tr>
                         <td>{$lang_server_groups}</td>
-                        <td class="right">{$lang_total}: {$server_group_count}</td>
+                        <td class="right">{$lang_total}: <span id="server_group_count">{$server_groups|@count}</span></td>
                       </tr>
                     </table>
                   </td>
@@ -147,7 +147,7 @@
                     <table width="100%" cellpadding="0" cellspacing="0" class="front-module-header">
                       <tr>
                         <td>{$lang_web_groups}</td>
-                        <td class="right">{$lang_total}: {$web_group_count}</td>
+                        <td class="right">{$lang_total}: <span id="web_group_count">{$web_groups|@count}</span></td>
                       </tr>
                     </table>
                   </td>

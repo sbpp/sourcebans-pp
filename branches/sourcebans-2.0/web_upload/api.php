@@ -573,12 +573,11 @@ class SB_API
    * @param  string $name    The name of the mod
    * @param  string $folder  The folder of the mod
    * @param  string $icon    The icon of the mod
-   * @param  bool   $enabled Whether or not the mod is enabled
    * @return The id of the added mod
    */
-  public static function addMod($name, $folder, $icon, $enabled = true)
+  public static function addMod($name, $folder, $icon)
   {
-    return ModsWriter::add($name, $folder, $icon, $enabled);
+    return ModsWriter::add($name, $folder, $icon);
   }
   
   
@@ -600,11 +599,10 @@ class SB_API
    * @param string  $name    The name of the mod
    * @param string  $folder  The folder of the mod
    * @param string  $icon    The icon of the mod
-   * @param bool    $enabled Whether or not the mod is enabled
    */
-  public static function editMod($id, $name = null, $folder = null, $icon = null, $enabled = null)
+  public static function editMod($id, $name = null, $folder = null, $icon = null)
   {
-    ModsWriter::edit($id, $name, $folder, $icon, $enabled);
+    ModsWriter::edit($id, $name, $folder, $icon);
   }
   
   
@@ -896,7 +894,7 @@ class SB_API
   public static function getServers()
   {
     $servers_reader = new ServersReader();
-    $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
+    $servers        = $servers_reader->executeCached(ONE_MINUTE);
     
     return $servers;
   }

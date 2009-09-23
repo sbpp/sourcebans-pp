@@ -7,8 +7,9 @@ class SubmissionsReader extends SBReader
 {
   public $archive = false;
   public $limit   = 0;
+  public $order   = SORT_DESC;
   public $page    = 1;
-  public $sort    = 'time DESC';
+  public $sort    = 'time';
   
   public function prepare()
   {  }
@@ -21,7 +22,7 @@ class SubmissionsReader extends SBReader
     $submissions = $db->GetAssoc('SELECT   id, name, steam, ip, reason, server_id, subname, subemail, subip, time
                                   FROM     ' . Env::get('prefix') . '_submissions
                                   WHERE    archived = ?
-                                  ORDER BY ' . $this->sort        .
+                                  ORDER BY ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                   ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                   array($this->archive ? 1 : 0));
     

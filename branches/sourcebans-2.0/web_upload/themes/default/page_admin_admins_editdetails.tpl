@@ -21,7 +21,7 @@
                 <option{if $admin_type == $smarty.const.IP_AUTH_TYPE} selected="selected"{/if} value="{$smarty.const.IP_AUTH_TYPE}">{$lang_ip_address}</option>
                 <option{if $admin_type == $smarty.const.NAME_AUTH_TYPE} selected="selected"{/if} value="{$smarty.const.NAME_AUTH_TYPE}">{$lang_name}</option>
               </select>
-              <label for="steam">{help_icon title="Steam ID" desc="This is the admin's Steam ID. This must be set so that admins can use their admin rights ingame."}Steam ID</label>
+              <label for="steam">{help_icon title="$lang_identity" desc="This is the admin's Steam ID. This must be set so that admins can use their admin rights ingame."}{$lang_identity}</label>
               <input class="submit-fields" {nid id="identity"} value="{$admin_identity}" />
               <label for="email">{help_icon title="$lang_email_address" desc="Set the admin's e-mail address. This will be used for sending out any automated messages from the system, and for use when you forget your password."}{$lang_email_address}</label>
               <input class="submit-fields" {nid id="email"} value="{$admin_email}" />

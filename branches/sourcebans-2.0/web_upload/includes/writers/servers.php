@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'servers.php';
-require_once READERS_DIR . 'counts.php';
 
 class ServersWriter
 {
@@ -45,9 +44,6 @@ class ServersWriter
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
     
-    $counts_reader  = new CountsReader();
-    $counts_reader->removeCacheFile();
-    
     SBPlugins::call('OnAddServer', $id, $ip, $port, $rcon, $mod, $groups);
     
     return $id;
@@ -75,9 +71,6 @@ class ServersWriter
     
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
-    
-    $counts_reader  = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteServer', $id);
   }

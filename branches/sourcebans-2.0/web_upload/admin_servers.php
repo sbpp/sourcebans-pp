@@ -1,6 +1,5 @@
 <?php
 require_once 'init.php';
-require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'groups.php';
 require_once READERS_DIR . 'mods.php';
 require_once READERS_DIR . 'servers.php';
@@ -8,7 +7,7 @@ require_once WRITERS_DIR . 'servers.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page($phrases['servers']);
+$page     = new Page($phrases['servers'], !isset($_GET['nofullpage']));
 
 try
 {
@@ -50,16 +49,14 @@ try
     }
   }
   
-  $counts_reader       = new CountsReader();
   $groups_reader       = new GroupsReader();
   $mods_reader         = new ModsReader();
   $servers_reader      = new ServersReader();
   
   $groups_reader->type = SERVER_GROUPS;
-  $counts              = $counts_reader->executeCached(ONE_MINUTE  * 5);
-  $groups              = $groups_reader->executeCached(ONE_MINUTE  * 5);
+  $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
   $mods                = $mods_reader->executeCached(ONE_DAY);
-  $servers             = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $servers             = $servers_reader->executeCached(ONE_MINUTE);
   
   $page->assign('permission_config',         $userbank->HasAccess(array('OWNER')));
   $page->assign('permission_rcon',           $userbank->HasAccess(SM_RCON . SM_ROOT));
@@ -71,7 +68,6 @@ try
   $page->assign('server_groups',             $groups);
   $page->assign('mods',                      $mods);
   $page->assign('servers',                   $servers);
-  $page->assign('server_count',              $counts['servers']);
   $page->display('page_admin_servers');
 }
 catch(Exception $e)

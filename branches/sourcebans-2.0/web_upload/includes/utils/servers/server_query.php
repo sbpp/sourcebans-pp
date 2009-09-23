@@ -114,13 +114,12 @@ class CServerQuery
       $player = array('index' => $this->_getbyte(),
                       'name'  => $this->_getnullstr(),
                       'score' => $this->_getlong(),
-                      'time'  => Util::SecondsToString((int)$this->_getfloat(), true));
+                      'time'  => (int)$this->_getfloat());
       
       if(!empty($player['name']))
         $players[] = $player;
     }
     
-    Util::array_qsort($players, 'score', SORT_DESC);
     return $players;
   }
   

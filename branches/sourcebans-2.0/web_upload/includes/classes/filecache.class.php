@@ -273,8 +273,9 @@ class SBFileCache extends SBCache
     //if(strlen($key) > $this->max_key_length)
     //  throw new SteambansCachingException('The key is too large to be deleted by the SBFileCache');
     
-    $cachefiles = dir(substr($this->tmp_dir, 0, strlen($this->tmp_dir)-1));
-    while(false !== ($file_name = $cachefiles->read())) {
+    $cachefiles = dir(substr($this->tmp_dir, 0, -1));
+    while(($file_name = $cachefiles->read()) !== false)
+    {
       // Ignore dirs
       if(!is_file($cachefiles->path . '/' . $file_name))
         continue;
@@ -286,6 +287,7 @@ class SBFileCache extends SBCache
         @unlink($cachefiles->path . '/' . $file_name);
       }
     }
+    $cachefiles->close();
   }
   
   /**

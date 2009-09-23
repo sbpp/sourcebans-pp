@@ -25,10 +25,8 @@ if($_SERVER['REQUEST_METHOD'] == 'POST')
     )));
   }
 }
-else
-{
-  $phrases = Env::get('phrases');
-  $page    = new Page(ucwords($phrases['login']));
-  $page->display('page_login');
-}
+
+$phrases = Env::get('phrases');
+$page    = new Page($phrases['login'], !isset($_GET['nofullpage']));
+$page->display('page_login');
 ?>

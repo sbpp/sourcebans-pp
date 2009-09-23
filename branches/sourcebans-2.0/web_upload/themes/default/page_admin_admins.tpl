@@ -28,7 +28,7 @@
             {if $permission_list_admins}
             <div id="pane-list">
               <h3>{$lang_admins} (<span id="admins_count">{$total}</span>)</h3>
-              Click on an admin to see more detailed information and actions to perform on them.<br /><br />
+              <p>Click on an admin to see more detailed information and actions to perform on them.</p>
               <div align="center">
                 <table class="listtable" cellpadding="0" cellspacing="0" width="80%">
                   <tr class="sea_open">
@@ -231,7 +231,7 @@
                 </tr>
                 <tr>
                   <td colspan="4">
-                    <div class="opener" align="center" border="1">
+                    <div class="opener" align="center">
                       <table width="100%" cellspacing="0" cellpadding="3" bgcolor="#eaebeb">
                         <tr>
                           <td width="35%" class="front-module-line"><strong>{$lang_server_permissions}</strong></td>
@@ -470,7 +470,7 @@
                   <span class="mandatory">*</span>
                 </div>
                 <div>
-                  <label for="identity">{help_icon title="Identity" desc="This is the admin's identity. This must be set so that admins can use their admin rights ingame."}Identity</label>
+                  <label for="identity">{help_icon title="$lang_identity" desc="This is the admin's identity. This must be set so that admins can use their admin rights ingame."}{$lang_identity}</label>
                   <input class="submit-fields" {nid id="identity"} value="STEAM_" />
                   <span class="mandatory">*</span>
                 </div>

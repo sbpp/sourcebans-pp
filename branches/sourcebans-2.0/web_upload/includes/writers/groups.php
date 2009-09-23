@@ -55,8 +55,8 @@ class GroupsWriter
         throw new Exception('Invalid group type specified.');
     }
     
-    $groups_reader      = new GroupsReader();
-    $group_reader->type = $type;
+    $groups_reader       = new GroupsReader();
+    $groups_reader->type = $type;
     $groups_reader->removeCacheFile();
     
     SBPlugins::call('OnAddGroup', $id, $type, $name, $flags, $immunity, $overrides);
@@ -100,8 +100,8 @@ class GroupsWriter
         throw new Exception('Invalid group type specified.');
     }
     
-    $groups_reader      = new GroupsReader();
-    $group_reader->type = $type;
+    $groups_reader       = new GroupsReader();
+    $groups_reader->type = $type;
     $groups_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteGroup', $id, $type);
@@ -118,7 +118,7 @@ class GroupsWriter
    * @param integer $immunity  The immunity level of the group
    * @param array   $overrides The overrides of the group
    */
-  public static function edit($id, $type = null, $name = null, $flags = null, $immunity = null, $overrides = null)
+  public static function edit($id, $type, $name = null, $flags = null, $immunity = null, $overrides = null)
   {
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
@@ -173,8 +173,8 @@ class GroupsWriter
         throw new Exception('Invalid group type specified.');
     }
     
-    $groups_reader      = new GroupsReader();
-    $group_reader->type = $type;
+    $groups_reader       = new GroupsReader();
+    $groups_reader->type = $type;
     $groups_reader->removeCacheFile();
     
     SBPlugins::call('OnEditGroup', $id, $type, $name, $flags, $immunity, $overrides);

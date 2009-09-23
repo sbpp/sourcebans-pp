@@ -8,7 +8,7 @@ require_once WRITERS_DIR . 'demos.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page($phrases['bans']);
+$page     = new Page($phrases['bans'], !isset($_GET['nofullpage']));
 
 try
 {

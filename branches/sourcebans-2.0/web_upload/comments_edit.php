@@ -5,7 +5,7 @@ require_once WRITERS_DIR . 'comments.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page('Edit Comment');
+$page     = new Page(ucwords($phrases['edit_comment']), !isset($_GET['nofullpage']));
 
 try
 {

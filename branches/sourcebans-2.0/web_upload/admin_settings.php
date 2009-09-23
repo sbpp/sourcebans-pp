@@ -8,7 +8,7 @@ require_once WRITERS_DIR . 'settings.php';
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['settings']));
+$page     = new Page($phrases['settings'], !isset($_GET['nofullpage']));
 
 try
 {
@@ -143,6 +143,7 @@ try
   $page->assign('config_dash_text',      $config['dash.intro.text']);
   $page->assign('config_dash_title',     $config['dash.intro.title']);
   $page->assign('config_dateformat',     $config['config.dateformat']);
+  $page->assign('config_language',       $config['config.language']);
   $page->assign('config_logo',           $config['template.logo']);
   $page->assign('config_min_password',   $config['config.password.minlength']);
   $page->assign('config_smtp_host',      $config['email.host']);

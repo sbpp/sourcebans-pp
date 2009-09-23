@@ -4,25 +4,21 @@ require_once READERS_DIR . 'servers.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
-$page    = new Page(ucwords($phrases['servers']));
+$page    = new Page($phrases['servers'], !isset($_GET['nofullpage']));
 
 try
 {
   $servers_reader = new ServersReader();
   
-  $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $servers        = $servers_reader->executeCached(ONE_MINUTE);
   
-  if(isset($_GET['sort'])  && is_string($_GET['sort']))
-    $sort  = $_GET['sort'];
-  else
-    $sort  = 'mod_name';
-  
-  if(isset($_GET['order']) && is_string($_GET['order']))
-    $order = $_GET['order'];
-  else
-    $order = SORT_ASC;
+  $order          = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
+  $sort           = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'mod_name';
   
   Util::array_qsort($servers, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC);
+  
+  foreach($servers as &$server)
+    Util::array_qsort($server['players'], 'score', SORT_DESC);
   
   $page->assign('servers', $servers);
   $page->assign('order',   $order);

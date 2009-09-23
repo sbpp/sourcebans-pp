@@ -6,8 +6,9 @@ class ProtestsReader extends SBReader
 {
   public $archive = false;
   public $limit   = 0;
+  public $order   = SORT_DESC;
   public $page    = 1;
-  public $sort    = 'time DESC';
+  public $sort    = 'time';
   
   public function prepare()
   {  }
@@ -25,7 +26,7 @@ class ProtestsReader extends SBReader
                                LEFT JOIN ' . Env::get('prefix') . '_admins   AS ad ON ad.id = ba.admin_id
                                LEFT JOIN ' . Env::get('prefix') . '_servers  AS se ON se.id = ba.server_id
                                WHERE     archived = ?
-                               ORDER BY  ' . $this->sort        .
+                               ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                array($this->archive ? 1 : 0));
     

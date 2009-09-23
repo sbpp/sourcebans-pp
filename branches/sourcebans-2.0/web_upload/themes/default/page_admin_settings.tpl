@@ -28,10 +28,10 @@
                   <a href="http://www.php.net/strftime">See: PHP strftime()</a>
                 </div>
                 <div>
-                  <label for="language">{help_icon title="$lang_language" desc="Choose your language here."}{$lang_language}</label>
+                  <label for="language">{help_icon title="$lang_language" desc="$lang_language_desc"}{$lang_language}</label>
                   <select class="submit-fields" {nid id="language"}>
                     {foreach from=$languages item=language}
-                    <option{if $language.code == $user_language} selected="selected"{/if} value="{$language.code}">{$language.name}</option>
+                    <option{if $language.code == $config_language} selected="selected"{/if} value="{$language.code}">{$language.name}</option>
                     {/foreach}
                   </select>
                 </div>
@@ -50,7 +50,7 @@
                     <option value="-3.5"{if $config_timezone == -3.5} selected="selected"{/if}>(GMT -3:30) Newfoundland</option>
                     <option value="-3"{if $config_timezone == -3} selected="selected"{/if}>(GMT -3:00) Brazil, Buenos Aires, Georgetown</option>
                     <option value="-2"{if $config_timezone == -2} selected="selected"{/if}>(GMT -2:00) Mid-Atlantic</option>
-                    <option value="-1"{if $config_timezone == -1} selected="selected"{/if}>(GMT -1:00 hour) Azores, Cape Verde Islands</option>
+                    <option value="-1"{if $config_timezone == -1} selected="selected"{/if}>(GMT -1:00 {$lang_hour}) Azores, Cape Verde Islands</option>
                     <option value="0"{if !$config_timezone} selected="selected"{/if}>(GMT) Western Europe Time, London, Lisbon, Casablanca</option>
                     <option value="1"{if $config_timezone == 1} selected="selected"{/if}>(GMT +1:00) Brussels, Copenhagen, Madrid, Paris</option>
                     <option value="2"{if $config_timezone == 2} selected="selected"{/if}>(GMT +2:00) Kaliningrad, South Africa</option>
@@ -196,7 +196,7 @@
             <div id="pane-themes">
               <h3>{$lang_themes}</h3>
               <div id="current-theme-holder">
-                <h4 class="largetitle">Selected Theme: <span id="theme.name">{$theme_name}</span></h4>
+                <h4 class="largetitle">Selected Theme: <span id="theme_name">{$theme_name}</span></h4>
                 <img alt="{$theme_name}" id="current-theme-screenshot" src="themes/{$theme_dir}/screenshot.jpg" title="{$theme_name}" />
                 <div id="current-theme-details">
                   <p>
@@ -211,7 +211,7 @@
                     <strong>{$lang_link}:</strong>
                     <br /><a href="{$theme_link}" id="theme_link">{$theme_link}</a>
                   </p>
-                  <input class="btn flRight ok" {nid id="theme_apply"} type="button" value="Apply Theme" />
+                  <input class="btn flRight ok" id="apply_theme" type="button" value="Apply Theme" />
                 </div>
               </div>
               <br />
@@ -230,7 +230,7 @@
               <div align="center">
                 <table width="80%" cellpadding="0" class="listtable" cellspacing="0">
                   <tr class="sea_open">
-                    <th colspan="3"><strong>{$lang_advanced_search}</strong> ({$lang_click})</th>
+                    <th colspan="3">{$lang_advanced_search} <span class="normal">({$lang_click})</span></th>
                   </tr>
                   <tr>
                     <td>
@@ -241,7 +241,7 @@
                             <td class="listtable_1" width="26%">{$lang_admin}</td>
                             <td class="listtable_1" width="66%">
                               <select id="admin" onmouseup="$('admin_').checked = true" class="sea_inputbox" style="width: 251px;">
-                                <option value="0">Guest</option>
+                                <option value="0">{$lang_guest}</option>
                                 {foreach from=$admins item=admin key=admin_id}
                                 <option value="{$admin_id}">{$admin.name}</option>
                                 {/foreach}

@@ -426,6 +426,8 @@
               </table>
               {/if}
               <div class="center">
+                <input name="id" type="hidden" value="{$smarty.get.id}" />
+                <input name="type" type="hidden" value="{$smarty.get.type}" />
                 <input class="btn ok" type="submit" value="{$lang_save}" />
                 <input class="back btn cancel" type="button" value="{$lang_back}" />
               </div>

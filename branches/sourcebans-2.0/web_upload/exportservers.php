@@ -10,7 +10,7 @@ if($userbank->HasAccess(SM_RCON . SM_ROOT))
   
   $servers_reader = new ServersReader();
   
-  $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
+  $servers        = $servers_reader->executeCached(ONE_MINUTE);
   
   header('Content-Type: application/x-httpd-php php');
   header('Content-Disposition: attachment; filename="sourcebans.sslf"');

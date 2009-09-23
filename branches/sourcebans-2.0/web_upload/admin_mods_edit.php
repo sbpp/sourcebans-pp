@@ -5,7 +5,7 @@ require_once WRITERS_DIR . 'mods.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
-$page     = new Page(ucwords($phrases['edit_mod']));
+$page     = new Page(ucwords($phrases['edit_mod']), !isset($_GET['nofullpage']));
 
 try
 {
@@ -15,7 +15,7 @@ try
   {
     try
     {
-      ModsWriter::edit($_POST['id'], $_POST['name'], $_POST['folder'], $_POST['icon'], isset($_POST['enabled']));
+      ModsWriter::edit($_POST['id'], $_POST['name'], $_POST['folder'], $_POST['icon']);
       
       exit(json_encode(array(
         'redirect' => 'admin_mods.php'
@@ -37,10 +37,9 @@ try
   
   $mod         = $mods[$_GET['id']];
   
-  $page->assign('mod_name',    $mod['name']);
-  $page->assign('mod_folder',  $mod['folder']);
-  $page->assign('mod_icon',    $mod['icon']);
-  $page->assign('mod_enabled', $mod['enabled']);
+  $page->assign('mod_name',   $mod['name']);
+  $page->assign('mod_folder', $mod['folder']);
+  $page->assign('mod_icon',   $mod['icon']);
   $page->display('page_admin_mods_edit');
 }
 catch(Exception $e)

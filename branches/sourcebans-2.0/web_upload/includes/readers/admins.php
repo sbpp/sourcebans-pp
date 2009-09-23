@@ -4,6 +4,7 @@ require_once READER;
 class AdminsReader extends SBReader
 {
   public $limit     = 0;
+  public $order     = SORT_ASC;
   public $page      = 1;
   public $server_id = 0;
   public $sort      = 'name';
@@ -34,8 +35,8 @@ class AdminsReader extends SBReader
                              LEFT JOIN ' . Env::get('prefix') . '_servers_srvgroups  AS gs ON gs.group_id = ag.group_id
                              LEFT JOIN ' . Env::get('prefix') . '_srvgroups          AS sg ON sg.id       = ag.group_id
                              WHERE     ' . $where             . '
-                             GROUP BY  id, name, auth, identity, password, group_id, email, language, theme, srv_password, validate, lastvisit, web_group
-                             ORDER BY  ' . $this->sort        .
+                             GROUP BY  id
+                             ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                              ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     // Process admins

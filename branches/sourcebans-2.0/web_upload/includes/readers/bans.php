@@ -2,16 +2,15 @@
 require_once READER;
 require_once READERS_DIR . 'comments.php';
 require_once READERS_DIR . 'demos.php';
-require_once LIB_DIR     . 'geoip/geoip.inc.php';
 
 class BansReader extends SBReader
 {
   public $hideinactive = false;
   public $limit        = 0;
+  public $order        = SORT_DESC;
   public $page         = 1;
   public $search;
   public $sort         = 'time';
-  public $order        = 'DESC';
   public $type;
   
   public function prepare()
@@ -23,7 +22,6 @@ class BansReader extends SBReader
     $db      = Env::get('db');
     $phrases = Env::get('phrases');
     
-    $geoip   = geoip_open(LIB_DIR . 'geoip/GeoIP.dat', GEOIP_STANDARD);
     $where   = 1;
     
     // Filter bans
@@ -94,7 +92,7 @@ class BansReader extends SBReader
     $ban_count = $db->GetOne('SELECT COUNT(*)
                               FROM   ' . Env::get('prefix') . '_bans AS ba
                               WHERE  ' . $where);
-    $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.reason, ba.length, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id, ba.unban_reason, ba.unban_time, ba.time,
+    $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.reason, ba.country_code, ba.country_name, ba.length, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id, ba.unban_reason, ba.unban_time, ba.time,
                                           se.ip AS server_ip, se.port AS server_port, IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, mo.name AS mod_name, mo.icon AS mod_icon,
                                           76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
@@ -106,20 +104,13 @@ class BansReader extends SBReader
                                 LEFT JOIN ' . Env::get('prefix') . '_servers AS se ON se.id = ba.server_id
                                 LEFT JOIN ' . Env::get('prefix') . '_mods    AS mo ON mo.id = se.mod_id
                                 WHERE     ' . $where             . '
-                                ORDER BY  ' . $this->sort        . ' ' . $this->order .
+                                ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                 ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
                                 array(BAN_TYPE));    
     
     // Process bans
     foreach($ban_list as $id => &$ban)
     {
-      // If ban contains an IP address, fetch country information
-      if(!empty($ban['ip']))
-      {
-        $ban['country_code'] = geoip_country_code_by_addr($geoip, $ban['ip']);
-        $ban['country_name'] = geoip_country_name_by_addr($geoip, $ban['ip']);
-      }
-      
       // Check if ban has been either unbanned or expired
       if(!empty($ban['unban_admin_id']))
         $ban['status'] = $phrases['unbanned'];
@@ -141,8 +132,6 @@ class BansReader extends SBReader
       // Format additional ban information
       $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length'] * 60) : $phrases['permanent']);
     }
-    
-    geoip_close($geoip);
     
     list($ban_list, $ban_count) = SBPlugins::call('OnGetBans', $ban_list, $ban_count, $this->type, $this->search, $this->hideinactive);
     

@@ -21,7 +21,7 @@
           <div id="admin-page-content">
             {if $permission_list_servers}
             <div id="pane-list">
-              <h3>{$lang_servers} (<span id="srvcount">{$server_count}</span>)</h3>
+              <h3>{$lang_servers} (<span id="server_count">{$servers|@count}</span>)</h3>
               {if $permission_config}
               <p>To view the database config file you need to upload to your game server, click <a href="{build_url _=admin_servers_config.php}">here</a>.</p>
               {/if}

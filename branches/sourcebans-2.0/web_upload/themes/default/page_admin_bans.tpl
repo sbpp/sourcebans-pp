@@ -226,14 +226,14 @@
                             <td class="listtable_1" width="20%">{$lang_comments}</td>
                             <td class="listtable_1" height="60">
                               <table width="100%">
-                                {foreach from=$protest.comments item=comment name=comment}
+                                {foreach from=$protest.comments item=comment key=comment_id name=comment}
                                 <tr>
                                   <td><strong>{$comment.name}</strong></td>
                                   <td align="right"><strong>{$comment.time|date_format:$date_format}</strong></td>
                                   {if $edit_comments || $comment.admin_id == $smarty.cookies.sb_admin_id}
                                   <td align="right">
-                                    {$comment.editcomlink}
-                                    <a href="#" class="tip" title="<img alt='Delete Comment' src='images/delete.gif' style='vertical-align:middle' title='Delete Comment' /> :: Delete Comment" onclick="DeleteComment('{$comment.cid}', 'B', '-1');"><img src="images/delete.gif" alt="Delete Comment" style="vertical-align: middle" /></a>
+                                    <a href="{build_url _=comments_edit.php id=$comment_id}" class="tips" title="<img src='images/edit.gif' alt='' style='vertical-align:middle' /> :: {$lang_edit_comment|ucwords}"><img src='images/edit.gif' alt='' style='vertical-align:middle' /></a>
+                                    <a href="#" class="tip" title="<img alt='' src='images/delete.gif' style='vertical-align:middle' /> :: {$lang_delete_comment|ucwords}" onclick="DeleteComment('{$comment_id}', '{$smarty.const.BAN_TYPE}', '-1');"><img src="images/delete.gif" alt="{$lang_delete_comment|ucwords}" style="vertical-align: middle" /></a>
                                   </td>
                                   {/if}
                                 </tr>
@@ -355,14 +355,14 @@
                             <td class="listtable_1" width="20%">{$lang_comments}</td>
                             <td class="listtable_1" height="60">
                               <table width="100%">
-                                {foreach from=$protest.comments item=comment name=comment}
+                                {foreach from=$protest.comments item=comment key=comment_id name=comment}
                                 <tr>
                                   <td><strong>{$comment.name}</strong></td>
                                   <td align="right"><strong>{$comment.time|date_format:$date_format}</strong></td>
                                   {if $edit_comments || $comment.admin_id == $smarty.cookies.sb_admin_id}
                                   <td align="right">
-                                    {$comment.editcomlink}
-                                    <a href="#" class="tip" title="<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment" onclick="DeleteComment('{$comment.cid}', 'B', '-1');"><img src="images/delete.gif" alt="Delete Comment" style="vertical-align: middle" /></a>
+                                    <a href="{build_url _=comments_edit.php id=$comment_id}" class="tips" title="<img src='images/edit.gif' alt='' style='vertical-align:middle' /> :: {$lang_edit_comment|ucwords}"><img src='images/edit.gif' alt='' style='vertical-align:middle' /></a>
+                                    <a href="#" class="tip" title="<img src='images/delete.gif' alt='' style='vertical-align:middle' /> :: {$lang_delete_comment|ucwords}" onclick="DeleteComment('{$comment_id}', '{$smarty.const.BAN_TYPE}', '-1');"><img src="images/delete.gif" alt="{$lang_delete_comment|ucwords}" style="vertical-align: middle" /></a>
                                   </td>
                                   {/if}
                                 </tr>

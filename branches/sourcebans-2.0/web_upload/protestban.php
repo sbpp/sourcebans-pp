@@ -4,7 +4,7 @@ require_once WRITERS_DIR . 'protests.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
-$page    = new Page(ucwords($phrases['protest_ban']));
+$page    = new Page(ucwords($phrases['protest_ban']), !isset($_GET['nofullpage']));
 
 try
 {
