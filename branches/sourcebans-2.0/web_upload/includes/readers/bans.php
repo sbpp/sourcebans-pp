@@ -92,21 +92,22 @@ class BansReader extends SBReader
     $ban_count = $db->GetOne('SELECT COUNT(*)
                               FROM   ' . Env::get('prefix') . '_bans AS ba
                               WHERE  ' . $where);
-    $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.reason, ba.country_code, ba.country_name, ba.length, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id, ba.unban_reason, ba.unban_time, ba.time,
-                                          se.ip AS server_ip, se.port AS server_port, IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, mo.name AS mod_name, mo.icon AS mod_icon,
-                                          76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
+    $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.reason, ba.length, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id, ba.unban_reason, ba.unban_time, ba.time,
+                                          IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, co.code AS country_code, co.name AS country_name, se.ip AS server_ip, se.port AS server_port,
+                                          mo.name AS mod_name, mo.icon AS mod_icon, 76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                     AS block_count,
                                           (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id    AND type = ?)     AS demo_count
-                                FROM      ' . Env::get('prefix') . '_bans    AS ba
-                                LEFT JOIN ' . Env::get('prefix') . '_admins  AS ad ON ad.id = ba.admin_id
-                                LEFT JOIN ' . Env::get('prefix') . '_admins  AS un ON un.id = ba.unban_admin_id
-                                LEFT JOIN ' . Env::get('prefix') . '_servers AS se ON se.id = ba.server_id
-                                LEFT JOIN ' . Env::get('prefix') . '_mods    AS mo ON mo.id = se.mod_id
+                                FROM      ' . Env::get('prefix') . '_bans      AS ba
+                                LEFT JOIN ' . Env::get('prefix') . '_admins    AS ad ON ad.id = ba.admin_id
+                                LEFT JOIN ' . Env::get('prefix') . '_admins    AS un ON un.id = ba.unban_admin_id
+                                LEFT JOIN ' . Env::get('prefix') . '_countries AS co ON co.ip = ba.ip
+                                LEFT JOIN ' . Env::get('prefix') . '_servers   AS se ON se.id = ba.server_id
+                                LEFT JOIN ' . Env::get('prefix') . '_mods      AS mo ON mo.id = se.mod_id
                                 WHERE     ' . $where             . '
                                 ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                 ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),
-                                array(BAN_TYPE));    
+                                array(BAN_TYPE));
     
     // Process bans
     foreach($ban_list as $id => &$ban)

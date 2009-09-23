@@ -165,6 +165,8 @@ try
   $page->assign('server_groups',             $server_groups);
   $page->assign('web_groups',                $web_groups);
   $page->assign('end',                       $admins_end);
+  $page->assign('order',                     $admins_reader->order == SORT_DESC ? 'desc' : 'asc');
+  $page->assign('sort',                      $admins_reader->sort);
   $page->assign('start',                     $admins_start);
   $page->assign('total',                     $counts['admins']);
   $page->assign('total_pages',               $pages);

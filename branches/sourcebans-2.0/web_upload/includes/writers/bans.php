@@ -1,7 +1,7 @@
 <?php
 require_once READERS_DIR . 'bans.php';
 require_once READERS_DIR . 'counts.php';
-require_once LIB_DIR     . 'geoip/geoip.inc.php';
+require_once WRITERS_DIR . 'countries.php';
 
 class BansWriter
 {
@@ -19,12 +19,9 @@ class BansWriter
    */
   public static function add($type, $steam, $ip, $name, $reason, $length, $server = 0)
   {
-    $db           = Env::get('db');
-    $phrases      = Env::get('phrases');
-    $userbank     = Env::get('userbank');
-    
-    $country_code = null;
-    $country_name = null;
+    $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
     
     if(!is_numeric($type))
       throw new Exception('Invalid ban type supplied.');
@@ -39,19 +36,13 @@ class BansWriter
     if(!is_numeric($length))
       throw new Exception('Invalid ban length supplied.');
     
-    // If ban contains an IP address, fetch country information
+    // If an IP address was supplied, store country information
     if(!empty($ip))
-    {
-      $geoip        = geoip_open(LIB_DIR . 'geoip/GeoIP.dat', GEOIP_STANDARD);
-      $country_code = geoip_country_code_by_addr($geoip, $ip);
-      $country_name = geoip_country_name_by_addr($geoip, $ip);
-      
-      geoip_close($geoip);
-    }
+      CountriesWriter::store($ip);
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_bans (type, steam, ip, name, reason, country_code, country_name, length, server_id, admin_id, admin_ip, time)
-                  VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
-                  array($type, $steam, $ip, $name, $reason, $country_code, $country_name, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
+    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_bans (type, steam, ip, name, reason, length, server_id, admin_id, admin_ip, time)
+                  VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
+                  array($type, $steam, $ip, $name, $reason, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
     $id            = $db->Insert_ID();
     $bans_reader   = new BansReader();
@@ -114,26 +105,22 @@ class BansWriter
     if(empty($id)        || !is_numeric($id))
       throw new Exception('Invalid ID supplied.');
     if(!is_null($type)   && is_numeric($type))
-      $ban['type']         = $type;
+      $ban['type']   = $type;
     if(!is_null($steam)  && preg_match(STEAM_FORMAT, $steam))
-      $ban['steam']        = $steam;
+      $ban['steam']  = $steam;
     if(!is_null($ip)     && preg_match(IP_FORMAT,    $ip))
     {
-      $ban['ip']           = $ip;
+      $ban['ip']     = $ip;
       
-      // Fetch country information
-      $geoip               = geoip_open(LIB_DIR . 'geoip/GeoIP.dat', GEOIP_STANDARD);
-      $ban['country_code'] = geoip_country_code_by_addr($geoip, $ban['ip']);
-      $ban['country_name'] = geoip_country_name_by_addr($geoip, $ban['ip']);
-      
-      geoip_close($geoip);
+      // Store country information
+      CountriesWriter::store($ip);
     }
     if(!is_null($name)   && is_string($name))
-      $ban['name']         = $name;
+      $ban['name']   = $name;
     if(!is_null($reason) && is_string($reason))
-      $ban['reason']       = $reason;
+      $ban['reason'] = $reason;
     if(!is_null($length) && is_numeric($length))
-      $ban['length']       = $length;
+      $ban['length'] = $length;
     
     $db->AutoExecute(Env::get('prefix') . '_bans', $ban, 'UPDATE', 'id = ' . $id);
     

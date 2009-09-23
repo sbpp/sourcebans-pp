@@ -84,6 +84,13 @@ CREATE TABLE sb_comments (
   KEY edit_admin_id (edit_admin_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
+CREATE TABLE sb_countries (
+  ip varchar(15) NOT NULL,
+  code varchar(2) NOT NULL,
+  name varchar(32) NOT NULL,
+  PRIMARY KEY (ip)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
 CREATE TABLE sb_demos (
   id int(10) unsigned NOT NULL auto_increment,
   ban_id mediumint(8) unsigned NOT NULL,
@@ -124,7 +131,6 @@ CREATE TABLE sb_mods (
   name varchar(32) NOT NULL,
   folder varchar(32) NOT NULL,
   icon varchar(32) NOT NULL,
-  enabled tinyint(1) NOT NULL default '1',
   PRIMARY KEY  (id)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
@@ -232,7 +238,7 @@ INSERT INTO sb_mods (name, folder, icon) VALUES
 ('Counter-Strike: Source', 'cstrike', 'csource.png'),
 ('Day of Defeat: Source', 'dod', 'dods.png'),
 ('Dystopia', 'dystopia_v1', 'dys.gif'),
-('Fortress Forever', 'FortressForever', 'hl2-fortressforever.gif'),
+('Fortress Forever', 'FortressForever', 'fortressforever.gif'),
 ('Garry''s Mod', 'garrysmod', 'gmod.png'),
 ('Half-Life 2 Capture the Flag', 'hl2ctf', 'hl2ctf.png'),
 ('Half-Life 2 Deathmatch', 'hl2mp', 'hl2dm.png'),
@@ -241,6 +247,7 @@ INSERT INTO sb_mods (name, folder, icon) VALUES
 ('Left 4 Dead', 'left4dead', 'l4d.png'),
 ('Perfect Dark: Source', 'pdark', 'pdark.gif'),
 ('Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif'),
+('SourceForts', 'sourceforts', 'sourceforts.gif'),
 ('Team Fortress 2', 'tf', 'tf2.gif'),
 ('The Ship', 'ship', 'ship.gif'),
 ('Zombie Panic: Source', 'zps', 'zps.gif');

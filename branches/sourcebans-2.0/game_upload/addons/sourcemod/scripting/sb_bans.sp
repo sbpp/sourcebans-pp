@@ -20,6 +20,7 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 #include <dbi>
+#include <geoip>
 
 #define STEAM_BAN_TYPE		0
 #define IP_BAN_TYPE				1
@@ -249,6 +250,8 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	WritePackString(hPack, reason);
 	WritePackCell(hPack,   iAdminId);
 	WritePackString(hPack, sAdminIp);
+	
+	StoreCountry(sIp);
 	
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[512];
 	SQL_EscapeString(g_hDatabase, sName,  sEscapedName,   sizeof(sEscapedName));
@@ -651,6 +654,9 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		new Handle:hPack = CreateDataPack();
 		WritePackString(hPack, iType == STEAM_BAN_TYPE ? sAuth : sIp);
 		
+		if(sIp[0])
+			StoreCountry(sIp);
+		
 		Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, steam, ip, name, reason, length, server_id, admin_id, admin_ip, time) \
 																		VALUES      (%i, NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, %i, NULLIF(%i, 0), '%s', %i)",
 																		g_sDatabasePrefix, iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength, g_iServerId, iAdminId, sAdminIp, iTime);
@@ -810,6 +816,8 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
 		return;
 	}
+	
+	StoreCountry(sIp);
 	
 	SQL_EscapeString(g_hDatabase, sReason, sEscapedReason, sizeof(sEscapedReason));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_bans (type, ip, reason, length, server_id, admin_id, admin_ip, time) \
@@ -1137,4 +1145,18 @@ SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)
 		iSecs     %= 60;
 		Format(sBuffer, iLength, "%i:%i:%i", iHours, iMins, iSecs);
 	}
+}
+
+StoreCountry(const String:sIp[])
+{
+	decl String:sCode[3], String:sName[33], String:sQuery[256];
+	GeoipCode2(sIp,   sCode);
+	GeoipCountry(sIp, sName, sizeof(sName));
+	
+	Format(sQuery, sizeof(sQuery), "INSERT INTO             %s_countries (ip, code, name) \
+																	VALUES                  ('%s', '%s', '%s') \
+																	ON DUPLICATE KEY UPDATE code = VALUES(code), \
+																													name = VALUES(name)",
+																	g_sDatabasePrefix, sIp, sCode, sName);
+	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
 }

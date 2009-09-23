@@ -121,6 +121,19 @@ CREATE TABLE {prefix}_comments (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table 'sb_countries'
+--
+
+CREATE TABLE sb_countries (
+  ip varchar(15) NOT NULL,
+  code varchar(2) NOT NULL,
+  name varchar(32) NOT NULL,
+  PRIMARY KEY (ip)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table 'sb_demos'
 --
 
@@ -188,7 +201,6 @@ CREATE TABLE {prefix}_mods (
   name varchar(32) NOT NULL,
   folder varchar(32) NOT NULL,
   icon varchar(32) NOT NULL,
-  enabled tinyint(1) NOT NULL default '1',
   PRIMARY KEY  (id)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
 
