@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'admins.php';
-require_once READERS_DIR . 'counts.php';
 
 class AdminsWriter
 {
@@ -24,17 +23,17 @@ class AdminsWriter
     $userbank = Env::get('userbank');
     
     if(empty($name)          || !is_string($name))
-      throw new Exception('Invalid name supplied.');
+      throw new Exception('Invalid name specified.');
     if(empty($auth)          || !is_string($auth))
-      throw new Exception('Invalid authentication type supplied.');
+      throw new Exception('Invalid authentication type specified.');
     if(empty($identity)      || !is_string($identity) ||
        ($auth == STEAM_AUTH_TYPE && !preg_match(STEAM_FORMAT, $identity)) ||
        ($auth == IP_AUTH_TYPE    && !preg_match(IP_FORMAT,    $identity)))
-      throw new Exception('Invalid identity supplied.');
+      throw new Exception('Invalid identity specified.');
     if(!empty($email)        && !preg_match(EMAIL_FORMAT, $email))
-      throw new Exception('Invalid e-mail address supplied.');
+      throw new Exception('Invalid e-mail address specified.');
     if(!is_string($password))
-      throw new Exception('Invalid password supplied.');
+      throw new Exception('Invalid password specified.');
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_admins (name, auth, identity, password, group_id, email, srv_password)
                   VALUES      (?, ?, ?, ?, ?, ?, ?)',
@@ -43,9 +42,6 @@ class AdminsWriter
     $id            = $db->Insert_ID();
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
-    
-    $counts_reader = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     if(is_array($srv_groups) && !empty($srv_groups))
     {
@@ -73,7 +69,7 @@ class AdminsWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     
     $db->Execute('DELETE    ad, ag
                   FROM      ' . Env::get('prefix') . '_admins           AS ad
@@ -83,9 +79,6 @@ class AdminsWriter
     
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
-    
-    $counts_reader = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteAdmin', $id);
   }
@@ -116,7 +109,7 @@ class AdminsWriter
     $admin    = array();
     
     if(empty($id)              || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     if(!is_null($name)         && is_string($name))
       $admin['name']         = $name;
     if(!is_null($auth)         && is_string($auth))
@@ -149,9 +142,6 @@ class AdminsWriter
     }
     
     $db->AutoExecute(Env::get('prefix') . '_admins', $admin, 'UPDATE', 'id = ' . $id);
-    
-    $admins_reader = new AdminsReader();
-    $admins_reader->removeCacheFile();
     
     SBPlugins::call('OnEditAdmin', $id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language);
   }

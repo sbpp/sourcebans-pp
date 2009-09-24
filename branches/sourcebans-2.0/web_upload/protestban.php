@@ -14,7 +14,7 @@ try
   {
     try
     {
-      ProtestsWriter::add($_POST['name'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['reason'], $_POST['email']);
+      ProtestsWriter::add($_POST['name'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['reason'], $_POST['email']);
       
       exit(json_encode(array(
         'redirect' => Env::get('active')

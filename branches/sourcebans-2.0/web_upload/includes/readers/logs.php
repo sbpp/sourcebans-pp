@@ -17,15 +17,18 @@ class LogsReader extends SBReader
     $db     = Env::get('db');
     
     // Fetch logs
-    $logs   = $db->GetAssoc('SELECT    lo.id, lo.type, lo.title, lo.message, lo.function, lo.query, lo.admin_ip, lo.time, ad.name AS admin_name
-                             FROM      ' . Env::get('prefix') . '_log    AS lo
-                             LEFT JOIN ' . Env::get('prefix') . '_admins AS ad ON ad.id = lo.admin_id
-                             ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
-                             ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+    $log_count = $db->GetOne('SELECT COUNT(id)
+                              FROM   ' . Env::get('prefix') . '_log');
+    $log_list  = $db->GetAssoc('SELECT    lo.id, lo.type, lo.title, lo.message, lo.function, lo.query, lo.admin_ip, lo.time, ad.name AS admin_name
+                                FROM      ' . Env::get('prefix') . '_log    AS lo
+                                LEFT JOIN ' . Env::get('prefix') . '_admins AS ad ON ad.id = lo.admin_id
+                                ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
+                                ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    list($logs) = SBPlugins::call('OnGetLogs', $logs);
+    list($log_list, $log_count) = SBPlugins::call('OnGetLogs', $log_list, $log_count);
     
-    return $logs;
+    return array('count' => $log_count,
+                 'list'  => $log_list);
   }
 }
 ?>

@@ -15,7 +15,7 @@ try
   {
     try
     {
-      BansWriter::edit($_POST['id'], $_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
+      BansWriter::edit($_POST['id'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
       
       // If one or more demos were uploaded, add them
       foreach($_FILES['demo'] as $demo)

@@ -2,7 +2,6 @@
 require_once 'init.php';
 require_once READERS_DIR . 'actions.php';
 require_once READERS_DIR . 'admins.php';
-require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'groups.php';
 require_once READERS_DIR . 'overrides.php';
 require_once READERS_DIR . 'servers.php';
@@ -30,7 +29,7 @@ try
           if($_POST['password'] != $_POST['password_confirm'])
             throw new Exception('The passwords don\'t match.');
           
-          AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
+          AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
           break;
         case 'import':
           if(!$userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS')))
@@ -56,7 +55,6 @@ try
   
   $actions_reader       = new ActionsReader();
   $admins_reader        = new AdminsReader();
-  $counts_reader        = new CountsReader();
   $groups_reader        = new GroupsReader();
   $overrides_reader     = new OverridesReader();
   $servers_reader       = new ServersReader();
@@ -77,7 +75,6 @@ try
   
   $actions              = $actions_reader->executeCached(ONE_MINUTE   * 5);
   $admins               = $admins_reader->executeCached(ONE_MINUTE    * 5);
-  $counts               = $counts_reader->executeCached(ONE_MINUTE    * 5);
   $overrides            = $overrides_reader->executeCached(ONE_MINUTE * 5);
   $servers              = $servers_reader->executeCached(ONE_MINUTE);
   
@@ -89,9 +86,9 @@ try
   
   $admins_start         = ($admins_reader->page - 1) * $limit;
   $admins_end           = $admins_start              + $limit;
-  $pages                = ceil($counts['admins']     / $limit);
-  if($admins_end > $counts['admins'])
-    $admins_end = $counts['admins'];
+  $pages                = ceil($admins['count']      / $limit);
+  if($admins_end > $admins['count'])
+    $admins_end = $admins['count'];
   
   foreach($admins as $id => &$admin)
   {
@@ -158,8 +155,8 @@ try
   $page->assign('permission_import_admins',  $userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS')));
   $page->assign('permission_list_admins',    $userbank->HasAccess(array('OWNER', 'LIST_ADMINS')));
   $page->assign('permission_list_overrides', $userbank->HasAccess(array('OWNER', 'LIST_OVERRIDES')));
-  $page->assign('actions',                   $actions);
-  $page->assign('admins',                    $admins);
+  $page->assign('actions',                   $actions['list']);
+  $page->assign('admins',                    $admins['list']);
   $page->assign('overrides',                 $overrides);
   $page->assign('servers',                   $servers);
   $page->assign('server_groups',             $server_groups);
@@ -168,7 +165,7 @@ try
   $page->assign('order',                     $admins_reader->order == SORT_DESC ? 'desc' : 'asc');
   $page->assign('sort',                      $admins_reader->sort);
   $page->assign('start',                     $admins_start);
-  $page->assign('total',                     $counts['admins']);
+  $page->assign('total',                     $admins['count']);
   $page->assign('total_pages',               $pages);
   $page->display('page_admin_admins');
 }

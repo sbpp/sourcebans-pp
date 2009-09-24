@@ -1,6 +1,5 @@
 <?php
 require_once 'init.php';
-require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'protests.php';
 require_once READERS_DIR . 'submissions.php';
 require_once WRITERS_DIR . 'bans.php';
@@ -24,7 +23,7 @@ try
           if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS')))
             throw new Exception($phrases['access_denied']);
           
-          $id = BansWriter::add($_POST['type'], $_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
+          $id = BansWriter::add($_POST['type'], strotupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
           
           // If one or more demos were uploaded, add them
           foreach($_FILES['demo'] as $demo)
@@ -53,11 +52,9 @@ try
     }
   }
   
-  $counts_reader               = new CountsReader();
   $protests_reader             = new ProtestsReader();
   $submissions_reader          = new SubmissionsReader();
   
-  $counts                      = $counts_reader->executeCached(ONE_MINUTE      * 5);
   $protests                    = $protests_reader->executeCached(ONE_MINUTE    * 5);
   $submissions                 = $submissions_reader->executeCached(ONE_MINUTE * 5);
   
@@ -72,14 +69,14 @@ try
   $page->assign('permission_list_comments',   $userbank->is_admin());
   $page->assign('permission_protests',        $userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')));
   $page->assign('permission_submissions',     $userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')));
-  $page->assign('protests',                   $protests);
-  $page->assign('submissions',                $submissions);
-  $page->assign('archived_protests',          $archived_protests);
-  $page->assign('archived_submissions',       $archived_submissions);
-  $page->assign('total_protests',             $counts['protests']);
-  $page->assign('total_submissions',          $counts['submissions']);
-  $page->assign('total_archived_protests',    $counts['archived_protests']);
-  $page->assign('total_archived_submissions', $counts['archived_submissions']);
+  $page->assign('protests',                   $protests['list']);
+  $page->assign('submissions',                $submissions['list']);
+  $page->assign('archived_protests',          $archived_protests['list']);
+  $page->assign('archived_submissions',       $archived_submissions['list']);
+  $page->assign('total_protests',             $protests['count']);
+  $page->assign('total_submissions',          $submissions['count']);
+  $page->assign('total_archived_protests',    $archived_protests['count']);
+  $page->assign('total_archived_submissions', $archived_submissions['count']);
   $page->display('page_admin_bans');
 }
 catch(Exception $e)

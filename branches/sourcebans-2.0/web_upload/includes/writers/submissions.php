@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'submissions.php';
-require_once READERS_DIR . 'counts.php';
 
 class SubmissionsWriter
 {
@@ -22,19 +21,19 @@ class SubmissionsWriter
     $phrases = Env::get('phrases');
     
     if(empty($steam)    || !preg_match(STEAM_FORMAT, $steam))
-      throw new Exception('Invalid Steam ID supplied.');
+      throw new Exception('Invalid Steam ID specified.');
     if(empty($ip)       || !preg_match(IP_FORMAT,    $ip))
-      throw new Exception('Invalid IP address supplied.');
+      throw new Exception('Invalid IP address specified.');
     if(empty($name)     || !is_string($name))
-      throw new Exception('Invalid player name supplied.');
+      throw new Exception('Invalid player name specified.');
     if(empty($reason)   || !is_string($reason))
-      throw new Exception('Invalid ban reason supplied.');
+      throw new Exception('Invalid ban reason specified.');
     if(empty($subname)  || !is_string($subname))
-      throw new Exception('Invalid name supplied.');
+      throw new Exception('Invalid name specified.');
     if(empty($subemail) || !preg_match(EMAIL_FORMAT, $subemail))
-      throw new Exception('Invalid e-mail address supplied.');
+      throw new Exception('Invalid e-mail address specified.');
     if(empty($server)   || !is_numeric($server))
-      throw new Exception('Invalid server ID supplied.');
+      throw new Exception('Invalid server ID specified.');
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_submissions (name, steam, ip, reason, server_id, subname, subemail, subip, time)
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
@@ -43,9 +42,6 @@ class SubmissionsWriter
     $id                 = $db->Insert_ID();
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
-    
-    $counts_reader      = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnAddSubmission', $id, $steam, $ip, $name, $reason, $subname, $subemail, $server);
     
@@ -69,9 +65,6 @@ class SubmissionsWriter
     
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
-    
-    $counts_reader      = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnArchiveSubmission', $id);
   }
@@ -121,9 +114,6 @@ class SubmissionsWriter
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
     
-    $counts_reader      = new CountsReader();
-    $counts_reader->removeCacheFile();
-    
     SBPlugins::call('OnDeleteSubmission', $id);
   }
   
@@ -144,9 +134,6 @@ class SubmissionsWriter
     
     $submissions_reader = new SubmissionsReader();
     $submissions_reader->removeCacheFile();
-    
-    $counts_reader      = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnRestoreSubmission', $id);
   }

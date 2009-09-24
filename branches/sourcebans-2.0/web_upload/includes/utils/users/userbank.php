@@ -35,7 +35,9 @@ class CUserManager
       $password = $_COOKIE['sb_password'];
     
     $admins_reader = new AdminsReader();
-    $this->users   = $admins_reader->executeCached(ONE_MINUTE * 5);
+    $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
+    
+    $this->users   = $admins['list'];
     $this->id      = $this->CheckLogin($password, $id) ? $id : -1;
   }
   

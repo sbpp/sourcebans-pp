@@ -16,7 +16,7 @@ try
   {
     try
     {
-      $id = SubmissionsWriter::add($_POST['steam'], $_POST['ip'], $_POST['name'], $_POST['reason'], $_POST['subname'], $_POST['subemail'], $_POST['server']);
+      $id = SubmissionsWriter::add(strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'], $_POST['subname'], $_POST['subemail'], $_POST['server']);
       
       // If one or more demos were uploaded, add them
       foreach($_FILES['demo'] as $demo)

@@ -14,11 +14,11 @@ class LogsWriter
   public static function add($type, $title, $message)
   {
     if(empty($type)    || !is_string($type))
-      throw new Exception('Invalid type supplied.');
+      throw new Exception('Invalid type specified.');
     if(empty($title)   || !is_string($title))
-      throw new Exception('Invalid title supplied.');
+      throw new Exception('Invalid title specified.');
     if(empty($message) || !is_string($message))
-      throw new Exception('Invalid message supplied.');
+      throw new Exception('Invalid message specified.');
     
     $db        = Env::get('db');
     $userbank  = Env::get('userbank');

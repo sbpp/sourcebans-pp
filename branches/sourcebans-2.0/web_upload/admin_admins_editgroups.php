@@ -41,10 +41,10 @@ try
   $groups_reader->type = WEB_GROUPS;
   $web_groups          = $groups_reader->executeCached(ONE_MINUTE * 5);
   
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins[$_GET['id']]))
+  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins['list'][$_GET['id']]))
     throw new Exception('Invalid ID specified.');
   
-  $admin               = $admins[$_GET['id']];
+  $admin               = $admins['list'][$_GET['id']];
   
   $page->assign('admin_name',       $admin['name']);
   $page->assign('admin_srv_groups', $admin['srv_groups']);

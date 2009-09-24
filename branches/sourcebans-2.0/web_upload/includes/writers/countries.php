@@ -11,7 +11,7 @@ class CountriesWriter
   public static function store($ip)
   {
     if(empty($ip) || !preg_match(IP_FORMAT, $ip))
-      throw new Exception('Invalid IP address supplied.');
+      throw new Exception('Invalid IP address specified.');
     
     $db    = Env::get('db');
     

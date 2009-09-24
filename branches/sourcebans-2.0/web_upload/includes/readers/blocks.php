@@ -17,15 +17,18 @@ class BlocksReader extends SBReader
     $db     = Env::get('db');
     
     // Fetch blocks
-    $blocks = $db->GetAll('SELECT    bl.ban_id, bl.name, bl.time, ba.steam 
-                           FROM      ' . Env::get('prefix') . '_blocks AS bl
-                           LEFT JOIN ' . Env::get('prefix') . '_bans   AS ba ON ba.id = bl.ban_id
-                           ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
-                           ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
+    $block_count = $db->GetOne('SELECT COUNT(ban_id)
+                                FROM   ' . Env::get('prefix') . '_blocks');
+    $block_list  = $db->GetAll('SELECT    bl.ban_id, bl.name, bl.time, ba.steam 
+                                FROM      ' . Env::get('prefix') . '_blocks AS bl
+                                LEFT JOIN ' . Env::get('prefix') . '_bans   AS ba ON ba.id = bl.ban_id
+                                ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
+                                ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    list($blocks) = SBPlugins::call('OnGetBlocks', $blocks);
+    list($block_list, $block_count) = SBPlugins::call('OnGetBlocks', $block_list, $block_count);
     
-    return $blocks;
+    return array('count' => $block_count,
+                 'list'  => $block_list);
   }
 }
 ?>

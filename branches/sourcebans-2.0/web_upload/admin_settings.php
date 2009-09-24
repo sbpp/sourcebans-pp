@@ -153,9 +153,9 @@ try
   $page->assign('config_smtp_username',  $config['email.username']);
   $page->assign('config_timezone',       $config['config.timezone']);
   $page->assign('config_title',          $config['template.title']);
-  $page->assign('admins',                $admins);
+  $page->assign('admins',                $admins['list']);
   $page->assign('languages',             $languages);
-  $page->assign('logs',                  $logs);
+  $page->assign('logs',                  $logs['list']);
   $page->assign('plugins',               $plugins);
   $page->assign('themes',                $themes);
   $page->assign('theme_author',          $theme_author);

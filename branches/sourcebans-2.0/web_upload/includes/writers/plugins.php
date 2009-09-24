@@ -11,7 +11,7 @@ class PluginsWriter
   public static function add($plugin)
   {
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name supplied.');
+      throw new Exception('Invalid plugin name specified.');
     
     $db = Env::get('db');
     
@@ -33,7 +33,7 @@ class PluginsWriter
   public static function delete($plugin)
   {
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name supplied.');
+      throw new Exception('Invalid plugin name specified.');
     
     $db = Env::get('db');
     
@@ -56,7 +56,7 @@ class PluginsWriter
   public static function disable($plugin)
   {
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name supplied.');
+      throw new Exception('Invalid plugin name specified.');
     
     $db = Env::get('db');
     
@@ -80,7 +80,7 @@ class PluginsWriter
   public static function enable($plugin)
   {
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name supplied.');
+      throw new Exception('Invalid plugin name specified.');
     
     $db = Env::get('db');
     

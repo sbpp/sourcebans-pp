@@ -55,7 +55,7 @@ try
   $page->assign('permission_edit_comments',    $userbank->HasAccess(array('OWNER')));
   $page->assign('permission_list_comments',    $userbank->is_admin());
   $page->assign('hide_adminname',              $config['banlist.hideadminname']);
-  $page->assign('admins',                      $admins);
+  $page->assign('admins',                      $admins['list']);
   $page->assign('bans',                        $bans['list']);
   $page->assign('servers',                     $servers);
   $page->assign('end',                         $bans_end);

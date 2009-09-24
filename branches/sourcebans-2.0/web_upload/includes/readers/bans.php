@@ -89,15 +89,15 @@ class BansReader extends SBReader
       $where .= ' AND (length = 0 OR time + length * 60 > UNIX_TIMESTAMP()) AND unban_admin_id IS NULL';
     
     // Fetch bans
-    $ban_count = $db->GetOne('SELECT COUNT(*)
+    $ban_count = $db->GetOne('SELECT COUNT(id)
                               FROM   ' . Env::get('prefix') . '_bans AS ba
                               WHERE  ' . $where);
     $ban_list  = $db->GetAssoc('SELECT    ba.id, ba.type, ba.steam, ba.ip, ba.name, ba.reason, ba.length, ba.server_id, ba.admin_id, ba.admin_ip, ba.unban_admin_id, ba.unban_reason, ba.unban_time, ba.time,
                                           IFNULL(ad.name, "CONSOLE") AS admin_name, un.name AS unban_admin_name, co.code AS country_code, co.name AS country_name, se.ip AS server_ip, se.port AS server_port,
                                           mo.name AS mod_name, mo.icon AS mod_icon, 76561197960265728 + CAST(SUBSTR(ba.steam, 9, 1) AS UNSIGNED) + CAST(SUBSTR(ba.steam, 11) * 2 AS UNSIGNED) AS community_id,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                     AS block_count,
-                                          (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id    AND type = ?)     AS demo_count
+                                          (SELECT COUNT(id)     FROM ' . Env::get('prefix') . '_bans   WHERE steam  = ba.steam OR  ip   = ba.ip) AS ban_count,
+                                          (SELECT COUNT(ban_id) FROM ' . Env::get('prefix') . '_blocks WHERE ban_id = ba.id)                     AS block_count,
+                                          (SELECT COUNT(id)     FROM ' . Env::get('prefix') . '_demos  WHERE ban_id = ba.id    AND type = ?)     AS demo_count
                                 FROM      ' . Env::get('prefix') . '_bans      AS ba
                                 LEFT JOIN ' . Env::get('prefix') . '_admins    AS ad ON ad.id = ba.admin_id
                                 LEFT JOIN ' . Env::get('prefix') . '_admins    AS un ON un.id = ba.unban_admin_id

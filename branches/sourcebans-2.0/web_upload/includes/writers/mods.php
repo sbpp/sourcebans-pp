@@ -17,18 +17,18 @@ class ModsWriter
     $phrases = Env::get('phrases');
     
     if(empty($name)   || !is_string($name))
-      throw new Exception('Invalid name supplied.');
+      throw new Exception('Invalid name specified.');
     if(empty($folder) || !is_string($folder))
-      throw new Exception('Invalid mod folder supplied.');
+      throw new Exception('Invalid mod folder specified.');
     if(empty($icon)   || !is_string($icon))
-      throw new Exception('Invalid icon filename supplied.');
+      throw new Exception('Invalid icon filename specified.');
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_mods (name, folder, icon)
                   VALUES      (?, ?, ?)',
                   array($name, $folder, $icon));
     
-    $id            = $db->Insert_ID();
-    $mods_reader   = new ModsReader();
+    $id          = $db->Insert_ID();
+    $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();
     
     SBPlugins::call('OnAddMod', $id, $name, $folder, $icon);
@@ -48,13 +48,13 @@ class ModsWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_mods
                   WHERE       id = ?',
                   array($id));
     
-    $mods_reader   = new ModsReader();
+    $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteMod', $id);
@@ -77,7 +77,7 @@ class ModsWriter
     $mod     = array();
     
     if(empty($id)         || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     if(!is_null($name)   && is_string($name))
       $mod['name']   = $name;
     if(!is_null($folder) && is_string($folder))

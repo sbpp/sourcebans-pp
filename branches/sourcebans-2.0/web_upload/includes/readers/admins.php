@@ -22,11 +22,16 @@ class AdminsReader extends SBReader
       $where = 'gs.server_id = ' . $this->server_id;
     
     // Fetch admins
-    $admins = $db->GetAssoc('SELECT    ad.id, ad.name, ad.auth, ad.identity, ad.password, ad.group_id, ad.email, ad.language, ad.theme,
+    $admin_count = $db->GetOne('SELECT    COUNT(id)
+                                FROM      ' . Env::get('prefix') . '_admins AS ad
+                                LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups  AS ag ON ag.admin_id = ad.id
+                                LEFT JOIN ' . Env::get('prefix') . '_servers_srvgroups AS gs ON gs.group_id = ag.group_id
+                                WHERE     ' . $where);
+    $admin_list  = $db->GetAssoc('SELECT    ad.id, ad.name, ad.auth, ad.identity, ad.password, ad.group_id, ad.email, ad.language, ad.theme,
                                        ad.srv_password, ad.validate, ad.lastvisit, wg.name AS web_group, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS web_flags,
                                        GROUP_CONCAT(DISTINCT sg.id ORDER BY sg.id) AS srv_groups, GROUP_CONCAT(DISTINCT sg.flags SEPARATOR "") AS srv_flags, IFNULL(MAX(sg.immunity), 0) AS srv_immunity,
-                                       (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans       WHERE admin_id    = ad.id)                                                                                           AS ban_count,
-                                       (SELECT COUNT(*) FROM ' . Env::get('prefix') . '_bans AS ba WHERE ba.admin_id = ad.id AND NOT EXISTS (SELECT ban_id FROM ' . Env::get('prefix') . '_demos WHERE ban_id = ba.id)) AS nodemo_count
+                                       (SELECT COUNT(id) FROM ' . Env::get('prefix') . '_bans       WHERE admin_id    = ad.id)                                                                                           AS ban_count,
+                                       (SELECT COUNT(id) FROM ' . Env::get('prefix') . '_bans AS ba WHERE ba.admin_id = ad.id AND NOT EXISTS (SELECT ban_id FROM ' . Env::get('prefix') . '_demos WHERE ban_id = ba.id)) AS nodemo_count
                              FROM      ' . Env::get('prefix') . '_admins             AS ad
                              LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups   AS ag ON ag.admin_id = ad.id
                              LEFT JOIN ' . Env::get('prefix') . '_groups             AS wg ON wg.id       = ad.group_id
@@ -40,7 +45,7 @@ class AdminsReader extends SBReader
                              ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
     // Process admins
-    foreach($admins as &$admin)
+    foreach($admin_list as &$admin)
     {
       // Remove duplicate server flags
       $srv_flags           = str_split($admin['srv_flags']);
@@ -52,9 +57,10 @@ class AdminsReader extends SBReader
       $admin['web_flags']  = empty($admin['web_flags'])  ? array() : explode(',', $admin['web_flags']);
     }
     
-    list($admins) = SBPlugins::call('OnGetAdmins', $admins);
+    list($admin_list, $admin_count) = SBPlugins::call('OnGetAdmins', $admin_list, $admin_count, $this->server_id);
     
-    return $admins;
+    return array('count' => $admin_count,
+                 'list'  => $admin_list);
   }
 }
 ?>

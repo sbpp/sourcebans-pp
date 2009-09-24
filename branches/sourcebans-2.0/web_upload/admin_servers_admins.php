@@ -18,7 +18,7 @@ try
   $admins_reader->server_id = $_GET['id'];
   $admins                   = $admins_reader->executeCached(ONE_MINUTE * 5);
   
-  $page->assign('admins', $admins);
+  $page->assign('admins', $admins['list']);
   $page->display('page_admin_servers_admins');
 }
 catch(Exception $e)

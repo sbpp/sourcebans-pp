@@ -20,11 +20,11 @@ class ServersWriter
     $phrases = Env::get('phrases');
     
     if(empty($ip)   || !is_string($ip))
-      throw new Exception('Invalid IP address supplied.');
+      throw new Exception('Invalid IP address specified.');
     if(empty($port) || !is_numeric($port))
-      throw new Exception('Invalid port number supplied.');
+      throw new Exception('Invalid port number specified.');
     if(empty($mod)  || !is_numeric($mod))
-      throw new Exception('Invalid mod ID supplied.');
+      throw new Exception('Invalid mod ID specified.');
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_servers (ip, port, rcon, mod_id, enabled)
                   VALUES      (?, ?, ?, ?, ?)',
@@ -61,7 +61,7 @@ class ServersWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     
     $db->Execute('DELETE    se, gs
                   FROM      ' . Env::get('prefix') . '_servers           AS se
@@ -95,7 +95,7 @@ class ServersWriter
     $server  = array();
     
     if(empty($id)        || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     if(!is_null($ip)      && is_string($ip))
       $server['ip']      = $ip;
     if(!is_null($port)    && is_numeric($port))

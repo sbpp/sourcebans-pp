@@ -15,11 +15,11 @@ class OverridesWriter
     $db = Env::get('db');
     
     if(empty($type)  || !is_string($type))
-      throw new Exception('Invalid override type supplied.');
+      throw new Exception('Invalid override type specified.');
     if(empty($name)  || !is_string($name))
-      throw new Exception('Invalid name supplied.');
+      throw new Exception('Invalid name specified.');
     if(empty($flags) || !is_string($flags))
-      throw new Exception('Invalid flags supplied.');
+      throw new Exception('Invalid flags specified.');
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_overrides (type, name, flags)
                   VALUES      (?, ?, ?)',

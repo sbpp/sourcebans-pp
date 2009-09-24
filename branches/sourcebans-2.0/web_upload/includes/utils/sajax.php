@@ -530,7 +530,7 @@ if($userbank->is_logged_in())
       $admins         = $admins_reader->executeCached(ONE_MINUTE * 5);
       $servers        = $servers_reader->executeCached(ONE_MINUTE);
       
-      foreach($admins as $id => $admin)
+      foreach($admins['list'] as $id => $admin)
         $admin_list[$admin['identity']] = $id;
       
       $authids        = array_keys($admin_list);

@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'bans.php';
-require_once READERS_DIR . 'counts.php';
 require_once WRITERS_DIR . 'countries.php';
 
 class BansWriter
@@ -24,19 +23,19 @@ class BansWriter
     $userbank = Env::get('userbank');
     
     if(!is_numeric($type))
-      throw new Exception('Invalid ban type supplied.');
+      throw new Exception('Invalid ban type specified.');
     if($type == STEAM_BAN_TYPE && !preg_match(STEAM_FORMAT, $steam))
-      throw new Exception('Invalid Steam ID supplied.');
+      throw new Exception('Invalid Steam ID specified.');
     if($type == IP_BAN_TYPE    && !preg_match(IP_FORMAT,    $ip))
-      throw new Exception('Invalid IP address supplied.');
+      throw new Exception('Invalid IP address specified.');
     if(empty($name)   || !is_string($name))
-      throw new Exception('Invalid name supplied.');
+      throw new Exception('Invalid name specified.');
     if(empty($reason) || !is_string($reason))
-      throw new Exception('Invalid ban reason supplied.');
+      throw new Exception('Invalid ban reason specified.');
     if(!is_numeric($length))
-      throw new Exception('Invalid ban length supplied.');
+      throw new Exception('Invalid ban length specified.');
     
-    // If an IP address was supplied, store country information
+    // If an IP address was specified, store country information
     if(!empty($ip))
       CountriesWriter::store($ip);
     
@@ -44,12 +43,9 @@ class BansWriter
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $steam, $ip, $name, $reason, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
-    $id            = $db->Insert_ID();
-    $bans_reader   = new BansReader();
+    $id          = $db->Insert_ID();
+    $bans_reader = new BansReader();
     $bans_reader->removeCacheFile();
-    
-    $counts_reader = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnAddBan', $id, $type, $steam, $ip, $name, $reason, $length, $server);
     
@@ -68,17 +64,14 @@ class BansWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_bans
                   WHERE       id = ?',
                   array($id));
     
-    $bans_reader   = new BansReader();
+    $bans_reader = new BansReader();
     $bans_reader->removeCacheFile();
-    
-    $counts_reader = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteBan', $id);
   }
@@ -103,7 +96,7 @@ class BansWriter
     $ban     = array();
     
     if(empty($id)        || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     if(!is_null($type)   && is_numeric($type))
       $ban['type']   = $type;
     if(!is_null($steam)  && preg_match(STEAM_FORMAT, $steam))
@@ -199,7 +192,7 @@ class BansWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_bans
                          unban_admin_id = NULL,
@@ -229,9 +222,9 @@ class BansWriter
     $userbank = Env::get('userbank');
     
     if(empty($id)     || !is_numeric($id))
-      throw new Exception('Invalid ID supplied.');
+      throw new Exception('Invalid ID specified.');
     if(empty($reason) || !is_string($reason))
-      throw new Exception('Invalid unban reason supplied.');
+      throw new Exception('Invalid unban reason specified.');
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_bans
                          unban_admin_id = ?,

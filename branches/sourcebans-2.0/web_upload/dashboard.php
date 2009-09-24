@@ -2,7 +2,6 @@
 require_once 'init.php';
 require_once READERS_DIR . 'bans.php';
 require_once READERS_DIR . 'blocks.php';
-require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'servers.php';
 
 $config  = Env::get('config');
@@ -13,7 +12,6 @@ try
 {
   $bans_reader          = new BansReader();
   $blocks_reader        = new BlocksReader();
-  $counts_reader        = new CountsReader();
   $servers_reader       = new ServersReader();
   
   $bans_reader->limit   = 10;
@@ -21,7 +19,6 @@ try
   
   $bans                 = $bans_reader->executeCached(ONE_MINUTE   * 5);
   $blocks               = $blocks_reader->executeCached(ONE_MINUTE * 5);
-  $counts               = $counts_reader->executeCached(ONE_MINUTE * 5);
   $servers              = $servers_reader->executeCached(ONE_MINUTE);
   
   $order                = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
@@ -33,12 +30,12 @@ try
   $page->assign('dashboard_title', $config['dash.intro.title']);
   $page->assign('log_nopopup',     $config['dash.lognopopup']);
   $page->assign('bans',            $bans['list']);
-  $page->assign('blocks',          $blocks);
+  $page->assign('blocks',          $blocks['list']);
   $page->assign('servers',         $servers);
   $page->assign('order',           $order);
   $page->assign('sort',            $sort);
-  $page->assign('total_bans',      $counts['bans']);
-  $page->assign('total_blocks',    $counts['blocks']);
+  $page->assign('total_bans',      $bans['count']);
+  $page->assign('total_blocks',    $blocks['count']);
   $page->display('page_dashboard');
 }
 catch(Exception $e)

@@ -19,9 +19,9 @@ class GroupsWriter
     $phrases = Env::get('phrases');
     
     if(empty($name) || !is_string($name))
-      throw new Exception('Invalid group name supplied.');
+      throw new Exception('Invalid group name specified.');
     if(!is_numeric($immunity))
-      throw new Exception('Invalid group immunity supplied.');
+      throw new Exception('Invalid group immunity specified.');
     
     switch($type)
     {
@@ -129,7 +129,7 @@ class GroupsWriter
     {
       case SERVER_GROUPS:
         if(empty($id)           || !is_numeric($id))
-          throw new Exception('Invalid ID supplied.');
+          throw new Exception('Invalid ID specified.');
         if(!is_null($name)      && is_string($name))
           $group['name']     = $name;
         if(!is_null($flags)     && is_string($flags))
@@ -154,7 +154,7 @@ class GroupsWriter
         break;
       case WEB_GROUPS:
         if(empty($id)       || !is_numeric($id))
-          throw new Exception('Invalid ID supplied.');
+          throw new Exception('Invalid ID specified.');
         if(!is_null($name)  && is_string($name))
           $group['name'] = $name;
         if(!is_null($flags) && is_array($flags))

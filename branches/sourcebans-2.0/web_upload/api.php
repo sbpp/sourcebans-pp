@@ -5,7 +5,6 @@ require_once READERS_DIR . 'admins.php';
 require_once READERS_DIR . 'bans.php';
 require_once READERS_DIR . 'blocks.php';
 require_once READERS_DIR . 'comments.php';
-require_once READERS_DIR . 'counts.php';
 require_once READERS_DIR . 'groups.php';
 require_once READERS_DIR . 'logs.php';
 require_once READERS_DIR . 'mods.php';
@@ -395,34 +394,6 @@ class SB_API
   }
   
   
-  /*
-   * Returns a count
-   * 
-   * @param string $type The type of count to return (admins, bans, blocks, mods, protests, archived_protests, servers, submissions, archived_submissions)
-   */
-  public static function getCount($type)
-  {
-    $counts = self::getCounts();
-    
-    if(!isset($counts[$type]))
-      throw new Exception('Invalid type specified.');
-    
-    return $counts[$type];
-  }
-  
-  
-  /**
-   * Returns the list of counts
-   */
-  public static function getCounts()
-  {
-    $counts_reader = new CountsReader();
-    $counts        = $counts_reader->executeCached(ONE_MINUTE * 5);
-    
-    return $counts;
-  }
-  
-  
   /**
    * Adds a group
    *
@@ -634,7 +605,7 @@ class SB_API
   }
   
   
-  /*
+  /**
    * Calls a hook on the enabled plugins
    *
    * @param  string $hook     The hook to call
@@ -646,7 +617,7 @@ class SB_API
     return SBPlugins::call(func_get_args());
   }
   
-  /*
+  /**
    * Returns the list of plugins
    */
   public static function getPlugins()
@@ -935,7 +906,7 @@ class SB_API
   }
   
   
-  /*
+  /**
    * Returns a setting
    *
    * @param string $name The name of the setting to return (banlist.bansperpage, banlist.hideadminname, config.dateformat, config.debug, config.defaultpage, config.enableprotest,

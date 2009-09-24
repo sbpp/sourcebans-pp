@@ -1,6 +1,5 @@
 <?php
 require_once READERS_DIR . 'protests.php';
-require_once READERS_DIR . 'counts.php';
 
 class ProtestsWriter
 {
@@ -35,9 +34,6 @@ class ProtestsWriter
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile();
-    
     SBPlugins::call('OnAddProtest', $id, $type, $steam, $ip, $reason, $email);
     
     return $id;
@@ -62,9 +58,6 @@ class ProtestsWriter
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
     
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile();
-    
     SBPlugins::call('OnArchiveProtest', $id);
   }
   
@@ -85,9 +78,6 @@ class ProtestsWriter
     
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
-    
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnDeleteProtest', $id);
   }
@@ -110,9 +100,6 @@ class ProtestsWriter
     
     $protests_reader = new ProtestsReader();
     $protests_reader->removeCacheFile();
-    
-    $counts_reader   = new CountsReader();
-    $counts_reader->removeCacheFile();
     
     SBPlugins::call('OnRestoreProtest', $id);
   }

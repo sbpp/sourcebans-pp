@@ -17,7 +17,7 @@ try
       $admins_reader = new AdminsReader();
       $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
       
-      foreach($admins as $id => $admin)
+      foreach($admins['list'] as $id => $admin)
       {
         if($admin['email'] != $_POST['email'])
           continue;
@@ -55,7 +55,7 @@ try
     $admins_reader = new AdminsReader();
     $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
     
-    foreach($admins as $id => $admin)
+    foreach($admins['list'] as $id => $admin)
     {
       if($admin['email'] != $_GET['email'] || $admin['validate'] != $_GET['validation'])
         continue;
