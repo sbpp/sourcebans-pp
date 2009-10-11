@@ -1,3 +1,17 @@
+/**
+ * =============================================================================
+ * SourceBans View Previous Bans Plugin
+ *
+ * @author InterWave Studios
+ * @version 2.0.0
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
+ * @package SourceBans
+ * @link http://www.sourcebans.net
+ * 
+ * @version $Id$
+ * =============================================================================
+ */
+
 #pragma semicolon 1
 
 #include <sourcemod>
@@ -8,11 +22,11 @@
 
 public Plugin:myinfo =
 {
-	name        = "SourceBans: View Bans",
-	author      = "InterWave Studios",
-	description = "Allows admins to view bans ingame",
-	version     = SB_VERSION,
-	url         = "http://www.sourcebans.net"
+	name     	= "SourceBans: View Bans",
+	author   	= "InterWave Studios",
+	description	= "Allows admins to view bans ingame",
+	version   	= SB_VERSION,
+	url      	= "http://www.sourcebans.net"
 };
 
 
@@ -33,15 +47,30 @@ public OnPluginStart()
 {
 	RegAdminCmd("sb_viewbans", Command_ViewBans, ADMFLAG_KICK, "Usage: sm_viewbans <#userid|name>");
 	
+	LoadTranslations("common.phrases");
+	LoadTranslations("sourcebans.phrases");
 	LoadTranslations("sb_viewbans.phrases");
 }
 
 public OnAdminMenuReady(Handle:topmenu)
 {
+	// Block us from being called twice
 	if(topmenu == g_hTopMenu)
 		return;
 	
+	// Save the handle
 	g_hTopMenu = topmenu;
+	
+	// Find the "Player Commands" category
+	new TopMenuObject:iPlayerCommands = FindTopMenuCategory(g_hTopMenu, ADMINMENU_PLAYERCOMMANDS);
+	if(iPlayerCommands)
+		AddToTopMenu(g_hTopMenu,
+			"sb_viewbans",
+			TopMenuObject_Item,
+			MenuHandler_AdminMenu_ViewBans,
+			iPlayerCommands,
+			"sb_viewbans",
+			ADMFLAG_KICK);
 }
 
 public OnAllPluginsLoaded()
@@ -74,7 +103,7 @@ public OnClientPostAdminCheck(client)
 public OnClientDisconnect(client)
 {
 	// Cleanup the client variables
-	if(g_hPlayerResults[client])
+	if(g_hPlayerResults[client] != INVALID_HANDLE)
 	{
 		CloseHandle(g_hPlayerResults[client]);
 		g_hPlayerResults[client] = INVALID_HANDLE;
@@ -151,6 +180,18 @@ public Action:Command_ViewBans(client, args)
 /**
  * Menu Handlers
  */
+public MenuHandler_AdminMenu_ViewBans(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id, param, String:buffer[], maxlength)
+{
+	if(action      == TopMenuAction_DisplayOption)
+	{
+		Format(buffer, maxlength, "%T", "View bans", param);
+	}
+	else if(action == TopMenuAction_SelectOption)
+	{
+		DisplayMenu(BuildPlayerMenu(param), param, MENU_TIME_FOREVER);
+	}
+}
+ 
 public MenuHandler_SelectPlayer(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action      == MenuAction_Cancel)

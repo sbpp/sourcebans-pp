@@ -8,30 +8,9 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
- * @version $Id: sourcebans.sp 178 2008-12-01 15:10:00Z tsunami $
+ * @version $Id$
  * =============================================================================
  */
-
-/**
-  Table structure for table 'sb_submissions'
---------------------------------------------------------
-  {prefix}_submissions (
-  id mediumint(8) unsigned NOT NULL auto_increment,
-  name varchar(64) NOT NULL,
-  steam varchar(32) default NULL,
-  ip varchar(15) default NULL,
-  reason varchar(255) NOT NULL,
-  server_id smallint(5) unsigned NOT NULL,
-  subname varchar(64) NOT NULL,
-  subemail varchar(128) NOT NULL,
-  subip varchar(15) NOT NULL,
-  archived tinyint(1) NOT NULL default '0',
-  time int(10) unsigned NOT NULL,
-  PRIMARY KEY  (id),
-  KEY server_id (server_id)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
---------------------------------------------------------
-*/
 
 #pragma semicolon 1
 
@@ -110,6 +89,20 @@ public OnLibraryRemoved(const String:name[])
 		g_hTopMenu = INVALID_HANDLE;
 }
 
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+#else
+public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
+#endif
+{
+	CreateNative("SB_SubmitBan", Native_SubmitBan);
+	RegPluginLibrary("sb_submitban");
+	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+	return APLRes_Success;
+	#else
+	return true;
+	#endif
+}
 
 /**
  * Client Forwards
@@ -392,6 +385,41 @@ public Query_Submission(Handle:owner, Handle:hndl, const String:error[], any:pac
 	PrintToChat(iClient, "[SM] %t", "Upload demo", g_sWebsite);
 }
 
+/**
+ * Natives
+ */
+public Native_SubmitBan(Handle:plugin, numParams)
+{
+	new iClient = GetNativeCell(1);
+	new iTarget = GetNativeCell(2);
+	if (iClient < 1 || iClient > MaxClients)
+	{
+		return ThrowNativeError(SP_ERROR_INDEX, "Invalid client index (%d)", iClient);
+	}
+	if (!IsClientConnected(iClient))
+	{
+		return ThrowNativeError(SP_ERROR_INDEX, "Client %d is not connected", iClient);
+	}
+	if (iTarget < 1 || iTarget > MaxClients)
+	{
+		return ThrowNativeError(SP_ERROR_INDEX, "Invalid target index (%d)", iTarget);
+	}
+	if (!IsClientConnected(iTarget))
+	{
+		return ThrowNativeError(SP_ERROR_INDEX, "Target %d is not connected", iTarget);
+	}
+	if (IsFakeClient(iTarget))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Bots are not supported");
+	}
+	
+	decl String:sReason[128];
+	GetNativeString(3, sReason, sizeof(sReason));
+	
+	PrepareSubmittal(iClient, iTarget, sReason);
+	
+	return true;
+}
 
 /**
  * Stocks
@@ -406,7 +434,6 @@ stock PrepareSubmittal(iClient, iTarget, const String:sReason[])
 		return;
 	}
 	
-	// TODO: Match these sizes up with the database structure
 	decl String:sClientIp[16], String:sClientName[MAX_NAME_LENGTH + 1], String:sQuery[768];
 	decl String:sEscapedClientName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedTargetName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256];
 	
@@ -443,21 +470,7 @@ stock DisplayTargetMenu(client)
 stock AssignTargetInfo(client, target)
 {
 	g_aPlayers[client][iSubmissionTarget] = target;
-	GetClientAuthString(target, g_sTargetsAuth[client], sizeof(g_sTargetsAuth));
-	GetClientIP(target,         g_sTargetsIP[client],   sizeof(g_sTargetsIP));
-	GetClientName(target,       g_sTargetsName[client], sizeof(g_sTargetsName));
+	GetClientAuthString(target,	g_sTargetsAuth[target],		sizeof(g_sTargetsAuth[]));
+	GetClientIP(target,					g_sTargetsIP[target],	   	sizeof(g_sTargetsIP[]));
+	GetClientName(target,			g_sTargetsName[target], 	sizeof(g_sTargetsName[]));
 }
-
-/**
-Could not get this to work
-stock DisplayTargetMenu(client)
-{
-	decl String:sTitle[128];
-	new Handle:hMenu = CreateMenu(MenuHandler_Target);
-	Format(sTitle, sizeof(sTitle), "%T:", "Select player", client);
-	SetMenuTitle(hMenu, sTitle);
-	SetMenuExitBackButton(hMenu, true);
-	AddTargetsToMenu2(hMenu, client, COMMAND_FILTER_NO_BOTS|COMMAND_FILTER_CONNECTED);
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
-}
-*/

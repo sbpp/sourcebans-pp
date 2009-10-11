@@ -8,7 +8,7 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
- * @version $Id: sourcebans.sp 178 2008-12-01 15:10:00Z tsunami $
+ * @version $Id$
  * =============================================================================
  */
 
@@ -1124,8 +1124,8 @@ SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)
 {
 	if(bTextual)
 	{
-		decl String:sDesc[6][8] = {"mo",              "wk",             "d",          "hr",    "min", "sec"};
-		new  iCount, iDiv[6]    = {60 * 60 * 24 * 30, 60 * 60 * 24 * 7, 60 * 60 * 24, 60 * 60, 60,    1};
+		decl String:sDesc[6][8] = { "mo",              "wk",             "d",          "hr",    "min", "sec" };
+		new  iCount, iDiv[6]    = { 60 * 60 * 24 * 30, 60 * 60 * 24 * 7, 60 * 60 * 24, 60 * 60, 60,    1 };
 		
 		for(new i = 0; i < sizeof(iDiv); i++)
 		{

@@ -47,4 +47,8 @@
 	{
 		"en"			"The ban procedure has been stopped successfully."
 	}
+	"Select player"
+	{
+		"en"			"Select Player:"
+	}
 }

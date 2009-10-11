@@ -8,7 +8,7 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
- * @version $Id: sourcebans.sp 178 2008-12-01 15:10:00Z tsunami $
+ * @version $Id$
  * =============================================================================
  */
 
