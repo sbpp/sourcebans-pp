@@ -22,16 +22,15 @@
 
 public SharedPlugin:__pl_sourcebans = 
 {
-	name	= "sourcebans",
-	file 		= "sourcebans.smx",
-#if defined REQUIRE_PLUGIN
+	name = "sourcebans",
+	file = "sourcebans.smx",
+	#if defined REQUIRE_PLUGIN
 	required = 1
-#else
+	#else
 	required = 0
-#endif
+	#endif
 };
 
-#if !defined REQUIRE_PLUGIN
 public __pl_sourcebans_SetNTVOptional()
 {
 	MarkNativeAsOptional("SB_GetAdminId");
@@ -42,15 +41,15 @@ public __pl_sourcebans_SetNTVOptional()
 	MarkNativeAsOptional("SB_DeleteAdmin");
 	MarkNativeAsOptional("SB_AddGroup");
 	MarkNativeAsOptional("SB_DeleteGroup");
-	MarkNativeAsOptional("SB_AssignGroup");
+	MarkNativeAsOptional("SB_SetAdminGroups");
 	MarkNativeAsOptional("SB_SubmitBan");
 }
-#endif
+
 
 /*********************************************************
  * When connected to SourceBans database
  *
- * @param database		The database handle
+ * @param database	The database handle
  * @noreturn		
  *********************************************************/
 forward SB_OnConnect(Handle:database);
@@ -73,8 +72,8 @@ native SB_Connect();
 /*********************************************************
  * Get SourceBans admin id from client
  *
- * @param 	client		The index of the client
- * @return	value		The admin id of the client
+ * @param  client		The index of the client
+ * @return value		The admin id of the client
  *********************************************************/
 native SB_GetAdminId(client);
 
@@ -89,9 +88,9 @@ native SB_GetSettingCell(const String:key[]);
 /*********************************************************
  * Get string setting from SourceBans config
  *
- * @param 	key				The name of the setting to retrieve
- * @param 	buffer			The string buffer to store the value in
- * @param 	maxlength	The max length of the string buffer
+ * @param key				The name of the setting to retrieve
+ * @param buffer		The string buffer to store the value in
+ * @param maxlength	The max length of the string buffer
  * @noreturn		
  *********************************************************/
 native SB_GetSettingString(const String:key[], String:buffer[], maxlength);
@@ -106,10 +105,10 @@ native SB_Reload();
 /*********************************************************
  * Add an admin to the SourceBans database
  *
- * @param client			The index of the client  (person adding admin)
+ * @param client		The index of the client  (person adding admin)
  * @param name			The name of the admin to add
- * @param authtype		The authentication type (steam, ip, name)
- * @param identity		The steamid, ip, or name of admin based on authtype
+ * @param authtype	The authentication type (steam, ip, name)
+ * @param identity	The steamid, ip, or name of admin based on authtype
  * @param flags			The flags to assign to the admin
  * @param immunity	The immunity to assign to the admin (optional)
  * @param password	The password for the admin (optional based on authtype)
@@ -132,7 +131,7 @@ native SB_DeleteAdmin(client, const String:authtype[], const String:identity[]);
 /*********************************************************
  * Add an group to the SourceBans database
  *
- * @param client			The index of the client  (person adding group)
+ * @param client		The index of the client  (person adding group)
  * @param name			The name of the new group
  * @param flags			The flags to assign to the group
  * @param immunity	The immunity to assign to the group (optional)
@@ -143,7 +142,7 @@ native SB_AddGroup(client, const String:name[], const String:flags[], immunity=0
 /*********************************************************
  * Delete a group from the SourceBans database
  *
- * @param client			The index of the client  (person deleting group)
+ * @param client		The index of the client  (person deleting group)
  * @param name			The name of the group to delete
  * @noreturn
  *********************************************************/
@@ -152,22 +151,22 @@ native SB_DeleteGroup(client, const String:name[]);
 /*********************************************************
  * Sets an admins group(s) in the SourceBans database
  *
- * @param client				The index of the client  (person setting the group(s))
- * @param authtype			The authentication type of the admin (steam, ip, name)
- * @param identity			The steamid, ip, or name of admin based on authtype
- * @param groupnames	The group name(s) of the group(s) to set the admin to; blank, or default is to reset groups
+ * @param client		The index of the client  (person setting the group(s))
+ * @param authtype	The authentication type of the admin (steam, ip, name)
+ * @param identity	The steamid, ip, or name of admin based on authtype
+ * @param groups		The groups to set the admin to; blank, or default is to reset groups
  * @noreturn
- * @error							Invalid authtype
+ * @error						Invalid authtype
  *********************************************************/
-native SB_SetAdminGroups(client, const String:authtype[], const String:identity[], const String:groupnames[] = "");
+native SB_SetAdminGroups(client, const String:authtype[], const String:identity[], const String:groups[] = "");
 
 /*********************************************************
  * Submit a ban to the SourceBans database
  *
  * @param client		The index of the client
  * @param target		The index of the target
- * @param reason	The reason for the submission
+ * @param reason		The reason for the submission
  * @noreturn
- * @error					Invalid client or target index
+ * @error						Invalid client or target index
  *********************************************************/
 native SB_SubmitBan(client, target, const String:reason[]);

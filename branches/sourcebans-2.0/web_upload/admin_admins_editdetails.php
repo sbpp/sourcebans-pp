@@ -18,7 +18,7 @@ try
       if($_POST['password'] != $_POST['password_confirm'])
           throw new Exception('The passwords don\'t match.');
       
-      AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['identity'], $_POST['email'], $_POST['password']);
+      AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password']);
       
       exit(json_encode(array(
         'redirect' => 'admin_admins.php'

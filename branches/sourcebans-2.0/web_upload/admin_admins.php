@@ -90,7 +90,7 @@ try
   if($admins_end > $admins['count'])
     $admins_end = $admins['count'];
   
-  foreach($admins as $id => &$admin)
+  foreach($admins['list'] as $id => &$admin)
   {
     $admin['permission_reservation']      = $userbank->HasAccess(SM_ROOT . SM_RESERVATION,           $id);
     $admin['permission_generic']          = $userbank->HasAccess(SM_ROOT . SM_GENERIC,               $id);

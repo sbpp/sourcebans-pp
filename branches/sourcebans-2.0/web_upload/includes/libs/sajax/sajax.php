@@ -3,12 +3,12 @@ class sAJAX
 {
   private static $functions = array();
   
-  public static function call($name, $args)
+  public static function call($func, $args)
   {
-    if(!isset(self::$functions[$name]))
-      throw new Exception('The function name "' . $name . '" is not registered and cannot be called.');
+    if(!in_array($func, self::$functions))
+      throw new sAJAXException('The function name "' . $func . '" is not registered and cannot be called.');
     
-    return json_encode(call_user_func_array(self::$functions[$name], $args));
+    return json_encode(call_user_func_array($func, $args));
   }
   
   public static function getFunctions()
@@ -16,12 +16,12 @@ class sAJAX
     return self::$functions;
   }
   
-  public static function register($name, $func)
+  public static function register($func)
   {
-    if(isset(self::$functions[$name]))
-      throw new Exception('The function name "' . $name . '" is already registered.');
+    if(in_array($func, self::$functions))
+      throw new sAJAXException('The function name "' . $func . '" is already registered.');
     
-    self::$functions[$name] = $func;
+    self::$functions[] = $func;
   }
 }
 ?>

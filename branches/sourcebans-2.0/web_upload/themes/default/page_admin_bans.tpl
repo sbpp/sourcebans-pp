@@ -24,7 +24,7 @@
           </div>
           <div id="admin-page-content">
             {if $permission_add_bans}
-            <form action="{$active}" id="pane-add" method="post">
+            <form action="{$active}" enctype="multipart/form-data" id="pane-add" method="post">
               <fieldset>
                 <h3>{$lang_add_ban|ucwords}</h3>
                 <p>{$lang_help_desc}</p>

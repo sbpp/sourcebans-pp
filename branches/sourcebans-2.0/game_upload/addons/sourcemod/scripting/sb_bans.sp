@@ -162,7 +162,7 @@ public OnClientAuthorized(client, const String:auth[])
 		return;
 	}
 	
-	decl String:sIp[16], String:sQuery[256];
+	decl String:sIp[16], String:sQuery[512];
 	GetClientIP(client, sIp, sizeof(sIp));
 	
 	Format(sQuery, sizeof(sQuery), "SELECT type, steam, ip, name, reason, length, admin_id, admin_ip, time \
@@ -672,7 +672,7 @@ public Action:Timer_ProcessTemp(Handle:timer)
 	// Delete temporary bans that expired or were added over 5 minutes ago
 	decl String:sQuery[128];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
-																	WHERE       (time + length * 60 <= %i OR insert_time + 300 > %i) \
+																	WHERE       (time + length * 60 <= %i OR insert_time + 300 <= %i) \
 																		AND       queued = 0",
 																	GetTime(), GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
@@ -1100,8 +1100,7 @@ bool:HasLocalBan(const String:sIdentity[])
 	Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																	FROM   sb_bans \
 																	WHERE  (steam = '%s' OR ip = '%s') \
-																		AND  time + length * 60 > %i \
-																		AND  insert_time + 300 <= %i",
+																		AND  (time + length * 60 > %i OR insert_time + 300 > %i)",
 																	sIdentity, sIdentity, GetTime(), GetTime());
 	
 	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
@@ -1124,8 +1123,8 @@ SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)
 {
 	if(bTextual)
 	{
-		decl String:sDesc[6][8] = { "mo",              "wk",             "d",          "hr",    "min", "sec" };
-		new  iCount, iDiv[6]    = { 60 * 60 * 24 * 30, 60 * 60 * 24 * 7, 60 * 60 * 24, 60 * 60, 60,    1 };
+		decl String:sDesc[6][8] = {"mo",              "wk",             "d",          "hr",    "min", "sec"};
+		new  iCount, iDiv[6]    = {60 * 60 * 24 * 30, 60 * 60 * 24 * 7, 60 * 60 * 24, 60 * 60, 60,    1};
 		
 		for(new i = 0; i < sizeof(iDiv); i++)
 		{

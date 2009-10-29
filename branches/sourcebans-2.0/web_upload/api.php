@@ -139,11 +139,12 @@ class SB_API
    */
   public static function getServerAdmins($server_id, $limit = 0, $page = 1)
   {
-    $admins_reader            = new AdminsReader();
-    $admins_reader->limit     = $limit;
-    $admins_reader->page      = $page;
-    $admins_reader->server_id = $server_id;
-    $admins                   = $admins_reader->executeCached(ONE_MINUTE * 5);
+    $admins_reader         = new AdminsReader();
+    $admins_reader->limit  = $limit;
+    $admins_reader->page   = $page;
+    $admins_reader->search = $server_id;
+    $admins_reader->type   = 'server';
+    $admins                = $admins_reader->executeCached(ONE_MINUTE * 5);
     
     return $admins;
   }

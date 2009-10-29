@@ -13,10 +13,11 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']))
     throw new Exception('Invalid ID specified.');
   
-  $admins_reader            = new AdminsReader();
+  $admins_reader         = new AdminsReader();
   
-  $admins_reader->server_id = $_GET['id'];
-  $admins                   = $admins_reader->executeCached(ONE_MINUTE * 5);
+  $admins_reader->search = $_GET['id'];
+  $admins_reader->type   = 'server';
+  $admins                = $admins_reader->executeCached(ONE_MINUTE * 5);
   
   $page->assign('admins', $admins['list']);
   $page->display('page_admin_servers_admins');

@@ -10,7 +10,7 @@
               <img alt="{$page_title}" src="themes/{$theme_dir}/images/admin/mods.png" title="{$page_title}" />
             </div>
           </div>
-          <form action="{$active}" id="admin-page-content" method="post">
+          <form action="{$active}" enctype="multipart/form-data" id="admin-page-content" method="post">
             <fieldset>
               <h3>{$lang_edit_mod|ucwords}</h3>
               <p>{$lang_help_desc}</p>

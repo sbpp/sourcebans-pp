@@ -654,16 +654,23 @@ window.addEvent('domready', function() {
   if($chk($('relver')))
     x_Version(setVersion);
   
+  $('dialog').fade('hide');
+  
   new Drag('dialog', {
     handle: 'dialog-title'
   });
   new Tips('.tips',  {
+    className: 'tipwrapper',
     onHide: function(tip) {
       tip.fade('out');
     },
     onShow: function(tip) {
       tip.fade('in');
     }
+  });
+  
+  $$('.tipwrapper').each(function(el) {
+    el.fade('hide');
   });
 });
 

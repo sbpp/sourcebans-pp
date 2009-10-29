@@ -23,6 +23,6 @@ function sajax_call(func, args)
   }).post({'func': func, 'args': JSON.encode(data)});
 }
 
-<?php foreach(sAJAX::getFunctions() as $name => $func): ?>
-function x_<?php echo $name; ?>() { sajax_call('<?php echo $name; ?>', x_<?php echo $name; ?>.arguments); }
+<?php foreach(sAJAX::getFunctions() as $func): ?>
+function x_<?php echo $func; ?>() { sajax_call('<?php echo $func; ?>', arguments); }
 <?php endforeach; ?>

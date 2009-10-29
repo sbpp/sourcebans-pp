@@ -65,12 +65,12 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 #endif
 {
-	CreateNative("SB_GetAdminId", 		Native_GetAdminId);
-	CreateNative("SB_AddAdmin", 			Native_AddAdmin);
-	CreateNative("SB_DeleteAdmin", 		Native_DeleteAdmin);
-	CreateNative("SB_AddGroup", 			Native_AddGroup);
-	CreateNative("SB_DeleteGroup", 		Native_DeleteGroup);
-	CreateNative("SB_SetAdminGroups",	Native_SetAdminGroups);
+	CreateNative("SB_GetAdminId",     Native_GetAdminId);
+	CreateNative("SB_AddAdmin",       Native_AddAdmin);
+	CreateNative("SB_DeleteAdmin",    Native_DeleteAdmin);
+	CreateNative("SB_AddGroup",       Native_AddGroup);
+	CreateNative("SB_DeleteGroup",    Native_DeleteGroup);
+	CreateNative("SB_SetAdminGroups", Native_SetAdminGroups);
 	RegPluginLibrary("sb_admins");
 	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 	return APLRes_Success;
@@ -246,7 +246,6 @@ public Action:Command_AddAdmin(client, args)
 		sPassword[0] = '\0';
 	
 	SB_AddAdmin(client, sName, sType, sIdentity, sFlags, iImmunity, sPassword);
-	
 	return Plugin_Handled;
 }
 
@@ -274,7 +273,6 @@ public Action:Command_DelAdmin(client, args)
 	}
 	
 	SB_DeleteAdmin(client, sType, sIdentity);
-	
 	return Plugin_Handled;
 }
 
@@ -308,7 +306,6 @@ public Action:Command_AddGroup(client, args)
 	}
 	
 	SB_AddGroup(client, sName, sFlags, iImmunity);
-	
 	return Plugin_Handled;
 }
 
@@ -337,7 +334,6 @@ public Action:Command_DelGroup(client, args)
 	}
 	
 	SB_DeleteGroup(client, sName[iStart]);
-	
 	return Plugin_Handled;
 }
 
@@ -354,9 +350,10 @@ public Action:Command_SetAdminGroups(client, args)
 		return Plugin_Handled;
 	}
 	
-	decl String:sIdentity[65], String:sType[16];
-	GetCmdArg(1, sType, sizeof(sType));
-	GetCmdArg(2, sIdentity, sizeof(sIdentity));
+	decl iLen, String:sArg[256], String:sIdentity[65], String:sType[16];
+	GetCmdArgString(sArg, sizeof(sArg));
+	iLen  = BreakString(sArg,       sType,     sizeof(sType));
+	iLen += BreakString(sArg[iLen], sIdentity, sizeof(sIdentity));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
 	{
@@ -364,27 +361,7 @@ public Action:Command_SetAdminGroups(client, args)
 		return Plugin_Handled;
 	}
 	
-	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack, client);
-	// Store amount of passed groups
-	WritePackCell(hPack, args - 2);
-	
-	// Get group names from command argument string
-	decl String:sName[65];
-	for(new i = 3; i <= args; i++)
-	{
-		GetCmdArg(i, sName, sizeof(sName));
-		WritePackString(hPack, sName);
-	}
-	
-	decl String:sEscapedIdentity[129], String:sQuery[256];
-	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
-	Format(sQuery, sizeof(sQuery), "SELECT id \
-																	FROM   %s_admins \
-																	WHERE  auth     = '%s' \
-																		AND  identity = '%s'",
-																	g_sDatabasePrefix, sType, sEscapedIdentity);
-	SQL_TQuery(g_hDatabase, Query_SetAdminGroups, sQuery, hPack);
+	SB_SetAdminGroups(client, sType, sIdentity, sArg[iLen]);
 	return Plugin_Handled;
 }
 
@@ -474,8 +451,8 @@ public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	
 	decl String:sFlags[33], String:sName[MAX_NAME_LENGTH + 1];
 	new iAdmin    = ReadPackCell(pack);
-	ReadPackString(pack, sName,     sizeof(sName));
-	ReadPackString(pack, sFlags,    sizeof(sFlags));
+	ReadPackString(pack, sName,  sizeof(sName));
+	ReadPackString(pack, sFlags, sizeof(sFlags));
 	new iImmunity = ReadPackCell(pack);
 	
 	if(error[0])
@@ -1030,21 +1007,19 @@ public Native_GetAdminId(Handle:plugin, numParams)
 
 public Native_AddAdmin(Handle:plugin, numParams)
 {
-	//order = client, name, authtype, identity, flags, immunity, password
+	// order = client, name, authtype, identity, flags, immunity, password
 	
 	decl String:sFlags[33], String:sIdentity[65], String:sName[33], String:sPassword[65], String:sType[16];
-	new iClient = GetNativeCell(1);
-	GetNativeString(2, sName,  	sizeof(sName));
-	GetNativeString(3, sType,   	sizeof(sType));
-	GetNativeString(4, sIdentity,		sizeof(sIdentity));
-	GetNativeString(5, sFlags,			sizeof(sFlags));
+	new iClient   = GetNativeCell(1);
+	GetNativeString(2, sName,     sizeof(sName));
+	GetNativeString(3, sType,     sizeof(sType));
+	GetNativeString(4, sIdentity, sizeof(sIdentity));
+	GetNativeString(5, sFlags,    sizeof(sFlags));
 	new iImmunity = GetNativeCell(6);
-	GetNativeString(7, sPassword,	sizeof(sPassword));
+	GetNativeString(7, sPassword, sizeof(sPassword));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
-	}
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iClient);
@@ -1064,26 +1039,23 @@ public Native_AddAdmin(Handle:plugin, numParams)
 																	g_sDatabasePrefix, sType, sEscapedIdentity);
 	SQL_TQuery(g_hDatabase, Query_AddAdmin, sQuery, hPack);
 	
-	return true;
+	return SP_ERROR_NONE;
 }
 
 public Native_DeleteAdmin(Handle:plugin, numParams)
 {
-	
-	//order = client, authtype, identity
+	// order = client, authtype, identity
 	
 	decl String:sIdentity[65], String:sType[16];
 	new iClient = GetNativeCell(1);
-	GetNativeString(2, sType,		sizeof(sType));
-	GetNativeString(3, sIdentity,	sizeof(sIdentity));
+	GetNativeString(2, sType,     sizeof(sType));
+	GetNativeString(3, sIdentity, sizeof(sIdentity));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
-	}
 	
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack, 	iClient);
+	WritePackCell(hPack,   iClient);
 	WritePackString(hPack, sType);
 	WritePackString(hPack, sIdentity);
 	
@@ -1096,28 +1068,27 @@ public Native_DeleteAdmin(Handle:plugin, numParams)
 																	g_sDatabasePrefix, sType, sEscapedIdentity);
 	SQL_TQuery(g_hDatabase, Query_DelAdmin, sQuery, hPack);
 	
-	return true;
+	return SP_ERROR_NONE;
 }
 
 public Native_AddGroup(Handle:plugin, numParams)
 {
+	// order = client, name, flags, immunity
 	
-	//order = client, name, flags, immunity
-	
-	decl String:sFlags[33], String:sGroupName[33];
-	new iClient = GetNativeCell(1);
-	GetNativeString(2, sGroupName,	sizeof(sGroupName));
-	GetNativeString(3, sFlags,		sizeof(sFlags));
+	decl String:sFlags[33], String:sName[33];
+	new iClient   = GetNativeCell(1);
+	GetNativeString(2, sName,  sizeof(sName));
+	GetNativeString(3, sFlags, sizeof(sFlags));
 	new iImmunity = GetNativeCell(4);
 	
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack, 	iClient);
-	WritePackString(hPack, sGroupName);
+	WritePackCell(hPack,   iClient);
+	WritePackString(hPack, sName);
 	WritePackString(hPack, sFlags);
-	WritePackCell(hPack,  	iImmunity);
+	WritePackCell(hPack,   iImmunity);
 	
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
-	SQL_EscapeString(g_hDatabase, sGroupName, sEscapedName, sizeof(sEscapedName));
+	SQL_EscapeString(g_hDatabase, sName, sEscapedName, sizeof(sEscapedName));
 	Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																	FROM   %s_srvgroups \
 																	WHERE  name = '%s'",
@@ -1127,19 +1098,16 @@ public Native_AddGroup(Handle:plugin, numParams)
 
 public Native_DeleteGroup(Handle:plugin, numParams)
 {
+	// order = client, name
 	
-	//order = client, name
-	
-	decl String:sGroupName[33];
-	new iClient = GetNativeCell(1);
-	GetNativeString(2, sGroupName,	sizeof(sGroupName));
+	decl String:sName[33];
+	GetNativeString(1, sName, sizeof(sName));
 	
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack, iClient);
-	WritePackString(hPack, sGroupName);
-
+	WritePackString(hPack, sName);
+	
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
-	SQL_EscapeString(g_hDatabase, sGroupName, sEscapedName, sizeof(sEscapedName));
+	SQL_EscapeString(g_hDatabase, sName, sEscapedName, sizeof(sEscapedName));
 	Format(sQuery, sizeof(sQuery), "SELECT id \
 																	FROM   %s_srvgroups \
 																	WHERE  name = '%s'",
@@ -1149,70 +1117,50 @@ public Native_DeleteGroup(Handle:plugin, numParams)
 
 public Native_SetAdminGroups(Handle:plugin, numParams)
 {
+	// order = client, authtype, identity, groups
 	
-	//order = client, authtype, identity, groupnames...
-	
-	/**
-	Since the query is set to [256] that left [111] for the group names.
-	Each group could be (33)+1, so that ment really only 3 group names
-	could be passed if full names were used. Hince [100].
-	*/
-	decl String:sGroupNames[100];
-	
-	decl String:sIdentity[65], String:sType[16];
+	decl String:sGroups[256], String:sIdentity[65], String:sType[16];
 	new iClient = GetNativeCell(1);
-	GetNativeString(2, sType,	sizeof(sType));
-	GetNativeString(3, sIdentity,		sizeof(sIdentity));
+	GetNativeString(2, sType,     sizeof(sType));
+	GetNativeString(3, sIdentity, sizeof(sIdentity));
+	GetNativeString(4, sGroups,   sizeof(sGroups));
+	TrimString(sGroups);
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
-	}
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack, iClient);
 	
-	// check to see if we have a group name
-	GetNativeString(4, sGroupNames,	sizeof(sGroupNames));
-	TrimString(sGroupNames);
-	if (strlen(sGroupNames) == 0)
+	// If groups were passed
+	if(sGroups[0])
 	{
-		WritePackCell(hPack, 0);
+		/**
+		 * Get the total number of groups.
+		 * We have to do this first because the query needs to know
+		 * the amount before it starts to read the group names.
+		 */
+		decl String:sName[33];
+		new iIndex  = 0, Handle:hGroups = CreateArray(33);
+		while(iIndex != -1)
+		{
+			iIndex = BreakString(sGroups[iIndex], sName, sizeof(sName));
+			PushArrayString(hGroups, sName);
+		}
+		
+		// Store amount of passed groups
+		new iGroups = GetArraySize(hGroups);
+		WritePackCell(hPack, iGroups);
+		
+		// Store group names
+		for(new i = 0; i < iGroups; i++)
+		{
+			GetArrayString(hGroups, i, sName, sizeof(sName));
+			WritePackString(hPack, sName);
+		}
 	}
 	else
-	{
-		
-		/**
-		Get the total number of groups.
-		We have to do this first because the query needs to know
-		the count before it starts to read the group names.
-		*/
-		decl String:sArrayString[33];
-		new iCurrentIndex, iNextIndex;
-		new Handle:aGroupNames = CreateArray(33, 1);
-		while(iCurrentIndex != -1)
-		{
-			iNextIndex = BreakString(sGroupNames[iCurrentIndex], sArrayString, sizeof(sArrayString));
-			//lets go ahead and store this info
-			PushArrayString(aGroupNames, sArrayString);
-			iCurrentIndex = iNextIndex;
-		}
-		// store the number of groups in the pack
-		new iTotalGroups = GetArraySize(aGroupNames);
-		WritePackCell(hPack, iTotalGroups);
-		
-		// now we can store the names in the pack
-		new iIndex;
-		while(iIndex < iTotalGroups)
-		{
-			decl String:sPackString[33];
-			GetArrayString(aGroupNames, iIndex++, sPackString, sizeof(sPackString));
-			WritePackString(hPack, sPackString);
-		}
-		
-		// we are done with the array, close it
-		CloseHandle(aGroupNames);
-	}
+		WritePackCell(hPack, 0);
 	
 	decl String:sEscapedIdentity[129], String:sQuery[256];
 	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
@@ -1223,7 +1171,7 @@ public Native_SetAdminGroups(Handle:plugin, numParams)
 																	g_sDatabasePrefix, sType, sEscapedIdentity);
 	SQL_TQuery(g_hDatabase, Query_SetAdminGroups, sQuery, hPack);
 	
-	return true;
+	return SP_ERROR_NONE;
 }
 
 /**
