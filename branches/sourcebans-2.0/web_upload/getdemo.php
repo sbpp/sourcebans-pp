@@ -1,6 +1,8 @@
 <?php
 require_once 'init.php';
 
+$phrases = Env::get('phrases');
+
 try
 {
   $db   = Env::get('db');
@@ -10,7 +12,7 @@ try
                        array($_GET['id']));
   
   if(!file_exists(DEMOS_DIR . $demo['type'] . $demo['ban_id'] . '_' . $demo['filename']))
-    throw new Exception('File not found.');
+    throw new Exception($phrases['file_does_not_exist']);
   
   header('Content-type: application/force-download');
   header('Content-Transfer-Encoding: Binary');
@@ -19,7 +21,6 @@ try
 }
 catch(Exception $e)
 {
-  $phrases = Env::get('phrases');
   $page    = new Page($phrases['error']);
   
   $page->assign('error', $e->getMessage());

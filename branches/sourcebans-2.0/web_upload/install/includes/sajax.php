@@ -24,7 +24,7 @@ function SetupAdmin($username, $password, $confirm_password, $email, $auth, $ide
   try
   {
     if($password != $confirm_password)
-      throw new Exception('The passwords don\'t match');
+      throw new Exception($phrases['passwords_do_not_match']);
     
     require_once BASE_PATH . 'api.php';
     

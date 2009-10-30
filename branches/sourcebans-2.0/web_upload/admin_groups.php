@@ -34,7 +34,7 @@ try
               $flags = in_array('OWNER', $_POST['web_flags']) ? array('OWNER') : $_POST['web_flags'];
               break;
             default:
-              throw new Exception('Invalid group type specified.');
+              throw new Exception($phrases['invalid_type']);
           }
           
           GroupsWriter::add($_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $_POST['overrides']);
@@ -46,7 +46,7 @@ try
           GroupsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
-          throw new Exception('Invalid action specified.');
+          throw new Exception($phrases['invalid_action']);
       }
       
       exit(json_encode(array(

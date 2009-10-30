@@ -16,7 +16,7 @@ try
     try
     {
       if($_POST['password'] != $_POST['password_confirm'])
-          throw new Exception('The passwords don\'t match.');
+          throw new Exception($phrases['passwords_do_not_match']);
       
       AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password']);
       
@@ -36,7 +36,7 @@ try
   $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins['list'][$_GET['id']]))
-    throw new Exception('Invalid ID specified.');
+    throw new Exception($phrases['invalid_id']);
   
   $admin         = $admins['list'][$_GET['id']];
   

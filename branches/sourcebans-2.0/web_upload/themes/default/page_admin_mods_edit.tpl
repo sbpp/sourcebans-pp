@@ -20,10 +20,6 @@
               <input class="submit-fields" {nid id="folder"} value="{$mod_folder}" />
               <label for="icon">{help_icon title="$lang_icon" desc="Click here to upload an icon to associate with this mod."}{$lang_icon}</label>
               <input class="submit-fields" {nid id="icon"} type="file" />
-                {if $mod_icon}
-                Uploaded: <strong>{$mod_icon}</strong>
-                {/if}
-              </div>
               <div class="center">
                 <input name="id" type="hidden" value="{$smarty.get.id}" />
                 <input class="btn ok" type="submit" value="{$lang_save}" />

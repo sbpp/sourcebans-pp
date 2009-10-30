@@ -41,7 +41,7 @@ try
   $servers             = $servers_reader->executeCached(ONE_MINUTE);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($servers[$_GET['id']]))
-    throw new Exception('Invalid ID specified.');
+    throw new Exception($phrases['invalid_id']);
   
   $server              = $servers[$_GET['id']];
   

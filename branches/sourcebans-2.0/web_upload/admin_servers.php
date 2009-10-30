@@ -23,7 +23,7 @@ try
           if(!$userbank->HasAccess(array('OWNER', 'ADD_SERVERS')))
             throw new Exception($phrases['access_denied']);
           if($_POST['rcon'] != $_POST['rcon_confirm'])
-              throw new Exception('The passwords don\'t match.');
+              throw new Exception($phrases['passwords_do_not_match']);
           
           ServersWriter::add($_POST['ip'], $_POST['port'], $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
           break;
@@ -34,7 +34,7 @@ try
           ServersWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
-          throw new Exception('Invalid action specified.');
+          throw new Exception($phrases['invalid_action']);
       }
       
       exit(json_encode(array(

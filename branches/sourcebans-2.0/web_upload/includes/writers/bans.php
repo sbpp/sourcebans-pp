@@ -23,17 +23,17 @@ class BansWriter
     $userbank = Env::get('userbank');
     
     if(!is_numeric($type))
-      throw new Exception('Invalid ban type specified.');
+      throw new Exception($phrases['invalid_type']);
     if($type == STEAM_BAN_TYPE && !preg_match(STEAM_FORMAT, $steam))
-      throw new Exception('Invalid Steam ID specified.');
+      throw new Exception($phrases['invalid_steam']);
     if($type == IP_BAN_TYPE    && !preg_match(IP_FORMAT,    $ip))
-      throw new Exception('Invalid IP address specified.');
+      throw new Exception($phrases['invalid_ip']);
     if(empty($name)   || !is_string($name))
-      throw new Exception('Invalid name specified.');
+      throw new Exception($phrases['invalid_name']);
     if(empty($reason) || !is_string($reason))
-      throw new Exception('Invalid ban reason specified.');
+      throw new Exception($phrases['invalid_reason']);
     if(!is_numeric($length))
-      throw new Exception('Invalid ban length specified.');
+      throw new Exception($phrases['invalid_length']);
     
     // If an IP address was specified, store country information
     if(!empty($ip))
@@ -64,7 +64,7 @@ class BansWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_bans
                   WHERE       id = ?',
@@ -96,7 +96,7 @@ class BansWriter
     $ban     = array();
     
     if(empty($id)        || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     if(!is_null($type)   && is_numeric($type))
       $ban['type']   = $type;
     if(!is_null($steam)  && preg_match(STEAM_FORMAT, $steam))
@@ -138,7 +138,7 @@ class BansWriter
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
-      throw new Exception('File does not exist.');
+      throw new Exception($phrases['file_does_not_exist']);
     
     $lines    = file($tmp_name);
     switch(basename($file))
@@ -176,7 +176,7 @@ class BansWriter
         
         break;
       default:
-        throw new Exception('Unsupported file format.');
+        throw new Exception($phrases['unsupported_format']);
     }
   }
   
@@ -192,7 +192,7 @@ class BansWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_bans
                          unban_admin_id = NULL,
@@ -222,9 +222,9 @@ class BansWriter
     $userbank = Env::get('userbank');
     
     if(empty($id)     || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     if(empty($reason) || !is_string($reason))
-      throw new Exception('Invalid unban reason specified.');
+      throw new Exception($phrases['invalid_reason']);
     
     $db->Execute('UPDATE ' . Env::get('prefix') . '_bans
                          unban_admin_id = ?,

@@ -29,7 +29,7 @@ try
           AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword']);
           break;
         default:
-          throw new Exception('Invalid action specified.');
+          throw new Exception($phrases['invalid_action']);
       }
       
       exit(json_encode(array(

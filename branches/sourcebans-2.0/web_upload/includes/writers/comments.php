@@ -20,9 +20,9 @@ class CommentsWriter
     if(empty($ban_id)  || !is_numeric($ban_id))
       throw new Exception('Invalid ban ID specified.');
     if(empty($type)    || !is_string($type))
-      throw new Exception('Invalid type specified.');
+      throw new Exception($phrases['invalid_type']);
     if(empty($message) || !is_string($message))
-      throw new Exception('Invalid message specified.');
+      throw new Exception($phrases['invalid_message']);
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_comments (type, ban_id, admin_id, message, time)
                   VALUES      (?, ?, ?, ?, UNIX_TIMESTAMP())',
@@ -51,7 +51,7 @@ class CommentsWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $comment = $db->GetRow('SELECT ban_id, type
                             FROM   ' . Env::get('prefix') . '_comments
@@ -59,7 +59,7 @@ class CommentsWriter
                             array($id));
     
     if(empty($comment))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_comments
                   WHERE       id = ?',
@@ -87,9 +87,9 @@ class CommentsWriter
     $userbank = Env::get('userbank');
     
     if(empty($id)      || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     if(empty($message) || !is_string($message))
-      throw new Exception('Invalid message specified.');
+      throw new Exception($phrases['invalid_message']);
     
     $comment = $db->GetRow('SELECT ban_id, type
                             FROM   ' . Env::get('prefix') . '_comments

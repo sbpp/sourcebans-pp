@@ -37,7 +37,7 @@ try
   $bans        = $bans_reader->executeCached(ONE_MINUTE * 5);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($bans['list'][$_GET['id']]))
-    throw new Exception('Invalid ID specified.');
+    throw new Exception($phrases['invalid_id']);
   
   $ban         = $bans['list'][$_GET['id']];
   

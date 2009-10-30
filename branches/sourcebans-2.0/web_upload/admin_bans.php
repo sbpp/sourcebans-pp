@@ -37,7 +37,7 @@ try
           BansWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
-          throw new Exception('Invalid action specified.');
+          throw new Exception($phrases['invalid_action']);
       }
       
       exit(json_encode(array(

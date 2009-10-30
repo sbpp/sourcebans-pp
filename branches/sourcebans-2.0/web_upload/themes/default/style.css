@@ -761,6 +761,13 @@ td.listtable_2 { background-color: #efefef; }
 }
 .srv_group label { text-align: right; }
 
+/** ================ Settings ================ **/
+.plugin_row { padding: 5px !important; }
+.plugin_desc {
+  margin-top: 1px;
+  text-align: justify;
+}
+
 /** ================ Tiny MCE ================ **/
 .mceLayout { clear: both; }
 

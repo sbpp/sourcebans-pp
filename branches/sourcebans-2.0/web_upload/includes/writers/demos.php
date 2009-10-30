@@ -20,11 +20,11 @@ class DemosWriter
     if(empty($ban_id)   || !is_numeric($ban_id))
       throw new Exception('Invalid ban ID specified.');
     if(empty($type)     || !is_string($type))
-      throw new Exception('Invalid type specified.');
+      throw new Exception($phrases['invalid_type']);
     if(empty($filename) || !is_string($filename))
-      throw new Exception('Invalid filename specified.');
+      throw new Exception($phrases['invalid_filename']);
     if(!in_array(pathinfo($filename, PATHINFO_EXTENSION), array('dem', 'rar', 'zip')))
-      throw new Exception('Unsupported file format.');
+      throw new Exception($phrases['unsupported_format']);
     if(!move_uploaded_file($tmp_name, DEMOS_DIR . $type . $ban_id . '_' . $filename))
       throw new Exception('Unable to upload demo.');
     
@@ -55,7 +55,7 @@ class DemosWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $demo = $db->GetRow('SELECT ban_id, type, filename
                          FROM   ' . Env::get('prefix') . '_demos
@@ -63,7 +63,7 @@ class DemosWriter
                          array($id));
     
     if(empty($demo))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     unlink(DEMOS_DIR . $demo['type'] . $demo['ban_id'] . '_' . $demo['filename']);
     

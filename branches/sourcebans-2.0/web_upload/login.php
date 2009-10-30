@@ -12,7 +12,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST')
   try
   {
     if(!$userbank->login($_POST['username'], $_POST['password'], isset($_POST['remember'])))
-      throw new Exception('Invalid username or password specified.');
+      throw new Exception($phrases['invalid_login']);
     
     exit(json_encode(array(
       'redirect' => $userbank->is_admin() ? 'admin.php' : 'account.php'

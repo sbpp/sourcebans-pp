@@ -448,7 +448,7 @@ function KickPlayer($id, $name)
     $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
     
     if(!isset($servers[$id]))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     if(empty($servers[$id]['rcon']))
       throw new Exception('Can\'t kick ' . addslashes($name) . '. No RCON password set!');
     
@@ -459,7 +459,7 @@ function KickPlayer($id, $name)
       
       ServersWriter::edit($id, null, null, '');
       
-      throw new Exception('Invalid RCON password.');
+      throw new Exception($phrases['invalid_rcon']);
     }
     
     $players = array();
@@ -557,9 +557,11 @@ function SelectTheme($theme)
 {
   try
   {
-    $file = THEMES_DIR . $theme . '/theme.info';
+    $phrases = Env::get('phrases');
+    $file    = THEMES_DIR . $theme . '/theme.info';
+    
     if(!file_exists($file))
-      throw new Exception('Invalid theme name specified.');
+      throw new Exception($phrases['invalid_theme']);
     
     return array_merge(array(
       'theme' => $theme
@@ -582,21 +584,23 @@ function ServerAdmins($id)
     require_once READERS_DIR . 'servers.php';
     require_once UTILS_DIR   . 'servers/server_rcon.php';
     
+    $phrases        = Env::get('phrases');
+    
     $admins_reader  = new AdminsReader();
     $servers_reader = new ServersReader();
     
-    $list     = array();
+    $admin_list     = array();
     $server_admins  = array();
     $admins         = $admins_reader->executeCached(ONE_MINUTE  * 5);
     $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
     
     foreach($admins as $id => $admin)
-      $list[$admin['identity']] = $id;
+      $admin_list[$admin['identity']] = $id;
     
-    $authids        = array_keys($list);
+    $authids        = array_keys($admin_list);
     
     if(!isset($servers[$id]))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $server_rcon    = new CServerRcon($servers[$id]['ip'], $servers[$id]['port'], $servers[$id]['rcon']);
     
@@ -606,14 +610,14 @@ function ServerAdmins($id)
       
       ServersWriter::edit($id, null, null, '');
       
-      throw new Exception('Invalid RCON password.');
+      throw new Exception($phrases['invalid_rcon']);
     }
     
     preg_match_all(STATUS_PARSE, $server_rcon->rconCommand('status'), $players);
     
     foreach($players[3] AS $authid)
       if(in_array($authid, $authids))
-        $server_admins[$list[$authid]] = array('name'  => $players[2][$i],
+        $server_admins[$admin_list[$authid]] = array('name'  => $players[2][$i],
                                                      'steam' => $players[3][$i],
                                                      'ip'    => strtok($players[8][$i], ':'),
                                                      'time'  => $players[4][$i],
@@ -640,12 +644,14 @@ function ServerInfo($id)
     require_once READERS_DIR . 'server_query.php';
     require_once READERS_DIR . 'servers.php';
     
+    $phrases        = Env::get('phrases');
+    
     $servers_reader = new ServersReader();
     
     $servers        = $servers_reader->executeCached(ONE_MINUTE);
     
     if(!isset($servers[$id]))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $server_query_reader       = new ServerQueryReader();
     $server_query_reader->ip   = $servers[$id]['ip'];
@@ -687,12 +693,14 @@ function ServerPlayers($id)
     require_once READERS_DIR . 'server_query.php';
     require_once READERS_DIR . 'servers.php';
     
+    $phrases        = Env::get('phrases');
+    
     $servers_reader = new ServersReader();
     
     $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
     
     if(!isset($servers[$id]))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $server_query_reader       = new ServerQueryReader();
     $server_query_reader->ip   = $servers[$id]['ip'];
@@ -743,6 +751,7 @@ function Version()
 {
   try
   {
+    $phrases = Env::get('phrases');
     $version = @file_get_contents('http://www.sourcebans.net/public/versionchecker/?type=rel');
     
     if(empty($version) || strlen($version) > 8)

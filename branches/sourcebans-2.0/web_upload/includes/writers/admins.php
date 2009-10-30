@@ -23,17 +23,17 @@ class AdminsWriter
     $userbank = Env::get('userbank');
     
     if(empty($name)          || !is_string($name))
-      throw new Exception('Invalid name specified.');
+      throw new Exception($phrases['invalid_name']);
     if(empty($auth)          || !is_string($auth))
-      throw new Exception('Invalid authentication type specified.');
+      throw new Exception($phrases['invalid_type']);
     if(empty($identity)      || !is_string($identity) ||
        ($auth == STEAM_AUTH_TYPE && !preg_match(STEAM_FORMAT, $identity)) ||
        ($auth == IP_AUTH_TYPE    && !preg_match(IP_FORMAT,    $identity)))
-      throw new Exception('Invalid identity specified.');
+      throw new Exception($phrases['invalid_identity']);
     if(!empty($email)        && !preg_match(EMAIL_FORMAT, $email))
-      throw new Exception('Invalid e-mail address specified.');
+      throw new Exception($phrases['invalid_email']);
     if(!is_string($password))
-      throw new Exception('Invalid password specified.');
+      throw new Exception($phrases['invalid_password']);
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_admins (name, auth, identity, password, group_id, email, srv_password)
                   VALUES      (?, ?, ?, ?, ?, ?, ?)',
@@ -69,7 +69,7 @@ class AdminsWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE    ad, ag
                   FROM      ' . Env::get('prefix') . '_admins           AS ad
@@ -109,7 +109,7 @@ class AdminsWriter
     $admin    = array();
     
     if(empty($id)              || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     if(!is_null($name)         && is_string($name))
       $admin['name']         = $name;
     if(!is_null($auth)         && is_string($auth))
@@ -162,7 +162,7 @@ class AdminsWriter
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
-      throw new Exception('File does not exist.');
+      throw new Exception($phrases['file_does_not_exist']);
     
     switch(basename($file))
     {
@@ -231,7 +231,7 @@ class AdminsWriter
         
         break;
       default:
-        throw new Exception('Unsupported file format.');
+        throw new Exception($phrases['unsupported_format']);
     }
   }
 }

@@ -176,10 +176,10 @@
                   </tr>
                   {foreach from=$plugins item=plugin key=class}
                   <tr>
-                    <td class="listtable_1" style="padding: 5px">
+                    <td class="listtable_1 plugin_row">
                       <a class="flRight italic" href="{$plugin.url}">{$plugin.author}</a>
                       <span class="underline">{$plugin.name} <strong>{$plugin.version}</strong></span>
-                      <div style="text-align: justify">{$plugin.desc}</div>
+                      <div class="plugin_desc">{$plugin.desc}</div>
                     </td>
                     <td class="center listtable_1"><input{if $plugin.enabled} checked="checked"{/if} name="plugins[{$class}]" type="radio" value="1" /></td>
                     <td class="center listtable_1"><input{if !$plugin.enabled} checked="checked"{/if} name="plugins[{$class}]" type="radio" value="0" /></td>
@@ -249,9 +249,9 @@
                             </td>
                           </tr>
                           <tr>
-                            <td class="listtable_1" align="center"><input id="message_" name="type" type="radio" value="message" /></td>
-                            <td class="listtable_1">Event</td>
-                            <td class="listtable_1"><input id="message" value="" onmouseup="$('message_').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
+                            <td class="listtable_1" align="center"><input id="title_" name="type" type="radio" value="title" /></td>
+                            <td class="listtable_1">{$lang_title}</td>
+                            <td class="listtable_1"><input id="title" value="" onmouseup="$('title_').checked = true" class="sea_inputbox" style="width: 249px;" /></td>
                           </tr>
                           <tr>
                             <td align="center" class="listtable_1"><input id="date_" type="radio" name="type" value="date" /></td>
@@ -296,7 +296,7 @@
               <table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
                 <tr>
                   <th width="5%" align="center">{$lang_type}</th>
-                  <th width="28%" align="center">Event</th>
+                  <th width="28%" align="center">{$lang_title}</th>
                   <th width="28%" align="center">{$lang_admin}</th>
                   <th>{$lang_date}/{$lang_time}</th>
                 </tr>
@@ -323,7 +323,7 @@
                           <th colspan="3">{$lang_details}</th>
                         </tr>
                         <tr>
-                          <td class="listtable_1" width="20%">Message</td>
+                          <td class="listtable_1" width="20%">{$lang_message}</td>
                           <td class="listtable_1">{$log.message}</td>
                         </tr>
                         <tr>

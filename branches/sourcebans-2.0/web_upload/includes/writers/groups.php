@@ -19,9 +19,9 @@ class GroupsWriter
     $phrases = Env::get('phrases');
     
     if(empty($name) || !is_string($name))
-      throw new Exception('Invalid group name specified.');
+      throw new Exception($phrases['invalid_name']);
     if(!is_numeric($immunity))
-      throw new Exception('Invalid group immunity specified.');
+      throw new Exception($phrases['invalid_immunity']);
     
     switch($type)
     {
@@ -52,7 +52,7 @@ class GroupsWriter
         
         break;
       default:
-        throw new Exception('Invalid group type specified.');
+        throw new Exception($phrases['invalid_type']);
     }
     
     $groups_reader       = new GroupsReader();
@@ -97,7 +97,7 @@ class GroupsWriter
                       array($id));
         break;
       default:
-        throw new Exception('Invalid group type specified.');
+        throw new Exception($phrases['invalid_type']);
     }
     
     $groups_reader       = new GroupsReader();
@@ -129,7 +129,7 @@ class GroupsWriter
     {
       case SERVER_GROUPS:
         if(empty($id)           || !is_numeric($id))
-          throw new Exception('Invalid ID specified.');
+          throw new Exception($phrases['invalid_id']);
         if(!is_null($name)      && is_string($name))
           $group['name']     = $name;
         if(!is_null($flags)     && is_string($flags))
@@ -154,7 +154,7 @@ class GroupsWriter
         break;
       case WEB_GROUPS:
         if(empty($id)       || !is_numeric($id))
-          throw new Exception('Invalid ID specified.');
+          throw new Exception($phrases['invalid_id']);
         if(!is_null($name)  && is_string($name))
           $group['name'] = $name;
         if(!is_null($flags) && is_array($flags))
@@ -170,7 +170,7 @@ class GroupsWriter
         
         break;
       default:
-        throw new Exception('Invalid group type specified.');
+        throw new Exception($phrases['invalid_type']);
     }
     
     $groups_reader       = new GroupsReader();
@@ -196,7 +196,7 @@ class GroupsWriter
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
-      throw new Exception('File does not exist.');
+      throw new Exception($phrases['file_does_not_exist']);
     
     $reader  = new KVReader($tmp_name);
     switch(basename($file))
@@ -217,7 +217,7 @@ class GroupsWriter
         
         break;
       default:
-        throw new Exception('Unsupported file format.');
+        throw new Exception($phrases['unsupported_format']);
     }
   }
   

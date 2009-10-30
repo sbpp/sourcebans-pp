@@ -17,11 +17,11 @@ class ModsWriter
     $phrases = Env::get('phrases');
     
     if(empty($name)   || !is_string($name))
-      throw new Exception('Invalid name specified.');
+      throw new Exception($phrases['invalid_name']);
     if(empty($folder) || !is_string($folder))
-      throw new Exception('Invalid mod folder specified.');
+      throw new Exception($phrases['invalid_folder']);
     if(empty($icon)   || !is_string($icon))
-      throw new Exception('Invalid icon filename specified.');
+      throw new Exception($phrases['invalid_filename']);
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_mods (name, folder, icon)
                   VALUES      (?, ?, ?)',
@@ -48,7 +48,7 @@ class ModsWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE FROM ' . Env::get('prefix') . '_mods
                   WHERE       id = ?',
@@ -77,7 +77,7 @@ class ModsWriter
     $mod     = array();
     
     if(empty($id)         || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     if(!is_null($name)   && is_string($name))
       $mod['name']   = $name;
     if(!is_null($folder) && is_string($folder))

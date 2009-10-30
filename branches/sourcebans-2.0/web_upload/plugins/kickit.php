@@ -9,14 +9,8 @@ class SB_KickIt extends SBPlugin
     {
       try
       {
-        if(empty($server['rcon']))
-          throw new Exception('No RCON password set.');
-        if(!$testsocket = @fsockopen('udp://' . $server['ip'], $server['port']))
-          throw new Exception('Can\'t connect.');
-        fclose($testsocket);
+        preg_match_all(STATUS_PARSE, SB_API::sendRCON('status', $id), $players);
         
-        preg_match_all(STATUS_PARSE, SB_API::sendRCON('status', $id), $players); // throw new Exception('Invalid RCON password.'); (already in sendRCON)
-      
         foreach($players[1] AS $userid)
         {
           if(($type == STEAM_BAN_TYPE && $steam == $players[3]) ||

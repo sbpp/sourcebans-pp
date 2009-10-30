@@ -1096,5 +1096,22 @@ class SB_API
     
     return $translations;
   }
+  
+  
+  /**
+   * Loads translations into memory
+   *
+   * @param string $lang The language of the translations to return
+   */
+  public static function loadTranslations($file)
+  {
+    $phrases      = Env::get('phrases');
+    
+    if(!file_exists($file))
+      throw new Exception($phrases['file_does_not_exist']);
+    
+    $translations = Util::parse_ini_file($file);
+    Env::set('phrases', array_merge($phrases, $translations['phrases']));
+  }
 }
 ?>

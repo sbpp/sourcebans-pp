@@ -21,17 +21,17 @@ class SubmissionsWriter
     $phrases = Env::get('phrases');
     
     if(empty($steam)    || !preg_match(STEAM_FORMAT, $steam))
-      throw new Exception('Invalid Steam ID specified.');
+      throw new Exception($phrases['invalid_steam']);
     if(empty($ip)       || !preg_match(IP_FORMAT,    $ip))
-      throw new Exception('Invalid IP address specified.');
+      throw new Exception($phrases['invalid_ip']);
     if(empty($name)     || !is_string($name))
       throw new Exception('Invalid player name specified.');
     if(empty($reason)   || !is_string($reason))
-      throw new Exception('Invalid ban reason specified.');
+      throw new Exception($phrases['invalid_reason']);
     if(empty($subname)  || !is_string($subname))
-      throw new Exception('Invalid name specified.');
+      throw new Exception($phrases['invalid_name']);
     if(empty($subemail) || !preg_match(EMAIL_FORMAT, $subemail))
-      throw new Exception('Invalid e-mail address specified.');
+      throw new Exception($phrases['invalid_email']);
     if(empty($server)   || !is_numeric($server))
       throw new Exception('Invalid server ID specified.');
     
@@ -80,7 +80,8 @@ class SubmissionsWriter
   {
     require_once WRITERS_DIR . 'bans.php';
     
-    $db  = Env::get('db');
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
     
     $sub = $db->GetRow('SELECT name, steam, ip, reason
                         FROM   ' . Env::get('prefix') . '_submissions
@@ -89,7 +90,7 @@ class SubmissionsWriter
                         array($id));
     
     if(empty($sub))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $ban_id = BansWriter::add($sub['name'], STEAM_BAN_TYPE, $sub['steam'], $sub['ip'], 0, $sub['reason']);
     self::archive($id);

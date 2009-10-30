@@ -17,6 +17,8 @@ class ServerQueryReader extends SBReader
   
   public function &execute()
   {
+    $phrases      = Env::get('phrases');
+    
     $server_query = new CServerQuery($this->ip, $this->port);
     
     // Fetch server info, players or rules
@@ -29,7 +31,7 @@ class ServerQueryReader extends SBReader
       case SERVER_RULES:
         return $server_query->GetRules();
       default:
-        throw new Exception('Invalid server query type specified.');
+        throw new Exception($phrases['invalid_type']);
     }
   }
 }

@@ -39,7 +39,7 @@ try
           
           break;
         default:
-          throw new Exception('Invalid group type specified.');
+          throw new Exception($phrases['invalid_type']);
       }
       
       GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
@@ -57,14 +57,14 @@ try
   }
   
   if(!isset($_GET['type']))
-    throw new Exception('Invalid group type specified.');
+    throw new Exception($phrases['invalid_type']);
   
   $groups_reader       = new GroupsReader();
   $groups_reader->type = $_GET['type'];
   $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($groups[$_GET['id']]))
-    throw new Exception('Invalid ID specified.');
+    throw new Exception($phrases['invalid_id']);
   
   $group               = $groups[$_GET['id']];
   

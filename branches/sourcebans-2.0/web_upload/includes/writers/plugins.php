@@ -10,8 +10,10 @@ class PluginsWriter
    */
   public static function add($plugin)
   {
+    $phrases = Env::get('phrases');
+    
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name specified.');
+      throw new Exception($phrases['invalid_plugin']);
     
     $db = Env::get('db');
     
@@ -32,8 +34,10 @@ class PluginsWriter
    */
   public static function delete($plugin)
   {
+    $phrases = Env::get('phrases');
+    
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name specified.');
+      throw new Exception($phrases['invalid_plugin']);
     
     $db = Env::get('db');
     
@@ -55,8 +59,10 @@ class PluginsWriter
    */
   public static function disable($plugin)
   {
+    $phrases = Env::get('phrases');
+    
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name specified.');
+      throw new Exception($phrases['invalid_plugin']);
     
     $db = Env::get('db');
     
@@ -79,8 +85,10 @@ class PluginsWriter
    */
   public static function enable($plugin)
   {
+    $phrases = Env::get('phrases');
+    
     if(empty($plugin) || !is_string($plugin))
-      throw new Exception('Invalid plugin name specified.');
+      throw new Exception($phrases['invalid_plugin']);
     
     $db = Env::get('db');
     

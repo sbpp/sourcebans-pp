@@ -20,9 +20,9 @@ class ServersWriter
     $phrases = Env::get('phrases');
     
     if(empty($ip)   || !is_string($ip))
-      throw new Exception('Invalid IP address specified.');
+      throw new Exception($phrases['invalid_ip']);
     if(empty($port) || !is_numeric($port))
-      throw new Exception('Invalid port number specified.');
+      throw new Exception($phrases['invalid_port']);
     if(empty($mod)  || !is_numeric($mod))
       throw new Exception('Invalid mod ID specified.');
     
@@ -61,7 +61,7 @@ class ServersWriter
     $phrases = Env::get('phrases');
     
     if(empty($id) || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+      throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE    se, gs
                   FROM      ' . Env::get('prefix') . '_servers           AS se
@@ -94,8 +94,8 @@ class ServersWriter
     
     $server  = array();
     
-    if(empty($id)        || !is_numeric($id))
-      throw new Exception('Invalid ID specified.');
+    if(empty($id)         || !is_numeric($id))
+      throw new Exception($phrases['invalid_id']);
     if(!is_null($ip)      && is_string($ip))
       $server['ip']      = $ip;
     if(!is_null($port)    && is_numeric($port))
@@ -141,9 +141,9 @@ class ServersWriter
     if(!file_exists($tmp_name))
       $tmp_name = $file;
     if(!file_exists($tmp_name))
-      throw new Exception('File does not exist.');
+      throw new Exception($phrases['file_does_not_exist']);
     if(pathinfo($file, PATHINFO_EXTENSION) != 'sslf')
-      throw new Exception('Unsupported file format.');
+      throw new Exception($phrases['unsupported_format']);
     
     preg_match_all('Server=([a-zA-Z0-9]+) ([0-9\.]+):([0-9]+)', file_get_contents($tmp_name), $servers);
     

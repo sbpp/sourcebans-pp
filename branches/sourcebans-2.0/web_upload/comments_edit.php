@@ -49,7 +49,7 @@ try
   $comments        = $comments_reader->executeCached(ONE_MINUTE * 5);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($comments[$_GET['id']]))
-    throw new Exception('Invalid ID specified.');
+    throw new Exception($phrases['invalid_id']);
   
   $comment         = $comments[$_GET['id']];
   

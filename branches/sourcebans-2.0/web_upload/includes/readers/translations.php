@@ -10,8 +10,6 @@ class TranslationsReader extends SBReader
   
   public function &execute()
   {
-    $db           = Env::get('db');
-    
     // If specified language does not exist, fall back to English
     if(!file_exists(LANGUAGES_DIR . $this->language . '.lang'))
       $this->language = 'en';

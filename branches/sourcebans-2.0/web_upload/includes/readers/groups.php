@@ -45,7 +45,7 @@ class GroupsReader extends SBReader
         
         break;
       default:
-        throw new Exception('Invalid group type specified.');
+        throw new Exception($phrases['invalid_type']);
     }
     
     list($groups) = SBPlugins::call('OnGetGroups', $groups, $this->type);

@@ -27,7 +27,7 @@ try
           if(!$userbank->HasAccess(array('OWNER', 'ADD_ADMINS')))
             throw new Exception($phrases['access_denied']);
           if($_POST['password'] != $_POST['password_confirm'])
-            throw new Exception('The passwords don\'t match.');
+            throw new Exception($phrases['passwords_do_not_match']);
           
           AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
           break;
@@ -38,7 +38,7 @@ try
           AdminsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
-          throw new Exception('Invalid action specified.');
+          throw new Exception($phrases['invalid_action']);
       }
       
       exit(json_encode(array(

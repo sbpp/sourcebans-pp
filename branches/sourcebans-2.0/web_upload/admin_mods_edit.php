@@ -33,7 +33,7 @@ try
   $mods        = $mods_reader->executeCached(ONE_DAY);
   
   if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($mods[$_GET['id']]))
-    throw new Exception('Invalid ID specified.');
+    throw new Exception($phrases['invalid_id']);
   
   $mod         = $mods[$_GET['id']];
   

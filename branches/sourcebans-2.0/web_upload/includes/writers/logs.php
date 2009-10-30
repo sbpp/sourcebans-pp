@@ -13,15 +13,17 @@ class LogsWriter
    */
   public static function add($type, $title, $message)
   {
-    if(empty($type)    || !is_string($type))
-      throw new Exception('Invalid type specified.');
-    if(empty($title)   || !is_string($title))
-      throw new Exception('Invalid title specified.');
-    if(empty($message) || !is_string($message))
-      throw new Exception('Invalid message specified.');
+    $db       = Env::get('db');
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
     
-    $db        = Env::get('db');
-    $userbank  = Env::get('userbank');
+    if(empty($type)    || !is_string($type))
+      throw new Exception($phrases['invalid_type']);
+    if(empty($title)   || !is_string($title))
+      throw new Exception($phrases['invalid_title']);
+    if(empty($message) || !is_string($message))
+      throw new Exception($phrases['invalid_message']);
+    
     $bt        = debug_backtrace();
     $function  = isset($bt[2]['file']) ? $bt[2]['file'] . ' - ' . $bt[2]['line'] . "\n" : '';
     $function .= isset($bt[3]['file']) ? $bt[3]['file'] . ' - ' . $bt[3]['line'] . "\n" : '';
