@@ -3,9 +3,9 @@
  * =============================================================================
  * Send and receive RCON packets
  * 
- * @author InterWave Studios Development Team
+ * @author InterWave Studios
  * @version 2.0.0
- * @copyright SourceBans (C)2008 InterWaveStudios.com.  All rights reserved.
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 

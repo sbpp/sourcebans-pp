@@ -9,7 +9,7 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
- * @version $Id$
+ * $Id$
  * =============================================================================
  */
 

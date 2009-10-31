@@ -6,7 +6,9 @@ class AdminsReader extends SBReader
   public $limit = 0;
   public $order = SORT_ASC;
   public $page  = 1;
+  public $search;
   public $sort  = 'name';
+  public $type;
   
   public function prepare()
   {  }
@@ -21,13 +23,13 @@ class AdminsReader extends SBReader
     // Filter admins
     if(!empty($this->search) && !empty($this->type))
     {
-      $search = $this->search;
+      $search = $db->qstr($this->search);
       
       switch($this->type)
       {
-        // Name
-        case 'name':
-          $where = 'ad.name LIKE "%' . $search . '%"';
+        // E-mail
+        case 'email':
+          $where = 'ad.email LIKE "%' . $search . '%"';
           break;
         // Exact Identity
         case 'identity':
@@ -37,9 +39,9 @@ class AdminsReader extends SBReader
         case 'identity_part':
           $where = 'ad.identity LIKE "%' . $search . '%"';
           break;
-        // E-mail
-        case 'email':
-          $where = 'ad.email LIKE "%' . $search . '%"';
+        // Name
+        case 'name':
+          $where = 'ad.name LIKE "%' . $search . '%"';
           break;
         // Server
         case 'server':

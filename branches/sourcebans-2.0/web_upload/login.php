@@ -15,7 +15,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST')
       throw new Exception($phrases['invalid_login']);
     
     exit(json_encode(array(
-      'redirect' => $userbank->is_admin() ? 'admin.php' : 'account.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => $userbank->is_admin() ? 'admin.php' : 'account.php'
+      ))
     )));
   }
   catch(Exception $e)

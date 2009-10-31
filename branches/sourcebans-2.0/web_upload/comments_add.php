@@ -17,7 +17,7 @@ try
       CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['message']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => Util::buildQuery()
       )));
     }
     catch(Exception $e)

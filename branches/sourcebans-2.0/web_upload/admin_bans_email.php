@@ -16,7 +16,9 @@ try
       Util::mail($_POST['email'], 'noreply@' . $_SERVER['HTTP_HOST'], $_POST['subject'], $_POST['message']);
       
       exit(json_encode(array(
-        'redirect' => 'admin_bans.php'
+        'redirect' => Util::buildUrl(array(
+          '_' => 'admin_bans.php'
+        ))
       )));
     }
     catch(Exception $e)

@@ -143,6 +143,9 @@ class AdminsWriter
     
     $db->AutoExecute(Env::get('prefix') . '_admins', $admin, 'UPDATE', 'id = ' . $id);
     
+    $admins_reader = new AdminsReader();
+    $admins_reader->removeCacheFile();
+    
     SBPlugins::call('OnEditAdmin', $id, $name, $auth, $identity, $email, $password, $srv_password, $srv_groups, $web_group, $theme, $language);
   }
   

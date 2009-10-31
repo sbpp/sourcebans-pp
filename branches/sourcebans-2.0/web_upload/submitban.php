@@ -23,7 +23,7 @@ try
         DemosWriter::add($id, SUBMISSION_TYPE, $demo['name'], $demo['tmp_name']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => Util::buildQuery()
       )));
     }
     catch(Exception $e)

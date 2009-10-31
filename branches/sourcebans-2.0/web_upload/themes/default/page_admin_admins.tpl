@@ -590,7 +590,7 @@
               <table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
                 <tr>
                   <th width="5%" align="center">{$lang_admin}</th>
-                  <th width="28%" align="center">Message</th>
+                  <th width="28%" align="center">{$lang_message}</th>
                   <th width="28%" align="center">{$lang_name}</th>
                   <th>{$lang_date}/{$lang_time}</td>
                 </tr>

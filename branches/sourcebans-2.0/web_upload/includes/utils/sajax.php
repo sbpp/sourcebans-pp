@@ -3,13 +3,13 @@
  * =============================================================================
  * AJAX Callback handler
  * 
- * @author InterWave Studios Development Team
+ * @author InterWave Studios
  * @version 2.0.0
- * @copyright SourceBans (C)2008 InterWaveStudios.com.  All rights reserved.
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
  * 
- * @version $Id: sajax.php 140 2009-02-11 18:30:00Z tsunami
+ * $Id: sajax.php 140 2009-02-11 18:30:00Z tsunami $
  * =============================================================================
  */
 $userbank = Env::get('userbank');
@@ -90,7 +90,9 @@ function ArchiveProtest($id, $name)
     return array(
       'headline' => 'Protest archived',
       'message' => "The protest for '$name' has been moved to the archive.",
-      'redirect' => 'bans.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_bans.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -121,7 +123,9 @@ function ArchiveSubmission($id, $name)
     return array(
       'headline' => 'Submission archived',
       'message' => "The submission for '$name' has been moved to the archive.",
-      'redirect' => 'bans.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_bans.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -161,7 +165,9 @@ function ClearActions()
     return array(
       'headline' => 'Actions cleared',
       'message' => 'The actions has been successfully cleared.',
-      'redirect' => 'admins.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_admins.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -195,7 +201,9 @@ function ClearLogs()
     return array(
       'headline' => 'Logs cleared',
       'message' => 'The logs has been successfully cleared.',
-      'redirect' => 'settings.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_settings.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -226,7 +234,9 @@ function DeleteAdmin($id, $name)
     return array(
       'headline' => 'Admin deleted',
       'message' => "The admin '$name' has been deleted.",
-      'redirect' => 'admins.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_admins.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -263,7 +273,9 @@ function DeleteBan($id, $name)
     return array(
       'headline' => 'Ban deleted',
       'message' => "The ban for '$name' (".$identity.") has been deleted.",
-      'redirect' => 'banlist.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'banlist.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -294,7 +306,9 @@ function DeleteGroup($id, $name, $type)
     return array(
       'headline' => 'Group deleted',
       'message' => "The group '$name' has been successfully deleted.",
-      'redirect' => 'groups.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_groups.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -325,7 +339,9 @@ function DeleteMod($id, $name)
     return array(
       'headline' => 'Mod deleted',
       'message' => "The mod '$name' has been successfully deleted.",
-      'redirect' => 'mods.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_mods.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -356,7 +372,9 @@ function DeleteProtest($id, $name)
     return array(
       'headline' => 'Protest deleted',
       'message' => "The protest for '$name' has been successfully deleted.",
-      'redirect' => 'bans.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_bans.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -387,7 +405,9 @@ function DeleteServer($id, $name)
     return array(
       'headline' => 'Server deleted',
       'message' => "The server '$name' has been successfully deleted.",
-      'redirect' => 'servers.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_servers.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -418,7 +438,9 @@ function DeleteSubmission($id, $name)
     return array(
       'headline' => 'Submission deleted',
       'message' => "The submission for '$name' has been successfully deleted.",
-      'redirect' => 'bans.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_bans.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -510,7 +532,9 @@ function RestoreProtest($id, $name)
     return array(
       'headline' => 'Protest restored',
       'message' => "The protest for '$name' has been successfully restored from the archive.",
-      'redirect' => 'bans.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_bans.php'
+      ))
     );
   }
   catch(Exception $e)
@@ -541,7 +565,9 @@ function RestoreSubmission($id, $name)
     return array(
       'headline' => 'Submission restored',
       'message' => "The submission for '$name' has been successfully restored from the archive.",
-      'redirect' => 'bans.php'
+      'redirect' => Util::buildUrl(array(
+        '_' => 'admin_bans.php'
+      ))
     );
   }
   catch(Exception $e)

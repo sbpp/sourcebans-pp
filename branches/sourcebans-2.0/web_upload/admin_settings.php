@@ -76,7 +76,7 @@ try
       }
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => Util::buildQuery()
       )));
     }
     catch(Exception $e)

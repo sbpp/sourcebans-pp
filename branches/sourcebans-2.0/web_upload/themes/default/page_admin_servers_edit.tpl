@@ -23,11 +23,11 @@
                 <input class="submit-fields" {nid id="port"} value="{if empty($server_port)}27015{else}{$server_port}{/if}" />
               </div>
               <div>
-                <label for="rcon">{help_icon title="RCON Password" desc="This is your server's RCON password. This can be found in your server.cfg file next to &lt;em&gt;rcon_password&lt;/em&gt;.&lt;br /&gt;&lt;br /&gt;This will be used to allow admins to administrate the server through the web interface."}RCON Password</label>
+                <label for="rcon">{help_icon title="$lang_rcon_password" desc="This is your server's RCON password. This can be found in your server.cfg file next to &lt;em&gt;rcon_password&lt;/em&gt;.&lt;br /&gt;&lt;br /&gt;This will be used to allow admins to administrate the server through the web interface."}{$lang_rcon_password}</label>
                 <input class="submit-fields" {nid id="rcon"} type="password" value="{if !empty($server_rcon)}xxxxxxxxxx{/if}" />
               </div>
               <div>
-                <label for="rcon_confirm">{help_icon title="RCON Password (Confirm)" desc="Please re-type your rcon password to avoid 'typos'."}RCON Password (Confirm)</label>
+                <label for="rcon_confirm">{help_icon title="$lang_confirm_rcon_password" desc="Please re-type your rcon password to avoid 'typos'."}{$lang_confirm_rcon_password}</label>
                 <input class="submit-fields" {nid id="rcon_confirm"} type="password" value="{if !empty($server_rcon)}xxxxxxxxxx{/if}" />
               </div>
               <div>

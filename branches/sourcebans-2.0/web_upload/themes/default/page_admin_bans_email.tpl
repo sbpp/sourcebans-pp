@@ -15,7 +15,7 @@
               <h3>Email Player <em>({$smarty.get.email})</em></h3>
               <label for="subject">{help_icon title="Subject" desc="Type the subject of the email."}Subject</label>
               <input class="submit-fields" {nid id="subject"} />
-              <label for="message">{help_icon title="Message" desc="Type your message here."}Message</label>
+              <label for="message">{help_icon title="$lang_message" desc="Type your message here."}{$lang_message}</label>
               <textarea class="submit-fields" cols="35" {nid id="message"} rows="7"></textarea>
               <div class="center">
                 <input name="email" type="hidden" value="{$smarty.get.email}" />

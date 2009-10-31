@@ -11,7 +11,7 @@
  *
  * Type:    function<br>
  * Name:    build url<br>
- * Purpose: build URL
+ * Purpose: builds a URL
  * @link    http://www.sourcebans.net
  * @author  InterWave Studios
  * @param   array
@@ -20,22 +20,6 @@
  */
 function smarty_function_build_url($params, &$smarty)
 {
-  if(isset($params['_']))
-  {
-    $file = $params['_'];
-    unset($params['_']);
-  }
-  else
-    $file = Env::get('active');
-  
-  $url       = dirname($_SERVER['SCRIPT_NAME']) . '/' . $file;
-  if(!empty($params))
-  {
-    ksort($params);
-    $url .= '?' . http_build_query($params, '', '&amp;');
-  }
-  list($url) = SBPlugins::call('OnBuildUrl', $url);
-  
-  return $url;
+  return Util::buildUrl($params);
 }
 ?>

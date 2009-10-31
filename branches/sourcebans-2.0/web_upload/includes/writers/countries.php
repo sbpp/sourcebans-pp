@@ -10,10 +10,11 @@ class CountriesWriter
    */
   public static function store($ip)
   {
+    $db      = Env::get('db');
+    $phrases = Env::get('phrases');
+    
     if(empty($ip) || !preg_match(IP_FORMAT, $ip))
       throw new Exception($phrases['invalid_ip']);
-    
-    $db    = Env::get('db');
     
     $geoip = geoip_open(LIB_DIR . 'geoip/GeoIP.dat', GEOIP_STANDARD);
     $code  = geoip_country_code_by_addr($geoip, $ip);

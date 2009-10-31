@@ -2,9 +2,9 @@
 /**
  * This file contains general Utils
  * 
- * @author $LastChangedBy$
- * @version $LastChangedRevision$
- * @copyright http://www.SteamFriends.com
+ * @author InterWave Studios
+ * @version 2.0.0
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * $Id$
  */
@@ -263,6 +263,61 @@ class Util
   {
     header('Location: ' . (is_null($url) ? $_SERVER['HTTP_REFERER'] : $url));
     exit;
+  }
+  
+  
+  /**
+   * Builds a query string
+   *
+   * @param  array  $formdata form data to use for the query string
+   * @return string URL that was built
+   */
+  public static function buildQuery($formdata = array())
+  {
+    $file  = Env::get('active');
+    $query = $_GET;
+    
+    foreach($formdata as $name => $value)
+    {
+      if(is_null($value))
+        unset($query[$name]);
+      else
+        $query[$name] = $value;
+    }
+    
+    ksort($query);
+    $url       = dirname($_SERVER['SCRIPT_NAME']) . '/' . $file . '?' . http_build_query($query, '', '&amp;');
+    list($url) = SBPlugins::call('OnBuildQuery', $url);
+    
+    return $url;
+  }
+  
+  
+  /**
+   * Builds a URL
+   *
+   * @param  array  $formdata form data to use for the URL
+   * @return string URL that was built
+   */
+  public static function buildUrl($formdata = array())
+  {
+    if(isset($formdata['_']))
+    {
+      $file = $formdata['_'];
+      unset($formdata['_']);
+    }
+    else
+      $file = Env::get('active');
+    
+    $url       = dirname($_SERVER['SCRIPT_NAME']) . '/' . $file;
+    if(!empty($formdata))
+    {
+      ksort($formdata);
+      $url .= '?' . http_build_query($formdata, '', '&amp;');
+    }
+    list($url) = SBPlugins::call('OnBuildUrl', $url);
+    
+    return $url;
   }
   
   

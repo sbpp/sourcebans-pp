@@ -2,10 +2,12 @@
 /**
  * This file sets up the engine depending on the environment that the system is currently running on.
  * 
- * @author $LastChangedBy$
- * @version $LastChangedRevision$
- * @copyright http://www.SteamFriends.com
+ * @author InterWave Studios
+ * @version 2.0.0
+ * @copyright SourceBans (C)2007-2009 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
+ * @link http://www.sourcebans.net
+ * 
  * $Id$
  */
 

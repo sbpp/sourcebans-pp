@@ -45,7 +45,9 @@ try
       GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
       
       exit(json_encode(array(
-        'redirect' => 'admin_groups.php'
+        'redirect' => Util::buildUrl(array(
+          '_' => 'admin_groups.php'
+        ))
       )));
     }
     catch(Exception $e)

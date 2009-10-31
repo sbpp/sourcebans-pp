@@ -17,7 +17,7 @@ try
       ProtestsWriter::add($_POST['name'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['reason'], $_POST['email']);
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => Util::buildQuery()
       )));
     }
     catch(Exception $e)

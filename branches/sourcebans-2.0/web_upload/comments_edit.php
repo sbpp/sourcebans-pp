@@ -34,7 +34,9 @@ try
       }
       
       exit(json_encode(array(
-        'redirect' => $redirect
+        'redirect' => Util::buildUrl(array(
+          '_' => $redirect
+        ))
       )));
     }
     catch(Exception $e)

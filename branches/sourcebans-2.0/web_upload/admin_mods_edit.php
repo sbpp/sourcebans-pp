@@ -18,7 +18,9 @@ try
       ModsWriter::edit($_POST['id'], $_POST['name'], $_POST['folder'], $_POST['icon']);
       
       exit(json_encode(array(
-        'redirect' => 'admin_mods.php'
+        'redirect' => Util::buildUrl(array(
+          '_' => 'admin_mods.php'
+        ))
       )));
     }
     catch(Exception $e)

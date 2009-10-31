@@ -42,7 +42,7 @@ try
       }
       
       exit(json_encode(array(
-        'redirect' => Env::get('active')
+        'redirect' => util::buildQuery()
       )));
     }
     catch(Exception $e)

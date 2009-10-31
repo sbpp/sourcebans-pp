@@ -19,7 +19,9 @@ try
       AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, $_POST['srv_groups'], $_POST['web_group']);
       
       exit(json_encode(array(
-        'redirect' => 'admin_admins.php'
+        'redirect' => Util::buildUrl(array(
+          '_' => 'admin_admins.php'
+        ))
       )));
     }
     catch(Exception $e)

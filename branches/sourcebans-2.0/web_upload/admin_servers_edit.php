@@ -20,7 +20,9 @@ try
       ServersWriter::edit($_POST['id'], $_POST['ip'], $_POST['port'], $_POST['rcon'] == 'xxxxxxxxxx' ? null : $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
       
       exit(json_encode(array(
-        'redirect' => 'admin_servers.php'
+        'redirect' => Util::buildUrl(array(
+          '_' => 'admin_servers.php'
+        ))
       )));
     }
     catch(Exception $e)

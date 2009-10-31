@@ -21,7 +21,9 @@ try
       AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password']);
       
       exit(json_encode(array(
-        'redirect' => 'admin_admins.php'
+        'redirect' => Util::buildUrl(array(
+          '_' => 'admin_admins.php'
+        ))
       )));
     }
     catch(Exception $e)

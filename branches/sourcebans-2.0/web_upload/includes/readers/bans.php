@@ -27,7 +27,7 @@ class BansReader extends SBReader
     // Filter bans
     if(!empty($this->search) && !empty($this->type))
     {
-      $search = $this->search;
+      $search = $db->qstr($this->search);
       
       switch($this->type)
       {
