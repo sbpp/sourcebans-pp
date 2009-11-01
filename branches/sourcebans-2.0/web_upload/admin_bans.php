@@ -1,9 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'protests.php';
-require_once READERS_DIR . 'submissions.php';
-require_once WRITERS_DIR . 'bans.php';
-require_once WRITERS_DIR . 'demos.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -23,18 +19,18 @@ try
           if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS')))
             throw new Exception($phrases['access_denied']);
           
-          $id = BansWriter::add($_POST['type'], strotupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
+          $id = SB_API::addBan($_POST['type'], strotupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
           
           // If one or more demos were uploaded, add them
           foreach($_FILES['demo'] as $demo)
-            DemosWriter::add($id, BAN_TYPE, $demo['name'], $demo['tmp_name']);
+            SB_API::addDemo($id, BAN_TYPE, $demo['name'], $demo['tmp_name']);
           
           break;
         case 'import':
           if(!$userbank->HasAccess(array('OWNER', 'IMPORT_BANS')))
             throw new Exception($phrases['access_denied']);
           
-          BansWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          SB_API::importBans($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
           throw new Exception($phrases['invalid_action']);
@@ -52,16 +48,10 @@ try
     }
   }
   
-  $protests_reader             = new ProtestsReader();
-  $submissions_reader          = new SubmissionsReader();
-  
-  $protests                    = $protests_reader->executeCached(ONE_MINUTE    * 5);
-  $submissions                 = $submissions_reader->executeCached(ONE_MINUTE * 5);
-  
-  $protests_reader->archive    = true;
-  $submissions_reader->archive = true;
-  $archived_protests           = $protests_reader->executeCached(ONE_MINUTE    * 5);
-  $archived_submissions        = $submissions_reader->executeCached(ONE_MINUTE * 5);
+  $protests             = SB_API::getProtests();
+  $submissions          = SB_API::getSubmissions();
+  $archived_protests    = SB_API::getProtests(true);
+  $archived_submissions = SB_API::getSubmissions(true);
   
   $page->assign('permission_add_bans',        $userbank->HasAccess(array('OWNER', 'ADD_BANS')));
   $page->assign('permission_edit_bans',       $userbank->HasAccess(array('OWNER', 'EDIT_ALL_BANS', 'EDIT_GROUP_BANS', 'EDIT_OWN_BANS')));

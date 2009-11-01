@@ -57,6 +57,7 @@ class BansWriter
    * Deletes a ban
    *
    * @param integer $id The id of the ban to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -87,6 +88,7 @@ class BansWriter
    * @param string  $name   The name of the banned player
    * @param string  $reason The reason of the ban
    * @param integer $length The length of the ban in minutes
+   * @noreturn
    */
   public static function edit($id, $type = null, $steam = null, $ip = null, $name = null, $reason = null, $length = null)
   {
@@ -129,6 +131,7 @@ class BansWriter
    *
    * @param string $file     The file to import from
    * @param string $tmp_name Optional temporary filename
+   * @noreturn
    */
   public static function import($file, $tmp_name = '')
   {
@@ -185,6 +188,7 @@ class BansWriter
    * Rebans a ban
    *
    * @param integer $id The id of the ban to reban
+   * @noreturn
    */
   public static function reban($id)
   {
@@ -214,6 +218,7 @@ class BansWriter
    *
    * @param integer $id     The id of the ban to unban
    * @param string  $reason The reason for unbanning the ban
+   * @noreturn
    */
   public static function unban($id, $reason)
   {

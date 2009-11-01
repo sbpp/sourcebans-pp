@@ -1,8 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'bans.php';
-require_once READERS_DIR . 'blocks.php';
-require_once READERS_DIR . 'servers.php';
+require_once 'api.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
@@ -10,19 +7,12 @@ $page    = new Page($phrases['dashboard'], !isset($_GET['nofullpage']));
 
 try
 {
-  $bans_reader          = new BansReader();
-  $blocks_reader        = new BlocksReader();
-  $servers_reader       = new ServersReader();
+  $bans    = SB_API::getBans(false, 10);
+  $blocks  = SB_API::getBlocks(10);
+  $servers = SB_API::getServers();
   
-  $bans_reader->limit   = 10;
-  $blocks_reader->limit = 10;
-  
-  $bans                 = $bans_reader->executeCached(ONE_MINUTE   * 5);
-  $blocks               = $blocks_reader->executeCached(ONE_MINUTE * 5);
-  $servers              = $servers_reader->executeCached(ONE_MINUTE);
-  
-  $order                = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
-  $sort                 = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'mod_name';
+  $order   = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
+  $sort    = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'mod_name';
   
   Util::array_qsort($servers, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC);
   

@@ -13,8 +13,6 @@
  * =============================================================================
  */
 
-require_once WRITERS_DIR . 'settings.php';
-
 class SBUpdater
 {
   function __construct()
@@ -88,7 +86,9 @@ class SBUpdater
   
   function setCurrentVersion($version)
   {
-    SettingsWriter::update(array(
+    require_once BASE_PATH . 'api.php';
+    
+    SB_API::updateSettings(array(
       'config.version' => $version
     ));
   }

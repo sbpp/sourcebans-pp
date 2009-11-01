@@ -1,6 +1,5 @@
 <?php
-require_once 'init.php';
-require_once WRITERS_DIR . 'comments.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -14,7 +13,7 @@ try
   {
     try
     {
-      CommentsWriter::add($_POST['bid'], $_POST['type'], $_POST['message']);
+      SB_API::addComment($_POST['ban_id'], $_POST['type'], $_POST['message']);
       
       exit(json_encode(array(
         'redirect' => Util::buildQuery()

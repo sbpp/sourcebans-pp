@@ -111,7 +111,7 @@
             <input class="searchbox" name="search" onblur="{literal}if (this.value=='') {this.value=' {/literal}{$lang_search_bans|ucwords}{literal}...';}{/literal}" onfocus="this.value='';" value=" {$lang_search_bans|ucwords}..." /><input class="searchbtn" type="submit" value="" />
           </fieldset>
         </form>
-    	</div>
+      </div>
       <div id="innerwrapper">
         <h2 id="content_title">{$page_title}</h2>
         <div id="breadcrumb">

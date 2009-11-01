@@ -1,9 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'groups.php';
-require_once READERS_DIR . 'mods.php';
-require_once READERS_DIR . 'servers.php';
-require_once WRITERS_DIR . 'servers.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -17,7 +13,7 @@ try
   {
     try
     {
-      ServersWriter::edit($_POST['id'], $_POST['ip'], $_POST['port'], $_POST['rcon'] == 'xxxxxxxxxx' ? null : $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
+      SB_API::editServer($_POST['id'], $_POST['name'], $_POST['icon'], $_POST['folder'], isset($_POST['enabled']), $_POST['groups']);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(
@@ -33,19 +29,7 @@ try
     }
   }
   
-  $groups_reader       = new GroupsReader();
-  $mods_reader         = new ModsReader();
-  $servers_reader      = new ServersReader();
-  
-  $groups_reader->type = SERVER_GROUPS;
-  $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
-  $mods                = $mods_reader->executeCached(ONE_DAY);
-  $servers             = $servers_reader->executeCached(ONE_MINUTE);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($servers[$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $server              = $servers[$_GET['id']];
+  $server = SB_API::getServer($_GET['id']);
   
   $page->assign('server_ip',      $server['ip']);
   $page->assign('server_port',    $server['port']);
@@ -53,8 +37,8 @@ try
   $page->assign('server_mod',     $server['mod_id']);
   $page->assign('server_enabled', $server['enabled']);
   $page->assign('server_groups',  $server['groups']);
-  $page->assign('groups',         $groups);
-  $page->assign('mods',           $mods);
+  $page->assign('groups',         SB_API::getGroups(SERVER_GROUPS));
+  $page->assign('mods',           SB_API::getMods());
   $page->display('page_admin_servers_edit');
 }
 catch(Exception $e)

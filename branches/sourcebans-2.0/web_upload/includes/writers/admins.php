@@ -11,12 +11,12 @@ class AdminsWriter
    * @param  string  $identity     The identity of the admin
    * @param  string  $email        The e-mail address of the admin
    * @param  string  $password     The password of the admin
-   * @param  bool    $srv_password Whether or not the password should be used as server password
+   * @param  string  $srv_password The server password of the admin
    * @param  array   $srv_groups   The list of server admin groups of the admin
    * @param  integer $web_group    The web admin group of the admin
-   * @return The id of the added admin
+   * @return integer The id of the added admin
    */
-  public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = false, $srv_groups = array(), $web_group = null)
+  public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = null, $srv_groups = array(), $web_group = null)
   {
     $db       = Env::get('db');
     $phrases  = Env::get('phrases');
@@ -37,7 +37,7 @@ class AdminsWriter
     
     $db->Execute('INSERT INTO ' . Env::get('prefix') . '_admins (name, auth, identity, password, group_id, email, srv_password)
                   VALUES      (?, ?, ?, ?, ?, ?, ?)',
-                  array($name, $auth, $identity, empty($password) ? null : $userbank->encrypt_password($password), $web_group, $email, $srv_password ? $password : null));
+                  array($name, $auth, $identity, empty($password) ? null : $userbank->encrypt_password($password), $web_group, $email, $srv_password));
     
     $id            = $db->Insert_ID();
     $admins_reader = new AdminsReader();
@@ -62,6 +62,7 @@ class AdminsWriter
    * Deletes an admin
    *
    * @param integer $id The id of the admin to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -98,6 +99,7 @@ class AdminsWriter
    * @param integer $web_group    The web admin group of the admin
    * @param string  $theme        The theme setting of the admin
    * @param string  $language     The language setting of the admin
+   * @noreturn
    */
   public static function edit($id, $name = null, $auth = null, $identity = null, $email = null, $password = null, $srv_password = null, $srv_groups = null, $web_group = null, $theme = null, $language = null)
   {
@@ -120,8 +122,8 @@ class AdminsWriter
       $admin['email']        = $email;
     if(!is_null($password)     && is_string($password))
       $admin['password']     = $userbank->encrypt_password($password);
-    if(!is_null($srv_password) && is_bool($srv_password))
-      $admin['srv_password'] = $srv_password ? $password : null;
+    if(!is_null($srv_password) && is_string($srv_password))
+      $admin['srv_password'] = $srv_password;
     if(!is_null($language)     && is_string($language))
       $admin['language']     = $language;
     if(!is_null($theme)        && is_string($theme))
@@ -155,6 +157,7 @@ class AdminsWriter
    *
    * @param string $file     The file to import from
    * @param string $tmp_name Optional temporary filename
+   * @noreturn
    */
   public static function import($file, $tmp_name = '')
   {

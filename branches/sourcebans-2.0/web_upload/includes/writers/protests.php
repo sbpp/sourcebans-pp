@@ -12,7 +12,7 @@ class ProtestsWriter
    * @param  string  $ip     The IP address of the banned player
    * @param  string  $reason The reason of the protest
    * @param  string  $email  The e-mail address of the protester
-   * @return The id of the added protest
+   * @return integer The id of the added protest
    */
   public static function add($name, $type, $steam, $ip, $reason, $email)
   {
@@ -44,6 +44,7 @@ class ProtestsWriter
    * Archives a protest
    *
    * @param integer $id The id of the protest to archive
+   * @noreturn
    */
   public static function archive($id)
   {
@@ -66,6 +67,7 @@ class ProtestsWriter
    * Deletes a protest
    *
    * @param integer $id The id of the protest to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -87,6 +89,7 @@ class ProtestsWriter
    * Restores a protest from the archive
    *
    * @param integer $id The id of the protest to restore
+   * @noreturn
    */
   public static function restore($id)
   {

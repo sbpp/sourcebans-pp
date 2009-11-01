@@ -1,5 +1,5 @@
 <?php
-require_once 'init.php';
+require_once 'api.php';
 
 $phrases = Env::get('phrases');
 
@@ -21,7 +21,7 @@ try
 }
 catch(Exception $e)
 {
-  $page    = new Page($phrases['error']);
+  $page = new Page($phrases['error']);
   
   $page->assign('error', $e->getMessage());
   $page->display('page_error');

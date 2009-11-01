@@ -7,6 +7,7 @@ class SettingsWriter
    * Updates one or more settings
    *
    * @param array $settings The list of settings to update
+   * @noreturn
    */
   public static function update($settings = array())
   {

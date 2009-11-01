@@ -1,6 +1,5 @@
 <?php
-require_once 'init.php';
-require_once WRITERS_DIR . 'protests.php';
+require_once 'api.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
@@ -14,7 +13,7 @@ try
   {
     try
     {
-      ProtestsWriter::add($_POST['name'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['reason'], $_POST['email']);
+      SB_API::addProtest($_POST['name'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['reason'], $_POST['email']);
       
       exit(json_encode(array(
         'redirect' => Util::buildQuery()

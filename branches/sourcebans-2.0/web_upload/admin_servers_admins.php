@@ -1,6 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'admins.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -13,11 +12,7 @@ try
   if(!isset($_GET['id']) || !is_numeric($_GET['id']))
     throw new Exception($phrases['invalid_id']);
   
-  $admins_reader         = new AdminsReader();
-  
-  $admins_reader->search = $_GET['id'];
-  $admins_reader->type   = 'server';
-  $admins                = $admins_reader->executeCached(ONE_MINUTE * 5);
+  $admins = SB_API::getAdmins(0, 1, null, null, 'server', $_GET['id']);
   
   $page->assign('admins', $admins['list']);
   $page->display('page_admin_servers_admins');

@@ -1,7 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'bans.php';
-require_once WRITERS_DIR . 'bans.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -15,11 +13,11 @@ try
   {
     try
     {
-      BansWriter::edit($_POST['id'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
+      SB_API::editBan($_POST['id'], $_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
       
       // If one or more demos were uploaded, add them
       foreach($_FILES['demo'] as $demo)
-        DemosWriter::add($_POST['id'], BAN_TYPE, $demo['name'], $demo['tmp_name']);
+        SB_API::addDemo($_POST['id'], BAN_TYPE, $demo['name'], $demo['tmp_name']);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(
@@ -35,13 +33,7 @@ try
     }
   }
   
-  $bans_reader = new BansReader();
-  $bans        = $bans_reader->executeCached(ONE_MINUTE * 5);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($bans['list'][$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $ban         = $bans['list'][$_GET['id']];
+  $ban = SB_API::getBan($_GET['id']);
   
   $page->assign('ban_type',   $ban['type']);
   $page->assign('ban_steam',  $ban['steam']);

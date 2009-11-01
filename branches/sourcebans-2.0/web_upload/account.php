@@ -1,5 +1,5 @@
 <?php
-require_once 'init.php';
+require_once 'api.php';
 
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
@@ -17,16 +17,16 @@ try
       switch($_POST['action'])
       {
         case 'email':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, $_POST['email']);
+          SB_API::editAdmin($userbank->GetID(), null, null, null, $_POST['email']);
           break;
         case 'password':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, null, $userbank->encrypt_password($_POST['password']));
+          SB_API::editAdmin($userbank->GetID(), null, null, null, null, $_POST['password']);
           break;
         case 'settings':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, null, null, null, $_POST['theme'], $_POST['language']);
+          SB_API::editAdmin($userbank->GetID(), null, null, null, null, null, null, null, null, $_POST['theme'], $_POST['language']);
           break;
         case 'srvpassword':
-          AdminsWriter::edit($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword']);
+          SB_API::editAdmin($userbank->GetID(), null, null, null, null, null, $_POST['srvpassword']);
           break;
         default:
           throw new Exception($phrases['invalid_action']);
@@ -50,13 +50,11 @@ try
   // Parse languages
   foreach(glob(LANGUAGES_DIR . '*.lang') as $language)
   {
-    $code                          = pathinfo(LANGUAGES_DIR . $language, PATHINFO_FILENAME);
-    $translations_reader           = new TranslationsReader();
-    $translations_reader->language = $code;
-    $translations                  = $translations_reader->executeCached(ONE_DAY);
+    $code         = pathinfo(LANGUAGES_DIR . $language, PATHINFO_FILENAME);
+    $translations = SB_API::getTranslations($code);
     
-    $languages[]                   = array('code' => $code,
-                                           'name' => $translations['info']['name']);
+    $languages[]  = array('code' => $code,
+                          'name' => $translations['info']['name']);
   }
   // Parse themes
   foreach(scandir(THEMES_DIR) as $theme)

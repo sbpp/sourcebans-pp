@@ -1,7 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'admins.php';
-require_once WRITERS_DIR . 'admins.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -18,7 +16,7 @@ try
       if($_POST['password'] != $_POST['password_confirm'])
           throw new Exception($phrases['passwords_do_not_match']);
       
-      AdminsWriter::edit($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password']);
+      SB_API::editAdmin($_POST['id'], $_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password']);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(
@@ -34,13 +32,7 @@ try
     }
   }
   
-  $admins_reader = new AdminsReader();
-  $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins['list'][$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $admin         = $admins['list'][$_GET['id']];
+  $admin = SB_API::getAdmin($_GET['id']);
   
   $page->assign('admin_name',             $admin['name']);
   $page->assign('admin_type',             $admin['auth']);

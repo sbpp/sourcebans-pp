@@ -12,7 +12,7 @@ class ServersWriter
    * @param  integer $mod     The id of the server mod
    * @param  bool    $enabled Whether or not the server is enabled
    * @param  array   $groups  The list of server groups to add the server to
-   * @return The id of the added server
+   * @return integer The id of the added server
    */
   public static function add($ip, $port, $rcon, $mod, $enabled = true, $groups = array())
   {
@@ -54,6 +54,7 @@ class ServersWriter
    * Deletes a server
    *
    * @param integer $id The id of the server to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -86,6 +87,7 @@ class ServersWriter
    * @param integer $mod     The id of the server mod
    * @param bool    $enabled Whether or not the server is enabled
    * @param array   $groups  The list of servers groups to add the server to
+   * @noreturn
    */
   public static function edit($id, $ip = null, $port = null, $rcon = null, $mod = null, $enabled = null, $groups = null)
   {
@@ -133,6 +135,7 @@ class ServersWriter
    *
    * @param string $file     The file to import from
    * @param string $tmp_name Optional temporary filename
+   * @noreturn
    */
   public static function import($file, $tmp_name = '')
   {

@@ -1,8 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'servers.php';
-require_once WRITERS_DIR . 'submissions.php';
-require_once WRITERS_DIR . 'demos.php';
+require_once 'api.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
@@ -16,11 +13,11 @@ try
   {
     try
     {
-      $id = SubmissionsWriter::add(strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'], $_POST['subname'], $_POST['subemail'], $_POST['server']);
+      $id = SB_API::addSubmission(strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'], $_POST['subname'], $_POST['subemail'], $_POST['server']);
       
       // If one or more demos were uploaded, add them
       foreach($_FILES['demo'] as $demo)
-        DemosWriter::add($id, SUBMISSION_TYPE, $demo['name'], $demo['tmp_name']);
+        SB_API::addDemo($id, SUBMISSION_TYPE, $demo['name'], $demo['tmp_name']);
       
       exit(json_encode(array(
         'redirect' => Util::buildQuery()
@@ -34,11 +31,7 @@ try
     }
   }
   
-  $servers_reader = new ServersReader();
-  
-  $servers        = $servers_reader->executeCached(ONE_MINUTE);
-  
-  $page->assign('servers', $servers);
+  $page->assign('servers', SB_API::getServers());
   $page->display('page_submitban');
 }
 catch(Exception $e)

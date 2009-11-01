@@ -11,7 +11,7 @@ class GroupsWriter
    * @param  mixed   $flags    The access flags of the group
    * @param  integer $immunity The immunity level of the group
    * @param  array   $overrides The overrides of the group
-   * @return The id of the added group
+   * @return integer The id of the added group
    */
   public static function add($type, $name, $flags = '', $immunity = 0, $overrides = array())
   {
@@ -70,6 +70,7 @@ class GroupsWriter
    *
    * @param integer $id   The id of the group to delete
    * @param string  $type The type of the group to delete (SERVER_GROUPS, WEB_GROUPS)
+   * @noreturn
    */
   public static function delete($id, $type)
   {
@@ -117,6 +118,7 @@ class GroupsWriter
    * @param mixed   $flags     The access flags of the group
    * @param integer $immunity  The immunity level of the group
    * @param array   $overrides The overrides of the group
+   * @noreturn
    */
   public static function edit($id, $type, $name = null, $flags = null, $immunity = null, $overrides = null)
   {
@@ -186,6 +188,7 @@ class GroupsWriter
    *
    * @param string $file     The file to import from
    * @param string $tmp_name Optional temporary filename
+   * @noreturn
    */
   public static function import($file, $tmp_name = '')
   {

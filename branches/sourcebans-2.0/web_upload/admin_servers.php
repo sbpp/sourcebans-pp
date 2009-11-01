@@ -1,9 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'groups.php';
-require_once READERS_DIR . 'mods.php';
-require_once READERS_DIR . 'servers.php';
-require_once WRITERS_DIR . 'servers.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -25,13 +21,13 @@ try
           if($_POST['rcon'] != $_POST['rcon_confirm'])
               throw new Exception($phrases['passwords_do_not_match']);
           
-          ServersWriter::add($_POST['ip'], $_POST['port'], $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
+          SB_API::addServer($_POST['ip'], $_POST['port'], $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
           break;
         case 'import':
           if(!$userbank->HasAccess(array('OWNER', 'IMPORT_SERVERS')))
             throw new Exception($phrases['access_denied']);
           
-          ServersWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          SB_API::importServers($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
           throw new Exception($phrases['invalid_action']);
@@ -49,15 +45,6 @@ try
     }
   }
   
-  $groups_reader       = new GroupsReader();
-  $mods_reader         = new ModsReader();
-  $servers_reader      = new ServersReader();
-  
-  $groups_reader->type = SERVER_GROUPS;
-  $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
-  $mods                = $mods_reader->executeCached(ONE_DAY);
-  $servers             = $servers_reader->executeCached(ONE_MINUTE);
-  
   $page->assign('permission_config',         $userbank->HasAccess(array('OWNER')));
   $page->assign('permission_rcon',           $userbank->HasAccess(SM_RCON . SM_ROOT));
   $page->assign('permission_add_servers',    $userbank->HasAccess(array('OWNER', 'ADD_SERVERS')));
@@ -65,9 +52,9 @@ try
   $page->assign('permission_edit_servers',   $userbank->HasAccess(array('OWNER', 'EDIT_SERVERS')));
   $page->assign('permission_import_servers', $userbank->HasAccess(array('OWNER', 'IMPORT_SERVERS')));
   $page->assign('permission_list_servers',   $userbank->HasAccess(array('OWNER', 'LIST_SERVERS')));
-  $page->assign('server_groups',             $groups);
-  $page->assign('mods',                      $mods);
-  $page->assign('servers',                   $servers);
+  $page->assign('server_groups',             SB_API::getGroups(SERVER_GROUPS));
+  $page->assign('mods',                      SB_API::getMods());
+  $page->assign('servers',                   SB_API::getServers());
   $page->display('page_admin_servers');
 }
 catch(Exception $e)

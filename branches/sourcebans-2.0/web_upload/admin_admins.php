@@ -1,12 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'actions.php';
-require_once READERS_DIR . 'admins.php';
-require_once READERS_DIR . 'groups.php';
-require_once READERS_DIR . 'overrides.php';
-require_once READERS_DIR . 'servers.php';
-require_once WRITERS_DIR . 'admins.php';
-require_once WRITERS_DIR . 'overrides.php';
+require_once 'api.php';
 
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
@@ -29,13 +22,14 @@ try
           if($_POST['password'] != $_POST['password_confirm'])
             throw new Exception($phrases['passwords_do_not_match']);
           
-          AdminsWriter::add($_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'], $_POST['password'], isset($_POST['srv_password']), $_POST['srv_groups'], $_POST['web_group']);
+          SB_API::addAdmin($_POST['name'], $_POST['auth'], $_POST['auth'] == STEAM_AUTH_TYPE ? strtoupper($_POST['identity']) : $_POST['identity'], $_POST['email'],
+                           $_POST['password'], isset($_POST['srv_password']) ? $_POST['password'] : null, $_POST['srv_groups'], $_POST['web_group']);
           break;
         case 'import':
           if(!$userbank->HasAccess(array('OWNER', 'IMPORT_ADMINS')))
             throw new Exception($phrases['access_denied']);
           
-          AdminsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          SB_API::importAdmins($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
           throw new Exception($phrases['invalid_action']);
@@ -53,40 +47,20 @@ try
     }
   }
   
-  $actions_reader       = new ActionsReader();
-  $admins_reader        = new AdminsReader();
-  $groups_reader        = new GroupsReader();
-  $overrides_reader     = new OverridesReader();
-  $servers_reader       = new ServersReader();
+  $limit        = 25;
+  $pagenr       = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 1 ? $_GET['page'] : 1;
   
-  $limit                = 25;
-  $admins_reader->limit = $limit;
+  $order        = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
+  $sort         = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'name';
   
-  if(isset($_GET['order']) && is_string($_GET['order']))
-    $admins_reader->order  = ($_GET['order'] == 'desc' ? SORT_DESC : SORT_ASC);
-  if(isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 1)
-    $admins_reader->page   = $_GET['page'];
-  if(isset($_GET['search']))
-    $admins_reader->search = $_GET['search'];
-  if(isset($_GET['sort']) && is_string($_GET['sort']))
-    $admins_reader->sort   = $_GET['sort'];
-  if(isset($_GET['type']))
-    $admins_reader->type   = $_GET['type'];
+  $actions      = SB_API::getActions($limit, $pagenr, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC,
+                                     isset($_GET['search']) ? $_GET['search'] : null, isset($_GET['type']) ? $_GET['type'] : null);
+  $admins       = SB_API::getAdmins($limit,  $pagenr, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC,
+                                    isset($_GET['search']) ? $_GET['search'] : null, isset($_GET['type']) ? $_GET['type'] : null);
   
-  $actions              = $actions_reader->executeCached(ONE_MINUTE   * 5);
-  $admins               = $admins_reader->executeCached(ONE_MINUTE    * 5);
-  $overrides            = $overrides_reader->executeCached(ONE_MINUTE * 5);
-  $servers              = $servers_reader->executeCached(ONE_MINUTE);
-  
-  $groups_reader->type  = SERVER_GROUPS;
-  $server_groups        = $groups_reader->executeCached(ONE_MINUTE    * 5);
-  
-  $groups_reader->type  = WEB_GROUPS;
-  $web_groups           = $groups_reader->executeCached(ONE_MINUTE    * 5);
-  
-  $admins_start         = ($admins_reader->page - 1) * $limit;
-  $admins_end           = $admins_start              + $limit;
-  $pages                = ceil($admins['count']      / $limit);
+  $admins_start = ($pagenr - 1)         * $limit;
+  $admins_end   = $admins_start         + $limit;
+  $pages        = ceil($admins['count'] / $limit);
   if($admins_end > $admins['count'])
     $admins_end = $admins['count'];
   
@@ -157,13 +131,13 @@ try
   $page->assign('permission_list_overrides', $userbank->HasAccess(array('OWNER', 'LIST_OVERRIDES')));
   $page->assign('actions',                   $actions['list']);
   $page->assign('admins',                    $admins['list']);
-  $page->assign('overrides',                 $overrides);
-  $page->assign('servers',                   $servers);
-  $page->assign('server_groups',             $server_groups);
-  $page->assign('web_groups',                $web_groups);
+  $page->assign('overrides',                 SB_API::getOverrides());
+  $page->assign('servers',                   SB_API::getServers());
+  $page->assign('server_groups',             SB_API::getGroups(SERVER_GROUPS));
+  $page->assign('web_groups',                SB_API::getGroups(WEB_GROUPS));
   $page->assign('end',                       $admins_end);
-  $page->assign('order',                     $admins_reader->order == SORT_DESC ? 'desc' : 'asc');
-  $page->assign('sort',                      $admins_reader->sort);
+  $page->assign('order',                     $order);
+  $page->assign('sort',                      $sort);
   $page->assign('start',                     $admins_start);
   $page->assign('total',                     $admins['count']);
   $page->assign('total_pages',               $pages);

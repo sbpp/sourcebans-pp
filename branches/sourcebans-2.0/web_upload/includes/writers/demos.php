@@ -10,7 +10,7 @@ class DemosWriter
    * @param  integer $type     The type of the demo (BAN_TYPE, SUBMISSION_TYPE)
    * @param  string  $filename The filename of the demo
    * @param  string  $tmp_name The temporary filename of the demo
-   * @return The id of the added demo
+   * @return integer The id of the added demo
    */
   public static function add($ban_id, $type, $filename, $tmp_name)
   {
@@ -48,6 +48,7 @@ class DemosWriter
    * Deletes a demo
    *
    * @param integer $id The id of the demo to delete
+   * @noreturn
    */
   public static function delete($id)
   {

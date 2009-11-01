@@ -1,5 +1,5 @@
 <?php
-require_once 'init.php';
+require_once 'api.php';
 
 $config = Env::get('config');
 

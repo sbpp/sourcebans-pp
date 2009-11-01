@@ -1,7 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'mods.php';
-require_once WRITERS_DIR . 'mods.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -15,7 +13,7 @@ try
   {
     try
     {
-      ModsWriter::edit($_POST['id'], $_POST['name'], $_POST['folder'], $_POST['icon']);
+      SB_API::editMod($_POST['id'], $_POST['name'], $_POST['folder'], $_POST['icon']);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(
@@ -31,13 +29,7 @@ try
     }
   }
   
-  $mods_reader = new ModsReader();
-  $mods        = $mods_reader->executeCached(ONE_DAY);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($mods[$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $mod         = $mods[$_GET['id']];
+  $mod = SB_API::getMod($_GET['id']);
   
   $page->assign('mod_name',   $mod['name']);
   $page->assign('mod_folder', $mod['folder']);

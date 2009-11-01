@@ -4,7 +4,7 @@ require_once WRITERS_DIR . 'plugins.php';
 
 abstract class SBPlugin
 {
-  /*
+  /**
    * Registers the plugin for use
    *
    * @param string $name    The name of the plugin
@@ -12,6 +12,7 @@ abstract class SBPlugin
    * @param string $desc    The description of the plugin
    * @param float  $version The version number of the plugin
    * @param string $url     The URL of the plugin
+   * @noreturn
    */
   public function __construct($name, $author, $desc, $version, $url)
   {
@@ -21,13 +22,13 @@ abstract class SBPlugin
 
 class SBPlugins
 {
-  /*
+  /**
    * List of plugins
    */
   private static $plugins = array();
   
   
-  /*
+  /**
    * Calls a hook on the enabled plugins
    *
    * @param  string $hook     The hook to call
@@ -54,8 +55,10 @@ class SBPlugins
   }
   
   
-  /*
+  /**
    * Returns the list of plugins
+   *
+   * @return array The list of plugins
    */
   public static function getPlugins()
   {
@@ -64,7 +67,9 @@ class SBPlugins
   
   
   /*
-   * Initialize 
+   * Initialize
+   *
+   * @noreturn
    */
   public static function init()
   {
@@ -93,6 +98,7 @@ class SBPlugins
    * @param string $desc    The description of the plugin
    * @param string $version The version number of the plugin
    * @param string $url     The URL of the plugin
+   * @noreturn
    */
   public static function register($class, $name, $author, $desc, $version, $url)
   {

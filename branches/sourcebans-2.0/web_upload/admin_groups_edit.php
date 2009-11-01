@@ -1,7 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'groups.php';
-require_once WRITERS_DIR . 'groups.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -42,7 +40,7 @@ try
           throw new Exception($phrases['invalid_type']);
       }
       
-      GroupsWriter::edit($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
+      SB_API::editGroup($_POST['id'], $_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $overrides);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(
@@ -58,17 +56,7 @@ try
     }
   }
   
-  if(!isset($_GET['type']))
-    throw new Exception($phrases['invalid_type']);
-  
-  $groups_reader       = new GroupsReader();
-  $groups_reader->type = $_GET['type'];
-  $groups              = $groups_reader->executeCached(ONE_MINUTE * 5);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($groups[$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $group               = $groups[$_GET['id']];
+  $group = SB_API::getGroup($_GET['type'], $_GET['id']);
   
   switch($_GET['type'])
   {
@@ -179,6 +167,10 @@ try
       $page->assign('group_permission_notify',           $permission_notify_prot    && $permission_notify_sub);
       $page->assign('group_permission_servers',          $permission_add_servers    && $permission_delete_servers   && $permission_edit_servers   && $permission_import_servers  && $permission_list_servers);
       $page->assign('group_permission_owner',            $permission_owner);
+      
+      break;
+    default:
+      throw new Exception($phrases['invalid_type']);
   }
   
   $page->assign('group_name', $group['name']);

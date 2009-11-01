@@ -1,7 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'comments.php';
-require_once WRITERS_DIR . 'comments.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -15,7 +13,7 @@ try
   {
     try
     {
-      CommentsWriter::edit($_POST['id'], $_POST['message']);
+      SB_API::editComment($_POST['id'], $_POST['message']);
       
       switch($_POST['type'])
       {
@@ -47,13 +45,7 @@ try
     }
   }
   
-  $comments_reader = new CommentsReader();
-  $comments        = $comments_reader->executeCached(ONE_MINUTE * 5);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($comments[$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $comment         = $comments[$_GET['id']];
+  $comment = SB_API::getComment($_GET['id']);
   
   $page->assign('comment_message', $comment['message']);
   $page->assign('comment_type',    $comment['type']);

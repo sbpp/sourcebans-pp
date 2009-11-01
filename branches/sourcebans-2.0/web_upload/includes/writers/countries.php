@@ -6,7 +6,8 @@ class CountriesWriter
   /**
    * Store the country code and name of an IP address
    *
-   * @param  string $ip The IP address to store the country code and name for
+   * @param string $ip The IP address to store the country code and name for
+   * @noreturn
    */
   public static function store($ip)
   {

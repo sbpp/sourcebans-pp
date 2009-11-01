@@ -9,7 +9,7 @@ class CommentsWriter
    * @param  integer $ban_id  The id of the ban/protest/submission to comment to
    * @param  integer $type    The type of the comment (BAN_TYPE, PROTEST_TYPE, SUBMISSION_TYPE)
    * @param  string  $message The message of the comment
-   * @return The id of the added comment
+   * @return integer The id of the added comment
    */
   public static function add($ban_id, $type, $message)
   {
@@ -44,6 +44,7 @@ class CommentsWriter
    * Deletes a comment
    *
    * @param integer $id The id of the comment to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -79,6 +80,7 @@ class CommentsWriter
    *
    * @param integer $id      The id of the comment to edit
    * @param string  $message The message of the comment
+   * @noreturn
    */
   public static function edit($id, $message)
   {

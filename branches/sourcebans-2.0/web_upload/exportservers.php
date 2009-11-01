@@ -1,16 +1,13 @@
 <?php
-require_once 'init.php';
+require_once 'api.php';
 
-$config   = Env::get('config');
+$phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
 
-if($userbank->HasAccess(SM_RCON . SM_ROOT))
+try
 {
-  require_once READERS_DIR . 'servers.php';
-  
-  $servers_reader = new ServersReader();
-  
-  $servers        = $servers_reader->executeCached(ONE_MINUTE);
+  if(!$userbank->HasAccess(SM_RCON . SM_ROOT))
+    throw new Exception($phrases['access_denied']);
   
   header('Content-Type: application/x-httpd-php php');
   header('Content-Disposition: attachment; filename="sourcebans.sslf"');
@@ -20,7 +17,14 @@ SSLF - Shared Server List Format - Version 1.01
 Name="SourceBans"
 
 <?
-  foreach($servers as $server)
+  foreach(SB_API::getServers() as $server)
     printf('Server="" %s:%d "" ""%s', $server['ip'], $server['port'], PHP_EOL);
+}
+catch(Exception $e)
+{
+  $page = new Page($phrases['error']);
+  
+  $page->assign('error', $e->getMessage());
+  $page->display('page_error');
 }
 ?>

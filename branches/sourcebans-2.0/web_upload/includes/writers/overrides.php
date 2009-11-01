@@ -6,9 +6,10 @@ class OverridesWriter
   /**
    * Adds an override
    *
-   * @param string $type  The type of the override
-   * @param string $name  The name of the override
-   * @param string $flags The flags of the override
+   * @param  string  $type  The type of the override
+   * @param  string  $name  The name of the override
+   * @param  string  $flags The flags of the override
+   * @return integer The id of the added override
    */
   public static function add($type, $name, $flags)
   {
@@ -36,6 +37,8 @@ class OverridesWriter
   
   /**
    * Clears the overrides
+   *
+   * @noreturn
    */
   public static function clear()
   {

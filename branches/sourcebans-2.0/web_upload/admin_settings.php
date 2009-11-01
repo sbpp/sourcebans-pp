@@ -1,9 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'logs.php';
-require_once WRITERS_DIR . 'plugins.php';
-require_once READERS_DIR . 'translations.php';
-require_once WRITERS_DIR . 'settings.php';
+require_once 'api.php';
 
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
@@ -59,7 +55,7 @@ try
           if(isset($_POST['title'])              && !empty($_POST['title'])              && is_string($_POST['title']))
             $settings['template.title']            = $_POST['title'];
           
-          SettingsWriter::update($settings);
+          SB_API::updateSettings($settings);
           break;
         case 'plugins':
           foreach($_POST['plugins'] as $plugin => $enabled)
@@ -87,25 +83,17 @@ try
     }
   }
   
-  $admins_reader = new AdminsReader();
-  $logs_reader   = new LogsReader();
-  
-  $languages     = array();
-  $themes        = array();
-  $plugins       = SBPlugins::getPlugins();
-  $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
-  $logs          = $logs_reader->executeCached(ONE_MINUTE   * 5);
+  $languages = array();
+  $themes    = array();
   
   // Parse languages
   foreach(glob(LANGUAGES_DIR . '*.lang') as $language)
   {
-    $code                          = pathinfo(LANGUAGES_DIR . $language, PATHINFO_FILENAME);
-    $translations_reader           = new TranslationsReader();
-    $translations_reader->language = $code;
-    $translations                  = $translations_reader->executeCached(ONE_DAY);
+    $code         = pathinfo(LANGUAGES_DIR . $language, PATHINFO_FILENAME);
+    $translations = SB_API::getTranslations($code);
     
-    $languages[]                   = array('code' => $code,
-                                           'name' => $translations['info']['name']);
+    $languages[]  = array('code' => $code,
+                          'name' => $translations['info']['name']);
   }
   // Parse themes
   foreach(scandir(THEMES_DIR) as $theme)
@@ -156,7 +144,7 @@ try
   $page->assign('admins',                $admins['list']);
   $page->assign('languages',             $languages);
   $page->assign('logs',                  $logs['list']);
-  $page->assign('plugins',               $plugins);
+  $page->assign('plugins',               SB_API::getPlugins());
   $page->assign('themes',                $themes);
   $page->assign('theme_author',          $theme_author);
   $page->assign('theme_link',            $theme_link);

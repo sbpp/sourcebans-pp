@@ -1,8 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'admins.php';
-require_once READERS_DIR . 'groups.php';
-require_once WRITERS_DIR . 'admins.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -16,7 +13,7 @@ try
   {
     try
     {
-      AdminsWriter::edit($_POST['id'], null, null, null, null, null, null, $_POST['srv_groups'], $_POST['web_group']);
+      SB_API::editAdmin($_POST['id'], null, null, null, null, null, null, $_POST['srv_groups'], $_POST['web_group']);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(
@@ -32,27 +29,13 @@ try
     }
   }
   
-  $admins_reader       = new AdminsReader();
-  $groups_reader       = new GroupsReader();
+  $admin = SB_API::getAdmin($_GET['id']);
   
-  $admins              = $admins_reader->executeCached(ONE_MINUTE * 5);
-  
-  $groups_reader->type = SERVER_GROUPS;
-  $server_groups       = $groups_reader->executeCached(ONE_MINUTE * 5);
-  
-  $groups_reader->type = WEB_GROUPS;
-  $web_groups          = $groups_reader->executeCached(ONE_MINUTE * 5);
-  
-  if(!isset($_GET['id']) || !is_numeric($_GET['id']) || !isset($admins['list'][$_GET['id']]))
-    throw new Exception($phrases['invalid_id']);
-  
-  $admin               = $admins['list'][$_GET['id']];
-  
-  $page->assign('admin_name',       $admin['name']);
-  $page->assign('admin_srv_groups', $admin['srv_groups']);
-  $page->assign('admin_web_group',  $admin['group_id']);
-  $page->assign('server_groups',    $server_groups);
-  $page->assign('web_groups',       $web_groups);
+  $page->assign('admin_name',      $admin['name']);
+  $page->assign('admin_srv_group', $admin['srv_groups']);
+  $page->assign('admin_web_group', $admin['group_id']);
+  $page->assign('server_groups',   SB_API::getGroups(SERVER_GROUPS));
+  $page->assign('web_groups',      SB_API::getGroups(WEB_GROUPS));
   $page->display('page_admin_admins_editgroups');
 }
 catch(Exception $e)

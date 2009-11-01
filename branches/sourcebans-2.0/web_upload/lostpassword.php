@@ -1,6 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'admins.php';
+require_once 'api.php';
 
 $db       = Env::get('db');
 $config   = Env::get('config');
@@ -14,8 +13,7 @@ try
   {
     try
     {
-      $admins_reader = new AdminsReader();
-      $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
+      $admins = SB_API::getAdmins();
       
       foreach($admins['list'] as $id => $admin)
       {
@@ -32,9 +30,9 @@ try
         Util::mail($_POST['email'], 'noreply@' . $_SERVER['HTTP_HOST'], 'SourceBans Password Reset',
                    'Hello ' . $admin['name'] . ',\n\n' .
                    'You have requested to have your password reset for your SourceBans account.\n' .
-                   'To complete this process, please click the following link.\n' .
-                   'NOTE: If you didn\'t request this reset, then simply ignore this email.\n\n' .
-                   'http://' . dirname($_SERVER['SCRIPT_NAME']) . '/lostpassword.php?email=' . $_POST['email'] . '&validation=' . $validation);
+                   'To complete this process, please click the following link.\n\n' .
+                   Util::buildUrl('lostpassword.php?email=' . $_POST['email'] . '&validation=' . $validation) . '\n\n' .
+                   'NOTE: If you didn\'t request this reset, then simply ignore this email.');
         
         break;
       }
@@ -52,8 +50,7 @@ try
   }
   if(isset($_GET['email'], $_GET['validation']) && !empty($_GET['email']) && !empty($_GET['validation']))
   {
-    $admins_reader = new AdminsReader();
-    $admins        = $admins_reader->executeCached(ONE_MINUTE * 5);
+    $admins = SB_API::getAdmins();
     
     foreach($admins['list'] as $id => $admin)
     {

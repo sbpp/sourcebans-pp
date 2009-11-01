@@ -1,8 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'admins.php';
-require_once READERS_DIR . 'bans.php';
-require_once READERS_DIR . 'servers.php';
+require_once 'api.php';
 
 $config   = Env::get('config');
 $phrases  = Env::get('phrases');
@@ -11,33 +8,19 @@ $page     = new Page(ucwords($phrases['ban_list']), !isset($_GET['nofullpage']))
 
 try
 {
-  $admins_reader      = new AdminsReader();
-  $bans_reader        = new BansReader();
-  $servers_reader     = new ServersReader();
+  $limit      = $config['banlist.bansperpage'];
+  $pagenr     = isset($_GET['page']) && is_numeric($_GET['page']) && $_GET['page'] > 1 ? $_GET['page'] : 1;
   
-  $limit              = $config['banlist.bansperpage'];
-  $bans_reader->limit = $limit;
+  $order      = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'desc';
+  $sort       = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'time';
   
-  if(isset($_GET['hideinactive']))
-    $bans_reader->hideinactive = true;
-  if(isset($_GET['order']) && is_string($_GET['order']))
-    $bans_reader->order  = ($_GET['order'] == 'desc' ? SORT_DESC : SORT_ASC);
-  if(isset($_GET['page'])  && is_numeric($_GET['page']) && $_GET['page'] > 1)
-    $bans_reader->page   = $_GET['page'];
-  if(isset($_GET['search']))
-    $bans_reader->search = $_GET['search'];
-  if(isset($_GET['sort'])  && is_string($_GET['sort']))
-    $bans_reader->sort   = $_GET['sort'];
-  if(isset($_GET['type']))
-    $bans_reader->type   = $_GET['type'];
+  $admins     = SB_API::getAdmins();
+  $bans       = SB_API::getBans(isset($_GET['hideinactive']), $limit, $pagenr, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC,
+                                isset($_GET['search']) ? $_GET['search'] : null, isset($_GET['type']) ? $_GET['type'] : null);
   
-  $admins             = $admins_reader->executeCached(ONE_MINUTE * 5);
-  $bans               = $bans_reader->executeCached(ONE_MINUTE   * 5);
-  $servers            = $servers_reader->executeCached(ONE_MINUTE);
-  
-  $bans_start         = ($bans_reader->page - 1) * $limit;
-  $bans_end           = $bans_start              + $limit;
-  $pages              = ceil($bans['count']      / $limit);
+  $bans_start = ($pagenr - 1)       * $limit;
+  $bans_end   = $bans_start         + $limit;
+  $pages      = ceil($bans['count'] / $limit);
   if($bans_end > $bans['count'])
     $bans_end = $bans['count'];
   
@@ -57,10 +40,10 @@ try
   $page->assign('hide_adminname',              $config['banlist.hideadminname']);
   $page->assign('admins',                      $admins['list']);
   $page->assign('bans',                        $bans['list']);
-  $page->assign('servers',                     $servers);
+  $page->assign('servers',                     SB_API::getServers());
   $page->assign('end',                         $bans_end);
-  $page->assign('order',                       $bans_reader->order == SORT_DESC ? 'desc' : 'asc');
-  $page->assign('sort',                        $bans_reader->sort);
+  $page->assign('order',                       $order);
+  $page->assign('sort',                        $sort);
   $page->assign('start',                       $bans_start);
   $page->assign('total',                       $bans['count']);
   $page->assign('total_pages',                 $pages);

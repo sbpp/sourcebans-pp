@@ -13,7 +13,7 @@ class SubmissionsWriter
    * @param  string  $subname  The name of the submitter
    * @param  string  $subemail The e-mail address of the submitter
    * @param  integer $server   The server id on which the player was playing
-   * @return The id of the added submission
+   * @return integer The id of the added submission
    */
   public static function add($steam, $ip, $name, $reason, $subname, $subemail, $server = 0)
   {
@@ -53,6 +53,7 @@ class SubmissionsWriter
    * Archives a submission
    *
    * @param integer $id The id of the submission to archive
+   * @noreturn
    */
   public static function archive($id)
   {
@@ -74,7 +75,7 @@ class SubmissionsWriter
    * Bans a submission
    *
    * @param  integer $id The id of the submission to ban
-   * @return The id of the added ban
+   * @return integer The id of the added ban
    */
   public static function ban($id)
   {
@@ -103,6 +104,7 @@ class SubmissionsWriter
    * Deletes a submission
    *
    * @param integer $id The id of the submission to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -123,6 +125,7 @@ class SubmissionsWriter
    * Restores a submission from the archive
    *
    * @param integer $id The id of the submission to restore
+   * @noreturn
    */
   public static function restore($id)
   {

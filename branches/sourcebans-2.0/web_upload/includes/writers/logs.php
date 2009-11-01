@@ -6,10 +6,10 @@ class LogsWriter
   /**
    * Adds a log
    *
-   * @param  string $type    The type of the log
-   * @param  string $title   The title of the log
-   * @param  string $message The message of the log
-   * @return The id of the added log
+   * @param  string  $type    The type of the log
+   * @param  string  $title   The title of the log
+   * @param  string  $message The message of the log
+   * @return integer The id of the added log
    */
   public static function add($type, $title, $message)
   {
@@ -47,6 +47,8 @@ class LogsWriter
   
   /**
    * Clears the logs
+   *
+   * @noreturn
    */
   public static function clear()
   {

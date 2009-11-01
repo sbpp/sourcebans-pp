@@ -5,6 +5,8 @@ class ActionsWriter
 {  
   /**
    * Clears the actions
+   *
+   * @noreturn
    */
   public static function clear()
   {

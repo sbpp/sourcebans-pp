@@ -77,7 +77,7 @@ class CServerRcon
   
   private function Read()
   {
-    $Packets = $this->_PacketRead();	
+    $Packets = $this->_PacketRead();
     foreach($Packets as $pack)
     {
       if(isset($ret[$pack['ID']])) 

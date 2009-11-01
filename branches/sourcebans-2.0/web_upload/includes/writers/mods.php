@@ -6,10 +6,10 @@ class ModsWriter
   /**
    * Adds a mod
    *
-   * @param  string $name    The name of the mod
-   * @param  string $folder  The folder of the mod
-   * @param  string $icon    The icon of the mod
-   * @return The id of the added mod
+   * @param  string  $name    The name of the mod
+   * @param  string  $folder  The folder of the mod
+   * @param  string  $icon    The icon of the mod
+   * @return integer The id of the added mod
    */
   public static function add($name, $folder, $icon)
   {
@@ -41,6 +41,7 @@ class ModsWriter
    * Deletes a mod
    *
    * @param integer $id The id of the mod to delete
+   * @noreturn
    */
   public static function delete($id)
   {
@@ -64,10 +65,11 @@ class ModsWriter
   /**
    * Edits a mod
    *
-   * @param integer $id      The id of the mod to edit
-   * @param string  $name    The name of the mod
-   * @param string  $folder  The folder of the mod
-   * @param string  $icon    The icon of the mod
+   * @param integer $id     The id of the mod to edit
+   * @param string  $name   The name of the mod
+   * @param string  $folder The folder of the mod
+   * @param string  $icon   The icon of the mod
+   * @noreturn
    */
   public static function edit($id, $name = null, $folder = null, $icon = null)
   {

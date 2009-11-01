@@ -1,8 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'groups.php';
-require_once WRITERS_DIR . 'groups.php';
-require_once READERS_DIR . 'permissions.php';
+require_once 'api.php';
 
 $phrases  = Env::get('phrases');
 $userbank = Env::get('userbank');
@@ -37,13 +34,13 @@ try
               throw new Exception($phrases['invalid_type']);
           }
           
-          GroupsWriter::add($_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $_POST['overrides']);
+          SB_API::addGroup($_POST['type'], $_POST['name'], $flags, isset($_POST['immunity']) && is_numeric($_POST['immunity']) ? $_POST['immunity'] : 0, $_POST['overrides']);
           break;
         case 'import':
           if(!$userbank->HasAccess(array('OWNER', 'IMPORT_GROUPS')))
             throw new Exception($phrases['access_denied']);
           
-          GroupsWriter::import($_FILES['file']['name'], $_FILES['file']['tmp_name']);
+          SB_API::importGroups($_FILES['file']['name'], $_FILES['file']['tmp_name']);
           break;
         default:
           throw new Exception($phrases['invalid_action']);
@@ -61,13 +58,8 @@ try
     }
   }
   
-  $groups_reader       = new GroupsReader();
-  
-  $groups_reader->type = SERVER_GROUPS;
-  $server_groups       = $groups_reader->executeCached(ONE_MINUTE * 5);
-  
-  $groups_reader->type = WEB_GROUPS;
-  $web_groups          = $groups_reader->executeCached(ONE_MINUTE * 5);
+  $server_groups = SB_API::getGroups(SERVER_GROUPS);
+  $web_groups    = SB_API::getGroups(WEB_GROUPS);
   
   foreach($server_groups as &$group)
   {

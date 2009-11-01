@@ -81,11 +81,9 @@ function ArchiveProtest($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'protests.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    ProtestsWriter::archive($id);
+    SB_API::archiveProtest($id);
     
     return array(
       'headline' => 'Protest archived',
@@ -114,11 +112,9 @@ function ArchiveSubmission($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'submissions.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    SubmissionsWriter::archive($id);
+    SB_API::archiveSubmission($id);
     
     return array(
       'headline' => 'Submission archived',
@@ -158,9 +154,7 @@ function ClearActions()
     if(!$userbank->HasAccess(array('OWNER')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'actions.php';
-    
-    ActionsWriter::clear();
+    SB_API::clearActions();
     
     return array(
       'headline' => 'Actions cleared',
@@ -194,9 +188,7 @@ function ClearLogs()
     if(!$userbank->HasAccess(array('OWNER')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'logs.php';
-    
-    LogsWriter::clear();
+    SB_API::clearLog();
     
     return array(
       'headline' => 'Logs cleared',
@@ -225,11 +217,9 @@ function DeleteAdmin($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_ADMINS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'admins.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    AdminsWriter::delete($id);
+    SB_API::deleteAdmin($id);
     
     return array(
       'headline' => 'Admin deleted',
@@ -258,17 +248,12 @@ function DeleteBan($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_BANS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once READERS_DIR . 'bans.php';
-    require_once WRITERS_DIR . 'bans.php';
+    $ban      = SB_API::getBan($id);
     
-    $name = addslashes(htmlspecialchars($name));
+    $name     = addslashes(htmlspecialchars($name));
+    $identity = ($ban['type'] == STEAM_BAN_TYPE ? $ban['steam'] : $ban['ip']);
     
-    $bans_reader = new BansReader();
-    $bans        = $bans_reader->executeCached(ONE_MINUTE * 5);
-    
-    $identity = ($bans['list'][$id]['type'] == STEAM_BAN_TYPE ? $bans['list'][$id]['steam'] : $bans['list'][$id]['ip']);
-    
-    BansWriter::delete($id);
+    SB_API::deleteBan($id);
     
     return array(
       'headline' => 'Ban deleted',
@@ -297,11 +282,9 @@ function DeleteGroup($id, $name, $type)
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_GROUPS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'groups.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    GroupsWriter::delete($id, $type);
+    SB_API::deleteGroup($id, $type);
     
     return array(
       'headline' => 'Group deleted',
@@ -330,11 +313,9 @@ function DeleteMod($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_MODS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'mods.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    ModsWriter::delete($id);
+    SB_API::deleteMod($id);
     
     return array(
       'headline' => 'Mod deleted',
@@ -363,11 +344,9 @@ function DeleteProtest($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'protests.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    ProtestsWriter::delete($id);
+    SB_API::deleteProtest($id);
     
     return array(
       'headline' => 'Protest deleted',
@@ -396,11 +375,9 @@ function DeleteServer($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_SERVERS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'servers.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    ServersWriter::delete($id);
+    SB_API::deleteServer($id);
     
     return array(
       'headline' => 'Server deleted',
@@ -429,11 +406,9 @@ function DeleteSubmission($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'submissions.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    SubmissionsWriter::delete($id);
+    SB_API::deleteSubmission($id);
     
     return array(
       'headline' => 'Submission deleted',
@@ -462,30 +437,7 @@ function KickPlayer($id, $name)
     if(!$userbank->HasAccess(SM_ROOT . SM_KICK))
       throw new Exception($phrases['access_denied']);
     
-    require_once READERS_DIR . 'servers.php';
-    require_once UTILS_DIR   . 'servers/server_rcon.php';
-    
-    $servers_reader = new ServersReader();
-    
-    $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
-    
-    if(!isset($servers[$id]))
-      throw new Exception($phrases['invalid_id']);
-    if(empty($servers[$id]['rcon']))
-      throw new Exception('Can\'t kick ' . addslashes($name) . '. No RCON password set!');
-    
-    $server_rcon    = new CServerRcon($servers[$id]['ip'], $servers[$id]['port'], $servers[$id]['rcon']);
-    if(!$server_rcon->Auth())
-    {
-      require_once WRITERS_DIR . 'servers.php';
-      
-      ServersWriter::edit($id, null, null, '');
-      
-      throw new Exception($phrases['invalid_rcon']);
-    }
-    
-    $players = array();
-    preg_match_all(STATUS_PARSE, $server_rcon->rconCommand('status'), $players);
+    preg_match_all(STATUS_PARSE, SB_API::sendRCON('status', $id), $players);
     
     foreach($players[2] AS $index => $player)
     {
@@ -523,11 +475,9 @@ function RestoreProtest($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTEST')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'protests.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    ProtestsWriter::restore($id);
+    SB_API::restoreProtest($id);
     
     return array(
       'headline' => 'Protest restored',
@@ -556,11 +506,9 @@ function RestoreSubmission($id, $name)
     if(!$userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'submissions.php';
-    
     $name = addslashes(htmlspecialchars($name));
     
-    SubmissionsWriter::restore($id);
+    SB_API::restoreSubmission($id);
     
     return array(
       'headline' => 'Submission restored',
@@ -606,40 +554,15 @@ function ServerAdmins($id)
 {
   try
   {
-    require_once READERS_DIR . 'admins.php';
-    require_once READERS_DIR . 'servers.php';
-    require_once UTILS_DIR   . 'servers/server_rcon.php';
+    $admin_list    = array();
+    $server_admins = array();
     
-    $phrases        = Env::get('phrases');
-    
-    $admins_reader  = new AdminsReader();
-    $servers_reader = new ServersReader();
-    
-    $admin_list     = array();
-    $server_admins  = array();
-    $admins         = $admins_reader->executeCached(ONE_MINUTE  * 5);
-    $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
-    
-    foreach($admins as $id => $admin)
+    foreach(SB_API::getAdmins() as $id => $admin)
       $admin_list[$admin['identity']] = $id;
     
-    $authids        = array_keys($admin_list);
+    $authids       = array_keys($admin_list);
     
-    if(!isset($servers[$id]))
-      throw new Exception($phrases['invalid_id']);
-    
-    $server_rcon    = new CServerRcon($servers[$id]['ip'], $servers[$id]['port'], $servers[$id]['rcon']);
-    
-    if(!$server_rcon->Auth())
-    {
-      require_once WRITERS_DIR . 'servers.php';
-      
-      ServersWriter::edit($id, null, null, '');
-      
-      throw new Exception($phrases['invalid_rcon']);
-    }
-    
-    preg_match_all(STATUS_PARSE, $server_rcon->rconCommand('status'), $players);
+    preg_match_all(STATUS_PARSE, SB_API::sendRCON('status', $id), $players);
     
     foreach($players[3] AS $authid)
       if(in_array($authid, $authids))
@@ -667,30 +590,15 @@ function ServerInfo($id)
 {
   try
   {
-    require_once READERS_DIR . 'server_query.php';
-    require_once READERS_DIR . 'servers.php';
-    
-    $phrases        = Env::get('phrases');
-    
-    $servers_reader = new ServersReader();
-    
-    $servers        = $servers_reader->executeCached(ONE_MINUTE);
-    
-    if(!isset($servers[$id]))
-      throw new Exception($phrases['invalid_id']);
-    
-    $server_query_reader       = new ServerQueryReader();
-    $server_query_reader->ip   = $servers[$id]['ip'];
-    $server_query_reader->port = $servers[$id]['port'];
-    $server_query_reader->type = SERVER_INFO;
-    $server_info               = $server_query_reader->executeCached(ONE_MINUTE);
+    $server      = SB_API::getServer($id);
+    $server_info = SB_API::getServerInfo($id);
     
     if(empty($server_info))
-      throw new Exception('Error connecting (' . $servers[$id]['ip'] . ':' . $servers[$id]['port'] . ')');
+      throw new Exception('Error connecting (' . $server['ip'] . ':' . $server['port'] . ')');
     if($server_info['hostname'] == "anned by server\n")
-      throw new Exception('Banned by server (' . $servers[$id]['ip'] . ':' . $servers[$id]['port'] . ')');
+      throw new Exception('Banned by server (' . $server['ip'] . ':' . $server['port'] . ')');
     
-    $map_image = 'images/maps/' . $servers[$id]['mod_folder'] . '/' . $server_info['map'] . '.jpg';
+    $map_image = 'images/maps/' . $server['mod_folder'] . '/' . $server_info['map'] . '.jpg';
     
     return array(
       'id'         => $id,
@@ -716,27 +624,9 @@ function ServerPlayers($id)
 {
   try
   {
-    require_once READERS_DIR . 'server_query.php';
-    require_once READERS_DIR . 'servers.php';
-    
-    $phrases        = Env::get('phrases');
-    
-    $servers_reader = new ServersReader();
-    
-    $servers        = $servers_reader->executeCached(ONE_MINUTE * 5);
-    
-    if(!isset($servers[$id]))
-      throw new Exception($phrases['invalid_id']);
-    
-    $server_query_reader       = new ServerQueryReader();
-    $server_query_reader->ip   = $servers[$id]['ip'];
-    $server_query_reader->port = $servers[$id]['port'];
-    $server_query_reader->type = SERVER_PLAYERS;
-    $server_players            = $server_query_reader->executeCached(ONE_MINUTE);
-    
     return array(
       'id'      => $id,
-      'players' => $server_players
+      'players' => SB_API::getServerPlayers($id)
     );
   }
   catch(Exception $e)
@@ -758,10 +648,8 @@ function SetWebGroup($admins, $id)
     if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
       throw new Exception($phrases['access_denied']);
     
-    require_once WRITERS_DIR . 'admins.php';
-    
     foreach($admins as $admin)
-      AdminsWriter::edit($admin, null, null, null, null, null, null, null, $id);
+      SB_API::editAdmin($admin, null, null, null, null, null, null, null, $id);
   }
   catch(Exception $e)
   {

@@ -7,6 +7,7 @@ class PluginsWriter
    * Adds a plugin
    *
    * @param string $plugin The class name of the plugin to add
+   * @noreturn
    */
   public static function add($plugin)
   {
@@ -31,6 +32,7 @@ class PluginsWriter
    * Deletes a plugin
    *
    * @param string $plugin The class name of the plugin to delete
+   * @noreturn
    */
   public static function delete($plugin)
   {
@@ -56,6 +58,7 @@ class PluginsWriter
    * Disables a plugin
    *
    * @param string $plugin The class name of the plugin to disable
+   * @noreturn
    */
   public static function disable($plugin)
   {
@@ -82,6 +85,7 @@ class PluginsWriter
    * Enables a plugin
    *
    * @param string $plugin The class name of the plugin to enable
+   * @noreturn
    */
   public static function enable($plugin)
   {

@@ -65,8 +65,16 @@ function SubmitForm(el, cb_complete)
     'name': 'submit_form',
     'events': {
       'load': function() {
+        var doc;
+        if(this.contentDocument)
+          doc = this.contentDocument;
+        else if(this.contentWindow)
+          doc = this.contentWindow.document;
+        else if(this.document)
+          doc = this.document;
+        
         if(typeof(cb_complete) == 'function')
-          cb_complete(this.contentWindow.document.body.innerHTML);
+          cb_complete(doc ? doc.body.innerHTML : null);
         
         $('ajax-indicator').setStyle('display', 'none');
         this.dispose();

@@ -1,6 +1,5 @@
 <?php
-require_once 'init.php';
-require_once READERS_DIR . 'servers.php';
+require_once 'api.php';
 
 $config  = Env::get('config');
 $phrases = Env::get('phrases');
@@ -8,12 +7,10 @@ $page    = new Page($phrases['servers'], !isset($_GET['nofullpage']));
 
 try
 {
-  $servers_reader = new ServersReader();
+  $servers = SB_API::getServers();
   
-  $servers        = $servers_reader->executeCached(ONE_MINUTE);
-  
-  $order          = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
-  $sort           = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'mod_name';
+  $order   = isset($_GET['order']) && is_string($_GET['order']) ? $_GET['order'] : 'asc';
+  $sort    = isset($_GET['sort'])  && is_string($_GET['sort'])  ? $_GET['sort']  : 'mod_name';
   
   Util::array_qsort($servers, $sort, $order == 'desc' ? SORT_DESC : SORT_ASC);
   
