@@ -93,7 +93,7 @@ class AdminsReader extends SBReader
       $admin['web_flags']  = empty($admin['web_flags'])  ? array() : explode(',', $admin['web_flags']);
     }
     
-    list($admin_list, $admin_count) = SBPlugins::call('OnGetAdmins', $admin_list, $admin_count, $this->search, $this->type);
+    list($admin_list, $admin_count) = SBPlugins::call('OnGetAdmins', $admin_list, $admin_count, $this->limit, $this->page, $this->sort, $this->order, $this->search, $this->type);
     
     return array('count' => $admin_count,
                  'list'  => $admin_list);

@@ -30,14 +30,14 @@
                 <p>{$lang_help_desc}</p>
                 <label for="name">{help_icon title="$lang_name" desc="Type the nickname of the person that you are banning."}{$lang_name}</label>
                 <input class="submit-fields" {nid id="name"} />
-                <label for="type">{help_icon title="Ban Type" desc="Choose whether to ban by Steam ID or IP address."}Ban Type</label>
+                <label for="type">{help_icon title="$lang_type" desc="Choose whether to ban by Steam ID or IP address."}{$lang_type}</label>
                 <select class="submit-fields" {nid id="type"}>
                   <option value="{$smarty.const.STEAM_BAN_TYPE}">Steam ID</option>
                   <option value="{$smarty.const.IP_BAN_TYPE}">{$lang_ip_address}</option>
                 </select>
-                <label for="steam">{help_icon title="Steam ID" desc="The Steam ID of the person to ban."}Steam ID</label>
+                <label for="steam">{help_icon title="Steam ID" desc="The Steam ID of the person to ban."}Steam ID (<a href="{build_url _=banlist.php search=null type=steam}"><span id="steam_count">0</span> {$lang_bans|strtolower}</a>)</label>
                 <input class="submit-fields" {nid id="steam"} />
-                <label for="ip">{help_icon title="$lang_ip_address" desc="Type the IP address of the person you want to ban."}{$lang_ip_address}</label>
+                <label for="ip">{help_icon title="$lang_ip_address" desc="Type the IP address of the person you want to ban."}{$lang_ip_address} (<a href="{build_url _=banlist.php search=null type=ip}"><span id="ip_count">0</span> {$lang_bans|strtolower}</a>)</label>
                 <input class="submit-fields" {nid id="ip"} />
                 <label for="reason">{help_icon title="$lang_reason" desc="Explain in detail, why this ban is being made."}{$lang_reason}</label>
                 <select class="submit-fields" {nid id="reason"}>
@@ -105,7 +105,7 @@
                   </optgroup>
                 </select>
                 <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo} (<a href="#" id="add_demo">{$lang_add}</a>)</label>
-                <input class="submit-fields" name="demo[]" id="demo" type="file" />
+                <input class="demo submit-fields" name="demo[]" id="demo" type="file" />
                 <div class="center">
                   <input name="action" type="hidden" value="add" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -148,8 +148,8 @@
                   </tr>
                   {foreach from=$protests item=protest key=protest_id}
                   <tr id="protest_{$protest_id}" class="opener2 tbl_out">
-                    <td class="toggler" style="border-bottom: solid 1px #ccc">{$protest.name}</td>
-                    <td style="border-bottom: solid 1px #ccc">{$protest.steam}</td>
+                    <td class="toggler" style="border-bottom: solid 1px #ccc">{$protest.ban_name}</td>
+                    <td style="border-bottom: solid 1px #ccc">{$protest.ban_steam}</td>
                     <td style="border-bottom: solid 1px #ccc">
                       {if $permission_edit_bans}
                       <a href="#" onclick="ArchiveProtest({$protest_id}, '{$protest.steam}');">{$lang_to_archive}</a> -
@@ -167,16 +167,16 @@
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_name}</td>
-                            <td class="listtable_1">{$protest.name}</td>
+                            <td class="listtable_1">{$protest.ban_name}</td>
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">Steam ID</td>
-                            <td class="listtable_1">{$protest.steam}</td>
+                            <td class="listtable_1">{$protest.ban_steam}</td>
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_ip_address}</td>
                             <td class="listtable_1">
-                              {if empty($protest.ip)}
+                              {if empty($protest.ban_ip)}
                               <em class="not_applicable">no IP address present</em>
                               {else}
                               {$protest.ip}
@@ -211,11 +211,11 @@
                           </tr>
                           <tr>
                             <td class="listtable_1">Protester IP</td>
-                            <td class="listtable_1">{$protest.pip}</td>
+                            <td class="listtable_1">{$protest.ip}</td>
                           </tr>
                           <tr>
                             <td class="listtable_1">Protested on</td>
-                            <td class="listtable_1">{$protest.date}</td>
+                            <td class="listtable_1">{$protest.time|date_format:$date_format}</td>
                           </tr>
                           <tr>
                             <td class="listtable_1">Protest message</td>
@@ -277,8 +277,8 @@
                   </tr>
                   {foreach from=$archived_protests item=protest key=protest_id}
                   <tr id="protest_{$protest_id}" class="opener2 tbl_out">
-                    <td class="toggler" style="border-bottom: solid 1px #ccc">{$protest.name}</td>
-                    <td style="border-bottom: solid 1px #ccc">{$protest.steam}</td>
+                    <td class="toggler" style="border-bottom: solid 1px #ccc">{$protest.ban_name}</td>
+                    <td style="border-bottom: solid 1px #ccc">{$protest.ban_steam}</td>
                     <td style="border-bottom: solid 1px #ccc">
                       {if $permission_edit_bans}
                       <a href="#" onclick="RestoreProtest({$protest_id}, '{$protest.steam}');">{$lang_restore}</a> -
@@ -296,16 +296,16 @@
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_name}</td>
-                            <td class="listtable_1">{$protest.name}</td>
+                            <td class="listtable_1">{$protest.ban_name}</td>
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">Steam ID</td>
-                            <td class="listtable_1">{$protest.steam}</td>
+                            <td class="listtable_1">{$protest.ban_steam}</td>
                           </tr>
                           <tr>
                             <td width="20%" class="listtable_1">{$lang_ip_address}</td>
                             <td class="listtable_1">
-                              {if empty($protest.ip)}
+                              {if empty($protest.ban_ip)}
                               <em class="not_applicable">no IP address present</em>
                               {else}
                               {$protest.ip}
@@ -336,11 +336,11 @@
                           </tr>
                           <tr>
                             <td class="listtable_1">{$lang_server}</td>
-                            <td class="listtable_1" id="host_{$protest.sid}">Querying Server Data...</td>
+                            <td class="listtable_1" id="host_{$protest.server_id}">Querying Server Data...</td>
                           </tr>
                           <tr>
                             <td class="listtable_1">Protester IP</td>
-                            <td class="listtable_1">{$protest.pip}</td>
+                            <td class="listtable_1">{$protest.ip}</td>
                           </tr>
                           <tr>
                             <td class="listtable_1">Protested on</td>

@@ -104,8 +104,8 @@ function UpdateCheckBox(objCheckbox)
 
 
 var MooMenu = new Class({
-  initialize: function(id) {
-    this.menu = $(id);
+  initialize: function(el) {
+    this.menu = $(el);
     
     this.menu.fade('hide').getChildren('li').each(function(el) {
       var submenu = el.getChildren('ul')[0];

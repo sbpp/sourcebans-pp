@@ -19,9 +19,10 @@ class ProtestsWriter
     $db     = Env::get('db');
     $ban_id = $db->GetOne('SELECT id
                            FROM   ' . Env::get('prefix') . '_bans
-                           WHERE  (type = ? AND steam = ?)
+                           WHERE  name = ?
+                              OR  (type = ? AND steam = ?)
                               OR  (type = ? AND ip    = ?)',
-                           array(STEAM_BAN_TYPE, $steam, IP_BAN_TYPE, $ip));
+                           array($name, STEAM_BAN_TYPE, $steam, IP_BAN_TYPE, $ip));
     
     if(is_null($ban_id))
       throw new Exception('This Steam ID or IP address is not banned.');
@@ -57,7 +58,7 @@ class ProtestsWriter
                   array($id));
     
     $protests_reader = new ProtestsReader();
-    $protests_reader->removeCacheFile();
+    $protests_reader->removeCacheFile(true);
     
     SBPlugins::call('OnArchiveProtest', $id);
   }
@@ -79,7 +80,7 @@ class ProtestsWriter
                   array($id));
     
     $protests_reader = new ProtestsReader();
-    $protests_reader->removeCacheFile();
+    $protests_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteProtest', $id);
   }
@@ -102,7 +103,7 @@ class ProtestsWriter
                   array($id));
     
     $protests_reader = new ProtestsReader();
-    $protests_reader->removeCacheFile();
+    $protests_reader->removeCacheFile(true);
     
     SBPlugins::call('OnRestoreProtest', $id);
   }

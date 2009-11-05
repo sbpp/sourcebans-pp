@@ -65,7 +65,7 @@ class SubmissionsWriter
                   array($id));
     
     $submissions_reader = new SubmissionsReader();
-    $submissions_reader->removeCacheFile();
+    $submissions_reader->removeCacheFile(true);
     
     SBPlugins::call('OnArchiveSubmission', $id);
   }
@@ -115,7 +115,7 @@ class SubmissionsWriter
                   array($id));
     
     $submissions_reader = new SubmissionsReader();
-    $submissions_reader->removeCacheFile();
+    $submissions_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteSubmission', $id);
   }
@@ -137,7 +137,7 @@ class SubmissionsWriter
                   array($id));
     
     $submissions_reader = new SubmissionsReader();
-    $submissions_reader->removeCacheFile();
+    $submissions_reader->removeCacheFile(true);
     
     SBPlugins::call('OnRestoreSubmission', $id);
   }

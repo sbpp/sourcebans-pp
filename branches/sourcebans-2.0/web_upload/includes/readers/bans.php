@@ -33,54 +33,54 @@ class BansReader extends SBReader
       {
         // Admin
         case 'admin':
-          $where = 'admin_id = ' . $search;
+          $where = 'ba.admin_id = ' . $search;
           break;
         // Date
         case 'date':
           $date  = explode(',', $search);
           $time  = mktime(0,  0,  0,  $date[1], $date[0], $date[2]);
           $time2 = mktime(23, 59, 59, $date[1], $date[0], $date[2]);
-          $where = 'time > ' . $time . ' AND time < ' . $time2;
+          $where = 'ba.time > ' . $time . ' AND ba.time < ' . $time2;
           break;
         // Ban
         case 'id':
-          $where = 'id = ' . $search;
+          $where = 'ba.id = ' . $search;
           break;
         // Partial IP address
         case 'ip':
-          $where = 'ip LIKE "%' . $search . '%"';
+          $where = 'ba.ip LIKE "%' . $search . '%"';
           break;
         // Length
         case 'length':
-          $where = 'length = ' . $search;
+          $where = 'ba.length = ' . $search;
           break;
         // Partial name
         case 'name':
-          $where = 'name LIKE "%' . $search . '%"';
+          $where = 'ba.name LIKE "%' . $search . '%"';
           break;
         // No demos
         case 'nodemo':
-          $where = 'admin_id = ' . $search . ' AND NOT EXISTS (SELECT de.id FROM ' . Env::get('prefix') . '_demos AS de WHERE de.id = ba.id)';
+          $where = 'ba.admin_id = ' . $search . ' AND NOT EXISTS (SELECT de.id FROM ' . Env::get('prefix') . '_demos AS de WHERE de.id = ba.id)';
           break;
         // Partial reason
         case 'reason':
-          $where = 'reason LIKE "%' . $search . '%"';
+          $where = 'ba.reason LIKE "%' . $search . '%"';
           break;
         // Server
         case 'server':
-          $where = 'server_id = ' . $search;
+          $where = 'ba.server_id = ' . $search;
           break;
         // Partial Steam ID
         case 'steam':
-          $where = 'steam REGEXP "^STEAM_[0-9]:' . substr($search, 8) . '"';
+          $where = 'ba.steam REGEXP "^STEAM_[0-9]:' . substr($search, 8) . '"';
           break;
         // Steam ID
         case 'steamid':
-          $where = 'steam REGEXP "^STEAM_[0-9]:' . substr($search, 8) . '$"';
+          $where = 'ba.steam REGEXP "^STEAM_[0-9]:' . substr($search, 8) . '$"';
           break;
         // Partial IP address, Steam ID, name or reason
         default:
-          $where = 'ip LIKE "%' . $search . '%" OR steam REGEXP "^STEAM_[0-9]:' . substr($search, 8) . '" OR name LIKE "%' . $search . '%" OR reason LIKE "%' . $search . '%"';
+          $where = 'ba.ip LIKE "%' . $search . '%" OR ba.steam REGEXP "^STEAM_[0-9]:' . substr($search, 8) . '" OR ba.name LIKE "%' . $search . '%" OR ba.reason LIKE "%' . $search . '%"';
       }
     }
     
@@ -134,7 +134,7 @@ class BansReader extends SBReader
       $ban['length']           = ($ban['length'] ? Util::SecondsToString($ban['length'] * 60) : $phrases['permanent']);
     }
     
-    list($ban_list, $ban_count) = SBPlugins::call('OnGetBans', $ban_list, $ban_count, $this->type, $this->search, $this->hideinactive);
+    list($ban_list, $ban_count) = SBPlugins::call('OnGetBans', $ban_list, $ban_count, $this->hideinactive, $this->limit, $this->page, $this->sort, $this->order, $this->search, $this->type);
     
     return array('count' => $ban_count,
                  'list'  => $ban_list);

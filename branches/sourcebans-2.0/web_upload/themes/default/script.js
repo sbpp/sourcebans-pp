@@ -337,7 +337,7 @@ function showConfirmation(res)
     ShowBox('error', 'Error', res.message + res.error, 'Ok');
     return;
   }
-    ShowBox('ok', res.headline, res.message, 'Ok', false, false, false, 5000, res.redirect);
+  ShowBox('ok', res.title, res.message, 'Ok', false, false, false, 5000, res.redirect);
 }
 
 function clearCache(res)
@@ -434,6 +434,24 @@ window.addEvent('domready', function() {
     el.addEvent('click', function(e) {
       e.stop();
       window.location = 'steam://connect/' + this.get('rel');
+    });
+  });
+  $$('.context-menu').each(function(el) {
+    var contextmenu = new MooMenu(el);
+    
+    document.body.addEvent('click', function(e) {
+      contextmenu.hide();
+    });
+    
+    $$('td').each(function(el) {
+      el.addEvent('contextmenu', function(e) {
+        e.stop();
+        
+        // Check row's checkbox
+        this.getParent().getChildren('td')[0].getChildren('input')[0].checked = true;
+        // Show custom context menu
+        contextmenu.show(e.page.y, e.page.x);
+      });
     });
   });
   $$('.group_type_select').each(function(el) {
@@ -550,25 +568,6 @@ window.addEvent('domready', function() {
       e.stop();
       ShowBox('error', 'Clear Logs', 'Are you sure you want to delete all of the log entries?', 'Yes', 'No', function() { x_ClearLogs(showConfirmation); });
     });
-  if($chk($('context-menu')))
-  {
-    var contextmenu = new MooMenu('context-menu');
-    
-    document.body.addEvent('click', function(e) {
-      contextmenu.hide();
-    });
-    
-    $$('td').each(function(el) {
-      el.addEvent('contextmenu', function(e) {
-        e.stop();
-        
-        // Check row's checkbox
-        this.getParent().getChildren('td')[0].getChildren('input')[0].checked = true;
-        // Show custom context menu
-        contextmenu.show(e.page.y, e.page.x);
-      });
-    });
-  }
   if($chk($('demo_howto')))
     $('demo_howto').addEvent('click', function(e) {
       e.stop();
@@ -583,6 +582,18 @@ window.addEvent('domready', function() {
       $('smtp_password').set('disabled', !this.checked);
       $('smtp_secure').set('disabled',   !this.checked);
     }).fireEvent('change');
+  }
+  if($chk($('identity-label')))
+    $('auth').addEvent('change', function(e) {
+      $('identity-label').set('text', this.options[this.selectedIndex].get('text'));
+    });
+  if($chk($('ip_count')))
+  {
+    $('ip').addEvent('keyup', function(e) {
+      x_GetBans('ip', this.value, function(res) {
+        $('ip_count').set('text', res.count);
+      });
+    });
   }
   if($chk($('permission_owner')))
   {
@@ -653,6 +664,14 @@ window.addEvent('domready', function() {
   }
   if($chk($('relver')))
     x_Version(setVersion);
+  if($chk($('steam_count')))
+  {
+    $('steam').addEvent('keyup', function(e) {
+      x_GetBans('steam', this.value, function(res) {
+        $('steam_count').set('text', res.count);
+      });
+    });
+  }
   
   $('dialog').fade('hide');
   

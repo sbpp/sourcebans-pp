@@ -30,6 +30,7 @@ if($userbank->is_logged_in())
   sAJAX::register('DeleteProtest');
   sAJAX::register('DeleteServer');
   sAJAX::register('DeleteSubmission');
+  sAJAX::register('GetBans');
   sAJAX::register('KickPlayer');
   sAJAX::register('Reban');
   sAJAX::register('RestoreProtest');
@@ -86,8 +87,8 @@ function ArchiveProtest($id, $name)
     SB_API::archiveProtest($id);
     
     return array(
-      'headline' => 'Protest archived',
-      'message' => "The protest for '$name' has been moved to the archive.",
+      'title'    => 'Protest archived',
+      'message'  => 'The protest for "' . $name . '" has been archived.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_bans.php'
       ))
@@ -96,8 +97,8 @@ function ArchiveProtest($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error moving the protest for '$name' to the archive: ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while archiving the protest for "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -117,8 +118,8 @@ function ArchiveSubmission($id, $name)
     SB_API::archiveSubmission($id);
     
     return array(
-      'headline' => 'Submission archived',
-      'message' => "The submission for '$name' has been moved to the archive.",
+      'title'    => 'Submission archived',
+      'message'  => 'The submission for "' . $name . '" has been archived.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_bans.php'
       ))
@@ -127,8 +128,8 @@ function ArchiveSubmission($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error moving the submission for '$name' to the archive: ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while archiving the submission for "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -157,8 +158,8 @@ function ClearActions()
     SB_API::clearActions();
     
     return array(
-      'headline' => 'Actions cleared',
-      'message' => 'The actions has been successfully cleared.',
+      'title'    => 'Actions cleared',
+      'message'  => 'The actions have been successfully cleared.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_admins.php'
       ))
@@ -167,8 +168,8 @@ function ClearActions()
   catch(Exception $e)
   {
     return array(
-      'message' => 'There was an error clearing the actions: ',
-      'error' => $e->getMessage()
+      'message' => 'An error occured while clearing the actions: ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -191,8 +192,8 @@ function ClearLogs()
     SB_API::clearLog();
     
     return array(
-      'headline' => 'Logs cleared',
-      'message' => 'The logs has been successfully cleared.',
+      'title'    => 'Logs cleared',
+      'message'  => 'The logs have been successfully cleared.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_settings.php'
       ))
@@ -201,8 +202,8 @@ function ClearLogs()
   catch(Exception $e)
   {
     return array(
-      'message' => 'There was an error clearing the logs: ',
-      'error' => $e->getMessage()
+      'message' => 'An error occured while clearing the logs: ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -222,8 +223,8 @@ function DeleteAdmin($id, $name)
     SB_API::deleteAdmin($id);
     
     return array(
-      'headline' => 'Admin deleted',
-      'message' => "The admin '$name' has been deleted.",
+      'title'    => 'Admin deleted',
+      'message'  => 'The admin "' . $name . '" has been deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_admins.php'
       ))
@@ -232,8 +233,8 @@ function DeleteAdmin($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the admin '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while deleting the admin "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -256,8 +257,8 @@ function DeleteBan($id, $name)
     SB_API::deleteBan($id);
     
     return array(
-      'headline' => 'Ban deleted',
-      'message' => "The ban for '$name' (".$identity.") has been deleted.",
+      'title'    => 'Ban deleted',
+      'message'  => 'The ban for "' . $name . '" (' . $identity . ') has been deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'banlist.php'
       ))
@@ -266,8 +267,8 @@ function DeleteBan($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the ban for '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while deleting the ban for "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -287,8 +288,8 @@ function DeleteGroup($id, $name, $type)
     SB_API::deleteGroup($id, $type);
     
     return array(
-      'headline' => 'Group deleted',
-      'message' => "The group '$name' has been successfully deleted.",
+      'title'    => 'Group deleted',
+      'message'  => 'The group "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_groups.php'
       ))
@@ -297,8 +298,8 @@ function DeleteGroup($id, $name, $type)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the group '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while deleting the group "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -318,8 +319,8 @@ function DeleteMod($id, $name)
     SB_API::deleteMod($id);
     
     return array(
-      'headline' => 'Mod deleted',
-      'message' => "The mod '$name' has been successfully deleted.",
+      'title'    => 'Mod deleted',
+      'message'  => 'The mod "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_mods.php'
       ))
@@ -328,8 +329,8 @@ function DeleteMod($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the mod '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'There was an error deleting the mod "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -349,8 +350,8 @@ function DeleteProtest($id, $name)
     SB_API::deleteProtest($id);
     
     return array(
-      'headline' => 'Protest deleted',
-      'message' => "The protest for '$name' has been successfully deleted.",
+      'title'    => 'Protest deleted',
+      'message'  => 'The protest for "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_bans.php'
       ))
@@ -359,8 +360,8 @@ function DeleteProtest($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the protest for '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while deleting the protest for "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -380,8 +381,8 @@ function DeleteServer($id, $name)
     SB_API::deleteServer($id);
     
     return array(
-      'headline' => 'Server deleted',
-      'message' => "The server '$name' has been successfully deleted.",
+      'title'    => 'Server deleted',
+      'message'  => 'The server "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_servers.php'
       ))
@@ -390,8 +391,8 @@ function DeleteServer($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the server '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while deleting the server "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -411,8 +412,8 @@ function DeleteSubmission($id, $name)
     SB_API::deleteSubmission($id);
     
     return array(
-      'headline' => 'Submission deleted',
-      'message' => "The submission for '$name' has been successfully deleted.",
+      'title'    => 'Submission deleted',
+      'message'  => 'The submission for "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_bans.php'
       ))
@@ -421,8 +422,27 @@ function DeleteSubmission($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error deleting the submission for '$name': ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while deleting the submission for "' . $name . '": ',
+      'error'   => $e->getMessage()
+    );
+  }
+}
+
+function GetBans($type, $identity)
+{
+  try
+  {
+    $bans = SB_API::getBans(false, 0, 1, null, null, $type == IP_BAN_TYPE ? 'ip' : 'steam', $identity);
+    
+    return array(
+      'count' => $bans['count']
+    );
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'message' => 'An error occured while retrieving the bans for "' . $identity . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -480,8 +500,8 @@ function RestoreProtest($id, $name)
     SB_API::restoreProtest($id);
     
     return array(
-      'headline' => 'Protest restored',
-      'message' => "The protest for '$name' has been successfully restored from the archive.",
+      'title'    => 'Protest restored',
+      'message'  => 'The protest for "' . $name . '" has been successfully restored.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_bans.php'
       ))
@@ -490,8 +510,8 @@ function RestoreProtest($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error restoring the protest for '$name' from the archive: ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while restoring the protest for "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }
@@ -511,8 +531,8 @@ function RestoreSubmission($id, $name)
     SB_API::restoreSubmission($id);
     
     return array(
-      'headline' => 'Submission restored',
-      'message' => "The submission for '$name' has been successfully restored from the archive.",
+      'title'    => 'Submission restored',
+      'message'  => 'The submission for "' . $name . '" has been successfully restored.',
       'redirect' => Util::buildUrl(array(
         '_' => 'admin_bans.php'
       ))
@@ -521,8 +541,8 @@ function RestoreSubmission($id, $name)
   catch(Exception $e)
   {
     return array(
-      'message' => "There was an error restoring the submission for '$name' from the archive: ",
-      'error' => $e->getMessage()
+      'message' => 'An error occured while restoring the submission for "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }

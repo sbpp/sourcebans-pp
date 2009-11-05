@@ -9,9 +9,8 @@ if(isset($_POST['func']))
 ?>
 function sajax_call(func, args)
 {
-  var data = new Array();
-  for(var i = 0; i < args.length; i++)
-    data.push(args[i]);
+  // Convert array-like object to array
+  args = Array.prototype.slice.call(args);
   
   new Request.JSON({
     url: 'scripts/sajax.php',
@@ -20,7 +19,7 @@ function sajax_call(func, args)
       if(typeof(callback) == 'function')
         callback(res);
     }
-  }).post({'func': func, 'args': JSON.encode(data)});
+  }).post({'func': func, 'args': JSON.encode(args)});
 }
 
 <?php foreach(sAJAX::getFunctions() as $func): ?>

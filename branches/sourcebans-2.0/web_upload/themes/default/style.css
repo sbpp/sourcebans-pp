@@ -613,7 +613,10 @@ img.tips { vertical-align: bottom; }
 }
 #pane-protests-current h3, #pane-protests-archive h3, #pane-submissions-current h3, #pane-submissions-archive h3 { margin-top: 0; }
 
-#reason_other { display: none; }
+#reason_other {
+  display: none;
+  margin-left: 203px !important;
+}
 
 /** ================ Dashboard ================ **/
 #front-servers { margin: 13px; }
@@ -693,6 +696,10 @@ td.listtable_2 { background-color: #efefef; }
   border-top: 2px solid #aaa9a9;
 }
 
+.demo {
+  float: right;
+  margin-right: 189px !important;
+}
 .sort_asc, .sort_desc {
   background: no-repeat 100% 50%;
   padding-right: 16px;
@@ -912,7 +919,7 @@ div.playerlist_menu .head {
 #theme-list ul li.active a:hover { background-image: url("images/admin/rightarrow.png"); }
 
 /** ================ Context Menu ================ **/
-#context-menu, #context-menu ul {
+.context-menu, .context-menu ul {
   width: 150px;
   border: 1px solid;
   margin: 0;
@@ -925,26 +932,26 @@ div.playerlist_menu .head {
   list-style-type: none;
   background-color: #FFF;
 }
-#context-menu a {
+.context-menu a {
   border: 1px solid #FFF;
   display: block;
   padding: 0 2px;
   font-size: 0.9em;
 }
-#context-menu a:hover {
+.context-menu a:hover {
   border-color: #808080;
   background-color: #EEE;
 }
-#context-menu li {
+.context-menu li {
   margin: 1px;
   position: relative;
 }
-#context-menu li.submenu > a {
+.context-menu li.submenu > a {
   background-image: url("http://projects.interwavestudios.com/images/sub.gif");
   background-repeat: no-repeat;
   background-position: right center;
 }
-#context-menu ul {
+.context-menu ul {
   top: -2px;
   left: 148px;
 }

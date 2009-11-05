@@ -31,11 +31,11 @@ try
   
   $admin = SB_API::getAdmin($_GET['id']);
   
-  $page->assign('admin_name',      $admin['name']);
-  $page->assign('admin_srv_group', $admin['srv_groups']);
-  $page->assign('admin_web_group', $admin['group_id']);
-  $page->assign('server_groups',   SB_API::getGroups(SERVER_GROUPS));
-  $page->assign('web_groups',      SB_API::getGroups(WEB_GROUPS));
+  $page->assign('admin_name',       $admin['name']);
+  $page->assign('admin_srv_groups', $admin['srv_groups']);
+  $page->assign('admin_web_group',  $admin['group_id']);
+  $page->assign('server_groups',    SB_API::getGroups(SERVER_GROUPS));
+  $page->assign('web_groups',       SB_API::getGroups(WEB_GROUPS));
   $page->display('page_admin_admins_editgroups');
 }
 catch(Exception $e)

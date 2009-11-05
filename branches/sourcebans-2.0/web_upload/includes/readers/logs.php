@@ -25,7 +25,7 @@ class LogsReader extends SBReader
                                 ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                 ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    list($log_list, $log_count) = SBPlugins::call('OnGetLogs', $log_list, $log_count);
+    list($log_list, $log_count) = SBPlugins::call('OnGetLogs', $log_list, $log_count, $this->limit, $this->page, $this->sort, $this->order);
     
     return array('count' => $log_count,
                  'list'  => $log_list);

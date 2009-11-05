@@ -130,10 +130,10 @@ class SB_API
   {
     $admins = self::getAdmins();
     
-    if(!isset($admins[$id]))
+    if(!isset($admins['list'][$id]))
       throw new Exception('Invalid ID specified.');
     
-    return $admins[$id];
+    return $admins['list'][$id];
   }
   
   
@@ -725,10 +725,10 @@ class SB_API
   {
     $protests = self::getProtests();
     
-    if(!isset($protests[$id]))
+    if(!isset($protests['list'][$id]))
       throw new Exception('Invalid ID specified.');
     
-    return $protests[$id];
+    return $protests['list'][$id];
   }
   
   
@@ -1080,10 +1080,10 @@ class SB_API
   {
     $submissions = self::getSubmissions();
     
-    if(!isset($submissions[$id]))
+    if(!isset($submissions['list'][$id]))
       throw new Exception('Invalid ID specified.');
     
-    return $submissions[$id];
+    return $submissions['list'][$id];
   }
   
   

@@ -334,7 +334,7 @@
                 </tr>
                 {/foreach}
               </table>
-              <ul id="context-menu">
+              <ul class="context-menu">
                 <li><a href="#">{$lang_unban}</a></li>
                 <li><a href="#">{$lang_delete}</a></li>
               </ul>

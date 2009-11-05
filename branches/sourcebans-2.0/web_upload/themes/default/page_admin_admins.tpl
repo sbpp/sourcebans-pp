@@ -427,7 +427,7 @@
                 </tr>
                 {/foreach}
               </table>
-              <ul id="context-menu">
+              <ul class="context-menu">
                 <li><a href="#">{$lang_delete}</a></li>
                 <li><a href="#">Send e-mail</a></li>
                 <li>
@@ -470,7 +470,7 @@
                   <span class="mandatory">*</span>
                 </div>
                 <div>
-                  <label for="identity">{help_icon title="$lang_identity" desc="This is the admin's identity. This must be set so that admins can use their admin rights ingame."}{$lang_identity}</label>
+                  <label for="identity">{help_icon title="Steam ID" desc="This is the admin's Steam ID, IP address or name. This must be set so that admins can use their admin rights ingame."}<span id="identity-label">Steam ID</span></label>
                   <input class="submit-fields" {nid id="identity"} value="STEAM_" />
                   <span class="mandatory">*</span>
                 </div>

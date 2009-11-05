@@ -46,7 +46,7 @@ class SubmissionsReader extends SBReader
       $submission['demos']     = $demos_reader->executeCached(ONE_DAY);
     }
     
-    list($submission_list, $submission_count) = SBPlugins::call('OnGetSubmissions', $submission_list, $submission_count);
+    list($submission_list, $submission_count) = SBPlugins::call('OnGetSubmissions', $submission_list, $submission_count, $this->archive, $this->limit, $this->page, $this->sort, $this->order);
     
     return array('count' => $submission_count,
                  'list'  => $submission_list);

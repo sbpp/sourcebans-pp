@@ -76,7 +76,7 @@ class ActionsReader extends SBReader
                                    ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                    ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    list($action_list, $action_count) = SBPlugins::call('OnGetActions', $action_list, $action_count);
+    list($action_list, $action_count) = SBPlugins::call('OnGetActions', $action_list, $action_count, $this->limit, $this->page, $this->sort, $this->order, $this->search, $this->type);
     
     return array('count' => $action_count,
                  'list'  => $action_list);

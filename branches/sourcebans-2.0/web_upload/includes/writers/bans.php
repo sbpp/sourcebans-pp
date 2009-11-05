@@ -72,7 +72,7 @@ class BansWriter
                   array($id));
     
     $bans_reader = new BansReader();
-    $bans_reader->removeCacheFile();
+    $bans_reader->removeCacheFile(true);
     
     SBPlugins::call('OnDeleteBan', $id);
   }
@@ -120,7 +120,7 @@ class BansWriter
     $db->AutoExecute(Env::get('prefix') . '_bans', $ban, 'UPDATE', 'id = ' . $id);
     
     $bans_reader = new BansReader();
-    $bans_reader->removeCacheFile();
+    $bans_reader->removeCacheFile(true);
     
     SBPlugins::call('OnEditBan', $id, $type, $steam, $ip, $name, $reason, $length);
   }
@@ -207,7 +207,7 @@ class BansWriter
                   array($id));
     
     $bans_reader = new BansReader();
-    $bans_reader->removeCacheFile();
+    $bans_reader->removeCacheFile(true);
     
     SBPlugins::call('OnReban', $id);
   }
@@ -240,7 +240,7 @@ class BansWriter
                   array($userbank->GetID(), $reason, $id));
     
     $bans_reader = new BansReader();
-    $bans_reader->removeCacheFile();
+    $bans_reader->removeCacheFile(true);
     
     SBPlugins::call('OnUnban', $id, $reason);
   }

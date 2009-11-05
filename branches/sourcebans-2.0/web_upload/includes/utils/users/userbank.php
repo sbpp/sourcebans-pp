@@ -103,7 +103,7 @@ class CUserManager
    */
   public function CheckLogin($password, $id)
   {
-    if(isset($this->users[$id]) && !empty($password) && $this->encrypt_password($password) == $this->users[$id]['password'])
+    if(isset($this->users[$id]) && !empty($password) && $password == $this->users[$id]['password'])
     {
       $db = Env::get('db');
       $db->Execute('UPDATE ' . Env::get('prefix') . '_admins SET lastvisit = UNIX_TIMESTAMP() WHERE id = ?', array($id));
@@ -118,7 +118,7 @@ class CUserManager
   {
     $db = Env::get('db');
     $id = $db->GetOne('SELECT id FROM ' . Env::get('prefix') . '_admins WHERE name = ?', array($username));
-    if($this->CheckLogin($password, $id))
+    if($this->CheckLogin($this->encrypt_password($password), $id))
     {
       $expire = $save ? time() + LOGIN_COOKIE_LIFETIME : 0;
       setcookie('sb_admin_id', $id,                                $expire);
@@ -153,7 +153,7 @@ class CUserManager
    */
   public function encrypt_password($password, $salt = SB_SALT)
   {
-    return strlen($password) == 40 ? $password : sha1(sha1($salt . $password));
+    return sha1(sha1($salt . $password));
   }
   
   

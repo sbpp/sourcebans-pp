@@ -25,7 +25,7 @@ class BlocksReader extends SBReader
                                 ORDER BY  ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                 ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''));
     
-    list($block_list, $block_count) = SBPlugins::call('OnGetBlocks', $block_list, $block_count);
+    list($block_list, $block_count) = SBPlugins::call('OnGetBlocks', $block_list, $block_count, $this->limit, $this->page, $this->sort, $this->order);
     
     return array('count' => $block_count,
                  'list'  => $block_list);

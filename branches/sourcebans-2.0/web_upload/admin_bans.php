@@ -19,7 +19,7 @@ try
           if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS')))
             throw new Exception($phrases['access_denied']);
           
-          $id = SB_API::addBan($_POST['type'], strotupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
+          $id = SB_API::addBan($_POST['type'], strtoupper($_POST['steam']), $_POST['ip'], $_POST['name'], $_POST['reason'] == 'other' ? $_POST['reason_other'] : $_POST['reason'], $_POST['length']);
           
           // If one or more demos were uploaded, add them
           foreach($_FILES['demo'] as $demo)
