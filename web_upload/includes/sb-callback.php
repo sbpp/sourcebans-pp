@@ -20,7 +20,7 @@ $xajax = new xajax();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);
 global $userbank;
 
-if(isset($_COOKIE['aid'], $_COOKIE['password']) && check_login($_COOKIE['aid'], $_COOKIE['password']))
+if(isset($_COOKIE['aid'], $_COOKIE['password']) && $userbank->CheckLogin($_COOKIE['password'], $_COOKIE['aid']))
 {
 	$xajax->registerFunction("AddMod");
 	$xajax->registerFunction("RemoveMod");
@@ -89,7 +89,7 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 	{
 		$objResponse->addScript('ShowBox("Information", "Your account has been imported from the AMXBANS system. Before you can login, your password must be reset by the main admin.", "blue", "", true);');
 		return $objResponse;
-	} else if(!$q || !$userbank->CheckLogin($password, $aid))
+	} else if(!$q || !$userbank->CheckLogin($userbank->encrypt_password($password), $aid))
 	{
 		if($nopass!=1)
 			$objResponse->addScript('ShowBox("Login Failed", "The username or password you supplied was incorrect.<br \> If you have forgotten your password, use the <a href=\"index.php?p=lostpassword\" title=\"Lost password\">Lost Password</a> link.", "red", "", true);');
@@ -1902,7 +1902,8 @@ function SetupEditServer($sid)
 function CheckPassword($aid, $pass)
 {
 	$objResponse = new xajaxResponse();
-	if(!check_login($aid, $pass))
+	global $userbank;
+	if(!$userbank->CheckLogin($userbank->encrypt_password($pass), $aid))
 	{
 		$objResponse->addScript("$('current.msg').setStyle('display', 'block');");
 		$objResponse->addScript("$('current.msg').setHTML('Incorrect password.');");
