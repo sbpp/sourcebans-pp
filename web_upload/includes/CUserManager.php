@@ -169,7 +169,7 @@ class CUserManager
 		if(!isset($this->admins[$aid]))
 			$this->GetUserArray($aid);
 			
-		if($this->encrypt_password($password) == $this->admins[$aid]['password'])
+		if($password == $this->admins[$aid]['password'])
 		{
 			$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `lastvisit` = UNIX_TIMESTAMP() WHERE `aid` = '$aid'");
 			return true;
@@ -181,7 +181,7 @@ class CUserManager
 	
 	function login($aid, $password, $save = true)
 	{
-	    if($this->CheckLogin($password, $aid))
+	    if($this->CheckLogin($this->encrypt_password($password), $aid))
 	    {
 	        if($save)
 	        {
@@ -212,20 +212,11 @@ class CUserManager
 	 * @param $password password to encrypt.
 	 * @return string.
 	 */
-	function encrypt_password($password)
+	function encrypt_password($password, $salt=SB_SALT)
 	{
-		if(strlen($password) == 40)
-			return $password;
-		return sha1(sha1(SB_SALT . $password));
-	}
-	
-	function encrypt_password2($password, $salt=SB_SALT)
-	{
-		if(strlen($password) == 40)
-			return $password;
 		return sha1(sha1($salt . $password));
 	}
-
+	
 	function is_logged_in()
 	{
 		if($this->aid != -1)

@@ -27,97 +27,6 @@ function is_taken($table, $field, $value)
 
 
 /**
- * Generates a random string to use as the salt
- *
- * @param integer $length the length of the salt
- * @return string of random chars in the length specified
- */
-function encrypt_password($password, $salt=SB_SALT)
-{
-	if(strlen($password) == 40)
-		return $password;
-	return sha1(sha1($salt . $password));
-}
-
-
-/**
- * Generates a random string to use as the salt
- *
- * @param integer $length the length of the salt
- * @return string of random chars in the length specified
- */
-function generate_salt($length=5)
-{
-	return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
-}
-
-/**
- * Checks the login details of the admin. And logs in
- *
- * @param string $username The username of the admin
- * @param string $password The password of the admin
- * @param boolean $cookie Should we create a cookie
- * @return true if login was successfull, else false
- */
-function login($aid, $password, $save = true)
-{
-    if(check_login($aid, $password))
-    {
-    	
-        userdata($aid, $password);
-        if($save)
-        {
-            //Sets cookies
-            setcookie("aid", $aid, time()+LOGIN_COOKIE_LIFETIME);
-            setcookie("password", encrypt_password($password), time()+LOGIN_COOKIE_LIFETIME);
-        }
-        else 
-        {
-        	setcookie("aid", $aid);
-            setcookie("password", encrypt_password($password));
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/**
- * Checks the login details of the admin.
- *
- * @param string $username The username of the admin
- * @param string $password The password of the admin
- * @param boolean $cookie Should we create a cookie
- * @return true if login is correct, else false
- */
-function check_login($aid, $password)
-{   
-	if(empty($aid) || empty($password))
-		return false;
-    $query = $GLOBALS['db']->GetRow("SELECT `aid` FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '$aid' AND `password` = '" . encrypt_password($password) . "'");   
-	
-    return (count($query) > 0);
-}
-
-/**
- * Logs out the admin by removing cookies and killing the session
- *
- * @param string $username The username of the admin
- * @param string $password The password of the admin
- * @param boolean $cookie Should we create a cookie
- * @return true.
- */
-function logout()
-{
-    setcookie('aid', $_SESSION['aid'], time()-15000);
-    setcookie('password', $_SESSION['password'], time()-15000);
-    session_destroy();
-    return true;
-}
-
-/**
  * Changes the admins data
  *
  * @param integer $aid The admin id to change the details of
@@ -156,43 +65,6 @@ function delete_admin($aid)
     else
     {
         return false;
-    }
-}
-
-/**
- * Creates an array to store the admin's data in
- *
- * @param integer $aid The admin id of the user get details for
- * @param string $pass The admins password for security
- * @return array.
- */
-function userdata($aid, $pass)
-{
-	
-    if(!check_login($aid, $pass))
-    {
-        //Fill array with guest data
-      $_SESSION['user'] = array('aid' => '-1', 
-        			'user' => 'Guest', 
-        			'password' => '',
-        			'steam' => '',  
-        			'email' => '', 
-        			'gid' => '',
-        			'flags' => '0');
-        			
-    }
-    else
-    {
-        $query = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '$aid'");
-        $_SESSION['user'] = array('aid' => $aid, 
-        			'user' => $query['user'], 
-        			'password' => $query['password'], 
-        			'steam' => $query['authid'], 
-        			'email' => $query['email'], 
-        			'gid' => $query['gid'],
-        			'flags' => get_user_flags($aid),
-        			'admin' => get_user_admin($query['authid']));
-        			
     }
 }
 
@@ -307,49 +179,6 @@ function check_group($mask)
 }
 
 
-
-/**
- * Removes all flags and replaces with new flag
- *
- * @param integet $aid the admin id to change the flags of
- * @param integer $flag the new flag to apply to the user
- * @return noreturn
- */
-function set_flag($aid, $flag)
-{
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flag' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-	userdata($aid, $_SESSION['user']['password']);
-}
-
-/**
- * Adds a new flag to the current bitmask
- *
- * @param integet $aid the admin id to change the flags of
- * @param integer $flag the flag to apply to the user
- * @return noreturn
- */
-function add_flag($aid, $flag)
-{
-	$flagd = get_user_flags($aid);
-	$flagd |= $flag;
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flagd' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-	userdata($aid, $_SESSION['user']['password']);
-}
-
-/**
- * Removes a flag from the bitmask
- *
- * @param integet $aid the admin id to change the flags of
- * @param integer $flag the flag to remove from the user
- * @return noreturn
- */
-function remove_flag($aid, $flag)
-{
-	$flagd = get_user_flags($aid);
-	$flagd &= ~($flag);
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flagd' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-	userdata($aid, $_SESSION['user']['password']);
-}
 
 /**
  * Checks if the admin has ALL the specified flags

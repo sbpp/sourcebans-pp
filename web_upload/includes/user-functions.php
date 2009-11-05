@@ -35,76 +35,9 @@ function is_taken($table, $field, $value)
  * @param integer $length the length of the salt
  * @return string of random chars in the length specified
  */
-function encrypt_password($password, $salt=SB_SALT)
-{
-	if(strlen($password) == 40)
-		return $password;
-	return sha1(sha1($salt . $password));
-}
-
-
-/**
- * Generates a random string to use as the salt
- *
- * @param integer $length the length of the salt
- * @return string of random chars in the length specified
- */
 function generate_salt($length=5)
 {
 	return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
-}
-
-/**
- * Checks the login details of the admin. And logs in
- *
- * @param string $username The username of the admin
- * @param string $password The password of the admin
- * @param boolean $cookie Should we create a cookie
- * @return true if login was successfull, else false
- */
-function login($aid, $password, $save = true)
-{
-    if(check_login($aid, $password))
-    {
-
-        userdata($aid, $password);
-        if($save)
-        {
-            //Sets cookies
-            setcookie("aid", $aid, time()+LOGIN_COOKIE_LIFETIME);
-            setcookie("password", encrypt_password($password), time()+LOGIN_COOKIE_LIFETIME);
-            setcookie("user", $_SESSION['user']['user'], time()+LOGIN_COOKIE_LIFETIME);
-        }
-        else
-        {
-        	setcookie("aid", $aid);
-            setcookie("password", encrypt_password($password));
-            setcookie("user", $_SESSION['user']['user']);
-        }
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-/**
- * Checks the login details of the admin.
- *
- * @param string $username The username of the admin
- * @param string $password The password of the admin
- * @param boolean $cookie Should we create a cookie
- * @return true if login is correct, else false
- */
-function check_login($aid, $password)
-{
-	if(empty($aid) || empty($password))
-		return false;
-		$aid = (int)$aid;
-    $query = $GLOBALS['db']->GetRow("SELECT `aid` FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '$aid' AND `password` = '" . encrypt_password($password) . "'");
-
-    return (count($query) > 0);
 }
 
 /**
@@ -175,7 +108,8 @@ function delete_admin($aid)
  */
 function userdata($aid, $pass)
 {
-    if(!check_login($aid, $pass))
+    global $userbank;
+    if(!$userbank->CheckLogin($userbank->encrypt_password($pass), $aid))
     {
         //Fill array with guest data
       $_SESSION['user'] = array('aid' => '-1',
