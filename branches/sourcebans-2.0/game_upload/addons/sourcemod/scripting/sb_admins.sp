@@ -208,7 +208,7 @@ public Action:Command_AddAdmin(client, args)
 {
 	if(args < 4)
 	{
-		ReplyToCommand(client, "%sUsage: sb_addadmin <name> <authtype> <identity> <flags> [immunity] [password]", SB_PREFIX);
+		ReplyToCommand(client, "%sUsage: sb_addadmin <name> <authtype> <identity> [password] [group1] ... [group N]", SB_PREFIX);
 		return Plugin_Handled;
 	}
 	if(!g_hDatabase)
@@ -217,11 +217,11 @@ public Action:Command_AddAdmin(client, args)
 		return Plugin_Handled;
 	}
 	
-	decl String:sFlags[33], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
-	GetCmdArg(1, sName,     sizeof(sName));
-	GetCmdArg(2, sType,     sizeof(sType));
-	GetCmdArg(3, sIdentity, sizeof(sIdentity));
-	GetCmdArg(4, sFlags,    sizeof(sFlags));
+	decl iLen, String:sArg[256], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
+	GetCmdArgString(sArg, sizeof(sArg));
+	iLen  = BreakString(sArg,       sName,     sizeof(sName));
+	iLen += BreakString(sArg[iLen], sType,     sizeof(sType));
+	iLen += BreakString(sArg[iLen], sIdentity, sizeof(sIdentity));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
 	{
@@ -229,23 +229,12 @@ public Action:Command_AddAdmin(client, args)
 		return Plugin_Handled;
 	}
 	
-	new iImmunity;
-	if(args >= 5)
-	{
-		decl String:sArg[32];
-		GetCmdArg(5, sArg, sizeof(sArg));
-		if(!StringToIntEx(sArg, iImmunity))
-		{
-			ReplyToCommand(client, "%s%t", "Invalid immunity", SB_PREFIX);
-			return Plugin_Handled;
-		}
-	}
-	if(args >= 6)
-		GetCmdArg(6, sPassword, sizeof(sPassword));
+	if(sArg[iLen])
+		iLen        += BreakString(sArg[iLen], sPassword, sizeof(sPassword));
 	else
 		sPassword[0] = '\0';
 	
-	SB_AddAdmin(client, sName, sType, sIdentity, sFlags, iImmunity, sPassword);
+	SB_AddAdmin(client, sName, sType, sIdentity, sPassword, sArg[iLen]);
 	return Plugin_Handled;
 }
 
@@ -263,7 +252,7 @@ public Action:Command_DelAdmin(client, args)
 	}
 	
 	decl String:sIdentity[65], String:sType[16];
-	GetCmdArg(1, sType, sizeof(sType));
+	GetCmdArg(1, sType,     sizeof(sType));
 	GetCmdArg(2, sIdentity, sizeof(sIdentity));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
@@ -388,25 +377,24 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		return;
 	}
 	
-	decl String:sFlags[33], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
+	decl String:sGroups[512], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
 	ReadPackString(pack, sName,     sizeof(sName));
 	ReadPackString(pack, sType,     sizeof(sType));
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
-	ReadPackString(pack, sFlags,    sizeof(sFlags));
-	new iImmunity = ReadPackCell(pack);
 	ReadPackString(pack, sPassword, sizeof(sPassword));
+	ReadPackString(pack, sGroups,   sizeof(sGroups));
 	
-	decl String:sEscapedFlags[65], String:sEscapedIdentity[129], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedPassword[129], String:sQuery[256];
-	SQL_EscapeString(g_hDatabase, sFlags,    sEscapedFlags,    sizeof(sEscapedFlags));
+	decl String:sEscapedIdentity[129], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedPassword[129], String:sQuery[256];
 	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
 	SQL_EscapeString(g_hDatabase, sName,     sEscapedName,     sizeof(sEscapedName));
 	SQL_EscapeString(g_hDatabase, sPassword, sEscapedPassword, sizeof(sEscapedPassword));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_admins (name, auth, identity, password, srv_flags, immunity) \
-																	VALUES ('%s', '%s', '%s', '%s', '%s', %i)",
-																	g_sDatabasePrefix, sEscapedName, sType, sEscapedIdentity, sEscapedPassword, sEscapedFlags, iImmunity);
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_admins (name, auth, identity, password) \
+																	VALUES ('%s', '%s', '%s', '%s')",
+																	g_sDatabasePrefix, sEscapedName, sType, sEscapedIdentity, sEscapedPassword);
 	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery, pack);
 	
 	ReplyToCommand(iAdmin, "%s%t", "SQL Admin added", SB_PREFIX);
+	SB_SetAdminGroups(iAdmin, sType, sIdentity, sGroups);
 }
 
 public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -1007,16 +995,15 @@ public Native_GetAdminId(Handle:plugin, numParams)
 
 public Native_AddAdmin(Handle:plugin, numParams)
 {
-	// order = client, name, authtype, identity, flags, immunity, password
+	// order = client, name, authtype, identity, password, groups
 	
-	decl String:sFlags[33], String:sIdentity[65], String:sName[33], String:sPassword[65], String:sType[16];
+	decl String:sGroups[512], String:sIdentity[65], String:sName[33], String:sPassword[65], String:sType[16];
 	new iClient   = GetNativeCell(1);
 	GetNativeString(2, sName,     sizeof(sName));
 	GetNativeString(3, sType,     sizeof(sType));
 	GetNativeString(4, sIdentity, sizeof(sIdentity));
-	GetNativeString(5, sFlags,    sizeof(sFlags));
-	new iImmunity = GetNativeCell(6);
-	GetNativeString(7, sPassword, sizeof(sPassword));
+	GetNativeString(5, sPassword, sizeof(sPassword));
+	GetNativeString(6, sGroups,   sizeof(sGroups));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
 		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
@@ -1026,11 +1013,10 @@ public Native_AddAdmin(Handle:plugin, numParams)
 	WritePackString(hPack, sName);
 	WritePackString(hPack, sType);
 	WritePackString(hPack, sIdentity);
-	WritePackString(hPack, sFlags);
-	WritePackCell(hPack,   iImmunity);
 	WritePackString(hPack, sPassword);
+	WritePackString(hPack, sGroups);
 	
-	decl String:sEscapedIdentity[129], String:sQuery[128];
+	decl String:sEscapedIdentity[129], String:sQuery[384];
 	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
 	Format(sQuery, sizeof(sQuery), "SELECT 1 \
 																	FROM   %s_admins \
@@ -1173,6 +1159,7 @@ public Native_SetAdminGroups(Handle:plugin, numParams)
 	
 	return SP_ERROR_NONE;
 }
+
 
 /**
  * Stocks

@@ -103,25 +103,24 @@ native SB_GetSettingString(const String:key[], String:buffer[], maxlength);
 native SB_Reload();
 
 /*********************************************************
- * Add an admin to the SourceBans database
+ * Adds an admin to the SourceBans database
  *
- * @param client		The index of the client  (person adding admin)
+ * @param client		The index of the client (person adding admin)
  * @param name			The name of the admin to add
- * @param authtype	The authentication type (steam, ip, name)
- * @param identity	The steamid, ip, or name of admin based on authtype
- * @param flags			The flags to assign to the admin
- * @param immunity	The immunity to assign to the admin (optional)
- * @param password	The password for the admin (optional based on authtype)
+ * @param authtype	The authentication type (AUTHMETHOD_STEAM, AUTHMETHOD_IP, AUTHMETHOD_NAME)
+ * @param identity	The Steam ID, IP address or name of the admin based on authtype
+ * @param password	The password for the admin (optional)
+ * @param groups		The groups to assign to the admin (optional)
  * @noreturn
  * @error						Invalid authtype
  *********************************************************/
-native SB_AddAdmin(client, const String:name[], const String:authtype[], const String:identity[], const String:flags[], immunity=0, const String:password[] = "");
+native SB_AddAdmin(client, const String:name[], const String:authtype[], const String:identity[], const String:password[] = "", const String:groups[] = "");
 
 /*********************************************************
- * Delete an admin fom the SourceBans database
+ * Deletes an admin from the SourceBans database
  *
- * @param client			The index of the client  (person deleting admin)
- * @param authtype		The authentication type (steam, ip, name)
+ * @param client			The index of the client (person deleting admin)
+ * @param authtype		The authentication type (AUTHMETHOD_STEAM, AUTHMETHOD_IP, AUTHMETHOD_NAME)
  * @param identity		The steamid, ip, or name of admin based on authtype
  * @noreturn
  * @error						Invalid authtype
@@ -129,30 +128,30 @@ native SB_AddAdmin(client, const String:name[], const String:authtype[], const S
 native SB_DeleteAdmin(client, const String:authtype[], const String:identity[]);
 
 /*********************************************************
- * Add an group to the SourceBans database
+ * Adds a group to the SourceBans database
  *
- * @param client		The index of the client  (person adding group)
+ * @param client		The index of the client (person adding group)
  * @param name			The name of the new group
  * @param flags			The flags to assign to the group
  * @param immunity	The immunity to assign to the group (optional)
  * @noreturn
  *********************************************************/
-native SB_AddGroup(client, const String:name[], const String:flags[], immunity=0);
+native SB_AddGroup(client, const String:name[], const String:flags[], immunity = 0);
 
 /*********************************************************
- * Delete a group from the SourceBans database
+ * Deletes a group from the SourceBans database
  *
- * @param client		The index of the client  (person deleting group)
+ * @param client		The index of the client (person deleting group)
  * @param name			The name of the group to delete
  * @noreturn
  *********************************************************/
 native SB_DeleteGroup(client, const String:name[]);
 
 /*********************************************************
- * Sets an admins group(s) in the SourceBans database
+ * Sets an admin's groups in the SourceBans database
  *
- * @param client		The index of the client  (person setting the group(s))
- * @param authtype	The authentication type of the admin (steam, ip, name)
+ * @param client		The index of the client (person setting groups)
+ * @param authtype	The authentication type of the admin (AUTHMETHOD_STEAM, AUTHMETHOD_IP, AUTHMETHOD_NAME)
  * @param identity	The steamid, ip, or name of admin based on authtype
  * @param groups		The groups to set the admin to; blank, or default is to reset groups
  * @noreturn
@@ -161,12 +160,11 @@ native SB_DeleteGroup(client, const String:name[]);
 native SB_SetAdminGroups(client, const String:authtype[], const String:identity[], const String:groups[] = "");
 
 /*********************************************************
- * Submit a ban to the SourceBans database
+ * Submits a ban to the SourceBans database
  *
  * @param client		The index of the client
  * @param target		The index of the target
  * @param reason		The reason for the submission
  * @noreturn
- * @error						Invalid client or target index
  *********************************************************/
 native SB_SubmitBan(client, target, const String:reason[]);

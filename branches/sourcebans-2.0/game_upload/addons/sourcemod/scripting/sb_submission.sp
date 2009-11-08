@@ -30,6 +30,7 @@ public Plugin:myinfo =
 	url         = "http://www.sourcebans.net"
 };
 
+
 /**
  * Globals
  */
@@ -44,7 +45,6 @@ new g_aPlayers[MAXPLAYERS + 1][PlayerData];
 new String:g_sTargetsAuth[MAXPLAYERS + 1][32];
 new String:g_sTargetsName[MAXPLAYERS + 1][MAX_NAME_LENGTH + 1];
 new String:g_sTargetsIP[MAXPLAYERS + 1][16];
-new g_iServerId;
 new Handle:g_hDatabase;
 new Handle:g_hReasonMenu;
 new Handle:g_hHackingMenu;
@@ -89,20 +89,6 @@ public OnLibraryRemoved(const String:name[])
 		g_hTopMenu = INVALID_HANDLE;
 }
 
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
-#else
-public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
-#endif
-{
-	CreateNative("SB_SubmitBan", Native_SubmitBan);
-	RegPluginLibrary("sb_submitban");
-	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-	return APLRes_Success;
-	#else
-	return true;
-	#endif
-}
 
 /**
  * Client Forwards
@@ -140,7 +126,6 @@ public OnClientDisconnect(client)
  */
 public SB_OnConnect(Handle:database)
 {
-	g_iServerId = SB_GetSettingCell("ServerID");
 	g_hDatabase = database;
 }
 
@@ -183,7 +168,7 @@ public Action:Command_SubmitBan(client, args)
 	// Make sure we have arguments, if not, display the player menu and bug out.
 	if(!args) 
 	{
-		ReplyToCommand(client, "Usage: sm_submitban <#userid|name> [reason]");
+		ReplyToCommand(client, "Usage: sm_submitban <#userid|name> <reason>");
 		DisplayTargetMenu(client);
 		return Plugin_Handled;
 	}
@@ -196,7 +181,7 @@ public Action:Command_SubmitBan(client, args)
 	// If it's not a valid target display the player menu and bug out.
 	if(iTarget <= 0 || !IsClientInGame(iTarget)) 
 	{
-		ReplyToCommand(client, "Usage: sm_submitban <#userid|name> [reason]");
+		ReplyToCommand(client, "Usage: sm_submitban <#userid|name> <reason>");
 		DisplayTargetMenu(client);
 		return Plugin_Handled;
 	}
@@ -213,17 +198,17 @@ public Action:Command_SubmitBan(client, args)
 	// Set the target variables
 	AssignTargetInfo(client, iTarget);
 	
-	// If they have given us a reason prepare the submission
+	// If they have given us a reason submit the ban
 	if(args >= 2)
 	{
-		decl String:sReasonBuffer[128];
-		GetCmdArg(2, sReasonBuffer, sizeof(sReasonBuffer));
-		PrepareSubmittal(client, iTarget, sReasonBuffer);
+		decl String:sReason[256];
+		GetCmdArg(2, sReason, sizeof(sReason));
+		SubmitBan(client, iTarget, sReason);
 	}
 	// If not, display the reason menu
 	else 
 	{
-		ReplyToCommand(client, "Usage: sm_submitban <#userid|name> [reason]");
+		ReplyToCommand(client, "Usage: sm_submitban <#userid|name> <reason>");
 		DisplayMenu(g_hReasonMenu, client, MENU_TIME_FOREVER);
 	}
 	return Plugin_Handled;
@@ -254,11 +239,12 @@ public Action:Command_Say(client, args)
 	}
 	if(g_aPlayers[client][iSubmissionTarget] != -1)
 	{
-		PrepareSubmittal(client, g_aPlayers[client][iSubmissionTarget], sText[iStart]);
+		SubmitBan(client, g_aPlayers[client][iSubmissionTarget], sText[iStart]);
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
 }
+
 
 /**
  * Menu Handlers
@@ -306,7 +292,7 @@ public MenuHandler_Reason(Handle:menu, MenuAction:action, param1, param2)
 		}
 		if(g_aPlayers[param1][iSubmissionTarget] != -1)
 		{
-			PrepareSubmittal(param1, g_aPlayers[param1][iSubmissionTarget], sInfo);
+			SubmitBan(param1, g_aPlayers[param1][iSubmissionTarget], sInfo);
 		}
 	}
 }
@@ -345,117 +331,19 @@ public Query_RecieveSubmissions(Handle:owner, Handle:hndl, const String:error[],
 	g_aPlayers[iClient][iBansSubmitted] = SQL_GetRowCount(hndl);
 }
 
-public Query_Submission(Handle:owner, Handle:hndl, const String:error[], any:pack)
-{
-	ResetPack(pack);
-	
-	// Make sure the query worked
-	new iClient = ReadPackCell(pack), iTarget = ReadPackCell(pack);
-	if(error[0]) 
-	{
-		decl String:sQuery[256];
-		ReadPackString(pack, sQuery, sizeof(sQuery));
-		LogError("SQL error: %s", error);
-		LogError("Query dump: %s", sQuery);
-		if(IsClientInGame(iClient))
-			PrintToChat(iClient, "[SM] %t", "Submission failed", g_sWebsite);
-		// We're done with you now.
-		CloseHandle(pack);
-		return;
-	}
-	
-	// We're done with you now.
-	CloseHandle(pack);
-	
-	// Increment the submission array for the target.
-	g_aPlayers[iTarget][iBansSubmitted] = 1;
-	
-	// Blank out the target for this client
-	g_aPlayers[iClient][iSubmissionTarget] = -1;
-	// Blank out the target's saved info
-	//Format(g_sTargetsAuth[iTarget], sizeof(g_sTargetsAuth[iTarget]), " ");
-	//Format(g_sTargetsName[iTarget], sizeof(g_sTargetsName[iTarget]), " ");
-	//Format(g_sTargetsIP[iTarget], sizeof(g_sTargetsIP[iTarget]), " ");
-	
-	// Report the results
-	if(!IsClientInGame(iClient))
-		return;
-	
-	PrintToChat(iClient, "[SM] %t", "Submission succeeded");
-	PrintToChat(iClient, "[SM] %t", "Upload demo", g_sWebsite);
-}
-
-/**
- * Natives
- */
-public Native_SubmitBan(Handle:plugin, numParams)
-{
-	new iClient = GetNativeCell(1);
-	new iTarget = GetNativeCell(2);
-	if (iClient < 1 || iClient > MaxClients)
-	{
-		return ThrowNativeError(SP_ERROR_INDEX, "Invalid client index (%d)", iClient);
-	}
-	if (!IsClientConnected(iClient))
-	{
-		return ThrowNativeError(SP_ERROR_INDEX, "Client %d is not connected", iClient);
-	}
-	if (iTarget < 1 || iTarget > MaxClients)
-	{
-		return ThrowNativeError(SP_ERROR_INDEX, "Invalid target index (%d)", iTarget);
-	}
-	if (!IsClientConnected(iTarget))
-	{
-		return ThrowNativeError(SP_ERROR_INDEX, "Target %d is not connected", iTarget);
-	}
-	if (IsFakeClient(iTarget))
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Bots are not supported");
-	}
-	
-	decl String:sReason[128];
-	GetNativeString(3, sReason, sizeof(sReason));
-	
-	PrepareSubmittal(iClient, iTarget, sReason);
-	
-	return true;
-}
 
 /**
  * Stocks
  */
-stock PrepareSubmittal(iClient, iTarget, const String:sReason[])
+stock SubmitBan(client, target, const String:reason[])
 {
-	// Connect to the database
-	if(g_hDatabase == INVALID_HANDLE)
-	{
-		SB_Connect();
-		PrintToChat(iClient, "[SM] %t", "DB Connect Fail");
-		return;
-	}
+	SB_SubmitBan(client, target, reason);
 	
-	decl String:sClientIp[16], String:sClientName[MAX_NAME_LENGTH + 1], String:sQuery[768];
-	decl String:sEscapedClientName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedTargetName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256];
+	// Increment the submission array for the target.
+	g_aPlayers[target][iBansSubmitted] = 1;
 	
-	// Get the clients information
-	GetClientIP(iClient,   sClientIp,   sizeof(sClientIp));
-	GetClientName(iClient, sClientName, sizeof(sClientName));
-	
-	// SQL Escape all the information (prepares for query)
-	SQL_EscapeString(g_hDatabase, sClientName, sEscapedClientName, sizeof(sEscapedClientName));
-	SQL_EscapeString(g_hDatabase, g_sTargetsName[iTarget], sEscapedTargetName, sizeof(sEscapedTargetName));
-	SQL_EscapeString(g_hDatabase, sReason,     sEscapedReason,     sizeof(sEscapedReason));
-	
-	// Format the query
-	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_submissions (name, steam, ip, reason, server_id, subname, subip) VALUES ('%s', '%s', '%s', '%s', %i, '%s', '%s')",
-																	g_sDatabasePrefix, sEscapedTargetName, g_sTargetsAuth[iTarget], g_sTargetsIP[iTarget], sEscapedReason, g_iServerId, sEscapedClientName, sClientIp);
-	
-	// Send the query.
-	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack, iClient);
-	WritePackCell(hPack, iTarget);
-	WritePackString(hPack, sQuery);
-	SQL_TQuery(g_hDatabase, Query_Submission, sQuery, hPack);
+	// Blank out the target for this client
+	g_aPlayers[client][iSubmissionTarget] = -1;
 }
 
 stock DisplayTargetMenu(client)
@@ -472,5 +360,5 @@ stock AssignTargetInfo(client, target)
 	g_aPlayers[client][iSubmissionTarget] = target;
 	GetClientAuthString(target,	g_sTargetsAuth[target],		sizeof(g_sTargetsAuth[]));
 	GetClientIP(target,					g_sTargetsIP[target],	   	sizeof(g_sTargetsIP[]));
-	GetClientName(target,			g_sTargetsName[target], 	sizeof(g_sTargetsName[]));
+	GetClientName(target,				g_sTargetsName[target], 	sizeof(g_sTargetsName[]));
 }

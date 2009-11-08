@@ -109,6 +109,21 @@ public OnPluginStart()
 	CreateTimer(60.0, Timer_ProcessTemp);
 }
 
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+#else
+public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
+#endif
+{
+	CreateNative("SB_SubmitBan", Native_SubmitBan);
+	RegPluginLibrary("sb_bans");
+	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+	return APLRes_Success;
+	#else
+	return true;
+	#endif
+}
+
 public OnAdminMenuReady(Handle:topmenu)
 {
 	// Block us from being called twice
@@ -592,12 +607,12 @@ public Action:Event_PlayerConnect(Handle:event, const String:name[], bool:dontBr
 		return Plugin_Continue;
 	
 	new Handle:hEvent = CreateEvent("player_connect");
-	SetEventInt(hEvent, "index", iIndex);
-	SetEventInt(hEvent, "userid", iUserId);
+	SetEventInt(hEvent,    "index",     iIndex);
+	SetEventInt(hEvent,    "userid",    iUserId);
 	SetEventString(hEvent, "address",   sIp);
 	SetEventString(hEvent, "name",      sName);
 	SetEventString(hEvent, "networkid", sAuth);
-	FireEvent(hEvent, true);
+	FireEvent(hEvent,      true);
 	return Plugin_Handled;
 }
 
@@ -963,6 +978,25 @@ public Query_UnbanUpdate(Handle:owner, Handle:hndl, const String:error[], any:pa
 	}
 }
 
+public Query_SubmitBan(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	
+	new iAdmin  = ReadPackCell(pack);
+	new iTarget = ReadPackCell(pack);
+	
+	if(error[0]) 
+	{
+		LogError("Failed to submit the ban to the database: %s", error);
+		
+		ReplyToCommand(iAdmin, "%sFailed to submit %N.", SB_PREFIX, iTarget);
+		return;
+	}
+	
+	ReplyToCommand(iAdmin, "[SM] %t", "Submission succeeded");
+	ReplyToCommand(iAdmin, "[SM] %t", "Upload demo", g_sWebsite);
+}
+
 public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:client)
 {
 	if(!client || !IsClientInGame(client))
@@ -979,7 +1013,8 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:clie
 		return;
 	}
 	
-	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16], String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[512], String:sReason[128];
+	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16],
+			 String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[512], String:sReason[128];
 	GetClientAuthString(client, sAuth, sizeof(sAuth));
 	GetClientIP(client,         sIp,   sizeof(sIp));
 	GetClientName(client,       sName, sizeof(sName));
@@ -1032,6 +1067,41 @@ public Query_ErrorCheck(Handle:owner, Handle:hndl, const String:error[], any:dat
 {
 	if(error[0])
 		LogError("%T (%s)", "Failed to query database", error);
+}
+
+
+/**
+ * Natives
+ */
+public Native_SubmitBan(Handle:plugin, numParams)
+{
+	decl String:sReason[256];
+	new iClient = GetNativeCell(1);
+	new iTarget = GetNativeCell(2);
+	GetNativeString(3, sReason, sizeof(sReason));
+	
+	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[512], String:sEscapedTargetName[MAX_NAME_LENGTH * 2 + 1],
+			 String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sTargetAuth[20], String:sTargetIp[16], String:sTargetName[MAX_NAME_LENGTH + 1];
+	GetClientAuthString(iTarget, sTargetAuth, sizeof(sTargetAuth));
+	GetClientIP(iClient,         sIp,         sizeof(sIp));
+	GetClientIP(iTarget,         sTargetIp,   sizeof(sTargetIp));
+	GetClientName(iClient,       sName,       sizeof(sName));
+	GetClientName(iTarget,       sTargetName, sizeof(sTargetName));
+	
+	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack,   iClient);
+	WritePackCell(hPack,   iTarget);
+	WritePackString(hPack, sReason);
+	
+	SQL_EscapeString(g_hDatabase, sName,       sEscapedName,       sizeof(sEscapedName));
+	SQL_EscapeString(g_hDatabase, sReason,     sEscapedReason,     sizeof(sEscapedReason));
+	SQL_EscapeString(g_hDatabase, sTargetName, sEscapedTargetName, sizeof(sEscapedTargetName));
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_submissions (name, steam, ip, reason, server_id, subname, subip, time) \
+																	VALUES      ('%s', '%s', '%s', '%s', %i, '%s', '%s', UNIX_TIMESTAMP())",
+																	g_sDatabasePrefix, sEscapedTargetName, sTargetAuth, sTargetIp, sEscapedReason, g_iServerId, sEscapedName, sIp);
+	SQL_TQuery(g_hDatabase, Query_SubmitBan, sQuery, hPack);
+	
+	return SP_ERROR_NONE;
 }
 
 
