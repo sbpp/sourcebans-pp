@@ -1930,7 +1930,7 @@ function ChangePassword($aid, $pass)
 		return $objResponse;
 	}
 
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `password` = '" . encrypt_password($pass) . "' WHERE `aid` = $aid");
+	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `password` = '" . $userbank->encrypt_password($pass) . "' WHERE `aid` = $aid");
 	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
 	$objResponse->addAlert("Password changed successfully");
 	$objResponse->addRedirect("index.php?p=login", 0);
