@@ -341,12 +341,12 @@ function check_flag($mask, $flag)
 
 function validate_steam($steam)
 {
-	return ereg(STEAM_FORMAT, $steam) ? true : false;
+	return preg_match(STEAM_FORMAT, $steam) ? true : false;
 }
 
 function validate_email($email)
 {
-	return ereg(EMAIL_FORMAT, $email) ? true : false;
+	return preg_match(EMAIL_FORMAT, $email) ? true : false;
 }
 function validate_ip($ip)
 {
