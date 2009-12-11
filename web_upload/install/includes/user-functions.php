@@ -226,7 +226,7 @@ function check_flag($mask, $flag)
 
 function validate_steam($steam)
 {
-	if(ereg(STEAM_FORMAT, $steam))
+	if(preg_match(STEAM_FORMAT, $steam))
 		return true;
 	else 
 		return false;
@@ -234,7 +234,7 @@ function validate_steam($steam)
 
 function validate_email($email)
 {
-	if(ereg(EMAIL_FORMAT, $email))
+	if(preg_match(EMAIL_FORMAT, $email))
 	{
 		return true;
 	}
