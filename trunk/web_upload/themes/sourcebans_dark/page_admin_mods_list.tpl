@@ -13,8 +13,8 @@
 		</tr>
 		{foreach from="$mod_list" item="mod" name="gaben"}
 			<tr id="mid_{$mod.mid}">
-				<td style="border-bottom: solid 1px #ccc" height='16'>{$mod.name}</td>
-				<td style="border-bottom: solid 1px #ccc" height='16'>{$mod.modfolder}</td>
+				<td style="border-bottom: solid 1px #ccc" height='16'>{$mod.name|htmlspecialchars}</td>
+				<td style="border-bottom: solid 1px #ccc" height='16'>{$mod.modfolder|htmlspecialchars}</td>
 				<td style="border-bottom: solid 1px #ccc" height='16'><img src="images/games/{$mod.icon}" width="16"></td>
 				{if $permission_editmods || $permission_deletemods}
 				<td style="border-bottom: solid 1px #ccc" height='16'>
@@ -22,7 +22,7 @@
 					<a href="index.php?p=admin&c=mods&o=edit&id={$mod.mid}">Edit</a> - 
 					{/if}
 					{if $permission_deletemods}
-					<a href="#" onclick="RemoveMod('{$mod.name|escape:'quotes'}', '{$mod.mid}');">Delete</a>
+					<a href="#" onclick="RemoveMod('{$mod.name|escape:'quotes'|htmlspecialchars}', '{$mod.mid}');">Delete</a>
 					{/if}
 				</td>
 				{/if}

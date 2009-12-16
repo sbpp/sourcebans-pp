@@ -1320,7 +1320,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 			}
 			$objResponse->addAssign("map_$sid", "innerHTML", $info['map']);
 			if(!$inHome) {
-				$objResponse->addScript("$('mapimg_$sid').setProperty('src', '".GetMapImage($info['map'])."');");
+				$objResponse->addScript("$('mapimg_$sid').setProperty('src', '".GetMapImage($info['map'])."').setProperty('alt', '".$info['map']."').setProperty('title', '".$info['map']."');");
 				if($info['numplayers'] == 0 || empty($info['numplayers']))
 				{
 					$objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
@@ -1330,7 +1330,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 					$objResponse->addScript("$('sinfo_$sid').setStyle('display', 'block');");
 					$objResponse->addScript("$('noplayer_$sid').setStyle('display', 'none');");
 					if(!defined('IN_HOME')) {
-						$players = $sinfo->getPlayers($res[1],$res[2]);
+						$players = $sinfo->getPlayers();
 						// remove childnodes
 						$objResponse->addScript('var toempty = document.getElementById("playerlist_'.$sid.'");
 						var empty = toempty.cloneNode(false);

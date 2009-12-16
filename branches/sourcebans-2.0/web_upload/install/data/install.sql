@@ -393,6 +393,7 @@ INSERT INTO {prefix}_mods (name, folder, icon) VALUES
 ('Hidden: Source', 'hidden', 'hidden.png'),
 ('Insurgency', 'insurgency', 'ins.gif'),
 ('Left 4 Dead', 'left4dead', 'l4d.png'),
+('Left 4 Dead 2', 'left4dead2', 'l4d2.png'),
 ('Perfect Dark: Source', 'pdark', 'pdark.gif'),
 ('Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif'),
 ('SourceForts', 'sourceforts', 'sourceforts.gif'),

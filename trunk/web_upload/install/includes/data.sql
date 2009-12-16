@@ -14,7 +14,8 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`) VALUES
 (13, 'Team Fortress 2', 'tf2.gif', 'tf'),
 (14, 'Zombie Panic', 'zps.gif', 'zps'),
 (15, "Garry's Mod", 'gmod.png', 'garrysmod'),
-(16, "Left 4 Dead", 'l4d.png', 'left4dead');
+(16, "Left 4 Dead", 'l4d.png', 'left4dead'),
+(17, "Left 4 Dead 2", 'l4d2.png', 'left4dead2');
 
 UPDATE `{prefix}_mods` SET `mid` = '0' WHERE `name` = 'Web';
 
