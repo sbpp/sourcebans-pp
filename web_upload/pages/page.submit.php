@@ -27,7 +27,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1)
 	$BanReason = "";
 	$SubmitterName = "";
 	$Email = "";
-	$SID = "";
+	$SID = -1;
 }
 else
 {
@@ -37,7 +37,7 @@ else
 	$BanReason = $_POST['BanReason'];
 	$SubmitterName = htmlspecialchars($_POST['SubmitName']);
 	$Email = $_POST['EmailAddr'];
-	$SID = $_POST['server'];
+	$SID = (int)$_POST['server'];
 	$validsubmit = true;
 	$errors = "";
 	if((strlen($SteamID)!=0 && $SteamID != "STEAM_0:") && !validate_steam($SteamID))
@@ -65,7 +65,7 @@ else
 		$errors .= '* You must include a valid email address<br>';
 		$validsubmit = false;
 	}
-	if($SID == '-1')
+	if($SID == -1)
 	{
 		$errors .= '* Please select a server.<br>';
 		$validsubmit = false;
@@ -74,7 +74,7 @@ else
 	{
 		if((!CheckExt($_FILES['demo_file']['name'], "zip") && !CheckExt($_FILES['demo_file']['name'], "rar")))
 		{
-			$errors .= '* A demo can only be a zip, or a rar filetype.<br>';
+			$errors .= '* A demo can only be a zip or a rar filetype.<br>';
 			$validsubmit = false;
 		}
 	}
@@ -97,10 +97,20 @@ else
 		$demo = move_uploaded_file($_FILES['demo_file']['tmp_name'],SB_DEMOS."/".$filename);
 		if($demo || empty($_FILES['demo_file']['name']))
 		{
-			if($SID!="0")
+			if($SID!=0) {
+				require_once(INCLUDES_PATH.'/CServerInfo.php');
+				$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM ".DB_PREFIX."_servers WHERE sid = $SID");
+				$sinfo = new CServerInfo($res[0],$res[1]);
+				$info = $sinfo->getInfo();
+				if(!empty($info['hostname']))
+					$mailserver = "Server: " . $info['hostname'] . " (" . $res[0] . ":" . $res[1] . ")\n";
+				else
+					$mailserver = "Server: Error Connecting (" . $res[0] . ":" . $res[1] . ")\n";
 				$modid = $GLOBALS['db']->GetRow("SELECT m.mid FROM `".DB_PREFIX."_servers` as s LEFT JOIN `".DB_PREFIX."_mods` as m ON m.mid = s.modid WHERE s.sid = '".$SID."';");
-			else
+			} else {
+				$mailserver = "Server: Other server\n";
 				$modid[0] = 0;
+			}
 			if($SteamID == "STEAM_0:") $SteamID = "";
 			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_submissions(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)");
 			$GLOBALS['db']->Execute($pre,array($SteamID,$PlayerName,$Email,$modid[0],$BanReason, $_SERVER['REMOTE_ADDR'], $SubmitterName, $BanIP, $SID));
@@ -108,14 +118,13 @@ else
 
 			if(!empty($_FILES['demo_file']['name']))
 				$GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname) VALUES (?, 'S', ?, ?)", array($subid, $filename, $_FILES['demo_file']['name']));
-
 			$SteamID = "";
 			$BanIP = "";
 			$PlayerName = "";
 			$BanReason = "";
 			$SubmitterName = "";
 			$Email = "";
-			$SID = "";
+			$SID = -1;
 
 			// Send an email when ban was posted
 			$headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" . 'X-Mailer: PHP/' . phpversion();
@@ -127,7 +136,7 @@ else
 				$message = "";
 				$message .= "Hello " . $admin['user'] . ",\n\n";
 				$message .= "A new ban submission has been posted on your SourceBans page:\n\n";
-				$message .= "Player: ".$_POST['PlayerName']." (".$_POST['SteamID'].")\nDemo: ".(empty($_FILES['demo_file']['name'])?'no':'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id='.$subid.')')."\nReason: ".$_POST['BanReason']."\n\n";
+				$message .= "Player: ".$_POST['PlayerName']." (".$_POST['SteamID'].")\nDemo: ".(empty($_FILES['demo_file']['name'])?'no':'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id='.$subid.')')."\n".$mailserver."Reason: ".$_POST['BanReason']."\n\n";
 				$message .= "Click the link below to view the current ban submissions.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "index.php?p=admin&c=bans#^2";
 				if($userbank->HasAccess(ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid']))
 					mail($admin['email'], "[SourceBans] Ban Submission Added", $message, $headers);
