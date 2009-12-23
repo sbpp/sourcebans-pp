@@ -8,6 +8,13 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(23/12/09): Version 1.4.6
+-----------------------
+01. * Added Left 4 Dead 2 support
+02. * Added server to submission e-mail
+03. + Updated Russian plugin translation
+04. ! Fixed ereg() being deprecated
+
 (17/09/09): Version 1.4.5
 -----------------------
 01. + Improved Dashboard loading time. Loading blocked servername through ajax

@@ -83,8 +83,8 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 // ---------------------------------------------------
 #define('SB_SVN', true);
 if(!defined('SB_VERSION')){
-	define('SB_VERSION', '1.4.5');
-	define('SB_REV', '$Rev: 315 $');
+	define('SB_VERSION', '1.4.6');
+	define('SB_REV', '$Rev: 343 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
