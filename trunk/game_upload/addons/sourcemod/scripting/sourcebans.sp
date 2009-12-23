@@ -17,7 +17,7 @@
 #include <adminmenu>
 #include "dbi.inc"
 
-#define SB_VERSION "1.4.5"
+#define SB_VERSION "1.4.6"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
