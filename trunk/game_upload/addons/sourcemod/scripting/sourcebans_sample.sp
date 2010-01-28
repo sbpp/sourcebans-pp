@@ -15,7 +15,8 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
-#include "dbi.inc"
+
+new g_bSBAvailable = false;
 
 public Plugin:myinfo =
 {
@@ -26,10 +27,40 @@ public Plugin:myinfo =
 	url = "http://www.sourcebans.net"
 };
 
+public OnAllPluginsLoaded()
+{
+	if (LibraryExists("sourcebans"))
+	{
+		g_bSBAvailable = true;
+	}
+}
+
+public OnLibraryAdded(const String:name[])
+{
+	if (StrEqual(name, "sourcebans"))
+	{
+		g_bSBAvailable = true;
+	}
+}
+
+public OnLibraryRemoved(const String:name[])
+{
+	if (StrEqual(name, "sourcebans"))
+	{
+		g_bSBAvailable = false;
+	}
+}
 
 public banSample()
 {
 	new client = 1;
 	
-	SBBanPlayer(client, client, 5, "Ohnoes i banned myself");
+	if (g_bSBAvailable)
+	{
+		SBBanPlayer(client, client, 5, "Ohnoes i banned myself");
+	}
+	else
+	{
+		BanClient(client, 5, BANFLAG_AUTO, "Ohnoes i banned myself");
+	}
 }

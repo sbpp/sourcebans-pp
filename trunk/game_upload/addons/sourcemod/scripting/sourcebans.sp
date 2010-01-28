@@ -117,11 +117,21 @@ public Plugin:myinfo =
 	url = "http://www.sourcebans.net"
 };
 
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+#else
 public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
+#endif
 {
+	RegPluginLibrary("sourcebans");
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
 	LateLoaded = late;
-	return true;
+	
+	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+		return APLRes_Success;
+	#else
+		return true;
+	#endif
 }
 
 public OnPluginStart()
