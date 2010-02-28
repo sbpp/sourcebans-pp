@@ -889,7 +889,7 @@ function check_email($email) {
 // check, if one steamid is online on one specific server
 function checkSinglePlayer($sid, $steamid)
 {
-	require INCLUDES_PATH.'/CServerRcon.php';
+	require_once(INCLUDES_PATH.'/CServerRcon.php');
 	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($serv['rcon'])) {
 		return false;
@@ -928,7 +928,7 @@ function checkSinglePlayer($sid, $steamid)
 //returns array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => array()....)
 function checkMultiplePlayers($sid, $steamids)
 {
-	require INCLUDES_PATH.'/CServerRcon.php';
+	require_once(INCLUDES_PATH.'/CServerRcon.php');
 	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($serv['rcon'])) {
 		return false;
@@ -1062,7 +1062,7 @@ function GetCommunityName($steamid)
 
 function SendRconSilent($rcon, $sid)
 {
-	require INCLUDES_PATH.'/CServerRcon.php';
+	require_once(INCLUDES_PATH.'/CServerRcon.php');
 	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($serv['rcon'])) {
 		return false;
