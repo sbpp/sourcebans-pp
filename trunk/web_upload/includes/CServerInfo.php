@@ -117,7 +117,12 @@ class CServerInfo
     $players = array();
     for($i = 0; $i < $count; $i++)
     {
-      $temp = array('index' => $this->_getbyte(),
+      // Warning: As of September 29, 2009, Left4Dead2 returns an index of zero for all players.
+      // Need the index for the server context menu...
+      $index = $this->_getbyte();
+      if($index == 0)
+        $index = $i;
+      $temp = array('index' => $index,
                     'name'  => $this->_getnullstr(),
                     'kills' => $this->_getlong(),
                     'time'  => SecondsToString((int)$this->_getfloat(), true));
