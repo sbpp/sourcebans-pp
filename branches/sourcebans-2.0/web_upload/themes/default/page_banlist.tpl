@@ -313,7 +313,7 @@
                               </tr>
                               {if !empty($comment.edit_admin_name)}
                               <tr>
-                                <td colspan="3" style="font-size: 6pt; color: grey;">
+                                <td class="comment_edit" colspan="3">
                                   last edit {$comment.edit_time|date_format:$date_format} by {$comment.edit_admin_name}
                                 </td>
                               </tr>

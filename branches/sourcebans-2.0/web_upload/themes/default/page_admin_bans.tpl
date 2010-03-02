@@ -28,84 +28,100 @@
               <fieldset>
                 <h3>{$lang_add_ban|ucwords}</h3>
                 <p>{$lang_help_desc}</p>
-                <label for="name">{help_icon title="$lang_name" desc="Type the nickname of the person that you are banning."}{$lang_name}</label>
-                <input class="submit-fields" {nid id="name"} />
-                <label for="type">{help_icon title="$lang_type" desc="Choose whether to ban by Steam ID or IP address."}{$lang_type}</label>
-                <select class="submit-fields" {nid id="type"}>
-                  <option value="{$smarty.const.STEAM_BAN_TYPE}">Steam ID</option>
-                  <option value="{$smarty.const.IP_BAN_TYPE}">{$lang_ip_address}</option>
-                </select>
-                <label for="steam">{help_icon title="Steam ID" desc="The Steam ID of the person to ban."}Steam ID (<a href="{build_url _=banlist.php search=null type=steam}"><span id="steam_count">0</span> {$lang_bans|strtolower}</a>)</label>
-                <input class="submit-fields" {nid id="steam"} />
-                <label for="ip">{help_icon title="$lang_ip_address" desc="Type the IP address of the person you want to ban."}{$lang_ip_address} (<a href="{build_url _=banlist.php search=null type=ip}"><span id="ip_count">0</span> {$lang_bans|strtolower}</a>)</label>
-                <input class="submit-fields" {nid id="ip"} />
-                <label for="reason">{help_icon title="$lang_reason" desc="Explain in detail, why this ban is being made."}{$lang_reason}</label>
-                <select class="submit-fields" {nid id="reason"}>
-                  <option value=""> -- Select Reason -- </option>
-                  <optgroup label="Hacking">
-                    <option value="Aimbot">Aimbot</option>
-                    <option value="Antirecoil">Antirecoil</option>
-                    <option value="Wallhack">Wallhack</option>
-                    <option value="Spinhack">Spinhack</option>
-                    <option value="Multi-Hack">Multi-Hack</option>
-                    <option value="No Smoke">No Smoke</option>
-                    <option value="No Flash">No Flash</option>
-                  </optgroup>
-                  <optgroup label="Behavior">
-                    <option value="Team Killing">Team Killing</option>
-                    <option value="Team Flashing">Team Flashing</option>
-                    <option value="Spamming Mic/Chat">Spamming Mic/Chat</option>
-                    <option value="Inappropriate Spray">Inappropriate Spray</option>
-                    <option value="Inappropriate Language">Inappropriate Language</option>
-                    <option value="Inappropriate Name">Inappropriate Name</option>
-                    <option value="Ignoring Admins">Ignoring Admins</option>
-                    <option value="Team Stacking">Team Stacking</option>
-                  </optgroup>
-                  <option value="other">Other Reason</option>
-                </select>
-                <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5"></textarea>
-                <label for="length">{help_icon title="$lang_length" desc="Select how long you want to ban this person for."}{$lang_length}</label>
-                <select class="submit-fields" {nid id="length"}>
-                  <option value="0">{$lang_permanent}</option>
-                  <optgroup label="{$lang_minutes}">
-                    <option value="1">1 {$lang_minute}</option>
-                    <option value="5">5 {$lang_minutes}</option>
-                    <option value="10">10 {$lang_minutes}</option>
-                    <option value="15">15 {$lang_minutes}</option>
-                    <option value="30">30 {$lang_minutes}</option>
-                    <option value="45">45 {$lang_minutes}</option>
-                  </optgroup>
-                  <optgroup label="{$lang_hours}">
-                    <option value="60">1 {$lang_hour}</option>
-                    <option value="120">2 {$lang_hours}</option>
-                    <option value="180">3 {$lang_hours}</option>
-                    <option value="240">4 {$lang_hours}</option>
-                    <option value="480">8 {$lang_hours}</option>
-                    <option value="720">12 {$lang_hours}</option>
-                  </optgroup>
-                  <optgroup label="{$lang_days}">
-                    <option value="1440">1 {$lang_day}</option>
-                    <option value="2880">2 {$lang_days}</option>
-                    <option value="4320">3 {$lang_days}</option>
-                    <option value="5760">4 {$lang_days}</option>
-                    <option value="7200">5 {$lang_days}</option>
-                    <option value="8640">6 {$lang_days}</option>
-                  </optgroup>
-                  <optgroup label="{$lang_weeks}">
-                    <option value="10080">1 {$lang_week}</option>
-                    <option value="20160">2 {$lang_weeks}</option>
-                    <option value="30240">3 {$lang_weeks}</option>
-                  </optgroup>
-                  <optgroup label="{$lang_months}">
-                    <option value="43200">1 {$lang_month}</option>
-                    <option value="86400">2 {$lang_months}</option>
-                    <option value="129600">3 {$lang_months}</option>
-                    <option value="259200">6 {$lang_months}</option>
-                    <option value="518400">12 {$lang_months}</option>
-                  </optgroup>
-                </select>
-                <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo} (<a href="#" id="add_demo">{$lang_add}</a>)</label>
-                <input class="demo submit-fields" name="demo[]" id="demo" type="file" />
+                <div>
+                  <label for="name">{help_icon title="$lang_name" desc="Type the nickname of the person that you are banning."}{$lang_name}</label>
+                  <input class="submit-fields" {nid id="name"} />
+                </div>
+                <div>
+                  <label for="type">{help_icon title="$lang_type" desc="Choose whether to ban by Steam ID or IP address."}{$lang_type}</label>
+                  <select class="submit-fields" {nid id="type"}>
+                    <option value="{$smarty.const.STEAM_BAN_TYPE}">Steam ID</option>
+                    <option value="{$smarty.const.IP_BAN_TYPE}">{$lang_ip_address}</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="steam">{help_icon title="Steam ID" desc="The Steam ID of the person to ban."}Steam ID</label>
+                  <input class="submit-fields" {nid id="steam"} />
+                  <a class="ban_count" href="{build_url _=banlist.php search=null type=steam}"><span><span id="steam_count">0</span> {$lang_bans|strtolower}</span></a>
+                </div>
+                <div>
+                  <label for="ip">{help_icon title="$lang_ip_address" desc="Type the IP address of the person you want to ban."}{$lang_ip_address}</label>
+                  <input class="submit-fields" {nid id="ip"} />
+                  <a class="ban_count" href="{build_url _=banlist.php search=null type=ip}"><span><span id="ip_count">0</span> {$lang_bans|strtolower}</span></a>
+                </div>
+                <div>
+                  <label for="reason">{help_icon title="$lang_reason" desc="Explain in detail, why this ban is being made."}{$lang_reason}</label>
+                  <select class="submit-fields" {nid id="reason"}>
+                    <option value=""> -- Select Reason -- </option>
+                    <optgroup label="Hacking">
+                      <option value="Aimbot">Aimbot</option>
+                      <option value="Antirecoil">Antirecoil</option>
+                      <option value="Wallhack">Wallhack</option>
+                      <option value="Spinhack">Spinhack</option>
+                      <option value="Multi-Hack">Multi-Hack</option>
+                      <option value="No Smoke">No Smoke</option>
+                      <option value="No Flash">No Flash</option>
+                    </optgroup>
+                    <optgroup label="Behavior">
+                      <option value="Team Killing">Team Killing</option>
+                      <option value="Team Flashing">Team Flashing</option>
+                      <option value="Spamming Mic/Chat">Spamming Mic/Chat</option>
+                      <option value="Inappropriate Spray">Inappropriate Spray</option>
+                      <option value="Inappropriate Language">Inappropriate Language</option>
+                      <option value="Inappropriate Name">Inappropriate Name</option>
+                      <option value="Ignoring Admins">Ignoring Admins</option>
+                      <option value="Team Stacking">Team Stacking</option>
+                    </optgroup>
+                    <option value="other">Other Reason</option>
+                  </select>
+                  <textarea class="submit-fields" cols="30" {nid id="reason_other"} rows="5"></textarea>
+                </div>
+                <div>
+                  <label for="length">{help_icon title="$lang_length" desc="Select how long you want to ban this person for."}{$lang_length}</label>
+                  <select class="submit-fields" {nid id="length"}>
+                    <option value="0">{$lang_permanent}</option>
+                    <optgroup label="{$lang_minutes}">
+                      <option value="1">1 {$lang_minute}</option>
+                      <option value="5">5 {$lang_minutes}</option>
+                      <option value="10">10 {$lang_minutes}</option>
+                      <option value="15">15 {$lang_minutes}</option>
+                      <option value="30">30 {$lang_minutes}</option>
+                      <option value="45">45 {$lang_minutes}</option>
+                    </optgroup>
+                    <optgroup label="{$lang_hours}">
+                      <option value="60">1 {$lang_hour}</option>
+                      <option value="120">2 {$lang_hours}</option>
+                      <option value="180">3 {$lang_hours}</option>
+                      <option value="240">4 {$lang_hours}</option>
+                      <option value="480">8 {$lang_hours}</option>
+                      <option value="720">12 {$lang_hours}</option>
+                    </optgroup>
+                    <optgroup label="{$lang_days}">
+                      <option value="1440">1 {$lang_day}</option>
+                      <option value="2880">2 {$lang_days}</option>
+                      <option value="4320">3 {$lang_days}</option>
+                      <option value="5760">4 {$lang_days}</option>
+                      <option value="7200">5 {$lang_days}</option>
+                      <option value="8640">6 {$lang_days}</option>
+                    </optgroup>
+                    <optgroup label="{$lang_weeks}">
+                      <option value="10080">1 {$lang_week}</option>
+                      <option value="20160">2 {$lang_weeks}</option>
+                      <option value="30240">3 {$lang_weeks}</option>
+                    </optgroup>
+                    <optgroup label="{$lang_months}">
+                      <option value="43200">1 {$lang_month}</option>
+                      <option value="86400">2 {$lang_months}</option>
+                      <option value="129600">3 {$lang_months}</option>
+                      <option value="259200">6 {$lang_months}</option>
+                      <option value="518400">12 {$lang_months}</option>
+                    </optgroup>
+                  </select>
+                </div>
+                <div>
+                  <label for="demo">{help_icon title="$lang_demo" desc="Click here to upload a demo with this ban submission."}{$lang_demo} (<a href="#" id="add_demo">{$lang_add}</a>)</label>
+                  <input class="demo submit-fields" name="demo[]" id="demo" type="file" />
+                </div>
                 <div class="center">
                   <input name="action" type="hidden" value="add" />
                   <input class="btn ok" type="submit" value="{$lang_save}" />
@@ -244,7 +260,7 @@
                                 </tr>
                                 {if !empty($comment.edit_admin_name)}
                                 <tr>
-                                  <td colspan="3" style="font-size: 6pt; color: grey;">
+                                  <td class="comment_edit" colspan="3">
                                     last edit {$comment.edit_time|date_format:$date_format} by {$comment.edit_admin_name}
                                   </td>
                                 </tr>
@@ -373,7 +389,7 @@
                                 </tr>
                                 {if !empty($comment.edit_admin_name)}
                                 <tr>
-                                  <td colspan="3" style="font-size: 6pt; color: grey;">
+                                  <td class="comment_edit" colspan="3">
                                     last edit {$comment.edit_time|date_format:$date_format} by {$comment.edit_admin_name}
                                   </td>
                                 </tr>

@@ -13,7 +13,7 @@
           <form action="{$active}" id="admin-page-content" method="post">
             <fieldset>
               <h3>RCON Console</h3>
-              <div id="rcon" style="overflow: auto; background-color: #efefef; border: 1px solid #999; padding: 3px; height: 250px; width: 90%; margin: 0 auto;">
+              <div id="rcon_out">
                 <pre>
 
 
@@ -42,7 +42,7 @@
               <br />
               Command:
               <input name="id" type="hidden" value="{$smarty.get.id}" />
-              <input {nid id="rcon_cmd"} style="font-family: verdana, tahoma, arial; font-size: 10px; width: 500px;" />
+              <input {nid id="rcon_cmd"} />
               <input {nid id="rcon_btn"} type="button" value="Send" />
             </fieldset>
           </form>

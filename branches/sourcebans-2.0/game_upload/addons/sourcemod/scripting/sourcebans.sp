@@ -66,7 +66,7 @@ new String:g_sServerIp[16];
  */
 public OnPluginStart()
 {
-	CreateConVar("sb_version", SB_VERSION, "Advanced admin and ban management for the Source engine", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sb_version", SB_VERSION, "Advanced admin and ban management for the Source engine", FCVAR_NOTIFY|FCVAR_PLUGIN);
 	RegAdminCmd("sb_reload", Command_Reload, ADMFLAG_RCON, "Reload SourceBans config and ban reason menu options");
 	
 	LoadTranslations("common.phrases");

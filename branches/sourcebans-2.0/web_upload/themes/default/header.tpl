@@ -108,7 +108,7 @@
         </ul>
         <form action="banlist.php" id="search" method="get">
           <fieldset>
-            <input class="searchbox" name="search" onblur="{literal}if (this.value=='') {this.value=' {/literal}{$lang_search_bans|ucwords}{literal}...';}{/literal}" onfocus="this.value='';" value=" {$lang_search_bans|ucwords}..." /><input class="searchbtn" type="submit" value="" />
+            <input id="searchbox" name="search" value=" {$lang_search_bans|ucwords}..." /><input class="searchbtn" type="submit" value="" />
           </fieldset>
         </form>
       </div>

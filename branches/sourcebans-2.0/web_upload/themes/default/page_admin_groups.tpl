@@ -467,7 +467,7 @@
                     <td class="tablerow1">{$lang_immunity_level}</td>
                     <td class="tablerow1" align="center"></td>
                     <td class="tablerow1">Choose the immunity level. The higher the number, the more immunity.</td>
-                    <td align="center" class="tablerow1"><input maxlength="3" {nid id="immunity"} style="width: 25px; text-align: center;" value="0" /></td>
+                    <td align="center" class="tablerow1"><input {nid id="immunity"} maxlength="3" value="0" /></td>
                   </tr>
                 </table>
                 <table align="center" cellspacing="0" cellpadding="4" class="group_type" id="group_type_{$smarty.const.WEB_GROUPS}" width="90%">

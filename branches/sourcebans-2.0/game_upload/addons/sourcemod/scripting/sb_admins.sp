@@ -59,11 +59,7 @@ public OnPluginStart()
 	LoadTranslations("sqladmins.phrases");
 }
 
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
-#else
-public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
-#endif
 {
 	CreateNative("SB_GetAdminId",     Native_GetAdminId);
 	CreateNative("SB_AddAdmin",       Native_AddAdmin);
@@ -72,11 +68,8 @@ public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("SB_DeleteGroup",    Native_DeleteGroup);
 	CreateNative("SB_SetAdminGroups", Native_SetAdminGroups);
 	RegPluginLibrary("sb_admins");
-	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+	
 	return APLRes_Success;
-	#else
-	return true;
-	#endif
 }
 
 public OnRebuildAdminCache(AdminCachePart:part)
@@ -213,7 +206,7 @@ public Action:Command_AddAdmin(client, args)
 	}
 	if(!g_hDatabase)
 	{
-		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Could not connect to database");
 		return Plugin_Handled;
 	}
 	
@@ -222,12 +215,6 @@ public Action:Command_AddAdmin(client, args)
 	iLen  = BreakString(sArg,       sName,     sizeof(sName));
 	iLen += BreakString(sArg[iLen], sType,     sizeof(sType));
 	iLen += BreakString(sArg[iLen], sIdentity, sizeof(sIdentity));
-	
-	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-	{
-		ReplyToCommand(client, "%s%t", "Invalid authtype", SB_PREFIX);
-		return Plugin_Handled;
-	}
 	
 	if(sArg[iLen])
 		iLen        += BreakString(sArg[iLen], sPassword, sizeof(sPassword));
@@ -247,19 +234,13 @@ public Action:Command_DelAdmin(client, args)
 	}
 	if(!g_hDatabase)
 	{
-		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Could not connect to database");
 		return Plugin_Handled;
 	}
 	
 	decl String:sIdentity[65], String:sType[16];
 	GetCmdArg(1, sType,     sizeof(sType));
 	GetCmdArg(2, sIdentity, sizeof(sIdentity));
-	
-	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-	{
-		ReplyToCommand(client, "%s%t", "Invalid authtype", SB_PREFIX);
-		return Plugin_Handled;
-	}
 	
 	SB_DeleteAdmin(client, sType, sIdentity);
 	return Plugin_Handled;
@@ -274,7 +255,7 @@ public Action:Command_AddGroup(client, args)
 	}
 	if(!g_hDatabase)
 	{
-		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Could not connect to database");
 		return Plugin_Handled;
 	}
 	
@@ -289,7 +270,7 @@ public Action:Command_AddGroup(client, args)
 		GetCmdArg(3, sArg, sizeof(sArg));
 		if(!StringToIntEx(sArg, iImmunity))
 		{
-			ReplyToCommand(client, "%s%t", "Invalid immunity", SB_PREFIX);
+			ReplyToCommand(client, "%s%t", SB_PREFIX, "Invalid immunity");
 			return Plugin_Handled;
 		}
 	}
@@ -307,7 +288,7 @@ public Action:Command_DelGroup(client, args)
 	}
 	if(!g_hDatabase)
 	{
-		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Could not connect to database");
 		return Plugin_Handled;
 	}
 	
@@ -319,7 +300,7 @@ public Action:Command_DelGroup(client, args)
 	if(sName[strlen(sName) - 1] == '"')
 	{
 		sName[strlen(sName) - 1] = '\0';
-		iStart = 1;
+		iStart                   = 1;
 	}
 	
 	SB_DeleteGroup(client, sName[iStart]);
@@ -335,7 +316,7 @@ public Action:Command_SetAdminGroups(client, args)
 	}
 	if(!g_hDatabase)
 	{
-		ReplyToCommand(client, "%s%t", "Could not connect to database", SB_PREFIX);
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Could not connect to database");
 		return Plugin_Handled;
 	}
 	
@@ -346,7 +327,7 @@ public Action:Command_SetAdminGroups(client, args)
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
 	{
-		ReplyToCommand(client, "%s%t", "Invalid authtype", SB_PREFIX);
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Invalid authtype");
 		return Plugin_Handled;
 	}
 	
@@ -388,12 +369,12 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	SQL_EscapeString(g_hDatabase, sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
 	SQL_EscapeString(g_hDatabase, sName,     sEscapedName,     sizeof(sEscapedName));
 	SQL_EscapeString(g_hDatabase, sPassword, sEscapedPassword, sizeof(sEscapedPassword));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_admins (name, auth, identity, password) \
-																	VALUES ('%s', '%s', '%s', '%s')",
+	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_admins (name, auth, identity, srv_password) \
+																	VALUES      ('%s', '%s', '%s', NULLIF('%s', ''))",
 																	g_sDatabasePrefix, sEscapedName, sType, sEscapedIdentity, sEscapedPassword);
 	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery, pack);
 	
-	ReplyToCommand(iAdmin, "%s%t", "SQL Admin added", SB_PREFIX);
+	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin added");
 	SB_SetAdminGroups(iAdmin, sType, sIdentity, sGroups);
 }
 
@@ -412,7 +393,7 @@ public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	}
 	if(!SQL_FetchRow(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", "SQL Admin not found", SB_PREFIX);
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
 		return;
 	}
 	
@@ -430,7 +411,7 @@ public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 																	g_sDatabasePrefix, iAdminId);
 	SQL_TQuery(g_hDatabase, Query_ErrorCheck, sQuery);
 	
-	ReplyToCommand(iAdmin, "%s%t", "SQL Admin deleted", SB_PREFIX);
+	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin deleted");
 }
 
 public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -458,7 +439,7 @@ public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	
 	decl String:sEscapedFlags[65], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
 	SQL_EscapeString(g_hDatabase, sFlags, sEscapedFlags, sizeof(sEscapedFlags));
-	SQL_EscapeString(g_hDatabase, sFlags, sEscapedName,  sizeof(sEscapedName));
+	SQL_EscapeString(g_hDatabase, sName,  sEscapedName,  sizeof(sEscapedName));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO %s_srvgroups (name, flags, immunity) \
 																	VALUES ('%s', '%s', %i)",
 																	g_sDatabasePrefix, sEscapedName, sEscapedFlags, iImmunity);
@@ -532,7 +513,7 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	}
 	if(!SQL_FetchRow(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", "SQL Admin not found", SB_PREFIX);
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
 		return;
 	}
 	
@@ -548,7 +529,7 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	new iCount = ReadPackCell(pack);
 	if(!iCount)
 	{
-		ReplyToCommand(iAdmin, "%s%t", "SQL Admin groups reset", SB_PREFIX);
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin groups reset");
 		return;
 	}
 	
@@ -564,9 +545,9 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	}
 	
 	if(iOrder     == 1)
-		ReplyToCommand(iAdmin, "%s%t", "Added group to user",  SB_PREFIX);
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added group to user");
 	else if(iOrder > 1)
-		ReplyToCommand(iAdmin, "%s%t", "Added groups to user", SB_PREFIX, iOrder);
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added groups to user", iOrder);
 }
 
 public Query_SelectAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -1006,7 +987,7 @@ public Native_AddAdmin(Handle:plugin, numParams)
 	GetNativeString(6, sGroups,   sizeof(sGroups));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
+		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", SB_PREFIX, "Invalid authtype");
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iClient);
@@ -1038,7 +1019,7 @@ public Native_DeleteAdmin(Handle:plugin, numParams)
 	GetNativeString(3, sIdentity, sizeof(sIdentity));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
+		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", SB_PREFIX, "Invalid authtype");
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iClient);
@@ -1087,9 +1068,11 @@ public Native_DeleteGroup(Handle:plugin, numParams)
 	// order = client, name
 	
 	decl String:sName[33];
-	GetNativeString(1, sName, sizeof(sName));
+	new iClient = GetNativeCell(1);
+	GetNativeString(2, sName, sizeof(sName));
 	
 	new Handle:hPack = CreateDataPack();
+	WritePackCell(hPack,   iClient);
 	WritePackString(hPack, sName);
 	
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sQuery[256];
@@ -1113,7 +1096,7 @@ public Native_SetAdminGroups(Handle:plugin, numParams)
 	TrimString(sGroups);
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", "Invalid authtype", SB_PREFIX);
+		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", SB_PREFIX, "Invalid authtype");
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack, iClient);

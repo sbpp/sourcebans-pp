@@ -622,7 +622,7 @@ function ServerInfo($id)
     
     return array(
       'id'         => $id,
-      'hostname'   => preg_replace('/[\x00-\x09]/', null, $server_info['hostname']),
+      'hostname'   => preg_replace('/[\x00-\x1F\x7F-\x9F]/', null, $server_info['hostname']),
       'numplayers' => $server_info['numplayers'],
       'maxplayers' => $server_info['maxplayers'],
       'map'        => $server_info['map'],

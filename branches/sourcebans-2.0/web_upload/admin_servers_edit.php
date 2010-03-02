@@ -13,7 +13,10 @@ try
   {
     try
     {
-      SB_API::editServer($_POST['id'], $_POST['name'], $_POST['icon'], $_POST['folder'], isset($_POST['enabled']), $_POST['groups']);
+      if($_POST['rcon'] != $_POST['rcon_confirm'])
+        throw new Exception($phrases['passwords_do_not_match']);
+      
+      SB_API::editServer($_POST['id'], $_POST['ip'], $_POST['port'], $_POST['rcon'] == 'xxxxxxxxxx' ? null : $_POST['rcon'], $_POST['mod'], isset($_POST['enabled']), $_POST['groups']);
       
       exit(json_encode(array(
         'redirect' => Util::buildUrl(array(

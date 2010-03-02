@@ -87,6 +87,8 @@ public OnPluginStart()
 	
 	g_hHackingMenu = CreateMenu(MenuHandler_Reason);
 	g_hReasonMenu  = CreateMenu(MenuHandler_Reason);
+	SetMenuExitBackButton(g_hHackingMenu, true);
+	SetMenuExitBackButton(g_hReasonMenu,  true);
 	
 	// Account for late loading
 	new Handle:hTopMenu;
@@ -94,7 +96,7 @@ public OnPluginStart()
 		OnAdminMenuReady(hTopMenu);
 	
 	// Connect to local database
-	decl String:sError[256];
+	decl String:sError[256] = "";
 	g_hSQLiteDB    = SQLite_UseDatabase("sourcemod-local", sError, sizeof(sError));
 	if(sError[0])
 	{
@@ -109,19 +111,12 @@ public OnPluginStart()
 	CreateTimer(60.0, Timer_ProcessTemp);
 }
 
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
-#else
-public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
-#endif
 {
 	CreateNative("SB_SubmitBan", Native_SubmitBan);
 	RegPluginLibrary("sb_bans");
-	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
+	
 	return APLRes_Success;
-	#else
-	return true;
-	#endif
 }
 
 public OnAdminMenuReady(Handle:topmenu)
@@ -197,6 +192,10 @@ public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 	GetClientIP(client, sIp, sizeof(sIp));
 	if(!HasLocalBan(sIp))
 		return true;
+	
+	#if defined _DEBUG
+	PrintToServer("Found local ban (%s)", sIp);
+	#endif
 	
 	Format(rejectmsg, maxlen, "%t", "Banned Check Site", g_sWebsite);
 	return false;
@@ -593,27 +592,14 @@ public Action:Command_Say(client, args)
  */
 public Action:Event_PlayerConnect(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(dontBroadcast)
-		return Plugin_Continue;
+	decl String:sIp[16];
+	GetEventString(event, "address", sIp, sizeof(sIp));
 	
-	decl String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1];
-	new iIndex  = GetEventInt(event, "index"),
-			iUserId = GetEventInt(event, "userid");
-	GetEventString(event, "address",   sIp,   sizeof(sIp));
-	GetEventString(event, "name",      sName, sizeof(sName));
-	GetEventString(event, "networkid", sAuth, sizeof(sAuth));
-	// If the player is not banned, allow the event to continue
-	if(!HasLocalBan(sIp))
-		return Plugin_Continue;
+	// If the player is banned, don't broadcast the event
+	if(HasLocalBan(sIp))
+		SetEventBroadcast(event, true);
 	
-	new Handle:hEvent = CreateEvent("player_connect");
-	SetEventInt(hEvent,    "index",     iIndex);
-	SetEventInt(hEvent,    "userid",    iUserId);
-	SetEventString(hEvent, "address",   sIp);
-	SetEventString(hEvent, "name",      sName);
-	SetEventString(hEvent, "networkid", sAuth);
-	FireEvent(hEvent,      true);
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
 
 
@@ -687,8 +673,8 @@ public Action:Timer_ProcessTemp(Handle:timer)
 	// Delete temporary bans that expired or were added over 5 minutes ago
 	decl String:sQuery[128];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
-																	WHERE       (time + length * 60 <= %i OR insert_time + 300 <= %i) \
-																		AND       queued = 0",
+																	WHERE       queued = 0 \
+																		AND       (time + length * 60 <= %i OR insert_time + 300 <= %i)",
 																	GetTime(), GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
 }
@@ -734,8 +720,8 @@ public MenuHandler_Time(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action      == MenuAction_Cancel)
 	{
-		if(param2 == MenuCancel_ExitBack && g_hTopMenu)
-			DisplayTopMenu(g_hTopMenu, param1, TopMenuPosition_LastCategory);
+		if(param2 == MenuCancel_ExitBack)
+			DisplayBanTargetMenu(param1);
 	}
 	else if(action == MenuAction_End)
 		CloseHandle(menu);
@@ -751,7 +737,12 @@ public MenuHandler_Time(Handle:menu, MenuAction:action, param1, param2)
 public MenuHandler_Reason(Handle:menu, MenuAction:action, param1, param2)
 {
 	if(action == MenuAction_Cancel)
-		DisplayBanTimeMenu(param1);
+	{
+		if(menu == g_hHackingMenu)
+			DisplayMenu(g_hReasonMenu, param1, MENU_TIME_FOREVER);
+		else
+			DisplayBanTimeMenu(param1);
+	}
 	if(action != MenuAction_Select)
 		return;
 	
@@ -1187,6 +1178,10 @@ InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sNa
 																	VALUES      (%i, '%s', '%s', '%s', '%s', %i, %i, '%s', %i, %i, %i)",
 																	iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength, iAdminId, sAdminIp, bQueued ? 1 : 0, iTime, GetTime());
 	SQL_FastQuery(g_hSQLiteDB, sQuery);
+	
+	#if defined _DEBUG
+	PrintToServer("Added local ban (%i,%s,%s,%s,%s,%i,%i,%s,%i,%i)", iType, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, iTime, bQueued ? 1 : 0);
+	#endif
 }
 
 SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)

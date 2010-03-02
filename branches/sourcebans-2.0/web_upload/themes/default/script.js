@@ -17,6 +17,7 @@
  */
 var demo;
 var override;
+var search;
 
 
 /**
@@ -591,7 +592,8 @@ window.addEvent('domready', function() {
   {
     $('ip').addEvent('keyup', function(e) {
       x_GetBans('ip', this.value, function(res) {
-        $('ip_count').set('text', res.count);
+        var el = $('ip_count').set('text', res.count).getParent().getParent();
+        el.set('title', el.get('text'));
       });
     });
   }
@@ -636,7 +638,7 @@ window.addEvent('domready', function() {
   }
   if($chk($('rcon_con')))
   {
-    new Fx.Scroll($('rcon'), {
+    new Fx.Scroll($('rcon_out'), {
       duration: 500,
       transition: Fx.Transitions.Cubic.easeInOut
     }).toBottom();
@@ -646,7 +648,7 @@ window.addEvent('domready', function() {
         return;
       if(this.value == 'clr')
       {
-        $('rcon').empty();
+        $('rcon_out').empty();
         this.value    = '';
       }
       else
@@ -664,11 +666,26 @@ window.addEvent('domready', function() {
   }
   if($chk($('relver')))
     x_Version(setVersion);
+  if($chk($('searchbox')))
+  {
+    search = $('searchbox').value;
+    
+    $('searchbox').addEvents({
+      'blur': function(e) {
+        if(this.value == '')
+          this.value = search;
+      },
+      'focus': function(e) {
+        this.value = '';
+      }
+    });
+  }
   if($chk($('steam_count')))
   {
     $('steam').addEvent('keyup', function(e) {
       x_GetBans('steam', this.value, function(res) {
-        $('steam_count').set('text', res.count);
+        var el = $('steam_count').set('text', res.count).getParent().getParent();
+        el.set('title', el.get('text'));
       });
     });
   }

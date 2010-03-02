@@ -184,7 +184,7 @@
                   <td class="tablerow1">{$lang_immunity_level}</td>
                   <td class="tablerow1" align="center"></td>
                   <td class="tablerow1">Choose the immunity level. The higher the number, the more immunity.</td>
-                  <td align="center" class="tablerow1"><input {nid id="immunity"} maxlength="3" style="width: 25px; text-align: center;" value="{$group_immunity}" /></td>
+                  <td align="center" class="tablerow1"><input {nid id="immunity"} maxlength="3" value="{$group_immunity}" /></td>
                 </tr>
               </table>
               <label for="overrides">{help_icon title="Overrides" desc="Choose the group's overrides here."}Overrides (<a id="add_override" href="#">Add</a>)</label>
