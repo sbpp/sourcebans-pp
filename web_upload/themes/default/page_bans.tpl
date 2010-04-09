@@ -344,5 +344,15 @@
 		<a href="./exportbans.php?type=ip" title="Export Permanent IP Bans">Export Permanent IP Bans</a>
 	{/if}
 </div>
-<script>InitAccordion('tr.opener', 'div.opener', 'mainwrapper');$('tickswitch').value=0;</script>
+{literal}
+<script type="text/javascript">window.addEvent('domready', function(){	
+InitAccordion('tr.opener', 'div.opener', 'mainwrapper');
+{/literal}
+{if $view_bans}
+$('tickswitch').value=0;
+{/if}
+{literal}
+}); 
+</script>
+{/literal}
 {/if}
