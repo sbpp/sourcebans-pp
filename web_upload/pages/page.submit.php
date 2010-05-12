@@ -154,7 +154,7 @@ else
 //$mod_list = $GLOBALS['db']->GetAssoc("SELECT mid,name FROM ".DB_PREFIX."_mods WHERE `mid` > 0 AND `enabled`= 1 ORDER BY mid ");
 require_once INCLUDES_PATH.'/CServerInfo.php';
 //serverlist
-$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers`");
+$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
 $servers = array();
 while (!$server_list->EOF)
 {
