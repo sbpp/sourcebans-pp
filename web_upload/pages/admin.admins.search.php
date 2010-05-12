@@ -16,7 +16,7 @@
 global $userbank, $theme;
 
 //serverlist
-$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers`");
+$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
 $servers = array();
 $serverscript = "<script type=\"text/javascript\">";
 while (!$server_list->EOF)
