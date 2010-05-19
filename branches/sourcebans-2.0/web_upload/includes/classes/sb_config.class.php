@@ -169,7 +169,7 @@ class SBConfig
     
     // Set up database connection
     $GLOBALS['ADODB_FETCH_MODE'] = ADODB_FETCH_ASSOC;
-    $db               = NewADOConnection('mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
+    $db               = NewADOConnection('mysql://' . DB_USER . ':' . rawurlencode(DB_PASS) . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
     $db->Execute('SET NAMES "UTF8"');
     Env::set('db',       $db);
     

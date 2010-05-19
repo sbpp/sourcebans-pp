@@ -43,7 +43,7 @@ function SetupDatabase($host, $port, $user, $pass, $name, $prefix)
 {
   try
   {
-    $db      = NewADOConnection('mysql://' . $user . ':' . $pass . '@' . $host . ':' . $port . '/' . $name);
+    $db      = NewADOConnection('mysql://' . $user . ':' . rawurlencode($pass) . '@' . $host . ':' . $port . '/' . $name);
     
     // Setup database
     $queries = file_get_contents('data/install.sql');
