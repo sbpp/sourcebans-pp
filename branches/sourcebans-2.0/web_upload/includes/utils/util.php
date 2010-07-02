@@ -74,7 +74,7 @@ class Util
       $ret  = '';
       for($i = 0; $i < count($div); $i++)
       {
-        if(($cou = round($secs / $div[$i])))
+        if(($cou = intval($secs / $div[$i])))
         {
           $ret  .= $cou . ' ' . $desc[$i] . ', ';
           $secs %= $div[$i];

@@ -69,7 +69,7 @@ CREATE TABLE {prefix}_bans (
   name varchar(64) default NULL,
   reason varchar(255) NOT NULL,
   length mediumint(8) unsigned NOT NULL,
-  server_id smallint(5) unsigned NOT NULL,
+  server_id smallint(5) unsigned default NULL,
   admin_id smallint(5) unsigned default NULL,
   admin_ip varchar(15) NOT NULL,
   unban_admin_id smallint(5) unsigned default NULL,
@@ -110,7 +110,7 @@ CREATE TABLE {prefix}_comments (
   admin_id smallint(5) unsigned NOT NULL,
   message varchar(255) NOT NULL,
   time int(10) unsigned NOT NULL,
-  edit_admin_id smallint(5) unsigned NOT NULL,
+  edit_admin_id smallint(5) unsigned default NULL,
   edit_time int(10) unsigned default NULL,
   PRIMARY KEY  (id),
   KEY ban_id (ban_id),
@@ -239,7 +239,7 @@ CREATE TABLE {prefix}_permissions (
 CREATE TABLE {prefix}_plugins (
   name varchar(32) NOT NULL,
   enabled tinyint(1) NOT NULL default '1',
-  UNIQUE KEY name (name)
+  PRIMARY KEY  (name)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
@@ -283,7 +283,7 @@ CREATE TABLE {prefix}_servers (
   ip varchar(15) NOT NULL,
   port smallint(5) unsigned NOT NULL default '27015',
   rcon varchar(32) default NULL,
-  mod_id tinyint(3) unsigned default NULL,
+  mod_id tinyint(3) unsigned NOT NULL,
   enabled tinyint(1) NOT NULL default '1',
   PRIMARY KEY  (id),
   KEY mod_id (mod_id)
@@ -310,7 +310,7 @@ CREATE TABLE {prefix}_servers_srvgroups (
 CREATE TABLE {prefix}_settings (
   name varchar(32) NOT NULL,
   value text NOT NULL,
-  UNIQUE KEY name (name)
+  PRIMARY KEY  (name)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
