@@ -19,7 +19,6 @@ global $theme;
 $theme->assign('SB_REV', 		defined('SB_SVN')?" Rev: ".GetSVNRev():'');
 $theme->assign('SB_VERSION', 	SB_VERSION);
 $theme->assign('SB_QUOTE', 		CreateQuote());
-$theme->assign('debugmode', 	(isset($_GET['debug']) || defined('DEVELOPER_MODE'))?true:false);
 $theme->display('page_footer.tpl');
 
 if(isset($_GET['p']))

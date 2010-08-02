@@ -16,7 +16,7 @@
 		</div>
 	</div>
 <?php
-if(isset($_GET['debug']) && $_GET['debug'] == 1 || isset($_SESSION['debug']))
+if(isset($_GET['debug']) && $_GET['debug'] == 1)
 {
 	echo '
 	<h3>Session Data</h3><pre>
