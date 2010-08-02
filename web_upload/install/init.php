@@ -58,16 +58,9 @@ if(function_exists('date_default_timezone_set')){
 }else if(!ini_get('safe_mode')) {
     putenv('TZ=GMT');
 }
-//if(defined('DEBUG') && DEBUG){
-if (isset($_GET['debug']) && $_GET['debug'] == 1 || isset($_SESSION['debug']) && $_GET['debug'] != 0) {
-	ini_set('display_errors', 1);
-    error_reporting(E_ALL);
-	$_SESSION['debug'] = 1;
-}else if(isset($_GET['debug']) && $_GET['debug'] == 0) {
-    ini_set('display_errors', 0);
-	error_reporting(0);
-	unset($_SESSION['debug']);
-} 
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
     
 // Create a blank config file
 if(!file_exists("../config.php") && is_writable('../')) {

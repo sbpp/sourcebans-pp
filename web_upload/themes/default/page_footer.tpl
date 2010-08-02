@@ -13,8 +13,5 @@
 		Powered by <a class="footer_link" href="http://www.sourcemod.net" target="_blank">SourceMod</a>
 		</div>
 	</div>
-	{if $debugmode}
-		{debug}
-	{/if}
 	{*/body*}
 {*/html*}
