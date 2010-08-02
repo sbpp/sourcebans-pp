@@ -101,13 +101,8 @@ ini_set('date.timezone', 'GMT');
 if(defined("SB_MEM"))
 	ini_set('memory_limit', SB_MEM);
 
-if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE") ) {
-	ini_set('display_errors', 1);
-    error_reporting(E_ALL);
-  }else{
-    ini_set('display_errors', 0);
-	error_reporting(E_ALL ^ E_NOTICE);
-} 
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 
 // ---------------------------------------------------
@@ -124,8 +119,6 @@ if( !is_object($GLOBALS['db']) )
 $debug = $GLOBALS['db']->Execute("SELECT value FROM `".DB_PREFIX."_settings` WHERE setting = 'config.debug';");
 if($debug->fields['value']=="1") {
 	define("DEVELOPER_MODE", true);
-	ini_set('display_errors', 1);
-    error_reporting(E_ALL);
 }
 
 // ---------------------------------------------------
@@ -320,7 +313,7 @@ if(!@is_writable(SB_THEMES_COMPILE))
 }
 
 $theme = new Smarty();
-$theme->error_reporting 	= 	E_ALL & ~E_NOTICE;
+$theme->error_reporting 	= 	E_ALL;
 $theme->use_sub_dirs 		= 	false;
 $theme->compile_id			= 	$theme_name;
 $theme->caching 			= 	false;
