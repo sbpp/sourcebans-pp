@@ -713,7 +713,9 @@ echo '<div id="admin-page-content">';
 		$theme->assign('groupbanning_enabled', $GLOBALS['config']['config.enablegroupbanning']==1?true:false);
 		if(isset($_GET['fid'])) {
 			$theme->assign('list_steam_groups', $_GET['fid']);
-		}
+		} else {
+            $theme->assign('list_steam_groups', false);
+        }
 		$theme->display('page_admin_bans_groups.tpl');
 	echo '</div>';
 ?>

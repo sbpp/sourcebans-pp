@@ -196,7 +196,7 @@ if (isset($_GET['searchText']))
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM ".DB_PREFIX."_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
-			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE BH.type = BA.type AND (BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR BH.type = BA.type AND (BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
+			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
 	   FROM ".DB_PREFIX."_bans AS BA
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
@@ -218,7 +218,7 @@ elseif(!isset($_GET['advSearch']))
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM ".DB_PREFIX."_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
-			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE BH.type = BA.type AND (BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR BH.type = BA.type AND (BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
+			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
 	   FROM ".DB_PREFIX."_bans AS BA
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
@@ -329,7 +329,7 @@ if(isset($_GET['advSearch']))
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
 			(SELECT count(*) FROM ".DB_PREFIX."_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
-			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE BH.type = BA.type AND (BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR BH.type = BA.type AND (BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
+			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
 	   FROM ".DB_PREFIX."_bans AS BA
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
@@ -410,7 +410,9 @@ while (!$res->EOF)
 		$data['ureason'] = stripslashes($res->fields['unban_reason']);
 
 		$removedby = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = '".$res->fields['RemovedBy']."'");
-		$data['removedby'] = $removedby[0];
+        $data['removedby'] = "";
+        if(isset($removedby[0]))
+            $data['removedby'] = $removedby[0];
 	}
 	else
 	{
@@ -436,7 +438,7 @@ while (!$res->EOF)
 	$data['unban_link'] = CreateLinkR('<img src="images/locked.gif" border="0" alt="" style="vertical-align:middle" /> Unban',"#","", "_self", false, "UnbanBan('".$res->fields['ban_id']."', '".$_SESSION['banlist_postkey']."', '".$pagelink."', '".StripQuotes($data['player'])."', 1, false);return false;");
 	$data['delete_link'] = CreateLinkR('<img src="images/delete.gif" border="0" alt="" style="vertical-align:middle" /> Delete Ban',"#","", "_self", false, "RemoveBan('".$res->fields['ban_id']."', '".$_SESSION['banlist_postkey']."', '".$pagelink."', '".StripQuotes($data['player'])."', 0, false);return false;");
 
-	$data['prevoff_link'] = "No previous bans";
+	
 	$data['server_id'] = $res->fields['ban_server'];
 
 	if(empty($res->fields['mod_icon']))
@@ -450,8 +452,10 @@ while (!$res->EOF)
 
 	$data['mod_icon'] = '<img src="images/games/' .$modicon . '" alt="MOD" border="0" align="absmiddle" />&nbsp;' . $data['country'];
 
-
-	$data['prevoff_link'] = $res->fields['history_count'] . " " . CreateLinkR("(search)","index.php?p=banlist&searchText=" . ($data['type']==0?$data['steamid']:$res->fields['ban_ip']) . "&Submit");
+    if($res->fields['history_count'] > 1)
+        $data['prevoff_link'] = $res->fields['history_count'] . " " . CreateLinkR("(search)","index.php?p=banlist&searchText=" . ($data['type']==0?$data['steamid']:$res->fields['ban_ip']) . "&Submit");
+    else
+        $data['prevoff_link'] = "No previous bans";
 
 
 
@@ -478,12 +482,8 @@ while (!$res->EOF)
 	}
 
 
-	if($res->fields['ban_server'] != 0)
-	{
-	   $data['server_id'] = $res->fields['ban_server'];
-    }
-	else
-		$data['server'] = "Web Ban";
+
+	$data['server_id'] = $res->fields['ban_server'];
 
 	$banlog = $GLOBALS['db']->GetAll("SELECT bl.time, bl.name, s.ip, s.port FROM `".DB_PREFIX."_banlog` AS bl LEFT JOIN `".DB_PREFIX."_servers` AS s ON s.sid = bl.sid WHERE bid = '".$data['ban_id']."'");
 	$data['blockcount'] = sizeof($banlog);

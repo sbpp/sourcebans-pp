@@ -16,7 +16,15 @@
 
 include_once("../init.php");
 include_once("../includes/system-functions.php");
-global $theme;
+global $theme, $userbank;
+
+if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BANS|ADMIN_EDIT_BANS))
+{
+    $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty('user') . " tried to upload a demo, but doesn't have access.");
+	echo 'You don\'t have access to this!';
+	die();
+}
+
 $message = "";
 
 if(isset($_POST['upload']))
@@ -26,6 +34,7 @@ if(isset($_POST['upload']))
 		$filename = md5(time().rand(0, 1000));
 		move_uploaded_file($_FILES['demo_file']['tmp_name'],SB_DEMOS."/".$filename);
 		$message =  "<script>window.opener.demo('" . $filename . "','" . $_FILES['demo_file']['name'] . "');self.close()</script>";
+        $log = new CSystemLog("m", "Demo Uploaded", "A new demo has been uploaded: ".htmlspecialchars($_FILES['demo_file']['name']));
 	}
 	else 
 	{
