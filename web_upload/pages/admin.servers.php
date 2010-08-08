@@ -43,6 +43,12 @@
 		$theme->assign('permission_addserver', $userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_SERVER));
 		$theme->assign('modlist', 	$modlist);
 		$theme->assign('grouplist', $grouplist);
+        // set vars from edit form
+        $theme->assign('edit_server', false);
+        $theme->assign('ip', 	'');
+        $theme->assign('port', 	'');
+        $theme->assign('rcon', 	'');
+        $theme->assign('modid', '');
 		
 		$theme->assign('submit_text', "Add Server");
 	?>

@@ -22,7 +22,7 @@ else
 {
     $GLOBALS['server_qry'] = "";
 	if(isset($_GET['s']))				
-		$number = $_GET['s'];
+		$number = (int)$_GET['s'];
 	else 
 		$number = -1;
 }

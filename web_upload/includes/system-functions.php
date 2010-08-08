@@ -324,7 +324,9 @@ function SubMenu($el)
 	foreach($el AS $e)
 	{
         preg_match('/.*?&c=(.*)/', html_entity_decode($e['url']), $matches);
-        $c = $matches[1];
+        if(!empty($matches[1]))
+            $c = $matches[1];
+        
 		$output .= "<a class=\"nav_link".($first?" first":"").(isset($_GET['c'])&&$_GET['c']==$c?" active":"")."\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
 		$first = false;
 	}
