@@ -20,11 +20,11 @@
  */
 function smarty_function_sb_button($params, &$smarty) //$text, $click, $class, $id="", $submit=false
 {
-	$text = $params['text'];
-	$click = $params['onclick'];
-	$class = $params['class'];
-	$id = $params['id'];
-	$submit = $params['submit'];	
+	$text = isset($params['text'])?$params['text']:"";
+	$click = isset($params['onclick'])?$params['onclick']:"";
+	$class = isset($params['class'])?$params['class']:"";
+	$id = isset($params['id'])?$params['id']:"";
+	$submit = isset($params['submit'])?$params['submit']:"";
 	
 	$type = $submit ? "submit" : "button";
 	$button = "<input type='$type' onclick=\"$click\" name='$id' class='btn $class' onmouseover='ButtonOver(\"$id\")' onmouseout='ButtonOver(\"$id\")' id='$id' value='$text' />";

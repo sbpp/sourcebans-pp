@@ -15,7 +15,15 @@
 
 include_once("../init.php");
 include_once("../includes/system-functions.php");
-global $theme;
+global $theme, $userbank;
+
+if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_SERVER))
+{
+    $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty('user') . " tried to upload a mapimage, but doesn't have access.");
+	echo 'You don\'t have access to this!';
+	die();
+}
+
 $message = "";
 if(isset($_POST['upload']))
 {
@@ -23,7 +31,7 @@ if(isset($_POST['upload']))
 	{
 		move_uploaded_file($_FILES['mapimg_file']['tmp_name'],SB_MAP_LOCATION."/".$_FILES['mapimg_file']['name']);
 		$message =  "<script>window.opener.mapimg('" . $_FILES['mapimg_file']['name'] . "');self.close()</script>";
-		$log = new CSystemLog("m", "Map Image Uploaded", "A new map image has been uploaded: ".$_FILES['mapimg_file']['name']);
+		$log = new CSystemLog("m", "Map Image Uploaded", "A new map image has been uploaded: ".htmlspecialchars($_FILES['mapimg_file']['name']));
 	}
 	else 
 	{
