@@ -18,7 +18,7 @@ include_once("../init.php");
 include_once("../includes/system-functions.php");
 global $theme, $userbank;
 
-if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BANS|ADMIN_EDIT_BANS))
+if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_ALL_BANS))
 {
     $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty('user') . " tried to upload a demo, but doesn't have access.");
 	echo 'You don\'t have access to this!';

@@ -231,7 +231,7 @@ class SB_API
   {
     $bans = self::getBans();
     
-    if(!isset($bans[$id]))
+    if(!isset($bans['list'][$id]))
       throw new Exception('Invalid ID specified.');
     
     return $bans[$id];
