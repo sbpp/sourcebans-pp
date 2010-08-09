@@ -732,8 +732,8 @@ function GetMapImage($map)
 
 function CheckExt($filename, $ext)
 {
-	$name = strtolower($filename);
-	if(substr($name, strlen($name) -3, 3) == $ext)
+    $path_info = pathinfo($filename);
+    if(strtolower($path_info['extension']) == $ext)
 		return true;
 	else
 		return false;
