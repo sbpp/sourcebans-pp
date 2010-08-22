@@ -8,6 +8,18 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(22/08/10): Version 1.4.7
+-----------------------
+01. * Added SourceMod plugin library registration
+02. - Removed debug popup
+03. ! Fixed disabled servers still being listed in some dropdown boxes
+04. ! Fixed total bans count sometimes being invalid
+05. ! Fixed Lost Password page
+06. ! Fixed multiple includes of CServerRcon
+07. ! Fixed A2S_PLAYER indices for OrangeBox games in CServerQuery
+08. ! Fixed SourceMod plugin memory leak
+09. ? Updated IpToCountry.csv for country lookup
+
 (23/12/09): Version 1.4.6
 -----------------------
 01. * Added Left 4 Dead 2 support
