@@ -17,7 +17,7 @@
 #include <adminmenu>
 #include "dbi.inc"
 
-#define SB_VERSION "1.4.6"
+#define SB_VERSION "1.4.7"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -1624,6 +1624,7 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	
 	if(backupConfig)
 		KeyValuesToFile(adminsKV, adminsLoc);
+	CloseHandle(adminsKV);
 	
 #if defined DEBUG
 		LogToFile(logFile, "Finished loading %i admins.",admCount);
@@ -1703,6 +1704,7 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	
 	if(backupConfig)
 		KeyValuesToFile(groupsKV, groupsLoc);
+	CloseHandle(groupsKV);
 	
 #if defined DEBUG
 		LogToFile(logFile, "Finished loading %i groups.",grpCount);
