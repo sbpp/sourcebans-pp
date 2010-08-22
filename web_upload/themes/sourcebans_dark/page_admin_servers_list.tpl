@@ -3,7 +3,7 @@
 {else}
 	<h3>Servers (<span id="srvcount">{$server_count}</span>)</h3>
 	
-	{if permission_config}
+	{if $permission_config}
 		To view the database config file you need to upload to your game server, click <a href="index.php?p=admin&c=servers&o=dbsetup">here</a>.<br /><br />
 	{/if}
 	

@@ -136,7 +136,7 @@ function LostPassword($email)
     'X-Mailer: PHP/' . phpversion();
 	$m = mail($email, "SourceBans Password Reset", $message, $headers);
 
-	$objResponse->addScript("ShowBox('Error', 'Please check your email inbox (and spam) for a link which will help you reset your password.', 'blue', '');");
+	$objResponse->addScript("ShowBox('Check E-Mail', 'Please check your email inbox (and spam) for a link which will help you reset your password.', 'blue', '');");
 	return $objResponse;
 }
 
