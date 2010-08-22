@@ -74,7 +74,7 @@
 		</tr>
 		{foreach from=$ban_list item=ban name=banlist}
 			<tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" 
-			{if $ban.server != "Web Ban"}
+			{if $ban.server_id != 0}
 				onclick="xajax_ServerHostPlayers({$ban.server_id}, {$ban.ban_id});"
 			{/if}
 			>
@@ -246,7 +246,7 @@
 							<tr align="left">
 								<td width="20%" height="16" class="listtable_1">Banned from</td>
 								<td height="16" class="listtable_1" id="ban_server_{$ban.ban_id}">
-									{if $ban.server == "Web Ban"}
+									{if $ban.server_id == 0}
 										Web Ban
 									{else}
 										Please Wait...
