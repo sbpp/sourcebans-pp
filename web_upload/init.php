@@ -102,7 +102,7 @@ if(defined("SB_MEM"))
 	ini_set('memory_limit', SB_MEM);
 
 ini_set('display_errors', 1);
-error_reporting(E_ALL);
+error_reporting(E_ALL ^ E_NOTICE);
 
 
 // ---------------------------------------------------
@@ -261,14 +261,11 @@ if(version_compare(PHP_VERSION, "5") != -1)
     $offset = (empty($GLOBALS['config']['config.timezone'])?0:$GLOBALS['config']['config.timezone'])*3600;
     date_default_timezone_set("GMT");
     $abbrarray = timezone_abbreviations_list();
-    $abbrstop = false;
     foreach ($abbrarray as $abbr) {
-        if($abbrstop) break;
         foreach ($abbr as $city) {
             if ($city['offset'] == $offset && $city['dst'] == $GLOBALS['config']['config.summertime']) {
                 date_default_timezone_set($city['timezone_id']);
-                $abbrstop = true;
-                break;
+                break 2;
             }
         }
     }
@@ -313,7 +310,7 @@ if(!@is_writable(SB_THEMES_COMPILE))
 }
 
 $theme = new Smarty();
-$theme->error_reporting 	= 	E_ALL;
+$theme->error_reporting 	= 	E_ALL ^ E_NOTICE;
 $theme->use_sub_dirs 		= 	false;
 $theme->compile_id			= 	$theme_name;
 $theme->caching 			= 	false;
