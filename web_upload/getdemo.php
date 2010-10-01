@@ -20,6 +20,6 @@ $st = $GLOBALS['db']->Prepare("SELECT `filename`, `origname` FROM ".DB_PREFIX."_
 $res = $GLOBALS['db']->Execute($st,array($_GET['type'],$_GET['id']));
 header('Content-type: application/force-download');
 header('Content-Transfer-Encoding: Binary');
-header('Content-disposition: attachment; filename='.$res->fields[1]);
+header('Content-disposition: attachment; filename="'.$res->fields[1].'"');
 @readfile(SB_DEMOS . "/" . $res->fields[0]);
 ?>

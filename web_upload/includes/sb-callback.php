@@ -1302,7 +1302,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 	$sid = (int)$sid;
 
 	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-	if(!isset($res[1]) && !isset($res[2]))
+	if(empty($res[1]) || empty($res[2]))
 		return $objResponse;
 	$info = array();
 	$sinfo = new CServerInfo($res[1],$res[2]);
@@ -1460,7 +1460,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
     $trunchostname = (int)$trunchostname;
 
 	$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-	if(!isset($res[0]) && !isset($res[1]))
+	if(empty($res[0]) || empty($res[1]))
 		return $objResponse;
 	$info = array();
 	$sinfo = new CServerInfo($res[0],$res[1]);
@@ -1489,7 +1489,7 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
 		$sid = (int)$sids[$i];
 
 		$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-		if(!isset($res[1]) && !isset($res[2]))
+		if(empty($res[1]) || empty($res[2]))
 			return $objResponse;
 		$info = array();
 		$sinfo = new CServerInfo($res[1],$res[2]);
@@ -1525,7 +1525,7 @@ function ServerPlayers($sid)
 	$sid = (int)$sid;
 
 	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-	if(!isset($res[1]) && !isset($res[2]))
+	if(empty($res[1]) || empty($res[2]))
 	{
 		$objResponse->addAlert('IP or Port not set :o');
 		return $objResponse;
