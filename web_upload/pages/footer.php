@@ -31,7 +31,7 @@ if(isset($_GET['p']) && $_GET['p'] != "login")
 
 
 	
-if(isset($_GET['debug']) || defined('DEVELOPER_MODE'))
+if(defined('DEVELOPER_MODE'))
 	{
 		global $start;
 		$time = microtime();
