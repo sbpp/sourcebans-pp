@@ -191,6 +191,12 @@ if(isset($_SESSION["hideinactive"])) {
 if (isset($_GET['searchText']))
 {
 	$search = '%'.trim($_GET['searchText']).'%';
+    
+    // disable ip search if hiding player ips
+    $search_ips = " or BA.ip LIKE " . $GLOBALS['db']->qstr($search);
+    if(isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin())
+        $search_ips = "";
+
 	$res = $GLOBALS['db']->Execute(
 	"SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
@@ -201,9 +207,9 @@ if (isset($_GET['searchText']))
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
   LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
-      WHERE BA.authid LIKE ? or BA.ip LIKE ? or BA.name LIKE ? or BA.reason LIKE ?".$hideinactive."
+      WHERE BA.authid LIKE ?" . $search_ips . " or BA.name LIKE ? or BA.reason LIKE ?".$hideinactive."
    ORDER BY created DESC
-   LIMIT ?,?",array($search,$search,$search,$search,intval($BansStart),intval($BansPerPage)));
+   LIMIT ?,?",array($search,$search,$search,intval($BansStart),intval($BansPerPage)));
 
 
 	$res_count = $GLOBALS['db']->Execute("SELECT count(bid) FROM ".DB_PREFIX."_bans
@@ -256,6 +262,9 @@ if(isset($_GET['advSearch']))
 			$advcrit = array("%$value%");
 		break;
 		case "ip":
+            // disable ip search if hiding player ips
+            if(isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin())
+                break;
 			$where = "WHERE BA.ip LIKE ?";
 			$advcrit = array("%$value%");
 		break;
@@ -675,6 +684,7 @@ $theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
+$theme->assign('hideplayerips', (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()));
 $theme->assign('hideadminname', (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()));
 $theme->assign('groupban', ($GLOBALS['config']['config.enablegroupbanning']==1 && $userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)));
 $theme->assign('friendsban', ($GLOBALS['config']['config.enablefriendsbanning']==1 && $userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)));

@@ -108,7 +108,7 @@
 			<td>&nbsp;</td>
 			<td>
 			{if $edit_server}
-				{sb_button text=$submit_text class="ok" id="aserver" submit=true}
+				{sb_button text=$submit_text onclick="process_edit_server();" class="ok" id="aserver" submit=false}
 			{else}
 				{sb_button text=$submit_text onclick="process_add_server();" class="ok" id="aserver" submit=false}
 			{/if}
