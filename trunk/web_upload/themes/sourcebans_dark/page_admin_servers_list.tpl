@@ -24,7 +24,7 @@
 		<td style="border-bottom: solid 1px #ccc" height='16' id="players_{$server.sid}">N/A</td>
 		<td style="border-bottom: solid 1px #ccc" height='16'><img src="images/games/{$server.icon}"></td>
 		<td style="border-bottom: solid 1px #ccc" height='16'>
-		{if $permission_rcon}
+		{if $server.rcon_access}
 			<a href="index.php?p=admin&c=servers&o=rcon&id={$server.sid}">RCON</a> - 
 		{/if}
 		

@@ -746,6 +746,19 @@ function process_add_server()
 	
 }
 
+function process_edit_server()
+{
+    if($('rcon').value != $('rcon2').value)
+    {
+        $('rcon2.msg').innerHTML = 'Passwords don\'t match.';
+        $('rcon2.msg').setStyle('display', 'block');
+        return;
+    }
+    
+    $('rcon2.msg').setStyle('display', 'none');
+	document.forms.editserver.submit();
+}
+
 function search_bans()
 {
 	var type = "";

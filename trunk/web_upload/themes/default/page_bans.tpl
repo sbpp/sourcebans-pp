@@ -177,6 +177,7 @@
                 <td height="16" class="listtable_1"><a href="http://steamcommunity.com/profiles/{$ban.communityid}" target="_blank">{$ban.communityid}</a></td>
               </tr>
               {/if}
+              {if !$hideplayerips}
               <tr align="left">
                 <td width="20%" height="16" class="listtable_1">IP address</td>
                 <td height="16" class="listtable_1">
@@ -187,6 +188,7 @@
                   {/if}
                 </td>
               </tr>
+              {/if}
               <tr align="left">
 								<td width="20%" height="16" class="listtable_1">Invoked on</td>
 								<td height="16" class="listtable_1">{$ban.ban_date}</td>

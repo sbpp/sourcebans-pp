@@ -116,7 +116,7 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 		elseif($l['type'] == "e")
 			$log_item['type_img'] = "<img src='themes/".SB_THEME."/images/admin/error.png' alt='Warning'>"; 
 		$log_item['user'] = !empty($l['user'])?$l['user']:'Guest';
-		$log_item['date_str'] = strftime("%d %B %y - %H:%M", $l['created']);
+		$log_item['date_str'] = SBDate($dateformat, $l['created']);
 		$log_item = array_merge($l, $log_item);	
 		array_push($log_list, $log_item);
 	}
@@ -181,6 +181,8 @@ else
 				$summertime = (isset($_POST['config_summertime']) && $_POST['config_summertime'] == "on" ? 1 : 0);
 				
 				$hideadmname = (isset($_POST['banlist_hideadmname']) && $_POST['banlist_hideadmname'] == "on" ? 1 : 0);
+                
+				$hideplayerips = (isset($_POST['banlist_hideplayerips']) && $_POST['banlist_hideplayerips'] == "on" ? 1 : 0);
 				
 				$nocountryfetch = (isset($_POST['banlist_nocountryfetch']) && $_POST['banlist_nocountryfetch'] == "on" ? 1 : 0);
 				
@@ -209,6 +211,7 @@ else
 												(?, 'dash.intro.title'),
 												(" . (int)$_POST['banlist_bansperpage'] . ", 'banlist.bansperpage'),
 												(" . (int)$hideadmname . ", 'banlist.hideadminname'),
+												(" . (int)$hideplayerips . ", 'banlist.hideplayerips'),
 												(" . (int)$nocountryfetch . ", 'banlist.nocountryfetch'),
 												(?, 'dash.intro.text'),
 												(" . (int)$lognopopup . ", 'dash.lognopopup'),
@@ -315,6 +318,7 @@ $('default_page').value = <?php echo $GLOBALS['config']['config.defaultpage']?>;
 $('protest_emailonlyinvolved').checked = <?php echo $GLOBALS['config']['protest.emailonlyinvolved']?>;
 $('banlist_hideadmname').checked = <?php echo $GLOBALS['config']['banlist.hideadminname']?>;
 $('banlist_nocountryfetch').checked = <?php echo $GLOBALS['config']['banlist.nocountryfetch']?>;
+$('banlist_hideplayerips').checked = <?php echo $GLOBALS['config']['banlist.hideplayerips']?>;
 $('enable_groupbanning').checked = <?php echo $GLOBALS['config']['config.enablegroupbanning']?>;
 $('enable_friendsbanning').checked = <?php echo $GLOBALS['config']['config.enablefriendsbanning']?>;
 $('enable_adminrehashing').checked = <?php echo $GLOBALS['config']['config.enableadminrehashing']?>;
