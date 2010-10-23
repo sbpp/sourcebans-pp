@@ -2100,6 +2100,14 @@ function SendRcon($sid, $command, $output)
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
 		return $objResponse;
 	}
+    
+    if(strstr($command, "rcon_password") != false)
+	{
+        $objResponse->addAppend("rcon_con", "innerHTML",  "\n> Error: You have to use this console. Don't try to cheat the rcon password!");
+		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+		return $objResponse;
+	}
+    
 	$sid = (int)$sid;
     
 	$rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM `".DB_PREFIX."_servers` WHERE sid = ".$sid." LIMIT 1");

@@ -212,6 +212,15 @@
 		    	<div id="banlist_nocountryfetch.msg" class="badentry"></div>
 		    </td>
 		</tr>
+        <tr>
+			<td valign="top"><div class="rowdesc">{help_icon title="Hide Player IP" message="Check this box, if you want to hide the player IP from the public."}Hide Player IP</div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="checkbox" TABINDEX=15 name="banlist_hideplayerips" id="banlist_hideplayerips" />
+		    	</div>
+		    	<div id="banlist_hideplayerips.msg" class="badentry"></div>
+		    </td>
+		</tr>
 		<tr>
 			<td valign="top"><div class="rowdesc">{help_icon title="Custom Banreasons" message="Type the custom banreasons you want to appear in the dropdown menu."}Custom Banreasons</div></td>
 		    <td>

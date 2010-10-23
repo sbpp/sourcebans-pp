@@ -44,16 +44,20 @@ if(isset($_POST['address']))
 		}
 	}
 	
-	$address = $_POST['address'];
 	$enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
 	
+    // don't change rcon password if not changed
+    $rcon = "";
+    if($_POST['rcon'] != '+-#*_')
+        $rcon = "`rcon` = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
+        
 	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET
 									`ip` = ?,
 									`port` = " . (int)$_POST['port'] . ",
-									`rcon` = ?,
+									" . $rcon . "
 									`modid` = " . (int)$_POST['mod'] . ",
 									`enabled` = " . (int)$enabled . "
-									WHERE `sid` = '". (int)$_GET['id'] . "'", array($address, $_POST['rcon']));
+									WHERE `sid` = '". (int)$_GET['id'] . "'", array($_POST['address']));
 
 	
 									
@@ -79,7 +83,7 @@ $grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM `" . DB_PREFIX . "_gr
 
 $theme->assign('ip', 	$server['ip']);
 $theme->assign('port', 	 $server['port']);
-$theme->assign('rcon', 	$server['rcon']);
+$theme->assign('rcon', 	'+-#*_'); // Mh, some random string
 $theme->assign('modid', 	$server['modid']);
 
 
@@ -90,7 +94,7 @@ $theme->assign('grouplist', $grouplist);
 $theme->assign('edit_server', true);
 $theme->assign('submit_text', "Update Server");
 
-echo '<form action="" method="post">';
+echo '<form action="" method="post" name="editserver">';
 $theme->display('page_admin_servers_add.tpl');
 echo '</form>';
 
