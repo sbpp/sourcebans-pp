@@ -8,6 +8,18 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(24/10/10): Version 1.4.8
+-----------------------
+01. * Added option to not show player IP's to public
+02. ! Fixed showing php notices
+03. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
+04. ! Fixed trying to reach servers with buggy empty ip/port field
+05. ! Fixed not downloading demos with space in filename
+06. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
+07. ! Fixed System log does not take summertime into account
+08. ! Fixed the contact url in kickit messages getting cut off
+09. ? Updated IpToCountry.csv for country lookup
+
 (22/08/10): Version 1.4.7
 -----------------------
 01. * Added SourceMod plugin library registration
