@@ -1608,7 +1608,7 @@ function KickPlayer($sid, $name)
 
 		if($immune <= $userbank->GetProperty('srv_immunity')) {
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
-			$kick = $r->sendCommand("kickid ".$steam." You have been kicked by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.");
+			$kick = $r->sendCommand("kickid ".$steam." \"You have been kicked by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 			$log = new CSystemLog("m", "Player kicked", $username . " kicked player '".$name."' (".$steam.") from ".$data['ip'].":".$data['port'].".", true, true);
 			$objResponse->addScript("ShowBox('Player kicked', 'Player \'".$name."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
 		} else {
