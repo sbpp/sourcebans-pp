@@ -169,13 +169,16 @@ class SBConfig
     
     // Set up database connection
     $GLOBALS['ADODB_FETCH_MODE'] = ADODB_FETCH_ASSOC;
-    $db               = NewADOConnection('mysql://' . DB_USER . ':' . rawurlencode(DB_PASS) . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
+    if (!defined('DB_TYPE'))
+      define('DB_TYPE', 'mysql');
+
+    $db = NewADOConnection(DB_TYPE . '://' . DB_USER . ':' . rawurlencode(DB_PASS) . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
     $db->Execute('SET NAMES "UTF8"');
-    Env::set('db',       $db);
+    Env::set('db', $db);
     
     // Set up caching
     require_once CLASS_DIR   . 'filecache.class.php';
-    Env::set('sbcache',  new SBFileCache(CACHE_DIR, new SBGZCompressor(1)));
+    Env::set('sbcache', new SBFileCache(CACHE_DIR, new SBGZCompressor(1)));
     
     // Fetch settings
     require_once READERS_DIR . 'settings.php';

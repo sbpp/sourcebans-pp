@@ -718,7 +718,7 @@ tinyMCE.init({
   mode : 'exact',
   skin : 'o2k7',
   theme : 'advanced',
-  plugins : 'inlinepopups,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,insertdatetime,preview,zoom,media,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras',
+  plugins : 'inlinepopups,style,layer,table,save,advhr,advimage,advlink,emotions,iespell,insertdatetime,preview,media,contextmenu,paste,directionality,fullscreen,noneditable,visualchars,nonbreaking,xhtmlxtras',
   elements : 'intro_text,message',
   skin_variant : 'silver',
   theme_advanced_path : false,

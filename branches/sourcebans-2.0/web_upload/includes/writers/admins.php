@@ -197,7 +197,7 @@ class AdminsWriter
         }
         else
         {
-          preg_match_all('~"(.+?)"[ \t]*"(.+?)"([ \t]*"(.+?)")?~', file_get_contents($tmp_file), $admins);
+          preg_match_all('~"(.+?)"[ \t]*"(.+?)"([ \t]*"(.+?)")?~', file_get_contents($tmp_name), $admins);
           
           for($i = 0; $i < count($admins[0]); $i++)
           {

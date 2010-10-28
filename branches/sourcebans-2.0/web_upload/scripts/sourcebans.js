@@ -75,9 +75,9 @@ function SubmitForm(el, cb_complete)
         
         if(typeof(cb_complete) == 'function')
           cb_complete(doc ? doc.body.innerHTML : null);
-        
+//        window.alert(typeof(cb_complete));
         $('ajax-indicator').setStyle('display', 'none');
-        this.dispose();
+        // this.dispose();
       }
     },
     'styles': {

@@ -191,19 +191,19 @@
                           {if $permission_bans} 
                           <td width="30%" rowspan="12" class="listtable_2 opener">
                             <ul class="ban-edit">
-                              {if !empty($ban.status)}
-                              <li><a href="#" onclick="RebanBan({$ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_reban|ucwords}" class="icon" src="images/forbidden.gif" title="{$lang_reban|ucwords}" /> {$lang_reban|ucwords}</a></li>
+                              {if !empty($ban.status)}\?
+                              <li><a href="#" onclick="RebanBan({$ban.ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_reban|ucwords}" class="icon" src="images/forbidden.gif" title="{$lang_reban|ucwords}" /> {$lang_reban|ucwords}</a></li>
                               {/if}
-                              <li><a href="{if $ban.demo_count}{build_url _=getdemo.php id=$ban_id type=$smarty.const.BAN_TYPE}{else}#{/if}"><img alt="{$lang_demo}" class="icon" src="images/demo.gif" title="{$lang_demo}" /> {if $ban.demo_count}Review Demo{else}No Demos{/if}</a></li>
-                              <li><a href="{build_url _=comments_add.php id=$ban_id type=$smarty.const.BAN_TYPE}"><img alt="{$lang_add_comment|ucwords}" class="icon" src="images/details.gif" title="{$lang_add_comment|ucwords}" /> {$lang_add_comment|ucwords}</a></li>
+                              <li>{if $ban.demo_count}<a href="{build_url _=getdemo.php id=$ban.ban_id type=$smarty.const.BAN_TYPE}">{/if}<img alt="{$lang_demo}" class="icon" src="images/demo.gif" title="{$lang_demo}" /> {if $ban.demo_count}Review Demo{else}No Demos{/if}</a></li>
+                              <li><a href="{build_url _=comments_add.php id=$ban.ban_id type=$smarty.const.BAN_TYPE}"><img alt="{$lang_add_comment|ucwords}" class="icon" src="images/details.gif" title="{$lang_add_comment|ucwords}" /> {$lang_add_comment|ucwords}</a></li>
                               {if $permission_edit_all_bans || ($permission_edit_own_bans && $ban.admin_id == $smarty.cookies.sb_admin_id)}
-                              <li><a href="{build_url _=admin_bans_edit.php id=$ban_id}"><img alt="{$lang_edit_ban|ucwords}" src="images/edit.gif" class="icon" title="{$lang_edit_ban|ucwords}" /> {$lang_edit_ban|ucwords}</a></li>
+                              <li><a href="{build_url _=admin_bans_edit.php id=$ban.ban_id}"><img alt="{$lang_edit_ban|ucwords}" src="images/edit.gif" class="icon" title="{$lang_edit_ban|ucwords}" /> {$lang_edit_ban|ucwords}</a></li>
                               {/if}
                               {if empty($ban.status) && ($permission_unban_all_bans || ($permission_unban_own_bans && $ban.admin_id == $smarty.cookies.sb_admin_id))}
-                              <li><a href="#" onclick="UnbanBan({$ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_unban|ucwords}" class="icon" src="images/locked.gif" title="{$lang_unban|ucwords}" /> {$lang_unban|ucwords}</a></li>
+                              <li><a href="#" onclick="UnbanBan({$ban.ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_unban|ucwords}" class="icon" src="images/locked.gif" title="{$lang_unban|ucwords}" /> {$lang_unban|ucwords}</a></li>
                               {/if}
                               {if $permission_delete_bans || ($permission_edit_own_bans && $ban.admin_id == $smarty.cookies.sb_admin_id)}
-                              <li><a href="#" onclick="DeleteBan({$ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_delete_ban|ucwords}" class="icon" src="images/delete.gif" title="{$lang_delete_ban|ucwords}" /> {$lang_delete_ban|ucwords}</a></li>
+                              <li><a href="#" onclick="DeleteBan({$ban.ban_id}, '{$ban.name}'); return false;"><img alt="{$lang_delete_ban|ucwords}" class="icon" src="images/delete.gif" title="{$lang_delete_ban|ucwords}" /> {$lang_delete_ban|ucwords}</a></li>
                               {/if}
                               {foreach from=$admin_tabs item=tab}
                               <li{if !empty($tab.id)} id="tab-{$tab.id}"{/if}><a href="{$tab.url}">{$tab.name}</a></li>
