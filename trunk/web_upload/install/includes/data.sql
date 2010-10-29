@@ -26,6 +26,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('banlist.bansperpage', '30'),
 ('banlist.hideadminname', '0'),
 ('banlist.nocountryfetch', '0'),
+('banlist.hideplayerips', '0'),
 ('bans.customreasons', ''),
 ('config.password.minlength', '4'),
 ('config.debug', '0 '),
