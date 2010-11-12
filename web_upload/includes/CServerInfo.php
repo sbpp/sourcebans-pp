@@ -22,6 +22,7 @@ class CServerInfo
   private $address;
   private $port;
   private $socket = false;
+  private $isfsock = true;
 
   /** Constants of the data we need for a query */
   const QUERY_HEADER = "\xFF\xFF\xFF\xFF";
@@ -158,23 +159,49 @@ class CServerInfo
     ksort($ret);
     return $ret;
   }
-  
+
   private function _getSocket()
   {
     if($this->socket !== false)
       return $this->socket;
+
+    try
+    {
+      if (defined('BIND_IP') && function_exists('socket_create') && function_exists('socket_bind'))
+      {
+
+        $this->isfsock = false;
+        $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+
+        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_bind($this->socket, BIND_IP);
+
+        socket_connect($this->socket, $this->address, $this->port);
+
+        socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array("sec"=>1, "usec"=>0));
+        socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array("sec"=>1, "usec"=>0));
+      }
+      else
+      {
+        $this->socket    = @fsockopen("udp://$address", $port, $errno, $errstr, 2);
+        stream_set_timeout($this->socket, 1);
+      }
+    }
+    catch (Exception $err) { }
     
-    $this->socket = fsockopen('udp://' . $this->address, $this->port);
     if($this->socket === false)
       return false;
       
-    stream_set_timeout($this->socket, 1);
     return $this->socket;
   }
   
   private function _request($socket, $code, $reply = null)
   {
-    fwrite($socket, self::QUERY_HEADER . $code);
+    if ($this->isfsock)
+      fwrite($socket, self::QUERY_HEADER . $code);
+    else
+      socket_write($socket, self::QUERY_HEADER . $code, strlen(self::QUERY_HEADER . $code));
+
     $packet = $this->_readsplit($socket);
     if(empty($packet))
       return "";
@@ -194,11 +221,15 @@ class CServerInfo
   }
   
   private function _requestWithChallenge($socket, $code, $reply = null)
-	{
+  {
     $maxretries = 5;
     while(--$maxretries >= 0)
     {
-      fwrite($socket, self::QUERY_HEADER . $code . $this->challenge); // do the request with challenge id = -1
+      if ($this->isfsock)
+        fwrite($socket, self::QUERY_HEADER . $code . $this->challenge); // do the request with challenge id = -1
+      else
+        socket_write($socket, self::QUERY_HEADER . $code . $this->challenge, strlen(self::QUERY_HEADER . $code . $this->challenge));
+
       $packet = $this->_readsplit($socket);
       if(empty($packet))
         return "";
@@ -224,111 +255,123 @@ class CServerInfo
     }
     
     return "";
-	}
+  }
 	
   private function _readsplit($socket)
   {
-  	$packet = fread($socket, 1480);
-  	if(empty($packet))
+    if ($this->isfock)
+      $packet = fread($socket, 1480);
+    else
+      $packet = socket_read($socket, 1480);
+
+    if(empty($packet))
       return "";
   	
-  	$this->raw = $packet;
-  	$type = $this->_getlong();
-  	if($type == -2)
-  	{
-  		// Parse first header
-  		$reqid = $this->_getlong();
-  		$packets = $this->_getushort();
-  		$numpackets = $packets & 0xFF;
-  		$curpacket = $packets >> 8;
-  		if($reqid >= 0)	// Dummy value telling how big the split is (hardcoded to 1248), Orangebox or later
-  			$this->_skip(2);
-  		$data = array();
-  		$tstart = microtime(true);
-  		
-  		// Sanity
-  		if($curpacket >= $numpackets)
-  			return "";
-  		
-  		// Compressed?
-  		if($curpacket == 0 && $reqid < 0)
-  		{
-  			$sizeuncompressed = $this->_getlong();
-  			$crc = $this->_getlong();
-  		}
-  		
-  		while(true)
-  		{
-  			// Split already received (duplicate)?
-  			if(!array_key_exists($curpacket, $data))
-  				$data[$curpacket] = $this->raw;
+    $this->raw = $packet;
+    $type = $this->_getlong();
+    if($type == -2)
+    {
+      // Parse first header
+      $reqid = $this->_getlong();
+      $packets = $this->_getushort();
+      $numpackets = $packets & 0xFF;
+      $curpacket = $packets >> 8;
 
-  			// Finished?
-  			if(count($data) >= $numpackets)
-  			{
-  				// Join the parts
-  				ksort($data);
-  				$data = implode("", $data);
+      if($reqid >= 0)	// Dummy value telling how big the split is (hardcoded to 1248), Orangebox or later
+        $this->_skip(2);
+
+      $data = array();
+      $tstart = microtime(true);
+  		
+      // Sanity
+      if($curpacket >= $numpackets)
+        return "";
+  		
+      // Compressed?
+      if($curpacket == 0 && $reqid < 0)
+      {
+        $sizeuncompressed = $this->_getlong();
+        $crc = $this->_getlong();
+      }
+  		
+      while(true)
+      {
+        // Split already received (duplicate)?
+        if(!array_key_exists($curpacket, $data))
+          $data[$curpacket] = $this->raw;
+
+        // Finished?
+        if(count($data) >= $numpackets)
+        {
+          // Join the parts
+          ksort($data);
+          $data = implode("", $data);
   				
-  				// Uncompress if necessary
-  				if($reqid < 0)
-  				{
-  					$data = bzdecompress($data);
-  					if(strlen($data) != $sizeuncompressed)
-  						return "";
-  					
-  					// TODO: CRC32 check
-  					return $data;
-  				}
+          // Uncompress if necessary
+          if($reqid < 0)
+          {
+            $data = bzdecompress($data);
+
+            if(strlen($data) != $sizeuncompressed)
+              return "";
+ 					
+            // TODO: CRC32 check
+            return $data;
+          }
   				
-  				// Not compressed
-  				return $data;
-  			}
+          // Not compressed
+          return $data;
+        }
   			
-  			// Check the timeout over several receives
-  			if(microtime(true) - $tstart >= 2.0)	// 2s
-  				return "";
+        // Check the timeout over several receives
+        if(microtime(true) - $tstart >= 2.0)	// 2s
+          return "";
   			
-  			// Receive next packet
-  			$packet = fread($socket, 1480);
-  			if(empty($packet))
-  				return "";
+        // Receive next packet
+        if ($this->isfock)
+          $packet = fread($socket, 1480);
+        else
+          $packet = socket_read($socket, 1480);
+
+        if(empty($packet))
+          return "";
   			
-  			// Parse packet
-  			$this->raw = $packet;
-  			$_type = $this->_getlong();
-  			if($_type != -2)
-  				return "";
+        // Parse packet
+        $this->raw = $packet;
+        $_type = $this->_getlong();
+        if($_type != -2)
+          return "";
   			
-  			$_reqid = $this->_getlong();
-  			$_packets = $this->_getushort();
-  			$_numpackets = $_packets & 0xFF;
-  			$curpacket = $_packets >> 8;
-  			if($reqid >= 0)	// Dummy value telling how big the split is (hardcoded to 1248), Orangebox or later
-  				$this->_skip(2);
+        $_reqid = $this->_getlong();
+        $_packets = $this->_getushort();
+        $_numpackets = $_packets & 0xFF;
+        $curpacket = $_packets >> 8;
+
+        if($reqid >= 0)	// Dummy value telling how big the split is (hardcoded to 1248), Orangebox or later
+  	  $this->_skip(2);
   			
-  			// Sanity check
-  			if($_reqid != $reqid || $_numpackets != $numpackets || $curpacket >= $numpackets)
-  				return "";
+        // Sanity check
+        if($_reqid != $reqid || $_numpackets != $numpackets || $curpacket >= $numpackets)
+          return "";
   			
-  			// Compressed?
-  			if($curpacket == 0 && $reqid < 0)
-  			{
-  				$sizeuncompressed = $this->_getlong();
-  				$crc = $this->_getlong();
-  			}
-  		}	
-  	}
-  	else if($type == -1)
-  	{
-  		// Non-split packet
-  		return $packet;
-  	}
-  	else
-  	{
-  		// Invalid
-  		return "";
-  	}
+        // Compressed?
+        if($curpacket == 0 && $reqid < 0)
+        {
+          $sizeuncompressed = $this->_getlong();
+          $crc = $this->_getlong();
+        }
+      }	
+    }
+    else if($type == -1)
+    {
+      // Non-split packet
+      return $packet;
+    }
+    else
+    {
+      // Invalid
+      return "";
+    }
   }
   
   private function _getraw($count)
@@ -394,4 +437,4 @@ class CServerInfo
     $this->raw = substr($this->raw, $c);
   }
 }
-?>
+
