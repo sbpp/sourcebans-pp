@@ -436,7 +436,7 @@ while (!$res->EOF)
 	else
 		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `".DB_PREFIX."_bans` WHERE ip = '".$res->fields['ban_ip']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1';");
 	if($alrdybnd->fields['count']==0)
-		$data['reban_link'] = CreateLinkR('<img src="images/forbidden.gif" border="0" alt="" style="vertical-align:middle" /> Reban',"index.php?p=admin&c=bans".$pagelink."&rebanid=".$res->fields['ban_id']."&key=".$_SESSION['banlist_postkey']."#^0");
+		$data['reban_link'] = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Reban',"index.php?p=admin&c=bans".$pagelink."&rebanid=".$res->fields['ban_id']."&key=".$_SESSION['banlist_postkey']."#^0");
 	else
 		$data['reban_link'] = false;
 	$data['details_link'] = CreateLinkR('click','getdemo.php?type=B&id='.$res->fields['ban_id']);
