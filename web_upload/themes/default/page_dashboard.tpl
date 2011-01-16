@@ -42,7 +42,7 @@
 		</tr>
 		{foreach from=$players_blocked item=player}
 		<tr{if $dashboard_lognopopup} onclick="{$player.link_url}"{else} onclick="{$player.popup}"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor: pointer;" id="{$player.server}" title="Querying Server Data...">
-      <td width="16" height="16" align="center" class="listtable_1"><img src="images/forbidden.gif" width="16" height="16" alt="Blocked Player" /></td>
+      <td width="16" height="16" align="center" class="listtable_1"><img src="images/forbidden.png" width="16" height="16" alt="Blocked Player" /></td>
       <td width="25%" height="16" class="listtable_1">{$player.date}</td>
       <td height="16" class="listtable_1">{$player.short_name|escape:'html'}</td>
 		</tr>
