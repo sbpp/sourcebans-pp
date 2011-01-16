@@ -2103,7 +2103,7 @@ function SendRcon($sid, $command, $output)
     
     if(strstr($command, "rcon_password") != false)
 	{
-        $objResponse->addAppend("rcon_con", "innerHTML",  "\n> Error: You have to use this console. Don't try to cheat the rcon password!");
+        $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: You have to use this console. Don't try to cheat the rcon password!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
 		return $objResponse;
 	}
@@ -2113,14 +2113,14 @@ function SendRcon($sid, $command, $output)
 	$rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM `".DB_PREFIX."_servers` WHERE sid = ".$sid." LIMIT 1");
 	if(empty($rcon['rcon']))
 	{
-		$objResponse->addAppend("rcon_con", "innerHTML",  "\n> Error: No RCON password!\nYou have to add the RCON password for this server in the 'edit server' \npage to use this console!\n");
+		$objResponse->addAppend("rcon_con", "innerHTML",  "> Error: No RCON password!<br />You have to add the RCON password for this server in the 'edit server' <br />page to use this console!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value='Add RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
 		return $objResponse;
 	}
     if(!$test = @fsockopen($rcon['ip'], $rcon['port'], $errno, $errstr, 2))
     {
         @fclose($test);
-		$objResponse->addAppend("rcon_con", "innerHTML",  "\n> Error: Can't connect to server!\n");
+		$objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Can't connect to server!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
 		return $objResponse;
 	}
@@ -2130,28 +2130,28 @@ function SendRcon($sid, $command, $output)
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addAppend("rcon_con", "innerHTML",  "\n> Error: Wrong RCON password!\nYou MUST change the RCON password for this server in the 'edit server' \npage. If you continue to use this console with the wrong password, \nthe server will block the connection!\n");
+		$objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Wrong RCON password!<br />You MUST change the RCON password for this server in the 'edit server' <br />page. If you continue to use this console with the wrong password, <br />the server will block the connection!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value='Change RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
 		return $objResponse;
 	}
 	$ret = $r->rconCommand($command);
 
 
-	$ret = str_replace('\n', '\n\r', $ret);
+	$ret = str_replace("\n", "<br />", $ret);
 	if(empty($ret))
 	{
 		if($output)
 		{
-			$objResponse->addAppend("rcon_con", "innerHTML",  "-> $command\r\n");
-			$objResponse->addAppend("rcon_con", "innerHTML",  "Command Executed.\n");
+			$objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
+			$objResponse->addAppend("rcon_con", "innerHTML",  "Command Executed.<br />");
 		}
 	}
 	else
 	{
 		if($output)
 		{
-			$objResponse->addAppend("rcon_con", "innerHTML",  "-> $command\n");
-			$objResponse->addAppend("rcon_con", "innerHTML",  "$ret\r\n");
+			$objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
+			$objResponse->addAppend("rcon_con", "innerHTML",  "$ret<br />");
 		}
 	}
 	$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled=''; $('rcon_btn').disabled=''");

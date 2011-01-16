@@ -67,7 +67,7 @@ class CServerRcon
     $data = pack("VV",$id,$cmd).$s1.chr(0).$s2.chr(0);
     $data = pack("V",strlen($data)).$data;
 
-    if ($this->isfock)
+    if ($this->isfsock)
       fwrite($this->_sock, $data, strlen($data));
     else
       socket_write($this->_sock, $data, strlen($data));
@@ -77,7 +77,7 @@ class CServerRcon
 
   private function _sock_read($size)
   {
-    if ($this->isfock)
+    if ($this->isfsock)
       return @fread($this->_sock, $size);
     else
       return socket_read($this->_sock, $size);

@@ -183,7 +183,7 @@ class CServerInfo
       }
       else
       {
-        $this->socket    = @fsockopen("udp://$address", $port, $errno, $errstr, 2);
+        $this->socket    = @fsockopen("udp://".$this->address, $this->port, $errno, $errstr, 2);
         stream_set_timeout($this->socket, 1);
       }
     }
@@ -259,7 +259,7 @@ class CServerInfo
 	
   private function _readsplit($socket)
   {
-    if ($this->isfock)
+    if ($this->isfsock)
       $packet = fread($socket, 1480);
     else
       $packet = socket_read($socket, 1480);
@@ -328,7 +328,7 @@ class CServerInfo
           return "";
   			
         // Receive next packet
-        if ($this->isfock)
+        if ($this->isfsock)
           $packet = fread($socket, 1480);
         else
           $packet = socket_read($socket, 1480);
