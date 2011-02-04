@@ -68,6 +68,11 @@ function DeleteSubmission(id, name)
   ShowBox('error', 'Delete Submission',  'Are you sure you want to delete the ban submission for "'  + name + '"?', 'Yes', 'No', function(){ x_DeleteSubmission(id, name, showConfirmation); });
 }
 
+function RebanBan(id, name)
+{
+  ShowBox('error', 'Reban',              'Are you sure you want to reban "'                          + name + '"?', 'Yes', 'No', function(){ x_Reban(id, name, showConfirmation); });
+}
+
 function RestoreProtest(id, name)
 {
   ShowBox('error', 'Restore Protest',    'Are you sure you want to restore the ban protest for "'    + name + '" from the archive?', 'Yes', 'No', function(){ x_RestoreProtest(id, name, showConfirmation); });
@@ -162,7 +167,7 @@ function handleFormSubmit(res)
   res = JSON.decode(res);
   if(res.error)
   {
-    ShowBox('error', 'Error', res.error);
+    ShowBox('error', 'Error', res.error, 'Ok');
     return;
   }
   if(res.redirect)
@@ -173,20 +178,20 @@ function kickPlayer(res)
 {
   if(res.error)
   {
-    ShowBox('error', 'Failed to kick ' + res.name + '.', 'Failed to kick ' + res.name + '.', 'Ok', '', function(){ $('dialog').fade('out'); });
+    ShowBox('error', 'Failed to kick ' + res.name + '.', 'Failed to kick ' + res.name + '.', 'Ok');
     return;
   }
   
   x_ServerInfo(res.id,    setServerInfo);
   x_ServerPlayers(res.id, setServerPlayers);
-  ShowBox('ok', 'Kicked ' + res.name + '.', 'Successfully kicked ' + res.name + '.', 'Ok', '', function() { $('dialog').fade('out'); });
+  ShowBox('ok', 'Kicked ' + res.name + '.', 'Successfully kicked ' + res.name + '.', 'Ok');
 }
 
 function setSelectTheme(res)
 {
   if(res.error)
   {
-    ShowBox('error', res.error, 'Ok', '', function(){ $('dialog').fade('out'); });
+    ShowBox('error', res.error, 'Ok');
     return;
   }
   

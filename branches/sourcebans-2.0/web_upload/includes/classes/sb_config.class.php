@@ -154,7 +154,11 @@ class SBConfig
     require_once CLASS_DIR   . 'sb_debug.class.php';
     require_once UTILS_DIR   . 'util.php';
     require_once WRITERS_DIR . 'logs.php';
-    require_once BASE_PATH   . 'config.php';
+    if(is_file(BASE_PATH .'config.php')){
+        require_once BASE_PATH   . 'config.php';
+    }else{
+        header('Location: install/');
+    }
   }
   
   

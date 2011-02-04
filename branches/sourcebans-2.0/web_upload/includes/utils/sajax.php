@@ -39,6 +39,7 @@ if($userbank->is_logged_in())
   sAJAX::register('ServerAdmins');
   sAJAX::register('SelectTheme');
   sAJAX::register('SetWebGroup');
+  sAJAX::register('UnbanBan');
   sAJAX::register('Version');
 }
 
@@ -90,7 +91,7 @@ function ArchiveProtest($id, $name)
       'title'    => 'Protest archived',
       'message'  => 'The protest for "' . $name . '" has been archived.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_bans.php'
+        '_' => '../admin_bans.php'
       ))
     );
   }
@@ -121,7 +122,7 @@ function ArchiveSubmission($id, $name)
       'title'    => 'Submission archived',
       'message'  => 'The submission for "' . $name . '" has been archived.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_bans.php'
+        '_' => '../admin_bans.php'
       ))
     );
   }
@@ -161,7 +162,7 @@ function ClearActions()
       'title'    => 'Actions cleared',
       'message'  => 'The actions have been successfully cleared.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_admins.php'
+        '_' => '../admin_admins.php'
       ))
     );
   }
@@ -195,7 +196,7 @@ function ClearLogs()
       'title'    => 'Logs cleared',
       'message'  => 'The logs have been successfully cleared.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_settings.php'
+        '_' => '../admin_settings.php'
       ))
     );
   }
@@ -226,7 +227,7 @@ function DeleteAdmin($id, $name)
       'title'    => 'Admin deleted',
       'message'  => 'The admin "' . $name . '" has been deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_admins.php'
+        '_' => '../admin_admins.php'
       ))
     );
   }
@@ -260,7 +261,7 @@ function DeleteBan($id, $name)
       'title'    => 'Ban deleted',
       'message'  => 'The ban for "' . $name . '" (' . $identity . ') has been deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'banlist.php'
+        '_' => '../banlist.php'
       ))
     );
   }
@@ -291,7 +292,7 @@ function DeleteGroup($id, $name, $type)
       'title'    => 'Group deleted',
       'message'  => 'The group "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_groups.php'
+        '_' => '../admin_groups.php'
       ))
     );
   }
@@ -322,7 +323,7 @@ function DeleteMod($id, $name)
       'title'    => 'Mod deleted',
       'message'  => 'The mod "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_mods.php'
+        '_' => '../admin_mods.php'
       ))
     );
   }
@@ -353,7 +354,7 @@ function DeleteProtest($id, $name)
       'title'    => 'Protest deleted',
       'message'  => 'The protest for "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_bans.php'
+        '_' => '../admin_bans.php'
       ))
     );
   }
@@ -384,7 +385,7 @@ function DeleteServer($id, $name)
       'title'    => 'Server deleted',
       'message'  => 'The server "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_servers.php'
+        '_' => '../admin_servers.php'
       ))
     );
   }
@@ -415,7 +416,7 @@ function DeleteSubmission($id, $name)
       'title'    => 'Submission deleted',
       'message'  => 'The submission for "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_bans.php'
+        '_' => '../admin_bans.php'
       ))
     );
   }
@@ -485,6 +486,39 @@ function KickPlayer($id, $name)
   }
 }
 
+function Reban($id, $name)
+{
+  try
+  {
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
+    
+    if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS')))
+      throw new Exception($phrases['access_denied']);
+    
+    $ban      = SB_API::getBan($id);
+    
+    $identity = ($ban['type'] == STEAM_BAN_TYPE ? $ban['steam'] : $ban['ip']);
+    
+    SB_API::rebanBan($id);
+    
+    return array(
+      'title'    => 'Rebanned',
+      'message'  => 'You have rebanned "' . $name . '" (' . $identity . ')',
+      'redirect' => Util::buildUrl(array(
+        '_' => '../banlist.php'
+      ))
+    );
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'message' => 'An error occured while rebanning "' . $name . '": ',
+      'error'   => $e->getMessage()
+    );
+  }
+}
+
 function RestoreProtest($id, $name)
 {
   try
@@ -503,7 +537,7 @@ function RestoreProtest($id, $name)
       'title'    => 'Protest restored',
       'message'  => 'The protest for "' . $name . '" has been successfully restored.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_bans.php'
+        '_' => '../admin_bans.php'
       ))
     );
   }
@@ -534,7 +568,7 @@ function RestoreSubmission($id, $name)
       'title'    => 'Submission restored',
       'message'  => 'The submission for "' . $name . '" has been successfully restored.',
       'redirect' => Util::buildUrl(array(
-        '_' => 'admin_bans.php'
+        '_' => '../admin_bans.php'
       ))
     );
   }
@@ -677,6 +711,39 @@ function SetWebGroup($admins, $id)
       'id'    => $id,
       'name'  => $name,
       'error' => $e->getMessage()
+    );
+  }
+}
+
+function UnbanBan($id, $name, $reason)
+{
+  try
+  {
+    $phrases  = Env::get('phrases');
+    $userbank = Env::get('userbank');
+    
+    if(!$userbank->HasAccess(array('OWNER', 'UNBAN_BANS')))
+      throw new Exception($phrases['access_denied']);
+    
+    $ban      = SB_API::getBan($id);
+    
+    $identity = ($ban['type'] == STEAM_BAN_TYPE ? $ban['steam'] : $ban['ip']);
+    
+    SB_API::unbanBan($id, $reason);
+    
+    return array(
+      'title'    => 'Unbanned',
+      'message'  => 'You have unbanned "' . $name . '" (' . $identity . ')',
+      'redirect' => Util::buildUrl(array(
+        '_' => '../banlist.php'
+      ))
+    );
+  }
+  catch(Exception $e)
+  {
+    return array(
+      'message' => 'An error occured while unbanning "' . $name . '": ',
+      'error'   => $e->getMessage()
     );
   }
 }

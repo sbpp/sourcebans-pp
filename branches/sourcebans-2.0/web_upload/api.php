@@ -234,7 +234,7 @@ class SB_API
     if(!isset($bans['list'][$id]))
       throw new Exception('Invalid ID specified.');
     
-    return $bans[$id];
+    return $bans['list'][$id];
   }
   
   
@@ -286,6 +286,17 @@ class SB_API
   public static function unbanBan($id, $reason)
   {
     BansWriter::unban($id, $reason);
+  }
+  
+  /**
+   * Rebans a ban
+   *
+   * @param integer $id     The id of the ban to reban
+   * @noreturn
+   */
+  public static function rebanBan($id)
+  {
+    BansWriter::reban($id);
   }
   
   

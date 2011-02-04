@@ -198,7 +198,7 @@ class BansWriter
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_bans
+    $db->Execute('UPDATE ' . Env::get('prefix') . '_bans SET
                          unban_admin_id = NULL,
                          unban_reason   = NULL,
                          unban_time     = NULL
@@ -231,7 +231,7 @@ class BansWriter
     if(empty($reason) || !is_string($reason))
       throw new Exception($phrases['invalid_reason']);
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_bans
+    $db->Execute('UPDATE ' . Env::get('prefix') . '_bans SET
                          unban_admin_id = ?,
                          unban_reason   = ?,
                          unban_time     = UNIX_TIMESTAMP()
