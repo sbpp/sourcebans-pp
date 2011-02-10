@@ -1,0 +1,22 @@
+"Phrases"
+{
+	"Player already flagged"
+	{
+		"#format"		"{1:s}"
+		"en"			"Player {1} already has a ban submitted. We will review it shortly."
+	}
+	"Submission failed"
+	{
+		"#format"		"{1:s}"
+		"en"			"Your submission failed. Please visit our website: {1}"
+	}
+	"Submission succeeded"
+	{
+		"en"			"Your submission has been entered."
+	}
+	"Upload demo"
+	{
+		"#format"		"{1:s}"
+		"en"			"Remember to visit our website ({1}) and upload the demo."
+	}
+}

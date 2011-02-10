@@ -1,0 +1,114 @@
+body {
+  color: #000;
+  font-size: 12px;
+  font-family: Verdana,Arial,Tahoma,Trebuchet MS,Sans-Serif,Georgia,Courier,Times New Roman,Serif;
+}
+fieldset {
+  margin: 0;
+  padding: 0;
+  border-style: none;
+}
+h1 { display: none; }
+h2 {
+  color: #4D4D4D;
+  margin: 0;
+  font-size: 36px;
+  font-weight: normal;
+}
+h3 {
+  clear: both;
+  border: 1px solid #DDD;
+  margin: 5px 0;
+  padding: 5px;
+  font-size: 12px;
+  font-weight: bold;
+  background-color: #EAEAEA;
+  border-left-width: 5px;
+}
+img { border-style: none; }
+label {
+  clear: both;
+  float: left;
+  width: 150px;
+  margin: 3px 40px 0 0;
+  text-align: right;
+}
+p { margin: 10px 0; }
+th {
+  border: 1px solid #FFF;
+  padding: 2px 4px;
+  font-size: 10px;
+  text-align: left;
+  font-family: verdana, tahoma, arial;
+  border-width: 1px 1px 0 0;
+  background-color: #DFE3E9;
+  background-image: url("../themes/default/images/detail_head.gif");
+}
+
+.mainwrapper {
+  top: 50%;
+  left: 50%;
+  width: 714px;
+  height: 494px;
+  padding: 55px 46px 36px 40px;
+  position: absolute;
+  background: transparent url("images/bg.png") no-repeat;
+  margin-top: -300px;
+  margin-left: -400px;
+}
+.step {
+  width: inherit;
+  height: 350px;
+  position: absolute;
+}
+.step label, .step p, .step th { color: #FFF; }
+.step input { width: 200px; }
+.step select { width: 202px; }
+.step input, .step select {
+  border: 1px solid #000;
+  margin-bottom: 2px;
+}
+.buttons, .languages {
+  width: inherit;
+  position: absolute;
+  text-align: center;
+}
+.buttons { bottom: 83px; }
+.languages { bottom: 0; }
+.languages p {
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.license {
+  width: 100%;
+  height: 362px;
+}
+#back, #next {
+  width: 82px;
+  font-size: 16px;
+}
+
+table.listtable {
+  color: #444;
+  border: 1px solid #DDD;
+  font-size: 10px;
+  font-family: verdana, tahoma, arial;
+  background-color: #FFF;
+}
+td.listtable_1 {
+  border: 1px solid #DDD;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-family: verdana, tahoma, arial;
+  border-width: 0 0 1px 1px;
+}
+.green, .red {
+ border: #DDD solid;
+ padding: 2px 4px;
+ font-size: 10px;
+ font-family: verdana, tahoma, arial;
+ border-width: 0px 0px 1px 1px;
+}
+.green { background-color: #8bd659; }
+.red { background-color: #d65959; }

@@ -1,0 +1,25 @@
+"Phrases"
+{
+	"Player bans"
+	{
+		"#format"		"{1:s},{2:s},{3:i}"
+		"en"				"Player: {1} ({2}) has {3} previous bans."
+	}
+	"Processing client"
+	{
+		"en"				"Player has not been processed. Processing now."
+	}
+	"Processed client"
+	{
+		"en"				"Player was successfully processed. You can now view their bans, if any."
+	}
+	"Player ban list"
+	{
+		"#format"		"{1:s}"
+		"en"				"Bans for {1}"
+	}
+	"View bans"
+	{
+		"en"				"View Bans"
+	}
+}

@@ -1,0 +1,54 @@
+"Phrases"
+{
+	"Banned Check Site"
+	{
+		"#format"		"{1:s}"
+		"en"			"You have been banned by this server, check {1} for more information"
+	}
+	"DB Connect Fail"
+	{
+		"en"			"Database connection failed. Please contact server operator."
+	}
+	"Not In Game"
+	{
+		"en"			"The player is not in game, please visit the web panel to ban them."
+	}
+	"Ban Not Verified"
+	{
+		"en"			"This player's ban has not been verified. Please wait thirty seconds before retrying."
+	}
+	"Can Not Unban"
+	{
+		"#format"		"{1:s}"
+		"en"			"You can not unban from in the server, visit {1} to unban."
+	}
+	"Can Not Add Ban"
+	{
+		"#format"		"{1:s}"
+		"en"			"You can not add a ban from in the server, visit {1} to add a ban."
+	}
+	"Check Menu"
+	{
+		"en"			"Please check the menu to select a reason for ban."
+	}
+	"Include Reason"
+	{
+		"en"			"Please include a reason for banning the client."
+	}
+	"Ban Fail"
+	{
+		"en"			"Failed to ban player, please try again."
+	}
+	"Chat Reason"
+	{
+		"en"			"Please type the reason for ban in chat and press enter. Type '!noreason' to abort."
+	}
+	"Chat Reason Aborted"
+	{
+		"en"			"The ban procedure has been stopped successfully."
+	}
+	"Select player"
+	{
+		"en"			"Select Player:"
+	}
+}

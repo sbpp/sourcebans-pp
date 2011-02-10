@@ -1,0 +1,26 @@
+<?php
+/**
+ * =============================================================================
+ * This file will setup our defs, and configure php
+ * 
+ * @author InterWave Studios Development Team
+ * @version 2.0.0
+ * @copyright SourceBans (C)2008 InterWaveStudios.com.  All rights reserved.
+ * @package SourceBans
+ * @link http://www.sourcebans.net
+ * 
+ * @version $Id: config.php.template 24 2007-11-06 18:17:05Z olly $
+ * =============================================================================
+ */
+
+if(!defined('IN_SB'))
+  die('You should not be here. Only follow links!');
+
+define('DB_TYPE',   'mysql');    // mysql or mysqli
+define('DB_HOST',   '{host}');   // The host/ip to your SQL server
+define('DB_PORT',   '{port}');   // The SQL port (Default: 3306)
+define('DB_USER',   '{user}');   // The username to connect with
+define('DB_PASS',   '{pass}');   // The password
+define('DB_NAME',   '{name}');   // Database name	
+define('DB_PREFIX', '{prefix}'); // The table prefix for SourceBans
+?>
