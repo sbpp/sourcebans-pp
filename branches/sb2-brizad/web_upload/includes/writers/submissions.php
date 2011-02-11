@@ -17,8 +17,8 @@ class SubmissionsWriter
    */
   public static function add($steam, $ip, $name, $reason, $subname, $subemail, $server = 0)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($steam)    || !preg_match(STEAM_FORMAT, $steam))
       throw new Exception($phrases['invalid_steam']);
@@ -35,7 +35,7 @@ class SubmissionsWriter
     if(empty($server)   || !is_numeric($server))
       throw new Exception('Invalid server ID specified.');
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_submissions (name, steam, ip, reason, server_id, subname, subemail, subip, time)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_submissions (name, steam, ip, reason, server_id, subname, subemail, subip, time)
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($name, $steam, $ip, $reason, $server, $subname, $subemail, $_SERVER['REMOTE_ADDR']));
     
@@ -57,9 +57,9 @@ class SubmissionsWriter
    */
   public static function archive($id)
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_submissions
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_submissions
                   SET    archived = 1
                   WHERE  id       = ?',
                   array($id));
@@ -81,11 +81,11 @@ class SubmissionsWriter
   {
     require_once WRITERS_DIR . 'bans.php';
     
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     $sub = $db->GetRow('SELECT name, steam, ip, reason
-                        FROM   ' . Env::get('prefix') . '_submissions
+                        FROM   ' . SBConfig::getEnv('prefix') . '_submissions
                         WHERE  archived = 0
                           AND  id       = ?',
                         array($id));
@@ -108,9 +108,9 @@ class SubmissionsWriter
    */
   public static function delete($id)
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_submissions
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_submissions
                   WHERE       id  = ?',
                   array($id));
     
@@ -129,9 +129,9 @@ class SubmissionsWriter
    */
   public static function restore($id)
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_submissions
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_submissions
                   SET    archived = 0
                   WHERE  id       = ?',
                   array($id));

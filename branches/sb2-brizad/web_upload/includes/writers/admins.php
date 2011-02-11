@@ -18,9 +18,9 @@ class AdminsWriter
    */
   public static function add($name, $auth, $identity, $email = '', $password = '', $srv_password = null, $srv_groups = array(), $web_group = null)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(empty($name)          || !is_string($name))
       throw new Exception($phrases['invalid_name']);
@@ -35,7 +35,7 @@ class AdminsWriter
     if(!is_string($password))
       throw new Exception($phrases['invalid_password']);
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_admins (name, auth, identity, password, group_id, email, srv_password)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_admins (name, auth, identity, password, group_id, email, srv_password)
                   VALUES      (?, ?, ?, ?, ?, ?, ?)',
                   array($name, $auth, $identity, empty($password) ? null : $userbank->encrypt_password($password), $web_group, $email, $srv_password));
     
@@ -45,7 +45,7 @@ class AdminsWriter
     
     if(is_array($srv_groups) && !empty($srv_groups))
     {
-      $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_admins_srvgroups (admin_id, group_id, inherit_order)
+      $query = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_admins_srvgroups (admin_id, group_id, inherit_order)
                              VALUES      (?, ?, ?)');
       
       for($i = 0; $i < count($srv_groups); $i++)
@@ -66,15 +66,15 @@ class AdminsWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE    ad, ag
-                  FROM      ' . Env::get('prefix') . '_admins           AS ad
-                  LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.admin_id = ad.id 
+                  FROM      ' . SBConfig::getEnv('prefix') . '_admins           AS ad
+                  LEFT JOIN ' . SBConfig::getEnv('prefix') . '_admins_srvgroups AS ag ON ag.admin_id = ad.id 
                   WHERE     ad.id = ?',
                   array($id));
     
@@ -103,10 +103,10 @@ class AdminsWriter
    */
   public static function edit($id, $name = null, $auth = null, $identity = null, $email = null, $password = null, $srv_password = null, $srv_groups = null, $web_group = null, $theme = null, $language = null)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $plugins  = Env::get('plugins');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $plugins  = SBConfig::getEnv('plugins');
+    $userbank = SBConfig::getEnv('userbank');
     
     $admin    = array();
     
@@ -132,18 +132,18 @@ class AdminsWriter
       $admin['group_id']     = $web_group;
     if(!is_null($srv_groups)   && is_array($srv_groups))
     {
-      $db->Execute('DELETE FROM ' . Env::get('prefix') . '_admins_srvgroups
+      $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_admins_srvgroups
                     WHERE       admin_id = ?',
                     array($id));
       
-      $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_admins_srvgroups (admin_id, group_id, inherit_order)
+      $query = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_admins_srvgroups (admin_id, group_id, inherit_order)
                              VALUES      (?, ?, ?)');
       
       for($i = 0; $i < count($srv_groups); $i++)
         $db->Execute($query, array($id, $srv_groups[$i], $i));
     }
     
-    $db->AutoExecute(Env::get('prefix') . '_admins', $admin, 'UPDATE', 'id = ' . $id);
+    $db->AutoExecute(SBConfig::getEnv('prefix') . '_admins', $admin, 'UPDATE', 'id = ' . $id);
     
     $admins_reader = new AdminsReader();
     $admins_reader->removeCacheFile();
@@ -163,7 +163,7 @@ class AdminsWriter
   {
     require_once UTILS_DIR . 'keyvalues/kvutil.php';
     
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(!file_exists($tmp_name))
       $tmp_name = $file;

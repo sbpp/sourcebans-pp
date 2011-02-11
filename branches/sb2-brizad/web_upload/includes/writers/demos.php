@@ -14,8 +14,8 @@ class DemosWriter
    */
   public static function add($ban_id, $type, $filename, $tmp_name)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($ban_id)   || !is_numeric($ban_id))
       throw new Exception('Invalid ban ID specified.');
@@ -28,7 +28,7 @@ class DemosWriter
     if(!move_uploaded_file($tmp_name, DEMOS_DIR . $type . $ban_id . '_' . $filename))
       throw new Exception('Unable to upload demo.');
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_demos (ban_id, type, filename)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_demos (ban_id, type, filename)
                   VALUES      (?, ?, ?)',
                   array($ban_id, $type, $filename));
     
@@ -52,14 +52,14 @@ class DemosWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
     $demo = $db->GetRow('SELECT ban_id, type, filename
-                         FROM   ' . Env::get('prefix') . '_demos
+                         FROM   ' . SBConfig::getEnv('prefix') . '_demos
                          WHERE  id = ?',
                          array($id));
     
@@ -68,7 +68,7 @@ class DemosWriter
     
     unlink(DEMOS_DIR . $demo['type'] . $demo['ban_id'] . '_' . $demo['filename']);
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_demos
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_demos
                   WHERE       id = ?',
                   array($id));
     

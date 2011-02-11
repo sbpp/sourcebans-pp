@@ -11,9 +11,9 @@ class SettingsWriter
    */
   public static function update($settings = array())
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('REPLACE INTO ' . Env::get('prefix') . '_settings (name, value)
+    $db->Execute('REPLACE INTO ' . SBConfig::getEnv('prefix') . '_settings (name, value)
                   VALUES       ("' . implode('", ?), ("', array_keys($settings)) . '", ?)',
                   array_values($settings));
     

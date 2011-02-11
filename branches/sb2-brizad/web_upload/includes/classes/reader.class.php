@@ -86,7 +86,10 @@ abstract class SBReader
    */
   private function getCachedData($age)
   {
-    $sbcache = Env::get('sbcache');
+    if (defined('SB_NOCACHE') && SB_NOCACHE == true)
+      $age = null;
+
+    $sbcache = SBConfig::getEnv('sbcache');
     $key     = $this->getUniqueKey();
     $data    = $sbcache->fetch($key, $age, get_class($this));
     
@@ -102,7 +105,10 @@ abstract class SBReader
    */
   public function writeCacheFile($data)
   {
-    $sbcache = Env::get('sbcache');
+    if (defined('SB_NOCACHE') && SB_NOCACHE == true)
+      return;
+    
+    $sbcache = SBConfig::getEnv('sbcache');
     $key     = $this->getUniqueKey();
     $data    = serialize($data); // Since SBCache objects can only take strings
     $result  = $sbcache->store($key, $data, get_class($this));
@@ -119,7 +125,7 @@ abstract class SBReader
    */
   public function removeCacheFile($allFromClass = false)
   {
-    $sbcache = Env::get('sbcache');
+    $sbcache = SBConfig::getEnv('sbcache');
     $key     = $this->getUniqueKey();
     
     if($allFromClass)

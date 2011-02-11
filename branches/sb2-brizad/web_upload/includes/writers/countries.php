@@ -11,8 +11,8 @@ class CountriesWriter
    */
   public static function store($ip)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($ip) || !preg_match(IP_FORMAT, $ip))
       throw new Exception($phrases['invalid_ip']);
@@ -23,7 +23,7 @@ class CountriesWriter
     
     geoip_close($geoip);
     
-    $db->Execute('INSERT INTO             ' . Env::get('prefix') . '_countries (ip, code, name)
+    $db->Execute('INSERT INTO             ' . SBConfig::getEnv('prefix') . '_countries (ip, code, name)
                   VALUES                  (?, ?, ?)
                   ON DUPLICATE KEY UPDATE code = VALUES(code),
                                           name = VALUES(name)',

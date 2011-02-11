@@ -8,11 +8,11 @@ class QuotesReader extends SBReader
   
   public function &execute()
   {
-    $db     = Env::get('db');
+    $db     = SBConfig::getEnv('db');
     
     // Fetch quotes
     $quotes = $db->GetAll('SELECT name, text
-                           FROM   ' . Env::get('prefix') . '_quotes');
+                           FROM   ' . SBConfig::getEnv('prefix') . '_quotes');
     
     list($quotes) = SBPlugins::call('OnGetQuotes', $quotes);
     

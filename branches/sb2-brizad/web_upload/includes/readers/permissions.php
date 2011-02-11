@@ -8,11 +8,11 @@ class PermissionsReader extends SBReader
   
   public function &execute()
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
     // Fetch permissions
     $permissions = $db->GetAssoc('SELECT   id, name
-                                  FROM     ' . Env::get('prefix') . '_permissions
+                                  FROM     ' . SBConfig::getEnv('prefix') . '_permissions
                                   ORDER BY id');
     
     list($permissions) = SBPlugins::call('OnGetPermissions', $permissions);

@@ -16,9 +16,9 @@ class ProtestsWriter
    */
   public static function add($name, $type, $steam, $ip, $reason, $email)
   {
-    $db     = Env::get('db');
+    $db     = SBConfig::getEnv('db');
     $ban_id = $db->GetOne('SELECT id
-                           FROM   ' . Env::get('prefix') . '_bans
+                           FROM   ' . SBConfig::getEnv('prefix') . '_bans
                            WHERE  name = ?
                               OR  (type = ? AND steam = ?)
                               OR  (type = ? AND ip    = ?)',
@@ -27,7 +27,7 @@ class ProtestsWriter
     if(is_null($ban_id))
       throw new Exception('This Steam ID or IP address is not banned.');
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_protests (ban_id, reason, email, ip, time)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_protests (ban_id, reason, email, ip, time)
                   VALUES      (?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($ban_id, $reason, $email, $_SERVER['REMOTE_ADDR']));
     
@@ -49,10 +49,10 @@ class ProtestsWriter
    */
   public static function archive($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_protests
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_protests
                   SET    archived = 1
                   WHERE  id       = ?',
                   array($id));
@@ -72,10 +72,10 @@ class ProtestsWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_protests
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_protests
                   WHERE       id = ?',
                   array($id));
     
@@ -94,10 +94,10 @@ class ProtestsWriter
    */
   public static function restore($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_protests
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_protests
                   SET    archived = 0
                   WHERE  id       = ?',
                   array($id));

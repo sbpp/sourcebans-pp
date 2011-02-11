@@ -8,11 +8,11 @@ class OverridesReader extends SBReader
   
   public function &execute()
   {
-    $db        = Env::get('db');
+    $db        = SBConfig::getEnv('db');
     
     // Fetch overrides
     $overrides = $db->GetAll('SELECT type, name, flags
-                              FROM   ' . Env::get('prefix') . '_overrides');
+                              FROM   ' . SBConfig::getEnv('prefix') . '_overrides');
     
     list($overrides) = SBPlugins::call('OnGetOverrides', $overrides);
     

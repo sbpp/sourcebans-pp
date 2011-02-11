@@ -9,14 +9,14 @@ class ServersReader extends SBReader
   
   public function &execute()
   {
-    $db      = Env::get('db');
+    $db      = SBConfig::getEnv('db');
     
     // Fetch servers
     $servers = $db->GetAssoc('SELECT    se.id, se.ip, se.port, se.rcon, se.mod_id, se.enabled, mo.name AS mod_name, mo.folder AS mod_folder, mo.icon AS mod_icon,
                                         GROUP_CONCAT(DISTINCT sg.group_id ORDER BY sg.group_id) AS groups
-                              FROM      ' . Env::get('prefix') . '_servers           AS se
-                              LEFT JOIN ' . Env::get('prefix') . '_servers_srvgroups AS sg ON sg.server_id = se.id
-                              LEFT JOIN ' . Env::get('prefix') . '_mods              AS mo ON mo.id        = se.mod_id
+                              FROM      ' . SBConfig::getEnv('prefix') . '_servers           AS se
+                              LEFT JOIN ' . SBConfig::getEnv('prefix') . '_servers_srvgroups AS sg ON sg.server_id = se.id
+                              LEFT JOIN ' . SBConfig::getEnv('prefix') . '_mods              AS mo ON mo.id        = se.mod_id
                               GROUP BY  id
                               ORDER BY  mod_name');
     

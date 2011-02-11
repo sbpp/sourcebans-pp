@@ -17,7 +17,7 @@ class ServerQueryReader extends SBReader
   
   public function &execute()
   {
-    $phrases      = Env::get('phrases');
+    $phrases      = SBConfig::getEnv('phrases');
     
     $server_query = new CServerQuery($this->ip, $this->port);
     

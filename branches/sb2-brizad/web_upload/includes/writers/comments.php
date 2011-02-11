@@ -13,9 +13,9 @@ class CommentsWriter
    */
   public static function add($ban_id, $type, $message)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(empty($ban_id)  || !is_numeric($ban_id))
       throw new Exception('Invalid ban ID specified.');
@@ -24,7 +24,7 @@ class CommentsWriter
     if(empty($message) || !is_string($message))
       throw new Exception($phrases['invalid_message']);
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_comments (type, ban_id, admin_id, message, time)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_comments (type, ban_id, admin_id, message, time)
                   VALUES      (?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $ban_id, $userbank->GetID(), $message));
     
@@ -48,21 +48,21 @@ class CommentsWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
     $comment = $db->GetRow('SELECT ban_id, type
-                            FROM   ' . Env::get('prefix') . '_comments
+                            FROM   ' . SBConfig::getEnv('prefix') . '_comments
                             WHERE  id = ?',
                             array($id));
     
     if(empty($comment))
       throw new Exception($phrases['invalid_id']);
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_comments
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_comments
                   WHERE       id = ?',
                   array($id));
     
@@ -84,9 +84,9 @@ class CommentsWriter
    */
   public static function edit($id, $message)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(empty($id)      || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
@@ -94,11 +94,11 @@ class CommentsWriter
       throw new Exception($phrases['invalid_message']);
     
     $comment = $db->GetRow('SELECT ban_id, type
-                            FROM   ' . Env::get('prefix') . '_comments
+                            FROM   ' . SBConfig::getEnv('prefix') . '_comments
                             WHERE  id = ?',
                             array($id));
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_comments
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_comments
                   SET    message       = ?,
                          edit_admin_id = ?,
                          edit_time     = UNIX_TIMESTAMP()

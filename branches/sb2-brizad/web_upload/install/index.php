@@ -13,13 +13,13 @@ $writable = array(
 
 // If a path is not writable, attempt to make it writable
 foreach($writable as $path)
-  if(!is_writable($path) && is_dir($path))
+  if(!is_writable($path))
     chmod($path, 0755);
 
 
 // Server settings
 define('FILE_UPLOADS',      ini_get('file_uploads'));
-define('MYSQL_VERSION',     mysql_get_server_info());
+define('MYSQL_VERSION',     mysql_get_client_info());
 define('MYSQL_VERSION_REQ', '5.0');
 define('PHP_VERSION_REQ',   '5.2');
 define('REGISTER_GLOBALS',  ini_get('register_globals'));

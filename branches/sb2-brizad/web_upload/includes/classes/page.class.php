@@ -7,49 +7,49 @@
 class Page extends Smarty
 {
   private $page_title;
-  
+
   /**
    * This is an array of panes to add to this page
    *
    * @var array List of panes to add to this page
    */
   private $panes = array();
-  
+
   /**
    * This is an array of JS files to include into the header of our page
    *
    * @var array List of relative JS files in include
    */
   private $scripts = array();
-  
+
   /**
    * This is an array of CSS files to include into the HTML header of our page
    *
    * @var array List of relative CSS files to include in our header
    */
   private $styles = array();
-  
+
   /**
    * This is an array of tabs to add to this page
    *
    * @var array List of tabs to add to this page
    */
   private $tabs = array();
-  
+
   /**
    * This sets the active main menu tab on the page
    *
    * @var integer This value starts at 0 for the Home tab
    */
   private $menu_cat = 0;
-  
+
   /**
    * This sets the active sub-nav button of the page
    *
    * @var integer This value starts at 0 for the first element, but -1 will not make any buttons active
    */
   private $menu_itm = -1;
-  
+
   /**
    * If this is set to true (default) the full menu, side menu's etc will be displayed
    * If false, it will only display the template file specified.
@@ -57,19 +57,18 @@ class Page extends Smarty
    * @var boolean
    */
   private $full_page = true;
-  
+
   /**
    * This will hold the params for our page message
    *
    * @var array
    */
   private $page_message = array();
-  
-  
+
   function __construct($title = '', $full_page = true)
   {
-    $config                = Env::get('config');
-    $userbank              = Env::get('userbank');
+    $config                = SBConfig::getEnv('config');
+    $userbank              = SBConfig::getEnv('userbank');
     
     $this->compile_dir     = BASE_PATH  . 'themes_c';
     $this->debugging       = (defined('DEBUG_MODE') && DEBUG_MODE) || $config['config.debug'];
@@ -78,7 +77,7 @@ class Page extends Smarty
     $this->page_title      = $title;
     $this->template_dir    = THEMES_DIR . ($userbank->is_logged_in() ? $userbank->GetProperty('theme') : $config['config.theme']);
   }
-  
+
   /**
    * This adds a pane to this page
    *
@@ -90,7 +89,7 @@ class Page extends Smarty
     $this->panes[] = array('id'   => $id,
                            'html' => $html);
   }
-  
+
   /**
    * This allows us to set the JS files that we want to include on our page
    *
@@ -101,7 +100,7 @@ class Page extends Smarty
     if(!in_array($script, $this->scripts))
       $this->scripts[] = $script;
   }
-  
+
   /**
    * This allows us to set the css files that we want to include on our page
    *
@@ -112,7 +111,7 @@ class Page extends Smarty
     if(!in_array($style, $this->styles))
       $this->styles[]  = $style;
   }
-  
+
   /**
    * This adds a tab to this page
    *
@@ -126,7 +125,7 @@ class Page extends Smarty
                            'url'  => $url,
                            'name' => $name);
   }
-  
+
   /**
    * This will assign a value to the current page using the parent superclass
    *
@@ -137,7 +136,7 @@ class Page extends Smarty
   {
     parent::assign($key, $var);
   }
-  
+
   /**
    * This is the main function that will build the page using the class functions
    *
@@ -145,10 +144,10 @@ class Page extends Smarty
    */
   public function display($file)
   {
-    $config     = Env::get('config');
-    $phrases    = Env::get('phrases');
-    $quotes     = Env::get('quotes');
-    $userbank   = Env::get('userbank');
+    $config     = SBConfig::getEnv('config');
+    $phrases    = SBConfig::getEnv('phrases');
+    $quotes     = SBConfig::getEnv('quotes');
+    $userbank   = SBConfig::getEnv('userbank');
     $quote      = $quotes[array_rand($quotes)];
     
     list($page) = SBPlugins::call('OnDisplayPage', $this, $file);
@@ -157,7 +156,7 @@ class Page extends Smarty
       $this->$key = $value;
     
     // Assign global variables
-    parent::assign('active',                   Env::get('active'));
+    parent::assign('active',                   SBConfig::getEnv('active'));
     parent::assign('admin_panes',              $this->panes);
     parent::assign('admin_tabs',               $this->tabs);
     parent::assign('date_format',              $config['config.dateformat']);
@@ -191,7 +190,7 @@ class Page extends Smarty
     if($this->full_page)
       parent::display('footer.tpl');
   }
-  
+
   /**
    * This function will add a messagebox to the top of our page to display errors and such
    *
@@ -207,5 +206,16 @@ class Page extends Smarty
       'title'   => $title
     );
   }
+
+  /**
+   * This should be an abstract, but since inheriting from Smarty, does not allow it
+   * 
+   */
+  public function load() { }
+
+  public static function addPage()
+  {
+    //@todo Write to class or array of pages
+    //@todo Make serialized and cacheable 
+  }
 }
-?>

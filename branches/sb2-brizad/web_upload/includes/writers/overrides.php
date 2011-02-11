@@ -13,7 +13,7 @@ class OverridesWriter
    */
   public static function add($type, $name, $flags)
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
     if(empty($type)  || !is_string($type))
       throw new Exception($phrases['invalid_type']);
@@ -22,7 +22,7 @@ class OverridesWriter
     if(empty($flags) || !is_string($flags))
       throw new Exception($phrases['invalid_flags']);
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_overrides (type, name, flags)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_overrides (type, name, flags)
                   VALUES      (?, ?, ?)',
                   array($type, $name, $flags));
     
@@ -42,9 +42,9 @@ class OverridesWriter
    */
   public static function clear()
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('TRUNCATE TABLE ' . Env::get('prefix') . '_overrides');
+    $db->Execute('TRUNCATE TABLE ' . SBConfig::getEnv('prefix') . '_overrides');
     
     $overrides_reader = new OverridesReader();
     $overrides_reader->removeCacheFile();

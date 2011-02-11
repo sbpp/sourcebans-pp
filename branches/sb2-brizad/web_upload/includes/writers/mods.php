@@ -13,8 +13,8 @@ class ModsWriter
    */
   public static function add($name, $folder, $icon)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($name)   || !is_string($name))
       throw new Exception($phrases['invalid_name']);
@@ -23,7 +23,7 @@ class ModsWriter
     if(empty($icon)   || !is_string($icon))
       throw new Exception($phrases['invalid_filename']);
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_mods (name, folder, icon)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_mods (name, folder, icon)
                   VALUES      (?, ?, ?)',
                   array($name, $folder, $icon));
     
@@ -45,13 +45,13 @@ class ModsWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_mods
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_mods
                   WHERE       id = ?',
                   array($id));
     
@@ -73,8 +73,8 @@ class ModsWriter
    */
   public static function edit($id, $name = null, $folder = null, $icon = null)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     $mod     = array();
     
@@ -87,7 +87,7 @@ class ModsWriter
     if(!is_null($icon)   && is_string($icon))
       $mod['icon']   = $icon;
     
-    $db->AutoExecute(Env::get('prefix') . '_mods', $mod, 'UPDATE', 'id = ' . $id);
+    $db->AutoExecute(SBConfig::getEnv('prefix') . '_mods', $mod, 'UPDATE', 'id = ' . $id);
     
     $mods_reader = new ModsReader();
     $mods_reader->removeCacheFile();

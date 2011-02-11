@@ -18,9 +18,9 @@ class BansWriter
    */
   public static function add($type, $steam, $ip, $name, $reason, $length, $server = 0)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!is_numeric($type))
       throw new Exception($phrases['invalid_type']);
@@ -39,7 +39,7 @@ class BansWriter
     if(!empty($ip))
       CountriesWriter::store($ip);
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_bans (type, steam, ip, name, reason, length, server_id, admin_id, admin_ip, time)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_bans (type, steam, ip, name, reason, length, server_id, admin_id, admin_ip, time)
                   VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $steam, $ip, $name, $reason, $length, $server, $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
@@ -61,13 +61,13 @@ class BansWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_bans
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_bans
                   WHERE       id = ?',
                   array($id));
     
@@ -92,8 +92,8 @@ class BansWriter
    */
   public static function edit($id, $type = null, $steam = null, $ip = null, $name = null, $reason = null, $length = null)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     $ban     = array();
     
@@ -117,7 +117,7 @@ class BansWriter
     if(!is_null($length) && is_numeric($length))
       $ban['length'] = $length;
     
-    $db->AutoExecute(Env::get('prefix') . '_bans', $ban, 'UPDATE', 'id = ' . $id);
+    $db->AutoExecute(SBConfig::getEnv('prefix') . '_bans', $ban, 'UPDATE', 'id = ' . $id);
     
     $bans_reader = new BansReader();
     $bans_reader->removeCacheFile(true);
@@ -135,8 +135,8 @@ class BansWriter
    */
   public static function import($file, $tmp_name = '')
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!file_exists($tmp_name))
       $tmp_name = $file;
@@ -192,13 +192,13 @@ class BansWriter
    */
   public static function reban($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_bans SET
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_bans
                          unban_admin_id = NULL,
                          unban_reason   = NULL,
                          unban_time     = NULL
@@ -222,16 +222,16 @@ class BansWriter
    */
   public static function unban($id, $reason)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(empty($id)     || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     if(empty($reason) || !is_string($reason))
       throw new Exception($phrases['invalid_reason']);
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_bans SET
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_bans
                          unban_admin_id = ?,
                          unban_reason   = ?,
                          unban_time     = UNIX_TIMESTAMP()

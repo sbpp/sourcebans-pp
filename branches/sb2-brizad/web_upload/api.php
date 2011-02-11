@@ -234,7 +234,7 @@ class SB_API
     if(!isset($bans['list'][$id]))
       throw new Exception('Invalid ID specified.');
     
-    return $bans['list'][$id];
+    return $bans[$id];
   }
   
   
@@ -286,17 +286,6 @@ class SB_API
   public static function unbanBan($id, $reason)
   {
     BansWriter::unban($id, $reason);
-  }
-  
-  /**
-   * Rebans a ban
-   *
-   * @param integer $id     The id of the ban to reban
-   * @noreturn
-   */
-  public static function rebanBan($id)
-  {
-    BansWriter::reban($id);
   }
   
   
@@ -1199,13 +1188,13 @@ class SB_API
    */
   public static function loadTranslations($file)
   {
-    $phrases      = Env::get('phrases');
+    $phrases      = SBConfig::getEnv('phrases');
     
     if(!file_exists($file))
       throw new Exception($phrases['file_does_not_exist']);
     
     $translations = Util::parse_ini_file($file);
-    Env::set('phrases', array_merge($phrases, $translations['phrases']));
+    SBConfig::setEnv('phrases', array_merge($phrases, $translations['phrases']));
   }
 }
 ?>

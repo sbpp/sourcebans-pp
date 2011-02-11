@@ -1,26 +1,19 @@
 <?php
 require_once 'api.php';
 
-$config = Env::get('config');
+/*
+@todo somehow allow default page selection again
+$config = SBConfig::getEnv('config');
+$config['config.defaultpage']
+*/
 
-switch($config['config.defaultpage'])
+$pageid = SBConfig::getVar('p', 'dashboard');
+
+if (file_exists(sprintf("%s/%s.php", PAGES_DIR, $pageid)))
 {
-  case 1:
-    $active = 'banlist.php';
-    break;
-  case 2:
-    $active = 'servers.php';
-    break;
-  case 3:
-    $active = 'submitban.php';
-    break;
-  case 4:
-    $active = 'protestban.php';
-    break;
-  default:
-    $active = 'dashboard.php';
+  // @todo Once a static loader method is made in SBConfig or Page class
 }
 
-Env::set('active', $active);
-require_once $active;
-?>
+
+//SBConfig::setEnv('active', $active);
+//require_once $active;

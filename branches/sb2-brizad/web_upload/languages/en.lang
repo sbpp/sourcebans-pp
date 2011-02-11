@@ -259,7 +259,6 @@ total_submissions      = Total submissions
 type                   = Type
 unban                  = Unban
 unban_desc             = Remove bans
-unbanned               = Unbanned
 unbanned_by            = Unbanned by
 unban_all_bans         = Unban all bans
 unban_group_bans       = Unban group bans

@@ -44,7 +44,7 @@ class SBUpdater
   
   function getCurrentVersion()
   {
-    $config  = Env::get('config');
+    $config  = SBConfig::getEnv('config');
     $version = $config['config.version'];
     
     return isset($version) && is_numeric($version) ? $version : -1;

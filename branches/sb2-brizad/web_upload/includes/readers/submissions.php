@@ -16,15 +16,15 @@ class SubmissionsReader extends SBReader
   
   public function &execute()
   {
-    $db               = Env::get('db');
+    $db               = SBConfig::getEnv('db');
     
     // Fetch submissions
     $submission_count = $db->GetOne('SELECT COUNT(id)
-                                     FROM   ' . Env::get('prefix') . '_submissions
+                                     FROM   ' . SBConfig::getEnv('prefix') . '_submissions
                                      WHERE  archived = ?',
                                      array($this->archive ? 1 : 0));
     $submission_list  = $db->GetAssoc('SELECT   id, name, steam, ip, reason, server_id, subname, subemail, subip, time
-                                       FROM     ' . Env::get('prefix') . '_submissions
+                                       FROM     ' . SBConfig::getEnv('prefix') . '_submissions
                                        WHERE    archived = ?
                                        ORDER BY ' . $this->sort        . ' ' . ($this->order == SORT_DESC ? 'DESC' : 'ASC') .
                                        ($this->limit ? ' LIMIT ' . ($this->page - 1) * $this->limit . ',' . $this->limit : ''),

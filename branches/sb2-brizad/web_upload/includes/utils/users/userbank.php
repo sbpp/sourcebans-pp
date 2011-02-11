@@ -105,8 +105,8 @@ class CUserManager
   {
     if(isset($this->users[$id]) && !empty($password) && $password == $this->users[$id]['password'])
     {
-      $db = Env::get('db');
-      $db->Execute('UPDATE ' . Env::get('prefix') . '_admins SET lastvisit = UNIX_TIMESTAMP() WHERE id = ?', array($id));
+      $db = SBConfig::getEnv('db');
+      $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_admins SET lastvisit = UNIX_TIMESTAMP() WHERE id = ?', array($id));
       return true;
     }
     else 
@@ -116,8 +116,8 @@ class CUserManager
   
   public function login($username, $password, $save = true)
   {
-    $db = Env::get('db');
-    $id = $db->GetOne('SELECT id FROM ' . Env::get('prefix') . '_admins WHERE name = ?', array($username));
+    $db = SBConfig::getEnv('db');
+    $id = $db->GetOne('SELECT id FROM ' . SBConfig::getEnv('prefix') . '_admins WHERE name = ?', array($username));
     if($this->CheckLogin($this->encrypt_password($password), $id))
     {
       $expire = $save ? time() + LOGIN_COOKIE_LIFETIME : 0;

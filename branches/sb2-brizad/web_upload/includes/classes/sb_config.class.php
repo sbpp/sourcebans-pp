@@ -12,12 +12,23 @@
  */
 
 /**
- * This class holds Environmental vars that can be used anywhere in the code
- * For example the database object to perform mysql stuff
+ * This class sorts out where we are and sets up environment variables for different urls
+ * Environmental vars can be used anywhere in the code.  For example the database object
+ * to perform mysql stuff.
  */
-class Env
+class SBConfig
 {
-  private static $data = array();
+  const GETTYPE_ALL = 0;
+  const GETTYPE_GET = 1;
+  const GETTYPE_POST = 2;
+  const GETTYPE_COOKIE = 3;
+  const GETDATA_ANY = 0;
+  const GETDATA_BOOL = 1;
+  const GETDATA_INT = 2;
+  const GETDATA_FLOAT = 3;
+  const GETDATA_STRING = 4;
+  
+  private static $envdata = array();
   
   
   /**
@@ -26,30 +37,64 @@ class Env
    * @param string $key this is the identifier of the value you are adding
    * @param string $value The value to add into the array
    */
-  public static function set($key, $value)
+  public static function setEnv($key, $value)
   {
-    self::$data[$key] = $value;
+    self::$envdata[$key] = $value;
   }
-  
   
   /**
    * Gets the current value from the data array
    *
    * @param string $key The key to lookup in the array
-   * @throws SteambansException if the variable cannot be found
    * @return mixed null if the key cannot be found, or the value that was stored in the array
    */
-  public static function get($key)
+  public static function getEnv($key)
   {
-    return array_key_exists($key, self::$data) ? self::$data[$key] : null;
+    return array_key_exists($key, self::$envdata) ? self::$envdata[$key] : null;
   }
-}
 
-/**
- * This class sorts out where we are and sets up environment variables for different urls
- */
-class SBConfig
-{
+  public static function getVar($name, $default = null, $method = self::GETTYPE_ALL, $datatype = self::GETDATA_ANY)
+  {
+    $value = null;
+
+    if ((empty($method) || $method == self::GETTYPE_COOKIE) && array_key_exists($name, $_COOKIE))
+      $value = $_COOKIE[$name];
+    else if ((empty($method) || $method == self::GETTYPE_POST) && array_key_exists($name, $_POST))
+      $value = $_POST[$name];
+    else if ((empty($method) || $method == self::GETTYPE_GET) && array_key_exists($name, $_GET))                    
+      $value = $_GET[$name];
+
+    if (is_null($value) && !is_null($default))
+      $value = $default;
+
+    if (is_array($value))
+      $arrayvalue = &$value;
+    else
+      $arrayvalue = array($value);
+
+    foreach ($arrayvalue as $item)
+      switch ($datatype)
+      {
+        case self::GETDATA_BOOL:
+          $item = ($item ? true : false);
+          break;
+        case self::GETDATA_INT:
+          $item = (int)$item;
+          break;
+        case self::GETDATA_FLOAT:
+          $item = (float)$item;
+          break;
+        case self::GETDATA_STRING:
+          $item = (string)$item;
+          break;
+      }
+
+    if (!is_array($value))
+      $value = $arrayvalue[0];
+
+    return $value;
+  }
+
   /**
    * Main init function that sets all of our defines, and calls other setup functions later on
    */
@@ -76,6 +121,7 @@ class SBConfig
     define('PLUGINS_DIR',   BASE_PATH     . 'plugins/');
     define('THEMES_DIR',    BASE_PATH     . 'themes/');
     define('UPDATER_DIR',   BASE_PATH     . 'updater/');
+    define('PAGES_DIR',     BASE_PATH     . 'pages/');
     define('CLASS_DIR',     INCLUDES_PATH . 'classes/');
     define('LIB_DIR',       INCLUDES_PATH . 'libs/');
     define('READERS_DIR',   INCLUDES_PATH . 'readers/');
@@ -154,11 +200,7 @@ class SBConfig
     require_once CLASS_DIR   . 'sb_debug.class.php';
     require_once UTILS_DIR   . 'util.php';
     require_once WRITERS_DIR . 'logs.php';
-    if(is_file(BASE_PATH .'config.php')){
-        require_once BASE_PATH   . 'config.php';
-    }else{
-        header('Location: install/');
-    }
+    require_once BASE_PATH   . 'config.php';
   }
   
   
@@ -168,8 +210,8 @@ class SBConfig
   private static function setup_globals()
   {
     // Set up global variables
-    Env::set('active',   basename($_SERVER['PHP_SELF']));
-    Env::set('prefix',   DB_PREFIX);
+    self::setEnv('active',   basename($_SERVER['PHP_SELF']));
+    self::setEnv('prefix',   DB_PREFIX);
     
     // Set up database connection
     $GLOBALS['ADODB_FETCH_MODE'] = ADODB_FETCH_ASSOC;
@@ -178,17 +220,17 @@ class SBConfig
 
     $db = NewADOConnection(DB_TYPE . '://' . DB_USER . ':' . rawurlencode(DB_PASS) . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
     $db->Execute('SET NAMES "UTF8"');
-    Env::set('db', $db);
+    self::setEnv('db', $db);
     
     // Set up caching
     require_once CLASS_DIR   . 'filecache.class.php';
-    Env::set('sbcache', new SBFileCache(CACHE_DIR, new SBGZCompressor(1)));
+    self::setEnv('sbcache', new SBFileCache(CACHE_DIR, new SBGZCompressor(1)));
     
     // Fetch settings
     require_once READERS_DIR . 'settings.php';
     $settings = new SettingsReader();
     $config   = $settings->executeCached(ONE_DAY);
-    Env::set('config',   $config);
+    self::setEnv('config',   $config);
     
     // Set timezone
     $timezone = $config['config.timezone'] + $config['config.summertime'];
@@ -197,14 +239,14 @@ class SBConfig
     // Set up user manager
     require_once UTILS_DIR   . 'users/userbank.php';
     $userbank = new CUserManager();
-    Env::set('userbank', $userbank);
+    self::setEnv('userbank', $userbank);
     
     // Fetch translations
     require_once READERS_DIR . 'translations.php';
     $translations_reader           = new TranslationsReader();
     $translations_reader->language = $userbank->is_logged_in() ? $userbank->GetProperty('language') : $config['config.language'];
     $translations                  = $translations_reader->executeCached(ONE_DAY);
-    Env::set('phrases',  $translations['phrases']);
+    self::setEnv('phrases',  $translations['phrases']);
     
     // Set ADODB language
     if(file_exists(LIB_DIR . 'adodb/lang/adodb-' . $translations_reader->language . '.inc.php'))
@@ -213,7 +255,7 @@ class SBConfig
     // Fetch quotes
     require_once READERS_DIR . 'quotes.php';
     $quotes   = new QuotesReader();
-    Env::set('quotes',   $quotes->executeCached(ONE_DAY));
+    self::setEnv('quotes',   $quotes->executeCached(ONE_DAY));
   }
 }
 ?>

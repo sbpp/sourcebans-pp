@@ -12,7 +12,7 @@
  * $Id: sajax.php 140 2009-02-11 18:30:00Z tsunami $
  * =============================================================================
  */
-$userbank = Env::get('userbank');
+$userbank = SBConfig::getEnv('userbank');
 
 if($userbank->is_logged_in())
 {
@@ -39,7 +39,6 @@ if($userbank->is_logged_in())
   sAJAX::register('ServerAdmins');
   sAJAX::register('SelectTheme');
   sAJAX::register('SetWebGroup');
-  sAJAX::register('UnbanBan');
   sAJAX::register('Version');
 }
 
@@ -52,8 +51,8 @@ function AddServerGroup($admins, $id)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
       throw new Exception($phrases['access_denied']);
@@ -77,8 +76,8 @@ function ArchiveProtest($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
@@ -91,7 +90,7 @@ function ArchiveProtest($id, $name)
       'title'    => 'Protest archived',
       'message'  => 'The protest for "' . $name . '" has been archived.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_bans.php'
+        '_' => 'admin_bans.php'
       ))
     );
   }
@@ -108,8 +107,8 @@ function ArchiveSubmission($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
@@ -122,7 +121,7 @@ function ArchiveSubmission($id, $name)
       'title'    => 'Submission archived',
       'message'  => 'The submission for "' . $name . '" has been archived.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_bans.php'
+        '_' => 'admin_bans.php'
       ))
     );
   }
@@ -137,7 +136,7 @@ function ArchiveSubmission($id, $name)
 
 function BanExpires($id, $ends)
 {
-  $phrases = Env::get('phrases');
+  $phrases = SBConfig::getEnv('phrases');
   $secs    = $ends - time();
   
   return array(
@@ -150,8 +149,8 @@ function ClearActions()
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER')))
       throw new Exception($phrases['access_denied']);
@@ -162,7 +161,7 @@ function ClearActions()
       'title'    => 'Actions cleared',
       'message'  => 'The actions have been successfully cleared.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_admins.php'
+        '_' => 'admin_admins.php'
       ))
     );
   }
@@ -184,8 +183,8 @@ function ClearLogs()
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER')))
       throw new Exception($phrases['access_denied']);
@@ -196,7 +195,7 @@ function ClearLogs()
       'title'    => 'Logs cleared',
       'message'  => 'The logs have been successfully cleared.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_settings.php'
+        '_' => 'admin_settings.php'
       ))
     );
   }
@@ -213,8 +212,8 @@ function DeleteAdmin($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_ADMINS')))
       throw new Exception($phrases['access_denied']);
@@ -227,7 +226,7 @@ function DeleteAdmin($id, $name)
       'title'    => 'Admin deleted',
       'message'  => 'The admin "' . $name . '" has been deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_admins.php'
+        '_' => 'admin_admins.php'
       ))
     );
   }
@@ -244,8 +243,8 @@ function DeleteBan($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_BANS')))
       throw new Exception($phrases['access_denied']);
@@ -261,7 +260,7 @@ function DeleteBan($id, $name)
       'title'    => 'Ban deleted',
       'message'  => 'The ban for "' . $name . '" (' . $identity . ') has been deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../banlist.php'
+        '_' => 'banlist.php'
       ))
     );
   }
@@ -278,8 +277,8 @@ function DeleteGroup($id, $name, $type)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_GROUPS')))
       throw new Exception($phrases['access_denied']);
@@ -292,7 +291,7 @@ function DeleteGroup($id, $name, $type)
       'title'    => 'Group deleted',
       'message'  => 'The group "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_groups.php'
+        '_' => 'admin_groups.php'
       ))
     );
   }
@@ -309,8 +308,8 @@ function DeleteMod($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_MODS')))
       throw new Exception($phrases['access_denied']);
@@ -323,7 +322,7 @@ function DeleteMod($id, $name)
       'title'    => 'Mod deleted',
       'message'  => 'The mod "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_mods.php'
+        '_' => 'admin_mods.php'
       ))
     );
   }
@@ -340,8 +339,8 @@ function DeleteProtest($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTESTS')))
       throw new Exception($phrases['access_denied']);
@@ -354,7 +353,7 @@ function DeleteProtest($id, $name)
       'title'    => 'Protest deleted',
       'message'  => 'The protest for "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_bans.php'
+        '_' => 'admin_bans.php'
       ))
     );
   }
@@ -371,8 +370,8 @@ function DeleteServer($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'DELETE_SERVERS')))
       throw new Exception($phrases['access_denied']);
@@ -385,7 +384,7 @@ function DeleteServer($id, $name)
       'title'    => 'Server deleted',
       'message'  => 'The server "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_servers.php'
+        '_' => 'admin_servers.php'
       ))
     );
   }
@@ -402,8 +401,8 @@ function DeleteSubmission($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')))
       throw new Exception($phrases['access_denied']);
@@ -416,7 +415,7 @@ function DeleteSubmission($id, $name)
       'title'    => 'Submission deleted',
       'message'  => 'The submission for "' . $name . '" has been successfully deleted.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_bans.php'
+        '_' => 'admin_bans.php'
       ))
     );
   }
@@ -452,8 +451,8 @@ function KickPlayer($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(SM_ROOT . SM_KICK))
       throw new Exception($phrases['access_denied']);
@@ -486,45 +485,12 @@ function KickPlayer($id, $name)
   }
 }
 
-function Reban($id, $name)
-{
-  try
-  {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('OWNER', 'ADD_BANS')))
-      throw new Exception($phrases['access_denied']);
-    
-    $ban      = SB_API::getBan($id);
-    
-    $identity = ($ban['type'] == STEAM_BAN_TYPE ? $ban['steam'] : $ban['ip']);
-    
-    SB_API::rebanBan($id);
-    
-    return array(
-      'title'    => 'Rebanned',
-      'message'  => 'You have rebanned "' . $name . '" (' . $identity . ')',
-      'redirect' => Util::buildUrl(array(
-        '_' => '../banlist.php'
-      ))
-    );
-  }
-  catch(Exception $e)
-  {
-    return array(
-      'message' => 'An error occured while rebanning "' . $name . '": ',
-      'error'   => $e->getMessage()
-    );
-  }
-}
-
 function RestoreProtest($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'BAN_PROTEST')))
       throw new Exception($phrases['access_denied']);
@@ -537,7 +503,7 @@ function RestoreProtest($id, $name)
       'title'    => 'Protest restored',
       'message'  => 'The protest for "' . $name . '" has been successfully restored.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_bans.php'
+        '_' => 'admin_bans.php'
       ))
     );
   }
@@ -554,8 +520,8 @@ function RestoreSubmission($id, $name)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'BAN_SUBMISSIONS')))
       throw new Exception($phrases['access_denied']);
@@ -568,7 +534,7 @@ function RestoreSubmission($id, $name)
       'title'    => 'Submission restored',
       'message'  => 'The submission for "' . $name . '" has been successfully restored.',
       'redirect' => Util::buildUrl(array(
-        '_' => '../admin_bans.php'
+        '_' => 'admin_bans.php'
       ))
     );
   }
@@ -585,7 +551,7 @@ function SelectTheme($theme)
 {
   try
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     $file    = THEMES_DIR . $theme . '/theme.info';
     
     if(!file_exists($file))
@@ -696,8 +662,8 @@ function SetWebGroup($admins, $id)
 {
   try
   {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(!$userbank->HasAccess(array('OWNER', 'EDIT_ADMINS')))
       throw new Exception($phrases['access_denied']);
@@ -715,44 +681,11 @@ function SetWebGroup($admins, $id)
   }
 }
 
-function UnbanBan($id, $name, $reason)
-{
-  try
-  {
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
-    
-    if(!$userbank->HasAccess(array('OWNER', 'UNBAN_BANS')))
-      throw new Exception($phrases['access_denied']);
-    
-    $ban      = SB_API::getBan($id);
-    
-    $identity = ($ban['type'] == STEAM_BAN_TYPE ? $ban['steam'] : $ban['ip']);
-    
-    SB_API::unbanBan($id, $reason);
-    
-    return array(
-      'title'    => 'Unbanned',
-      'message'  => 'You have unbanned "' . $name . '" (' . $identity . ')',
-      'redirect' => Util::buildUrl(array(
-        '_' => '../banlist.php'
-      ))
-    );
-  }
-  catch(Exception $e)
-  {
-    return array(
-      'message' => 'An error occured while unbanning "' . $name . '": ',
-      'error'   => $e->getMessage()
-    );
-  }
-}
-
 function Version()
 {
   try
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     $version = @file_get_contents('http://www.sourcebans.net/public/versionchecker/?type=rel');
     
     if(empty($version) || strlen($version) > 8)

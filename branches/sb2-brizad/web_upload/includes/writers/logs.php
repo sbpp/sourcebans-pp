@@ -13,9 +13,9 @@ class LogsWriter
    */
   public static function add($type, $title, $message)
   {
-    $db       = Env::get('db');
-    $phrases  = Env::get('phrases');
-    $userbank = Env::get('userbank');
+    $db       = SBConfig::getEnv('db');
+    $phrases  = SBConfig::getEnv('phrases');
+    $userbank = SBConfig::getEnv('userbank');
     
     if(empty($type)    || !is_string($type))
       throw new Exception($phrases['invalid_type']);
@@ -31,7 +31,7 @@ class LogsWriter
     $function .= isset($bt[5]['file']) ? $bt[5]['file'] . ' - ' . $bt[5]['line'] . "\n" : '';
     $function .= isset($bt[6]['file']) ? $bt[6]['file'] . ' - ' . $bt[6]['line'] . "\n" : '';
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_log (type, title, message, function, query, admin_id, admin_ip, time)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_log (type, title, message, function, query, admin_id, admin_ip, time)
                   VALUES      (?, ?, ?, ?, ?, ?, ?, UNIX_TIMESTAMP())',
                   array($type, $title, $message, $function, $_SERVER['QUERY_STRING'], $userbank->GetID(), $_SERVER['REMOTE_ADDR']));
     
@@ -52,9 +52,9 @@ class LogsWriter
    */
   public static function clear()
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('TRUNCATE TABLE ' . Env::get('prefix') . '_log');
+    $db->Execute('TRUNCATE TABLE ' . SBConfig::getEnv('prefix') . '_log');
     
     $logs_reader = new LogsReader();
     $logs_reader->removeCacheFile();

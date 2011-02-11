@@ -16,8 +16,8 @@ class ServersWriter
    */
   public static function add($ip, $port, $rcon, $mod, $enabled = true, $groups = array())
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($ip)   || !is_string($ip))
       throw new Exception($phrases['invalid_ip']);
@@ -26,7 +26,7 @@ class ServersWriter
     if(empty($mod)  || !is_numeric($mod))
       throw new Exception('Invalid mod ID specified.');
     
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_servers (ip, port, rcon, mod_id, enabled)
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_servers (ip, port, rcon, mod_id, enabled)
                   VALUES      (?, ?, ?, ?, ?)',
                   array($ip, $port, $rcon, $mod, $enabled ? 1 : 0));
     
@@ -34,7 +34,7 @@ class ServersWriter
     
     if(is_array($groups) && !empty($groups))
     {
-      $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_servers_srvgroups (server_id, group_id)
+      $query = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_servers_srvgroups (server_id, group_id)
                              VALUES      (?, ?)');
       
       foreach($groups as $group)
@@ -58,15 +58,15 @@ class ServersWriter
    */
   public static function delete($id)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($id) || !is_numeric($id))
       throw new Exception($phrases['invalid_id']);
     
     $db->Execute('DELETE    se, gs
-                  FROM      ' . Env::get('prefix') . '_servers           AS se
-                  LEFT JOIN ' . Env::get('prefix') . '_servers_srvgroups AS gs ON gs.server_id = se.id
+                  FROM      ' . SBConfig::getEnv('prefix') . '_servers           AS se
+                  LEFT JOIN ' . SBConfig::getEnv('prefix') . '_servers_srvgroups AS gs ON gs.server_id = se.id
                   WHERE     se.id = ?',
                   array($id));
     
@@ -91,8 +91,8 @@ class ServersWriter
    */
   public static function edit($id, $ip = null, $port = null, $rcon = null, $mod = null, $enabled = null, $groups = null)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     $server  = array();
     
@@ -110,18 +110,18 @@ class ServersWriter
       $server['enabled'] = $enabled ? 1 : 0;
     if(!is_null($groups)  && is_array($groups))
     {
-      $db->Execute('DELETE FROM ' . Env::get('prefix') . '_servers_srvgroups
+      $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_servers_srvgroups
                     WHERE       server_id = ?',
                     array($id));
       
-      $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_servers_srvgroups (server_id, group_id)
+      $query = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_servers_srvgroups (server_id, group_id)
                              VALUES      (?, ?)');
       
       foreach($groups as $group)
         $db->Execute($query, array($id, $group));
     }
     
-    $db->AutoExecute(Env::get('prefix') . '_servers', $server, 'UPDATE', 'id = ' . $id);
+    $db->AutoExecute(SBConfig::getEnv('prefix') . '_servers', $server, 'UPDATE', 'id = ' . $id);
     
     $servers_reader = new ServersReader();
     $servers_reader->removeCacheFile();
@@ -139,7 +139,7 @@ class ServersWriter
    */
   public static function import($file, $tmp_name = '')
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(!file_exists($tmp_name))
       $tmp_name = $file;

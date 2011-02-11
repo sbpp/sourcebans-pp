@@ -9,18 +9,19 @@ class PluginsWriter
    * @param string $plugin The class name of the plugin to add
    * @noreturn
    */
-  public static function add($plugin)
+  public static function add($plugin, $enabled = 0)
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
+    $enabled = ($enabled == 1 ? 1 : 0);
     
     if(empty($plugin) || !is_string($plugin))
       throw new Exception($phrases['invalid_plugin']);
+
+    $db = SBConfig::getEnv('db');
     
-    $db = Env::get('db');
-    
-    $db->Execute('INSERT INTO ' . Env::get('prefix') . '_plugins (name)
-                  VALUES      (?)',
-                  array($plugin));
+    $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_plugins (name, enabled)
+                  VALUES      (?, ?)',
+                  array($plugin, $enabled));
     
     $plugins_reader = new PluginsReader();
     $plugins_reader->removeCacheFile();
@@ -36,14 +37,14 @@ class PluginsWriter
    */
   public static function delete($plugin)
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($plugin) || !is_string($plugin))
       throw new Exception($phrases['invalid_plugin']);
     
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('DELETE FROM ' . Env::get('prefix') . '_plugins
+    $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_plugins
                   WHERE       name = ?',
                   array($plugin));
     
@@ -62,14 +63,14 @@ class PluginsWriter
    */
   public static function disable($plugin)
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($plugin) || !is_string($plugin))
       throw new Exception($phrases['invalid_plugin']);
     
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_plugins
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_plugins
                   SET    enabled = 0
                   WHERE  name  = ?',
                   array($plugin));
@@ -89,14 +90,14 @@ class PluginsWriter
    */
   public static function enable($plugin)
   {
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($plugin) || !is_string($plugin))
       throw new Exception($phrases['invalid_plugin']);
     
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('UPDATE ' . Env::get('prefix') . '_plugins
+    $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_plugins
                   SET    enabled = 1
                   WHERE  name  = ?',
                   array($plugin));

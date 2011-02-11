@@ -8,11 +8,11 @@ class SettingsReader extends SBReader
   
   public function &execute()
   {
-    $db       = Env::get('db');
+    $db       = SBConfig::getEnv('db');
     
     // Fetch settings
     $settings = $db->GetAssoc('SELECT   name, value
-                               FROM     ' . Env::get('prefix') . '_settings
+                               FROM     ' . SBConfig::getEnv('prefix') . '_settings
                                ORDER BY name');
     
     list($settings) = SBPlugins::call('OnGetSettings', $settings);

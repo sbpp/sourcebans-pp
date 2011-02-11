@@ -4,19 +4,24 @@ require_once WRITERS_DIR . 'plugins.php';
 
 abstract class SBPlugin
 {
+  public $name;
+  public $author;
+  public $desc;
+  public $version;
+  public $url;
+
   /**
-   * Registers the plugin for use
-   *
-   * @param string $name    The name of the plugin
-   * @param string $author  The author of the plugin
-   * @param string $desc    The description of the plugin
-   * @param float  $version The version number of the plugin
-   * @param string $url     The URL of the plugin
+   * Basic plugin defaults if not strictly definded on in inherited class
+   * 
    * @noreturn
    */
-  public function __construct($name, $author, $desc, $version, $url)
+  public function setInfo($name = null, $author = null, $desc = null, $version = null, $url = null)
   {
-    SBPlugins::register(get_class($this), $name, $author, $desc, $version, $url);
+    if (!empty($name)) $this->name = $name;
+    if (!empty($author)) $this->author = $author;
+    if (!empty($desc)) $this->desc = $desc;
+    if (!empty($version)) $this->version = $version;
+    if (!empty($url)) $this->url = $url;
   }
 }
 
@@ -75,8 +80,14 @@ class SBPlugins
   {
     // Loop through all plugin files and include them
     foreach(glob(PLUGINS_DIR . '*.php') as $plugin)
+    {
+      $filename = pathinfo($plugin, PATHINFO_FILENAME);
       require_once $plugin;
-    
+
+      if (class_exists($filename) && method_exists($filename, '__construct'))
+        SBPlugins::register(new $filename());
+    }
+
     // Remove deleted plugins from database
     $plugins_reader = new PluginsReader();
     $plugins        = $plugins_reader->executeCached(ONE_DAY);
@@ -92,31 +103,33 @@ class SBPlugins
   /*
    * Registers a plugin for use
    *
-   * @param string $class   The class name of the plugin to register
-   * @param string $name    The name of the plugin
-   * @param string $author  The author of the plugin
-   * @param string $desc    The description of the plugin
-   * @param string $version The version number of the plugin
-   * @param string $url     The URL of the plugin
-   * @noreturn
+   * @param mixed  $plugin   The plugin object to register
+   * @retrun bool  true/false if registration worked
    */
-  public static function register($class, $name, $author, $desc, $version, $url)
+  public static function register($plugin)
   {
+    if (is_object(!$plugin))
+      return false;
+
+    $class = get_class($plugin);
+
     if(!array_key_exists($class, self::$plugins))
-      self::$plugins[$class] = array('name'    => $name,
-                                     'author'  => $author,
-                                     'desc'    => $desc,
-                                     'version' => $version,
-                                     'url'     => $url,
-                                     'enabled' => true);
-    
+      self::$plugins[$class] = array('name'    => $class->name,
+                                     'author'  => $class->author,
+                                     'desc'    => $class->desc,
+                                     'version' => $class->version,
+                                     'url'     => $class->url,
+                                     'enabled' => false,
+                                     'instance' => &$plugin );
+
     $plugins_reader = new PluginsReader();
     $plugins        = $plugins_reader->executeCached(ONE_DAY);
-    
+
     if(isset($plugins[$class]))
       self::$plugins[$class]['enabled'] = $plugins[$class];
     else
       PluginsWriter::add($class);
+
+    return true;
   }
 }
-?>

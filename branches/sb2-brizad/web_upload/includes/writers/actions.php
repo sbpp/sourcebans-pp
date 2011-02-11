@@ -10,9 +10,9 @@ class ActionsWriter
    */
   public static function clear()
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
-    $db->Execute('TRUNCATE TABLE ' . Env::get('prefix') . '_actions');
+    $db->Execute('TRUNCATE TABLE ' . SBConfig::getEnv('prefix') . '_actions');
     
     $actions_reader = new ActionsReader();
     $actions_reader->removeCacheFile();

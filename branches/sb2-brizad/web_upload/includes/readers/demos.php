@@ -11,11 +11,11 @@ class DemosReader extends SBReader
   
   public function &execute()
   {
-    $db    = Env::get('db');
+    $db    = SBConfig::getEnv('db');
     
     // Fetch demos
     $demos = $db->GetAssoc('SELECT   id, filename
-                            FROM     ' . Env::get('prefix') . '_demos
+                            FROM     ' . SBConfig::getEnv('prefix') . '_demos
                             WHERE    ban_id = ?
                               AND    type   = ?
                             ORDER BY id',

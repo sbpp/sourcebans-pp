@@ -189,7 +189,7 @@ class Util
    */
   public static function mail($to, $from, $subject, $message)
   {
-    $config = Env::get('config');
+    $config = SBConfig::getEnv('config');
     $mail   = new PHPMailer(true);
     
     // If SMTP is enabled
@@ -274,7 +274,7 @@ class Util
    */
   public static function buildQuery($formdata = array())
   {
-    $file  = Env::get('active');
+    $file  = SBConfig::getEnv('active');
     $query = $_GET;
     
     foreach($formdata as $name => $value)
@@ -307,7 +307,7 @@ class Util
       unset($formdata['_']);
     }
     else
-      $file = Env::get('active');
+      $file = SBConfig::getEnv('active');
     
     $url       = dirname($_SERVER['SCRIPT_NAME']) . '/' . $file;
     if(!empty($formdata))

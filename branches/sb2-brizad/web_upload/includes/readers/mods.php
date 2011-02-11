@@ -8,11 +8,11 @@ class ModsReader extends SBReader
   
   public function &execute()
   {
-    $db   = Env::get('db');
+    $db   = SBConfig::getEnv('db');
     
     // Fetch mods
     $mods = $db->GetAssoc('SELECT   id, name, folder, icon
-                           FROM     ' . Env::get('prefix') . '_mods
+                           FROM     ' . SBConfig::getEnv('prefix') . '_mods
                            ORDER BY name');
     
     list($mods) = SBPlugins::call('OnGetMods', $mods);

@@ -15,8 +15,8 @@ class GroupsWriter
    */
   public static function add($type, $name, $flags = '', $immunity = 0, $overrides = array())
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(empty($name) || !is_string($name))
       throw new Exception($phrases['invalid_name']);
@@ -26,14 +26,14 @@ class GroupsWriter
     switch($type)
     {
       case SERVER_GROUPS:
-        $db->Execute('INSERT INTO ' . Env::get('prefix') . '_srvgroups (name, flags, immunity)
+        $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_srvgroups (name, flags, immunity)
                       VALUES      (?, ?, ?)',
                       array($name, $flags, $immunity));
         $id = $db->Insert_ID();
         
         if(is_array($overrides) && !empty($overrides))
         {
-          $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_srvgroups_overrides (groupd_id, type, name, access)
+          $query = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_srvgroups_overrides (groupd_id, type, name, access)
                                  VALUES      (?, ?, ?, ?)');
           
           foreach($overrides as $override)
@@ -42,7 +42,7 @@ class GroupsWriter
         
         break;
       case WEB_GROUPS:
-        $db->Execute('INSERT INTO ' . Env::get('prefix') . '_groups (name)
+        $db->Execute('INSERT INTO ' . SBConfig::getEnv('prefix') . '_groups (name)
                       VALUES      (?)',
                       array($name));
         $id = $db->Insert_ID();
@@ -74,26 +74,26 @@ class GroupsWriter
    */
   public static function delete($id, $type)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     switch($type)
     {
       case SERVER_GROUPS:
         $db->Execute('DELETE    sg, ag
-                      FROM      ' . Env::get('prefix') . '_srvgroups        AS sg
-                      LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
+                      FROM      ' . SBConfig::getEnv('prefix') . '_srvgroups        AS sg
+                      LEFT JOIN ' . SBConfig::getEnv('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
                       WHERE     sg.id = ?',
                       array($id));
         break;
       case WEB_GROUPS:
-        $db->Execute('UPDATE ' . Env::get('prefix') . '_admins
+        $db->Execute('UPDATE ' . SBConfig::getEnv('prefix') . '_admins
                       SET    group_id = NULL
                       WHERE  group_id = ?',
                       array($id));
         $db->Execute('DELETE    wg, gp
-                      FROM      ' . Env::get('prefix') . '_groups             AS wg
-                      LEFT JOIN ' . Env::get('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
+                      FROM      ' . SBConfig::getEnv('prefix') . '_groups             AS wg
+                      LEFT JOIN ' . SBConfig::getEnv('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
                       WHERE     wg.id = ?',
                       array($id));
         break;
@@ -122,8 +122,8 @@ class GroupsWriter
    */
   public static function edit($id, $type, $name = null, $flags = null, $immunity = null, $overrides = null)
   {
-    $db      = Env::get('db');
-    $phrases = Env::get('phrases');
+    $db      = SBConfig::getEnv('db');
+    $phrases = SBConfig::getEnv('phrases');
     
     $group   = array();
     
@@ -140,18 +140,18 @@ class GroupsWriter
           $group['immunity'] = $immunity;
         if(!is_null($overrides) && is_array($overrides))
         {
-          $db->Execute('DELETE FROM ' . Env::get('prefix') . '_srvgroups_overrides
+          $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_srvgroups_overrides
                         WHERE       group_id = ?',
                         array($id));
           
-          $query = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_srvgroups_overrides (groupd_id, type, name, access)
+          $query = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_srvgroups_overrides (groupd_id, type, name, access)
                                  VALUES      (?, ?, ?, ?)');
           
           foreach($overrides as $override)
             $db->Execute($query, array($id, $override['type'], $override['name'], $override['access']));
         }
         
-        $db->AutoExecute(Env::get('prefix') . '_srvgroups', $group, 'UPDATE', 'id = ' . $id);
+        $db->AutoExecute(SBConfig::getEnv('prefix') . '_srvgroups', $group, 'UPDATE', 'id = ' . $id);
         
         break;
       case WEB_GROUPS:
@@ -161,14 +161,14 @@ class GroupsWriter
           $group['name'] = $name;
         if(!is_null($flags) && is_array($flags))
         {
-          $db->Execute('DELETE FROM ' . Env::get('prefix') . '_groups_permissions
+          $db->Execute('DELETE FROM ' . SBConfig::getEnv('prefix') . '_groups_permissions
                         WHERE       group_id = ?',
                         array($id));
           
           self::setFlags($id, $flags);
         }
         
-        $db->AutoExecute(Env::get('prefix') . '_groups',    $group, 'UPDATE', 'id = ' . $id);
+        $db->AutoExecute(SBConfig::getEnv('prefix') . '_groups',    $group, 'UPDATE', 'id = ' . $id);
         
         break;
       default:
@@ -194,7 +194,7 @@ class GroupsWriter
   {
     require_once UTILS_DIR . 'keyvalues/kvutil.php';
     
-    $phrases = Env::get('phrases');
+    $phrases = SBConfig::getEnv('phrases');
     
     if(!file_exists($tmp_name))
       $tmp_name = $file;
@@ -235,8 +235,8 @@ class GroupsWriter
   {
     require_once READERS_DIR . 'permissions.php';
     
-    $db                 = Env::get('db');
-    $query              = $db->Prepare('INSERT INTO ' . Env::get('prefix') . '_groups_permissions (groupd_id, permission_id)
+    $db                 = SBConfig::getEnv('db');
+    $query              = $db->Prepare('INSERT INTO ' . SBConfig::getEnv('prefix') . '_groups_permissions (groupd_id, permission_id)
                                         VALUES      (?, ?)');
     
     $permissions_reader = new PermissionsReader();

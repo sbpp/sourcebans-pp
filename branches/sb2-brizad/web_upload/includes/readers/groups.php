@@ -10,32 +10,32 @@ class GroupsReader extends SBReader
   
   public function &execute()
   {
-    $db = Env::get('db');
+    $db = SBConfig::getEnv('db');
     
     // Fetch groups, depending on type
     switch($this->type)
     {
       case SERVER_GROUPS:
         $groups = $db->GetAssoc('SELECT    sg.id, sg.name, sg.flags, sg.immunity, COUNT(ag.admin_id) AS admin_count
-                                 FROM      ' . Env::get('prefix') . '_srvgroups        AS sg
-                                 LEFT JOIN ' . Env::get('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
+                                 FROM      ' . SBConfig::getEnv('prefix') . '_srvgroups        AS sg
+                                 LEFT JOIN ' . SBConfig::getEnv('prefix') . '_admins_srvgroups AS ag ON ag.group_id = sg.id
                                  GROUP BY  ag.group_id
                                  ORDER BY  name');
         
         // Fetch group overrides
         foreach($groups as $id => &$group)
           $group['overrides'] = $db->GetAll('SELECT type, name, access
-                                             FROM   ' . Env::get('prefix') . '_srvgroups_overrides
+                                             FROM   ' . SBConfig::getEnv('prefix') . '_srvgroups_overrides
                                              WHERE  group_id = ?',
                                              array($id));
         
         break;
       case WEB_GROUPS:
         $groups = $db->GetAssoc('SELECT    wg.id, wg.name, GROUP_CONCAT(DISTINCT pe.name ORDER BY pe.name) AS flags, COUNT(ad.id) AS admin_count
-                                 FROM      ' . Env::get('prefix') . '_groups             AS wg
-                                 LEFT JOIN ' . Env::get('prefix') . '_admins             AS ad ON ad.group_id = wg.id
-                                 LEFT JOIN ' . Env::get('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
-                                 LEFT JOIN ' . Env::get('prefix') . '_permissions        AS pe ON pe.id       = gp.permission_id
+                                 FROM      ' . SBConfig::getEnv('prefix') . '_groups             AS wg
+                                 LEFT JOIN ' . SBConfig::getEnv('prefix') . '_admins             AS ad ON ad.group_id = wg.id
+                                 LEFT JOIN ' . SBConfig::getEnv('prefix') . '_groups_permissions AS gp ON gp.group_id = wg.id
+                                 LEFT JOIN ' . SBConfig::getEnv('prefix') . '_permissions        AS pe ON pe.id       = gp.permission_id
                                  GROUP BY  id
                                  ORDER BY  name');
         
