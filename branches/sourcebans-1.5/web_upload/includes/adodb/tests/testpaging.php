@@ -1,6 +1,6 @@
 <?php
 /* 
-V4.80 8 Mar 2006  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
+V4.80 8 Mar 2006  (c) 2000-2010 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. 
@@ -63,7 +63,7 @@ if (empty($driver) or $driver == 'mysql') {
 $db->debug = true;
 
 if (0) {
-$rs = &$db->Execute($sql);
+$rs = $db->Execute($sql);
 include_once('../toexport.inc.php');
 print "<pre>";
 print rs2csv($rs); # return a string

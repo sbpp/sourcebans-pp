@@ -10,7 +10,7 @@ try {
 	$dsn = 'pdo_mysql://root:@localhost/northwind?persist';
 	
 	if (!empty($dsn)) {
-		$DB =& NewADOConnection($dsn) || die("CONNECT FAILED");
+		$DB = NewADOConnection($dsn) || die("CONNECT FAILED");
 		$connstr = $dsn;
 	} else {
 	

@@ -1,6 +1,6 @@
 <?php
 /* 
-V4.94 23 Jan 2007  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
+V5.11 5 May 2010   (c) 2000-2010 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. See License.txt. 
@@ -16,11 +16,14 @@ V4.94 23 Jan 2007  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights rese
 if (!defined('ADODB_DIR')) die();
 
 class perf_oci8 extends ADODB_perf{
+
+	var $noShowIxora = 15; // if the sql for suspicious sql is taking too long, then disable ixora
 	
 	var $tablesSQL = "select segment_name as \"tablename\", sum(bytes)/1024 as \"size_in_k\",tablespace_name as \"tablespace\",count(*) \"extents\" from sys.user_extents 
 	   group by segment_name,tablespace_name";
 	 
 	var $version;
+	
 	var $createTableSQL = "CREATE TABLE adodb_logsql (
 		  created date NOT NULL,
 		  sql0 varchar(250) NOT NULL,
@@ -68,6 +71,7 @@ AND    b.name = 'sorts (memory)'",
 		"select value from v\$sysstat where name='physical writes'"),
 	
 	'Data Cache',
+	
 		'data cache buffers' => array( 'DATAC',
 		"select a.value/b.value  from v\$parameter a, v\$parameter b 
 			where a.name = 'db_cache_size' and b.name= 'db_block_size'",
@@ -75,8 +79,24 @@ AND    b.name = 'sorts (memory)'",
 		'data cache blocksize' => array('DATAC',
 			"select value from v\$parameter where name='db_block_size'",
 			'' ),			
+	
 	'Memory Pools',
-		'data cache size' => array('DATAC',
+		'Mem Max Target (11g+)' => array( 'DATAC',
+		"select value from v\$parameter where name = 'memory_max_target'",
+			'The memory_max_size is the maximum value to which memory_target can be set.' ),
+	'Memory target (11g+)' => array( 'DATAC',
+		"select value from v\$parameter where name = 'memory_target'",
+			'If memory_target is defined then SGA and PGA targets are consolidated into one memory_target.' ),
+		'SGA Max Size' => array( 'DATAC',
+		"select nvl(value,0)/1024.0/1024 || 'M' from v\$parameter where name = 'sga_max_size'",
+			'The sga_max_size is the maximum value to which sga_target can be set.' ),
+	'SGA target' => array( 'DATAC',
+		"select nvl(value,0)/1024.0/1024 || 'M'  from v\$parameter where name = 'sga_target'",
+			'If sga_target is defined then data cache, shared, java and large pool size can be 0. This is because all these pools are consolidated into one sga_target.' ),
+	'PGA aggr target' => array( 'DATAC',
+		"select value from v\$parameter where name = 'pga_aggregate_target'",
+			'If pga_aggregate_target is defined then this is the maximum memory that can be allocated for cursor operations such as sorts, group by, joins, merges. When in doubt, set it to 20% of sga_target.' ),
+	'data cache size' => array('DATAC',
 			"select value from v\$parameter where name = 'db_cache_size'",
 			'db_cache_size' ),
 		'shared pool size' => array('DATAC',
@@ -93,6 +113,7 @@ AND    b.name = 'sorts (memory)'",
 			"select value from v\$parameter where name='pga_aggregate_target'",
 			'program global area is private memory for sorting, and hash and bitmap merges - since oracle 9i (pga_aggregate_target)' ),
 
+		'dynamic memory usage' => array('CACHE', "select '-' from dual", '=DynMemoryUsage'),
 		
 		'Connections',
 		'current connections' => array('SESS',
@@ -109,8 +130,8 @@ AND    b.name = 'sorts (memory)'",
 			where name = 'free memory' and pool = 'shared pool'",
 		'Percentage of data cache actually in use - should be over 85%'),
 		
-		'shared pool utilization ratio' => array('RATIOU',
-		'select round((sga.bytes/p.value)*100,2)
+		'shared pool utilization ratio' => array('RATIOU', 
+		'select round((sga.bytes/case when p.value=0 then sga.bytes else to_number(p.value) end)*100,2)
 		from v$sgastat sga, v$parameter p
 		where sga.name = \'free memory\' and sga.pool = \'shared pool\'
 		and p.name = \'shared_pool_size\'',
@@ -157,6 +178,31 @@ having count(*) > 100)",'These are sql statements that should be using bind vari
 			"select value from v\$parameter where name = 'optimizer_index_cost_adj'",
 			'=WarnPageCost'),
 		
+	'Backup',
+		'Achivelog Mode' => array('BACKUP', 'select log_mode from v$database', 'To turn on archivelog:<br>
+	<pre>
+        SQLPLUS> connect sys as sysdba;
+        SQLPLUS> shutdown immediate;
+
+        SQLPLUS> startup mount exclusive;
+        SQLPLUS> alter database archivelog;
+        SQLPLUS> archive log start;
+        SQLPLUS> alter database open;
+</pre>'),
+	
+		'DBID' => array('BACKUP','select dbid from v$database','Primary key of database, used for recovery with an RMAN Recovery Catalog'),
+		'Archive Log Dest' => array('BACKUP', "SELECT NVL(v1.value,v2.value) 
+FROM v\$parameter v1, v\$parameter v2 WHERE v1.name='log_archive_dest' AND v2.name='log_archive_dest_10'", ''),
+	
+		'Flashback Area' => array('BACKUP', "select nvl(value,'Flashback Area not used') from v\$parameter where name=lower('DB_RECOVERY_FILE_DEST')", 'Flashback area is a folder where all backup data and logs can be stored and managed by Oracle. If Error: message displayed, then it is not in use.'),
+	
+		'Flashback Usage' => array('BACKUP', "select nvl('-','Flashback Area not used') from v\$parameter where name=lower('DB_RECOVERY_FILE_DEST')", '=FlashUsage', 'Flashback area usage.'),
+		
+		'Control File Keep Time' => array('BACKUP', "select value from v\$parameter where name='control_file_record_keep_time'",'No of days to keep RMAN info in control file. I recommend it be set to x2 or x3 times the frequency of your full backup.'),
+		'Recent RMAN Jobs' => array('BACKUP', "select '-' from dual", "=RMAN"),
+		
+		//		'Control File Keep Time' => array('BACKUP', "select value from v\$parameter where name='control_file_record_keep_time'",'No of days to keep RMAN info in control file. I recommend it be set to x2 or x3 times the frequency of your full backup.'),
+
 		false
 		
 	);
@@ -167,7 +213,36 @@ having count(*) > 100)",'These are sql statements that should be using bind vari
 		$savelog = $conn->LogSQL(false);	
 		$this->version = $conn->ServerInfo();
 		$conn->LogSQL($savelog);	
-		$this->conn =& $conn;
+		$this->conn = $conn;
+	}
+	
+	function RMAN()
+	{
+		$rs = $this->conn->Execute("select * from (select start_time, end_time, operation, status, mbytes_processed, output_device_type  
+			from V\$RMAN_STATUS order by start_time desc) where rownum <=10");
+		
+		$ret = rs2html($rs,false,false,false,false);		
+		return "&nbsp;<p>".$ret."&nbsp;</p>";
+		
+	}
+	function DynMemoryUsage()
+	{
+		if (@$this->version['version'] >= 11) {
+			$rs = $this->conn->Execute("select component, current_size/1024./1024 as \"CurrSize (M)\" from  V\$MEMORY_DYNAMIC_COMPONENTS");
+
+		} else
+			$rs = $this->conn->Execute("select name, round(bytes/1024./1024,2) as \"CurrSize (M)\" from  V\$sgainfo");
+
+			
+		$ret = rs2html($rs,false,false,false,false);		
+		return "&nbsp;<p>".$ret."&nbsp;</p>";
+	}
+	
+	function FlashUsage()
+	{
+        $rs = $this->conn->Execute("select * from  V\$FLASH_RECOVERY_AREA_USAGE");
+		$ret = rs2html($rs,false,false,false,false);		
+		return "&nbsp;<p>".$ret."&nbsp;</p>";
 	}
 	
 	function WarnPageCost($val)
@@ -184,7 +259,7 @@ having count(*) > 100)",'These are sql statements that should be using bind vari
 		else $s = '';
 		
 		return $s.'Percentage of indexed data blocks expected in the cache.
-			Recommended is 20 (fast disk array) to 50 (slower hard disks). Default is 0.
+			Recommended is 20 (fast disk array) to 30 (slower hard disks). Default is 0.
 			 See <a href=http://www.dba-oracle.com/oracle_tips_cbo_part1.htm>optimizer_index_caching</a>.';
 		}
 	
@@ -193,10 +268,10 @@ having count(*) > 100)",'These are sql statements that should be using bind vari
 		if ($this->version['version'] < 9) return 'Oracle 9i or later required';
 		
 		$rs = $this->conn->Execute("select a.mb,a.targ as pga_size_pct,a.pct from 
-	   (select round(pga_target_for_estimate/1024.0/1024.0,0) Mb,
+	   (select round(pga_target_for_estimate/1024.0/1024.0,0) MB,
 	   	   pga_target_factor targ,estd_pga_cache_hit_percentage pct,rownum as r 
 	   	   from v\$pga_target_advice) a left join
-	   (select round(pga_target_for_estimate/1024.0/1024.0,0) Mb,
+	   (select round(pga_target_for_estimate/1024.0/1024.0,0) MB,
 	   	   pga_target_factor targ,estd_pga_cache_hit_percentage pct,rownum as r 
 	   	   from v\$pga_target_advice) b on 
 	  a.r = b.r+1 where 
@@ -211,7 +286,7 @@ having count(*) > 100)",'These are sql statements that should be using bind vari
 	function Explain($sql,$partial=false) 
 	{
 		$savelog = $this->conn->LogSQL(false);
-		$rs =& $this->conn->SelectLimit("select ID FROM PLAN_TABLE");
+		$rs = $this->conn->SelectLimit("select ID FROM PLAN_TABLE");
 		if (!$rs) {
 			echo "<p><b>Missing PLAN_TABLE</b></p>
 <pre>
@@ -250,7 +325,7 @@ CREATE TABLE PLAN_TABLE (
 	
 		if ($partial) {
 			$sqlq = $this->conn->qstr($sql.'%');
-			$arr = $this->conn->GetArray("select distinct distinct sql1 from adodb_logsql where sql1 like $sqlq");
+			$arr = $this->conn->GetArray("select distinct sql1 from adodb_logsql where sql1 like $sqlq");
 			if ($arr) {
 				foreach($arr as $row) {
 					$sql = reset($row);
@@ -264,7 +339,7 @@ CREATE TABLE PLAN_TABLE (
 		$this->conn->BeginTrans();
 		$id = "ADODB ".microtime();
 
-		$rs =& $this->conn->Execute("EXPLAIN PLAN SET STATEMENT_ID='$id' FOR $sql");
+		$rs = $this->conn->Execute("EXPLAIN PLAN SET STATEMENT_ID='$id' FOR $sql");
 		$m = $this->conn->ErrorMsg();
 		if ($m) {
 			$this->conn->RollbackTrans();
@@ -272,7 +347,7 @@ CREATE TABLE PLAN_TABLE (
 			$s .= "<p>$m</p>";
 			return $s;
 		}
-		$rs =& $this->conn->Execute("
+		$rs = $this->conn->Execute("
 		select 
   '<pre>'||lpad('--', (level-1)*2,'-') || trim(operation) || ' ' || trim(options)||'</pre>'  as Operation, 
   object_name,COST,CARDINALITY,bytes
@@ -292,16 +367,18 @@ CONNECT BY prior id=parent_id and statement_id='$id'");
 	{
 		if ($this->version['version'] < 9) return 'Oracle 9i or later required';
 		
-		 $rs =& $this->conn->Execute("
-select  a.size_for_estimate as cache_mb_estimate,
-	case when a.size_factor=1 then 
-   		'&lt;&lt;= current'
-	 when a.estd_physical_read_factor-b.estd_physical_read_factor > 0 and a.estd_physical_read_factor<1 then
-		'- BETTER - '
-	else ' ' end as currsize, 
-   a.estd_physical_read_factor-b.estd_physical_read_factor as best_when_0
-   from (select size_for_estimate,size_factor,estd_physical_read_factor,rownum  r from v\$db_cache_advice) a , 
-   (select size_for_estimate,size_factor,estd_physical_read_factor,rownum r from v\$db_cache_advice) b where a.r = b.r-1");
+		 $rs = $this->conn->Execute("
+select  b.size_for_estimate as cache_mb_estimate, 
+	case when b.size_factor=1 then 
+   		'&lt;&lt;= Current'
+	 when a.estd_physical_read_factor-b.estd_physical_read_factor > 0.001 and b.estd_physical_read_factor<1 then
+		'- BETTER than current by ' || round((1-b.estd_physical_read_factor)/b.estd_physical_read_factor*100,2) || '%'
+	else ' ' end as RATING, 
+   b.estd_physical_read_factor \"Phys. Reads Factor\",
+   round((a.estd_physical_read_factor-b.estd_physical_read_factor)/b.estd_physical_read_factor*100,2) as \"% Improve\"
+   from (select size_for_estimate,size_factor,estd_physical_read_factor,rownum  r from v\$db_cache_advice order by 1) a , 
+   (select size_for_estimate,size_factor,estd_physical_read_factor,rownum r from v\$db_cache_advice order by 1) b where a.r = b.r-1
+  ");
 		if (!$rs) return false;
 		
 		/*
@@ -311,7 +388,7 @@ select  a.size_for_estimate as cache_mb_estimate,
 		if ($rs->EOF) {
 			$s .= "<p>Cache that is 50% of current size is still too big</p>";
 		} else {
-			$s .= "Ideal size of Data Cache is when \"best_when_0\" changes from a positive number and becomes zero.";
+			$s .= "Ideal size of Data Cache is when %Improve gets close to zero.";
 			$s .= rs2html($rs,false,false,false,false);
 		}
 		return $s;
@@ -412,7 +489,11 @@ order by
 		if (isset($_GET['sql'])) return $this->_SuspiciousSQL($numsql);
 		
 		$s = '';
+		$timer = time();
 		$s .= $this->_SuspiciousSQL($numsql);
+		$timer = time() - $timer;
+		
+		if ($timer > $this->noShowIxora) return $s;
 		$s .= '<p>';
 		
 		$save = $ADODB_CACHE_MODE;
@@ -420,7 +501,7 @@ order by
 		if ($this->conn->fetchMode !== false) $savem = $this->conn->SetFetchMode(false);
 		
 		$savelog = $this->conn->LogSQL(false);
-		$rs =& $this->conn->SelectLimit($sql);
+		$rs = $this->conn->SelectLimit($sql);
 		$this->conn->LogSQL($savelog);
 		
 		if (isset($savem)) $this->conn->SetFetchMode($savem);
@@ -484,14 +565,18 @@ order by
 		}
 		
 		$s = '';		
+		$timer = time();
 		$s .= $this->_ExpensiveSQL($numsql);
+		$timer = time() - $timer;
+		if ($timer > $this->noShowIxora) return $s;
+		
 		$s .= '<p>';
 		$save = $ADODB_CACHE_MODE;
 		$ADODB_CACHE_MODE = ADODB_FETCH_NUM;
 		if ($this->conn->fetchMode !== false) $savem = $this->conn->SetFetchMode(false);
 		
 		$savelog = $this->conn->LogSQL(false);
-		$rs =& $this->conn->Execute($sql);
+		$rs = $this->conn->Execute($sql);
 		$this->conn->LogSQL($savelog);
 		
 		if (isset($savem)) $this->conn->SetFetchMode($savem);
@@ -503,6 +588,30 @@ order by
 		}
 	
 		return $s;
+	}
+	
+	function clearsql() 
+	{
+		$perf_table = adodb_perf::table();
+	// using the naive "delete from $perf_table where created<".$this->conn->sysTimeStamp will cause the table to lock, possibly
+	// for a long time
+		$sql = 
+"DECLARE cnt pls_integer;
+BEGIN
+	cnt := 0;
+	FOR rec IN (SELECT ROWID AS rr FROM $perf_table WHERE created<SYSDATE) 
+	LOOP
+	  cnt := cnt + 1;
+	  DELETE FROM $perf_table WHERE ROWID=rec.rr;
+	  IF cnt = 1000 THEN
+	  	COMMIT;
+		cnt := 0;
+	  END IF;
+	END LOOP;
+	commit;
+END;";
+
+		$ok = $this->conn->Execute($sql);
 	}
 	
 }

@@ -31,7 +31,7 @@ include_once('DB.php');
 	$databasename = 'northwind';
 	
 	$dsn = "mssql://$username:$password@$hostname/$databasename";
-	$conn = &DB::connect($dsn);
+	$conn = DB::connect($dsn);
 	print "date=".$conn->GetOne('select getdate()')."<br>";
 	@$conn->query('create table tester (id integer)');
 	print "<p>Delete</p>"; flush();
