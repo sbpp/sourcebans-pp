@@ -31,12 +31,12 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1)
 }
 else
 {
-	$SteamID = $_POST['SteamID'];
-	$BanIP = $_POST['BanIP'];
+	$SteamID = htmlspecialchars($_POST['SteamID']);
+	$BanIP = htmlspecialchars($_POST['BanIP']);
 	$PlayerName = htmlspecialchars($_POST['PlayerName']);
-	$BanReason = $_POST['BanReason'];
+	$BanReason = htmlspecialchars($_POST['BanReason']);
 	$SubmitterName = htmlspecialchars($_POST['SubmitName']);
-	$Email = $_POST['EmailAddr'];
+	$Email = htmlspecialchars($_POST['EmailAddr']);
 	$SID = (int)$_POST['server'];
 	$validsubmit = true;
 	$errors = "";

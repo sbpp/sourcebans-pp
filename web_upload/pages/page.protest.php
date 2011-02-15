@@ -30,12 +30,12 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1)
 }
 else
 {
-	$Type = $_POST['Type'];
-	$SteamID = $_POST['SteamID'];
-	$IP = $_POST['IP'];
-	$PlayerName = $_POST['PlayerName'];
-	$UnbanReason = $_POST['BanReason'];
-	$Email = $_POST['EmailAddr'];
+	$Type = (int)$_POST['Type'];
+	$SteamID = htmlspecialchars($_POST['SteamID']);
+	$IP = htmlspecialchars($_POST['IP']);
+	$PlayerName = htmlspecialchars($_POST['PlayerName']);
+	$UnbanReason = htmlspecialchars($_POST['BanReason']);
+	$Email = htmlspecialchars($_POST['EmailAddr']);
 	$validsubmit = true;
 	$errors = "";
 	$BanId = -1;
@@ -50,7 +50,7 @@ else
 	}
 	elseif($Type==0)
 	{
-		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM ".DB_PREFIX."_bans WHERE authid=? AND RemovedBy IS NULL;");
+		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM ".DB_PREFIX."_bans WHERE authid=? AND RemovedBy IS NULL AND type=0;");
 		$res = $GLOBALS['db']->Execute($pre,array($SteamID));
 		if ($res->RecordCount() == 0)
 		{
@@ -75,7 +75,7 @@ else
 	}
 	elseif($Type==1)
 	{
-		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM ".DB_PREFIX."_bans WHERE ip=? AND RemovedBy IS NULL;");
+		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM ".DB_PREFIX."_bans WHERE ip=? AND RemovedBy IS NULL AND type=1;");
 		$res = $GLOBALS['db']->Execute($pre,array($IP));
 		if ($res->RecordCount() == 0)
 		{
