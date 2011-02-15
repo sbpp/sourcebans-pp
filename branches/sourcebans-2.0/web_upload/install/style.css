@@ -1,3 +1,11 @@
+a {
+  color: #2F4075;
+  text-decoration: none;
+}
+a:hover {
+  color: #000;
+  border-bottom: 1px dotted #000;
+}
 body {
   color: #000;
   font-size: 12px;
@@ -34,15 +42,8 @@ label {
   text-align: right;
 }
 p { margin: 10px 0; }
-th {
-  border: 1px solid #FFF;
-  padding: 2px 4px;
-  font-size: 10px;
-  text-align: left;
-  font-family: verdana, tahoma, arial;
-  border-width: 1px 1px 0 0;
-  background-color: #DFE3E9;
-  background-image: url("../themes/default/images/detail_head.gif");
+table, td, th, tr {
+  border-collapse: collapse;
 }
 
 .mainwrapper {
@@ -58,7 +59,6 @@ th {
 }
 .step {
   width: inherit;
-  height: 350px;
   position: absolute;
 }
 .step label, .step p, .step th { color: #FFF; }
@@ -73,8 +73,9 @@ th {
   position: absolute;
   text-align: center;
 }
-.buttons { bottom: 83px; }
+.buttons { bottom: 80px; }
 .languages { bottom: 0; }
+.languages a:hover { border-bottom: 0; }
 .languages p {
   font-size: 11px;
   margin-bottom: 5px;
@@ -82,7 +83,8 @@ th {
 
 .license {
   width: 100%;
-  height: 362px;
+  height: 352px;
+  margin-top: 5px;
 }
 #back, #next {
   width: 82px;
@@ -91,24 +93,21 @@ th {
 
 table.listtable {
   color: #444;
-  border: 1px solid #DDD;
   font-size: 10px;
   font-family: verdana, tahoma, arial;
   background-color: #FFF;
 }
-td.listtable_1 {
+table.listtable, table.listtable td, table.listtable tr {
   border: 1px solid #DDD;
-  padding: 2px 4px;
-  font-size: 10px;
-  font-family: verdana, tahoma, arial;
-  border-width: 0 0 1px 1px;
 }
-.green, .red {
- border: #DDD solid;
- padding: 2px 4px;
- font-size: 10px;
- font-family: verdana, tahoma, arial;
- border-width: 0px 0px 1px 1px;
+table.listtable td, table.listtable th {
+  padding: 2px 4px;
+}
+table.listtable th {
+  text-align: left;
+  border: 1px solid #FFF;
+  background-color: #DFE3E9;
+  background-image: url("../themes/default/images/detail_head.gif");
 }
 .green { background-color: #8bd659; }
 .red { background-color: #d65959; }

@@ -12,24 +12,24 @@ $writable = array(
 );
 
 // If a path is not writable, attempt to make it writable
-foreach($writable as $path)
-  if(!is_writable($path) && is_dir($path))
+foreach($writable as $name => $path)
+{
+  if(!is_writable($path))
+  {
     chmod($path, 0755);
+  }
+  
+  define('WRITABLE_' . strtoupper($name), is_writable($path));
+}
 
 
 // Server settings
 define('FILE_UPLOADS',      ini_get('file_uploads'));
-define('MYSQL_VERSION',     mysql_get_server_info());
+define('MYSQL_VERSION',     mysql_get_client_info());
 define('MYSQL_VERSION_REQ', '5.0');
 define('PHP_VERSION_REQ',   '5.2');
 define('REGISTER_GLOBALS',  ini_get('register_globals'));
 define('SAFE_MODE',         ini_get('safe_mode'));
-define('WRITABLE_CACHE',    is_writable($writable['cache']));
-define('WRITABLE_CONFIG',   is_writable($writable['config']));
-define('WRITABLE_DEMOS',    is_writable($writable['demos']));
-define('WRITABLE_GAMES',    is_writable($writable['games']));
-define('WRITABLE_MAPS',     is_writable($writable['maps']));
-define('WRITABLE_THEMES',   is_writable($writable['themes']));
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
 "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -118,9 +118,8 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
       </div>
       <div class="step" id="step-2">
         <h2>Step 2: System Requirements</h2>
-        <p></p>
         <h3>PHP Requirements</h3>
-        <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top: 3px;">
+        <table align="center" class="listtable" style="margin: 3px auto;" width="98%">
           <tr>
             <th>Setting</th>
             <th width="25%">Required</th>
@@ -129,38 +128,38 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
           <tr>
             <td class="listtable_1">PHP Version</td>
             <td class="listtable_1"><?php echo PHP_VERSION_REQ; ?></td>
-            <td class="<?php if(version_compare(PHP_VERSION, PHP_VERSION_REQ, '>=')): ?>green<?php else: ?>red<?php endif; ?>"><?php echo PHP_VERSION; ?></td>
+            <td class="<?php if(version_compare(PHP_VERSION, PHP_VERSION_REQ, '>=')): ?>green<?php else: ?>red<?php endif ?>"><?php echo PHP_VERSION; ?></td>
           </tr>
           <tr>
             <td class="listtable_1">File Uploads</td>
             <td class="listtable_1">On</td>
-            <?php if(FILE_UPLOADS): ?>
+<?php if(FILE_UPLOADS): ?>
             <td class="green">On</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">Off</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Register Globals</td>
             <td class="listtable_1">Off</td>
-            <?php if(REGISTER_GLOBALS): ?>
+<?php if(REGISTER_GLOBALS): ?>
             <td class="red">On</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="green">Off</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Safe Mode</td>
             <td class="listtable_1">Off</td>
-            <?php if(SAFE_MODE): ?>
+<?php if(SAFE_MODE): ?>
             <td class="red">On</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="green">Off</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
         </table>
         <h3>MySQL Requirements</h3>
-        <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top: 3px;">
+        <table align="center" class="listtable" style="margin: 3px auto;" width="98%">
           <tr>
             <th>Setting</th>
             <th width="25%">Required</th>
@@ -169,11 +168,11 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
           <tr>
             <td class="listtable_1">MySQL Version</td>
             <td class="listtable_1"><?php echo MYSQL_VERSION_REQ; ?></td>
-            <td class="<?php if(version_compare(MYSQL_VERSION, MYSQL_VERSION_REQ, '>=')): ?>green<?php else: ?>red<?php endif; ?>"><?php echo MYSQL_VERSION; ?></td>
+            <td class="<?php if(version_compare(MYSQL_VERSION, MYSQL_VERSION_REQ, '>=')): ?>green<?php else: ?>red<?php endif ?>"><?php echo MYSQL_VERSION; ?></td>
           </tr>
         </table>
         <h3>File System Requirements</h3>
-        <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top: 3px;">
+        <table align="center" class="listtable" style="margin: 3px auto;" width="98%">
           <tr>
             <th>Setting</th>
             <th width="25%">Required</th>
@@ -182,56 +181,56 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
           <tr>
             <td class="listtable_1">Query Cache Writable (/file_cache)</td>
             <td class="listtable_1">Yes</td>
-            <?php if(WRITABLE_CACHE): ?>
+<?php if(WRITABLE_CACHE): ?>
             <td class="green">Yes</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">No</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Demo Folder Writable (/demos)</td>
             <td class="listtable_1">Yes</td>
-            <?php if(WRITABLE_DEMOS): ?>
+<?php if(WRITABLE_DEMOS): ?>
             <td class="green">Yes</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">No</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Compiled Themes Writable (/themes_c)</td>
             <td class="listtable_1">Yes</td>
-            <?php if(WRITABLE_THEMES): ?>
+<?php if(WRITABLE_THEMES): ?>
             <td class="green">Yes</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">No</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Mod Icon Folder Writable (/images/games)</td>
             <td class="listtable_1">Yes</td>
-            <?php if(WRITABLE_GAMES): ?>
+<?php if(WRITABLE_GAMES): ?>
             <td class="green">Yes</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">No</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Map Image Folder Writable (/images/maps)</td>
             <td class="listtable_1">Yes</td>
-            <?php if(WRITABLE_MAPS): ?>
+<?php if(WRITABLE_MAPS): ?>
             <td class="green">Yes</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">No</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
           <tr>
             <td class="listtable_1">Config File Writable (/config.php)</td>
             <td class="listtable_1">Yes</td>
-            <?php if(WRITABLE_CONFIG): ?>
+<?php if(WRITABLE_CONFIG): ?>
             <td class="green">Yes</td>
-            <?php else: ?>
+<?php else: ?>
             <td class="red">No</td>
-            <?php endif; ?>
+<?php endif ?>
           </tr>
         </table>
       </div>
@@ -271,7 +270,7 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
         <h2>Step 4: Owner Information</h2>
         <form action="index.php" method="post">
           <fieldset>
-            <p>Please enter your admin details into the following fields.</p>
+            <p>Please enter your preferred admin details into the following fields.</p>
             <div>
               <label for="username">Username:</label>
               <input id="username" name="username" />
@@ -305,7 +304,7 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
       </div>
       <div class="step" id="step-5">
         <h2>Installation Complete</h2>
-        <p>Please delete the install folder and navigate to <a href="../index.php">your SourceBans install</a>.
+        <p>Please delete the install folder and navigate to <a href="../">your SourceBans install</a>.
       </div>
       <div class="buttons">
         <input id="back" type="button" value="&lt;&lt; Back" />
