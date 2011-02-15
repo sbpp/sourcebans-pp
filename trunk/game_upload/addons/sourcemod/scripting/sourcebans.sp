@@ -2,7 +2,7 @@
 * sourcebans.sp
 *
 * This file contains all Source Server Plugin Functions
-* @author InterWave Studios Development Team
+* @author SourceBans Development Team
 * @version 0.0.0.$Rev: 108 $
 * @copyright InterWave Studios (www.interwavestudios.com)
 * @package SourceBans
@@ -111,7 +111,7 @@ new serverID = -1;
 public Plugin:myinfo =
 {
 	name = "SourceBans",
-	author = "InterWave Studios Development Team",
+	author = "SourceBans Development Team",
 	description = "Advanced ban management for the Source engine",
 	version = SB_VERSION,
 	url = "http://www.sourcebans.net"
@@ -196,8 +196,20 @@ public OnPluginStart()
 	
 	BuildPath(Path_SM, logFile, sizeof(logFile), "logs/sourcebans.log");
 	g_bConnecting = true;
+	
+	// Catch config error and show link to FAQ
+	if(!SQL_CheckConfig("sourcebans"))
+	{
+		if(ReasonMenuHandle != INVALID_HANDLE)
+			CloseHandle(ReasonMenuHandle);
+		if(HackingMenuHandle != INVALID_HANDLE)
+			CloseHandle(HackingMenuHandle);
+		LogToFile(logFile, "Database failure: Could not find Database conf \"sourcebans\". See FAQ: http://sourcebans.net/node/19");
+		SetFailState("Database failure: Could not find Database conf \"sourcebans\"");
+		return;
+	}
 	SQL_TConnect(GotDatabase, "sourcebans");
-		
+	
 	BuildPath(Path_SM,groupsLoc,sizeof(groupsLoc),"configs/admin_groups.cfg");
 	
 	BuildPath(Path_SM,adminsLoc,sizeof(adminsLoc),"configs/admins.cfg");
@@ -925,7 +937,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	if (hndl == INVALID_HANDLE)
 	{
-		LogToFile(logFile, "Database failure: %s", error);
+		LogToFile(logFile, "Database failure: %s. See FAQ: http://www.sourcebans.net/node/20", error);
 		g_bConnecting = false;
 		return;
 	}
@@ -1329,6 +1341,12 @@ public InsertAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any
 // ProcessQueueCallback is called as the result of selecting all the rows from the queue table
 public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
+	if (hndl == INVALID_HANDLE || strlen(error) > 0)
+	{
+		LogToFile(logFile, "Failed to retrieve queued bans from sqlite database, %s", error);
+		return;
+	}
+
 	decl String:auth[30];
 	decl time;
 	decl startTime;
@@ -1340,8 +1358,10 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 	decl String:query[1024];
 	decl String:banName[128];
 	decl String:banReason[256];
-	while(hndl != INVALID_HANDLE && SQL_FetchRow(hndl))
+	while(SQL_MoreRows(hndl))
 	{
+		SQL_FetchRow(hndl);
+		
 		// if we get to here then there are rows in the queue pending processing
 		SQL_FetchString(hndl, 0, auth, sizeof(auth));
 		time = SQL_FetchInt(hndl, 1);
