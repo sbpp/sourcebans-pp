@@ -400,6 +400,7 @@ img.tips { vertical-align: bottom; }
   border: 0;
   cursor: pointer;
   height: 18px;
+  padding: 0;
   background-image: url("images/searchbutton.jpg");
 }
 
