@@ -84,11 +84,18 @@
 		<td height="16" align="center" class="listtable_1">{$ban.mod_icon}</td>
         <td height="16" align="center" class="listtable_1">{$ban.ban_date}</td>
         <td height="16" class="listtable_1">
+		  <div style="float:left;">
           {if empty($ban.player)}
             <i><font color="#677882">no nickname present</font></i>
           {else}
             {$ban.player|escape:'html'}
           {/if}
+		  </div>
+		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
+		  <div style="float:right;">
+		  {$ban.commentdata|@count} <img src="images/details.gif" alt="Comments" title="Comments" style="height:12px;width:12px;" />
+		  </div>
+		  {/if}
         </td>
 		{if !$hideadminname}
         <td height="16" class="listtable_1">

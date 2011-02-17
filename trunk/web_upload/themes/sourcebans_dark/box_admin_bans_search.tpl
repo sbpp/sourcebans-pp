@@ -22,13 +22,13 @@
 				    </select>
 				</td>
 			    </tr>
-          {if !$hideplayerips}
-          <tr>
-            <td align="center" class="listtable_1" ><input id="ip_" type="radio" name="search_type" value="radiobutton"></td>
-            <td class="listtable_1" >IP</td>
-            <td class="listtable_1" ><input type="text" id="ip" value="" onmouseup="$('ip_').checked = true"style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
-          </tr>
-          {/if}
+				{if !$hideplayerips}
+				<tr>
+					<td align="center" class="listtable_1" ><input id="ip_" type="radio" name="search_type" value="radiobutton"></td>
+					<td class="listtable_1" >IP</td>
+					<td class="listtable_1" ><input type="text" id="ip" value="" onmouseup="$('ip_').checked = true"style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
+				</tr>
+				{/if}
 			    <tr>
 			        <td align="center" class="listtable_1" ><input id="reason_" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Reason</td>
@@ -142,6 +142,13 @@
 						</select>            
 					</td>
 			    </tr>
+				{if $is_admin}
+				<tr>
+			        <td align="center" class="listtable_1" ><input id="comment_" type="radio" name="search_type" value="radiobutton"></td>
+			        <td class="listtable_1" >Comment</td>
+			        <td class="listtable_1" ><input type="text" id="ban_comment" value="" onmouseup="$('comment_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
+			    </tr>
+				{/if}
 			    <tr>
 				    <td> </td>
 				    <td> </td>
