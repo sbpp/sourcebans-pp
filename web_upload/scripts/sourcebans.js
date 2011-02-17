@@ -817,6 +817,11 @@ function search_bans()
 		type = "where_banned";
 		input = $('server').value;
 	}
+	if($('comment_').checked)
+	{
+		type = "comment";
+		input = $('ban_comment').value;
+	}
 	if(type!="" && input!="")
 		window.location = "index.php?p=banlist&advSearch=" + input + "&advType=" + type;
 }
