@@ -1514,6 +1514,8 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
  	//SELECT authid, srv_password , srv_group, srv_flags, user
 	if (hndl == INVALID_HANDLE || strlen(error) > 0)
 	{
+		--curLoading;
+		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve admins from the database, %s", error);
 		return;
 	}
@@ -1658,6 +1660,8 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	if (hndl == INVALID_HANDLE)
 	{
+		curLoading--;
+		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s",error);
 		return;
 	}
@@ -1747,6 +1751,8 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 {
 	if (hndl == INVALID_HANDLE)
 	{
+		curLoading--;
+		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s",error);
 		return;
 	}
@@ -2148,9 +2154,9 @@ stock UTIL_InsertTempBan(time, const String:name[], const String:auth[], const S
 
 stock CheckLoadAdmins()
 {
-	for(new i = 1; i <= MAXPLAYERS; i++)
+	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(i <= GetMaxClients() && IsClientInGame(i))
+		if(IsClientInGame(i))
 		{
 			RunAdminCacheChecks(i);
 			NotifyPostAdminCheck(i);

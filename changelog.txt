@@ -8,17 +8,27 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
-(24/10/10): Version 1.4.8
+(17/02/11): Version 1.4.8
 -----------------------
-01. * Added option to not show player IP's to public
-02. ! Fixed showing php notices
-03. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
-04. ! Fixed trying to reach servers with buggy empty ip/port field
-05. ! Fixed not downloading demos with space in filename
-06. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
-07. ! Fixed System log does not take summertime into account
-08. ! Fixed the contact url in kickit messages getting cut off
-09. ? Updated IpToCountry.csv for country lookup
+01. * Added option to hide player IP's from public
+02. * Added search for comments
+03. * Added little icon on banlist indicating that there are comments on that ban
+04. + CServerInfo & CServerRcon classes updated to support BIND_IP for web servers with strict firewall/IP policies
+05. + Added error logging to local ban queue
+06. + Added links to FAQ to common error messages in plugin
+07. ! Fixed XSS exploit (Thanks to Sw1tCh)
+08. ! Fixed showing php notices
+09. ! Fixed admins losing permissions if gameserver can't connect to the database
+10. ! Fixed RCON console in IE (Thanks Synergy)
+11. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
+12. ! Fixed trying to reach servers with buggy empty ip/port field
+13. ! Fixed not downloading demos with space in filename
+14. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
+15. ! Fixed System log does not take summertime into account
+16. ! Fixed the contact url in kickit messages getting cut off
+17. ? Added hint to servers page mentioning the player context menu
+18. ? Updated IpToCountry.csv for country lookup
+19. ? Changed footer and logo to GameConnect.net
 
 (22/08/10): Version 1.4.7
 -----------------------
