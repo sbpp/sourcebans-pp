@@ -46,6 +46,12 @@ if(isset($_POST['name']))
 {
 	$lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM ".DB_PREFIX."_bans WHERE bid = '".(int)$_GET['id']."'");
 	$reason = trim($_POST['listReason'] == "other"?$_POST['txtReason']:$_POST['listReason']);
+	
+	$_POST['steam'] = trim($_POST['steam']);
+	// Handle communityid
+	if(is_numeric($_POST['steam']) && strlen($_POST['steam']) > 15)
+		$_POST['steam'] = FriendIDToSteamID($_POST['steam']);
+	
 	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_bans SET
 									`name` = ?, `type` = ?, `reason` = ?, `authid` = ?,
 									`length` = " . (int)($_POST['banlength']*60) . ",

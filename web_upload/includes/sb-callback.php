@@ -1692,19 +1692,26 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a ban, but doesnt have access.");
 		return $objResponse;
 	}
-
+	
+	$steam = trim($steam);
+	
 	$error = 0;
 	// If they didnt type a steamid
 	if(empty($steam) && $type == 0)
 	{
 		$error++;
-		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID");
+		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 	}
-	else if(!validate_steam($steam) && $type == 0)
+	else if(($type == 0 
+	&& !is_numeric($steam) 
+	&& !validate_steam($steam))
+	|| (is_numeric($steam) 
+	&& (strlen($steam) < 15
+	|| !validate_steam($steam = FriendIDToSteamID($steam)))))
 	{
 		$error++;
-		$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID.");
+		$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 	}
 	else if (empty($ip) && $type == 1)
@@ -1718,7 +1725,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		$objResponse->addAssign("steam.msg", "innerHTML", "");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
 	}
-
+	
 	if($error > 0)
 		return $objResponse;
 
