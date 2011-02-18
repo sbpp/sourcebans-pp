@@ -821,7 +821,7 @@ function AddServerGroupName()
 
 }
 
-function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a_password2,	$a_sg, $a_wg, $a_spass, $a_webname, $a_servername, $server, $singlesrv)
+function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a_password2,	$a_sg, $a_wg, $a_serverpass, $a_webname, $a_servername, $server, $singlesrv)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
@@ -868,21 +868,25 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
                 $objResponse->addScript("$('name.msg').setStyle('display', 'none');");
             }
 		}
-		
 	}
-	// If they didnt type a steamid, and didnt check the use password box
-	if((empty($a_steam) || strlen($a_steam) < 10) && $a_spass == "false")
+	// If they didnt type a steamid
+	if((empty($a_steam) || strlen($a_steam) < 10))
 	{
 		$error++;
-		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a STEAM ID for the admin.");
+		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID for the admin.");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 	}
 	else
 	{
-		if(!validate_steam($a_steam))
+		// Validate the steamid or fetch it from the community id
+		if((!is_numeric($a_steam) 
+		&& !validate_steam($a_steam))
+		|| (is_numeric($a_steam) 
+		&& (strlen($a_steam) < 15
+		|| !validate_steam($a_steam = FriendIDToSteamID($a_steam)))))
 		{
 			$error++;
-			$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid STEAM id.");
+			$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
 			$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 		}
 		else
@@ -890,7 +894,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			if(is_taken("admins", "authid", $a_steam))
 			{
 				$error++;
-				$objResponse->addAssign("steam.msg", "innerHTML", "An admin with this STEAM already exists");
+				$objResponse->addAssign("steam.msg", "innerHTML", "An admin with this Steam ID already exists");
 				$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 			}
 			else
@@ -901,83 +905,135 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		}
 	}
 	// If they only want server admin, we dont need an email
-	if(empty($a_email))
+	// but still validate and store, if typed anyway
+	if($a_wg != "-3" // No Permissions
+	|| !empty($a_email))
 	{
-		$error++;
-		$objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
-		$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
-	}
-	else{
-		if(is_taken("admins", "email", $a_email))
+		// No email
+		if(empty($a_email))
 		{
 			$error++;
-			$objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used.");
+			$objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
 			$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
 		}
-		else
-		{
-			$objResponse->addAssign("email.msg", "innerHTML", "");
-			$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
-		/*	if(!validate_email($a_email))
+		else{
+			// Is an other admin already registred with that email address?
+			if(is_taken("admins", "email", $a_email))
 			{
 				$error++;
-				$objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
+				$objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used.");
 				$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
 			}
 			else
 			{
 				$objResponse->addAssign("email.msg", "innerHTML", "");
 				$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
+			/*	if(!validate_email($a_email))
+				{
+					$error++;
+					$objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
+					$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+				}
+				else
+				{
+					$objResponse->addAssign("email.msg", "innerHTML", "");
+					$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
 
-			}*/
+				}*/
+			}
 		}
 	}
-	// no pass
-	if(empty($a_password) && $srv_mask != SM_RESERVED_SLOT)
+	else
 	{
-		$error++;
-		$objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
-		$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+		$objResponse->addAssign("email.msg", "innerHTML", "");
+		$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
 	}
-	else{
+	
+	// If they only want server admin, we dont need a password
+	// but still validate and store, if typed anyway
+	if($a_wg != "-3"
+	|| !empty($a_password))
+	{
+		// no pass
+		if(empty($a_password))
+		{
+			$error++;
+			$objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
+			$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+		}
+		// Password too short?
+		else if(strlen($a_password) < MIN_PASS_LENGTH)
+		{
+			$error++;
+			$objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
+			$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+		}
+		else 
+		{
+			$objResponse->addAssign("password.msg", "innerHTML", "");
+			$objResponse->addScript("$('password.msg').setStyle('display', 'none');");
+			
+			// No confirmation typed
+			if(empty($a_password2))
+			{
+				$error++;
+				$objResponse->addAssign("password2.msg", "innerHTML", "You must confirm the password");
+				$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+			}
+			// Passwords match?
+			else if($a_password != $a_password2)
+			{
+				$error++;
+				$objResponse->addAssign("password2.msg", "innerHTML", "Your passwords don't match");
+				$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+			}
+			else
+			{
+				$objResponse->addAssign("password2.msg", "innerHTML", "");
+				$objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
+			}
+		}
+	}
+	else
+	{
 		$objResponse->addAssign("password.msg", "innerHTML", "");
 		$objResponse->addScript("$('password.msg').setStyle('display', 'none');");
-	}
-
-	if(empty($a_password2))
-	{
-		$error++;
-		$objResponse->addAssign("password2.msg", "innerHTML", "You must type a password");
-		$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
-	}
-	else{
 		$objResponse->addAssign("password2.msg", "innerHTML", "");
 		$objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
 	}
 
-	// no match
-	if($a_password != $a_password2 && !empty($a_password2))
+	// Choose to use a server password
+	if($a_serverpass != "-1")
 	{
-		$error++;
-		$objResponse->addAssign("password2.msg", "innerHTML", "Your passwords dont match");
-		$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+		// No password given?
+		if(empty($a_serverpass))
+		{
+			$error++;
+			$objResponse->addAssign("a_serverpass.msg", "innerHTML", "You must type a server password or uncheck the box.");
+			$objResponse->addScript("$('a_serverpass.msg').setStyle('display', 'block');");
+		}
+		// Password too short?
+		else if(strlen($a_serverpass) < MIN_PASS_LENGTH)
+		{
+			$error++;
+			$objResponse->addAssign("a_serverpass.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
+			$objResponse->addScript("$('a_serverpass.msg').setStyle('display', 'block');");
+		}
+		else 
+		{
+			$objResponse->addAssign("a_serverpass.msg", "innerHTML", "");
+			$objResponse->addScript("$('a_serverpass.msg').setStyle('display', 'none');");
+		}
 	}
-	else{
-		$objResponse->addAssign("password2.msg", "innerHTML", "");
-		$objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
-	}
-	if(strlen($a_password) < MIN_PASS_LENGTH)
+	else
 	{
-		$error++;
-		$objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
-		$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+		$objResponse->addAssign("a_serverpass.msg", "innerHTML", "");
+		$objResponse->addScript("$('a_serverpass.msg').setStyle('display', 'none');");
+		// Don't set "-1" as password ;)
+		$a_serverpass = "";
 	}
-	else{
-		$objResponse->addAssign("password.msg", "innerHTML", "");
-		$objResponse->addScript("$('password.msg').setStyle('display', 'none');");
-	}
-
-    // didn't choose a group
+	
+    // didn't choose a server group
     if($a_sg == "-2")
     {
         $error++;
@@ -989,6 +1045,32 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         $objResponse->addAssign("server.msg", "innerHTML", "");
         $objResponse->addScript("$('server.msg').setStyle('display', 'none');");
     }
+	
+	// chose to create a new server group
+	if($a_sg == 'n')
+	{
+		// didn't type a name
+		if(empty($a_servername))
+		{
+			$error++;
+			$objResponse->addAssign("servername_err", "innerHTML", "You need to type a name for the new group.");
+			$objResponse->addScript("$('servername_err').setStyle('display', 'block');");
+		}
+		// Group names can't contain ,
+		else if(strstr($a_servername, ','))
+		{
+			$error++;
+			$objResponse->addAssign("servername_err", "innerHTML", "Group name cannot contain a ','");
+			$objResponse->addScript("$('servername_err').setStyle('display', 'block');");
+		}
+		else
+		{
+			$objResponse->addAssign("servername_err", "innerHTML", "");
+			$objResponse->addScript("$('servername_err').setStyle('display', 'none');");
+		}
+	}
+	
+	// didn't choose a web group
     if($a_wg == "-2")
 	{
         $error++;
@@ -1001,43 +1083,30 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         $objResponse->addScript("$('web.msg').setStyle('display', 'none');");
     }
     
-	// chose a new group, but didnt type a name
-	if($a_sg == 'n' && empty($a_servername))
+	// Choose to create a new webgroup
+	if($a_wg == 'n')
 	{
-		$error++;
-		$objResponse->addAssign("servername_err", "innerHTML", "You need to type a name for the new group.");
-		$objResponse->addScript("$('servername_err').setStyle('display', 'block');");
-	}
-	elseif($a_sg == 'n') {
-		if(strstr($a_servername, ','))
+		// But didn't type a name
+		if(empty($a_webname))
 		{
 			$error++;
-			$objResponse->addAssign("servername_err", "innerHTML", "Group name cannot contain a ','");
-			$objResponse->addScript("$('servername_err').setStyle('display', 'block');");
+			$objResponse->addAssign("webname_err", "innerHTML", "You need to type a name for the new group.");
+			$objResponse->addScript("$('webname_err').setStyle('display', 'block');");
 		}
-		else{
-			$objResponse->addAssign("servername_err", "innerHTML", "");
-			$objResponse->addScript("$('servername_err').setStyle('display', 'none');");
-		}
-	}
-	if($a_wg == 'n' && empty($a_webname))
-	{
-		$error++;
-		$objResponse->addAssign("webname_err", "innerHTML", "You need to type a name for the new group.");
-		$objResponse->addScript("$('webname_err').setStyle('display', 'block');");
-	}
-	elseif($a_wg == 'n') {
-		if(strstr($a_webname, ','))
+		// Group names can't contain ,
+		else if(strstr($a_webname, ','))
 		{
 			$error++;
 			$objResponse->addAssign("webname_err", "innerHTML", "Group name cannot contain a ','");
 			$objResponse->addScript("$('webname_err').setStyle('display', 'block');");
 		}
-		else{
+		else
+		{
 			$objResponse->addAssign("webname_err", "innerHTML", "");
 			$objResponse->addScript("$('webname_err').setStyle('display', 'none');");
 		}
 	}
+	
 	// Ohnoes! something went wrong, stop and show errs
 	if($error)
 	{
@@ -1045,226 +1114,96 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		return $objResponse;
 	}
 
-	if(!empty($a_spass) && $a_spass == "true") {
-		$a_spass = $a_password;
-	}else{
-		$a_spass = "";
-	}
 // ##############################################################
 // ##                     Start adding to DB                   ##
 // ##############################################################
-	// They chose a web group, but custom server group
-	$added_id = 0;
+	
 	$gid = 0;
-	$done = false;
 	$groupID = 0;
 	$inGroup = false;
 	$wgid = NextAid();
 	$immunity = 0;
-
+	
+	// Extract immunity from server mask string
 	if(strstr($srv_mask, "#"))
 	{
 		$immunity = "0";
 		$immunity = substr($srv_mask, strpos($srv_mask, "#")+1);
 		$srv_mask = substr($srv_mask, 0, strlen($srv_mask) - strlen($immunity)-1);
 	}
+	
+	// Avoid negative immunity
 	$immunity = ($immunity>0) ? $immunity : 0;
-
-	if(($a_wg > -1 && $a_wg != 'n' && $a_wg != 'c') && ($a_sg == 'n' || $a_sg == 'c'))
+	
+	// Handle Webpermissions
+	// Chose to create a new webgroup
+	if($a_wg == 'n')
 	{
-		// Add custom group for that admin
-		if($a_sg == 'c')
-		{
-			// ##############################################################
-			// ##                     Add non group Admin		           ##
-			// ##############################################################
-			$done = true;
-			//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
-			//		VALUES (?,?,?,?,?,?,?)");
-			//$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", " ", $srv_mask, $a_name, $wgid));
-			//$userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $a_wg, )
-		}
-		// Add a new group
-		elseif($a_sg == 'n')
-		{
-			$groupID = NextGid();
-			// ##############################################################
-			// ##              Add New Group + Server Admin                ##
-			// ##############################################################
-			$inGroup = true;
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvgroups(immunity,flags,name,groups_immune)
-					VALUES (?,?,?,?)");
-			$GLOBALS['db']->Execute($sm_group,array($immunity, $srv_mask, $a_servername, "none"));
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
-		//			VALUES (?,?,?,?,?,?,?)");
-		//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $a_servername, "", $a_name, $wgid));
-			$mask = 0;
-			$srv_mask = "";
-		}
-		// ##############################################################
-		// ##                     Add Web Admin		                   ##
-		// ##############################################################
-	//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
-	//										VALUES (?, ?,?,?,?,?,?)");
-	//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $a_wg, $a_email, 0));
-		$added_id = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $a_wg, $mask, $a_servername, $srv_mask, $immunity, $a_spass);
-	}
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	// They chose a server group, and custom web group
-	if(($a_sg > -1 && $a_sg != 'n' && $a_sg != 'c') && ($a_wg == 'n' || $a_wg == 'c'))
-	{
-		$web_group = -1;
-		// Add custom group for that admin
-		if($a_wg == 'c')
-		{
-			$done = true;
-			// ##############################################################
-			// ##               Custom Web Admin		                   ##
-			// ##############################################################
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
-		//									VALUES (?, ?,?,?,?,?,?)");
-		//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), -1, $a_email, $wmask));
-		}
-		// Add a new group
-		elseif($a_wg == 'n')
-		{
-			// ##############################################################
-			// ##               New	 Web Group			                   ##
-			// ##############################################################
-			$id = NextGid();
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_groups(gid, type,name,flags)
-											VALUES (?,?,?,?)");
-			$GLOBALS['db']->Execute($sm_group,array($id, 1, $a_webname, $mask));
-	//		$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
-	//										VALUES (?, ?,?,?,?,?,?)");
-	//		$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $id, $a_email, 0));
-			$mask = 0;
-			$srv_mask = "";
-			$web_group = $id;
-		}
-		// ##############################################################
-		// ##               New	Server Admin 		                   ##
-		// ##############################################################
-		$inGroup = true;
-		$groupname = $GLOBALS['db']->GetRow("SELECT `name` FROM ".DB_PREFIX."_srvgroups WHERE id = '" . (int)$a_sg . "'");
-	//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
-	//										VALUES (?,?,?,?,?,?,?)");
-	//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $groupname['name'], "", $a_name, $wgid));
-		$added_id = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $groupname['name'], $srv_mask, $immunity, $a_spass);
-	}
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-	// They chose 2 custom/new group types
-	if(($a_wg == 'n' || $a_wg == 'c') && ($a_sg == 'n' || $a_sg == 'c'))
-	{
-		$wmask = $mask;
-		$smask = $mask;
-		//we need to toggle off any server flags to extract the web flags
-		$web_group = -1;
-		$smask &= ~(ALL_WEB);
-
-		if($a_wg == 'n')
-		{
-			// ##############################################################
-			// ##               New	Web Group	 		                   ##
-			// ##############################################################
-			$id = NextGid();
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_groups(gid,type,name,flags)
-											VALUES (?,?,?,?)");
-			$GLOBALS['db']->Execute($sm_group,array($id, 1, $a_webname, $wmask));
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
-		//									VALUES (?,?,?,?,?,?,?)");
-		//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $id, $a_email, 0));
-			$mask = 0;
-			$web_group = $id;
-		}
-		if($a_sg == 'n')
-		{
-			// ##############################################################
-			// ##               New	Server Group	 	                   ##
-			// ##############################################################
-			$inGroup = true;
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvgroups(immunity,flags,name,groups_immune)
-					VALUES (?,?,?,?)");
-			$GLOBALS['db']->Execute($sm_group,array($immunity, $srv_mask, $a_servername, "none"));
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
-		//			VALUES (?,?,?,?,?,?,?)");
-		//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $a_servername, " ", $a_name, $wgid));
-			$srv_mask = "";
-		}
-		if($a_wg == 'c')
-		{
-			// ##############################################################
-			// ##               Custom web Group	 	                   ##
-			// ##############################################################
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
-		//									VALUES (?,?,?,?,?,?,?)");
-		//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), -1, $a_email, $wmask));
-		}
-		if($a_sg == 'c')
-		{
-			// ##############################################################
-			// ##               Custom server admin	 	                   ##
-			// ##############################################################
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
-		//			VALUES (?,?,?,?,?,?,?)");
-		//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", " ", $srv_mask, $a_name, $wgid));
-		}
-		$added_id = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $a_servername, $srv_mask, $immunity, $a_spass);
-	}
-
-	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-	// They chose 2 ready-made groups
-	if(($a_sg > -1 && $a_sg != 'n' && $a_sg != 'c') && ($a_wg > -1 && $a_wg != 'n' && $a_wg != 'c'))
-	{
-		$inGroup = true;
-		$groupname = $GLOBALS['db']->GetRow("SELECT `name` FROM ".DB_PREFIX."_srvgroups WHERE id = '" . $a_sg . "'");
-		//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
-		//									VALUES (?,?,?,?,?,?,?)");
-		//$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $groupname['name'], " ", $a_name, $wgid));
-		//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
-		//									VALUES (?,?,?,?,?,?,?)");
-		//$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $a_wg, $a_email, 0));
-		$srv_mask = "";
+		$add_webgroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_groups(type, name, flags)
+										VALUES (?,?,?)", array(1, $a_webname, $mask));
+		$web_group = (int)$GLOBALS['db']->Insert_ID();
+		
+		// We added those permissons to the group, so don't add them as custom permissions again
 		$mask = 0;
-		$added_id = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $a_wg, $mask, $groupname['name'], $srv_mask, $immunity, $a_spass);
 	}
-
-
-	// Link with servers
-	$aid = $added_id;
-	if($inGroup == true)
+	// Chose an existing group
+	else if($a_wg != 'c' && $a_wg > 0)
 	{
-		if($a_sg == 'n')
-			$group_id = $a_servername;
-		else
-			$group_id = $a_sg;
+		$web_group = (int)$a_wg;
 	}
+	// Custom permissions -> no group
 	else
-		$group_id = $aid;
-
-	if($added_id > -1)
 	{
-		// Add the admin <-> server_group link
+		$web_group = -1;
+	}
+	
+	// Handle Serverpermissions
+	// Chose to create a new server admin group
+	if($a_sg == 'n')
+	{
+		$add_servergroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_srvgroups(immunity, flags, name, groups_immune)
+					VALUES (?,?,?,?)", array($immunity, $srv_mask, $a_servername, "none"));
+		
+		$server_admin_group = $a_servername;
+		$server_admin_group_int = (int)$GLOBALS['db']->Insert_ID();
+		
+		// We added those permissons to the group, so don't add them as custom permissions again
+		$srv_mask = "";
+	}
+	// Chose an existing group
+	else if($a_sg != 'c' && $a_sg > 0)
+	{
+		$server_admin_group = $GLOBALS['db']->GetOne("SELECT `name` FROM ".DB_PREFIX."_srvgroups WHERE id = '" . (int)$a_sg . "'");
+		$server_admin_group_int = (int)$a_sg;
+	}
+	// Custom permissions -> no group
+	else
+	{
+		$server_admin_group = "";
+		$server_admin_group_int = -1;
+	}
+	
+	// Add the admin
+	$aid = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $server_admin_group, $srv_mask, $immunity, $a_serverpass);
+	
+	if($aid > -1)
+	{
+		// Grant permissions to the selected server groups
 		$srv_groups = explode(",", $server);
 		$addtosrvgrp = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
-		foreach($srv_groups AS $g)
+		foreach($srv_groups AS $srv_group)
 		{
-			if($g)
-				$GLOBALS['db']->Execute($addtosrvgrp,array($aid, $group_id, substr($g, 1), '-1'));
+			if(!empty($srv_group))
+				$GLOBALS['db']->Execute($addtosrvgrp,array($aid, $server_admin_group_int, substr($srv_group, 1), '-1'));
 		}
-		$addtosrv = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
-		// Add the admin <-group-> server link
+		
+		// Grant permissions to individual servers
 		$srv_arr = explode(",", $singlesrv);
-		foreach($srv_arr AS $s)
+		$addtosrv = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+		foreach($srv_arr AS $server)
 		{
-			if($s)
-				$GLOBALS['db']->Execute($addtosrv,array($aid, $group_id, '-1', substr($s, 1)));
+			if(!empty($server))
+				$GLOBALS['db']->Execute($addtosrv,array($aid, $server_admin_group_int, '-1', substr($server, 1)));
 		}
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
@@ -1284,6 +1223,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			$objResponse->addScript("ShowRehashBox('".$allservers."','Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 		} else
 			$objResponse->addScript("ShowBox('Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
+		
 		$log = new CSystemLog("m", "Admin added", "Admin (" . $a_name . ") has been added");
 		return $objResponse;
 	}
@@ -1711,7 +1651,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 	|| !validate_steam($steam = FriendIDToSteamID($steam)))))
 	{
 		$error++;
-		$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
+		$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 	}
 	else if (empty($ip) && $type == 1)
@@ -1720,10 +1660,18 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		$objResponse->addAssign("ip.msg", "innerHTML", "You must type an IP");
 		$objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
 	}
+	else if($type == 1 && !validate_ip($ip))
+	{
+		$error++;
+		$objResponse->addAssign("ip.msg", "innerHTML", "You must type a valid IP");
+		$objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
+	}
 	else
 	{
 		$objResponse->addAssign("steam.msg", "innerHTML", "");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
+		$objResponse->addAssign("ip.msg", "innerHTML", "");
+		$objResponse->addScript("$('ip.msg').setStyle('display', 'none');");
 	}
 	
 	if($error > 0)
@@ -1741,6 +1689,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 	// prune any old bans
 	PruneBans();
 	if((int)$type==0) {
+		// Check if the new steamid is already banned
 		$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($steam));
 
 		if(intval($chk[0]) > 0)
@@ -1787,18 +1736,18 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 						     VALUES(?,'B', ?, ?)", array((int)$subid, $dfile, $dname));
 	}
 	if($fromsub) {
-			$submail = $GLOBALS['db']->Execute("SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'");
-			// Send an email when ban is accepted
-			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
-			$headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
-			'X-Mailer: PHP/' . phpversion();
+		$submail = $GLOBALS['db']->Execute("SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'");
+		// Send an email when ban is accepted
+		$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
+		$headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
+		'X-Mailer: PHP/' . phpversion();
 
-			$message = "Hello,\n";
-			$message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
+		$message = "Hello,\n";
+		$message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
 
-			mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
-			$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
-		}
+		mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
+		$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
+	}
 
 	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
 

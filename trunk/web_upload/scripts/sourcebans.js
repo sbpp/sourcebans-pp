@@ -577,7 +577,7 @@ function ProcessAddAdmin()
 {
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
-	var server_a_pass = false;
+	var server_a_pass = "-1";
 	
 	var el = document.getElementsByName('group[]');
 	var grp = "";
@@ -598,18 +598,18 @@ function ProcessAddAdmin()
     var serverg = document.getElementById('serverg').value;
   	if(serverg == "-3")
   	{
-  		serverg = "c";
+  		//serverg = "c";
   		srvMask = "";
   	}
     var webg = document.getElementById('webg').value;
   	if(webg == "-3")
   	{
-  		webg = "c";
+  		//webg = "c";
   		Mask = 0;
   	}
   	
-  	if(document.getElementById('a_spass').checked)
-  		server_a_pass = true;
+  	if(document.getElementById('a_useserverpass').checked)
+  		server_a_pass = document.getElementById('a_serverpass').value;
   
 	if(document.getElementById('webname') && !document.getElementById('servername'))
 	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
