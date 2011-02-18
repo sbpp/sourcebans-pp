@@ -30,7 +30,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Steam ID" message="This is the admins 'STEAM' id. This must be set so that admins can use their admin rights ingame."}Admin STEAM ID 
+		    			{help_icon title="Steam ID" message="This is the admins 'STEAM' id. This must be set so that admins can use their admin rights ingame."}Admin Steam ID / Community ID
 		    		</div>
 		    	</td>
 		    	<td>
@@ -43,7 +43,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Admin Email" message="Set the admins e-mail address. This will be used for sending out any automated messages from the system, and for use when you forget your password."}Admin Email 
+		    			{help_icon title="Admin Email" message="Set the admins e-mail address. This will be used for sending out any automated messages from the system and changing of forgotten passwords. This is only required, if you set webpanel permissions."}Admin Email 
 		    		</div>
 		    	</td>
 		    	<td>
@@ -56,7 +56,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Password" message="The password the admin will need to access the admin panel."}Admin Password 
+		    			{help_icon title="Password" message="The password the admin will need to access the admin panel. This is only required, if you set webpanel permissions."}Admin Password 
 		    		</div>
 		    	</td>
 		    	<td>
@@ -69,7 +69,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Password" message="Type your password again to confirm."}Admin Password (confirm) 
+		    			{help_icon title="Password" message="Type the password again to confirm."}Admin Password (confirm) 
 		    		</div>
 		    	</td>
 		    	<td>
@@ -82,13 +82,14 @@
 		    <tr>
 		    	<td valign="top" width="35%">
 		    		<div class="rowdesc">
-		    			{help_icon title="Server Admin Password" message="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Use as admin password? 
+		    			{help_icon title="Server Admin Password" message="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Server Password <small>(<a href="http://wiki.alliedmods.net/Adding_Admins_%28SourceMod%29#Passwords" title="SourceMod Password Info" target="_blank">More</a>)</small>
 		    		</div>
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		        		<input type="checkbox" TABINDEX=7 name="a_spass" id="a_spass" />
+		        		<input type="checkbox" id="a_useserverpass" name="a_useserverpass" TABINDEX=6 onclick="$('a_serverpass').disabled = !$(this).checked;" /> <input type="password" TABINDEX=7 class="submit-fields" name="a_serverpass" id="a_serverpass" disabled="disabled" />
 		    		</div>
+					<div id="a_serverpass.msg" class="badentry"></div>
 		    	</td>
 		  	</tr>
 		</table>
