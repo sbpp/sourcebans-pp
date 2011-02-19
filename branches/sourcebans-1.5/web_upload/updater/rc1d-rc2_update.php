@@ -12,20 +12,21 @@
  * @version $Id$
  * =============================================================================
  */
-
 define('IN_SB', true);
-require_once("../config.php");
-define('ROOT', dirname(dirname(__FILE__)));
-define('INCLUDES_PATH', ROOT . '/includes');
-include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
+define('ROOT', dirname(__FILE__) . '/../');
+define('INCLUDES_PATH', ROOT . 'includes/');
 
-echo "- Starting <b>SourceBans</b> database update from RC1d to RC2 -<br>";
-$db = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
+require_once ROOT . '../config.php';
+include_once INCLUDES_PATH . 'adodb/adodb.inc.php';
 
-$db->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.dateformat', 'm-d-y H:i')");
-$db->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.timezone', 'Europe/London')");
-$db->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.theme', 'default')");
+echo '- Starting <b>SourceBans</b> database update from RC1d to RC2 -<br />';
+$db = ADONewConnection('mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
 
+$db->Execute('INSERT INTO ' . DB_PREFIX . '_settings (setting, value)
+              VALUES      ("config.dateformat", "m-d-y H:i")');
+$db->Execute('INSERT INTO ' . DB_PREFIX . '_settings (setting, value)
+              VALUES      ("config.timezone", "Europe/London")');
+$db->Execute('INSERT INTO ' . DB_PREFIX . '_settings (setting, value)
+              VALUES      ("config.theme", "default")');
 
-echo "Done updating admin structure. Please delete this file.<br>";
-?>
+echo 'Done updating. Please delete this file.<br />';

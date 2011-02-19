@@ -12,16 +12,17 @@
  * @version $Id$
  * =============================================================================
  */
-
 define('IN_SB', true);
-require_once("../config.php");
-define('ROOT', dirname(dirname(__FILE__)));
-define('INCLUDES_PATH', ROOT . '/includes');
-include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
+define('ROOT', dirname(__FILE__) . '/../');
+define('INCLUDES_PATH', ROOT . 'includes/');
 
-echo "- Starting <b>SourceBans</b> database update from RC1d to RC2 -<br>";
-$db = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
+require_once ROOT . '../config.php';
+require_once INCLUDES_PATH . 'adodb/adodb.inc.php';
 
-$db->Execute("ALTER TABLE `" . DB_PREFIX . "_admins` ADD `lastvisit` DATETIME NULL;");
-echo "Done updating. Please delete this file.<br>";
-?>
+echo '- Starting <b>SourceBans</b> database update from RC1d to RC2 -<br />';
+$db = ADONewConnection('mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
+
+$db->Execute('ALTER TABLE ' . DB_PREFIX . '_admins
+              ADD         lastvisit DATETIME NULL');
+
+echo 'Done updating. Please delete this file.<br />';

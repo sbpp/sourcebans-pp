@@ -10,8 +10,7 @@
  * @version    $Id$
  */
 include_once 'init.php';
-include_once INCLUDES_PATH . '/user-functions.php';
-include_once INCLUDES_PATH . '/system-functions.php';
+include_once INCLUDES_PATH . 'system-functions.php';
 
 $steps      = array(
   1 => 'License Agreement',
@@ -22,8 +21,8 @@ $steps      = array(
   6 => 'AMXBans Import',
 );
 $step       = (isset($_GET['step']) && isset($steps[$_GET['step']]) ? $_GET['step'] : 1);
-$page_title = $steps[$GLOBALS['step']];
+$page_title = $steps[$step];
 
-include TEMPLATES_PATH . '/header.php';
-include TEMPLATES_PATH . '/page.' . $step . '.php';
-include TEMPLATES_PATH . '/footer.php';
+include TEMPLATE_PATH . 'header.php';
+include TEMPLATE_PATH . 'page.' . $step . '.php';
+include TEMPLATE_PATH . 'footer.php';

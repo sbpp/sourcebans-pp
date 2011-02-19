@@ -12,66 +12,75 @@
  * @version $Id$
  * =============================================================================
  */
-
 define('IN_SB', true);
-require_once("../config.php");
-define('ROOT', dirname(dirname(__FILE__)));
-define('INCLUDES_PATH', ROOT . '/includes');
-include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
+define('ROOT', dirname(__FILE__) . '/../');
+define('INCLUDES_PATH', ROOT . 'includes/');
 
-echo "- Starting <b>SourceBans</b> database update from RC1c to RC1d -<br>";
-$db = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
+require_once ROOT . '../config.php';
+require_once INCLUDES_PATH . 'adodb/adodb.inc.php';
 
-$db->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.dateformat', 'm-d-y H:i')");
-$db->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.timezone', 'Europe/London')");
+echo '- Starting <b>SourceBans</b> database update from RC1c to RC1d -<br />';
+$db = ADONewConnection('mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
 
-$alt = $db->Execute("ALTER TABLE ".DB_PREFIX."_admins MODIFY COLUMN `validate` VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL;");
+$db->Execute('INSERT INTO ' . DB_PREFIX . '_settings (setting, value)
+              VALUES      ("config.dateformat", "m-d-y H:i")');
+$db->Execute('INSERT INTO ' . DB_PREFIX . '_settings (setting, value)
+              VALUES      ("config.timezone", "Europe/London")');
 
-$out = $db->GetRow("SELECT `immunity` FROM sb_admins");
-if($out)
+$db->Execute('ALTER TABLE   ' . DB_PREFIX . '_admins
+              MODIFY COLUMN validate VARCHAR(128) CHARACTER SET utf8 COLLATE utf8_general_ci NULL');
+
+$res = $db->GetRow('SELECT immunity
+                    FROM   ' . DB_PREFIX . '_admins');
+if($res)
 {
-	echo "The table structure is already up-to-date. Please delete this file.";
-	die();
+  die('The table structure is already up-to-date. Please delete this file.');
 }
 
-$res = $db->Execute("ALTER TABLE `".DB_PREFIX."_admins` ADD `immunity` INT( 10 ) NOT NULL DEFAULT '0',
-ADD `srv_group` VARCHAR( 128 ) NULL ,
-ADD `srv_flags` VARCHAR( 64 ) NULL,
-ADD `srv_password` VARCHAR( 128 ) NULL;");
-
+$res = $db->Execute('ALTER TABLE ' . DB_PREFIX . '_admins
+                     ADD         immunity INT( 10 ) NOT NULL DEFAULT "0",
+                     ADD         srv_group VARCHAR( 128 ) NULL ,
+                     ADD         srv_flags VARCHAR( 64 ) NULL,
+                     ADD         srv_password VARCHAR( 128 ) NULL');
 if(!$res)
 {
-	echo "There was an error altering the table structure."; die();
-}
-else 
-{
-	echo "Table structure successfully altered...<br>";
+  die('There was an error altering the table structure.');
 }
 
-$srvadmins = $db->GetAll("SELECT * FROM ".DB_PREFIX."_srvadmins");
-echo "Found: ". count($srvadmins) . " admins...<br><br><br>";
-$errors = 0;
+echo 'Table structure successfully altered...<br />';
+
+$srvadmins = $db->GetAll('SELECT *
+                          FROM ' . DB_PREFIX . '_srvadmins');
+echo 'Found: ' . count($srvadmins) . ' admins...<br /><br /><br />';
+
+$error = true;
 foreach($srvadmins AS $sa)
 {
-	echo "Updating entry for: " . $sa['name'] . "... ";
-	$res = $db->Execute("UPDATE ".DB_PREFIX."_admins SET 
-						`immunity` = " . $sa['immunity'] . ",
-						`srv_group` = '" . $sa['groups'] . "',
-						`srv_flags` = '" . $sa['flags'] . "',
-						`srv_password` = '" . $sa['password'] . "'
-						WHERE authid = '" . $sa['identity'] . "';");
-	echo $res ? "<b>Ok</b><br>" : "<b>Failed</b><br>";
-	if(!$res)
-		$errors++;	
+  echo 'Updating entry for: ' . $sa['name'] . '...';
+  $res = $db->Execute('UPDATE ' . DB_PREFIX . '_admins
+                       SET    immunity     = ?,
+                              srv_group    = ?,
+                              srv_flags    = ?,
+                              srv_password = ?
+                       WHERE  authid       = ?',
+                      array($sa['immunity'], $sa['groups'], $sa['flags'], $sa['password'], $sa['identity']));
+  
+  echo $res ? ' <b>Done</b><br />' : ' <b>Failed</b><br />';
+  if($res)
+    continue;
+  
+  $error = true;  
 }
-if($errors == 0)
+if($error)
 {
-	echo "<br><br>Deleting old admins table...";
-	$res = $db->Execute("DROP TABLE ".DB_PREFIX."_srvadmins");
-	echo $res ? "<b>Ok</b><br>" : "<b>Failed</b><br>";
+  echo '<br /><br />There were some failed admin imports. Old admins table will <b>not</b> be deleted.<br />';
 }
-else 
-	echo "<br><br>There were some failed admin imports. Old admins table will <b>not</b> be deleted.<br>";
-echo "Done updating admin structure. Please delete this file.<br>";
+else
+{
+  echo '<br /><br />Deleting old admins table...';
+  $res = $db->Execute('DROP TABLE ' . DB_PREFIX . '_srvadmins');
+  
+  echo $res ? ' <b>Done</b><br />' : ' <b>Failed</b><br />';
+}
 
-?>
+echo 'Done updating. Please delete this file.<br />';

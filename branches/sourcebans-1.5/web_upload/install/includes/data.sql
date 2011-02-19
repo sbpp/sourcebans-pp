@@ -1,4 +1,4 @@
-INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`) VALUES
+INSERT INTO {prefix}_mods (mid, name, icon, modfolder) VALUES
 (1, 'Web', 'web.png', 'NULL'),
 (2, 'Half-Life 2 Deathmatch', 'hl2dm.png', 'hl2mp'),
 (3, 'Counter-Strike: Source', 'csource.png', 'cstrike'),
@@ -17,9 +17,9 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`) VALUES
 (16, "Left 4 Dead", 'l4d.png', 'left4dead'),
 (17, "Left 4 Dead 2", 'l4d2.png', 'left4dead2');
 
-UPDATE `{prefix}_mods` SET `mid` = '0' WHERE `name` = 'Web';
+UPDATE {prefix}_mods SET mid = '0' WHERE name = 'Web';
 
-INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
+INSERT INTO {prefix}_settings (setting, value) VALUES
 ('dash.intro.text', '<img src="images/logo-large.jpg" border="0" width="800" height="126" /><h3>Your new SourceBans install</h3><p>SourceBans successfully installed!</p>'),
 ('dash.intro.title', 'Your SourceBans install'),
 ('dash.lognopopup', '0'),
@@ -47,10 +47,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('protest.emailonlyinvolved', '0'),
 ('config.version', '295');
 
+INSERT INTO {prefix}_admins (user, authid, password, gid, email, validate, extraflags, immunity) VALUES
+('CONSOLE', 'STEAM_ID_SERVER', '', '0', '', '', '0', 0);
 
-INSERT INTO `{prefix}_admins` (
-`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`)
-VALUES (
-NULL , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', '', '0', 0);
-
-UPDATE `{prefix}_admins` SET `aid` = '0' WHERE `authid` = 'STEAM_ID_SERVER';
+UPDATE {prefix}_admins SET aid = '0' WHERE authid = 'STEAM_ID_SERVER';

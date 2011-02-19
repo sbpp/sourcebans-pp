@@ -58,7 +58,7 @@ $srv_cfg = '
                       array($_POST['name'], $_POST['steam'], sha1(sha1(SB_SALT . $_POST['password'])), -1, $_POST['email'], (1<<24), ' ', 100));
         
         // Setup Database
-        $file = file_get_contents(INCLUDES_PATH . '/data.sql');
+        $file = file_get_contents(INCLUDES_PATH . 'data.sql');
         $file = str_replace('{prefix}', $_SESSION['db_prefix'], $file);
         $queries = explode(';', $file);
         foreach($queries AS $q)

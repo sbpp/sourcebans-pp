@@ -12,51 +12,63 @@
  * @version $Id$
  * =============================================================================
  */
-
 define('IN_SB', true);
-require_once("config.php");
-define('ROOT', dirname(dirname(__FILE__)));
-define('INCLUDES_PATH', ROOT . '/includes');
-include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
+define('ROOT', dirname(__FILE__) . '/../');
+define('INCLUDES_PATH', ROOT . 'includes/');
 
-echo "- Starting <b>SourceBans</b> database update from RC2 to RC3 -<br>";
-$db = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
+require_once ROOT . '../config.php';
+require_once INCLUDES_PATH . 'adodb/adodb.inc.php';
 
-echo "- Altering table -<br>";
-$result = $db->Execute("ALTER TABLE `" . DB_PREFIX . "_bans` ADD `RemovedBy` int(8) NULL;");
-$result = $db->Execute("ALTER TABLE `" . DB_PREFIX . "_bans` ADD `RemoveType` VARCHAR(3) NULL;");
-$result = $db->Execute("ALTER TABLE `" . DB_PREFIX . "_bans` ADD `RemovedOn` int(10) NULL;");
-$result = $db->Execute("ALTER TABLE `" . DB_PREFIX . "_bans` DROP INDEX `authid`");
+echo '- Starting <b>SourceBans</b> database update from RC2 to RC3 -<br />';
+$db = ADONewConnection('mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME);
 
-if( $result == false )
+echo '- Altering bans table -<br />';
+$res = $db->Execute('ALTER TABLE ' . DB_PREFIX . '_bans
+                     ADD         RemovedBy int(8) NULL,
+                     ADD         RemoveType VARCHAR(3) NULL,
+                     ADD         RemovedOn int(10) NULL,
+                     DROP INDEX  authid');
+if(!$res)
 {
-	echo "Error altering table";
-	die();
+  die('Error altering bans table');
 }
 
-echo "- Converting old bans -<br>";
-$res = $db->Execute("SELECT * FROM `" . DB_PREFIX . "_banhistory`;");
+echo '- Converting old bans -<br />';
+$banhistory = $db->GetAll('SELECT *
+                           FROM   ' . DB_PREFIX . '_banhistory');
+$ins = $db->Prepare('INSERT INTO ' . DB_PREFIX . '_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country, RemovedBy, RemoveType)
+                     VALUES      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, "U")');
+$upd = $db->Prepare('UPDATE ' . DB_PREFIX . '_demos
+                     SET    demid   = ?
+                     WHERE  demtype = "B"
+                       AND  demid   = ?');
 
-while (!$res->EOF)
+foreach($banhistory as $row)
 {
-	$db->Execute("INSERT INTO `" . DB_PREFIX . "_bans` ( `bid` , `ip` , `authid` , `name` , `created` , `ends` , `length` , `reason` , `aid` , `adminIp` , `sid` , `country`, `RemovedBy`, `RemoveType` )
-				VALUES ( NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )",
-				array( $res->fields['IP'], $res->fields['AuthId'], $res->fields['Name'], $res->fields['Created'], $res->fields['Ends'], $res->fields['Length'], $res->fields['Reason'], $res->fields['AdminId'], $res->fields['AdminIp'], $res->fields['SId'], $res->fields['country'], 0, "U" ) );
-	
-	$newID = (int)$GLOBALS['db']->Insert_ID();
-	echo "> Updating ban for: <b>". $res->fields['Name'] . "</b><br />";
-	
-	
-	$res2 = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_demos` SET 
-								`demid` = ?,
-								WHERE `demtype` = 'B' AND `demid` = ?;",
-								array( $newID, $res->fields['HistId'] ));
-	if( !empty($res2) )
-		echo "	>> Updating demo: <b>". $res->fields['HistId'] . "</b> > " . $newID ."<br />";
-	$res->MoveNext();
+  $db->Execute($ins, array(
+    $row['IP'],
+    $row['AuthId'],
+    $row['Name'],
+    $row['Created'],
+    $row['Ends'],
+    $row['Length'],
+    $row['Reason'],
+    $row['AdminId'],
+    $row['AdminIp'],
+    $row['SId'],
+    $row['country'],
+  ));
+  echo '> Updated ban for: <b>' . $row['Name'] . '</b><br />';
+  
+  $id  = $GLOBALS['db']->Insert_ID();
+  $res = $GLOBALS['db']->Execute($upd, array(
+    $id,
+    $row['HistId'],
+  ));
+  if(empty($res))
+    continue;
+  
+  echo '  >> Updated demo: <b>' . $row['HistId'] . '</b> > ' . $id . '<br />';
 }
 
-
-
-echo "Done updating. Please delete this file.<br>";
-?>
+echo 'Done updating. Please delete this file.<br />';

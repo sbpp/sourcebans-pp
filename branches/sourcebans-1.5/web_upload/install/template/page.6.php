@@ -7,7 +7,7 @@
 </script>
 <?php
     else:
-      include_once(INCLUDES_PATH . '/converter.inc.php');
+      include_once(INCLUDES_PATH . 'converter.inc.php');
       
       $olddsn = 'mysql://' . $_POST['db_user'] . ':' . $_POST['db_pass'] . '@' . $_POST['db_host'] . ':' . $_POST['db_port'] . '/' . $_POST['db_name'];
       $newdsn = 'mysql://' . DB_USER . ':' . DB_PASS . '@' . DB_HOST . ':' . DB_PORT . '/' . DB_NAME;

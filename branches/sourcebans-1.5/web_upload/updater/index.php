@@ -10,8 +10,9 @@
  * @version    $Id$
  */
 define('IS_UPDATE', true);
-include '../init.php';
-include INCLUDES_PATH . '/CUpdate.php';
+
+require_once '../init.php';
+require_once INCLUDES_PATH . '/CUpdate.php';
 
 $updater = new CUpdater();
 $theme->assign('theme_name',      isset($GLOBALS['config']['config.theme']) ? $GLOBALS['config']['config.theme'] : 'default');
