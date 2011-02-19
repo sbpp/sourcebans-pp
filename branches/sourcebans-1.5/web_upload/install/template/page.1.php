@@ -1,22 +1,11 @@
-<?php
-	if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
-	?>
-	<div id="install-progress">
-<b><u>Installation Progress</u></b><br />
-Step 1: License Agreement<br />
-Step 2: Database Information<br />
-Step 3: System Requirements<br />
-Step 4: Table Creation<br />
-Step 5: Initial Setup<br />
-</div>
-<div id="submit-introduction">
-
-To use this webpanel software, you are required to read and accept the following license. If you do not agree with the license, then go and make your own ban/admin system.<br /><br />
-An explanation  of this license is available <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">here</a>.
-</div>
-<form action="index.php?p=submit" method="POST" enctype="multipart/form-data">
-<div id="submit-main"><h3>Creative Commons - Attribution-NonCommercial-ShareAlike 3.0</h3>
-<textarea id="license" cols="105" rows="15" name="license">License
+          <form action="" method="post">
+            <div id="submit-introduction">
+              To use this webpanel software, you are required to read and accept the following license. If you do not agree with the license, then go and make your own ban/admin system.<br /><br />
+              An explanation  of this license is available <a href="http://creativecommons.org/licenses/by-nc-sa/3.0" target="_blank">here</a>.
+            </div>
+            <div id="submit-main">
+              <h3>Creative Commons - Attribution-NonCommercial-ShareAlike 3.0</h3>
+              <textarea cols="105" id="license" name="license" readonly="readonly" rows="15">License
 
 THIS SOFTWARE COMES WITH NO WARRANTY WHAT SO EVER. IT IS PROVIDED AS-IS AND ANY MELTING OF SERVERS OR ANY OTHER BAD STUFF THAT HAPPENS TO YOUR DATA OR HARDWARE FROM USING THIS SOFTWARE WILL BE YOUR PROBLEM. YOU SHOULD HAVE BACKED EVERYTHING UP.
 
@@ -80,28 +69,22 @@ UNLESS OTHERWISE MUTUALLY AGREED TO BY THE PARTIES IN WRITING AND TO THE FULLEST
    3. If any provision of this License is invalid or unenforceable under applicable law, it shall not affect the validity or enforceability of the remainder of the terms of this License, and without further action by the parties to this agreement, such provision shall be reformed to the minimum extent necessary to make such provision valid and enforceable.
    4. No term or provision of this License shall be deemed waived and no breach consented to unless such waiver or consent shall be in writing and signed by the party to be charged with such waiver or consent.
    5. This License constitutes the entire agreement between the parties with respect to the Work licensed here. There are no understandings, agreements or representations with respect to the Work not specified here. Licensor shall not be bound by any additional provisions that may appear in any communication from You. This License may not be modified without the mutual written agreement of the Licensor and You.
-   6. The rights granted under, and the subject matter referenced, in this License were drafted utilizing the terminology of the Berne Convention for the Protection of Literary and Artistic Works (as amended on September 28, 1979), the Rome Convention of 1961, the WIPO Copyright Treaty of 1996, the WIPO Performances and Phonograms Treaty of 1996 and the Universal Copyright Convention (as revised on July 24, 1971). These rights and subject matter take effect in the relevant jurisdiction in which the License terms are sought to be enforced according to the corresponding provisions of the implementation of those treaty provisions in the applicable national law. If the standard suite of rights granted under applicable copyright law includes additional rights not granted under this License, such additional rights are deemed to be included in the License; this License is not intended to restrict the license of any rights under applicable law.
-</textarea>
-<br /><br />
-
-<input type="checkbox" name="accept" id="accept" /><span style="cursor:pointer;" onclick="($('accept').checked?$('accept').checked=false:$('accept').checked=true)"> I have read, and accept the license</span>
-
-<div align="center">
-<input type="button" TABINDEX=2 onclick="checkAccept()" name="button" class="btn ok" id="button" value="Ok" /></div>
-</div>
-</form>
-<script type="text/javascript">
-$E('html').onkeydown = function(event){
-	var event = new Event(event);
-	if (event.key == 'enter' ) checkAccept();
-};
-function checkAccept()
-{
-	if($('accept').checked)
-		window.location = "index.php?step=2";
-	else
-	{
-		ShowBox('Error', 'If you do not accept the license, you may NOT install this web panel.', 'red', '', true);
-	}
-}
-</script>
+   6. The rights granted under, and the subject matter referenced, in this License were drafted utilizing the terminology of the Berne Convention for the Protection of Literary and Artistic Works (as amended on September 28, 1979), the Rome Convention of 1961, the WIPO Copyright Treaty of 1996, the WIPO Performances and Phonograms Treaty of 1996 and the Universal Copyright Convention (as revised on July 24, 1971). These rights and subject matter take effect in the relevant jurisdiction in which the License terms are sought to be enforced according to the corresponding provisions of the implementation of those treaty provisions in the applicable national law. If the standard suite of rights granted under applicable copyright law includes additional rights not granted under this License, such additional rights are deemed to be included in the License; this License is not intended to restrict the license of any rights under applicable law.</textarea>
+              <br /><br />
+              <input id="accept" name="accept" type="checkbox" />
+              <label for="accept" style="cursor: pointer;">I have read, and accept the license</label>
+              <div align="center">
+                <input class="btn ok" onclick="next(); return false;" type="submit" value="Ok" />
+              </div>
+            </div>
+          </form>
+          <script type="text/javascript">
+            function next() {
+              if($('accept').checked) {
+                window.location = '?step=2';
+              }
+              else {
+                ShowBox('Error', 'If you do not accept the license, you may NOT install this web panel.', 'red', '', true);
+              }
+            }
+          </script>

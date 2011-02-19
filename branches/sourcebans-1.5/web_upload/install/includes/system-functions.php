@@ -20,8 +20,6 @@
 * @return string
 */
 
-if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
-
 function substr_utf($string, $start = 0, $length = null) {
 $start = (integer) $start >= 0 ? (integer) $start : 0;
 if(is_null($length)) 
@@ -246,7 +244,7 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
 
 function HelpIcon($title, $text)
 {
-	return '<img border="0" align="absbottom" src="images/admin/help.png" class="tip" title="' .  $title . ' :: ' .  $text . '">&nbsp;&nbsp;';
+	return '<img border="0" align="absbottom" src="../themes/default/images/admin/help.png" class="tip" title="' .  $title . ' :: ' .  $text . '">&nbsp;&nbsp;';
 }
 
 /**

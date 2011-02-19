@@ -1,44 +1,29 @@
 <?php
 /**
- * =============================================================================
- * Updater Data
+ * Updater
  * 
- * @author SteamFriends Development Team
- * @version 1.2.0
- * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
- * @package SourceBans
- * @link http://www.sourcebans.net
- * 
- * @version $Id$
- * =============================================================================
+ * @author     InterWave Studios
+ * @copyright  SourceBans (C)2007-2011 InterWaveStudios.com.  All rights reserved.
+ * @link       http://www.sourcebans.net
+ * @package    SourceBans
+ * @subpackage Updater
+ * @version    $Id$
  */
- define('IS_UPDATE', true);
- include "../init.php";
-//clear compiled themes
-$cachedir = dir(SB_THEMES_COMPILE);
-while (($entry = $cachedir->read()) !== false) {
-	if (is_file($cachedir->path.$entry)) {
-		unlink($cachedir->path.$entry);
-	}
+define('IS_UPDATE', true);
+include '../init.php';
+include INCLUDES_PATH . '/CUpdate.php';
+
+$updater = new CUpdater();
+$theme->assign('theme_name',      isset($GLOBALS['config']['config.theme']) ? $GLOBALS['config']['config.theme'] : 'default');
+$theme->assign('current_version', $updater->getCurrentVersion());
+$theme->assign('latest_version',  $updater->getLatestVersion());
+
+$updates = $updater->update();
+// If updated, clear compiled templates
+if(!empty($updates))
+{
+  $theme->clear_compiled_tpl();
 }
-$cachedir->close();
- include INCLUDES_PATH . "/CUpdate.php";
- $updater = new CUpdater();
- 
- $setup = "Checking current database version...<b> " . $updater->getCurrentRevision() . "</b>";
- if(!$updater->needsUpdate())
- {
-	$setup .= "<br />Installation up-to-date.";
-	$theme->assign('setup', $setup);
-	$theme->assign('progress', "");
-	$theme->display('updater.tpl');
-	die();
- }
- $setup .= "<br />Updating database to version: <b>" . $updater->getLatestPackageVersion() . "</b>";
- 
- $progress = $updater->doUpdates();
- 
- $theme->assign('setup', $setup);
- $theme->assign('progress', $progress);
- $theme->display('updater.tpl');
-?>
+
+$theme->assign('updates', $updates);
+$theme->display('updater.tpl');

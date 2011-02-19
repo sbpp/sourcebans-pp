@@ -1,31 +1,29 @@
 <?php 
 /**
- * index.php
+ * Installer
  * 
- * This file that loads everything we need to get started
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SteamFriends (www.SteamFriends.com)
- * @package SourceBans
- * @link http://www.sourcebans.net
+ * @author     InterWave Studios
+ * @copyright  SourceBans (C)2007-2011 InterWaveStudios.com.  All rights reserved.
+ * @link       http://www.sourcebans.net
+ * @package    SourceBans
+ * @subpackage Installer
+ * @version    $Id$
  */
-
-
-session_start();
 include_once 'init.php';
-include_once(INCLUDES_PATH . "/user-functions.php");
-include_once(INCLUDES_PATH . "/system-functions.php");
-include_once(INCLUDES_PATH . "/page-builder.php");
+include_once INCLUDES_PATH . '/user-functions.php';
+include_once INCLUDES_PATH . '/system-functions.php';
 
+$steps      = array(
+  1 => 'License Agreement',
+  2 => 'Database Details',
+  3 => 'System Requirements',
+  4 => 'Table Creation',
+  5 => 'Initial Setup',
+  6 => 'AMXBans Import',
+);
+$step       = (isset($_GET['step']) && isset($steps[$_GET['step']]) ? $_GET['step'] : 1);
+$page_title = $steps[$GLOBALS['step']];
 
-
-
-
-
-
-
-
-
-//Yarr!
-
-?>
+include TEMPLATES_PATH . '/header.php';
+include TEMPLATES_PATH . '/page.' . $step . '.php';
+include TEMPLATES_PATH . '/footer.php';
