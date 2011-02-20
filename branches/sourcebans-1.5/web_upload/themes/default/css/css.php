@@ -1,13 +1,12 @@
 <?php
 /**
- * css.php
- * 
  * This file contains all of our styles :D
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SteamFriends (www.steamfriends.com)
- * @package SourceBans
- * @link http://www.sourcebans.net
+ * 
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
  */
 
 if(isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) { 
@@ -674,7 +673,7 @@ border-bottom-width:1px;
 
 #gc {
 	height: 68px;
-	width: 25%;
+	width: 220px;
 	float: left;
 	color: #FFF;
 	padding: 3px 0 0 5px;
@@ -686,14 +685,14 @@ border-bottom-width:1px;
 	
 #sb {
 	height: 68px;
-	width: 50%;
+	width: 442px;
 	float: left;
 	text-align: center;
 	}
 	
 #sm {
 	height: 68px;
-	width: 20%;
+	width: 220px;
 	float: right;
 	color: #FFF;
 	text-align: right;

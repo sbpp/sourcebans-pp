@@ -45,7 +45,7 @@ INSERT INTO {prefix}_settings (setting, value) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '295');
+('config.version', '350');
 
 INSERT INTO {prefix}_admins (user, authid, password, gid, email, validate, extraflags, immunity) VALUES
 ('CONSOLE', 'STEAM_ID_SERVER', '', '0', '', '', '0', 0);

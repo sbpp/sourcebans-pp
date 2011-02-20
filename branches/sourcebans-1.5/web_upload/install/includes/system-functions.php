@@ -1,13 +1,12 @@
 <?php
 /**
- * system-functions.php
+ * Main functions for system
  * 
- * This file contains most of our main funcs
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SteamFriends (www.steamfriends.com)
- * @package SourceBans
- * @link http://www.sourcebans.net
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
  */
 function HelpIcon($title, $text)
 {

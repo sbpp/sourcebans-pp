@@ -1,13 +1,12 @@
 /**
-* sourcebans.sp
-*
-* This file contains all Source Server Plugin Functions
-* @author InterWave Studios Development Team
-* @version 0.0.0.$Rev: 108 $
-* @copyright InterWave Studios (www.interwavestudios.com)
-* @package SourceBans
-* @link http://www.sourcebans.net
-*/
+ * SourceBans Game Plugin
+ *
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
+ */
 
 #pragma semicolon 1
 #include <sourcemod>
@@ -17,7 +16,7 @@
 #include <adminmenu>
 #include "dbi.inc"
 
-#define SB_VERSION "1.4.8"
+#define SB_VERSION "1.5.0"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -111,7 +110,7 @@ new serverID = -1;
 public Plugin:myinfo =
 {
 	name = "SourceBans",
-	author = "InterWave Studios Development Team",
+	author = "GameConnect",
 	description = "Advanced ban management for the Source engine",
 	version = SB_VERSION,
 	url = "http://www.sourcebans.net"

@@ -70,10 +70,10 @@
       </div>
       <div id="footer">
         <div id="gc">
-          By <a class="footer_link" href="http://www.interwavestudios.com" target="_blank">InterWave Studios</a>
+          By <a class="footer_link" href="http://www.gameconnect.net" target="_blank">GameConnect</a>
         </div>
         <div id="sb">
-          <br/>
+          <br />
         </div>
         <div id="sm">
           Powered by <a class="footer_link" href="http://www.sourcemod.net" target="_blank">SourceMod</a>

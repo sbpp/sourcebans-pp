@@ -13,7 +13,7 @@
  * Name:     help tip<br>
  * Purpose:  show help tip
  * @link http://www.sourcebans.net
- * @author  SourceBans Development Team
+ * @author  SteamFriends, InterWave Studios, GameConnect
  * @param array
  * @param Smarty
  * @return string

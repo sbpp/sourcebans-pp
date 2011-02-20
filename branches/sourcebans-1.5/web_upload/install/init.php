@@ -2,8 +2,8 @@
 /**
  * This file will setup our defs, and configure php
  * 
- * @author     InterWave Studios
- * @copyright  SourceBans (C)2007-2011 InterWaveStudios.com.  All rights reserved.
+ * @author     SteamFriends, InterWave Studios, GameConnect
+ * @copyright  (C)2007-2011 GameConnect.net.  All rights reserved.
  * @link       http://www.sourcebans.net
  * @package    SourceBans
  * @subpackage Installer

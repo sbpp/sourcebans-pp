@@ -1,16 +1,12 @@
 <?php
 /**
- * =============================================================================
  * AJAX Callback handler
  *
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
- * @package SourceBans
- * @link http://www.sourcebans.net
- *
- * @version $Id: sb-callback.php 140 2008-08-31 15:30:35Z peace-maker
- * =============================================================================
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id: sb-callback.php 140 2008-08-31 15:30:35Z peace-maker
  */
 require_once('xajax.inc.php');
 include_once('system-functions.php');

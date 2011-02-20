@@ -1,16 +1,12 @@
 <?php
 /**
- * =============================================================================
  * This file will setup our defs, and configure php
  * 
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
- * @package SourceBans
- * @link http://www.sourcebans.net
- * 
- * @version $Id$
- * =============================================================================
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
  */
 
 // ---------------------------------------------------

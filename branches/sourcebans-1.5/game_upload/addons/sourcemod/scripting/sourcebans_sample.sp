@@ -1,13 +1,12 @@
 /**
-* sourcebans.sp
-*
-* This file contains all Source Server Plugin Functions
-* @author SteamFriends Development Team
-* @version 0.0.0.$Rev: 108 $
-* @copyright SteamFriends (www.steamfriends.com)
-* @package SourceBans
-* @link http://www.sourcebans.net
-*/
+ * SourceBans Sample Plugin
+ *
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
+ */
 
 #pragma semicolon 1
 #include <sourcemod>
@@ -21,9 +20,9 @@ new g_bSBAvailable = false;
 public Plugin:myinfo =
 {
 	name = "SourceBans Sample Plugin",
-	author = "SteamFriends Development Team",
+	author = "GameConnect",
 	description = "Sample plugin to show SourceBans functionality",
-	version = "1.0.0 RC2",
+	version = "1.5.0",
 	url = "http://www.sourcebans.net"
 };
 

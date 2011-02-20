@@ -1,16 +1,13 @@
 <?php
 /**
- * =============================================================================
  * Query servers for details, map, players, etc
  * 
- * @author InterWave Studios Development Team, IceMatrix
- * @version 1.0.0
- * @copyright SourceBans (C)2008 InterWaveStudios.com.  All rights reserved.
- * @package SourceBans
- * @link http://www.sourcebans.net
- * 
- * @version $Id$
- * =============================================================================
+ * @author    SteamFriends, InterWave Studios, GameConnect
+ * @author    IceMatrix
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
  */
 
 if(!isset($_SESSION)) // We are using AJAX so need a new session, as we bypass some stuff before :o
