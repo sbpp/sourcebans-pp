@@ -54,7 +54,7 @@ For a short explination on how to create a demo, click <a href="javascript:void(
 <tr>
 	<td width="20%">
 		Server<span class="mandatory">*</span>:	</td>
-	<td>
+	<td colspan="2">
         <select id="server" name="server">
 			<option value="-1">-- Select Server --</option>
 			{foreach from="$server_list" item="server}

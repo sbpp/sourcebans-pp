@@ -197,11 +197,6 @@ if (isset($_GET['searchText']))
     if(!isset($GLOBALS['config']['banlist.hideplayerips']) || $GLOBALS['config']['banlist.hideplayerips'] != "1" || $userbank->is_admin())
         $search_ips = " or BA.ip LIKE " . $GLOBALS['db']->qstr($search);
 	
-	// Only allow searching for comments for admins
-	$search_comments = "";
-	if($userbank->is_admin())
-		$search_comments = " or CO.commenttxt LIKE " . $GLOBALS['db']->qstr($search);
-	
 	$res = $GLOBALS['db']->Execute(
 	"SELECT BA.bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
@@ -212,15 +207,12 @@ if (isset($_GET['searchText']))
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
   LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
-  LEFT JOIN ".DB_PREFIX."_comments AS CO ON BA.bid = CO.bid
-      WHERE BA.authid LIKE ?" . $search_ips . " or BA.name LIKE ? or BA.reason LIKE ?" . $search_comments . $hideinactive."
+      WHERE BA.authid LIKE ?" . $search_ips . " or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive."
    ORDER BY BA.created DESC
    LIMIT ?,?",array($search,$search,$search,intval($BansStart),intval($BansPerPage)));
 
 
-	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM ".DB_PREFIX."_bans AS BA
-											LEFT JOIN ".DB_PREFIX."_comments AS CO ON BA.bid = CO.bid
-	                                        WHERE BA.authid LIKE ?" . $search_ips . " OR BA.name LIKE ? OR BA.reason LIKE ?" . $search_comments . $hideinactive
+	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM ".DB_PREFIX."_bans AS BA WHERE BA.authid LIKE ?" . $search_ips . " OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive
 										,array($search,$search,$search));
 $searchlink = "&searchText=".$_GET["searchText"];
 }
@@ -271,9 +263,15 @@ if(isset($_GET['advSearch']))
 		case "ip":
             // disable ip search if hiding player ips
             if(isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin())
-                break;
-			$where = "WHERE BA.ip LIKE ?";
-			$advcrit = array("%$value%");
+            {
+                $where = "";
+				$advcrit = array();
+			}
+			else
+			{
+				$where = "WHERE BA.ip LIKE ?";
+				$advcrit = array("%$value%");
+			}
 		break;
 		case "reason":
 			$where = "WHERE BA.reason LIKE ?";
@@ -317,7 +315,10 @@ if(isset($_GET['advSearch']))
 		break;
 		case "admin":
             if($GLOBALS['config']['banlist.hideadminname']&&!$userbank->is_admin())
+			{
                 $where = "";
+				$advcrit = array();
+			}
             else {
                 $where = "WHERE BA.aid=?";
                 $advcrit = array($value);
@@ -342,10 +343,14 @@ if(isset($_GET['advSearch']))
 				$advcrit = array("%$value%");
 			}
 			else
-				$where = "";
+			{
+                $where = "";
+				$advcrit = array();
+			}
 		break;
 		default:
 			$where = "";
+			$advcrit = array();
 		break;
 	}
 
@@ -359,13 +364,13 @@ if(isset($_GET['advSearch']))
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
   LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
-  LEFT JOIN ".DB_PREFIX."_comments AS CO ON BA.bid = CO.bid
+  ".($type=="comment"&&$userbank->is_admin()?"LEFT JOIN ".DB_PREFIX."_comments AS CO ON BA.bid = CO.bid":"")."
       ".$where.$hideinactive."
    ORDER BY BA.created DESC
    LIMIT ?,?", array_merge($advcrit, array(intval($BansStart),intval($BansPerPage))));
 
 	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM ".DB_PREFIX."_bans AS BA
-										  LEFT JOIN ".DB_PREFIX."_comments AS CO ON BA.bid = CO.bid ".$where.$hideinactive, $advcrit);
+										  ".($type=="comment"&&$userbank->is_admin()?"LEFT JOIN ".DB_PREFIX."_comments AS CO ON BA.bid = CO.bid":"")." ".$where.$hideinactive, $advcrit);
 	$searchlink = "&advSearch=".$_GET['advSearch']."&advType=".$_GET['advType'];
 }
 
