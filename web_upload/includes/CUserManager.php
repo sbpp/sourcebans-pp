@@ -106,7 +106,7 @@ class CUserManager
 		if($aid == -2)
 			$aid = $this->aid;
 			
-		if(empty($flags) || $aid < 0)
+		if(empty($flags) || $aid <= 0)
 			return false;
 		
 		$aid = (int)$aid;
@@ -230,6 +230,7 @@ class CUserManager
 	{
 		if($aid == -2)
 			$aid = $this->aid;
+		
 		if($this->HasAccess(ALL_WEB, $aid))
 			return true;
 		else 	
