@@ -904,102 +904,79 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			}
 		}
 	}
-	// If they only want server admin, we dont need an email
-	// but still validate and store, if typed anyway
-	if($a_wg != "-3" // No Permissions
-	|| !empty($a_email))
+	
+	// No email
+	if(empty($a_email))
 	{
-		// No email
-		if(empty($a_email))
+		$error++;
+		$objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
+		$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+	}
+	else{
+		// Is an other admin already registred with that email address?
+		if(is_taken("admins", "email", $a_email))
 		{
 			$error++;
-			$objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
+			$objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used.");
 			$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
 		}
-		else{
-			// Is an other admin already registred with that email address?
-			if(is_taken("admins", "email", $a_email))
+		else
+		{
+			$objResponse->addAssign("email.msg", "innerHTML", "");
+			$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
+		/*	if(!validate_email($a_email))
 			{
 				$error++;
-				$objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used.");
+				$objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
 				$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
 			}
 			else
 			{
 				$objResponse->addAssign("email.msg", "innerHTML", "");
 				$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
-			/*	if(!validate_email($a_email))
-				{
-					$error++;
-					$objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
-					$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
-				}
-				else
-				{
-					$objResponse->addAssign("email.msg", "innerHTML", "");
-					$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
 
-				}*/
-			}
+			}*/
 		}
-	}
-	else
-	{
-		$objResponse->addAssign("email.msg", "innerHTML", "");
-		$objResponse->addScript("$('email.msg').setStyle('display', 'none');");
 	}
 	
-	// If they only want server admin, we dont need a password
-	// but still validate and store, if typed anyway
-	if($a_wg != "-3"
-	|| !empty($a_password))
+	// no pass
+	if(empty($a_password))
 	{
-		// no pass
-		if(empty($a_password))
-		{
-			$error++;
-			$objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
-			$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
-		}
-		// Password too short?
-		else if(strlen($a_password) < MIN_PASS_LENGTH)
-		{
-			$error++;
-			$objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
-			$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
-		}
-		else 
-		{
-			$objResponse->addAssign("password.msg", "innerHTML", "");
-			$objResponse->addScript("$('password.msg').setStyle('display', 'none');");
-			
-			// No confirmation typed
-			if(empty($a_password2))
-			{
-				$error++;
-				$objResponse->addAssign("password2.msg", "innerHTML", "You must confirm the password");
-				$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
-			}
-			// Passwords match?
-			else if($a_password != $a_password2)
-			{
-				$error++;
-				$objResponse->addAssign("password2.msg", "innerHTML", "Your passwords don't match");
-				$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
-			}
-			else
-			{
-				$objResponse->addAssign("password2.msg", "innerHTML", "");
-				$objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
-			}
-		}
+		$error++;
+		$objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
+		$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
 	}
-	else
+	// Password too short?
+	else if(strlen($a_password) < MIN_PASS_LENGTH)
+	{
+		$error++;
+		$objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
+		$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+	}
+	else 
 	{
 		$objResponse->addAssign("password.msg", "innerHTML", "");
 		$objResponse->addScript("$('password.msg').setStyle('display', 'none');");
-		$objResponse->addAssign("password2.msg", "innerHTML", "");
-		$objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
+		
+		// No confirmation typed
+		if(empty($a_password2))
+		{
+			$error++;
+			$objResponse->addAssign("password2.msg", "innerHTML", "You must confirm the password");
+			$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+		}
+		// Passwords match?
+		else if($a_password != $a_password2)
+		{
+			$error++;
+			$objResponse->addAssign("password2.msg", "innerHTML", "Your passwords don't match");
+			$objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+		}
+		else
+		{
+			$objResponse->addAssign("password2.msg", "innerHTML", "");
+			$objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
+		}
 	}
 
 	// Choose to use a server password
@@ -1931,7 +1908,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 		return $objResponse;
 	}
 
-	if(!$userbank->HasAccess(ADMIN_OWNER) && ((int)$web_flags) > 101056271 )
+	if(!$userbank->HasAccess(ADMIN_OWNER) && (int)$web_flags & ADMIN_OWNER )
 	{
 			$objResponse->redirect("index.php?p=login&m=no_access", 0);
 			$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to gain OWNER admin permissios, but doesnt have access.");
