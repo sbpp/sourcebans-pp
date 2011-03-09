@@ -115,7 +115,8 @@ CREATE TABLE {prefix}_comments (
   PRIMARY KEY  (id),
   KEY ban_id (ban_id),
   KEY admin_id (admin_id),
-  KEY edit_admin_id (edit_admin_id)
+  KEY edit_admin_id (edit_admin_id),
+  FULLTEXT message (message)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
