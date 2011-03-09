@@ -7,20 +7,20 @@
   <tr>
     <td valign="top" width="35%"><div class="rowdesc">{help_icon title="Admin Login" message="This is the username the admin will use to login-to their admin panel. Also this will identify the admin on any bans they make."}Admin Login </div></td>
     <td><div align="left">
-        <input type="text" class="submit-fields" id="adminname" name="adminname" />
+        <input type="text" class="submit-fields" id="adminname" name="adminname" value="{$user}" />
       </div>
-        <div id="name.msg" class="badentry"></div></td>
+        <div id="adminname.msg" class="badentry"></div></td>
   </tr>
   <tr>
     <td valign="top"><div class="rowdesc">{help_icon title="Steam ID" message="This is the admins 'STEAM' id. This must be set so that admins can use their admin rights ingame."}Admin STEAM ID </div></td>
     <td><div align="left">
-      <input type="text" value="STEAM_0:" class="submit-fields" id="steam" name="steam" />
+      <input type="text" class="submit-fields" id="steam" name="steam" value="{$authid}" />
     </div><div id="steam.msg" class="badentry"></div></td>
   </tr>
   <tr>
     <td valign="top"><div class="rowdesc">{help_icon title="Admin Email" message="Set the admins e-mail address. This will be used for sending out any automated messages from the system, and for use when you forget your password."}Admin Email </div></td>
     <td><div align="left">
-        <input type="text" class="submit-fields" id="email" name="email" />
+        <input type="text" class="submit-fields" id="email" name="email" value="{$email}" />
       </div>
         <div id="email.msg" class="badentry"></div></td>
   </tr>
@@ -41,12 +41,18 @@
         <div id="password2.msg" class="badentry"></div></td>
   </tr>
   <tr>
-		<td valign="top" width="35%"><div class="rowdesc">{help_icon title="Server Admin Password" message="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Use as admin password?</div></td>
-		<td><div align="left">
-			<input type="checkbox" name="a_spass" id="a_spass" /> <small>You need to change the password, to enable the serverpassword</small>
-		</div>
-		</td>
-	</tr>
+    <td valign="top" width="35%">
+      <div class="rowdesc">
+        {help_icon title="Server Admin Password" message="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Server Password <small>(<a href="http://wiki.alliedmods.net/Adding_Admins_%28SourceMod%29#Passwords" title="SourceMod Password Info" target="_blank">More</a>)</small>
+      </div>
+    </td>
+    <td>
+      <div align="left">
+        <input type="checkbox" id="a_useserverpass" name="a_useserverpass"{if $a_spass} checked="checked"{/if} TABINDEX=6 onclick="$('a_serverpass').disabled = !$(this).checked;" /> <input type="password" TABINDEX=7 class="submit-fields" name="a_serverpass" id="a_serverpass"{if !$a_spass} disabled="disabled"{/if} />
+      </div>
+      <div id="a_serverpass.msg" class="badentry"></div>
+    </td>
+  </tr>
   
   {/if}
   
@@ -60,12 +66,4 @@
       </td>
   </tr>
 </table>
-<script>
-$('adminname').value = "{$user}";
-$('steam').value = "{$authid}";
-$('email').value = "{$email}";
-$('a_spass').checked = "{$a_spass}";
-
-
-</script>
 </div></div></form>

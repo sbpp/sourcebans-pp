@@ -70,7 +70,7 @@ if(isset($_POST['editadminserver']))
 			$GLOBALS['db']->Execute($pre,array($aid,
 											   $server_grp,
 											   -1,
-											   substr($s,1)));
+											   (int)substr($s,1)));
 		}
 	}
 	if(isset($_POST['group']) && is_array($_POST['group']) && count($_POST['group']) > 0) {
@@ -79,7 +79,7 @@ if(isset($_POST['editadminserver']))
 			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array($aid,
 											   $server_grp,
-											   substr($g,1),
+											   (int)substr($g,1),
 											   -1));
 		}
 	}
@@ -92,12 +92,31 @@ if(isset($_POST['editadminserver']))
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+		
 		$allservers = "";
 		foreach($serveraccessq as $access) {
 			if(!strstr($allservers, $access['sid'].",")) {
 				$allservers .= $access['sid'].",";
 			}
 		}
+		
+		// Add all servers, he's been admin on before
+		foreach($servers as $server)
+		{
+			if($server['server_id'] != "-1" && !strstr($allservers, (int)$server['server_id'].",")) {
+				$allservers .= (int)$server['server_id'].",";
+			}
+			
+			// old server groups
+			$serv_in_grp = $GLOBALS['db']->GetAll('SELECT server_id FROM `'.DB_PREFIX.'_servers_groups` WHERE group_id = ?;', array((int)$server['srv_group_id']));
+			foreach($serv_in_grp as $srg)
+			{
+				if($srg['server_id'] != "-1" && !strstr($allservers, (int)$srg['server_id'].",")) {
+					$allservers .= (int)$srg['server_id'].",";
+				}
+			}
+		}
+		
 		echo '<script>ShowRehashBox("'.$allservers.'", "Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	} else
 		echo '<script>ShowBox("Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
