@@ -37,17 +37,48 @@ $res = $GLOBALS['db']->GetRow("
     				SELECT name, modfolder, icon, enabled
     				FROM ".DB_PREFIX."_mods
     				WHERE mid = {$_GET['id']}");
+
+$errorScript = "";
+
 if(isset($_POST['name']))
 {
+	// Form validation
+	$error = 0;
+	
+	if(empty($_POST['name']))
+	{
+		$error++;
+		$errorScript .= "$('name.msg').innerHTML = 'You must type a name for the mod.';";
+		$errorScript .= "$('name.msg').setStyle('display', 'block');";
+	}
+	if(empty($_POST['folder']))
+	{
+		$error++;
+		$errorScript .= "$('name.msg').innerHTML = 'You must enter mod\'s folder name.';";
+		$errorScript .= "$('name.msg').setStyle('display', 'block');";
+	}
+	
+	$name = htmlspecialchars(strip_tags($_POST['name']));//don't want to addslashes because execute will automatically do it
+	$icon = htmlspecialchars(strip_tags($_POST['icon_hid']));
+	$folder = htmlspecialchars(strip_tags($_POST['folder']));
 	$enabled = ($_POST['enabled'] == '1' ? 1 : 0);
 	
-	if($res['icon']!=$_POST['icon_hid'])
-		@unlink(SB_ICONS."/".$res['icon']);
-		
-	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_mods SET
-									`name` = ?, `modfolder` = ?, `icon` = ?, `enabled` = ?
-									WHERE `mid` = ?", array($_POST['name'], $_POST['folder'], $_POST['icon_hid'], $enabled, (int)$_GET['id']));
-	echo '<script>ShowBox("Mod updated", "The mod has been updated successfully", "green", "index.php?p=admin&c=mods");</script>';
+	if($error == 0)
+	{
+		if($res['icon']!=$_POST['icon_hid'])
+			@unlink(SB_ICONS."/".$res['icon']);
+			
+		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_mods SET
+										`name` = ?, `modfolder` = ?, `icon` = ?, `enabled` = ?
+										WHERE `mid` = ?", array($name, $folder, $icon, $enabled, $_GET['id']));
+		echo '<script>ShowBox("Mod updated", "The mod has been updated successfully", "green", "index.php?p=admin&c=mods");</script>';
+	}
+	
+	// put into array to display new values after submit
+	$res['name'] = $name;
+	$res['modfolder'] = $folder;
+	$res['icon'] = $icon;
+	$res['enabled'] = $enabled;
 }
 if(!$res)
 	echo '<script>ShowBox("Error", "There was an error getting details. Maybe the mod has been deleted?", "red", "index.php?p=admin&c=mod");</script>';
@@ -62,8 +93,11 @@ $theme->assign('name', $res['name']);
 <div id="1">
 <?php $theme->display('page_admin_edit_mod.tpl'); ?>
 <script>
-$('enabled').checked = <?php echo $res['enabled'] ?>;
+$('enabled').checked = <?php echo (int)$res['enabled'] ?>;
 </script>
 </div>
 </div>
-
+<script type="text/javascript">window.addEvent('domready', function(){
+<?php echo $errorScript; ?>
+});
+</script>

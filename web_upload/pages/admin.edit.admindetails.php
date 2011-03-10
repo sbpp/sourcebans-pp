@@ -57,6 +57,8 @@ if(!$userbank->HasAccess(ADMIN_OWNER))
 	}
 }
 
+$errorScript = "";
+
 // Form submitted?
 if(isset($_POST['adminname']))
 {
