@@ -27,6 +27,17 @@ if(!isset($_GET['id']))
 	die();
 }
 
+if(!isset($_GET['type']) || ($_GET['type'] != 'web' && $_GET['type'] != 'srv' && $_GET['type'] != 'server'))
+{
+	echo '<div id="msg-red" >
+	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<b>Error</b>
+	<br />
+	No valid group type specified. Please only follow links
+</div>';
+	die();
+}
+
 $_GET['id'] = (int)$_GET['id'];
 
 $web_group = $GLOBALS['db']->GetRow("SELECT flags, name FROM ".DB_PREFIX."_groups WHERE gid = {$_GET['id']}");
@@ -47,7 +58,7 @@ $name = $userbank->GetProperty("user", $_GET['id']);
     <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Group Name", "Type the name of the new group you want to create.");?>Group Name </div></td>
     <td><div align="left">
       <input type="text" TABINDEX=1 class="inputbox" id="groupname" name="groupname" />
-    </div><div id="name.msg" style="color:#CC0000;"></div></td>
+    </div><div id="groupname.msg" style="color:#CC0000;"></div></td>
   </tr>
   </table>
 <?php if($_GET['type'] == "web")
@@ -57,12 +68,6 @@ $name = $userbank->GetProperty("user", $_GET['id']);
 <br /><?php }elseif($_GET['type'] == "srv"){?>
 <h3>Server Admin Permissions</h3>
 <?php  $permissions = str_replace("{title}", $name, @file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php")) ;
-$ig = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
-		$html = "";
-		foreach($ig AS $g)
-			$html .= '<option value="' . $g['id'] . '">' . $g['name'] . '</option>';
-			
-		$permissions = str_replace("{GROUPS}", $html, $permissions);
 echo $permissions;
 ?>
 <?php }?>
@@ -157,7 +162,7 @@ $('s20').checked = <?php echo strstr($srv_flags, SM_CUSTOM4) ? "true" : "false"?
 $('s21').checked = <?php echo strstr($srv_flags, SM_CUSTOM5) ? "true" : "false"?>;
 $('s22').checked = <?php echo strstr($srv_flags, SM_CUSTOM6) ? "true" : "false"?>;
 
-$('immunity').value = <?php echo $srv_group['immunity'] ? $srv_group['immunity'] : "0"?>;
+$('immunity').value = <?php echo $srv_group['immunity'] ? (int)$srv_group['immunity'] : "0"?>;
 <?php }?>
 </script>
 </div></div>
