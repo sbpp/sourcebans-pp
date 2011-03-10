@@ -8,29 +8,31 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
-(18/02/11): Version 1.4.8
+(11/03/11): Version 1.4.8
 -----------------------
-01. * Added option to hide player IP's from public
+01. * Added option to hide player IP's from public on banlist
 02. * Added search for comments
 03. * Added little icon on banlist indicating that there are comments on that ban
-04. * Added option to ban by community id
-05. + CServerInfo & CServerRcon classes updated to support BIND_IP for web servers with strict firewall/IP policies
-06. + Added error logging to local ban queue
-07. + Added links to FAQ to common error messages in plugin
-08. ! Fixed XSS exploit (Thanks to Sw1tCh)
-09. ! Fixed showing php notices
-10. ! Fixed admins losing permissions if gameserver can't connect to the database
-11. ! Fixed RCON console in IE (Thanks Synergy)
-12. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
-13. ! Fixed trying to reach servers with buggy empty ip/port field
-14. ! Fixed not downloading demos with space in filename
-15. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
-16. ! Fixed System log does not take summertime into account
-17. ! Fixed the contact url in kickit messages getting cut off
-18. ! Fixed setting "Error getting name" instead of "Imported Ban" when importing bans from banned_user.cfg and being unable to fetch the player name
-19. ? Added hint to servers page mentioning the player context menu
-20. ? Updated IpToCountry.csv for country lookup
-21. ? Changed footer and logo to GameConnect.net
+04. * Added option to ban by community id (converted to steamid)
+05. * Added edit form validation
+06. + Seperated server admin password from web password in admin adding form
+07. + CServerInfo & CServerRcon classes updated to support BIND_IP for web servers with strict firewall/IP policies
+08. + Added error logging to local ban queue
+09. + Added links to FAQ to common error messages in plugin
+10. ! Fixed XSS exploit (Thanks to Sw1tCh)
+11. ! Fixed showing php notices
+12. ! Fixed admins losing permissions if gameserver can't connect to the database
+13. ! Fixed RCON console in IE (Thanks Synergy)
+14. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
+15. ! Fixed trying to reach servers with buggy empty ip/port field
+16. ! Fixed not downloading demos with space in filename
+17. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
+18. ! Fixed System log does not take summertime into account
+19. ! Fixed the contact url in kickit messages getting cut off
+20. ! Fixed setting "Error getting name" instead of "Imported Ban" when importing bans from banned_user.cfg and being unable to fetch the player name
+21. ? Added hint to servers page mentioning the player context menu
+22. ? Updated IpToCountry.csv for country lookup
+23. ? Changed footer and logo to GameConnect.net
 
 (22/08/10): Version 1.4.7
 -----------------------
