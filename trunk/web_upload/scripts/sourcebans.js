@@ -688,6 +688,20 @@ function ProcessEditGroup(type, name)
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
 	var group = $('group_id').value;
+	
+	if(name == "")
+	{
+		ShowBox("Error", "You have to type a name for the group.", "red", "", true);
+		$('groupname.msg').innerHTML = 'You have to type a name for the group.';
+		$('groupname.msg').setStyle('display', 'block');
+		return;
+	}
+	else
+	{
+		$('groupname.msg').innerHTML = '';
+		$('groupname.msg').setStyle('display', 'none');
+	}
+	
 	if($('immunity'))
 	{
 	 	if(IsNumeric($('immunity').value))
@@ -936,7 +950,7 @@ function ProcessMod()
 	var err = 0;
 	if(!$('name').value)
 	{
-		$('name.msg').setHTML('You must enter the name of the MOD you are adding');
+		$('name.msg').setHTML('You must enter the name of the mod you are adding.');
 		$('name.msg').setStyle('display', 'block');
 		err++;
 	}else
@@ -947,7 +961,7 @@ function ProcessMod()
 	
 	if(!$('folder').value)
 	{
-		$('folder.msg').setHTML('You must enter MOD`s folder name');
+		$('folder.msg').setHTML('You must enter mod\'s folder name.');
 		$('folder.msg').setStyle('display', 'block');
 		err++;
 	}else

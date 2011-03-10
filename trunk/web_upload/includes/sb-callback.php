@@ -658,7 +658,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 	if(!empty($rcon) && $rcon != $rcon2)
 	{
 		$error++;
-		$objResponse->addAssign("rcon2.msg", "innerHTML", "You must type the server RCON password.");
+		$objResponse->addAssign("rcon2.msg", "innerHTML", "The passwords don't match.");
 		$objResponse->addScript("$('rcon2.msg').setStyle('display', 'block');");
 	}
 	else
@@ -1882,13 +1882,16 @@ function AddMod($name, $folder, $icon, $enabled)
 		return $objResponse;
 	}
 	$name = htmlspecialchars(strip_tags($name));//don't want to addslashes because execute will automatically do it
+	$icon = htmlspecialchars(strip_tags($icon));
+	$folder = htmlspecialchars(strip_tags($folder));
+	$enabled = (int)$enabled;
 
 	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_mods(name,icon,modfolder,enabled) VALUES (?,?,?,?)");
 	$GLOBALS['db']->Execute($pre,array($name, $icon, $folder, $enabled));
 
-	$objResponse->addScript("ShowBox('MOD Added', 'The game MOD has been successfully added', 'green', 'index.php?p=admin&c=mods');");
+	$objResponse->addScript("ShowBox('Mod Added', 'The game mod has been successfully added', 'green', 'index.php?p=admin&c=mods');");
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "MOD Added", "MOD ($name) has been added");
+    $log = new CSystemLog("m", "Mod Added", "Mod ($name) has been added");
 	return $objResponse;
 }
 
@@ -1962,9 +1965,17 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit group details, but doesnt have access.");
 		return $objResponse;
 	}
-
+	
+	if(empty($name))
+	{
+		$objResponse->redirect("index.php?p=login&m=no_access", 0);
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to set group's name to nothing. This isn't possible with the normal form.");
+		return $objResponse;
+	}
+	
 	$gid = (int)$gid;
 	$name = RemoveCode($name);
+	$web_flags = (int)$web_flags;
 	if($type == "web" || $type == "server" )
 	// Update web stuff
 	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_groups` SET `flags` = ?, `name` = ? WHERE `gid` = $gid", array($web_flags, $name));
