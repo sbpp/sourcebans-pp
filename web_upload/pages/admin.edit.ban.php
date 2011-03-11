@@ -101,7 +101,7 @@ if(isset($_POST['name']))
 		// Check if the new steamid is already banned
 		if($_POST['type'] == 0)
 		{
-			$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($_POST['steam']));
+			$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != ?", array($_POST['steam'], (int)$_GET['id']));
 
 			if((int)$chk[0] > 0)
 			{
@@ -128,7 +128,7 @@ if(isset($_POST['name']))
 		// Check if the ip is already banned
 		else if($_POST['type'] == 1)
 		{
-			$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'", array($_POST['ip']));
+			$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != ?", array($_POST['ip'], (int)$_GET['id']));
 
 			if((int)$chk[0] > 0)
 			{
