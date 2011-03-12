@@ -1037,7 +1037,7 @@ function toggleMCE(id) {
 		tinyMCE.execCommand('mceRemoveControl', false, id);
 }
 
-function CheckEmail(email)
+function CheckEmail(type, id)
 {
 	var err = 0;
 	if($('subject').value == "") {
@@ -1060,7 +1060,7 @@ function CheckEmail(email)
 		
 	if(err>0)
 		return;
-	xajax_SendMail($('subject').value, $('message').value, email);
+	xajax_SendMail($('subject').value, $('message').value, type, id);
 }
 
 function IsNumeric(sText)

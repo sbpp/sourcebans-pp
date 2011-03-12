@@ -22,7 +22,7 @@
 		  <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '2');">Restore</a> -
             <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '0');">Delete</a> -
           {/if}
-          <a href="index.php?p=admin&c=bans&o=email&mail={$protest.email}">Contact</a>
+          <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid}">Contact</a>
           </td>
 				</tr>
 				<tr id="apid_{$protest.pid}a" >
