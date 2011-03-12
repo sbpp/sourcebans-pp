@@ -2104,20 +2104,56 @@ function SendRcon($sid, $command, $output)
 }
 
 
-function SendMail($subject, $message, $email)
+function SendMail($subject, $message, $type, $id)
 {
 	$objResponse = new xajaxResponse();
     global $userbank, $username;
+	
+	$id = (int)$id;
+	
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
-		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send an email to ".htmlspecialchars(addslashes(trim($email))).", but doesnt have access.");
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send an email, but doesnt have access.");
 		return $objResponse;
 	}
+	
+	// Don't mind wrong types
+	if($type != 's' && $type != 'p')
+	{
+		return $objResponse;
+	}
+	
+	// Submission
+	$email = "";
+	if($type == 's')
+	{
+		$email = $GLOBALS['db']->GetOne('SELECT email FROM `'.DB_PREFIX.'_submissions` WHERE subid = ?', array($id));
+	}
+	// Protest
+	else if($type == 'p')
+	{
+		$email = $GLOBALS['db']->GetOne('SELECT email FROM `'.DB_PREFIX.'_protests` WHERE pid = ?', array($id));
+	}
+	
+	if(empty($email))
+	{
+		$objResponse->addScript("ShowBox('Error', 'There is no email to send to supplied.', 'red', 'index.php?p=admin&c=bans');");
+		return $objResponse;
+	}
+	
 	$headers = "From: noreply@" . $_SERVER['HTTP_HOST'] . "\n" . 'X-Mailer: PHP/' . phpversion();
-	$m = mail($email, $subject, $message, $headers);
+	$m = @mail($email, '[SourceBans] ' . $subject, $message, $headers);
 
-	$objResponse->addScript("ShowBox('Email Sent', 'The email has been sent to the user.', 'green', 'index.php?p=admin&c=bans');");
+	
+	if($m)
+	{
+		$objResponse->addScript("ShowBox('Email Sent', 'The email has been sent to the user.', 'green', 'index.php?p=admin&c=bans');");
+		$log = new CSystemLog("m", "Email Sent", $username . " send an email to ".htmlspecialchars($email).".<br />Subject: '[SourceBans] " . htmlspecialchars($subject) . "'<br />Message: '" . nl2br(htmlspecialchars($message)) . "'");
+	}
+	else
+		$objResponse->addScript("ShowBox('Error', 'Failed to send the email to the user.', 'red', '');");
+	
 	return $objResponse;
 }
 
