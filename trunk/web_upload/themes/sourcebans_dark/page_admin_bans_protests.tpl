@@ -21,7 +21,7 @@
           {if $permission_editban}
             <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '1');">Remove</a> -
           {/if}
-          <a href="index.php?p=admin&c=bans&o=email&mail={$protest.email}">Contact</a>
+          <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid}">Contact</a>
           </td>
 				</tr>
 				<tr id="pid_{$protest.pid}a" >

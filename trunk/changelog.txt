@@ -19,20 +19,21 @@ Legend:
 07. + CServerInfo & CServerRcon classes updated to support BIND_IP for web servers with strict firewall/IP policies
 08. + Added error logging to local ban queue
 09. + Added links to FAQ to common error messages in plugin
-10. ! Fixed XSS exploit (Thanks to Sw1tCh)
-11. ! Fixed showing php notices
-12. ! Fixed admins losing permissions if gameserver can't connect to the database
-13. ! Fixed RCON console in IE (Thanks Synergy)
-14. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
-15. ! Fixed trying to reach servers with buggy empty ip/port field
-16. ! Fixed not downloading demos with space in filename
-17. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
-18. ! Fixed System log does not take summertime into account
-19. ! Fixed the contact url in kickit messages getting cut off
-20. ! Fixed setting "Error getting name" instead of "Imported Ban" when importing bans from banned_user.cfg and being unable to fetch the player name
-21. ? Added hint to servers page mentioning the player context menu
-22. ? Updated IpToCountry.csv for country lookup
-23. ? Changed footer and logo to GameConnect.net
+10. + Changed emailing form to only send to emails that belong to submissions or protests
+11. ! Fixed XSS exploit (Thanks to Sw1tCh)
+12. ! Fixed showing php notices
+13. ! Fixed admins losing permissions if gameserver can't connect to the database
+14. ! Fixed RCON console in IE (Thanks Synergy)
+15. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
+16. ! Fixed trying to reach servers with buggy empty ip/port field
+17. ! Fixed not downloading demos with space in filename
+18. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
+19. ! Fixed System log does not take summertime into account
+20. ! Fixed the contact url in kickit messages getting cut off
+21. ! Fixed setting "Error getting name" instead of "Imported Ban" when importing bans from banned_user.cfg and being unable to fetch the player name
+22. ? Added hint to servers page mentioning the player context menu
+23. ? Updated IpToCountry.csv for country lookup
+24. ? Changed footer and logo to GameConnect.net
 
 (22/08/10): Version 1.4.7
 -----------------------
