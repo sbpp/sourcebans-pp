@@ -302,14 +302,13 @@ div.dialog-control{
 	}
 	
 #footer {
-	clear:both;
+	clear: both;
 	color: #000;
 	width: 892px;
-	margin-left:15px;
+	margin: 0 15px;
+	overflow: hidden;
 	background-image: url(../images/footerrepeatbg.png);
 	background-repeat: repeat-x;
-	
-	height: 68px;
 }
 
 /** ================ Header ================ **/
@@ -694,7 +693,6 @@ border-bottom-width:1px;
 	
 	
 #sb {
-	height: 68px;
 	width: 442px;
 	float: left;
 	text-align: center;

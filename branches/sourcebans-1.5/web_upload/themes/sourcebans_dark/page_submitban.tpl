@@ -8,74 +8,74 @@ For a short explination on how to create a demo, click <a href="javascript:void(
 <input type="hidden" name="subban" value="1">
 <table cellspacing='10' width='100%' align='center'>
 <tr>
-	<td colspan="3">
-		Ban Details:	</td>
+  <td colspan="3">
+    Ban Details:  </td>
 </tr>
 <tr>
-	<td width="20%">
-		Players SteamID:</td>
-	<td>
-		<input type="text" name="SteamID" size="40" maxlength="64" value="{$STEAMID}" class="submit-fields" />
-	</td>
+  <td width="20%">
+    Players SteamID:</td>
+  <td>
+    <input type="text" name="SteamID" size="40" maxlength="64" value="{$STEAMID}" class="submit-fields" />
+  </td>
     <td rowspan="7" align="center" valign="top" width="200px"><img src="images/nocheat.jpg" alt="No Cheaters!" width="200" height="200" /></td>
 </tr>
 <tr>
-	<td width="20%">
-		Players IP:</td>
-	<td>
-		<input type="text" name="BanIP" size="40" maxlength="64" value="{$ban_ip}" class="submit-fields" />
-	</td>
+  <td width="20%">
+    Players IP:</td>
+  <td>
+    <input type="text" name="BanIP" size="40" maxlength="64" value="{$ban_ip}" class="submit-fields" />
+  </td>
 </tr>
 <tr>
-	<td width="20%">
+  <td width="20%">
         Players Nick Name<span class="mandatory">*</span>:</td>
-	<td>
+  <td>
         <input type="text" size="40" maxlength="70" name="PlayerName" value="{$player_name}" class="submit-fields" /></td>
 </tr>
 <tr>
-	<td width="20%" valign="top">
-		Comments<span class="mandatory">*</span>:<br />
-		(Please write down a descriptive comment. So NO comments like: "hacking")	</td>
-	<td><textarea name="BanReason" cols="30" rows="5" class="submit-fields">{$ban_reason}</textarea></td>
+  <td width="20%" valign="top">
+    Comments<span class="mandatory">*</span>:<br />
+    (Please write down a descriptive comment. So NO comments like: "hacking")  </td>
+  <td><textarea name="BanReason" cols="30" rows="5" class="submit-fields">{$ban_reason}</textarea></td>
     </tr>
 <tr>
-	<td width="20%">
-		Your Name:	</td>
-	<td>
-		<input type="text" size="40" maxlength="70" name="SubmitName" value="{$subplayer_name}" class="submit-fields" />	</td>
+  <td width="20%">
+    Your Name:  </td>
+  <td>
+    <input type="text" size="40" maxlength="70" name="SubmitName" value="{$subplayer_name}" class="submit-fields" />  </td>
     </tr>
 
 <tr>
-	<td width="20%">
-		Your Email<span class="mandatory">*</span>:	</td>
-	<td>
-		<input type="text" size="40" maxlength="70" name="EmailAddr" value="{$player_email}" class="submit-fields" />	</td>
+  <td width="20%">
+    Your Email<span class="mandatory">*</span>:  </td>
+  <td>
+    <input type="text" size="40" maxlength="70" name="EmailAddr" value="{$player_email}" class="submit-fields" />  </td>
     </tr>
 <tr>
-	<td width="20%">
-		Server<span class="mandatory">*</span>:	</td>
-	<td>
+  <td width="20%">
+    Server<span class="mandatory">*</span>:  </td>
+  <td>
         <select id="server" name="server">
-			<option value="-1">-- Select Server --</option>
-			{foreach from="$server_list" item="server}
-				<option value="{$server.sid}" {if $server_selected == $server.sid}selected{/if}>{$server.hostname}</option>
-			{/foreach}
-			<option value="0">Other server / Not listed here</option>
-		</select> 
+      <option value="-1">-- Select Server --</option>
+      {foreach from="$server_list" item="server"}
+        <option value="{$server.sid}" {if $server_selected == $server.sid}selected{/if}>{$server.hostname}</option>
+      {/foreach}
+      <option value="0">Other server / Not listed here</option>
+    </select> 
     </td>
     </tr>
 <tr>
-	<td width="20%">
-		Upload demo:	</td>
-	<td>
-		<input name="demo_file" type="file" size="25" class="submit-fields" /><br />
-		Note: Only <a href="http://www.winzip.com" target="_blank">ZIP</a> or <a href="http://www.rarlab.com" target="_blank">RAR</a> allowed.	</td>
+  <td width="20%">
+    Upload demo:  </td>
+  <td>
+    <input name="demo_file" type="file" size="25" class="submit-fields" /><br />
+    Note: Only <a href="http://www.winzip.com" target="_blank">ZIP</a> or <a href="http://www.rarlab.com" target="_blank">RAR</a> allowed.  </td>
     </tr>
 <tr>
-	<td width="20%"><span class="mandatory">*</span> = Mandatory Field</td>
-	<td>
-		{sb_button text=Ok onclick="" class=ok id=save submit=true}
-	</td>
+  <td width="20%"><span class="mandatory">*</span> = Mandatory Field</td>
+  <td>
+    {sb_button text=Ok onclick="" class=ok id=save submit=true}
+  </td>
     <td>&nbsp;</td>
 </tr>
 </table>

@@ -41,12 +41,12 @@
         <div id="password2.msg" class="badentry"></div></td>
   </tr>
   <tr>
-		<td valign="top" width="35%"><div class="rowdesc">{help_icon title="Server Admin Password" message="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Use as admin password?</div></td>
-		<td><div align="left">
-			<input type="checkbox" name="a_spass" id="a_spass" /> <small>You need to change the password, to enable the serverpassword</small>
-		</div>
-		</td>
-	</tr>
+    <td valign="top" width="35%"><div class="rowdesc">{help_icon title="Server Admin Password" message="If this box is checked, you will need to specify this password in the game server before you can use your admin rights."}Use as admin password?</div></td>
+    <td><div align="left">
+      <input type="checkbox" name="a_spass" id="a_spass" /> <small>You need to change the password, to enable the serverpassword</small>
+    </div>
+    </td>
+  </tr>
   
   {/if}
   
@@ -55,8 +55,8 @@
     <td>&nbsp;</td>
     <td>
       {sb_button text="Save Changes" class="ok" id="editmod" submit=true}
-	&nbsp;
-	  {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="back" submit=false} 
+  &nbsp;
+    {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="back" submit=false} 
       </td>
   </tr>
 </table>

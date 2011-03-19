@@ -15,7 +15,7 @@ function HelpIcon($title, $text)
 
 function Quote()
 {
-  static $quotes = array(
+  $quotes = array(
     array('Buy a new PC!', 'Viper'),
     array('I\'m not lazy! I just utilize technical resources!', 'Brizad'),
     array('I need to mow the lawn', 'sslice'),

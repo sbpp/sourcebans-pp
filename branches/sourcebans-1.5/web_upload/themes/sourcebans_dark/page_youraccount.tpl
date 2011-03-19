@@ -45,7 +45,7 @@ The following is a list of the permissions that you have on this system.<br /><b
     <td>&nbsp;</td>
     <td>
       <input type="submit" onclick="xajax_CheckPassword(-{$user_aid}-, $('current').value);dispatch();" name="button" class="btn ok" id="button" value="Save" />
-      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
+      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />  </td>
   </tr>
 </table>
 </div>
@@ -93,7 +93,7 @@ The following is a list of the permissions that you have on this system.<br /><b
     <td>&nbsp;</td>
     <td>
       <input type="submit" onclick="-{if $srvpwset}-xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);-{/if}-srvdispatch();" name="button" class="btn ok" id="button" value="Save" />
-      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
+      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />  </td>
   </tr>
 </table>
 </div>
@@ -103,7 +103,7 @@ The following is a list of the permissions that you have on this system.<br /><b
 <h3>Change E-Mail</h3>
 <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>
-	  <td valign="top"><div class="rowdesc">-{help_icon title="Current E-Mail" message="This is your current saved E-mail address."}-Current E-Mail</div></td>
+    <td valign="top"><div class="rowdesc">-{help_icon title="Current E-Mail" message="This is your current saved E-mail address."}-Current E-Mail</div></td>
     <td><div align="left">-{$email}-</div></td>
   </tr>
   <tr>
@@ -129,170 +129,170 @@ The following is a list of the permissions that you have on this system.<br /><b
     <td>&nbsp;</td>
     <td>
       <input type="submit" onclick="checkmail();" name="button" class="btn ok" id="button" value="Save" />
-      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
+      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />  </td>
   </tr>
 </table>
 </div>
 <script>
 var error = 0;
-	function set_error(count)
-	{
-		error = count;
-	}
+  function set_error(count)
+  {
+    error = count;
+  }
 function checkYourAcctPass()
-	{
-		var err = 0;
-		
-		if($('pass1').value.length < -{$min_pass_len}-)
-		{
-			$('pass1.msg').setStyle('display', 'block');
-			$('pass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
-			err++;
-		}
-		else
-		{
-			$('pass1.msg').setStyle('display', 'none');
-		}
-		if($('pass2').value != "" && $('pass2').value != $('pass1').value)
-		{	
-			$('pass2.msg').setStyle('display', 'block');
-			$('pass2.msg').setHTML('Your passwords dont match');
-			err++;
-		}else{
-			$('pass2.msg').setStyle('display', 'none');
-		}
-		if(err > 0)
-		{
-			set_error(1);
-			return false;
-		}
-		else
-		{
-			set_error(0);
-			return true;
-		}	
-	}
-	function dispatch()
-	{
-		if($('current.msg').innerHTML == "Incorrect password.")
-		{
-			alert("Incorrect Password");
-			return false;
-		}
-		if(checkYourAcctPass() && error == 0)
-		{
-			xajax_ChangePassword(-{$user_aid}-, $('pass2').value);
-		}
-	}
-	function checkYourSrvPass()
-	{
-		if(!$('delspass') || $('delspass').checked == false)
-		{
-			var err = 0;
-			
-			if($('spass1').value.length < -{$min_pass_len}-)
-			{
-				$('spass1.msg').setStyle('display', 'block');
-				$('spass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
-				err++;
-			}
-			else
-			{
-				$('spass1.msg').setStyle('display', 'none');
-			}
-			if($('spass2').value != "" && $('spass2').value != $('spass1').value)
-			{	
-				$('spass2.msg').setStyle('display', 'block');
-				$('spass2.msg').setHTML('Your passwords dont match');
-				err++;
-			}else{
-				$('spass2.msg').setStyle('display', 'none');
-			}
-			if(err > 0)
-			{
-				set_error(1);
-				return false;
-			}
-			else
-			{
-				set_error(0);
-				return true;
-			}	
-		}
-		else
-		{
-			set_error(0);
-			return true;
-		}	
-	}
-	function srvdispatch()
-	{
-		-{if $srvpwset}-
-		if($('scurrent.msg').innerHTML == "Incorrect password.")
-		{
-			alert("Incorrect Password");
-			return false;
-		}
-		-{/if}-
-		if(checkYourSrvPass() && error == 0 && (!$('delspass') || $('delspass').checked == false))
-		{
-			xajax_ChangeSrvPassword(-{$user_aid}-, $('spass2').value);
-		}
-		if($('delspass').checked == true)
-		{
-			xajax_ChangeSrvPassword(-{$user_aid}-, 'NULL');
-		}
-	}
-	function checkmail()
-	{
-		var err = 0;
+  {
+    var err = 0;
+    
+    if($('pass1').value.length < -{$min_pass_len}-)
+    {
+      $('pass1.msg').setStyle('display', 'block');
+      $('pass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
+      err++;
+    }
+    else
+    {
+      $('pass1.msg').setStyle('display', 'none');
+    }
+    if($('pass2').value != "" && $('pass2').value != $('pass1').value)
+    {  
+      $('pass2.msg').setStyle('display', 'block');
+      $('pass2.msg').setHTML('Your passwords dont match');
+      err++;
+    }else{
+      $('pass2.msg').setStyle('display', 'none');
+    }
+    if(err > 0)
+    {
+      set_error(1);
+      return false;
+    }
+    else
+    {
+      set_error(0);
+      return true;
+    }  
+  }
+  function dispatch()
+  {
+    if($('current.msg').innerHTML == "Incorrect password.")
+    {
+      alert("Incorrect Password");
+      return false;
+    }
+    if(checkYourAcctPass() && error == 0)
+    {
+      xajax_ChangePassword(-{$user_aid}-, $('pass2').value);
+    }
+  }
+  function checkYourSrvPass()
+  {
+    if(!$('delspass') || $('delspass').checked == false)
+    {
+      var err = 0;
+      
+      if($('spass1').value.length < -{$min_pass_len}-)
+      {
+        $('spass1.msg').setStyle('display', 'block');
+        $('spass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
+        err++;
+      }
+      else
+      {
+        $('spass1.msg').setStyle('display', 'none');
+      }
+      if($('spass2').value != "" && $('spass2').value != $('spass1').value)
+      {  
+        $('spass2.msg').setStyle('display', 'block');
+        $('spass2.msg').setHTML('Your passwords dont match');
+        err++;
+      }else{
+        $('spass2.msg').setStyle('display', 'none');
+      }
+      if(err > 0)
+      {
+        set_error(1);
+        return false;
+      }
+      else
+      {
+        set_error(0);
+        return true;
+      }  
+    }
+    else
+    {
+      set_error(0);
+      return true;
+    }  
+  }
+  function srvdispatch()
+  {
+    -{if $srvpwset}-
+    if($('scurrent.msg').innerHTML == "Incorrect password.")
+    {
+      alert("Incorrect Password");
+      return false;
+    }
+    -{/if}-
+    if(checkYourSrvPass() && error == 0 && (!$('delspass') || $('delspass').checked == false))
+    {
+      xajax_ChangeSrvPassword(-{$user_aid}-, $('spass2').value);
+    }
+    if($('delspass').checked == true)
+    {
+      xajax_ChangeSrvPassword(-{$user_aid}-, 'NULL');
+    }
+  }
+  function checkmail()
+  {
+    var err = 0;
         if($('email1').value == "")
         {
             $('email1.msg').setStyle('display', 'block');
-			$('email1.msg').setHTML('Please type the new E-mail.');
-			err++;
-		}else{
-			$('email1.msg').setStyle('display', 'none');
-		}
+      $('email1.msg').setHTML('Please type the new E-mail.');
+      err++;
+    }else{
+      $('email1.msg').setStyle('display', 'none');
+    }
         
         if($('email2').value == "")
         {
             $('email2.msg').setStyle('display', 'block');
-			$('email2.msg').setHTML('Please retype the new E-mail.');
-			err++;
-		}else{
-			$('email2.msg').setStyle('display', 'none');
-		}
+      $('email2.msg').setHTML('Please retype the new E-mail.');
+      err++;
+    }else{
+      $('email2.msg').setStyle('display', 'none');
+    }
          
-		if(err == 0 && $('email2').value != $('email1').value)
-		{	
-			$('email2.msg').setStyle('display', 'block');
-			$('email2.msg').setHTML('The typed E-mails doesn\'t match.');
-			err++;
-		}
+    if(err == 0 && $('email2').value != $('email1').value)
+    {  
+      $('email2.msg').setStyle('display', 'block');
+      $('email2.msg').setHTML('The typed E-mails doesn\'t match.');
+      err++;
+    }
         
         if($('emailpw').value == "")
         {
             $('emailpw.msg').setStyle('display', 'block');
-			$('emailpw.msg').setHTML('Please type your password.');
-			err++;
-		}else{
-			$('emailpw.msg').setStyle('display', 'none');
-		}
+      $('emailpw.msg').setHTML('Please type your password.');
+      err++;
+    }else{
+      $('emailpw.msg').setStyle('display', 'none');
+    }
         
-		if(err > 0)
-		{
-			set_error(1);
-			return false;
-		}
-		else
-		{
-			set_error(0);
-		}
-		if(error == 0)
-		{
-			xajax_ChangeEmail(-{$user_aid}-, $('email2').value, $('emailpw').value);
-		}
-	}
+    if(err > 0)
+    {
+      set_error(1);
+      return false;
+    }
+    else
+    {
+      set_error(0);
+    }
+    if(error == 0)
+    {
+      xajax_ChangeEmail(-{$user_aid}-, $('email2').value, $('emailpw').value);
+    }
+  }
 </script>
-</div>	
+</div>  

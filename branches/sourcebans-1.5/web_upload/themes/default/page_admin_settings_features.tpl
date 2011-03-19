@@ -20,33 +20,33 @@
                 </div>
             </td>
         </tr>
-		<tr>
-			<td valign="top"><div class="rowdesc">{help_icon title="Enable Group Banning" message="Check this box, if you want to enable banning of whole steam community groups."}Enable Group Banning</div></td>
-		    <td>
-		    	<div align="left">
-		      		<input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" />
-		    	</div>
-		    	<div id="enable_groupbanning.msg" class="badentry"></div>
-		    </td>
-		</tr>
-		<tr>
-			<td valign="top"><div class="rowdesc">{help_icon title="Enable Friend Banning" message="Check this box, if you want to enable banning all steam community friends of a player."}Enable Friends Banning</div></td>
-		    <td>
-		    	<div align="left">
-		      		<input type="checkbox" name="enable_friendsbanning" id="enable_friendsbanning" />
-		    	</div>
-		    	<div id="enable_friendsbanning.msg" class="badentry"></div>
-		    </td>
-		</tr>
-		<tr>
-			<td valign="top"><div class="rowdesc">{help_icon title="Enable Admin Rehashing" message="Check this box, if you want to enable the admin rehashing everytime an admin/group has been changed."}Enable Admin Rehashing</div></td>
-		    <td>
-		    	<div align="left">
-		      		<input type="checkbox" name="enable_adminrehashing" id="enable_adminrehashing" />
-		    	</div>
-		    	<div id="enable_adminrehashing.msg" class="badentry"></div>
-		    </td>
-		</tr>
+    <tr>
+      <td valign="top"><div class="rowdesc">{help_icon title="Enable Group Banning" message="Check this box, if you want to enable banning of whole steam community groups."}Enable Group Banning</div></td>
+        <td>
+          <div align="left">
+              <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" />
+          </div>
+          <div id="enable_groupbanning.msg" class="badentry"></div>
+        </td>
+    </tr>
+    <tr>
+      <td valign="top"><div class="rowdesc">{help_icon title="Enable Friend Banning" message="Check this box, if you want to enable banning all steam community friends of a player."}Enable Friends Banning</div></td>
+        <td>
+          <div align="left">
+              <input type="checkbox" name="enable_friendsbanning" id="enable_friendsbanning" />
+          </div>
+          <div id="enable_friendsbanning.msg" class="badentry"></div>
+        </td>
+    </tr>
+    <tr>
+      <td valign="top"><div class="rowdesc">{help_icon title="Enable Admin Rehashing" message="Check this box, if you want to enable the admin rehashing everytime an admin/group has been changed."}Enable Admin Rehashing</div></td>
+        <td>
+          <div align="left">
+              <input type="checkbox" name="enable_adminrehashing" id="enable_adminrehashing" />
+          </div>
+          <div id="enable_adminrehashing.msg" class="badentry"></div>
+        </td>
+    </tr>
         <tr>
             <td colspan="2" align="center">
                 {sb_button text="Save Changes" class="ok" id="fsettings" submit=true}

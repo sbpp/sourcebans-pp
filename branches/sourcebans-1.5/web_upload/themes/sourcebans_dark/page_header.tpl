@@ -19,22 +19,22 @@
 
 
 <div id="mainwrapper">
-	<div id="header">
-		<div id="head-logo">
-    		<a href="index.php">
-    			<img src="images/{$header_logo}" border="0" alt="SourceBans Logo" />
-    		</a>
-		</div>
-		<div id="head-userbox">
-	         Welcome {$username}
-	         {if $logged_in}
-	         	(<a href='index.php?p=logout'>Logout</a>)<br /><a href='index.php?p=account'>Your account</a>
-	         {else}
-	          	(<a href='index.php?p=login'>Login</a>)
-	         {/if}
-		</div>
-	</div>     
-	<div id="tabsWrapper">
+  <div id="header">
+    <div id="head-logo">
+        <a href="index.php">
+          <img src="images/{$header_logo}" border="0" alt="SourceBans Logo" />
+        </a>
+    </div>
+    <div id="head-userbox">
+           Welcome {$username}
+           {if $logged_in}
+             (<a href='index.php?p=logout'>Logout</a>)<br /><a href='index.php?p=account'>Your account</a>
+           {else}
+              (<a href='index.php?p=login'>Login</a>)
+           {/if}
+    </div>
+  </div>     
+  <div id="tabsWrapper">
         <div id="tabs">
           <ul>
          

@@ -1,8 +1,7 @@
 {if $active}
-	<li class="active">
+  <li class="active">
 {else}
-	<li class="nonactive">
+  <li class="nonactive">
 {/if}
-		{$tab_link}
+    {$tab_link}
 </li>
-	

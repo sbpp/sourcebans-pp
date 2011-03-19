@@ -113,7 +113,7 @@ class CServerRcon
       {
         $ret[$pack['ID']] = array('Reponse' => $pack['Reponse'],
                                   'S1' => $pack['S1'],
-                                  'S2' =>	$pack['S2'],);
+                                  'S2' => $pack['S2']);
       }
     }
 
@@ -128,8 +128,8 @@ class CServerRcon
 
   public function rconCommand($command)
   {
-	  $this->sendCommand($command);
-	  $ret = $this->Read();
-	  return $ret[2]['S1'];
+    $this->sendCommand($command);
+    $ret = $this->Read();
+    return $ret[2]['S1'];
   }
 }

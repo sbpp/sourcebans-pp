@@ -1,5 +1,5 @@
 -{if NOT $permission_rcon}-
-	Access Denied!
+  Access Denied!
 -{else}-
 <div id="admin-page-content">
 <div id="1">
@@ -8,11 +8,11 @@
 <h3>RCON Console</h3>
 <div align="center" width="90%">
 <div id="rcon" style="overflow:auto;
-			background-color:#efefef;
-			border: 1px solid #999;
-			padding: 3px;
-			height: 250px;
-			width: 90%;" align="left">
+      background-color:#efefef;
+      border: 1px solid #999;
+      padding: 3px;
+      height: 250px;
+      width: 90%;" align="left">
 
 <pre>
 
@@ -48,9 +48,9 @@ $E('html').onkeydown = function(event){
 
 function SendRcon()
 {
-	xajax_SendRcon('-{$id}-', $('cmd').value, true);
-	 $('cmd').value='Executing, Please Wait...'; $('cmd').disabled='true'; $('rcon_btn').disabled='true';
-	 
+  xajax_SendRcon('-{$id}-', $('cmd').value, true);
+   $('cmd').value='Executing, Please Wait...'; $('cmd').disabled='true'; $('rcon_btn').disabled='true';
+   
 }
 </script>
 -{/if}-
