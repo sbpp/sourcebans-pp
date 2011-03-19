@@ -70,9 +70,9 @@ if(isset($_POST['adminname']))
 			else
 				$srvpw = $userbank->GetProperty("srv_password", $_GET['id']);
 
-			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
-										`user` = ?, `authid` = ?, `email` = ?, `srv_password` = ?
-										WHERE `aid` = ?", array(RemoveCode($_POST['adminname']), trim(RemoveCode($_POST['steam'])), RemoveCode($_POST['email']), $srvpw, (int)$_GET['id']));
+			$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+										user = ?, authid = ?, email = ?, srv_password = ?
+										WHERE aid = ?", array(RemoveCode($_POST['adminname']), trim(RemoveCode($_POST['steam'])), RemoveCode($_POST['email']), $srvpw, (int)$_GET['id']));
 		}
 		else
 		{
@@ -86,20 +86,20 @@ if(isset($_POST['adminname']))
 			if($_GET['id']==$userbank->GetAid() && $userbank->encrypt_password($_POST['password'])!=$userbank->GetProperty("password"))
 				$ownpwchanged = true;
 			
-			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
-										`user` = ?,
-										`authid` = ?,
-										`email` = ?,
-										`password` = ?,
-										`srv_password` = ?
-										WHERE `aid` = ". (int)$_GET['id'], array(RemoveCode($_POST['adminname']), trim(RemoveCode($_POST['steam'])), RemoveCode($_POST['email']), $userbank->encrypt_password($_POST['password']), $srvpw));
+			$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+										user = ?,
+										authid = ?,
+										email = ?,
+										password = ?,
+										srv_password = ?
+										WHERE aid = ". (int)$_GET['id'], array(RemoveCode($_POST['adminname']), trim(RemoveCode($_POST['steam'])), RemoveCode($_POST['email']), $userbank->encrypt_password($_POST['password']), $srvpw));
 		}
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
 			// rehash the admins on the servers
-			$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$_GET['id']."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+			$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM " . DB_PREFIX . "_servers s
+												LEFT JOIN " . DB_PREFIX . "_admins_servers_groups asg ON asg.admin_id = '".(int)$_GET['id']."'
+												LEFT JOIN " . DB_PREFIX . "_servers_groups sg ON sg.group_id = asg.srv_group_id
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
@@ -111,7 +111,7 @@ if(isset($_POST['adminname']))
 			}
 			$rehashing = true;
 		}
-		$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$_GET['id']));
+		$admname = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = ?", array((int)$_GET['id']));
 		$log = new CSystemLog("m", "Admin Servers Updated", "Admin (" . $admname['user'] . ") details has been changed");
 		if($ownpwchanged)
 			echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';

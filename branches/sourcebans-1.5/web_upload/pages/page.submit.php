@@ -74,7 +74,7 @@ else
 			$validsubmit = false;
 		}
 	}
-	$checkres = $GLOBALS['db']->Execute("SELECT length FROM ".DB_PREFIX."_bans WHERE authid = ? AND RemoveType IS NULL", array($SteamID));
+	$checkres = $GLOBALS['db']->Execute("SELECT length FROM " . DB_PREFIX . "_bans WHERE authid = ? AND RemoveType IS NULL", array($SteamID));
 	$numcheck = $checkres->RecordCount();
 	if($numcheck == 1 && $checkres->fields['length'] == 0)
 	{
@@ -95,25 +95,25 @@ else
 		{
 			if($SID!=0) {
 				require_once(INCLUDES_PATH.'/CServerInfo.php');
-				$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM ".DB_PREFIX."_servers WHERE sid = $SID");
+				$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $SID");
 				$sinfo = new CServerInfo($res[0],$res[1]);
 				$info = $sinfo->getInfo();
 				if(!empty($info['hostname']))
 					$mailserver = "Server: " . $info['hostname'] . " (" . $res[0] . ":" . $res[1] . ")\n";
 				else
 					$mailserver = "Server: Error Connecting (" . $res[0] . ":" . $res[1] . ")\n";
-				$modid = $GLOBALS['db']->GetRow("SELECT m.mid FROM `".DB_PREFIX."_servers` as s LEFT JOIN `".DB_PREFIX."_mods` as m ON m.mid = s.modid WHERE s.sid = '".$SID."';");
+				$modid = $GLOBALS['db']->GetRow("SELECT m.mid FROM " . DB_PREFIX . "_servers as s LEFT JOIN " . DB_PREFIX . "_mods as m ON m.mid = s.modid WHERE s.sid = '".$SID."';");
 			} else {
 				$mailserver = "Server: Other server\n";
 				$modid[0] = 0;
 			}
 			if($SteamID == "STEAM_0:") $SteamID = "";
-			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_submissions(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)");
+			$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_submissions(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)");
 			$GLOBALS['db']->Execute($pre,array($SteamID,$PlayerName,$Email,$modid[0],$BanReason, $_SERVER['REMOTE_ADDR'], $SubmitterName, $BanIP, $SID));
 			$subid = (int)$GLOBALS['db']->Insert_ID();
 
 			if(!empty($_FILES['demo_file']['name']))
-				$GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname) VALUES (?, 'S', ?, ?)", array($subid, $filename, $_FILES['demo_file']['name']));
+				$GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_demos(demid,demtype,filename,origname) VALUES (?, 'S', ?, ?)", array($subid, $filename, $_FILES['demo_file']['name']));
 			$SteamID = "";
 			$BanIP = "";
 			$PlayerName = "";
@@ -147,10 +147,10 @@ else
 	}
 }
 
-//$mod_list = $GLOBALS['db']->GetAssoc("SELECT mid,name FROM ".DB_PREFIX."_mods WHERE `mid` > 0 AND `enabled`= 1 ORDER BY mid ");
+//$mod_list = $GLOBALS['db']->GetAssoc("SELECT mid,name FROM " . DB_PREFIX . "_mods WHERE mid > 0 AND enabled= 1 ORDER BY mid ");
 require_once INCLUDES_PATH.'/CServerInfo.php';
 //serverlist
-$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
+$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM " . DB_PREFIX . "_servers WHERE enabled = 1");
 $servers = array();
 while (!$server_list->EOF)
 {

@@ -15,23 +15,23 @@
 		if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();} 
 		global $userbank, $theme;
 		
-			$servers = $GLOBALS['db']->GetAll("SELECT srv.ip ip, srv.port port, srv.sid sid, mo.icon icon, srv.enabled enabled FROM `" . DB_PREFIX . "_servers` AS srv
-											   LEFT JOIN `" . DB_PREFIX . "_mods` AS mo ON mo.mid = srv.modid
+			$servers = $GLOBALS['db']->GetAll("SELECT srv.ip ip, srv.port port, srv.sid sid, mo.icon icon, srv.enabled enabled FROM " . DB_PREFIX . "_servers AS srv
+											   LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = srv.modid
 											   ORDER BY modid");
-			$server_count = $GLOBALS['db']->GetRow("SELECT COUNT(sid) AS cnt FROM `" . DB_PREFIX . "_servers`") ;
+			$server_count = $GLOBALS['db']->GetRow("SELECT COUNT(sid) AS cnt FROM " . DB_PREFIX . "_servers") ;
 
 		
         $server_access = array();
         if($userbank->HasAccess(SM_RCON . SM_ROOT))
         {
             // Get all servers the admin has access to
-            $servers2 = $GLOBALS['db']->GetAll("SELECT `server_id`, `srv_group_id` FROM ".DB_PREFIX."_admins_servers_groups WHERE admin_id = ". $userbank->GetAid());
+            $servers2 = $GLOBALS['db']->GetAll("SELECT server_id, srv_group_id FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = ". $userbank->GetAid());
             foreach($servers2 as $server)
             {
                 $server_access[] = $server['server_id'];
                 if($server['srv_group_id'] > 0)
                 {
-                    $servers_in_group = $GLOBALS['db']->GetAll("SELECT `server_id` FROM ".DB_PREFIX."_servers_groups WHERE group_id = ". (int)$server['srv_group_id']);
+                    $servers_in_group = $GLOBALS['db']->GetAll("SELECT server_id FROM " . DB_PREFIX . "_servers_groups WHERE group_id = ". (int)$server['srv_group_id']);
                     foreach($servers_in_group as $servig)
                     {
                         $server_access[] = $servig['server_id'];
@@ -50,9 +50,9 @@
         }
         
 		// List mods
-		$modlist = $GLOBALS['db']->GetAll("SELECT mid, name FROM `" . DB_PREFIX . "_mods` WHERE `mid` > 0 AND `enabled` = 1 ORDER BY name ASC");
+		$modlist = $GLOBALS['db']->GetAll("SELECT mid, name FROM " . DB_PREFIX . "_mods WHERE mid > 0 AND enabled = 1 ORDER BY name ASC");
 		// List groups
-		$grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM `" . DB_PREFIX . "_groups` WHERE type = 3 ORDER BY name ASC");
+		$grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = 3 ORDER BY name ASC");
 		
 		// Vars for server list
 		$theme->assign('permission_list', $userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_SERVERS));

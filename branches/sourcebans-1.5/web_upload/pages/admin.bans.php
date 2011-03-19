@@ -24,19 +24,19 @@ if(isset($_POST['action']) && $_POST['action'] == "importBans")
 		{
 			if(validate_ip($line[2])) // if its an banned_ip.cfg
 			{
-				$check = $GLOBALS['db']->Execute("SELECT ip FROM `" . DB_PREFIX . "_bans` WHERE ip = ? AND RemoveType IS NULL", array($line[2]));
+				$check = $GLOBALS['db']->Execute("SELECT ip FROM " . DB_PREFIX . "_bans WHERE ip = ? AND RemoveType IS NULL", array($line[2]));
 
 				if($check->RecordCount() == 0)
 				{
 					$bancnt++;
-					$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
+					$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
 										(UNIX_TIMESTAMP(),?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)");
 					$GLOBALS['db']->Execute($pre, array("", $line[2], "Imported Ban", 0, 0, "banned_ip.cfg import", $_COOKIE['aid'], $_SERVER['REMOTE_ADDR'], 1));
 				}
 			} else { // if its an banned_user.cfg
 				if (!validate_steam($line[2]))
 					continue;
-				$check = $GLOBALS['db']->Execute("SELECT authid FROM `" . DB_PREFIX . "_bans` WHERE authid = ? AND RemoveType IS NULL", array($line[2]));
+				$check = $GLOBALS['db']->Execute("SELECT authid FROM " . DB_PREFIX . "_bans WHERE authid = ? AND RemoveType IS NULL", array($line[2]));
 
 				if($check->RecordCount() == 0)
 				{
@@ -45,7 +45,7 @@ if(isset($_POST['action']) && $_POST['action'] == "importBans")
 					else
 						$pname = "Imported Ban";
 					$bancnt++;
-					$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
+					$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
 										(UNIX_TIMESTAMP(),?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)");
 					$GLOBALS['db']->Execute($pre, array($line[2], "", $pname, 0, 0, "banned_user.cfg import", $_COOKIE['aid'], $_SERVER['REMOTE_ADDR'], 0));
 				}
@@ -96,8 +96,8 @@ echo '<div id="admin-page-content">';
         {
             $page = intval($_GET['ppage']);
         }
-        $protests = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0' ORDER BY pid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-        $protests_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0' ORDER BY pid DESC");
+        $protests = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_protests WHERE archiv = '0' ORDER BY pid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
+        $protests_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM " . DB_PREFIX . "_protests WHERE archiv = '0' ORDER BY pid DESC");
         $page_count = $protests_count['count'];
         $PageStart = intval(($page-1) * $ItemsPerPage);
         $PageEnd = intval($PageStart+$ItemsPerPage);
@@ -143,9 +143,9 @@ echo '<div id="admin-page-content">';
 		{
 			$prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 			$protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
-							    				FROM ".DB_PREFIX."_bans AS ba
-							    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
-							    				LEFT JOIN ".DB_PREFIX."_servers AS se ON se.sid = ba.sid
+							    				FROM " . DB_PREFIX . "_bans AS ba
+							    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
+							    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
 							    				WHERE bid = \"". (int)$prot['bid'] . "\"");
 			if(!$protestb)
 			{
@@ -174,9 +174,9 @@ echo '<div id="admin-page-content">';
 			//-----------------------------------
 			$view_comments = true;
 			$commentres = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-												(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
-												(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
-												FROM `".DB_PREFIX."_comments` AS C
+												(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.aid) AS comname,
+												(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.editaid) AS editname
+												FROM " . DB_PREFIX . "_comments AS C
 												WHERE type = 'P' AND bid = '".(int)$prot['pid']."' ORDER BY added desc");
 
 			if($commentres->RecordCount()>0) {
@@ -228,7 +228,7 @@ echo '<div id="admin-page-content">';
 		if(count($delete) > 0) {//time for protest cleanup
 			$ids = rtrim(implode(',', $delete), ',');
 			$cnt = count($delete);
-			$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_protests SET archiv = '2' WHERE bid IN($ids) limit $cnt");
+			$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '2' WHERE bid IN($ids) limit $cnt");
 		}
 
 		$theme->assign('permission_protests', $userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_PROTESTS));
@@ -239,7 +239,7 @@ echo '<div id="admin-page-content">';
 		$theme->display('page_admin_bans_protests.tpl');
 		echo '</div>';
 
-		$protestsarchiv = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_protests` WHERE archiv > '0' ORDER BY pid DESC");
+		$protestsarchiv = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_protests WHERE archiv > '0' ORDER BY pid DESC");
 		// archived protests
 		echo '<div id="p1" style="display:none;">';
         
@@ -249,8 +249,8 @@ echo '<div id="admin-page-content">';
         {
             $page = intval($_GET['papage']);
         }
-        $protestsarchiv = $GLOBALS['db']->GetAll("SELECT p.*, (SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = p.archivedby) AS archivedby FROM `" . DB_PREFIX . "_protests` p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-        $protestsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM `" . DB_PREFIX . "_protests` WHERE archiv > '0' ORDER BY pid DESC");
+        $protestsarchiv = $GLOBALS['db']->GetAll("SELECT p.*, (SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = p.archivedby) AS archivedby FROM " . DB_PREFIX . "_protests p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
+        $protestsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM " . DB_PREFIX . "_protests WHERE archiv > '0' ORDER BY pid DESC");
         $page_count = $protestsarchiv_count['count'];
         $PageStart = intval(($page-1) * $ItemsPerPage);
         $PageEnd = intval($PageStart+$ItemsPerPage);
@@ -298,12 +298,12 @@ echo '<div id="admin-page-content">';
 
 			if($prot['archiv'] != "2") {
 				$protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
-								    				FROM ".DB_PREFIX."_bans AS ba
-								    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
-								    				LEFT JOIN ".DB_PREFIX."_servers AS se ON se.sid = ba.sid
+								    				FROM " . DB_PREFIX . "_bans AS ba
+								    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
+								    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
 								    				WHERE bid = \"". (int)$prot['bid'] . "\"");
 				if(!$protestb) {
-					$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '2' WHERE pid = '". (int)$prot['pid'] . "';");
+					$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '2' WHERE pid = '". (int)$prot['pid'] . "';");
 					$prot['archiv'] = "2";
 					$prot['archive'] = "ban has been deleted.";
 				} else {
@@ -337,9 +337,9 @@ echo '<div id="admin-page-content">';
 			//-----------------------------------
 			$view_comments = true;
 			$commentres = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-												(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
-												(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
-												FROM `".DB_PREFIX."_comments` AS C
+												(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.aid) AS comname,
+												(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.editaid) AS editname
+												FROM " . DB_PREFIX . "_comments AS C
 												WHERE type = 'P' AND bid = '".(int)$prot['pid']."' ORDER BY added desc");
 
 			if($commentres->RecordCount()>0) {
@@ -421,8 +421,8 @@ echo '<div id="admin-page-content">';
             {
                 $page = intval($_GET['spage']);
             }
-            $submissions = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0' ORDER BY subid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-            $submissions_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0' ORDER BY subid DESC");
+            $submissions = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_submissions WHERE archiv = '0' ORDER BY subid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
+            $submissions_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM " . DB_PREFIX . "_submissions WHERE archiv = '0' ORDER BY subid DESC");
             $page_count = $submissions_count['count'];
             $PageStart = intval(($page-1) * $ItemsPerPage);
             $PageEnd = intval($PageStart+$ItemsPerPage);
@@ -481,8 +481,8 @@ echo '<div id="admin-page-content">';
 
 			    $sub['submitted'] = SBDate($dateformat, $sub['submitted']);
 
-				$mod = $GLOBALS['db']->GetRow("SELECT m.name FROM `".DB_PREFIX."_submissions` AS s
-												LEFT JOIN `".DB_PREFIX."_mods` AS m ON m.mid = s.ModID
+				$mod = $GLOBALS['db']->GetRow("SELECT m.name FROM " . DB_PREFIX . "_submissions AS s
+												LEFT JOIN " . DB_PREFIX . "_mods AS m ON m.mid = s.ModID
 												WHERE s.subid = ".(int)$sub['subid']);
 			    $sub['mod'] = $mod['name'];
 
@@ -496,9 +496,9 @@ echo '<div id="admin-page-content">';
 				$view_comments = true;
 					$commentres = $GLOBALS['db']->Execute(
 														"SELECT cid, aid, commenttxt, added, edittime,
-														(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
-														(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
-														FROM `".DB_PREFIX."_comments` AS C
+														(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.aid) AS comname,
+														(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.editaid) AS editname
+														FROM " . DB_PREFIX . "_comments AS C
 														WHERE type = 'S' AND bid = '".(int)$sub['subid']."' ORDER BY added desc");
 
 					if($commentres->RecordCount()>0) {
@@ -559,8 +559,8 @@ echo '<div id="admin-page-content">';
             {
                 $page = intval($_GET['sapage']);
             }
-            $submissionsarchiv = $GLOBALS['db']->GetAll("SELECT s.*, (SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = s.archivedby) AS archivedby FROM `" . DB_PREFIX . "_submissions` s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-            $submissionsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM `" . DB_PREFIX . "_submissions` WHERE archiv > '0' ORDER BY subid DESC");
+            $submissionsarchiv = $GLOBALS['db']->GetAll("SELECT s.*, (SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = s.archivedby) AS archivedby FROM " . DB_PREFIX . "_submissions s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page-1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
+            $submissionsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM " . DB_PREFIX . "_submissions WHERE archiv > '0' ORDER BY subid DESC");
             $page_count = $submissionsarchiv_count['count'];
             $PageStart = intval(($page-1) * $ItemsPerPage);
             $PageEnd = intval($PageStart+$ItemsPerPage);
@@ -619,8 +619,8 @@ echo '<div id="admin-page-content">';
 
 			    $sub['submitted'] = SBDate($dateformat, $sub['submitted']);
 
-				$mod = $GLOBALS['db']->GetRow("SELECT m.name FROM `".DB_PREFIX."_submissions` AS s
-												LEFT JOIN `".DB_PREFIX."_mods` AS m ON m.mid = s.ModID
+				$mod = $GLOBALS['db']->GetRow("SELECT m.name FROM " . DB_PREFIX . "_submissions AS s
+												LEFT JOIN " . DB_PREFIX . "_mods AS m ON m.mid = s.ModID
 												WHERE s.subid = ".(int)$sub['subid']);
 			    $sub['mod'] = $mod['name'];
                 if(empty($sub['server']))
@@ -638,9 +638,9 @@ echo '<div id="admin-page-content">';
 				$view_comments = true;
 					$commentres = $GLOBALS['db']->Execute(
 														"SELECT cid, aid, commenttxt, added, edittime,
-														(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
-														(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
-														FROM `".DB_PREFIX."_comments` AS C
+														(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.aid) AS comname,
+														(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.editaid) AS editname
+														FROM " . DB_PREFIX . "_comments AS C
 														WHERE type = 'S' AND bid = '".(int)$sub['subid']."' ORDER BY added desc");
 
 					if($commentres->RecordCount()>0) {

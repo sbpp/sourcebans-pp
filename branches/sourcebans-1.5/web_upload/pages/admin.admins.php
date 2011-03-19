@@ -39,10 +39,10 @@ foreach($admins AS $admin)
 	{
 		$admin['server_group'] = "No Group/Individual Permissions";
 	}
-	$num = $GLOBALS['db']->GetRow("SELECT count(authid) AS num FROM `" . DB_PREFIX . "_bans` WHERE aid = '".$admin['aid']."'");
+	$num = $GLOBALS['db']->GetRow("SELECT count(authid) AS num FROM " . DB_PREFIX . "_bans WHERE aid = '".$admin['aid']."'");
 	$admin['bancount'] = $num['num'];
 
-	$nodem = $GLOBALS['db']->GetRow("SELECT count(B.bid) AS num FROM `" . DB_PREFIX . "_bans` AS B WHERE aid = '".$admin['aid']."' AND NOT EXISTS (SELECT D.demid FROM `" . DB_PREFIX . "_demos` AS D WHERE D.demid = B.bid)");
+	$nodem = $GLOBALS['db']->GetRow("SELECT count(B.bid) AS num FROM " . DB_PREFIX . "_bans AS B WHERE aid = '".$admin['aid']."' AND NOT EXISTS (SELECT D.demid FROM " . DB_PREFIX . "_demos AS D WHERE D.demid = B.bid)");
 	$admin['aid'] = $admin['aid'];
 	$admin['nodemocount'] = $nodem['num'];
 
@@ -107,10 +107,10 @@ echo '</div>';
 
 
 // Add Page
-$group_list = 				$GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type = '3'");
-$servers = 					$GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
-$server_admin_group_list = 	$GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
-$server_group_list = 		$GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type != 3");
+$group_list = 				$GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_groups WHERE type = '3'");
+$servers = 					$GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers");
+$server_admin_group_list = 	$GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_srvgroups");
+$server_group_list = 		$GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_groups WHERE type != 3");
 $server_list = array();
 $serverscript = "<script type=\"text/javascript\">";
 foreach($servers AS $server)

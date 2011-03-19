@@ -25,8 +25,8 @@ if(!isset($_GET['id']))
 
 $_GET['id'] = (int)$_GET['id'];
 
-$web_group = $GLOBALS['db']->GetRow("SELECT flags, name FROM ".DB_PREFIX."_groups WHERE gid = {$_GET['id']}");
-$srv_group = $GLOBALS['db']->GetRow("SELECT flags, name, immunity FROM ".DB_PREFIX."_srvgroups WHERE id = {$_GET['id']}");
+$web_group = $GLOBALS['db']->GetRow("SELECT flags, name FROM " . DB_PREFIX . "_groups WHERE gid = {$_GET['id']}");
+$srv_group = $GLOBALS['db']->GetRow("SELECT flags, name, immunity FROM " . DB_PREFIX . "_srvgroups WHERE id = {$_GET['id']}");
 
 
 $web_flags = intval($web_group[0]);
@@ -53,7 +53,7 @@ $name = $userbank->GetProperty("user", $_GET['id']);
 <br /><?php }elseif($_GET['type'] == "srv"){?>
 <h3>Server Admin Permissions</h3>
 <?php  $permissions = str_replace("{title}", $name, @file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php")) ;
-$ig = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
+$ig = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_srvgroups");
 		$html = "";
 		foreach($ig AS $g)
 			$html .= '<option value="' . $g['id'] . '">' . $g['name'] . '</option>';

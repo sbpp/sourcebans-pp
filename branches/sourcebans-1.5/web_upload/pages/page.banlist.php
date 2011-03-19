@@ -47,7 +47,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 	$fail = 0;
 	foreach($bids AS $bid) {
 		$bid = intval($bid);
-		$res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `".DB_PREFIX."_bans` b INNER JOIN ".DB_PREFIX."_admins a ON a.aid = b.aid WHERE bid = '".$bid."';");
+		$res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM " . DB_PREFIX . "_bans b INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = b.aid WHERE bid = '".$bid."';");
 		if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_UNBAN) &&
 		    !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) &&
 		    !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid')))
@@ -60,9 +60,9 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 
 		$row = $GLOBALS['db']->GetRow("SELECT b.ip, CONCAT( 'STEAM_1:', SUBSTR( b.authid, 9 ) ) AS authid_l4d, CONCAT( 'STEAM_0:', SUBSTR( b.authid, 9 ) ) AS authid, 
 										b.name, b.created, b.sid, b.type, m.modfolder, UNIX_TIMESTAMP() as now
-										FROM ".DB_PREFIX."_bans b
-										LEFT JOIN ".DB_PREFIX."_servers s ON s.sid = b.sid
-										LEFT JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid
+										FROM " . DB_PREFIX . "_bans b
+										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
+										LEFT JOIN " . DB_PREFIX . "_mods m ON m.mid = s.modid
 										WHERE b.bid = ? AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP()) AND b.RemoveType IS NULL",array($bid));
 		if(empty($row) || !$row) {
 			$fail++;
@@ -73,17 +73,17 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 			continue;
 		}
 		$unbanReason = htmlspecialchars(trim($_GET['ureason']));
-		$ins = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_bans` SET
-										`RemovedBy` = ?,
-										`RemoveType` = 'U',
-										`RemovedOn` = UNIX_TIMESTAMP(),
-										`ureason` = ?
-										WHERE `bid` = ?;",
+		$ins = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET
+										RemovedBy = ?,
+										RemoveType = 'U',
+										RemovedOn = UNIX_TIMESTAMP(),
+										ureason = ?
+										WHERE bid = ?;",
 										array( $userbank->GetAid(), $unbanReason, $bid));
 
-		$protestsunban = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '4' WHERE bid = '".$bid."';");
+		$protestsunban = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '4' WHERE bid = '".$bid."';");
 
-		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.modfolder FROM `".DB_PREFIX."_banlog` bl INNER JOIN ".DB_PREFIX."_servers s ON s.sid = bl.sid INNER JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
+		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.modfolder FROM " . DB_PREFIX . "_banlog bl INNER JOIN " . DB_PREFIX . "_servers s ON s.sid = bl.sid INNER JOIN " . DB_PREFIX . "_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
 		foreach($blocked as $tempban)
 		{
 			SendRconSilent(($row['type']==0?"removeid ".(($tempban['modfolder']=='left4dead'||$tempban['modfolder']=='tf')?$row['authid_l4d']:$row['authid']):"removeip ".$row['ip']), $tempban['sid']);
@@ -124,18 +124,18 @@ else if(isset($_GET['a']) && $_GET['a'] == "delete")
 	$fail = 0;
 	foreach($bids AS $bid) {
 		$bid = intval($bid);
-		$demres = $GLOBALS['db']->Execute("SELECT filename FROM `".DB_PREFIX."_demos` WHERE `demid` = ?",
+		$demres = $GLOBALS['db']->Execute("SELECT filename FROM " . DB_PREFIX . "_demos WHERE demid = ?",
 									array( $bid ));
 		@unlink(SB_DEMOS."/".$demres->fields["filename"]);
-		$blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `".DB_PREFIX."_banlog` WHERE bid=? AND (UNIX_TIMESTAMP() - time <= 300)",array($bid));
+		$blocked = $GLOBALS['db']->GetAll("SELECT sid FROM " . DB_PREFIX . "_banlog WHERE bid=? AND (UNIX_TIMESTAMP() - time <= 300)",array($bid));
 		$steam = $GLOBALS['db']->GetRow("SELECT b.name, CONCAT( 'STEAM_1:', SUBSTR( b.authid, 9 ) ) AS authid_l4d, 
 										CONCAT( 'STEAM_0:', SUBSTR( b.authid, 9 ) ) AS authid, b.created, b.sid, b.RemoveType, b.ip, b.type, m.modfolder, UNIX_TIMESTAMP() AS now
-										FROM ".DB_PREFIX."_bans b 
-										LEFT JOIN ".DB_PREFIX."_servers s ON s.sid = b.sid
-										LEFT JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid 
+										FROM " . DB_PREFIX . "_bans b 
+										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
+										LEFT JOIN " . DB_PREFIX . "_mods m ON m.mid = s.modid 
 										WHERE b.bid=?",array($bid));
-		$block = $GLOBALS['db']->Execute("DELETE FROM `".DB_PREFIX."_banlog` WHERE bid = ?",array($bid));
-		$res = $GLOBALS['db']->Execute("DELETE FROM `".DB_PREFIX."_bans` WHERE `bid` = ?",
+		$block = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_banlog WHERE bid = ?",array($bid));
+		$res = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_bans WHERE bid = ?",
 									array( $bid ));
 		if(empty($steam['RemoveType']))
 		{
@@ -197,18 +197,18 @@ if (isset($_GET['searchText']))
 	"SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
-			(SELECT count(*) FROM ".DB_PREFIX."_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
-			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
-	   FROM ".DB_PREFIX."_bans AS BA
-  LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
-  LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
-  LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
+			(SELECT count(*) FROM " . DB_PREFIX . "_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
+			(SELECT count(*) FROM " . DB_PREFIX . "_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
+	   FROM " . DB_PREFIX . "_bans AS BA
+  LEFT JOIN " . DB_PREFIX . "_servers AS SE ON SE.sid = BA.sid
+  LEFT JOIN " . DB_PREFIX . "_mods AS MO on SE.modid = MO.mid
+  LEFT JOIN " . DB_PREFIX . "_admins AS AD ON BA.aid = AD.aid
       WHERE BA.authid LIKE ?" . $search_ips . " or BA.name LIKE ? or BA.reason LIKE ?".$hideinactive."
    ORDER BY created DESC
    LIMIT ?,?",array($search,$search,$search,intval($BansStart),intval($BansPerPage)));
 
 
-	$res_count = $GLOBALS['db']->Execute("SELECT count(bid) FROM ".DB_PREFIX."_bans
+	$res_count = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_bans
 	                                                WHERE authid LIKE ? OR ip LIKE ? OR name LIKE ? OR reason LIKE ?".$hideinactive."
 										",array($search,$search,$search,$search));
 $searchlink = "&searchText=".$_GET["searchText"];
@@ -219,18 +219,18 @@ elseif(!isset($_GET['advSearch']))
 	"SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
-			(SELECT count(*) FROM ".DB_PREFIX."_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
-			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
-	   FROM ".DB_PREFIX."_bans AS BA
-  LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
-  LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
-  LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
+			(SELECT count(*) FROM " . DB_PREFIX . "_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
+			(SELECT count(*) FROM " . DB_PREFIX . "_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
+	   FROM " . DB_PREFIX . "_bans AS BA
+  LEFT JOIN " . DB_PREFIX . "_servers AS SE ON SE.sid = BA.sid
+  LEFT JOIN " . DB_PREFIX . "_mods AS MO on SE.modid = MO.mid
+  LEFT JOIN " . DB_PREFIX . "_admins AS AD ON BA.aid = AD.aid
   ".$hideinactiven."
    ORDER BY created DESC
    LIMIT ?,?",
 	array(intval($BansStart),intval($BansPerPage)));
 
-	$res_count = $GLOBALS['db']->Execute("SELECT count(bid) FROM ".DB_PREFIX."_bans".$hideinactiven);
+	$res_count = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_bans".$hideinactiven);
 	$searchlink = "";
 }
 
@@ -317,7 +317,7 @@ if(isset($_GET['advSearch']))
 			$advcrit = array($value);
 		break;
 		case "nodemo":
-			$where = "WHERE BA.aid = ? AND NOT EXISTS (SELECT DM.demid FROM ".DB_PREFIX."_demos AS DM WHERE DM.demid = BA.bid)";
+			$where = "WHERE BA.aid = ? AND NOT EXISTS (SELECT DM.demid FROM " . DB_PREFIX . "_demos AS DM WHERE DM.demid = BA.bid)";
 			$advcrit = array($value);
 		break;
 		case "bid":
@@ -333,17 +333,17 @@ if(isset($_GET['advSearch']))
 				    	"SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
-			(SELECT count(*) FROM ".DB_PREFIX."_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
-			(SELECT count(*) FROM ".DB_PREFIX."_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
-	   FROM ".DB_PREFIX."_bans AS BA
-  LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
-  LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
-  LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
+			(SELECT count(*) FROM " . DB_PREFIX . "_demos as DM WHERE DM.demtype='B' and DM.demid = BA.bid) as demo_count,
+			(SELECT count(*) FROM " . DB_PREFIX . "_bans as BH WHERE (BH.type = BA.type AND BH.authid = BA.authid AND BH.authid != '' AND BH.authid IS NOT NULL) OR (BH.type = BA.type AND BH.ip = BA.ip AND BH.ip != '' AND BH.ip IS NOT NULL)) as history_count
+	   FROM " . DB_PREFIX . "_bans AS BA
+  LEFT JOIN " . DB_PREFIX . "_servers AS SE ON SE.sid = BA.sid
+  LEFT JOIN " . DB_PREFIX . "_mods AS MO on SE.modid = MO.mid
+  LEFT JOIN " . DB_PREFIX . "_admins AS AD ON BA.aid = AD.aid
       ".$where.$hideinactive."
    ORDER BY created DESC
    LIMIT ?,?", array_merge($advcrit, array(intval($BansStart),intval($BansPerPage))));
 
-	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM ".DB_PREFIX."_bans AS BA ".$where.$hideinactive, $advcrit);
+	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM " . DB_PREFIX . "_bans AS BA ".$where.$hideinactive, $advcrit);
 	$searchlink = "&advSearch=".$_GET['advSearch']."&advType=".$_GET['advType'];
 }
 
@@ -372,7 +372,7 @@ while (!$res->EOF)
 		elseif(isset($GLOBALS['config']['banlist.nocountryfetch']) && $GLOBALS['config']['banlist.nocountryfetch'] == "0")
 		{
 			$country = FetchIp($res->fields['ban_ip']);
-			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_bans SET country = ?
+			$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET country = ?
 				                            WHERE bid = ?",array($country,$res->fields['ban_id']));
 
 			$data['country'] = '<img src="images/country/' . strtolower($country) . '.gif" alt="' . $country . '" border="0" align="absmiddle" />';
@@ -414,7 +414,7 @@ while (!$res->EOF)
 
 		$data['ureason'] = stripslashes($res->fields['unban_reason']);
 
-		$removedby = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = '".$res->fields['RemovedBy']."'");
+		$removedby = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = '".$res->fields['RemovedBy']."'");
         $data['removedby'] = "";
         if(isset($removedby[0]))
             $data['removedby'] = $removedby[0];
@@ -428,9 +428,9 @@ while (!$res->EOF)
 
 	$data['layer_id'] = 'layer_'.$res->fields['ban_id'];
 	if($data['type'] == "0")
-		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `".DB_PREFIX."_bans` WHERE authid = '".$data['steamid']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0';");
+		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM " . DB_PREFIX . "_bans WHERE authid = '".$data['steamid']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0';");
 	else
-		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `".DB_PREFIX."_bans` WHERE ip = '".$res->fields['ban_ip']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1';");
+		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM " . DB_PREFIX . "_bans WHERE ip = '".$res->fields['ban_ip']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1';");
 	if($alrdybnd->fields['count']==0)
 		$data['reban_link'] = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Reban',"index.php?p=admin&c=bans".$pagelink."&rebanid=".$res->fields['ban_id']."&key=".$_SESSION['banlist_postkey']."#^0");
 	else
@@ -490,7 +490,7 @@ while (!$res->EOF)
 
 	$data['server_id'] = $res->fields['ban_server'];
 
-	$banlog = $GLOBALS['db']->GetAll("SELECT bl.time, bl.name, s.ip, s.port FROM `".DB_PREFIX."_banlog` AS bl LEFT JOIN `".DB_PREFIX."_servers` AS s ON s.sid = bl.sid WHERE bid = '".$data['ban_id']."'");
+	$banlog = $GLOBALS['db']->GetAll("SELECT bl.time, bl.name, s.ip, s.port FROM " . DB_PREFIX . "_banlog AS bl LEFT JOIN " . DB_PREFIX . "_servers AS s ON s.sid = bl.sid WHERE bid = '".$data['ban_id']."'");
 	$data['blockcount'] = sizeof($banlog);
 	$logstring = "";
 	foreach($banlog AS $logged) {
@@ -505,9 +505,9 @@ while (!$res->EOF)
 	if($userbank->is_admin()) {
 		$view_comments = true;
 		$commentres = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
-											FROM `".DB_PREFIX."_comments` AS C
+											(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.aid) AS comname,
+											(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.editaid) AS editname
+											FROM " . DB_PREFIX . "_comments AS C
 											WHERE type = 'B' AND bid = '".$data['ban_id']."' ORDER BY added desc");
 
 		if($commentres->RecordCount()>0) {
@@ -624,7 +624,7 @@ if($pages > 1) {
 if(isset($_GET["comment"])) {
 	$theme->assign('commenttype', (isset($_GET["cid"])?"Edit":"Add"));
 	if(isset($_GET["cid"])) {
-		$ceditdata = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_comments WHERE cid = '".(int)$_GET["cid"]."'");
+		$ceditdata = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_comments WHERE cid = '".(int)$_GET["cid"]."'");
         $ctext = $ceditdata['commenttxt'];
 		$cotherdataedit = " AND cid != '".(int)$_GET["cid"]."'";
 	}
@@ -634,9 +634,9 @@ if(isset($_GET["comment"])) {
         $ctext = "";
     }
 	$cotherdata = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
-											FROM `".DB_PREFIX."_comments` AS C
+											(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.aid) AS comname,
+											(SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = C.editaid) AS editname
+											FROM " . DB_PREFIX . "_comments AS C
 											WHERE type = ? AND bid = ?".$cotherdataedit." ORDER BY added desc", array($_GET["ctype"], $_GET["comment"]));
 
 	$ocomments = array();

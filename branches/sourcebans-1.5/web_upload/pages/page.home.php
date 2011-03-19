@@ -12,12 +12,12 @@ global $theme;
 if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 define('IN_HOME', true);
 
-$res = $GLOBALS['db']->Execute("SELECT count(name) FROM ".DB_PREFIX."_banlog");
+$res = $GLOBALS['db']->Execute("SELECT count(name) FROM " . DB_PREFIX . "_banlog");
 $totalstopped = (int)$res->fields[0];
 
 $res = $GLOBALS['db']->Execute("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.authid, b.ip
-								FROM ".DB_PREFIX."_banlog AS bl
-								LEFT JOIN ".DB_PREFIX."_bans AS b ON b.bid = bl.bid
+								FROM " . DB_PREFIX . "_banlog AS bl
+								LEFT JOIN " . DB_PREFIX . "_bans AS b ON b.bid = bl.bid
 								ORDER BY time DESC LIMIT 10");
 
 $GLOBALS['server_qry'] = "";
@@ -49,14 +49,14 @@ while (!$res->EOF)
     ++$blcount;
 }
 
-$res = $GLOBALS['db']->Execute("SELECT count(bid) FROM ".DB_PREFIX."_bans");
+$res = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_bans");
 $BanCount = (int)$res->fields[0];
 
 $res = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
-			    				FROM ".DB_PREFIX."_bans AS ba 
-			    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
-			    				LEFT JOIN ".DB_PREFIX."_servers AS se ON se.sid = ba.sid
-			    				LEFT JOIN ".DB_PREFIX."_mods AS mo ON mo.mid = se.modid
+			    				FROM " . DB_PREFIX . "_bans AS ba 
+			    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
+			    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
+			    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
 			    				ORDER BY created DESC LIMIT 10");
 $bans = array();
 while (!$res->EOF)

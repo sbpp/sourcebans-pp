@@ -20,7 +20,7 @@ $groupsTabMenu->addMenuItem("Server Password", 2);
 $groupsTabMenu->addMenuItem("Change Email", 3);
 $groupsTabMenu->outputMenu();
 
-$res = $GLOBALS['db']->Execute("SELECT `srv_password`, `email` FROM `".DB_PREFIX."_admins` WHERE `aid` = '".$userbank->GetAid()."'");
+$res = $GLOBALS['db']->Execute("SELECT srv_password, email FROM " . DB_PREFIX . "_admins WHERE aid = '".$userbank->GetAid()."'");
 $srvpwset = (!empty($res->fields['srv_password'])?true:false);
 
 $theme->assign('srvpwset',				$srvpwset);

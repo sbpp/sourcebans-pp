@@ -25,11 +25,11 @@ if(!isset($_GET['id']) || !is_numeric($_GET['id']))
 }
 
 $res = $GLOBALS['db']->GetRow("
-    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port), se.sid, mo.icon, (SELECT origname FROM ".DB_PREFIX."_demos WHERE demtype = 'b' AND demid = {$_GET['id']})
-    				FROM ".DB_PREFIX."_bans AS ba
-    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
-    				LEFT JOIN ".DB_PREFIX."_servers AS se ON se.sid = ba.sid
-    				LEFT JOIN ".DB_PREFIX."_mods AS mo ON mo.mid = se.modid
+    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port), se.sid, mo.icon, (SELECT origname FROM " . DB_PREFIX . "_demos WHERE demtype = 'b' AND demid = {$_GET['id']})
+    				FROM " . DB_PREFIX . "_bans AS ba
+    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
+    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
+    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
     				WHERE bid = {$_GET['id']}");
 
 if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ALL_BANS)&&(!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res[8]!=$_COOKIE['user'])&&(!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid']!=$userbank->GetProperty('gid')))
@@ -40,21 +40,21 @@ if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ALL_BANS)&&(!$userbank->HasAcce
 isset($_GET["page"])?$pagelink = "&page=".$_GET["page"]:$pagelink = "";
 if(isset($_POST['name']))
 {
-	$lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM ".DB_PREFIX."_bans WHERE bid = '".(int)$_GET['id']."'");
+	$lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM " . DB_PREFIX . "_bans WHERE bid = '".(int)$_GET['id']."'");
 	$reason = trim($_POST['listReason'] == "other"?$_POST['txtReason']:$_POST['listReason']);
-	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_bans SET
-									`name` = ?, `type` = ?, `reason` = ?, `authid` = ?,
-									`length` = " . (int)($_POST['banlength']*60) . ",
-									`ip` = ?,
-									`country` = '',
-									`ends` 	 =  `created` + " . (int)($_POST['banlength']*60) . "
+	$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET
+									name = ?, type = ?, reason = ?, authid = ?,
+									length = " . (int)($_POST['banlength']*60) . ",
+									ip = ?,
+									country = '',
+									ends 	 =  created + " . (int)($_POST['banlength']*60) . "
 									WHERE bid = ?", array($_POST['name'], $_POST['type'], $reason, trim($_POST['steam']), $_POST['ip'], (int)$_GET['id']));
 	if(!empty($_POST['dname']))
 	{
-		$demoid = $GLOBALS['db']->GetRow("SELECT filename FROM `" . DB_PREFIX . "_demos` WHERE demid = '" . $_GET['id'] . "';");
+		$demoid = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos WHERE demid = '" . $_GET['id'] . "';");
 		@unlink(SB_DEMOS."/".$demoid['filename']);
-		$edit = $GLOBALS['db']->Execute("REPLACE INTO ".DB_PREFIX."_demos
-										(`demid`, `demtype`, `filename`, `origname`)
+		$edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_demos
+										(demid, demtype, filename, origname)
 										VALUES
 										(?,
 										'b',

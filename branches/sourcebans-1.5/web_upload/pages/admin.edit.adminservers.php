@@ -48,8 +48,8 @@ if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS))
 	PageDie();
 }
 
-$servers = $GLOBALS['db']->GetAll("SELECT `server_id`, `srv_group_id` FROM ".DB_PREFIX."_admins_servers_groups WHERE admin_id = ". (int)$aid);
-$adminGroup = $GLOBALS['db']->GetAll('SELECT id FROM '.DB_PREFIX.'_srvgroups sg, '.DB_PREFIX.'_admins a WHERE sg.name = a.srv_group and a.aid = ? limit 1', array($aid));
+$servers = $GLOBALS['db']->GetAll("SELECT server_id, srv_group_id FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = ". (int)$aid);
+$adminGroup = $GLOBALS['db']->GetAll('SELECT id FROM ' . DB_PREFIX . '_srvgroups sg, ' . DB_PREFIX . '_admins a WHERE sg.name = a.srv_group and a.aid = ? limit 1', array($aid));
 
 $server_grp = isset($adminGroup[0]['id'])?$adminGroup[0]['id']:0;
 
@@ -58,11 +58,11 @@ if(isset($_POST['editadminserver']))
 {
 	
 	// clear old stuffs
-	$GLOBALS['db']->Execute("DELETE FROM ".DB_PREFIX."_admins_servers_groups WHERE admin_id = {$aid}");
+	$GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = {$aid}");
 	if(isset($_POST['servers']) && is_array($_POST['servers']) && count($_POST['servers']) > 0) {
 		foreach($_POST['servers'] AS $s)
 		{
-			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+			$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array($aid,
 											   $server_grp,
 											   -1,
@@ -72,7 +72,7 @@ if(isset($_POST['editadminserver']))
 	if(isset($_POST['group']) && is_array($_POST['group']) && count($_POST['group']) > 0) {
 		foreach($_POST['group'] AS $g)
 		{
-			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+			$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array($aid,
 											   $server_grp,
 											   substr($g,1),
@@ -82,9 +82,9 @@ if(isset($_POST['editadminserver']))
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 	{
 		// rehash the admins on the servers
-		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM " . DB_PREFIX . "_servers s
+												LEFT JOIN " . DB_PREFIX . "_admins_servers_groups asg ON asg.admin_id = '".(int)$aid."'
+												LEFT JOIN " . DB_PREFIX . "_servers_groups sg ON sg.group_id = asg.srv_group_id
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
@@ -98,13 +98,13 @@ if(isset($_POST['editadminserver']))
 	} else
 		echo '<script>ShowBox("Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	
-	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
+	$admname = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = ?", array((int)$aid));
 	$log = new CSystemLog("m", "Admin Servers Updated", "Admin (" . $admname['user'] . ") server access has been changed");
 }
 
 
-$server_list = 	$GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
-$group_list = 	$GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type = '3'");
+$server_list = 	$GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers");
+$group_list = 	$GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_groups WHERE type = '3'");
 $rowcount = 	(count($server_list)+count($group_list));
 
 $theme->assign('row_count', $rowcount);

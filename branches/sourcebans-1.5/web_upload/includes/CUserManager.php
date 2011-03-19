@@ -167,7 +167,7 @@ class CUserManager
 			
 		if($password == $this->admins[$aid]['password'])
 		{
-			$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `lastvisit` = UNIX_TIMESTAMP() WHERE `aid` = '$aid'");
+			$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET lastvisit = UNIX_TIMESTAMP() WHERE aid = '$aid'");
 			return true;
 		}
 		else 
@@ -265,7 +265,7 @@ class CUserManager
 	
 	function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
 	{		
-		$add_admin = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(user, authid, password, gid, email, validate, extraflags, immunity, srv_group, srv_flags, srv_password)
+		$add_admin = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(user, authid, password, gid, email, validate, extraflags, immunity, srv_group, srv_flags, srv_password)
 											 VALUES (?,?,?,?,?,?,?,?,?,?,?)");
 		$GLOBALS['db']->Execute($add_admin,array($name, $steam, $this->encrypt_password($password), $web_group, $email, 0, $web_flags, $immunity, $srv_group, $srv_flags, $srv_password));
 		return ($add_admin) ? (int)$GLOBALS['db']->Insert_ID() : -1;

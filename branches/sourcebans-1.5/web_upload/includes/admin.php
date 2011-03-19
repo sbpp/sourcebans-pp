@@ -94,14 +94,14 @@ else
 					break;
 					case "srvgroup":
 						$where = " AND SG.srv_group_id = '" . $value . "'";
-						$join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS SG ON SG.admin_id = ADM.aid";
+						$join = " LEFT JOIN " . DB_PREFIX . "_admins_servers_groups AS SG ON SG.admin_id = ADM.aid";
 					break;
 					case "admwebflag":
 						$findflags = explode(",",$value);
 						foreach($findflags AS $flag)
 							$flags[] = constant($flag);
 						$flagstring = implode('|',$flags);
-						$alladmins = $GLOBALS['db']->Execute("SELECT aid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
+						$alladmins = $GLOBALS['db']->Execute("SELECT aid FROM " . DB_PREFIX . "_admins WHERE aid > 0");
 						while(!$alladmins->EOF)
 						{
 							if($userbank->HasAccess($flagstring, $alladmins->fields["aid"])) {
@@ -117,7 +117,7 @@ else
 						$findflags = explode(",",$value);
 						foreach($findflags AS $flag)
 							$flags[] = constant($flag);
-						$alladmins = $GLOBALS['db']->Execute("SELECT aid, authid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
+						$alladmins = $GLOBALS['db']->Execute("SELECT aid, authid FROM " . DB_PREFIX . "_admins WHERE aid > 0");
 						while(!$alladmins->EOF)
 						{
 							foreach($flags AS $fla) {
@@ -138,7 +138,7 @@ else
 					break;
 					case "server":
 						$where = " AND (ASG.server_id = '" . $value . "' OR SG.server_id = '" . $value . "')";
-						$join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS ASG ON ASG.admin_id = ADM.aid LEFT JOIN `" . DB_PREFIX . "_servers_groups` AS SG ON SG.group_id = ASG.srv_group_id";
+						$join = " LEFT JOIN " . DB_PREFIX . "_admins_servers_groups AS ASG ON ASG.admin_id = ADM.aid LEFT JOIN " . DB_PREFIX . "_servers_groups AS SG ON SG.group_id = ASG.srv_group_id";
 					break;
 					default:
 						$where = "";
@@ -146,7 +146,7 @@ else
 				}
 				$advSearchString = "&advSearch=".$_GET['advSearch']."&advType=".$_GET['advType'];
 			}
-			$admins = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage));
+			$admins = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage));
 			// quick fix for the server search showing admins mulitple times.
 			if(isset($_GET['advSearch']) && isset($_GET['advType']) && $_GET['advType'] == 'server') {
 
@@ -161,7 +161,7 @@ else
 				}
 			}
 			
-			$query = $GLOBALS['db']->GetRow("SELECT COUNT(ADM.aid) AS cnt FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where);
+			$query = $GLOBALS['db']->GetRow("SELECT COUNT(ADM.aid) AS cnt FROM " . DB_PREFIX . "_admins AS ADM".$join." WHERE ADM.aid > 0".$where);
 			$admin_count = $query['cnt'];
 			include TEMPLATES_PATH . "/admin.admins.php";
 			RewritePageTitle("Admin Management");
@@ -317,8 +317,8 @@ else
 			$modTabMenu->outputMenu();
 			// ====================[ ADMIN SIDE MENU END ] ===================	
 			
-			$mod_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE mid > 0 ORDER BY name ASC") ;
-			$query = $GLOBALS['db']->GetRow("SELECT COUNT(mid) AS cnt FROM `" . DB_PREFIX . "_mods`") ;
+			$mod_list = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_mods WHERE mid > 0 ORDER BY name ASC") ;
+			$query = $GLOBALS['db']->GetRow("SELECT COUNT(mid) AS cnt FROM " . DB_PREFIX . "_mods") ;
 			$mod_count = $query['cnt'];
 			include TEMPLATES_PATH . "/admin.mods.php";
 			RewritePageTitle("Manage Mods");	

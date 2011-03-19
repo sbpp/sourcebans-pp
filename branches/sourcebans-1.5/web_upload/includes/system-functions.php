@@ -497,22 +497,22 @@ function PrintArray($array)
 
 function NextGid()
 {
-	$gid = $GLOBALS['db']->GetRow("SELECT MAX(gid) AS next_gid FROM `" . DB_PREFIX . "_groups`");
+	$gid = $GLOBALS['db']->GetRow("SELECT MAX(gid) AS next_gid FROM " . DB_PREFIX . "_groups");
 	return ($gid['next_gid']+1);
 }
 function NextSGid()
 {
-	$gid = $GLOBALS['db']->GetRow("SELECT MAX(id) AS next_id FROM `" . DB_PREFIX . "_srvgroups`");
+	$gid = $GLOBALS['db']->GetRow("SELECT MAX(id) AS next_id FROM " . DB_PREFIX . "_srvgroups");
 	return ($gid['next_id']+1);
 }
 function NextSid()
 {
-	$sid = $GLOBALS['db']->GetRow("SELECT MAX(sid) AS next_sid FROM `" . DB_PREFIX . "_servers`");
+	$sid = $GLOBALS['db']->GetRow("SELECT MAX(sid) AS next_sid FROM " . DB_PREFIX . "_servers");
 	return ($sid['next_sid']+1);
 }
 function NextAid()
 {
-	$aid = $GLOBALS['db']->GetRow("SELECT MAX(aid) AS next_aid FROM `" . DB_PREFIX . "_admins`");
+	$aid = $GLOBALS['db']->GetRow("SELECT MAX(aid) AS next_aid FROM " . DB_PREFIX . "_admins");
 	return ($aid['next_aid']+1);
 }
 
@@ -650,7 +650,7 @@ function SecondsToString($sec, $textual=true)
 function CreateHostnameCache()
 {
 	require_once INCLUDES_PATH.'/CServerInfo.php';
-	$res = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM ".DB_PREFIX."_servers ORDER BY sid");
+	$res = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM " . DB_PREFIX . "_servers ORDER BY sid");
 	$servers = array();
 	while (!$res->EOF)
 	{
@@ -748,9 +748,9 @@ function PruneBans()
 {
 	global $userbank;
 
-	$res = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_bans` SET `RemovedBy` = 0, `RemoveType` = \'E\', `RemovedOn` = UNIX_TIMESTAMP() WHERE `length` != 0 and `ends` < UNIX_TIMESTAMP() and `RemoveType` IS NULL');
-	$prot = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '3', archivedby = ".($userbank->GetAid()<0?0:$userbank->GetAid())." WHERE archiv = '0' AND bid IN((SELECT bid FROM `".DB_PREFIX."_bans` WHERE `RemoveType` = 'E'))");
-	$submission = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_submissions` SET archiv = \'3\', archivedby = '.($userbank->GetAid()<0?0:$userbank->GetAid()).' WHERE archiv = \'0\' AND (SteamId IN((SELECT authid FROM `'.DB_PREFIX.'_bans` WHERE `type` = 0 AND `RemoveType` IS NULL)) OR sip IN((SELECT ip FROM `'.DB_PREFIX.'_bans` WHERE `type` = 1 AND `RemoveType` IS NULL)))');
+	$res = $GLOBALS['db']->Execute('UPDATE ' . DB_PREFIX . '_bans SET RemovedBy = 0, RemoveType = \'E\', RemovedOn = UNIX_TIMESTAMP() WHERE length != 0 and ends < UNIX_TIMESTAMP() and RemoveType IS NULL');
+	$prot = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '3', archivedby = ".($userbank->GetAid()<0?0:$userbank->GetAid())." WHERE archiv = '0' AND bid IN((SELECT bid FROM " . DB_PREFIX . "_bans WHERE RemoveType = 'E'))");
+	$submission = $GLOBALS['db']->Execute('UPDATE ' . DB_PREFIX . '_submissions SET archiv = \'3\', archivedby = '.($userbank->GetAid()<0?0:$userbank->GetAid()).' WHERE archiv = \'0\' AND (SteamId IN((SELECT authid FROM ' . DB_PREFIX . '_bans WHERE type = 0 AND RemoveType IS NULL)) OR sip IN((SELECT ip FROM ' . DB_PREFIX . '_bans WHERE type = 1 AND RemoveType IS NULL)))');
     return $res?true:false;
 }
 
@@ -888,7 +888,7 @@ function check_email($email) {
 function checkSinglePlayer($sid, $steamid)
 {
 	require_once(INCLUDES_PATH.'/CServerRcon.php');
-	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($serv['rcon'])) {
 		return false;
 	}
@@ -899,7 +899,7 @@ function checkSinglePlayer($sid, $steamid)
 	$r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
 		return false;
 	}
 
@@ -927,7 +927,7 @@ function checkSinglePlayer($sid, $steamid)
 function checkMultiplePlayers($sid, $steamids)
 {
 	require_once(INCLUDES_PATH.'/CServerRcon.php');
-	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($serv['rcon'])) {
 		return false;
 	}
@@ -939,7 +939,7 @@ function checkMultiplePlayers($sid, $steamids)
 
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
 		return false;
 	}
 
@@ -1061,7 +1061,7 @@ function GetCommunityName($steamid)
 function SendRconSilent($rcon, $sid)
 {
 	require_once(INCLUDES_PATH.'/CServerRcon.php');
-	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($serv['rcon'])) {
 		return false;
 	}
@@ -1073,7 +1073,7 @@ function SendRconSilent($rcon, $sid)
 
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
 		return false;
 	}
 

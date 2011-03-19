@@ -31,7 +31,7 @@ if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_MODS))
 $_GET['id'] = (int)$_GET['id'];
 $res = $GLOBALS['db']->GetRow("
     				SELECT name, modfolder, icon, enabled
-    				FROM ".DB_PREFIX."_mods
+    				FROM " . DB_PREFIX . "_mods
     				WHERE mid = {$_GET['id']}");
 if(isset($_POST['name']))
 {
@@ -40,9 +40,9 @@ if(isset($_POST['name']))
 	if($res['icon']!=$_POST['icon_hid'])
 		@unlink(SB_ICONS."/".$res['icon']);
 		
-	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_mods SET
-									`name` = ?, `modfolder` = ?, `icon` = ?, `enabled` = ?
-									WHERE `mid` = ?", array($_POST['name'], $_POST['folder'], $_POST['icon_hid'], $enabled, (int)$_GET['id']));
+	$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_mods SET
+									name = ?, modfolder = ?, icon = ?, enabled = ?
+									WHERE mid = ?", array($_POST['name'], $_POST['folder'], $_POST['icon_hid'], $enabled, (int)$_GET['id']));
 	echo '<script>ShowBox("Mod updated", "The mod has been updated successfully", "green", "index.php?p=admin&c=mods");</script>';
 }
 if(!$res)

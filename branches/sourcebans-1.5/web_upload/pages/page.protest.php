@@ -46,7 +46,7 @@ else
 	}
 	elseif($Type==0)
 	{
-		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM ".DB_PREFIX."_bans WHERE authid=? AND RemovedBy IS NULL;");
+		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE authid=? AND RemovedBy IS NULL;");
 		$res = $GLOBALS['db']->Execute($pre,array($SteamID));
 		if ($res->RecordCount() == 0)
 		{
@@ -56,7 +56,7 @@ else
 		else
 		{
 			$BanId = (int)$res->fields[0];
-			$res = $GLOBALS['db']->Execute("SELECT pid FROM ".DB_PREFIX."_protests WHERE bid=$BanId");
+			$res = $GLOBALS['db']->Execute("SELECT pid FROM " . DB_PREFIX . "_protests WHERE bid=$BanId");
 			if ($res->RecordCount() > 0)
 			{
 				$errors .=  '* A protest is already pending for this Steam ID.<br>';
@@ -71,7 +71,7 @@ else
 	}
 	elseif($Type==1)
 	{
-		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM ".DB_PREFIX."_bans WHERE ip=? AND RemovedBy IS NULL;");
+		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE ip=? AND RemovedBy IS NULL;");
 		$res = $GLOBALS['db']->Execute($pre,array($IP));
 		if ($res->RecordCount() == 0)
 		{
@@ -81,7 +81,7 @@ else
 		else
 		{
 			$BanId = (int)$res->fields[0];
-			$res = $GLOBALS['db']->Execute("SELECT pid FROM ".DB_PREFIX."_protests WHERE bid=$BanId");
+			$res = $GLOBALS['db']->Execute("SELECT pid FROM " . DB_PREFIX . "_protests WHERE bid=$BanId");
 			if ($res->RecordCount() > 0)
 			{
 				$errors .=  '* A protest is already pending for this IP.<br>';
@@ -111,10 +111,10 @@ else
 	if ($validsubmit && $BanId != -1)
 	{
 		$UnbanReason = trim($UnbanReason);
-		$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_protests(bid,datesubmitted,reason,email,archiv,pip) VALUES (?,UNIX_TIMESTAMP(),?,?,0,?)");
+		$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_protests(bid,datesubmitted,reason,email,archiv,pip) VALUES (?,UNIX_TIMESTAMP(),?,?,0,?)");
 		$res = $GLOBALS['db']->Execute($pre,array($BanId, $UnbanReason,$Email,$_SERVER['REMOTE_ADDR']));
         $protid = $GLOBALS['db']->Insert_ID();
-        $protadmin = $GLOBALS['db']->GetRow("SELECT ad.user FROM ".DB_PREFIX."_protests p, ".DB_PREFIX."_admins ad, ".DB_PREFIX."_bans b WHERE p.pid = '".$protid."' AND b.bid = p.bid AND ad.aid = b.aid");
+        $protadmin = $GLOBALS['db']->GetRow("SELECT ad.user FROM " . DB_PREFIX . "_protests p, " . DB_PREFIX . "_admins ad, " . DB_PREFIX . "_bans b WHERE p.pid = '".$protid."' AND b.bid = p.bid AND ad.aid = b.aid");
 
 		$Type = 0;
 		$SteamID = "";
@@ -127,7 +127,7 @@ else
 		$headers = 'From: protest@' . $_SERVER['HTTP_HOST'] . "\n" .
 		'X-Mailer: PHP/' . phpversion();
 
-		$emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `".DB_PREFIX."_admins` WHERE aid = (SELECT aid FROM `".DB_PREFIX."_bans` WHERE bid = '".(int)$BanId."');");
+		$emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM " . DB_PREFIX . "_admins WHERE aid = (SELECT aid FROM " . DB_PREFIX . "_bans WHERE bid = '".(int)$BanId."');");
         $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
 		if(isset($GLOBALS['config']['protest.emailonlyinvolved']) && $GLOBALS['config']['protest.emailonlyinvolved'] == 1 && !empty($emailinfo->fields['email']))
 			$admins = array(array('aid' => $emailinfo->fields['aid'], 'user' => $emailinfo->fields['user'], 'email' => $emailinfo->fields['email']));

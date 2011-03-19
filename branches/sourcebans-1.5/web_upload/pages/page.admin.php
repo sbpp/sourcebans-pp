@@ -12,14 +12,14 @@
 if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();} 
 global $userbank, $theme;
 $counts = $GLOBALS['db']->GetRow("SELECT 
-								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_banlog`) AS blocks, 
-								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_bans`) AS bans,
-								 (SELECT COUNT(aid) FROM `" . DB_PREFIX . "_admins` WHERE aid > 0) AS admins,
-								 (SELECT COUNT(subid) FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0') AS subs,
-								 (SELECT COUNT(subid) FROM `" . DB_PREFIX . "_submissions` WHERE archiv > 0) AS archiv_subs,
-								 (SELECT COUNT(pid) FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0') AS protests,
-								 (SELECT COUNT(pid) FROM `" . DB_PREFIX . "_protests` WHERE archiv > 0) AS archiv_protests,
-								 (SELECT COUNT(sid) FROM `" . DB_PREFIX . "_servers`) AS servers");
+								 (SELECT COUNT(bid) FROM " . DB_PREFIX . "_banlog) AS blocks, 
+								 (SELECT COUNT(bid) FROM " . DB_PREFIX . "_bans) AS bans,
+								 (SELECT COUNT(aid) FROM " . DB_PREFIX . "_admins WHERE aid > 0) AS admins,
+								 (SELECT COUNT(subid) FROM " . DB_PREFIX . "_submissions WHERE archiv = '0') AS subs,
+								 (SELECT COUNT(subid) FROM " . DB_PREFIX . "_submissions WHERE archiv > 0) AS archiv_subs,
+								 (SELECT COUNT(pid) FROM " . DB_PREFIX . "_protests WHERE archiv = '0') AS protests,
+								 (SELECT COUNT(pid) FROM " . DB_PREFIX . "_protests WHERE archiv > 0) AS archiv_protests,
+								 (SELECT COUNT(sid) FROM " . DB_PREFIX . "_servers) AS servers");
 
 $demsi = getDirectorySize(SB_DEMOS);
 

@@ -27,15 +27,15 @@ $_GET['id'] = (int)$_GET['id'];
 if(isset($_POST['address']))
 {
 	$grps = "";
-	$sg = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_servers_groups WHERE server_id = {$_GET['id']}");
+	$sg = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}");
 	foreach($sg AS $server)
 	{
-		$GLOBALS['db']->Execute("DELETE FROM ".DB_PREFIX."_servers_groups WHERE server_id = " . (int)$server['server_id'] . " AND group_id = " . (int)$server['group_id']);
+		$GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE server_id = " . (int)$server['server_id'] . " AND group_id = " . (int)$server['group_id']);
 	}
 	if(!empty($_POST['groups'])) {
 		foreach($_POST['groups'] as $t)
 		{
-			$addtogrp = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_servers_groups (`server_id`, `group_id`) VALUES (?,?)");
+			$addtogrp = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_servers_groups (server_id, group_id) VALUES (?,?)");
 			$GLOBALS['db']->Execute($addtogrp,array($_GET['id'], $t));
 		}
 	}
@@ -45,22 +45,22 @@ if(isset($_POST['address']))
     // don't change rcon password if not changed
     $rcon = "";
     if($_POST['rcon'] != '+-#*_')
-        $rcon = "`rcon` = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
+        $rcon = "rcon = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
         
-	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET
-									`ip` = ?,
-									`port` = " . (int)$_POST['port'] . ",
+	$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET
+									ip = ?,
+									port = " . (int)$_POST['port'] . ",
 									" . $rcon . "
-									`modid` = " . (int)$_POST['mod'] . ",
-									`enabled` = " . (int)$enabled . "
-									WHERE `sid` = '". (int)$_GET['id'] . "'", array($_POST['address']));
+									modid = " . (int)$_POST['mod'] . ",
+									enabled = " . (int)$enabled . "
+									WHERE sid = '". (int)$_GET['id'] . "'", array($_POST['address']));
 
 	
 									
 	echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";		
 }
 
-$server = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_servers WHERE sid = {$_GET['id']}");
+$server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = {$_GET['id']}");
 if(!$server)
 {
 	$log = new CSystemLog("e", "Getting server data failed", "Can't find data for server with id '".$_GET['id']."'");
@@ -74,8 +74,8 @@ if(!$server)
 }
 
 
-$modlist = $GLOBALS['db']->GetAll("SELECT mid, name FROM `" . DB_PREFIX . "_mods` WHERE `mid` > 0 AND `enabled` = 1 ORDER BY name ASC");
-$grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM `" . DB_PREFIX . "_groups` WHERE type = 3 ORDER BY name ASC");
+$modlist = $GLOBALS['db']->GetAll("SELECT mid, name FROM " . DB_PREFIX . "_mods WHERE mid > 0 AND enabled = 1 ORDER BY name ASC");
+$grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = 3 ORDER BY name ASC");
 
 $theme->assign('ip', 	$server['ip']);
 $theme->assign('port', 	 $server['port']);
@@ -95,7 +95,7 @@ $theme->display('page_admin_servers_add.tpl');
 echo '</form>';
 
 echo "<script>";
-$groups = $GLOBALS['db']->GetAll("SELECT group_id FROM `" . DB_PREFIX . "_servers_groups` WHERE server_id = {$_GET['id']}"); 
+$groups = $GLOBALS['db']->GetAll("SELECT group_id FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}"); 
 foreach($groups AS $g)
 {
 	if($g)

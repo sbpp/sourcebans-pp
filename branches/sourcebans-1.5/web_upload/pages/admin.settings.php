@@ -22,7 +22,7 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 	{
 		if($userbank->HasAccess(ADMIN_OWNER))
 		{
-			$result = $GLOBALS['db']->Execute("TRUNCATE TABLE `".DB_PREFIX."_log`");
+			$result = $GLOBALS['db']->Execute("TRUNCATE TABLE " . DB_PREFIX . "_log");
 		}
         else
         {
@@ -198,7 +198,7 @@ else
 
 				$tz_string = $_POST['timezoneoffset'];
 
-				$edit = $GLOBALS['db']->Execute("REPLACE INTO ".DB_PREFIX."_settings (`value`, `setting`) VALUES
+				$edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (value, setting) VALUES
 												(?, 'template.title'),
 												(?,'template.logo'),
 												(" . (int)$_POST['config_password_minlength'] . ", 'config.password.minlength'),
@@ -237,7 +237,7 @@ else
 			
 			$adminrehash = (isset($_POST['enable_adminrehashing']) && $_POST['enable_adminrehashing'] == "on" ? 1 : 0);
 			
-			$edit = $GLOBALS['db']->Execute("REPLACE INTO ".DB_PREFIX."_settings (`value`, `setting`) VALUES
+			$edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (value, setting) VALUES
 											(" . (int)$exportpub . ", 'config.exportpublic'),
 											(" . (int)$kickit . ", 'config.enablekickit'),
 											(" . (int)$groupban . ", 'config.enablegroupbanning'),

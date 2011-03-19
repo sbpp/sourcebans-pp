@@ -38,9 +38,9 @@ if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS))
 
 $authId = $userbank->GetProperty('authid', $_GET['id']);
 
-$serveradmin = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_admins WHERE authid = ?", array($authId));
-$wgroups = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_groups WHERE type != 3");
-$sgroups = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_srvgroups");
+$serveradmin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE authid = ?", array($authId));
+$wgroups = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_groups WHERE type != 3");
+$sgroups = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_srvgroups");
 
 if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 {
@@ -52,38 +52,38 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 	}
 	if(isset($_POST['wg']))	{
 		// Edit the web group
-		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
-										`gid` = '" . (int)$_POST['wg'] . "'
-										WHERE `aid` = ". (int)$_GET['id']);
+		$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+										gid = '" . (int)$_POST['wg'] . "'
+										WHERE aid = ". (int)$_GET['id']);
 	}
 	
 	if(isset($_POST['sg'])) {
 		// Edit the server admin group
-		$grps = $GLOBALS['db']->GetRow("SELECT name FROM ".DB_PREFIX."_srvgroups WHERE id = " . (int)$_POST['sg']);
+		$grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = " . (int)$_POST['sg']);
 		if(!$grps)
 			$group = "";
 		else 
 			$group = $grps['name'];
 			
-		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
-										`srv_group` = ?
+		$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+										srv_group = ?
 										WHERE authid = ?", array($group, $authId));
 		
-		$srv = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_admins_servers_groups WHERE admin_id = (SELECT aid FROM ".DB_PREFIX."_admins WHERE authid = ?)", array($authId));
+		$srv = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = (SELECT aid FROM " . DB_PREFIX . "_admins WHERE authid = ?)", array($authId));
 		foreach($srv AS $s)
 		{
-			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins_servers_groups SET
-										`group_id` = " . (int)$_POST['sg'] . "
-										WHERE admin_id = (SELECT aid FROM ".DB_PREFIX."_admins WHERE authid = ?)", array($authId));
+			$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins_servers_groups SET
+										group_id = " . (int)$_POST['sg'] . "
+										WHERE admin_id = (SELECT aid FROM " . DB_PREFIX . "_admins WHERE authid = ?)", array($authId));
 			
 		}
 	}
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 	{
 		// rehash the admins on the servers
-		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$_GET['id']."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM " . DB_PREFIX . "_servers s
+												LEFT JOIN " . DB_PREFIX . "_admins_servers_groups asg ON asg.admin_id = '".(int)$_GET['id']."'
+												LEFT JOIN " . DB_PREFIX . "_servers_groups sg ON sg.group_id = asg.srv_group_id
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
@@ -98,7 +98,7 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 	else
 		echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	
-	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$_GET['id']));
+	$admname = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = ?", array((int)$_GET['id']));
 	$log = new CSystemLog("m", "Admin Group Updated", "Admin (" . $admname['user'] . ") groups has been updated");
 }
 

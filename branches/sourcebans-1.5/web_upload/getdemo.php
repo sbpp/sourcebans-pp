@@ -12,7 +12,7 @@
 include_once("init.php");
 
 $GLOBALS['db']->Execute("SET NAMES utf8"); 
-$st = $GLOBALS['db']->Prepare("SELECT `filename`, `origname` FROM ".DB_PREFIX."_demos WHERE demtype=? and demid=?");
+$st = $GLOBALS['db']->Prepare("SELECT filename, origname FROM " . DB_PREFIX . "_demos WHERE demtype=? and demid=?");
 $res = $GLOBALS['db']->Execute($st,array($_GET['type'],$_GET['id']));
 header('Content-type: application/force-download');
 header('Content-Transfer-Encoding: Binary');

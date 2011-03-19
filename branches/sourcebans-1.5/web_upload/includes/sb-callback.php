@@ -78,7 +78,7 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 {
 	global $userbank;
 	$objResponse = new xajaxResponse();
-	$q = $GLOBALS['db']->GetRow("SELECT `aid`, `password` FROM `" . DB_PREFIX . "_admins` WHERE `user` = ?", array($username));
+	$q = $GLOBALS['db']->GetRow("SELECT aid, password FROM " . DB_PREFIX . "_admins WHERE user = ?", array($username));
 	if($q)
 		$aid = $q[0];
 	if($q && strlen($q[1]) == 0 && count($q) != 0)
@@ -107,7 +107,7 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 function LostPassword($email)
 {
 	$objResponse = new xajaxResponse();
-	$q = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_admins` WHERE `email` = ?", array($email));
+	$q = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE email = ?", array($email));
 
 	if(!$q[0])
 	{
@@ -119,7 +119,7 @@ function LostPassword($email)
 	}
 
 	$validation = md5(time());
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `validate` = ? WHERE `email` = ?", array($validation, $email));
+	$query = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET validate = ? WHERE email = ?", array($validation, $email));
 	$message = "";
 	$message .= "Hello " . $q['user'] . "\n";
 	$message .= "You have requested to have your password reset for your SourceBans account.\n
@@ -147,7 +147,7 @@ function CheckSrvPassword($aid, $srv_pass)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to check ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
 		return $objResponse;
 	}
-	$res = $GLOBALS['db']->Execute("SELECT `srv_password` FROM `".DB_PREFIX."_admins` WHERE `aid` = '".$aid."'");
+	$res = $GLOBALS['db']->Execute("SELECT srv_password FROM " . DB_PREFIX . "_admins WHERE aid = '".$aid."'");
 	if($res->fields['srv_password'] != NULL && $res->fields['srv_password'] != $srv_pass)
 	{
 		$objResponse->addScript("$('scurrent.msg').setStyle('display', 'block');");
@@ -176,9 +176,9 @@ function ChangeSrvPassword($aid, $srv_pass)
 	}
     
 	if($srv_pass == "NULL")
-		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = NULL WHERE `aid` = '".$aid."'");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET srv_password = NULL WHERE aid = '".$aid."'");
 	else
-		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = '".$srv_pass."' WHERE `aid` = '".$aid."'");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET srv_password = '".$srv_pass."' WHERE aid = '".$aid."'");
 	$objResponse->addScript("ShowBox('Server Password changed', 'Your server password has been changed successfully.', 'green', 'index.php?p=account', true);");
 	$log = new CSystemLog("m", "Srv Password Changed", "Password changed for admin (".$aid.")");
 	return $objResponse;
@@ -218,7 +218,7 @@ function ChangeEmail($aid, $email, $password)
 		$objResponse->addScript("set_error(0);");
 	}
 
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `email` = ? WHERE `aid` = ?", array($email, $aid));
+	$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET email = ? WHERE aid = ?", array($email, $aid));
 	$objResponse->addScript("ShowBox('E-mail address changed', 'Your E-mail address has been changed successfully.', 'green', 'index.php?p=account', true);");
 	$log = new CSystemLog("m", "E-mail Changed", "E-mail changed for admin (".$aid.")");
 	return $objResponse;
@@ -236,8 +236,8 @@ function AddGroup($name, $type, $bitmask, $srvflags)
 	}
 
 	$error = 0;
-	$query = $GLOBALS['db']->GetRow("SELECT `gid` FROM `" . DB_PREFIX . "_groups` WHERE `name` = ?", array($name));
-	$query2 = $GLOBALS['db']->GetRow("SELECT `id` FROM `" . DB_PREFIX . "_srvgroups` WHERE `name` = ?", array($name));
+	$query = $GLOBALS['db']->GetRow("SELECT gid FROM " . DB_PREFIX . "_groups WHERE name = ?", array($name));
+	$query2 = $GLOBALS['db']->GetRow("SELECT id FROM " . DB_PREFIX . "_srvgroups WHERE name = ?", array($name));
 	if(strlen($name) == 0 || count($query) > 0 || count($query2) > 0)
 	{
 		if(strlen($name) == 0)
@@ -274,11 +274,11 @@ function AddGroup($name, $type, $bitmask, $srvflags)
 	if($error > 0)
 		return $objResponse;
 
-	$query = $GLOBALS['db']->GetRow("SELECT MAX(gid) AS next_gid FROM `" . DB_PREFIX . "_groups`");
+	$query = $GLOBALS['db']->GetRow("SELECT MAX(gid) AS next_gid FROM " . DB_PREFIX . "_groups");
 	if($type == "1")
 	{
 		// add the web group
-		$query1 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_groups` (`gid`, `type`, `name`, `flags`) VALUES (". (int)($query['next_gid']+1) .", '" . (int)$type . "', ?, '" . (int)$bitmask . "')", array($name));
+		$query1 = $GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_groups (gid, type, name, flags) VALUES (". (int)($query['next_gid']+1) .", '" . (int)$type . "', ?, '" . (int)$bitmask . "')", array($name));
 	}
 	elseif($type == "2")
 	{
@@ -289,14 +289,14 @@ function AddGroup($name, $type, $bitmask, $srvflags)
 			$srvflags = substr($srvflags, 0, strlen($srvflags) - strlen($immunity)-1);
 		}
 		$immunity = (isset($immunity) && $immunity>0) ? $immunity : 0;
-		$add_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvgroups(immunity,flags,name,groups_immune)
+		$add_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvgroups(immunity,flags,name,groups_immune)
 					VALUES (?,?,?,?)");
 		$GLOBALS['db']->Execute($add_group,array($immunity, $srvflags, $name, " "));
 	}
 	elseif($type == "3")
 	{
 		// We need to add the server into the table
-		$query1 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_groups` (`gid`, `type`, `name`, `flags`) VALUES (". ($query['next_gid']+1) .", '3', ?, '0')", array($name));
+		$query1 = $GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_groups (gid, type, name, flags) VALUES (". ($query['next_gid']+1) .", '3', ?, '0')", array($name));
 	}
 
 	$log = new CSystemLog("m", "Group Created", "A new group was created ($name)");
@@ -320,22 +320,22 @@ function RemoveGroup($gid, $type)
 
 
 	if($type == "web") {
-		$query2 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET gid = -1 WHERE gid = $gid");
-		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_groups` WHERE gid = $gid");
+		$query2 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET gid = -1 WHERE gid = $gid");
+		$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_groups WHERE gid = $gid");
 	}
 	else if($type == "server") {
-		$query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_servers_groups` WHERE group_id = $gid");
-		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_groups` WHERE gid = $gid");
+		$query2 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE group_id = $gid");
+		$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_groups WHERE gid = $gid");
 	}
 	else {
-		$query2 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET srv_group = NULL WHERE srv_group = (SELECT name FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid)");
-		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid");
+		$query2 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET srv_group = NULL WHERE srv_group = (SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = $gid)");
+		$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_srvgroups WHERE id = $gid");
 	}
 	
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 	{
 		// rehash the settings out of the database on all servers
-		$serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
+		$serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM " . DB_PREFIX . "_servers WHERE enabled = 1;");
 		$allservers = "";
 		foreach($serveraccessq as $access) {
 			if(!strstr($allservers, $access['sid'].",")) {
@@ -372,8 +372,8 @@ function RemoveSubmission($sid, $archiv)
 	}
 	$sid = (int)$sid;
 	if($archiv == "1") { // move submission to archiv
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE subid = $sid");
-		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0'");
+		$query1 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_submissions SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE subid = $sid");
+		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM " . DB_PREFIX . "_submissions WHERE archiv = '0'");
 		$objResponse->addScript("$('subcount').setHTML('" . $query['cnt'] . "');");
 
 		$objResponse->addScript("SlideUp('sid_$sid');");
@@ -387,9 +387,9 @@ function RemoveSubmission($sid, $archiv)
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem moving the submission to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == "0") { // delete submission
-		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_submissions` WHERE subid = $sid");
-		$query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_demos` WHERE demid = '".$sid."' AND demtype = 'S'");
-		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '1'");
+		$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_submissions WHERE subid = $sid");
+		$query2 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_demos WHERE demid = '".$sid."' AND demtype = 'S'");
+		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM " . DB_PREFIX . "_submissions WHERE archiv = '1'");
 		$objResponse->addScript("$('subcountarchiv').setHTML('" . $query['cnt'] . "');");
 
 		$objResponse->addScript("SlideUp('asid_$sid');");
@@ -403,8 +403,8 @@ function RemoveSubmission($sid, $archiv)
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem deleting the submission from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == "2") { // restore the submission
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '0', archivedby = NULL WHERE subid = $sid");
-		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0'");
+		$query1 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_submissions SET archiv = '0', archivedby = NULL WHERE subid = $sid");
+		$query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM " . DB_PREFIX . "_submissions WHERE archiv = '0'");
 		$objResponse->addScript("$('subcountarchiv').setHTML('" . $query['cnt'] . "');");
 
 		$objResponse->addScript("SlideUp('asid_$sid');");
@@ -433,9 +433,9 @@ function RemoveProtest($pid, $archiv)
 	}
 	$pid = (int)$pid;
 	if($archiv == '0') { // delete protest
-		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_protests` WHERE pid = $pid");
-		$query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_comments` WHERE type = 'P' AND bid = $pid;");
-		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '1'");
+		$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_protests WHERE pid = $pid");
+		$query2 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_comments WHERE type = 'P' AND bid = $pid;");
+		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM " . DB_PREFIX . "_protests WHERE archiv = '1'");
 		$objResponse->addScript("$('protcountarchiv').setHTML('" . $query['cnt'] . "');");
 		$objResponse->addScript("SlideUp('apid_$pid');");
 		$objResponse->addScript("SlideUp('apid_" . $pid . "a');");
@@ -448,8 +448,8 @@ function RemoveProtest($pid, $archiv)
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem deleting the protest from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == '1') { // move protest to archiv
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE pid = $pid");
-		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0'");
+		$query1 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE pid = $pid");
+		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM " . DB_PREFIX . "_protests WHERE archiv = '0'");
 		$objResponse->addScript("$('protcount').setHTML('" . $query['cnt'] . "');");
 		$objResponse->addScript("SlideUp('pid_$pid');");
 		$objResponse->addScript("SlideUp('pid_" . $pid . "a');");
@@ -462,8 +462,8 @@ function RemoveProtest($pid, $archiv)
 		else
 			$objResponse->addScript("ShowBox('Error', 'There was a problem moving the protest to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
 	} else if($archiv == '2') { // restore protest
-		$query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '0', archivedby = NULL WHERE pid = $pid");
-		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '1'");
+		$query1 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '0', archivedby = NULL WHERE pid = $pid");
+		$query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM " . DB_PREFIX . "_protests WHERE archiv = '1'");
 		$objResponse->addScript("$('protcountarchiv').setHTML('" . $query['cnt'] . "');");
 		$objResponse->addScript("SlideUp('apid_$pid');");
 		$objResponse->addScript("SlideUp('apid_" . $pid . "a');");
@@ -491,12 +491,12 @@ function RemoveServer($sid)
 	}
 	$sid = (int)$sid;
 	$objResponse->addScript("SlideUp('sid_$sid');");
-	$servinfo = $GLOBALS['db']->GetRow("SELECT ip, port FROM `" . DB_PREFIX . "_servers` WHERE sid = $sid");
-	$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_servers` WHERE sid = $sid");
-	$query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_servers_groups` WHERE server_id = $sid");
-    $query3 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins_servers_groups` SET server_id = -1 WHERE server_id = $sid");
+	$servinfo = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
+	$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
+	$query2 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE server_id = $sid");
+    $query3 = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins_servers_groups SET server_id = -1 WHERE server_id = $sid");
 
-	$query = $GLOBALS['db']->GetRow("SELECT count(sid) AS cnt FROM `" . DB_PREFIX . "_servers`");
+	$query = $GLOBALS['db']->GetRow("SELECT count(sid) AS cnt FROM " . DB_PREFIX . "_servers");
 	$objResponse->addScript("$('srvcount').setHTML('" . $query['cnt'] . "');");
 
 
@@ -523,10 +523,10 @@ function RemoveMod($mid)
 	$mid = (int)$mid;
 	$objResponse->addScript("SlideUp('mid_$mid');");
 
-	$modicon = $GLOBALS['db']->GetRow("SELECT icon, name FROM `" . DB_PREFIX . "_mods` WHERE mid = '" . $mid . "';");
+	$modicon = $GLOBALS['db']->GetRow("SELECT icon, name FROM " . DB_PREFIX . "_mods WHERE mid = '" . $mid . "';");
 	@unlink(SB_ICONS."/".$modicon['icon']);
 
-	$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_mods` WHERE mid = '" . $mid . "'");
+	$query1 = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_mods WHERE mid = '" . $mid . "'");
 
 	if($query1)
 	{
@@ -549,21 +549,21 @@ function RemoveAdmin($aid)
 		return $objResponse;
 	}
 	$aid = (int)$aid;
-	$gid = $GLOBALS['db']->GetRow("SELECT gid, authid, extraflags, user FROM `" . DB_PREFIX . "_admins` WHERE aid = $aid");
+	$gid = $GLOBALS['db']->GetRow("SELECT gid, authid, extraflags, user FROM " . DB_PREFIX . "_admins WHERE aid = $aid");
 	if((intval($gid[2]) & ADMIN_OWNER) != 0)
 	{
 		$objResponse->addAlert("Error: You cannot delete the owner.");
 		return $objResponse;
 	}
 
-	$delquery = $GLOBALS['db']->Execute(sprintf("DELETE FROM `%s_admins` WHERE aid = %d LIMIT 1", DB_PREFIX, $aid));
+	$delquery = $GLOBALS['db']->Execute(sprintf("DELETE FROM %s_admins WHERE aid = %d LIMIT 1", DB_PREFIX, $aid));
 	if($delquery) {
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
 			// rehash the admins for the servers where this admin was on
-			$serveraccess = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+			$serveraccess = $GLOBALS['db']->GetAll("SELECT s.sid FROM " . DB_PREFIX . "_servers s
+												LEFT JOIN " . DB_PREFIX . "_admins_servers_groups asg ON asg.admin_id = '".(int)$aid."'
+												LEFT JOIN " . DB_PREFIX . "_servers_groups sg ON sg.group_id = asg.srv_group_id
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
@@ -576,10 +576,10 @@ function RemoveAdmin($aid)
 			$rehashing = true;
 		}
 
-		$GLOBALS['db']->Execute(sprintf("DELETE FROM `%s_admins_servers_groups` WHERE admin_id = %d", DB_PREFIX, $aid));
+		$GLOBALS['db']->Execute(sprintf("DELETE FROM %s_admins_servers_groups WHERE admin_id = %d", DB_PREFIX, $aid));
  	}
 
-	$query = $GLOBALS['db']->GetRow("SELECT count(aid) AS cnt FROM `" . DB_PREFIX . "_admins`");
+	$query = $GLOBALS['db']->GetRow("SELECT count(aid) AS cnt FROM " . DB_PREFIX . "_admins");
 	$objResponse->addScript("SlideUp('aid_$aid');");
 	$objResponse->addScript("$('admincount').setHTML('" . $query['cnt'] . "');");
 	if($delquery)
@@ -692,13 +692,13 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 	$enable = ($enabled=="true"?1:0);
 
 	// Add the server
-	$addserver = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_servers (`sid`, `ip`, `port`, `rcon`, `modid`, `enabled`)
+	$addserver = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_servers (sid, ip, port, rcon, modid, enabled)
 										  VALUES (?,?,?,?,?,?)");
 	$GLOBALS['db']->Execute($addserver,array($sid, $ip, $port, $rcon, $mod, $enable));
 
 	// Add server to each group specified
 	$groups = explode(",", $group);
-	$addtogrp = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_servers_groups (`server_id`, `group_id`) VALUES (?,?)");
+	$addtogrp = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_servers_groups (server_id, group_id) VALUES (?,?)");
 	foreach($groups AS $g)
 	{
 		if($g)
@@ -1075,7 +1075,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##                     Add non group Admin		           ##
 			// ##############################################################
 			$done = true;
-			//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
+			//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvadmins(authtype,identity,password,groups,flags,name,external_id)
 			//		VALUES (?,?,?,?,?,?,?)");
 			//$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", " ", $srv_mask, $a_name, $wgid));
 			//$userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $a_wg, )
@@ -1088,10 +1088,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##              Add New Group + Server Admin                ##
 			// ##############################################################
 			$inGroup = true;
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvgroups(immunity,flags,name,groups_immune)
+			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvgroups(immunity,flags,name,groups_immune)
 					VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($sm_group,array($immunity, $srv_mask, $a_servername, "none"));
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
+		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvadmins(authtype,identity,password,groups,flags,name,external_id)
 		//			VALUES (?,?,?,?,?,?,?)");
 		//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $a_servername, "", $a_name, $wgid));
 			$mask = 0;
@@ -1100,7 +1100,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		// ##############################################################
 		// ##                     Add Web Admin		                   ##
 		// ##############################################################
-	//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
+	//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(aid, user,authid,password,gid, email, extraflags)
 	//										VALUES (?, ?,?,?,?,?,?)");
 	//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $a_wg, $a_email, 0));
 		$added_id = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $a_wg, $mask, $a_servername, $srv_mask, $immunity, $a_spass);
@@ -1119,7 +1119,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##############################################################
 			// ##               Custom Web Admin		                   ##
 			// ##############################################################
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
+		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(aid, user,authid,password,gid, email, extraflags)
 		//									VALUES (?, ?,?,?,?,?,?)");
 		//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), -1, $a_email, $wmask));
 		}
@@ -1130,10 +1130,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##               New	 Web Group			                   ##
 			// ##############################################################
 			$id = NextGid();
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_groups(gid, type,name,flags)
+			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_groups(gid, type,name,flags)
 											VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($sm_group,array($id, 1, $a_webname, $mask));
-	//		$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
+	//		$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(aid, user,authid,password,gid, email, extraflags)
 	//										VALUES (?, ?,?,?,?,?,?)");
 	//		$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $id, $a_email, 0));
 			$mask = 0;
@@ -1144,8 +1144,8 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		// ##               New	Server Admin 		                   ##
 		// ##############################################################
 		$inGroup = true;
-		$groupname = $GLOBALS['db']->GetRow("SELECT `name` FROM ".DB_PREFIX."_srvgroups WHERE id = '" . (int)$a_sg . "'");
-	//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
+		$groupname = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = '" . (int)$a_sg . "'");
+	//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvadmins(authtype,identity,password,groups,flags,name,external_id)
 	//										VALUES (?,?,?,?,?,?,?)");
 	//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $groupname['name'], "", $a_name, $wgid));
 		$added_id = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $groupname['name'], $srv_mask, $immunity, $a_spass);
@@ -1169,10 +1169,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##               New	Web Group	 		                   ##
 			// ##############################################################
 			$id = NextGid();
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_groups(gid,type,name,flags)
+			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_groups(gid,type,name,flags)
 											VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($sm_group,array($id, 1, $a_webname, $wmask));
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
+		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(aid, user,authid,password,gid, email, extraflags)
 		//									VALUES (?,?,?,?,?,?,?)");
 		//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $id, $a_email, 0));
 			$mask = 0;
@@ -1184,10 +1184,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##               New	Server Group	 	                   ##
 			// ##############################################################
 			$inGroup = true;
-			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvgroups(immunity,flags,name,groups_immune)
+			$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvgroups(immunity,flags,name,groups_immune)
 					VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($sm_group,array($immunity, $srv_mask, $a_servername, "none"));
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
+		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvadmins(authtype,identity,password,groups,flags,name,external_id)
 		//			VALUES (?,?,?,?,?,?,?)");
 		//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $a_servername, " ", $a_name, $wgid));
 			$srv_mask = "";
@@ -1197,7 +1197,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##############################################################
 			// ##               Custom web Group	 	                   ##
 			// ##############################################################
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
+		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(aid, user,authid,password,gid, email, extraflags)
 		//									VALUES (?,?,?,?,?,?,?)");
 		//	$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), -1, $a_email, $wmask));
 		}
@@ -1206,7 +1206,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			// ##############################################################
 			// ##               Custom server admin	 	                   ##
 			// ##############################################################
-		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
+		//	$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvadmins(authtype,identity,password,groups,flags,name,external_id)
 		//			VALUES (?,?,?,?,?,?,?)");
 		//	$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", " ", $srv_mask, $a_name, $wgid));
 		}
@@ -1219,11 +1219,11 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	if(($a_sg > -1 && $a_sg != 'n' && $a_sg != 'c') && ($a_wg > -1 && $a_wg != 'n' && $a_wg != 'c'))
 	{
 		$inGroup = true;
-		$groupname = $GLOBALS['db']->GetRow("SELECT `name` FROM ".DB_PREFIX."_srvgroups WHERE id = '" . $a_sg . "'");
-		//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvadmins(authtype,identity,password,groups,flags,name,external_id)
+		$groupname = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = '" . $a_sg . "'");
+		//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_srvadmins(authtype,identity,password,groups,flags,name,external_id)
 		//									VALUES (?,?,?,?,?,?,?)");
 		//$GLOBALS['db']->Execute($sm_group,array("steam", $a_steam, "", $groupname['name'], " ", $a_name, $wgid));
-		//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(aid, user,authid,password,gid, email, extraflags)
+		//$sm_group = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins(aid, user,authid,password,gid, email, extraflags)
 		//									VALUES (?,?,?,?,?,?,?)");
 		//$GLOBALS['db']->Execute($sm_group,array($wgid, $a_name, $a_steam, encrypt_password($a_password), $a_wg, $a_email, 0));
 		$srv_mask = "";
@@ -1248,13 +1248,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	{
 		// Add the admin <-> server_group link
 		$srv_groups = explode(",", $server);
-		$addtosrvgrp = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+		$addtosrvgrp = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
 		foreach($srv_groups AS $g)
 		{
 			if($g)
 				$GLOBALS['db']->Execute($addtosrvgrp,array($aid, $group_id, substr($g, 1), '-1'));
 		}
-		$addtosrv = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+		$addtosrv = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
 		// Add the admin <-group-> server link
 		$srv_arr = explode(",", $singlesrv);
 		foreach($srv_arr AS $s)
@@ -1265,9 +1265,9 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
 			// rehash the admins on the servers
-			$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+			$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM " . DB_PREFIX . "_servers s
+												LEFT JOIN " . DB_PREFIX . "_admins_servers_groups asg ON asg.admin_id = '".(int)$aid."'
+												LEFT JOIN " . DB_PREFIX . "_servers_groups sg ON sg.group_id = asg.srv_group_id
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
@@ -1297,7 +1297,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 	
 	$sid = (int)$sid;
 
-	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
 	if(empty($res[1]) || empty($res[2]))
 		return $objResponse;
 	$info = array();
@@ -1455,7 +1455,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
     $obProp = htmlspecialchars($obProp);
     $trunchostname = (int)$trunchostname;
 
-	$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+	$res = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
 	if(empty($res[0]) || empty($res[1]))
 		return $objResponse;
 	$info = array();
@@ -1484,7 +1484,7 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
 	{
 		$sid = (int)$sids[$i];
 
-		$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+		$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
 		if(empty($res[1]) || empty($res[2]))
 			return $objResponse;
 		$info = array();
@@ -1520,7 +1520,7 @@ function ServerPlayers($sid)
 	
 	$sid = (int)$sid;
 
-	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
 	if(empty($res[1]) || empty($res[2]))
 	{
 		$objResponse->addAlert('IP or Port not set :o');
@@ -1564,7 +1564,7 @@ function KickPlayer($sid, $name)
 
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
 		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".$name.". No RCON password!', 'red', '', true);");
 		return $objResponse;
@@ -1573,7 +1573,7 @@ function KickPlayer($sid, $name)
 
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".$sid."';");
 		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".$name.". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
@@ -1594,7 +1594,7 @@ function KickPlayer($sid, $name)
 	if($found) {
 		$steam = $matches[3][$index];
 		// check for immunity
-		$admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam."' LIMIT 1;");
+		$admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM " . DB_PREFIX . "_admins AS a LEFT JOIN " . DB_PREFIX . "_srvgroups AS g ON g.name = a.srv_group WHERE authid = '".$steam."' LIMIT 1;");
 		if($admin && $admin['gimmune']>$admin['pimmune'])
 			$immune = $admin['gimmune'];
 		elseif($admin)
@@ -1628,7 +1628,7 @@ function PasteBan($sid, $name, $type=0)
 	}
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		$objResponse->addScript("ShowBox('Error', 'No RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
@@ -1638,7 +1638,7 @@ function PasteBan($sid, $name, $type=0)
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".$sid."';");
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		$objResponse->addScript("ShowBox('Error', 'Wrong RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
 		return $objResponse;
@@ -1730,7 +1730,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 	// prune any old bans
 	PruneBans();
 	if((int)$type==0) {
-		$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($steam));
+		$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($steam));
 
 		if(intval($chk[0]) > 0)
 		{
@@ -1748,7 +1748,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
             }
 	}
 	if((int)$type==1) {
-		$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'", array($ip));
+		$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'", array($ip));
 
 		if(intval($chk[0]) > 0)
 		{
@@ -1757,7 +1757,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		}
 	}
 
-	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
+	$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
 									(UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
 	$GLOBALS['db']->Execute($pre,array($type,
 									   $ip,
@@ -1772,11 +1772,11 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 
 	if($dname && $dfile)
 	{
-		$GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname)
+		$GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_demos(demid,demtype,filename,origname)
 						     VALUES(?,'B', ?, ?)", array((int)$subid, $dfile, $dname));
 	}
 	if($fromsub) {
-			$submail = $GLOBALS['db']->Execute("SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'");
+			$submail = $GLOBALS['db']->Execute("SELECT name, email FROM " . DB_PREFIX . "_submissions WHERE subid = '" . (int)$fromsub . "'");
 			// Send an email when ban is accepted
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
 			$headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
@@ -1786,10 +1786,10 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 			$message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
 
 			mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
-			$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
+			$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_submissions SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
 		}
 
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
+	$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_submissions SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
 
 	$kickit = isset($GLOBALS['config']['config.enablekickit']) && $GLOBALS['config']['config.enablekickit'] == "1";
 	if ($kickit)
@@ -1807,8 +1807,8 @@ function SetupBan($subid)
 	$objResponse = new xajaxResponse();
 	$subid = (int)$subid;
 
-	$ban = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_submissions WHERE subid = $subid");
-	$demo = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_demos WHERE demid = $subid AND demtype = \"S\"");
+	$ban = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_submissions WHERE subid = $subid");
+	$demo = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_demos WHERE demid = $subid AND demtype = \"S\"");
 	// clear any old stuff
 	$objResponse->addScript("$('nickname').value = ''");
 	$objResponse->addScript("$('fromsub').value = ''");
@@ -1841,8 +1841,8 @@ function PrepareReban($bid)
 	$objResponse = new xajaxResponse();
 	$bid = (int)$bid;
 
-	$ban = $GLOBALS['db']->GetRow("SELECT type, ip, authid, name, length, reason FROM ".DB_PREFIX."_bans WHERE bid = '".$bid."';");
-	$demo = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_demos WHERE demid = '".$bid."' AND demtype = \"B\";");
+	$ban = $GLOBALS['db']->GetRow("SELECT type, ip, authid, name, length, reason FROM " . DB_PREFIX . "_bans WHERE bid = '".$bid."';");
+	$demo = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_demos WHERE demid = '".$bid."' AND demtype = \"B\";");
 	// clear any old stuff
 	$objResponse->addScript("$('nickname').value = ''");
 	$objResponse->addScript("$('ip').value = ''");
@@ -1871,7 +1871,7 @@ function SetupEditServer($sid)
 {
 	$objResponse = new xajaxResponse();
 	$sid = (int)$sid;
-	$server = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+	$server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = $sid");
 
 	// clear any old stuff
 	$objResponse->addScript("$('address').value = ''");
@@ -1926,8 +1926,8 @@ function ChangePassword($aid, $pass)
 		return $objResponse;
 	}
 
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `password` = '" . $userbank->encrypt_password($pass) . "' WHERE `aid` = $aid");
-	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
+	$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET password = '" . $userbank->encrypt_password($pass) . "' WHERE aid = $aid");
+	$admname = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = ?", array((int)$aid));
 	$objResponse->addAlert("Password changed successfully");
 	$objResponse->addRedirect("index.php?p=login", 0);
 	$log = new CSystemLog("m", "Password Changed", "Password changed for admin (".$admname['user'].")");
@@ -1946,7 +1946,7 @@ function AddMod($name, $folder, $icon, $enabled)
 	}
 	$name = htmlspecialchars(strip_tags($name));//don't want to addslashes because execute will automatically do it
 
-	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_mods(name,icon,modfolder,enabled) VALUES (?,?,?,?)");
+	$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_mods(name,icon,modfolder,enabled) VALUES (?,?,?,?)");
 	$GLOBALS['db']->Execute($pre,array($name, $icon, $folder, $enabled));
 
 	$objResponse->addScript("ShowBox('MOD Added', 'The game MOD has been successfully added', 'green', 'index.php?p=admin&c=mods');");
@@ -1979,7 +1979,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 	}
 
 	// Update web stuff
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `extraflags` = $web_flags WHERE `aid` = $aid");
+	$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET extraflags = $web_flags WHERE aid = $aid");
 
 
 	if(strstr($srv_flags, "#"))
@@ -1990,14 +1990,14 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 	}
 	$immunity = ($immunity>0) ? $immunity : 0;
 	// Update server stuff
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_flags` = ?, `immunity` = ? WHERE `aid` = $aid", array($srv_flags, $immunity));
+	$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET srv_flags = ?, immunity = ? WHERE aid = $aid", array($srv_flags, $immunity));
 
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 	{
 		// rehash the admins on the servers
-		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM " . DB_PREFIX . "_servers s
+												LEFT JOIN " . DB_PREFIX . "_admins_servers_groups asg ON asg.admin_id = '".(int)$aid."'
+												LEFT JOIN " . DB_PREFIX . "_servers_groups sg ON sg.group_id = asg.srv_group_id
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
@@ -2007,10 +2007,10 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 				$allservers .= $access['sid'].",";
 			}
 		}
-		$objResponse->addScript("ShowRehashBox('".$allservers."', 'Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
+		$objResponse->addScript("ShowRehashBox('".$allservers."', 'Permissions updated', 'The users permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 	} else
-		$objResponse->addScript("ShowBox('Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
-	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
+		$objResponse->addScript("ShowBox('Permissions updated', 'The users permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
+	$admname = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = ?", array((int)$aid));
     $log = new CSystemLog("m", "Permissions Changed", "Permissions have been changed for (".$admname['user'].")");
 	return $objResponse;
 }
@@ -2030,11 +2030,11 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name)
 	$name = RemoveCode($name);
 	if($type == "web" || $type == "server" )
 	// Update web stuff
-	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_groups` SET `flags` = ?, `name` = ? WHERE `gid` = $gid", array($web_flags, $name));
+	$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_groups SET flags = ?, name = ? WHERE gid = $gid", array($web_flags, $name));
 
 	if($type == "srv")
 	{
-		$gname = $GLOBALS['db']->GetRow("SELECT name FROM ".DB_PREFIX."_srvgroups WHERE id = $gid");
+		$gname = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = $gid");
 
 		if(strstr($srv_flags, "#"))
 		{
@@ -2045,17 +2045,17 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name)
 		$immunity = ($immunity>0) ? $immunity : 0;
 
 		// Update server stuff
-		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_srvgroups` SET `flags` = ?, `name` = ?, `immunity` = ? WHERE `id` = $gid", array($srv_flags, $name, $immunity));
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_srvgroups SET flags = ?, name = ?, immunity = ? WHERE id = $gid", array($srv_flags, $name, $immunity));
 
-		$oldname = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_admins WHERE srv_group = ?", array($gname['name']));
+		$oldname = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins WHERE srv_group = ?", array($gname['name']));
 		foreach($oldname as $o)
 		{
-			$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_group` = ? WHERE `aid` = '" . (int)$o['aid'] . "'", array($name));
+			$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET srv_group = ? WHERE aid = '" . (int)$o['aid'] . "'", array($name));
 		}
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
 			// rehash the settings out of the database on all servers
-			$serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
+			$serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM " . DB_PREFIX . "_servers WHERE enabled = 1;");
 			$allservers = "";
 			foreach($serveraccessq as $access) {
 				if(!strstr($allservers, $access['sid'].",")) {
@@ -2106,7 +2106,7 @@ function SendRcon($sid, $command, $output)
     
 	$sid = (int)$sid;
     
-	$rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM `".DB_PREFIX."_servers` WHERE sid = ".$sid." LIMIT 1");
+	$rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = ".$sid." LIMIT 1");
 	if(empty($rcon['rcon']))
 	{
 		$objResponse->addAppend("rcon_con", "innerHTML",  "> Error: No RCON password!<br />You have to add the RCON password for this server in the 'edit server' <br />page to use this console!<br />");
@@ -2125,7 +2125,7 @@ function SendRcon($sid, $command, $output)
 	$r = new CServerRcon($rcon['ip'], $rcon['port'], $rcon['rcon']);
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".$sid."';");
 		$objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Wrong RCON password!<br />You MUST change the RCON password for this server in the 'edit server' <br />page. If you continue to use this console with the wrong password, <br />the server will block the connection!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value='Change RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
 		return $objResponse;
@@ -2254,7 +2254,7 @@ function ApplyTheme($theme)
 		return $objResponse;
 	}
 
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_settings` SET `value` = ? WHERE `setting` = 'config.theme'", array($theme));
+	$query = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_settings SET value = ? WHERE setting = 'config.theme'", array($theme));
 	$objResponse->addScript('window.location.reload( false );');
 	return $objResponse;
 }
@@ -2276,7 +2276,7 @@ function AddComment($bid, $ctype, $ctext, $page)
 
 	$ctext = trim($ctext);
 
-	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comments(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())");
+	$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_comments(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())");
 	$GLOBALS['db']->Execute($pre,array($bid,
 									   $ctype,
 									   $_COOKIE['aid'],
@@ -2312,7 +2312,7 @@ function EditComment($cid, $ctype, $ctext, $page)
 
 	$ctext = trim($ctext);
 
-	$pre = $GLOBALS['db']->Prepare("UPDATE ".DB_PREFIX."_comments SET `commenttxt` = ?, `editaid` = ?, `edittime`= UNIX_TIMESTAMP() WHERE cid = '".$cid."'");
+	$pre = $GLOBALS['db']->Prepare("UPDATE " . DB_PREFIX . "_comments SET commenttxt = ?, editaid = ?, edittime= UNIX_TIMESTAMP() WHERE cid = '".$cid."'");
 	$GLOBALS['db']->Execute($pre,array($ctext,
 									   $_COOKIE['aid']));
 
@@ -2344,7 +2344,7 @@ function RemoveComment($cid, $ctype, $page)
 	if($page != -1)
 		$pagelink = "&page=".$page;
 
-	$res = $GLOBALS['db']->Execute("DELETE FROM `".DB_PREFIX."_comments` WHERE `cid` = ?",
+	$res = $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_comments WHERE cid = ?",
 								array( $cid ));
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
@@ -2388,7 +2388,7 @@ function RefreshServer($sid)
 {
 	$objResponse = new xajaxResponse();
 	session_start();
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port FROM `".DB_PREFIX."_servers` WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if (isset($_SESSION['getInfo.' . $data['ip'] . '.' . $data['port']]) && is_array($_SESSION['getInfo.' . $data['ip'] . '.' . $data['port']]))
 		unset($_SESSION['getInfo.' . $data['ip'] . '.' . $data['port']]);
 	$objResponse->addScript("xajax_ServerHostPlayers('".$sid."');");
@@ -2410,7 +2410,7 @@ function RehashAdmins($server, $do=0)
 		if(sizeof($servers)-2 > $do)
 			$objResponse->addScriptCall("xajax_RehashAdmins", $server, $do+1);
 
-		$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$servers[$do]."';");
+		$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$servers[$do]."';");
 		if(empty($serv['rcon'])) {
 			$objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".(sizeof($servers)-1).") <font color='red'>failed: No rcon password set</font>.<br />");
 			if($do >= sizeof($servers)-2) {
@@ -2434,7 +2434,7 @@ function RehashAdmins($server, $do=0)
 		$r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
 		if(!$r->Auth())
 		{
-			$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$serv['sid']."';");
+			$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".$serv['sid']."';");
 			$objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".(sizeof($servers)-1).") <font color='red'>failed: Wrong rcon password</font>.<br />");
 			if($do >= sizeof($servers)-2) {
 				$objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
@@ -2507,7 +2507,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban group '".$grpurl."', but doesnt have access.");
 		return $objResponse;
 	}
-	$bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM ".DB_PREFIX."_bans WHERE RemoveType IS NULL;");
+	$bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM " . DB_PREFIX . "_bans WHERE RemoveType IS NULL;");
 	foreach($bans as $ban) {
 		$already[] = $ban["community_id"];
 	}
@@ -2570,7 +2570,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 					$steamid = FriendIDToSteamID($url[2]);
 					$urltag = $url[2];
 				}
-				$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
+				$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
 									(UNIX_TIMESTAMP(),?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?)");
 				$GLOBALS['db']->Execute($pre,array(0,
 												   "",
@@ -2678,7 +2678,7 @@ function BanFriends($friendid, $name)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban friends of '".RemoveCode($friendid)."', but doesnt have access.");
 		return $objResponse;
 	}
-	$bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM ".DB_PREFIX."_bans WHERE RemoveType IS NULL;");
+	$bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM " . DB_PREFIX . "_bans WHERE RemoveType IS NULL;");
 	foreach($bans as $ban) {
 		$already[] = $ban["community_id"];
 	}
@@ -2728,7 +2728,7 @@ function BanFriends($friendid, $name)
 				$steamid = FriendIDToSteamID($url[2]);
 				$urltag = $url[2];
 			}
-			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
+			$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
 									(UNIX_TIMESTAMP(),?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array(0,
 											   "",
@@ -2765,7 +2765,7 @@ function ViewCommunityProfile($sid, $name)
 
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
 		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".$name.". No RCON password!', 'red', '', true);");
 		return $objResponse;
@@ -2774,7 +2774,7 @@ function ViewCommunityProfile($sid, $name)
 
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".$sid."';");
 		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".$name.". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
@@ -2815,7 +2815,7 @@ function SendMessage($sid, $name, $message)
 	$sid = (int)$sid;
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
 		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".$name.". No RCON password!', 'red', '', true);");
 		return $objResponse;
@@ -2823,7 +2823,7 @@ function SendMessage($sid, $name, $message)
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".$sid."';");
 		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".$name.". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
