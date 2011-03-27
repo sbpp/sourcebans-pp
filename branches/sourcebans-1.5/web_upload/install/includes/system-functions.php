@@ -37,5 +37,5 @@ function Quote()
   );
   list($text, $name) = $quotes[array_rand($quotes)];
   
-  return '"' . $text . '" - <i>' . $name . '</i>';
+  return '"' . $text . '" - <em>' . $name . '</em>';
 }

@@ -29,6 +29,7 @@ define('IN_SB', true);
 define('SB_AID', isset($_COOKIE['aid']) ? $_COOKIE['aid'] : null);
 define('XAJAX_REQUEST_URI', './index.php');
 
+require_once INCLUDES_PATH . '/system-functions.php';
 require_once INCLUDES_PATH . '/CSystemLog.php';
 require_once INCLUDES_PATH . '/CUserManager.php';
 require_once INCLUDES_PATH . '/CUI.php';
@@ -284,6 +285,11 @@ else
 }*/
 
 // ---------------------------------------------------
+// Setup our user manager
+// ---------------------------------------------------
+$userbank = new CUserManager(isset($_COOKIE['aid']) ? $_COOKIE['aid'] : '', isset($_COOKIE['password']) ? $_COOKIE['password'] : '');
+
+// ---------------------------------------------------
 // Setup our templater
 // ---------------------------------------------------
 require_once INCLUDES_PATH . '/smarty/Smarty.class.php';
@@ -310,13 +316,11 @@ $theme->compile_id      = $theme_name;
 $theme->error_reporting = E_ALL ^ E_NOTICE;
 $theme->template_dir    = SB_THEMES . $theme_name;
 $theme->use_sub_dirs    = false;
+$theme->assign('SB_REV',     defined('SB_SVN') ? ' Rev: ' . GetSVNRev() : '');
+$theme->assign('SB_VERSION', SB_VERSION);
+$theme->assign('SB_QUOTE',   Quote());
 
 if((isset($_GET['debug']) && $_GET['debug'] == 1) || defined('DEVELOPER_MODE'))
 {
   $theme->force_compile = true;
 }
-
-// ---------------------------------------------------
-// Setup our user manager
-// ---------------------------------------------------
-$userbank = new CUserManager(isset($_COOKIE['aid']) ? $_COOKIE['aid'] : '', isset($_COOKIE['password']) ? $_COOKIE['password'] : '');

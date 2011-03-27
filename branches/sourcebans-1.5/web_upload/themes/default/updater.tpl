@@ -1,87 +1,63 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <title>SourceBans</title>
+    <title>Updater | SourceBans</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link href="./images/favicon.ico" rel="shortcut icon" />
-    <link href="../themes/{$theme_name}/css/css.php" rel="stylesheet" type="text/css" />
+    <meta name="author" content="GameConnect" />
+    <meta name="copyright" content="SourceBans © 2007-2011 GameConnect.net. All rights reserved." />
+    <meta name="description" content="Global admin and ban management for the Source engine" />
+    <link href="../images/favicon.ico" rel="shortcut icon" />
+    <link href="../themes/{$theme_name}/style.css" rel="stylesheet" type="text/css" />
     <style type="text/css">
-      {literal}
+      #content_title { margin: 55px 0 17px; }
       #content p { margin: 11px 0 11px 40px; }
-      {/literal}
     </style>
   </head>
   <body>
     <div id="mainwrapper">
       <div id="header">
-        <div id="head-logo">
-          <a href="index.php">
-            <img src="../images/logos/sb-large.png" border="0" alt="SourceBans Logo" />
-          </a>
-        </div>
-      </div>
-      <div id="tabsWrapper">
-        <div id="tabs"></div>
+        <a href="index.php" id="head-logo"><h1><span>SourceBans</span></h1></a>
       </div>
       <div id="innerwrapper">
-        <div id="navigation">
-          <div id="nav"></div>
-          <div id="search"></div>
-        </div>
-        <div id="msg-red-debug" style="display:none;">
-          <i><img src="./images/warning.png" alt="Warning" /></i>
-          <b>Debug</b>
-          <br />
-          <div id="debug-text">
-          </div>
-        </div>
-        <div id="dialog-placement" style="align:center;display:none;text-align:center;width:892px;margin:0 auto;position:fixed !important;position:absolute;overflow:hidden;top:10px;">
-        </div>
-        <div id="content_title">Updater</div>
-        <div id="breadcrumb"></div>
+        <h2 id="content_title">Updater</h2>
         <div id="content">
           <h3>Setup...</h3>
           <p>
             Checking current database version... <strong>{$current_version}</strong><br />
-            {if empty($updates)}
+{if empty($updates)}
             Installation up-to-date.
-            {else}
+{else}
             Updating database to version: <strong>{$latest_version}</strong>
-            {/if}
+{/if}
           </p>
-          {if !empty($updates)}
+{if !empty($updates)}
           <h3>Updating...</h3>
           <p>
-            {foreach from=$updates item=update key=version}
+{foreach from=$updates item=update key=version}
             Running update: <strong>v{$version}</strong>... 
-            {if $update}
+{if $update}
             Done.<br /><br />
-            {else}
+{else}
             <strong>Error executing: /updater/data/{$version}.php. Stopping Update!</strong>
-            {/if}
-            {/foreach}
-            {if $update}
+{/if}
+{/foreach}
+{if $update}
             <br />Updated successfully. Please delete the /updater folder.
-            {/if}
+{/if}
           </p>
-          {/if}
+{/if}
         </div>
       </div>
       <div id="footer">
-        <div id="gc">
-          By <a class="footer_link" href="http://www.gameconnect.net" target="_blank">GameConnect</a>
+        <p class="gc">By <a href="http://www.gameconnect.net">GameConnect</a></p>
+        <div class="sb">
+          <a href="http://www.sourcebans.net"><img alt="SourceBans" src="../images/sb.png" title="SourceBans" /></a>
+          <p>Version {$SB_VERSION}</p>
+          <p>{$SB_QUOTE}</p>
         </div>
-        <div id="sb">
-          <br />
-        </div>
-        <div id="sm">
-          Powered by <a class="footer_link" href="http://www.sourcemod.net" target="_blank">SourceMod</a>
-        </div>
+        <p class="sm">Powered by <a href="http://www.sourcemod.net">SourceMod</a></p>
       </div>
     </div>
-    <!--[if lt IE 7]>
-    <script defer type="text/javascript" src="./scripts/pngfix.js"></script>
-    <![endif]-->
   </body>
 </html>

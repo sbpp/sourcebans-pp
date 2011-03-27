@@ -29,7 +29,7 @@ header('Content-type: text/css');
 ?> 
 
 body { 
-	background: url(../images/bk.jpg);
+	background: url(../images/bk.gif);
 	background-color: #FFF;
 	background-repeat: repeat-x;
 	color: #444;

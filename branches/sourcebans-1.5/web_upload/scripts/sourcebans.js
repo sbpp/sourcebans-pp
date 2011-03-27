@@ -957,7 +957,7 @@ function ProcessMod()
 	
 	if(!$('folder').value)
 	{
-		$('folder.msg').setHTML('You must enter MOD\'s folder name.');
+		$('folder.msg').setHTML('You must enter the MOD\'s folder name.');
 		$('folder.msg').setStyle('display', 'block');
 		err++;
 	}else

@@ -59,18 +59,18 @@
       <td valign="middle">
         <div class="rowdesc">{help_icon title="Server Mod" message="Select the mod that your server is currently running."}Server MOD </div>
       </td>
-        <td>
-          <div align="left" id="admingroup">
-              <select name="mod" TABINDEX=5 onchange="" id="mod" class="submit-fields">
+      <td>
+        <div align="left" id="admingroup">
+          <select name="mod" TABINDEX=5 onchange="" id="mod" class="submit-fields">
             {if !$edit_server}
-                <option value="-2">Please Select...</option>
+            <option value="-2">Please Select...</option>
             {/if}
-              {foreach from="$modlist" item="mod"}
-                <option value='{$mod.mid}'>{$mod.name}</option>
-              {/foreach}
-              </select>
-            </div>
-            <div id="mod.msg" class="badentry"></div>
+            {foreach from="$modlist" item="mod"}
+            <option value='{$mod.mid}'>{$mod.name}</option>
+            {/foreach}
+          </select>
+        </div>
+        <div id="mod.msg" class="badentry"></div>
       </td>
     </tr>
       

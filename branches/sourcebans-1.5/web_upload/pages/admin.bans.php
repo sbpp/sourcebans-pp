@@ -757,7 +757,7 @@ function ProcessBan()
 
 	if($('steam').value.length < 10 && !$('ip').value)
 	{
-		$('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
+		$('steam.msg').setHTML('You must enter a valid Steam ID or Community ID');
 		$('steam.msg').setStyle('display', 'block');
 		err++;
 	}else

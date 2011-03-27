@@ -4,49 +4,49 @@
     {if $access_admins}
       <li>
         <a href="index.php?p=admin&amp;c=admins">
-        <img src="themes/default/images/admin/admins.png" alt="Admin Settings" border="0" /><br />
-        Admin Settings
-          </a>
+          <img src="themes/default/images/admin/admins.png" alt="Admin Settings" border="0" /><br />
+          Admin Settings
+        </a>
       </li>
     {/if}
     {if $access_servers}
       <li>
         <a href="index.php?p=admin&amp;c=servers">
-        <img src="themes/default/images/admin/servers.png" alt="Server Admin" border="0" /><br />
-        Server Settings
-          </a>
+          <img src="themes/default/images/admin/servers.png" alt="Server Admin" border="0" /><br />
+          Server Settings
+        </a>
       </li>
     {/if}
     {if $access_bans}
       <li>
         <a href="index.php?p=admin&amp;c=bans">
-        <img src="themes/default/images/admin/bans.png" alt="Edit Bans" border="0" /><br />
-        Bans
-          </a>
+          <img src="themes/default/images/admin/bans.png" alt="Edit Bans" border="0" /><br />
+          Bans
+        </a>
       </li>
     {/if}
     {if $access_groups}
       <li>
         <a href="index.php?p=admin&amp;c=groups">
-        <img src="themes/default/images/admin/groups.png" alt="Edit Groups" border="0" /><br />
-        Group Settings
-          </a>
+          <img src="themes/default/images/admin/groups.png" alt="Edit Groups" border="0" /><br />
+          Group Settings
+        </a>
       </li>
     {/if}
     {if $access_settings}
       <li>
         <a href="index.php?p=admin&amp;c=settings">
-        <img src="themes/default/images/admin/settings.png" alt="SourceBans Settings" border="0" /><br />
-        Webpanel Settings
-          </a> 
+          <img src="themes/default/images/admin/settings.png" alt="SourceBans Settings" border="0" /><br />
+          Webpanel Settings
+        </a> 
       </li>
     {/if}
     {if $access_mods}
       <li>
         <a href="index.php?p=admin&amp;c=mods">
-        <img src="themes/default/images/admin/mods.png" alt="Mods" border="0" /><br />
-        Manage Mods
-          </a>
+          <img src="themes/default/images/admin/mods.png" alt="Mods" border="0" /><br />
+          Manage Mods
+        </a>
       </li>
     {/if}
   </ul>
@@ -67,7 +67,7 @@
   <tr>
     <td>
       {if $sb_svn}
-        Latest SVN: <strong id='svnrev'>Please Wait...</strong>
+      Latest SVN: <strong id='svnrev'>Please Wait...</strong>
       {/if}
     </td>
     <td>&nbsp;</td>

@@ -558,45 +558,33 @@ function CreateGreenBox($title, $contnet)
 	echo $text;
 }
 
-function CreateQuote()
+function Quote()
 {
 	global $userbank;
-	$quote = array(
-		array("Buy a new PC!", "Viper"),
-		array("I'm not lazy! I just utilize technical resources!", "Brizad"),
-		array("I need to mow the lawn", "sslice"),
-		array("Like A Glove!", "Viper"),
-		array("Your a Noob and You Know It!", "Viper"),
-		array("Get your ass ingame", "Viper"),
-		array("Mother F***ing Peices of Sh**", "Viper"),
-		array("Shut up Bam", "[Everyone]"),
-		array("Hi OllyBunch", "Viper"),
-		array("Procrastination is like masturbation. Sure it feels good, but in the end you're only F***ing yourself!", "[Unknown]"),
-		array("Rave's momma so fat she sat on the beach and Greenpeace threw her in", "SteamFriend"),
-		array("Im just getting a beer", "Faith"),
-		array("To be honest " . ($userbank->is_logged_in()?$userbank->getProperty('user'):'...') . ", I DONT CARE!", "Viper"),
-		array("Yams", "teame06"),
-		array("built in cheat 1.6 - my friend told me theres a cheat where u can buy a car door and run around and it makes u invincible....", "gdogg"),
-		array("i just join conversation when i see a chance to tell people they might be wrong, then i quickly leave, LIKE A BAT", "BAILOPAN"),
-		array("Lets just blame it on FlyingMongoose", "[Everyone]"),
-		array("Don't step on that boom... mine...", "Recon"),
-		array("Looks through sniper scope... Sit ;)", "Recon"),
-		array("That plugin looks like something you found in a junk yard.", "Recon"),
-		array("That's exactly what I asked you not to do.", "Recon"),
-		array("Why are you wasting your time looking at this?", "Recon"),
-		array("You must have better things to do with your time", "Recon"),
-		array("I pity da fool", "Mr. T"),
-		array("you grew a 3rd head?", "Tsunami"),
-		array("I dont think you want to know...", "devicenull"),
-		array("Sheep sex isn't baaaaaa...aad", "Brizad"),
-		array("Oh wow, he's got skillz spelled with an 's'", "Brizad"),
-		array("I'll get to it this weekend... I promise", "Brizad"),
-		array("People do crazy things all the time... Like eat a Arby's", "Marge Simpson"),
-		array("I wish my lawn was emo, so it would cut itself", "SirTiger"),
-		array("Oh no! I've overflowed my balls!", "Olly"),
-	);
-	$num = rand(0, sizeof($quote)-1);
-	return '"' . $quote[$num][0] . '" - <i>' . $quote[$num][1] . '</i>';
+  $quotes = array(
+    array('Buy a new PC!', 'Viper'),
+    array('I\'m not lazy! I just utilize technical resources!', 'Brizad'),
+    array('I need to mow the lawn', 'sslice'),
+    array('Like A Glove!', 'Viper'),
+    array('You\'re a Noob and You Know It!', 'Viper'),
+    array('Get your ass ingame', 'Viper'),
+    array('Mother F***ing Pieces of Sh**', 'Viper'),
+    array('Shut up Bam', '[Everyone]'),
+    array('Hi OllyBunch', 'Viper'),
+    array('Procrastination is like masturbation. Sure it feels good, but in the end you\'re only F***ing yourself!', '[Unknown]'),
+    array('Rave\'s momma so fat she sat on the beach and Greenpeace threw her in', 'SteamFriend'),
+    array('I\'m just getting a beer', 'Faith'),
+    array('To be honest' . ($userbank->is_logged_in() ? ' ' . $userbank->getProperty('user') : '...') . ', I DON\'T CARE!', 'Viper'),
+    array('Yams', 'teame06'),
+    array('built in cheat 1.6 - my friend told me theres a cheat where u can buy a car door and run around and it makes u invincible....', 'gdogg'),
+    array('I just join conversation when I see a chance to tell people they might be wrong, then I quickly leave, LIKE A BAT', 'BAILOPAN'),
+    array('Let\'s just blame it on FlyingMongoose', '[Everyone]'),
+    array('I wish my lawn was emo, so it would cut itself', 'SirTiger'),
+		array('Oh no! I\'ve overflowed my balls!', 'Olly'),
+  );
+  list($text, $name) = $quotes[array_rand($quotes)];
+  
+  return '"' . $text . '" - <em>' . $name . '</em>';
 }
 
 function CheckAdminAccess($mask)

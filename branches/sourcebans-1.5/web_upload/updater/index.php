@@ -23,7 +23,7 @@ $updates = $updater->update();
 // If updated, clear compiled templates
 if(!empty($updates))
 {
-  $theme->clear_compiled_tpl();
+  $theme->clearCompiledTemplate();
 }
 
 $theme->assign('updates', $updates);
