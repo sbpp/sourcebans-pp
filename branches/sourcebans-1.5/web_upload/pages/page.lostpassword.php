@@ -15,12 +15,12 @@ if(isset($_GET['validation'],$_GET['email']) && !empty($_GET['email']) && !empty
 {  
 	$email = $_GET['email'];
 	$validation = $_GET['validation'];
-	$q = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE email = ? && validate = ?", array($email, $validation));
-	if($q)
+	$aid = $GLOBALS['db']->GetOne("SELECT aid FROM " . DB_PREFIX . "_admins WHERE email = ? && validate = ?", array($email, $validation));
+	if($aid)
 	{
 		$newpass = generate_salt(MIN_PASS_LENGTH+1);
-		$query = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET password = '" . $userbank->encrypt_password($newpass) . "' WHERE email = ?", array($email));
-		$query = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET validate = '' WHERE email = ?", array($email));
+		$query = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET password = '" . $userbank->encrypt_password($newpass) . "' WHERE aid = ?", array($aid));
+		$query = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET validate = '' WHERE aid = ?", array($aid));
 		echo '<div id="msg-blue" style="">
 			<i><img src="./images/info.png" alt="Info" /></i>
 			<b>Password Reset</b>

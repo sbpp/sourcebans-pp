@@ -62,7 +62,9 @@
         <td>
           <div align="left" id="admingroup">
               <select name="mod" TABINDEX=5 onchange="" id="mod" class="submit-fields">
+            {if !$edit_server}
                 <option value="-2">Please Select...</option>
+            {/if}
               {foreach from="$modlist" item="mod"}
                 <option value='{$mod.mid}'>{$mod.name}</option>
               {/foreach}
@@ -86,7 +88,7 @@
     
     <tr>
       <td valign="middle">
-        <div class="rowdesc">{help_icon title="Server Groups" message="Choose a group to add this server to. Server groups are used for adding admins to specific sets of servers."}Server Groups </div>
+        <div class="rowdesc">{help_icon title="Server Groups" message="Choose the groups to add this server to. Server groups are used for adding admins to specific sets of servers."}Server Groups </div>
       </td>
         <td>&nbsp;</td>
     </tr>
@@ -102,7 +104,7 @@
             </td>
         </tr> 
       {/foreach}
-    <tr id="nsgroup" valign="top" class="badentry">     
+    <tr id="nsgroup" valign="top" class="badentry">
     </tr>
     <tr>
       <td>&nbsp;</td>

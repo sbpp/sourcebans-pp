@@ -8,7 +8,6 @@
           <td valign="top" width="35%"><div class="rowdesc">{help_icon title="Mod Name" message="Type the name of the mod you are adding."}Mod Name</div></td>
           <td>
             <div align="left"> 
-              <input type="hidden" id="fromsub" value="" />
               <input type="hidden" id="icon_hid" name="icon_hid" value="{$mod_icon}">
               <input type="text" TABINDEX=1 class="submit-fields" id="name" name="name" value="{$name}" />
           </div>

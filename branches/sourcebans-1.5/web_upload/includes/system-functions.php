@@ -1055,7 +1055,7 @@ function GetCommunityName($steamid)
 		$friendid = (string)$result[0];
 		return $friendid;
 	}
-	return "Error getting Name";
+	return "";
 }
 
 function SendRconSilent($rcon, $sid)

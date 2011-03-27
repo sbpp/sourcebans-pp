@@ -9,7 +9,8 @@ For a short explination on how to create a demo, click <a href="javascript:void(
 <table cellspacing='10' width='100%' align='center'>
 <tr>
   <td colspan="3">
-    Ban Details:  </td>
+    Ban Details:
+  </td>
 </tr>
 <tr>
   <td width="20%">
@@ -35,12 +36,14 @@ For a short explination on how to create a demo, click <a href="javascript:void(
 <tr>
   <td width="20%" valign="top">
     Comments<span class="mandatory">*</span>:<br />
-    (Please write down a descriptive comment. So NO comments like: "hacking")  </td>
+    (Please write down a descriptive comment. So NO comments like: "hacking")
+  </td>
   <td><textarea name="BanReason" cols="30" rows="5" class="submit-fields">{$ban_reason}</textarea></td>
     </tr>
 <tr>
   <td width="20%">
-    Your Name:  </td>
+    Your Name:
+  </td>
   <td>
     <input type="text" size="40" maxlength="70" name="SubmitName" value="{$subplayer_name}" class="submit-fields" />  </td>
     </tr>
@@ -54,7 +57,7 @@ For a short explination on how to create a demo, click <a href="javascript:void(
 <tr>
   <td width="20%">
     Server<span class="mandatory">*</span>:  </td>
-  <td>
+  <td colspan="2">
         <select id="server" name="server">
       <option value="-1">-- Select Server --</option>
       {foreach from="$server_list" item="server"}

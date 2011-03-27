@@ -35,12 +35,12 @@
         </td>
       </tr>
       <tr>   
-          <td colspan="7" align="center">       
-            <div class="opener"> 
+          <td colspan="7" align="center">
+            <div class="opener">
           <table width="80%" cellspacing="0" cellpadding="0" class="listtable">
                   <tr>
                     <td height="16" align="left" class="listtable_top" colspan="3">
-                <b>Group Details</b>            
+                <b>Group Details</b>
               </td>
                   </tr>
                   <tr align="left">
@@ -63,10 +63,10 @@
                 </table>
               </td>
                    </tr>
-              </table>    
+              </table>
            </div>
-        </td>   
-    </tr>        
+        </td>
+    </tr>
     {/foreach}
   </table>
   <br /><br />
@@ -92,7 +92,7 @@
     <tr id="gid_{$group.id}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.setProperty('class', 'tbl_hover')">
       <td style="border-bottom: solid 1px #ccc" height='16'>{$group.name}</td>
           <td style="border-bottom: solid 1px #ccc" height='16'>{$server_admins[$smarty.foreach.server_admin_group.index]}</td>
-          <td style="border-bottom: solid 1px #ccc" height='16'> 
+          <td style="border-bottom: solid 1px #ccc" height='16'>
         {if $permission_editgroup}
           <a href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id}">Edit</a>
         {/if}
@@ -101,13 +101,13 @@
         {/if}
       </td>
     </tr>
-    <tr>   
-        <td colspan="7" align="center">       
-            <div class="opener"> 
+    <tr>
+        <td colspan="7" align="center">
+            <div class="opener">
           <table width="80%" cellspacing="0" cellpadding="0" class="listtable">
                   <tr>
                     <td height="16" align="left" class="listtable_top" colspan="3">
-                <b>Group Details</b>            
+                <b>Group Details</b>
               </td>
                   </tr>
                   <tr align="left">
@@ -130,10 +130,10 @@
                 </table>
               </td>
                    </tr>
-              </table>    
+              </table>
            </div>
-         </td>   
-      </tr>      
+         </td>
+      </tr>
   {/foreach}
   </table>
   <br /><br />
@@ -160,18 +160,18 @@
       <tr id="gid_{$group.gid}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.setProperty('class', 'tbl_hover')">
               <td style="border-bottom: solid 1px #ccc" height='16'>{$group.name}</td>
             <td style="border-bottom: solid 1px #ccc" height='16'>{$server_counts[$smarty.foreach.server_group.index]}</td>
-              <td style="border-bottom: solid 1px #ccc" height='16'>   
+              <td style="border-bottom: solid 1px #ccc" height='16'>
               {if $permission_editgroup}
           <a href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid}">Edit</a>
         {/if}
         {if $permission_deletegroup}
           - <a href="#" onclick="RemoveGroup({$group.gid}, '{$group.name}', 'server');">Delete</a>
-        {/if}        
+        {/if}
               </td>
       </tr>
-      <tr>   
-          <td colspan="7" align="center">       
-              <div class="opener"> 
+      <tr>
+          <td colspan="7" align="center">
+              <div class="opener">
             <table width="80%" cellspacing="0" cellpadding="0" class="listtable">
                     <tr>
                       <td height="16" align="left" class="listtable_top" colspan="3"><b>Servers in this group</b></td>
@@ -182,10 +182,10 @@
                         Please Wait!
                       </td>
                      </tr>
-                </table>    
+                </table>
              </div>
-           </td>   
-        </tr> 
+           </td>
+        </tr>
     {/foreach}
   </table>
 {/if}

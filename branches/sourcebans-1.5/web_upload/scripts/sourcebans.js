@@ -573,7 +573,7 @@ function ProcessAddAdmin()
 {
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
-	var server_a_pass = false;
+	var server_a_pass = "-1";
 	
 	var el = document.getElementsByName('group[]');
 	var grp = "";
@@ -594,18 +594,18 @@ function ProcessAddAdmin()
     var serverg = document.getElementById('serverg').value;
   	if(serverg == "-3")
   	{
-  		serverg = "c";
+  		//serverg = "c";
   		srvMask = "";
   	}
     var webg = document.getElementById('webg').value;
   	if(webg == "-3")
   	{
-  		webg = "c";
+  		//webg = "c";
   		Mask = 0;
   	}
   	
-  	if(document.getElementById('a_spass').checked)
-  		server_a_pass = true;
+  	if(document.getElementById('a_useserverpass').checked)
+  		server_a_pass = document.getElementById('a_serverpass').value;
   
 	if(document.getElementById('webname') && !document.getElementById('servername'))
 	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
@@ -684,6 +684,20 @@ function ProcessEditGroup(type, name)
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
 	var group = $('group_id').value;
+	
+	if(name == "")
+	{
+		ShowBox("Error", "You have to type a name for the group.", "red", "", true);
+		$('groupname.msg').innerHTML = 'You have to type a name for the group.';
+		$('groupname.msg').setStyle('display', 'block');
+		return;
+	}
+	else
+	{
+		$('groupname.msg').innerHTML = '';
+		$('groupname.msg').setStyle('display', 'none');
+	}
+	
 	if($('immunity'))
 	{
 	 	if(IsNumeric($('immunity').value))
@@ -813,6 +827,11 @@ function search_bans()
 		type = "where_banned";
 		input = $('server').value;
 	}
+	if($('comment_').checked)
+	{
+		type = "comment";
+		input = $('ban_comment').value;
+	}
 	if(type!="" && input!="")
 		window.location = "index.php?p=banlist&advSearch=" + input + "&advType=" + type;
 }
@@ -927,7 +946,7 @@ function ProcessMod()
 	var err = 0;
 	if(!$('name').value)
 	{
-		$('name.msg').setHTML('You must enter the name of the MOD you are adding');
+		$('name.msg').setHTML('You must enter the name of the MOD you are adding.');
 		$('name.msg').setStyle('display', 'block');
 		err++;
 	}else
@@ -938,7 +957,7 @@ function ProcessMod()
 	
 	if(!$('folder').value)
 	{
-		$('folder.msg').setHTML('You must enter MOD`s folder name');
+		$('folder.msg').setHTML('You must enter MOD\'s folder name.');
 		$('folder.msg').setStyle('display', 'block');
 		err++;
 	}else
@@ -1014,7 +1033,7 @@ function toggleMCE(id) {
 		tinyMCE.execCommand('mceRemoveControl', false, id);
 }
 
-function CheckEmail(email)
+function CheckEmail(type, id)
 {
 	var err = 0;
 	if($('subject').value == "") {
@@ -1037,7 +1056,7 @@ function CheckEmail(email)
 		
 	if(err>0)
 		return;
-	xajax_SendMail($('subject').value, $('message').value, email);
+	xajax_SendMail($('subject').value, $('message').value, type, id);
 }
 
 function IsNumeric(sText)

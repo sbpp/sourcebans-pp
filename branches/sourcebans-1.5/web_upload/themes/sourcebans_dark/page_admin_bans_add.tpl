@@ -44,7 +44,7 @@
       <tr>
         <td valign="top">
           <div class="rowdesc">
-            {help_icon title="Steam ID" message="The Steam ID of the person to ban."}Steam ID 
+            {help_icon title="Steam ID / Community ID" message="The Steam ID or Community ID of the person to ban."}Steam ID / Community ID
           </div>
         </td>
         <td>
@@ -160,7 +160,7 @@
             </optgroup>
           </select>
           </div>
-          <div id="length.msg" ></div>
+          <div id="length.msg"></div>
         </td>
       </tr>
       

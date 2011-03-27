@@ -30,10 +30,12 @@ class SBUpdater
       if($version <= self::getCurrentVersion())
         continue;
       
-      $updates[$version] = !include(UPDATER_DIR . 'data/' . $version . '.php');
+      $updates[$version] = include(UPDATER_DIR . 'data/' . $version . '.php');
       // File was executed successfully
       if($updates[$version])
+      {
         self::setCurrentVersion($version);
+      }
       // OHSHI! Something went tits up :(
       else
         break;

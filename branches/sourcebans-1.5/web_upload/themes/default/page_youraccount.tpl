@@ -45,8 +45,7 @@ The following is a list of the permissions that you have on this system.<br /><b
     <td>&nbsp;</td>
     <td>
       <input type="submit" onclick="xajax_CheckPassword(-{$user_aid}-, $('current').value);dispatch();" name="button" class="btn ok" id="button" value="Save" />
-      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />
-    </td>
+      &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />  </td>
   </tr>
 </table>
 </div>
@@ -54,6 +53,7 @@ The following is a list of the permissions that you have on this system.<br /><b
 
 <div id="2" style="display:none;"> <!-- div ID 2 is the third 'panel' to be shown -->
 <h3>Change Server Password</h3>
+You will need to specify this password in the game server before you can use your admin rights.<br />Click <a href="http://wiki.alliedmods.net/Adding_Admins_%28SourceMod%29#Passwords" title="SourceMod Password Info" target="_blank"><b>here</b></a> for more infos.
 <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   -{if $srvpwset}-
   <tr>

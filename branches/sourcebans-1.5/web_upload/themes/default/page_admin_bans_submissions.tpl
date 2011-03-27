@@ -21,7 +21,7 @@
                 {if $permissions_editsub}
                    <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes|stripquotes}', '1');return false;">Remove</a> -
                  {/if}
-          <a href="index.php?p=admin&c=bans&o=email&mail={$sub.email}">Contact</a>
+          <a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid}">Contact</a>
         </td>
       </tr>
       <tr id="sid_{$sub.subid}a">

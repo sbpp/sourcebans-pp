@@ -10,7 +10,8 @@ If you do find yourself listed on the banlist and find the reason for this to be
 <table cellspacing='10' width='100%' align='center'>
 <tr>
   <td colspan="3">
-    Your Details:  </td>
+    Your Details:
+  </td>
 </tr>
 <tr>
   <td width="20%">Ban Type:</td>

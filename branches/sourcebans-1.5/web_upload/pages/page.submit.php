@@ -27,12 +27,12 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1)
 }
 else
 {
-	$SteamID = $_POST['SteamID'];
-	$BanIP = $_POST['BanIP'];
+	$SteamID = htmlspecialchars($_POST['SteamID']);
+	$BanIP = htmlspecialchars($_POST['BanIP']);
 	$PlayerName = htmlspecialchars($_POST['PlayerName']);
-	$BanReason = $_POST['BanReason'];
+	$BanReason = htmlspecialchars($_POST['BanReason']);
 	$SubmitterName = htmlspecialchars($_POST['SubmitName']);
-	$Email = $_POST['EmailAddr'];
+	$Email = htmlspecialchars($_POST['EmailAddr']);
 	$SID = (int)$_POST['server'];
 	$validsubmit = true;
 	$errors = "";
@@ -134,7 +134,7 @@ else
 				$message .= "A new ban submission has been posted on your SourceBans page:\n\n";
 				$message .= "Player: ".$_POST['PlayerName']." (".$_POST['SteamID'].")\nDemo: ".(empty($_FILES['demo_file']['name'])?'no':'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id='.$subid.')')."\n".$mailserver."Reason: ".$_POST['BanReason']."\n\n";
 				$message .= "Click the link below to view the current ban submissions.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "index.php?p=admin&c=bans#^2";
-				if($userbank->HasAccess(ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid']))
+				if($userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid']))
 					mail($admin['email'], "[SourceBans] Ban Submission Added", $message, $headers);
 			}
 			CreateGreenBox("Successful", "Your submission has been added into the database, and will be reviewed by one of our admins");

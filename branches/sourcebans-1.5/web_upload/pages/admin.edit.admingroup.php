@@ -31,17 +31,23 @@ if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS))
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
 	<br />
-	You are not allowed to edit other groups.
+	You are not allowed to edit other admin\'s groups.
 </div>';
 	PageDie();
 }
 
-$authId = $userbank->GetProperty('authid', $_GET['id']);
+if(!$userbank->GetProperty("user", $_GET['id']))
+{
+	$log = new CSystemLog("e", "Getting admin data failed", "Can't find data for admin with id '".$_GET['id']."'");
+	echo '<div id="msg-red" >
+	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<b>Error</b>
+	<br />
+	Error getting current data.</div>';
+	PageDie();
+}
 
-$serveradmin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE authid = ?", array($authId));
-$wgroups = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_groups WHERE type != 3");
-$sgroups = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_srvgroups");
-
+// Form sent
 if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 {
 	if(isset($_GET['wg'])) {
@@ -50,31 +56,40 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 	if(isset($_GET['sg'])) {
 		$_POST['sg'] = $_GET['sg'];
 	}
-	if(isset($_POST['wg']))	{
+	
+	$_POST['wg'] = (int)$_POST['wg'];
+	$_POST['sg'] = (int)$_POST['sg'];
+	
+	if(isset($_POST['wg']) && $_POST['wg'] != "-2")	{
+		if($_POST['wg'] == -1)
+			$_POST['wg'] = 0;
+		
 		// Edit the web group
 		$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
-										gid = '" . (int)$_POST['wg'] . "'
-										WHERE aid = ". (int)$_GET['id']);
+										gid = ?
+										WHERE aid = ?;", array($_POST['wg'], $_GET['id']));
 	}
 	
-	if(isset($_POST['sg'])) {
+	if(isset($_POST['sg']) && $_POST['sg'] != "-2") {
 		// Edit the server admin group
-		$grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = " . (int)$_POST['sg']);
-		if(!$grps)
-			$group = "";
-		else 
-			$group = $grps['name'];
+		$group = "";
+		if($_POST['sg'] != -1)
+		{
+			$grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = ?;", array($_POST['sg']));
+			if($grps)
+				$group = $grps['name'];
+		}
 			
 		$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
 										srv_group = ?
-										WHERE authid = ?", array($group, $authId));
+										WHERE aid = ?", array($group, $_GET['id']));
 		
-		$srv = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = (SELECT aid FROM " . DB_PREFIX . "_admins WHERE authid = ?)", array($authId));
+		$srv = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = ?;", array($_GET['id']));
 		foreach($srv AS $s)
 		{
 			$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins_servers_groups SET
-										group_id = " . (int)$_POST['sg'] . "
-										WHERE admin_id = (SELECT aid FROM " . DB_PREFIX . "_admins WHERE authid = ?)", array($authId));
+										group_id = ?
+										WHERE admin_id = ?;", array($_POST['sg'], $_GET['id']));
 			
 		}
 	}
@@ -99,46 +114,27 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 		echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	
 	$admname = $GLOBALS['db']->GetRow("SELECT user FROM " . DB_PREFIX . "_admins WHERE aid = ?", array((int)$_GET['id']));
-	$log = new CSystemLog("m", "Admin Group Updated", "Admin (" . $admname['user'] . ") groups has been updated");
+	$log = new CSystemLog("m", "Admin's Groups Updated", "Admin (" . $admname['user'] . ") groups has been updated");
 }
 
+$wgroups = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type != 3");
+$sgroups = $GLOBALS['db']->GetAll("SELECT id, name FROM " . DB_PREFIX . "_srvgroups");
 
-if(!$userbank->GetProperty("user", $_GET['id']))
+$server_admin_group = $userbank->GetProperty('srv_groups', $_GET['id']);
+foreach($sgroups as $sg)
 {
-	$log = new CSystemLog("e", "Getting admin data failed", "Can't find data for admin with id '".$_GET['id']."'");
-	echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
-	<b>Error</b>
-	<br />
-	Error getting current data.</div>';
-	PageDie();
-}
-
-$sarray = array();
-$lst = "";
-$wlist = "";
-foreach($sgroups AS $g)
-{
-	$grp = array($g['name'] => $g['id']);
-	array_push($sarray, $grp);
-	$lst .= "<option value='" . $g['id'] . "'>" . $g['name'] . "</option>";
-}
-foreach($wgroups AS $g)
-{
-	$wlist .= "<option value='" . $g['gid'] . "'>" . $g['name'] . "</option>";
-}
-$tmp = 0;
-foreach($sarray as $idx=>$a)
-{
-	$tmp = isset($sarray[$idx][$serveradmin['srv_group']])?$sarray[$idx][$serveradmin['srv_group']]:false; 
-	if($tmp)
+	if($sg['name'] == $server_admin_group)
+	{
+		$server_admin_group = (int)$sg['id'];
 		break;
+	}
 }
+
 $theme->assign('group_admin_name', $userbank->GetProperty("user", $_GET['id']));
 $theme->assign('group_admin_id', $userbank->GetProperty("gid", $_GET['id']));
-$theme->assign('group_lst',  $lst);
-$theme->assign('web_lst',  $wlist);
-$theme->assign('tmp',  $tmp);
+$theme->assign('group_lst',  $sgroups);
+$theme->assign('web_lst',  $wgroups);
+$theme->assign('server_admin_group_id',  $server_admin_group);
 
 $theme->display('page_admin_edit_admins_group.tpl');
 ?>

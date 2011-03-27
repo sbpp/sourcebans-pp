@@ -21,10 +21,10 @@
           {if $permission_editban}
             <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '1');">Remove</a> -
           {/if}
-          <a href="index.php?p=admin&c=bans&o=email&mail={$protest.email}">Contact</a>
+          <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid}">Contact</a>
           </td>
         </tr>
-        <tr id="pid_{$protest.pid}a" >
+        <tr id="pid_{$protest.pid}a">
           <td colspan="3" align="center" id="ban_details_{$protest.pid}">
             <div class="opener2">
               <table width="90%" cellspacing="0" cellpadding="0" class="listtable">

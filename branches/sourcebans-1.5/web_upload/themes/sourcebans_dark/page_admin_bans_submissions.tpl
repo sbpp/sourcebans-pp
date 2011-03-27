@@ -21,7 +21,7 @@
                 {if $permissions_editsub}
                    <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes|stripquotes}', '1');return false;">Remove</a> -
                  {/if}
-          <a href="index.php?p=admin&c=bans&o=email&mail={$sub.email}">Contact</a>
+          <a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid}">Contact</a>
         </td>
       </tr>
       <tr id="sid_{$sub.subid}a">
@@ -39,8 +39,8 @@
                     <td width="30%" rowspan="9" class="listtable_2">
                   <div class="ban-edit">
                               <ul>
-                                <li>{$sub.demo}</li>    
-                                <li>{$sub.subaddcomment}</li>  
+                                <li>{$sub.demo}</li>
+                                <li>{$sub.subaddcomment}</li>
                               </ul>
                   </div>
                   </td>

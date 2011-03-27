@@ -12,18 +12,18 @@
  * @version $Id: CServerRcon.php 117 2008-08-21 17:17:54Z peace-maker $
  * =============================================================================
  */
-
-define('SERVERDATA_EXECCOMMAND',    02);
-define('SERVERDATA_AUTH',           03);
-define('SERVERDATA_RESPONSE_VALUE', 00);
-define('SERVERDATA_AUTH_RESPONSE',  02);
-
 class CServerRcon
 {
   private $hl1   = false;
   private $password;
   private $_id   = 0;
   private $_sock = null;
+  
+  const SERVERDATA_EXECCOMMAND    = 02;
+  const SERVERDATA_AUTH           = 03;
+  const SERVERDATA_RESPONSE_VALUE = 00;
+  const SERVERDATA_AUTH_RESPONSE  = 02;
+  
   
   public function __construct($address, $port, $password)
   {
@@ -46,7 +46,7 @@ class CServerRcon
       return;
     
     // HL2
-    $PackID = $this->_Write(SERVERDATA_AUTH, $this->password);
+    $PackID = $this->_Write(self::SERVERDATA_AUTH, $this->password);
     $ret    = $this->_PacketRead();
     return !(isset($ret[1]['ID']) && $ret[1]['ID'] == -1);
   }
@@ -98,7 +98,7 @@ class CServerRcon
     // HL2
     if(!$this->hl1)
     {
-      $this->_Write(SERVERDATA_EXECCOMMAND, $command, '');
+      $this->_Write(self::SERVERDATA_EXECCOMMAND, $command, '');
       $ret = $this->Read();
       return $ret[2]['S1'];
     }

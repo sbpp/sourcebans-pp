@@ -74,12 +74,12 @@ class CUserManager
 		$user['email'] = $res['email'];
 		$user['validate'] = $res['validate'];
 		$user['extraflags'] = (intval($res['extraflags']) | intval($res['wgflags']));
-
+		
 		if(intval($res['admimmunity']) > intval($res['sgimmunity']))
 			$user['srv_immunity'] = intval($res['admimmunity']);
 		else 
 			$user['srv_immunity'] = intval($res['sgimmunity']);
-
+		
 		$user['srv_password'] = $res['srv_password'];
 		$user['srv_groups'] = $res['srv_group'];
 		$user['srv_flags'] = $res['srv_flags'] . $res['sgflags'];
@@ -88,7 +88,7 @@ class CUserManager
 		$this->admins[$aid] = $user;
 		return $user;
 	}
-
+	
 	
 	/**
 	 * Will check to see if an admin has any of the flags given
@@ -101,8 +101,8 @@ class CUserManager
 	{
 		if($aid == -2)
 			$aid = $this->aid;
-			
-		if(empty($flags) || $aid < 0)
+		
+		if(empty($flags) || $aid <= 0)
 			return false;
 		
 		$aid = (int)$aid;
@@ -147,7 +147,7 @@ class CUserManager
 		return $this->admins[$aid][$name];
 	}
 	
-
+	
 	/**
 	 * Will test the user's login stuff to check if they havnt changed their 
 	 * cookies or something along those lines.
@@ -159,12 +159,12 @@ class CUserManager
 	function CheckLogin($password, $aid)
 	{
 		$aid = (int)$aid;
-
+		
 		if(empty($password))
 			return false;
 		if(!isset($this->admins[$aid]))
 			$this->GetUserArray($aid);
-			
+		
 		if($password == $this->admins[$aid]['password'])
 		{
 			$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET lastvisit = UNIX_TIMESTAMP() WHERE aid = '$aid'");
@@ -226,6 +226,7 @@ class CUserManager
 	{
 		if($aid == -2)
 			$aid = $this->aid;
+		
 		if($this->HasAccess(ALL_WEB, $aid))
 			return true;
 		else 	
@@ -252,9 +253,9 @@ class CUserManager
 	{
 		if($aid == -2)
 			$aid = $this->aid;
-		if($aid < 0)
-			return false;	
-			
+		if($aid <= 0)
+			return false;
+		
 		$aid = (int)$aid;
 		
 		if(!isset($this->admins[$aid]))

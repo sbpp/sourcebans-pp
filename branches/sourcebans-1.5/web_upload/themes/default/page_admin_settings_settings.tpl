@@ -50,7 +50,7 @@
               <select TABINDEX=4 name="timezoneoffset" id="sel_timezoneoffset">
             <option value="-12" class="">(GMT -12:00) Eniwetok, Kwajalein</option>
             
-            <option value="-11" id="-39600" class="" >(GMT -11:00) Midway Island, Samoa</option>
+            <option value="-11" id="-39600" class="">(GMT -11:00) Midway Island, Samoa</option>
             <option value="-10" id="-36000" class="">(GMT -10:00) Hawaii</option>
             <option value="-9" class="">(GMT -9:00) Alaska</option>
             <option value="-8" class="">(GMT -8:00) Pacific Time (US &amp; Canada)</option>

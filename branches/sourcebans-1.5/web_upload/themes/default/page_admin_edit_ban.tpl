@@ -43,7 +43,7 @@
       <tr>
         <td valign="top">
           <div class="rowdesc">
-            -{help_icon title="STEAM ID" message="This is the STEAM id of the player that is banned"}-STEAM ID
+            -{help_icon title="Steam ID" message="This is the Steam ID of the player that is banned. You may want to type a Community ID either."}-Steam ID
           </div>
         </td>
         <td>

@@ -50,7 +50,7 @@
       </li>
     {/if}
   </ul>
-</div>  
+</div>
 <br />
 
 <table width="100%" border="0" cellpadding="3" cellspacing="0">
@@ -68,7 +68,7 @@
     <td>
       {if $sb_svn}
         Latest SVN: <strong id='svnrev'>Please Wait...</strong>
-      {/if}    
+      {/if}
     </td>
     <td>&nbsp;</td>
     <td>Connection blocks: <strong>{$total_blocks}</strong></td>

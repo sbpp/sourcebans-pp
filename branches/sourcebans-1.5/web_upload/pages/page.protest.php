@@ -26,12 +26,12 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1)
 }
 else
 {
-	$Type = $_POST['Type'];
-	$SteamID = $_POST['SteamID'];
-	$IP = $_POST['IP'];
-	$PlayerName = $_POST['PlayerName'];
-	$UnbanReason = $_POST['BanReason'];
-	$Email = $_POST['EmailAddr'];
+	$Type = (int)$_POST['Type'];
+	$SteamID = htmlspecialchars($_POST['SteamID']);
+	$IP = htmlspecialchars($_POST['IP']);
+	$PlayerName = htmlspecialchars($_POST['PlayerName']);
+	$UnbanReason = htmlspecialchars($_POST['BanReason']);
+	$Email = htmlspecialchars($_POST['EmailAddr']);
 	$validsubmit = true;
 	$errors = "";
 	$BanId = -1;
@@ -46,7 +46,7 @@ else
 	}
 	elseif($Type==0)
 	{
-		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE authid=? AND RemovedBy IS NULL;");
+		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE authid=? AND RemovedBy IS NULL AND type=0;");
 		$res = $GLOBALS['db']->Execute($pre,array($SteamID));
 		if ($res->RecordCount() == 0)
 		{
@@ -71,7 +71,7 @@ else
 	}
 	elseif($Type==1)
 	{
-		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE ip=? AND RemovedBy IS NULL;");
+		$pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE ip=? AND RemovedBy IS NULL AND type=1;");
 		$res = $GLOBALS['db']->Execute($pre,array($IP));
 		if ($res->RecordCount() == 0)
 		{
@@ -140,7 +140,7 @@ else
 			$message .= "A new ban protest has been posted on your SourceBans page.\n\n";
 			$message .= "Player: ".$_POST['PlayerName']." (".$_POST['SteamID'].")\nBanned by: ".$protadmin['user']."\nMessage: ".$_POST['BanReason']."\n\n";
 			$message .= "Click the link below to view the current ban protests.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=admin&c=bans#^1";
-			if($userbank->HasAccess(ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid']))
+			if($userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid']))
 				mail($admin['email'], "[SourceBans] Ban Protest Added", $message, $headers);
 		}
 

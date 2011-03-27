@@ -1,6 +1,6 @@
 <h3>Admins on this server ({$admin_count})</h3>
 <table width="100%" cellpadding="1" cellspacing="1" class="listtable">
-<tr >
+<tr>
             <td width="50%" height='16' class="listtable_top"><strong>Admin Name</strong></td>
             <td width="50%" height='16' class="listtable_top"><strong>Admin SteamID</strong></td>
 </tr>

@@ -34,7 +34,7 @@
         <td align="right"><div id="theme.apply"></div></td>
       </tr>
     </table>
-  </div>  
+  </div>
 </div>
 
 <br />

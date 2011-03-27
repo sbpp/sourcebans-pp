@@ -2,7 +2,7 @@
   <table width="100%" cellpadding="1">
     <tr>
       <td colspan="3">
-        <h3>{$dashboard_title}</h3>    
+        <h3>{$dashboard_title}</h3>
       </td>
     </tr>
     <tr>
@@ -34,11 +34,11 @@
           </tr>
         </table>
       </td>
-    </tr>        
+    </tr>
     <tr>
       <td width="16px" height="16" class="listtable_top">&nbsp;</td>
       <td height="25%" class="listtable_top" align="center"><b>Date/Time</b></td>
-      <td height="16" class="listtable_top"><b>Name</b></td>    
+      <td height="16" class="listtable_top"><b>Name</b></td>
     </tr>
     {foreach from=$players_blocked item=player}
     <tr{if $dashboard_lognopopup} onclick="{$player.link_url}"{else} onclick="{$player.popup}"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor: pointer;" id="{$player.server}" title="Querying Server Data...">

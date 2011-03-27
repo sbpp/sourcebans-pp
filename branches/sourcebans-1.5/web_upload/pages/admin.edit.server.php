@@ -24,42 +24,6 @@ if(!isset($_GET['id']))
 }
 $_GET['id'] = (int)$_GET['id'];
 
-if(isset($_POST['address']))
-{
-	$grps = "";
-	$sg = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}");
-	foreach($sg AS $server)
-	{
-		$GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE server_id = " . (int)$server['server_id'] . " AND group_id = " . (int)$server['group_id']);
-	}
-	if(!empty($_POST['groups'])) {
-		foreach($_POST['groups'] as $t)
-		{
-			$addtogrp = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_servers_groups (server_id, group_id) VALUES (?,?)");
-			$GLOBALS['db']->Execute($addtogrp,array($_GET['id'], $t));
-		}
-	}
-	
-	$enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
-	
-    // don't change rcon password if not changed
-    $rcon = "";
-    if($_POST['rcon'] != '+-#*_')
-        $rcon = "rcon = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
-        
-	$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET
-									ip = ?,
-									port = " . (int)$_POST['port'] . ",
-									" . $rcon . "
-									modid = " . (int)$_POST['mod'] . ",
-									enabled = " . (int)$enabled . "
-									WHERE sid = '". (int)$_GET['id'] . "'", array($_POST['address']));
-
-	
-									
-	echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";		
-}
-
 $server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = {$_GET['id']}");
 if(!$server)
 {
@@ -73,6 +37,99 @@ if(!$server)
 	PageDie();
 }
 
+$errorScript = "";
+
+if(isset($_POST['address']))
+{
+	// Form validation
+	$error = 0;
+	
+	// ip
+	if((empty($_POST['address'])))
+	{
+		$error++;
+		$errorScript .= "$('address.msg').innerHTML = 'You must type the server address.';";
+		$errorScript .= "$('address.msg').setStyle('display', 'block');";
+	}
+	else
+	{
+		if(!validate_ip($_POST['address']) && !is_string($_POST['address']))
+		{
+			$error++;
+			$errorScript .= "$('address.msg').innerHTML = 'You must type a valid IP.';";
+			$errorScript .= "$('address.msg').setStyle('display', 'block');";
+		}
+	}
+	
+	// Port
+	if((empty($_POST['port'])))
+	{
+		$error++;
+		$errorScript .= "$('port.msg').innerHTML = 'You must type the server port.';";
+		$errorScript .= "$('port.msg').setStyle('display', 'block');";
+	}
+	else
+	{
+		if(!is_numeric($_POST['port']))
+		{
+			$error++;
+			$errorScript .= "$('port.msg').innerHTML = 'You must type a valid port <b>number</b>.';";
+			$errorScript .= "$('port.msg').setStyle('display', 'block');";
+		}
+	}
+	
+	// rcon
+	if($_POST['rcon'] != '+-#*_' && $_POST['rcon'] != $_POST['rcon2'])
+	{
+		$error++;
+		$errorScript .= "$('rcon2.msg').innerHTML = 'The passwords don't match.';";
+		$errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
+	}
+	
+	$ip = RemoveCode($_POST['address']);
+	$enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
+	
+	$server['ip'] = $ip;
+	$server['port'] = (int)$_POST['port'];
+	$server['modid'] = (int)$_POST['mod'];
+	$server['enabled'] = $enabled;
+	
+	if($error == 0)
+	{
+		$grps = "";
+		$sg = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}");
+		foreach($sg AS $s)
+		{
+			$GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE server_id = " . (int)$s['server_id'] . " AND group_id = " . (int)$s['group_id']);
+		}
+		if(!empty($_POST['groups'])) {
+			foreach($_POST['groups'] as $t)
+			{
+				$addtogrp = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_servers_groups (server_id, group_id) VALUES (?,?)");
+				$GLOBALS['db']->Execute($addtogrp,array($_GET['id'], (int)$t));
+			}
+		}
+		
+		$enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
+		
+		// don't change rcon password if not changed
+		$rcon = "";
+		if($_POST['rcon'] != '+-#*_')
+			$rcon = "rcon = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
+			
+		$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET
+										ip = ?,
+										port = " . (int)$_POST['port'] . ",
+										" . $rcon . "
+										modid = " . (int)$_POST['mod'] . ",
+										enabled = " . $enabled . "
+										WHERE sid = '". (int)$_GET['id'] . "'", array($ip));
+
+		
+		
+		echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";
+	}
+}
 
 $modlist = $GLOBALS['db']->GetAll("SELECT mid, name FROM " . DB_PREFIX . "_mods WHERE mid > 0 AND enabled = 1 ORDER BY name ASC");
 $grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = 3 ORDER BY name ASC");
@@ -95,12 +152,31 @@ $theme->display('page_admin_servers_add.tpl');
 echo '</form>';
 
 echo "<script>";
-$groups = $GLOBALS['db']->GetAll("SELECT group_id FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}"); 
+if(!isset($_POST['address']))
+{
+	$groups = $GLOBALS['db']->GetAll("SELECT group_id FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}");
+}
+else
+{
+	if(isset($_POST['groups']) && is_array($_POST['groups']))
+	{
+		$groups = $_POST['groups'];
+		foreach($groups as $k => $g)
+		{
+			$groups[$k] = array($g);
+		}
+	}
+	else
+	{
+		$groups = array();
+	}
+}
 foreach($groups AS $g)
 {
 	if($g)
 		echo "if($('g_" . $g[0] . "')) $('g_" . $g[0] . "').checked = true;";
 }
+echo $errorScript;
 ?>
 
 $('enabled').checked = <?php echo $server['enabled']; ?>;

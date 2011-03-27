@@ -12,13 +12,13 @@
  * @version $Id: server_query.php 249 2009-03-25 12:40:00Z tsunami $
  * =============================================================================
  */
-
 class CServerQuery
 {
   private $raw;
   private $address;
   private $port;
-  private $socket = false;
+  private $isfsock = true;
+  private $socket  = false;
   
   /** Constants of the data we need for a query */
   const QUERY_HEADER                          = "\xFF\xFF\xFF\xFF";
@@ -34,12 +34,19 @@ class CServerQuery
   const A2S_RULES                             = "\x56";
   const A2S_RULES_RESPONSE                    = "\x45";
   
+  
   public function __construct($address, $port)
   {
     $this->address   = $address;
     $this->port      = $port;
-    $this->challenge = "\xFF\xFF\xFF\xFF";
+    $this->challenge = self::QUERY_HEADER;
+    
+    if(defined('BIND_IP') && function_exists('socket_create') && function_exists('socket_bind'))
+    {
+      $this->isfsock = false;
+    }
   }
+  
   
   public function getInfo()
   {
@@ -96,7 +103,7 @@ class CServerQuery
     else
       return array();
     
-    return $info;        
+    return $info;
   }
   
   public function getPlayers()
@@ -107,7 +114,7 @@ class CServerQuery
       return array();
     
     $this->raw = $packet;
-    $count     = $this->_getbyte();   
+    $count     = $this->_getbyte();
     $players   = array();
     for($i = 0; $i < $count; $i++)
     {
@@ -131,7 +138,7 @@ class CServerQuery
       return array();
     
     $this->raw = $packet;
-    $count     = $this->_getushort(); 
+    $count     = $this->_getushort();
     $rules     = array();
     
     for($i = 0; $i < $count; $i++)
@@ -152,17 +159,43 @@ class CServerQuery
     if($this->socket !== false)
       return $this->socket;
     
-    $this->socket = fsockopen('udp://' . $this->address, $this->port);
+    try
+    {
+      if($this->fsock)
+      {
+        $this->socket = fsockopen('udp://' . $this->address, $this->port);
+        
+        stream_set_timeout($this->socket, 1);
+      }
+      else
+      {
+        $this->socket = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
+        
+        socket_set_option($this->socket, SOL_SOCKET, SO_REUSEADDR, 1);
+        socket_set_option($this->socket, SOL_SOCKET, SO_SNDTIMEO, array(
+          'sec'  => 1,
+          'usec' => 0,
+        ));
+        socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, array(
+          'sec'  => 1,
+          'usec' => 0,
+        ));
+        
+        socket_bind($this->socket, BIND_IP);
+        socket_connect($this->socket, $this->address, $this->port);
+      }
+    }
+    catch(Exception $ex) {}
+    
     if($this->socket === false)
       return false;
-      
-    stream_set_timeout($this->socket, 1);
+    
     return $this->socket;
   }
   
   private function _request($socket, $code, $reply = null)
   {
-    fwrite($socket, self::QUERY_HEADER . $code);
+    $this->_write($socket, self::QUERY_HEADER . $code);
     $packet = $this->_readsplit($socket);
     if(empty($packet))
       return '';
@@ -186,7 +219,7 @@ class CServerQuery
     $maxretries = 5;
     while(--$maxretries >= 0)
     {
-      fwrite($socket, self::QUERY_HEADER . $code . $this->challenge); // do the request with challenge id = -1
+      $this->_write($socket, self::QUERY_HEADER . $code . $this->challenge); // do the request with challenge id = -1
       $packet = $this->_readsplit($socket);
       if(empty($packet))
         return '';
@@ -210,7 +243,7 @@ class CServerQuery
   
   private function _readsplit($socket)
   {
-    $packet = fread($socket, 1480);
+    $packet = $this->_read($socket, 1480);
     if(empty($packet))
       return '';
     
@@ -272,7 +305,7 @@ class CServerQuery
           return '';
         
         // Receive next packet
-        $packet = fread($socket, 1480);
+        $packet = $this->_read($socket, 1480);
         if(empty($packet))
           return '';
         
@@ -311,6 +344,22 @@ class CServerQuery
       // Invalid
       return '';
     }
+  }
+  
+  private function _read($socket, $length)
+  {
+    if($this->isfsock)
+      return fread($socket, $length);
+    
+    return socket_read($socket, $length);
+  }
+  
+  private function _write($socket, $string)
+  {
+    if($this->isfsock)
+      return fwrite($socket, $string);
+    
+    return socket_write($socket, $string);
   }
   
   private function _getraw($count)

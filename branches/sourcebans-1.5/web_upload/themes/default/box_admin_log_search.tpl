@@ -24,18 +24,18 @@
               <td class="listtable_1"><input type="text" id="message" value="" onmouseup="$('message_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
         </tr>
           <tr>
-              <td align="center" class="listtable_1" ><input id="date_" type="radio" name="search_type" value="radiobutton"></td>
-              <td class="listtable_1" >Date</td>
-            <td class="listtable_1" >
+              <td align="center" class="listtable_1"><input id="date_" type="radio" name="search_type" value="radiobutton"></td>
+              <td class="listtable_1">Date</td>
+            <td class="listtable_1">
                 <input type="text" id="day" value="DD" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 25px;">.<input type="text" id="month" value="MM" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 25px;">.<input type="text" id="year" value="YYYY" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 40px;">
             &nbsp;<input type="text" id="fhour" value="00" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 25px;">:<input type="text" id="fminute" value="00" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 25px;">
             -&nbsp;<input type="text" id="thour" value="23" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 25px;">:<input type="text" id="tminute" value="59" onmouseup="$('date_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 25px;">
               </td>
           </tr>
           <tr>
-              <td align="center" class="listtable_1" ><input id="type_" type="radio" name="search_type" value="radiobutton"></td>
-              <td class="listtable_1" >Type</td>
-              <td class="listtable_1" >
+              <td align="center" class="listtable_1"><input id="type_" type="radio" name="search_type" value="radiobutton"></td>
+              <td class="listtable_1">Type</td>
+              <td class="listtable_1">
             <select id="type" onmouseup="$('type_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
               <option label="Message" value="m">Message</option>
               <option label="Warning" value="w">Warning</option>

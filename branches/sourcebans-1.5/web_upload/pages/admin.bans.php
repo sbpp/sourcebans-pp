@@ -40,10 +40,9 @@ if(isset($_POST['action']) && $_POST['action'] == "importBans")
 
 				if($check->RecordCount() == 0)
 				{
-					if(isset($_POST['friendsname']) && $_POST['friendsname'] == "on")
-						$pname = GetCommunityName($line[2]);
-					else
+					if(!isset($_POST['friendsname']) || $_POST['friendsname'] != "on" || ($pname = GetCommunityName($line[2])) == "")
 						$pname = "Imported Ban";
+					
 					$bancnt++;
 					$pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
 										(UNIX_TIMESTAMP(),?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)");
@@ -758,7 +757,7 @@ function ProcessBan()
 
 	if($('steam').value.length < 10 && !$('ip').value)
 	{
-		$('steam.msg').setHTML('You must enter a valid STEAM ID');
+		$('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
 		$('steam.msg').setStyle('display', 'block');
 		err++;
 	}else

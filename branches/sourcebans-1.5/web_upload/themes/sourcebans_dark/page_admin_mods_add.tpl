@@ -8,7 +8,7 @@
       <tr>
           <td valign="top" width="35%">
             <div class="rowdesc">
-              {help_icon title="Mod Name" message="Type the name of the mod you are adding."}Mod Name 
+              {help_icon title="Mod Name" message="Type the name of the mod you are adding."}Mod Name
             </div>
           </td>
           <td>
@@ -22,7 +22,7 @@
         <tr>
           <td valign="top">
             <div class="rowdesc">
-              {help_icon title="Folder Name" message="Type the name of this mods folder. For example, Counter-Strike: Source's mod folder is 'cstrike'"}Mod Folder 
+              {help_icon title="Folder Name" message="Type the name of this mods folder. For example, Counter-Strike: Source's mod folder is 'cstrike'"}Mod Folder
             </div>
           </td>
           <td>
@@ -47,9 +47,9 @@
         </tr>
        <tr>
           <td>&nbsp;</td>
-          <td>    
+          <td>
              {sb_button text="Add Mod" onclick="ProcessMod();" class="ok" id="amod"}&nbsp;
-             {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="aback"}      
+             {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="aback"}
             </td>
         </tr>
     </table>

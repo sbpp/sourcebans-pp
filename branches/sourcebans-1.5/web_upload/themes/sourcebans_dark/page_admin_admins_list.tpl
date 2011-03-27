@@ -28,19 +28,19 @@ Click on an admin to see more detailed information and actions to perform on the
         <div class="opener" align="center" border="1">
           <table width="100%" cellspacing="0" cellpadding="3" bgcolor="#eaebeb">
             <tr>
-                    <td align="left" colspan="3" class="front-module-header">
+              <td align="left" colspan="3" class="front-module-header">
                 <b>Admin Details of {$admin.user}</b>
               </td>
-                  </tr>
-                  <tr align="left">
-                    <td width="35%" class="front-module-line"><b>Server Admin Permissions</b></td>
-                    <td width="35%" class="front-module-line"><b>Web Admin Permissions</b></td>
-                    <td width="30%" valign="top" class="front-module-line"><b>Action</b></td>
-                  </tr>
-                  <tr align="left">
-                    <td valign="top">{$admin.server_flag_string}</td>
-                    <td valign="top">{$admin.web_flag_string}</td>
-                    <td width="30%" valign="top">
+            </tr>
+            <tr align="left">
+              <td width="35%" class="front-module-line"><b>Server Admin Permissions</b></td>
+              <td width="35%" class="front-module-line"><b>Web Admin Permissions</b></td>
+              <td width="30%" valign="top" class="front-module-line"><b>Action</b></td>
+            </tr>
+            <tr align="left">
+              <td valign="top">{$admin.server_flag_string}</td>
+              <td valign="top">{$admin.web_flag_string}</td>
+              <td width="30%" valign="top">
                 <div class="ban-edit">
                       <ul>
                       {if $permission_editadmin}
@@ -58,14 +58,14 @@ Click on an admin to see more detailed information and actions to perform on the
                         </li>
                       {/if}
                       {if $permission_deleteadmin}
-                          <li>
+                        <li>
                           <a href="#" onclick="RemoveAdmin({$admin.aid}, '{$admin.user}');"><img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Admin</a>
                         </li>
-                        {/if}
-                        </ul>
+                      {/if}
+                      </ul>
                 </div>
-                   <div class="front-module-line" style="padding:3px;">Immunity Level: <b>{$admin.immunity}</b></div>
-                   <div class="front-module-line" style="padding:3px;">Last Visited: <b><small>{$admin.lastvisit}</small></b></div>
+                <div class="front-module-line" style="padding:3px;">Immunity Level: <b>{$admin.immunity}</b></div>
+                <div class="front-module-line" style="padding:3px;">Last Visited: <b><small>{$admin.lastvisit}</small></b></div>
               </td>
             </tr>
           </table>
