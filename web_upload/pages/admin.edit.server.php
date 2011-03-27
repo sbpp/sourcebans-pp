@@ -119,7 +119,7 @@ if(isset($_POST['address']))
 		// don't change rcon password if not changed
 		$rcon = "";
 		if($_POST['rcon'] != '+-#*_')
-			$rcon = "`rcon` = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
+			$rcon = "`rcon` = '" . $GLOBALS['db']->qstr($_POST['rcon']) . "',";
 			
 		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET
 										`ip` = ?,
