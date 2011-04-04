@@ -17,7 +17,7 @@
 #include <adminmenu>
 #include "dbi.inc"
 
-#define SB_VERSION "1.4.8"
+#define SB_VERSION "1.4.9"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -414,7 +414,7 @@ public Action:CommandBan(client, args)
 	// Get the ban time
 	GetCmdArg(2, buffer, sizeof(buffer));
 	new time = StringToInt(buffer);
-	if(!time && client && !(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)))
+	if(!time && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN|ADMFLAG_ROOT)))
 	{
 		ReplyToCommand(client, "You do not have Perm Ban Permission");
 		return Plugin_Handled;
@@ -493,7 +493,7 @@ public Action:CommandBanIp(client, args)
 	
 	decl String:adminIp[24], String:adminAuth[64];
 	new minutes = StringToInt(time);
-	if(!minutes && client && !(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)))
+	if(!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN|ADMFLAG_ROOT)))
 	{
 		ReplyToCommand(client, "You do not have Perm Ban Permission");
 		return Plugin_Handled;
@@ -615,7 +615,7 @@ public Action:CommandAddBan(client, args)
 	
 	decl String:adminIp[24], String:adminAuth[64];
 	new minutes = StringToInt(time);
-	if(!minutes && client && !(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)))
+	if(!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN|ADMFLAG_ROOT)))
 	{
 		ReplyToCommand(client, "You do not have Perm Ban Permission");
 		return Plugin_Handled;
@@ -911,7 +911,7 @@ stock DisplayBanTimeMenu(client)
 	SetMenuTitle(menu, title);
 	SetMenuExitBackButton(menu, true);
 	
-	if(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT))
+	if(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN|ADMFLAG_ROOT))
 		AddMenuItem(menu, "0", "Permanent");
 	AddMenuItem(menu, "10", "10 Minutes");
 	AddMenuItem(menu, "30", "30 Minutes");
