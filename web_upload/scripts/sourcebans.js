@@ -327,7 +327,7 @@ function RemoveBan(id, key, page, name, confirm, bulk)
 {
 	if(confirm==0) {
 		ShowBox('Delete Ban', 'Are you sure you want to delete the ban'+(bulk=="true"?"s":"")+' for '+(bulk=="true"?"those players":"\'"+ name +"\'")+'?', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="RemoveBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+name.replace(/\'/g,'\\\'')+'\', \'1\''+(bulk=="true"?", \'true\'":"")+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').setHTML('<input type="button" onclick="RemoveBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+(bulk=="true"?", \'true\'":"")+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(confirm==1) {
 		if(page != "") 
 			var pagelink = page;
@@ -341,7 +341,7 @@ function UnbanBan(id, key, page, name, popup, bulk)
 {
 	if(popup==1) {
 		ShowBox('Unban Reason', '<b>Please give a short comment, why you are going to unban '+(bulk=="true"?"those players":"\'"+ name +"\'")+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="UnbanBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+name.replace(/\'/g,'\\\'')+'\', \'0\''+(bulk=="true"?", \'true\'":"")+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="Unban Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').setHTML('<input type="button" onclick="UnbanBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+(bulk=="true"?", \'true\'":"")+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="Unban Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(popup==0) {
 		if(page != "") 
 			var pagelink = page;
@@ -1413,4 +1413,10 @@ function ViewCommunityProfile(sid, name)
     ShowBox('View Community Profile', 'Generating Community Profile link for "'+name+'", please wait...', 'blue', '', true);
     $('dialog-control').setStyle('display', 'none');
     xajax_ViewCommunityProfile(sid, name);
+}
+
+// Thanks to http://phpjs.org/functions/addslashes:303
+function addslashes (str)
+{
+	return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
 }

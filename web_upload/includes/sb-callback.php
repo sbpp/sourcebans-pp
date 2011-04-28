@@ -685,6 +685,14 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 
 	if($error)
 		return $objResponse;
+	
+	// Check for dublicates afterwards
+	$chk = $GLOBALS['db']->GetRow('SELECT sid FROM `'.DB_PREFIX.'_servers` WHERE ip = ? AND port = ?;', array($ip, (int)$port));
+	if($chk)
+	{
+		$objResponse->addScript("ShowBox('Error', 'There already is a server with that IP:Port combination.', 'red');");
+		return $objResponse;
+	}
 
 	// ##############################################################
 	// ##                     Start adding to DB                   ##
@@ -698,7 +706,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 	// Add the server
 	$addserver = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_servers (`sid`, `ip`, `port`, `rcon`, `modid`, `enabled`)
 										  VALUES (?,?,?,?,?,?)");
-	$GLOBALS['db']->Execute($addserver,array($sid, $ip, $port, $rcon, $mod, $enable));
+	$GLOBALS['db']->Execute($addserver,array($sid, $ip, (int)$port, $rcon, $mod, $enable));
 
 	// Add server to each group specified
 	$groups = explode(",", $group);
