@@ -88,7 +88,7 @@
           {if empty($ban.player)}
             <i><font color="#677882">no nickname present</font></i>
           {else}
-            {$ban.player|escape:'html'}
+            {$ban.player|escape:'html'|stripslashes}
           {/if}
 		  </div>
 		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
@@ -124,7 +124,7 @@
                   {if empty($ban.player)}
                     <i><font color="#677882">no nickname present</font></i>
                   {else}
-                    {$ban.player|escape:'html'}
+                    {$ban.player|escape:'html'|stripslashes}
                   {/if}
                 </td>
                 <!-- ###############[ Start Admin Controls ]################## -->

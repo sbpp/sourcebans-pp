@@ -207,13 +207,13 @@ if (isset($_GET['searchText']))
   LEFT JOIN ".DB_PREFIX."_servers AS SE ON SE.sid = BA.sid
   LEFT JOIN ".DB_PREFIX."_mods AS MO on SE.modid = MO.mid
   LEFT JOIN ".DB_PREFIX."_admins AS AD ON BA.aid = AD.aid
-      WHERE BA.authid LIKE ?" . $search_ips . " or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive."
+      WHERE BA.authid LIKE ? ? or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive."
    ORDER BY BA.created DESC
-   LIMIT ?,?",array($search,$search,$search,intval($BansStart),intval($BansPerPage)));
+   LIMIT ?,?",array($search,$search_ips,$search,$search,intval($BansStart),intval($BansPerPage)));
 
 
-	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM ".DB_PREFIX."_bans AS BA WHERE BA.authid LIKE ?" . $search_ips . " OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive
-										,array($search,$search,$search));
+	$res_count = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM ".DB_PREFIX."_bans AS BA WHERE BA.authid LIKE ? ? OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive
+										,array($search,$search_ips,$search,$search));
 $searchlink = "&searchText=".$_GET["searchText"];
 }
 elseif(!isset($_GET['advSearch']))
@@ -415,7 +415,7 @@ while (!$res->EOF)
 	}
 
 	$data['ban_date'] = SBDate($dateformat,$res->fields['ban_created']);
-	$data['player'] = stripslashes($res->fields['player_name']);
+	$data['player'] = addslashes($res->fields['player_name']);
 	$data['type'] = $res->fields['type'];
 	$data['steamid'] = $res->fields['authid'];
 	$data['communityid'] = $res->fields['community_id'];

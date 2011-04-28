@@ -91,6 +91,18 @@ if(isset($_POST['address']))
 	}
 	
 	$ip = RemoveCode($_POST['address']);
+	
+	// Check for dublicates afterwards
+	if($error == 0)
+	{
+		$chk = $GLOBALS['db']->GetRow('SELECT sid FROM `'.DB_PREFIX.'_servers` WHERE ip = ? AND port = ? AND sid != ?;', array($ip, (int)$_POST['port'], $_GET['id']));
+		if($chk)
+		{
+			$error++;
+			$errorScript .= "ShowBox('Error', 'There already is a server with that IP:Port combination.', 'red');";
+		}
+	}
+	
 	$enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
 	
 	$server['ip'] = $ip;
@@ -119,7 +131,7 @@ if(isset($_POST['address']))
 		// don't change rcon password if not changed
 		$rcon = "";
 		if($_POST['rcon'] != '+-#*_')
-			$rcon = "`rcon` = '" . $GLOBALS['db']->qstr($_POST['rcon']) . "',";
+			$rcon = "`rcon` = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
 			
 		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET
 										`ip` = ?,
