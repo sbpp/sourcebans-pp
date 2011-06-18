@@ -1,0 +1,155 @@
+/**
+ * Global JavaScript functions
+ *
+ * @author     SteamFriends, InterWave Studios, GameConnect
+ * @copyright (C)2007-2011 GameConnect.net.  All rights reserved.
+ * @link      http://www.sourcebans.net
+ * @package   SourceBans
+ * @version   $Id$
+ */
+function InitAccordion(opener, element, container, num)
+{
+  return new Fx.Accordion(opener, element, {
+    display: num == null ? -1 : num,
+    opacity: true,
+    alwaysHide: true,
+    transition: Fx.Transitions.Quart.easeOut,
+    onActive: function(toggler, element) {
+      toggler.setStyle('cursor',           'pointer');
+      toggler.setStyle('background-color', '');
+    },
+    onBackground: function(toggler, element) {
+      toggler.setStyle('cursor',           'pointer');
+      toggler.setStyle('background-color', '');    
+    }
+  }, $(container)).hideAll();
+}
+
+function MarkPasswordField(el)
+{
+  el.password = el.value;
+  
+  el.addEvent('blur',  function(e) {
+    if(this.value == '')
+      this.value = this.password;
+  });
+  el.addEvent('focus', function(e) {
+    if(this.value == this.password)
+      this.value = '';
+  });
+}
+
+function Shrink(id, time, height)
+{
+  $(id).effects({
+    duration: time,
+    transition: Fx.Transitions.Bounce.easeOut
+  }).start({'height': [height]});
+}
+
+function SlideUp(id)
+{
+  new Fx.Slide(id).slideOut().chain(function() {
+    $(id).remove();
+  });
+}
+
+function SubmitForm(el, cb_complete)
+{
+  new Element('iframe', {
+    'name': 'submit_form',
+    'events': {
+      'load': function() {
+        var doc;
+        if(this.contentDocument)
+          doc = this.contentDocument;
+        else if(this.contentWindow)
+          doc = this.contentWindow.document;
+        else if(this.document)
+          doc = this.document;
+        
+        if(typeof(cb_complete) == 'function')
+          cb_complete(doc ? doc.body.innerHTML : null);
+        
+        $('ajax-indicator').setStyle('display', 'none');
+        this.dispose();
+      }
+    },
+    'styles': {
+      'display': 'none'
+    }
+  }).inject(el);
+  
+  $('ajax-indicator').setStyle('display', 'block');
+  $(el).set('target', 'submit_form').submit();
+}
+
+function UpdateCheckBox(objCheckbox)
+{
+  // Other Arguments is individual items not available in the range
+  if(arguments.length < 2)
+    return;
+  
+  for(var i = 1; i < arguments.length; i++)
+  {
+    if($(arguments[i]))
+      $(arguments[i]).checked = objCheckbox.checked;
+  }
+}
+
+
+var MooMenu = new Class({
+  initialize: function(el) {
+    this.menu = $(el);
+    
+    this.menu.fade('hide').getChildren('li').each(function(el) {
+      var submenu = el.getChildren('ul')[0];
+      if(!submenu)
+        return;
+      
+      el.addClass('submenu').addEvents({
+        'mouseout':  function(e) {
+          submenu.fade('hide');
+        },
+        'mouseover': function(e) {
+          submenu.fade('show');
+        }
+      });
+      
+      new MooMenu(submenu);
+    });
+  },
+  hide: function() {
+    this.menu.fade('hide');
+  },
+  show: function(top, left) {
+    this.menu.setStyles({
+      'top': top,
+      'left': left
+    }).fade('in');
+  }
+});
+
+
+Fx.Accordion.implement({
+  hideAll: function() {
+    var obj       = {};
+    this.previous = -1;
+    this.elements.each(function(el, i) {
+      obj[i] = {};
+      this.fireEvent('onBackground', [this.togglers[i], el]);
+      for(var fx in this.effects) obj[i][fx] = 0;
+    }, this);
+    return this.start(obj);
+  },
+  showAll: function() {
+    var obj       = {};
+    this.previous = -1;
+    this.elements.each(function(el, i) {
+      obj[i] = {};
+      this.fireEvent('onActive', [this.togglers[i], el]);
+      for(var fx in this.effects) obj[i][fx] = el[this.effects[fx]];
+    }, this);
+    return this.start(obj);
+  }
+});
