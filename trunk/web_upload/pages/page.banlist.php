@@ -354,6 +354,8 @@ if(isset($_GET['advSearch']))
 		break;
 		default:
 			$where = "";
+			$_GET['advType'] = "";
+			$_GET['advSearch'] = "";
 			$advcrit = array();
 		break;
 	}
