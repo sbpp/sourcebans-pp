@@ -38,7 +38,8 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 	$where = "";
 	if(isset($_GET['advSearch']))
 	{
-		$value = $_GET['advSearch'];
+		// Escape the value, but strip the leading and trailing quote
+		$value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
 		$type = $_GET['advType'];
 		switch($type)
 		{
@@ -49,15 +50,17 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 				$where = " WHERE l.message LIKE '%" . $value . "%' OR l.title LIKE '%" . $value . "%'";
 			break;
 			case "date":
-			$date = explode(",", $value);
-			$time = mktime($date[3],$date[4],0,$date[1],$date[0],$date[2]);
-			$time2 = mktime($date[5],$date[6],59,$date[1],$date[0],$date[2]);
-			$where = "WHERE l.created > '$time' AND l.created < '$time2'";
-		break;
+				$date = explode(",", $value);
+				$time = mktime($date[3],$date[4],0,$date[1],$date[0],$date[2]);
+				$time2 = mktime($date[5],$date[6],59,$date[1],$date[0],$date[2]);
+				$where = "WHERE l.created > '$time' AND l.created < '$time2'";
+			break;
 			case "type":
 				$where = " WHERE l.type = '" . $value . "'";
 			break;
 			default:
+				$_GET['advType'] = "";
+				$_GET['advSearch'] = "";
 				$where = "";
 			break;
 		}
