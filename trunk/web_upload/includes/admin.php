@@ -74,7 +74,8 @@ else
 			}
 			if(isset($_GET['advSearch']))
 			{
-				$value = $_GET['advSearch'];
+				// Escape the value, but strip the leading and trailing quote
+				$value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
 				$type = $_GET['advType'];
 				switch($type)
 				{
@@ -145,6 +146,8 @@ else
 						$join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS ASG ON ASG.admin_id = ADM.aid LEFT JOIN `" . DB_PREFIX . "_servers_groups` AS SG ON SG.group_id = ASG.srv_group_id";
 					break;
 					default:
+						$_GET['advSearch'] = "";
+						$_GET['advType'] = "";
 						$where = "";
 					break;
 				}
