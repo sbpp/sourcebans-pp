@@ -182,7 +182,7 @@ function ChangeSrvPassword($aid, $srv_pass)
 	if($srv_pass == "NULL")
 		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = NULL WHERE `aid` = '".$aid."'");
 	else
-		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = '".$srv_pass."' WHERE `aid` = '".$aid."'");
+		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = ? WHERE `aid` = ?", array($srv_pass, $aid));
 	$objResponse->addScript("ShowBox('Server Password changed', 'Your server password has been changed successfully.', 'green', 'index.php?p=account', true);");
 	$log = new CSystemLog("m", "Srv Password Changed", "Password changed for admin (".$aid.")");
 	return $objResponse;
@@ -729,6 +729,7 @@ function UpdateGroupPermissions($gid)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank;
+	$gid = (int)$gid;
 	if($gid == 1)
 	{
 		$permissions = @file_get_contents(TEMPLATES_PATH . "/groups.web.perm.php");
@@ -759,6 +760,7 @@ function UpdateAdminPermissions($type, $value)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank;
+	$type = (int)$type;
 	if($type == 1)
 	{
 		$id = "web";
@@ -1487,7 +1489,7 @@ function KickPlayer($sid, $name)
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
-		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to kick ".$name.", but doesn't have access.");
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to kick ".htmlspecialchars($name).", but doesn't have access.");
 		return $objResponse;
 	}
 
@@ -1495,7 +1497,7 @@ function KickPlayer($sid, $name)
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".$name.". No RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". No RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
@@ -1503,7 +1505,7 @@ function KickPlayer($sid, $name)
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".$name.". Wrong RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	// search for the playername
@@ -1534,13 +1536,13 @@ function KickPlayer($sid, $name)
 		if($immune <= $userbank->GetProperty('srv_immunity')) {
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
 			$kick = $r->sendCommand("kickid ".$steam." \"You have been kicked by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
-			$log = new CSystemLog("m", "Player kicked", $username . " kicked player '".$name."' (".$steam.") from ".$data['ip'].":".$data['port'].".", true, true);
-			$objResponse->addScript("ShowBox('Player kicked', 'Player \'".$name."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
+			$log = new CSystemLog("m", "Player kicked", $username . " kicked player '".htmlspecialchars($name)."' (".$steam.") from ".$data['ip'].":".$data['port'].".", true, true);
+			$objResponse->addScript("ShowBox('Player kicked', 'Player \'".htmlspecialchars($name)."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
 		} else {
-			$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".$name.". Player is immune!', 'red', '', true);");
+			$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". Player is immune!', 'red', '', true);");
 		}
 	} else {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".$name.". Player not on the server anymore!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". Player not on the server anymore!', 'red', '', true);");
 	}
 	return $objResponse;
 }
@@ -1549,6 +1551,9 @@ function PasteBan($sid, $name, $type=0)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
+	
+	$sid = (int)$sid;
+	$type = (int)$type;
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
@@ -1557,7 +1562,7 @@ function PasteBan($sid, $name, $type=0)
 	}
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = ?;", array($sid));
 	if(empty($data['rcon'])) {
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		$objResponse->addScript("ShowBox('Error', 'No RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
@@ -1567,7 +1572,7 @@ function PasteBan($sid, $name, $type=0)
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = ?;", array($sid));
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		$objResponse->addScript("ShowBox('Error', 'Wrong RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
 		return $objResponse;
@@ -1591,8 +1596,8 @@ function PasteBan($sid, $name, $type=0)
 		$name = $matches[2][$index];
 		$ip = explode(":", $matches[8][$index]);
 		$ip = $ip[0];
-		$objResponse->addScript("$('nickname').value = '" . $name . "'");
-		if((int)$type==1)
+		$objResponse->addScript("$('nickname').value = '" . htmlspecialchars($name) . "'");
+		if($type==1)
 			$objResponse->addScript("$('type').options[1].selected = true");
 		$objResponse->addScript("$('steam').value = '" . $steam . "'");
 		$objResponse->addScript("$('ip').value = '" . $ip . "'");
@@ -1711,7 +1716,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 									   $length*60,
 									   $len,
 									   $reason,
-									   $_COOKIE['aid'],
+									   $userbank->GetAid(),
 									   $_SERVER['REMOTE_ADDR']));
 	$subid = $GLOBALS['db']->Insert_ID();
 
@@ -1844,6 +1849,7 @@ function CheckPassword($aid, $pass)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank;
+	$aid = (int)$aid;
 	if(!$userbank->CheckLogin($userbank->encrypt_password($pass), $aid))
 	{
 		$objResponse->addScript("$('current.msg').setStyle('display', 'block');");
@@ -2271,7 +2277,7 @@ function AddComment($bid, $ctype, $ctext, $page)
 	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comments(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())");
 	$GLOBALS['db']->Execute($pre,array($bid,
 									   $ctype,
-									   $_COOKIE['aid'],
+									   $userbank->GetAid(),
 									   $ctext));
 
 	if($ctype=="B")
@@ -2298,15 +2304,19 @@ function EditComment($cid, $ctype, $ctext, $page)
 		return $objResponse;
 	}
 
+	$cid = (int)$cid;
+	$page = (int)$page;
+	
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
 
 	$ctext = trim($ctext);
 
-	$pre = $GLOBALS['db']->Prepare("UPDATE ".DB_PREFIX."_comments SET `commenttxt` = ?, `editaid` = ?, `edittime`= UNIX_TIMESTAMP() WHERE cid = '".$cid."'");
+	$pre = $GLOBALS['db']->Prepare("UPDATE ".DB_PREFIX."_comments SET `commenttxt` = ?, `editaid` = ?, `edittime`= UNIX_TIMESTAMP() WHERE cid = ?");
 	$GLOBALS['db']->Execute($pre,array($ctext,
-									   $_COOKIE['aid']));
+									   $userbank->GetAid(),
+									   $cid));
 
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
@@ -2317,7 +2327,7 @@ function EditComment($cid, $ctype, $ctext, $page)
 
 	$objResponse->addScript("ShowBox('Comment Edited', 'The comment #".$cid." has been successfully edited', 'green', 'index.php$redir');");
 	$objResponse->addScript("TabToReload();");
-	$log = new CSystemLog("m", "Comment Edited", $username." edited comment #".(int)$cid);
+	$log = new CSystemLog("m", "Comment Edited", $username." edited comment #".$cid);
 	return $objResponse;
 }
 
@@ -2332,6 +2342,9 @@ function RemoveComment($cid, $ctype, $page)
 		return $objResponse;
 	}
 
+	$cid = (int)$cid;
+	$page = (int)$page;
+	
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
@@ -2345,7 +2358,7 @@ function RemoveComment($cid, $ctype, $page)
 	if($res)
 	{
 		$objResponse->addScript("ShowBox('Comment Deleted', 'The selected comment has been deleted from the database', 'green', 'index.php$redir', true);");
-		$log = new CSystemLog("m", "Comment Deleted", $username." deleted comment #".(int)$cid);
+		$log = new CSystemLog("m", "Comment Deleted", $username." deleted comment #".$cid);
 	}
 	else
 		$objResponse->addScript("ShowBox('Error', 'There was a problem deleting the comment from the database. Check the logs for more info', 'red', 'index.php$redir', true);");
@@ -2379,8 +2392,9 @@ function ClearCache()
 function RefreshServer($sid)
 {
 	$objResponse = new xajaxResponse();
+	$sid = (int)$sid;
 	session_start();
-	$data = $GLOBALS['db']->GetRow("SELECT ip, port FROM `".DB_PREFIX."_servers` WHERE sid = '".$sid."';");
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port FROM `".DB_PREFIX."_servers` WHERE sid = ?;", array($sid));
 	if (isset($_SESSION['getInfo.' . $data['ip'] . '.' . $data['port']]) && is_array($_SESSION['getInfo.' . $data['ip'] . '.' . $data['port']]))
 		unset($_SESSION['getInfo.' . $data['ip'] . '.' . $data['port']]);
 	$objResponse->addScript("xajax_ServerHostPlayers('".$sid."');");
@@ -2391,6 +2405,7 @@ function RehashAdmins($server, $do=0)
 {
 	$objResponse = new xajaxResponse();
     global $userbank, $username;
+	$do = (int)$do;
 	if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS|ADMIN_EDIT_GROUPS|ADMIN_ADD_ADMINS))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
@@ -2402,7 +2417,7 @@ function RehashAdmins($server, $do=0)
 		if(sizeof($servers)-2 > $do)
 			$objResponse->addScriptCall("xajax_RehashAdmins", $server, $do+1);
 
-		$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$servers[$do]."';");
+		$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".(int)$servers[$do]."';");
 		if(empty($serv['rcon'])) {
 			$objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".(sizeof($servers)-1).") <font color='red'>failed: No rcon password set</font>.<br />");
 			if($do >= sizeof($servers)-2) {
@@ -2570,7 +2585,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 												   $tag->childNodes->item(0)->nodeValue,
 												   0,
 												   "Steam Community Group Ban (".$grpurl.") ".$reason,
-												   $_COOKIE['aid'],
+												   $userbank->GetAid(),
 												   $_SERVER['REMOTE_ADDR']));
 			}
 		}
@@ -2593,7 +2608,7 @@ function GetGroups($friendid)
 {
 	set_time_limit(0);
 	$objResponse = new xajaxResponse();
-	if($GLOBALS['config']['config.enablegroupbanning']==0)
+	if($GLOBALS['config']['config.enablegroupbanning']==0 || !is_numeric($friendid))
 		return $objResponse;
 	global $userbank, $username;
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
@@ -2661,7 +2676,7 @@ function BanFriends($friendid, $name)
 {
 	set_time_limit(0);
 	$objResponse = new xajaxResponse();
-	if($GLOBALS['config']['config.enablefriendsbanning']==0)
+	if($GLOBALS['config']['config.enablefriendsbanning']==0 || !is_numeric($friendid))
 		return $objResponse;
 	global $userbank, $username;
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
@@ -2728,7 +2743,7 @@ function BanFriends($friendid, $name)
 											   $link->childNodes->item(0)->nodeValue,
 											   0,
 											   "Steam Community Friend Ban (".htmlspecialchars($name).")",
-											   $_COOKIE['aid'],
+											   $userbank->GetAid(),
 											   $_SERVER['REMOTE_ADDR']));
 		}
 	}
@@ -2759,7 +2774,7 @@ function ViewCommunityProfile($sid, $name)
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".$name.". No RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".RemoveCode($name).". No RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
@@ -2767,7 +2782,7 @@ function ViewCommunityProfile($sid, $name)
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".$name.". Wrong RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".RemoveCode($name).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	// search for the playername
@@ -2786,10 +2801,10 @@ function ViewCommunityProfile($sid, $name)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".$name.", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".$name."\'s Profile\" target=\"_blank\">here</a>.</b>';");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".RemoveCode($name).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".RemoveCode($name)."\'s Profile\" target=\"_blank\">here</a>.</b>';");
 		$objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/', 'Community_".$steam."');");
 	} else {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".$name.". Player not on the server anymore!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".RemoveCode($name).". Player not on the server anymore!', 'red', '', true);");
 	}
 	return $objResponse;
 }
@@ -2809,18 +2824,18 @@ function SendMessage($sid, $name, $message)
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".$name.". No RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".RemoveCode($name).". No RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".$name.". Wrong RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".RemoveCode($name).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$ret = $r->sendCommand('sm_psay "'.$name.'" "'.addslashes($message).'"');
-	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".$name."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
+	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".RemoveCode($name)."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
 	return $objResponse;
 }
 ?>
