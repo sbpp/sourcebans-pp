@@ -242,7 +242,7 @@ function BuildBreadcrumbs()
 		$text = "&raquo; <a href='index.php?p=home'>Home</a> &raquo; " . $bread;
 	else
 		$text = "&raquo; <a href='index.php?p=home'>Home</a>";
-	echo '<script type="text/javascript">$("breadcrumb").setHTML("' . $text . '");</script>';
+	echo '<script type="text/javascript">$("breadcrumb").setHTML("' . $text . '");</script>' . PHP_EOL;
 
 }
 /**
@@ -706,18 +706,21 @@ function PageDie()
 	die();
 }
 
-function GetMapImage($map)
+function GetMapImage($map, $mod = null)
 {
-	if(@file_exists(SB_MAP_LOCATION . "/" . $map . ".jpg"))
-		return "images/maps/" . $map . ".jpg";
+	if(!empty($mod) && @file_exists(SB_MAP_LOCATION . '/' . $mod . '/' . $map . '.jpg'))
+		return 'images/maps/' . $mod . '/' . $map . '.jpg';
+	else if(@file_exists(SB_MAP_LOCATION . '/' . $map . '.jpg'))
+		return 'images/maps/' . $map . '.jpg';
 	else
-		return "images/maps/nomap.jpg";
+		return 'images/maps/unknown.jpg';
 }
 
 function CheckExt($filename, $ext)
 {
-    $path_info = pathinfo($filename);
-    if(strtolower($path_info['extension']) == $ext)
+	$filename = str_replace(chr(0), '', $filename);
+	$path_info = pathinfo($filename);
+	if(strtolower($path_info['extension']) == strtolower($ext))
 		return true;
 	else
 		return false;
@@ -876,7 +879,7 @@ function check_email($email) {
 function checkSinglePlayer($sid, $steamid)
 {
 	require_once(INCLUDES_PATH.'/CServerRcon.php');
-	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
+	$serv = $GLOBALS['db']->GetRow('SELECT ip, port, rcon FROM ' . DB_PREFIX . '_servers WHERE sid = ?', array($sid));
 	if(empty($serv['rcon'])) {
 		return false;
 	}
@@ -887,7 +890,7 @@ function checkSinglePlayer($sid, $steamid)
 	$r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+		$GLOBALS['db']->Execute('UPDATE ' . DB_PREFIX . "_servers SET rcon = '' WHERE sid = ?", array($sid));
 		return false;
 	}
 
@@ -915,7 +918,7 @@ function checkSinglePlayer($sid, $steamid)
 function checkMultiplePlayers($sid, $steamids)
 {
 	require_once(INCLUDES_PATH.'/CServerRcon.php');
-	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
+	$serv = $GLOBALS['db']->GetRow('SELECT ip, port, rcon FROM ' . DB_PREFIX . '_servers WHERE sid = ?', array($sid));
 	if(empty($serv['rcon'])) {
 		return false;
 	}
@@ -927,7 +930,7 @@ function checkMultiplePlayers($sid, $steamids)
 
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+		$GLOBALS['db']->Execute('UPDATE ' . DB_PREFIX . "_servers SET rcon = '' WHERE sid = ?", array($sid));
 		return false;
 	}
 
@@ -991,8 +994,7 @@ function SBDate($format, $timestamp="")
 */
 function SteamIDToFriendID($authid)
 {
-	$friendid = $GLOBALS['db']->GetRow("SELECT CAST(MID('".$authid."', 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID('".$authid."', 11, 10) * 2 AS UNSIGNED) AS friend_id");
-	return $friendid["friend_id"];
+	return $GLOBALS['db']->GetOne("SELECT CAST(MID('" . $authid . "', 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID('" . $authid . "', 11, 10) * 2 AS UNSIGNED)");
 }
 
 /**
@@ -1003,9 +1005,7 @@ function SteamIDToFriendID($authid)
 */
 function FriendIDToSteamID($friendid)
 {
-
-	$steamid = $GLOBALS['db']->GetRow("SELECT CONCAT(\"STEAM_0:\", (CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2, \":\", CAST(((CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) - ((CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2)) / 2 AS UNSIGNED)) AS steam_id;");
-	return $steamid['steam_id'];
+	return $GLOBALS['db']->GetOne("SELECT CONCAT('STEAM_0:', (CAST('" . $friendid . "' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2, ':', CAST(((CAST('" . $friendid . "' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) - ((CAST('" . $friendid . "' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2)) / 2 AS UNSIGNED))");
 }
 
 /**
@@ -1049,7 +1049,7 @@ function GetCommunityName($steamid)
 function SendRconSilent($rcon, $sid)
 {
 	require_once(INCLUDES_PATH.'/CServerRcon.php');
-	$serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '".$sid."';");
+	$serv = $GLOBALS['db']->GetRow('SELECT ip, port, rcon FROM ' . DB_PREFIX . '_servers WHERE sid = ?', array($sid));
 	if(empty($serv['rcon'])) {
 		return false;
 	}
@@ -1061,7 +1061,7 @@ function SendRconSilent($rcon, $sid)
 
 	if(!$r->Auth())
 	{
-		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+		$GLOBALS['db']->Execute('UPDATE ' . DB_PREFIX . "_servers SET rcon = '' WHERE sid = ?", array($sid));
 		return false;
 	}
 
@@ -1072,11 +1072,11 @@ function SendRconSilent($rcon, $sid)
 }
 
 /* Function to check if a needle is inside a 2 layered recursive array
-* like the one from ADODB->GetAll
-* @param string $needle The string to search for
-* @param array $array The array to search in
-* @return boolean
-*/
+ * like the one from ADODB->GetAll
+ * @param string $needle The string to search for
+ * @param array $array The array to search in
+ * @return boolean
+ */
 function in_array_dim($needle, $array)
 {
 	foreach($array as $secarray)

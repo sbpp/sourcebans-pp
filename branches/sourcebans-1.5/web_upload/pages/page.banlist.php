@@ -47,7 +47,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 	$fail = 0;
 	foreach($bids AS $bid) {
 		$bid = intval($bid);
-		$res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM " . DB_PREFIX . "_bans b INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = b.aid WHERE bid = '".$bid."';");
+		$res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM " . DB_PREFIX . "_bans b INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = b.aid WHERE bid = ?", array($bid));
 		if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_UNBAN) &&
 		    !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) &&
 		    !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid')))
@@ -78,12 +78,12 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 										RemoveType = 'U',
 										RemovedOn = UNIX_TIMESTAMP(),
 										ureason = ?
-										WHERE bid = ?;",
+										WHERE bid = ?",
 										array( $userbank->GetAid(), $unbanReason, $bid));
 
-		$protestsunban = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '4' WHERE bid = '".$bid."';");
+		$protestsunban = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = 4 WHERE bid = ?", array($bid));
 
-		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.modfolder FROM " . DB_PREFIX . "_banlog bl INNER JOIN " . DB_PREFIX . "_servers s ON s.sid = bl.sid INNER JOIN " . DB_PREFIX . "_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
+		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.modfolder FROM " . DB_PREFIX . "_banlog bl INNER JOIN " . DB_PREFIX . "_servers s ON s.sid = bl.sid INNER JOIN " . DB_PREFIX . "_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)", array($bid));
 		foreach($blocked as $tempban)
 		{
 			SendRconSilent(($row['type']==0?"removeid ".(($tempban['modfolder']=='left4dead'||$tempban['modfolder']=='tf')?$row['authid_l4d']:$row['authid']):"removeip ".$row['ip']), $tempban['sid']);
@@ -402,12 +402,12 @@ while (!$res->EOF)
 		}
 		else
 		{
-			$data['country'] = '<img src="images/country/zz.gif" alt="Unknown Country" border="0" align="absmiddle" />';
+			$data['country'] = '<img src="images/country/unknown.gif" alt="Unknown Country" border="0" align="absmiddle" />';
 		}
 	}
 	else
 	{
-		$data['country'] = '<img src="images/country/zz.gif" alt="Unknown Country" border="0" align="absmiddle" />';
+		$data['country'] = '<img src="images/country/unknown.gif" alt="Unknown Country" border="0" align="absmiddle" />';
 	}
 
 	$data['ban_date'] = SBDate($dateformat,$res->fields['ban_created']);
@@ -451,9 +451,9 @@ while (!$res->EOF)
 
 	$data['layer_id'] = 'layer_'.$res->fields['ban_id'];
 	if($data['type'] == "0")
-		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM " . DB_PREFIX . "_bans WHERE authid = '".$data['steamid']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0';");
+		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM " . DB_PREFIX . "_bans WHERE authid = '".$data['steamid']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = 0");
 	else
-		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM " . DB_PREFIX . "_bans WHERE ip = '".$res->fields['ban_ip']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1';");
+		$alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM " . DB_PREFIX . "_bans WHERE ip = '".$res->fields['ban_ip']."' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = 1");
 	if($alrdybnd->fields['count']==0)
 		$data['reban_link'] = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Reban',"index.php?p=admin&c=bans".$pagelink."&rebanid=".$res->fields['ban_id']."&key=".$_SESSION['banlist_postkey']."#^0");
 	else

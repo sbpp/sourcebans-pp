@@ -168,19 +168,16 @@ if(isset($_POST['name']))
 										WHERE bid = ?", array($_POST['name'], $_POST['type'], $reason, $_POST['steam'], $_POST['banlength'], $_POST['ip'], $_POST['banlength'], (int)$_GET['id']));
 		
 		// Set all submissions to archived for that steamid
-		$GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_submissions SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($_POST['steam']));
-				
+		$GLOBALS['db']->Execute('UPDATE ' . DB_PREFIX . '_submissions SET archiv = 3, archivedby = ? WHERE SteamId = ?', array($userbank->GetAid(), $_POST['steam']));
+		
 		if(!empty($_POST['dname']))
 		{
-			$demoid = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos WHERE demid = '" . $_GET['id'] . "';");
-			@unlink(SB_DEMOS."/".$demoid['filename']);
-			$edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_demos
+			$demoid = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos WHERE demid = ?", array($_GET['id']));
+			@unlink(SB_DEMOS . '/' . $demoid['filename']);
+			$edit = $GLOBALS['db']->Execute('REPLACE INTO ' . DB_PREFIX . "_demos
 											(demid, demtype, filename, origname)
-											VALUES
-											(?,
-											'b',
-											?,
-											?)", array((int)$_GET['id'], $_POST['did'], $_POST['dname']));
+											VALUES (?, 'b', ?, ?)",
+											array((int)$_GET['id'], $_POST['did'], $_POST['dname']));
 			$res['dname'] = RemoveCode($_POST['dname']);
 		}
 		

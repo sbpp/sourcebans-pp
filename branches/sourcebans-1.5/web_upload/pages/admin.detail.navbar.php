@@ -45,7 +45,7 @@ foreach($var AS $v)
 }
 
 if($_GET['p'] == "account")
-	$theme->assign('pane_image','<img src="themes/' . SB_THEME . '/images/admin/your_account.png"> </div>') ;
+	$theme->assign('pane_image','<img src="themes/' . SB_THEME . '/images/admin/account.png"> </div>') ;
 else 
 	$theme->assign('pane_image', '<img src="themes/' . SB_THEME . '/images/admin/'.  $_GET['c'] . '.png"> </div>');
 	

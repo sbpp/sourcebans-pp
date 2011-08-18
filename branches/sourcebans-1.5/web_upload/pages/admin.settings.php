@@ -34,7 +34,8 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 	$where = "";
 	if(isset($_GET['advSearch']))
 	{
-		$value = $_GET['advSearch'];
+		// Escape the value, but strip the leading and trailing quote
+		$value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
 		$type = $_GET['advType'];
 		switch($type)
 		{

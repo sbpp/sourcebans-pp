@@ -79,7 +79,7 @@ class CUpdater
       'INSERT INTO ' . DB_PREFIX . '_settings (setting, value)
        VALUES ("config.version", ?)
        ON DUPLICATE KEY UPDATE value = VALUES(value)',
-       array($version)
+      array($version)
     );
     
     return !empty($ret);

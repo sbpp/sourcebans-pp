@@ -67,7 +67,7 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 		// Edit the web group
 		$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
 										gid = ?
-										WHERE aid = ?;", array($_POST['wg'], $_GET['id']));
+										WHERE aid = ?", array($_POST['wg'], $_GET['id']));
 	}
 	
 	if(isset($_POST['sg']) && $_POST['sg'] != "-2") {
@@ -75,7 +75,7 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 		$group = "";
 		if($_POST['sg'] != -1)
 		{
-			$grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = ?;", array($_POST['sg']));
+			$grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = ?", array($_POST['sg']));
 			if($grps)
 				$group = $grps['name'];
 		}
@@ -84,12 +84,12 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 										srv_group = ?
 										WHERE aid = ?", array($group, $_GET['id']));
 		
-		$srv = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = ?;", array($_GET['id']));
+		$srv = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = ?", array($_GET['id']));
 		foreach($srv AS $s)
 		{
 			$edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins_servers_groups SET
 										group_id = ?
-										WHERE admin_id = ?;", array($_POST['sg'], $_GET['id']));
+										WHERE admin_id = ?", array($_POST['sg'], $_GET['id']));
 			
 		}
 	}

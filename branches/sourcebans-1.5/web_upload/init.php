@@ -319,6 +319,17 @@ $theme->use_sub_dirs    = false;
 $theme->assign('SB_REV',     defined('SB_SVN') ? ' Rev: ' . GetSVNRev() : '');
 $theme->assign('SB_VERSION', SB_VERSION);
 $theme->assign('SB_QUOTE',   Quote());
+$theme->assign('enable_protest',      $config['config.enableprotest']);
+$theme->assign('enable_submit',       $config['config.enablesubmit']);
+$theme->assign('is_admin',            $userbank->is_admin());
+$theme->assign('logged_in',           $userbank->is_logged_in());
+$theme->assign('permission_admins',   $userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_ADMINS|ADMIN_ADD_ADMINS|ADMIN_EDIT_ADMINS|ADMIN_DELETE_ADMINS));
+$theme->assign('permission_bans',     $userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_ALL_BANS|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS));
+$theme->assign('permission_groups',   $userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_GROUPS|ADMIN_ADD_GROUP|ADMIN_EDIT_GROUPS|ADMIN_DELETE_GROUPS));
+$theme->assign('permission_mods',     $userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_MODS|ADMIN_ADD_MODS|ADMIN_EDIT_MODS|ADMIN_DELETE_MODS));
+$theme->assign('permission_servers',  $userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_SERVERS|ADMIN_ADD_SERVER|ADMIN_EDIT_SERVERS|ADMIN_DELETE_SERVERS));
+$theme->assign('permission_settings', $userbank->HasAccess(ADMIN_OWNER|ADMIN_WEB_SETTINGS));
+
 
 if((isset($_GET['debug']) && $_GET['debug'] == 1) || defined('DEVELOPER_MODE'))
 {

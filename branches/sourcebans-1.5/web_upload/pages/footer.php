@@ -12,9 +12,6 @@
 if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();} 
 
 global $theme;
-$theme->assign('SB_REV',     defined('SB_SVN')?" Rev: ".GetSVNRev():'');
-$theme->assign('SB_VERSION', SB_VERSION);
-$theme->assign('SB_QUOTE',   CreateQuote());
 $theme->display('page_footer.tpl');
 
 if(isset($_GET['p']))
@@ -25,7 +22,7 @@ if(isset($_GET['p']) && $_GET['p'] != "login")
   $_SESSION['q'] = $_SERVER['QUERY_STRING'];
 
 
-if(defined('DEVELOPER_MODE'))
+/*if(defined('DEVELOPER_MODE'))
 {
   global $start;
   $time = microtime();
@@ -43,7 +40,7 @@ if(defined('DEVELOPER_MODE'))
    print_r($_SESSION); echo'</pre> ';
    echo '</pre><h3>Cookie Data</h3><pre>'; 
    print_r($_COOKIE); echo'</pre> ';
-}
+}*/
 ?>
     </div>
     <script type="text/javascript">

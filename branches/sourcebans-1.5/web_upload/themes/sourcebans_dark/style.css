@@ -362,6 +362,7 @@ img.tips { vertical-align: bottom; }
 
 /** ================ Navigation ================ **/
 #nav {
+  clear: left;
   float: left;
   width: 580px;
   font-size: 10px;
