@@ -15,7 +15,11 @@ INSERT INTO {prefix}_mods (mid, name, icon, modfolder) VALUES
 (14, 'Zombie Panic', 'zps.gif', 'zps'),
 (15, "Garry's Mod", 'gmod.png', 'garrysmod'),
 (16, "Left 4 Dead", 'l4d.png', 'left4dead'),
-(17, "Left 4 Dead 2", 'l4d2.png', 'left4dead2');
+(17, "Left 4 Dead 2", 'l4d2.png', 'left4dead2'),
+(18, "CSPromod", 'cspromod.png', 'cspromod'),
+(19, "Alien Swarm", 'alienswarm.png', 'alienswarm'),
+(20, "E.Y.E: Divine Cybermancy", 'eye.png', 'eye'),
+(21, "Nuclear Dawn", 'nucleardawn.png', 'nucleardawn');
 
 UPDATE {prefix}_mods SET mid = '0' WHERE name = 'Web';
 
@@ -45,7 +49,7 @@ INSERT INTO {prefix}_settings (setting, value) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '351');
+('config.version', '352');
 
 INSERT INTO {prefix}_admins (user, authid, password, gid, email, validate, extraflags, immunity) VALUES
 ('CONSOLE', 'STEAM_ID_SERVER', '', '0', '', '', '0', 0);

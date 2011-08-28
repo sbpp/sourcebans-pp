@@ -384,9 +384,12 @@ CREATE TABLE {prefix}_submissions (
 --
 
 INSERT INTO {prefix}_mods (name, folder, icon) VALUES
+('Alien Swarm', 'alienswarm', 'alienswarm.png'),
 ('Counter-Strike: Source', 'cstrike', 'csource.png'),
+('CSPromod', 'cspromod', 'cspromod.png'),
 ('Day of Defeat: Source', 'dod', 'dods.png'),
 ('Dystopia', 'dystopia_v1', 'dys.gif'),
+('E.Y.E: Divine Cybermancy', 'eye', 'eye.png'),
 ('Fortress Forever', 'FortressForever', 'fortressforever.gif'),
 ('Garry''s Mod', 'garrysmod', 'gmod.png'),
 ('Half-Life 2 Capture the Flag', 'hl2ctf', 'hl2ctf.png'),
@@ -395,6 +398,7 @@ INSERT INTO {prefix}_mods (name, folder, icon) VALUES
 ('Insurgency', 'insurgency', 'ins.gif'),
 ('Left 4 Dead', 'left4dead', 'l4d.png'),
 ('Left 4 Dead 2', 'left4dead2', 'l4d2.png'),
+('Nuclear Dawn', 'nucleardawn', 'nucleardawn.png'),
 ('Perfect Dark: Source', 'pdark', 'pdark.gif'),
 ('Pirates Vikings and Knights II', 'pvkii', 'pvkii.gif'),
 ('SourceForts', 'sourceforts', 'sourceforts.gif'),

@@ -25,9 +25,9 @@ foreach($bans['list'] as $id => $ban)
 ?>
     <item>
       <title><?php echo $title; ?></title>
-      <link>http://<?php echo $_SERVER['HTTP_HOST'] . Util::buildUrl('banlist.php?search=' . $id . '&amp;type=banid'); ?></link>
+      <link>http://<?php echo $_SERVER['HTTP_HOST'] . Util::buildUrl(array('_' => 'banlist.php', 'search' => $id, 'type' => 'id')); ?></link>
       <description><?php echo $ban['reason']; ?></description>
-      <guid>http://<?php echo $_SERVER['HTTP_HOST'] . Util::buildUrl('banlist.php?search=' . $id . '&amp;type=banid'); ?></guid>
+      <guid>http://<?php echo $_SERVER['HTTP_HOST'] . Util::buildUrl(array('_' => 'banlist.php', 'search' => $id, 'type' => 'id')); ?></guid>
     </item>
 <?php
 }
