@@ -903,8 +903,17 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		{
 			if(is_taken("admins", "authid", $a_steam))
 			{
+				$admins = $userbank->GetAllAdmins();
+				foreach($admins as $admin)
+				{
+					if($admin['authid'] == $a_steam)
+					{
+						$name = $admin['user'];
+						break;
+					}
+				}
 				$error++;
-				$objResponse->addAssign("steam.msg", "innerHTML", "An admin with this Steam ID already exists");
+				$objResponse->addAssign("steam.msg", "innerHTML", "Admin ".htmlspecialchars(addslashes($name))." already uses this Steam ID.");
 				$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 			}
 			else
@@ -926,8 +935,17 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		// Is an other admin already registred with that email address?
 		if(is_taken("admins", "email", $a_email))
 		{
+			$admins = $userbank->GetAllAdmins();
+			foreach($admins as $admin)
+			{
+				if($admin['email'] == $a_email)
+				{
+					$name = $admin['user'];
+					break;
+				}
+			}
 			$error++;
-			$objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used.");
+			$objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used by ".htmlspecialchars(addslashes($name)).".");
 			$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
 		}
 		else

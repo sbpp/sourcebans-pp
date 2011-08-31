@@ -122,8 +122,17 @@ if(isset($_POST['adminname']))
 			// Is an other admin already registred with that steam id?
 			if($a_steam != $userbank->GetProperty('authid', $_GET['id']) && is_taken("admins", "authid", $a_steam))
 			{
+				$admins = $userbank->GetAllAdmins();
+				foreach($admins as $admin)
+				{
+					if($admin['authid'] == $a_steam)
+					{
+						$name = $admin['user'];
+						break;
+					}
+				}
 				$error++;
-				$errorScript .= "$('steam.msg').innerHTML = 'An admin with this Steam ID already exists.';";
+				$errorScript .= "$('steam.msg').innerHTML = 'Admin ".htmlspecialchars(addslashes($name))." already uses this Steam ID.';";
 				$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 			}
 		}
@@ -140,8 +149,17 @@ if(isset($_POST['adminname']))
 		// Is an other admin already registred with that email address?
 		if($a_email != $userbank->GetProperty('email', $_GET['id']) && is_taken("admins", "email", $a_email))
 		{
+			$admins = $userbank->GetAllAdmins();
+			foreach($admins as $admin)
+			{
+				if($admin['email'] == $a_email)
+				{
+					$name = $admin['user'];
+					break;
+				}
+			}
 			$error++;
-			$errorScript .= "$('email.msg').innerHTML = 'This email address is already being used.';";
+			$errorScript .= "$('email.msg').innerHTML = 'This email address is already being used by ".htmlspecialchars(addslashes($name)).".';";
 			$errorScript .= "$('email.msg').setStyle('display', 'block');";
 		}
 		/*else if(!validate_email($a_email))
