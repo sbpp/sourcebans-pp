@@ -1360,7 +1360,9 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 	decl String:banReason[256];
 	while(SQL_MoreRows(hndl))
 	{
-		SQL_FetchRow(hndl);
+		// Oh noes! What happened?!
+		if(!SQL_FetchRow(hndl))
+			continue;
 		
 		// if we get to here then there are rows in the queue pending processing
 		SQL_FetchString(hndl, 0, auth, sizeof(auth));
@@ -2156,7 +2158,7 @@ stock CheckLoadAdmins()
 {
 	for(new i = 1; i <= MaxClients; i++)
 	{
-		if(IsClientInGame(i))
+		if(IsClientInGame(i) && IsClientAuthorized(i))
 		{
 			RunAdminCacheChecks(i);
 			NotifyPostAdminCheck(i);
