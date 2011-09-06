@@ -14,11 +14,12 @@ public SharedPlugin:__pl_sourcebans =
 #endif
 };
 
-
+#if !defined REQUIRE_PLUGIN
 public __pl_sourcebans_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
 }
+#endif
 
 
 /*********************************************************
