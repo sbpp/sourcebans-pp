@@ -55,6 +55,6 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 INSERT INTO `{prefix}_admins` (
 `aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`)
 VALUES (
-NULL , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', '', '0', 0);
+NULL , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);
 
 UPDATE `{prefix}_admins` SET `aid` = '0' WHERE `authid` = 'STEAM_ID_SERVER';
