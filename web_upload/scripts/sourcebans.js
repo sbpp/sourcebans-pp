@@ -129,6 +129,14 @@ function SwapPane(id)
 
 function InitAccordion(opener, element, container, num)
 {
+	if (document.readyState != "complete")
+	{
+		window.addEventListener("load", function () {
+			InitAccordion(opener, element, container, num);
+		});
+		return;
+	}
+
 	if(num == null)
 		num = -1;
 	var ExtendedAccordion = Accordion.extend({

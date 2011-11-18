@@ -3,11 +3,11 @@ SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 CREATE TABLE IF NOT EXISTS `{prefix}_admins` (
   `aid` int(6) NOT NULL auto_increment,
   `user` varchar(64) NOT NULL,
-  `authid` varchar(64)NOT NULL default '',
+  `authid` varchar(64) NOT NULL default '',
   `password` varchar(128) NOT NULL,
   `gid` int(6) NOT NULL,
   `email` varchar(128) NOT NULL,
-  `validate` varchar(128) NOT NULL,
+  `validate` varchar(128) NULL default NULL,
   `extraflags` int(10) NOT NULL,
   `immunity` int(10) NOT NULL default '0',
   `srv_group` varchar(128) default NULL,
