@@ -8,6 +8,22 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(18/11/11): Version 1.4.9
+-----------------------
+01. * Added mod support for Alien Swarm, CSPromod, E.Y.E and Nuclear Dawn
+02. + Added admin name to dublicate admindetails error message
+03. + Permission to permaban now follows sm_unban permission, even when sm_unban is overridden. (Thanks psychonic)
+04. ! Fixed problem with lost password page (Thanks to Qabandi)
+05. ! Fixed SQL injection exploit (Thanks to endreu)
+06. ! Fixed status regex to handle the new formatted "status" command output.
+07. ! Fixed some log spaming bugs in the plugin (SQL_FetchRow)
+08. ! Fixed playername ending in a backslash causing javascript error on unban/delete
+09. ! Fixed searching for a name containing a questionmark in the quick search causes sql error
+10. ! Fixed not checking for dublicates when changing the server ip/port
+11. ! Fixed the accordion widget to fail on init on various pages randomly. (Thanks Nephyrin)
+12. ! Fixed total bans count isn't right
+13. ? Updated IpToCountry.csv
+
 (11/03/11): Version 1.4.8
 -----------------------
 01. * Added option to hide player IP's from public on banlist

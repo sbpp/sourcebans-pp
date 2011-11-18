@@ -122,15 +122,15 @@ function LostPassword($email)
 		$objResponse->addScript("$('msg-red').setStyle('display', 'none');");
 	}
 
-	$validation = md5(time());
+	$validation = md5(generate_salt(20).generate_salt(20)).md5(generate_salt(20).generate_salt(20));
 	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `validate` = ? WHERE `email` = ?", array($validation, $email));
 	$message = "";
 	$message .= "Hello " . $q['user'] . "\n";
-	$message .= "You have requested to have your password reset for your SourceBans account.\n
-				 To complete this process, please click the following link.\n
-				 NOTE: If you didnt request this reset, then simply ignore this email.\n\n
+	$message .= "You have requested to have your password reset for your SourceBans account.\n";
+	$message .= "To complete this process, please click the following link.\n";
+	$message .= "NOTE: If you didnt request this reset, then simply ignore this email.\n\n";
 
-				 http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". RemoveCode($email) . "&validation=" . $validation;
+	$message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". RemoveCode($email) . "&validation=" . $validation;
 
 	$headers = 'From: lostpwd@' . $_SERVER['HTTP_HOST'] . "\n" .
     'X-Mailer: PHP/' . phpversion();
