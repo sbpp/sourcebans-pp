@@ -433,7 +433,7 @@ while (!$res->EOF)
 	$data['reason'] = stripslashes($res->fields['ban_reason']);
 	$data['ban_length'] = $res->fields['ban_length'] == 0 ? 'Permanent' : SecondsToString(intval($res->fields['ban_length']));
 
-	if($res->fields['row_type'] == 'D' || $res->fields['row_type'] == 'U' || ($res->fields['ban_length'] && $res->fields['ban_ends'] < time()))
+	if($res->fields['row_type'] == 'D' || $res->fields['row_type'] == 'U' || $res->fields['row_type'] == 'E' || ($res->fields['ban_length'] && $res->fields['ban_ends'] < time()))
 	{
 		$data['unbanned'] = true;
 		$data['class'] = "listtable_1_unbanned";

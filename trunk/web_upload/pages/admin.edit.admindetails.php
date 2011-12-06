@@ -272,10 +272,10 @@ if(isset($_POST['adminname']))
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-			$allservers = "";
+			$allservers = array();
 			foreach($serveraccessq as $access) {
-				if(!strstr($allservers, $access['sid'].",")) {
-					$allservers .= $access['sid'].",";
+				if(!in_array($access['sid'], $allservers)) {
+					$allservers[] = $access['sid'];
 				}
 			}
 			$rehashing = true;
@@ -286,7 +286,7 @@ if(isset($_POST['adminname']))
 		if($ownpwchanged)
 			echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
 		else if(isset($rehashing))
-			echo '<script>ShowRehashBox("'.$allservers.'", "Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+			echo '<script>ShowRehashBox("'.implode(",", $allservers).'", "Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 		else
 			echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	}
