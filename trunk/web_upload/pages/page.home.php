@@ -82,7 +82,7 @@ while (!$res->EOF)
 	$info['link_url'] = "window.location = '" . $info['search_link'] . "';";
 	$info['short_name'] = trunc($info['name'], 25, false);
 	
-	if($res->fields[14] == 'D' || $res->fields[14] == 'U' || ($res->fields[6] && $res->fields[5] < time()))
+	if($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time()))
 	{
 		$info['unbanned'] = true;
 		
