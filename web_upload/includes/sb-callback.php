@@ -340,10 +340,10 @@ function RemoveGroup($gid, $type)
 	{
 		// rehash the settings out of the database on all servers
 		$serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
-		$allservers = "";
+		$allservers = array();
 		foreach($serveraccessq as $access) {
-			if(!strstr($allservers, $access['sid'].",")) {
-				$allservers .= $access['sid'].",";
+			if(!in_array($access['sid'], $allservers)) {
+				$allservers[] = $access['sid'];
 			}
 		}
 		$rehashing = true;
@@ -353,7 +353,7 @@ function RemoveGroup($gid, $type)
 	if($query1)
 	{
 		if(isset($rehashing))
-			$objResponse->addScript("ShowRehashBox('".$allservers."', 'Group Deleted', 'The selected group has been deleted from the database', 'green', 'index.php?p=admin&c=groups', true);");
+			$objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Group Deleted', 'The selected group has been deleted from the database', 'green', 'index.php?p=admin&c=groups', true);");
 		else
 			$objResponse->addScript("ShowBox('Group Deleted', 'The selected group has been deleted from the database', 'green', 'index.php?p=admin&c=groups', true);");
 		$log = new CSystemLog("m", "Group Deleted", "Group (" . $gid . ") has been deleted");
@@ -571,10 +571,10 @@ function RemoveAdmin($aid)
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-			$allservers = "";
-			foreach($serveraccess as $access) {
-				if(!strstr($allservers, $access['sid'].",")) {
-					$allservers .= $access['sid'].",";
+			$allservers = array();
+			foreach($serveraccessq as $access) {
+				if(!in_array($access['sid'], $allservers)) {
+					$allservers[] = $access['sid'];
 				}
 			}
 			$rehashing = true;
@@ -589,7 +589,7 @@ function RemoveAdmin($aid)
 	if($delquery)
 	{
 		if(isset($rehashing))
-			$objResponse->addScript("ShowRehashBox('".$allservers."', 'Admin Deleted', 'The selected admin has been deleted from the database', 'green', 'index.php?p=admin&c=admins', true);");
+			$objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Admin Deleted', 'The selected admin has been deleted from the database', 'green', 'index.php?p=admin&c=admins', true);");
 		else
 			$objResponse->addScript("ShowBox('Admin Deleted', 'The selected admin has been deleted from the database', 'green', 'index.php?p=admin&c=admins', true);");
 		$log = new CSystemLog("m", "Admin Deleted", "Admin (" . $gid['user'] . ") has been deleted");
@@ -1219,13 +1219,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-			$allservers = "";
+			$allservers = array();
 			foreach($serveraccessq as $access) {
-				if(!strstr($allservers, $access['sid'].",")) {
-					$allservers .= $access['sid'].",";
+				if(!in_array($access['sid'], $allservers)) {
+					$allservers[] = $access['sid'];
 				}
 			}
-			$objResponse->addScript("ShowRehashBox('".$allservers."','Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
+			$objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."','Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 		} else
 			$objResponse->addScript("ShowBox('Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 		
@@ -1973,13 +1973,13 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-		$allservers = "";
+		$allservers = array();
 		foreach($serveraccessq as $access) {
-			if(!strstr($allservers, $access['sid'].",")) {
-				$allservers .= $access['sid'].",";
+			if(!in_array($access['sid'], $allservers)) {
+				$allservers[] = $access['sid'];
 			}
 		}
-		$objResponse->addScript("ShowRehashBox('".$allservers."', 'Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
+		$objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 	} else
 		$objResponse->addScript("ShowBox('Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
@@ -2036,13 +2036,13 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name)
 		{
 			// rehash the settings out of the database on all servers
 			$serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
-			$allservers = "";
+			$allservers = array();
 			foreach($serveraccessq as $access) {
-				if(!strstr($allservers, $access['sid'].",")) {
-					$allservers .= $access['sid'].",";
+				if(!in_array($access['sid'], $allservers)) {
+					$allservers[] = $access['sid'];
 				}
 			}
-			$objResponse->addScript("ShowRehashBox('".$allservers."', 'Group updated', 'The group has been updated successfully', 'green', 'index.php?p=admin&c=groups');TabToReload();");
+			$objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Group updated', 'The group has been updated successfully', 'green', 'index.php?p=admin&c=groups');TabToReload();");
 		} else
 			$objResponse->addScript("ShowBox('Group updated', 'The group has been updated successfully', 'green', 'index.php?p=admin&c=groups');TabToReload();");
 		$log = new CSystemLog("m", "Group Updated", "Group ($name) has been updated");

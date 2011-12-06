@@ -93,31 +93,31 @@ if(isset($_POST['editadminserver']))
 												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
 												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
 		
-		$allservers = "";
+		$allservers = array();
 		foreach($serveraccessq as $access) {
-			if(!strstr($allservers, $access['sid'].",")) {
-				$allservers .= $access['sid'].",";
+			if(!in_array($access['sid'], $allservers)) {
+				$allservers[] = $access['sid'];
 			}
 		}
 		
 		// Add all servers, he's been admin on before
 		foreach($servers as $server)
 		{
-			if($server['server_id'] != "-1" && !strstr($allservers, (int)$server['server_id'].",")) {
-				$allservers .= (int)$server['server_id'].",";
+			if($server['server_id'] != "-1" && !in_array((int)$server['server_id'], $allservers)) {
+				$allservers[] = (int)$server['server_id'];
 			}
 			
 			// old server groups
 			$serv_in_grp = $GLOBALS['db']->GetAll('SELECT server_id FROM `'.DB_PREFIX.'_servers_groups` WHERE group_id = ?;', array((int)$server['srv_group_id']));
 			foreach($serv_in_grp as $srg)
 			{
-				if($srg['server_id'] != "-1" && !strstr($allservers, (int)$srg['server_id'].",")) {
-					$allservers .= (int)$srg['server_id'].",";
+				if($srg['server_id'] != "-1" && !in_array((int)$srg['server_id'], $allservers)) {
+					$allservers[] = (int)$srg['server_id'];
 				}
 			}
 		}
 		
-		echo '<script>ShowRehashBox("'.$allservers.'", "Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+		echo '<script>ShowRehashBox("'.implode(",", $allservers).'", "Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	} else
 		echo '<script>ShowBox("Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
 	
