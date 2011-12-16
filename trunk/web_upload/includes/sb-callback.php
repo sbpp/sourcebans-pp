@@ -2238,9 +2238,21 @@ function SelTheme($theme)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to execute SelTheme() function, but doesnt have access.");
 		return $objResponse;
 	}
-	if (!include (SB_THEMES . $theme . "/theme.conf.php"))
+	
+	$theme = rawurldecode($theme);
+	$theme = str_replace(array('../', '..\\', chr(0)), '', $theme);
+	
+	if(!file_exists(SB_THEMES . $theme . "/theme.conf.php"))
 	{
 		$objResponse->addAlert('Invalid theme selected.');
+		return $objResponse;
+	}
+	
+	include(SB_THEMES . $theme . "/theme.conf.php");
+	
+	if(!defined('theme_screenshot'))
+	{
+		$objResponse->addAlert('Bad theme selected.');
 		return $objResponse;
 	}
 
@@ -2264,9 +2276,21 @@ function ApplyTheme($theme)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change the theme to ".htmlspecialchars(addslashes($theme)).", but doesnt have access.");
 		return $objResponse;
 	}
-	if (!include (SB_THEMES . $theme . "/theme.conf.php"))
+	
+	$theme = rawurldecode($theme);
+	$theme = str_replace(array('../', '..\\', chr(0)), '', $theme);
+	
+	if(!file_exists(SB_THEMES . $theme . "/theme.conf.php"))
 	{
 		$objResponse->addAlert('Invalid theme selected.');
+		return $objResponse;
+	}
+	
+	include(SB_THEMES . $theme . "/theme.conf.php");
+	
+	if(!defined('theme_screenshot'))
+	{
+		$objResponse->addAlert('Bad theme selected.');
 		return $objResponse;
 	}
 
