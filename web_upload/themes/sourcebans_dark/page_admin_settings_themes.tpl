@@ -43,7 +43,7 @@ Click a theme below to see details about it.<br /><br />
 <div id="theme-list">
 	<ul>
 	{foreach from=$theme_list item=theme}
-		<li><a href="javascript:void(0);" onclick="javascript:xajax_SelTheme('{$theme.dir}');"><b>{$theme.name}</b></li>
+		<li><a href="javascript:void(0);" onclick="javascript:xajax_SelTheme('{$theme.dir}');"><b>{$theme.name}</b></a></li>
 	{/foreach}
 	</ul>
 </div>
