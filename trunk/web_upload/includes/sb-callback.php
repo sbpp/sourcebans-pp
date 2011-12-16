@@ -2241,8 +2241,9 @@ function SelTheme($theme)
 	
 	$theme = rawurldecode($theme);
 	$theme = str_replace(array('../', '..\\', chr(0)), '', $theme);
+	$theme = basename($theme);
 	
-	if(!file_exists(SB_THEMES . $theme . "/theme.conf.php"))
+	if($theme[0] == '.' || !in_array($theme, scandir(SB_THEMES)) || !is_dir(SB_THEMES . $theme) || !file_exists(SB_THEMES . $theme . "/theme.conf.php"))
 	{
 		$objResponse->addAlert('Invalid theme selected.');
 		return $objResponse;
@@ -2279,8 +2280,9 @@ function ApplyTheme($theme)
 	
 	$theme = rawurldecode($theme);
 	$theme = str_replace(array('../', '..\\', chr(0)), '', $theme);
+	$theme = basename($theme);
 	
-	if(!file_exists(SB_THEMES . $theme . "/theme.conf.php"))
+	if($theme[0] == '.' || !in_array($theme, scandir(SB_THEMES)) || !is_dir(SB_THEMES . $theme) || !file_exists(SB_THEMES . $theme . "/theme.conf.php"))
 	{
 		$objResponse->addAlert('Invalid theme selected.');
 		return $objResponse;
