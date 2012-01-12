@@ -2563,6 +2563,10 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 		$already[] = $ban["community_id"];
 	}
 	$doc = new DOMDocument();
+	// This could be changed to use the memberlistxml
+	// https://partner.steamgames.com/documentation/community_data
+	// http://steamcommunity.com/groups/<GroupName>/memberslistxml/?xml=1
+	// but we'd need to open every single profile of every member to get the name..
 	$raw = file_get_contents("http://steamcommunity.com/groups/".$grpurl."/members"); // get the members page
 	@$doc->loadHTML($raw); // load it into a handy object so we can maintain it
 	// the memberlist is paginated, so we need to check the number of pages
@@ -2578,7 +2582,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 	$pagenumbers[] = 1; // add at least one page for the loop. if the group doesn't have 50 members -> no paginating
 	foreach($pagelinks as $pagelink) {
 		$pagenumber = str_replace("?p=", "", $pagelink->childNodes->item(0)->nodeValue); // remove the get variable stuff so we only have the pagenumber
-		if($pagenumber!=">>") // don't want the "next" button ;)
+		if(strpos($pagenumber, ">") === false) // don't want the "next" button ;)
 			$pagenumbers[] = $pagenumber;
 	}
 	$members = array();
@@ -2626,7 +2630,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 				$GLOBALS['db']->Execute($pre,array(0,
 												   "",
 												   $steamid,
-												   $tag->childNodes->item(0)->nodeValue,
+												   utf8_decode($tag->childNodes->item(0)->nodeValue),
 												   0,
 												   "Steam Community Group Ban (".$grpurl.") ".$reason,
 												   $userbank->GetAid(),
@@ -2690,7 +2694,7 @@ function GetGroups($friendid)
 															var a = document.createElement("a");
 																a.href = "http://steamcommunity.com/groups/'.$node->groupURL.'";
 																a.setAttribute("target","_blank");
-																	var txt = document.createTextNode("'.$node->groupName.'");
+																	var txt = document.createTextNode("'.utf8_decode($node->groupName).'");
 																a.appendChild(txt);
 															td.appendChild(a);
 																var txt = document.createTextNode(" (");
@@ -2784,7 +2788,7 @@ function BanFriends($friendid, $name)
 			$GLOBALS['db']->Execute($pre,array(0,
 											   "",
 											   $steamid,
-											   $link->childNodes->item(0)->nodeValue,
+											   utf8_decode($link->childNodes->item(0)->nodeValue),
 											   0,
 											   "Steam Community Friend Ban (".htmlspecialchars($name).")",
 											   $userbank->GetAid(),
