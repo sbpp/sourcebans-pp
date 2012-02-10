@@ -424,7 +424,11 @@ public Action:CommandBan(client, args)
 	decl String:reason[128];
 	if(args >= 3)
 	{
-		GetCmdArg(3, reason, sizeof(reason));
+		for(new i=3;i<=args;i++)
+		{
+			GetCmdArg(i, buffer, sizeof(buffer));
+			StrCat(reason, sizeof(reason), buffer);
+		}
 	}
 	else
 	{
