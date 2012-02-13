@@ -421,13 +421,13 @@ public Action:CommandBan(client, args)
 	}
 	
 	// Get the reason
-	decl String:reason[128];
+	new String:reason[128];
 	if(args >= 3)
 	{
 		for(new i=3;i<=args;i++)
 		{
 			GetCmdArg(i, buffer, sizeof(buffer));
-			StrCat(reason, sizeof(reason), buffer);
+			Format(reason, sizeof(reason), "%s %s", reason, buffer);
 		}
 	}
 	else
