@@ -296,8 +296,8 @@ CREATE TABLE {prefix}_servers (
 --
 
 CREATE TABLE {prefix}_servers_srvgroups (
-  server_id smallint(5) NOT NULL,
-  group_id smallint(5) NOT NULL,
+  server_id smallint(5) unsigned NOT NULL,
+  group_id smallint(5) unsigned NOT NULL,
   PRIMARY KEY  (server_id,group_id)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
