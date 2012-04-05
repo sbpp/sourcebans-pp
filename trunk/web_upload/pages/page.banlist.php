@@ -563,6 +563,8 @@ while (!$res->EOF)
 				$cdata['comname'] = $commentres->fields['comname'];
 				$cdata['added'] = SBDate($dateformat, $commentres->fields['added']);
 				$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+				// Parse links and wrap them in a <a href=""></a> tag to be easily clickable
+				$cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
 
 				if(!empty($commentres->fields['edittime'])) {
 					$cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
@@ -679,6 +681,8 @@ if(isset($_GET["comment"])) {
 		$coment['comname'] = $cotherdata->fields['comname'];
 		$coment['added'] = SBDate($dateformat, $cotherdata->fields['added']);
 		$coment['commenttxt'] = str_replace("\n", "<br />", $cotherdata->fields['commenttxt']);
+		// Parse links and wrap them in a <a href=""></a> tag to be easily clickable
+		$coment['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $coment['commenttxt']);
 		if($cotherdata->fields['editname']!="") {
 			$coment['edittime'] = SBDate($dateformat, $cotherdata->fields['edittime']);
 			$coment['editname'] = $cotherdata->fields['editname'];
