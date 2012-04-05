@@ -88,14 +88,10 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 										`srv_group` = ?
 										WHERE aid = ?", array($group, $_GET['id']));
 		
-		$srv = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_admins_servers_groups WHERE admin_id = ?;", array($_GET['id']));
-		foreach($srv AS $s)
-		{
-			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins_servers_groups SET
-										`group_id` = ?
-										WHERE admin_id = ?;", array($_POST['sg'], $_GET['id']));
+	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins_servers_groups SET
+									`group_id` = ?
+									WHERE admin_id = ?;", array($_POST['sg'], $_GET['id']));
 			
-		}
 	}
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 	{

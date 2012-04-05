@@ -128,20 +128,20 @@ if(isset($_POST['address']))
 		
 		$enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
 		
-		// don't change rcon password if not changed
-		$rcon = "";
-		if($_POST['rcon'] != '+-#*_')
-			$rcon = "`rcon` = " . $GLOBALS['db']->qstr($_POST['rcon']) . ",";
-			
 		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET
 										`ip` = ?,
-										`port` = " . (int)$_POST['port'] . ",
-										" . $rcon . "
-										`modid` = " . (int)$_POST['mod'] . ",
-										`enabled` = " . $enabled . "
-										WHERE `sid` = '". (int)$_GET['id'] . "'", array($ip));
+										`port` = ?,
+										`modid` = ?,
+										`enabled` = ?
+										WHERE `sid` = ?", array($ip, (int)$_POST['port'], (int)$_POST['mod'], $enabled, (int)$_GET['id']));
 
-		
+	// don't change rcon password if not changed
+	if($_POST['rcon'] != '+-#*_')
+	{
+		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET
+										`rcon` = ?
+										WHERE `sid` = ?", array($_POST['rcon'], (int)$_GET['id']));
+	}
 										
 		echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";
 	}
