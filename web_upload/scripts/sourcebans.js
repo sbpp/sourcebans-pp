@@ -1360,7 +1360,8 @@ function OpenMessageBox(sid, name, popup)
 {
 	if(popup==1) {
 		ShowBox('Send Message', '<b>Please type the message you want to send to <br>\''+name+'\'.</b><br>You need to have basechat.smx enabled as we use<br><i>&lt;sm_psay&gt;</i>.<br><textarea rows="3" cols="40" name="ingamemsg" id="ingamemsg" style="overflow:auto;"></textarea><br><div id="ingamemsg.msg" class="badentry"></div>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="OpenMessageBox(\''+sid+'\', \''+name+'\', \'0\');" name="ingmsg" class="btn ok" onmouseover="ButtonOver(\'ingmsg\')" onmouseout="ButtonOver(\'ingmsg\')" id="ingmsg" value="Send Message" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').setHTML('<input type="button" name="ingmsg" class="btn ok" onmouseover="ButtonOver(\'ingmsg\')" onmouseout="ButtonOver(\'ingmsg\')" id="ingmsg" value="Send Message" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('ingmsg').addEvent('click', function(){OpenMessageBox(sid, name, 0);});
 	} else if(popup==0) {
 		message = $('ingamemsg').value;
 		if(message == "") {
@@ -1381,7 +1382,8 @@ function KickPlayerConfirm(sid, name, conf)
 {
 	if(conf==0)	{
 		ShowBox('Kick Player', '<b>Are you sure you want to kick player  <br>\''+name+'\'?</b>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="KickPlayerConfirm(\''+sid+'\', \''+name+'\', \'1\');" name="kbutton" class="btn ok" onmouseover="ButtonOver(\'kbutton\')" onmouseout="ButtonOver(\'kbutton\')" id="kbutton" value="Yes" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="No" />');
+		$('dialog-control').setHTML('<input type="button" name="kbutton" class="btn ok" onmouseover="ButtonOver(\'kbutton\')" onmouseout="ButtonOver(\'kbutton\')" id="kbutton" value="Yes" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="No" />');
+		$('kbutton').addEvent('click', function(){KickPlayerConfirm(sid, name, 1);});
 	} else if(conf==1) {
 		$('dialog-control').setStyle('display', 'none');
 		xajax_KickPlayer(sid, name);
