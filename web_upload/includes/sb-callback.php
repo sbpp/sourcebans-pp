@@ -1321,7 +1321,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 														// Name TD
 														var td = tr.insertCell("-1");
 															td.className = "listtable_1";
-															var txt = document.createTextNode("'.$player["name"].'");
+															var txt = document.createTextNode("'.str_replace('"', '\"', $player["name"]).'");
 															td.appendChild(txt);
 														// Score TD
 														var td = tr.insertCell("-1");
@@ -1336,11 +1336,11 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 														');
 							if($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
 								$objResponse->addScript('AddContextMenu("#player_s'.$sid.'p'.$player["index"].'", "contextmenu", true, "Player Commands", [
-														{name: "Kick", callback: function(){KickPlayerConfirm("'.$sid.'", "'.$player["name"].'", 0);}},
-														{name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.$player["name"].'"}},
+														{name: "Kick", callback: function(){KickPlayerConfirm('.$sid.', "'.str_replace('"', '\"', $player["name"]).'", 0);}},
+														{name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["name"]).'"}},
 														{separator: true},
-														'.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile("'.$sid.'", "'.$player["name"].'")}},':'').'
-														{name: "Send Message", callback: function(){OpenMessageBox("'.$sid.'", "'.$player["name"].'", "1")}}
+														'.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile('.$sid.', "'.str_replace('"', '\"', $player["name"]).'")}},':'').'
+														{name: "Send Message", callback: function(){OpenMessageBox('.$sid.', "'.str_replace('"', '\"', $player["name"]).'", 1)}}
 														]);');
 							}
 							$playercount++;
@@ -1515,7 +1515,7 @@ function KickPlayer($sid, $name)
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". No RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
@@ -1523,7 +1523,7 @@ function KickPlayer($sid, $name)
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". Wrong RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	// search for the playername
@@ -1555,12 +1555,12 @@ function KickPlayer($sid, $name)
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
 			$kick = $r->sendCommand("kickid ".$steam." \"You have been kicked by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 			$log = new CSystemLog("m", "Player kicked", $username . " kicked player '".htmlspecialchars($name)."' (".$steam.") from ".$data['ip'].":".$data['port'].".", true, true);
-			$objResponse->addScript("ShowBox('Player kicked', 'Player \'".htmlspecialchars($name)."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
+			$objResponse->addScript("ShowBox('Player kicked', 'Player \'".addslashes(htmlspecialchars($name))."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
 		} else {
-			$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". Player is immune!', 'red', '', true);");
+			$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player is immune!', 'red', '', true);");
 		}
 	} else {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".htmlspecialchars($name).". Player not on the server anymore!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
 	}
 	return $objResponse;
 }
@@ -1614,13 +1614,13 @@ function PasteBan($sid, $name, $type=0)
 		$name = $matches[2][$index];
 		$ip = explode(":", $matches[8][$index]);
 		$ip = $ip[0];
-		$objResponse->addScript("$('nickname').value = '" . htmlspecialchars($name) . "'");
+		$objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
 		if($type==1)
 			$objResponse->addScript("$('type').options[1].selected = true");
 		$objResponse->addScript("$('steam').value = '" . $steam . "'");
 		$objResponse->addScript("$('ip').value = '" . $ip . "'");
 	} else {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".htmlspecialchars($name).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		return $objResponse;
 	}
@@ -2813,16 +2813,16 @@ function ViewCommunityProfile($sid, $name)
 	if(!$userbank->is_admin())
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
-		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to view profile of '".RemoveCode($name)."', but doesnt have access.");
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to view profile of '".htmlspecialchars($name)."', but doesnt have access.");
 		return $objResponse;
 	}
 	$sid = (int)$sid;
-
+  
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".RemoveCode($name).". No RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
@@ -2830,7 +2830,7 @@ function ViewCommunityProfile($sid, $name)
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".RemoveCode($name).". Wrong RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	// search for the playername
@@ -2849,10 +2849,10 @@ function ViewCommunityProfile($sid, $name)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".RemoveCode($name).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".RemoveCode($name)."\'s Profile\" target=\"_blank\">here</a>.</b>';");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
 		$objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/', 'Community_".$steam."');");
 	} else {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".RemoveCode($name).". Player not on the server anymore!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
 	}
 	return $objResponse;
 }
@@ -2864,7 +2864,7 @@ function SendMessage($sid, $name, $message)
 	if(!$userbank->is_admin())
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
-		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send ingame message to '".RemoveCode($name)."' (\"".RemoveCode($message)."\"), but doesnt have access.");
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send ingame message to '".addslashes(htmlspecialchars($name))."' (\"".RemoveCode($message)."\"), but doesnt have access.");
 		return $objResponse;
 	}
 	$sid = (int)$sid;
@@ -2872,18 +2872,18 @@ function SendMessage($sid, $name, $message)
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
 	if(empty($data['rcon'])) {
-		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".RemoveCode($name).". No RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 	if(!$r->Auth())
 	{
 		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".RemoveCode($name).". Wrong RCON password!', 'red', '', true);");
+		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
 	$ret = $r->sendCommand('sm_psay "'.$name.'" "'.addslashes($message).'"');
-	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".RemoveCode($name)."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
+	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
 	return $objResponse;
 }
 ?>
