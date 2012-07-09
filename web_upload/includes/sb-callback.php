@@ -1167,7 +1167,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	if($a_sg == 'n')
 	{
 		$add_servergroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_srvgroups(immunity, flags, name, groups_immune)
-					VALUES (?,?,?,?)", array($immunity, $srv_mask, $a_servername, "none"));
+					VALUES (?,?,?,?)", array($immunity, $srv_mask, $a_servername, " "));
 		
 		$server_admin_group = $a_servername;
 		$server_admin_group_int = (int)$GLOBALS['db']->Insert_ID();
@@ -2883,6 +2883,7 @@ function SendMessage($sid, $name, $message)
 		return $objResponse;
 	}
 	$ret = $r->sendCommand('sm_psay "'.$name.'" "'.addslashes($message).'"');
+  new CSystemLog("m", "Message sent to player", "The following message was sent to " . addslashes(htmlspecialchars($name)) . " on server " . $data['ip'] . ":" . $data['port'] . ": " . RemoveCode($message));
 	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
 	return $objResponse;
 }
