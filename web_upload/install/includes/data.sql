@@ -19,7 +19,8 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`) VALUES
 (18, "CSPromod", 'cspromod.png', 'cspromod'),
 (19, "Alien Swarm", 'alienswarm.png', 'alienswarm'),
 (20, "E.Y.E: Divine Cybermancy", 'eye.png', 'eye'),
-(21, "Nuclear Dawn", 'nucleardawn.png', 'nucleardawn');
+(21, "Nuclear Dawn", 'nucleardawn.png', 'nucleardawn'),
+(22, "Counter-Strike: Global Offensive", 'csgo.png', 'csgo');
 
 UPDATE `{prefix}_mods` SET `mid` = '0' WHERE `name` = 'Web';
 
@@ -49,7 +50,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '353');
+('config.version', '354');
 
 
 INSERT INTO `{prefix}_admins` (
