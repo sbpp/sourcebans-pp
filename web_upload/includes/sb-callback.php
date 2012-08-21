@@ -2077,7 +2077,7 @@ function SendRcon($sid, $command, $output)
 		return $objResponse;
 	}
     
-    if(strstr($command, "rcon_password") != false)
+    if(stripos($command, "rcon_password") !== false)
 	{
         $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: You have to use this console. Don't try to cheat the rcon password!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
