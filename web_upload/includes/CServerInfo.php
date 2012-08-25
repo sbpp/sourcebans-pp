@@ -48,6 +48,8 @@ class CServerInfo
   public function getInfo()
   {
     $socket = $this->_getSocket();
+    if($socket === false)
+      return array();
     $packet = $this->_request($socket, self::A2S_INFO);
     if(empty($packet))
       return array();
@@ -100,7 +102,7 @@ class CServerInfo
     else
     {
       $_SESSION['getInfo.' . $this->address . '.' . $this->port] = array();
-	  return $_SESSION['getInfo.' . $this->address . '.' . $this->port];
+      return $_SESSION['getInfo.' . $this->address . '.' . $this->port];
     }
     $_SESSION['getInfo.' . $this->address . '.' . $this->port] = $ret;
     return $ret;        
@@ -109,6 +111,8 @@ class CServerInfo
   public function getPlayers()
   {
     $socket = $this->_getSocket();
+    if($socket === false)
+      return array();
     $packet = $this->_requestWithChallenge($socket, self::A2S_PLAYER, self::A2S_PLAYER_RESPONSE);
     if(empty($packet))
       return array();
@@ -139,6 +143,8 @@ class CServerInfo
   public function getRules()
   {
     $socket = $this->_getSocket();
+    if($socket === false)
+      return array();
     $packet = $this->_requestWithChallenge($socket, self::A2S_RULES, self::A2S_RULES_RESPONSE);
     if(empty($packet))
       return array();
@@ -184,6 +190,8 @@ class CServerInfo
       else
       {
         $this->socket    = @fsockopen("udp://".$this->address, $this->port, $errno, $errstr, 2);
+        if($this->socket === false)
+          return false;
         stream_set_timeout($this->socket, 1);
       }
     }
