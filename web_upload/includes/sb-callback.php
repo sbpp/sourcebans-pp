@@ -56,14 +56,14 @@ if(isset($_COOKIE['aid'], $_COOKIE['password']) && $userbank->CheckLogin($_COOKI
 	$xajax->registerFunction("BanFriends");
 	$xajax->registerFunction("SendMessage");
 	$xajax->registerFunction("ViewCommunityProfile");
-    $xajax->registerFunction("SetupBan");
-    $xajax->registerFunction("CheckPassword");
-    $xajax->registerFunction("ChangePassword");
-    $xajax->registerFunction("CheckSrvPassword");
-    $xajax->registerFunction("ChangeSrvPassword");
-    $xajax->registerFunction("ChangeEmail");
-    $xajax->registerFunction("CheckVersion");
-    $xajax->registerFunction("SendMail");
+	$xajax->registerFunction("SetupBan");
+	$xajax->registerFunction("CheckPassword");
+	$xajax->registerFunction("ChangePassword");
+	$xajax->registerFunction("CheckSrvPassword");
+	$xajax->registerFunction("ChangeSrvPassword");
+	$xajax->registerFunction("ChangeEmail");
+	$xajax->registerFunction("CheckVersion");
+	$xajax->registerFunction("SendMail");
 }
 
 $xajax->registerFunction("Plogin");
@@ -87,7 +87,7 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 		$aid = $q[0];
 	if($q && strlen($q[1]) == 0 && count($q) != 0)
 	{
-		$objResponse->addScript('ShowBox("Information", "Your account has been imported from the AMXBANS system. Before you can login, your password must be reset by the main admin.", "blue", "", true);');
+		$objResponse->addScript('ShowBox("Information", "You can\'t login. No password set.", "blue", "", true);');
 		return $objResponse;
 	} else if(!$q || !$userbank->CheckLogin($userbank->encrypt_password($password), $aid))
 	{
@@ -846,7 +846,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	$a_email = RemoveCode($a_email);
 	$a_servername = ($a_servername=="0" ? null : RemoveCode($a_servername));
 	$a_webname = RemoveCode($a_webname);
-
+	$mask = (int)$mask;
 
 	$error=0;
 	
@@ -858,7 +858,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		$objResponse->addScript("$('name.msg').setStyle('display', 'block');");
 	}
 	else{
-        if(strstr($a_name, "'"))
+		if(strstr($a_name, "'"))
 		{
 			$error++;
 			$objResponse->addAssign("name.msg", "innerHTML", "An admin name can not contain a \" ' \".");
@@ -866,17 +866,17 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		}
 		else
 		{
-            if(is_taken("admins", "user", $a_name))
-            {
-                $error++;
-                $objResponse->addAssign("name.msg", "innerHTML", "An admin with this name already exists");
-                $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
-            }
-            else
-            {
-                $objResponse->addAssign("name.msg", "innerHTML", "");
-                $objResponse->addScript("$('name.msg').setStyle('display', 'none');");
-            }
+			if(is_taken("admins", "user", $a_name))
+			{
+					$error++;
+					$objResponse->addAssign("name.msg", "innerHTML", "An admin with this name already exists");
+					$objResponse->addScript("$('name.msg').setStyle('display', 'block');");
+			}
+			else
+			{
+					$objResponse->addAssign("name.msg", "innerHTML", "");
+					$objResponse->addScript("$('name.msg').setStyle('display', 'none');");
+			}
 		}
 	}
 	// If they didnt type a steamid
@@ -927,9 +927,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	// No email
 	if(empty($a_email))
 	{
-		$error++;
-		$objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
-		$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+		// An E-Mail address is only required for users with web permissions.
+		if($mask != 0)
+		{
+			$error++;
+			$objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
+			$objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+		}
 	}
 	else{
 		// Is an other admin already registred with that email address?
@@ -970,9 +974,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	// no pass
 	if(empty($a_password))
 	{
-		$error++;
-		$objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
-		$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+		// A password is only required for users with web permissions.
+		if($mask != 0)
+		{
+			$error++;
+			$objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
+			$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+		}
 	}
 	// Password too short?
 	else if(strlen($a_password) < MIN_PASS_LENGTH)
@@ -1948,17 +1956,26 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
-		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit admin permissios, but doesnt have access.");
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit admin permissions, but doesnt have access.");
 		return $objResponse;
 	}
 
 	if(!$userbank->HasAccess(ADMIN_OWNER) && (int)$web_flags & ADMIN_OWNER )
 	{
 			$objResponse->redirect("index.php?p=login&m=no_access", 0);
-			$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to gain OWNER admin permissios, but doesnt have access.");
+			$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to gain OWNER admin permissions, but doesnt have access.");
 			return $objResponse;
 	}
 
+	// Users require a password and email to have web permissions
+	$password = $GLOBALS['userbank']->GetProperty('password', $aid);
+	$email = $GLOBALS['userbank']->GetProperty('email', $aid);
+	if($web_flags > 0 && (empty($password) || empty($email)))
+	{
+		$objResponse->addScript("ShowBox('Error', 'Admins have to have a password and email set in order to get web permissions.<br /><a href=\"index.php?p=admin&c=admins&o=editdetails&id=" . $aid . "\" title=\"Edit Admin Details\">Set the details</a> first and try again.', 'red', '');");
+		return $objResponse;
+	}
+	
 	// Update web stuff
 	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `extraflags` = $web_flags WHERE `aid` = $aid");
 

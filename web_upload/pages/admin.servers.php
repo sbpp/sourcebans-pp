@@ -21,7 +21,7 @@
 		
 			$servers = $GLOBALS['db']->GetAll("SELECT srv.ip ip, srv.port port, srv.sid sid, mo.icon icon, srv.enabled enabled FROM `" . DB_PREFIX . "_servers` AS srv
 											   LEFT JOIN `" . DB_PREFIX . "_mods` AS mo ON mo.mid = srv.modid
-											   ORDER BY modid");
+											   ORDER BY modid, sid");
 			$server_count = $GLOBALS['db']->GetRow("SELECT COUNT(sid) AS cnt FROM `" . DB_PREFIX . "_servers`") ;
 
 		

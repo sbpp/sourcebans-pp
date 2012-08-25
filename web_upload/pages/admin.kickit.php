@@ -38,7 +38,7 @@ function LoadServers($check, $type) {
 		return $objResponse;
 	}
 	$id = 0;
-	$servers = $GLOBALS['db']->Execute("SELECT sid, rcon FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
+	$servers = $GLOBALS['db']->Execute("SELECT sid, rcon FROM ".DB_PREFIX."_servers WHERE enabled = 1 ORDER BY modid, sid;");
 	while(!$servers->EOF) {
 		//search for player
 		if(!empty($servers->fields["rcon"])) {
@@ -140,7 +140,7 @@ function KickPlayer($check, $sid, $num, $type) {
 		return $objResponse;
 	}
 }
-$servers = $GLOBALS['db']->Execute("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
+$servers = $GLOBALS['db']->Execute("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE enabled = 1 ORDER BY modid, sid;");
 $theme->assign('total', $servers->RecordCount());
 $serverlinks = array();
 $num = 0;
