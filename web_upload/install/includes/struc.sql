@@ -112,8 +112,12 @@ CREATE TABLE IF NOT EXISTS `{prefix}_mods` (
   `name` varchar(128) NOT NULL,
   `icon` varchar(128) NOT NULL,
   `modfolder` varchar(64) NOT NULL,
+  `steam_universe` TINYINT NOT NULL DEFAULT '0',
   `enabled` TINYINT NOT NULL DEFAULT '1',
-  PRIMARY KEY  (`mid`)
+  PRIMARY KEY  (`mid`),
+  UNIQUE (`modfolder`),
+  UNIQUE (`name`),
+  INDEX (`steam_universe`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
