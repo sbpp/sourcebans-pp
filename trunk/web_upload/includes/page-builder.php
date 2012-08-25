@@ -14,6 +14,7 @@
  */
 
 $_GET['p'] = isset($_GET['p']) ? $_GET['p'] : 'default';
+$_GET['p'] = trim($_GET['p']);
 switch ($_GET['p'])
 {
 	case "login":
@@ -59,35 +60,33 @@ switch ($_GET['p'])
 		$page = TEMPLATES_PATH . "/page.home.php";
 		break;
 	default:
-		if($GLOBALS['config']['config.defaultpage'] == 0)
+		switch($GLOBALS['config']['config.defaultpage'])
 		{
-			RewritePageTitle("Dashboard");
-			$page = TEMPLATES_PATH . "/page.home.php";
-			break;
-		}
-		elseif($GLOBALS['config']['config.defaultpage'] == 1)
-		{
-			RewritePageTitle("Ban List");
-			$page = TEMPLATES_PATH . "/page.banlist.php";
-			break;
-		}
-		elseif($GLOBALS['config']['config.defaultpage'] == 2)
-		{
-			RewritePageTitle("Server Info");
-			$page = TEMPLATES_PATH . "/page.servers.php";
-			break;
-		}
-		elseif($GLOBALS['config']['config.defaultpage'] == 3)
-		{
-			RewritePageTitle("Submit a Ban");
-			$page = TEMPLATES_PATH . "/page.submit.php";
-			break;
-		}
-		elseif($GLOBALS['config']['config.defaultpage'] == 4)
-		{
-			RewritePageTitle("Protest a Ban");
-			$page = TEMPLATES_PATH . "/page.protest.php";
-			break;
+			case 1:
+				RewritePageTitle("Ban List");
+				$page = TEMPLATES_PATH . "/page.banlist.php";
+				$_GET['p'] = "banlist";
+				break;
+			case 2:
+				RewritePageTitle("Server Info");
+				$page = TEMPLATES_PATH . "/page.servers.php";
+				$_GET['p'] = "servers";
+				break;
+			case 3:
+				RewritePageTitle("Submit a Ban");
+				$page = TEMPLATES_PATH . "/page.submit.php";
+				$_GET['p'] = "submit";
+				break;
+			case 4:
+				RewritePageTitle("Protest a Ban");
+				$page = TEMPLATES_PATH . "/page.protest.php";
+				$_GET['p'] = "protest";
+				break;
+			default: //case 0:
+				RewritePageTitle("Dashboard");
+				$page = TEMPLATES_PATH . "/page.home.php";
+				$_GET['p'] = "home";
+				break;
 		}
 }
 
