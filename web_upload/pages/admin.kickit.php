@@ -74,7 +74,7 @@ function KickPlayer($check, $sid, $num, $type) {
 	//test if server is online
 	if($test = @fsockopen($sdata['ip'], $sdata['port'], $errno, $errstr, 2)) {
 		@fclose($test);
-		include(INCLUDES_PATH . "/CServerRcon.php");
+		require_once(INCLUDES_PATH . "/CServerRcon.php");
 		
 		$r = new CServerRcon($sdata['ip'], $sdata['port'], $sdata['rcon']);
 

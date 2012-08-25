@@ -984,7 +984,8 @@ function ProcessMod()
 	xajax_AddMod($('name').value,
 				 $('folder').value,
 				 icname,
-				 1);
+				 $('steam_universe').value,
+				 $('enabled').checked);
 }
 function ShowBox(title, msg, color, redir, noclose)
 {
