@@ -142,7 +142,7 @@
 			<tr>
 			    <td valign="top" width="35%">
 			    	<div class="rowdesc">
-			    		{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose cusrom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose cusrom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Server Admin Group 
+			    		{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose custom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose custom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Server Admin Group 
 			    	</div>
 			    </td>
 			    <td>
@@ -168,7 +168,7 @@
 		   	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose cusrom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose cusrom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Web Admin Group 
+		    			{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose custom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose custom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Web Admin Group 
 		    		</div>
 		    	</td>
 		    	<td>

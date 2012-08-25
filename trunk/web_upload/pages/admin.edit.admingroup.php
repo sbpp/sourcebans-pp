@@ -64,57 +64,67 @@ if(isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg']))
 	$_POST['wg'] = (int)$_POST['wg'];
 	$_POST['sg'] = (int)$_POST['sg'];
 	
-	if(isset($_POST['wg']) && $_POST['wg'] != "-2")	{
-		if($_POST['wg'] == -1)
-			$_POST['wg'] = 0;
-		
-		// Edit the web group
-		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
-										`gid` = ?
-										WHERE `aid` = ?;", array($_POST['wg'], $_GET['id']));
-	}
-	
-	if(isset($_POST['sg']) && $_POST['sg'] != "-2") {
-		// Edit the server admin group
-		$group = "";
-		if($_POST['sg'] != -1)
-		{
-			$grps = $GLOBALS['db']->GetRow("SELECT name FROM ".DB_PREFIX."_srvgroups WHERE id = ?;", array($_POST['sg']));
-			if($grps)
-				$group = $grps['name'];
-		}
-			
-		$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
-										`srv_group` = ?
-										WHERE aid = ?", array($group, $_GET['id']));
-		
-	$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins_servers_groups SET
-									`group_id` = ?
-									WHERE admin_id = ?;", array($_POST['sg'], $_GET['id']));
-			
-	}
-	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+	// Users require a password and email to have web permissions
+	$password = $GLOBALS['userbank']->GetProperty('password', $_GET['id']);
+	$email = $GLOBALS['userbank']->GetProperty('email', $_GET['id']);
+	if($_POST['wg'] > 0 && (empty($password) || empty($email)))
 	{
-		// rehash the admins on the servers
-		$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-												LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$_GET['id']."'
-												LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
-												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
-		$allservers = array();
-		foreach($serveraccessq as $access) {
-			if(!in_array($access['sid'], $allservers)) {
-				$allservers[] = $access['sid'];
-			}
-		}
-		echo '<script>ShowRehashBox("'.implode(",", $allservers).'", "Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+		echo '<script>ShowBox("Error", "Admins have to have a password and email set in order to get web permissions.<br /><a href=\"index.php?p=admin&c=admins&o=editdetails&id=' . $_GET['id'] . '\" title=\"Edit Admin Details\">Set the details</a> first and try again.", "red");</script>';
 	}
 	else
-		echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
-	
-	$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$_GET['id']));
-	$log = new CSystemLog("m", "Admin's Groups Updated", "Admin (" . $admname['user'] . ") groups has been updated");
+	{
+		if(isset($_POST['wg']) && $_POST['wg'] != "-2")	{
+			if($_POST['wg'] == -1)
+				$_POST['wg'] = 0;
+			
+			// Edit the web group
+			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
+											`gid` = ?
+											WHERE `aid` = ?;", array($_POST['wg'], $_GET['id']));
+		}
+		
+		if(isset($_POST['sg']) && $_POST['sg'] != "-2") {
+			// Edit the server admin group
+			$group = "";
+			if($_POST['sg'] != -1)
+			{
+				$grps = $GLOBALS['db']->GetRow("SELECT name FROM ".DB_PREFIX."_srvgroups WHERE id = ?;", array($_POST['sg']));
+				if($grps)
+					$group = $grps['name'];
+			}
+				
+			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins SET
+											`srv_group` = ?
+											WHERE aid = ?", array($group, $_GET['id']));
+			
+			$edit = $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_admins_servers_groups SET
+										`group_id` = ?
+										WHERE admin_id = ?;", array($_POST['sg'], $_GET['id']));
+				
+		}
+		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+		{
+			// rehash the admins on the servers
+			$serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
+													LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$_GET['id']."'
+													LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
+													WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
+													OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
+													AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+			$allservers = array();
+			foreach($serveraccessq as $access) {
+				if(!in_array($access['sid'], $allservers)) {
+					$allservers[] = $access['sid'];
+				}
+			}
+			echo '<script>ShowRehashBox("'.implode(",", $allservers).'", "Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+		}
+		else
+			echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+		
+		$admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$_GET['id']));
+		$log = new CSystemLog("m", "Admin's Groups Updated", "Admin (" . $admname['user'] . ") groups has been updated");
+	}
 }
 
 $wgroups = $GLOBALS['db']->GetAll("SELECT gid, name FROM ".DB_PREFIX."_groups WHERE type != 3");
