@@ -224,6 +224,8 @@ function BuildBreadcrumbs()
 			case "mods":
 				$cat = "Mod management";
 				break;
+			default:
+				unset($_GET['c']);
 		}
 	}
 
