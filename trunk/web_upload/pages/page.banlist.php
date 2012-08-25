@@ -62,8 +62,8 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 			continue;
 		}
 
-		$row = $GLOBALS['db']->GetRow("SELECT b.ip, CONCAT( 'STEAM_1:', SUBSTR( b.authid, 9 ) ) AS authid_l4d, CONCAT( 'STEAM_0:', SUBSTR( b.authid, 9 ) ) AS authid, 
-										b.name, b.created, b.sid, b.type, m.modfolder, UNIX_TIMESTAMP() as now
+		$row = $GLOBALS['db']->GetRow("SELECT b.ip, b.authid, 
+										b.name, b.created, b.sid, b.type, m.steam_universe, UNIX_TIMESTAMP() as now
 										FROM ".DB_PREFIX."_bans b
 										LEFT JOIN ".DB_PREFIX."_servers s ON s.sid = b.sid
 										LEFT JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid
@@ -87,18 +87,18 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 
 		$protestsunban = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '4' WHERE bid = '".$bid."';");
 
-		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.modfolder FROM `".DB_PREFIX."_banlog` bl INNER JOIN ".DB_PREFIX."_servers s ON s.sid = bl.sid INNER JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
+		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.steam_universe FROM `".DB_PREFIX."_banlog` bl INNER JOIN ".DB_PREFIX."_servers s ON s.sid = bl.sid INNER JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
 		foreach($blocked as $tempban)
 		{
-			SendRconSilent(($row['type']==0?"removeid ".(($tempban['modfolder']=='left4dead'||$tempban['modfolder']=='left4dead2')?$row['authid_l4d']:$row['authid']):"removeip ".$row['ip']), $tempban['sid']);
+			SendRconSilent(($row['type']==0?"removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 6):"removeip ".$row['ip']), $tempban['sid']);
 		}
 		if(((int)$row['now'] - (int)$row['created']) <= 300 && $row['sid'] != "0" && !in_array_dim($row['sid'], $blocked))
-			SendRconSilent(($row['type']==0?"removeid ".(($row['modfolder']=='left4dead'||$row['modfolder']=='left4dead2')?$row['authid_l4d']:$row['authid']):"removeip ".$row['ip']), $row['sid']);
+			SendRconSilent(($row['type']==0?"removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 6):"removeip ".$row['ip']), $row['sid']);
 
 		if($res){
 			if(!isset($_GET['bulk']))
-				echo "<script>ShowBox('Player Unbanned', '".StripQuotes($row['name'])." (" . ($row['type']==0?(($row['modfolder']=='left4dead'||$row['modfolder']=='left4dead2')?$row['authid_l4d']:$row['authid']):$row['ip']) . ") has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
-			$log = new CSystemLog("m", "Player Unbanned", "'".StripQuotes($row['name'])."' (" . ($row['type']==0?(($row['modfolder']=='left4dead'||$row['modfolder']=='left4dead2')?$row['authid_l4d']:$row['authid']):$row['ip']) . ") has been unbanned");
+				echo "<script>ShowBox('Player Unbanned', '".StripQuotes($row['name'])." (" . ($row['type']==0?$row['authid']:$row['ip']) . ") has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
+			$log = new CSystemLog("m", "Player Unbanned", "'".StripQuotes($row['name'])."' (" . ($row['type']==0?$row['authid']:$row['ip']) . ") has been unbanned");
 			$ucount++;
 		}else{
 			if(!isset($_GET['bulk']))
@@ -131,9 +131,8 @@ else if(isset($_GET['a']) && $_GET['a'] == "delete")
 		$demres = $GLOBALS['db']->Execute("SELECT filename FROM `".DB_PREFIX."_demos` WHERE `demid` = ?",
 									array( $bid ));
 		@unlink(SB_DEMOS."/".$demres->fields["filename"]);
-		$blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `".DB_PREFIX."_banlog` WHERE bid=? AND (UNIX_TIMESTAMP() - time <= 300)",array($bid));
-		$steam = $GLOBALS['db']->GetRow("SELECT b.name, CONCAT( 'STEAM_1:', SUBSTR( b.authid, 9 ) ) AS authid_l4d, 
-										CONCAT( 'STEAM_0:', SUBSTR( b.authid, 9 ) ) AS authid, b.created, b.sid, b.RemoveType, b.ip, b.type, m.modfolder, UNIX_TIMESTAMP() AS now
+		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.steam_universe FROM `".DB_PREFIX."_banlog` bl INNER JOIN ".DB_PREFIX."_servers s ON s.sid = bl.sid INNER JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
+		$steam = $GLOBALS['db']->GetRow("SELECT b.name, b.authid, b.created, b.sid, b.RemoveType, b.ip, b.type, m.steam_universe, UNIX_TIMESTAMP() AS now
 										FROM ".DB_PREFIX."_bans b 
 										LEFT JOIN ".DB_PREFIX."_servers s ON s.sid = b.sid
 										LEFT JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid 
@@ -145,16 +144,16 @@ else if(isset($_GET['a']) && $_GET['a'] == "delete")
 		{
 			foreach($blocked as $tempban)
 			{
-				SendRconSilent(($row['type']==0?"removeid ".(($tempban['modfolder']=='left4dead'||$tempban['modfolder']=='left4dead2')?$steam['authid_l4d']:$steam['authid']):"removeip ".$steam['ip']), $tempban['sid']);
+				SendRconSilent(($steam['type']==0?"removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 6):"removeip ".$steam['ip']), $tempban['sid']);
 			}
 			if(((int)$steam['now'] - (int)$steam['created']) <= 300 && $steam['sid'] != "0" && !in_array_dim($steam['sid'], $blocked))
-				SendRconSilent(($row['type']==0?"removeid ".(($steam['modfolder']=='left4dead'||$steam['modfolder']=='left4dead2')?$steam['authid_l4d']:$steam['authid']):"removeip ".$steam['ip']), $steam['sid']);
+				SendRconSilent(($steam['type']==0?"removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 6):"removeip ".$steam['ip']), $steam['sid']);
 		}
 
 		if($res){
 			if(!isset($_GET['bulk']))
-				echo "<script>ShowBox('Ban Deleted', 'The ban for \'".StripQuotes($steam['name'])."\' (".($steam['type']==0?(($steam['modfolder']=='left4dead'||$steam['modfolder']=='left4dead2')?$steam['authid_l4d']:$steam['authid']):$steam['ip']).") has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
-			$log = new CSystemLog("m", "Ban Deleted", "Ban '".StripQuotes($steam['name'])."' (" . ($steam['type']==0?(($steam['modfolder']=='left4dead'||$steam['modfolder']=='left4dead2')?$steam['authid_l4d']:$steam['authid']):$steam['ip']) . ") has been deleted.");
+				echo "<script>ShowBox('Ban Deleted', 'The ban for \'".StripQuotes($steam['name'])."\' (".($steam['type']==0?$steam['authid']:$steam['ip']).") has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
+			$log = new CSystemLog("m", "Ban Deleted", "Ban '".StripQuotes($steam['name'])."' (" . ($steam['type']==0?$steam['authid']:$steam['ip']) . ") has been deleted.");
 			$dcount++;
 		}else{
 			if(!isset($_GET['bulk']))

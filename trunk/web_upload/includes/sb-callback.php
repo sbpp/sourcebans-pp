@@ -1903,7 +1903,7 @@ function ChangePassword($aid, $pass)
 	return $objResponse;
 }
 
-function AddMod($name, $folder, $icon, $enabled)
+function AddMod($name, $folder, $icon, $steam_universe, $enabled)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
@@ -1916,14 +1916,23 @@ function AddMod($name, $folder, $icon, $enabled)
 	$name = htmlspecialchars(strip_tags($name));//don't want to addslashes because execute will automatically do it
 	$icon = htmlspecialchars(strip_tags($icon));
 	$folder = htmlspecialchars(strip_tags($folder));
+	$steam_universe = (int)$steam_universe;
 	$enabled = (int)$enabled;
+	
+	// Already there?
+	$check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE modfolder = ? OR name = ?;", array($folder, $name));
+	if(!empty($check))
+	{
+		$objResponse->addScript("ShowBox('Error adding mod', 'A mod using that folder or name already exists.', 'red');");
+		return $objResponse;
+	}
 
-	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_mods(name,icon,modfolder,enabled) VALUES (?,?,?,?)");
-	$GLOBALS['db']->Execute($pre,array($name, $icon, $folder, $enabled));
+	$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_mods(name,icon,modfolder,steam_universe,enabled) VALUES (?,?,?,?,?)");
+	$GLOBALS['db']->Execute($pre,array($name, $icon, $folder, $steam_universe, $enabled));
 
 	$objResponse->addScript("ShowBox('Mod Added', 'The game mod has been successfully added', 'green', 'index.php?p=admin&c=mods');");
-    $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Mod Added", "Mod ($name) has been added");
+	$objResponse->addScript("TabToReload();");
+	$log = new CSystemLog("m", "Mod Added", "Mod ($name) has been added");
 	return $objResponse;
 }
 

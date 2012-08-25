@@ -32,6 +32,22 @@
 			    	<div id="folder.msg" class="badentry"></div>
 				</td>
 			</tr>
+      <tr>
+				<td valign="top"><div class="rowdesc">{help_icon title="Steam Universe Number" message="(STEAM_<b>X</b>:Y:Z) Some games display the steamid differently than others. Type the first number in the SteamID (<b>X</b>) depending on how it's rendered by this mod. (Default: 0)."}Steam Universe Number</div></td>
+		    	<td>
+		    		<div align="left">
+		      			<input type="text" TABINDEX=3 class="submit-fields" id="steam_universe" name="steam_universe" value="0" />
+		    		</div>
+		    	</td>
+		  </tr>
+      <tr>
+			<td valign="top"><div class="rowdesc">{help_icon title="Mod Enabled" message="Select if this mod is enabled and assignable to bans and servers."}Enabled</div></td>
+		    	<td>
+		    		<div align="left">
+		      			<input type="checkbox" TABINDEX=4 id="enabled" name="enabled" value="1" checked="checked" />
+		    		</div>
+		    	</td>
+		  </tr>
 		  	<tr>
 		    	<td valign="top" width="35%">
 		    		<div class="rowdesc">

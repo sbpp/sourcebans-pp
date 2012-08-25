@@ -1,26 +1,26 @@
-INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`) VALUES
-(1, 'Web', 'web.png', 'NULL'),
-(2, 'Half-Life 2 Deathmatch', 'hl2dm.png', 'hl2mp'),
-(3, 'Counter-Strike: Source', 'csource.png', 'cstrike'),
-(4, 'Day of Defeat: Source', 'dods.png', 'dod'),
-(5, 'Insurgency: Source', 'ins.gif', 'insurgency'),
-(6, 'Dystopia', 'dys.gif', 'dystopia_v1'),
-(7, 'Hidden: Source', 'hidden.png', 'hidden'),
-(8, 'Half-Life 2 Capture the Flag', 'hl2ctf.png', 'hl2ctf'),
-(9, 'Pirates Vikings and Knights II', 'pvkii.gif', 'pvkii'),
-(10, 'Perfect Dark: Source', 'pdark.gif', 'pdark'),
-(11, 'The Ship', 'ship.gif', 'ship'),
-(12, 'Fortress Forever', 'hl2-fortressforever.gif', 'FortressForever'),
-(13, 'Team Fortress 2', 'tf2.gif', 'tf'),
-(14, 'Zombie Panic', 'zps.gif', 'zps'),
-(15, "Garry's Mod", 'gmod.png', 'garrysmod'),
-(16, "Left 4 Dead", 'l4d.png', 'left4dead'),
-(17, "Left 4 Dead 2", 'l4d2.png', 'left4dead2'),
-(18, "CSPromod", 'cspromod.png', 'cspromod'),
-(19, "Alien Swarm", 'alienswarm.png', 'alienswarm'),
-(20, "E.Y.E: Divine Cybermancy", 'eye.png', 'eye'),
-(21, "Nuclear Dawn", 'nucleardawn.png', 'nucleardawn'),
-(22, "Counter-Strike: Global Offensive", 'csgo.png', 'csgo');
+INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe`) VALUES
+(1, 'Web', 'web.png', 'NULL', '0'),
+(2, 'Half-Life 2 Deathmatch', 'hl2dm.png', 'hl2mp', '0'),
+(3, 'Counter-Strike: Source', 'csource.png', 'cstrike', '0'),
+(4, 'Day of Defeat: Source', 'dods.png', 'dod', '0'),
+(5, 'Insurgency: Source', 'ins.gif', 'insurgency', '0'),
+(6, 'Dystopia', 'dys.gif', 'dystopia_v1', '0'),
+(7, 'Hidden: Source', 'hidden.png', 'hidden', '0'),
+(8, 'Half-Life 2 Capture the Flag', 'hl2ctf.png', 'hl2ctf', '0'),
+(9, 'Pirates Vikings and Knights II', 'pvkii.gif', 'pvkii', '0'),
+(10, 'Perfect Dark: Source', 'pdark.gif', 'pdark', '0'),
+(11, 'The Ship', 'ship.gif', 'ship', '0'),
+(12, 'Fortress Forever', 'hl2-fortressforever.gif', 'FortressForever', '0'),
+(13, 'Team Fortress 2', 'tf2.gif', 'tf', '0'),
+(14, 'Zombie Panic', 'zps.gif', 'zps', '0'),
+(15, "Garry's Mod", 'gmod.png', 'garrysmod', '0'),
+(16, "Left 4 Dead", 'l4d.png', 'left4dead', '1'),
+(17, "Left 4 Dead 2", 'l4d2.png', 'left4dead2', '1'),
+(18, "CSPromod", 'cspromod.png', 'cspromod', '0'),
+(19, "Alien Swarm", 'alienswarm.png', 'alienswarm', '0'),
+(20, "E.Y.E: Divine Cybermancy", 'eye.png', 'eye', '0'),
+(21, "Nuclear Dawn", 'nucleardawn.png', 'nucleardawn', '0'),
+(22, "Counter-Strike: Global Offensive", 'csgo.png', 'csgo', '1');
 
 UPDATE `{prefix}_mods` SET `mid` = '0' WHERE `name` = 'Web';
 
@@ -50,7 +50,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '354');
+('config.version', '355');
 
 
 INSERT INTO `{prefix}_admins` (
