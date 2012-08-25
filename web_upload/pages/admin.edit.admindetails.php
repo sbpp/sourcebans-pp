@@ -141,9 +141,13 @@ if(isset($_POST['adminname']))
 	// No email
 	if(empty($a_email))
 	{
-		$error++;
-		$errorScript .= "$('email.msg').innerHTML = 'You must type an e-mail address.';";
-		$errorScript .= "$('email.msg').setStyle('display', 'block');";
+		// Only required, if admin has web permissions.
+		if($GLOBALS['userbank']->GetProperty('extraflags', $_GET['id']) != 0 || $GLOBALS['userbank']->GetProperty('gid', $_GET['id']) > 0)
+		{
+			$error++;
+			$errorScript .= "$('email.msg').innerHTML = 'You must type an e-mail address.';";
+			$errorScript .= "$('email.msg').setStyle('display', 'block');";
+		}
 	}
 	else{
 		// Is an other admin already registred with that email address?
