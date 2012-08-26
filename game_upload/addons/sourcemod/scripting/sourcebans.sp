@@ -15,7 +15,6 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
-#include "dbi.inc"
 
 #define SB_VERSION "1.4.9"
 
@@ -229,7 +228,7 @@ public OnPluginStart()
 			{
 				PlayerStatus[i] = false;
 			}
-			if(IsClientInGame(i) && !IsFakeClient(i))
+			if(IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
 			{
 				GetClientAuthString(i, auth, sizeof(auth));
 				OnClientAuthorized(i, auth);
@@ -290,8 +289,15 @@ public OnMapEnd()
 
 public Action:OnClientPreAdminCheck(client)
 {
+	if(!Database)
+		return Plugin_Continue;
+	
+	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
+		return Plugin_Continue;
+	
 	if (curLoading > 0)
-		return Plugin_Stop;
+		return Plugin_Handled;
+	
 	return Plugin_Continue;
 }
 
@@ -336,7 +342,7 @@ public OnRebuildAdminCache(AdminCachePart:part)
 	switch(loadPart)
 	{
 		case AdminCache_Overrides:
-		loadOverrides = true;
+			loadOverrides = true;
 		case AdminCache_Groups:
 			loadGroups = true;
 		case AdminCache_Admins:
@@ -1560,7 +1566,7 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		{
 			KvJumpToKey(adminsKV, name, true);
 			
-			KvSetString(adminsKV, "auth", "steam");
+			KvSetString(adminsKV, "auth", authType);
 			KvSetString(adminsKV, "identity", identity);
 			
 			if(strlen(flags) > 0)
@@ -1578,17 +1584,32 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			KvRewind(adminsKV);
 		}
 		
-		curAdm = CreateAdmin(name);       
-		BindAdminIdentity(curAdm,authType,identity);
+		// find or create the admin using that identity
+		if((curAdm = FindAdminByIdentity(authType, identity)) == INVALID_ADMIN_ID)
+		{
+			curAdm = CreateAdmin(name);
+			// That should never happen!
+			if(!BindAdminIdentity(curAdm, authType, identity))
+			{
+				LogToFile(logFile, "Unable to bind admin %s to identity %s", name, identity);
+				RemoveAdmin(curAdm);
+				continue;
+			}
+		}
 		
 #if defined DEBUG
         LogToFile(logFile, "Given %s (%s) admin", name, identity);
 #endif
 		
-		decl String:grp[64];
 		new curPos = 0;
-		new nextPos = 0;
 		new GroupId:curGrp = INVALID_GROUP_ID;
+		new numGroups;
+		decl String:iterGroupName[64];
+		
+		// Who thought this comma seperated group parsing would be a good idea?!
+		/*
+		decl String:grp[64];
+		new nextPos = 0;
 		while ((nextPos = SplitString(groups[curPos],",",grp,64)) != -1)
 		{
 			curPos += nextPos;
@@ -1599,12 +1620,25 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			}
 			else
 			{
-				if (!AdminInheritGroup(curAdm,curGrp))
+				// Check, if he's not in the group already.
+				numGroups = GetAdminGroupCount(curAdm);
+				for(new i=0;i<numGroups;i++)
+				{
+					GetAdminGroup(curAdm, i, iterGroupName, sizeof(iterGroupName));
+					// Admin is already part of the group, so don't try to inherit its permissions.
+					if(StrEqual(iterGroupName, grp))
+					{
+						numGroups = -2;
+						break;
+					}
+				}
+				// Only try to inherit the group, if it's a new one.
+				if (numGroups != -2 && !AdminInheritGroup(curAdm,curGrp))
 				{
 					LogToFile(logFile, "Unable to inherit group \"%s\"",grp);
 				}
 			}
-		}
+		}*/
 		
 		if (strcmp(groups[curPos], "") != 0)
 		{
@@ -1615,18 +1649,28 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			}
 			else
 			{
-				if (!AdminInheritGroup(curAdm,curGrp))
+				// Check, if he's not in the group already.
+				numGroups = GetAdminGroupCount(curAdm);
+				for(new i=0;i<numGroups;i++)
+				{
+					GetAdminGroup(curAdm, i, iterGroupName, sizeof(iterGroupName));
+					// Admin is already part of the group, so don't try to inherit its permissions.
+					if(StrEqual(iterGroupName, groups[curPos]))
+					{
+						numGroups = -2;
+						break;
+					}
+				}
+				
+				// Only try to inherit the group, if it's a new one.
+				if (numGroups != -2 && !AdminInheritGroup(curAdm,curGrp))
 				{
 					LogToFile(logFile, "Unable to inherit group \"%s\"",groups[curPos]);
 				}
 				
-				if( Immunity > GetAdmGroupImmunityLevel(curGrp) )
+				if (GetAdminImmunityLevel(curAdm) < Immunity)
 				{
 					SetAdminImmunityLevel(curAdm, Immunity);
-				}
-				else
-				{
-					SetAdminImmunityLevel(curAdm, GetAdmGroupImmunityLevel(curGrp));
 				}
 #if defined DEBUG
 				LogToFile(logFile, "Admin %s (%s) has %d immunity", name, identity, Immunity);
@@ -1645,7 +1689,7 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			if (g_FlagLetters[flags[i] - 'a'] < Admin_Reservation)
 				continue;
 				
-			SetAdminFlag(curAdm, g_FlagLetters[flags[i] - 'a'],true);
+			SetAdminFlag(curAdm, g_FlagLetters[flags[i] - 'a'], true);
 		}
 		++admCount;
 	}
@@ -1655,7 +1699,7 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	CloseHandle(adminsKV);
 	
 #if defined DEBUG
-		LogToFile(logFile, "Finished loading %i admins.",admCount);
+	LogToFile(logFile, "Finished loading %i admins.",admCount);
 #endif
 	
 	--curLoading;
@@ -1671,7 +1715,7 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s",error);
 		return;
 	}
-	decl String:grpName[128];
+	decl String:grpName[128], String:immuneGrpName[128];
 	decl String:grpFlags[32];
 	new Immunity;
 	new bool:reparse = false;
@@ -1687,11 +1731,14 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		SQL_FetchString(hndl,0,grpName,128);
 		SQL_FetchString(hndl,1,grpFlags,32);
 		Immunity = SQL_FetchInt(hndl,2);
+		SQL_FetchString(hndl,3,immuneGrpName,128);
 
  		TrimString(grpName);
-		TrimString(grpFlags);   
+		TrimString(grpFlags);
+		TrimString(immuneGrpName);
 		
-		if(!strcmp(grpName, " "))
+		// Ignore empty rows..
+		if(!strlen(grpName))
 			continue;
 		
 		curGrp = CreateAdmGroup(grpName);
@@ -1703,6 +1750,15 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 				KvSetString(groupsKV, "flags", grpFlags);
 			if(Immunity > 0)
 				KvSetNum(groupsKV, "immunity", Immunity);
+			else if(strlen(immuneGrpName) > 0)
+			{
+				new junk;
+				if(StringToIntEx(immuneGrpName, junk))
+				{
+					Format(immuneGrpName, sizeof(immuneGrpName), "@%s", immuneGrpName);
+				}
+				KvSetString(groupsKV, "immunity", immuneGrpName);
+			}
 			
 			KvRewind(groupsKV);
 		}
@@ -1722,12 +1778,10 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 				
 			SetAdmGroupAddFlag(curGrp, g_FlagLetters[grpFlags[i] - 'a'], true);
 		}
-			
-		SetAdmGroupImmunityLevel(curGrp, Immunity);
 		
-#if defined DEBUG
-			LogToFile(logFile, "Group %s has %d immunity", grpName, Immunity);
-#endif
+		// Reparse the groups to apply the correct immunity inheritance
+		if(Immunity > 0)
+			reparse = true;
 		
 		grpCount++;
 	}
@@ -1753,6 +1807,7 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	}
 }
 
+// Reparse to apply inherited immunity
 public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	if (hndl == INVALID_HANDLE)
@@ -1762,31 +1817,49 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s",error);
 		return;
 	}
-	decl String:grpName[128];
+	decl String:grpName[128], String:immunityGrpName[128];
 	new Immunity;
     
 	new GroupId:curGrp = INVALID_GROUP_ID;
+	new GroupId:immuneGrp = INVALID_GROUP_ID;
 	while (SQL_MoreRows(hndl))
 	{
 		SQL_FetchRow(hndl);
 		if(SQL_IsFieldNull(hndl, 0))
 			continue;  // Sometimes some rows return NULL due to some setups
+		
 		SQL_FetchString(hndl,0,grpName,128);
  		TrimString(grpName);
-		if(!strcmp(grpName, " "))
+		if(strlen(grpName) == 0)
 			continue;
+		
 		Immunity = SQL_FetchInt(hndl,1);
+		
+		SQL_FetchString(hndl, 2, immunityGrpName, sizeof(immunityGrpName));
+		TrimString(immunityGrpName);
         
 		curGrp = FindAdmGroup(grpName);
 		if (curGrp == INVALID_GROUP_ID)
-			curGrp = CreateAdmGroup(grpName); 
+			continue;
 		
-		SetAdmGroupImmunityLevel(curGrp, Immunity);
+		// Set the immunity directly, if we don't want to inherit it from another group.
+		if(Immunity > 0 && strlen(immunityGrpName) == 0)
+		{
+			SetAdmGroupImmunityLevel(curGrp, Immunity);
+			#if defined DEBUG
+				LogToFile(logFile, "Group %s has %d immunity", grpName, Immunity);
+			#endif
+		}
 		
-#if defined DEBUG
-			LogToFile(logFile, "Group %s has %d immunity", grpName, Immunity);
-#endif
+		immuneGrp = FindAdmGroup(immunityGrpName);
+		if (immuneGrp == INVALID_GROUP_ID)
+			continue;
 		
+		SetAdmGroupImmuneFrom(curGrp, immuneGrp);
+		
+		#if defined DEBUG
+			LogToFile(logFile, "Group %s inhertied immunity from group %s", grpName, immunityGrpName);
+		#endif
 	}
 	--curLoading;
 	CheckLoadAdmins();
