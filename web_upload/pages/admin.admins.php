@@ -137,5 +137,82 @@ echo '<div id="1" style="display:none;">';
 	$theme->display('page_admin_admins_add.tpl');
 echo '</div>';
 
+
+
+
+// Overrides
+
+// Saving changed overrides
+$overrides_error = "";
+$overrides_save_success = false;
+try
+{
+	if(isset($_POST['new_override_name']))
+	{
+		// Handle old overrides, if there are any.
+		if(isset($_POST['override_id']))
+		{
+			// Apply changes first
+			$edit_errors = "";
+			foreach($_POST['override_id'] as $index => $id)
+			{
+				// Skip invalid stuff?!
+				if($_POST['override_type'][$index] != "command" && $_POST['override_type'][$index] != "group")
+					continue;
+			
+				$id = (int)$id;
+				// Wants to delete this override?
+				if(empty($_POST['override_name'][$index]))
+				{
+					$GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_overrides` WHERE id = ?;", array($id));
+					continue;
+				}
+				
+				// Check for duplicates
+				$chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides` WHERE name = ? AND type = ? AND id != ?", array($_POST['override_name'][$index], $_POST['override_type'][$index], $id));
+				if(!empty($chk))
+				{
+					$edit_errors .= "&bull; There already is an override with name \\\"" . htmlspecialchars(addslashes($_POST['override_name'][$index])) . "\\\" from the selected type.<br />";
+					continue;
+				}
+				
+				// Edit the override
+				$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_overrides` SET name = ?, type = ?, flags = ? WHERE id = ?;", array($_POST['override_name'][$index], $_POST['override_type'][$index], trim($_POST['override_flags'][$index]), $id));
+			}
+			
+			if(!empty($edit_errors))
+				throw new Exception("There were errors applying your changes:<br /><br />" . $edit_errors);
+		}
+	
+		// Add a new override
+		if(!empty($_POST['new_override_name']))
+		{
+			if($_POST['new_override_type'] != "command" && $_POST['new_override_type'] != "group")
+				throw new Exception("Invalid override type.");
+			
+			// Check for duplicates
+			$chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides` WHERE name = ? AND type = ?", array($_POST['new_override_name'], $_POST['new_override_type']));
+			if(!empty($chk))
+				throw new Exception("There already is an override with that name from the selected type.");
+			
+			// Insert the new override
+			$GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_overrides` (type, name, flags) VALUES (?, ?, ?);", array($_POST['new_override_type'], $_POST['new_override_name'], trim($_POST['new_override_flags'])));
+		}
+		
+		$overrides_save_success = true;
+	}
+} catch (Exception $e) {
+	$overrides_error = $e->getMessage();
+}
+
+$overrides_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides`;");
+
+echo '<div id="2" style="display:none;">';
+	$theme->assign('overrides_list', $overrides_list);
+	$theme->assign('overrides_error', $overrides_error);
+	$theme->assign('overrides_save_success', $overrides_save_success);
+	$theme->assign('permission_addadmin', $userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_ADMINS));
+	$theme->display('page_admin_overrides.tpl');
+echo '</div>';
 ?>
 </div>
