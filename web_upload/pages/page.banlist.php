@@ -90,10 +90,10 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 		$blocked = $GLOBALS['db']->GetAll("SELECT s.sid, m.steam_universe FROM `".DB_PREFIX."_banlog` bl INNER JOIN ".DB_PREFIX."_servers s ON s.sid = bl.sid INNER JOIN ".DB_PREFIX."_mods m ON m.mid = s.modid WHERE bl.bid=? AND (UNIX_TIMESTAMP() - bl.time <= 300)",array($bid));
 		foreach($blocked as $tempban)
 		{
-			SendRconSilent(($row['type']==0?"removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 6):"removeip ".$row['ip']), $tempban['sid']);
+			SendRconSilent(($row['type']==0?"removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 7):"removeip ".$row['ip']), $tempban['sid']);
 		}
 		if(((int)$row['now'] - (int)$row['created']) <= 300 && $row['sid'] != "0" && !in_array_dim($row['sid'], $blocked))
-			SendRconSilent(($row['type']==0?"removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 6):"removeip ".$row['ip']), $row['sid']);
+			SendRconSilent(($row['type']==0?"removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 7):"removeip ".$row['ip']), $row['sid']);
 
 		if($res){
 			if(!isset($_GET['bulk']))
@@ -144,10 +144,10 @@ else if(isset($_GET['a']) && $_GET['a'] == "delete")
 		{
 			foreach($blocked as $tempban)
 			{
-				SendRconSilent(($steam['type']==0?"removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 6):"removeip ".$steam['ip']), $tempban['sid']);
+				SendRconSilent(($steam['type']==0?"removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 7):"removeip ".$steam['ip']), $tempban['sid']);
 			}
 			if(((int)$steam['now'] - (int)$steam['created']) <= 300 && $steam['sid'] != "0" && !in_array_dim($steam['sid'], $blocked))
-				SendRconSilent(($steam['type']==0?"removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 6):"removeip ".$steam['ip']), $steam['sid']);
+				SendRconSilent(($steam['type']==0?"removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 7):"removeip ".$steam['ip']), $steam['sid']);
 		}
 
 		if($res){
