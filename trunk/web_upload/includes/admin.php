@@ -60,7 +60,10 @@ else
 			if($userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_ADMINS ) )
 				$adminTabMenu->addMenuItem("List admins", 0);		
 			if($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_ADMINS ) )
+			{
 				$adminTabMenu->addMenuItem("Add new admin", 1);
+				$adminTabMenu->addMenuItem("Overrides", 2);
+			}
 			$adminTabMenu->outputMenu();
 			// ====================[ ADMIN SIDE MENU END ] ===================
 			$AdminsPerPage = SB_BANS_PER_PAGE;

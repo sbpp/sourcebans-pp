@@ -98,7 +98,6 @@ new String:logFile[256];
 /* Own Chat Reason */
 new g_ownReasons[MAXPLAYERS+1] = {false, ...};
 
-new MaxSlots;
 new Float:RetryTime = 15.0;
 new ProcessQueueTime = 5;
 new bool:LateLoaded;
@@ -268,13 +267,12 @@ public OnConfigsExecuted()
 
 public OnMapStart()
 {
-	MaxSlots = GetMaxClients();
 	ResetSettings();
 }
 
 public OnMapEnd()
 {
-	for(new i = 0; i <= MaxSlots; i++)
+	for(new i = 0; i <= MaxClients; i++)
 	{
 		if(PlayerDataPack[i] != INVALID_HANDLE)
 		{
@@ -348,17 +346,14 @@ public OnRebuildAdminCache(AdminCachePart:part)
 		case AdminCache_Admins:
 			loadAdmins = true;
 	}
-	if(enableAdmins)
-	{
-		if(Database == INVALID_HANDLE) {
-			if(!g_bConnecting) {
-				g_bConnecting = true;
-				SQL_TConnect(GotDatabase,"sourcebans");
-			}
+	if(Database == INVALID_HANDLE) {
+		if(!g_bConnecting) {
+			g_bConnecting = true;
+			SQL_TConnect(GotDatabase,"sourcebans");
 		}
-		else {
-			GotDatabase(Database,Database,"",0);
-		}
+	}
+	else {
+		GotDatabase(Database,Database,"",0);
 	}
 }
 
@@ -661,6 +656,7 @@ public Action:sm_rehash(args)
 {
 	if(enableAdmins)
 		DumpAdminCache(AdminCache_Groups,true);
+	DumpAdminCache(AdminCache_Overrides, true);
 	return Plugin_Handled;   
 }
 
@@ -964,6 +960,8 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 
 	if(loadOverrides)
 	{
+		Format(query, 1024, "SELECT type, name, flags FROM %s_overrides", DatabasePrefix);
+		SQL_TQuery(Database, OverridesDone, query);
 		loadOverrides = false;
 	}
 
@@ -1865,6 +1863,31 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 	CheckLoadAdmins();
 }
 
+public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
+{
+	if (hndl == INVALID_HANDLE)
+	{
+		LogToFile(logFile, "Failed to retrieve overrides from the database, %s",error);
+		return;
+	}
+	
+	decl String:sFlags[32], String:sName[64], String:sType[64];
+	while(SQL_FetchRow(hndl))
+	{
+		SQL_FetchString(hndl, 0, sType, sizeof(sType));
+		SQL_FetchString(hndl, 1, sName, sizeof(sName));
+		SQL_FetchString(hndl, 2, sFlags, sizeof(sFlags));
+		
+		#if defined DEBUG
+		LogToFile(logFile, "Adding override (%s, %s, %s)", sType, sName, sFlags);
+		#endif
+		
+		if(StrEqual(sType,      "command"))
+			AddCommandOverride(sName, Override_Command,      ReadFlagString(sFlags));
+		else if(StrEqual(sType, "group"))
+			AddCommandOverride(sName, Override_CommandGroup, ReadFlagString(sFlags));
+	}
+}
 
 // TIMER CALL BACKS //
 

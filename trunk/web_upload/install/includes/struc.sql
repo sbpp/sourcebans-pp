@@ -121,6 +121,16 @@ CREATE TABLE IF NOT EXISTS `{prefix}_mods` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
+CREATE TABLE IF NOT EXISTS `{prefix}_overrides` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` enum('command','group') NOT NULL,
+  `name` varchar(32) NOT NULL,
+  `flags` varchar(30) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `type` (`type`,`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 CREATE TABLE IF NOT EXISTS `{prefix}_protests` (
   `pid` int(6) NOT NULL auto_increment,
   `bid` int(6) NOT NULL,
