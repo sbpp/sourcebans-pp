@@ -190,7 +190,7 @@ class CServerInfo
       else
       {
         $this->socket    = @fsockopen("udp://".$this->address, $this->port, $errno, $errstr, 2);
-        if($this->socket === false)
+        if(!$this->socket)
           return false;
         stream_set_timeout($this->socket, 1);
       }
