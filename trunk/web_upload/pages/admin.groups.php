@@ -37,6 +37,7 @@ for($i=0;$i<count($server_admin_group_list);$i++)
 	$query = $GLOBALS['db']->GetRow("SELECT COUNT(aid) AS cnt FROM `" . DB_PREFIX . "_admins` WHERE srv_group = $srvGroup;");
 	$server_admin_group_count[$i] = $query['cnt'];
 	$server_admin_group_admins[$i] = $GLOBALS['db']->GetAll("SELECT aid, user, authid FROM `" . DB_PREFIX . "_admins` WHERE srv_group = $srvGroup;");
+	$server_admin_group_overrides[$i] = $GLOBALS['db']->GetAll("SELECT type, name, access FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = ?", array($server_admin_group_list[$i]['id']));
 }
 
 
@@ -73,6 +74,7 @@ echo '<div id="0" style="display:none;">';
 	$theme->assign('server_admin_group_count',	count($server_admin_group_list));
 	$theme->assign('server_admins', 			(isset($server_admin_group_count)?$server_admin_group_count:'0'));
 	$theme->assign('server_admins_list',		$server_admin_group_admins);
+	$theme->assign('server_overrides_list',		$server_admin_group_overrides);
 	$theme->assign('server_group_list', 		$server_admin_group_list);
 	$theme->assign('server_group_count',		count($server_group_list));
 	$theme->assign('server_counts', 			(isset($server_group_count)?$server_group_count:'0'));
