@@ -64,6 +64,7 @@ new AdminFlag:g_FlagLetters[26];
 /* Admin KeyValues */
 new String:groupsLoc[128];
 new String:adminsLoc[128];
+new String:overridesLoc[128];
 	
 /* Cvar handle*/
 new Handle:CvarHostIp;
@@ -211,6 +212,8 @@ public OnPluginStart()
 	BuildPath(Path_SM,groupsLoc,sizeof(groupsLoc),"configs/admin_groups.cfg");
 	
 	BuildPath(Path_SM,adminsLoc,sizeof(adminsLoc),"configs/admins.cfg");
+	
+	BuildPath(Path_SM,overridesLoc,sizeof(overridesLoc),"configs/sourcebans/overrides_backup.cfg");
 	
 	InitializeBackupDB();
 	
@@ -945,6 +948,9 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 	{
 		LogToFile(logFile, "Database failure: %s. See FAQ: http://www.sourcebans.net/node/20", error);
 		g_bConnecting = false;
+		
+		// Parse the overrides backup!
+		ParseBackupConfig_Overrides();
 		return;
 	}
 
@@ -1868,8 +1874,11 @@ public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	if (hndl == INVALID_HANDLE)
 	{
 		LogToFile(logFile, "Failed to retrieve overrides from the database, %s",error);
+		ParseBackupConfig_Overrides();
 		return;
 	}
+	
+	new Handle:hKV = CreateKeyValues("SB_Overrides");
 	
 	decl String:sFlags[32], String:sName[64], String:sType[64];
 	while(SQL_FetchRow(hndl))
@@ -1878,15 +1887,38 @@ public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		SQL_FetchString(hndl, 1, sName, sizeof(sName));
 		SQL_FetchString(hndl, 2, sFlags, sizeof(sFlags));
 		
+		// KeyValuesToFile won't add that key, if the value is ""..
+		if(sFlags[0] == '\0')
+		{
+			sFlags[0] = ' ';
+			sFlags[1] = '\0';
+		}
+		
 		#if defined DEBUG
 		LogToFile(logFile, "Adding override (%s, %s, %s)", sType, sName, sFlags);
 		#endif
 		
-		if(StrEqual(sType,      "command"))
+		if(StrEqual(sType, "command"))
+		{
 			AddCommandOverride(sName, Override_Command,      ReadFlagString(sFlags));
+			KvJumpToKey(hKV, "commands", true);
+			KvSetString(hKV, sName, sFlags);
+			KvGoBack(hKV);
+		}
 		else if(StrEqual(sType, "group"))
+		{
 			AddCommandOverride(sName, Override_CommandGroup, ReadFlagString(sFlags));
+			KvJumpToKey(hKV, "groups", true);
+			KvSetString(hKV, sName, sFlags);
+			KvGoBack(hKV);
+		}
 	}
+	
+	KvRewind(hKV);
+	
+	if(backupConfig)
+		KeyValuesToFile(hKV, overridesLoc);
+	CloseHandle(hKV);
 }
 
 // TIMER CALL BACKS //
@@ -2361,6 +2393,45 @@ stock ResetSettings()
 
 	ResetMenu();
 	ReadConfig();
+}
+
+stock ParseBackupConfig_Overrides()
+{
+	new Handle:hKV = CreateKeyValues("SB_Overrides");
+	if(!FileToKeyValues(hKV, overridesLoc))
+		return;
+	
+	if(!KvGotoFirstSubKey(hKV))
+		return;
+	
+	decl String:sSection[16], String:sFlags[32], String:sName[64];
+	decl OverrideType:type;
+	do
+	{
+		KvGetSectionName(hKV, sSection, sizeof(sSection));
+		if(StrEqual(sSection, "Commands"))
+			type = Override_Command;
+		else if(StrEqual(sSection, "Groups"))
+			type = Override_CommandGroup;
+		else
+			continue;
+			
+		if(KvGotoFirstSubKey(hKV, false))
+		{
+			do
+			{
+				KvGetSectionName(hKV, sName, sizeof(sName));
+				KvGetString(hKV, NULL_STRING, sFlags, sizeof(sFlags));
+				AddCommandOverride(sName, type, ReadFlagString(sFlags));
+				#if defined _DEBUG
+				PrintToServer("Adding override (%s, %s, %s)", sSection, sName, sFlags);
+				#endif
+			} while (KvGotoNextKey(hKV, false));
+			KvGoBack(hKV);
+		}
+	}
+	while(KvGotoNextKey(hKV));
+	CloseHandle(hKV);
 }
 
 //Yarr!
