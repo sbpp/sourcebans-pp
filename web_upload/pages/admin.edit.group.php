@@ -60,7 +60,7 @@ $name = $userbank->GetProperty("user", $_GET['id']);
       <input type="text" TABINDEX=1 class="inputbox" id="groupname" name="groupname" />
     </div><div id="groupname.msg" style="color:#CC0000;"></div></td>
   </tr>
-  </table>
+</table>
 <?php if($_GET['type'] == "web")
 {?>
 <h3>Web Admin Permissions</h3>
@@ -69,8 +69,63 @@ $name = $userbank->GetProperty("user", $_GET['id']);
 <h3>Server Admin Permissions</h3>
 <?php  $permissions = str_replace("{title}", $name, @file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php")) ;
 echo $permissions;
+
+// Group overrides
+// ALERT >>> GROSS CODE MIX <<<
+// I'm far to lazy to rewrite this to use smarty right now.
+$overrides_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = ?", array($_GET['id']));
+
 ?>
-<?php }?>
+<br />
+<form action="" method="post" name="group_overrides_form">
+<div class="rowdesc">Group Overrides</div>
+Group Overrides allow specific commands or groups of commands to be completely allowed or denied to members of the group.<br />
+<i>Read about <b><a href="http://wiki.alliedmods.net/Adding_Groups_%28SourceMod%29" title="Adding Groups (SourceMod)" target="_blank">group overrides</a></b> in the AlliedModders Wiki!</i><br /><br />
+Blanking out an overrides' name will delete it.<br /><br />
+<table align="center" cellspacing="0" cellpadding="4" id="overrides" width="90%">
+	<tr>
+		<td class="tablerow4">Type</td>
+		<td class="tablerow4">Name</td>
+		<td class="tablerow4">Access</td>
+	</tr>
+<?php
+	foreach($overrides_list as $override) {
+?>
+	<tr>
+		<td class="tablerow1">
+			<select name="override_type[]">
+				<option value="command" <?php echo $override['type']=="command"?"selected=\"selected\"":""; ?>>Command</option>
+				<option value="group"<?php echo $override['type']=="group"?"selected=\"selected\"":""; ?>>Group</option>
+			</select>
+			<input type="hidden" name="override_id[]" value="<?php echo $override['id']; ?>" />
+		</td>
+		<td class="tablerow1"><input name="override_name[]" value="<?php echo htmlspecialchars($override['name']); ?>" /></td>
+		<td class="tablerow1">
+			<select name="override_access[]">
+				<option value="allow"<?php echo $override['access']=="allow"?"selected=\"selected\"":""; ?>>Allow</option>
+				<option value="deny"<?php echo $override['access']=="deny"?"selected=\"selected\"":""; ?>>Deny</option>
+			</select>
+		</td>
+	</tr>
+<?php } ?>	
+	<tr>
+		<td class="tablerow1">
+			<select id="new_override_type">
+				<option value="command">Command</option>
+				<option value="group">Group</option>
+			</select>
+		</td>
+		<td class="tablerow1"><input id="new_override_name" /></td>
+		<td class="tablerow1">
+			<select id="new_override_access">
+				<option value="allow">Allow</option>
+				<option value="deny">Deny</option>
+			</select>
+		</td>
+	</tr>
+</table>
+</form>
+<?php } ?>
 <table width="100%">
 <tr><td>&nbsp;</td>
 </tr>

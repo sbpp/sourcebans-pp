@@ -334,6 +334,7 @@ function RemoveGroup($gid, $type)
 	else {
 		$query2 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET srv_group = NULL WHERE srv_group = (SELECT name FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid)");
 		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid");
+		$query0 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = $gid");
 	}
 	
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
@@ -2013,7 +2014,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 	return $objResponse;
 }
 
-function EditGroup($gid, $web_flags, $srv_flags, $type, $name)
+function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newOverride)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
@@ -2053,11 +2054,60 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name)
 		// Update server stuff
 		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_srvgroups` SET `flags` = ?, `name` = ?, `immunity` = ? WHERE `id` = $gid", array($srv_flags, $name, $immunity));
 
-		$oldname = $GLOBALS['db']->GetAll("SELECT * FROM ".DB_PREFIX."_admins WHERE srv_group = ?", array($gname['name']));
+		$oldname = $GLOBALS['db']->GetAll("SELECT aid FROM ".DB_PREFIX."_admins WHERE srv_group = ?", array($gname['name']));
 		foreach($oldname as $o)
 		{
 			$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_group` = ? WHERE `aid` = '" . (int)$o['aid'] . "'", array($name));
 		}
+		
+		// Update group overrides
+		if(!empty($overrides))
+		{
+			foreach($overrides as $override)
+			{
+				// Skip invalid stuff?!
+				if($override['type'] != "command" && $override['type'] != "group")
+					continue;
+			
+				$id = (int)$override['id'];
+				// Wants to delete this override?
+				if(empty($override['name']))
+				{
+					$GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE id = ?;", array($id));
+					continue;
+				}
+				
+				// Check for duplicates
+				$chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE name = ? AND type = ? AND group_id = ? AND id != ?", array($override['name'], $override['type'], $gid, $id));
+				if(!empty($chk))
+				{
+					$objResponse->addScript("ShowBox('Error', 'There already is an override with name \\\"" . htmlspecialchars(addslashes($override['name'])) . "\\\" from the selected type..', 'red', '', true);");
+					return $objResponse;
+				}
+				
+				// Edit the override
+				$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_srvgroups_overrides` SET name = ?, type = ?, access = ? WHERE id = ?;", array($override['name'], $override['type'], $override['access'], $id));
+			}
+		}
+		
+		// Add a new override
+		if(!empty($newOverride))
+		{
+			if(($newOverride['type'] == "command" || $newOverride['type'] == "group") && !empty($newOverride['name']))
+			{
+				// Check for duplicates
+				$chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE name = ? AND type = ? AND group_id = ?", array($newOverride['name'], $newOverride['type'], $gid));
+				if(!empty($chk))
+				{
+					$objResponse->addScript("ShowBox('Error', 'There already is an override with name \\\"" . htmlspecialchars(addslashes($newOverride['name'])) . "\\\" from the selected type..', 'red', '', true);");
+					return $objResponse;
+				}
+				
+				// Insert the new override
+				$GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_srvgroups_overrides` (group_id, type, name, access) VALUES (?, ?, ?, ?);", array($gid, $newOverride['type'], $newOverride['name'], $newOverride['access']));
+			}
+		}
+		
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
 			// rehash the settings out of the database on all servers
