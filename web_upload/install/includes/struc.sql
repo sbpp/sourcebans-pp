@@ -181,6 +181,17 @@ CREATE TABLE IF NOT EXISTS `{prefix}_srvgroups` (
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
+CREATE TABLE IF NOT EXISTS `{prefix}_srvgroups_overrides` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `group_id` smallint(5) unsigned NOT NULL,
+  `type` enum('command','group') NOT NULL,
+  `name` varchar(32) NOT NULL,
+  `access` enum('allow','deny') NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `group_id` (`group_id`,`type`,`name`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+
 CREATE TABLE IF NOT EXISTS `{prefix}_submissions` (
   `subid` int(6) NOT NULL auto_increment,
   `submitted` int(11) NOT NULL,

@@ -130,7 +130,26 @@
 								</table>
 							</td>
 		           		</tr>
-	        		</table>		
+							<tr align="left">
+		            <td width="20%" height="16" class="listtable_1">Overrides</td>
+		            <td height="16" class="listtable_1">
+									<table width="100%" cellspacing="0" cellpadding="0" class="listtable">
+										<tr>
+											<td class="listtable_top">Type</td>
+											<td class="listtable_top">Name</td>
+											<td class="listtable_top">Access</td>
+										</tr>
+										{foreach from=$server_overrides_list[$smarty.foreach.server_admin_group.index] item="override"}
+										<tr>
+											<td width="60%" height="16" class="listtable_1">{$override.type}</td>
+											<td width="60%" height="16" class="listtable_1">{$override.name|htmlspecialchars}</td>
+											<td width="60%" height="16" class="listtable_1">{$override.access}</td>
+										</tr>
+										{/foreach}
+									</table>
+								</td>
+		           </tr>
+	        	</table>		
 	     		</div>
 	     	</td> 	
 	  	</tr>      

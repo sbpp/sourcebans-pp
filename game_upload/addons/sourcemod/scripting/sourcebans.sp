@@ -1722,7 +1722,6 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	decl String:grpName[128], String:immuneGrpName[128];
 	decl String:grpFlags[32];
 	new Immunity;
-	new bool:reparse = false;
 	new grpCount = 0;
 	new Handle:groupsKV = CreateKeyValues("Groups");
 	
@@ -1754,15 +1753,6 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 				KvSetString(groupsKV, "flags", grpFlags);
 			if(Immunity > 0)
 				KvSetNum(groupsKV, "immunity", Immunity);
-			else if(strlen(immuneGrpName) > 0)
-			{
-				new junk;
-				if(StringToIntEx(immuneGrpName, junk))
-				{
-					Format(immuneGrpName, sizeof(immuneGrpName), "@%s", immuneGrpName);
-				}
-				KvSetString(groupsKV, "immunity", immuneGrpName);
-			}
 			
 			KvRewind(groupsKV);
 		}
@@ -1783,9 +1773,14 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			SetAdmGroupAddFlag(curGrp, g_FlagLetters[grpFlags[i] - 'a'], true);
 		}
 		
-		// Reparse the groups to apply the correct immunity inheritance
+		// Set the group immunity.
 		if(Immunity > 0)
-			reparse = true;
+		{
+			SetAdmGroupImmunityLevel(curGrp, Immunity);
+			#if defined DEBUG
+			LogToFile(logFile, "Group %s has %d immunity", grpName, Immunity);
+			#endif
+		}
 		
 		grpCount++;
 	}
@@ -1794,11 +1789,16 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		KeyValuesToFile(groupsKV, groupsLoc);
 	CloseHandle(groupsKV);
 	
-#if defined DEBUG
-		LogToFile(logFile, "Finished loading %i groups.",grpCount);
-#endif
+	#if defined DEBUG
+	LogToFile(logFile, "Finished loading %i groups.",grpCount);
+	#endif
 	
-	if (reparse)
+	// Load the group overrides
+	decl String:query[512];
+	FormatEx(query, 512, "SELECT sg.name, so.type, so.name, so.access FROM %s_srvgroups_overrides so LEFT JOIN %s_srvgroups sg ON sg.id = so.group_id ORDER BY sg.id", DatabasePrefix, DatabasePrefix);
+	SQL_TQuery(Database, LoadGroupsOverrides, query);
+	
+	/*if (reparse)
 	{
 		decl String:query[512];
 		FormatEx(query,512,"SELECT name, immunity, groups_immune FROM %s_srvgroups ORDER BY id",DatabasePrefix);
@@ -1808,7 +1808,7 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	{
 		curLoading--;
 		CheckLoadAdmins();
-	}
+	}*/
 }
 
 // Reparse to apply inherited immunity
@@ -1822,7 +1822,6 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 		return;
 	}
 	decl String:grpName[128], String:immunityGrpName[128];
-	new Immunity;
     
 	new GroupId:curGrp = INVALID_GROUP_ID;
 	new GroupId:immuneGrp = INVALID_GROUP_ID;
@@ -1836,24 +1835,13 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
  		TrimString(grpName);
 		if(strlen(grpName) == 0)
 			continue;
-		
-		Immunity = SQL_FetchInt(hndl,1);
-		
+
 		SQL_FetchString(hndl, 2, immunityGrpName, sizeof(immunityGrpName));
 		TrimString(immunityGrpName);
         
 		curGrp = FindAdmGroup(grpName);
 		if (curGrp == INVALID_GROUP_ID)
 			continue;
-		
-		// Set the immunity directly, if we don't want to inherit it from another group.
-		if(Immunity > 0 && strlen(immunityGrpName) == 0)
-		{
-			SetAdmGroupImmunityLevel(curGrp, Immunity);
-			#if defined DEBUG
-				LogToFile(logFile, "Group %s has %d immunity", grpName, Immunity);
-			#endif
-		}
 		
 		immuneGrp = FindAdmGroup(immunityGrpName);
 		if (immuneGrp == INVALID_GROUP_ID)
@@ -1862,10 +1850,55 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 		SetAdmGroupImmuneFrom(curGrp, immuneGrp);
 		
 		#if defined DEBUG
-			LogToFile(logFile, "Group %s inhertied immunity from group %s", grpName, immunityGrpName);
+		LogToFile(logFile, "Group %s inhertied immunity from group %s", grpName, immunityGrpName);
 		#endif
 	}
 	--curLoading;
+	CheckLoadAdmins();
+}
+
+public LoadGroupsOverrides(Handle:owner, Handle:hndl, const String:error[], any:data)
+{
+	if (hndl == INVALID_HANDLE)
+	{
+		curLoading--;
+		CheckLoadAdmins();
+		LogToFile(logFile, "Failed to retrieve group overrides from the database, %s",error);
+		return;
+	}
+	decl String:sGroupName[128], String:sType[16], String:sCommand[64], String:sAllowed[16];
+	decl OverrideRule:iRule, OverrideType:iType;
+
+	new GroupId:curGrp = INVALID_GROUP_ID;
+	while (SQL_MoreRows(hndl))
+	{
+		SQL_FetchRow(hndl);
+		if(SQL_IsFieldNull(hndl, 0))
+			continue;  // Sometimes some rows return NULL due to some setups
+		
+		SQL_FetchString(hndl, 0, sGroupName,sizeof(sGroupName));
+ 		TrimString(sGroupName);
+		if(strlen(sGroupName) == 0)
+			continue;
+		
+		SQL_FetchString(hndl, 1, sType, sizeof(sType));
+		SQL_FetchString(hndl, 2, sCommand, sizeof(sCommand));
+		SQL_FetchString(hndl, 3, sAllowed, sizeof(sAllowed));
+		
+		curGrp = FindAdmGroup(sGroupName);
+		if (curGrp == INVALID_GROUP_ID)
+			continue;
+		
+		iRule = StrEqual(sAllowed,"allow") ? Command_Allow         : Command_Deny;
+		iType = StrEqual(sType,   "group") ? Override_CommandGroup : Override_Command;
+		
+		#if defined DEBUG
+		PrintToServer("AddAdmGroupCmdOverride(%i, %s, %i, %i)", curGrp, sCommand, iType, iRule);
+		#endif
+		
+		AddAdmGroupCmdOverride(curGrp, sCommand, iType, iRule);
+	}
+	curLoading--;
 	CheckLoadAdmins();
 }
 

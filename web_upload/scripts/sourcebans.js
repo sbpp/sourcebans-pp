@@ -710,14 +710,48 @@ function ProcessEditGroup(type, name)
 		$('groupname.msg').setStyle('display', 'none');
 	}
 	
-	if($('immunity'))
+	if($('immunity') && !IsNumeric($('immunity').value))
 	{
-	 	if(IsNumeric($('immunity').value))
-			xajax_EditGroup(group, Mask, srvMask, type, name);
-		else
-			ShowBox("Error", "Immunity must be a numerical value (0-9)", "red", "", true);
-	}else
-		xajax_EditGroup(group, Mask, srvMask, type, name);
+		ShowBox("Error", "Immunity must be a numerical value (0-9)", "red", "", true);
+		return;
+	}
+	
+	var overrides = [];
+	var new_override = {};
+	
+	// Handle group overrides
+	if(type == "srv")
+	{
+		var override_id = document.group_overrides_form.elements["override_id[]"];
+		// Are there any old overrides to change?
+		if(override_id != null)
+		{
+			var override_type = document.group_overrides_form.elements["override_type[]"];
+			var override_name = document.group_overrides_form.elements["override_name[]"];
+			var override_access = document.group_overrides_form.elements["override_access[]"];
+
+			// Make sure they're arrays!
+			if($type(override_id) == "element")
+				override_id = [override_id];
+			if($type(override_type) == "element")
+				override_type = [override_type];
+			if($type(override_name) == "element")
+				override_name = [override_name];
+			if($type(override_access) == "element")
+				override_access = [override_access];
+			
+			overrides = new Array(override_id.length);
+			
+			for(var i=0;i<override_id.length;i++)
+			{
+				overrides[i] = {'id': override_id[i].value, 'type': override_type[i][override_type[i].selectedIndex].value, 'name': override_name[i].value, 'access': override_access[i][override_access[i].selectedIndex].value};
+			}
+		}
+		
+		new_override = {'type': $('new_override_type')[$('new_override_type').selectedIndex].value, 'name': $('new_override_name').value, 'access': $('new_override_access')[$('new_override_access').selectedIndex].value};
+	}
+	
+	xajax_EditGroup(group, Mask, srvMask, type, name, overrides, new_override);
 }
 
 function update_server()
