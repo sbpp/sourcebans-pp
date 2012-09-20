@@ -2,13 +2,15 @@
 
 SourceBans | Global admin and ban management for the Source engine
 
-Copyright © 2007-2009 SteamFriends and InterWave Studios
+Copyright © 2007-2012 SteamFriends and InterWave Studios
 
 ---------
 
 Authors: Interwave Studios Development Team
 
 Website: www.sourcebans.net
+
+IRC: #sourcebans @ gamesurge.net
 
 Install help: http://www.sourcebans.net/manual
 

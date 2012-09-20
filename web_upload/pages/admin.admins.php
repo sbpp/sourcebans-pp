@@ -50,11 +50,16 @@ foreach($admins AS $admin)
 	$admin['aid'] = $admin['aid'];
 	$admin['nodemocount'] = $nodem['num'];
 
-  	$admin['name'] = stripslashes($admin['user']);
-  	$admin['server_flag_string'] = SmFlagsToSb($userbank->GetProperty("srv_flags",$admin['aid']));
-  	$admin['web_flag_string'] = BitToString($userbank->GetProperty("extraflags",$admin['aid']));
-  	$admin['lastvisit'] = SBDate($dateformat,$userbank->GetProperty("lastvisit", $admin['aid']));
-  	array_push($admin_list, $admin);
+	$admin['name'] = stripslashes($admin['user']);
+	$admin['server_flag_string'] = SmFlagsToSb($userbank->GetProperty("srv_flags",$admin['aid']));
+	$admin['web_flag_string'] = BitToString($userbank->GetProperty("extraflags",$admin['aid']));
+	
+	$lastvisit = $userbank->GetProperty("lastvisit", $admin['aid']);
+	if(!$lastvisit)
+		$admin['lastvisit'] = "Never";
+	else
+		$admin['lastvisit'] = SBDate($dateformat,$userbank->GetProperty("lastvisit", $admin['aid']));
+	array_push($admin_list, $admin);
 }
 
 if ($page > 1)
