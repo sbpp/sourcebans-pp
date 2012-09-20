@@ -45,7 +45,6 @@ new Handle:ConfigParser;
 
 new Handle:hTopMenu = INVALID_HANDLE;
 
-new const String:BLANK[] = "";
 new const String:Prefix[] = "[SourceBans] ";
 
 new String:ServerIp[24];
@@ -145,15 +144,15 @@ public OnPluginStart()
 	CvarPort = FindConVar("hostport");
 	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	RegServerCmd("sm_rehash",sm_rehash,"Reload SQL admins");
-	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]");
-	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]");
-	RegAdminCmd("sm_addban", CommandAddBan, ADMFLAG_RCON, "sm_addban <time> <steamid> [reason]");
-	RegAdminCmd("sm_unban", CommandUnban, ADMFLAG_UNBAN, "sm_unban <steamid|ip> [reason]");
+	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
+	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
+	RegAdminCmd("sm_addban", CommandAddBan, ADMFLAG_RCON, "sm_addban <time> <steamid> [reason]", "sourcebans");
+	RegAdminCmd("sm_unban", CommandUnban, ADMFLAG_UNBAN, "sm_unban <steamid|ip> [reason]", "sourcebans");
 	RegAdminCmd("sb_reload",
 				_CmdReload,
 				ADMFLAG_RCON,
 				"Reload sourcebans config and ban reason menu options",
-				BLANK);
+				"sourcebans");
 	
 	RegConsoleCmd("say", ChatHook);
 	RegConsoleCmd("say_team", ChatHook);
@@ -1869,6 +1868,9 @@ public LoadGroupsOverrides(Handle:owner, Handle:hndl, const String:error[], any:
 	decl String:sGroupName[128], String:sType[16], String:sCommand[64], String:sAllowed[16];
 	decl OverrideRule:iRule, OverrideType:iType;
 
+	new Handle:groupsKV = CreateKeyValues("Groups");
+	FileToKeyValues(groupsKV, groupsLoc);
+	
 	new GroupId:curGrp = INVALID_GROUP_ID;
 	while (SQL_MoreRows(hndl))
 	{
@@ -1896,10 +1898,28 @@ public LoadGroupsOverrides(Handle:owner, Handle:hndl, const String:error[], any:
 		PrintToServer("AddAdmGroupCmdOverride(%i, %s, %i, %i)", curGrp, sCommand, iType, iRule);
 		#endif
 		
+		// Save overrides into admin_groups.cfg backup
+		if(KvJumpToKey(groupsKV, sGroupName))
+		{
+			KvJumpToKey(groupsKV, "Overrides", true);
+			if(iType == Override_Command)
+				KvSetString(groupsKV, sCommand, sAllowed);
+			else
+			{
+				Format(sCommand, sizeof(sCommand), "@%s", sCommand);
+				KvSetString(groupsKV, sCommand, sAllowed);
+			}
+			KvRewind(groupsKV);
+		}
+		
 		AddAdmGroupCmdOverride(curGrp, sCommand, iType, iRule);
 	}
 	curLoading--;
 	CheckLoadAdmins();
+	
+	if(backupConfig)
+		KeyValuesToFile(groupsKV, groupsLoc);
+	CloseHandle(groupsKV);
 }
 
 public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
@@ -1934,14 +1954,14 @@ public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		if(StrEqual(sType, "command"))
 		{
 			AddCommandOverride(sName, Override_Command,      ReadFlagString(sFlags));
-			KvJumpToKey(hKV, "commands", true);
+			KvJumpToKey(hKV, "override_commands", true);
 			KvSetString(hKV, sName, sFlags);
 			KvGoBack(hKV);
 		}
 		else if(StrEqual(sType, "group"))
 		{
 			AddCommandOverride(sName, Override_CommandGroup, ReadFlagString(sFlags));
-			KvJumpToKey(hKV, "groups", true);
+			KvJumpToKey(hKV, "override_groups", true);
 			KvSetString(hKV, sName, sFlags);
 			KvGoBack(hKV);
 		}
@@ -2442,9 +2462,9 @@ stock ParseBackupConfig_Overrides()
 	do
 	{
 		KvGetSectionName(hKV, sSection, sizeof(sSection));
-		if(StrEqual(sSection, "Commands"))
+		if(StrEqual(sSection, "override_commands"))
 			type = Override_Command;
-		else if(StrEqual(sSection, "Groups"))
+		else if(StrEqual(sSection, "override_groups"))
 			type = Override_CommandGroup;
 		else
 			continue;
