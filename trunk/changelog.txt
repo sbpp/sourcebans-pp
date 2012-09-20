@@ -8,6 +8,37 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(20/09/12): Version 1.4.10
+-----------------------
+01. * Added support for global overrides
+02. * Added support for group overrides
+03. * Added option to add admins without a password and email set, if they don't have any web permissions
+04. * Added mod support for CS:GO
+05. * Added basic link parsing in comments. Pasted links are now clickable
+06. + Fixed trying to unban badly formated steamids for games not using STEAM_0: but STEAM_1: or similar. Steam Universe is specified per mod.
+07. + Added filesize of demo on download to enable browsers estimate the download time
+08. + Trimmed whitespace from submission form input
+09. + Added option to add disabled mods
+10. + Servers are now sorted by serverid in the server list
+11. + (Plugin) Enhanced sm_ban to use everything after the 2nd argument (time) as the reason. No "quotes" required.
+12. ! (Plugin) Fixed creating another admin user if there already is one
+13. ! Fixed a XSS vulnerability in the breadcrumbs. (Thanks NightlyDev)
+14. ! Fixed LFI exploit for root admins
+15. ! Fixed not rehashing all servers on some installs
+16. ! Fixed case-sensitive search for "rcon_password" in rcon console
+17. ! Fixed not showing expired bans as expired if the timezone of mysql and php differs. (That should NEVER be the case!)
+18. ! Fixed visual glitch on the theme selection page showing an empty theme
+19. ! Fixed community group banning failing for groups with more than 50 members
+20. ! Fixed sql error when editing server rcon, if password contains a '?'
+21. ! Fixed not showing players with quotes in their name on the server player list
+22. ! Fixed not being able to kick/ban some players from the web directly. (not on the server anymore, while they actually are)
+23. ! Fixed not checking for duplicated mods on mod edit/add
+24. ! Fixed trying to use an invalid socket in CServerInfo causing ugly ajax errors instead of a clean "Error connecting"
+25. ! Fixed showing 1.1.1970 as last login time, if user never logged in before
+26. ? Removed unnecassary query in admingroup editform
+27. ? Added link to FAQ to "Error connecting" message for admins
+28. ? Updated IpToCountry.csv
+
 (18/11/11): Version 1.4.9
 -----------------------
 01. * Added mod support for Alien Swarm, CSPromod, E.Y.E and Nuclear Dawn
