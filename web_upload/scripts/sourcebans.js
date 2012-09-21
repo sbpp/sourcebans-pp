@@ -1215,6 +1215,12 @@ function ShowKickBox(check, type)
 
 function ShowRehashBox(servers, title, msg, color, redir)
 {
+	// Don't show anything sm_rehash related, if there are no servers to rcon.
+	if(servers == '')
+	{
+		ShowBox(title, msg, color, redir, true);
+		return;
+	}
 	msg = msg + '<br /><hr /><i>Rehashing Admin and Group data on all related servers...</i><div id="rehashDiv" name="rehashDiv" width="100%"></div>';
 	ShowBox(title, msg, color, redir, true);
 	$('dialog-control').setStyle('display', 'none');
