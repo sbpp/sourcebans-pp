@@ -8,7 +8,7 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
-(20/09/12): Version 1.4.10
+(21/09/12): Version 1.4.10
 -----------------------
 01. * Added support for global overrides
 02. * Added support for group overrides
