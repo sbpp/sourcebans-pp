@@ -2390,10 +2390,25 @@ function AddComment($bid, $ctype, $ctext, $page)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a comment, but doesnt have access.");
 		return $objResponse;
 	}
-
+	
+	$bid = (int)$bid;
+	$page = (int)$page;
+	
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
+		
+	if($ctype=="B")
+		$redir = "?p=banlist".$pagelink;
+	elseif($ctype=="S")
+		$redir = "?p=admin&c=bans#^2";
+	elseif($ctype=="P")
+		$redir = "?p=admin&c=bans#^1";
+	else
+	{
+		$objResponse->addScript("ShowBox('Error', 'Bad comment type.', 'red');");
+		return $objResponse;
+	}
 
 	$ctext = trim($ctext);
 
@@ -2403,16 +2418,9 @@ function AddComment($bid, $ctype, $ctext, $page)
 									   $userbank->GetAid(),
 									   $ctext));
 
-	if($ctype=="B")
-		$redir = "?p=banlist".$pagelink;
-	elseif($ctype=="S")
-		$redir = "?p=admin&c=bans#^2";
-	elseif($ctype=="P")
-		$redir = "?p=admin&c=bans#^1";
-
 	$objResponse->addScript("ShowBox('Comment Added', 'The comment has been successfully published', 'green', 'index.php$redir');");
 	$objResponse->addScript("TabToReload();");
-	$log = new CSystemLog("m", "Comment Added", $username." added a comment for ban #".(int)$bid);
+	$log = new CSystemLog("m", "Comment Added", $username." added a comment for ban #".$bid);
 	return $objResponse;
 }
 
@@ -2433,6 +2441,18 @@ function EditComment($cid, $ctype, $ctext, $page)
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
+	
+	if($ctype=="B")
+		$redir = "?p=banlist".$pagelink;
+	elseif($ctype=="S")
+		$redir = "?p=admin&c=bans#^2";
+	elseif($ctype=="P")
+		$redir = "?p=admin&c=bans#^1";
+	else
+	{
+		$objResponse->addScript("ShowBox('Error', 'Bad comment type.', 'red');");
+		return $objResponse;
+	}
 
 	$ctext = trim($ctext);
 
@@ -2440,13 +2460,6 @@ function EditComment($cid, $ctype, $ctext, $page)
 	$GLOBALS['db']->Execute($pre,array($ctext,
 									   $userbank->GetAid(),
 									   $cid));
-
-	if($ctype=="B")
-		$redir = "?p=banlist".$pagelink;
-	elseif($ctype=="S")
-		$redir = "?p=admin&c=bans#^2";
-	elseif($ctype=="P")
-		$redir = "?p=admin&c=bans#^1";
 
 	$objResponse->addScript("ShowBox('Comment Edited', 'The comment #".$cid." has been successfully edited', 'green', 'index.php$redir');");
 	$objResponse->addScript("TabToReload();");

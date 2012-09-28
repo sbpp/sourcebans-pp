@@ -551,7 +551,7 @@ while (!$res->EOF)
 				if($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
 					$cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.gif\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />','index.php?p=banlist&comment='.$data['ban_id'].'&ctype=B&cid='.$commentres->fields['cid'].$pagelink,'Edit Comment');
 					if($userbank->HasAccess(ADMIN_OWNER)) {
-						$cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(".$commentres->fields['cid'].",'B',".(isset($_GET["page"])?$_GET["page"]:-1).");\"><img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /></a>";
+						$cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(".$commentres->fields['cid'].",'B',".(isset($_GET["page"])?$page:-1).");\"><img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /></a>";
 					}
 				}
 				else {
@@ -561,7 +561,8 @@ while (!$res->EOF)
 
 				$cdata['comname'] = $commentres->fields['comname'];
 				$cdata['added'] = SBDate($dateformat, $commentres->fields['added']);
-				$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+				$cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
+				$cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 				// Parse links and wrap them in a <a href=""></a> tag to be easily clickable
 				$cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
 
@@ -644,7 +645,7 @@ if($pages > 1) {
 	$ban_nav .= '&nbsp;<select onchange="changePage(this,\'B\',\''.(isset($_GET['advSearch']) ? $_GET['advSearch'] : '').'\',\''.(isset($_GET['advType']) ? $_GET['advType'] : '').'\');">';
 	for($i=1;$i<=$pages;$i++)
 	{
-		if(isset($_GET["page"]) && $i == $_GET["page"]) {
+		if(isset($_GET["page"]) && $i == $page) {
 			$ban_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
 			continue;
 		}
@@ -656,17 +657,22 @@ if($pages > 1) {
 //COMMENT STUFF
 //----------------------------------------
 if(isset($_GET["comment"])) {
+	$_GET["comment"] = (int)$_GET["comment"];
 	$theme->assign('commenttype', (isset($_GET["cid"])?"Edit":"Add"));
 	if(isset($_GET["cid"])) {
-		$ceditdata = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_comments WHERE cid = '".(int)$_GET["cid"]."'");
-        $ctext = $ceditdata['commenttxt'];
-		$cotherdataedit = " AND cid != '".(int)$_GET["cid"]."'";
+		$_GET["cid"] = (int)$_GET["cid"];
+		$ceditdata = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_comments WHERE cid = '".$_GET["cid"]."'");
+		$ctext = htmlspecialchars($ceditdata['commenttxt']);
+		$cotherdataedit = " AND cid != '".$_GET["cid"]."'";
 	}
 	else 
-    {
-        $cotherdataedit = "";
-        $ctext = "";
-    }
+	{
+		$cotherdataedit = "";
+		$ctext = "";
+	}
+	
+	$_GET["ctype"] = substr($_GET["ctype"], 0, 1);
+	
 	$cotherdata = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
 											(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.aid) AS comname,
 											(SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = C.editaid) AS editname
@@ -679,7 +685,8 @@ if(isset($_GET["comment"])) {
 		$coment = array();
 		$coment['comname'] = $cotherdata->fields['comname'];
 		$coment['added'] = SBDate($dateformat, $cotherdata->fields['added']);
-		$coment['commenttxt'] = str_replace("\n", "<br />", $cotherdata->fields['commenttxt']);
+		$coment['commenttxt'] = htmlspecialchars($cotherdata->fields['commenttxt']);
+		$coment['commenttxt'] = str_replace("\n", "<br />", $coment['commenttxt']);
 		// Parse links and wrap them in a <a href=""></a> tag to be easily clickable
 		$coment['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $coment['commenttxt']);
 		if($cotherdata->fields['editname']!="") {
@@ -694,14 +701,14 @@ if(isset($_GET["comment"])) {
 		$cotherdata->MoveNext();
 	}
 
-	$theme->assign('page', (isset($_GET["page"])?$_GET["page"]:-1));
+	$theme->assign('page', (isset($_GET["page"])?$page:-1));
 	$theme->assign('othercomments', $ocomments);
 	$theme->assign('commenttext', (isset($ctext)?$ctext:""));
 	$theme->assign('ctype', $_GET["ctype"]);
 	$theme->assign('cid', (isset($_GET["cid"])?$_GET["cid"]:""));
 }
 $theme->assign('view_comments',$view_comments);
-$theme->assign('comment', (isset($_GET["comment"])?$_GET["comment"]:false));
+$theme->assign('comment', (isset($_GET["comment"])&&$view_comments?$_GET["comment"]:false));
 //----------------------------------------
 
 unset($_SESSION['CountryFetchHndl']);
