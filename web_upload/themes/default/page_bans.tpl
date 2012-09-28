@@ -32,7 +32,7 @@
   </tr>
   <tr>
 	<td>
-		<b>{$com.comname}</b></td><td align=\"right\"><b>{$com.added}</b>
+		<b>{$com.comname}</b></td><td align="right"><b>{$com.added}</b>
 	</td>
   </tr>
   <tr>
