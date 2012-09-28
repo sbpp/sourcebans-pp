@@ -129,12 +129,15 @@ function SwapPane(id)
 
 function InitAccordion(opener, element, container, num)
 {
-	if (document.readyState != "complete")
-	{
+	// IE6 got no window.addEventListener
+	if (window.addEventListener) {
 		window.addEventListener("load", function () {
-			InitAccordion(opener, element, container, num);
+				InitAccordion(opener, element, container, num);
+		}, false);
+	} else {
+		window.attachEvent('onload', function () {
+				InitAccordion(opener, element, container, num);
 		});
-		return;
 	}
 
 	if(num == null)
