@@ -18,13 +18,14 @@
  * rows, username, email etc
  *
  * @param string $table the table to lookup
- * @param string $field The feild to check
+ * @param string $field The field to check
  * @param string $value The value to check against
  * @return true if the value already exists in that field is found, else false
  */
 function is_taken($table, $field, $value)
 {
-    $query = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_$table` WHERE `$field` = '$value'");
+    // This one is nasty and should be removed. Avoid throwing any user input into $table and $field here...
+    $query = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_$table` WHERE `$field` = ?", array($value));
     return (count($query) > 0);
 }
 
