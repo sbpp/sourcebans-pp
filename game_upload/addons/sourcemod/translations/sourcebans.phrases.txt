@@ -1,11 +1,11 @@
-﻿"Phrases"
+"Phrases"
 {
 	"Banned Check Site"
 	{
 		"#format"		"{1:s}"
 		"en"			"You have been banned by this server, check {1} for more info"
 		"nl"			"U bent gebanned van deze server, kijk op {1} voor meer informatie"
-		"fr"			"Vous avez ete banne de ce serveur, allez sur {1} pour plus d'informations"
+		"fr"			"Vous avez été banni de ce serveur, allez sur {1} pour plus d'informations"
 		"pl"			"Zostałeś zbanowany na tym serwerze, odwiedź {1} aby poznać szczegóły"
 		"de"			"Sie wurden von diesem Server gebannt, weitere Informationen auf {1}"
 		"ru"			"Вы были забанены на этом сервере, для получения информации посетите: {1}"
@@ -16,7 +16,7 @@
 	{
 		"en"			"Database connection failed. Please contact server operator."
 		"nl"			"Database connectie is mislukt. Neem contact op met uw server beheerder."
-		"fr"			"Probleme de connection avec la database. Merci de bien vouloir contacter un admin."
+		"fr"			"Problème de connection avec la base de données. Merci de bien vouloir contacter un admin."
 		"pl"			"Błąd połączenia z bazą danych. Skontaktuj się z adminem serwera."
 		"de"			"Datenbankverbindung fehlgeschlagen. Bitte kontaktieren Sie den Serveradministrator."
 		"ru"			"Не удалось подключиться к базе данных. Свяжитесь с администратором сервера."
@@ -27,7 +27,7 @@
 	{
 		"en"			"The player is not in game, please visit the web panel to ban them."
 		"nl"			"De speler is niet in het spel, gaat u alstublieft naar het web panel om de speler op de banlijst te plaatsen."
-		"fr"			"Le joueur ne joue plus, merci d'aller sur le pannel internet pour le banner."
+		"fr"			"Le joueur n'est pas en jeu, merci d'aller sur le panel internet pour le bannir."
 		"pl"			"Gracz nie znajduje się w grze, odwiedź panel www aby go zbanować."
 		"de"			"Der Spieler ist nicht im Spiel. Bitte benutzen Sie das Webpanel um ihn zu bannen."
 		"ru"			"Так как игрок не в игре вы должны посетить веб-панель, чтобы забанить его."
@@ -38,7 +38,7 @@
 	{
 		"en"			"This player has not been verified. Please wait thirty seconds before retrying."
 		"nl"			"Deze speler zijn ban is niet geverifieerd. Wacht u alstublieft 30 seconden voordat u het opnieuw probeerd."
-		"fr"			"Le systeme n'a pas reussi a determiner si ce joueur est ban. Merci de bien vouloir attendre trente secondes avant de re-essayer."
+		"fr"			"Le systeme n'a pas réussi à déterminer si ce joueur est banni. Merci d'attendre 30 secondes avant de re-essayer."
 		"pl"			"Gracz nie został jeszcze zweryfikowany. Spróbuj ponownie za 30 sekund."
 		"de"			"Dieser Spieler wurde noch nicht verifiziert. Bitte warten Sie 30 Sekunden und versuchen Sie es nochmal."
 		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
@@ -50,7 +50,7 @@
 		"#format"		"{1:s}"
 		"en"			"You can not unban from in the server, visit {1} to unban."
 		"nl"			"U kunt de speler niet vanuit de server unbannen, bezoek {1} om te unbannen."
-		"fr"			"Vous ne pouvez pas annuler de ban sur ce serveur, allez sur {1} pour le faire."
+		"fr"			"Vous ne pouvez pas annuler de ban depuis ce serveur, allez sur {1} pour le faire."
 		"pl"			"Nie możesz odbanować z serwera, odwiedź {1} by zdjąć bana."
 		"de"			"Sie können nicht vom Server aus entbannen, entbannen Sie auf {1} ."
 		"ru"			"Вы не можете разбанить игрока на сервере, зайдите на {1} для удаления бана."
@@ -62,7 +62,7 @@
 		"#format"		"{1:s}"
 		"en"			"You can not add a ban from in the server, visit {1} to add a ban."
 		"nl"			"U kunt geen ban toevoegen vanuit de server, bezoek {1} om de ban toe te voegen."
-		"fr"			"Vous ne pouvez pas ajouter de formulaire de ban sur ce serveur, allez sur {1} pour ajouter un ban."
+		"fr"			"Vous ne pouvez pas ajouter de ban depuis ce serveur, allez sur {1} pour ajouter un ban."
 		"pl"			"Nie możesz dodać bana z serwera, odwiedź {1} by dodać bana."
 		"de"			"Sie können keinen Ban vom Server aus hinzufügen, bannen Sie auf {1} ."
 		"ru"			"Вы не можете дать бан на сервере, зайдите на {1} для добавления бана."
@@ -73,7 +73,7 @@
 	{
 		"en"			"Please check the menu to select a reason for ban."
 		"nl"			"Controleerdt u alstublieft het menu om een reden te selecteren voor de ban."
-		"fr"			"Merci de bien vouloir utiliser le menu pour selectionner la raison du ban."
+		"fr"			"Merci d'utiliser le menu pour sélectionner la raison du ban."
 		"pl"			"Sprawdź menu aby wybrać powód bana."
 		"de"			"Bitte benutzen Sie das Menü um einen Grund für den Ban auszuwählen."
 		"ru"			"Выберите причину бана из меню."
@@ -84,7 +84,7 @@
 	{
 		"en"			"Please include a reason for banning the client."
 		"nl"			"Voegt u alstublieft een reden toe voor het bannen van deze persoon."
-		"fr"			"Merci de bien vouloir ajouter la raison du ban."
+		"fr"			"Merci d'ajouter la raison du ban."
 		"pl"			"Proszę dodać powód bana."
 		"de"			"Bitte geben Sie einen Grund für den Ban an."
 		"ru"			"Добавьте причину бана игрока."
@@ -95,7 +95,7 @@
 	{
 		"en"			"Failed to ban player, please try again."
 		"nl"			"Er is een fout opgetreden tijdens de ban procedure, probeert u het alstublieft nogmaals."
-		"fr"			"Le joueur n'a pas pu être ban merci d'essayer ulterieurment."
+		"fr"			"Le joueur n'a pas pu être banni merci d'essayer ultérieurement."
 		"pl"			"Błąd przy dodawaniu bana, spróbuj ponownie."
 		"de"			"Es ist ein Fehler beim bannen des Spielers aufgetreten, bitte versuchen Sie es erneut."
 		"ru"			"Не удалось забанить игрока, попробуйте еще раз."
@@ -106,7 +106,7 @@
 	{
 		"en"			"Please type the reason for ban in chat and press enter. Type '!noreason' to abort."
 		"nl"			"Typ alstublieft de reden voor de ban in chat and druk op enter. Typ '!noreason' om the annuleren."
-		"fr"			"Prière d'ecrire la raison du ban dans le chat. Tapez '!noreason' pour annuler."
+		"fr"			"Merci d'écrire la raison du ban dans le chat. Tapez '!noreason' pour annuler."
 		"pl"			"Proszę wpisać powód bana w czacie oraz potwierdzić przyciskiem Enter. Wpisz !noreason by anulować."
 		"de"			"Bitte schreiben Sie den Grund für den Ban in den Chat. Schreiben Sie '!noreason' um abzubrechen."
 		"ru"			"Введите причину бана и нажмите Ввод. Введите '!noreason' для отмены бана."
@@ -117,7 +117,7 @@
 	{
 		"en"			"The ban procedure has been stopped successfully."
 		"nl"			"De ban procedure is succesvol gestopt."
-		"fr"			"La procédure de ban a etée arreté avec succes."
+		"fr"			"La procédure de ban a été arrêté avec succès."
 		"pl"			"Procedura banowania została pomyślnie zatrzymana."
 		"de"			"Der Banvorgang wurde erfolgreich angehalten."
 		"ru"			"Бан отменён."
