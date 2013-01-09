@@ -358,7 +358,13 @@ if(isset($_GET['advSearch']))
 			$advcrit = array();
 		break;
 	}
-
+	
+	// Make sure we got a "WHERE" clause there, if we add the hide inactive condition
+	if(empty($where) && isset($_SESSION["hideinactive"]))
+	{
+		$hideinactive = $hideinactiven;
+	}
+	
 		$res = $GLOBALS['db']->Execute(
 				    	"SELECT BA.bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
@@ -509,11 +515,13 @@ while (!$res->EOF)
 
 	if ($res->fields['demo_count'] == 0)
 	{
+		$data['demo_available'] = false;
 		$data['demo_quick'] = 'N/A';
 		$data['demo_link'] = CreateLinkR('<img src="images/demo.gif" border="0" alt="" style="vertical-align:middle" /> No Demos',"#");
 	}
 	else
 	{
+		$data['demo_available'] = true;
 		$data['demo_quick'] = CreateLinkR('Demo',"getdemo.php?type=B&id=".$data['ban_id']);
 		$data['demo_link'] = CreateLinkR('<img src="images/demo.gif" border="0" alt="" style="vertical-align:middle" /> Review Demo',"getdemo.php?type=B&id=".$data['ban_id']);
 	}

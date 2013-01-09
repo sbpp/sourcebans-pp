@@ -91,6 +91,11 @@
             {$ban.player|escape:'html'|stripslashes}
           {/if}
 		  </div>
+		  {if $ban.demo_available}
+		  <div style="float:right;">
+		  <img src="images/demo.gif" alt="Demo" title="Demo available" style="height:14px;width:14px;" />
+		  </div>
+		  {/if}
 		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
 		  <div style="float:right;">
 		  {$ban.commentdata|@count} <img src="images/details.gif" alt="Comments" title="Comments" style="height:12px;width:12px;" />
