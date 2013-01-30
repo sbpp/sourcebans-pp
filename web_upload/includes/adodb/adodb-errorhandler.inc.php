@@ -1,6 +1,6 @@
 <?php
 /**
- * @version V4.94 23 Jan 2007  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
+ * @version V5.18 3 Sep 2012   (c) 2000-2012 John Lim (jlim#natsoft.com). All rights reserved.
  * Released under both BSD license and Lesser GPL library license.
  * Whenever there is any discrepancy between the two licenses,
  * the BSD license will take precedence.
@@ -64,7 +64,6 @@ function ADODB_Error_Handler($dbms, $fn, $errno, $errmsg, $p1, $p2, &$thisConnec
 	*		and optionally, port number, of the socket receiving the debug information.
 	*	3 message is appended to the file destination
 	*/
-		
 	if (defined('ADODB_ERROR_LOG_TYPE')) {
 		$t = date('Y-m-d H:i:s');
 		if (defined('ADODB_ERROR_LOG_DEST'))
@@ -73,19 +72,8 @@ function ADODB_Error_Handler($dbms, $fn, $errno, $errmsg, $p1, $p2, &$thisConnec
 			error_log("($t) $s", ADODB_ERROR_LOG_TYPE);
 	}
 
-	$unique = substr(md5(rand(0, 1000)), 0, 7);
-	$errorstring = "";
-	$errorstring .= "<div class='dbg' id='" . $unique . "'><span style='font-weight:bold'>".$errmsg."</span> <br />";
-	$errorstring .= "<br /><span>SQL Query type: </span><span style='font-weight:bold'>$fn</span><span><br />";
-	$errorstring .= "<span>Script: <span style='font-weight:bold'>'{$_SERVER['PHP_SELF']}'</span></span><br />";
-	$errorstring .= "<span>SQL Query: <span style='font-weight:bold'>$p1</span></span><br />";
-	$errorstring .= "<span>SQL Params: <span style='font-weight:bold'>$p2</span></span><br />";
-		
-	echo $errorstring . "<hr></div>";
-	echo "<script>$('msg-red-debug').setStyle('display', 'block');$('".$unique."').getChildren().injectInside('debug-text');</script>";
-	echo "<script>$('".$unique."').getChildren().remove();</script>";
-	
-	if(!strstr($p1, "_log(type") && !defined("IN_INSTALL"))
-		$log = new CSystemLog("e", "sql error", $errmsg . "<br /><br />Query: $p1");
+
+	//print "<p>$s</p>";
+	trigger_error($s,ADODB_ERROR_HANDLER_TYPE); 
 }
 ?>

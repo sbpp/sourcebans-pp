@@ -1,6 +1,6 @@
 <?php
 /* 
-V4.94 23 Jan 2007  (c) 2000-2007 John Lim (jlim#natsoft.com.my). All rights reserved.
+V5.18 3 Sep 2012  (c) 2000-2012 John Lim (jlim#natsoft.com). All rights reserved.
   Released under both BSD license and Lesser GPL library license. 
   Whenever there is any discrepancy between the two licenses, 
   the BSD license will take precedence. 
@@ -52,9 +52,13 @@ class ADODB_odbc extends ADOConnection {
 		
 		if (!function_exists('odbc_connect')) return null;
 		
-		if ($this->debug && $argDatabasename && $this->databaseType != 'vfp') {
-			ADOConnection::outp("For odbc Connect(), $argDatabasename is not used. Place dsn in 1st parameter.");
+		if (!empty($argDatabasename) && stristr($argDSN, 'Database=') === false) {
+			$argDSN = trim($argDSN);
+			$endDSN = substr($argDSN, strlen($argDSN) - 1);
+			if ($endDSN != ';') $argDSN .= ';';
+			$argDSN .= 'Database='.$argDatabasename;
 		}
+		
 		if (isset($php_errormsg)) $php_errormsg = '';
 		if ($this->curmode === false) $this->_connectionID = odbc_connect($argDSN,$argUsername,$argPassword);
 		else $this->_connectionID = odbc_connect($argDSN,$argUsername,$argPassword,$this->curmode);
@@ -161,6 +165,12 @@ class ADODB_odbc extends ADOConnection {
 				$num += 1;
 				$this->genID = $num;
 				return $num;
+			} elseif ($this->affected_rows() == 0) {
+				// some drivers do not return a valid value => try with another method
+				$value = $this->GetOne("select id from $seq");
+				if ($value == $num + 1) {
+					return $value;
+				}
 			}
 		}
 		if ($fn = $this->raiseErrorFn) {
@@ -252,7 +262,7 @@ class ADODB_odbc extends ADOConnection {
 		if (!$rs) return false;
 		$rs->_has_stupid_odbc_fetch_api_change = $this->_has_stupid_odbc_fetch_api_change;
 		
-		$arr =& $rs->GetArray();
+		$arr = $rs->GetArray();
 		$rs->Close();
 		//print_r($arr);
 		$arr2 = array();
@@ -264,7 +274,7 @@ class ADODB_odbc extends ADOConnection {
 	
 	
 	
-	function &MetaTables($ttype=false)
+	function MetaTables($ttype=false)
 	{
 	global $ADODB_FETCH_MODE;
 	
@@ -281,7 +291,7 @@ class ADODB_odbc extends ADOConnection {
 		}
 		$rs->_has_stupid_odbc_fetch_api_change = $this->_has_stupid_odbc_fetch_api_change;
 		
-		$arr =& $rs->GetArray();
+		$arr = $rs->GetArray();
 		//print_r($arr);
 		
 		$rs->Close();
@@ -370,7 +380,7 @@ See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/od
 		}
 	}
 	
-	function &MetaColumns($table)
+	function MetaColumns($table, $normalize=true)
 	{
 	global $ADODB_FETCH_MODE;
 	
@@ -422,7 +432,7 @@ See http://msdn.microsoft.com/library/default.asp?url=/library/en-us/odbc/htm/od
 		}
 		if (empty($qid)) return $false;
 		
-		$rs =& new ADORecordSet_odbc($qid);
+		$rs = new ADORecordSet_odbc($qid);
 		$ADODB_FETCH_MODE = $savem;
 		
 		if (!$rs) return $false;
@@ -614,7 +624,7 @@ class ADORecordSet_odbc extends ADORecordSet {
 
 
 	// returns the field object
-	function &FetchField($fieldOffset = -1) 
+	function FetchField($fieldOffset = -1) 
 	{
 		
 		$off=$fieldOffset+1; // offsets begin at 1
@@ -661,10 +671,10 @@ class ADORecordSet_odbc extends ADORecordSet {
 	}
 	
 	// speed up SelectLimit() by switching to ADODB_FETCH_NUM as ADODB_FETCH_ASSOC is emulated
-	function &GetArrayLimit($nrows,$offset=-1) 
+	function GetArrayLimit($nrows,$offset=-1) 
 	{
 		if ($offset <= 0) {
-			$rs =& $this->GetArray($nrows);
+			$rs = $this->GetArray($nrows);
 			return $rs;
 		}
 		$savem = $this->fetchMode;
@@ -673,7 +683,7 @@ class ADORecordSet_odbc extends ADORecordSet {
 		$this->fetchMode = $savem;
 		
 		if ($this->fetchMode & ADODB_FETCH_ASSOC) {
-			$this->fields =& $this->GetRowAssoc(ADODB_ASSOC_CASE);
+			$this->fields = $this->GetRowAssoc(ADODB_ASSOC_CASE);
 		}
 		
 		$results = array();
@@ -700,7 +710,7 @@ class ADORecordSet_odbc extends ADORecordSet {
 			}
 			if ($rez) {
 				if ($this->fetchMode & ADODB_FETCH_ASSOC) {
-					$this->fields =& $this->GetRowAssoc(ADODB_ASSOC_CASE);
+					$this->fields = $this->GetRowAssoc(ADODB_ASSOC_CASE);
 				}
 				return true;
 			}
@@ -721,7 +731,7 @@ class ADORecordSet_odbc extends ADORecordSet {
 		}
 		if ($rez) {
 			if ($this->fetchMode & ADODB_FETCH_ASSOC) {
-				$this->fields =& $this->GetRowAssoc(ADODB_ASSOC_CASE);
+				$this->fields = $this->GetRowAssoc(ADODB_ASSOC_CASE);
 			}
 			return true;
 		}
