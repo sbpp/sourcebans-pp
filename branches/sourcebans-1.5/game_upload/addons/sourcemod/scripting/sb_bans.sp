@@ -7,7 +7,7 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  *
- * @version $Id: sb_bans.sp 52 2010-05-19 20:30:03Z tsunami.productions $
+ * @version $Id$
  */
 
 #pragma semicolon 1
@@ -424,11 +424,6 @@ public Action:Command_Ban(client, args)
 		ReplyToCommand(client, "%s%t", SB_PREFIX, "Ban Not Verified");
 		return Plugin_Handled;
 	}
-	if(!iTime && !(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)))
-	{
-		ReplyToCommand(client, "%sYou do not have Perm Ban Permission", SB_PREFIX);
-		return Plugin_Handled;
-	}
 	
 	Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
 	BanClient(iTarget, iTime, BANFLAG_AUTO, sArg[iLen], sKickMessage, "sm_ban", client);
@@ -449,11 +444,6 @@ public Action:Command_BanIp(client, args)
 	iLen += BreakString(sArg[iLen], sTime, sizeof(sTime));
 	
 	new iTarget = -1, iTime = StringToInt(sTime);
-	if(!iTime && !(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)))
-	{
-		ReplyToCommand(client, "%sYou do not have Perm Ban Permission", SB_PREFIX);
-		return Plugin_Handled;
-	}
 	if(ProcessTargetString(sIp,
 		client,
 		iTargets,
@@ -491,11 +481,6 @@ public Action:Command_AddBan(client, args)
 	iLen += BreakString(sArg[iLen], sAuth, sizeof(sAuth));
 	
 	new iTarget = -1, iTime = StringToInt(sTime);
-	if(!iTime && !(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)))
-	{
-		ReplyToCommand(client, "%sYou do not have Perm Ban Permission", SB_PREFIX);
-		return Plugin_Handled;
-	}
 	if(ProcessTargetString(sAuth,
 		client,
 		iTargets,
@@ -522,7 +507,7 @@ public Action:Command_Unban(client, args)
 		ReplyToCommand(client, "%sUsage: sm_unban <steamid|ip>", SB_PREFIX);
 		return Plugin_Handled;
 	}
-	if(!(GetUserFlagBits(client) & (ADMFLAG_UNBAN|ADMFLAG_ROOT)) || !g_bEnableUnban)
+	if(!g_bEnableUnban)
 	{
 		ReplyToCommand(client, "%s%t", SB_PREFIX, "Can Not Unban", g_sWebsite);
 		return Plugin_Handled;
