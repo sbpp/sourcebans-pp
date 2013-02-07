@@ -7,7 +7,7 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  *
- * @version $Id: sb_admins.sp 48 2010-03-02 12:20:46Z tsunami.productions $
+ * @version $Id$
  */
 
 #pragma semicolon 1
