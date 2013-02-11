@@ -160,11 +160,12 @@ public OnConfigsExecuted()
  */
 public OnClientDisconnect(client)
 {
-	if(!g_hPlayerRecheck[client])
-		return;
+	if(g_hPlayerRecheck[client])
+		KillTimer(g_hPlayerRecheck[client]);
 	
-	KillTimer(g_hPlayerRecheck[client]);
 	g_hPlayerRecheck[client] = INVALID_HANDLE;
+	g_bOwnReason[client] = false;
+	g_bPlayerStatus[client] = false;
 }
 
 public OnClientPostAdminCheck(client)
@@ -184,7 +185,7 @@ public OnClientPostAdminCheck(client)
 		return;
 	}
 	
-	decl String:sQuery[512];
+	decl String:sQuery[1024];
 	Format(sQuery, sizeof(sQuery), "SELECT type, authid, ip, name, reason, length, aid, adminIp, created \
 	                                FROM   {{bans}} \
 	                                WHERE  ((type = %i AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = %i AND '%s' REGEXP REPLACE(REPLACE(ip, '.', '\\.') , '.0', '..{1,3}'))) \
@@ -251,7 +252,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	
 	//StoreCountry(sIp);
 	
-	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[512];
+	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[1024];
 	SB_Escape(sName,  sEscapedName,   sizeof(sEscapedName));
 	SB_Escape(reason, sEscapedReason, sizeof(sEscapedReason));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, ip, name, reason, length, sid, aid, adminIp, created) \
@@ -265,7 +266,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 
 public Action:OnBanIdentity(const String:identity[], time, flags, const String:reason[], const String:command[], any:admin)
 {
-	decl String:sAdminIp[16], String:sQuery[140];
+	decl String:sAdminIp[16], String:sQuery[1024];
 	new iAdminId    = GetAdminId(admin),
 			bool:bSteam = strncmp(identity, "STEAM_", 6) == 0;
 	
@@ -321,7 +322,7 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 
 public Action:OnRemoveBan(const String:identity[], flags, const String:command[], any:admin)
 {
-	decl String:sQuery[256];
+	decl String:sQuery[1024];
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   admin);
 	WritePackString(hPack, identity);
@@ -612,7 +613,7 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		return;
 	
 	decl iAdminId, iTime, iLength, iType, String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1],
-			 String:sEscapedReason[256], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[768], String:sReason[128];
+			 String:sEscapedReason[256], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
 	while(SQL_FetchRow(hQuery))
 	{
 		iType    = SQL_FetchInt(hQuery, 0);
@@ -652,7 +653,7 @@ public Action:Timer_ProcessTemp(Handle:timer)
 		return;
 	
 	// Delete temporary bans that expired or were added over 5 minutes ago
-	decl String:sQuery[128];
+	decl String:sQuery[1024];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
 	                                WHERE       queued = 0 \
 	                                  AND       (time + length * 60 <= %i OR insert_time + 300 <= %i)",
@@ -784,7 +785,7 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 {
 	ResetPack(pack);
 	
-	decl String:sAdminIp[16], String:sEscapedReason[256], String:sIp[16], String:sQuery[512], String:sReason[128];
+	decl String:sAdminIp[16], String:sEscapedReason[256], String:sIp[16], String:sQuery[1024], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
 	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sIp,      sizeof(sIp));
@@ -840,7 +841,7 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 {
 	ResetPack(pack);
 	
-	decl String:sAdminIp[20], String:sAuth[20], String:sEscapedReason[256], String:sQuery[512], String:sReason[128];
+	decl String:sAdminIp[20], String:sAuth[20], String:sEscapedReason[256], String:sQuery[1024], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
 	new iLength  = ReadPackCell(pack);
 	ReadPackString(pack, sAuth,      sizeof(sAuth));
@@ -894,7 +895,7 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 {
 	ResetPack(pack);
 	
-	decl String:sIdentity[20], String:sQuery[512];
+	decl String:sIdentity[20], String:sQuery[1024];
 	new iAdmin = ReadPackCell(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
 	
@@ -989,7 +990,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:user
 	}
 	
 	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16],
-			 String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[512], String:sReason[128];
+			 String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
 	GetClientAuthString(iClient, sAuth, sizeof(sAuth));
 	GetClientIP(iClient,         sIp,   sizeof(sIp));
 	GetClientName(iClient,       sName, sizeof(sName));
@@ -1083,7 +1084,7 @@ DeleteLocalBan(const String:sIdentity[])
 	if(!g_hSQLiteDB)
 		return;
 	
-	decl String:sQuery[64];
+	decl String:sQuery[1024];
 	Format(sQuery, sizeof(sQuery), "DELETE FROM sb_bans \
 	                                WHERE       (type = %i AND steam = '%s') \
 	                                   OR       (type = %i AND ip    = '%s')",
@@ -1136,7 +1137,7 @@ bool:HasLocalBan(const String:sAuth[], const String:sIp[] = "", bool:bType = tru
 	if(!g_hSQLiteDB)
 		return false;
 	
-	decl String:sQuery[256];
+	decl String:sQuery[1024];
 	if(bType)
 		Format(sQuery, sizeof(sQuery), "SELECT 1 \
 		                                FROM   sb_bans \
@@ -1156,7 +1157,7 @@ bool:HasLocalBan(const String:sAuth[], const String:sIp[] = "", bool:bType = tru
 
 InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sName[], const String:sReason[], iLength, iAdminId, const String:sAdminIp[], iTime, bool:bQueued = false)
 {
-	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[512];
+	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[1024];
 	SQL_EscapeString(g_hSQLiteDB, sName,   sEscapedName,   sizeof(sEscapedName));
 	SQL_EscapeString(g_hSQLiteDB, sReason, sEscapedReason, sizeof(sEscapedReason));
 	
@@ -1201,7 +1202,7 @@ SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)
 /*
 StoreCountry(const String:sIp[])
 {
-	decl String:sCode[3], String:sName[33], String:sQuery[256];
+	decl String:sCode[3], String:sName[33], String:sQuery[1024];
 	GeoipCode2(sIp,   sCode);
 	GeoipCountry(sIp, sName, sizeof(sName));
 	

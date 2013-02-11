@@ -122,11 +122,19 @@ public OnPluginStart()
 
 public OnMapStart()
 {
-	// Reload config file
 	SB_Reload();
-	
-	// Connect to database
-	SB_Connect();
+}
+
+public OnMapEnd()
+{
+	/**
+	 * Clean up on map end just so we can start a fresh connection when we need it later.
+	 */
+	if(g_hDatabase)
+	{
+		CloseHandle(g_hDatabase);
+		g_hDatabase = INVALID_HANDLE;
+	}
 }
 
 public OnLibraryAdded(const String:name[])
@@ -234,7 +242,7 @@ public Query_ServerSelect(Handle:owner, Handle:hndl, const String:error[], any:d
 		return;
 	}
 	
-	decl String:sFolder[32], String:sQuery[256];
+	decl String:sFolder[32], String:sQuery[1024];
 	GetGameFolderName(sFolder, sizeof(sFolder));
 	
 	Format(sQuery, sizeof(sQuery), "INSERT INTO {{servers}} (ip, port, modid) \
@@ -314,7 +322,7 @@ public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 	SB_Execute("SET NAMES 'UTF8'");
 	
 	// Select server from the database
-	decl String:sQuery[96];
+	decl String:sQuery[1024];
 	Format(sQuery, sizeof(sQuery), "SELECT sid \
 	                                FROM   {{servers}} \
 	                                WHERE  ip   = '%s' \
