@@ -426,7 +426,7 @@ public Action:Command_Ban(client, args)
 		return Plugin_Handled;
 	}
 	
-	Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
+	Format(sKickMessage, sizeof(sKickMessage), "%T", "Banned Check Site", iTarget, g_sWebsite);
 	BanClient(iTarget, iTime, BANFLAG_AUTO, sArg[iLen], sKickMessage, "sm_ban", client);
 	return Plugin_Handled;
 }
@@ -548,7 +548,7 @@ public Action:Command_Say(client, const String:command[], argc)
 	if(g_iBanTarget[client] != -1)
 	{
 		decl String:sKickMessage[128];
-		Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
+		Format(sKickMessage, sizeof(sKickMessage), "%T", "Banned Check Site", g_iBanTarget[client], g_sWebsite);
 		BanClient(g_iBanTarget[client], g_iBanTime[client], BANFLAG_AUTO, sText[iStart], sKickMessage, "sm_ban", client);
 		return Plugin_Handled;
 	}
@@ -718,7 +718,7 @@ public MenuHandler_Time(Handle:menu, MenuAction:action, param1, param2)
 
 public MenuHandler_Reason(Handle:menu, MenuAction:action, param1, param2)
 {
-	if(action == MenuAction_Cancel)
+	if(action == MenuAction_Cancel && param2 == MenuCancel_ExitBack)
 	{
 		if(menu == g_hHackingMenu)
 			DisplayMenu(g_hReasonMenu, param1, MENU_TIME_FOREVER);
@@ -769,6 +769,7 @@ public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack
 	ReadPackString(pack, sReason,    sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp,   sizeof(sAdminIp));
+	CloseHandle(pack);
 	
 	InsertLocalBan(STEAM_BAN_TYPE, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
@@ -798,11 +799,13 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 		LogError("Failed to retrieve the IP ban from the database: %s", error);
 		
 		ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sIp);
+		CloseHandle(pack);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
 		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
+		CloseHandle(pack);
 		return;
 	}
 	
@@ -826,6 +829,7 @@ public Query_BanIpInsert(Handle:owner, Handle:hndl, const String:error[], any:pa
 	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
+	CloseHandle(pack);
 	
 	InsertLocalBan(IP_BAN_TYPE, "", sIp, "", sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
@@ -854,11 +858,13 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 		LogError("Failed to retrieve the ID ban from the database: %s", error);
 		
 		ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sAuth);
+		CloseHandle(pack);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
 		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sAuth);
+		CloseHandle(pack);
 		return;
 	}
 	
@@ -880,6 +886,7 @@ public Query_AddBanInsert(Handle:owner, Handle:hndl, const String:error[], any:p
 	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
+	CloseHandle(pack);
 	
 	InsertLocalBan(STEAM_BAN_TYPE, sAuth, "", "", sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
@@ -904,11 +911,13 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 		LogError("Failed to retrieve the ban from the database: %s", error);
 		
 		ReplyToCommand(iAdmin, "%sFailed to unban %s.",          SB_PREFIX, sIdentity);
+		CloseHandle(pack);
 		return;
 	}
 	if(!SQL_GetRowCount(hndl))
 	{
 		ReplyToCommand(iAdmin, "%sNo active bans found for %s.", SB_PREFIX, sIdentity);
+		CloseHandle(pack);
 		return;
 	}
 	
@@ -943,6 +952,7 @@ public Query_UnbanUpdate(Handle:owner, Handle:hndl, const String:error[], any:pa
 	decl String:sIdentity[20];
 	new iAdmin = ReadPackCell(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
+	CloseHandle(pack);
 	
 	if(error[0])
 	{
@@ -958,6 +968,7 @@ public Query_SubmitBan(Handle:owner, Handle:hndl, const String:error[], any:pack
 	
 	new iAdmin  = ReadPackCell(pack);
 	new iTarget = ReadPackCell(pack);
+	CloseHandle(pack);
 	
 	if(error[0]) 
 	{
@@ -1036,6 +1047,7 @@ public Query_AddedFromQueue(Handle:owner, Handle:hndl, const String:error[], any
 	decl String:sIdentity[20];
 	ResetPack(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
+	CloseHandle(pack);
 	
 	DeleteLocalBan(sIdentity);
 }

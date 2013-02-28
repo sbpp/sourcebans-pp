@@ -273,6 +273,7 @@ public Query_ExecuteCallback(Handle:owner, Handle:hndl, const String:error[], an
 	new Handle:plugin = Handle:ReadPackCell(pack);
 	new SQLTCallback:callback = SQLTCallback:ReadPackCell(pack);
 	new data = ReadPackCell(pack);
+	CloseHandle(pack);
 	
 	Call_StartFunction(plugin, callback);
 	Call_PushCell(owner);
@@ -496,7 +497,9 @@ ExecuteQuery(SQLTCallback:callback, String:sQuery[4096], any:data = 0, DBPriorit
 	
 	// Format {{table}} as DatabasePrefix_table
 	decl String:sSearch[65], String:sReplace[65], String:sTable[65];
-	new Handle:hTables = CompileRegex("\\{\\{([0-9a-zA-Z\\$_]+?)\\}\\}");
+	static Handle:hTables;
+	if(!hTables)
+		hTables = CompileRegex("\\{\\{([0-9a-zA-Z\\$_]+?)\\}\\}");
 	
 	while(MatchRegex(hTables, sQuery) > 0)
 	{

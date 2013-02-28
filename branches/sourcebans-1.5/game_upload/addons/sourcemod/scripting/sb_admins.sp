@@ -349,7 +349,14 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
 	ResetPack(pack);
 	
+	decl String:sGroups[512], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
 	new iAdmin = ReadPackCell(pack);
+	ReadPackString(pack, sName,     sizeof(sName));
+	ReadPackString(pack, sType,     sizeof(sType));
+	ReadPackString(pack, sIdentity, sizeof(sIdentity));
+	ReadPackString(pack, sPassword, sizeof(sPassword));
+	ReadPackString(pack, sGroups,   sizeof(sGroups));
+	CloseHandle(pack);
 	
 	if(error[0])
 	{
@@ -364,13 +371,6 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		return;
 	}
 	
-	decl String:sGroups[512], String:sIdentity[65], String:sName[MAX_NAME_LENGTH + 1], String:sPassword[65], String:sType[16];
-	ReadPackString(pack, sName,     sizeof(sName));
-	ReadPackString(pack, sType,     sizeof(sType));
-	ReadPackString(pack, sIdentity, sizeof(sIdentity));
-	ReadPackString(pack, sPassword, sizeof(sPassword));
-	ReadPackString(pack, sGroups,   sizeof(sGroups));
-	
 	decl String:sEscapedIdentity[129], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedPassword[129], String:sQuery[1024];
 	SB_Escape(sIdentity, sEscapedIdentity, sizeof(sEscapedIdentity));
 	SB_Escape(sName,     sEscapedName,     sizeof(sEscapedName));
@@ -378,7 +378,7 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	Format(sQuery, sizeof(sQuery), "INSERT INTO {{admins}} (user, authid, srv_password) \
 	                                VALUES      ('%s', '%s', NULLIF('%s', ''))",
 	                                sEscapedName, sEscapedIdentity, sEscapedPassword);
-	SB_Execute(sQuery, pack);
+	SB_Execute(sQuery);
 	
 	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin added");
 	SB_SetAdminGroups(iAdmin, sType, sIdentity, sGroups);
@@ -389,6 +389,7 @@ public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	ResetPack(pack);
 	
 	new iAdmin = ReadPackCell(pack);
+	CloseHandle(pack);
 	
 	if(error[0])
 	{
@@ -429,6 +430,7 @@ public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	ReadPackString(pack, sName,  sizeof(sName));
 	ReadPackString(pack, sFlags, sizeof(sFlags));
 	new iImmunity = ReadPackCell(pack);
+	CloseHandle(pack);
 	
 	if(error[0])
 	{
@@ -460,6 +462,7 @@ public Query_DelGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	
 	decl String:sQuery[1024];
 	new iAdmin = ReadPackCell(pack);
+	CloseHandle(pack);
 	
 	if(error[0])
 	{
@@ -517,11 +520,13 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 		LogError("Failed to retrieve the admin from the database: %s", error);
 		
 		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		CloseHandle(pack);
 		return;
 	}
 	if(!SQL_FetchRow(hndl))
 	{
 		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
+		CloseHandle(pack);
 		return;
 	}
 	
@@ -538,6 +543,7 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	if(!iCount)
 	{
 		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin groups reset");
+		CloseHandle(pack);
 		return;
 	}
 	
@@ -551,6 +557,8 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 		                                iAdminId, sName);
 		SB_Execute(sQuery);
 	}
+	
+	CloseHandle(pack);
 	
 	if(iOrder     == 1)
 		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added group to user");
@@ -855,6 +863,9 @@ public Query_SelectGroupOverrides(Handle:owner, Handle:hndl, const String:error[
 		AddAdmGroupCmdOverride(iGroup, sCommand, iType, iRule);
 	}
 	
+	// Remove this, if the group immunity gets implemented
+	CloseHandle(pack);
+	
 	// It's time to get the group immunity list.
 	/*
 	decl String:sQuery[1024];
@@ -996,7 +1007,7 @@ public Native_AddAdmin(Handle:plugin, numParams)
 	GetNativeString(6, sGroups,   sizeof(sGroups));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", SB_PREFIX, "Invalid authtype");
+		return ThrowNativeError(SP_ERROR_NATIVE, "%s%T", SB_PREFIX, "Invalid authtype", iClient);
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iClient);
@@ -1027,7 +1038,7 @@ public Native_DeleteAdmin(Handle:plugin, numParams)
 	GetNativeString(3, sIdentity, sizeof(sIdentity));
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", SB_PREFIX, "Invalid authtype");
+		return ThrowNativeError(SP_ERROR_NATIVE, "%s%T", SB_PREFIX, "Invalid authtype", iClient);
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack,   iClient);
@@ -1103,7 +1114,7 @@ public Native_SetAdminGroups(Handle:plugin, numParams)
 	TrimString(sGroups);
 	
 	if(!StrEqual(sType, AUTHMETHOD_STEAM) && !StrEqual(sType, AUTHMETHOD_IP) && !StrEqual(sType, AUTHMETHOD_NAME))
-		return ThrowNativeError(SP_ERROR_NATIVE, "%s%t", SB_PREFIX, "Invalid authtype");
+		return ThrowNativeError(SP_ERROR_NATIVE, "%s%T", SB_PREFIX, "Invalid authtype", iClient);
 	
 	new Handle:hPack = CreateDataPack();
 	WritePackCell(hPack, iClient);
