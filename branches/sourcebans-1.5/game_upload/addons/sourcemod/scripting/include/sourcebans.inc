@@ -18,29 +18,6 @@
 #define SB_PREFIX		"[SourceBans] "
 #define SB_VERSION	"1.5.0-dev"
 
-public SharedPlugin:__pl_sourcebans = 
-{
-	name = "sourcebans",
-	file = "sourcebans.smx",
-	#if defined REQUIRE_PLUGIN
-	required = 1
-	#else
-	required = 0
-	#endif
-};
-
-public __pl_sourcebans_SetNTVOptional()
-{
-	MarkNativeAsOptional("SB_GetAdminId");
-	MarkNativeAsOptional("SB_AddAdmin");
-	MarkNativeAsOptional("SB_DeleteAdmin");
-	MarkNativeAsOptional("SB_AddGroup");
-	MarkNativeAsOptional("SB_DeleteGroup");
-	MarkNativeAsOptional("SB_SetAdminGroups");
-	MarkNativeAsOptional("SB_SubmitBan");
-}
-
-
 /**
  * When connected to SourceBans database
  *
@@ -85,14 +62,6 @@ native bool:SB_Escape(const String:string[], String:buffer[], maxlength, &writte
 native SB_Execute(const String:query[], DBPriority:prio = DBPrio_Normal);
 
 /**
- * Get SourceBans admin id from client
- *
- * @param  client		The index of the client
- * @return value		The admin id of the client
- */
-native SB_GetAdminId(client);
-
-/**
  * Get string value from SourceBans config
  *
  * @param key				The key of the value to retrieve
@@ -131,73 +100,30 @@ native SB_Query(SQLTCallback:callback, const String:query[], any:data = 0, DBPri
  */
 native SB_Reload();
 
-/**
- * Adds an admin to the SourceBans database
- *
- * @param client		The index of the client (person adding admin)
- * @param name			The name of the admin to add
- * @param authtype	The authentication type (AUTHMETHOD_STEAM, AUTHMETHOD_IP, AUTHMETHOD_NAME)
- * @param identity	The Steam ID, IP address or name of the admin based on authtype
- * @param password	The password for the admin (optional)
- * @param groups		The groups to assign to the admin (optional)
- * @noreturn
- * @error						Invalid authtype
- */
-native SB_AddAdmin(client, const String:name[], const String:authtype[], const String:identity[], const String:password[] = "", const String:groups[] = "");
+public SharedPlugin:__pl_sourcebans = 
+{
+	name = "sourcebans",
+	file = "sourcebans.smx",
+	#if defined REQUIRE_PLUGIN
+	required = 1
+	#else
+	required = 0
+	#endif
+};
 
-/**
- * Deletes an admin from the SourceBans database
- *
- * @param client			The index of the client (person deleting admin)
- * @param authtype		The authentication type (AUTHMETHOD_STEAM, AUTHMETHOD_IP, AUTHMETHOD_NAME)
- * @param identity		The steamid, ip, or name of admin based on authtype
- * @noreturn
- * @error						Invalid authtype
- */
-native SB_DeleteAdmin(client, const String:authtype[], const String:identity[]);
-
-/**
- * Adds a group to the SourceBans database
- *
- * @param client		The index of the client (person adding group)
- * @param name			The name of the new group
- * @param flags			The flags to assign to the group
- * @param immunity	The immunity to assign to the group (optional)
- * @noreturn
- */
-native SB_AddGroup(client, const String:name[], const String:flags[], immunity = 0);
-
-/**
- * Deletes a group from the SourceBans database
- *
- * @param client		The index of the client (person deleting group)
- * @param name			The name of the group to delete
- * @noreturn
- */
-native SB_DeleteGroup(client, const String:name[]);
-
-/**
- * Sets an admin's groups in the SourceBans database
- *
- * @param client		The index of the client (person setting groups)
- * @param authtype	The authentication type of the admin (AUTHMETHOD_STEAM, AUTHMETHOD_IP, AUTHMETHOD_NAME)
- * @param identity	The steamid, ip, or name of admin based on authtype
- * @param groups		The groups to set the admin to; blank, or default is to reset groups
- * @noreturn
- * @error						Invalid authtype
- */
-native SB_SetAdminGroups(client, const String:authtype[], const String:identity[], const String:groups[] = "");
-
-/**
- * Submits a ban to the SourceBans database
- *
- * @param client		The index of the client
- * @param target		The index of the target
- * @param reason		The reason for the submission
- * @noreturn
- */
-native SB_SubmitBan(client, target, const String:reason[]);
-
+#if !defined REQUIRE_PLUGIN
+public __pl_sourcebans_SetNTVOptional()
+{
+	MarkNativeAsOptional("SB_Connect");
+	MarkNativeAsOptional("SB_Escape");
+	MarkNativeAsOptional("SB_Execute");
+	MarkNativeAsOptional("SB_GetConfigString");
+	MarkNativeAsOptional("SB_GetConfigValue");
+	MarkNativeAsOptional("SB_Init");
+	MarkNativeAsOptional("SB_Query");
+	MarkNativeAsOptional("SB_Reload");
+}
+#endif
 
 stock bool:DisablePlugin(const String:file[])
 {

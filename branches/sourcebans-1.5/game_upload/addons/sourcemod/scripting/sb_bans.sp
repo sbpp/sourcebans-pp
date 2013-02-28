@@ -14,8 +14,10 @@
 
 #include <sourcemod>
 #include <sourcebans>
+#include <sb_bans>
 
 #undef REQUIRE_PLUGIN
+#include <sb_admins>
 #include <adminmenu>
 #include <dbi>
 #include <geoip>

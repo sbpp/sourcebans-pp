@@ -14,6 +14,7 @@
 
 #include <sourcemod>
 #include <sourcebans>
+#include <sb_admins>
 
 //#define _DEBUG
 
