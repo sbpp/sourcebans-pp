@@ -257,9 +257,9 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[1024];
 	SB_Escape(sName,  sEscapedName,   sizeof(sEscapedName));
 	SB_Escape(reason, sEscapedReason, sizeof(sEscapedReason));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, ip, name, reason, length, sid, aid, adminIp, created) \
-	                                VALUES      (%i, '%s', '%s', '%s', '%s', %i, %i, %i, '%s', UNIX_TIMESTAMP())",
-	                                iType, sAuth, sIp, sEscapedName, sEscapedReason, time * 60, g_iServerId, iAdminId, sAdminIp);
+	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, ip, name, reason, length, sid, aid, adminIp, created, ends) \
+	                                VALUES      (%i, '%s', '%s', '%s', '%s', %i, %i, %i, '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i)",
+	                                iType, sAuth, sIp, sEscapedName, sEscapedReason, time * 60, g_iServerId, iAdminId, sAdminIp, time * 60);
 	SB_Query(Query_BanInsert, sQuery, hPack, DBPrio_High);
 	
 	LogAction(admin, client, "\"%L\" banned \"%L\" (minutes \"%i\") (reason \"%s\")", admin, client, time, reason);
@@ -642,9 +642,9 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		//if(sIp[0])
 		//	StoreCountry(sIp);
 		
-		Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, ip, name, reason, length, sid, aid, adminIp, created) \
-		                                VALUES      (%i, NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, %i, NULLIF(%i, 0), '%s', %i)",
-		                                iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp, iTime);
+		Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, ip, name, reason, length, sid, aid, adminIp, created, ends) \
+		                                VALUES      (%i, NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, %i, NULLIF(%i, 0), '%s', %i, %i)",
+		                                iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp, iTime, iTime + iLength * 60);
 		SB_Query(Query_AddedFromQueue, sQuery, hPack);
 	}
 }
@@ -814,9 +814,9 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	//StoreCountry(sIp);
 	
 	SB_Escape(sReason, sEscapedReason, sizeof(sEscapedReason));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, ip, reason, length, sid, aid, adminIp, created) \
-	                                VALUES      (%i, '%s', '%s', %i, %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP())",
-	                                IP_BAN_TYPE, sIp, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp);
+	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, ip, reason, length, sid, aid, adminIp, created, ends) \
+	                                VALUES      (%i, '%s', '%s', %i, %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i)",
+	                                IP_BAN_TYPE, sIp, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp, iLength * 60);
 	SB_Query(Query_BanIpInsert, sQuery, pack, DBPrio_High);
 }
 
@@ -871,9 +871,9 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 	}
 	
 	SB_Escape(sReason, sEscapedReason, sizeof(sEscapedReason));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, reason, length, sid, aid, adminIp, created) \
-	                                VALUES      (%i, '%s', '%s', %i, %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP())",
-	                                STEAM_BAN_TYPE, sAuth, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp);
+	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, reason, length, sid, aid, adminIp, created, ends) \
+	                                VALUES      (%i, '%s', '%s', %i, %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %i)",
+	                                STEAM_BAN_TYPE, sAuth, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp, iLength * 60);
 	SB_Query(Query_AddBanInsert, sQuery, pack, DBPrio_High);
 }
 

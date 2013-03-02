@@ -2,7 +2,6 @@
 {
 	"Banned Check Site"
 	{
-		"#format"		"{1:s}"
 		"pl"			"Zostałeś zbanowany na tym serwerze, odwiedź {1} aby poznać szczegóły"
 	}
 	"DB Connect Fail"
@@ -19,12 +18,10 @@
 	}
 	"Can Not Unban"
 	{
-		"#format"		"{1:s}"
 		"pl"			"Nie możesz odbanować z serwera, odwiedź {1} by zdjąć bana."
 	}
 	"Can Not Add Ban"
 	{
-		"#format"		"{1:s}"
 		"pl"			"Nie możesz dodać bana z serwera, odwiedź {1} by dodać bana."
 	}
 	"Check Menu"

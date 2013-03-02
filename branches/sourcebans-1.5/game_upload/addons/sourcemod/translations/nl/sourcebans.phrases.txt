@@ -2,7 +2,6 @@
 {
 	"Banned Check Site"
 	{
-		"#format"		"{1:s}"
 		"nl"			"U bent gebanned van deze server, kijk op {1} voor meer informatie"
 	}
 	"DB Connect Fail"
@@ -19,12 +18,10 @@
 	}
 	"Can Not Unban"
 	{
-		"#format"		"{1:s}"
 		"nl"			"U kunt de speler niet vanuit de server unbannen, bezoek {1} om te unbannen."
 	}
 	"Can Not Add Ban"
 	{
-		"#format"		"{1:s}"
 		"nl"			"U kunt geen ban toevoegen vanuit de server, bezoek {1} om de ban toe te voegen."
 	}
 	"Check Menu"
