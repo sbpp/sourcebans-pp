@@ -166,8 +166,8 @@ public OnClientDisconnect(client)
 		KillTimer(g_hPlayerRecheck[client]);
 	
 	g_hPlayerRecheck[client] = INVALID_HANDLE;
-	g_bOwnReason[client] = false;
-	g_bPlayerStatus[client] = false;
+	g_bOwnReason[client]     = false;
+	g_bPlayerStatus[client]  = false;
 }
 
 public OnClientPostAdminCheck(client)
@@ -205,7 +205,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 {
 	decl iType, String:sAdminIp[16], String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1];
 	new iAdminId    = GetAdminId(admin),
-			bool:bSteam = GetClientAuthString(client, sAuth, sizeof(sAuth));
+	    bool:bSteam = GetClientAuthString(client, sAuth, sizeof(sAuth));
 	GetClientIP(client,   sIp,   sizeof(sIp));
 	GetClientName(client, sName, sizeof(sName));
 	
@@ -252,8 +252,6 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	WritePackCell(hPack,   iAdminId);
 	WritePackString(hPack, sAdminIp);
 	
-	//StoreCountry(sIp);
-	
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[256], String:sQuery[1024];
 	SB_Escape(sName,  sEscapedName,   sizeof(sEscapedName));
 	SB_Escape(reason, sEscapedReason, sizeof(sEscapedReason));
@@ -270,7 +268,7 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 {
 	decl String:sAdminIp[16], String:sQuery[1024];
 	new iAdminId    = GetAdminId(admin),
-			bool:bSteam = strncmp(identity, "STEAM_", 6) == 0;
+	    bool:bSteam = strncmp(identity, "STEAM_", 6) == 0;
 	
 	if(admin)
 		GetClientIP(admin, sAdminIp, sizeof(sAdminIp));
@@ -299,8 +297,8 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 		                                FROM   {{bans}} \
 		                                WHERE  type  = %i \
 		                                  AND  authid REGEXP '^STEAM_[0-9]:%s$' \
-		                                	AND  (length = 0 OR created + length > UNIX_TIMESTAMP()) \
-		                                	AND  RemovedBy IS NULL",
+		                                  AND  (length = 0 OR created + length > UNIX_TIMESTAMP()) \
+		                                  AND  RemovedBy IS NULL",
 		                                STEAM_BAN_TYPE, identity[8]);
 		SB_Query(Query_AddBanSelect, sQuery, hPack, DBPrio_High);
 		
@@ -615,7 +613,7 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		return;
 	
 	decl iAdminId, iTime, iLength, iType, String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1],
-			 String:sEscapedReason[256], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
+	     String:sEscapedReason[256], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
 	while(SQL_FetchRow(hQuery))
 	{
 		iType    = SQL_FetchInt(hQuery, 0);
@@ -638,9 +636,6 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		
 		new Handle:hPack = CreateDataPack();
 		WritePackString(hPack, iType == STEAM_BAN_TYPE ? sAuth : sIp);
-		
-		//if(sIp[0])
-		//	StoreCountry(sIp);
 		
 		Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, authid, ip, name, reason, length, sid, aid, adminIp, created, ends) \
 		                                VALUES      (%i, NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, %i, NULLIF(%i, 0), '%s', %i, %i)",
@@ -780,7 +775,6 @@ public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack
 		
 		if(!iAdmin || IsClientInGame(iAdmin))
 			ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
-		return;
 	}
 }
 
@@ -800,18 +794,20 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to retrieve the IP ban from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sIp);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sIp);
+		
 		CloseHandle(pack);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
+		
 		CloseHandle(pack);
 		return;
 	}
-	
-	//StoreCountry(sIp);
 	
 	SB_Escape(sReason, sEscapedReason, sizeof(sEscapedReason));
 	Format(sQuery, sizeof(sQuery), "INSERT INTO {{bans}} (type, ip, reason, length, sid, aid, adminIp, created, ends) \
@@ -838,8 +834,8 @@ public Query_BanIpInsert(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to insert the IP ban into the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to ban %s.",       SB_PREFIX, sIp);
-		return;
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sIp);
 	}
 }
 
@@ -859,13 +855,17 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 	{
 		LogError("Failed to retrieve the ID ban from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sAuth);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sAuth);
+		
 		CloseHandle(pack);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sAuth);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sAuth);
+		
 		CloseHandle(pack);
 		return;
 	}
@@ -895,8 +895,8 @@ public Query_AddBanInsert(Handle:owner, Handle:hndl, const String:error[], any:p
 	{
 		LogError("Failed to insert the ID ban into the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
-		return;
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
 	}
 }
 
@@ -912,13 +912,17 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to retrieve the ban from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to unban %s.",          SB_PREFIX, sIdentity);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to unban %s.",          SB_PREFIX, sIdentity);
+		
 		CloseHandle(pack);
 		return;
 	}
 	if(!SQL_GetRowCount(hndl))
 	{
-		ReplyToCommand(iAdmin, "%sNo active bans found for %s.", SB_PREFIX, sIdentity);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sNo active bans found for %s.", SB_PREFIX, sIdentity);
+		
 		CloseHandle(pack);
 		return;
 	}
@@ -960,7 +964,8 @@ public Query_UnbanUpdate(Handle:owner, Handle:hndl, const String:error[], any:pa
 	{
 		LogError("Failed to unban the ban from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to unban %s.", SB_PREFIX, sIdentity);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to unban %s.", SB_PREFIX, sIdentity);
 	}
 }
 
@@ -976,12 +981,15 @@ public Query_SubmitBan(Handle:owner, Handle:hndl, const String:error[], any:pack
 	{
 		LogError("Failed to submit the ban to the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to submit %N.", SB_PREFIX, iTarget);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to submit %N.", SB_PREFIX, iTarget);
 		return;
 	}
-	
-	ReplyToCommand(iAdmin, "[SM] %t", "Submission succeeded");
-	ReplyToCommand(iAdmin, "[SM] %t", "Upload demo", g_sWebsite);
+	if(!iAdmin || IsClientInGame(iAdmin))
+	{
+		ReplyToCommand(iAdmin, "[SM] %t", "Submission succeeded");
+		ReplyToCommand(iAdmin, "[SM] %t", "Upload demo", g_sWebsite);
+	}
 }
 
 public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:userid)
@@ -993,6 +1001,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:user
 	if(error[0])
 	{
 		LogError("Failed to verify the ban: %s", error);
+		
 		g_hPlayerRecheck[iClient] = CreateTimer(g_flRetryTime, Timer_PlayerRecheck, userid);
 		return;
 	}
@@ -1003,7 +1012,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:user
 	}
 	
 	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16],
-			 String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
+	     String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
 	GetClientAuthString(iClient, sAuth, sizeof(sAuth));
 	GetClientIP(iClient,         sIp,   sizeof(sIp));
 	GetClientName(iClient,       sName, sizeof(sName));
@@ -1043,15 +1052,13 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:user
 
 public Query_AddedFromQueue(Handle:owner, Handle:hndl, const String:error[], any:pack)
 {
-	if(error[0])
-		return;
-	
 	decl String:sIdentity[20];
 	ResetPack(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
 	CloseHandle(pack);
 	
-	DeleteLocalBan(sIdentity);
+	if(!error[0])
+		DeleteLocalBan(sIdentity);
 }
 
 
@@ -1066,7 +1073,7 @@ public Native_SubmitBan(Handle:plugin, numParams)
 	GetNativeString(3, sReason, sizeof(sReason));
 	
 	decl String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sEscapedReason[512], String:sEscapedTargetName[MAX_NAME_LENGTH * 2 + 1],
-			 String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sTargetAuth[20], String:sTargetIp[16], String:sTargetName[MAX_NAME_LENGTH + 1];
+	     String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sTargetAuth[20], String:sTargetIp[16], String:sTargetName[MAX_NAME_LENGTH + 1];
 	GetClientAuthString(iTarget, sTargetAuth, sizeof(sTargetAuth));
 	GetClientIP(iClient,         sIp,         sizeof(sIp));
 	GetClientIP(iTarget,         sTargetIp,   sizeof(sTargetIp));
@@ -1212,19 +1219,3 @@ SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)
 		Format(sBuffer, iLength, "%i:%i:%i", iHours, iMins, iSecs);
 	}
 }
-
-/*
-StoreCountry(const String:sIp[])
-{
-	decl String:sCode[3], String:sName[33], String:sQuery[1024];
-	GeoipCode2(sIp,   sCode);
-	GeoipCountry(sIp, sName, sizeof(sName));
-	
-	Format(sQuery, sizeof(sQuery), "INSERT INTO             {{countries}} (ip, code, name) \
-	                                VALUES                  ('%s', '%s', '%s') \
-	                                ON DUPLICATE KEY UPDATE code = VALUES(code), \
-	                                                        name = VALUES(name)",
-	                                sIp, sCode, sName);
-	SB_Execute(sQuery);
-}
-*/

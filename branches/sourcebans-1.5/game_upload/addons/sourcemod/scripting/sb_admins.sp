@@ -94,32 +94,6 @@ public OnRebuildAdminCache(AdminCachePart:part)
 		SB_FetchOverrides(iSequence);
 }
 
-/*
-public Action:OnLogAction(Handle:source, Identity:ident, client, target, const String:message[])
-{
-	decl String:sAdminIp[16] = "", String:sAuth[20] = "", String:sEscapedMessage[256], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16] = "", String:sName[MAX_NAME_LENGTH + 1] = "", String:sQuery[1024];
-	new iAdminId = SB_GetAdminId(client);
-	if(target > 0 && IsClientInGame(target))
-	{
-		GetClientAuthString(target, sAuth, sizeof(sAuth));
-		GetClientIP(target,         sIp,   sizeof(sIp));
-		GetClientName(target,       sName, sizeof(sName));
-	}
-	if(client > 0 && IsClientInGame(client))
-		GetClientIP(client, sAdminIp, sizeof(sAdminIp));
-	else
-		sAdminIp = g_sServerIp;
-	
-	SB_Escape(message, sEscapedMessage, sizeof(sEscapedMessage));
-	SB_Escape(sName,   sEscapedName,    sizeof(sEscapedName));
-	Format(sQuery, sizeof(sQuery), "INSERT INTO {{actions}} (name, steam, ip, message, server_id, admin_id, admin_ip, time) \
-	                                VALUES      (NULLIF('%s', ''), NULLIF('%s', ''), NULLIF('%s', ''), '%s', %i, NULLIF(%i, 0), '%s', UNIX_TIMESTAMP())",
-	                                sEscapedName, sAuth, sIp, sEscapedMessage, g_iServerId, iAdminId, sAdminIp);
-	SB_Execute(sQuery);
-	return Plugin_Handled;
-}
-*/
-
 public OnConfigsExecuted()
 {
 	if(DisablePlugin("admin-sql-prefetch") | DisablePlugin("admin-sql-threaded") | DisablePlugin("sql-admin-manager"))
@@ -363,12 +337,14 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	{
 		LogError("Failed to retrieve the admin from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin already exists");
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin already exists");
 		return;
 	}
 	
@@ -381,7 +357,9 @@ public Query_AddAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	                                sEscapedName, sEscapedIdentity, sEscapedPassword);
 	SB_Execute(sQuery);
 	
-	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin added");
+	if(!iAdmin || IsClientInGame(iAdmin))
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin added");
+	
 	SB_SetAdminGroups(iAdmin, sType, sIdentity, sGroups);
 }
 
@@ -396,12 +374,14 @@ public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	{
 		LogError("Failed to retrieve the admin from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
 		return;
 	}
 	if(!SQL_FetchRow(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
 		return;
 	}
 	
@@ -419,7 +399,8 @@ public Query_DelAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	                                iAdminId);
 	SB_Execute(sQuery);
 	
-	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin deleted");
+	if(!iAdmin || IsClientInGame(iAdmin))
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin deleted");
 }
 
 public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -437,12 +418,14 @@ public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	{
 		LogError("Failed to retrieve the group from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to retrieve the group.", SB_PREFIX);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to retrieve the group.", SB_PREFIX);
 		return;
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group already exists");
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group already exists");
 		return;
 	}
 	
@@ -454,7 +437,8 @@ public Query_AddGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	                                sEscapedName, sEscapedFlags, iImmunity);
 	SB_Execute(sQuery);
 	
-	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group added");
+	if(!iAdmin || IsClientInGame(iAdmin))
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group added");
 }
 
 public Query_DelGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -469,12 +453,14 @@ public Query_DelGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	{
 		LogError("Failed to retrieve the group from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to retrieve the group.", SB_PREFIX);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to retrieve the group.", SB_PREFIX);
 		return;
 	}
 	if(!SQL_FetchRow(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group not found");
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group not found");
 		return;
 	}
 	
@@ -507,7 +493,8 @@ public Query_DelGroup(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	                                iGroupId);
 	SB_Execute(sQuery);
 	
-	ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group deleted");
+	if(!iAdmin || IsClientInGame(iAdmin))
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Group deleted");
 }
 
 public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -520,13 +507,17 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	{
 		LogError("Failed to retrieve the admin from the database: %s", error);
 		
-		ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%sFailed to retrieve the admin.", SB_PREFIX);
+		
 		CloseHandle(pack);
 		return;
 	}
 	if(!SQL_FetchRow(hndl))
 	{
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin not found");
+		
 		CloseHandle(pack);
 		return;
 	}
@@ -543,7 +534,9 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	new iCount = ReadPackCell(pack);
 	if(!iCount)
 	{
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin groups reset");
+		if(!iAdmin || IsClientInGame(iAdmin))
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "SQL Admin groups reset");
+		
 		CloseHandle(pack);
 		return;
 	}
@@ -561,10 +554,13 @@ public Query_SetAdminGroups(Handle:owner, Handle:hndl, const String:error[], any
 	
 	CloseHandle(pack);
 	
-	if(iOrder     == 1)
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added group to user");
-	else if(iOrder > 1)
-		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added groups to user", iOrder);
+	if(!iAdmin || IsClientInGame(iAdmin))
+	{
+		if(iOrder     == 1)
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added group to user");
+		else if(iOrder > 1)
+			ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Added groups to user", iOrder);
+	}
 }
 
 public Query_SelectAdmin(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -572,7 +568,8 @@ public Query_SelectAdmin(Handle:owner, Handle:hndl, const String:error[], any:pa
 	ResetPack(pack);
 	
 	// Check if this is the latest result request.
-	new iClient = ReadPackCell(pack), iSequence = ReadPackCell(pack);
+	new iClient   = ReadPackCell(pack),
+	    iSequence = ReadPackCell(pack);
 	if(g_iPlayerSeq[iClient] != iSequence)
 	{
 		// Discard everything, since we're out of sequence.
@@ -1000,7 +997,7 @@ public Native_AddAdmin(Handle:plugin, numParams)
 	// order = client, name, authtype, identity, password, groups
 	
 	decl String:sGroups[512], String:sIdentity[65], String:sName[33], String:sPassword[65], String:sType[16];
-	new iClient   = GetNativeCell(1);
+	new iClient = GetNativeCell(1);
 	GetNativeString(2, sName,     sizeof(sName));
 	GetNativeString(3, sType,     sizeof(sType));
 	GetNativeString(4, sIdentity, sizeof(sIdentity));

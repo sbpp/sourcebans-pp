@@ -131,10 +131,9 @@ public OnMapEnd()
 	 * Clean up on map end just so we can start a fresh connection when we need it later.
 	 */
 	if(g_hDatabase)
-	{
 		CloseHandle(g_hDatabase);
-		g_hDatabase = INVALID_HANDLE;
-	}
+	
+	g_hDatabase = INVALID_HANDLE;
 }
 
 public OnLibraryAdded(const String:name[])
