@@ -674,7 +674,7 @@ function CreateHostnameCache()
 
 function FetchIp($ip)
 {
-	$ip = ip2long($ip);
+	$ip = sprintf('%u', ip2long($ip));
 	if(!isset($_SESSION['CountryFetchHndl']) || !is_resource($_SESSION['CountryFetchHndl'])) {
 		$handle = fopen(INCLUDES_PATH.'/IpToCountry.csv', "r");
 		$_SESSION['CountryFetchHndl'] = $handle;
@@ -687,35 +687,17 @@ function FetchIp($ip)
 	if (!$handle)
 		return "zz";
 
-	$row = 1;
-	while (($buffer = fgets($handle, 4096)) !== FALSE) {
-	  $array[$row] = substr($buffer, 1, strpos($buffer, ",") - 1);
-	  $row++;
+	while (($ipdata = fgetcsv($handle, 4096)) !== FALSE) {
+		// If line is comment or IP is out of range
+		if ($ipdata[0][0] == '#' || $ip < $ipdata[0] || $ip > $ipdata[1])
+			continue;
+
+		if(empty($ipdata[4]))
+			return "zz";
+		return $ipdata[4];
 	}
 
-	$row_lower = '0';
-	$row_upper = $row;
-	while (($row_upper - $row_lower) > 1) {
-	  $row_midpt = (int) (($row_upper + $row_lower) / 2);
-	  if ($ip >= $array[$row_midpt]) {
-	    $row_lower = $row_midpt;
-	  } else {
-	    $row_upper = $row_midpt;
-	  }
-	}
-
-	rewind($handle);
-	$row = 1;
-	while ($row <= $row_lower) {
-	  $buffer = fgets($handle, 4096);
-	  $row++;
-	}
-	$buffer = str_replace("\"", "", $buffer);
-	$ipdata = explode(",", $buffer);
-
-	if(empty($ipdata[4]))
-		return "zz";
-	return $ipdata[4];
+	return "zz";
 }
 
 function PageDie()
