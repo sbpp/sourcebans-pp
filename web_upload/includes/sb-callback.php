@@ -1272,9 +1272,9 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 			{
 				$objResponse->addAssign("vac_$sid", "innerHTML", "<img src='images/shield.png'>");
 			}
-			$objResponse->addAssign("map_$sid", "innerHTML", $info['map']);
+			$objResponse->addAssign("map_$sid", "innerHTML", basename($info['map'])); // Strip Steam Workshop folder
 			if(!$inHome) {
-				$objResponse->addScript("$('mapimg_$sid').setProperty('src', '".GetMapImage($info['map'])."').setProperty('alt', '".$info['map']."').setProperty('title', '".$info['map']."');");
+				$objResponse->addScript("$('mapimg_$sid').setProperty('src', '".GetMapImage($info['map'])."').setProperty('alt', '".$info['map']."').setProperty('title', '".basename($info['map'])."');");
 				if($info['numplayers'] == 0 || empty($info['numplayers']))
 				{
 					$objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
