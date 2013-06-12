@@ -229,9 +229,8 @@ public OnPluginStart()
 			{
 				PlayerStatus[i] = false;
 			}
-			if(IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
+			if(IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i) && GetClientAuthString(i, auth, sizeof(auth)))
 			{
-				GetClientAuthString(i, auth, sizeof(auth));
 				OnClientAuthorized(i, auth);
 			}
 		}
@@ -1978,10 +1977,9 @@ public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 
 public Action:ClientRecheck(Handle:timer, any:client)
 {
-	if(!PlayerStatus[client] && IsClientConnected(client))
+	decl String:Authid[64];
+	if(!PlayerStatus[client] && IsClientConnected(client) && GetClientAuthString(client, Authid, sizeof(Authid)))
 	{
-		decl String:Authid[64];
-		GetClientAuthString(client, Authid, sizeof(Authid));
 		OnClientAuthorized(client, Authid);
 	}
 
@@ -2242,7 +2240,8 @@ public bool:CreateBan(client, target, time, String:reason[])
 
 	GetClientName(target, name, sizeof(name));
 	GetClientIP(target, ip, sizeof(ip));
-	GetClientAuthString(target, auth, sizeof(auth));
+	if(!GetClientAuthString(target, auth, sizeof(auth)))
+		return false;
 
 	new userid = admin ? GetClientUserId(admin) : 0;
 
@@ -2382,7 +2381,8 @@ stock PrepareBan(client, target, time, String:reason[], size)
 	if(!target || !IsClientInGame(target))
 		return;
 	decl String:authid[64], String:name[32], String:bannedSite[512];
-	GetClientAuthString(target, authid, sizeof(authid));
+	if(!GetClientAuthString(target, authid, sizeof(authid)))
+		return;
 	GetClientName(target, name, sizeof(name));
 
 	
