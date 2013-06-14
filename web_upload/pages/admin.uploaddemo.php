@@ -29,7 +29,8 @@ $message = "";
 
 if(isset($_POST['upload']))
 {
-	if(CheckExt($_FILES['demo_file']['name'], "zip") || CheckExt($_FILES['demo_file']['name'], "rar") || CheckExt($_FILES['demo_file']['name'], "dem"))
+	if(CheckExt($_FILES['demo_file']['name'], "zip") || CheckExt($_FILES['demo_file']['name'], "rar") || CheckExt($_FILES['demo_file']['name'], "dem") ||
+	   CheckExt($_FILES['demo_file']['name'], "7z") || CheckExt($_FILES['demo_file']['name'], "bz2") || CheckExt($_FILES['demo_file']['name'], "gz"))
 	{
 		$filename = md5(time().rand(0, 1000));
 		move_uploaded_file($_FILES['demo_file']['tmp_name'],SB_DEMOS."/".$filename);
@@ -38,7 +39,7 @@ if(isset($_POST['upload']))
 	}
 	else 
 	{
-		$message =  "<b> File must be zip, rar or dem filetype.</b><br><br>";
+		$message =  "<b> File must be dem, zip, rar, 7z, bz2 or gz filetype.</b><br><br>";
 	}
 }
 
@@ -46,7 +47,7 @@ $theme->assign("title", "Upload Demo");
 $theme->assign("message", $message);
 $theme->assign("input_name", "demo_file");
 $theme->assign("form_name", "demup");
-$theme->assign("formats", "a ZIP, RAR, or DEM");
+$theme->assign("formats", "a DEM, ZIP, RAR, 7Z, BZ2 or GZ");
 
 $theme->display('page_uploadfile.tpl');
 ?>
