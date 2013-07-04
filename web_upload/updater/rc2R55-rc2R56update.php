@@ -20,7 +20,7 @@ define('INCLUDES_PATH', ROOT . '/includes');
 include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
 
 echo "- Starting <b>SourceBans</b> database update from RC1d to RC2 -<br>";
-$db = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
+$db = ADONewConnection("mysqli://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 
 $db->Execute("ALTER TABLE `" . DB_PREFIX . "_admins` ADD `lastvisit` DATETIME NULL;");
 echo "Done updating. Please delete this file.<br>";

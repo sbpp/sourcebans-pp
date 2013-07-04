@@ -6,7 +6,7 @@ $warnings = 0;
 if(isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port'], $_POST['database'])) {
 	require(ROOT . "../includes/adodb/adodb.inc.php");
 	include_once(ROOT . "../includes/adodb/adodb-errorhandler.inc.php");
-	$server = "mysql://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
+	$server = "mysqli://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
 	$db = ADONewConnection($server);
 	$vars = $db->Execute("SHOW VARIABLES");
 	$sql_version = "";
