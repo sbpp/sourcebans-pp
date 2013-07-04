@@ -69,7 +69,7 @@ define('DB_PORT','{port}');							// The SQL port (Default: 3306)
 		{
 			require(ROOT . "../includes/adodb/adodb.inc.php");
 			include_once(ROOT . "../includes/adodb/adodb-errorhandler.inc.php");
-			$server = "mysql://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
+			$server = "mysqli://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
 			$db = ADONewConnection($server);
 			if(!$db)
 				echo "<script>ShowBox('Error', 'There was an error connecting to your database. <br />Recheck the details to make sure they are correct', 'red', '', true);</script>";

@@ -10,8 +10,8 @@
 		{
 			include_once(INCLUDES_PATH . "/converter.inc.php");
 			
-			$olddsn = "mysql://" . $_POST['amx_username'] . ":" . $_POST['amx_password'] . "@" . $_POST['amx_server'] . ":" . $_POST['amx_port'] . "/" . $_POST['amx_database'];
-			$newdsn = "mysql://" . DB_USER . ":" . DB_PASS . "@" . DB_HOST . ":" . DB_PORT . "/" . DB_NAME . "";
+			$olddsn = "mysqli://" . $_POST['amx_username'] . ":" . $_POST['amx_password'] . "@" . $_POST['amx_server'] . ":" . $_POST['amx_port'] . "/" . $_POST['amx_database'];
+			$newdsn = "mysqli://" . DB_USER . ":" . DB_PASS . "@" . DB_HOST . ":" . DB_PORT . "/" . DB_NAME . "";
 			$oldprefix = $_POST['amx_prefix'];
 			$newprefix = DB_PREFIX;
 			

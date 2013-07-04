@@ -110,7 +110,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 // ---------------------------------------------------
 include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
 include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
-$GLOBALS['db'] = ADONewConnection("mysql://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
+$GLOBALS['db'] = ADONewConnection("mysqli://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 $GLOBALS['log'] = new CSystemLog();
 
 if( !is_object($GLOBALS['db']) )
