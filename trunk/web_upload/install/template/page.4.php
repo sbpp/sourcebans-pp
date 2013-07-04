@@ -5,7 +5,7 @@
 
 	require(ROOT . "../includes/adodb/adodb.inc.php");
 	include_once(ROOT . "../includes/adodb/adodb-errorhandler.inc.php");
-	$server = "mysql://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
+	$server = "mysqli://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
 	$db = ADONewConnection($server);
 	
 	$file = file_get_contents(INCLUDES_PATH . "/struc.sql");
