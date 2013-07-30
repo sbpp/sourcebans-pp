@@ -80,6 +80,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("SB_Init",            Native_Init);
 	CreateNative("SB_Query",           Native_Query);
 	CreateNative("SB_Reload",          Native_Reload);
+	MarkNativeAsOptional("SQL_SetCharset");
 	RegPluginLibrary("sourcebans");
 	
 	return APLRes_Success;
@@ -319,7 +320,10 @@ public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 	}
 	
 	// Set character set to UTF-8 in the database
-	SB_Execute("SET NAMES 'UTF8'");
+	if(GetFeatureStatus(FeatureType_Native, "SQL_SetCharset") == FeatureStatus_Available)
+		SQL_SetCharset(g_hDatabase, "utf8");
+	else
+		SB_Execute("SET NAMES 'UTF8'");
 	
 	// Select server from the database
 	decl String:sQuery[1024];

@@ -449,14 +449,13 @@ public Action:Command_BanIp(client, args)
 		client,
 		iTargets,
 		1,
-		COMMAND_FILTER_CONNECTED|COMMAND_FILTER_NO_MULTI,
+		COMMAND_FILTER_CONNECTED|COMMAND_FILTER_NO_MULTI|COMMAND_FILTER_NO_BOTS,
 		sTargets,
 		sizeof(sTargets),
 		tn_is_ml) > 0)
 	{
 		iTarget = iTargets[0];
-		if(!IsFakeClient(iTarget) && CanUserTarget(client, iTarget))
-			GetClientIP(iTarget, sIp, sizeof(sIp));
+		GetClientIP(iTarget, sIp, sizeof(sIp));
 	}
 	
 	BanIdentity(sIp, iTime, BANFLAG_IP, sArg[iLen], "sm_banip",  client);
@@ -476,26 +475,12 @@ public Action:Command_AddBan(client, args)
 		return Plugin_Handled;
 	}
 	
-	decl iLen, iTargets[1], bool:tn_is_ml, String:sArg[256], String:sAuth[20], String:sTargets[MAX_TARGET_LENGTH], String:sTime[20];
+	decl iLen, String:sArg[256], String:sAuth[20], String:sTime[20];
 	GetCmdArgString(sArg, sizeof(sArg));
 	iLen  = BreakString(sArg,       sTime, sizeof(sTime));
 	iLen += BreakString(sArg[iLen], sAuth, sizeof(sAuth));
 	
-	new iTarget = -1, iTime = StringToInt(sTime);
-	if(ProcessTargetString(sAuth,
-		client,
-		iTargets,
-		1,
-		COMMAND_FILTER_CONNECTED|COMMAND_FILTER_NO_MULTI,
-		sTargets,
-		sizeof(sTargets),
-		tn_is_ml) > 0)
-	{
-		iTarget = iTargets[0];
-		
-		if(!IsFakeClient(iTarget) && CanUserTarget(client, iTarget))
-			GetClientAuthString(iTarget, sAuth, sizeof(sAuth));
-	}
+	new iTime = StringToInt(sTime);
 	
 	BanIdentity(sAuth, iTime, BANFLAG_AUTHID, sArg[iLen], "sm_addban", client);
 	return Plugin_Handled;
@@ -517,6 +502,7 @@ public Action:Command_Unban(client, args)
 	decl String:sArg[24];
 	GetCmdArgString(sArg, sizeof(sArg));
 	ReplaceString(sArg,   sizeof(sArg), "\"", "");
+	TrimString(sArg);
 	
 	RemoveBan(sArg, strncmp(sArg, "STEAM_", 6) == 0 ? BANFLAG_AUTHID : BANFLAG_IP, "sm_unban", client);
 	return Plugin_Handled;
@@ -642,6 +628,8 @@ public Action:Timer_ProcessQueue(Handle:timer, any:data)
 		                                iType, sAuth, sIp, sEscapedName, sEscapedReason, iLength * 60, g_iServerId, iAdminId, sAdminIp, iTime, iTime + iLength * 60);
 		SB_Query(Query_AddedFromQueue, sQuery, hPack);
 	}
+	
+	CloseHandle(hQuery);
 }
 
 public Action:Timer_ProcessTemp(Handle:timer)
@@ -741,7 +729,7 @@ public MenuHandler_Reason(Handle:menu, MenuAction:action, param1, param2)
 	if(g_iBanTarget[param1] != -1)
 	{
 		decl String:sKickMessage[128];
-		Format(sKickMessage, sizeof(sKickMessage), "%t", "Banned Check Site", g_sWebsite);
+		Format(sKickMessage, sizeof(sKickMessage), "%T", "Banned Check Site", g_iBanTarget[param1], g_sWebsite);
 		BanClient(g_iBanTarget[param1], g_iBanTime[param1], BANFLAG_AUTO, sInfo, sKickMessage, "sm_ban", param1);
 	}
 	
@@ -1173,7 +1161,14 @@ bool:HasLocalBan(const String:sAuth[], const String:sIp[] = "", bool:bType = tru
 		                                sAuth[0] ? sAuth : "none", sIp[0] ? sIp : "none", GetTime(), GetTime());
 	
 	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
-	return hQuery && SQL_GetRowCount(hQuery);
+	new bool:bResult = false;
+	if(hQuery)
+	{
+		bResult = SQL_GetRowCount(hQuery) > 0;
+		CloseHandle(hQuery);
+	}
+	
+	return bResult;
 }
 
 InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sName[], const String:sReason[], iLength, iAdminId, const String:sAdminIp[], iTime, bool:bQueued = false)
