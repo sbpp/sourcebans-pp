@@ -194,7 +194,7 @@ public OnClientPostAdminCheck(client)
 	                                  AND  (length = 0 OR created + length > UNIX_TIMESTAMP()) \
 	                                  AND  RemovedBy IS NULL",
 	                                STEAM_BAN_TYPE, sAuth[8], IP_BAN_TYPE, sIp);
-	SB_Query(Query_BanVerify, sQuery, GetClientUserId(client), DBPrio_High);
+	SB_Query(Query_BanVerify, sQuery, ParseClientSerial(client), DBPrio_High);
 }
 
 
@@ -243,7 +243,7 @@ public Action:OnBanClient(client, time, flags, const String:reason[], const Stri
 	}
 	
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack,   admin);
+	WritePackCell(hPack,   ParseClientSerial(admin));
 	WritePackCell(hPack,   time);
 	WritePackString(hPack, sAuth);
 	WritePackString(hPack, sIp);
@@ -284,7 +284,7 @@ public Action:OnBanIdentity(const String:identity[], time, flags, const String:r
 	}
 	
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack,   admin);
+	WritePackCell(hPack,   ParseClientSerial(admin));
 	WritePackCell(hPack,   time);
 	WritePackString(hPack, identity);
 	WritePackString(hPack, reason);
@@ -324,7 +324,7 @@ public Action:OnRemoveBan(const String:identity[], flags, const String:command[]
 {
 	decl String:sQuery[1024];
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack,   admin);
+	WritePackCell(hPack,   ParseClientSerial(admin));
 	WritePackString(hPack, identity);
 	
 	if(flags      & BANFLAG_AUTHID)
@@ -444,6 +444,12 @@ public Action:Command_BanIp(client, args)
 	iLen  = BreakString(sArg,       sIp,   sizeof(sIp));
 	iLen += BreakString(sArg[iLen], sTime, sizeof(sTime));
 	
+	if(StrEqual(sIp, "0"))
+	{
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Cannot ban that IP");
+		return Plugin_Handled;
+	}
+	
 	new iTarget = -1, iTime = StringToInt(sTime);
 	if(ProcessTargetString(sIp,
 		client,
@@ -480,6 +486,12 @@ public Action:Command_AddBan(client, args)
 	iLen  = BreakString(sArg,       sTime, sizeof(sTime));
 	iLen += BreakString(sArg[iLen], sAuth, sizeof(sAuth));
 	
+	if(strncmp(sAuth, "STEAM_", 6) != 0 || sAuth[7] != ':')
+	{
+		ReplyToCommand(client, "%s%t", SB_PREFIX, "Invalid SteamID specified");
+		return Plugin_Handled;
+	}
+	
 	new iTime = StringToInt(sTime);
 	
 	BanIdentity(sAuth, iTime, BANFLAG_AUTHID, sArg[iLen], "sm_addban", client);
@@ -501,32 +513,27 @@ public Action:Command_Unban(client, args)
 	
 	decl String:sArg[24];
 	GetCmdArgString(sArg, sizeof(sArg));
-	ReplaceString(sArg,   sizeof(sArg), "\"", "");
+	StripQuotes(sArg);
 	TrimString(sArg);
 	
-	RemoveBan(sArg, strncmp(sArg, "STEAM_", 6) == 0 ? BANFLAG_AUTHID : BANFLAG_IP, "sm_unban", client);
+	RemoveBan(sArg, strncmp(sArg, "STEAM_", 6) == 0 && sArg[7] == ':' ? BANFLAG_AUTHID : BANFLAG_IP, "sm_unban", client);
 	return Plugin_Handled;
 }
 
 public Action:Command_Say(client, const String:command[], argc)
 {
 	// If this client is not typing their own reason to ban someone, ignore
-	if(!g_bOwnReason[client])
+	if(argc < 1 || !g_bOwnReason[client])
 		return Plugin_Continue;
 	
 	g_bOwnReason[client] = false;
 	
 	decl String:sText[192];
-	new iStart = 0;
-	if(GetCmdArgString(sText, sizeof(sText)) < 1)
-		return Plugin_Continue;
+	GetCmdArgString(sText, sizeof(sText));
+	StripQuotes(sText);
+	TrimString(sText);
 	
-	if(sText[strlen(sText) - 1] == '"')
-	{
-		sText[strlen(sText) - 1] = '\0';
-		iStart = 1;
-	}
-	if(StrEqual(sText[iStart], "!noreason"))
+	if(!sText[0] || StrEqual(sText[1], "noreason", false))
 	{
 		ReplyToCommand(client, "%s%t", SB_PREFIX, "Chat Reason Aborted");
 		return Plugin_Handled;
@@ -535,7 +542,7 @@ public Action:Command_Say(client, const String:command[], argc)
 	{
 		decl String:sKickMessage[128];
 		Format(sKickMessage, sizeof(sKickMessage), "%T", "Banned Check Site", g_iBanTarget[client], g_sWebsite);
-		BanClient(g_iBanTarget[client], g_iBanTime[client], BANFLAG_AUTO, sText[iStart], sKickMessage, "sm_ban", client);
+		BanClient(g_iBanTarget[client], g_iBanTime[client], BANFLAG_AUTO, sText, sKickMessage, "sm_ban", client);
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
@@ -672,9 +679,9 @@ public MenuHandler_Target(Handle:menu, MenuAction:action, param1, param2)
 		decl iTarget, String:sInfo[32];
 		GetMenuItem(menu, param2, sInfo, sizeof(sInfo));
 		if(!(iTarget = GetClientOfUserId(StringToInt(sInfo))))
-			PrintToChat(param1, "%s%t", "Player no longer available", SB_PREFIX);
+			PrintToChat(param1, "%s%t", SB_PREFIX, "Player no longer available");
 		else if(!CanUserTarget(param1, iTarget))
-			PrintToChat(param1, "%s%t", "Unable to target",           SB_PREFIX);
+			PrintToChat(param1, "%s%t", SB_PREFIX, "Unable to target");
 		else
 		{
 			g_iBanTarget[param1] = iTarget;
@@ -761,7 +768,7 @@ public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack
 	{
 		LogError("Failed to insert the ban into the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(ParseClientFromSerial(iAdmin, true))
 			ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
 	}
 }
@@ -778,11 +785,13 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
 	if(error[0])
 	{
 		LogError("Failed to retrieve the IP ban from the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sIp);
 		
 		CloseHandle(pack);
@@ -790,7 +799,7 @@ public Query_BanIpSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sIp);
 		
 		CloseHandle(pack);
@@ -817,14 +826,19 @@ public Query_BanIpInsert(Handle:owner, Handle:hndl, const String:error[], any:pa
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	CloseHandle(pack);
 	
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
 	InsertLocalBan(IP_BAN_TYPE, "", sIp, "", sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the IP ban into the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sIp);
+		return;
 	}
+	if(bPrint)
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Ban added");
 }
 
 public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -839,11 +853,13 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 	new iAdminId = ReadPackCell(pack);
 	ReadPackString(pack, sAdminIp,   sizeof(sAdminIp));
 	
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
 	if(error[0])
 	{
 		LogError("Failed to retrieve the ID ban from the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sFailed to ban %s.",     SB_PREFIX, sAuth);
 		
 		CloseHandle(pack);
@@ -851,7 +867,7 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 	}
 	if(SQL_GetRowCount(hndl))
 	{
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%s%s is already banned.", SB_PREFIX, sAuth);
 		
 		CloseHandle(pack);
@@ -878,14 +894,19 @@ public Query_AddBanInsert(Handle:owner, Handle:hndl, const String:error[], any:p
 	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	CloseHandle(pack);
 	
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
 	InsertLocalBan(STEAM_BAN_TYPE, sAuth, "", "", sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
 	if(error[0])
 	{
 		LogError("Failed to insert the ID ban into the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sFailed to ban %s.", SB_PREFIX, sAuth);
+		return;
 	}
+	if(bPrint)
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Ban added");
 }
 
 public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -896,11 +917,13 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	new iAdmin = ReadPackCell(pack);
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
 	
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
 	if(error[0])
 	{
 		LogError("Failed to retrieve the ban from the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sFailed to unban %s.",          SB_PREFIX, sIdentity);
 		
 		CloseHandle(pack);
@@ -908,7 +931,7 @@ public Query_UnbanSelect(Handle:owner, Handle:hndl, const String:error[], any:pa
 	}
 	if(!SQL_GetRowCount(hndl))
 	{
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sNo active bans found for %s.", SB_PREFIX, sIdentity);
 		
 		CloseHandle(pack);
@@ -948,13 +971,18 @@ public Query_UnbanUpdate(Handle:owner, Handle:hndl, const String:error[], any:pa
 	ReadPackString(pack, sIdentity, sizeof(sIdentity));
 	CloseHandle(pack);
 	
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
 	if(error[0])
 	{
 		LogError("Failed to unban the ban from the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
+		if(bPrint)
 			ReplyToCommand(iAdmin, "%sFailed to unban %s.", SB_PREFIX, sIdentity);
+		return;
 	}
+	if(bPrint)
+		ReplyToCommand(iAdmin, "%s%t", SB_PREFIX, "Removed bans matching", sIdentity);
 }
 
 public Query_SubmitBan(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -965,32 +993,33 @@ public Query_SubmitBan(Handle:owner, Handle:hndl, const String:error[], any:pack
 	new iTarget = ReadPackCell(pack);
 	CloseHandle(pack);
 	
-	if(error[0]) 
+	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
+	
+	if(error[0])
 	{
 		LogError("Failed to submit the ban to the database: %s", error);
 		
-		if(!iAdmin || IsClientInGame(iAdmin))
-			ReplyToCommand(iAdmin, "%sFailed to submit %N.", SB_PREFIX, iTarget);
+		if(bPrint)
+		{
+			if(ParseClientFromSerial(iTarget))
+				ReplyToCommand(iAdmin, "%sFailed to submit %N.", SB_PREFIX, iTarget);
+			else
+				ReplyToCommand(iAdmin, "%sFailed to submit.", SB_PREFIX);
+		}
 		return;
-	}
-	if(!iAdmin || IsClientInGame(iAdmin))
-	{
-		ReplyToCommand(iAdmin, "[SM] %t", "Submission succeeded");
-		ReplyToCommand(iAdmin, "[SM] %t", "Upload demo", g_sWebsite);
 	}
 }
 
-public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:userid)
+public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:iClient)
 {
-	new iClient = GetClientOfUserId(userid);
-	if(!iClient)
+	if(!ParseClientFromSerial(iClient))
 		return;
 	
 	if(error[0])
 	{
 		LogError("Failed to verify the ban: %s", error);
 		
-		g_hPlayerRecheck[iClient] = CreateTimer(g_flRetryTime, Timer_PlayerRecheck, userid);
+		g_hPlayerRecheck[iClient] = CreateTimer(g_flRetryTime, Timer_PlayerRecheck, ParseClientSerial(iClient));
 		return;
 	}
 	if(!SQL_FetchRow(hndl))
@@ -1035,7 +1064,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:user
 	
 	InsertLocalBan(iType, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, iTime);
 	// Delay kick, otherwise ban information will not be printed to console
-	CreateTimer(1.0, Timer_KickClient, userid);
+	CreateTimer(1.0, Timer_KickClient, GetClientUserId(iClient));
 }
 
 public Query_AddedFromQueue(Handle:owner, Handle:hndl, const String:error[], any:pack)
@@ -1069,8 +1098,8 @@ public Native_SubmitBan(Handle:plugin, numParams)
 	GetClientName(iTarget,       sTargetName, sizeof(sTargetName));
 	
 	new Handle:hPack = CreateDataPack();
-	WritePackCell(hPack,   iClient);
-	WritePackCell(hPack,   iTarget);
+	WritePackCell(hPack,   ParseClientSerial(iClient));
+	WritePackCell(hPack,   ParseClientSerial(iTarget));
 	WritePackString(hPack, sReason);
 	
 	SB_Escape(sName,       sEscapedName,       sizeof(sEscapedName));
