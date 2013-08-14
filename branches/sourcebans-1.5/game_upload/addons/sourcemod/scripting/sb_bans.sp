@@ -172,18 +172,21 @@ public OnClientDisconnect(client)
 
 public OnClientPostAdminCheck(client)
 {
-	decl String:sAuth[20], String:sIp[16];
+	decl String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sReason[128];
+	new iLength, iTime;
 	GetClientAuthString(client, sAuth, sizeof(sAuth));
 	GetClientIP(client,         sIp,   sizeof(sIp));
 	
+	if(GetLocalBan(true, sAuth, sIp, sAuth, sIp, sName, sReason, iLength, iTime))
+	{
+		PrintBan(client, sAuth, sIp, sName, sReason, iLength, iTime);
+		// Delay kick, otherwise ban information will not be printed to console
+		CreateTimer(1.0, Timer_KickClient, GetClientUserId(client));
+		return;
+	}
 	if(!SB_Connect() || StrContains("BOT STEAM_ID_LAN", sAuth) != -1)
 	{
 		g_bPlayerStatus[client] = true;
-		return;
-	}
-	if(HasLocalBan(sAuth, sIp))
-	{
-		KickClient(client, "%t", "Banned Check Site", g_sWebsite);
 		return;
 	}
 	
@@ -563,7 +566,7 @@ public Action:Event_PlayerConnect(Handle:event, const String:name[], bool:dontBr
 		sIp[iPos] = '\0';
 	
 	// If the IP address is banned, don't broadcast the event
-	if(HasLocalBan("", sIp, false))
+	if(GetLocalBan(false, "", sIp))
 		SetEventBroadcast(event, true);
 	
 	return Plugin_Continue;
@@ -755,12 +758,12 @@ public Query_BanInsert(Handle:owner, Handle:hndl, const String:error[], any:pack
 	decl String:sAdminIp[16], String:sAuth[20], String:sIp[16], String:sName[MAX_NAME_LENGTH + 1], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
 	new iLength  = ReadPackCell(pack);
-	ReadPackString(pack, sAuth,      sizeof(sAuth));
-	ReadPackString(pack, sIp,        sizeof(sIp));
-	ReadPackString(pack, sName,      sizeof(sName));
-	ReadPackString(pack, sReason,    sizeof(sReason));
+	ReadPackString(pack, sAuth,    sizeof(sAuth));
+	ReadPackString(pack, sIp,      sizeof(sIp));
+	ReadPackString(pack, sName,    sizeof(sName));
+	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
-	ReadPackString(pack, sAdminIp,   sizeof(sAdminIp));
+	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	CloseHandle(pack);
 	
 	InsertLocalBan(STEAM_BAN_TYPE, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, GetTime(), !!error[0]);
@@ -848,10 +851,10 @@ public Query_AddBanSelect(Handle:owner, Handle:hndl, const String:error[], any:p
 	decl String:sAdminIp[20], String:sAuth[20], String:sEscapedReason[256], String:sQuery[1024], String:sReason[128];
 	new iAdmin   = ReadPackCell(pack);
 	new iLength  = ReadPackCell(pack);
-	ReadPackString(pack, sAuth,      sizeof(sAuth));
-	ReadPackString(pack, sReason,    sizeof(sReason));
+	ReadPackString(pack, sAuth,    sizeof(sAuth));
+	ReadPackString(pack, sReason,  sizeof(sReason));
 	new iAdminId = ReadPackCell(pack);
-	ReadPackString(pack, sAdminIp,   sizeof(sAdminIp));
+	ReadPackString(pack, sAdminIp, sizeof(sAdminIp));
 	
 	new bool:bPrint = ParseClientFromSerial(iAdmin, true);
 	
@@ -1029,7 +1032,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:iCli
 	}
 	
 	decl String:sAdminIp[16], String:sAuth[20], String:sEscapedName[MAX_NAME_LENGTH * 2 + 1], String:sIp[16],
-	     String:sLength[64], String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
+	     String:sName[MAX_NAME_LENGTH + 1], String:sQuery[1024], String:sReason[128];
 	GetClientAuthString(iClient, sAuth, sizeof(sAuth));
 	GetClientIP(iClient,         sIp,   sizeof(sIp));
 	GetClientName(iClient,       sName, sizeof(sName));
@@ -1051,16 +1054,7 @@ public Query_BanVerify(Handle:owner, Handle:hndl, const String:error[], any:iCli
 	SQL_FetchString(hndl, 7, sAdminIp, sizeof(sAdminIp));
 	new iTime    = SQL_FetchInt(hndl, 8);
 	
-	SecondsToString(sLength, sizeof(sLength), (iTime + iLength * 60) - GetTime());
-	PrintToConsole(iClient, "===============================================");
-	PrintToConsole(iClient, "%sYou are banned from this server.", SB_PREFIX);
-	PrintToConsole(iClient, "%sYou have %s left on your ban.",    SB_PREFIX, sLength);
-	PrintToConsole(iClient, "%sName:       %s",                   SB_PREFIX, sName);
-	PrintToConsole(iClient, "%sSteam ID:   %s",                   SB_PREFIX, sAuth);
-	PrintToConsole(iClient, "%sIP address: %s",                   SB_PREFIX, sIp);
-	PrintToConsole(iClient, "%sReason:     %s",                   SB_PREFIX, sReason);
-	PrintToConsole(iClient, "%sYou can protest your ban at %s.",  SB_PREFIX, g_sWebsite);
-	PrintToConsole(iClient, "===============================================");
+	PrintBan(iClient, sAuth, sIp, sName, sReason, iLength, iTime);
 	
 	InsertLocalBan(iType, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, iTime);
 	// Delay kick, otherwise ban information will not be printed to console
@@ -1170,33 +1164,41 @@ GetAdminId(client)
 	return SB_GetConfigValue("EnableAdmins") ? SB_GetAdminId(client) : 0;
 }
 
-bool:HasLocalBan(const String:sAuth[], const String:sIp[] = "", bool:bType = true)
+bool:GetLocalBan(bool:bType, const String:sAuth[], const String:sIp[] = "", String:sBanAuth[20] = "", String:sBanIp[16] = "", String:sBanName[MAX_NAME_LENGTH + 1] = "", String:sBanReason[128] = "", &iBanLength = 0, &iBanTime = 0)
 {
 	if(!g_hSQLiteDB)
 		return false;
 	
 	decl String:sQuery[1024];
 	if(bType)
-		Format(sQuery, sizeof(sQuery), "SELECT 1 \
+		Format(sQuery, sizeof(sQuery), "SELECT steam, ip, name, reason, length, time \
 		                                FROM   sb_bans \
 		                                WHERE  ((type = %i AND steam = '%s') OR (type = %i AND ip = '%s')) \
 		                                  AND  (length = 0 OR time + length * 60 > %i OR (queued = 0 AND insert_time + 300 > %i))",
 		                                STEAM_BAN_TYPE, sAuth[0] ? sAuth : "none", IP_BAN_TYPE, sIp[0] ? sIp : "none", GetTime(), GetTime());
 	else
-		Format(sQuery, sizeof(sQuery), "SELECT 1 \
+		Format(sQuery, sizeof(sQuery), "SELECT steam, ip, name, reason, length, time \
 		                                FROM   sb_bans \
 		                                WHERE  (steam = '%s' OR ip = '%s') \
 		                                  AND  (length = 0 OR time + length * 60 > %i OR (queued = 0 AND insert_time + 300 > %i))",
 		                                sAuth[0] ? sAuth : "none", sIp[0] ? sIp : "none", GetTime(), GetTime());
 	
 	new Handle:hQuery = SQL_Query(g_hSQLiteDB, sQuery);
-	new bool:bResult = false;
-	if(hQuery)
+	if(!hQuery)
+		return false;
+	
+	new bool:bResult = SQL_FetchRow(hQuery);
+	if(bResult)
 	{
-		bResult = SQL_GetRowCount(hQuery) > 0;
-		CloseHandle(hQuery);
+		SQL_FetchString(hQuery, 0, sBanAuth,   sizeof(sBanAuth));
+		SQL_FetchString(hQuery, 1, sBanIp,     sizeof(sBanIp));
+		SQL_FetchString(hQuery, 2, sBanName,   sizeof(sBanName));
+		SQL_FetchString(hQuery, 3, sBanReason, sizeof(sBanReason));
+		iBanLength = SQL_FetchInt(hQuery, 4);
+		iBanTime   = SQL_FetchInt(hQuery, 5);
 	}
 	
+	CloseHandle(hQuery);
 	return bResult;
 }
 
@@ -1214,6 +1216,30 @@ InsertLocalBan(iType, const String:sAuth[], const String:sIp[], const String:sNa
 	#if defined _DEBUG
 	PrintToServer("%sAdded local ban (%i,%s,%s,%s,%s,%i,%i,%s,%i,%i)", SB_PREFIX, iType, sAuth, sIp, sName, sReason, iLength, iAdminId, sAdminIp, iTime, bQueued ? 1 : 0);
 	#endif
+}
+
+PrintBan(iClient, const String:sAuth[20], const String:sIp[16], const String:sName[MAX_NAME_LENGTH + 1], const String:sReason[128], iLength, iTime)
+{
+	PrintToConsole(iClient, "===============================================");
+	PrintToConsole(iClient, "%sYou are banned from this server.", SB_PREFIX);
+	
+	if(iLength)
+	{
+		decl String:sLength[64];
+		SecondsToString(sLength, sizeof(sLength), iTime + (iLength * 60) - GetTime());
+		PrintToConsole(iClient, "%sYou have %s left on your ban.",  SB_PREFIX, sLength);
+	}
+	if(sName[0])
+		PrintToConsole(iClient, "%sName:\t\t%s",                    SB_PREFIX, sName);
+	if(sAuth[0])
+		PrintToConsole(iClient, "%sSteam ID:\t\t%s",                SB_PREFIX, sAuth);
+	if(sIp[0])
+		PrintToConsole(iClient, "%sIP address:\t%s",                SB_PREFIX, sIp);
+	if(sReason[0])
+		PrintToConsole(iClient, "%sReason:\t\t%s",                  SB_PREFIX, sReason);
+	
+	PrintToConsole(iClient, "%sYou can protest your ban at %s.",  SB_PREFIX, g_sWebsite);
+	PrintToConsole(iClient, "===============================================");
 }
 
 SecondsToString(String:sBuffer[], iLength, iSecs, bool:bTextual = true)

@@ -320,9 +320,11 @@ public OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
 	}
 	
 	// Set character set to UTF-8 in the database
+	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 6
 	if(GetFeatureStatus(FeatureType_Native, "SQL_SetCharset") == FeatureStatus_Available)
 		SQL_SetCharset(g_hDatabase, "utf8");
 	else
+	#endif
 		SB_Execute("SET NAMES 'UTF8'");
 	
 	// Select server from the database
