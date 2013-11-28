@@ -2689,7 +2689,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 		$tags = $doc->getElementsByTagName('a');
 		foreach ($tags as $tag) {
 			// search for the member profile links
-			if((strstr($tag->getAttribute('href'), "http://steamcommunity.com/id/") || strstr($tag->getAttribute('href'), "http://steamcommunity.com/profiles/")) && $tag->childNodes->item(0)->nodeValue != "") {
+			if((strstr($tag->getAttribute('href'), "http://steamcommunity.com/id/") || strstr($tag->getAttribute('href'), "http://steamcommunity.com/profiles/")) && $tag->hasChildNodes() && $tag->childNodes->length == 1 && $tag->childNodes->item(0)->nodeValue != "") {
 				$total++;
 				$url = parse_url($tag->getAttribute('href'), PHP_URL_PATH);
 				$url = explode("/", $url);
@@ -2733,11 +2733,11 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 	if($queue=="yes") {
 		$objResponse->addAppend("steamGroupStatus", "innerHTML", "<p>Banned ".($total-$bannedbefore-$error)."/".$total." players of group '".$grpurl."'. | ".$bannedbefore." were banned already. | ".$error." failed.</p>");
 		if($grpurl==$last) {
-			$objResponse->addScript("ShowBox('Groups banned successful', 'The selected Groups were banned successful. For detailed info check below.', 'green', '', true);");
+			$objResponse->addScript("ShowBox('Groups banned successfully', 'The selected Groups were banned successfully. For detailed info check below.', 'green', '', true);");
 			$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		}
 	} else {
-		$objResponse->addScript("ShowBox('Group banned successful', 'Banned ".($total-$bannedbefore-$error)."/".$total." players of group \'".$grpurl."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.', 'green', '', true);");
+		$objResponse->addScript("ShowBox('Group banned successfully', 'Banned ".($total-$bannedbefore-$error)."/".$total." players of group \'".$grpurl."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.', 'green', '', true);");
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 	}
 	$log = new CSystemLog("m", "Group Banned", "Banned ".($total-$bannedbefore-$error)."/".$total." players of group \'".$grpurl."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.");
@@ -2769,6 +2769,17 @@ function GetGroups($friendid)
 		$result = $xml->xpath('/profile/groups/group'); // go to the group nodes
 		$i = 0;
 		while(list( , $node) = each($result)) {
+			// Steam only provides the details of the first 3 groups of a players profile. We need to fetch the individual groups seperately to get the correct information.
+			if(empty($node->groupName)) {
+				$memberlistxml = file_get_contents("http://steamcommunity.com/gid/".$node->groupID64."/memberslistxml/?xml=1");
+				$memberlistxml = str_replace("&", "", $memberlistxml);
+				$memberlistxml = strip_31_ascii($memberlistxml);
+				$memberlistxml = utf8_encode($memberlistxml);
+				$groupxml = simplexml_load_string($memberlistxml); // parse xml
+				$node = $groupxml->xpath('/memberList/groupDetails');
+				$node = $node[0];
+			}
+			
 			// Checkbox & Groupname table cols
 			$objResponse->addScript('var e = document.getElementById("steamGroupsTable");
 													var tr = e.insertRow("-1");
@@ -2846,7 +2857,7 @@ function BanFriends($friendid, $name)
 	$error = 0;
 	$links = $memberdiv->getElementsByTagName('a');
 	foreach ($links as $link) {
-		if((strstr($link->getAttribute('href'), "http://steamcommunity.com/id/") || strstr($link->getAttribute('href'), "http://steamcommunity.com/profiles/")) && $link->childNodes->item(0)->nodeValue != "")
+		if(strstr($link->getAttribute('href'), "http://steamcommunity.com/id/") || strstr($link->getAttribute('href'), "http://steamcommunity.com/profiles/"))
 		{
 			$total++;
 			$url = parse_url($link->getAttribute('href'), PHP_URL_PATH);
@@ -2875,12 +2886,18 @@ function BanFriends($friendid, $name)
 				$steamid = FriendIDToSteamID($url[2]);
 				$urltag = $url[2];
 			}
+			
+			// get the name
+			$friendName = $link->parentNode->childNodes->item(5)->childNodes->item(0)->nodeValue;
+			$friendName = str_replace("&#13;", "", $friendName);
+			$friendName = trim($friendName);
+			
 			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
 									(UNIX_TIMESTAMP(),?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array(0,
 											   "",
 											   $steamid,
-											   utf8_decode($link->childNodes->item(0)->nodeValue),
+											   utf8_decode($friendName),
 											   0,
 											   "Steam Community Friend Ban (".htmlspecialchars($name).")",
 											   $userbank->GetAid(),
@@ -2892,7 +2909,7 @@ function BanFriends($friendid, $name)
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		return $objResponse;
 	}
-	$objResponse->addScript("ShowBox('Friends banned successful', 'Banned ".($total-$bannedbefore-$error)."/".$total." friends of \'".htmlspecialchars($name)."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);");
+	$objResponse->addScript("ShowBox('Friends banned successfully', 'Banned ".($total-$bannedbefore-$error)."/".$total." friends of \'".htmlspecialchars($name)."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);");
 	$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 	$log = new CSystemLog("m", "Friends Banned", "Banned ".($total-$bannedbefore-$error)."/".$total." friends of \'".htmlspecialchars($name)."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.");
 	return $objResponse;
