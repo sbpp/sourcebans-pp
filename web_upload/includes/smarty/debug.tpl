@@ -150,10 +150,8 @@ td {
        var title = 'Console_' + self.name;
     {rdelim}
     _smarty_console = window.open("",title.value,"width=680,height=600,resizable,scrollbars=yes");
-    if ( _smarty_console != null ) {ldelim}
-       _smarty_console.document.write('{$debug_output|escape:'javascript'}');
-       _smarty_console.document.close();
-    {rdelim}
+    _smarty_console.document.write('{$debug_output|escape:'javascript'}');
+    _smarty_console.document.close();
 // ]]>
 </script>
 {/if}
