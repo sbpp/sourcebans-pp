@@ -16,7 +16,7 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 
-#define SB_VERSION "1.4.10"
+#define SB_VERSION "1.4.11"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -133,7 +133,7 @@ public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 }
 
 public OnPluginStart()
-{	
+{
 	LoadTranslations("common.phrases");
 	LoadTranslations("plugin.basecommands");
 	LoadTranslations("sourcebans.phrases");
@@ -483,9 +483,9 @@ public Action:CommandBanIp(client, args)
 	
 	if (ProcessTargetString(
 			arg,
-			client, 
-			target_list, 
-			1, 
+			client,
+			target_list,
+			1,
 			COMMAND_FILTER_CONNECTED|COMMAND_FILTER_NO_MULTI,
 			target_name,
 			sizeof(target_name),
@@ -524,7 +524,7 @@ public Action:CommandBanIp(client, args)
 	WritePackString(dataPack, adminIp);
 	
 	decl String:Query[256];
-	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE type = 1 AND ip     = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", 
+	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE type = 1 AND ip     = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
 																	DatabasePrefix, arg);
 	
 	SQL_TQuery(Database, SelectBanIpCallback,  Query, dataPack, DBPrio_High);
@@ -605,7 +605,7 @@ public Action:CommandAddBan(client, args)
 	{
 		ReplyToCommand(client, "%sUsage: sm_addban <time> <steamid> [reason]", Prefix);
 		return Plugin_Handled;
-	}	
+	}
 	total_len += len;
 	
 	/* Get steamid */
@@ -646,7 +646,7 @@ public Action:CommandAddBan(client, args)
 	WritePackString(dataPack, adminIp);
 	
 	decl String:Query[256];
-	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE type = 0 AND authid = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", 
+	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE type = 0 AND authid = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
 																	DatabasePrefix, authid);
 	
 	SQL_TQuery(Database, SelectAddbanCallback, Query, dataPack, DBPrio_High);
@@ -658,7 +658,7 @@ public Action:sm_rehash(args)
 	if(enableAdmins)
 		DumpAdminCache(AdminCache_Groups,true);
 	DumpAdminCache(AdminCache_Overrides, true);
-	return Plugin_Handled;   
+	return Plugin_Handled;
 }
 
 
@@ -710,7 +710,7 @@ public OnAdminMenuReady(Handle:topmenu)
 	}
 }
 
-public AdminMenu_Ban(Handle:topmenu, 
+public AdminMenu_Ban(Handle:topmenu,
 					TopMenuAction:action,	// Action being performed
 					TopMenuObject:object_id,// The object ID (if used)
 					param,			// client idx of admin who chose the option (if used)
@@ -761,10 +761,10 @@ public ReasonSelected(Handle:menu, MenuAction:action, param1, param2)
 			return;
 		}
 		if(g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-			PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));	
+			PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
 
-	} 
-	else if (action == MenuAction_Cancel && param2 == MenuCancel_Disconnected) 
+	}
+	else if (action == MenuAction_Cancel && param2 == MenuCancel_Disconnected)
 	{
 		if(PlayerDataPack[param1] != INVALID_HANDLE)
 		{
@@ -1134,12 +1134,12 @@ public SelectBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						(1, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
-						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')", 
+						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
 						DatabasePrefix, ip, (minutes*60), (minutes*60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						(1, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
-						%d, ' ')", 
+						%d, ' ')",
 						DatabasePrefix, ip, (minutes*60), (minutes*60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 	
@@ -1173,12 +1173,12 @@ public InsertBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:
 		return;
 	}
 	
-	LogAction(admin, 
-			  -1, 
-			  "\"%L\" added ban (minutes \"%d\") (ip \"%s\") (reason \"%s\")", 
-			  admin, 
-			  minutes, 
-			  arg, 
+	LogAction(admin,
+			  -1,
+			  "\"%L\" added ban (minutes \"%d\") (ip \"%s\") (reason \"%s\")",
+			  admin,
+			  minutes,
+			  arg,
 			  reason);
 	if(admin && IsClientInGame(admin))
 		PrintToChat(admin, "%s%s successfully banned", Prefix, arg);
@@ -1303,12 +1303,12 @@ public SelectAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
-						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')", 
+						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
 						DatabasePrefix, authid, (minutes*60), (minutes*60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
-						%d, ' ')", 
+						%d, ' ')",
 						DatabasePrefix, authid, (minutes*60), (minutes*60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 	
@@ -1392,18 +1392,18 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 			// This ban is still valid and should be entered into the db
 			if( serverID == -1 )
 			{
-				FormatEx(query, sizeof(query), 
+				FormatEx(query, sizeof(query),
 						"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
 						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
-						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1))", 
+						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1))",
 						DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
 			}
 			else
 			{
-				FormatEx(query, sizeof(query), 
+				FormatEx(query, sizeof(query),
 						"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
 						('%s', '%s', '%s', %d, %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
-						%d)", 
+						%d)",
 						DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 			}
 			new Handle:authPack = CreateDataPack();
@@ -1451,7 +1451,7 @@ public ServerInfoCallback(Handle:owner, Handle:hndl, const String:error[], any:d
 	}
 
 	if(hndl	== INVALID_HANDLE || SQL_GetRowCount(hndl)==0)
-	{	
+	{
 		// get the game folder name used to determine the mod
 		decl String:desc[64], String:query[200];
 		GetGameFolderName(desc, sizeof(desc));
@@ -1499,14 +1499,14 @@ public VerifyBan(Handle:owner, Handle:hndl, const String:error[], any:userid)
 		{
 			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
 				((SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), UNIX_TIMESTAMP(), '%s', \
-				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))", 
+				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))",
 				DatabasePrefix, DatabasePrefix, ServerIp, ServerPort, Name, DatabasePrefix, clientAuth[8], clientIp);
 		}
 		else
 		{
 			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
 				(%d, UNIX_TIMESTAMP(), '%s', \
-				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))", 
+				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))",
 				DatabasePrefix, serverID, Name, DatabasePrefix, clientAuth[8], clientIp);
 		}
 		
@@ -1757,7 +1757,7 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		
 		if (curGrp == INVALID_GROUP_ID)
 		{   //This occurs when the group already exists
-			curGrp = FindAdmGroup(grpName);   
+			curGrp = FindAdmGroup(grpName);
 		}
         
 		for (new i=0;i<strlen(grpFlags);++i)
@@ -1990,7 +1990,7 @@ public Action:ClientRecheck(Handle:timer, any:client)
 /*
 public Action:PruneBans(Handle:timer)
 {
-	decl String:Query[512];	
+	decl String:Query[512];
 	FormatEx(Query, sizeof(Query),
 			"UPDATE %s_bans SET RemovedBy = 0, RemoveType = 'E', RemovedOn = UNIX_TIMESTAMP() WHERE length != '0' AND ends < UNIX_TIMESTAMP()",
 			DatabasePrefix);
@@ -2064,7 +2064,7 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 			if(strcmp("website", key, false) == 0)
 			{
 				strcopy(WebsiteAddress, sizeof(WebsiteAddress), value);
-			} else if(strcmp("Addban", key, false) == 0) 
+			} else if(strcmp("Addban", key, false) == 0)
 			{
 				if(StringToInt(value) == 0)
 				{
@@ -2077,14 +2077,14 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 					AutoAdd = true;
 				else
 					AutoAdd = false;
-			} else if(strcmp("Unban", key, false) == 0) 
+			} else if(strcmp("Unban", key, false) == 0)
 			{
 				if(StringToInt(value) == 0)
 				{
 					CommandDisable |= DISABLE_UNBAN;
 				}
 			}
-			else if(strcmp("DatabasePrefix", key, false) == 0) 
+			else if(strcmp("DatabasePrefix", key, false) == 0)
 			{
 				strcopy(DatabasePrefix, sizeof(DatabasePrefix), value);
 
@@ -2092,8 +2092,8 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 				{
 					DatabasePrefix = "sb";
 				}
-			} 
-			else if(strcmp("RetryTime", key, false) == 0) 
+			}
+			else if(strcmp("RetryTime", key, false) == 0)
 			{
 				RetryTime	= StringToFloat(value);
 				if(RetryTime < 15.0)
@@ -2102,8 +2102,8 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 				} else if(RetryTime > 60.0) {
 					RetryTime = 60.0;
 				}
-			} 
-			else if(strcmp("ProcessQueueTime", key, false) == 0) 
+			}
+			else if(strcmp("ProcessQueueTime", key, false) == 0)
 			{
 				ProcessQueueTime = StringToInt(value);
 			}
@@ -2164,7 +2164,7 @@ public SMCResult:ReadConfig_EndSection(Handle:smc)
  * @param client	The client index of the player to ban
  * @param time		The time to ban the player for (in minutes, 0 = permanent)
  * @param reason	The reason to ban the player from the server
- * @noreturn		
+ * @noreturn
  *********************************************************/
 public Native_SBBanPlayer(Handle:plugin, numParams)
 {
@@ -2297,12 +2297,12 @@ stock UTIL_InsertBan(time, const String:Name[], const String:Authid[], const Str
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
-						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')", 
+						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
 						DatabasePrefix, Ip, Authid, banName, (time*60), (time*60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, DatabasePrefix, ServerIp, ServerPort);
 	}else{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
-						%d, ' ')", 
+						%d, ' ')",
 						DatabasePrefix, Ip, Authid, banName, (time*60), (time*60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, serverID);
 	}
 	
@@ -2333,7 +2333,7 @@ stock UTIL_InsertTempBan(time, const String:name[], const String:auth[], const S
 	decl String:query[512];
 	SQL_EscapeString(SQLiteDB, name, banName, sizeof(banName));
 	SQL_EscapeString(SQLiteDB, reason, banReason, sizeof(banReason));
-	FormatEx(	query, sizeof(query), "INSERT INTO queue VALUES ('%s', %i, %i, '%s', '%s', '%s', '%s', '%s')", 
+	FormatEx(	query, sizeof(query), "INSERT INTO queue VALUES ('%s', %i, %i, '%s', '%s', '%s', '%s', '%s')",
 				auth, time, GetTime(), banReason, banName, ip, adminAuth, adminIp);
 	SQL_TQuery(SQLiteDB, ErrorCheckCallback, query);
 }
@@ -2347,7 +2347,7 @@ stock CheckLoadAdmins()
 			RunAdminCacheChecks(i);
 			NotifyPostAdminCheck(i);
 		}
-	}    
+	}
 }
 
 stock InsertServerInfo()
