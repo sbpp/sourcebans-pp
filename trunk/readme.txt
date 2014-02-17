@@ -2,11 +2,11 @@
 
 SourceBans | Global admin and ban management for the Source engine
 
-Copyright © 2007-2012 SteamFriends and InterWave Studios
+Copyright © 2007-2014 SteamFriends, InterWave Studios and GameConnect
 
 ---------
 
-Authors: Interwave Studios Development Team
+Authors: SourceBans Development Team
 
 Website: www.sourcebans.net
 
@@ -24,5 +24,5 @@ Prerequisites
    o MySQL 5.0
  * Source Dedicated Server
    o MetaMod: Source
-   o SourceMod: greater than or equal to 1.1
+   o SourceMod: greater than or equal to 1.5
 
