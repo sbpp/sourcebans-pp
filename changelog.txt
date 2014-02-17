@@ -8,6 +8,25 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 
+(17/02/14): Version 1.4.11
+-----------------------
+01. * Added .7z, .bz2 and .gz as supported demo file types
+02. * Added group overrides to admin_groups.cfg config backup
+03. * Added small demo icon next to player name in banlist, if there is a demo attached to that ban
+04. + Updated French plugin translation
+05. + Updated libraries to ADOdb 5.18, Smarty 2.6.28 and TinyMCE 3.5.8
+06. ! Fixed "Player is not on the server anymore" error
+07. ! Fixed an SQL injection
+08. ! Fixed banning people twice in community group banning
+09. ! Fixed getting names of friends in friend banning
+10. ! Fixed possible SQL error when doing an advanced search while hiding inactive bans
+11. ! Fixed several XSS vulnerabilities concerning comments
+12. ! Fixed the accordion widget to fail on init randomly for some browsers
+13. ! Fixed trying to rehash invalid server, if admin has no server access at all
+14. ! Ignore checks if GetClientAuthString returns false
+15. ! Switched to mysqli for PHP 5.5 compatibility
+16. ? Optimized and updated IpToCountry.csv
+
 (21/09/12): Version 1.4.10
 -----------------------
 01. * Added support for global overrides
@@ -35,7 +54,7 @@ Legend:
 23. ! Fixed not checking for duplicated mods on mod edit/add
 24. ! Fixed trying to use an invalid socket in CServerInfo causing ugly ajax errors instead of a clean "Error connecting"
 25. ! Fixed showing 1.1.1970 as last login time, if user never logged in before
-26. ? Removed unnecassary query in admingroup editform
+26. ? Removed unnecessary query in admingroup editform
 27. ? Added link to FAQ to "Error connecting" message for admins
 28. ? Updated IpToCountry.csv
 
@@ -71,7 +90,7 @@ Legend:
 12. ! Fixed showing php notices
 13. ! Fixed admins losing permissions if gameserver can't connect to the database
 14. ! Fixed RCON console in IE (Thanks Synergy)
-15. ! Debug output now only allowed if DEVELOPER_MODE is enabled 
+15. ! Debug output now only allowed if DEVELOPER_MODE is enabled
 16. ! Fixed trying to reach servers with buggy empty ip/port field
 17. ! Fixed not downloading demos with space in filename
 18. ! Fixed webinterface not hiding RCON properly and only allow sending rcon commands to servers the admin has access to
@@ -365,7 +384,7 @@ Legend:
 30. ! Fixed last page sometimes being missed out of the listbox for fast page switching
 31. ! Fixed the plugin sometimes only loading one admin, and one group.
 32. ! Fixed STATUS_PARSE not always working
-33. ! Fixed Issue with searchText on steamid showing up multiple un-matching players when steamid begins like another. 
+33. ! Fixed Issue with searchText on steamid showing up multiple un-matching players when steamid begins like another.
 34. ! Fixed query escapes when player has quotes in their name.
 35. ! Fixed smarty debug mode causeing script error with popup blocker.
 36. ! Fixed daylight savings
@@ -490,19 +509,19 @@ This is a maintenance release, and contains no new features.
 26. ! Fixed banlist search again
 27. ! Fixed a problem lost password
 28. ! Fixed problem with errors on creating a log entry when the user is a guest
-29. + Improvements to the admin server permissions. If no servers or groups are added, a message 
+29. + Improvements to the admin server permissions. If no servers or groups are added, a message
       tell you to add servers
 30. ! Fixed admin password always being set in server
 31. ! fixed an undefined index on page.banlist <devnull, is the query getting the right row_type?>
 32. + refactored CUserManager sql interface, added aid index
 33. ! fixed misc protest submit bugs (see prev. entry)
 34. ! various installer index fixes
-35. ! Fixed 'Warning: fsockopen() [function.fsockopen]: unable to connect to udp://:0 (Failed to 
+35. ! Fixed 'Warning: fsockopen() [function.fsockopen]: unable to connect to udp://:0 (Failed to
       parse address "")' showing on some bans
-36. ! Fixed server config link being shown to everyone 
-37. * Added a warning on viewing the server config for locahost, as it may need changing unless its 
+36. ! Fixed server config link being shown to everyone
+37. * Added a warning on viewing the server config for locahost, as it may need changing unless its
       same box as gameserver
-38. * Server querying will now be performed on YOUR server (pre RC1d) unless there is a problem, ie 
+38. * Server querying will now be performed on YOUR server (pre RC1d) unless there is a problem, ie
       blocked portes etc. In which case we will use the query proxy (RC1d)
 39. * Version info now includes SVN revision stuff (Only if you are using an SVN version)
 40. + Updated the version checker to use ajax to speed admin page up
@@ -526,7 +545,7 @@ This is a maintenance release, and contains no new features.
 58. ! Fixed major lag bug where any person still banned would have their country queried ALWAYS
 59. ! Fixed unbanning problem where 'RemovedBy' was missing from the query
 60. + Added some extra error checking in the unban/delban code
-61. * Removed the banlist from the admin panel, and added all admin controls and search box onto 
+61. * Removed the banlist from the admin panel, and added all admin controls and search box onto
       the main banlist. All associated code removed.
 62. ! Fixed some small problems with the advanced search not working
 63. + Changed some folder names to allow for templating stuff
@@ -549,7 +568,7 @@ This is a maintenance release, and contains no new features.
 79. * Added SourceBans ban menu to SourceMod admin menu
 80. + Improved the active tab image to have better Anti-Aliasing
 81. * Changed 'previous bans' to Total Bans to reflect new ban limit feature
-82. * Added new feature: Ban Limit - If player gets banned [banlimit] times - they will get a 
+82. * Added new feature: Ban Limit - If player gets banned [banlimit] times - they will get a
       permanent ban
 83. ! Fixed problem with non-defined functions when uploading demo, or icons
 84. ! Fixed demo review button pointing to IP instead of banid sometimes
@@ -565,7 +584,7 @@ This is a maintenance release, and contains no new features.
 92. * Player list on servers page now orders the players by Kills in descending order
 93. ! Fixed player data being WAY off on the server page, it now shows correct score
       and playing time. /me slaps devicenull
-94. * Added a new option in sourcebans.cfg for the server plugin to stop servers being added 
+94. * Added a new option in sourcebans.cfg for the server plugin to stop servers being added
       to sourcebans automatically. If this is enabled, you MUST specify an IP:Port in the config
 95. ! Fixed screenshots not being displayed in non relative paths
 96. ! Fixed edit details button not linking to correct page
@@ -637,7 +656,7 @@ Numbers 139 - 157 were fixed/added by Peace-Maker
 --------------------------------
 * Huge overhaul of the user system, pages should load much faster & less bugs?
 * Fixed all groups on admin page saying 'No Group/Individual Permissions'
-* Fixed lots of problems when register_globals was on. It now doesnt matter if 
+* Fixed lots of problems when register_globals was on. It now doesnt matter if
   its on or not
 * Removed the .htaccess from the package as it caused problems on some setups
 * Fixed lots of sql injection stuff (thx WhiteWlf)
@@ -696,7 +715,7 @@ Numbers 139 - 157 were fixed/added by Peace-Maker
 * Fixed send button not enabling again after typing 'clr'
 * Added a link on the list servers page to show the databases.cfg you need
   to upload to the gameserver.
-* Removed 'Config' link from server page as plugin hasnt required this cfg 
+* Removed 'Config' link from server page as plugin hasnt required this cfg
   for a long time.
 * Fixed trying to get a server query for a server that doesnt exist
 * Fixed `WriteLogEntries()' ?>` being show in the footer in some setups
