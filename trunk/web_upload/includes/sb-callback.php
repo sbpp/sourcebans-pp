@@ -1554,6 +1554,10 @@ function KickPlayer($sid, $name)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
+		// Hack to support steam3 [U:1:X] representation.
+		if(strpos($steam, "[U:") === 0) {
+			$steam = renderSteam2(getAccountId($steam), 0);
+		}
 		// check for immunity
 		$admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam."' LIMIT 1;");
 		if($admin && $admin['gimmune']>$admin['pimmune'])
@@ -1623,6 +1627,10 @@ function PasteBan($sid, $name, $type=0)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
+		// Hack to support steam3 [U:1:X] representation.
+		if(strpos($steam, "[U:") === 0) {
+			$steam = renderSteam2(getAccountId($steam), 0);
+		}
 		$name = $matches[2][$index];
 		$ip = explode(":", $matches[8][$index]);
 		$ip = $ip[0];
@@ -2958,6 +2966,10 @@ function ViewCommunityProfile($sid, $name)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
+		// Hack to support steam3 [U:1:X] representation.
+		if(strpos($steam, "[U:") === 0) {
+			$steam = renderSteam2(getAccountId($steam), 0);
+		}
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
 		$objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/', 'Community_".$steam."');");
 	} else {

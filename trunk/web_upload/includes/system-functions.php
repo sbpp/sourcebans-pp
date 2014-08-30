@@ -896,7 +896,7 @@ function checkSinglePlayer($sid, $steamid)
 	$search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
 	$i = 0;
 	foreach($matches[3] AS $match) {
-		if($match == $steamid) {
+		if(getAccountId($match) == getAccountId($steamid)) {
 			$steam = $matches[3][$i];
 			$name = $matches[2][$i];
 			$time = $matches[4][$i];
@@ -938,7 +938,7 @@ function checkMultiplePlayers($sid, $steamids)
 	$found = array();
 	foreach($matches[3] AS $match) {
 		foreach($steamids AS $steam) {
-			if($match == $steam) {
+			if(getAccountId($match) == getAccountId($steam)) {
 				$steam = $matches[3][$i];
 				$name = $matches[2][$i];
 				$time = $matches[4][$i];
@@ -952,6 +952,28 @@ function checkMultiplePlayers($sid, $steamids)
 		$i++;
 	}
 	return $found;
+}
+
+function getAccountId($steamid)
+{
+	if(strpos($steamid, "STEAM_") === 0) {
+		$parts = explode(":", $steamid);
+		if(count($parts) != 3)
+			return -1;
+		return (int)$parts[2]*2 + (int)$parts[1];
+	}
+	else if(strpos($steamid, "[U:") === 0) {
+		$parts = explode(":", $steamid);
+		if(count($parts) != 3)
+			return -1;
+		return (int)substr($parts[2], 0, -1);
+	}
+	return -1;
+}
+
+function renderSteam2($accountId, $universe)
+{
+	return "STEAM_" . $universe . ":" . ($accountId & 1) . ":" . ($accountId >> 1);
 }
 
 function SBDate($format, $timestamp="")
