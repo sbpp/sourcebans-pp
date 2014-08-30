@@ -163,7 +163,7 @@ function sbError($errno, $errstr, $errfile, $errline)
 define('EMAIL_FORMAT', "/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/");
 define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i");
 define('STEAM_FORMAT', "/^STEAM_[0-9]:[0-9]:[0-9]+$/");
-define('STATUS_PARSE', '/# +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+) +([0-9.:]+)/');
+define('STATUS_PARSE', '/# +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+) +([0-9.:]+)/');
 define('IP_FORMAT', '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
 define('SERVER_QUERY', 'http://www.sourcebans.net/public/query/');
 
