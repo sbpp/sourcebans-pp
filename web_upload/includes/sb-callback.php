@@ -1554,12 +1554,13 @@ function KickPlayer($sid, $name)
 	}
 	if($found) {
 		$steam = $matches[3][$index];
+		$steam2 = $steam;
 		// Hack to support steam3 [U:1:X] representation.
 		if(strpos($steam, "[U:") === 0) {
-			$steam = renderSteam2(getAccountId($steam), 0);
+			$steam2 = renderSteam2(getAccountId($steam), 0);
 		}
 		// check for immunity
-		$admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam."' LIMIT 1;");
+		$admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam2."' LIMIT 1;");
 		if($admin && $admin['gimmune']>$admin['pimmune'])
 			$immune = $admin['gimmune'];
 		elseif($admin)
@@ -1569,7 +1570,7 @@ function KickPlayer($sid, $name)
 
 		if($immune <= $userbank->GetProperty('srv_immunity')) {
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
-			$kick = $r->sendCommand("kickid ".$steam." \"You have been kicked by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
+			$kick = $r->sendCommand("kickid \"".$steam."\" \"You have been kicked by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 			$log = new CSystemLog("m", "Player kicked", $username . " kicked player '".htmlspecialchars($name)."' (".$steam.") from ".$data['ip'].":".$data['port'].".", true, true);
 			$objResponse->addScript("ShowBox('Player kicked', 'Player \'".addslashes(htmlspecialchars($name))."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
 		} else {
