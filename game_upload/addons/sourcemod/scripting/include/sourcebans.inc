@@ -21,7 +21,6 @@ public __pl_sourcebans_SetNTVOptional()
 }
 #endif
 
-
 /*********************************************************
  * Ban Player from server
  *
@@ -33,4 +32,11 @@ public __pl_sourcebans_SetNTVOptional()
  *********************************************************/
 native SBBanPlayer(client, target, time, String:reason[]);
 
-//Yarr!
+/*********************************************************
+ * Ban Player from server
+ *
+ * @param client	The client index of the player being checked
+ * @param auth		The client auth ID
+ * @noreturn		
+ *********************************************************/
+native SBCheckBans(client, String:auth[]);

@@ -1,22 +1,12 @@
-/**
-* sourcebans.sp
-*
-* This file contains all Source Server Plugin Functions
-* @author SourceBans Development Team
-* @version 0.0.0.$Rev: 108 $
-* @copyright InterWave Studios (www.interwavestudios.com)
-* @package SourceBans
-* @link http://www.sourcebans.net
-*/
-
 #pragma semicolon 1
 #include <sourcemod>
 #include <sourcebans>
+#include <SteamWorks>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 
-#define SB_VERSION "1.4.11"
+#define SB_VERSION "1.4.12"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -106,11 +96,15 @@ new bool:g_bConnecting = false;
 
 new serverID = -1;
 
+new String:g_sOwnerSteamID[MAXPLAYERS+1][MAX_NAME_LENGTH];
+new g_iModUniverse = 0;
+new g_iLogFamilySharing = 1;
+
 public Plugin:myinfo =
 {
 	name = "SourceBans",
-	author = "SourceBans Development Team",
-	description = "Advanced ban management for the Source engine",
+	author = "SourceBans Development Team, Sarabveer(VEER™)",
+	description = "Advanced ban management with ban evasion handled",
 	version = SB_VERSION,
 	url = "http://www.sourcebans.net"
 };
@@ -123,6 +117,7 @@ public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 {
 	RegPluginLibrary("sourcebans");
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
+	CreateNative("SBCheckBans", Native_CheckBans);
 	LateLoaded = late;
 	
 	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
@@ -143,16 +138,13 @@ public OnPluginStart()
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
 	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	
 	RegServerCmd("sm_rehash",sm_rehash,"Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
 	RegAdminCmd("sm_addban", CommandAddBan, ADMFLAG_RCON, "sm_addban <time> <steamid> [reason]", "sourcebans");
 	RegAdminCmd("sm_unban", CommandUnban, ADMFLAG_UNBAN, "sm_unban <steamid|ip> [reason]", "sourcebans");
-	RegAdminCmd("sb_reload",
-				_CmdReload,
-				ADMFLAG_RCON,
-				"Reload sourcebans config and ban reason menu options",
-				"sourcebans");
+	RegAdminCmd("sb_reload", _CmdReload, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options", "sourcebans");
 	
 	RegConsoleCmd("say", ChatHook);
 	RegConsoleCmd("say_team", ChatHook);
@@ -308,31 +300,78 @@ public OnClientDisconnect(client)
 		PlayerRecheck[client] = INVALID_HANDLE;
 	}
 	g_ownReasons[client] = false;
+	Format(g_sOwnerSteamID[client], 64, "");
 }
 
 public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 {
 	PlayerStatus[client] = false;
+	Format(g_sOwnerSteamID[client], 64, "");
 	return true;
 }
 
 public OnClientAuthorized(client, const String:auth[])
 {
+	decl String:sauth[64];
+	GetClientAuthString(client, sauth, sizeof(sauth));
+	SBCheckBans(client, sauth);
+}
+
+public Native_CheckBans(Handle:plugin, numParams)
+{
+	new client = GetNativeCell(1);
+	decl String:sAuth[64];
+	GetNativeString(2, sAuth, sizeof(sAuth));
 	/* Do not check bots nor check player with lan steamid. */
-	if(auth[0] == 'B' || auth[9] == 'L' || Database == INVALID_HANDLE)
+	if(sAuth[0] == 'B' || sAuth[9] == 'L' || Database == INVALID_HANDLE)
 	{
 		PlayerStatus[client] = true;
 		return;
 	}
 	
-	decl String:Query[256], String:ip[30];
-	GetClientIP(client, ip, sizeof(ip));
-	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, auth[8], ip);
+	decl String:sQuery[300], String:sIP[32];
+	GetClientIP(client, sIP, sizeof(sIP));
+	FormatEx(sQuery, sizeof(sQuery), "SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, sAuth[8], sIP);
 #if defined DEBUG
-	LogToFile(logFile, "Checking ban for: %s", auth);
+	LogToFile(logFile, "Checking ban for: %s", sAuth);
 #endif
+	SQL_TQuery(Database, VerifyBan, sQuery, GetClientUserId(client), DBPrio_High);
 	
-	SQL_TQuery(Database, VerifyBan, Query, GetClientUserId(client), DBPrio_High);
+	FormatEx(sQuery, sizeof(sQuery),  "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL", DatabasePrefix, sIP);
+	new Handle:datapack = CreateDataPack();
+	WritePackCell(datapack, GetClientUserId(client));
+	WritePackString(datapack, sAuth);
+	WritePackString(datapack, sIP);
+	ResetPack(datapack);
+	SQL_TQuery(Database, SQL_CheckIP, sQuery, datapack);
+}
+
+public SQL_CheckIP(Handle:owner, Handle:hndl, const String:error[], any:datapack)
+{
+	new client;
+	new String:sAuth[MAX_NAME_LENGTH], String:sIP[MAX_NAME_LENGTH], String:sReason[255];
+	
+	if(datapack != INVALID_HANDLE)
+	{
+		client = GetClientOfUserId(ReadPackCell(datapack));
+		ReadPackString(datapack, sAuth, sizeof(sAuth));
+		ReadPackString(datapack, sIP, sizeof(sIP));
+		CloseHandle(datapack); 
+	}
+	
+	if (hndl == INVALID_HANDLE)
+	{
+		LogError("SourceBans: Database query error: %s", error);
+	}
+	
+	if (SQL_FetchRow(hndl))
+	{
+		if(SQL_GetRowCount(hndl) > 0)
+		{
+			Format(sReason, sizeof(sReason), "[SourceBans] Ban Evasion - IP Ban.");
+			SBBanPlayer(0, client, 0, sReason);
+		}
+	}
 }
 
 public OnRebuildAdminCache(AdminCachePart:part)
@@ -1101,6 +1140,192 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPac
 		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
 }
 
+public SteamWorks_OnValidateClient(ownerauthid, authid)
+{
+	decl String:sOwnerSteamID[32], String:sSteamID[32];
+	Format(sOwnerSteamID, 32, "STEAM_%i:%d:%d", g_iModUniverse, (ownerauthid & 1), (ownerauthid >> 1));
+	Format(sSteamID, 32, "STEAM_%i:%d:%d", g_iModUniverse, (authid & 1), (authid >> 1));
+	new Handle:dataPack = CreateDataPack();
+	WritePackString(dataPack, sSteamID);
+	WritePackString(dataPack, sOwnerSteamID);
+	ResetPack(dataPack);
+	CreateTimer(3.0, CheckFamSharing, dataPack);
+}
+
+public Action:CheckFamSharing(Handle:Timer, Handle:data)
+{
+	decl String:sSteamID[32], String:sOwnerSteamID[32], String:sBuffer[256];
+	ReadPackString(data, sSteamID, sizeof(sSteamID));
+	ReadPackString(data, sOwnerSteamID, sizeof(sOwnerSteamID));
+	CloseHandle(data);
+	
+	//since SteamWorks_OnValidateClient doesnt provide which client number it is...
+	new client = GetIndexBySteamID(sSteamID);
+	
+	if(client != -1)
+	{
+		strcopy(g_sOwnerSteamID[client], 32, sOwnerSteamID);
+		decl String:sName[MAX_NAME_LENGTH];
+		GetClientName(client, sName, sizeof(sName));
+		Format(sBuffer, sizeof(sBuffer), "[SourceBans] Player \"%s\" (%s) has been verified with game owner's Steam ID: %s", sName, sSteamID, g_sOwnerSteamID[client]);
+		MsgAdmins_Console("b", sBuffer);
+		LogMessage(sBuffer);
+		LogToGame(sBuffer);
+		if(!StrEqual(sSteamID, sOwnerSteamID, false))
+		{
+			//check for bans under game owner's steam ID
+			CheckForBanEvasion(client, sOwnerSteamID);
+			if(g_iLogFamilySharing)
+			{
+				decl String:sSharingLogPath[PLATFORM_MAX_PATH];
+				BuildPath(Path_SM, sSharingLogPath, sizeof(sSharingLogPath), "logs/SB_familysharing.log");
+				LogToFileEx(sSharingLogPath, sBuffer);
+			}
+		}
+	}
+}
+
+GetIndexBySteamID(const String:sSteamID[])
+{
+	decl String:AuthStringToCompareWith[32];
+	for(new i = 1; i <= MaxClients; i++)
+	{
+		if(IsValidClient(i))
+		{
+			GetClientAuthString(i, AuthStringToCompareWith, sizeof(AuthStringToCompareWith));
+			
+			if(StrEqual(AuthStringToCompareWith, sSteamID, false))
+			{
+				return i;
+			}
+		}
+	}
+	return -1;
+}
+
+stock MsgAdmins_Console(String:sFlags[], String:sMsg[])
+{
+	for(new i = 1; i <= MaxClients; i++)
+	{
+		if(IsValidClient(i))
+		{
+			if(HasFlags(i, sFlags))
+			{
+				PrintToConsole(i, "%s", sMsg);
+			}
+		}
+	}
+}
+
+stock bool:HasFlags(client, String:sFlags[])
+{
+	new AdminId:id = GetUserAdmin(client);
+	
+	if (id != INVALID_ADMIN_ID)
+	{
+		new count, found, flags = ReadFlagString(sFlags);
+		for (new i = 0; i <= 20; i++)
+		{
+			if(flags & (1<<i))
+			{
+				count++;
+
+				if (GetAdminFlag(id, AdminFlag:i))
+				{
+					found++;
+				}
+			}
+		}
+
+		if (count == found)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+stock bool:IsValidClient(client)
+{
+	if (!(1 <= client <= MaxClients) || !IsClientInGame(client) || IsFakeClient(client))
+	{
+		return false;
+	}
+	return true;
+}
+
+CheckForBanEvasion(client, any:sAuth[])
+{
+	/* Do not check bots nor check player with lan steamid. */
+	if(sAuth[0] == 'B' || sAuth[9] == 'L' || Database == INVALID_HANDLE)
+	{
+		return;
+	}
+	
+	decl String:sQuery[1024], String:sIP[32];
+	GetClientIP(client, sIP, sizeof(sIP));
+	FormatEx(sQuery, sizeof(sQuery), "SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, sAuth[8], sIP);
+	SQL_TQuery(Database, VerifyBan2, sQuery, GetClientUserId(client), DBPrio_High);
+}
+
+public VerifyBan2(Handle:owner, Handle:hndl, const String:error[], any:userid)
+{
+	decl String:clientName[64];
+	decl String:clientAuth[64];
+	decl String:clientIp[64];
+	new client = GetClientOfUserId(userid);
+	
+	if(!client)
+		return;
+	
+	/* Failure happen. Do retry with delay */
+	if(hndl == INVALID_HANDLE)
+	{
+		LogToFile(logFile, "Verify Ban Query Failed: %s", error);
+		PlayerRecheck[client] = CreateTimer(RetryTime, ClientRecheck, client);
+		return;
+	}
+	GetClientIP(client, clientIp, sizeof(clientIp));
+	GetClientAuthString(client, clientAuth, sizeof(clientAuth));
+	GetClientName(client, clientName, sizeof(clientName));
+	if(SQL_GetRowCount(hndl) > 0)
+	{
+		decl String:buffer[40];
+		decl String:Name[128];
+		decl String:Query[512];
+		
+		SQL_EscapeString(Database, clientName, Name, sizeof(Name));
+		if(serverID == -1 )
+		{
+			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
+				((SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), UNIX_TIMESTAMP(), '%s', \
+				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))",
+				DatabasePrefix, DatabasePrefix, ServerIp, ServerPort, Name, DatabasePrefix, clientAuth[8], clientIp);
+		}
+		else
+		{
+			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
+				(%d, UNIX_TIMESTAMP(), '%s', \
+				(SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND RemoveType IS NULL LIMIT 0,1))",
+				DatabasePrefix, serverID, Name, DatabasePrefix, clientAuth[8], clientIp);
+		}
+		
+		SQL_TQuery(Database, ErrorCheckCallback, Query, client, DBPrio_High);
+		if(!StrEqual(clientAuth, g_sOwnerSteamID[client], false))
+		{
+			
+		}
+		FormatEx(buffer, sizeof(buffer), "banid 5 %s", clientAuth);
+		ServerCommand(buffer);
+		FormatEx(buffer, sizeof(buffer), "[SourceBans] Ban Evasion for Steam ID: %s", clientAuth);
+		SBBanPlayer(0, client, 0, buffer);
+		return;
+	}
+		
+	PlayerStatus[client] = true;
+}
+
 public SelectBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	decl admin, minutes, String:adminAuth[30], String:adminIp[30], String:banReason[256], String:ip[16], String:Query[512], String:reason[128];
@@ -1511,6 +1736,10 @@ public VerifyBan(Handle:owner, Handle:hndl, const String:error[], any:userid)
 		}
 		
 		SQL_TQuery(Database, ErrorCheckCallback, Query, client, DBPrio_High);
+		if(!StrEqual(clientAuth, g_sOwnerSteamID[client], false))
+		{
+			
+		}
 		FormatEx(buffer, sizeof(buffer), "banid 5 %s", clientAuth);
 		ServerCommand(buffer);
 		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
@@ -2132,6 +2361,14 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 			{
 				serverID = StringToInt(value);
 			}
+			else if(strcmp("SteamUniverse", key, false) == 0)
+			{
+				g_iModUniverse = StringToInt(value);
+			}
+			else if(strcmp("LogSharing", key, false) == 0)
+			{
+				g_iLogFamilySharing = StringToInt(value);
+			}
 		}
 
 		case ConfigStateReasons:
@@ -2264,6 +2501,30 @@ public bool:CreateBan(client, target, time, String:reason[])
 
 	ResetPack(dataPack);
 	ResetPack(reasonPack);
+	
+	//ban game owner as well - this covers steam family sharing loopholes
+	decl String:reason2[256], String:auth2[64] = "";
+	Format(reason2, sizeof(reason2), "[SourceBans] Family Sharing Owner Ban for Steam ID: %s", auth);
+	strcopy(auth2, sizeof(auth2), g_sOwnerSteamID[target]);
+	
+	new Handle:dataPack2 = CreateDataPack();
+	new Handle:reasonPack2 = CreateDataPack();
+	WritePackString(reasonPack2, reason2);
+
+	WritePackCell(dataPack2, admin);
+	WritePackCell(dataPack2, target);
+	WritePackCell(dataPack2, userid);
+	WritePackCell(dataPack2, GetClientUserId(target));
+	WritePackCell(dataPack2, time);
+	WritePackCell(dataPack2, _:reasonPack2);
+	WritePackString(dataPack2, name);
+	WritePackString(dataPack2, auth2);
+	WritePackString(dataPack2, ip);
+	WritePackString(dataPack2, adminAuth);
+	WritePackString(dataPack2, adminIp);
+
+	ResetPack(dataPack2);
+	ResetPack(reasonPack2);
 
 	if(reason[0] != '\0')
 	{
@@ -2271,8 +2532,16 @@ public bool:CreateBan(client, target, time, String:reason[])
 		if(Database != INVALID_HANDLE)
 		{
 			UTIL_InsertBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
+			if(!StrEqual(auth2, "", false) && !StrEqual(auth, auth2, false))
+			{
+				UTIL_InsertBan(time, name, auth2, ip, reason2, adminAuth, adminIp, dataPack2);
+			}
 		} else {
 			UTIL_InsertTempBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
+			if(!StrEqual(auth2, "", false) && !StrEqual(auth, auth2, false))
+			{
+				UTIL_InsertTempBan(time, name, auth2, ip, reason2, adminAuth, adminIp, dataPack2);
+			}
 		}
 	} else {
 		// We need a reason so offer the administrator a menu of reasons
