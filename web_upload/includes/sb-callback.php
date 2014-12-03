@@ -1759,7 +1759,8 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 									   $_SERVER['REMOTE_ADDR']));
 	$subid = $GLOBALS['db']->Insert_ID();
 
-	if($dname && $dfile)
+	if($dname && $dfile && ctype_alnum($dfile))
+	//Thanks jsifuentes (http://jacobsifuentes.com/sourcebans-1-4-lfi-exploit/)
 	{
 		$GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname)
 						     VALUES(?,'B', ?, ?)", array((int)$subid, $dfile, $dname));
