@@ -9,6 +9,12 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 ```
+
+(02/12/14): Version 1.4.13
+-----------------------
+01. ! Fixed LFI EXPLOIT //Thanks jsifuentes
+02. ? Optimized and updated IpToCountry.csv
+
 (15/11/14): Version 1.4.12
 -----------------------
 01. * Added Steam3 Support

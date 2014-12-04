@@ -17,7 +17,7 @@ define('theme_name', "SourceBans Dark Theme");
 define('theme_author', "SourceBans Development Team");
 
 // Set the version of the theme here
-define('theme_version', "1.4.12");
+define('theme_version', "1.4.13");
 
 // Set the link of the theme here
 define('theme_link', "http://www.sourcebans.net");

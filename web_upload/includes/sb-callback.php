@@ -2281,7 +2281,7 @@ function SendMail($subject, $message, $type, $id)
 function CheckVersion()
 {
 	$objResponse = new xajaxResponse();
-	$relver = @file_get_contents("http://www.sourcebans.net/public/versionchecker/?type=rel");
+	$relver = @file_get_contents("http://sbversion.v33r.tk/");
 
 	if(defined('SB_SVN'))
 		$relsvn = @file_get_contents("http://www.sourcebans.net/public/versionchecker/?type=svn");
