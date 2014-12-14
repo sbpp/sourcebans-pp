@@ -2284,7 +2284,7 @@ function CheckVersion()
 	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans/");
 
 	if(defined('SB_SVN'))
-		$relsvn = @file_get_contents("http://www.sourcebans.net/public/versionchecker/?type=svn");
+		$relsvn = @file_get_contents("https://sarabveer.github.io/SourceBans/dev/");
 
 	if(version_compare($relver, SB_VERSION) > 0)
 		$versmsg = "<span style='color:#aa0000;'><strong>A new release is available.</strong></span>";
