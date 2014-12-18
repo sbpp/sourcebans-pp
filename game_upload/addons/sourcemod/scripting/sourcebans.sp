@@ -6,7 +6,7 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 
-#define SB_VERSION "1.4.14-dev"
+#define SB_VERSION "1.4.14F-dev"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
