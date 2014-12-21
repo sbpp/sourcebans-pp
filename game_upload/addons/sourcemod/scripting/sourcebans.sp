@@ -6,7 +6,7 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 
-#define SB_VERSION "1.4.14F-dev"
+#define SB_VERSION "1.4.14F-dev-3"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -194,7 +194,7 @@ public OnPluginStart()
 			CloseHandle(ReasonMenuHandle);
 		if(HackingMenuHandle != INVALID_HANDLE)
 			CloseHandle(HackingMenuHandle);
-		LogToFile(logFile, "Database failure: Could not find Database conf \"sourcebans\". See FAQ: http://sourcebans.net/node/19");
+		LogToFile(logFile, "Database failure: Could not find Database conf \"sourcebans\". See FAQ: https://sarabveer.github.io/SourceBans/faq/");
 		SetFailState("Database failure: Could not find Database conf \"sourcebans\"");
 		return;
 	}
@@ -983,7 +983,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	if (hndl == INVALID_HANDLE)
 	{
-		LogToFile(logFile, "Database failure: %s. See FAQ: http://www.sourcebans.net/node/20", error);
+		LogToFile(logFile, "Database failure: %s. See FAQ: https://sarabveer.github.io/SourceBans/faq/", error);
 		g_bConnecting = false;
 		
 		// Parse the overrides backup!
