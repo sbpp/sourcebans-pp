@@ -8,6 +8,8 @@ Global admin and ban management for the Source engine
 
 - Install help: [SourceBans Manual](http://www.sourcebans.net/manual)
 
+- FAQ: [SourceBans FAQ](https://sarabveer.github.io/SourceBans/faq/)
+
 - Having trouble? [SourceBans Forums](https://forums.alliedmods.net/forumdisplay.php?f=152)
 
 ```
