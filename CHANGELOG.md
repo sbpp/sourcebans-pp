@@ -10,15 +10,20 @@ Legend:
 ? = Other stuff
 ```
 
-(02/12/14): Version 1.4.13
+(02/12/14): Version 1.4.13F
 -----------------------
 01. ! Fixed LFI EXPLOIT //Thanks jsifuentes
 02. ? Optimized and updated IpToCountry.csv
 
-(15/11/14): Version 1.4.12
+(15/11/14): Version 1.4.12F
 -----------------------
-01. * Added Steam3 Support
-02. ? Optimized and updated IpToCountry.csv
+01. * Added Steam3 Support for Player Menu
+02. ! Fixed Steam Family Sharing Ban Evasion.
+03. * Added IP Ban checking from SourceSlueth
+04. ? Added SteamWorks Extension
+05. ? Optimized and updated IpToCountry.csv
+
+***ORIGINAL ENDS HERE***
 
 (17/02/14): Version 1.4.11
 -----------------------
