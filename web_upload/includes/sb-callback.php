@@ -64,6 +64,10 @@ if(isset($_COOKIE['aid'], $_COOKIE['password']) && $userbank->CheckLogin($_COOKI
 	$xajax->registerFunction("ChangeEmail");
 	$xajax->registerFunction("CheckVersion");
 	$xajax->registerFunction("SendMail");
+	$xajax->registerFunction("AddBlock");
+	$xajax->registerFunction("PrepareReblock");
+	$xajax->registerFunction("PrepareBlockFromBan");
+	$xajax->registerFunction("PasteBlock");
 }
 
 $xajax->registerFunction("Plogin");
@@ -1346,6 +1350,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 							if($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
 								$objResponse->addScript('AddContextMenu("#player_s'.$sid.'p'.$player["index"].'", "contextmenu", true, "Player Commands", [
 														{name: "Kick", callback: function(){KickPlayerConfirm('.$sid.', "'.str_replace('"', '\"', $player["name"]).'", 0);}},
+														{name: "Block Comms", callback: function(){window.location = "index.php?p=admin&c=comms&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["name"]).'"}},
 														{name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["name"]).'"}},
 														{separator: true},
 														'.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile('.$sid.', "'.str_replace('"', '\"', $player["name"]).'")}},':'').'
@@ -2411,6 +2416,8 @@ function AddComment($bid, $ctype, $ctext, $page)
 		
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
+	elseif($ctype=="C")
+		$redir = "?p=commslist".$pagelink;
 	elseif($ctype=="S")
 		$redir = "?p=admin&c=bans#^2";
 	elseif($ctype=="P")
@@ -2455,6 +2462,8 @@ function EditComment($cid, $ctype, $ctext, $page)
 	
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
+	elseif($ctype=="C")
+		$redir = "?p=commslist".$pagelink;
 	elseif($ctype=="S")
 		$redir = "?p=admin&c=bans#^2";
 	elseif($ctype=="P")
@@ -2500,6 +2509,8 @@ function RemoveComment($cid, $ctype, $page)
 								array( $cid ));
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
+	elseif($ctype=="C")
+		$redir = "?p=commslist".$pagelink;
 	else
 		$redir = "?p=admin&c=bans";
 	if($res)
@@ -3009,6 +3020,221 @@ function SendMessage($sid, $name, $message)
 	$ret = $r->sendCommand('sm_psay "'.$name.'" "'.addslashes($message).'"');
   new CSystemLog("m", "Message sent to player", "The following message was sent to " . addslashes(htmlspecialchars($name)) . " on server " . $data['ip'] . ":" . $data['port'] . ": " . RemoveCode($message));
 	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
+	return $objResponse;
+}
+function AddBlock($nickname, $type, $steam, $length, $reason)
+{
+	$objResponse = new xajaxResponse();
+	global $userbank, $username;
+	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
+	{
+		$objResponse->redirect("index.php?p=login&m=no_access", 0);
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a block, but doesnt have access.");
+		return $objResponse;
+	}
+	
+	$steam = trim($steam);
+	
+	$error = 0;
+	// If they didnt type a steamid
+	if(empty($steam))
+	{
+		$error++;
+		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
+		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+	}
+	else if((!is_numeric($steam) 
+	&& !validate_steam($steam))
+	|| (is_numeric($steam) 
+	&& (strlen($steam) < 15
+	|| !validate_steam($steam = FriendIDToSteamID($steam)))))
+	{
+		$error++;
+		$objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
+		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+	}
+	else
+	{
+		$objResponse->addAssign("steam.msg", "innerHTML", "");
+		$objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
+	}
+	
+	if($error > 0)
+		return $objResponse;
+
+	$nickname = RemoveCode($nickname);
+	$reason = RemoveCode($reason);
+	if(!$length)
+		$len = 0;
+	else
+		$len = $length*60;
+
+	// prune any old bans
+	PruneComms();
+
+	$typeW = "";
+	switch ((int)$type)
+	{
+		case 1:
+			$typeW = "type = 1";
+			break;
+		case 2:
+			$typeW = "type = 2";
+			break;
+		case 3:
+			$typeW = "(type = 1 OR type = 2)";
+			break;
+		default:
+			$typeW = "";
+			break;
+	}
+
+	// Check if the new steamid is already banned
+	$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_comms WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND ".$typeW, array($steam));
+	
+	if(intval($chk[0]) > 0)
+	{
+		$objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already blocked.', 'red', '');");
+		return $objResponse;
+	}
+
+	// Check if player is immune
+	$admchk = $userbank->GetAllAdmins();
+	foreach($admchk as $admin)
+	if($admin['authid'] == $steam && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity'])
+		{
+			$objResponse->addScript("ShowBox('Error', 'SteamID: Admin ".$admin['user']." ($steam) is immune.', 'red', '');");
+			return $objResponse;
+		}
+
+	if((int)$type == 1 || (int)$type == 3)
+	{
+		$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
+									  (UNIX_TIMESTAMP(),1,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
+		$GLOBALS['db']->Execute($pre,array($steam,
+										   $nickname,
+										   $length*60,
+										   $len,
+										   $reason,
+										   $userbank->GetAid(),
+										   $_SERVER['REMOTE_ADDR']));
+	}
+	if ((int)$type == 2 || (int)$type ==3)
+	{
+		$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
+									  (UNIX_TIMESTAMP(),2,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
+		$GLOBALS['db']->Execute($pre,array($steam,
+										   $nickname,
+										   $length*60,
+										   $len,
+										   $reason,
+										   $userbank->GetAid(),
+										   $_SERVER['REMOTE_ADDR']));
+	}
+
+	$objResponse->addScript("ShowBlockBox('".$steam."', '".(int)$type."', '".(int)$len."');");
+	$objResponse->addScript("TabToReload();");
+	$log = new CSystemLog("m", "Block Added", "Block against (" . $steam . ") has been added, reason: $reason, length: $length", true, $kickit);
+	return $objResponse;
+}
+
+function PrepareReblock($bid)
+{
+	$objResponse = new xajaxResponse();
+
+	$ban = $GLOBALS['db']->GetRow("SELECT name, authid, type, length, reason FROM ".DB_PREFIX."_comms WHERE bid = '".$bid."';");
+
+	// clear any old stuff
+	$objResponse->addScript("$('nickname').value = ''");
+	$objResponse->addScript("$('steam').value = ''");
+	$objResponse->addScript("$('txtReason').value = ''");
+	$objResponse->addAssign("txtReason", "innerHTML",  "");
+
+	// add new stuff
+	$objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
+	$objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
+	$objResponse->addScriptCall("selectLengthTypeReason", $ban['length'], $ban['type']-1, addslashes($ban['reason']));
+
+	$objResponse->addScript("SwapPane(0);");
+	return $objResponse;
+}
+
+function PrepareBlockFromBan($bid)
+{
+	$objResponse = new xajaxResponse();
+
+	// clear any old stuff
+	$objResponse->addScript("$('nickname').value = ''");
+	$objResponse->addScript("$('steam').value = ''");
+	$objResponse->addScript("$('txtReason').value = ''");	
+	$objResponse->addAssign("txtReason", "innerHTML",  "");
+
+	$ban = $GLOBALS['db']->GetRow("SELECT name, authid FROM ".DB_PREFIX."_bans WHERE bid = '".$bid."';");
+
+	// add new stuff
+	$objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
+	$objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
+	
+	$objResponse->addScript("SwapPane(0);");
+	return $objResponse;
+}
+
+function PasteBlock($sid, $name)
+{
+	$objResponse = new xajaxResponse();
+	global $userbank, $username;
+	
+	$sid = (int)$sid;
+	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
+	{
+		$objResponse->redirect("index.php?p=login&m=no_access", 0);
+		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried paste a block, but doesn't have access.");
+		return $objResponse;
+	}
+	require INCLUDES_PATH.'/CServerRcon.php';
+	//get the server data
+	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = ?;", array($sid));
+	if(empty($data['rcon'])) {
+		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+		$objResponse->addScript("ShowBox('Error', 'No RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
+		return $objResponse;
+	}
+
+	$r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
+	if(!$r->Auth())
+	{
+		$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = ?;", array($sid));
+		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+		$objResponse->addScript("ShowBox('Error', 'Wrong RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
+		return $objResponse;
+	}
+
+	$ret = $r->rconCommand("status");
+	$search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
+	$i = 0;
+	$found = false;
+	$index = -1;
+	foreach($matches[2] AS $match) {
+		if($match == $name) {
+			$found = true;
+			$index = $i;
+			break;
+		}
+		$i++;
+	}
+	if($found) {
+		$steam = $matches[3][$index];
+		$name = $matches[2][$index];
+		$objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
+		$objResponse->addScript("$('steam').value = '" . $steam . "'");
+	} else {
+		$objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
+		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+		return $objResponse;
+	}
+	$objResponse->addScript("SwapPane(0);");
+	$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+	$objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
 	return $objResponse;
 }
 ?>

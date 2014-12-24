@@ -35,6 +35,10 @@ switch ($_GET['p'])
 		RewritePageTitle("Ban List");
 		$page = TEMPLATES_PATH ."/page.banlist.php";
 		break;
+	case "commslist":
+		RewritePageTitle("Communications Block List");
+		$page = TEMPLATES_PATH ."/page.commslist.php";
+		break;
 	case "servers":
 		RewritePageTitle("Server List");
 		$page = TEMPLATES_PATH . "/page.servers.php";

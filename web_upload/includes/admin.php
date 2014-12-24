@@ -312,6 +312,41 @@ else
 			RewritePageTitle("Email");
 		}
 	}
+	elseif($_GET['c'] == "comms")
+	 // ###################[ Comms ]##################################################################
+	{
+		CheckAdminAccess( ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_ALL_BANS );
+		
+		if(!isset($_GET['o']))
+		{
+			// ====================[ ADMIN SIDE MENU START ] ===================
+			$banTabMenu = new CTabsMenu();
+			if($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN ) ) {
+				$banTabMenu->addMenuItem("Add a block", 0);
+			}
+			$banTabMenu->addMenuItem("Comms list", 1, "", "index.php?p=commslist",true);
+			$banTabMenu->outputMenu();
+			// ====================[ ADMIN SIDE MENU END ] ===================
+
+			include TEMPLATES_PATH . "/admin.comms.php";
+			
+			if(isset($_GET['mode']) && $_GET['mode'] == "delete")
+				echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+			elseif(isset($_GET['mode']) && $_GET['mode']=="unban")
+				echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+			
+			RewritePageTitle("Comms");
+		}
+		elseif($_GET['o'] == 'edit')
+		{
+			$banTabMenu = new CTabsMenu();
+			$banTabMenu->addMenuItem("Back", 0,"", "javascript:history.go(-1);", true);
+			$banTabMenu->outputMenu();			
+			
+			include TEMPLATES_PATH . "/admin.edit.comms.php";
+			RewritePageTitle("Edit Block Details");
+		}
+	}
 	elseif($_GET['c'] == "mods")
 	 // ###################[ Mods ]##################################################################
 	{

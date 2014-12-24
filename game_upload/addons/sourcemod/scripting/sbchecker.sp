@@ -1,8 +1,12 @@
+/* SourceBans Checker 1.0.2
+
+Intergrated into SourceBans 1.5.0F */
+
 // Some snippets such as the sourcebans.cfg parsing are taken near-directly from the Sourcebans plugin
 
 #include <sourcemod>
 
-#define VERSION "1.5.0F-dev"
+#define VERSION "SB-1.5.0F"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 
 new String:g_DatabasePrefix[10] = "sb";

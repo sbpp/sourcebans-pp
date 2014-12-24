@@ -1198,6 +1198,8 @@ function changePage(newPage, type, advSearch, advType)
             window.location = "index.php?p=admin&c=admins"+searchlink+"&page="+nextPage;
 		if(type == "B")
             window.location = "index.php?p=banlist"+searchlink+"&page="+nextPage;
+		if(type == "C")
+            window.location = "index.php?p=commslist"+searchlink+"&page="+nextPage;
 		if(type == "L")
             window.location = "index.php?p=admin&c=settings"+searchlink+"&page="+nextPage+"#^2";
         if(type == "P")
@@ -1473,4 +1475,131 @@ function ViewCommunityProfile(sid, name)
 function addslashes (str)
 {
 	return (str + '').replace(/[\\"']/g, '\\$&').replace(/\u0000/g, '\\0');
+}
+
+function RemoveBlock(id, key, page, name, confirm)
+{
+	if(confirm==0) {
+		ShowBox('Delete Block', 'Are you sure you want to delete the block for '+ name + '?', 'blue', '', true);
+		$('dialog-control').setHTML('<input type="button" onclick="RemoveBlock(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Block" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+	} else if(confirm==1) {
+		if(page != "") 
+			var pagelink = page;
+		else
+			var pagelink = "";
+		window.location = "index.php?p=commslist" + pagelink + "&a=delete&id="+ id +"&key="+ key;
+	}
+}
+
+function UnGag(id, key, page, name, popup)
+{
+	if(popup==1) {
+		ShowBox('UnGag Reason', '<b>Please give a short comment, why you are going to ungag '+"\'"+ name +"\'"+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
+		$('dialog-control').setHTML('<input type="button" onclick="UnGag(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="UnGag Player" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+	} else if(popup==0) {
+		if(page != "")
+			var pagelink = page;
+		else
+			var pagelink = "";
+		reason = $('ureason').value;
+		if(reason == "") {
+			$('ureason.msg').setHTML("Please leave a comment.");
+			$('ureason.msg').setStyle('display', 'block');
+			return;
+		} else {
+			$('ureason.msg').setHTML('');
+			$('ureason.msg').setStyle('display', 'none');
+		}
+		window.location = "index.php?p=commslist" + pagelink + "&a=ungag&id="+ id +"&key="+ key +"&ureason="+ reason;
+	}
+}
+
+function UnMute(id, key, page, name, popup)
+{
+	if(popup==1) {
+		ShowBox('UnMute Reason', '<b>Please give a short comment, why you are going to unmute '+"\'"+ name +"\'"+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
+		$('dialog-control').setHTML('<input type="button" onclick="UnMute(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="UnMute Player" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+	} else if(popup==0) {
+		if(page != "")
+			var pagelink = page;
+		else
+			var pagelink = "";
+		reason = $('ureason').value;
+		if(reason == "") {
+			$('ureason.msg').setHTML("Please leave a comment.");
+			$('ureason.msg').setStyle('display', 'block');
+			return;
+		} else {
+			$('ureason.msg').setHTML('');
+			$('ureason.msg').setStyle('display', 'none');
+		}
+		window.location = "index.php?p=commslist" + pagelink + "&a=unmute&id="+ id +"&key="+ key +"&ureason="+ reason;
+	}
+}
+
+function search_blocks()
+{
+	var type = "";
+	var input = "";
+	if($('name').checked)
+	{
+		type = "name";
+		input = $('nick').value;
+	}
+	if($('steam_').checked)
+	{
+		type = (document.getElementById('steam_match').value == "1" ? "steam" : "steamid");
+		input = $('steamid').value;
+	}
+	if($('reason_').checked)
+	{
+		type = "reason";
+		input = $('ban_reason').value;
+	}
+	if($('date').checked)
+	{
+		type = "date";
+		input = $('day').value + "," + $('month').value + "," + $('year').value;
+	}
+	if($('length_').checked)
+	{
+		type = "length";
+		if($('length').value=="other")
+			var length = $('other_length').value;
+		else
+			var length = $('length').value
+		input = $('length_type').value + "," + length;
+	}
+	if($('ban_type_').checked)
+	{
+		type = "btype";
+		input = $('ban_type').value;
+	}
+	if($('bancount').checked)
+	{
+		type = "bancount";
+		input = $('timesbanned').value;
+	}
+	if($('admin').checked)
+	{
+		type = "admin";
+		input = $('ban_admin').value;
+	}
+	if($('where_banned').checked)
+	{
+		type = "where_banned";
+		input = $('server').value;
+	}
+	if($('comment_').checked)
+	{
+		type = "comment";
+		input = $('ban_comment').value;
+	}
+	if(type!="" && input!="")
+		window.location = "index.php?p=commslist&advSearch=" + input + "&advType=" + type;
+}
+
+function ShowBlockBox(check, type, length)
+{
+	ShowBox('Block Added', 'The block has been successfully added<br><iframe id="srvkicker" frameborder="0" width="100%" src="pages/admin.blockit.php?check='+check+'&type='+type+'&length='+length+'"></iframe>', 'green', 'index.php?p=admin&c=comms', true);
 }
