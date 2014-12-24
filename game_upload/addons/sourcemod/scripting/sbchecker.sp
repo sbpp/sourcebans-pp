@@ -2,7 +2,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.4.14-dev-3"
+#define VERSION "1.5F-dev"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 
 new String:g_DatabasePrefix[10] = "sb";
