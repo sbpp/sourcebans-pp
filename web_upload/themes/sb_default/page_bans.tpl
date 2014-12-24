@@ -140,6 +140,7 @@
 					  {if $ban.unbanned && $ban.reban_link != false}
 					  <li>{$ban.reban_link}</li>
 					  {/if}
+					  <li>{$ban.blockcomm_link}</li>
                       <li>{$ban.demo_link}</li>
                       <li>{$ban.addcomment}</li>
 					  {if $ban.type == 0}

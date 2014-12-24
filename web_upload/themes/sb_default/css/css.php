@@ -332,9 +332,15 @@ div.dialog-control{
 }
 
 .searchbox {
+    width:230px;
+    height:14px;
+    background-color:#fdeaa8;
+    border:0;
+}
+.searchbox2 {
     width:105px; 
     height:14px; 
-    background-color:#d7d7d7; 
+    background-color:#fdeaa8;
     border:0;
 }
 
@@ -493,10 +499,20 @@ a.nav_link:hover {
     text-decoration: underline;
 }
 
-#search {
+#search2 {
 	width: 300px;
 	float: right;
 	padding: 2px 0 0 0;
+	text-align: right;
+	}
+
+#search {
+	width: 200px;
+	float: right;
+	margin: auto 14px 0 auto;
+	margin-right: 14;
+	margin-bottom: -10px;
+	padding: 0 0 0 0;
 	text-align: right;
 	}
 

@@ -1,0 +1,946 @@
+"Phrases"
+{
+	//--------------------------------------------------------------------------------
+	"Muted on connect"
+	{
+		"en"			"You have been muted!"
+		"es"			"Has sido muteado!"
+		"ru"			"Вам был отключен микрофон!"
+		"pl"			"Zostałeś wyciszony!"
+		"pt"			"Você foi silenciado!"
+		"de"			"Sie wurden im Voice-Chat gesperrt!"
+	}
+	"Gagged on connect"
+	{
+		"en"			"You have been gagged!"
+		"es"			"Has sido gageado!"
+		"ru"			"Вам был отключен чат!"
+		"pl"			"Zostałeś zakneblowany!"
+		"pt"			"Você foi amordaçado!"
+		"de"			"Sie wurden im Chat gesperrt!"
+	}
+	//--------------------------------------------------------------------------------
+	"Mute expired"
+	{
+		"en"			"Your mute has expired."
+		"es"			"Tu muteo ha expirado."
+		"ru"			"Вам был включен микрофон (истек срок блокировки)."
+		"pl"			"Twoje wyciszenie wygasło."
+		"pt"			"Seu emudecimento expirou."
+		"de"			"Sie wurden im Voice-Chat entsperrt (Die Sperrzeit ist abgelaufen)."
+	}
+	"Gag expired"
+	{
+		"en"			"Your gag has expired."
+		"es"			"Tu gageo ha expirado."
+		"ru"			"Вам был включен чат (истек срок блокировки)."
+		"pl"			"Twój knebel wygasł."
+		"pt"			"Seu amordaçamento expirou."
+		"de"			"Sie wurden im Chat entsperrt. (Die Sperrzeit ist abgelaufen)."
+	}
+	//--------------------------------------------------------------------------------
+	"FWUnmute"
+	{
+		"en"			"Your mute has been removed."
+		"es"			"Tu muteo ha sido eliminado"
+		"ru"			"Вам был включен микрофон."
+		"pl"			"Twoje wyciszenie zostało usunięte."
+		"pt"			"Seu emudecimento foi removido."
+		"de"			"Sie wurden im Voice-Chat entsperrt."
+	}
+	"FWUngag"
+	{
+		"en"			"Your gag has been removed."
+		"es"			"Tu gageo ha sido eliminado"
+		"ru"			"Вам был включен чат."
+		"pl"			"Twój knebel został usunięty."
+		"pt"			"Seu amordaçamento foi removido."
+		"de"			"Sie wurden im Chat entsperrt."
+	}
+	//--------------------------------------------------------------------------------
+	"Usage_time"
+	{
+		"#format"		"{1:d}"
+		"en"			"Time: {1} minutes, if unspecified; permanent, if 0.\nIf < 0, blocks for session."
+		"es"			"Tiempo: {1} minutos, si no es especificado el tiempo = permanente en caso de ser 0.\nSi es < 0, bloqueo sólo para la sesión."
+		"ru"			"Длительность: {1} минут, если не указана; навсегда, если 0.\nЕсли < 0, блокировка на сессию."
+		"pl"			"Czas: {1} minut, jeśli nieokreślony; permanentny, jeśli 0.\nJeśli < 0, blokada na sesje."
+		"pt"			"Tempo: {1} minutos se não for especificado, permanente se for 0 \.nSe for < 0, bloqueia na sessão."
+		"de"			"Dauer: {1} Minuten, wenn nicht festgelegt; für immer, wenn 0. \.nWenn < 0, Blockierung für nächste Periode."
+	}
+	"Player Comms Not Verified"
+	{
+		"en"			"This player has not been verified. Please wait thirty seconds before retrying."
+		"es"			"este jugador no ha podido ser verificado. Por favor, espera 30 segundos antes de volver a intentarlo"
+		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
+		"pl"			"Gracz niezweryfikowany. Proszę poczekać 30 sekund przed ponowną probą."
+		"pt"			"Este jogador não foi verificado. Por favor, aguarde trinta segundos antes de tentar novamente."
+		"de"			"Der Spieler ist noch nicht identifiziert. Warten Sie 30 Sekunden vor dem nächsten Versuch."
+	}
+	//--------------------------------------------------------------------------------
+	"Player already muted"
+	{
+		"#format"		"{1:s}"
+		"en"			"Player {1} already muted!"
+		"es"			"El jugador {1} ya está muteado actualmente!"
+		"ru"			"У игрока {1} уже отключен микрофон!"
+		"pl"			"Gracz {1} jest już wyciszony!"
+		"pt"			"Jogador {1} já foi emudecido!"
+		"de"			"Der Spieler {1} ist bereits im Voice-Chat gesperrt!"
+	}
+	"Player already gagged"
+	{
+		"#format"		"{1:s}"
+		"en"			"Player {1} already gagged!"
+		"es"			"El jugador {1} ya está gageado actualmente!"
+		"ru"			"У игрока {1} уже отключен чат!"
+		"pl"			"Gracz {1} jest już zakneblowany!"
+		"pt"			"Jogador {1} já foi amordaçado!"
+		"de"			"Der Spieler {1} ist bereits im Chat gesperrt!"
+	}
+	"Player already silenced"
+	{
+		"#format"		"{1:s}"
+		"en"			"Player {1} already gagged or muted!"
+		"es"			"El jugador {1} ya está gageado o muteado actualmente!"
+		"ru"			"У игрока {1} уже отключен чат или микрофон!"
+		"pl"			"Gracz {1} jest już całkowicie wyciszony!"
+		"pt"			"Jogador {1} já amordaçado ou emudecido!"
+		"de"			"Der Spieler {1} ist bereits im Chat oder im Voice-Chat gesperrt!"
+	}
+	//--------------------------------------------------------------------------------
+	"Player not muted"
+	{
+		"en"			"Player not muted."
+		"es"			"Jugador no muteado."
+		"ru"			"У игрока не отключен микрофон."
+		"pl"			"Gracz nie jest wyciszony."
+		"pt"			"Jogador não emudecido."
+		"de"			"Der Spieler ist im Voice-Chat nicht gesperrt."
+	}
+	"Player not gagged"
+	{
+		"en"			"Player not gagged."
+		"es"			"Jugador no gageado."
+		"ru"			"У игрока не отключен чат."
+		"pl"			"Gracz nie jest zakneblowany."
+		"pt"			"Jogador não amordaçado."
+		"de"			"Der Spieler ist im Chat nicht gesperrt."
+	}
+	"Player not silenced"
+	{
+		"en"			"Player not silenced."
+		"es"			"Jugador no silenciado."
+		"ru"			"У игрока не отключен чат или микрофон."
+		"pl"			"Gracz nie jest całkowicie wyciszony."
+		"pt"			"Jogador não silenciado."
+		"de"			"Der Spieler ist im Chat oder im Voice-Chat nicht gesperrt."
+	}
+	//--------------------------------------------------------------------------------
+	"Permagagged player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Issued a permanent gag on {1}."
+		"es"			"Ha gageado permanentemente a {1}."
+		"ru"			"Игроку {1} навсегда отключен чат."
+		"pl"			"Permanentnie zakneblowano {1}."
+		"pt"			"{1} foi permanentemente amordaçado."
+		"de"			"Der Spieler {1} ist für immer im Chat gesperrt."
+	}
+	"Permagagged player reason"
+	{
+		"#format"		"{1:t},{2:s}"
+		"en"			"Issued a permanent gag on {1} (reason: {2})."
+		"es"			"Ha gageado permanentemente a {1} (razón: {2})."
+		"ru"			"Игроку {1} навсегда отключен чат (причина: {2})."
+		"pl"			"Permanentnie zakneblowano {1} (powód: {2})."
+		"pt"			"{1} foi permanentemente amordaçado, (motivo: {2})."
+		"de"			"Der Spieler {1} ist für immer im Chat gesperrt (Grund: {2})."
+	}
+	"Gagged player"
+	{
+		"#format"		"{1:t},{2:d}"
+		"en"			"Issued an extended gag on {1} for {2} minutes."
+		"es"			"Ha gageado extensivamente a {1} por {2} minutos."
+		"ru"			"Игроку {1} отключен чат на {2} минут."
+		"pl"			"Zakneblowano {1} na {2} minut."
+		"pt"			"Amordaçamento de {1} foi estendido por {2} minutos."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Chat gesperrt."
+	}
+	"Gagged player reason"
+	{
+		"#format"		"{1:t},{2:d},{3:s}"
+		"en"			"Issued an extended gag on {1} for {2} minutes (reason: {3})."
+		"es"			"Ha gageado extensivamente a {1} por {2} minutos (razón: {3})."
+		"ru"			"Игроку {1} отключен чат на {2} минут (причина: {3})."
+		"pl"			"Zakneblowano {1} na {2} minut (powód: {3})."
+		"pt"			"Amordaçamento de {1} foi estendido por {2} minutos, (motivo: {3})."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Chat gesperrt (Grund: {3})."
+	}
+	//--------------------------------------------------------------------------------
+	"Permamuted player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Issued a permanent mute on {1}."
+		"es"			"Ha muteado permanentemente a {1}."
+		"ru"			"Игроку {1} навсегда отключен микрофон."
+		"pl"			"Permanentnie wyciszono {1}."
+		"pt"			"{1} foi permanentemente emudecido."
+		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt."
+	}
+	"Permamuted player reason"
+	{
+		"#format"		"{1:t},{2:s}"
+		"en"			"Issued a permanent mute on {1} (reason: {2})."
+		"es"			"Ha muteado permanentemente a {1} (razón: {2})."
+		"ru"			"Игроку {1} навсегда отключен микрофон (причина: {2})."
+		"pl"			"Permanentnie wyciszono {1} (powód: {2})."
+		"pt"			"{1} foi permanentemente emudecido, (motivo: {2})."
+		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt (Grund: {2})."
+	}
+	"Muted player"
+	{
+		"#format"		"{1:t},{2:d}"
+		"en"			"Issued an extended mute on {1} for {2} minutes."
+		"es"			"Ha muteado extensivamente a {1} por {2} minutos."
+		"ru"			"Игроку {1} отключен микрофон на {2} минут."
+		"pl"			"Wyciszono {1} na {2} minut."
+		"pt"			"Emudecimento de {1} foi estendido por {2} minutos."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat gesperrt."
+	}
+	"Muted player reason"
+	{
+		"#format"		"{1:t},{2:d},{3:s}"
+		"en"			"Issued an extended mute on {1} for {2} minutes (reason: {3})."
+		"es"			"Ha muteado extensivamente a {1} por {2} minutos (razón: {3})."
+		"ru"			"Игроку {1} отключен микрофон на {2} минут (причина: {3})."
+		"pl"			"Wyciszono {1} na {2} minut (powód: {3})."
+		"pt"			"Emudecimento de {1} foi estendido por {2} minutos, (motivo: {3})."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat gesperrt (Grund: {3})."
+	}
+	//--------------------------------------------------------------------------------
+	"Permasilenced player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Issued a permanent silence on {1}."
+		"es"			"Ha silenciado permanentemente a {1}."
+		"ru"			"Игроку {1} навсегда отключен чат и микрофон."
+		"pl"			"Permanentnie całkowicie wyciszono {1}."
+		"pt"			"{1} foi permanentemente silenciado."
+		"de"			"Der Spieler {1} ist für immer im Voice-Chat und im Chat gesperrt."
+	}
+	"Permasilenced player reason"
+	{
+		"#format"		"{1:t},{2:s}"
+		"en"			"Issued a permanent silence on {1} (reason: {2})."
+		"es"			"Ha silenciado permanentemente a {1} (razón: {2})."
+		"ru"			"Игроку {1} навсегда отключен чат и микрофон (причина: {2})."
+		"pl"			"Permanentnie całkowicie wyciszono {1} (powód: {2})."
+		"pt"			"{1} foi permanentemente silenciado, (motivo: {2})."
+		"de"			"Der Spieler {1} ist im Chat und im Voice-Chat gesperrt (Grund: {2})."
+	}
+	"Silenced player"
+	{
+		"#format"		"{1:t},{2:d}"
+		"en"			"Issued an extended silence on {1} for {2} minutes."
+		"es"			"Ha silenciado extensivamente a {1} por {2} minutos."
+		"ru"			"Игроку {1} отключен чат и микрофон на {2} минут."
+		"pl"			"Całkowicie wyciszono {1} na {2} minut."
+		"pt"			"Silenciamento de {1} foi estendido por {2} minutos."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat und im Chat gesperrt."
+	}
+	"Silenced player reason"
+	{
+		"#format"		"{1:t},{2:d},{3:s}"
+		"en"			"Issued an extended silence on {1} for {2} minutes (reason: {3})."
+		"es"			"Ha silenciado extensivamente a {1} por {2} minutos (razón: {3})."
+		"ru"			"Игроку {1} отключен чат и микрофон на {2} минут (причина: {3})."
+		"pl"			"Całkowicie wyciszono {1} na {2} minut (powód: {3})."
+		"pt"			"Silenciamento de {1} foi estendido por {2} minutos, (motivo: {3})."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat und im Chat gesperrt (Grund: {3})."
+	}
+	//--------------------------------------------------------------------------------
+	"Temp unmuted player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Temporarily removed mute from {1}."
+		"es"			"Ha eliminado el muteo temporal a {1}."
+		"ru"			"Игроку {1} временно включен микрофон."
+		"pl"			"Tymczasowo usunięto wyciszenie {1}."
+		"pt"			"Emudecimento de {1} foi temporariamente removido."
+		"de"			"Der Spieler {1} ist zeitweilig im Voice-Chat entsperrt."
+	}
+	"Temp ungagged player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Temporarily removed gag from {1}."
+		"es"			"Ha eliminado el gageo temporal a {1}."
+		"ru"			"Игроку {1} временно включен чат."
+		"pl"			"Tymczasowo usunięto knebel {1}."
+		"pt"			"Amordaçamento de {1} foi temporariamente removido."
+		"de"			"Der Spieler {1} ist zeitweilig im Chat entsperrt."
+	}
+	"Temp unsilenced player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Temporarily removed silence from {1}."
+		"es"			"Ha eliminado el silencio temporal a {1}."
+		"ru"			"Игроку {1} временно включен чат и микрофон."
+		"pl"			"Tymczasowo usunięto całkowite wyciszenie {1}."
+		"pt"			"Silenciamento de {1} foi temporariamente removido."
+		"de"			"Der Spieler {1} ist zeitweilig im Voice-Chat und im Chat entsperrt."
+	}
+	"Unblock Select Failed"
+	{
+		"#format"		"{1:s}"
+		"en"			"An error occurred while requesting blocks for {1} from DB."
+		"es"			"Ha ocurrido un error durante la solicitud de los bloqueos de {1} en la Base de Datos"
+		"ru"			"Произошла ошибка при запросе блокировок для {1} из базы."
+		"pl"			"Wystąpił błąd podczas pobierania blokad {1} z bazy danych."
+		"pt"			"Ocorreu um erro no DB durante a pedido de bloqueio de {1}."
+		"de"			"Es ist ein Fehler bei der Anfrage der Sperren für {1} aus der Datenbank passiert"
+	}
+	"No blocks found"
+	{
+		"#format"		"{1:s}"
+		"en"			"No active blocks found in DB for {1}."
+		"es"			"No hay bloqueos activos que se encuentren en la Base de Datos para {1}."
+		"ru"			"В базе не найдено действующих блокировок для {1}."
+		"pl"			"Brak aktywnych blokad {1} w bazie danych."
+		"pt"			"Nenhum bloqueio ativo foi encontrado no DB para {1}."
+		"de"			"Es wurde keine gültige Sperre für {1}in der Datenbank gefunden."
+	}
+	"No db error unlock perm"
+	{
+		"en"			"You lack the permission to unblocking with DB errors."
+		"es"			"No tienes permisos para desbloquear errores de la Base de Datos."
+		"ru"			"У вас нет разрешения на разблокировку при ошибках базы."
+		"pl"			"Nie masz uprawnień do usuwania blokad z bazy danych."
+		"pt"			"Você não tem permissão para desbloquear com erros de DB."
+		"de"			"Sie haben keine Erlaubnis zur Entsperrung bei den Fehlern in der Datenbank."
+	}
+	"No permission unmute"
+	{
+		"#format"		"{1:s}"
+		"en"			"The mute on {1} was unable to be removed due to being muted by a higher administrator!"
+		"es"			"El muteo de {1} no pudo ser eliminado debido a que fue muteado por un administrador superior a ti!"
+		"ru"			"Невозможно включить микрофон {1}, т.к. он был отключен более высоким администратором!"
+		"pl"			"Wyciszenie {1} nie może zostać usunięte, ponieważ zostało nadane przez admina z wyższymi uprawnieniami!"
+		"pt"			"O emudecimento de {1} não pôde ser removido porque foi efetuado por um administrador de nível mais alto!"
+		"de"			"Es ist unmöglich {1} im Voice-Chat zu entsperren, weil er von höherem Administrator gesperrt wurde!"
+	}
+	"No permission ungag"
+	{
+		"#format"		"{1:s}"
+		"en"			"The gag on {1} was unable to be removed due to being muted by a higher administrator!"
+		"es"			"El gageo de {1} no pudo ser eliminado debido a que fue gageado por un administrador superior a ti!"
+		"ru"			"Невозможно включить чат {1}, т.к. он был отключен более высоким администратором!"
+		"pl"			"Knebel {1} nie może zostać usunięty, ponieważ został nadany przez admina z wyższymi uprawnieniami!"
+		"pt"			"O amordaçamento de {1} não pôde ser removido porque foi efetuado por um administrador de nível mais alto!"
+		"de"			"Es ist unmöglich {1}im Chat zu entsperren, weil er von höherem Administrator gesperrt wurde!"
+	}
+	"Unmuted player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Removed an extended mute from {1}."
+		"es"			"Ha eliminado el muteo extendido a {1}."
+		"ru"			"Игроку {1} включен микрофон."
+		"pl"			"Usunięto wyciszenie {1}."
+		"pt"			"Removido um emudecimento estendido de {1}."
+		"de"			"Der Spieler {1} wurde im Voice-Chat entsperrt."
+	}
+	"Ungagged player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Removed an extended gag from {1}."
+		"es"			"Ha eliminado el gageo extendido a {1}."
+		"ru"			"Игроку {1} включен чат."
+		"pl"			"Usunięto knebel {1}."
+		"pt"			"Removido um amordaçamento estendido de {1}."
+		"de"			"Der Spieler {1} wurde im Chat entsperrt."
+	}
+	"Unblock insert failed"
+	{
+		"en"			"Failed to remove block from DB."
+		"es"			"Error al eliminar este bloqueo de la Base de Datos."
+		"ru"			"Не удалось удалить блокировку из базы."
+		"pl"			"Nie udało się usunąć blokady z bazy danych."
+		"pt"			"Falha ao remover o bloqueio do DB."
+		"de"			"Es ist ein Fehler beim Entfernen der Sperre aus der Datenbank passiert."
+	}
+	"successfully unmuted"
+	{
+		"#format"		"{1:s}"
+		"en"			"Successfully removed mute for {1} from DB."
+		"es"			"Eliminado con éxito el muteo de {1} desde la Base de Datos."
+		"ru"			"Успешно удалена блокировка микрофона для {1} из базы."
+		"pl"			"Usunięto wyciszenie {1} z bazy danych."
+		"pt"			"Removido com sucesso o emudecimento de {1} do DB."
+		"de"			"Die Sperre {1} im Voice-Chat wurde erfolgreich aus der Datenbank entfernt."
+	}
+	"successfully ungagged"
+	{
+		"#format"		"{1:s}"
+		"en"			"Successfully removed gag for {1} from DB."
+		"es"			"Eliminado con éxito el gageo de {1} desde la Base de Datos."
+		"ru"			"Успешно удалена блокировка чата для {1} из базы."
+		"pl"			"Usunięto knebel {1} z bazy danych."
+		"pt"			"Removido com sucesso o amordaçamento de {1} do DB."
+		"de"			"Die Sperre {1} im Chat wurde erfolgreich aus der Datenbank entfernt."
+	}
+	//--------------------------------------------------------------------------------
+	"AdminMenu_Display_None"
+	{
+		"#format"	"{1:s}"
+		"en"		"[  ] {1}"
+		"es"		"[  ] {1}"
+		"ru"		"[  ] {1}"
+		"pl"		"[  ] {1}"
+		"pt"		"[  ] {1}"
+		"de"		"[  ] {1}"
+	}
+	"AdminMenu_Display_Muted"
+	{
+		"#format"	"{1:s}"
+		"en"		"[M] {1}"
+		"es"		"[M] {1}"
+		"ru"		"[M] {1}"
+		"pl"		"[M] {1}"
+		"pt"		"[M] {1}"
+		"de"		"[M] {1}"
+	}
+	"AdminMenu_Display_Gagged"
+	{
+		"#format"	"{1:s}"
+		"en"		"[G] {1}"
+		"es"		"[G] {1}"
+		"ru"		"[G] {1}"
+		"pl"		"[G] {1}"
+		"pt"		"[G] {1}"
+		"de"		"[G] {1}"
+	}
+	"AdminMenu_Display_Silenced"
+	{
+		"#format"	"{1:s}"
+		"en"		"[S] {1}"
+		"es"		"[S] {1}"
+		"ru"		"[S] {1}"
+		"pl"		"[S] {1}"
+		"pt"		"[S] {1}"
+		"de"		"[S] {1}"
+	}
+	"AdminMenu_Main"
+	{
+		"en"		"Comm Commands"
+		"es"		"Comandos de Comunicación"
+		"ru"		"Чат и микрофон"
+		"pl"		"Komunikacja"
+		"pt"		"Comandos de Comunicação"
+		"de"		"Chat und Voice-Chat"
+	}
+	"AdminMenu_Select_Main"
+	{
+		"en"		"Comm Commands:"
+		"es"		"Comandos de Comunicación:"
+		"ru"		"Чат и микрофон:"
+		"pl"		"Komunikacja:"
+		"pt"		"Comandos de Comunicação:"
+		"de"		"Chat und Voice-Chat:"
+	}
+	"AdminMenu_List"
+	{
+		"en"		"View Punishments"
+		"es"		"Ver Castigos"
+		"ru"		"Посмотреть наказания"
+		"pl"		"Zobacz kary"
+		"pt"		"Ver Punições"
+		"de"		"Die Bestrafungen zeigen"
+	}
+	"AdminMenu_Select_List"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Игроки:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Die Spieler:"
+	}
+	"AdminMenu_Gag"
+	{
+		"en"		"Issue Gag"
+		"es"		"Gagear Jugador"
+		"ru"		"Отключить чат"
+		"pl"		"Zaknebluj"
+		"pt"		"Emitir Amordaçar"
+		"de"		"Chat sperren"
+	}
+	"AdminMenu_Select_Gag"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Отключить чат игроку:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Spieler im Chat sperren:"
+	}
+	"AdminMenu_Select_Mute"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Отключить микрофон игроку:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Spieler im Voice-Chat sperren:"
+	}
+	"AdminMenu_Select_Silence"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Отключить микрофон и чат игроку:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Spieler im Voice-Chat und im Chat sperren:"
+	}
+	"AdminMenu_Select_Ungag"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Включить чат игроку:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Spieler im Chat entsperren:"
+	}
+	"AdminMenu_Select_Unmute"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Включить микрофон игроку:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Spieler im Voice-Chat entsperren:"
+	}
+	"AdminMenu_Select_Unsilence"
+	{
+		"en"		"Select Player:"
+		"es"		"Seleccionar Jugador:"
+		"ru"		"Включить микрофон и чат игроку:"
+		"pl"		"Wybierz Gracza:"
+		"pt"		"Selecionar Jogador:"
+		"de"		"Spieler im Voice-Chat und im Chat entsperren:"
+	}
+	"AdminMenu_Option_Mute_Empty"
+	{
+		"en"		"No Muted Players"
+		"es"		"No hay jugadores muteados"
+		"ru"		"Нет игроков с отключенным микрофоном"
+		"pl"		"Brak wyciszonych graczy"
+		"pt"		"Nenhum Jogador Emudecido"
+		"de"		"Es gibt keinen Spieler, der im Chat gesperrt wurde"
+	}
+	"AdminMenu_Option_Gag_Empty"
+	{
+		"en"		"No Gagged Players"
+		"es"		"No hay jugadores gageados"
+		"ru"		"Нет игроков с отключенным чатом"
+		"pl"		"Brak zakneblowanych graczy"
+		"pt"		"Nenhum Jogador Amordaçado"
+		"de"		"Es gibt keinen Spieler, der im Voice-Chat gesperrt wurde"
+	}
+	"AdminMenu_Option_Silence_Empty"
+	{
+		"en"		"No Silenced Players"
+		"es"		"No hay jugadores silenciados"
+		"ru"		"Нет игроков с отключенным микрофоном и чатом"
+		"pl"		"Brak całkowicie wyciszonych graczy"
+		"pt"		"Nenhum Jogador Silenciado"
+		"de"		"Es gibt keinen Spieler, der im Voice-Chat und im Chat gesperrt wurde"
+	}
+	"ListMenu_Option_Empty"
+	{
+		"en"		"No Punished Clients"
+		"es"		"No hay jugadores castigados"
+		"ru"		"Нет наказанных игроков"
+		"pl"		"Brak ukaranych graczy"
+		"pt"		"Nenhum Cliente Punido"
+		"de"		"Es gibt keinen bestraften Spieler"
+	}
+	"AdminMenu_Option_Empty"
+	{
+		"en"		"No available players"
+		"es"		"No hay jugadores disponibles"
+		"ru"		"Нет доступных игроков"
+		"pl"		"Brak dostępnych graczy"
+		"pt"		"Não há jogadores disponíveis"
+		"de"		"Es gibt keinen zugänglichen Spieler"
+	}
+	"AdminMenu_UnGag"
+	{
+		"en"		"Remove Gag"
+		"es"		"Eliminar Gageo"
+		"ru"		"Включить чат"
+		"pl"		"Usuń knebel"
+		"pt"		"Remover Amordaçar"
+		"de"		"Chat entsperren"
+
+	}
+	"AdminMenu_Title_Durations"
+	{
+		"en"		"Select Duration:"
+		"es"		"Seleccionar Duración:"
+		"ru"		"На сколько:"
+		"pl"		"Wybierz czas trwania:"
+		"pt"		"Selecionar Duração:"
+		"de"		"Dauer auswählen:"
+	}
+	"AdminMenu_Title_Reasons"
+	{
+		"en"		"Select Reason:"
+		"es"		"Seleccionar Razón:"
+		"ru"		"Причина:"
+		"pl"		"Wybierz powód:"
+		"pt"		"Selecionar Motivo:"
+		"de"		"Grund auswählen:"
+	}
+	"AdminMenu_Mute"
+	{
+		"en"		"Issue Mute"
+		"es"		"Mutear Jugador"
+		"ru"		"Отключить микрофон"
+		"pl"		"Wycisz"
+		"pt"		"Emitir Emudecer"
+		"de"		"Voice-Chat sperren"
+	}
+	"AdminMenu_UnMute"
+	{
+		"en"		"Remove Mute"
+		"es"		"Eliminar Muteo"
+		"ru"		"Включить микрофон"
+		"pl"		"Usuń wyciszenie"
+		"pt"		"Remover Emudecer"
+		"de"		"Voice-Chat entsperren"
+	}
+	"AdminMenu_Silence"
+	{
+		"en"		"Issue Silence"
+		"es"		"Silenciar Jugador"
+		"ru"		"Отключить микрофон и чат"
+		"pl"		"Wycisz całkowicie"
+		"pt"		"Emitir Silenciar"
+		"de"		"Voice-Chat und Chat sperren"
+	}
+	"AdminMenu_UnSilence"
+	{
+		"en"		"Remove Silence"
+		"es"		"Eliminar Silencio"
+		"ru"		"Включить микрофон и чат"
+		"pl"		"Usuń całkowite wyciszenie"
+		"pt"		"Remover Silenciar"
+		"de"		"Voice-Chat und Chat entsperren"
+	}
+	//--------------------------------------------------------------------------------
+	"AdminMenu_Not_Available"
+	{
+		"en"		"The player you selected is no longer available."
+		"es"		"El jugador que has seleccionado ya no está disponible."
+		"ru"		"Игрок не доступен."
+		"pl"		"Wybrany gracz nie jest już dostępny."
+		"pt"		"O jogador que você selecionou não está mais disponível."
+		"de"		"Der Spieler ist nicht zugänglich."
+	}
+	"Command_Target_Not_Targetable"
+	{
+		"en"		"You cannot target this player."
+		"es"		"Tú no puedes controlar a este jugador."
+		"ru"		"Вы не можете выбрать этого игрока."
+		"pl"		"Nie możesz wskazać tego gracza."
+		"pt"		"Você não pode marcar este jogador."
+		"de"		"Sie können diesen Spieler nicht auswählen."
+	}
+	//---------------------------------------------------------------------------------
+	"ListMenu_Option_Mute"
+	{
+		"en"		"Muted"
+		"es"		"Muteado"
+		"ru"		"Микрофон"
+		"pl"		"Wyciszony"
+		"pt"		"Emudecido"
+		"de"		"Voice-Chat"
+	}
+	"ListMenu_Option_Gag"
+	{
+		"en"		"Gagged"
+		"es"		"Gageado"
+		"ru"		"Чат"
+		"pl"		"Zakneblowany"
+		"pt"		"Amordaçado"
+		"de"		"Chat"
+	}
+	"ListMenu_Option_Duration"
+	{
+		"en"		"- Duration: "
+		"es"		"- Duración: "
+		"ru"		"- На время: "
+		"pl"		"- Czas trwania: "
+		"pt"		"- Duração: "
+		"de"		"- Dauer: "
+	}
+	"ListMenu_Option_Duration_Perm"
+	{
+		"en"		"Permanent"
+		"es"		"Permanente"
+		"ru"		"Навсегда"
+		"pl"		"Permanentnie"
+		"pt"		"Permanente"
+		"de"		"Für immer"
+	}
+	"ListMenu_Option_Duration_Time"
+	{
+		"#format"	"{1:d}"
+		"en"		"{1} Minutes"
+		"es"		"{1} Minutos"
+		"ru"		"{1} минут"
+		"pl"		"{1} minut"
+		"pt"		"{1} Minutos"
+		"de"		"{1} Minuten"
+	}
+	"ListMenu_Option_Duration_Temp"
+	{
+		"en"		"Temporary"
+		"es"		"Temporal"
+		"ru"		"Временный"
+		"pl"		"Tymczasowo"
+		"pt"		"Temporário"
+		"de"		"Zeitweilig"
+	}
+	"ListMenu_Option_Expire"
+	{
+		"en"		"- Expires: "
+		"es"		"- Expira en: "
+		"ru"		"- Истекает: "
+		"pl"		"- Wygasa: "
+		"pt"		"- Expira: "
+		"de"		"- Läuft ab: "
+	}
+	"ListMenu_Option_Expire_Perm"
+	{
+		"en"		"Never"
+		"es"		"Nunca"
+		"ru"		"Никогда"
+		"pl"		"Nigdy"
+		"pt"		"Nunca"
+		"de"		"Nie"
+	}
+	"ListMenu_Option_Expire_Time"
+	{
+		"#format"	"{1:s}"
+		"en"		"{1}"
+		"es"		"{1}"
+		"ru"		"{1}"
+		"pl"		"{1}"
+		"pt"		"{1}"
+		"de"		"{1}"
+	}
+	"ListMenu_Option_Expire_Temp_Reconnect"
+	{
+		"en"		"Reconnect"
+		"es"		"Al reconectar"
+		"ru"		"Перезаход"
+		"pl"		"Ponowne połączenie"
+		"pt"		"Reconectar"
+		"de"		"Wiederverbinden"
+	}
+	"ListMenu_Option_Admin"
+	{
+		"#format"	"{1:s}"
+		"en"		"- Admin: {1}"
+		"es"		"- Admin: {1}"
+		"ru"		"- Админ: {1}"
+		"pl"		"- Admin: {1}"
+		"pt"		"- Admin: {1}"
+		"de"		"- Admin: {1}"
+	}
+	"ListMenu_Option_Issue"
+	{
+		"#format"	"{1:s}"
+		"en"		"- Issued: {1}"
+		"es"		"- Emitido: {1}"
+		"ru"		"- Отключен: {1}"
+		"pl"		"- Nadano: {1}"
+		"pt"		"- Emitido: {1}"
+		"de"		"- Gesperrt: {1}"
+	}
+	"ListMenu_Option_Reason"
+	{
+		"en"		"- View Reason"
+		"es"		"- Ver Razón"
+		"ru"		"- Причина"
+		"pl"		"- Zobacz powód"
+		"pt"		"- Ver Motivo"
+		"de"		"- Grund"
+	}
+	"ListMenu_Option_Reason_None"
+	{
+		"en"		"- Reason: None"
+		"es"		"- Razón: Ninguna"
+		"ru"		"- Нет причины"
+		"pl"		"- Powód: Brak"
+		"pt"		"- Motivo: Nenhum"
+		"de"		"- Kein Grund"
+	}
+	//---------------------------------------------------------------------------------
+	"ReasonPanel_Punishment_Mute"
+	{
+		"en"		"Muted: "
+		"es"		"Muteado: "
+		"ru"		"Микрофон: "
+		"pl"		"Wyciszono: "
+		"pt"		"Emudecido: "
+		"de"		"Voice-Chat: "
+	}
+	"ReasonPanel_Punishment_Gag"
+	{
+		"en"		"Gagged: "
+		"es"		"Gageado: "
+		"ru"		"Чат: "
+		"pl"		"Zakneblowano: "
+		"pt"		"Amordaçado: "
+		"de"		"Chat: "
+	}
+	"ReasonPanel_Perm"
+	{
+		"en"		"Permanent"
+		"es"		"Permanente"
+		"ru"		"Навсегда"
+		"pl"		"Permanentnie"
+		"pt"		"Permanente"
+		"de"		"Für immer"
+	}
+	"ReasonPanel_Time"
+	{
+		"#format"	"{1:d}"
+		"en"		"{1} Minutes"
+		"es"		"{1} Minutos"
+		"ru"		"{1} минут"
+		"pl"		"{1} minut"
+		"pt"		"{1} Minutos"
+		"de"		"{1} Minuten"
+	}
+	"ReasonPanel_Temp"
+	{
+		"en"		"Temporary"
+		"es"		"Temporal"
+		"ru"		"Временный"
+		"pl"		"Tymczasowo"
+		"pt"		"Temporário"
+		"de"		"Zeitweihlig"
+	}
+	"ReasonPanel_Reason"
+	{
+		"#format"	"{1:s}"
+		"en"		"Reason: {1}"
+		"es"		"Razón: {1}"
+		"ru"		"Причина: {1}"
+		"pl"		"Powód: {1}"
+		"pt"		"Motivo: {1}"
+		"de"		"Grund: {1}"
+	}
+	"ReasonPanel_Back"
+	{
+		"en"		"Exit"
+		"es"		"Salir"
+		"ru"		"Выход"
+		"pl"		"Wyjdź"
+		"pt"		"Sair"
+		"de"		"Ausgang"
+	}
+	//---------------------------------------------------------------------------------
+	"Temp muted player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Muted {1}."
+		"es"			"{1} Muteado."
+		"ru"			"Игроку {1} отключен микрофон."
+		"pl"			"Wyciszono {1}."
+		"pt"			"{1} Emudecido."
+		"de"			"Der Spieler {1} wurde im Voice-Chat gesperrt."
+	}
+	"Temp muted player reason"
+	{
+		"#format"		"{1:t},{2:s}"
+		"en"			"Muted {1} (reason: {2})."
+		"es"			"{1} Muteado (razón: {2})."
+		"ru"			"Игроку {1} отключен микрофон (причина: {2})."
+		"pl"			"Wyciszono {1} (powód: {2})."
+		"pt"			"{1} Emudecido (motivo: {2})."
+		"de"			"Der Spieler {1} wurde im Voice-Chat gesperrt (Grund: {2}}."
+	}
+	"Temp gagged player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Gagged {1}."
+		"es"			"{1} Gageado."
+		"ru"			"Игроку {1} отключен чат."
+		"pl"			"Zakneblowano {1}."
+		"pt"			"{1} Amordaçado."
+		"de"			"Der Spieler {1} wurde im Chat gesperrt."
+	}
+	"Temp gagged player reason"
+	{
+		"#format"		"{1:t},{2:s}"
+		"en"			"Gagged {1} (reason: {2})."
+		"es"			"{1} Gageado (razón: {2})."
+		"ru"			"Игроку {1} отключен чат (причина: {2})."
+		"pl"			"Zakneblowano {1} (powód: {2})."
+		"pt"			"{1} Amordaçado (motivo: {2})."
+		"de"			"Der Spieler {1} wurde im Chat gesperrt (Grund: {2}}."
+	}
+	"Temp silenced player"
+	{
+		"#format"		"{1:t}"
+		"en"			"Silenced {1}."
+		"es"			"{1} Silenciado."
+		"ru"			"Игроку {1} отключен чат и микрофон."
+		"pl"			"Całkowicie wyciszono {1}."
+		"pt"			"{1} Silenciado."
+		"de"			"Der Spieler {1} wurde im Chat und im Voice-Chat gesperrt."
+	}
+	"Temp silenced player reason"
+	{
+		"#format"		"{1:t},{2:s}"
+		"en"			"Silenced {1} (reason: {2})."
+		"es"			"{1} Silenciado (razón: {2})."
+		"ru"			"Игроку {1} отключен чат и микрофон (причина: {2})."
+		"pl"			"Całkowicie wyciszono {1} (powód: {2})."
+		"pt"			"{1} Silenciado (motivo: {2})."
+		"de"			"Der Spieler {1} wurde im Chat und im Voice-Chat gesperrt (Grund: {2}}."
+	}
+	//---------------------------------------------------------------------------------
+	"CommandComms_na"
+	{
+		"en"		"Available only for players on server."
+		"es" 		"Sólo está disponible para los jugadores que están en el servidor"
+		"ru"		"Доступно только для игроков на сервере."
+		"pl"		"Dostępne tylko dla graczy na serwerze."
+		"pt"		"Disponível apenas para os jogadores no servidor."
+		"de"		"Es ist nur für die Spieler auf dem Server zugänglich."
+	}
+	"CommandComms_nb"
+	{
+		"en"		"Your chat and voice isn't blocked."
+		"es"		"Tu chat y tu voz no están bloqueados."
+		"ru"		"У вас не заблокированы чат и микрофон."
+		"pl"		"Nie zostałeś wyciszony ani zakneblowany."
+		"pt"		"Seu chat de texto e voz e não estão bloqueados."
+		"de"		"Sie sind im Chat und Voice-Chat nicht gesperrt."
+	}
+	//---------------------------------------------------------------------------------
+	"no access"
+	{
+		"en"		"The punishment for the specified time is not allowed for you."
+		"es"		"El castigo por tiempo especificado no está permitido para ti"
+		"ru"		"Блокировка на указанное время недоступна для вас."
+		"pl"		"Nie możesz nakładać kar na określony czas."
+		"pt"		"O tempo de punição especificado não é permitido para você."
+		"de"		"Die Sperre für festgelegte Zeit ist für Sie nicht zugänglich."
+	}
+}
