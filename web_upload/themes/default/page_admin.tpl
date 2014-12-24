@@ -1,4 +1,8 @@
-<h3>Please select an option to administer.</h3>
+<table style="width: 101%; margin: 0 0 -2px -2px;">
+	<tr>
+		<td colspan="3" class="listtable_top"><b>Please select an option to administer</b></td>
+	</tr>
+</table>
 <div id="cpanel">
 	<ul>
 		{if $access_admins}
@@ -55,48 +59,53 @@
 
 <table width="100%" border="0" cellpadding="3" cellspacing="0">
 	<tr>
-		<td width="33%" align="center"><h3>Version Information</h3></td>
-		<td width="33%" align="center"><h3>Admin Information</h3></td>
-		<td width="33%" align="center"><h3>Ban Information</h3></td>
+		<td width="33%" class="listtable_top" align="center" style="border-right: 3px solid #CFCAC6;">Version Information</td>
+		<td width="33%" class="listtable_top" align="center" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Admin Information</td>
+		<td width="33%" class="listtable_top" align="center" style="border-left: 3px solid #CFCAC6;">Ban Information</td>
 	</tr>
 	<tr>
-		<td>Latest release: <strong id='relver'>Please Wait...</strong></td>
-		<td>Total admins: <strong>{$total_admins}</strong></td>
-		<td>Total bans: <strong>{$total_bans}</strong></td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">Latest release: <strong id='relver'>Please Wait...</strong></td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Total admins: <strong>{$total_admins}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total bans: <strong>{$total_bans}</strong></td>
 	</tr>
 	<tr>
-		<td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">
 			{if $sb_svn}
 				Latest SVN: <strong id='svnrev'>Please Wait...</strong>
 			{/if}		
 		</td>
-		<td>&nbsp;</td>
-		<td>Connection blocks: <strong>{$total_blocks}</strong></td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">&nbsp;</td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Connection blocks: <strong>{$total_blocks}</strong></td>
 	</tr>
 	<tr>
-		<td id='versionmsg'>Please Wait...</td>
-		<td> <strong> </strong></td>
-		<td>Total demo size: <strong>{$demosize}</td>
-	</tr>
-	<tr>
-		<td width="33%" align="center"><h3>Server Information</h3></td>
-		<td width="33%" align="center"><h3>Protest Information</h3></td>
-		<td width="33%" align="center"><h3>Submission Information</h3></td>
-	</tr>
-	<tr>
-		<td>Total Servers: <strong>{$total_servers}</strong></td>
-		<td>Total protests: <strong>{$total_protests}</strong></td>
-		<td>Total submissions: <strong>{$total_submissions}</strong></td>
-	</tr>
-	<tr>
-		<td>&nbsp;</td>
-		<td>Archived protests: <strong>{$archived_protests}</strong></td>
-		<td>Archived submissions: <strong>{$archived_submissions}</strong></td>
+		<td class="listtable_1" id='versionmsg' style="border-right: 3px solid #CFCAC6;">Please Wait...</td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;"><strong> </strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total demo size: <strong>{$demosize}</td>
 	</tr>
 	<tr>
 		<td>&nbsp;</td>
 		<td>&nbsp;</td>
 		<td>&nbsp;</td>
+	</tr>
+	<tr>
+		<td width="33%" class="listtable_top" align="center" style="border-right: 3px solid #CFCAC6;">Server Information</td>
+		<td width="33%" class="listtable_top" align="center" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Protest Information</td>
+		<td width="33%" class="listtable_top" align="center" style="border-left: 3px solid #CFCAC6;">Submission Information</td>
+	</tr>
+	<tr>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">Total Servers: <strong>{$total_servers}</strong></td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Total protests: <strong>{$total_protests}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total submissions: <strong>{$total_submissions}</strong></td>
+	</tr>
+	<tr>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">&nbsp;</td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Archived protests: <strong>{$archived_protests}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Archived submissions: <strong>{$archived_submissions}</strong></td>
+	</tr>
+	<tr>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">&nbsp;</td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">&nbsp;</td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">&nbsp;</td>
 	</tr>
 </table>
 <script type="text/javascript">xajax_CheckVersion();</script>

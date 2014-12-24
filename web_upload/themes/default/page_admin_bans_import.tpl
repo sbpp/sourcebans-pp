@@ -14,7 +14,7 @@
     	            </td>
     	            <td>
     	                <div align="left">
-    	                    <input type="file" TABINDEX=1 class="submit-fields" id="importFile" name="importFile" />
+    	                    <input type="file" TABINDEX=1 class="file" id="importFile" name="importFile" />
     	                </div>
     	                <div id="file.msg" class="badentry"></div>
     	            </td>

@@ -1,7 +1,6 @@
 <div>
-<h3>Servers List</h3>
 {if $IN_SERVERS_PAGE && $access_bans}<div style="text-align:right; width:100%;"><small>Hint: Rightclick on a player to open a context menu with options to kick, ban or contact the player directly.</small></div>{/if}
-			<table width="98%" cellspacing="0" cellpadding="0" align="center" class="sortable listtable" style="margin-top:3px;">
+			<table cellspacing="0" cellpadding="0" align="center" class="sortable listtable">
 			<thead>
 			  <tr>
 				<td width="2%" height="16" class="listtable_top">MOD</td>
@@ -29,19 +28,19 @@
 			       			<div class="opener">
 								<div id="serverwindow_{$server.sid}">
 				       				<div id="sinfo_{$server.sid}">
-				       				 <table width="90%" border="0" class="listtable">
+				       				 <table width="100%" border="0" class="listtable">
 										  <tr>
-										    <td class="listtable_2" valign="top">
+										    <td class="listtable_1" valign="top">
 											    <table width="100%" border="0" class="listtable" id="playerlist_{$server.sid}" name="playerlist_{$server.sid}">
 											    </table>
 										    </td>
-										    <td width="355px" class="listtable_2 opener" valign="top">
-										    	<img id="mapimg_{$server.sid}" height='255' width='340' src='images/maps/nomap.jpg'>
+										    <td width="355px" class="listtable_2 opener" valign="top" style="padding-right: 0px; padding-left: 13px; padding-top: 12px;">
+										    	<img id="mapimg_{$server.sid}" style="border-radius: 6px; padding-left: 1px;" height='255' width='340' src='images/maps/nomap.jpg'>
 										    	<br />
 										    	<br />
 										    	<div align='center'>
-										    		<b>IP:Port - {$server.ip}:{$server.port}</b> <br \>
-										    		<input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0px;' id='button' value='Connect' />
+										    		<p style="font-size: 13px;">{$server.ip}:{$server.port}</p>
+										    		<input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0px;' id='button' value='Join game' />
 													<input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' />
 										    	</div>
 										    	<br />
@@ -49,11 +48,12 @@
 										</tr>
 									</table>
 								  </div>
-								  <div id="noplayer_{$server.sid}" name="noplayer_{$server.sid}" style="display:none;">
-									<h3>No players in the server</h3>
+								  <div id="noplayer_{$server.sid}" name="noplayer_{$server.sid}" style="display:none;"><br />
+									<h2 style="color: #333;">No players in the server</h2><br />
 									<div align='center'>
-										<b>IP:Port - {$server.ip}:{$server.port}</b> <input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0;' id='button' value='Connect' />
-										<input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' />
+										<p style="font-size: 13px;">{$server.ip}:{$server.port}</p> 
+										<input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0;' id='button' value='Join game' />
+										<input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' /><br /><br />
 									</div>
 								  </div>
 							  </div>

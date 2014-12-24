@@ -23,9 +23,9 @@
 		</tr>
 		{foreach from="$web_group_list" item="group" name="web_group"}
 			<tr id="gid_{$group.gid}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-				<td style="border-bottom: solid 1px #ccc" height='16'>{$group.name}</td>
-		      	<td style="border-bottom: solid 1px #ccc" height='16'>{$web_admins[$smarty.foreach.web_group.index]}</td>
-				<td style="border-bottom: solid 1px #ccc" height='16'> 
+				<td class="listtable_1" height='16'>{$group.name}</td>
+		      	<td class="listtable_1" height='16'>{$web_admins[$smarty.foreach.web_group.index]}</td>
+				<td class="listtable_1" height='16'> 
 					{if $permission_editgroup}
 			        	<a href="index.php?p=admin&c=groups&o=edit&type=web&id={$group.gid}">Edit</a>
 			        {/if}
@@ -90,9 +90,9 @@
 	</tr>
 	{foreach from="$server_group_list" item="group" name="server_admin_group"}
 		<tr id="gid_{$group.id}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.setProperty('class', 'tbl_hover')">
-			<td style="border-bottom: solid 1px #ccc" height='16'>{$group.name}</td>
-	      	<td style="border-bottom: solid 1px #ccc" height='16'>{$server_admins[$smarty.foreach.server_admin_group.index]}</td>
-	        <td style="border-bottom: solid 1px #ccc" height='16'> 
+			<td class="listtable_1" height='16'>{$group.name}</td>
+	      	<td class="listtable_1" height='16'>{$server_admins[$smarty.foreach.server_admin_group.index]}</td>
+	        <td class="listtable_1" height='16'> 
 				{if $permission_editgroup}
 					<a href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id}">Edit</a>
 				{/if}
@@ -177,9 +177,9 @@
 		</tr>
 		{foreach from="$server_list" item="group" name="server_group"}
 			<tr id="gid_{$group.gid}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.setProperty('class', 'tbl_hover')">
-	            <td style="border-bottom: solid 1px #ccc" height='16'>{$group.name}</td>
-	      		<td style="border-bottom: solid 1px #ccc" height='16'>{$server_counts[$smarty.foreach.server_group.index]}</td>
-	            <td style="border-bottom: solid 1px #ccc" height='16'>   
+	            <td class="listtable_1" height='16'>{$group.name}</td>
+	      		<td class="listtable_1" height='16'>{$server_counts[$smarty.foreach.server_group.index]}</td>
+	            <td class="listtable_1" height='16'>   
 	            {if $permission_editgroup}
 					<a href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid}">Edit</a>
 				{/if}

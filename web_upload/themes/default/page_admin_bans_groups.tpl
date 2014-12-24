@@ -17,7 +17,7 @@
 			</td>
 			<td>
 				<div align="left">
-					<input type="text" TABINDEX=1 class="submit-fields" id="groupurl" name="groupurl" />
+					<input type="text" TABINDEX=1 class="textbox" id="groupurl" name="groupurl" style="width: 229px" />
 				</div>
 				<div id="groupurl.msg" class="badentry"></div>
 			</td>
@@ -30,7 +30,7 @@
 			</td>
 			<td>
 				<div align="left">
-					<textarea class="submit-fields" TABINDEX=2 cols="30" rows="5" id="groupreason" name="groupreason" /></textarea>
+					<textarea class="textbox" TABINDEX=2 cols="30" rows="5" id="groupreason" name="groupreason" /></textarea>
 				</div>
 				<div id="groupreason.msg" class="badentry"></div>
 			</td>
