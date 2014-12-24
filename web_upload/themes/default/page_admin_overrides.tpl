@@ -34,15 +34,16 @@
 			{/foreach}
 			<tr>
 				<td class="tablerow1">
-					<select name="new_override_type">
+					<select class="select" name="new_override_type">
 						<option value="command">Command</option>
 						<option value="group">Group</option>
 					</select>
 				</td>
-				<td class="tablerow1"><input name="new_override_name" /></td>
-				<td class="tablerow1"><input name="new_override_flags" /></td>
+				<td class="tablerow1"><input class="textbox" name="new_override_name" /></td>
+				<td class="tablerow1"><input class="textbox" name="new_override_flags" /></td>
 			</tr>
 		</table>
+		<br />
 		<center>
 			{sb_button text="Save" class="ok" id="oversave" submit=true}
 			{sb_button text="Back" onclick="history.go(-1)" class="cancel" id="oback"}

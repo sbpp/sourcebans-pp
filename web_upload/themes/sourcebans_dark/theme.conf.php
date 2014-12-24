@@ -4,6 +4,7 @@
  * 
  * This file will set some stuff about our theme
  * @author InterWave Studios Development Team
+ * @Modified By: Sarabveer(VEER™)
  * @version 1.0.0
  * @copyright InterWave Studios (www.interwavestudios.com)
  * @package SourceBans
@@ -11,10 +12,10 @@
  */
 
 // Set the name of this theme here
-define('theme_name', "SourceBans Dark Theme"); 
+define('theme_name', "SourceBans Dark Theme (Legacy)"); 
 
 // Set the author of this theme here
-define('theme_author', "SourceBans Development Team");
+define('theme_author', "SourceBans Development Team, Sarabveer(VEER™)");
 
 // Set the version of the theme here
 define('theme_version', "1.5F-dev");

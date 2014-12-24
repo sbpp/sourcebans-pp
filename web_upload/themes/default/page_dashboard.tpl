@@ -1,11 +1,6 @@
 <div class="front-module-intro">
 	<table width="100%" cellpadding="1">
 		<tr>
-			<td colspan="3">
-				<h3>{$dashboard_title}</h3>		
-			</td>
-		</tr>
-		<tr>
 			<td>
 				{$dashboard_text}
 			</td>

@@ -29,10 +29,13 @@ if(isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
 header('Content-type: text/css'); 
 ?> 
 
+@font-face {
+    font-family: tf2;
+    src: url(../css/tf2build.ttf);
+}
+
 body { 
-	background: url(../images/bk.gif);
-	background-color: #FFF;
-	background-repeat: repeat-x;
+	background-color: #CFCAC6;
 	color: #444;
 	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
 	font-size: 11px;
@@ -44,22 +47,20 @@ body {
 		
 a:link {
   text-decoration: none;
-  color : #2f4075;
+  color : #4d4742;
 }
 
 a:active {
-  color: #FF0000;
-  text-decoration: underline;
+  color: #b05015;
 }
 
 a:visited {
   text-decoration: none;
-  color : #2f4075;
+  color : #4d4742;
 }
 
 a:hover {
-  color: #000;
-  border-bottom: #000 dotted 1px;
+  color: #b05015;
 }
 
 .inputbox {
@@ -78,26 +79,20 @@ a:hover {
 /** ================ Permissions ================ **/	
 	
 .tablerow1 {
-background-color:#EAEDF0;
-border-color:#FFFFFF rgb(193, 190, 190) rgb(193, 190, 190) rgb(255, 255, 255);
-border-style:solid;
-border-width:1px;
+background-color: #eaebeb;
 padding:6px;
 }
 
 .tablerow2 {
 background-color: rgb(236, 213, 216);
-background-image: url(../images/table_highlight_red.gif);
-border-color:#FFFFFF rgb(193, 190, 190) rgb(193, 190, 190) rgb(255, 255, 255);
+border-color: #eaebeb;
 border-style:solid;
 border-width:1px;
 padding:6px;
 }
 
 .tablerow4 {
-background-color:#C0CBDA;
- background-image: url(../images/table_highlight.gif);
-border-color:#FFFFFF rgb(209, 220, 235) rgb(209, 220, 235) rgb(255, 255, 255);
+background-color: #736B63;
 border-style:solid;
 border-width:1px;
 padding:6px;
@@ -105,22 +100,6 @@ color:#fff;
 }
 
 /* =============== FORMS ==================== */
-
-.submit-fields {
-	border: 1px solid #dddddd;
-	font-size: 14px;
-	background-color: #fff;
-	width: 200px;
-}
-
-.submit-fields:hover {
-	border: 1px solid #c24733;
-}
-
-.submit-fields:focus {
-	border: 1px solid #c24733;
-	background-color: #f1e8e6;
-}
 
 .badentry{
  	color:#CC0000;
@@ -253,28 +232,28 @@ div.dialog-control{
 /* ================ STRUCTURE ================ */
 
 #mainwrapper {
-	width: 922px;
+	width: 984px;
 	margin: 0 auto 0 auto;  /*centers the box, no matter the overall width */
 	text-align: left; /* re_aligns text to left second part of two part MSIE centering workaround */
 	height: 100%;
 }
 
 #header {
-	width: 900px;
+	width: 984px;
 	margin: 0 auto 0 auto;  /*centers the box, no matter the overall width */
-	height: 64px;
+	height: 200px;
 	border: 0;
 }
 	
 #tabsWrapper {
   width: 100%;
-  margin: 5px auto 0 auto;
+  margin: 0 auto;
   text-align: left;
-  height: 18px;
+  height: 50px;
+  background-color: #38322c;
 }
 
 #innerwrapper {
-	margin: 0 14px;
 	text-align: left; /* re_aligns text to left, second part of two part MSIE centering workaround */
 	}
 #navigation {
@@ -284,57 +263,42 @@ div.dialog-control{
 	
 #breadcrumb {
 	width: 100%;
-	height: 22px;
-	margin-bottom: -5px;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
 }
 #content_title {
-	font-size: 22px;
-	color: #b80202;
-	padding: 3px;
-	margin-top:10px;
-	}
+	font-size: 26px;
+	color: #4d4742;
+	margin-bottom: 10px;
+}
 	
 #content {
-	background-color: #FFF;
-	padding: 8px;
 	height: 100%;
-	border-top: 2px solid #aaa9a9;
 	overflow:hidden;
 	}
 	
 #footer {
 	clear:both;
-	color: #000;
-	width: 892px;
-	margin-left:15px;
-	background-image: url(../images/footerrepeatbg.png);
-	background-repeat: repeat-x;
-	
-	height: 68px;
+	color: #919191;
+	width: 100%;
+	padding: 20px 0 20px 0;
+	background-color: #38322c;
+	margin-top: 40px;
 }
 
 /** ================ Header ================ **/
 
 #head-logo {
 	float: left;
-	margin-top: 12px;
-}
-
-#head-userbox {
-	border:1px dotted #cccecd;
-	float: right;
-	width: 273px;
-	height: 35px;
-	margin-top: 12px;
-	padding: 3px;
-	line-height:18px;
-	color: #666666;
+	margin-top: 73px;
 }
 
 .searchbox {
-    width:105px; 
-    height:14px; 
-    background-color:#d7d7d7; 
+    width: 200px; 
+    padding: 10px 6px 12px 6px;
+    background-color: #DADFE1; 
+    color: #34495E;
     border:0;
 }
 
@@ -342,49 +306,47 @@ div.dialog-control{
 
 #tabs {
   float: left;
+  width: 100%;
   margin-left: 0;
 }
 
 #tabs ul {
   margin: 0;
-  padding: 0 10px;
+  padding: 0;
   list-style: none;
 }
 
 #tabs ul li {
-  margin-right: 2px;
   float: left;
-  background: url('../images/tabs/tab_right.jpg') no-repeat top right;
 }
 
 #tabs ul li a {
   border: 0;
   display: block;
-  padding: 0 13px;
-  background: url('../images/tabs/tab_left.jpg') no-repeat top left;
+  padding: 0 16px;
   text-align: center;
-  color: #333;
-  font-size: 10px;
+  color: #eee;
+  font-size: 11px;
   font-weight: bolder;
-  line-height: 18px;
+  line-height: 50px;
   text-decoration: none;
+  text-transform: uppercase;
 }
 
 #tabs ul li a:hover {
   border: 0;
-  color: #333;
-  text-decoration: underline;
+  color: #eee;
+  background-color: #2A2723;
 }
 
 #tabs ul li.active {
-  background: url('../images/tabs/tab_active_right.jpg') no-repeat top right;
 }
 
 #tabs ul li.active a {
   /* padding: 0.1em 0.6em; */
-  padding: 0 13px;
-  background: url('../images/tabs/tab_active_left.jpg') no-repeat top left;
+  padding: 0 16px;
   color: white;
+  background-color: #2A2723;
 }
 
 #tabs ul li.active a:hover {
@@ -397,15 +359,13 @@ h4 {
 }
 
 h3 {
-	margin-right:5px;
 	margin-top:5px;
-	margin-bottom:5px;
+	margin-bottom:15px;
 	font-size: 12px;
-	padding:5px;
+	padding: 10px;
 	font-weight: bold;
-	background-color: #eaeaea;
-	border: 1px solid #dddddd;
-	border-left: 5px solid #dddddd;
+	background-color: #A69E97;
+	color: #e6e6e6;
 }
 /** ================ ToolTips ================ **/
 .tool-tip {
@@ -419,17 +379,17 @@ h3 {
 	font-weight: bold;
 	font-size: 14px;
 	margin: 0;
-	color: #b80202;
+	color: #DADFE1;
 	/*text-decoration:underline;*/
-	border-bottom: #b80202 dotted 1px;
+	border-bottom: #DADFE1 dotted 1px;
 	padding: 8px 8px 4px;
-	background: url(../images/tooltip.png) top left;
+	background-color: rgba(108, 122, 137, 0.7);
 }
  
 .tool-text {
 	font-size: 11px;
 	padding: 4px 8px 8px;
-	background: url(../images/tooltip.png) bottom right;
+	background-color: rgba(108, 122, 137, 0.7);
 }
 .perm-tip {
 	color: #fff;
@@ -442,9 +402,9 @@ h3 {
 	font-weight: bold;
 	font-size: 14px;
 	margin: 0;
-	color: #b80202;
+	color: #DADFE1;
 	/*text-decoration:underline;*/
-	border-bottom: #b80202 dotted 1px;
+	border-bottom: #DADFE1 dotted 1px;
 	padding: 8px 8px 4px;
 	background: url(../images/tooltip_sqr.png) top left;
 }
@@ -457,17 +417,19 @@ h3 {
 /** ================ Navigation ================ **/
 
 #nav {
-	color: #FFF;
-	margin-top: 3px;
+    font-family: tf2;
+    position: absolute;
+    top: 10px;
+	color: #2A2723;
 	float: left;
-	width: 580px;
-	font-weight: 600;
-	font-size: 10px;
+	width: 74%;
+	font-size: 13px;
+	transition: all 0.5s ease;
 	}
 
 a.nav_link:link,
 a.nav_link:visited {
-	color: #FFF;
+	color: #2A2723;
 	text-decoration: none;
 	padding: 0 5px;
 	}
@@ -476,21 +438,19 @@ a.nav_link:hover {
 	}
 
 #nav a:hover, #nav a.first:hover {
-	color : #eee; 
-	background-color: #333;  
-	border: 1px solid #c24733;
+	color : #666666; 
 	text-decoration: none;
+	transition: all 0.5s ease;
 }
 #nav a {
-	color : #eee; 
-	border-left: 1px solid #bbb;
+	color: #2A2723;
 }
 #nav a.first {
     border-left: 0px none;
 }
 
 #nav a.active {
-    text-decoration: underline;
+    color: #666666;
 }
 
 #search {
@@ -498,14 +458,28 @@ a.nav_link:hover {
 	float: right;
 	padding: 2px 0 0 0;
 	text-align: right;
-	}
+	position: relative;
+	top: -170px;
+}
+
+#searchbtn{
+	width: 100%;
+	padding: 8px 12px;
+	border-radius: 0;
+	font-size: 14px;
+	text-transform: uppercase;
+}
 
 .button {
-	background-image: url(../images/searchbutton.jpg);
 	border: 0;
-	width: 18px;
-	height: 18px;
-	}
+	width: 60px;
+	height: 38px;
+	color: #DADFE1;
+	background-color: #5885A2;
+	font-weight: bold;
+    text-transform: uppercase;
+    font-size: 11px;
+}
 
 /** ================ Content ================ **/
 /* Buttons
@@ -519,53 +493,61 @@ a.nav_link:hover {
 } */
 
 .btn{
-   color:#444444;
-   font-family:'trebuchet ms',helvetica,sans-serif;
-   font-weight:bold;
-   background-color:#eaeaea;
+   font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+   font-weight:400;
+   font-size: 13px;
+   color: #fff;
    border:1px solid;
-   border-top-color:#d5d4d4;
-   border-left-color:#d5d4d4;
-   border-right-color:#c8c8c8;
-   border-bottom-color:#c8c8c8;
-   background-repeat: no-repeat;
-   background-position: 2px 50%;
-   padding:1px 1px 1px 20px;
-   margin: 0 0.5em;
+   border-radius: 3px;
+   padding:6px 12px;
+   transition: all 0.5s ease;
 }
+
 .btnhvr{
-   color:#444444;
-   font-family:'trebuchet ms',helvetica,sans-serif;
-   font-weight:bold;
-   background-color:#eaeaea;
-   border:1px solid;
-   border-top-color:#c24733;
-   border-left-color:#c24733;
-   border-right-color:#a33c2b;
-   border-bottom-color:#a33c2b;
-   background-repeat: no-repeat;
-   background-position: 2px 50%;
-   padding:1px 1px 1px 20px;
-   margin: 0 0.5em;
+   color: #fff;
+   font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+   font-weight: 400;
+   border: 1px solid;
+   border-radius: 3px;
+   padding: 6px 12px;
+   transition: all 0.5s ease;
 }
 
 .game{
-	background-image: url(../images/connect.gif);
+	background-color: #8CC152;
+	border-color: #8CC152;
+}
+.game:hover {
+	background-color: #A0D468;
+	border-color: #A0D468;
 }
 .ok{
-	background-image: url(../images/admin/ok.gif);
+	background-color: #729E42;
+	border-color: #729E42;
+}
+.ok:hover {
+	background-color: #558126;
+	border-color: #558126;
 }
 .save{
-	background-image: url(../images/admin/save.gif);
+    background-color: #7D4071;
+    border: 1px solid #7D4071;
 }
 .cancel{
-	background-image: url(../images/admin/cancel.gif);
+    background-color: #CF7336;
+    border: 1px solid #CF7336;
 }
 .login{
-	background-image: url(../images/login.gif);
+	width: 100%;
+	text-transform: uppercase;
 }
 .refresh{
-	background-image: url(../images/refresh.png);
+	background-color: #3BAFDA;
+	border-color: #3BAFDA;
+}
+.refresh:hover {
+	background-color: #4FC1E9;
+	border-color: #4FC1E9;
 }
 
 .msg-button {
@@ -599,21 +581,23 @@ if($agent != "IE6") {
 }
 
 #msg-red-debug {
-	background-color:#fcf7c9;
-	border:#E80909 1px dotted;
-	color:#E80909;
-	width: 75%;
+	background-color: #ffdd87;
+	border: 1px solid #ffce54;
+	color: #8a6d3b;
+	width: 100%;
 	padding: 8px;
 	margin: 10px auto;
-	overflow:hidden;
-}#msg-blue-debug {
-	background-color:#fcf7c9;
-	border:#0066FF 1px dotted;
-	color:#0066FF;
-	width: 75%;
+	overflow: hidden;
+}
+
+#msg-blue-debug {
+	background-color: #7cd1ef;
+	border: 1px solid #4fc1e9;
+	color: #31708f;
+	width: 100%;
 	padding: 8px;
 	margin: 10px auto;
-	overflow:hidden;
+	overflow: hidden;
 }
 
 #msg-red b, #msg-green b, #msg-blue b, #msg-red-debug b,#msg-blue-debug b, #msg-green-debug b {
@@ -658,77 +642,27 @@ if($agent != "IE6") {
  
 
 .front-module-line {
-border-bottom-color:#CCCCCC;
-border-bottom-style:solid;
-border-bottom-width:1px;
-background: url(../images/detail_head.gif);
+background-color: #A69E97;
 color: #fff;
 }
-.admin-row {
-border-bottom-color:#CCCCCC;
-border-bottom-style:solid;
-border-bottom-width:1px;
 
 }
-/** ================ Footer ================ **/
-
-#gc {
-	height: 68px;
-	width: 25%;
-	float: left;
-	color: #FFF;
-	padding: 3px 0 0 5px;
-	background-image: url(../images/foot_left.png);
-	background-position: top left;
-	background-repeat: no-repeat;
-	}
-	
-	
-#sb {
-	height: 68px;
-	width: 50%;
-	float: left;
-	text-align: center;
-	}
-	
-#sm {
-	height: 68px;
-	width: 20%;
-	float: right;
-	color: #FFF;
-	text-align: right;
-	padding: 3px 5px 0 0;
-	background-image: url(../images/foot_right.png);
-	background-position: top right;
-	background-repeat: no-repeat;
-	}
-	
-a.footer_link:link,
-a.footer_link:visited {
-	color: #FFF;
-	text-decoration: none;
-	}
-	
-a.footer_link:hover {
-	text-decoration: underline;
-	}
-
 
 /** ================ Login ================ **/
 
 #login {
-	width: 400px;
+	width: 305px;
 	height: 260px;
-	border: 1px solid #aaa9a9;
+	background-color: #e0e0e0;
     margin: 30px auto;
 	padding: 12px;
 }
 
 #lostpassword {
-	width: 400px;
-	height: 260px;
+	width: 305px;
     margin: 30px auto;
 	padding: 12px;
+	background-color: #e0e0e0;
 }
 
 	
@@ -746,9 +680,11 @@ a.footer_link:hover {
 
 
 .loginmedium {
-	width: 394px;
-	height: 22px;
+	width: 278px;
+	padding: 6px 12px;
 	font-size: 18px;
+	border: 1px solid #ccc;
+	border-radius: 3px;
 	}
 
 	
@@ -785,6 +721,7 @@ a.footer_link:hover {
 #cpanel {
 	width: 100%;
 	height: 120px;
+	background-color: #e0e0e0;
 	}
 
 #cpanel ul {
@@ -806,17 +743,15 @@ a.footer_link:hover {
 	width: 108px !important;
 	width: 110px; 
 	vertical-align: middle; 
-	text-decoration : none;
-	border: 1px solid #DDD;
+	text-decoration: none;
 	padding: 2px 5px 1px 5px;
 	margin-right: 20px;
 }
 
 #cpanel ul li a:hover {
 	color : #333; 
-	background-color: #f1e8e6;  
-	border: 1px solid #c24733;
-	padding: 3px 4px 0px 6px; 
+	padding: 3px 4px 0px 6px;
+	text-decoration: none
 }
 
 #cpanel ul li.active {
@@ -831,12 +766,11 @@ a.footer_link:hover {
 #admin-page-menu {
 	width: 20%;
 	float: left;
-	padding: 5px;
 	}
 	
 #admin-page-menu ul {
   margin: 0;
-  padding: 0 10px;
+  padding: 0 0px;
   list-style: none;
 }
 
@@ -846,21 +780,16 @@ a.footer_link:hover {
 
 #admin-page-menu ul .active
 {
-	color : #333; 
-	background-color: #f1e8e6;
 	font-weight: bold;
-	background-image: url(../images/admin/rightarrow.png);
-	background-position: center right;
-	background-repeat: no-repeat;
 }
 
 #admin-page-menu ul li a {
 	display: block;
 	height: 20px;
 	text-decoration : none;
-	border-bottom: 1px solid #DDD;
-	border-left: 5px solid #DDD;
-	padding: 2px 5px 1px 5px;
+	padding: 9px 0px 3px 8px;
+	background-color: #4f463e;
+	color: #fff;
 }
 
 #admin-page-menu ul li a .tab-img {
@@ -869,25 +798,17 @@ a.footer_link:hover {
 }
 
 #admin-page-menu ul li a:hover {
-	color : #333; 
-	background-color: #f1e8e6;  
-	border: 1px solid #c24733;
-	border-left: 5px solid #c24733;
-	
-	background-position: center right;
-	background-repeat: no-repeat;
-	padding: 2px 5px 1px 5px;
+	color : #fff; 
+	background-color: #3d3631;
+	border: 0;
+	padding: 9px 0px 3px 8px;
 }
 
 #admin-page-menu ul li.active a:hover  {
-	color : #333; 
-	background-color: #f1e8e6;  
-	border: 1px solid #c24733;
-	border-left: 5px solid #c24733;
-	background-image: url(../images/admin/rightarrow.png);
-	background-position: center right;
-	background-repeat: no-repeat;
-	padding: 2px 5px 1px 5px;
+	color : #fff; 
+	background-color: #3d3631;  
+	border: 0;
+	padding: 9px 0px 3px 8px;
 }
 
 #admin-page-menu ul li.active {
@@ -896,10 +817,10 @@ a.footer_link:hover {
 /* Admin Page Content */
 
 #admin-page-content {
-	width: 76%;
+	width: 75%;
 	float: right;
-	border: 1px solid #DDD;
-	padding: 5px;
+	background-color: #e0e0e0;
+	padding: 10px;
 	}
 	
 /** ================ Permissions ================ **/
@@ -956,10 +877,10 @@ a.footer_link:hover {
 
 #front-introduction {
 	padding: 5px;
-	}
+}
 
 #front-servers {
-	margin: 13px;
+	margin-bottom: 30px;
 }
 	
 #front-servers hr {
@@ -968,22 +889,10 @@ a.footer_link:hover {
 	}
 	
 .front-module {
-	width: 410px;	
-	margin: 13px;
+	width: 410px;
 }
 .front-module-intro {
-	margin: 13px;
-	width: 98%;
-}
-
-.front-module-header {
-	padding: 5px;
-	border-bottom: 1px dotted #000;
-	padding: 3px;
-	margin-bottom: 3px;
-	font-size: 12px;
-	font-weight: 600;
-	background-color: #eaeaea;
+	margin: 11px;
 }
 	
 .fmsd {
@@ -992,13 +901,9 @@ a.footer_link:hover {
 
 /** ================ Submit ================ **/	
 
-#submit-introduction {
-	padding: 5px;
-	}
-
 #submit-main {
-	border: 1px solid #DDD;
-	padding: 5px;
+	background-color: #e0e0e0;
+	padding: 10px;
 	}
 	
 .faux-button {
@@ -1057,15 +962,15 @@ a.footer_link:hover {
 }
 
 table.listtable {
- font-family: verdana, tahoma, arial;
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
  font-size: 10px;
- background-color: #fff;
- border: 1px #DDD solid;
- border-collapse:collapse
+ border: 1px solid;
+ border-color: transparent;
+ border-collapse:collapse;
 }
 
 table.listtable2 {
- font-family: verdana, tahoma, arial;
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
  font-size: 10px;
  color: #000000;
  border: #c5c5c5 solid;
@@ -1073,7 +978,7 @@ table.listtable2 {
 }
 
 table.listtable3 {
- font-family: verdana, tahoma, arial;
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
  font-size: 11px;
  color: #000000;
  border: #c5c5c5 solid;
@@ -1081,17 +986,13 @@ table.listtable3 {
 }
 
 td.listtable_top {
- font-family: verdana, tahoma, arial;
- font-size: 10px;
- background-color: #DFE3E9;
- border: #fff solid;
- border-width: 1px 1px 0px 0px;
- padding-top: 2px;
- padding-right: 4px;
- padding-bottom: 2px;
- padding-left: 4px;
- color: #fff;
- background-image: url(../images/detail_head.gif);
+ font-size: 11px;
+ font-weight: bold;
+ background-color: #2A2723;
+ padding: 3px 10px 3px 10px;
+ color: #e6e6e6;
+ height: 30px;
+ text-transform: uppercase;
 }
 
 a.listtable_top {
@@ -1100,38 +1001,55 @@ a.listtable_top {
 
 
 td.listtable_1 {
- font-family: verdana, tahoma, arial;
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
  font-size: 10px;
- border: #DDD solid;
- border-width: 0px 0px 1px 1px;
- padding-top: 2px;
+ padding-top: 4px;
  padding-right: 4px;
- padding-bottom: 2px;
- padding-left: 4px
+ padding-bottom: 4px;
+ padding-left: 4px;
+ background-color: #e0e0e0;
 }
 
 td.listtable_1_unbanned {
- font-family: verdana, tahoma, arial;
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
  font-size: 10px;
- border: #DDD solid;
- border-width: 0px 0px 1px 1px;
- padding-top: 2px;
+ padding-top: 4px;
  padding-right: 4px;
- padding-bottom: 2px;
+ padding-bottom: 4px;
  padding-left: 4px;
- background-color: #dbf4d7;
+ background-color: #C8F7C5;
+}
+
+td.listtable_1_permanent {
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-size: 10px;
+ padding-top: 4px;
+ padding-right: 4px;
+ padding-bottom: 4px;
+ padding-left: 4px;
+ background-color: #F1A9A0;
+}
+
+td.listtable_1_banned {
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-size: 10px;
+ padding-top: 4px;
+ padding-right: 4px;
+ padding-bottom: 4px;
+ padding-left: 4px;
+ background-color: #FDE3A7;
 }
 
 td.listtable_2 {
- font-family: verdana, tahoma, arial;
+ font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
  font-size: 10px;
- border: #DDD solid;
+ border: #CCC solid;
  border-width: 0px 0px 1px 1px;
  padding-top: 2px;
  padding-right: 4px;
  padding-bottom: 2px;
  padding-left: 4px;
- background-color: #efefef;
+ background-color: #eaebeb;
 }
 
 .ban-edit {
@@ -1158,12 +1076,7 @@ td.listtable_2 {
 
 .ban-edit ul li a:hover {
 	color : #333; 
-	background-color: #f1e8e6;  
-	border: 1px solid #c24733;
 	padding: 3px 4px 0px 6px; 
-}
-
-.ban-edit ul li.active {
 }
 
 #banlisttitle {
@@ -1180,17 +1093,14 @@ td.listtable_2 {
 #banlist {
 	width: 100%;
 	float:left;
-	margin-top: 2px;
-	border-top: 2px solid #aaa9a9;
+	margin-top: 10px;
 }
 	
 	
 /** ================ Theme Page CSS ================ **/
 #current-theme-holder {
-	border: 1px solid #DDD;
-	width: 97%;
-	height: 220px;
-	background: #efefef;
+	height: 235px;
+	background: #eaebeb;
 	padding: 5px;
 }
 
@@ -1233,21 +1143,15 @@ td.listtable_2 {
 
 #theme-list ul .active
 {
-	color : #333; 
-	background-color: #f1e8e6;
+	color : #333;
 	font-weight: bold;
-	background-image: url(../images/admin/rightarrow.png);
-	background-position: center right;
-	background-repeat: no-repeat;
 }
 
 #theme-list ul li a {
 	display: block;
 	height: 20px;
 	text-decoration : none;
-	border-bottom: 1px solid #DDD;
-	border-top: 1px solid #DDD;
-	border-left: 5px solid #DDD;
+	border-left: 5px solid #CCC;
 	padding: 2px 5px 1px 5px;
 }
 
@@ -1258,12 +1162,7 @@ td.listtable_2 {
 
 #theme-list ul li a:hover {
 	color : #333; 
-	background-color: #f1e8e6;  
-	border: 1px solid #c24733;
 	border-left: 5px solid #c24733;
-	
-	background-position: center right;
-	background-repeat: no-repeat;
 	padding: 2px 5px 1px 5px;
 }
 
@@ -1284,7 +1183,7 @@ div.contextmenu {
 	position: absolute;
 	top: 0;
 	left: 0;
-	font-family: verdana;
+	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
 	background-color: #eaeaea;
 	border: 1px solid #dddddd;
 	border-left: 5px solid #dddddd;
@@ -1340,4 +1239,48 @@ div.contextmenu .separator {
  padding-left: 5px;
  color: #fff;
  background-image: url(../images/detail_head.gif);
+}
+
+.select {
+	background: #fff;
+    font-size: 13px;
+    padding: 5px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.textbox {
+	background: #fff;
+	font-size: 13px;
+	padding: 6px 12px;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+}
+
+.file {
+	background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 3px;
+}
+
+.user {
+	color: #eee;
+	float: right;
+	margin-top: 18px;
+	margin-right: 10px;
+}
+
+.user a:visited, .user a:link, .user a:hover {
+	color: #bd754b;
+}
+
+.front-module-header {
+	margin-bottom: 3px;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+hr {
+	border: 1px solid #ddd;
 }

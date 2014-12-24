@@ -9,7 +9,7 @@
 		    <td valign="top"><div class="rowdesc">{help_icon title="Title" message="Define the title shown in the title of your browser."}Title </div></td>
 		    <td>
 		    	<div align="left">
-		      		<input type="text" TABINDEX=1 class="submit-fields" id="template_title" name="template_title" value="{$config_title}" />
+		      		<input type="text" TABINDEX=1 class="textbox" id="template_title" name="template_title" value="{$config_title}" />
 		    	</div>
 		    </td>
 		</tr>
@@ -18,7 +18,7 @@
 		    <td valign="top"><div class="rowdesc">{help_icon title="Path to logo" message="Here you can define a new location for the logo, so you can use your own image."}Path to logo </div></td>
 		    <td>
 		    	<div align="left">
-		      		<input type="text" TABINDEX=2 class="submit-fields" id="template_logo" name="template_logo" value="{$config_logo}" />
+		      		<input type="text" TABINDEX=2 class="textbox" id="template_logo" name="template_logo" value="{$config_logo}" />
 		    	</div>
 		    </td>
 		</tr>
@@ -27,7 +27,7 @@
 			<td valign="top"><div class="rowdesc">{help_icon title="Min Password Length" message="Define the shortest length a password can be."}Min password length </div></td>
 			<td>
 				<div align="left">
-					<input type="text" TABINDEX=3 class="submit-fields" id="config_password_minlength" name="config_password_minlength" value="{$config_min_password}" />
+					<input type="text" TABINDEX=3 class="textbox" id="config_password_minlength" name="config_password_minlength" value="{$config_min_password}" />
 		    	</div>
 		    	<div id="minpasslength.msg" class="badentry"></div>
 		    </td>
@@ -37,7 +37,7 @@
 		    <td valign="top"><div class="rowdesc">{help_icon title="Date format" message="Here you can change the date format, displayed in the banlist and other pages."}Date format </div></td>
 		    <td>
 		    	<div align="left">
-		      		<input type="text" TABINDEX=4 class="submit-fields" id="config_dateformat" name="config_dateformat" value="{$config_dateformat}" />
+		      		<input type="text" TABINDEX=4 class="textbox" id="config_dateformat" name="config_dateformat" value="{$config_dateformat}" />
               <a href="http://www.php.net/date" target="_blank">See: PHP date()</a>
 		    	</div>
 		    </td>
@@ -47,7 +47,7 @@
 		    <td valign="top"><div class="rowdesc">{help_icon title="Timezone" message="Here you can change the default timezone that SourceBans displays times in"}Timezone </div></td>
 		    <td>
 		    	<div align="left">
-		      		<select TABINDEX=4 name="timezoneoffset" id="sel_timezoneoffset">
+		      		<select class="select" TABINDEX=4 name="timezoneoffset" id="sel_timezoneoffset">
 						<option value="-12" class="">(GMT -12:00) Eniwetok, Kwajalein</option>
 						
 						<option value="-11" id="-39600" class="" >(GMT -11:00) Midway Island, Samoa</option>
@@ -110,7 +110,7 @@
 			<td valign="top"><div class="rowdesc">{help_icon title="Intro Title" message="Set the title for the dashboard introduction."}Intro Title </div></td>
 			<td>
 				<div align="left">
-					<input type="text" TABINDEX=7 class="submit-fields" id="dash_intro_title" name="dash_intro_title" value="{$config_dash_title}" />
+					<input type="text" TABINDEX=7 class="textbox" id="dash_intro_title" name="dash_intro_title" value="{$config_dash_title}" />
 		    	</div>
 		    <div id="dash.intro.msg" class="badentry"></div></td>
 		</tr>
@@ -164,7 +164,7 @@
 			<td valign="top"><div class="rowdesc">{help_icon title="Default Page" message="Choose the page that will be the first page people will see."}Default Page</div></td>
 		    <td>
 		    	<div align="left">
-					<select TABINDEX=11 class="inputbox" name="default_page" id="default_page">
+					<select class="select" TABINDEX=11 class="inputbox" name="default_page" id="default_page">
 				        <option value="0">Dashboard</option>
 				      	<option value="1">Ban List</option>
 				      	<option value="2">Servers</option>
@@ -189,7 +189,7 @@
 			<td valign="top"><div class="rowdesc">{help_icon title="Items per page" message="Choose how many items to show on each page."}Items Per Page </div></td>
 		    <td>
 		    	<div align="left">
-		      		<input type="text" TABINDEX=12 class="submit-fields" id="banlist_bansperpage" name="banlist_bansperpage" value="{$config_bans_per_page}" />
+		      		<input type="text" TABINDEX=12 class="textbox" id="banlist_bansperpage" name="banlist_bansperpage" value="{$config_bans_per_page}" />
 		    	</div>
 		    	<div id="bansperpage.msg" class="badentry"></div>
 		    </td>
@@ -228,14 +228,14 @@
 					<table width="100%" border="0" style="border-collapse:collapse;" id="custom.reasons" name="custom.reasons">
 						{foreach from="$bans_customreason" item="creason"}
 						<tr>
-							<td><input type="text" class="submit-fields" name="bans_customreason[]" id="bans_customreason[]" value="{$creason}"/></td>
+							<td><input type="text" class="textbox" name="bans_customreason[]" id="bans_customreason[]" value="{$creason}"/></td>
 						</tr>
 						{/foreach}
 						<tr>
-							<td><input type="text" class="submit-fields" name="bans_customreason[]" id="bans_customreason[]"/></td>
+							<td><input type="text" class="textbox" name="bans_customreason[]" id="bans_customreason[]"/></td>
 						</tr>
 						<tr>
-							<td><input type="text" class="submit-fields" name="bans_customreason[]" id="bans_customreason[]"/></td>
+							<td><input type="text" class="textbox" name="bans_customreason[]" id="bans_customreason[]"/></td>
 						</tr>
 					</table>
 					<a href="javascript:void(0)" onclick="MoreFields();" title="Add more fields">[+]</a>

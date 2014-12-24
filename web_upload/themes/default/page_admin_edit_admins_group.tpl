@@ -9,7 +9,7 @@
 		    <td valign="middle"><div class="rowdesc">{help_icon title="Web Group" message="Choose the group you want this admin to appear in for web permissions"}Web Admin Group</div></td>
 		    <td>
 		    	<div align="left" id="wadmingroup">
-			      	<select name="wg" id="wg" class="submit-fields">
+			      	<select name="wg" id="wg" class="select">
 				        <option value="-1">No Group</option>
 				        <optgroup label="Groups" style="font-weight:bold;">
 							{foreach from=$web_lst item=wg}
@@ -28,7 +28,7 @@
 		 <tr>
 		    <td valign="middle"><div class="rowdesc">{help_icon title="Server Group" message="Choose the group you want this admin to appear in for server admin permissions"}Server Admin Group </div></td>
 		    <td><div align="left" id="wadmingroup">
-		      <select name="sg" id="sg" class="submit-fields">
+		      <select name="sg" id="sg" class="select">
 		        <option value="-1">No Group</option>
 		        
 		        <optgroup label="Groups" style="font-weight:bold;">

@@ -13,7 +13,7 @@
 		    </td>
 		    <td>
 		    	<div align="left">
-		        	<input type="text" TABINDEX=1 class="submit-fields" id="address" name="address" value="{$ip}" />
+		        	<input type="text" TABINDEX=1 class="textbox" id="address" name="address" value="{$ip}" style="width: 203px" />
 		      	</div>
 		        <div id="address.msg" class="badentry"></div>
 			</td>
@@ -25,7 +25,7 @@
 			</td>
 		    <td>
 		    	<div align="left">
-		      		<input type="text" TABINDEX=2 class="submit-fields" id="port" name="port" value="{if $port}{$port}{else}{27015}{/if}" />
+		      		<input type="text" TABINDEX=2 class="textbox" id="port" name="port" value="{if $port}{$port}{else}{27015}{/if}" style="width: 203px" />
 		    	</div>
 		    	<div id="port.msg" class="badentry"></div>
 		    </td>
@@ -37,7 +37,7 @@
 			</td>
 		    <td>
 		    	<div align="left">
-		        	<input type="password" TABINDEX=3 class="submit-fields" id="rcon" name="rcon" value="{$rcon}" />
+		        	<input type="password" TABINDEX=3 class="textbox" id="rcon" name="rcon" value="{$rcon}" style="width: 203px" />
 		      	</div>
 		        <div id="rcon.msg" class="badentry"></div>
 			</td>
@@ -49,7 +49,7 @@
 		    </td>
 		    <td>
 		    <div align="left">
-		    	<input type="password" TABINDEX=4 class="submit-fields" id="rcon2" name="rcon2" value="{$rcon}" />
+		    	<input type="password" TABINDEX=4 class="textbox" id="rcon2" name="rcon2" value="{$rcon}" style="width: 203px" />
 		    </div>
 		        <div id="rcon2.msg" class="badentry"></div>
 			</td>
@@ -61,7 +61,7 @@
 			</td>
 		    <td>
 		    	<div align="left" id="admingroup">
-		      		<select name="mod" TABINDEX=5 onchange="" id="mod" class="submit-fields">
+		      		<select name="mod" TABINDEX=5 onchange="" id="mod" class="select">
 						{if !$edit_server}
 		        		<option value="-2">Please Select...</option>
 						{/if}

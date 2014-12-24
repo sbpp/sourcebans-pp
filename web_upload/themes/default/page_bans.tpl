@@ -50,14 +50,10 @@
   {/foreach}
 </table>
 {else}
-<h3 align="left">Banlist Overview - <i>Total Bans: {$total_bans}</i></h3>
 <br />
 {php} require (TEMPLATES_PATH . "/admin.bans.search.php");{/php}
 <br />
-<div id="banlist-nav"> 
-{$ban_nav}
-</div>
-<a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a>
+<div id="banlist-nav"><a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a> | <i>Total Bans: {$total_bans}</i></div>
 <div id="banlist">
 	<table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
 		<tr>
@@ -68,7 +64,7 @@
 			<td width="14%" height="16" class="listtable_top" align="center"><b>Date</b></td>
 			<td height="16" class="listtable_top"><b>Player</b></td>
 			{if !$hideadminname}
-			<td width="10%" height="16" class="listtable_top"><b>Admin</b></td>
+			<td width="20%" height="16" class="listtable_top"><b>Admin</b></td>
 			{/if}
 			<td width="10%" height="16" class="listtable_top" align="center"><b>Length</b></td>  
 		</tr>
@@ -117,14 +113,14 @@
 			<tr>
         <td colspan="7" align="center">
           <div class="opener"> 
-						<table width="80%" cellspacing="0" cellpadding="0" class="listtable">
+						<table width="100%" cellspacing="0" cellpadding="0" class="listtable">
               <tr>
                 <td height="16" align="left" class="listtable_top" colspan="3">
 									<b>Ban Details</b>            
 								</td>
               </tr>
               <tr align="left">
-                <td width="20%" height="16" class="listtable_1">Player</td>
+                <td width="30%" height="16" class="listtable_1">Player</td>
                 <td height="16" class="listtable_1">
                   {if empty($ban.player)}
                     <i><font color="#677882">no nickname present</font></i>
@@ -340,6 +336,9 @@
           	<!-- ###############[ End Sliding Panel ]################## -->
 		{/foreach}
 	</table>
+	<div id="banlist-nav"> 
+        {$ban_nav}
+    </div>
 	{if $general_unban || $can_delete}
 	&nbsp;&nbsp;L&nbsp;&nbsp;<a href="#" onclick="TickSelectAll();return false;" title="Select All" name="tickswitchlink" id="tickswitchlink">Select All</a>&nbsp;&nbsp;|&nbsp;
 	<select name="bulk_action" id="bulk_action" onchange="BulkEdit(this,'{$admin_postkey}');">

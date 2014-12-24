@@ -14,9 +14,9 @@
 		</tr>
 		{foreach from="$submission_list" item="sub"}
 			<tr id="sid_{$sub.subid}" class="opener3 tbl_out" {if $sub.hostname == ""}onclick="xajax_ServerHostPlayers('{$sub.server}', 'id', 'sub{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-	            <td style="border-bottom: solid 1px #ccc" height='16'>{$sub.name}</td>
-				<td style="border-bottom: solid 1px #ccc" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
-	            <td style="border-bottom: solid 1px #ccc" height='16'> 
+	            <td class="listtable_1" height='16'>{$sub.name}</td>
+				      <td class="listtable_1" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
+	            <td class="listtable_1" height='16'> 
 		            <a href="#" onclick="xajax_SetupBan({$sub.subid});return false;">Ban</a> - 
 		            {if $permissions_editsub}
 		           		<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes|stripquotes}', '1');return false;">Remove</a> -

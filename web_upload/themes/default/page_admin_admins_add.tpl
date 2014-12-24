@@ -22,7 +22,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		        		<input type="text" TABINDEX=1 class="submit-fields" id="adminname" name="adminname" />
+		        		<input type="text" TABINDEX=1 class="textbox" style="width: 200px" id="adminname" name="adminname" />
 		      		</div>
 		        	<div id="name.msg" class="badentry"></div>
 		        </td>
@@ -35,7 +35,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		     			<input type="text" TABINDEX=2 value="STEAM_0:" class="submit-fields" id="steam" name="steam" />
+		     			<input type="text" TABINDEX=2 value="STEAM_0:" class="textbox" style="width: 200px" id="steam" name="steam" />
 		    		</div>
 		    		<div id="steam.msg" class="badentry"></div>
 		    	</td>
@@ -48,7 +48,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		        		<input type="text" TABINDEX=3 class="submit-fields" id="email" name="email" />
+		        		<input type="text" TABINDEX=3 class="textbox" style="width: 200px" id="email" name="email" />
 		     		</div>
 		        	<div id="email.msg" class="badentry"></div>
 		        </td>
@@ -61,7 +61,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		       			<input type="password" TABINDEX=4 class="submit-fields" id="password" name="password" />
+		       			<input type="password" TABINDEX=4 class="textbox" style="width: 200px" id="password" name="password" />
 		      		</div>
 		        	<div id="password.msg" class="badentry"></div>
 		        </td>
@@ -74,7 +74,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		        		<input type="password" TABINDEX=5 class="submit-fields" id="password2" name="password2" />
+		        		<input type="password" TABINDEX=5 class="textbox" style="width: 200px" id="password2" name="password2" />
 		      		</div>
 		        	<div id="password2.msg" class="badentry"></div>
 		        </td>
@@ -87,7 +87,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		        		<input type="checkbox" id="a_useserverpass" name="a_useserverpass" TABINDEX=6 onclick="$('a_serverpass').disabled = !$(this).checked;" /> <input type="password" TABINDEX=7 class="submit-fields" name="a_serverpass" id="a_serverpass" disabled="disabled" />
+		        		<input type="checkbox" id="a_useserverpass" name="a_useserverpass" TABINDEX=6 onclick="$('a_serverpass').disabled = !$(this).checked;" /> <input type="password" TABINDEX=7 class="textbox" style="width: 176px" name="a_serverpass" id="a_serverpass" disabled="disabled" />
 		    		</div>
 					<div id="a_serverpass.msg" class="badentry"></div>
 		    	</td>
@@ -147,7 +147,7 @@
 			    </td>
 			    <td>
 			    	<div align="left" id="admingroup">
-				      	<select TABINDEX=8 onchange="update_server()" name="serverg" id="serverg" class="submit-fields">
+				      	<select TABINDEX=8 onchange="update_server()" name="serverg" id="serverg" class="select" style="width: 225px">
 					        <option value="-2">Please Select...</option>
 					        <option value="-3">No Permissions</option>
 					        <option value="c">Custom Permissions</option>
@@ -173,7 +173,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left" id="webgroup">
-						<select TABINDEX=9 onchange="update_web()" name="webg" id="webg" class="submit-fields">
+						<select TABINDEX=9 onchange="update_web()" name="webg" id="webg" class="select" style="width: 225px">
 							<option value="-2">Please Select...</option>
 							<option value="-3">No Permissions</option>
 							<option value="c">Custom Permissions</option>

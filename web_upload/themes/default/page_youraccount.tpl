@@ -19,7 +19,7 @@ The following is a list of the permissions that you have on this system.<br /><b
   <tr>
     <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Password</div></td>
     <td><div align="left">
-        <input type="password" onblur="xajax_CheckPassword(-{$user_aid}-, $('current').value);" class="submit-fields" id="current" name="current" />
+        <input type="password" onblur="xajax_CheckPassword(-{$user_aid}-, $('current').value);" class="textbox" id="current" name="current" />
       </div>
         <div id="current.msg" class="badentry"></div></td>
   </tr>
@@ -30,13 +30,13 @@ The following is a list of the permissions that you have on this system.<br /><b
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="New password" message="Type your new password here. <br /><br /><i>Min Length: $min_pass_len</i>"}-New Password</div></td>
     <td><div align="left">
-      <input class="submit-fields" type="password" onkeyup="checkYourAcctPass();" id="pass1" value="" name="pass1" />
+      <input class="textbox" type="password" onkeyup="checkYourAcctPass();" id="pass1" value="" name="pass1" />
     </div><div id="pass1.msg" class="badentry"></div></td>
   </tr>
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="Confirm Password" message="Please type your new password again to avoid a mistake"}-Confirm Password</div></td>
     <td><div align="left">
-        <input type="password" onkeyup="checkYourAcctPass();" class="submit-fields" id="pass2" name="pass2" />
+        <input type="password" onkeyup="checkYourAcctPass();" class="textbox" id="pass2" name="pass2" />
       </div>
         <div id="pass2.msg" class="badentry"></div></td>
   </tr>
@@ -59,7 +59,7 @@ You will need to specify this password in the game server before you can use you
   <tr>
     <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Server Password</div></td>
     <td><div align="left">
-        <input type="password" onblur="xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);" class="submit-fields" id="scurrent" name="scurrent" />
+        <input type="password" onblur="xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);" class="textbox" id="scurrent" name="scurrent" />
       </div>
         <div id="scurrent.msg" class="badentry"></div></td>
   </tr>
@@ -71,13 +71,13 @@ You will need to specify this password in the game server before you can use you
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="New password" message="Type your new server password here. <br /><br /><i>Min Length: $min_pass_len"}-New Password</div></td>
     <td><div align="left">
-      <input class="submit-fields" type="password" onkeyup="checkYourSrvPass();" id="spass1" value="" name="spass1" />
+      <input class="textbox" type="password" onkeyup="checkYourSrvPass();" id="spass1" value="" name="spass1" />
     </div><div id="spass1.msg" class="badentry"></div></td>
   </tr>
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="Confirm Password" message="Please type your new server password again to avoid a mistake."}-Confirm Password</div></td>
     <td><div align="left">
-        <input type="password" onkeyup="checkYourSrvPass();" class="submit-fields" id="spass2" name="spass2" />
+        <input type="password" onkeyup="checkYourSrvPass();" class="textbox" id="spass2" name="spass2" />
       </div>
         <div id="spass2.msg" class="badentry"></div></td>
   </tr>
@@ -110,19 +110,19 @@ You will need to specify this password in the game server before you can use you
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="Current Password" message="Type your password here."}-Password</div></td>
     <td><div align="left">
-      <input class="submit-fields" type="password" id="emailpw" value="" name="emailpw" />
+      <input class="textbox" type="password" id="emailpw" value="" name="emailpw" />
     </div><div id="emailpw.msg" class="badentry"></div></td>
   </tr>
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="New E-mail" message="Type your new email address here."}-New E-mail</div></td>
     <td><div align="left">
-      <input class="submit-fields" type="text" id="email1" value="" name="email1" />
+      <input class="textbox" type="text" id="email1" value="" name="email1" />
     </div><div id="email1.msg" class="badentry"></div></td>
   </tr>
   <tr>
     <td valign="top"><div class="rowdesc">-{help_icon title="Confirm E-mail" message="Please type your new email address again to avoid a mistake."}-Confirm E-mail</div></td>
     <td><div align="left">
-        <input type="text" class="submit-fields" id="email2" name="email2" />
+        <input type="text" class="textbox" id="email2" name="email2" />
       </div>
         <div id="email2.msg" class="badentry"></div></td>
   </tr>

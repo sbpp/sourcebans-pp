@@ -19,9 +19,9 @@ Click on an admin to see more detailed information and actions to perform on the
 	</tr>
 	{foreach from="$admins" item="admin"}
 		<tr onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" class="tbl_out opener">
-			<td class="admin-row" style="padding:3px;">{$admin.user} (<a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=admin" title="Show bans">{$admin.bancount} bans</a> | <a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=nodemo" title="Show bans without demo">{$admin.nodemocount} w.d.</a>)</td>
-			<td class="admin-row" style="padding:3px;">{$admin.server_group}</td>
-			<td class="admin-row" style="padding:3px;">{$admin.web_group}</td>
+			<td class="listtable_1" style="padding:3px;">{$admin.user} (<a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=admin" title="Show bans">{$admin.bancount} bans</a> | <a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=nodemo" title="Show bans without demo">{$admin.nodemocount} w.d.</a>)</td>
+			<td class="listtable_1" style="padding:3px;">{$admin.server_group}</td>
+			<td class="listtable_1" style="padding:3px;">{$admin.web_group}</td>
  		</tr>
 		<tr>
 			<td colspan="3">

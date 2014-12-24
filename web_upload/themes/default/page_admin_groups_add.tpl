@@ -12,7 +12,7 @@
 	    	</td>
 	    	<td>
 	    		<div align="left">
-	      			<input type="text" TABINDEX=1 class="submit-fields" id="groupname" name="groupname" />
+	      			<input type="text" TABINDEX=1 class="textbox" id="groupname" name="groupname" />
 	    		</div>
 	    		<div id="name.msg" class="badentry"></div>
 	    	</td>
@@ -25,7 +25,7 @@
 	    	</td>
 	    	<td>
 	    		<div align="left">
-					<select onchange="UpdateGroupPermissionCheckBoxes()" TABINDEX=2 class="submit-fields" name="grouptype" id="grouptype">
+					<select onchange="UpdateGroupPermissionCheckBoxes()" TABINDEX=2 class="select" name="grouptype" id="grouptype">
 						<option value="0">Please Select...</option>
 						<option value="1">Web Admin Group</option>
 						<option value="2">Server Admin Group</option>

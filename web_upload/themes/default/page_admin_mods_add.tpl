@@ -14,7 +14,7 @@
 		    	<td>
 		    		<div align="left">
 		    			<input type="hidden" id="fromsub" value="" />
-		      			<input type="text" TABINDEX=1 class="submit-fields" id="name" name="name" />
+		      			<input type="text" TABINDEX=1 class="textbox" id="name" name="name" />
 		    		</div>
 		    		<div id="name.msg" class="badentry"></div>
 		    	</td>
@@ -27,7 +27,7 @@
 		    	</td>
 		    	<td>
 			    	<div align="left">
-			      		<input type="text" TABINDEX=2 class="submit-fields" id="folder" name="folder" />
+			      		<input type="text" TABINDEX=2 class="textbox" id="folder" name="folder" />
 			    	</div>
 			    	<div id="folder.msg" class="badentry"></div>
 				</td>
@@ -36,7 +36,7 @@
 				<td valign="top"><div class="rowdesc">{help_icon title="Steam Universe Number" message="(STEAM_<b>X</b>:Y:Z) Some games display the steamid differently than others. Type the first number in the SteamID (<b>X</b>) depending on how it's rendered by this mod. (Default: 0)."}Steam Universe Number</div></td>
 		    	<td>
 		    		<div align="left">
-		      			<input type="text" TABINDEX=3 class="submit-fields" id="steam_universe" name="steam_universe" value="0" />
+		      			<input type="text" TABINDEX=3 class="textbox" id="steam_universe" name="steam_universe" value="0" />
 		    		</div>
 		    	</td>
 		  </tr>
