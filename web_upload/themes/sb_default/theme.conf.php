@@ -18,7 +18,7 @@ define('theme_name', "SourceBans Default Theme (Legacy)");
 define('theme_author', "SourceBans Development Team, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.5F-dev");
+define('theme_version', "1.5.0F-dev");
 
 // Set the link of the theme here
 define('theme_link', "http://www.sourcebans.net");
