@@ -209,7 +209,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_submissions` (
   PRIMARY KEY  (`subid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
-CREATE TABLE `{prefix}_comms` (
+CREATE TABLE IF NOT EXISTS `{prefix}_comms` (
   `bid` int(6) NOT NULL AUTO_INCREMENT,
   `authid` varchar(64) NOT NULL,
   `name` varchar(128) NOT NULL DEFAULT 'unnamed',
@@ -231,5 +231,5 @@ CREATE TABLE `{prefix}_comms` (
   KEY `RemoveType` (`RemoveType`),
   KEY `authid` (`authid`),
   KEY `created` (`created`),
-  KEY `aid` (`aid`),
+  KEY `aid` (`aid`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8;
