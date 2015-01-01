@@ -20,8 +20,8 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe
 (19, "Alien Swarm", 'alienswarm.png', 'alienswarm', '0'),
 (20, "E.Y.E: Divine Cybermancy", 'eye.png', 'eye', '0'),
 (21, "Nuclear Dawn", 'nucleardawn.png', 'nucleardawn', '0'),
-(22, "Counter-Strike: Global Offensive", 'csgo.png', 'csgo', '1');
-(23, 'Synergy', 'synergy.png', 'synergy', '0'),
+(22, "Counter-Strike: Global Offensive", 'csgo.png', 'csgo', '1'),
+(23, 'Synergy', 'synergy.png', 'synergy', '0');
 
 UPDATE `{prefix}_mods` SET `mid` = '0' WHERE `name` = 'Web';
 

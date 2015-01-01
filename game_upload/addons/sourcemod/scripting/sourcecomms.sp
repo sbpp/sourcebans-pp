@@ -12,7 +12,7 @@ Intergrated into SourceBans 1.5.0F */
 #include <adminmenu>
 
 #define UNBLOCK_FLAG ADMFLAG_CUSTOM2
-#define DATABASE "sourcecomms"
+#define DATABASE "sourcebans"
 
 // #define DEBUG
 // #define LOG_QUERIES

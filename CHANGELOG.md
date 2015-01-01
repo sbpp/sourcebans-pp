@@ -1,4 +1,4 @@
-SourceBans Change Log
+SourceBans (FORK) Change Log
 ============
 
 ```
@@ -10,6 +10,19 @@ Legend:
 ? = Other stuff
 ```
 
+(26/12/14): Version 1.5.0F
+-----------------------
+01. * Integrated SourceComms
+02. * Added TF2 Modern Theme as Default (Made by IceMan)
+03. * Integrated SourceBans Checker
+04. * Re-made SourceBans FAQ
+05. * Added MvM and HL2 Map Pics
+06. * Added Synergy to the Game List
+07. + Re-arranged/Renamed Tabs
+08. + Added More Robust LFI Patch
+09. ! Fixed Plugin Pointing to wrong FAQ link
+10. ? Optimized and updated IpToCountry.csv
+
 (02/12/14): Version 1.4.13F
 -----------------------
 01. ! Fixed LFI EXPLOIT //Thanks jsifuentes
@@ -18,8 +31,8 @@ Legend:
 (15/11/14): Version 1.4.12F
 -----------------------
 01. * Added Steam3 Support for Player Menu
-02. ! Fixed Steam Family Sharing Ban Evasion.
-03. * Added IP Ban checking from SourceSlueth
+02. * Added IP Ban checking from SourceSlueth
+03. ! Fixed Steam Family Sharing Ban Evasion.
 04. ? Added SteamWorks Extension
 05. ? Optimized and updated IpToCountry.csv
 
