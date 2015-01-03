@@ -300,6 +300,7 @@ div.dialog-control{
     background-color: #DADFE1; 
     color: #34495E;
     border:0;
+    margin-bottom: 5px;
 }
 
 /** ================ Tabs ================ **/
