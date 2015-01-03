@@ -300,6 +300,7 @@ div.dialog-control{
     background-color: #DADFE1; 
     color: #34495E;
     border:0;
+    margin-bottom: 5px;
 }
 
 /** ================ Tabs ================ **/
@@ -454,8 +455,6 @@ a.nav_link:hover {
 }
 
 #search {
-	width: 300px;
-	float: right;
 	padding: 2px 0 0 0;
 	text-align: right;
 	position: relative;
