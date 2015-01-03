@@ -458,7 +458,9 @@ a.nav_link:hover {
 	padding: 2px 0 0 0;
 	text-align: right;
 	position: relative;
-	top: -170px;
+	right: -684px;
+	top: -180px;
+	width: 300px;
 }
 
 #searchbtn{
