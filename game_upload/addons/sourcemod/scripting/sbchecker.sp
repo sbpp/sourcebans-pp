@@ -6,7 +6,7 @@ Intergrated into SourceBans 1.5.0F */
 
 #include <sourcemod>
 
-#define VERSION "SB-1.5.0F"
+#define VERSION "SB-1.5.1F-dev"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 
 new String:g_DatabasePrefix[10] = "sb";
