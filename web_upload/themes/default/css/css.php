@@ -454,8 +454,6 @@ a.nav_link:hover {
 }
 
 #search {
-	width: 300px;
-	float: right;
 	padding: 2px 0 0 0;
 	text-align: right;
 	position: relative;
