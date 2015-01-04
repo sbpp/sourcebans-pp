@@ -362,6 +362,7 @@ public SQL_CheckIP(Handle:owner, Handle:hndl, const String:error[], any:datapack
 	if (hndl == INVALID_HANDLE)
 	{
 		LogError("SourceBans: Database query error: %s", error);
+		return;
 	}
 	
 	if (SQL_FetchRow(hndl))
