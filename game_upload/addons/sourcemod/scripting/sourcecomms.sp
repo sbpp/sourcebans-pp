@@ -6,7 +6,7 @@ Intergrated into SourceBans 1.5.0F */
 
 #include <sourcemod>
 #include <basecomm>
-#include "include/sourcecomms.inc"
+#include <sourcecomms>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>

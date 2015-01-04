@@ -1,4 +1,4 @@
-﻿SourceBans
+﻿SourceBans [![Build Status](https://travis-ci.org/Sarabveer/SourceBans.svg)](https://travis-ci.org/Sarabveer/SourceBans)
 ============
 
 Global admin and ban management for the Source engine
