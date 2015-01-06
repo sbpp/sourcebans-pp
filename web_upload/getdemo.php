@@ -24,7 +24,7 @@ if(strcasecmp($_GET['type'], "B") != 0 && strcasecmp($_GET['type'], "S") != 0)
 $id = (int)$_GET['id'];
 
 $demo = $GLOBALS['db']->GetRow("SELECT filename, origname FROM `".DB_PREFIX."_demos` WHERE demtype=? AND demid=?;", array($_GET['type'], $id));
-
+//Official Fix: https://code.google.com/p/sourcebans/source/detail?r=165
 if(!$demo)
 {
   die('Demo not found.');
@@ -32,8 +32,7 @@ if(!$demo)
 
 $demo['filename'] = basename($demo['filename']);
 
-if(!in_array($demo['filename'], scandir(SB_DEMOS)) || if(!file_exists(SB_DEMOS . "/" . $demo['filename']))
-//Official Fix: https://code.google.com/p/sourcebans/source/detail?r=165
+if(!in_array($demo['filename'], scandir(SB_DEMOS)) || !file_exists(SB_DEMOS . "/" . $demo['filename']))
 {
   die('File not found.');
 }
