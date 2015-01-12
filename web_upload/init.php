@@ -84,7 +84,7 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 define('SB_SVN', true);
 if(!defined('SB_VERSION')){
 	define('SB_VERSION', '1.5.1F-dev');
-	define('SB_REV', '$Rev: 482 $');
+	define('SB_REV', '$Rev: 483 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
@@ -163,7 +163,7 @@ function sbError($errno, $errstr, $errfile, $errline)
 define('EMAIL_FORMAT', "/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/");
 define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i");
 define('STEAM_FORMAT', "/^STEAM_[0-9]:[0-9]:[0-9]+$/");
-define('STATUS_PARSE', '/# +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+) +([0-9.:]+)/');
+define('STATUS_PARSE', '/# +([0-9 ]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+) +([0-9.:]+)/');
 define('IP_FORMAT', '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
 define('SERVER_QUERY', 'http://www.sourcebans.net/public/query/');
 
@@ -325,4 +325,4 @@ if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE") 
 // Setup our user manager
 // ---------------------------------------------------
 $userbank = new CUserManager(isset($_COOKIE['aid'])?$_COOKIE['aid']:'', isset($_COOKIE['password'])?$_COOKIE['password']:'');
- ?>
+?>
