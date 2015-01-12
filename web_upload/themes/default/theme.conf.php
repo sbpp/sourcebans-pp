@@ -4,8 +4,8 @@
  * 
  * This file will set some stuff about our theme
  * @author IceMan
- * @Modified By: Sarabveer(VEER™)
- * @version 1.0-S
+ * Modified By: Sarabveer(VEER™)
+ * @version 1.1-S
  * @copyright TF2 Romania (www.tf2.ro)
  * @package TF2 Romania
  * @link http://www.tf2.ro
@@ -18,7 +18,7 @@ define('theme_name', "SourceBans Default Theme");
 define('theme_author', "IceMan, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.0-S");
+define('theme_version', "1.1-S");
 
 // Set the link of the theme here
 define('theme_link', "https://forums.alliedmods.net/showthread.php?t=252533");
