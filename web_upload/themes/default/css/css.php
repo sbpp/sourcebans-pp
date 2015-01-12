@@ -34,6 +34,16 @@ header('Content-type: text/css');
     src: url(../css/tf2build.ttf);
 }
 
+@font-face {
+    font-family: danub;
+    src: url(../css/DANUB___.TTF);
+}
+
+@font-face {
+    font-family: danube;
+    src: url(../css/DANUBE__.TTF);
+}
+
 body { 
 	background-color: #CFCAC6;
 	color: #444;
