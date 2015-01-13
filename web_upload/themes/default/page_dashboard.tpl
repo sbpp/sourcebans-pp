@@ -65,7 +65,7 @@
 		<tr height="16">
 			<td width="16" class="listtable_top">MOD</td>
 			<td width="24%" class="listtable_top" align="center"><strong>Date/Time</strong></td>
-			<td class="listtable_top" align="center"><strong>Name</strong></td>
+			<td class="listtable_top"><strong>Name</strong></td>
 			<td width="23%" class="listtable_top"><strong>Length</strong></td>
 		</tr>
 		{foreach from=$players_banned item=player}

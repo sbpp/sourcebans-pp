@@ -132,7 +132,7 @@ function AddTab($title, $url, $desc, $active=false)
 	$tab_arr = array(	);
 	$tab_arr[0] = "Dashboard";
 	$tab_arr[1] = "Servers";
-	$tab_arr[2] = "Bans";
+	$tab_arr[2] = "&nbsp;Bans&nbsp;";
 	$tab_arr[3] = "Comms";
 	$tab_arr[4] = "Report Player";
 	$tab_arr[5] = "Appeal Ban";
@@ -168,7 +168,7 @@ function BuildPageTabs()
 	global $userbank;
 	AddTab("Dashboard", "index.php?p=home", "This page shows an overview of your bans and servers.");
 	AddTab("Servers", "index.php?p=servers", "All of your servers and their status can be viewed here");
-	AddTab("Bans", "index.php?p=banlist", "All of the bans in the database can be viewed from here.");
+	AddTab("&nbsp;Bans&nbsp;", "index.php?p=banlist", "All of the bans in the database can be viewed from here.");
 	AddTab("Comms", "index.php?p=commslist", "All of the communication bans (such as chat gags and voice mutes) in the database can be viewed from here.");
 	if($GLOBALS['config']['config.enablesubmit']=="1")
 		AddTab("Report Player", "index.php?p=submit", "You can submit a demo or screenshot of a suspected cheater here. It will then be up for review by one of the admins");
