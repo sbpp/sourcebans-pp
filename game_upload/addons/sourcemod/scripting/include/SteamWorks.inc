@@ -221,12 +221,14 @@ funcenum SteamWorksHTTPDataReceived
 
 native bool:SteamWorks_SetHTTPCallbacks(Handle:hHandle, SteamWorksHTTPRequestCompleted:fCompleted = INVALID_FUNCTION, SteamWorksHTTPHeadersReceived:fHeaders = INVALID_FUNCTION, SteamWorksHTTPDataReceived:fData = INVALID_FUNCTION, Handle:hCalling = INVALID_HANDLE);
 native bool:SteamWorks_SendHTTPRequest(Handle:hRequest);
+native bool:SteamWorks_SendHTTPRequestAndStreamResponse(Handle:hRequest);
 native bool:SteamWorks_DeferHTTPRequest(Handle:hRequest);
 native bool:SteamWorks_PrioritizeHTTPRequest(Handle:hRequest);
 native bool:SteamWorks_GetHTTPResponseHeaderSize(Handle:hRequest, const String:sHeader[], &size);
 native bool:SteamWorks_GetHTTPResponseHeaderValue(Handle:hRequest, const String:sHeader[], String:sValue[], size);
 native bool:SteamWorks_GetHTTPResponseBodySize(Handle:hRequest, &size);
 native bool:SteamWorks_GetHTTPResponseBodyData(Handle:hRequest, String:sBody[], length);
+native bool:SteamWorks_GetHTTPStreamingResponseBodyData(Handle:hRequest, cOffset, String:sBody[], length);
 native bool:SteamWorks_GetHTTPDownloadProgressPct(Handle:hRequest, &Float:percent);
 native bool:SteamWorks_SetHTTPRequestRawPostBody(Handle:hRequest, const String:sContentType[], const String:sBody[], bodylen);
 
@@ -296,12 +298,14 @@ public __ext_SteamWorks_SetNTVOptional()
 
 	MarkNativeAsOptional("SteamWorks_SetHTTPCallbacks");
 	MarkNativeAsOptional("SteamWorks_SendHTTPRequest");
+	MarkNativeAsOptional("SteamWorks_SendHTTPRequestAndStreamResponse");
 	MarkNativeAsOptional("SteamWorks_DeferHTTPRequest");
 	MarkNativeAsOptional("SteamWorks_PrioritizeHTTPRequest");
 	MarkNativeAsOptional("SteamWorks_GetHTTPResponseHeaderSize");
 	MarkNativeAsOptional("SteamWorks_GetHTTPResponseHeaderValue");
 	MarkNativeAsOptional("SteamWorks_GetHTTPResponseBodySize");
 	MarkNativeAsOptional("SteamWorks_GetHTTPResponseBodyData");
+	MarkNativeAsOptional("SteamWorks_GetHTTPStreamingResponseBodyData");
 	MarkNativeAsOptional("SteamWorks_GetHTTPDownloadProgressPct");
 	MarkNativeAsOptional("SteamWorks_SetHTTPRequestRawPostBody");
 
