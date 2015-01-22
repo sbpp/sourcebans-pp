@@ -20,7 +20,7 @@ before_script:
     - SMURL="http://www.sourcemod.net/smdrop/$VERSION/"
     - SMPACKAGE=`lynx -dump "$SMURL" | egrep -o "$SMPATTERN" | tail -1`
     - wget $SMPACKAGE
-    - tar -xzf sourcemod-1.6.3-linux.tar.gz
+    - tar -xzf $(basename "$SMPACKAGE")
     - cp game_upload/addons/sourcemod/scripting/sourcebans.sp addons/sourcemod/scripting/
     - cp game_upload/addons/sourcemod/scripting/sourcecomms.sp addons/sourcemod/scripting/
     - cp game_upload/addons/sourcemod/scripting/sbchecker.sp addons/sourcemod/scripting/
