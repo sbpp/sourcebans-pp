@@ -4,7 +4,13 @@ env:
   - VERSION=1.6
   - VERSION=1.7
   - VERSION=1.8
-    
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: VERSION=1.7
+    - env: VERSION=1.8
+
 before_install:
     - sudo apt-get update
     - sudo apt-get install gcc-multilib
