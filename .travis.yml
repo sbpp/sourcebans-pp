@@ -1,4 +1,4 @@
-language: c
+language: bash
 
 env:
   - VERSION=1.6
