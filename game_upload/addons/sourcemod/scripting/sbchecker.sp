@@ -1,8 +1,20 @@
-/* SourceBans Checker 1.0.2
+/*
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, per version 3 of the License.
 
-Intergrated into SourceBans 1.5.0F */
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-// Some snippets such as the sourcebans.cfg parsing are taken near-directly from the Sourcebans plugin
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+//SourceBans Checker 1.0.2
+//Intergrated into SourceBans 1.5.0F 
 
 #include <sourcemod>
 
