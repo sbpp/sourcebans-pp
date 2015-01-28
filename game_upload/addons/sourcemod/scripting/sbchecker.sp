@@ -1,9 +1,28 @@
-/* SourceBans Checker 1.0.2
-
-Intergrated into SourceBans 1.5.0F */
-
-// Some snippets such as the sourcebans.cfg parsing are taken near-directly from the Sourcebans plugin
-
+// *************************************************************************
+//  This file is part of SourceBans (FORK).
+//
+//  Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+//  
+//  SourceBans (FORK) is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, per version 3 of the License.
+//  
+//  SourceBans (FORK) is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//  
+//  You should have received a copy of the GNU General Public License
+//  along with SourceBans (FORK).  If not, see <http://www.gnu.org/licenses/>.
+//
+//  This file incorporates work covered by the following copyrights:  
+//
+//   SourceBans Checker 1.0.2
+//   Copyright (C) Nicholas Hastings 2010-2013
+//   Licensed under GNU GPL version 3, or later.
+//   Page: <https://forums.alliedmods.net/showthread.php?p=1288490>
+//
+// *************************************************************************
 #include <sourcemod>
 
 #define VERSION "SB-1.5.1F-dev"

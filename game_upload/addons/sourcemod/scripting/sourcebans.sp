@@ -1,3 +1,34 @@
+// *************************************************************************
+//  This file is part of SourceBans (FORK).
+//
+//  Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+//  
+//  SourceBans (FORK) is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, per version 3 of the License.
+//  
+//  SourceBans (FORK) is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//  
+//  You should have received a copy of the GNU General Public License
+//  along with SourceBans (FORK).  If not, see <http://www.gnu.org/licenses/>.
+//
+//  This file incorporates work covered by the following copyrights: 
+//
+//   SourceBans 1.4.11
+//   Copyright (C) SourceBans Team 2007-2014 - Part of GameConnect
+//   Licensed under GNU GPL version 3, or later.
+//   Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>  
+//
+//   TOGs SourceBans 1.4.11.TOG_EDIT_d
+//   Copyright (C) ThatOneGuy 2014
+//   Licensed under GNU GPL version 3, or later.
+//   Page: <https://forums.alliedmods.net/showthread.php?t=240626>
+//
+// *************************************************************************
+
 #pragma semicolon 1
 #include <sourcemod>
 #include <sourcebans>

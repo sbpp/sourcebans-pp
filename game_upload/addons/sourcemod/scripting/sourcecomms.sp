@@ -1,6 +1,28 @@
-/* SOURCECOMMS 0.9.266
-
-Intergrated into SourceBans 1.5.0F */
+// *************************************************************************
+//  This file is part of SourceBans (FORK).
+//
+//  Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+//  
+//  SourceBans (FORK) is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, per version 3 of the License.
+//  
+//  SourceBans (FORK) is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//  
+//  You should have received a copy of the GNU General Public License
+//  along with SourceBans (FORK).  If not, see <http://www.gnu.org/licenses/>.
+//
+//  This file incorporates work covered by the following copyright:  
+//
+//   SourceComms 0.9.266
+//   Copyright (C) Alexandr Duplishchev 2013-2014
+//   Licensed under GNU GPL version 3, or later.
+//   Page: <https://forums.alliedmods.net/showthread.php?p=1883705> - <https://github.com/d-ai/SourceComms>
+//
+// *************************************************************************
 
 #pragma semicolon 1
 
