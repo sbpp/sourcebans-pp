@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans (FORK).
 //
-//  Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans (FORK) is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 //  This file incorporates work covered by the following copyright:  
 //
 //   SourceComms 0.9.266
-//   Copyright (C) Alexandr Duplishchev 2013-2014
+//   Copyright (C) 2013-2014 Alexandr Duplishchev
 //   Licensed under GNU GPL version 3, or later.
 //   Page: <https://forums.alliedmods.net/showthread.php?p=1883705> - <https://github.com/d-ai/SourceComms>
 //

@@ -19,7 +19,7 @@ An explanation  of this license is available <a href="https://www.gnu.org/licens
 <textarea id="license" cols="105" rows="15" name="license">
 This program is part of SourceBans (FORK).
 
-Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 
 SourceBans (FORK) is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -36,12 +36,12 @@ along with SourceBans (FORK). If not, see <http://www.gnu.org/licenses/>.
 This program incorporates work covered by the following copyright: 
 
  SourceBans 1.4.11
- Copyright (C) SourceBans Team 2007-2014 - Part of GameConnect
+ Copyright (C) 2007-2014 SourceBans Team - Part of GameConnect
  Licensed under GNU GPL version 3, or later.
  Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
  
  SourceBans TF2 Theme v1.0
- Copyright (C) IceMan 2014
+ Copyright (C) 2014 IceMan
  Page: <https://forums.alliedmods.net/showthread.php?t=252533>
 </textarea>
 <br /><br />
