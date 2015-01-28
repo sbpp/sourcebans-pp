@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans (FORK).
 //
-//  Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans (FORK) is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 //  This file incorporates work covered by the following copyrights:  
 //
 //   SourceBans Checker 1.0.2
-//   Copyright (C) Nicholas Hastings 2010-2013
+//   Copyright (C) 2010-2013 Nicholas Hastings 
 //   Licensed under GNU GPL version 3, or later.
 //   Page: <https://forums.alliedmods.net/showthread.php?p=1288490>
 //

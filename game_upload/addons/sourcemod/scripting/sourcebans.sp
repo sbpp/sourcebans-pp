@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans (FORK).
 //
-//  Copyright (C) 2014-2015 Sarabveer(VEER™) <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans (FORK) is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -18,14 +18,24 @@
 //  This file incorporates work covered by the following copyrights: 
 //
 //   SourceBans 1.4.11
-//   Copyright (C) SourceBans Team 2007-2014 - Part of GameConnect
+//   Copyright (C) 2007-2014 SourceBans Team - Part of GameConnect
 //   Licensed under GNU GPL version 3, or later.
 //   Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>  
 //
 //   TOGs SourceBans 1.4.11.TOG_EDIT_d
-//   Copyright (C) ThatOneGuy 2014
+//   Copyright (C) 2014 ThatOneGuy
 //   Licensed under GNU GPL version 3, or later.
 //   Page: <https://forums.alliedmods.net/showthread.php?t=240626>
+//
+//   [ANY] SourceSleuth
+//   Copyright (C) 2012-2014 ecca
+//   Licensed under GNU GPL version 3, or later.
+//   Page: <https://forums.alliedmods.net/showthread.php?p=1818793>
+//
+//   [ANY] SteamWorks
+//   Copyright (C) 2013-2015 Kyle Sanderson
+//   Licensed under GNU GPL version 3.
+//   Page: <https://forums.alliedmods.net/showthread.php?t=229556> - <https://github.com/KyleSanderson/SteamWorks>
 //
 // *************************************************************************
 
