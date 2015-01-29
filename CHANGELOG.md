@@ -10,6 +10,19 @@ Legend:
 ? = Other stuff
 ```
 
+(29/01/15): Version 1.5.1F
+-----------------------
+01. * We are using GNU GPL v3 only, no later versions.
+02. * Added SourceBans Connection Debugger
+03. * Added SourceComms Search Box 
+04. * Re-made SourceBans Logo in Footer
+05. ! Fixed getdemo.php spewing errors
+06. ! Fixed Invalid Query in SB Plugin
+07. ! Fixed parsing rcon status in CS:GO
+08. ? Added/Fixed Copyright Headers
+09. ? Updated SteamWorks Ext to git90
+10. ? Optimized and updated IpToCountry.csv
+
 (26/12/14): Version 1.5.0F
 -----------------------
 01. * Integrated SourceComms
