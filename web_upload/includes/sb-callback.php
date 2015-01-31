@@ -2289,8 +2289,8 @@ function CheckVersion()
 	$objResponse = new xajaxResponse();
 	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans/");
 
-	if(defined('SB_SVN'))
-		$relsvn = @file_get_contents("https://sarabveer.github.io/SourceBans/dev/");
+	if(defined('SB_GIT'))
+		$relgit = @file_get_contents("https://sarabveer.github.io/SourceBans/dev/");
 
 	if(version_compare($relver, SB_VERSION) > 0)
 		$versmsg = "<span style='color:#aa0000;'><strong>A new release is available.</strong></span>";
@@ -2304,19 +2304,19 @@ function CheckVersion()
 	}
 	$objResponse->addAssign("relver", "innerHTML",  $relver);
 
-	if(defined('SB_SVN'))
+	if(defined('SB_GIT'))
 	{
-		if(intval($relsvn) > GetSVNRev())
-			$svnmsg = "<span style='color:#aa0000;'><strong>A new SVN revision is available.</strong></span>";
+		if(intval($relgit) > GetGITRev())
+			$svnmsg = "<span style='color:#aa0000;'><strong>A new Git commit is available.</strong></span>";
 		else
-			$svnmsg = "<span style='color:#00aa00;'><strong>You have the latest SVN revision.</strong></span>";
+			$svnmsg = "<span style='color:#00aa00;'><strong>You have the latest Git Commit.</strong></span>";
 
-		if(strlen($relsvn)>8 || $relsvn=="") {
-			$relsvn = "<span style='color:#aa0000;'>Error</span>";
-			$svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest svn revision.</strong></span>";
+		if(strlen($relgit)>8 || $relgit=="") {
+			$relgit = "<span style='color:#aa0000;'>Error</span>";
+			$svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Git Commit.</strong></span>";
 		}
 		$msg .= "<br />" . $svnmsg;
-		$objResponse->addAssign("svnrev", "innerHTML",  $relsvn);
+		$objResponse->addAssign("svnrev", "innerHTML",  $relgit);
 	}
 
 	$objResponse->addAssign("versionmsg", "innerHTML", $msg);

@@ -1,7 +1,7 @@
 	</div></div>
 	<div id="footer">
 		<div id="gc">
-		<a class="footer_link" href="https://github.com/Sarabveer/SourceBans" target="_blank">SourceBans</a> {$SB_VERSION} {$SB_REV}</div>
+		<a class="footer_link" href="https://github.com/Sarabveer/SourceBans" target="_blank">SourceBans</a> {$SB_VERSION}{$SB_REV}</div>
 		<div id="sb"><br/>
 		<a href="http://www.sourcebans.net" target="_blank"><img src="images/sb-legacy.png" alt="SourceBans" border="0" /></a><br/>
 		<!--<div id="footqversion">Version {$SB_VERSION} {$SB_REV}</div>-->

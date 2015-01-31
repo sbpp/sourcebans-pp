@@ -67,7 +67,7 @@
 	<tr>
 		<td>
 			{if $sb_svn}
-				Latest SVN: <strong id='svnrev'>Please Wait...</strong>
+				Latest Git: <strong id='svnrev'>Please Wait...</strong>
 			{/if}		
 		</td>
 		<td>&nbsp;</td>

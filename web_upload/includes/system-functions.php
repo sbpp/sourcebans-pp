@@ -758,11 +758,19 @@ function PruneComms()
     return $res?true:false;
 }
 
+/*
 function GetSVNRev()
 {
 	preg_match('/\\$Rev:[\\s]+([\\d]+)/', SB_REV, $rev, PREG_OFFSET_CAPTURE);
 	return (int)$rev[1][0];
+}*/
+
+function GetGITRev()
+{
+	preg_match('/\\$Git:[\\s]+([\\d]+)/', SB_GITRev, $gitrev, PREG_OFFSET_CAPTURE);
+	return (int)$gitrev[1][0];
 }
+
 
 
 // Function by Luman (http://snipplr.com/users/luman)
