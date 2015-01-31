@@ -16,7 +16,7 @@
 if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();} 
 
 global $theme;
-$theme->assign('SB_REV', 		defined('SB_SVN')?" Rev: ".GetSVNRev():'');
+$theme->assign('SB_REV', 		defined('SB_GIT')?"-git".GetGITRev():'');
 $theme->assign('SB_VERSION', 	SB_VERSION);
 $theme->assign('SB_QUOTE', 		CreateQuote());
 $theme->display('page_footer.tpl');

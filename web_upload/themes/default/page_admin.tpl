@@ -71,7 +71,7 @@
 	<tr>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">
 			{if $sb_svn}
-				Latest SVN: <strong id='svnrev'>Please Wait...</strong>
+				Latest Git: <strong id='svnrev'>Please Wait...</strong>
 			{/if}		
 		</td>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">&nbsp;</td>
