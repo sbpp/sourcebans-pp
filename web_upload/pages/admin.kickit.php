@@ -104,7 +104,7 @@ function KickPlayer($check, $sid, $num, $type) {
 					$gothim = true;
 					$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_bans` SET sid = '".$sid."' WHERE authid = '".$check."' AND RemovedBy IS NULL;");
 					$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
-					$kick = $r->sendCommand("kickid \"".$match."\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
+					$kick = $r->sendCommand("kickid ".$match." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 					$objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
 					$objResponse->addScript("set_counter('-1');");
 					return $objResponse;
