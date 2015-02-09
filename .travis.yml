@@ -1,27 +1,35 @@
-language: c
-    
+language: bash
+
+env:
+  - VERSION=1.6.3
+  - VERSION=1.7.0
+
+matrix:
+  fast_finish: true
+
 before_install:
-    - sudo apt-get update
-    - sudo apt-get install gcc-multilib
+  - sudo apt-get update -qq
+  - sudo apt-get install -y gcc-multilib lynx git lib32stdc++6
 
 before_script:
-    - SMURL="http://www.gsptalk.com/mirror/sourcemod/sourcemod-1.6.3-linux.tar.gz"
-    - wget $SMURL
-    - tar -xzf sourcemod-1.6.3-linux.tar.gz
-    - cp game_upload/addons/sourcemod/scripting/sourcebans.sp addons/sourcemod/scripting/
-    - cp game_upload/addons/sourcemod/scripting/sourcecomms.sp addons/sourcemod/scripting/
-    - cp game_upload/addons/sourcemod/scripting/sbchecker.sp addons/sourcemod/scripting/
-    - cp game_upload/addons/sourcemod/scripting/include/sourcebans.inc addons/sourcemod/scripting/include/
-    - cp game_upload/addons/sourcemod/scripting/include/sourcecomms.inc addons/sourcemod/scripting/include/
-    - cp game_upload/addons/sourcemod/scripting/include/SteamWorks.inc addons/sourcemod/scripting/include/
-    - cd addons/sourcemod/scripting/
-    - chmod +x spcomp
-    - chmod +x compile.sh
+  - SMURL="http://www.gsptalk.com/mirror/sourcemod/sourcemod-$VERSION-linux.tar.gz"
+  - wget $SMURL
+  - SMFILE="sourcemod-$VERSION-linux.tar.gz"
+  - tar -xzf $SMFILE
+  - cp game_upload/addons/sourcemod/scripting/sourcebans.sp addons/sourcemod/scripting/
+  - cp game_upload/addons/sourcemod/scripting/sourcecomms.sp addons/sourcemod/scripting/
+  - cp game_upload/addons/sourcemod/scripting/sbchecker.sp addons/sourcemod/scripting/
+  - cp game_upload/addons/sourcemod/scripting/include/sourcebans.inc addons/sourcemod/scripting/include/
+  - cp game_upload/addons/sourcemod/scripting/include/sourcecomms.inc addons/sourcemod/scripting/include/
+  - cp game_upload/addons/sourcemod/scripting/include/SteamWorks.inc addons/sourcemod/scripting/include/
+  - cd addons/sourcemod/scripting/
+  - chmod +x spcomp
+  - chmod +x compile.sh
 
 script: 
-    - ./compile.sh sourcebans.sp
-    - ./compile.sh sourcecomms.sp
-    - ./compile.sh sbchecker.sp
+  - ./compile.sh sourcebans.sp
+  - ./compile.sh sourcecomms.sp
+  - ./compile.sh sbchecker.sp
 
 after_script:
-    - ls compiled/
+  - ls compiled/
