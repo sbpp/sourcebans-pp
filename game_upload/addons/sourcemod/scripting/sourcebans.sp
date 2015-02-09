@@ -1211,8 +1211,6 @@ public Action:CheckFamSharing(Handle:Timer, Handle:data)
 		GetClientName(client, sName, sizeof(sName));
 		Format(sBuffer, sizeof(sBuffer), "[SourceBans] Player \"%s\" (%s) has been verified with game owner's Steam ID: %s", sName, sSteamID, g_sOwnerSteamID[client]);
 		MsgAdmins_Console("b", sBuffer);
-		LogMessage(sBuffer);
-		LogToGame(sBuffer);
 		if(!StrEqual(sSteamID, sOwnerSteamID, false))
 		{
 			//check for bans under game owner's steam ID
