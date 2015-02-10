@@ -105,7 +105,7 @@ function KickPlayer($check, $sid, $num, $type) {
 					$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_bans` SET sid = '".$sid."' WHERE authid = '".$check."' AND RemovedBy IS NULL;");
 					$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
 					
-					if(strpos($steam, "[U:") === 0) {
+					if(strpos($match, "[U:") === 0) {
 						$kick = $r->sendCommand("kickid \"".$match."\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 					} else {
 						$kick = $r->sendCommand("kickid ".$match." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
