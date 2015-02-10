@@ -20,7 +20,7 @@ Requirements:
    o MySQL 5.0
  * Source Dedicated Server
    o MetaMod: Source
-   o SourceMod: Greater Than or Equal To 1.5, Less Than 1.7.x
-   o Steam3ID Games: SourceMod: Greater Than or Equal To 1.6.2, Less Than 1.7.x
+   o SourceMod: Greater Than or Equal To 1.5
+   o Steam3ID Games: SourceMod: Greater Than or Equal To 1.6.2
 ```
 
