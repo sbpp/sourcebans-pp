@@ -1,16 +1,16 @@
 ﻿SourceBans [![Build Status](https://travis-ci.org/Sarabveer/SourceBans.svg)](https://travis-ci.org/Sarabveer/SourceBans)
 ============
 
-Global admin and ban management for the Source engine
+Global admin and ban/communication management for the Source engine
 
 
-- Website: [www.sourcebans.net](http://www.sourcebans.net)
+- Website: [SourceBans Fork - AlliedModders](https://forums.alliedmods.net/showthread.php?t=251591)
 
 - Install help: [SourceBans Manual](http://www.sourcebans.net/manual)
 
 - FAQ: [SourceBans FAQ](https://sarabveer.github.io/SourceBans/faq/)
 
-- Having trouble? [SourceBans Forums](https://forums.alliedmods.net/forumdisplay.php?f=152)
+- Having trouble? [SourceBans Forums - AlliedModders](https://forums.alliedmods.net/forumdisplay.php?f=152)
 
 ```
 Requirements:
@@ -20,7 +20,6 @@ Requirements:
    o MySQL 5.0
  * Source Dedicated Server
    o MetaMod: Source
-   o SourceMod: Greater Than or Equal To 1.5
-   o Steam3ID Games: SourceMod: Greater Than or Equal To 1.6.2
+   o SourceMod: Greater Than or Equal To 1.7
 ```
 

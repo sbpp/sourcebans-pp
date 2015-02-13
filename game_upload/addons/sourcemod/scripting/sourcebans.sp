@@ -262,7 +262,7 @@ public OnPluginStart()
 			{
 				PlayerStatus[i] = false;
 			}
-			if(IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i) && GetClientAuthString(i, auth, sizeof(auth)))
+			if(IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i) && GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth)))
 			{
 				OnClientAuthorized(i, auth);
 			}
@@ -354,7 +354,7 @@ public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
 public OnClientAuthorized(client, const String:auth[])
 {
 	decl String:sauth[64];
-	GetClientAuthString(client, sauth, sizeof(sauth));
+	GetClientAuthId(client, AuthId_Steam2, sauth, sizeof(sauth));
 	SBCheckBans(client, sauth);
 }
 
@@ -592,7 +592,7 @@ public Action:CommandBanIp(client, args)
 		strcopy(adminIp, sizeof(adminIp), ServerIp);
 	} else {
 		GetClientIP(client, adminIp, sizeof(adminIp));
-		GetClientAuthString(client, adminAuth, sizeof(adminAuth));
+		GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 	
 	// Pack everything into a data pack so we can retain it
@@ -640,7 +640,7 @@ public Action:CommandUnban(client, args)
 		// setup dummy adminAuth and adminIp for server
 		strcopy(adminAuth, sizeof(adminAuth), "STEAM_ID_SERVER");
 	} else {
-		GetClientAuthString(client, adminAuth, sizeof(adminAuth));
+		GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 	
 	// Pack everything into a data pack so we can retain it
@@ -714,7 +714,7 @@ public Action:CommandAddBan(client, args)
 		strcopy(adminIp, sizeof(adminIp), ServerIp);
 	} else {
 		GetClientIP(client, adminIp, sizeof(adminIp));
-		GetClientAuthString(client, adminAuth, sizeof(adminAuth));
+		GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 	
 	// Pack everything into a data pack so we can retain it
@@ -1232,7 +1232,7 @@ GetIndexBySteamID(const String:sSteamID[])
 	{
 		if(IsValidClient(i))
 		{
-			GetClientAuthString(i, AuthStringToCompareWith, sizeof(AuthStringToCompareWith));
+			GetClientAuthId(i, AuthId_Steam2, AuthStringToCompareWith, sizeof(AuthStringToCompareWith));
 			
 			if(StrEqual(AuthStringToCompareWith, sSteamID, false))
 			{
@@ -1327,7 +1327,7 @@ public VerifyBan2(Handle:owner, Handle:hndl, const String:error[], any:userid)
 		return;
 	}
 	GetClientIP(client, clientIp, sizeof(clientIp));
-	GetClientAuthString(client, clientAuth, sizeof(clientAuth));
+	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	GetClientName(client, clientName, sizeof(clientName));
 	if(SQL_GetRowCount(hndl) > 0)
 	{
@@ -1751,7 +1751,7 @@ public VerifyBan(Handle:owner, Handle:hndl, const String:error[], any:userid)
 		return;
 	}
 	GetClientIP(client, clientIp, sizeof(clientIp));
-	GetClientAuthString(client, clientAuth, sizeof(clientAuth));
+	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	GetClientName(client, clientName, sizeof(clientName));
 	if(SQL_GetRowCount(hndl) > 0)
 	{
@@ -2247,7 +2247,7 @@ public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 public Action:ClientRecheck(Handle:timer, any:client)
 {
 	decl String:Authid[64];
-	if(!PlayerStatus[client] && IsClientConnected(client) && GetClientAuthString(client, Authid, sizeof(Authid)))
+	if(!PlayerStatus[client] && IsClientConnected(client) && GetClientAuthId(client, AuthId_Steam2, Authid, sizeof(Authid)))
 	{
 		OnClientAuthorized(client, Authid);
 	}
@@ -2509,7 +2509,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 		strcopy(adminIp, sizeof(adminIp), ServerIp);
 	} else {
 		GetClientIP(admin, adminIp, sizeof(adminIp));
-		GetClientAuthString(admin, adminAuth, sizeof(adminAuth));
+		GetClientAuthId(admin, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 
 	// target information
@@ -2517,7 +2517,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 
 	GetClientName(target, name, sizeof(name));
 	GetClientIP(target, ip, sizeof(ip));
-	if(!GetClientAuthString(target, auth, sizeof(auth)))
+	if(!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth)))
 		return false;
 
 	new userid = admin ? GetClientUserId(admin) : 0;
@@ -2690,7 +2690,7 @@ stock PrepareBan(client, target, time, String:reason[], size)
 	if(!target || !IsClientInGame(target))
 		return;
 	decl String:authid[64], String:name[32], String:bannedSite[512];
-	if(!GetClientAuthString(target, authid, sizeof(authid)))
+	if(!GetClientAuthId(target, AuthId_Steam2, authid, sizeof(authid)))
 		return;
 	GetClientName(target, name, sizeof(name));
 
