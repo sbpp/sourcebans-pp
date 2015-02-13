@@ -124,7 +124,7 @@ public Action:OnListSourceBansCmd(client, args)
 	}
 	
 	decl String:auth[32];
-	if (!GetClientAuthString(target, auth, sizeof(auth))
+	if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth))
 		|| auth[0] == 'B' || auth[9] == 'L')
 	{
 		ReplyToCommand(client, "Error: Could not retrieve %N's steam id.", target);

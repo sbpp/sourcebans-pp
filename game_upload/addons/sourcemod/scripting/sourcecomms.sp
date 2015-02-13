@@ -278,7 +278,7 @@ public OnClientConnected(client)
 public OnClientPostAdminCheck(client)
 {
     decl String:clientAuth[64];
-    GetClientAuthString(client, clientAuth, sizeof(clientAuth));
+    GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
     GetClientName(client, g_sName[client], sizeof(g_sName[]));
 
     /* Do not check bots or check player with lan steamid. */
@@ -414,7 +414,7 @@ public Action:FWBlock(args)
         if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
         {
             decl String:clientAuth[64];
-            GetClientAuthString(i, clientAuth, sizeof(clientAuth));
+            GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
             if (strcmp(clientAuth, sArg[2], false) == 0)
             {
                 #if defined DEBUG
@@ -458,7 +458,7 @@ public Action:FWUngag(args)
         if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
         {
             decl String:clientAuth[64];
-            GetClientAuthString(i, clientAuth, sizeof(clientAuth));
+            GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
             if (strcmp(clientAuth, sArg[0], false) == 0)
             {
                 #if defined DEBUG
@@ -497,7 +497,7 @@ public Action:FWUnmute(args)
         if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
         {
             decl String:clientAuth[64];
-            GetClientAuthString(i, clientAuth, sizeof(clientAuth));
+            GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
             if (strcmp(clientAuth, sArg[0], false) == 0)
             {
                 #if defined DEBUG
@@ -1620,7 +1620,7 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
         return;
     }
 
-    GetClientAuthString(client, clientAuth, sizeof(clientAuth));
+    GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 
     //SELECT (c.ends - UNIX_TIMESTAMP()) as remaining, c.length, c.type, c.created, c.reason, a.user,
     //IF (a.immunity>=g.immunity, a.immunity, IFNULL(g.immunity,0)) as immunity, c.aid, c.sid, c.authid
@@ -1704,7 +1704,7 @@ public Action:Timer_MuteExpire(Handle:timer, any:userid)
 
     #if defined DEBUG
         decl String:clientAuth[64];
-        GetClientAuthString(client, clientAuth,sizeof(clientAuth));
+        GetClientAuthId(client, AuthId_Steam2, clientAuth,sizeof(clientAuth));
         PrintToServer("Mute expired for %s", clientAuth);
     #endif
 
@@ -1724,7 +1724,7 @@ public Action:Timer_GagExpire(Handle:timer, any:userid)
 
     #if defined DEBUG
         decl String:clientAuth[64];
-        GetClientAuthString(client, clientAuth,sizeof(clientAuth));
+        GetClientAuthId(client, AuthId_Steam2, clientAuth,sizeof(clientAuth));
         PrintToServer("Gag expired for %s", clientAuth);
     #endif
 
@@ -2072,7 +2072,7 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 
     if (client && IsClientInGame(client))
     {
-        GetClientAuthString(client, adminAuth, sizeof(adminAuth));
+        GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
     }
     else
     {
@@ -2086,7 +2086,7 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 
         #if defined DEBUG
             decl String:auth[64];
-            GetClientAuthString(target, auth, sizeof(auth));
+            GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth));
             PrintToServer("Processing block for %s", auth);
         #endif
 
@@ -2242,7 +2242,7 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 
     if (client && IsClientInGame(client))
     {
-        GetClientAuthString(client, adminAuth, sizeof(adminAuth));
+        GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
     }
     else
     {
@@ -2261,7 +2261,7 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
             new target = target_list[i];
 
             if (IsClientInGame(target))
-                GetClientAuthString(target, targetAuth, sizeof(targetAuth));
+                GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
             else
                 continue;
 
@@ -2289,7 +2289,7 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 
         if (IsClientInGame(target))
         {
-            GetClientAuthString(target, targetAuth, sizeof(targetAuth));
+            GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
         }
         else
         {
@@ -2707,7 +2707,7 @@ stock ForcePlayersRecheck()
             #if defined DEBUG
             {
                 decl String:clientAuth[64];
-                GetClientAuthString(i, clientAuth, sizeof(clientAuth));
+                GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
                 PrintToServer("Creating Recheck timer for %s", clientAuth);
             }
             #endif
@@ -2859,7 +2859,7 @@ stock SavePunishment(admin = 0, target, type, length = -1 , const String:reason[
     new String:targetAuth[64];
     if (IsClientInGame(target))
     {
-        GetClientAuthString(target, targetAuth, sizeof(targetAuth));
+        GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
     }
     else
     {
@@ -2871,7 +2871,7 @@ stock SavePunishment(admin = 0, target, type, length = -1 , const String:reason[
     if (admin && IsClientInGame(admin))
     {
         GetClientIP(admin, adminIp, sizeof(adminIp));
-        GetClientAuthString(admin, adminAuth, sizeof(adminAuth));
+        GetClientAuthId(admin, AuthId_Steam2, adminAuth, sizeof(adminAuth));
     }
     else
     {
