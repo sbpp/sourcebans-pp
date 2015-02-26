@@ -181,6 +181,8 @@ native bool:SteamWorks_IsConnected();
 native bool:SteamWorks_SetRule(const String:sKey[], const String:sValue[]);
 native bool:SteamWorks_ClearRules();
 native bool:SteamWorks_ForceHeartbeat();
+native bool:SteamWorks_GetUserGroupStatus(client, groupid);
+native bool:SteamWorks_GetUserGroupStatusAuthID(authid, groupid);
 
 native EUserHasLicenseForAppResult:SteamWorks_HasLicenseForApp(client, app);
 native SteamWorks_GetClientSteamID(client, String:sSteamID[], length);
@@ -251,6 +253,8 @@ forward SteamWorks_SteamServersDisconnected(EResult:result);
 forward Action:SteamWorks_RestartRequested();
 forward SteamWorks_TokenRequested(String:sToken[], maxlen);
 
+forward SteamWorks_OnClientGroupStatus(authid, groupid, bool:isMember, bool:isOfficer);
+
 public Extension:__ext_SteamWorks = 
 {
 	name = "SteamWorks",
@@ -279,6 +283,8 @@ public __ext_SteamWorks_SetNTVOptional()
 	MarkNativeAsOptional("SteamWorks_SetRule");
 	MarkNativeAsOptional("SteamWorks_ClearRules");
 	MarkNativeAsOptional("SteamWorks_ForceHeartbeat");
+	MarkNativeAsOptional("SteamWorks_GetUserGroupStatus");
+	MarkNativeAsOptional("SteamWorks_GetUserGroupStatusAuthID");
 
 	MarkNativeAsOptional("SteamWorks_HasLicenseForApp");
 	MarkNativeAsOptional("SteamWorks_GetClientSteamID");
