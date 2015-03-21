@@ -877,7 +877,11 @@ public HackingSelected(Handle:menu, MenuAction:action, param1, param2)
 
 		if(Pack != INVALID_HANDLE)
 		{
-			SetPackPosition(Pack, 40);
+			ReadPackCell(Pack); // admin index
+			ReadPackCell(Pack); // target index
+			ReadPackCell(Pack); // admin userid
+			ReadPackCell(Pack); // target userid
+			ReadPackCell(Pack); // time
 			new Handle:ReasonPack = Handle:ReadPackCell(Pack);
 
 			if(ReasonPack != INVALID_HANDLE)
@@ -1112,7 +1116,9 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPac
 	{
 		LogToFile(logFile, "Verify Insert Query Failed: %s", error);
 		new admin = ReadPackCell(dataPack);
-		SetPackPosition(dataPack, 32);
+		ReadPackCell(dataPack); // target
+		ReadPackCell(dataPack); // admin userid
+		ReadPackCell(dataPack); // target userid
 		new time = ReadPackCell(dataPack);
 		new Handle:reasonPack = Handle:ReadPackCell(dataPack);
 		decl String:reason[128];
@@ -1141,7 +1147,7 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPac
 	if( !IsClientConnected(client) || IsFakeClient(client) )
 		return;
 	
-	SetPackPosition(dataPack, 24);
+	ReadPackCell(dataPack); // admin userid
 	new UserId = ReadPackCell(dataPack);
 	new time = ReadPackCell(dataPack);
 	new Handle:ReasonPack = Handle:ReadPackCell(dataPack);
@@ -2620,9 +2626,11 @@ stock UTIL_InsertBan(time, const String:Name[], const String:Authid[], const Str
 
 stock UTIL_InsertTempBan(time, const String:name[], const String:auth[], const String:ip[], const String:reason[], const String:adminAuth[], const String:adminIp[], Handle:dataPack)
 {
-	ReadPackCell(dataPack);
+	ReadPackCell(dataPack); // admin index
 	new client = ReadPackCell(dataPack);
-	SetPackPosition(dataPack, 40);
+	ReadPackCell(dataPack); // admin userid
+	ReadPackCell(dataPack); // target userid
+	ReadPackCell(dataPack); // time
 	new Handle:reasonPack = Handle:ReadPackCell(dataPack);
 	if(reasonPack != INVALID_HANDLE)
 	{
