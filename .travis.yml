@@ -1,34 +1,23 @@
-language: bash
+#Use the new container-based infrastructure
+sudo: false
 
+#Install some apt packages needed for spcomp
+addons:
+  apt_packages:
+    - lib32stdc++6
+
+#Set the build environment
 env:
   - VERSION=1.7.0
 
-matrix:
-  fast_finish: true
-
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y gcc-multilib lynx git lib32stdc++6
-
+#And compile!
 before_script:
-  - SMURL="http://www.gsptalk.com/mirror/sourcemod/sourcemod-$VERSION-linux.tar.gz"
-  - wget $SMURL
   - SMFILE="sourcemod-$VERSION-linux.tar.gz"
+  - wget "http://www.gsptalk.com/mirror/sourcemod/$SMFILE" -O game_upload/
+  - cd game_upload
   - tar -xzf $SMFILE
-  - cp game_upload/addons/sourcemod/scripting/sourcebans.sp addons/sourcemod/scripting/
-  - cp game_upload/addons/sourcemod/scripting/sourcecomms.sp addons/sourcemod/scripting/
-  - cp game_upload/addons/sourcemod/scripting/sbchecker.sp addons/sourcemod/scripting/
-  - cp game_upload/addons/sourcemod/scripting/include/sourcebans.inc addons/sourcemod/scripting/include/
-  - cp game_upload/addons/sourcemod/scripting/include/sourcecomms.inc addons/sourcemod/scripting/include/
-  - cp game_upload/addons/sourcemod/scripting/include/SteamWorks.inc addons/sourcemod/scripting/include/
   - cd addons/sourcemod/scripting/
   - chmod +x spcomp
-  - chmod +x compile.sh
 
 script: 
-  - ./compile.sh sourcebans.sp
-  - ./compile.sh sourcecomms.sp
-  - ./compile.sh sbchecker.sp
-
-after_script:
-  - ls compiled/
+  - ./spcomp sourcebans.sp sourcecomms.sp sbchecker.sp
