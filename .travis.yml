@@ -20,8 +20,8 @@ before_script:
   - cp game_upload/addons/sourcemod/scripting/sbchecker.sp addons/sourcemod/scripting/
   - cp game_upload/addons/sourcemod/scripting/include/sourcebans.inc addons/sourcemod/scripting/include/
   - cp game_upload/addons/sourcemod/scripting/include/sourcecomms.inc addons/sourcemod/scripting/include/
-  - cp game_upload/addons/sourcemod/scripting/include/SteamWorks.inc addons/sourcemod/scripting/include/
   - cd addons/sourcemod/scripting/
+  - wget https://github.com/KyleSanderson/SteamWorks/raw/master/Pawn/includes/SteamWorks.inc -O include/SteamWorks.inc
   - chmod +x spcomp
   - chmod +x compile.sh
 
