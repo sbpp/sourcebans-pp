@@ -13,11 +13,11 @@ env:
 #And compile!
 before_script:
   - SMFILE="sourcemod-$VERSION-linux.tar.gz"
-  - wget http://www.gsptalk.com/mirror/sourcemod/$SMFILE -O game_upload/
+  - wget http://www.gsptalk.com/mirror/sourcemod/$SMFILE -O game_upload/$SMFILE
   - cd game_upload
   - tar -xzf $SMFILE
   - cd addons/sourcemod/scripting/
   - chmod +x spcomp
 
 script: 
-  - ./spcomp sourcebans.sp sourcecomms.sp sbchecker.sp
+  - ./compile.sh sourcebans.sp sourcecomms.sp sbchecker.sp
