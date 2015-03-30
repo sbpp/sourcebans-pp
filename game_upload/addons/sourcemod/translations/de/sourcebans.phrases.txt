@@ -1,0 +1,47 @@
+"Phrases"
+{
+	"Banned Check Site"
+	{
+		"de"			"Sie wurden von diesem Server gebannt, weitere Informationen auf {1}"
+	}
+	"DB Connect Fail"
+	{
+		"de"			"Datenbankverbindung fehlgeschlagen. Bitte kontaktieren Sie den Serveradministrator."
+	}
+	"Not In Game"
+	{
+		"de"			"Der Spieler ist nicht im Spiel. Bitte benutzen Sie das Webpanel um ihn zu bannen."
+	}
+	"Ban Not Verified"
+	{
+		"de"			"Dieser Spieler wurde noch nicht verifiziert. Bitte warten Sie 30 Sekunden und versuchen Sie es nochmal."
+	}
+	"Can Not Unban"
+	{
+		"de"			"Sie können nicht vom Server aus entbannen, entbannen Sie auf {1}."
+	}
+	"Can Not Add Ban"
+	{
+		"de"			"Sie können keinen Ban vom Server aus hinzufügen, bannen Sie auf {1}."
+	}
+	"Check Menu"
+	{
+		"de"			"Bitte benutzen Sie das Menü um einen Grund für den Ban auszuwählen."
+	}
+	"Include Reason"
+	{
+		"de"			"Bitte geben Sie einen Grund für den Ban an."
+	}
+	"Ban Fail"
+	{
+		"de"			"Es ist ein Fehler beim bannen des Spielers aufgetreten, bitte versuchen Sie es erneut."
+	}
+	"Chat Reason"
+	{
+		"de"			"Bitte schreiben Sie den Grund für den Ban in den Chat und drücken Sie die Eingabe Taste. Schreiben Sie '!noreason' um abzubrechen."
+	}
+	"Chat Reason Aborted"
+	{
+		"de"			"Der Banvorgang wurde erfolgreich angehalten."
+	}
+}
