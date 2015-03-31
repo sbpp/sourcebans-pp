@@ -17,6 +17,7 @@ before_script:
   - cd game_upload
   - tar -xzf $SMFILE
   - cd addons/sourcemod/scripting/
+  - wget https://github.com/KyleSanderson/SteamWorks/raw/master/Pawn/includes/SteamWorks.inc -O include/SteamWorks.inc
   - chmod +x spcomp
 
 script: 
