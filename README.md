@@ -21,5 +21,6 @@ Requirements:
  * Source Dedicated Server
    o MetaMod: Source
    o SourceMod: Greater Than or Equal To 1.7
+   o SteamWorks Extension
 ```
 
