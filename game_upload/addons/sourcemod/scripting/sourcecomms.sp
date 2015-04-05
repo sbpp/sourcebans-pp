@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "SB-1.5.2F-stable"
+#define PLUGIN_VERSION "SB-1.5.2F-dev"
 #define PREFIX "\x04[SourceComms]\x01 "
 
 #define MAX_TIME_MULTI 30       // maximum mass-target punishment length
