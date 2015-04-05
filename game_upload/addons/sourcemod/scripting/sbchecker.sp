@@ -25,7 +25,7 @@
 // *************************************************************************
 #include <sourcemod>
 
-#define VERSION "SB-1.5.2F-dev"
+#define VERSION "SB-1.5.2F-stable"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 
 new String:g_DatabasePrefix[10] = "sb";
