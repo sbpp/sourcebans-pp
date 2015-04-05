@@ -37,7 +37,7 @@ if (isset($_GET['page']) && $_GET['page'] > 0)
 	$page = intval($_GET['page']);
 	$pagelink = "&page=".$page;
 }
-
+$GLOBALS['db']->Execute("set session optimizer_switch='block_nested_loop=off';");
 if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 {
 	if ($_GET['key'] != $_SESSION['banlist_postkey'])
@@ -459,10 +459,9 @@ while (!$res->EOF)
 	}
 	else
 	{
-		if($res->fields['ban_length'] == 0)
-			$data['class'] = "listtable_1_permanent";
-		else
-			$data['class'] = "listtable_1_banned";
+		$data['unbanned'] = false;
+		$data['class'] = "listtable_1";
+		$data['ub_reason'] = "";
 	}
 
 	$data['layer_id'] = 'layer_'.$res->fields['ban_id'];
