@@ -1,7 +1,7 @@
 ﻿SourceBans [![Build Status](https://travis-ci.org/Sarabveer/SourceBans.svg)](https://travis-ci.org/Sarabveer/SourceBans)
 ============
 
-Global admin and ban/communication management for the Source engine
+Global admin, ban, and communication management system for the Source engine
 
 
 - Website: [SourceBans Fork - AlliedModders](https://forums.alliedmods.net/showthread.php?t=251591)
@@ -17,7 +17,7 @@ Requirements:
  * Webserver
    o PHP 5.4 or higher
      * ini setting: memory_limit greater than or equal to 64M
-   o MySQL 5.0
+   o MySQL 5.6
  * Source Dedicated Server
    o MetaMod: Source
    o SourceMod: Greater Than or Equal To 1.7
