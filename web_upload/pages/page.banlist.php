@@ -37,7 +37,10 @@ if (isset($_GET['page']) && $_GET['page'] > 0)
 	$page = intval($_GET['page']);
 	$pagelink = "&page=".$page;
 }
-$GLOBALS['db']->Execute("set session optimizer_switch='block_nested_loop=off';");
+if (version_compare($GLOBALS['db_version'], "5.6.0") >= 0)
+{
+  $GLOBALS['db']->Execute("set session optimizer_switch='block_nested_loop=off';");
+}
 if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id']))
 {
 	if ($_GET['key'] != $_SESSION['banlist_postkey'])
