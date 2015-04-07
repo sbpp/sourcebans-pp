@@ -117,6 +117,9 @@ $GLOBALS['log'] = new CSystemLog();
 if( !is_object($GLOBALS['db']) )
 				die();
 				
+$mysql_server_info = $GLOBALS['db']->ServerInfo();
+$GLOBALS['db_version'] = $mysql_server_info['version'];
+
 $debug = $GLOBALS['db']->Execute("SELECT value FROM `".DB_PREFIX."_settings` WHERE setting = 'config.debug';");
 if($debug->fields['value']=="1") {
 	define("DEVELOPER_MODE", true);
