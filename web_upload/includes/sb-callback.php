@@ -2613,7 +2613,7 @@ function RehashAdmins($server, $do=0)
 			}
 			return $objResponse;
 		}
-		$ret = $r->rconCommand("sm_rehash");
+		$ret = $r->rconCommand("sm_reloadadmins");
 
 		$objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='green'>successful</font>.<br />");
 		if($do >= sizeof($servers)-1) {
