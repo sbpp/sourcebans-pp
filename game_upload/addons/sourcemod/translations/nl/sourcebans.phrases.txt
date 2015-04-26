@@ -1,0 +1,47 @@
+"Phrases"
+{
+	"Banned Check Site"
+	{
+		"nl"			"U bent gebanned van deze server, kijk op {1} voor meer informatie"
+	}
+	"DB Connect Fail"
+	{
+		"nl"			"Database connectie is mislukt. Neem contact op met uw server beheerder."
+	}
+	"Not In Game"
+	{
+		"nl"			"De speler is niet in het spel, gaat u alstublieft naar het web panel om de speler op de banlijst te plaatsen."
+	}
+	"Ban Not Verified"
+	{
+		"nl"			"Deze speler zijn ban is niet geverifieerd. Wacht u alstublieft 30 seconden voordat u het opnieuw probeerd."
+	}
+	"Can Not Unban"
+	{
+		"nl"			"U kunt de speler niet vanuit de server unbannen, bezoek {1} om te unbannen."
+	}
+	"Can Not Add Ban"
+	{
+		"nl"			"U kunt geen ban toevoegen vanuit de server, bezoek {1} om de ban toe te voegen."
+	}
+	"Check Menu"
+	{
+		"nl"			"Controleerdt u alstublieft het menu om een reden te selecteren voor de ban."
+	}
+	"Include Reason"
+	{
+		"nl"			"Voegt u alstublieft een reden toe voor het bannen van deze persoon."
+	}
+	"Ban Fail"
+	{
+		"nl"			"Er is een fout opgetreden tijdens de ban procedure, probeert u het alstublieft nogmaals."
+	}
+	"Chat Reason"
+	{
+		"nl"			"Typ alstublieft de reden voor de ban in chat and druk op enter. Typ '!noreason' om te annuleren."
+	}
+	"Chat Reason Aborted"
+	{
+		"nl"			"De ban procedure is succesvol gestopt."
+	}
+}

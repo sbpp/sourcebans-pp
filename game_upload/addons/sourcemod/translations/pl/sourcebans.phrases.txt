@@ -1,0 +1,39 @@
+"Phrases"
+{
+	"Banned Check Site"
+	{
+		"pl"			"Zostałeś zbanowany na tym serwerze, odwiedź {1} aby poznać szczegóły"
+	}
+	"DB Connect Fail"
+	{
+		"pl"			"Błąd połączenia z bazą danych. Skontaktuj się z adminem serwera."
+	}
+	"Not In Game"
+	{
+		"pl"			"Gracz nie znajduje się w grze, odwiedź panel www aby go zbanować."
+	}
+	"Ban Not Verified"
+	{
+		"pl"			"Gracz nie został jeszcze zweryfikowany. Spróbuj ponownie za 30 sekund."
+	}
+	"Can Not Unban"
+	{
+		"pl"			"Nie możesz odbanować z serwera, odwiedź {1} by zdjąć bana."
+	}
+	"Can Not Add Ban"
+	{
+		"pl"			"Nie możesz dodać bana z serwera, odwiedź {1} by dodać bana."
+	}
+	"Check Menu"
+	{
+		"pl"			"Sprawdź menu aby wybrać powód bana."
+	}
+	"Include Reason"
+	{
+		"pl"			"Proszę dodać powód bana."
+	}
+	"Ban Fail"
+	{
+		"pl"			"Błąd przy dodawaniu bana, spróbuj ponownie."
+	}
+}
