@@ -304,7 +304,7 @@ stock ReadConfig()
 	}
 
 	decl String:ConfigFile[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans/sourcebans.cfg");
+	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans.cfg");
 
 	if(FileExists(ConfigFile))
 	{
