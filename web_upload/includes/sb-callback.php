@@ -2293,10 +2293,10 @@ function SendMail($subject, $message, $type, $id)
 function CheckVersion()
 {
 	$objResponse = new xajaxResponse();
-	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans/");
+	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/");
 
 	if(defined('SB_GIT'))
-		$relgit = @file_get_contents("https://sarabveer.github.io/SourceBans/dev/");
+		$relgit = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/dev/");
 
 	if(version_compare($relver, SB_VERSION) > 0)
 		$versmsg = "<span style='color:#aa0000;'><strong>A new release is available.</strong></span>";
@@ -2313,9 +2313,9 @@ function CheckVersion()
 	if(defined('SB_GIT'))
 	{
 		if(intval($relgit) > GetGITRev())
-			$svnmsg = "<span style='color:#aa0000;'><strong>A new Git commit is available.</strong></span>";
+			$svnmsg = "<span style='color:#aa0000;'><strong>A new Dev release is available.</strong></span>";
 		else
-			$svnmsg = "<span style='color:#00aa00;'><strong>You have the latest Git Commit.</strong></span>";
+			$svnmsg = "<span style='color:#00aa00;'><strong>You have the latest Dev release.</strong></span>";
 
 		if(strlen($relgit)>8 || $relgit=="") {
 			$relgit = "<span style='color:#aa0000;'>Error</span>";

@@ -1,4 +1,4 @@
-﻿SourceBans [![Build Status](https://travis-ci.org/Sarabveer/SourceBans.svg)](https://travis-ci.org/Sarabveer/SourceBans)
+﻿SourceBans [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork)
 ============
 
 Global admin, ban, and communication management system for the Source engine
@@ -8,7 +8,7 @@ Global admin, ban, and communication management system for the Source engine
 
 - Install help: [SourceBans Manual](http://www.sourcebans.net/manual)
 
-- FAQ: [SourceBans FAQ](https://sarabveer.github.io/SourceBans/faq/)
+- FAQ: [SourceBans FAQ](https://sarabveer.github.io/SourceBans-Fork/faq/)
 
 - Having trouble? [SourceBans Forums - AlliedModders](https://forums.alliedmods.net/forumdisplay.php?f=152)
 
