@@ -78,7 +78,7 @@ new Handle:g_hOnConnect;
 new Handle:g_hOnReload;
 new String:g_sConfigFile[PLATFORM_MAX_PATH];
 new String:g_sDatabasePrefix[16];
-new String:g_sServerIp[16];
+new String:g_sServerIp[32];
 
 
 /**
