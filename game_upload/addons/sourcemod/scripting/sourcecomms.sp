@@ -2563,12 +2563,12 @@ stock ReadConfig()
     }
 
     decl String:ConfigFile1[PLATFORM_MAX_PATH], String:ConfigFile2[PLATFORM_MAX_PATH];
-    BuildPath(Path_SM, ConfigFile1, sizeof(ConfigFile1), "configs/sourcebans.cfg");
-    BuildPath(Path_SM, ConfigFile2, sizeof(ConfigFile2), "configs/sourcecomms.cfg");
+    BuildPath(Path_SM, ConfigFile1, sizeof(ConfigFile1), "configs/sourcebans/sourcebans.cfg");
+    BuildPath(Path_SM, ConfigFile2, sizeof(ConfigFile2), "configs/sourcebans/sourcecomms.cfg");
 
     if (FileExists(ConfigFile1))
     {
-        PrintToServer("%sLoading configs/sourcebans.cfg config file", PREFIX);
+        PrintToServer("%sLoading configs/sourcebans/sourcebans.cfg config file", PREFIX);
         InternalReadConfig(ConfigFile1);
     }
     else

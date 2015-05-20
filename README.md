@@ -1,4 +1,4 @@
-﻿SourceBans [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork)
+﻿SourceBans-Fork [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork)
 ============
 
 Global admin, ban, and communication management system for the Source engine
@@ -21,6 +21,5 @@ Requirements:
  * Source Dedicated Server
    o MetaMod: Source
    o SourceMod: Greater Than or Equal To 1.7
-   o SteamWorks Extension
 ```
 

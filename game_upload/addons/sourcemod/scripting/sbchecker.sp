@@ -35,7 +35,7 @@ new Handle:g_DB;
 public Plugin:myinfo = 
 {
 	name = "SourceBans Checker",
-	author = "psychonic & Ca$h Munny, Sarabveer(VEER™)",
+	author = "psychonic, Ca$h Munny, Sarabveer(VEER™)",
 	description = "Notifies admins of prior bans from Sourcebans upon player connect.",
 	version = VERSION,
 	url = "http://www.nicholashastings.com"
@@ -304,7 +304,7 @@ stock ReadConfig()
 	}
 
 	decl String:ConfigFile[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans.cfg");
+	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans/sourcebans.cfg");
 
 	if(FileExists(ConfigFile))
 	{
