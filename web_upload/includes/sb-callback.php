@@ -2293,7 +2293,7 @@ function SendMail($subject, $message, $type, $id)
 function CheckVersion()
 {
 	$objResponse = new xajaxResponse();
-	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/");
+	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/rel/");
 
 	if(defined('SB_GIT'))
 		$relgit = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/dev/");
