@@ -127,7 +127,7 @@ public Plugin:myinfo =
 	author = "SourceBans Development Team, Sarabveer(VEER™)",
 	description = "Advanced ban management for the Source engine",
 	version = SB_VERSION,
-	url = "http://www.sourcebans.net"
+	url = "https://sarabveer.github.io/SourceBans-Fork/"
 };
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
@@ -217,7 +217,7 @@ public OnPluginStart()
 			CloseHandle(ReasonMenuHandle);
 		if(HackingMenuHandle != INVALID_HANDLE)
 			CloseHandle(HackingMenuHandle);
-		LogToFile(logFile, "Database failure: Could not find Database conf \"sourcebans\". See FAQ: http://sourcebans.net/node/19");
+		LogToFile(logFile, "Database failure: Could not find Database conf \"sourcebans\". See FAQ: https://sarabveer.github.io/SourceBans-Fork/faq/");
 		SetFailState("Database failure: Could not find Database conf \"sourcebans\"");
 		return;
 	}
@@ -963,7 +963,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	if (hndl == INVALID_HANDLE)
 	{
-		LogToFile(logFile, "Database failure: %s. See FAQ: http://www.sourcebans.net/node/20", error);
+		LogToFile(logFile, "Database failure: %s. See FAQ: https://sarabveer.github.io/SourceBans-Fork/faq/", error);
 		g_bConnecting = false;
 		
 		// Parse the overrides backup!
