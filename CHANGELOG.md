@@ -1,4 +1,4 @@
-SourceBans (FORK) Change Log
+SourceBans-Fork Change Log
 ============
 
 ```
@@ -10,12 +10,27 @@ Legend:
 ? = Other stuff
 ```
 
+(29/05/15): Version 1.5.2F
+-----------------------
+01. * Changed licence to GNU AGPL v3
+02. * Replaced GetClientAuthString with GetClientAuthId for SourceMod 1.7
+03. * Added IP Banning with SourceSleuth
+04. + Updated ADOdb Library to 5.19
+05. + Updated TinyMCE Library to 3.5.11
+06. - SourceMod 1.6.x and below are not supported
+07. - Removed FamilySharing Ban Evasion Detection
+08. - MariaDB not does not work anymore (Never was supported anyways)
+09. ! Fixed Ban List lagging on MySQL 5.6+ 
+10. ! Fixed Plugin Showing DataPack error
+11. ! Fixed KickId in Webpanel not working when trying to use Steam3
+12. ? Optimized and updated IpToCountry.csv
+
 (29/01/15): Version 1.5.1F
 -----------------------
-01. * We are using GNU GPL v3 only, no later versions.
+01. * Changed licence to GNU GPL v3
 02. * Added SourceBans Connection Debugger
 03. * Added SourceComms Search Box 
-04. * Re-made SourceBans Logo in Footer
+04. + Re-made SourceBans Logo in Footer
 05. ! Fixed getdemo.php spewing errors
 06. ! Fixed Invalid Query in SB Plugin
 07. ! Fixed parsing rcon status in CS:GO

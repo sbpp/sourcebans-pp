@@ -1,0 +1,15 @@
+"Phrases"
+{
+	"sourcesleuth_banreason"
+	{
+		"#format"	""
+		"en"		"Duplicate account"
+	}
+	
+	"sourcesleuth_admintext"
+	{
+		"#format"	"{1:N},{2:s},{3:s}"
+		"en"		"Player {1} (ID: {2} | IP: {3}) has active bans on IP: {4}"
+		"sv"		"Spelare {1} (ID: {2} | IP: {3}) har aktiva bannlysningar på IP: {3}"
+	}
+}

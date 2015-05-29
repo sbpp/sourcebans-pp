@@ -18,10 +18,10 @@ define('theme_name', "SourceBans Default Theme (Legacy)");
 define('theme_author', "SourceBans Development Team, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.5.1F");
+define('theme_version', "1.5.2F");
 
 // Set the link of the theme here
-define('theme_link', "http://www.sourcebans.net");
+define('theme_link', "https://sarabveer.github.io/SourceBans-Fork/");
 
 // Set the screenshot filename for your theme (must be inside your theme folder) 
 // Must be:  250px wide  X 170px High
