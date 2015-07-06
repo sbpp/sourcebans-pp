@@ -38,19 +38,25 @@ if(isset($_POST['action']) && $_POST['action'] == "importBans")
 					$GLOBALS['db']->Execute($pre, array("", $line[2], "Imported Ban", 0, 0, "banned_ip.cfg import", $_COOKIE['aid'], $_SERVER['REMOTE_ADDR'], 1));
 				}
 			} else { // if its an banned_user.cfg
-				if (!validate_steam($line[2]))
-					continue;
-				$check = $GLOBALS['db']->Execute("SELECT authid FROM `" . DB_PREFIX . "_bans` WHERE authid = ? AND RemoveType IS NULL", array($line[2]));
-
+				if (!validate_steam($line[2])) {
+					if (($accountId = getAccountId($line[2])) !== -1) {
+						$steam = renderSteam2($accountId, 0);
+					} else {
+						continue;
+					}
+				} else {
+					$steam = $line[2];
+				}
+				$check = $GLOBALS['db']->Execute("SELECT authid FROM `" . DB_PREFIX . "_bans` WHERE authid = ? AND RemoveType IS NULL", array($steam));
 				if($check->RecordCount() == 0)
 				{
-					if(!isset($_POST['friendsname']) || $_POST['friendsname'] != "on" || ($pname = GetCommunityName($line[2])) == "")
+					if(!isset($_POST['friendsname']) || $_POST['friendsname'] != "on" || ($pname = GetCommunityName($steam)) == "")
 						$pname = "Imported Ban";
 					
 					$bancnt++;
 					$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
 										(UNIX_TIMESTAMP(),?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)");
-					$GLOBALS['db']->Execute($pre, array($line[2], "", $pname, 0, 0, "banned_user.cfg import", $_COOKIE['aid'], $_SERVER['REMOTE_ADDR'], 0));
+					$GLOBALS['db']->Execute($pre, array($steam, "", $pname, 0, 0, "banned_user.cfg import", $_COOKIE['aid'], $_SERVER['REMOTE_ADDR'], 0));
 				}
 			}
 		}
