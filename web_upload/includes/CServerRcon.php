@@ -96,7 +96,11 @@ class CServerRcon
       else 
         $packet = $this->_sock_read($size["Size"]);
 
-      array_push($retarray,unpack("V1ID/V1Reponse/a*S1/a*S2",$packet));
+      // PHP 5.5 added the 'Z' format code to match Perl's behaviour. Could be used here.
+      $data = unpack("V1ID/V1Reponse",$packet);
+      $data["S1"] = substr($packet, 8, strlen($packet)-10);
+      $data["S2"] = ""; // Compatibility
+      array_push($retarray,$data);
     }
 
     return $retarray;
@@ -106,18 +110,19 @@ class CServerRcon
   {
     $Packets = $this->_PacketRead();
 
+    $ret = array();
     foreach($Packets as $pack) 
     {
       if (isset($ret[$pack['ID']])) 
       {
         $ret[$pack['ID']]['S1'] .= $pack['S1'];
-        $ret[$pack['ID']]['S2'] .= $pack['S1'];
+        $ret[$pack['ID']]['S2'] .= $pack['S2'];
       }
       else
       {
         $ret[$pack['ID']] = array('Reponse' => $pack['Reponse'],
                                   'S1' => $pack['S1'],
-                                  'S2' =>	$pack['S2'],);
+                                  'S2' => $pack['S2'],);
       }
     }
 
@@ -132,8 +137,8 @@ class CServerRcon
 
   public function rconCommand($command)
   {
-	  $this->sendCommand($command);
-	  $ret = $this->Read();
-	  return $ret[2]['S1'];
+      $this->sendCommand($command);
+      $ret = $this->Read();
+      return $ret[2]['S1'];
   }
 }
