@@ -1,21 +1,21 @@
 // *************************************************************************
-//  This file is part of SourceBans (FORK).
+//  This file is part of SourceBans-Fork.
 //
 //  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
-//  SourceBans (FORK) is free software: you can redistribute it and/or modify
+//  SourceBans-Fork is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
 //  
-//  SourceBans (FORK) is distributed in the hope that it will be useful,
+//  SourceBans-Fork is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //  
 //  You should have received a copy of the GNU Affero General Public License
-//  along with SourceBans (FORK).  If not, see <http://www.gnu.org/licenses/>.
+//  along with SourceBans-Fork. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file incorporates work covered by the following copyrights:  
+//  This file incorporates work covered by the following copyright(s):
 //
 //   SourceBans Checker 1.0.2
 //   Copyright (C) 2010-2013 Nicholas Hastings 
@@ -25,7 +25,7 @@
 // *************************************************************************
 #include <sourcemod>
 
-#define VERSION "SB-1.5.2F"
+#define VERSION "SBF-1.5.2F-R2-dev"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 
 new String:g_DatabasePrefix[10] = "sb";

@@ -81,11 +81,11 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 // ---------------------------------------------------
 //  Initial setup
 // ---------------------------------------------------
-# SourceBans REV: 544 #
+# SourceBans REV: 545 #
 define('SB_GIT', true);
 if(!defined('SB_VERSION')){
 	define('SB_VERSION', '1.5.2F-R2-dev');
-	define('SB_GITRev', '$Git: 204 $');
+	define('SB_GITRev', '$Git: 205 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');

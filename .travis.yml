@@ -8,8 +8,7 @@ addons:
 
 #Set the build environment
 env:
-  - SOURCEMOD=1.6.3
-  - SOURCEMOD=1.7.1
+  - SOURCEMOD=1.7.2
 
 #And compile!
 before_script:
@@ -22,4 +21,4 @@ before_script:
   - chmod +x spcomp
 
 script:
-  - ./compile.sh sourcebans.sp sourcecomms.sp sbchecker.sp
+  - ./compile.sh sourcebans.sp sourcecomms.sp sbchecker.sp SourceSleuth.sp

@@ -1,21 +1,21 @@
 // *************************************************************************
-//  This file is part of SourceBans (FORK).
+//  This file is part of SourceBans-Fork.
 //
 //  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
-//  SourceBans (FORK) is free software: you can redistribute it and/or modify
+//  SourceBans-Fork is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
 //  
-//  SourceBans (FORK) is distributed in the hope that it will be useful,
+//  SourceBans-Fork is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //  
 //  You should have received a copy of the GNU Affero General Public License
-//  along with SourceBans (FORK).  If not, see <http://www.gnu.org/licenses/>.
+//  along with SourceBans-Fork. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file incorporates work covered by the following copyright:  
+//  This file incorporates work covered by the following copyright(s):   
 //
 //   SourceSleuth 1.3 fix
 //   Copyright (C) 2013-2015 ecca
@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "SB-1.5.2F"
+#define PLUGIN_VERSION "SBF-1.5.2F-R2-dev"
 
 //- Handles -//
 new Handle:hDatabase = INVALID_HANDLE;

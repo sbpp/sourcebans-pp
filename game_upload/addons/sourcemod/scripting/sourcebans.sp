@@ -1,21 +1,21 @@
 // *************************************************************************
-//  This file is part of SourceBans (FORK).
+//  This file is part of SourceBans-Fork.
 //
 //  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
-//  SourceBans (FORK) is free software: you can redistribute it and/or modify
+//  SourceBans-Fork is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
 //  
-//  SourceBans (FORK) is distributed in the hope that it will be useful,
+//  SourceBans-Fork is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //  
 //  You should have received a copy of the GNU Affero General Public License
-//  along with SourceBans (FORK).  If not, see <http://www.gnu.org/licenses/>.
+//  along with SourceBans-Fork. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file incorporates work covered by the following copyrights: 
+//  This file incorporates work covered by the following copyright(s): 
 //
 //   SourceBans 1.4.11
 //   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
@@ -31,7 +31,7 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 
-#define SB_VERSION "1.5.2F"
+#define SB_VERSION "1.5.2F-R2-dev"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -123,7 +123,7 @@ new serverID = -1;
 
 public Plugin:myinfo =
 {
-	name = "SourceBans",
+	name = "SourceBans-Fork",
 	author = "SourceBans Development Team, Sarabveer(VEER™)",
 	description = "Advanced ban management for the Source engine",
 	version = SB_VERSION,
@@ -157,7 +157,7 @@ public OnPluginStart()
 	
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
-	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sbf_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	RegServerCmd("sm_rehash",sm_rehash,"Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
