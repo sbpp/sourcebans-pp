@@ -3,8 +3,9 @@
 
 Global admin, ban, and communication management system for the Source engine
 
+- Website: [SourceBans-Fork](https://sarabveer.github.io/SourceBans-Fork/)
 
-- Website: [SourceBans Fork - AlliedModders](https://forums.alliedmods.net/showthread.php?t=251591)
+- Forum Thread: [SourceBans Fork - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
 
 - Install help: [SourceBans Manual](http://www.sourcebans.net/manual)
 
