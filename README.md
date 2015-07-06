@@ -16,7 +16,7 @@ Global admin, ban, and communication management system for the Source engine
 ```
 Requirements:
  * Webserver
-   o PHP 5.4 or higher
+   o PHP 5.5 or higher
      * ini setting: memory_limit greater than or equal to 64M
    o MySQL 5.0
  * Source Dedicated Server
