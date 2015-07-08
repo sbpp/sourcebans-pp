@@ -1044,7 +1044,7 @@ function ShowBox(title, msg, color, redir, noclose)
 	FadeElIn('dialog-placement', 750);
 	
 	var jsCde = "closeMsg('" + redir + "');";
-	$('dialog-control').setHTML("<input name='dialog-close' onclick=\""+jsCde+"\" class='btn ok' onmouseover=\"ButtonOver('dialog-close')\" onmouseout='ButtonOver(\"dialog-close\")' id=\"dialog-close\" value=\"Okay\" type=\"button\">");
+	$('dialog-control').setHTML("<input name='dialog-close' onclick=\""+jsCde+"\" class='btn ok' onmouseover=\"ButtonOver('dialog-close')\" onmouseout='ButtonOver(\"dialog-close\")' id=\"dialog-close\" value=\"OK\" type=\"button\">");
 	$('dialog-control').setStyle('display', 'block');
 	
 	if(!noclose)

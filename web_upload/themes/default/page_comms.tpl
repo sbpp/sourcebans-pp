@@ -50,7 +50,7 @@
   {/foreach}
 </table>
 {else}
-<h3 align="left">Communicatinons Blocklist Overview - <i>Total Blocks: {$total_bans}</i></h3>
+<h3 align="left">Communications Blocklist Overview - <i>Total Blocks: {$total_bans}</i></h3>
 <br />
 {php} require (TEMPLATES_PATH . "/admin.comms.search.php");{/php}
 <br />

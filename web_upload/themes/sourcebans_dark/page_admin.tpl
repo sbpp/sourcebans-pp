@@ -71,7 +71,7 @@
 			{/if}		
 		</td>
 		<td>&nbsp;</td>
-		<td>Connection blocks: <strong>{$total_blocks}</strong></td>
+		<td>Connections Blocked: <strong>{$total_blocks}</strong></td>
 	</tr>
 	<tr>
 		<td id='versionmsg'>Please Wait...</td>
@@ -85,13 +85,13 @@
 	</tr>
 	<tr>
 		<td>Total Servers: <strong>{$total_servers}</strong></td>
-		<td>Total protests: <strong>{$total_protests}</strong></td>
-		<td>Total submissions: <strong>{$total_submissions}</strong></td>
+		<td>Pending Protests: <strong>{$total_protests}</strong></td>
+		<td>Pending Submissions: <strong>{$total_submissions}</strong></td>
 	</tr>
 	<tr>
 		<td>&nbsp;</td>
-		<td>Archived protests: <strong>{$archived_protests}</strong></td>
-		<td>Archived submissions: <strong>{$archived_submissions}</strong></td>
+		<td>Archived Protests: <strong>{$archived_protests}</strong></td>
+		<td>Archived Submissions: <strong>{$archived_submissions}</strong></td>
 	</tr>
 	<tr>
 		<td>&nbsp;</td>

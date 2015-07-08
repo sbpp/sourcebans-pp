@@ -75,7 +75,7 @@
 			{/if}		
 		</td>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">&nbsp;</td>
-		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Connection blocks: <strong>{$total_blocks}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Connections Blocked: <strong>{$total_blocks}</strong></td>
 	</tr>
 	<tr>
 		<td class="listtable_1" id='versionmsg' style="border-right: 3px solid #CFCAC6;">Please Wait...</td>
@@ -94,13 +94,13 @@
 	</tr>
 	<tr>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">Total Servers: <strong>{$total_servers}</strong></td>
-		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Total protests: <strong>{$total_protests}</strong></td>
-		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total submissions: <strong>{$total_submissions}</strong></td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Pending Protests: <strong>{$total_protests}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Pending Submissions: <strong>{$total_submissions}</strong></td>
 	</tr>
 	<tr>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">&nbsp;</td>
-		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Archived protests: <strong>{$archived_protests}</strong></td>
-		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Archived submissions: <strong>{$archived_submissions}</strong></td>
+		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Archived Protests: <strong>{$archived_protests}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Archived Submissions: <strong>{$archived_submissions}</strong></td>
 	</tr>
 	<tr>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">&nbsp;</td>

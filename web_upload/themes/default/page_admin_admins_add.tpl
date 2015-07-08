@@ -30,7 +30,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Steam ID" message="This is the admins 'STEAM' id. This must be set so that admins can use their admin rights ingame."}Admin Steam ID / Community ID
+		    			{help_icon title="Steam ID" message="This is the admins 'STEAM' id. This must be set so that admins can use their admin rights ingame."}Admin Steam ID
 		    		</div>
 		    	</td>
 		    	<td>

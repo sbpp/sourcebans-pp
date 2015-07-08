@@ -18,7 +18,7 @@ define('theme_name', "SourceBans Default Theme");
 define('theme_author', "IceMan, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.2-S");
+define('theme_version', "1.3-S");
 
 // Set the link of the theme here
 define('theme_link', "https://forums.alliedmods.net/showthread.php?t=252533");
