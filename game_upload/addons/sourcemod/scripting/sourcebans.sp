@@ -30,8 +30,11 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
+#include <updater>
 
-#define SB_VERSION "1.5.2F-R2-dev"
+#define SB_VERSION "1.5.2F-R2-dev-git208"
+
+#define UPDATE_URL "https://sarabveer.github.io/SourceBans-Fork/updater/updatefile.txt"
 
 //GLOBAL DEFINES
 #define YELLOW				0x01
@@ -250,6 +253,19 @@ public OnPluginStart()
 			}
 		}
 	}
+	
+	if (LibraryExists("updater"))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
+}
+
+public OnLibraryAdded(const String:name[])
+{
+    if (StrEqual(name, "updater"))
+    {
+        Updater_AddPlugin(UPDATE_URL);
+    }
 }
 
 public OnAllPluginsLoaded()
