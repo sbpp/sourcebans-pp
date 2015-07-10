@@ -25,6 +25,7 @@
 					<input type="hidden" name="database" value="<?php echo $_POST['database']?>">
 					<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 					<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
+					<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
 				</form>
 				<script>
 				$('send').submit();
@@ -81,6 +82,13 @@ Hover your mouse over the '?' buttons to see an explanation of the field.<br /><
     <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Prefix", "Type a prefix you want to use for the tables");?>Table Prefix</div></td>
     <td><div align="left">
   	 <input type="text" TABINDEX=1 class="inputbox" id="prefix" name="prefix" value="<?php echo isset($_POST['prefix'])?$_POST['prefix']:'sb';?>" />
+    </div><div id="database.msg" style="color:#CC0000;"></div></td>
+  </tr>
+  
+  <tr>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Steam API Key", "Copy & Paste Your Steam API Key Here");?>Steam API Key</div></td>
+    <td><div align="left">
+  	 <input type="text" TABINDEX=1 class="inputbox" id="apikey" name="apikey" value="<?php echo isset($_POST['apikey'])?$_POST['apikey']:'';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>
   </tr>
   
