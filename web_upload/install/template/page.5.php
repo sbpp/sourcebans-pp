@@ -14,13 +14,13 @@
  */
 if(!defined('IN_SB')){echo 'You should not be here. Only follow links!';die();}
 
-define('DB_HOST', '{server}');   			// The host/ip to your SQL server
-define('DB_USER', '{user}');					// The username to connect with
+define('DB_HOST', '{server}');   					// The host/ip to your SQL server
+define('DB_USER', '{user}');						// The username to connect with
 define('DB_PASS', '{pass}');						// The password
 define('DB_NAME', '{db}');  						// Database name	
 define('DB_PREFIX', '{prefix}');					// The table prefix for SourceBans
 define('DB_PORT','{port}');							// The SQL port (Default: 3306)
-$STEAMAPIKEY = "{steamapikey}";				      // Steam API Key for Shizz
+define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
 
 //define('DEVELOPER_MODE', true);			// Use if you want to show debugmessages
 //define('SB_MEM', '128M'); 				// Override php memory limit, if isn't enough (Banlist is just a blank page)
