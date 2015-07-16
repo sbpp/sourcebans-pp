@@ -226,7 +226,7 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 				case LENGTH_NOTIFY:
 				{
 					/* Notify Admins when a client with an ip on the bans list connects */
-					PrintToAdmins([SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
+					PrintToAdmins("[SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
 				}
 			}
 		}
