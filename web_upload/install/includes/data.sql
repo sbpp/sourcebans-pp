@@ -26,7 +26,7 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe
 UPDATE `{prefix}_mods` SET `mid` = '0' WHERE `name` = 'Web';
 
 INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
-('dash.intro.text', '<img src="images/logo-large.jpg" border="0" width="800" height="126" /><h3>Your new SourceBans install</h3><p>SourceBans successfully installed!</p>'),
+('dash.intro.text', '<center><p>Your new SourceBans install</p><p>SourceBans successfully installed!</center>'),
 ('dash.intro.title', 'Your SourceBans install'),
 ('dash.lognopopup', '0'),
 ('banlist.bansperpage', '30'),
