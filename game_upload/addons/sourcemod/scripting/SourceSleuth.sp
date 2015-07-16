@@ -31,6 +31,11 @@
 
 #define PLUGIN_VERSION "SBF-1.5.2F-R2-dev"
 
+#define LENGTH_ORIGINAL 1
+#define LENGTH_CUSTOM 2
+#define LENGTH_DOUBLE 3
+#define LENGTH_NOTIFY 4
+
 //- Handles -//
 new Handle:hDatabase = INVALID_HANDLE;
 new Handle:g_cVar_actions = INVALID_HANDLE;
@@ -196,7 +201,7 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 		{
 			switch (GetConVarInt(g_cVar_actions))
 			{
-				case 1:
+				case LENGTH_ORIGINAL:
 				{
 					new length = SQL_FetchInt(hndl, 6);
 					new time = length*60;
@@ -205,7 +210,7 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 					
 					SBBanPlayer(0, client, time, Reason);
 				}
-				case 2:
+				case LENGTH_CUSTOM:
 				{
 					new time = GetConVarInt(g_cVar_banduration);
 
@@ -213,7 +218,7 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 					
 					SBBanPlayer(0, client, time, Reason);
 				}
-				case 3:
+				case LENGTH_DOUBLE:
 				{
 					new length = SQL_FetchInt(hndl, 6);
 					new time = length/60*2;
@@ -222,7 +227,7 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 					
 					SBBanPlayer(0, client, time, Reason);
 				}
-				case 4:
+				case LENGTH_NOTIFY:
 				{
 					Format(text, sizeof(text), "[SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
 					PrintToAdmins("%s", text);
