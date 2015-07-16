@@ -45,7 +45,7 @@ header('Content-type: text/css');
 }
 
 body { 
-	background-color: #CFCAC6;
+	background-color: #999b9d;
 	color: #444;
 	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
 	font-size: 11px;
@@ -289,12 +289,11 @@ div.dialog-control{
 	}
 	
 #footer {
-	clear:both;
 	color: #919191;
 	width: 100%;
-	padding: 20px 0 20px 0;
+	padding: 20px;
 	background-color: #38322c;
-	margin-top: 40px;
+	margin-top: 25px;
 }
 
 /** ================ Header ================ **/
