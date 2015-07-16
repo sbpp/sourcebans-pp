@@ -86,10 +86,7 @@ public OnPluginStart()
 
 public OnAllPluginsLoaded()
 {
-	if (LibraryExists("sourcebans"))
-	{
-		CanUseSourcebans = true;
-	}
+	CanUseSourcebans = LibraryExists("sourcebans");
 }
 
 public OnLibraryAdded(const String:name[])
