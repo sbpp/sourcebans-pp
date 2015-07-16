@@ -174,7 +174,7 @@ public OnClientPostAdminCheck(client)
 public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapack)
 {
 	new client;
-	new String:steamid[32], String:IP[32], String:Reason[255], String:text[255];
+	decl String:steamid[32], String:IP[32], String:Reason[255];
 	
 	if(datapack != INVALID_HANDLE)
 	{
@@ -225,8 +225,8 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 				}
 				case LENGTH_NOTIFY:
 				{
-					Format(text, sizeof(text), "[SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
-					PrintToAdmins("%s", text);
+					/* Notify Admins when a client with an ip on the bans list connects */
+					PrintToAdmins("[SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
 				}
 			}
 		}
