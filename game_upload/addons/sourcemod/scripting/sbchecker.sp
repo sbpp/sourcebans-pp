@@ -27,6 +27,7 @@
 
 #define VERSION "SBF-1.5.2F-R2-dev"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
+#define INVALID_TARGET -1
 
 new String:g_DatabasePrefix[10] = "sb";
 new Handle:g_ConfigParser;
@@ -118,8 +119,9 @@ public Action:OnListSourceBansCmd(client, args)
 	GetCmdArg(1, targetarg, sizeof(targetarg));
 	
 	new target = FindTarget(client, targetarg, true, true);
-	if (target == -1)
+	if (target == INVALID_TARGET)
 	{
+		ReplyToCommand(client, "Error: Could not find a target matching '%s'.", targetarg);
 		return Plugin_Handled;
 	}
 	
