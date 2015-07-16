@@ -157,8 +157,15 @@ public OnClientPostAdminCheck(client)
 			
 			new String:query[1024];
 			
-			FormatEx(query, sizeof(query),  "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND ends > %d", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0);
-
+			if(g_cVar_bantype.IntValue == 0)
+			{
+				FormatEx(query, sizeof(query),  "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND ends > %d", Prefix, IP, GetTime());
+			}
+			else
+			{
+				FormatEx(query, sizeof(query),  "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND length='0'", Prefix, IP);
+			}
+			
 			new Handle:datapack = CreateDataPack();
 
 			WritePackCell(datapack, GetClientUserId(client));
@@ -174,7 +181,7 @@ public OnClientPostAdminCheck(client)
 public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapack)
 {
 	new client;
-	new String:steamid[32], String:IP[32], String:Reason[255], String:text[255];
+	decl String:steamid[32], String:IP[32], String:Reason[255];
 	
 	if(datapack != INVALID_HANDLE)
 	{
@@ -225,8 +232,8 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 				}
 				case LENGTH_NOTIFY:
 				{
-					Format(text, sizeof(text), "[SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
-					PrintToAdmins("%s", text);
+					/* Notify Admins when the ip address matches a ban on the list */
+					PrintToAdmins("[SourceSleuth] %t", "sourcesleuth_admintext",client, steamid, IP);
 				}
 			}
 		}
