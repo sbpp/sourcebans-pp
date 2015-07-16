@@ -189,7 +189,7 @@ public OnPluginStart()
 		SetMenuExitBackButton(HackingMenuHandle, true);
 	}
 	
-	g_FlagLetters = CreateFlagLetters(FLAG_LETTERS_SIZE);
+	g_FlagLetters = CreateFlagLetters();
 	
 	BuildPath(Path_SM, logFile, sizeof(logFile), "logs/sourcebans.log");
 	g_bConnecting = true;
@@ -2507,9 +2507,9 @@ stock ParseBackupConfig_Overrides()
 	CloseHandle(hKV);
 }
 
-stock AdminFlag:CreateFlagLetters(size)
+stock AdminFlag:CreateFlagLetters()
 {
-	new AdminFlag:FlagLetters[size];
+	new AdminFlag:FlagLetters[FLAG_LETTERS_SIZE];
 	
 	FlagLetters['a'-'a'] = Admin_Reservation;
 	FlagLetters['b'-'a'] = Admin_Generic;
