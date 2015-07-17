@@ -201,17 +201,18 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		
 		if (!SQL_IsFieldNull(hndl, 1))
 		{
-			SQL_FetchString(hndl, 1, bannedby, sizeof(bannedby));
+			new size_bannedby = sizeof(bannedby);
+			SQL_FetchString(hndl, 1, bannedby, size_bannedby);
 			new len = SQL_FetchSize(hndl, 1);
-			if (len > sizeof(bannedby)-1)
+			if (len > size_bannedby-1)
 			{
-				reason[sizeof(bannedby)-4] = '.';
-				reason[sizeof(bannedby)-3] = '.';
-				reason[sizeof(bannedby)-2] = '.';
+				reason[size_bannedby-4] = '.';
+				reason[size_bannedby-3] = '.';
+				reason[size_bannedby-2] = '.';
 			}
 			else
 			{
-				for (new i = len; i < sizeof(bannedby)-1; i++)
+				for (new i = len; i < size_bannedby-1; i++)
 				{
 					bannedby[i] = ' ';
 				}
@@ -219,15 +220,16 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		}
 		
 		// NOT NULL
+		new size_lenstring = sizeof(lenstring);
 		new length = SQL_FetchInt(hndl, 3);
 		if (length == 0)
 		{
-			strcopy(lenstring, sizeof(lenstring), "Permanent ");
+			strcopy(lenstring, size_lenstring, "Permanent ");
 		}
 		else
 		{
-			new len = IntToString(length, lenstring, sizeof(lenstring));
-			if (len < sizeof(lenstring)-1)
+			new len = IntToString(length, lenstring, size_lenstring);
+			if (len < size_lenstring -1)
 			{
 				// change the '\0' to a ' '. the original \0 at the end will still be there
 				lenstring[len] = ' ';
@@ -240,17 +242,18 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		}
 		
 		// NOT NULL
-		SQL_FetchString(hndl, 4, reason, sizeof(reason));
+		new reason_size = sizeof(reason);
+		SQL_FetchString(hndl, 4, reason, reason_size);
 		new len = SQL_FetchSize(hndl, 4);
-		if (len > sizeof(reason)-1)
+		if (len > reason_size-1)
 		{
-			reason[sizeof(reason)-4] = '.';
-			reason[sizeof(reason)-3] = '.';
-			reason[sizeof(reason)-2] = '.';
+			reason[reason_size-4] = '.';
+			reason[reason_size-3] = '.';
+			reason[reason_size-2] = '.';
 		}
 		else
 		{
-			for (new i = len; i < sizeof(reason)-1; i++)
+			for (new i = len; i < reason_size-1; i++)
 			{
 				reason[i] = ' ';
 			}
