@@ -171,7 +171,7 @@ public OnClientPostAdminCheck(client)
 public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapack)
 {
 	new client;
-	decl String:steamid[32], String:IP[32], String:Reason[255];
+	decl String:steamid[32], String:IP[32];
 	
 	if(datapack != INVALID_HANDLE)
 	{
@@ -199,26 +199,19 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 					new length = SQL_FetchInt(hndl, 6);
 					new time = length*60;
 					
-					Format(Reason, sizeof(Reason), "[SourceSleuth] %t", "sourcesleuth_banreason");
-					
-					SBBanPlayer(0, client, time, Reason);
+					BanPlayer(client, time);
 				}
 				case LENGTH_CUSTOM:
 				{
 					new time = g_cVar_banduration.IntValue;
-
-					Format(Reason, sizeof(Reason), "[SourceSleuth] %t", "sourcesleuth_banreason");
-					
-					SBBanPlayer(0, client, time, Reason);
+					BanPlayer(client, time);
 				}
 				case LENGTH_DOUBLE:
 				{
 					new length = SQL_FetchInt(hndl, 6);
 					new time = length/60*2;
 
-					Format(Reason, sizeof(Reason), "[SourceSleuth] %t", "sourcesleuth_banreason");
-					
-					SBBanPlayer(0, client, time, Reason);
+					BanPlayer(client, time);
 				}
 				case LENGTH_NOTIFY:
 				{
@@ -228,6 +221,13 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 			}
 		}
 	}
+}
+
+stock BanPlayer(client, time)
+{
+	decl String:Reason[255];
+	Format(Reason, sizeof(Reason), "[SourceSleuth] %t", "sourcesleuth_banreason");
+	SBBanPlayer(0, client, time, Reason);
 }
 
 PrintToAdmins(const String:format[], any:...)
