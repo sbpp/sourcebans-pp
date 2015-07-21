@@ -738,169 +738,201 @@ public AdminMenu_Ban(Handle:topmenu,
 	/* Clear the Ownreason bool, so he is able to chat again;) */
 	g_ownReasons[param] = false;
 	
-#if defined DEBUG
+	#if defined DEBUG
 	LogToFile(logFile, "AdminMenu_Ban()");
-#endif
-	if (action == TopMenuAction_DisplayOption)	// We are only being displayed, We only need to show the option name
+	#endif
+	
+	switch (action)
 	{
-		Format(buffer, maxlength, "%T", "Ban player", param);
-		//Format(buffer, maxlength, "Ban player", param);	// Show the menu option
-#if defined DEBUG
-	LogToFile(logFile, "AdminMenu_Ban() -> Formatted the Ban option text");
-#endif
-	}
-	else if (action == TopMenuAction_SelectOption)
-	{
-		DisplayBanTargetMenu(param);	// Someone chose to ban someone, show the list of users menu
-#if defined DEBUG
-	LogToFile(logFile, "AdminMenu_Ban() -> DisplayBanTargetMenu()");
-#endif
+		// We are only being displayed, We only need to show the option name
+		case TopMenuAction_DisplayOption:
+		{
+			Format(buffer, maxlength, "%T", "Ban player", param);
+			
+			#if defined DEBUG
+			LogToFile(logFile, "AdminMenu_Ban() -> Formatted the Ban option text");
+			#endif
+		}
+	
+		case TopMenuAction_SelectOption:
+		{
+			DisplayBanTargetMenu(param);	// Someone chose to ban someone, show the list of users menu
+			
+			#if defined DEBUG
+			LogToFile(logFile, "AdminMenu_Ban() -> DisplayBanTargetMenu()");
+			#endif
+		}
 	}
 }
 
 public ReasonSelected(Handle:menu, MenuAction:action, param1, param2)
 {
-	if (action == MenuAction_Select)
+	switch (action)
 	{
-		decl String:info[128];
-		decl String:key[128];
-		GetMenuItem(menu, param2, key, sizeof(key), _, info, sizeof(info));
+		case MenuAction_Select:
+		{
+			decl String:info[128], String:key[128];
+			GetMenuItem(menu, param2, key, sizeof(key), _, info, sizeof(info));
+				
+			if(StrEqual("Hacking", key))
+			{
+				DisplayMenu(HackingMenuHandle, param1, MENU_TIME_FOREVER);
+				return;
+			}
 			
-		if(StrEqual("Hacking", key))
-		{
-			DisplayMenu(HackingMenuHandle, param1, MENU_TIME_FOREVER);
-			return;
+			else if(StrEqual("Own Reason", key)) // admin wants to use his own reason
+			{
+				g_ownReasons[param1] = true;
+				PrintToChat(param1, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason");
+				return;
+			}
+			
+			else if(g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
+				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
 		}
-		if(StrEqual("Own Reason", key))
+		
+		case MenuAction_Cancel:
 		{
-			// admin wants to use his own reason
-			g_ownReasons[param1] = true;
-			PrintToChat(param1, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason");
-			return;
+			if (param2 == MenuCancel_Disconnected)
+			{
+				if(PlayerDataPack[param1] != INVALID_HANDLE)
+				{
+					CloseHandle(PlayerDataPack[param1]);
+					PlayerDataPack[param1] = INVALID_HANDLE;
+				}
+			}
+			
+			else 
+			{
+				DisplayBanTimeMenu(param1);
+			}
 		}
-		if(g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-			PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
-
-	}
-	else if (action == MenuAction_Cancel && param2 == MenuCancel_Disconnected)
-	{
-		if(PlayerDataPack[param1] != INVALID_HANDLE)
-		{
-			CloseHandle(PlayerDataPack[param1]);
-			PlayerDataPack[param1] = INVALID_HANDLE;
-		}
-
-	}
-	else if (action == MenuAction_Cancel)
-	{
-		DisplayBanTimeMenu(param1);
 	}
 }
 
 public HackingSelected(Handle:menu, MenuAction:action, param1, param2)
 {
-	if (action == MenuAction_Select)
+	switch (action)
 	{
-		decl String:info[128];
-		decl String:key[128];
-		GetMenuItem(menu, param2, key, sizeof(key), _, info, sizeof(info));
-		
-		if(g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-			PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
-		
-	} else if (action == MenuAction_Cancel && param2 == MenuCancel_Disconnected) {
-
-		new Handle:Pack = PlayerDataPack[param1];
-
-		if(Pack != INVALID_HANDLE)
+		case MenuAction_Select:
 		{
-			ReadPackCell(Pack); // admin index
-			ReadPackCell(Pack); // target index
-			ReadPackCell(Pack); // admin userid
-			ReadPackCell(Pack); // target userid
-			ReadPackCell(Pack); // time
-			new Handle:ReasonPack = Handle:ReadPackCell(Pack);
-
-			if(ReasonPack != INVALID_HANDLE)
-			{
-				CloseHandle(ReasonPack);
-			}
-
-			CloseHandle(Pack);
-			PlayerDataPack[param1] = INVALID_HANDLE;
+			decl String:info[128], String:key[128];
+			GetMenuItem(menu, param2, key, sizeof(key), _, info, sizeof(info));
+		
+			if(g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
+				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
 		}
-	}
-	else if (action == MenuAction_Cancel)
-	{
-		DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
+		
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_Disconnected)
+			{
+				new Handle:Pack = PlayerDataPack[param1];
+
+				if(Pack != INVALID_HANDLE)
+				{
+					ReadPackCell(Pack); // admin index
+					ReadPackCell(Pack); // target index
+					ReadPackCell(Pack); // admin userid
+					ReadPackCell(Pack); // target userid
+					ReadPackCell(Pack); // time
+					new Handle:ReasonPack = Handle:ReadPackCell(Pack);
+		
+					if(ReasonPack != INVALID_HANDLE)
+					{
+						CloseHandle(ReasonPack);
+					}
+		
+					CloseHandle(Pack);
+					PlayerDataPack[param1] = INVALID_HANDLE;
+				}
+			}
+			
+			else
+			{
+				DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
+			}
+		}
 	}
 }
 
 public MenuHandler_BanPlayerList(Handle:menu, MenuAction:action, param1, param2)
 {
-#if defined DEBUG
+	#if defined DEBUG
 	LogToFile(logFile, "MenuHandler_BanPlayerList()");
-#endif
-	if (action == MenuAction_End)
-	{
-		CloseHandle(menu);				// Chose to close the menu
-	}
-	else if (action == MenuAction_Cancel)
-	{
-		if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
-		{
-			DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
-		}
-	}
-	else if (action == MenuAction_Select)			// Chose someone!
-	{
-		decl String:info[32], String:name[32];
-		new userid, target;
-		
-		GetMenuItem(menu, param2, info, sizeof(info), _, name, sizeof(name));
-		userid = StringToInt(info);
+	#endif
 
-		if ((target = GetClientOfUserId(userid)) == 0)
+	switch (action)
+	{
+		case MenuAction_End:
 		{
-			PrintToChat(param1, "%s%t", Prefix, "Player no longer available");
+			CloseHandle(menu);
 		}
-		else if (!CanUserTarget(param1, target))
+		
+		case MenuAction_Cancel:
 		{
-			PrintToChat(param1, "%s%t", Prefix, "Unable to target");
+			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			{
+				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+			}
 		}
-		else
+		
+		case MenuAction_Select:
 		{
-			g_BanTarget[param1] = target;
-			DisplayBanTimeMenu(param1);
+			decl String:info[32], String:name[32];
+			new userid, target;
+			
+			GetMenuItem(menu, param2, info, sizeof(info), _, name, sizeof(name));
+			userid = StringToInt(info);
+	
+			if ((target = GetClientOfUserId(userid)) == 0)
+			{
+				PrintToChat(param1, "%s%t", Prefix, "Player no longer available");
+			}
+			else if (!CanUserTarget(param1, target))
+			{
+				PrintToChat(param1, "%s%t", Prefix, "Unable to target");
+			}
+			else
+			{
+				g_BanTarget[param1] = target;
+				DisplayBanTimeMenu(param1);
+			}
 		}
 	}
 }
 
 public MenuHandler_BanTimeList(Handle:menu, MenuAction:action, param1, param2)
 {
-#if defined DEBUG
+	#if defined DEBUG
 	LogToFile(logFile, "MenuHandler_BanTimeList()");
-#endif
-	if (action == MenuAction_End)
+	#endif
+	
+	switch (action)
 	{
-		CloseHandle(menu);
-	}
-	else if (action == MenuAction_Cancel)
-	{
-		if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+		case MenuAction_End:
 		{
-			DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+			CloseHandle(menu);
 		}
-	}
-	else if (action == MenuAction_Select)
-	{
-		decl String:info[32];
 		
-		GetMenuItem(menu, param2, info, sizeof(info));
-		g_BanTime[param1] = StringToInt(info);
+		case MenuAction_Cancel:
+		{
+			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			{
+				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+			}
+		}
 		
-		//DisplayBanReasonMenu(param1);
-		DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
+		case MenuAction_Select:
+		{
+			decl String:info[32];
+		
+			GetMenuItem(menu, param2, info, sizeof(info));
+			g_BanTime[param1] = StringToInt(info);
+			
+			//DisplayBanReasonMenu(param1);
+			DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
+		}
 	}
 }
 
