@@ -2165,24 +2165,15 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 			}
 			else if(strcmp("BackupConfigs", key, false) == 0)
 			{
-				if(StringToInt(value) == 1)
-					backupConfig = true;
-				else
-					backupConfig = false;
+				backupConfig = StringToInt(value) == 1;
 			}
 			else if(strcmp("EnableAdmins", key, false) == 0)
 			{
-				if(StringToInt(value) == 1)
-					enableAdmins = true;
-				else
-					enableAdmins = false;
+				enableAdmins = StringToInt(value) == 1;
 			}
 			else if(strcmp("RequireSiteLogin", key, false) == 0)
 			{
-				if(StringToInt(value) == 1)
-					requireSiteLogin = true;
-				else
-					requireSiteLogin = false;
+				requireSiteLogin = StringToInt(value) == 1;
 			}
 			else if(strcmp("ServerID", key, false) == 0)
 			{
