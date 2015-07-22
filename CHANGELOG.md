@@ -1,4 +1,4 @@
-SourceBans-Fork Change Log
+SourceBans: Reloaded Change Log
 ============
 
 ```

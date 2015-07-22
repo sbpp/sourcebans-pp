@@ -1,15 +1,15 @@
-﻿SourceBans-Fork [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork)
+﻿SourceBans: Reloaded [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork)
 ============
 
 Global admin, ban, and communication management system for the Source engine
 
-- Website: [SourceBans-Fork](https://sarabveer.github.io/SourceBans-Fork/)
+- Website: [SourceBans: Reloaded](https://sarabveer.github.io/SourceBans-Fork/)
 
-- Forum Thread: [SourceBans Fork - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
+- Forum Thread: [SourceBans: Reloaded - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
 
 - Install help: [SourceBans Manual](http://www.sourcebans.net/manual)
 
-- FAQ: [SourceBans FAQ](https://sarabveer.github.io/SourceBans-Fork/faq/)
+- FAQ: [SourceBans: Reloaded FAQ](https://sarabveer.github.io/SourceBans-Fork/faq/)
 
 - Having trouble? [SourceBans Forums - AlliedModders](https://forums.alliedmods.net/forumdisplay.php?f=152)
 

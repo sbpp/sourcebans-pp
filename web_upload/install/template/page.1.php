@@ -17,21 +17,21 @@ An explanation  of this license is available <a href="https://www.gnu.org/licens
 <form action="index.php?p=submit" method="POST" enctype="multipart/form-data">
 <div id="submit-main"><h3>GNU Affero General Public License - Version 3</h3>
 <textarea id="license" cols="105" rows="15" name="license">
-This program is part of SourceBans-Fork.
+This program is part of SourceBans: Reloaded.
 
 Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
   
-SourceBans-Fork is free software: you can redistribute it and/or modify
+SourceBans: Reloaded is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by
 the Free Software Foundation, per version 3 of the License.
 
-SourceBans-Fork is distributed in the hope that it will be useful,
+SourceBans: Reloaded is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
   
 You should have received a copy of the GNU Affero General Public License
-along with SourceBans-Fork. If not, see <http://www.gnu.org/licenses/>.
+along with SourceBans: Reloaded. If not, see <http://www.gnu.org/licenses/>.
 
 This program incorporates work covered by the following copyright(s): 
  SourceBans 1.4.11

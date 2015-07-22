@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>SourceBans-Fork</title>
+<title>SourceBans: Reloaded</title>
 <link href="includes/css.php" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="./scripts/mootools.js"></script>
 <script type="text/javascript" src="./scripts/sourcebans.js"></script>

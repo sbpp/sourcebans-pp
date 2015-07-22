@@ -1,19 +1,19 @@
 // *************************************************************************
-//  This file is part of SourceBans-Fork.
+//  This file is part of SourceBans: Reloaded.
 //
 //  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
-//  SourceBans-Fork is free software: you can redistribute it and/or modify
+//  SourceBans: Reloaded is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU Affero General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
 //  
-//  SourceBans-Fork is distributed in the hope that it will be useful,
+//  SourceBans: Reloaded is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //  
 //  You should have received a copy of the GNU Affero General Public License
-//  along with SourceBans-Fork. If not, see <http://www.gnu.org/licenses/>.
+//  along with SourceBans: Reloaded. If not, see <http://www.gnu.org/licenses/>.
 //
 //  This file incorporates work covered by the following copyright(s): 
 //
@@ -32,7 +32,7 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.5.2F-R2-dev-git232"
+#define SB_VERSION "1.5.2F-R2-dev-git245"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sarabveer.github.io/SourceBans-Fork/updater/updatefile.txt"
@@ -130,7 +130,7 @@ new serverID = -1;
 
 public Plugin:myinfo =
 {
-	name = "SourceBans-Fork",
+	name = "SourceBans: Reloaded",
 	author = "SourceBans Development Team, Sarabveer(VEER™)",
 	description = "Advanced ban management for the Source engine",
 	version = SB_VERSION,
