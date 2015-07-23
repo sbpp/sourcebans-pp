@@ -422,9 +422,9 @@ public Action:FWBlock(args)
                 #endif
 
                 switch (type) {
-                    case TYPE_MUTE: setMute(i);
-                    case TYPE_GAG: setGag(i);
-                    case TYPE_SILENCE: { setMute(i); setGag(i); }
+                    case TYPE_MUTE: setMute(i, length, clientAuth);
+                    case TYPE_GAG: setGag(i, length, clientAuth);
+                    case TYPE_SILENCE: { setMute(i, length, clientAuth); setGag(i, length, clientAuth); }
                 }
                 break;
             }
@@ -1910,8 +1910,7 @@ public SMCResult:ReadConfig_EndSection(Handle:smc)
 }
 
 // STOCK FUNCTIONS //
-
-stock setGag(client)
+stock setGag(client, length, const String:clientAuth[])
 {
     if (g_GagType[client] == bNot)
     {
@@ -1921,7 +1920,7 @@ stock setGag(client)
     }
 }
 
-stock setMute(client)
+stock setMute(client, length, const String:clientAuth[])
 {
     if (g_MuteType[client] == bNot)
     {
