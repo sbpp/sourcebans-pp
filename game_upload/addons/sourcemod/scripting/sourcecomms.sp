@@ -1755,14 +1755,7 @@ static InternalReadConfig(const String:path[])
     if (err != SMCError_Okay)
     {
         decl String:buffer[64];
-        if (SMC_GetErrorString(err, buffer, sizeof(buffer)))
-        {
-            PrintToServer(buffer);
-        }
-        else
-        {
-            PrintToServer("Fatal parse error");
-        }
+        PrintToServer("%s", SMC_GetErrorString(err, buffer, sizeof(buffer)) ? buffer : "Fatal parse error");
     }
 }
 
@@ -2591,7 +2584,6 @@ stock ReadConfig()
     }
     if (FileExists(ConfigFile2))
     {
-        PrintToServer("%sLoading configs/sourcecomms.cfg config file", PREFIX);
         PrintToServer("%sLoading configs/sourcecomms.cfg config file", PREFIX);
         iNumReasons = 0;
         iNumTimes = 0;

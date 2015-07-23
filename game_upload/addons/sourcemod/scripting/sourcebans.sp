@@ -2083,12 +2083,7 @@ static InternalReadConfig(const String:path[])
 	if (err != SMCError_Okay)
 	{
 		decl String:buffer[64];
-		if (SMC_GetErrorString(err, buffer, sizeof(buffer)))
-		{
-			PrintToServer(buffer);
-		} else {
-			PrintToServer("Fatal parse error");
-		}
+		PrintToServer("%s", SMC_GetErrorString(err, buffer, sizeof(buffer)) ? buffer : "Fatal parse error");
 	}
 }
 
