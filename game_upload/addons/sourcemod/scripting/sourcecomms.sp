@@ -397,10 +397,10 @@ public Action:CommandComms(client, args)
 
 public Action:FWBlock(args)
 {
-    new String:arg_string[256], String:sArg[3][64];
+    decl String:arg_string[256], String:sArg[3][64];
     GetCmdArgString(arg_string, sizeof(arg_string));
 
-    new type, length;
+    decl type, length;
     if(ExplodeString(arg_string, " ", sArg, 3, 64) != 3 || !StringToIntEx(sArg[0], type) || type < 1 || type > 3 || !StringToIntEx(sArg[1], length))
     {
         LogError("Wrong usage of sc_fw_block");
@@ -409,11 +409,11 @@ public Action:FWBlock(args)
 
     LogMessage("Received block command from web: steam %s, type %d, length %d", sArg[2], type, length);
 
+    decl String:clientAuth[64];
     for (new i = 1; i <= MaxClients; i++)
     {
         if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
         {
-            decl String:clientAuth[64];
             GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
             if (strcmp(clientAuth, sArg[2], false) == 0)
             {
@@ -421,23 +421,16 @@ public Action:FWBlock(args)
                     PrintToServer("Catched %s for blocking from web", clientAuth);
                 #endif
 
-                if (g_MuteType[i] == bNot && (type == 1 || type == 3))
-                {
-                    PerformMute(i, _, length / 60, _, _, _, _);
-                    PrintToChat(i, "%s%t", PREFIX, "Muted on connect");
-                    LogMessage("%s is muted from web", clientAuth);
-                }
-                if (g_GagType[i] == bNot && (type == 2 || type == 3))
-                {
-                    PerformGag(i, _, length / 60, _, _, _, _);
-                    PrintToChat(i, "%s%t", PREFIX, "Gagged on connect");
-                    LogMessage("%s is gagged from web", clientAuth);
+                switch (type) {
+                    case TYPE_MUTE: setMute(i);
+                    case TYPE_GAG: setGag(i);
+                    case TYPE_SILENCE: { setMute(i); setGag(i); }
                 }
                 break;
             }
         }
     }
-
+    
     return Plugin_Handled;
 }
 
@@ -1917,6 +1910,26 @@ public SMCResult:ReadConfig_EndSection(Handle:smc)
 }
 
 // STOCK FUNCTIONS //
+
+stock setGag(client)
+{
+    if (g_GagType[client] == bNot)
+    {
+        PerformGag(client, _, length / 60, _, _, _, _);
+        PrintToChat(client, "%s%t", PREFIX, "Gagged on connect");
+        LogMessage("%s is gagged from web", clientAuth);
+    }
+}
+
+stock setMute(client)
+{
+    if (g_MuteType[client] == bNot)
+    {
+        PerformMute(client, _, length / 60, _, _, _, _);
+        PrintToChat(client, "%s%t", PREFIX, "Muted on connect");
+        LogMessage("%s is muted from web", clientAuth);
+    }
+}
 
 stock bool:DB_Connect()
 {
