@@ -19,8 +19,10 @@ if(isset($_GET['validation'],$_GET['email']) && !empty($_GET['email']) && !empty
 {  
 	$email = $_GET['email'];
 	$validation = $_GET['validation'];
-	
-	if(strlen($validation) < 60)
+
+	preg_match("/[\w\.]*/", $_SERVER['HTTP_HOST'], $match);
+
+	if($match[0] == $_SERVER['HTTP_HOST']) 
 	{
 		echo '<div id="msg-red" style="">
 			<i><img src="./images/warning.png" alt="Warning" /></i>
