@@ -20,7 +20,7 @@ function setPostKey()
 	else
 		$_SESSION['banlist_postkey'] = md5(time().rand(0,100000));
 }
-if (!isset($_SESSION['banlist_postkey']) || strlen($_SESSION['banlist_postkey']) < 4)
+if (!isset($_SESSION['banlist_postkey']) || mb_strlen($_SESSION['banlist_postkey']) < 4)
 	setPostKey();
 
 $page = 1;
@@ -634,11 +634,11 @@ else
 //=================[ Start Layout ]==================================
 $ban_nav = 'displaying&nbsp;'.$BansStart.'&nbsp;-&nbsp;'.$BansEnd.'&nbsp;of&nbsp;'.$BanCount.'&nbsp;results';
 
-if (strlen($prev) > 0)
+if (mb_strlen($prev) > 0)
 {
 	$ban_nav .= ' | <b>'.$prev.'</b>';
 }
-if (strlen($next) > 0)
+if (mb_strlen($next) > 0)
 {
 	$ban_nav .= ' | <b>'.$next.'</b>';
 }

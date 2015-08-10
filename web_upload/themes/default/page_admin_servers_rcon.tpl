@@ -41,16 +41,10 @@ Command: <input type="text" style="font-family:verdana, tahoma, arial;font-size:
 </div></div>
 <script>
 
-$E('html').onkeydown = function(event){
+document.children[0].addEvent('keydown', function(event){
     var event = new Event(event);
     if (event.key == 'enter' ) SendRcon();
-};
+});
 
-function SendRcon()
-{
-	xajax_SendRcon('-{$id}-', $('cmd').value, true);
-	 $('cmd').value='Executing, Please Wait...'; $('cmd').disabled='true'; $('rcon_btn').disabled='true';
-	 
-}
 </script>
 -{/if}-

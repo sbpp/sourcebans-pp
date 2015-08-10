@@ -45,20 +45,21 @@ This program incorporates work covered by the following copyright(s):
 </textarea>
 <br /><br />
 
-<input type="checkbox" name="accept" id="accept" /><span style="cursor:pointer;" onclick="($('accept').checked?$('accept').checked=false:$('accept').checked=true)"> I have read, and accept the license</span>
+<input type="checkbox" name="accept" id="accept" /><span style="cursor:pointer;" onclick="($('accept').get('checked') ? $('accept').set('checked', false);:$('accept').set('checked', true))"> I have read, and accept the license</span>
 
 <div align="center">
 <input type="button" TABINDEX=2 onclick="checkAccept()" name="button" class="btn ok" id="button" value="Ok" /></div>
 </div>
 </form>
 <script type="text/javascript">
-$E('html').onkeydown = function(event){
+document.children[0].addEvent('keydown', function(event){
 	var event = new Event(event);
 	if (event.key == 'enter' ) checkAccept();
-};
+});
+
 function checkAccept()
 {
-	if($('accept').checked)
+	if($('accept').get('checked'))
 		window.location = "index.php?step=2";
 	else
 	{

@@ -2,13 +2,13 @@
 /**
  * =============================================================================
  * Query servers for details, map, players, etc
- * 
+ *
  * @author InterWave Studios Development Team, IceMatrix
  * @version 1.0.0
  * @copyright SourceBans (C)2008 InterWaveStudios.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
- * 
+ *
  * @version $Id: CServerInfo.php 278 2009-07-07 11:42:36Z tsunami $
  * =============================================================================
  */
@@ -37,14 +37,14 @@ class CServerInfo
   const A2S_PLAYER_RESPONSE = "\x44";
   const A2S_RULES = "\x56";
   const A2S_RULES_RESPONSE = "\x45";
-  
+
   public function __construct($address, $port)
   {
     $this->address = $address;
     $this->port = $port;
     $this->challenge = self::QUERY_HEADER;
   }
-  
+
   public function getInfo()
   {
     $socket = $this->_getSocket();
@@ -53,14 +53,14 @@ class CServerInfo
     $packet = $this->_request($socket, self::A2S_INFO);
     if(empty($packet))
       return array();
-    
+
     $this->raw = $packet;
     $ret = array();
     $type = $this->_getraw(1);
     if($type == self::A2S_INFO_RESPONSE)
     { // New protocol for Source and Goldsrc
       $this->_getbyte();  // Version
-      $ret['hostname'] = $this->_getnullstr();  
+      $ret['hostname'] = $this->_getnullstr();
       $ret['map'] = $this->_getnullstr();
       $ret['gamename'] = $this->_getnullstr();
       $ret['gamedesc'] = $this->_getnullstr();
@@ -105,9 +105,9 @@ class CServerInfo
       return $_SESSION['getInfo.' . $this->address . '.' . $this->port];
     }
     $_SESSION['getInfo.' . $this->address . '.' . $this->port] = $ret;
-    return $ret;        
+    return $ret;
   }
-  
+
   public function getPlayers()
   {
     $socket = $this->_getSocket();
@@ -116,9 +116,9 @@ class CServerInfo
     $packet = $this->_requestWithChallenge($socket, self::A2S_PLAYER, self::A2S_PLAYER_RESPONSE);
     if(empty($packet))
       return array();
-    
+
     $this->raw = $packet;
-    $count = $this->_getbyte();   
+    $count = $this->_getbyte();
     $players = array();
     for($i = 0; $i < $count; $i++)
     {
@@ -127,19 +127,26 @@ class CServerInfo
       $index = $this->_getbyte();
       if($index == 0)
         $index = $i;
+
       $temp = array('index' => $index,
                     'name'  => $this->_getnullstr(),
                     'kills' => $this->_getlong(),
                     'time'  => SecondsToString((int)$this->_getfloat(), true));
-      
+
       if(!empty($temp['name']))
+      	if( !mb_check_encoding ( $temp['name'] ) ) {
+      		$temp['name'] = mb_convert_encoding( $temp['name'], 'ISO-8859-1' );
+
+      	}
+
+
         $players[] = $temp;
     }
-    
+
     array_qsort($players, 'kills', SORT_DESC);
     return $players;
   }
-  
+
   public function getRules()
   {
     $socket = $this->_getSocket();
@@ -148,20 +155,20 @@ class CServerInfo
     $packet = $this->_requestWithChallenge($socket, self::A2S_RULES, self::A2S_RULES_RESPONSE);
     if(empty($packet))
       return array();
-    
+
     $this->raw = $packet;
-    $nump = $this->_getushort(); 
+    $nump = $this->_getushort();
     $ret = array();
-	
+
     for($i = 0; $i < $nump; $i++)
     {
       $name  = $this->_getnullstr();
       $value = $this->_getnullstr();
-      
+
       if(!empty($name))
         $ret[$name] = $value;
     }
-    
+
     ksort($ret);
     return $ret;
   }
@@ -196,38 +203,38 @@ class CServerInfo
       }
     }
     catch (Exception $err) { }
-    
+
     if($this->socket === false)
       return false;
-      
+
     return $this->socket;
   }
-  
+
   private function _request($socket, $code, $reply = null)
   {
     if ($this->isfsock)
       fwrite($socket, self::QUERY_HEADER . $code);
     else
-      socket_write($socket, self::QUERY_HEADER . $code, strlen(self::QUERY_HEADER . $code));
+      socket_write($socket, self::QUERY_HEADER . $code, mb_strlen(self::QUERY_HEADER . $code, '8bit'));
 
     $packet = $this->_readsplit($socket);
     if(empty($packet))
       return "";
-    
+
     $this->raw = $packet;
     $magic = $this->_getlong();
     if($magic != -1)
       return "";
-    
+
     $response = $this->_getraw(1);
     if($reply == null)
-      return substr($packet, 4);  // Skip magic as it was checked
+      return mb_substr($packet, 4);  // Skip magic as it was checked
     else if($response == $reply)
-      return substr($packet, 5);  // Skip magic and type as it was checked
-    
+      return mb_substr($packet, 5);  // Skip magic and type as it was checked
+
     return "";
   }
-  
+
   private function _requestWithChallenge($socket, $code, $reply = null)
   {
     $maxretries = 5;
@@ -236,17 +243,17 @@ class CServerInfo
       if ($this->isfsock)
         fwrite($socket, self::QUERY_HEADER . $code . $this->challenge); // do the request with challenge id = -1
       else
-        socket_write($socket, self::QUERY_HEADER . $code . $this->challenge, strlen(self::QUERY_HEADER . $code . $this->challenge));
+        socket_write($socket, self::QUERY_HEADER . $code . $this->challenge, mb_strlen(self::QUERY_HEADER . $code . $this->challenge, '8bit'));
 
       $packet = $this->_readsplit($socket);
       if(empty($packet))
         return "";
-      
+
       $this->raw = $packet;
       $magic = $this->_getlong();
       if($magic != -1)
         return "";
-      
+
       $response = $this->_getraw(1);
       if($response == self::A2S_SERVERQUERY_GETCHALLENGE_RESPONSE)
       {
@@ -254,17 +261,17 @@ class CServerInfo
       }
       else if($reply == null)
       {
-        return substr($packet, 4);  // Skip magic as it was checked
+        return mb_substr($packet, 4);  // Skip magic as it was checked
       }
       else if($response == $reply)
       {
-        return substr($packet, 5);  // Skip magic and type as it was checked
+        return mb_substr($packet, 5);  // Skip magic and type as it was checked
       }
     }
-    
+
     return "";
   }
-	
+
   private function _readsplit($socket)
   {
     if ($this->isfsock)
@@ -274,7 +281,7 @@ class CServerInfo
 
     if(empty($packet))
       return "";
-  	
+
     $this->raw = $packet;
     $type = $this->_getlong();
     if($type == -2)
@@ -290,18 +297,18 @@ class CServerInfo
 
       $data = array();
       $tstart = microtime(true);
-  		
+
       // Sanity
       if($curpacket >= $numpackets)
         return "";
-  		
+
       // Compressed?
       if($curpacket == 0 && $reqid < 0)
       {
         $sizeuncompressed = $this->_getlong();
         $crc = $this->_getlong();
       }
-  		
+
       while(true)
       {
         // Split already received (duplicate)?
@@ -314,27 +321,27 @@ class CServerInfo
           // Join the parts
           ksort($data);
           $data = implode("", $data);
-  				
+
           // Uncompress if necessary
           if($reqid < 0)
           {
             $data = bzdecompress($data);
 
-            if(strlen($data) != $sizeuncompressed)
+            if(mb_strlen($data, '8bit') != $sizeuncompressed)
               return "";
- 					
+
             // TODO: CRC32 check
             return $data;
           }
-  				
+
           // Not compressed
           return $data;
         }
-  			
+
         // Check the timeout over several receives
         if(microtime(true) - $tstart >= 2.0)	// 2s
           return "";
-  			
+
         // Receive next packet
         if ($this->isfsock)
           $packet = fread($socket, 1480);
@@ -343,13 +350,13 @@ class CServerInfo
 
         if(empty($packet))
           return "";
-  			
+
         // Parse packet
         $this->raw = $packet;
         $_type = $this->_getlong();
         if($_type != -2)
           return "";
-  			
+
         $_reqid = $this->_getlong();
         $_packets = $this->_getushort();
         $_numpackets = $_packets & 0xFF;
@@ -357,18 +364,18 @@ class CServerInfo
 
         if($reqid >= 0)	// Dummy value telling how big the split is (hardcoded to 1248), Orangebox or later
   	  $this->_skip(2);
-  			
+
         // Sanity check
         if($_reqid != $reqid || $_numpackets != $numpackets || $curpacket >= $numpackets)
           return "";
-  			
+
         // Compressed?
         if($curpacket == 0 && $reqid < 0)
         {
           $sizeuncompressed = $this->_getlong();
           $crc = $this->_getlong();
         }
-      }	
+      }
     }
     else if($type == -1)
     {
@@ -381,27 +388,27 @@ class CServerInfo
       return "";
     }
   }
-  
+
   private function _getraw($count)
   {
-    $data = substr($this->raw, 0, $count);
-    $this->raw = substr($this->raw, $count);
+    $data = mb_substr($this->raw, 0, $count, '8bit' );
+    $this->raw = mb_substr($this->raw, $count, NULL, '8bit' );
     return $data;
   }
-  
-  private function _getbyte() 
+
+  private function _getbyte()
   {
     $byte = $this->_getraw(1);
     return ord($byte);
   }
-  
-  private function _getfloat() 
+
+  private function _getfloat()
   {
     $f = @unpack('f1float', $this->_getraw(4));
     return $f['float'];
   }
-  
-  private function _getlong() 
+
+  private function _getlong()
   {
     $lo   = $this->_getushort();
     $hi   = $this->_getushort();
@@ -411,18 +418,18 @@ class CServerInfo
     else
       return $long;                       // 32-bit handles negative values implicitly
   }
-  
-  private function _getnullstr() 
+
+  private function _getnullstr()
   {
-    if (empty($this->raw)) 
+    if (empty($this->raw))
       return '';
-    
-    $end       = strpos($this->raw, "\0");
-    $str       = substr($this->raw, 0, $end);
-    $this->raw = substr($this->raw, $end + 1);
+
+    $end       = mb_strpos($this->raw, "\0");
+    $str       = mb_substr($this->raw, 0, $end);
+    $this->raw = mb_substr($this->raw, $end + 1);
     return $str;
   }
-  
+
   private function _getushort()
   {
     $lo    = $this->_getbyte();
@@ -430,8 +437,8 @@ class CServerInfo
     $short = ($hi << 8) | $lo;
     return $short;
   }
-  
-  private function _getshort() 
+
+  private function _getshort()
   {
     $short = $this->_getushort();
     if ($short & 0x8000)
@@ -439,10 +446,10 @@ class CServerInfo
     else
       return $short;
   }
-  
+
   private function _skip($c)
   {
-    $this->raw = substr($this->raw, $c);
+    $this->raw = mb_substr($this->raw, $c);
   }
 }
 

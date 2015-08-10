@@ -75,7 +75,7 @@
         </td>
         <td>
           <div align="left">
-            <select id="listReason" name="listReason" TABINDEX=4 class="select" onChange="changeReason(this[this.selectedIndex].value);">
+            <select id="listReason" name="listReason" TABINDEX=4 class="select" onChange="changeReason(this[this.selectedIndex].get('value'));">
               <option value="" selected> -- Select Reason -- </option>
           <optgroup label="Hacking">
             <option value="Aimbot">Aimbot</option>

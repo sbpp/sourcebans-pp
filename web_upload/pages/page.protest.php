@@ -93,12 +93,12 @@ else
 			}
 		}
 	}
-	if (strlen($PlayerName) == 0)
+	if (mb_strlen($PlayerName) == 0)
 	{
 		$errors .=  '* You must include a player name<br>';
 		$validsubmit = false;
 	}
-	if (strlen($UnbanReason) == 0)
+	if (mb_strlen($UnbanReason) == 0)
 	{
 		$errors .=  '* You must include comments<br>';
 		$validsubmit = false;
@@ -132,7 +132,7 @@ else
 		'X-Mailer: PHP/' . phpversion();
 
 		$emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `".DB_PREFIX."_admins` WHERE aid = (SELECT aid FROM `".DB_PREFIX."_bans` WHERE bid = '".(int)$BanId."');");
-        $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
+        $requri = mb_substr($_SERVER['REQUEST_URI'], 0, mb_strrpos($_SERVER['REQUEST_URI'], ".php")+4);
 		if(isset($GLOBALS['config']['protest.emailonlyinvolved']) && $GLOBALS['config']['protest.emailonlyinvolved'] == 1 && !empty($emailinfo->fields['email']))
 			$admins = array(array('aid' => $emailinfo->fields['aid'], 'user' => $emailinfo->fields['user'], 'email' => $emailinfo->fields['email']));
 		else

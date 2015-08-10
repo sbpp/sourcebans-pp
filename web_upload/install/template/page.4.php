@@ -13,7 +13,7 @@
 	$querys = explode(";", $file);
 	foreach($querys AS $q)
 	{
-		if(strlen($q) > 2)
+		if(mb_strlen($q) > 2)
 		{
 			$res = $db->Execute(stripslashes($q) . ";");
 			if(!$res)
@@ -57,10 +57,11 @@ Step 5: Setup<br />
 </div>
 </form>
 <script type="text/javascript">
-$E('html').onkeydown = function(event){
+document.children[0].addEvent('keydown', function(event){
 	var event = new Event(event);
 	if (event.key == 'enter' ) next();
-};
+});
+
 function next()
 {
 	var errors = <?php echo $errors?>;

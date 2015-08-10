@@ -78,7 +78,7 @@ else
 			if(isset($_GET['advSearch']))
 			{
 				// Escape the value, but strip the leading and trailing quote
-				$value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
+				$value = mb_substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
 				$type = $_GET['advType'];
 				switch($type)
 				{
@@ -129,13 +129,13 @@ else
 						while(!$alladmins->EOF)
 						{
 							foreach($flags AS $fla) {
-								if(strstr(get_user_admin($alladmins->fields["authid"]), $fla)) {
+								if(mb_strstr(get_user_admin($alladmins->fields["authid"]), $fla)) {
 									if(!isset($accessaid))
 										$accessaid = $alladmins->fields["aid"];
 									$accessaid .= ",".$alladmins->fields["aid"];
 								}
 							}
-							if(strstr(get_user_admin($alladmins->fields["authid"]), 'z')) {
+							if(mb_strstr(get_user_admin($alladmins->fields["authid"]), 'z')) {
 								if(!isset($accessaid))
 									$accessaid = $alladmins->fields["aid"];
 								$accessaid .= ",".$alladmins->fields["aid"];

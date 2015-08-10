@@ -47,7 +47,7 @@ if(isset($_GET['c']) && $_GET['c']  == "settings")
 } else
 	$theme->assign('tiny_mce_js', '');
 
-$theme->assign('xajax_functions',  $xajax->printJavascript("scripts", "xajax.js"));
+$theme->assign('xajax_functions',  $xajax->getJavascript( ) );
 $theme->assign('header_title', $GLOBALS['config']['template.title']);
 $theme->assign('header_logo', $GLOBALS['config']['template.logo']);
 $theme->assign('username', $userbank->GetProperty("user"));

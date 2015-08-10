@@ -57,31 +57,31 @@ if(isset($_POST['name']))
 	if(empty($_POST['steam']) && $_POST['type'] == 0)
 	{
 		$error++;
-		$errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
+		$errorScript .= "$('steam.msg').set('html', 'You must type a Steam ID or Community ID');";
 		$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 	}
 	else if(($_POST['type'] == 0 
 	&& !is_numeric($_POST['steam']) 
 	&& !validate_steam($_POST['steam']))
 	|| (is_numeric($_POST['steam']) 
-	&& (strlen($_POST['steam']) < 15
+	&& (mb_strlen($_POST['steam']) < 15
 	|| !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam'])))))
 	{
 		$error++;
-		$errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
+		$errorScript .= "$('steam.msg').set('html', 'Please enter a valid Steam ID or Community ID');";
 		$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 	}
 	// Didn't type an IP
 	else if (empty($_POST['ip']) && $_POST['type'] == 1)
 	{
 		$error++;
-		$errorScript .= "$('ip.msg').innerHTML = 'You must type an IP';";
+		$errorScript .= "$('ip.msg').set('html', 'You must type an IP');";
 		$errorScript .= "$('ip.msg').setStyle('display', 'block');";
 	}
 	else if ($_POST['type'] == 1 && !validate_ip($_POST['ip']))
 	{
 		$error++;
-		$errorScript .= "$('ip.msg').innerHTML = 'You must type a valid IP';";
+		$errorScript .= "$('ip.msg').set('html', 'You must type a valid IP');";
 		$errorScript .= "$('ip.msg').setStyle('display', 'block');";
 	}
 	
@@ -89,7 +89,7 @@ if(isset($_POST['name']))
 	if($_POST['listReason'] == "other" && empty($_POST['txtReason']))
 	{
 		$error++;
-		$errorScript .= "$('reason.msg').innerHTML = 'You must type a reason';";
+		$errorScript .= "$('reason.msg').set('html', 'You must type a reason');";
 		$errorScript .= "$('reason.msg').setStyle('display', 'block');";
 	}
 	
@@ -106,7 +106,7 @@ if(isset($_POST['name']))
 			if((int)$chk[0] > 0)
 			{
 				$error++;
-				$errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already banned';";
+				$errorScript .= "$('steam.msg').set('html', 'This SteamID is already banned');";
 				$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 			}
 			else
@@ -118,7 +118,7 @@ if(isset($_POST['name']))
 					if($admin['authid'] == $_POST['steam'] && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity'])
 					{
 						$error++;
-						$errorScript .= "$('steam.msg').innerHTML = 'Admin ".$admin['user']." is immune';";
+						$errorScript .= "$('steam.msg').set('html', 'Admin ".$admin['user']." is immune';";
 						$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 						break;
 					}
@@ -133,7 +133,7 @@ if(isset($_POST['name']))
 			if((int)$chk[0] > 0)
 			{
 				$error++;
-				$errorScript .= "$('ip.msg').innerHTML = 'This IP is already banned';";
+				$errorScript .= "$('ip.msg').set('html', 'This IP is already banned');";
 				$errorScript .= "$('ip.msg').setStyle('display', 'block');";
 			}
 		}

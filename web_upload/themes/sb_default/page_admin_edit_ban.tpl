@@ -74,7 +74,7 @@
     		</td>
     		<td>
     			<div align="left">
-    				<select id="listReason" name="listReason" TABINDEX=4 class="submit-fields" onChange="changeReason(this[this.selectedIndex].value);">
+    				<select id="listReason" name="listReason" TABINDEX=4 class="submit-fields" onChange="changeReason(this[this.selectedIndex].get('value'));">
     					<option value="" selected> -- Select Reason -- </option>
 					<optgroup label="Hacking">
 						<option value="Aimbot">Aimbot</option>
@@ -176,10 +176,10 @@
 			var dname = "";
 			function demo(id, name)
 			{
-				$('demo.msg').setHTML("Uploaded: <b>" + name + "</b>");
+				$('demo.msg').set('html', "Uploaded: <b>" + name + "</b>");
 			
-				$('did').value = id;
-				$('dname').value = name;
+				$('did').set('value', id);
+				$('dname').set('value', name);
 			}
 			</script>
 			

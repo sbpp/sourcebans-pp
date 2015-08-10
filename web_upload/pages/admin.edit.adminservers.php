@@ -70,7 +70,7 @@ if(isset($_POST['editadminserver']))
 			$GLOBALS['db']->Execute($pre,array($aid,
 											   $server_grp,
 											   -1,
-											   (int)substr($s,1)));
+											   (int)mb_substr($s,1)));
 		}
 	}
 	if(isset($_POST['group']) && is_array($_POST['group']) && count($_POST['group']) > 0) {
@@ -79,7 +79,7 @@ if(isset($_POST['editadminserver']))
 			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array($aid,
 											   $server_grp,
-											   (int)substr($g,1),
+											   (int)mb_substr($g,1),
 											   -1));
 		}
 	}

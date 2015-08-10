@@ -88,7 +88,7 @@ define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
 				$querys = explode(";", $file);
 				foreach($querys AS $q)
 				{
-					if(strlen($q) > 2)
+					if(mb_strlen($q) > 2)
 					{
 						$res = $db->Execute(stripslashes($q) . ";");
 						if(!$res)
@@ -103,7 +103,7 @@ define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
 				<textarea cols="105" rows="15" readonly><?php echo $srv_cfg;?></textarea>
 				
 				<?php
-				if(strtolower($_POST['server']) == "localhost")
+				if(mb_strtolower($_POST['server']) == "localhost")
 				{
 					echo '<script>ShowBox("Local server warning", "You have said your MySQL server is running on the same box as the webserver, this is fine, but you may need to alter the following config to set the remote domain/ip of your MySQL server. Unless your gameserver is on the same box as your webserver." , "blue", "", true);</script>';
 				}
@@ -194,23 +194,24 @@ Hover your mouse over the '?' buttons to see an explanation of the field.<br /><
 </form>
 
 <script type="text/javascript">
-$E('html').onkeydown = function(event){
+document.children[0].addEvent('keydown', function(event){
 	var event = new Event(event);
 	if (event.key == 'enter' ) CheckInput();
-};
+});
+
 function CheckInput()
 {
 	var error = 0;
 	
-	if($('uname').value == "")
+	if($('uname').get('value') == "")
 		error++;
-	if($('pass1').value == "")
+	if($('pass1').get('value') == "")
 		error++;
-	if($('pass2').value == "")
+	if($('pass2').get('value') == "")
 		error++;
-	if($('steam').value == "")
+	if($('steam').get('value') == "")
 		error++;
-	if($('email').value == "")
+	if($('email').get('value') == "")
 		error++;
 		
 	if(error > 0)

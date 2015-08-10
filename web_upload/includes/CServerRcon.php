@@ -2,13 +2,13 @@
 /**
  * =============================================================================
  * Send and receive RCON packets
- * 
+ *
  * @author SteamFriends Development Team
  * @version 1.0.0
  * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
- * 
+ *
  * @version $Id: CServerRcon.php 117 2008-08-21 17:17:54Z peace-maker $
  * =============================================================================
  */
@@ -25,7 +25,7 @@ class CServerRcon
   const SERVERDATA_RESPONSE_VALUE = 00;
   const SERVERDATA_AUTH_RESPONSE = 02;
 
-  function CServerRcon ($address, $port, $password)
+  function __construct($address, $port, $password)
   {
     $this->password = $password;
 
@@ -52,7 +52,7 @@ class CServerRcon
     }
     catch (Exception $err) { }
   }
-    
+
   public function Auth ()
   {
     $PackID = $this->_Write(CServerRcon::SERVERDATA_AUTH,$this->password);
@@ -65,12 +65,12 @@ class CServerRcon
   {
     $id = ++$this->_id;
     $data = pack("VV",$id,$cmd).$s1.chr(0).$s2.chr(0);
-    $data = pack("V",strlen($data)).$data;
+    $data = pack("V",mb_strlen($data, '8bit')).$data;
 
     if ($this->isfsock)
-      fwrite($this->_sock, $data, strlen($data));
+      fwrite($this->_sock, $data, mb_strlen($data, '8bit'));
     else
-      socket_write($this->_sock, $data, strlen($data));
+      socket_write($this->_sock, $data, mb_strlen($data, '8bit'));
 
     return $id;
   }
@@ -87,18 +87,18 @@ class CServerRcon
   {
     $retarray = array();
 
-    while ($size = $this->_sock_read(4)) 
+    while ($size = $this->_sock_read(4))
     {
       $size = unpack('V1Size',$size);
 
       if ($size["Size"] > 4096)
         $packet = "\x00\x00\x00\x00\x00\x00\x00\x00".$this->_sock_read(4096);
-      else 
+      else
         $packet = $this->_sock_read($size["Size"]);
 
       // PHP 5.5 added the 'Z' format code to match Perl's behaviour. Could be used here.
       $data = unpack("V1ID/V1Reponse",$packet);
-      $data["S1"] = substr($packet, 8, strlen($packet)-10);
+      $data["S1"] = mb_substr($packet, 8, mb_strlen($packet)-10);
       $data["S2"] = ""; // Compatibility
       array_push($retarray,$data);
     }
@@ -111,9 +111,9 @@ class CServerRcon
     $Packets = $this->_PacketRead();
 
     $ret = array();
-    foreach($Packets as $pack) 
+    foreach($Packets as $pack)
     {
-      if (isset($ret[$pack['ID']])) 
+      if (isset($ret[$pack['ID']]))
       {
         $ret[$pack['ID']]['S1'] .= $pack['S1'];
         $ret[$pack['ID']]['S2'] .= $pack['S2'];

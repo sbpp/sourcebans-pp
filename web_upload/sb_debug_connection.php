@@ -53,15 +53,15 @@ else
 		}
 		else
 		{
-            if(substr($packet, 5, (strpos(substr($packet, 5), "\0")-1)) == "Banned by server")
+            if(mb_substr($packet, 5, (mb_strpos(mb_substr($packet, 5), "\0")-1)) == "Banned by server")
             {
                 echo '[-] Got an response, but this webserver\'s ip is banned by the server.<br />';
                 $isBanned = true;
             }
             else
             {
-                $packet = substr($packet, 6);
-                $hostname = substr($packet, 0, strpos($packet, "\0"));
+                $packet = mb_substr($packet, 6);
+                $hostname = mb_substr($packet, 0, mb_strpos($packet, "\0"));
                 echo '[+] Got an response! Server: ' . $hostname . ' <br />';
             }
 		}
@@ -93,10 +93,10 @@ else
 	{
 		stream_set_timeout($sock, 2);
 		$data = pack("VV", 0, 03) . $serverrcon . chr(0) . '' . chr(0);
-		$data = pack("V", strlen($data)) . $data;
+		$data = pack("V", mb_strlen($data, '8bit')) . $data;
 		
 		echo '[+] Trying to write to TCP socket and authenticate via rcon<br />';
-		$written = fwrite($sock, $data, strlen($data));
+		$written = fwrite($sock, $data, mb_strlen($data, '8bit'));
 		
 		if($written === false)
 		{

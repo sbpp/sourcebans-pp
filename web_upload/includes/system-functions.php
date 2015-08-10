@@ -13,21 +13,116 @@
  * =============================================================================
  */
 
-if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
+if( !defined("IN_SB") ) {
+	echo "You should not be here. Only follow links!";
+	die();
+}
+
 /**
-* Extended substr function. If it finds mbstring extension it will use, else
-* it will use old substr() function
-*
-* @param string $string String that need to be fixed
-* @param integer $start Start extracting from
-* @param integer $length Extract number of characters
-* @return string
-*/
-function substr_utf($string, $start = 0, $length = null) {
-$start = (integer) $start >= 0 ? (integer) $start : 0;
-if(is_null($length))
-	$length = strlen_utf($string) - $start;
-    return substr($string, $start, $length);
+ * multibyte ucfirst function
+ * Make a string's first character uppercase
+ *
+ * @param string $str The input string.
+ * @return string Returns the resulting string.
+ **/
+function mb_ucfirst( $str ) {
+	$ret  = mb_strtoupper( mb_substr( $str, 0, 1 ) );
+	$ret .= mb_substr( $str, 1 );
+
+	return $ret;
+}
+
+/**
+ * multibyte ucwords function
+ * Uppercase the first character of each word in a string
+ *
+ * returns a string with the first character of each word in str
+ * capitalized, if that character is alphabetic.
+ *
+ * The definition of a word is any string of characters that is
+ * immediately after any character listed in the delimiters parameter
+ * (By default these are: space, form-feed, newline, carriage return, horizontal tab, and vertical tab
+ * [ \t\r\n\f\v] ).
+ *
+ * @param string The input string.
+ * @return string Returns the modified string.
+ **/
+function mb_ucwords( $str, $delimiters = " \t\r\n\f\v" ) {
+	$del = " \t\r\n\f\v";
+	if( $delimiters == $del ||
+		mb_strpos( $del, $delimiters ) !== FALSE )
+		return mb_convert_case( $str, MB_CASE_TITLE );
+
+	if( mb_strlen( $delimiters ) > 1 ) {
+		$str = mb_ucfirst( $str );
+
+		$CHARS = preg_split('//u', $str, -1, PREG_SPLIT_NO_EMPTY);
+		for( $i = 0; $i < count( $CHARS ); $i++ ) {
+			if( mb_strpos( $delimiters, $CHARS[$i] ) === FALSE ) {
+				continue;
+			}
+
+			if( array_key_exists( $i+1, $CHARS ) ) {
+				$CHARS[$i+1] = mb_strtoupper( $CHARS[$i+1] );
+			}
+		}
+
+		$str = implode( '' , $CHARS );
+	} else {
+		$PARTS = mb_split( $delimiters, $str );
+		foreach( $PARTS as &$part ) {
+			$part = mb_ucfirst( $part );
+		}
+
+		$str = implode( $delimiters, $PARTS );
+	}
+
+	return $str;
+}
+
+/**
+ * multibyte wordwrap function
+ * Wraps a string to a given number of characters
+ *
+ * @param string $str The input string.
+ * @param integer $width The number of characters at which the string will be wrapped.
+ * @param string $break The line is broken using the optional break parameter.
+ * @param boolean $cut If the cut is set to TRUE, the string is always wrapped at or
+ * 						before the specified width. So if you have a word that is
+ * 						larger than the given width, it is broken apart.
+ * 						When FALSE the function does not split the word even
+ * 						if the width is smaller than the word width.
+ * @return string Returns the given string wrapped at the specified length.
+ **/
+function mb_wordwrap($str, $width = 75, $break = "\n", $cut = false) {
+	$lines = explode($break, $str);
+	foreach ($lines as &$line) {
+		$line = rtrim($line);
+		if (mb_strlen($line) <= $width)
+			continue;
+
+		$words = explode(' ', $line);
+		$line = '';
+		$actual = '';
+		foreach ($words as $word) {
+			if (mb_strlen($actual.$word) <= $width)
+				$actual .= $word.' ';
+			else {
+				if ($actual != '')
+					$line .= rtrim($actual).$break;
+				$actual = $word;
+				if ($cut) {
+					while (mb_strlen($actual) > $width) {
+						$line .= mb_substr($actual, 0, $width).$break;
+						$actual = mb_substr($actual, $width);
+					}
+				}
+				$actual .= ' ';
+			}
+		}
+		$line .= trim($actual);
+	}
+	return implode($break, $lines);
 }
 
 /**
@@ -51,7 +146,7 @@ function clean($str) {
 */
 function is_valid_email($user_email) {
 	$chars = EMAIL_FORMAT;
-	if(strstr($user_email, '@') && strstr($user_email, '.')) {
+	if(mb_strstr($user_email, '@') && mb_strstr($user_email, '.')) {
 		return (boolean) preg_match($chars, $user_email);
 	}else{
 		return false;
@@ -65,7 +160,7 @@ function is_valid_email($user_email) {
  */
 function GetLocation()
 {
-	return substr($_SERVER['SCRIPT_FILENAME'], 0, strlen($base)-strlen("index.php"));
+	return mb_substr($_SERVER['SCRIPT_FILENAME'], 0, mb_strlen($base)-mb_strlen("index.php"));
 }
 
 /**
@@ -147,7 +242,7 @@ function AddTab($title, $url, $desc, $active=false)
 	}
 	else
 	{
-		if($_GET['p'] != "default" && substr($url, 12) == $_GET['p'])
+		if($_GET['p'] != "default" && mb_substr($url, 12) == $_GET['p'])
 		{
 			$tabs['active'] = true;
 			$GLOBALS['pagetitle'] = $title;
@@ -255,7 +350,7 @@ function BuildBreadcrumbs()
 		$text = "&raquo; <a href='index.php?p=home'>Home</a> &raquo; " . $bread;
 	else
 		$text = "&raquo; <a href='index.php?p=home'>Home</a>";
-	echo '<script type="text/javascript">$("breadcrumb").setHTML("' . $text . '");</script>';
+	echo '<script type="text/javascript">$("breadcrumb").set("html", "' . $text . '");</script>';
 
 }
 /**
@@ -273,7 +368,7 @@ function CreateLink($title, $url, $tooltip="", $target="_self", $wide=false)
 		$class = "perm";
 	else
 		$class = "tip";
-	if(strlen($tooltip) == 0)
+	if(mb_strlen($tooltip) == 0)
 	{
 		echo '<a href="' . $url . '" target="' . $target . '">' . $title .' </a>';
 	}else{
@@ -296,7 +391,7 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
 		$class = "perm";
 	else
 		$class = "tip";
-	if(strlen($tooltip) == 0)
+	if(mb_strlen($tooltip) == 0)
 	{
 		return '<a href="' . $url . '" onclick="' . $onclick . '" target="' . $target . '">' . $title .' </a>';
 	}else{
@@ -335,7 +430,7 @@ function SubMenu($el)
         preg_match('/.*?&c=(.*)/', html_entity_decode($e['url']), $matches);
         if(!empty($matches[1]))
             $c = $matches[1];
-        
+
 		$output .= "<a class=\"nav_link".($first?" first":"").(isset($_GET['c'])&&$_GET['c']==$c?" active":"")."\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
 		$first = false;
 	}
@@ -444,48 +539,48 @@ function SmFlagsToSb($flagstring, $head=true)
 			$string .= "<i>None</i>";
 			return $string;
 		}
-	if((strstr($flagstring, "a") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "a") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Reserved slot<br />";
-	if((strstr($flagstring, "b") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "b") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Generic admin<br />";
-	if((strstr($flagstring, "c") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "c") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Kick<br />";
-	if((strstr($flagstring, "d") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "d") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Ban<br />";
-	if((strstr($flagstring, "e") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "e") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Unban<br />";
-	if((strstr($flagstring, "f") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "f") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Slay<br />";
-	if((strstr($flagstring, "g") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "g") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Map change<br />";
-	if((strstr($flagstring, "h") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "h") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Change cvars<br />";
-	if((strstr($flagstring, "i") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "i") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Run configs<br />";
-	if((strstr($flagstring, "j") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "j") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Admin chat<br />";
-	if((strstr($flagstring, "k") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "k") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Start votes<br />";
-	if((strstr($flagstring, "l") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "l") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Password server<br />";
-	if((strstr($flagstring, "m") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "m") || mb_strstr($flagstring, "z")))
 		$string .="&bull; RCON<br />";
-	if((strstr($flagstring, "n") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "n") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Enable Cheats<br />";
-	if((strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "z")))
 		$string .="&bull; Full Admin<br />";
 
-	if((strstr($flagstring, "o") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "o") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 1<br />";
-	if((strstr($flagstring, "p") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "p") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 2<br />";
-	if((strstr($flagstring, "q") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "q") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 3<br />";
-	if((strstr($flagstring, "r") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "r") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 4<br />";
-	if((strstr($flagstring, "s") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "s") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 5<br />";
-	if((strstr($flagstring, "t") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "t") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 6<br />";
 
 
@@ -531,12 +626,12 @@ function NextAid()
 
 function trunc($text, $len, $byword=true)
 {
-	if(strlen($text) <= $len)
+	if(mb_strlen($text) <= $len)
 		return $text;
     $text = $text." ";
-    $text = substr($text,0,$len);
+    $text = mb_substr($text,0,$len);
     if($byword)
-    	$text = substr($text,0,strrpos($text,' '));
+    	$text = mb_substr($text,0,mb_strrpos($text,' '));
     $text = $text."...";
     return $text;
 }
@@ -647,7 +742,7 @@ function SecondsToString($sec, $textual=true)
 				$sec %= $value;
 			}
 		}
-		return substr($ret,0,-2);
+		return mb_substr($ret,0,-2);
 	}
 	else
 	{
@@ -725,7 +820,7 @@ function CheckExt($filename, $ext)
 {
 	$filename = str_replace(chr(0), '', $filename);
 	$path_info = pathinfo($filename);
-	if(strtolower($path_info['extension']) == strtolower($ext))
+	if(mb_strtolower($path_info['extension']) == mb_strtolower($ext))
 		return true;
 	else
 		return false;
@@ -735,9 +830,8 @@ function ShowBox($title, $msg, $color, $redir="", $noclose=false)
 {
 	echo "<script>ShowBox('$title', '$msg', '$color', '$redir', $noclose);</script>";
 }
-function ShowBox_ajx($title, $msg, $color, $redir="", $noclose=false, &$response)
-{
-	$response->AddScript("ShowBox('$title', '$msg', '$color', '$redir', $noclose);");
+function ShowBox_ajx($title, $msg, $color, $redir="", $noclose=false, &$response) {
+	$response->Script("ShowBox('$title', '$msg', '$color', '$redir', $noclose);");
 }
 
 function PruneBans()
@@ -978,17 +1072,17 @@ function checkMultiplePlayers($sid, $steamids)
 
 function getAccountId($steamid)
 {
-	if(strpos($steamid, "STEAM_") === 0) {
+	if(mb_strpos($steamid, "STEAM_") === 0) {
 		$parts = explode(":", $steamid);
 		if(count($parts) != 3)
 			return -1;
 		return (int)$parts[2]*2 + (int)$parts[1];
 	}
-	else if(strpos($steamid, "[U:") === 0) {
+	else if(mb_strpos($steamid, "[U:") === 0) {
 		$parts = explode(":", $steamid);
 		if(count($parts) != 3)
 			return -1;
-		return (int)substr($parts[2], 0, -1);
+		return (int)mb_substr($parts[2], 0, -1);
 	}
 	return -1;
 }
@@ -1063,7 +1157,7 @@ function GetFriendIDFromCommunityID($comid)
 {
 	$raw = @file_get_contents("http://steamcommunity.com/id/".$comid."/?xml=1");
 	preg_match("/<privacyState>([^\]]*)<\/privacyState>/", $raw, $status);
-	if(($status && $status[1] != "public") || strstr($raw, "</profile>")) {
+	if(($status && $status[1] != "public") || mb_strstr($raw, "</profile>")) {
 		$raw = str_replace("&", "", $raw);
 		$raw = strip_31_ascii($raw);
 		$raw = utf8_encode($raw);
@@ -1079,7 +1173,7 @@ function GetCommunityName($steamid)
 	$friendid = SteamIDToFriendID($steamid);
 	$result = get_headers("http://steamcommunity.com/profiles/".$friendid."/", 1);
 	$raw = file_get_contents(($result["Location"]!=""?$result["Location"]:"http://steamcommunity.com/profiles/".$friendid."/")."?xml=1");
-	if(strstr($raw, "</profile>")) {
+	if(mb_strstr($raw, "</profile>")) {
 		$raw = str_replace("&", "", $raw);
         $raw = strip_31_ascii($raw);
 		$raw = utf8_encode($raw);

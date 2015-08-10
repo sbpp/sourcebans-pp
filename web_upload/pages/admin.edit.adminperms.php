@@ -62,12 +62,12 @@ $name = $userbank->GetProperty("user", $_GET['id']);
 <div id="admin-page-content">
 <div id="add-group">
 <h3>Web Admin Permissions</h3>
-<input type="hidden" id="admin_id" value=<?php echo $_GET['id']?>>
-<?php echo str_replace("{title}", $name, file_get_contents(TEMPLATES_PATH . "/groups.web.perm.php")) ;?>
+<input type="hidden" id="admin_id" value=<?= $_GET['id']?>>
+<?= str_replace("{title}", $name, file_get_contents(TEMPLATES_PATH . "/groups.web.perm.php")) ;?>
 <br />
 <h3>Server Admin Permissions</h3>
 
-<?php echo str_replace("{title}", $name, file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php")) ;?>
+<?= str_replace("{title}", $name, file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php")) ;?>
 
 <table width="100%">
 <tr><td>&nbsp;</td>
@@ -76,8 +76,8 @@ $name = $userbank->GetProperty("user", $_GET['id']);
     <td>&nbsp;</td>
     <td>
     <div align="center">
-       <?php echo $ui->drawButton("Save Changes", "ProcessEditAdminPermissions();", "ok", "editadmingroup");?>
-      &nbsp;<?php echo $ui->drawButton("Back", "history.go(-1)", "cancel", "back");?>
+       <?= $ui->drawButton("Save Changes", "ProcessEditAdminPermissions();", "ok", "editadmingroup");?>
+      &nbsp;<?= $ui->drawButton("Back", "history.go(-1)", "cancel", "back");?>
       
       </div>	</td>
   </tr>
@@ -95,70 +95,70 @@ $name = $userbank->GetProperty("user", $_GET['id']);
 		$("srootcheckbox").setStyle('display', 'none');
 	}
 <?php } ?>
-$('p2').checked = <?php echo check_flag($web_flags, ADMIN_OWNER) ? "true" : "false"?>;
+$('p2').set('checked', <?= check_flag($web_flags, ADMIN_OWNER) ? "true" : "false"?>);
 
-$('p4').checked = <?php echo check_flag($web_flags, ADMIN_LIST_ADMINS) ? "true" : "false"?>;
-$('p5').checked = <?php echo check_flag($web_flags, ADMIN_ADD_ADMINS) ? "true" : "false"?>;
-$('p6').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_ADMINS) ? "true" : "false"?>;
-$('p7').checked = <?php echo check_flag($web_flags, ADMIN_DELETE_ADMINS) ? "true" : "false"?>;
+$('p4').set('checked', <?= check_flag($web_flags, ADMIN_LIST_ADMINS) ? "true" : "false"?>);
+$('p5').set('checked', <?= check_flag($web_flags, ADMIN_ADD_ADMINS) ? "true" : "false"?>);
+$('p6').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_ADMINS) ? "true" : "false"?>);
+$('p7').set('checked', <?= check_flag($web_flags, ADMIN_DELETE_ADMINS) ? "true" : "false"?>);
 
-$('p9').checked = <?php echo check_flag($web_flags, ADMIN_LIST_SERVERS) ? "true" : "false"?>;
-$('p10').checked = <?php echo check_flag($web_flags, ADMIN_ADD_SERVER) ? "true" : "false"?>;
-$('p11').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_SERVERS) ? "true" : "false"?>;
-$('p12').checked = <?php echo check_flag($web_flags, ADMIN_DELETE_SERVERS) ? "true" : "false"?>;
+$('p9').set('checked', <?= check_flag($web_flags, ADMIN_LIST_SERVERS) ? "true" : "false"?>);
+$('p10').set('checked', <?= check_flag($web_flags, ADMIN_ADD_SERVER) ? "true" : "false"?>);
+$('p11').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_SERVERS) ? "true" : "false"?>);
+$('p12').set('checked', <?= check_flag($web_flags, ADMIN_DELETE_SERVERS) ? "true" : "false"?>);
 
-$('p14').checked = <?php echo check_flag($web_flags, ADMIN_ADD_BAN) ? "true" : "false"?>;
-$('p16').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_OWN_BANS) ? "true" : "false"?>;
-$('p17').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_GROUP_BANS) ? "true" : "false"?>;
-$('p18').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_ALL_BANS) ? "true" : "false"?>;
-$('p19').checked = <?php echo check_flag($web_flags, ADMIN_BAN_PROTESTS) ? "true" : "false"?>;
-$('p20').checked = <?php echo check_flag($web_flags, ADMIN_BAN_SUBMISSIONS) ? "true" : "false"?>;
-$('p33').checked = <?php echo check_flag($web_flags, ADMIN_DELETE_BAN) ? "true" : "false"?>;
-$('p32').checked = <?php echo check_flag($web_flags, ADMIN_UNBAN) ? "true" : "false"?>;
-$('p34').checked = <?php echo check_flag($web_flags, ADMIN_BAN_IMPORT) ? "true" : "false"?>;
-$('p38').checked = <?php echo check_flag($web_flags, ADMIN_UNBAN_OWN_BANS) ? "true" : "false"?>;
-$('p39').checked = <?php echo check_flag($web_flags, ADMIN_UNBAN_GROUP_BANS) ? "true" : "false"?>;
+$('p14').set('checked', <?= check_flag($web_flags, ADMIN_ADD_BAN) ? "true" : "false"?>);
+$('p16').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_OWN_BANS) ? "true" : "false"?>);
+$('p17').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_GROUP_BANS) ? "true" : "false"?>);
+$('p18').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_ALL_BANS) ? "true" : "false"?>);
+$('p19').set('checked', <?= check_flag($web_flags, ADMIN_BAN_PROTESTS) ? "true" : "false"?>);
+$('p20').set('checked', <?= check_flag($web_flags, ADMIN_BAN_SUBMISSIONS) ? "true" : "false"?>);
+$('p33').set('checked', <?= check_flag($web_flags, ADMIN_DELETE_BAN) ? "true" : "false"?>);
+$('p32').set('checked', <?= check_flag($web_flags, ADMIN_UNBAN) ? "true" : "false"?>);
+$('p34').set('checked', <?= check_flag($web_flags, ADMIN_BAN_IMPORT) ? "true" : "false"?>);
+$('p38').set('checked', <?= check_flag($web_flags, ADMIN_UNBAN_OWN_BANS) ? "true" : "false"?>);
+$('p39').set('checked', <?= check_flag($web_flags, ADMIN_UNBAN_GROUP_BANS) ? "true" : "false"?>);
 
-$('p36').checked = <?php echo check_flag($web_flags, ADMIN_NOTIFY_SUB) ? "true" : "false"?>;
-$('p37').checked = <?php echo check_flag($web_flags, ADMIN_NOTIFY_PROTEST) ? "true" : "false"?>;
+$('p36').set('checked', <?= check_flag($web_flags, ADMIN_NOTIFY_SUB) ? "true" : "false"?>);
+$('p37').set('checked', <?= check_flag($web_flags, ADMIN_NOTIFY_PROTEST) ? "true" : "false"?>);
 
-$('p22').checked = <?php echo check_flag($web_flags, ADMIN_LIST_GROUPS) ? "true" : "false"?>;
-$('p23').checked = <?php echo check_flag($web_flags, ADMIN_ADD_GROUP) ? "true" : "false"?>;
-$('p24').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_GROUPS) ? "true" : "false"?>;
-$('p25').checked = <?php echo check_flag($web_flags, ADMIN_DELETE_GROUPS) ? "true" : "false"?>;
+$('p22').set('checked', <?= check_flag($web_flags, ADMIN_LIST_GROUPS) ? "true" : "false"?>);
+$('p23').set('checked', <?= check_flag($web_flags, ADMIN_ADD_GROUP) ? "true" : "false"?>);
+$('p24').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_GROUPS) ? "true" : "false"?>);
+$('p25').set('checked', <?= check_flag($web_flags, ADMIN_DELETE_GROUPS) ? "true" : "false"?>);
 
-$('p26').checked = <?php echo check_flag($web_flags, ADMIN_WEB_SETTINGS) ? "true" : "false"?>;
+$('p26').set('checked', <?= check_flag($web_flags, ADMIN_WEB_SETTINGS) ? "true" : "false"?>);
 
-$('p28').checked = <?php echo check_flag($web_flags, ADMIN_LIST_MODS) ? "true" : "false"?>;
-$('p29').checked = <?php echo check_flag($web_flags, ADMIN_ADD_MODS) ? "true" : "false"?>;
-$('p30').checked = <?php echo check_flag($web_flags, ADMIN_EDIT_MODS) ? "true" : "false"?>;
-$('p31').checked = <?php echo check_flag($web_flags, ADMIN_DELETE_MODS) ? "true" : "false"?>;
+$('p28').set('checked', <?= check_flag($web_flags, ADMIN_LIST_MODS) ? "true" : "false"?>);
+$('p29').set('checked', <?= check_flag($web_flags, ADMIN_ADD_MODS) ? "true" : "false"?>);
+$('p30').set('checked', <?= check_flag($web_flags, ADMIN_EDIT_MODS) ? "true" : "false"?>);
+$('p31').set('checked', <?= check_flag($web_flags, ADMIN_DELETE_MODS) ? "true" : "false"?>);
 
 
-$('s14').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_ROOT) ? "true" : "false"?>;
-$('s1').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_RESERVED_SLOT) ? "true" : "false"?>;
-$('s23').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_GENERIC) ? "true" : "false"?>;
-$('s2').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_KICK) ? "true" : "false"?>;
-$('s3').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_BAN) ? "true" : "false"?>;
-$('s4').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_UNBAN) ? "true" : "false"?>;
-$('s5').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_SLAY) ? "true" : "false"?>;
-$('s6').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_MAP) ? "true" : "false"?>;
-$('s7').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CVAR) ? "true" : "false"?>;
-$('s8').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CONFIG) ? "true" : "false"?>;
-$('s9').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CHAT) ? "true" : "false"?>;
-$('s10').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_VOTE) ? "true" : "false"?>;
-$('s11').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_PASSWORD) ? "true" : "false"?>;
-$('s12').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_RCON) ? "true" : "false"?>;
-$('s13').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CHEATS) ? "true" : "false"?>;
+$('s14').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_ROOT) ? "true" : "false"?>);
+$('s1').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_RESERVED_SLOT) ? "true" : "false"?>);
+$('s23').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_GENERIC) ? "true" : "false"?>);
+$('s2').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_KICK) ? "true" : "false"?>);
+$('s3').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_BAN) ? "true" : "false"?>);
+$('s4').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_UNBAN) ? "true" : "false"?>);
+$('s5').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_SLAY) ? "true" : "false"?>);
+$('s6').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_MAP) ? "true" : "false"?>);
+$('s7').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CVAR) ? "true" : "false"?>);
+$('s8').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CONFIG) ? "true" : "false"?>);
+$('s9').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CHAT) ? "true" : "false"?>);
+$('s10').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_VOTE) ? "true" : "false"?>);
+$('s11').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_PASSWORD) ? "true" : "false"?>);
+$('s12').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_RCON) ? "true" : "false"?>);
+$('s13').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CHEATS) ? "true" : "false"?>);
 
-$('s17').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM1) ? "true" : "false"?>;
-$('s18').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM2) ? "true" : "false"?>;
-$('s19').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM3) ? "true" : "false"?>;
-$('s20').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM4) ? "true" : "false"?>;
-$('s21').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM5) ? "true" : "false"?>;
-$('s22').checked = <?php echo strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM6) ? "true" : "false"?>;
+$('s17').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM1) ? "true" : "false"?>);
+$('s18').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM2) ? "true" : "false"?>);
+$('s19').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM3) ? "true" : "false"?>);
+$('s20').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM4) ? "true" : "false"?>);
+$('s21').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM5) ? "true" : "false"?>);
+$('s22').set('checked', <?= mb_strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM6) ? "true" : "false"?>);
 
-$('immunity').value = <?php echo $admin['immunity'] ? $admin['immunity'] : "0"?>;
+$('immunity').set('value', '<?= $admin['immunity'] ? $admin['immunity'] : "0"?>');
 </script>
 </div></div>
 

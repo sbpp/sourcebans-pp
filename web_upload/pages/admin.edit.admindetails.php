@@ -76,14 +76,14 @@ if(isset($_POST['adminname']))
 	if(empty($a_name))
 	{
 		$error++;
-		$errorScript .= "$('adminname.msg').innerHTML = 'You must type a name for the admin.';";
+		$errorScript .= "$('adminname.msg').set('html', 'You must type a name for the admin.');";
 		$errorScript .= "$('adminname.msg').setStyle('display', 'block');";
 	}
 	else{
-        if(strstr($a_name, "'"))
+        if(mb_strstr($a_name, "'"))
 		{
 			$error++;
-			$errorScript .= "$('adminname.msg').innerHTML = 'An admin name can not contain a \" \' \".';";
+			$errorScript .= "$('adminname.msg').set('html', 'An admin name can not contain a \" \' \".');";
 			$errorScript .= "$('adminname.msg').setStyle('display', 'block');";
 		}
 		else
@@ -91,17 +91,17 @@ if(isset($_POST['adminname']))
             if($a_name != $userbank->GetProperty('user', $_GET['id']) && is_taken("admins", "user", $a_name))
             {
                 $error++;
-				$errorScript .= "$('adminname.msg').innerHTML = 'An admin with this name already exists.';";
+				$errorScript .= "$('adminname.msg').set('html', 'An admin with this name already exists.');";
 				$errorScript .= "$('adminname.msg').setStyle('display', 'block');";
             }
 		}
 	}
 	
 	// If they didnt type a steamid
-	if((empty($a_steam) || strlen($a_steam) < 10))
+	if((empty($a_steam) || mb_strlen($a_steam) < 10))
 	{
 		$error++;
-		$errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID for the admin.';";
+		$errorScript .= "$('steam.msg').set('html', 'You must type a Steam ID or Community ID for the admin.');";
 		$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 	}
 	else
@@ -110,11 +110,11 @@ if(isset($_POST['adminname']))
 		if((!is_numeric($a_steam) 
 		&& !validate_steam($a_steam))
 		|| (is_numeric($a_steam) 
-		&& (strlen($a_steam) < 15
+		&& (mb_strlen($a_steam) < 15
 		|| !validate_steam($a_steam = FriendIDToSteamID($a_steam)))))
 		{
 			$error++;
-			$errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID.';";
+			$errorScript .= "$('steam.msg').set('html', 'Please enter a valid Steam ID or Community ID.');";
 			$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 		}
 		else
@@ -132,7 +132,7 @@ if(isset($_POST['adminname']))
 					}
 				}
 				$error++;
-				$errorScript .= "$('steam.msg').innerHTML = 'Admin ".htmlspecialchars(addslashes($name))." already uses this Steam ID.';";
+				$errorScript .= "$('steam.msg').set('html', 'Admin ".htmlspecialchars(addslashes($name))." already uses this Steam ID.');";
 				$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 			}
 		}
@@ -145,7 +145,7 @@ if(isset($_POST['adminname']))
 		if($GLOBALS['userbank']->GetProperty('extraflags', $_GET['id']) != 0 || $GLOBALS['userbank']->GetProperty('gid', $_GET['id']) > 0)
 		{
 			$error++;
-			$errorScript .= "$('email.msg').innerHTML = 'You must type an e-mail address.';";
+			$errorScript .= "$('email.msg').set('html', 'You must type an e-mail address.');";
 			$errorScript .= "$('email.msg').setStyle('display', 'block');";
 		}
 	}
@@ -163,12 +163,12 @@ if(isset($_POST['adminname']))
 				}
 			}
 			$error++;
-			$errorScript .= "$('email.msg').innerHTML = 'This email address is already being used by ".htmlspecialchars(addslashes($name)).".';";
+			$errorScript .= "$('email.msg').set('html', 'This email address is already being used by ".htmlspecialchars(addslashes($name)).".');";
 			$errorScript .= "$('email.msg').setStyle('display', 'block');";
 		}
 		/*else if(!validate_email($a_email))
 			$error++;
-			$errorScript .= "$('email.msg').innerHTML = 'Please enter a valid email address.';";
+			$errorScript .= "$('email.msg').set('html', 'Please enter a valid email address.');";
 			$errorScript .= "$('email.msg').setStyle('display', 'block');";
 		}*/
 	}
@@ -182,10 +182,10 @@ if(isset($_POST['adminname']))
 			$pw_changed = true;
 			// DID type a password, so he wants to change it.
 			// Password too short?
-			if(strlen($_POST['password']) < MIN_PASS_LENGTH)
+			if(mb_strlen($_POST['password']) < MIN_PASS_LENGTH)
 			{
 				$error++;
-				$errorScript .= "$('password.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
+				$errorScript .= "$('password.msg').set('html', 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.');";
 				$errorScript .= "$('password.msg').setStyle('display', 'block');";
 			}
 			else 
@@ -194,14 +194,14 @@ if(isset($_POST['adminname']))
 				if(empty($_POST['password2']))
 				{
 					$error++;
-					$errorScript .= "$('password2.msg').innerHTML = 'You must confirm the password.';";
+					$errorScript .= "$('password2.msg').set('html', 'You must confirm the password.');";
 					$errorScript .= "$('password2.msg').setStyle('display', 'block');";
 				}
 				// Passwords match?
 				else if($_POST['password'] != $_POST['password2'])
 				{
 					$error++;
-					$errorScript .= "$('password2.msg').innerHTML = 'Your passwords don't match.';";
+					$errorScript .= "$('password2.msg').set('html', 'Your passwords don't match.');";
 					$errorScript .= "$('password2.msg').setStyle('display', 'block');";
 				}
 			}
@@ -218,14 +218,14 @@ if(isset($_POST['adminname']))
 			if(empty($_POST['a_serverpass']) && empty($srvpw))
 			{
 				$error++;
-				$errorScript .= "$('a_serverpass.msg').innerHTML = 'You must type a server password or uncheck the box.';";
+				$errorScript .= "$('a_serverpass.msg').set('html', 'You must type a server password or uncheck the box.');";
 				$errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
 			}
 			// Password too short?
-			else if(strlen($_POST['a_serverpass']) < MIN_PASS_LENGTH)
+			else if(mb_strlen($_POST['a_serverpass']) < MIN_PASS_LENGTH)
 			{
 				$error++;
-				$errorScript .= "$('a_serverpass.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
+				$errorScript .= "$('a_serverpass.msg').set('html', 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.');";
 				$errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
 			}
 		}

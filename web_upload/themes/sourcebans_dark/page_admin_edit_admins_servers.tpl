@@ -43,8 +43,8 @@
 			</table>
 			<script>
 			{foreach from="$assigned_servers" item="asrv"}
-				if($('server_{$asrv.0}'))$('server_{$asrv.0}').checked = true;
-				if($('group_{$asrv[1]}'))$('group_{$asrv[1]}').checked = true;
+				if($('server_{$asrv.0}'))$('server_{$asrv.0}').set('checked', true);
+				if($('group_{$asrv[1]}'))$('group_{$asrv[1]}').set('checked', true);
 			{/foreach}
 			{foreach from="$server_list" item="server"}
 				xajax_ServerHostPlayers({$server.sid}, "id", "server_host_{$server.sid}");

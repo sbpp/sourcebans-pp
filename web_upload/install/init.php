@@ -34,7 +34,7 @@ if(!isset($_SERVER['REQUEST_URI']) || trim($_SERVER['REQUEST_URI']) == '')
     { $_SERVER['REQUEST_URI'] .= '?' . $_SERVER['QUERY_STRING']; } 
 } 
 // Fix for Dreamhost and other PHP as CGI hosts
-if(strstr($_SERVER['SCRIPT_NAME'], 'php.cgi')) unset($_SERVER['PATH_INFO']);
+if(mb_strstr($_SERVER['SCRIPT_NAME'], 'php.cgi')) unset($_SERVER['PATH_INFO']);
 if(trim($_SERVER['PHP_SELF']) == '') $_SERVER['PHP_SELF'] = preg_replace("/(\?.*)?$/",'', $_SERVER["REQUEST_URI"]);
 
 // ---------------------------------------------------

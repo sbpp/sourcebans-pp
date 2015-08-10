@@ -42,7 +42,7 @@ $theme->display('box_admin_bans_search.tpl');
 <script type="text/javascript">
 function switch_length(opt)
 {
-	if(opt.options[opt.selectedIndex].value=='other')
+	if(opt.options[opt.selectedIndex].get('value') == 'other')
 	{
 		$('other_length').setStyle('display', 'block');
 		$('other_length').focus();

@@ -14,7 +14,7 @@
 			$db = ADONewConnection($server);
 			if(!$db) {
 				echo "<script>ShowBox('Error', 'There was an error connecting to your database. <br />Recheck the details to make sure they are correct', 'red', '', true);</script>";
-			} else if(strlen($_POST['prefix']) > 9) {
+			} else if(mb_strlen($_POST['prefix']) > 9) {
 				echo "<script>ShowBox('Error', 'The prefix cannot be longer than 9 characters.<br />Correct this and submit again.', 'red', '', true);</script>";
 			} else {
 				?>
@@ -100,8 +100,8 @@ Hover your mouse over the '?' buttons to see an explanation of the field.<br /><
 </div>
 </form>
 <script type="text/javascript">
-	$E('html').onkeydown = function(event){
+	document.children[0].addEvent('keydown', function(event){
 	    var event = new Event(event);
 	    if (event.key == 'enter' ) $('submit').submit();
-	}
+	});
 </script>

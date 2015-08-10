@@ -19,7 +19,7 @@ The following is a list of the permissions that you have on this system.<br /><b
   <tr>
     <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Password</div></td>
     <td><div align="left">
-        <input type="password" onblur="xajax_CheckPassword(-{$user_aid}-, $('current').value);" class="textbox" id="current" name="current" />
+        <input type="password" onblur="xajax_CheckPassword(-{$user_aid}-, $('current').get('value'));" class="textbox" id="current" name="current" />
       </div>
         <div id="current.msg" class="badentry"></div></td>
   </tr>
@@ -44,7 +44,7 @@ The following is a list of the permissions that you have on this system.<br /><b
   <tr>
     <td>&nbsp;</td>
     <td>
-      <input type="submit" onclick="xajax_CheckPassword(-{$user_aid}-, $('current').value);dispatch();" name="button" class="btn ok" id="button" value="Save" />
+      <input type="submit" onclick="xajax_CheckPassword(-{$user_aid}-, $('current').get('value'));dispatch();" name="button" class="btn ok" id="button" value="Save" />
       &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
   </tr>
 </table>
@@ -59,7 +59,7 @@ You will need to specify this password in the game server before you can use you
   <tr>
     <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Server Password</div></td>
     <td><div align="left">
-        <input type="password" onblur="xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);" class="textbox" id="scurrent" name="scurrent" />
+        <input type="password" onblur="xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').get('value'));" class="textbox" id="scurrent" name="scurrent" />
       </div>
         <div id="scurrent.msg" class="badentry"></div></td>
   </tr>
@@ -93,7 +93,7 @@ You will need to specify this password in the game server before you can use you
   <tr>
     <td>&nbsp;</td>
     <td>
-      <input type="submit" onclick="-{if $srvpwset}-xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);-{/if}-srvdispatch();" name="button" class="btn ok" id="button" value="Save" />
+      <input type="submit" onclick="-{if $srvpwset}-xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').get('value'));-{/if}-srvdispatch();" name="button" class="btn ok" id="button" value="Save" />
       &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
   </tr>
 </table>
@@ -144,20 +144,20 @@ function checkYourAcctPass()
 	{
 		var err = 0;
 		
-		if($('pass1').value.length < -{$min_pass_len}-)
+		if($('pass1').get('value').length < -{$min_pass_len}-)
 		{
 			$('pass1.msg').setStyle('display', 'block');
-			$('pass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
+			$('pass1.msg').set('html', 'Your password must be atleast -{$min_pass_len}- letters long');
 			err++;
 		}
 		else
 		{
 			$('pass1.msg').setStyle('display', 'none');
 		}
-		if($('pass2').value != "" && $('pass2').value != $('pass1').value)
+		if($('pass2').get('value') != "" && $('pass2').get('value') != $('pass1').get('value'))
 		{	
 			$('pass2.msg').setStyle('display', 'block');
-			$('pass2.msg').setHTML('Your passwords dont match');
+			$('pass2.msg').set('html', 'Your passwords dont match');
 			err++;
 		}else{
 			$('pass2.msg').setStyle('display', 'none');
@@ -175,36 +175,36 @@ function checkYourAcctPass()
 	}
 	function dispatch()
 	{
-		if($('current.msg').innerHTML == "Incorrect password.")
+		if($('current.msg').get('html') == "Incorrect password.")
 		{
 			alert("Incorrect Password");
 			return false;
 		}
 		if(checkYourAcctPass() && error == 0)
 		{
-			xajax_ChangePassword(-{$user_aid}-, $('pass2').value);
+			xajax_ChangePassword(-{$user_aid}-, $('pass2').get('value'));
 		}
 	}
 	function checkYourSrvPass()
 	{
-		if(!$('delspass') || $('delspass').checked == false)
+		if(!$('delspass') || $('delspass').get('checked') == false)
 		{
 			var err = 0;
 			
-			if($('spass1').value.length < -{$min_pass_len}-)
+			if($('spass1').get('value').length < -{$min_pass_len}-)
 			{
 				$('spass1.msg').setStyle('display', 'block');
-				$('spass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
+				$('spass1.msg').set('html', 'Your password must be atleast -{$min_pass_len}- letters long');
 				err++;
 			}
 			else
 			{
 				$('spass1.msg').setStyle('display', 'none');
 			}
-			if($('spass2').value != "" && $('spass2').value != $('spass1').value)
+			if($('spass2').get('value') != "" && $('spass2').get('value') != $('spass1').get('value'))
 			{	
 				$('spass2.msg').setStyle('display', 'block');
-				$('spass2.msg').setHTML('Your passwords dont match');
+				$('spass2.msg').set('html', 'Your passwords dont match');
 				err++;
 			}else{
 				$('spass2.msg').setStyle('display', 'none');
@@ -229,17 +229,17 @@ function checkYourAcctPass()
 	function srvdispatch()
 	{
 		-{if $srvpwset}-
-		if($('scurrent.msg').innerHTML == "Incorrect password.")
+		if($('scurrent.msg').get('html') == "Incorrect password.")
 		{
 			alert("Incorrect Password");
 			return false;
 		}
 		-{/if}-
-		if(checkYourSrvPass() && error == 0 && (!$('delspass') || $('delspass').checked == false))
+		if(checkYourSrvPass() && error == 0 && (!$('delspass') || $('delspass').get('checked') == false))
 		{
-			xajax_ChangeSrvPassword(-{$user_aid}-, $('spass2').value);
+			xajax_ChangeSrvPassword(-{$user_aid}-, $('spass2').get('value'));
 		}
-		if($('delspass').checked == true)
+		if($('delspass').get('checked') == true)
 		{
 			xajax_ChangeSrvPassword(-{$user_aid}-, 'NULL');
 		}
@@ -247,35 +247,35 @@ function checkYourAcctPass()
 	function checkmail()
 	{
 		var err = 0;
-        if($('email1').value == "")
+        if($('email1').get('value') == "")
         {
             $('email1.msg').setStyle('display', 'block');
-			$('email1.msg').setHTML('Please type the new E-mail.');
+			$('email1.msg').set('html', 'Please type the new E-mail.');
 			err++;
 		}else{
 			$('email1.msg').setStyle('display', 'none');
 		}
         
-        if($('email2').value == "")
+        if($('email2').get('value') == "")
         {
             $('email2.msg').setStyle('display', 'block');
-			$('email2.msg').setHTML('Please retype the new E-mail.');
+			$('email2.msg').set('html', 'Please retype the new E-mail.');
 			err++;
 		}else{
 			$('email2.msg').setStyle('display', 'none');
 		}
          
-		if(err == 0 && $('email2').value != $('email1').value)
+		if(err == 0 && $('email2').get('value') != $('email1').get('value'))
 		{	
 			$('email2.msg').setStyle('display', 'block');
-			$('email2.msg').setHTML('The typed E-mails doesn\'t match.');
+			$('email2.msg').set('html', 'The typed E-mails doesn\'t match.');
 			err++;
 		}
         
-        if($('emailpw').value == "")
+        if($('emailpw').get('value') == "")
         {
             $('emailpw.msg').setStyle('display', 'block');
-			$('emailpw.msg').setHTML('Please type your password.');
+			$('emailpw.msg').set('html', 'Please type your password.');
 			err++;
 		}else{
 			$('emailpw.msg').setStyle('display', 'none');
@@ -292,7 +292,7 @@ function checkYourAcctPass()
 		}
 		if(error == 0)
 		{
-			xajax_ChangeEmail(-{$user_aid}-, $('email2').value, $('emailpw').value);
+			xajax_ChangeEmail(-{$user_aid}-, $('email2').get('value'), $('emailpw').get('value'));
 		}
 	}
 </script>

@@ -39,7 +39,7 @@ if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 	if(isset($_GET['advSearch']))
 	{
 		// Escape the value, but strip the leading and trailing quote
-		$value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
+		$value = mb_substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
 		$type = $_GET['advType'];
 		switch($type)
 		{
@@ -310,26 +310,26 @@ else
 	
 ?>
 <script>
-$('config_debug').checked = <?php echo $GLOBALS['config']['config.debug']?>;
-$('config_summertime').checked = <?php echo $GLOBALS['config']['config.summertime']?>;
-$('enable_submit').checked = <?php echo $GLOBALS['config']['config.enablesubmit']?>;
-$('enable_protest').checked = <?php echo $GLOBALS['config']['config.enableprotest']?>;
-$('enable_kickit').checked = <?php echo $GLOBALS['config']['config.enablekickit']?>;
-$('export_public').checked = <?php echo $GLOBALS['config']['config.exportpublic']?>;
-$('dash_nopopup').checked = <?php echo $GLOBALS['config']['dash.lognopopup']?>;
-$('default_page').value = <?php echo $GLOBALS['config']['config.defaultpage']?>;
-$('protest_emailonlyinvolved').checked = <?php echo $GLOBALS['config']['protest.emailonlyinvolved']?>;
-$('banlist_hideadmname').checked = <?php echo $GLOBALS['config']['banlist.hideadminname']?>;
-$('banlist_nocountryfetch').checked = <?php echo $GLOBALS['config']['banlist.nocountryfetch']?>;
-$('banlist_hideplayerips').checked = <?php echo $GLOBALS['config']['banlist.hideplayerips']?>;
-$('enable_groupbanning').checked = <?php echo $GLOBALS['config']['config.enablegroupbanning']?>;
-$('enable_friendsbanning').checked = <?php echo $GLOBALS['config']['config.enablefriendsbanning']?>;
-$('enable_adminrehashing').checked = <?php echo $GLOBALS['config']['config.enableadminrehashing']?>;
+$('config_debug').set('checked', <?php echo $GLOBALS['config']['config.debug']?>);
+$('config_summertime').set('checked', <?php echo $GLOBALS['config']['config.summertime']?>);
+$('enable_submit').set('checked', <?php echo $GLOBALS['config']['config.enablesubmit']?>);
+$('enable_protest').set('checked', <?php echo $GLOBALS['config']['config.enableprotest']?>);
+$('enable_kickit').set('checked', <?php echo $GLOBALS['config']['config.enablekickit']?>);
+$('export_public').set('checked', <?php echo $GLOBALS['config']['config.exportpublic']?>);
+$('dash_nopopup').set('checked', <?php echo $GLOBALS['config']['dash.lognopopup']?>);
+$('default_page').set('value', '<?php echo $GLOBALS['config']['config.defaultpage']?>');
+$('protest_emailonlyinvolved').set('checked', <?php echo $GLOBALS['config']['protest.emailonlyinvolved']?>);
+$('banlist_hideadmname').set('checked', <?php echo $GLOBALS['config']['banlist.hideadminname']?>);
+$('banlist_nocountryfetch').set('checked', <?php echo $GLOBALS['config']['banlist.nocountryfetch']?>);
+$('banlist_hideplayerips').set('checked', <?php echo $GLOBALS['config']['banlist.hideplayerips']?>);
+$('enable_groupbanning').set('checked', <?php echo $GLOBALS['config']['config.enablegroupbanning']?>);
+$('enable_friendsbanning').set('checked', <?php echo $GLOBALS['config']['config.enablefriendsbanning']?>);
+$('enable_adminrehashing').set('checked', <?php echo $GLOBALS['config']['config.enableadminrehashing']?>);
 <?php
 if(ini_get('safe_mode')==1) {
-	print "$('enable_groupbanning').disabled = true;\n";
-	print "$('enable_friendsbanning').disabled = true;\n";
-	print "$('enable_friendsbanning.msg').setHTML('You can\'t use these features. You need to set PHP safe mode off.');\n";
+	print "$('enable_groupbanning').set('disabled', true);\n";
+	print "$('enable_friendsbanning').set('disabled', true);\n";
+	print "$('enable_friendsbanning.msg').set('html', 'You can\'t use these features. You need to set PHP safe mode off.');\n";
 	print "$('enable_friendsbanning.msg').setStyle('display', 'block');\n";
 }
 ?>

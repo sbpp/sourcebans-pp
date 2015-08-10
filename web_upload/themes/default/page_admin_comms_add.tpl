@@ -63,7 +63,7 @@
     		</td>
     		<td>
     			<div align="left">
-    				<select id="listReason" name="listReason" TABINDEX=4 class="submit-fields" onChange="changeReason(this[this.selectedIndex].value);">
+    				<select id="listReason" name="listReason" TABINDEX=4 class="submit-fields" onChange="changeReason(this[this.selectedIndex].get('value'));">
     					<option value="" selected> -- Select Reason -- </option>
 					<optgroup label="Violation">
 						<option value="Obscene language">Obscene language</option>

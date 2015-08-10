@@ -1,7 +1,7 @@
 <?php
 /**
  * system-functions.php
- * 
+ *
  * This file contains most of our main funcs
  * @author SteamFriends Development Team
  * @version 1.0.0
@@ -9,25 +9,116 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  */
+if( !defined("IN_SB") ) {
+	echo "You should not be here. Only follow links!";
+	die();
+}
 
 /**
-* Extended substr function. If it finds mbstring extension it will use, else 
-* it will use old substr() function
-*
-* @param string $string String that need to be fixed
-* @param integer $start Start extracting from
-* @param integer $length Extract number of characters
-* @return string
-*/
+ * multibyte ucfirst function
+ * Make a string's first character uppercase
+ *
+ * @param string $str The input string.
+ * @return string Returns the resulting string.
+ **/
+function mb_ucfirst( $str ) {
+	$ret  = mb_strtoupper( mb_substr( $str, 0, 1 ) );
+	$ret .= mb_substr( $str, 1 );
 
-if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
+	return $ret;
+}
 
-function substr_utf($string, $start = 0, $length = null) {
-$start = (integer) $start >= 0 ? (integer) $start : 0;
-if(is_null($length)) 
-	$length = strlen_utf($string) - $start;
-    return substr($string, $start, $length); 
-} 
+/**
+ * multibyte ucwords function
+ * Uppercase the first character of each word in a string
+ *
+ * returns a string with the first character of each word in str
+ * capitalized, if that character is alphabetic.
+ *
+ * The definition of a word is any string of characters that is
+ * immediately after any character listed in the delimiters parameter
+ * (By default these are: space, form-feed, newline, carriage return, horizontal tab, and vertical tab
+ * [ \t\r\n\f\v] ).
+ *
+ * @param string The input string.
+ * @return string Returns the modified string.
+ **/
+function mb_ucwords( $str, $delimiters = " \t\r\n\f\v" ) {
+	$del = " \t\r\n\f\v";
+	if( $delimiters == $del ||
+		mb_strpos( $del, $delimiters ) !== FALSE )
+		return mb_convert_case( $str, MB_CASE_TITLE );
+
+	if( mb_strlen( $delimiters ) > 1 ) {
+		$str = mb_ucfirst( $str );
+
+		$CHARS = preg_split('//u', $str, -1, PREG_SPLIT_NO_EMPTY);
+		for( $i = 0; $i < count( $CHARS ); $i++ ) {
+			if( mb_strpos( $delimiters, $CHARS[$i] ) === FALSE ) {
+				continue;
+			}
+
+			if( array_key_exists( $i+1, $CHARS ) ) {
+				$CHARS[$i+1] = mb_strtoupper( $CHARS[$i+1] );
+			}
+		}
+
+		$str = implode( '' , $CHARS );
+	} else {
+		$PARTS = mb_split( $delimiters, $str );
+		foreach( $PARTS as &$part ) {
+			$part = mb_ucfirst( $part );
+		}
+
+		$str = implode( $delimiters, $PARTS );
+	}
+
+	return $str;
+}
+
+/**
+ * multibyte wordwrap function
+ * Wraps a string to a given number of characters
+ *
+ * @param string $str The input string.
+ * @param integer $width The number of characters at which the string will be wrapped.
+ * @param string $break The line is broken using the optional break parameter.
+ * @param boolean $cut If the cut is set to TRUE, the string is always wrapped at or
+ * 						before the specified width. So if you have a word that is
+ * 						larger than the given width, it is broken apart.
+ * 						When FALSE the function does not split the word even
+ * 						if the width is smaller than the word width.
+ * @return string Returns the given string wrapped at the specified length.
+ **/
+function mb_wordwrap($str, $width = 75, $break = "\n", $cut = false) {
+	$lines = explode($break, $str);
+	foreach ($lines as &$line) {
+		$line = rtrim($line);
+		if (mb_strlen($line) <= $width)
+			continue;
+		$words = explode(' ', $line);
+		$line = '';
+		$actual = '';
+		foreach ($words as $word) {
+			if (mb_strlen($actual.$word) <= $width)
+				$actual .= $word.' ';
+			else {
+				if ($actual != '')
+					$line .= rtrim($actual).$break;
+				$actual = $word;
+				if ($cut) {
+					while (mb_strlen($actual) > $width) {
+						$line .= mb_substr($actual, 0, $width).$break;
+						$actual = mb_substr($actual, $width);
+					}
+				}
+				$actual .= ' ';
+			}
+		}
+		$line .= trim($actual);
+	}
+	return implode($break, $lines);
+}
 
 /**
 * Equivalent to htmlspecialchars(), but allows &#[0-9]+ (for unicode)
@@ -50,7 +141,7 @@ function clean($str) {
 */
 function is_valid_email($user_email) {
 	$chars = EMAIL_FORMAT;
-	if(strstr($user_email, '@') && strstr($user_email, '.')) {
+	if(mb_strstr($user_email, '@') && mb_strstr($user_email, '.')) {
 		return (boolean) preg_match($chars, $user_email);
 	}else{
 		return false;
@@ -64,7 +155,7 @@ function is_valid_email($user_email) {
  */
 function GetLocation()
 {
-	return substr($_SERVER['SCRIPT_FILENAME'], 0, strlen($base)-strlen("index.php"));
+	return mb_substr($_SERVER['SCRIPT_FILENAME'], 0, mb_strlen($base)-mb_strlen("index.php"));
 }
 
 /**
@@ -129,9 +220,9 @@ function AddTab($title, $url, $desc, $active=false)
 		$tabs['active'] = true;
 		$GLOBALS['pagetitle'] = $title;
 	}
-	else 
+	else
 	{
-		if(isset($_GET['p']) && substr($url, 3) == $_GET['p'])
+		if(isset($_GET['p']) && mb_substr($url, 3) == $_GET['p'])
 		{
 			$tabs['active'] = true;
 			$GLOBALS['pagetitle'] = $title;
@@ -140,7 +231,7 @@ function AddTab($title, $url, $desc, $active=false)
 		{
 				$tabs['active'] = false;
 		}
-	}	
+	}
 	include TEMPLATES_PATH . "/tab.php";
 }
 
@@ -163,7 +254,7 @@ function BuildPageTabs()
 function BuildBreadcrumbs()
 {
 	$base = $GLOBALS['pagetitle'];
-	
+
 	switch($_GET['c'])
 	{
 		case "admins":
@@ -185,18 +276,18 @@ function BuildBreadcrumbs()
 			$cat = "Mod management";
 			break;
 	}
-		
+
 	if(!isset($_GET['c']))
 	{
 		$bread = "<b>" . $base . "</b>";
 	}
-	else 
+	else
 	{
-		$bread = "<a href='?p=". $_GET['p'] . "'>" . $base . "</a>  &raquo; <b>" . $cat . "</b>"; 
+		$bread = "<a href='?p=". $_GET['p'] . "'>" . $base . "</a>  &raquo; <b>" . $cat . "</b>";
 	}
 	$text = "&raquo; <a href='?p=home'>Home</a> &raquo; " . $bread;
-	echo '<script>$("breadcrumb").setHTML("' . $text . '");</script>';
-	
+	echo '<script>$("breadcrumb").set("html", "' . $text . '");</script>';
+
 }
 /**
  * Creates an anchor tag, and adds tooltip code if needed
@@ -211,9 +302,9 @@ function CreateLink($title, $url, $tooltip="", $target="_self", $wide=false)
 {
 	if($wide)
 		$class = "perm";
-	else 
+	else
 		$class = "tip";
-	if(strlen($tooltip) == 0)
+	if(mb_strlen($tooltip) == 0)
 	{
 		echo '<a href="' . $url . '" target="' . $target . '">' . $title .' </a>';
 	}else{
@@ -234,9 +325,9 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
 {
 	if($wide)
 		$class = "perm";
-	else 
+	else
 		$class = "tip";
-	if(strlen($tooltip) == 0)
+	if(mb_strlen($tooltip) == 0)
 	{
 		return '<a href="' . $url . '" onclick="' . $onclick . '" target="' . $target . '">' . $title .' </a>';
 	}else{
@@ -300,8 +391,8 @@ function BitToString($mask, $masktype=0, $head=true)
 			$string .= "&bull; Edit admins<br />";
 		if(($mask & ADMIN_DELETE_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Delete admins<br />";
-			
-		if(($mask & ADMIN_LIST_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+
+		if(($mask & ADMIN_LIST_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; View servers<br />";
 		if(($mask & ADMIN_ADD_SERVER) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Add servers<br />";
@@ -309,34 +400,34 @@ function BitToString($mask, $masktype=0, $head=true)
 			$string .= "&bull; Edit servers<br />";
 		if(($mask & ADMIN_DELETE_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Delete servers<br />";
-		
-		if(($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0)	
+
+		if(($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Add bans<br />";
-		if(($mask & ADMIN_BAN_LIST) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_BAN_LIST) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; View bans<br />";
-		if(($mask & ADMIN_EDIT_OWN_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_EDIT_OWN_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .="&bull; Edit own bans<br />";
-		if(($mask & ADMIN_EDIT_GROUP_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_EDIT_GROUP_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Edit groups bans<br />";
-		if(($mask & ADMIN_EDIT_ALL_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_EDIT_ALL_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Edit all bans<br />";
-		if(($mask & ADMIN_BAN_PROTESTS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_BAN_PROTESTS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Ban protests<br />";
 		if(($mask & ADMIN_BAN_SUBMISSIONS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Ban submissions<br />";	
-		
-		if(($mask & ADMIN_LIST_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+			$string .= "&bull; Ban submissions<br />";
+
+		if(($mask & ADMIN_LIST_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; List groups<br />";
-		if(($mask & ADMIN_ADD_GROUP) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_ADD_GROUP) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Add groups<br />";
-		if(($mask & ADMIN_EDIT_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)	
+		if(($mask & ADMIN_EDIT_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Edit groups<br />";
 		if(($mask & ADMIN_DELETE_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Delete groups<br />";
-			
+
 		if(($mask & ADMIN_WEB_SETTINGS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Web settings<br />";
-			
+
 		if(($mask & ADMIN_LIST_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; List mods<br />";
 		if(($mask & ADMIN_ADD_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
@@ -345,7 +436,7 @@ function BitToString($mask, $masktype=0, $head=true)
 			$string .= "&bull; Edit mods<br />";
 		if(($mask & ADMIN_DELETE_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Delete mods<br />";
-			
+
 		if(($mask & ADMIN_OWNER) !=0)
 			$string .= "&bull; Owner<br />";
 
@@ -355,7 +446,7 @@ function BitToString($mask, $masktype=0, $head=true)
 
 function SmFlagsToSb($flagstring, $head=true)
 {
-	
+
 	$string = "";
 	if($head)
 		$string .= "<span style='font-size:10px;color:#1b75d1;'>Server Permissions</span><br>";
@@ -364,51 +455,51 @@ function SmFlagsToSb($flagstring, $head=true)
 			$string .= "<i>None</i>";
 			return $string;
 		}
-	if((strstr($flagstring, "a") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "a") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Reserved slot<br />";
-	if((strstr($flagstring, "b") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "b") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Generic admin<br />";
-	if((strstr($flagstring, "c") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "c") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Kick<br />";
-	if((strstr($flagstring, "d") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "d") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Ban<br />";
-	if((strstr($flagstring, "e") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "e") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Un-ban<br />";
-	if((strstr($flagstring, "f") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "f") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Slay<br />";
-	if((strstr($flagstring, "g") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "g") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Map change<br />";
-	if((strstr($flagstring, "h") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "h") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Change cvars<br />";
-	if((strstr($flagstring, "i") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "i") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Run configs<br />";
-	if((strstr($flagstring, "j") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "j") || mb_strstr($flagstring, "z")))
 		$string .= "&bull; Admin chat<br />";
-	if((strstr($flagstring, "k") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "k") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Start votes<br />";
-	if((strstr($flagstring, "l") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "l") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Password server<br />";
-	if((strstr($flagstring, "m") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "m") || mb_strstr($flagstring, "z")))
 		$string .="&bull; RCON<br />";
-	if((strstr($flagstring, "n") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "n") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Enable Cheats<br />";
-	if((strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "z")))
 		$string .="&bull; Full Admin<br />";
-		
-	if((strstr($flagstring, "o") || strstr($flagstring, "z")))
+
+	if((mb_strstr($flagstring, "o") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 1<br />";
-	if((strstr($flagstring, "p") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "p") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 2<br />";
-	if((strstr($flagstring, "q") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "q") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 3<br />";
-	if((strstr($flagstring, "r") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "r") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 4<br />";
-	if((strstr($flagstring, "s") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "s") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 5<br />";
-	if((strstr($flagstring, "t") || strstr($flagstring, "z")))
+	if((mb_strstr($flagstring, "t") || mb_strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 6<br />";
 
-	
+
 	//if(($mask & SM_DEF_IMMUNITY) != 0)
 	//{
 	//	$flagstring .="&bull; Default immunity<br />";
@@ -417,8 +508,8 @@ function SmFlagsToSb($flagstring, $head=true)
 	//{
 	//	$flagstring .="&bull; Global immunity<br />";
 	//}
-	return $string;	
-	
+	return $string;
+
 }
 
 function PrintArray($array)
@@ -449,14 +540,14 @@ function NextAid()
 	return ($aid['next_aid']+1);
 }
 
-function trunc($text, $len, $byword=true) 
+function trunc($text, $len, $byword=true)
 {
-	if(strlen($text) <= $len)
+	if(mb_strlen($text) <= $len)
 		return $text;
     $text = $text." ";
-    $text = substr($text,0,$len);
+    $text = mb_substr($text,0,$len);
     if($byword)
-    	$text = substr($text,0,strrpos($text,' '));
+    	$text = mb_substr($text,0,mb_strrpos($text,' '));
     $text = $text."...";
     return $text;
 }
@@ -469,7 +560,7 @@ function CreateRedBox($title, $content)
 	<br />
 	' . $content . '</i>
 </div>';
-	
+
 	echo $text;
 }
 function CreateGreenBox($title, $contnet)
@@ -480,7 +571,7 @@ function CreateGreenBox($title, $contnet)
 	<br />
 	' . $contnet . '</i>
 </div>';
-	
+
 	echo $text;
 }
 
@@ -544,7 +635,7 @@ function SecondsToString($sec, $textual=true)
 				$sec %= $div[$i];
 			}
 		}
-		$ret = substr($ret,0,strlen($ret)-2);
+		$ret = mb_substr($ret,0,mb_strlen($ret)-2);
 	}else{
 		$hours = floor ($sec / 60 / 60);
 		$sec -= $hours * 60*60;
@@ -558,7 +649,7 @@ function SecondsToString($sec, $textual=true)
 function CreateHostnameCache()
 {
 	require_once INCLUDES_PATH.'/CServerInfo.php';
-	
+
 	$res = $GLOBALS['db']->Execute("SELECT sid, ip, port, modid, rcon FROM ".DB_PREFIX."_servers WHERE sid > 0 ORDER BY sid");
 	$servers = array();
 	while (!$res->EOF)
@@ -589,7 +680,7 @@ function GetMapImage($map)
 {
 	if(@file_exists(SB_MAP_LOCATION . "/" . $map . ".jpg"))
 		return "images/maps/" . $map . ".jpg";
-	else 
+	else
 		return "images/maps/nomap.jpg";
 }
 

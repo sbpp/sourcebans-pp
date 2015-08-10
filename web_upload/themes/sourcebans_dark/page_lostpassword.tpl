@@ -24,7 +24,7 @@
 		</div>
 		
 		<div id="loginSubmit">
-			{sb_button text=Ok onclick="xajax_LostPassword($('email').value);" class=ok id=alogin submit=false}
+			{sb_button text=Ok onclick="xajax_LostPassword($('email').get('value'));" class=ok id=alogin submit=false}
 		</div>
 		
 	</div>

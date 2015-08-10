@@ -52,7 +52,7 @@ if(isset($_POST['address']))
 	if((empty($_POST['address'])))
 	{
 		$error++;
-		$errorScript .= "$('address.msg').innerHTML = 'You must type the server address.';";
+		$errorScript .= "$('address.msg').set('html', 'You must type the server address.');";
 		$errorScript .= "$('address.msg').setStyle('display', 'block');";
 	}
 	else
@@ -60,7 +60,7 @@ if(isset($_POST['address']))
 		if(!validate_ip($_POST['address']) && !is_string($_POST['address']))
 		{
 			$error++;
-			$errorScript .= "$('address.msg').innerHTML = 'You must type a valid IP.';";
+			$errorScript .= "$('address.msg').set('html', 'You must type a valid IP.');";
 			$errorScript .= "$('address.msg').setStyle('display', 'block');";
 		}
 	}
@@ -69,7 +69,7 @@ if(isset($_POST['address']))
 	if((empty($_POST['port'])))
 	{
 		$error++;
-		$errorScript .= "$('port.msg').innerHTML = 'You must type the server port.';";
+		$errorScript .= "$('port.msg').set('html', 'You must type the server port.');";
 		$errorScript .= "$('port.msg').setStyle('display', 'block');";
 	}
 	else
@@ -77,7 +77,7 @@ if(isset($_POST['address']))
 		if(!is_numeric($_POST['port']))
 		{
 			$error++;
-			$errorScript .= "$('port.msg').innerHTML = 'You must type a valid port <b>number</b>.';";
+			$errorScript .= "$('port.msg').set('html', 'You must type a valid port <b>number</b>.');";
 			$errorScript .= "$('port.msg').setStyle('display', 'block');";
 		}
 	}
@@ -86,7 +86,7 @@ if(isset($_POST['address']))
 	if($_POST['rcon'] != '+-#*_' && $_POST['rcon'] != $_POST['rcon2'])
 	{
 		$error++;
-		$errorScript .= "$('rcon2.msg').innerHTML = 'The passwords don't match.';";
+		$errorScript .= "$('rcon2.msg').set('html', 'The passwords don't match.');";
 		$errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
 	}
 	
@@ -190,13 +190,13 @@ else
 foreach($groups AS $g)
 {
 	if($g)
-		echo "if($('g_" . $g[0] . "')) $('g_" . $g[0] . "').checked = true;";
+		echo "if($('g_" . $g[0] . "')) $('g_" . $g[0] . "').set('checked', true);";
 }
 echo $errorScript;
 ?>
 
-$('enabled').checked = <?php echo $server['enabled']; ?>;
-if($('mod')) $('mod').value = <?php echo $server['modid']?>;
+$('enabled').set('checked', <?php echo $server['enabled']; ?>);
+if($('mod')) $('mod').set('value', '<?php echo $server['modid']?>');
 </script>
 
 </div>
