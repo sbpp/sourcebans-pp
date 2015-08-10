@@ -479,7 +479,7 @@ function BoxToMask()
 			Mask |= ADMIN_LIST_GROUPS;
 		if(document.getElementById('p23').checked)
 			Mask |= ADMIN_ADD_GROUP;
-		if(document.getElementById('p29').checked)
+		if(document.getElementById('p24').checked)
 			Mask |= ADMIN_EDIT_GROUPS;
 		if(document.getElementById('p25').checked)
 			Mask |= ADMIN_DELETE_GROUPS;
