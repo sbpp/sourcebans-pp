@@ -1,13 +1,13 @@
 /**
  * =============================================================================
  * JavaScript functions, and AJAX calls
- * 
+ *
  * @author SteamFriends Development Team
  * @version 1.0.0
  * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
- * 
+ *
  * @version $Id: sourcebans.js 289 2009-07-13 18:35:11Z peace-maker $
  * =============================================================================
  */
@@ -62,12 +62,12 @@ function ProcessAdminTabs()
 	var pos = url.indexOf('^')+1;
 	var tabNo = url.charAt(pos);
 	SwapPane(tabNo);
-	
+
 	var upos = url.indexOf('~')+1;
 	var utabNo = url.charAt(upos+1);
 	var utabType = url.charAt(upos)
 	Swap2ndPane(utabNo, utabType);
-	
+
 	if(parseInt(pos) == 0)
 	{
 		return -1;
@@ -123,12 +123,13 @@ function SwapPane(id)
 			i2++;
 		}
 		$(document.getElementById("tab-" + id)).addClass('active');
-		$(document.getElementById(id)).setStyle('display', 'block');	
+		$(document.getElementById(id)).setStyle('display', 'block');
 	}
 }
 
 function InitAccordion(opener, element, container, num)
 {
+	
 	// IE6 got no window.addEventListener
 	if (window.addEventListener) {
 		window.addEventListener("load", function () {
@@ -142,28 +143,30 @@ function InitAccordion(opener, element, container, num)
 
 	if(num == null)
 		num = -1;
-	var ExtendedAccordion = Accordion.extend({
-	showAll: function() {
-		var obj = {};
-		 this.previous = -1;
-		this.elements.each(function(el, i){
-			obj[i] = {};
-			this.fireEvent('onActive', [this.togglers[i], el]);
-			for (var fx in this.effects) obj[i][fx] = el[this.effects[fx]];
-		}, this);
-		return this.start(obj);
-	},
-	hideAll: function() {
-		var obj = {};
-		 this.previous = -1;
-		this.elements.each(function(el, i){
-			obj[i] = {};
-			this.fireEvent('onBackground', [this.togglers[i], el]);
-			for (var fx in this.effects) obj[i][fx] = 0;
-		}, this);
-		return this.start(obj);
-	}
-  }); 
+
+	var ExtendedAccordion =  Class.refactor( Fx.Accordion, {
+		showAll: function() {
+			var obj = {};
+			this.previous = -1;
+			this.elements.each(function(el, i){
+				obj[i] = {};
+				this.fireEvent('onActive', [this.togglers[i], el]);
+				for (var fx in this.effects)
+				obj[i][fx] = el[this.effects[fx]];
+			}, this);
+			return this.start(obj);
+		},
+		hideAll: function() {
+			var obj = {};
+			this.previous = -1;
+			this.elements.each(function(el, i){
+				obj[i] = {};
+				this.fireEvent('onBackground', [this.togglers[i], el]);
+				for (var fx in this.effects) obj[i][fx] = 0;
+			}, this);
+			return this.start(obj);
+		}
+	});
 
 	accordion = new ExtendedAccordion(opener, element, {
 		opacity: true,
@@ -174,13 +177,20 @@ function InitAccordion(opener, element, container, num)
 			toggler.setStyle('cursor', 'pointer');
 			toggler.setStyle('background-color', '');
 		},
-	 
+
 		onBackground: function(toggler, element){
 			toggler.setStyle('cursor', 'pointer');
-			toggler.setStyle('background-color', '');		
+			toggler.setStyle('background-color', '');
 		}
 	}, $(container));
-	accordion.hideAll();
+}
+
+function SendRcon() {
+	xajax_SendRcon('-{$id}-', $('cmd').get('value'), true);
+
+	$('cmd').set('value', 'Executing, Please Wait...');
+	$('cmd').set('disabled', true);
+	$('rcon_btn').set('disabled', true);
 }
 
 function ScrollRcon()
@@ -192,23 +202,23 @@ function ScrollRcon()
 
 function Shrink(id, time, height)
 {
-	var myEffects = $(document.getElementById(id)).effects({duration: time, transition:Fx.Transitions.Bounce.easeOut});
+	var myEffects = new Fx.Morph( $(id), {duration: time, transition:Fx.Transitions.Bounce.easeOut} ); //$(document.getElementById(id))
 	myEffects.start({'height': [height]});
 }
 
 function FadeElOut(id, time)
 {
-	var myEffects = $(id).effects({duration: time, transition:Fx.Transitions.Sine.easeOut});
+	var myEffects = new Fx.Morph( $(id), {duration: time, transition:Fx.Transitions.Sine.easeOut});
 	myEffects.start({'opacity': [0]});
 	var d = id;
 	setTimeout("$(document.getElementById('" + d + "')).setStyle('display', 'none');$(document.getElementById('" + d + "')).setOpacity(0);", time);
-	
+
 	return;
 }
 function FadeElIn(id, time)
 {
 	$(document.getElementById(id)).setStyle('display', 'block');
-	var myEffects = $(id).effects({duration: time, transition:Fx.Transitions.Sine.easeIn});
+	var myEffects = new Fx.Morph( id, {duration: time, transition:Fx.Transitions.Sine.easeIn});
 	myEffects.start({'opacity': [1]});
 	setTimeout("$(document.getElementById('" + id + "')).setOpacity(1);", time);
 	return;
@@ -225,36 +235,36 @@ function DoLogin(redir)
 {
 	var err = 0;
 	var nopw = 0;
-	if(!$('loginUsername').value)
+	if(!$('loginUsername').get('value'))
 	{
-		$('loginUsername.msg').setHTML('You must enter your loginname!');
+		$('loginUsername.msg').set('html', 'You must enter your loginname!');
 		$('loginUsername.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('loginUsername.msg').setHTML('');
+		$('loginUsername.msg').set('html', '');
 		$('loginUsername.msg').setStyle('display', 'none');
 	}
-	
-	if(!$('loginPassword').value)
+
+	if(!$('loginPassword').get('value'))
 	{
-		$('loginPassword.msg').setHTML('You must enter your password!');
+		$('loginPassword.msg').set('html', 'You must enter your password!');
 		$('loginPassword.msg').setStyle('display', 'block');
 		nopw = 1;
 	}else
 	{
-		$('loginPassword.msg').setHTML('');
+		$('loginPassword.msg').set('html', '');
 		$('loginPassword.msg').setStyle('display', 'none');
 	}
 
 	if(err)
 		return 0;
-		
+
 	if(redir == "undefined")
 		redir = "";
-	xajax_Plogin(document.getElementById('loginUsername').value, 
-				document.getElementById('loginPassword').value,
-				 document.getElementById('loginRememberMe').checked,
+	xajax_Plogin(document.getElementById('loginUsername').get('value'),
+				document.getElementById('loginPassword').get('value'),
+				 document.getElementById('loginRememberMe').get('checked'),
 				 redir,
 				 nopw);
 }
@@ -302,7 +312,7 @@ function RemoveSubmission(id, name, archiv)
 	}
 	if(noPerm == false)
 		return;
-		
+
 	xajax_RemoveSubmission(id, archiv);
 }
 
@@ -338,9 +348,9 @@ function RemoveBan(id, key, page, name, confirm, bulk)
 {
 	if(confirm==0) {
 		ShowBox('Delete Ban', 'Are you sure you want to delete the ban'+(bulk=="true"?"s":"")+' for '+(bulk=="true"?"those players":"\'"+ name +"\'")+'?', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="RemoveBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+(bulk=="true"?", \'true\'":"")+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').set('html', '<input type="button" onclick="RemoveBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+(bulk=="true"?", \'true\'":"")+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(confirm==1) {
-		if(page != "") 
+		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
@@ -352,19 +362,19 @@ function UnbanBan(id, key, page, name, popup, bulk)
 {
 	if(popup==1) {
 		ShowBox('Unban Reason', '<b>Please give a short comment, why you are going to unban '+(bulk=="true"?"those players":"\'"+ name +"\'")+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="UnbanBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+(bulk=="true"?", \'true\'":"")+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="Unban Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').set('html', '<input type="button" onclick="UnbanBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+(bulk=="true"?", \'true\'":"")+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="Unban Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(popup==0) {
-		if(page != "") 
+		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
-		reason = $('ureason').value;
+		reason = $('ureason').get('value');
 		if(reason == "") {
-			$('ureason.msg').setHTML("Please leave a comment.");
+			$('ureason.msg').set('html', "Please leave a comment.");
 			$('ureason.msg').setStyle('display', 'block');
 			return;
 		} else {
-			$('ureason.msg').setHTML('');
+			$('ureason.msg').set('html', '');
 			$('ureason.msg').setStyle('display', 'none');
 		}
 		window.location = "index.php?p=banlist" + pagelink + "&a=unban&id="+ id +"&key="+ key +"&ureason="+ reason +(bulk=="true"?"&bulk=true":"");
@@ -372,54 +382,54 @@ function UnbanBan(id, key, page, name, popup, bulk)
 }
 
 function BoxToSrvMask()
-{	
+{
 	var string = "";
 	if(document.getElementById('s1'))
 	{
-		if(document.getElementById('s1').checked)
+		if(document.getElementById('s1').get('checked'))
 			string += "a";
-		if(document.getElementById('s23').checked)
+		if(document.getElementById('s23').get('checked'))
 			string +=  "b";
-		if(document.getElementById('s2').checked)
+		if(document.getElementById('s2').get('checked'))
 			string += "c";
-		if(document.getElementById('s3').checked)
+		if(document.getElementById('s3').get('checked'))
 			string += "d";
-		if(document.getElementById('s4').checked)
+		if(document.getElementById('s4').get('checked'))
 			string += "e";
-		if(document.getElementById('s5').checked)
+		if(document.getElementById('s5').get('checked'))
 			string += "f";
-		if(document.getElementById('s6').checked)
+		if(document.getElementById('s6').get('checked'))
 			string += "g";
-		if(document.getElementById('s7').checked)
+		if(document.getElementById('s7').get('checked'))
 			string += "h";
-		if(document.getElementById('s8').checked)
+		if(document.getElementById('s8').get('checked'))
 			string += "i";
-		if(document.getElementById('s9').checked)
+		if(document.getElementById('s9').get('checked'))
 			string += "j";
-		if(document.getElementById('s10').checked)
+		if(document.getElementById('s10').get('checked'))
 			string += "k";
-		if(document.getElementById('s11').checked)
+		if(document.getElementById('s11').get('checked'))
 			string += "l";
-		if(document.getElementById('s12').checked)
+		if(document.getElementById('s12').get('checked'))
 			string += "m";
-		if(document.getElementById('s13').checked)
+		if(document.getElementById('s13').get('checked'))
 			string += "n";
-		if(document.getElementById('s17').checked)
+		if(document.getElementById('s17').get('checked'))
 			string += "o";
-		if(document.getElementById('s18').checked)
+		if(document.getElementById('s18').get('checked'))
 			string += "p";
-		if(document.getElementById('s19').checked)
+		if(document.getElementById('s19').get('checked'))
 			string += "q";
-		if(document.getElementById('s20').checked)
+		if(document.getElementById('s20').get('checked'))
 			string += "r";
-		if(document.getElementById('s21').checked)
+		if(document.getElementById('s21').get('checked'))
 			string += "s";
-		if(document.getElementById('s22').checked)
+		if(document.getElementById('s22').get('checked'))
 			string += "t";
-		if(document.getElementById('s14').checked)
+		if(document.getElementById('s14').get('checked'))
 			string += "z";
-		if(document.getElementById('immunity').value)
-			string += "#" + $('immunity').value;
+		if(document.getElementById('immunity').get('value'))
+			string += "#" + $('immunity').get('value');
 	}
 	return string;
 }
@@ -429,74 +439,74 @@ function BoxToMask()
 	var Mask = 0;
 	if(document.getElementById('p4'))
 	{
-		if(document.getElementById('p4').checked)
+		if(document.getElementById('p4').get('checked'))
 			Mask |= ADMIN_LIST_ADMINS;
-		if(document.getElementById('p5').checked)
+		if(document.getElementById('p5').get('checked'))
 			Mask |= ADMIN_ADD_ADMINS;
-		if(document.getElementById('p6').checked)
+		if(document.getElementById('p6').get('checked'))
 			Mask |= ADMIN_EDIT_ADMINS;
-		if(document.getElementById('p7').checked)
+		if(document.getElementById('p7').get('checked'))
 			Mask |= ADMIN_DELETE_ADMINS;
-			
-		if(document.getElementById('p9').checked)
+
+		if(document.getElementById('p9').get('checked'))
 			Mask |= ADMIN_LIST_SERVERS;
-		if(document.getElementById('p10').checked)
+		if(document.getElementById('p10').get('checked'))
 			Mask |= ADMIN_ADD_SERVER;
-		if(document.getElementById('p11').checked)
+		if(document.getElementById('p11').get('checked'))
 			Mask |= ADMIN_EDIT_SERVERS;
-		if(document.getElementById('p12').checked)
+		if(document.getElementById('p12').get('checked'))
 			Mask |= ADMIN_DELETE_SERVERS;
-			
-		if(document.getElementById('p14').checked)
+
+		if(document.getElementById('p14').get('checked'))
 			Mask |= ADMIN_ADD_BAN;
-		if(document.getElementById('p16').checked)
+		if(document.getElementById('p16').get('checked'))
 			Mask |= ADMIN_EDIT_OWN_BANS;
-		if(document.getElementById('p17').checked)
+		if(document.getElementById('p17').get('checked'))
 			Mask |= ADMIN_EDIT_GROUP_BANS;
-		if(document.getElementById('p18').checked)
+		if(document.getElementById('p18').get('checked'))
 			Mask |= ADMIN_EDIT_ALL_BANS;
-		if(document.getElementById('p19').checked)
+		if(document.getElementById('p19').get('checked'))
 			Mask |= ADMIN_BAN_PROTESTS;
-		if(document.getElementById('p20').checked)
+		if(document.getElementById('p20').get('checked'))
 			Mask |= ADMIN_BAN_SUBMISSIONS;
-		if(document.getElementById('p38').checked)
+		if(document.getElementById('p38').get('checked'))
 			Mask |= ADMIN_UNBAN_OWN_BANS;
-		if(document.getElementById('p39').checked)
+		if(document.getElementById('p39').get('checked'))
 			Mask |= ADMIN_UNBAN_GROUP_BANS;
-		if(document.getElementById('p32').checked)
+		if(document.getElementById('p32').get('checked'))
 			Mask |= ADMIN_UNBAN;
-		if(document.getElementById('p33').checked)
+		if(document.getElementById('p33').get('checked'))
 			Mask |= ADMIN_DELETE_BAN;
-		if(document.getElementById('p34').checked)
+		if(document.getElementById('p34').get('checked'))
 			Mask |= ADMIN_BAN_IMPORT;
 
-		if(document.getElementById('p36').checked)
+		if(document.getElementById('p36').get('checked'))
 			Mask |= ADMIN_NOTIFY_SUB;
-		if(document.getElementById('p37').checked)
+		if(document.getElementById('p37').get('checked'))
 			Mask |= ADMIN_NOTIFY_PROTEST;
 
-		if(document.getElementById('p22').checked)
+		if(document.getElementById('p22').get('checked'))
 			Mask |= ADMIN_LIST_GROUPS;
-		if(document.getElementById('p23').checked)
+		if(document.getElementById('p23').get('checked'))
 			Mask |= ADMIN_ADD_GROUP;
-		if(document.getElementById('p24').checked)
+		if(document.getElementById('p24').get('checked'))
 			Mask |= ADMIN_EDIT_GROUPS;
-		if(document.getElementById('p25').checked)
+		if(document.getElementById('p25').get('checked'))
 			Mask |= ADMIN_DELETE_GROUPS;
-			
-		if(document.getElementById('p26').checked)
+
+		if(document.getElementById('p26').get('checked'))
 			Mask |= ADMIN_WEB_SETTINGS;
-			
-		if(document.getElementById('p28').checked)
+
+		if(document.getElementById('p28').get('checked'))
 			Mask |= ADMIN_LIST_MODS;
-		if(document.getElementById('p29').checked)
+		if(document.getElementById('p29').get('checked'))
 			Mask |= ADMIN_ADD_MODS;
-		if(document.getElementById('p30').checked)
+		if(document.getElementById('p30').get('checked'))
 			Mask |= ADMIN_EDIT_MODS;
-		if(document.getElementById('p31').checked)
+		if(document.getElementById('p31').get('checked'))
 			Mask |= ADMIN_DELETE_MODS;
-			
-		if(document.getElementById('p2').checked)
+
+		if(document.getElementById('p2').get('checked'))
 			Mask |= ADMIN_OWNER;
 	}
 	return Mask;
@@ -508,11 +518,11 @@ function UpdateCheckBox(tgl, start, stop)
 	{
 		if($('p' + i))
 		{
-			if($('p' + tgl).checked == true)
-				$('p' + i).checked = true;
+			if($('p' + tgl).get('checked') == true)
+				$('p' + i).set('checked', true);
 			else
-				$('p' + i).checked = false;
-		}	
+				$('p' + i).set('checked', false);
+		}
 	}
 
 	// Other Arguments is individual items not available in the range
@@ -522,7 +532,7 @@ function UpdateCheckBox(tgl, start, stop)
 		{
 			if ($('p' + arguments[lp - 1]))
 			{
-				$('p' + arguments[lp - 1]).checked = $('p' + tgl).checked;
+				$('p' + arguments[lp - 1]).set('checked', $('p' + tgl).get('checked'));
 			}
 		}
 	}
@@ -532,44 +542,44 @@ function ProcessGroup()
 {
 	var Mask = BoxToMask();
 	var Smask = BoxToSrvMask();
-	xajax_AddGroup(document.getElementById('groupname').value, document.getElementById('grouptype').value, Mask, Smask);
+	xajax_AddGroup(document.getElementById('groupname').get('value'), document.getElementById('grouptype').get('value'), Mask, Smask);
 }
 
 function update_web()
 {
-	$('webperm').setHTML('');
-	
-	if(document.getElementById('webg').value == "c" || document.getElementById('webg').value == "n") {
-		$('web.msg').setHTML('Please Wait...');
+	$('webperm').set('html', '');
+
+	if(document.getElementById('webg').get('value') == "c" || document.getElementById('webg').get('value') == "n") {
+		$('web.msg').set('html', 'Please Wait...');
 		$('web.msg').setStyle('display', 'block');
 	}
-	
-	if(document.getElementById('webg').value == "c")
+
+	if(document.getElementById('webg').get('value') == "c")
 		var height = 390;
-	else if(document.getElementById('webg').value == "n")
+	else if(document.getElementById('webg').get('value') == "n")
 		var height = 410;
 	else
 	{
-		$('webperm').setHTML('');
+		$('webperm').set('html', '');
 		var height = 1;
 	}
 	Shrink('webperm', 1000, height);
-	
-	if(document.getElementById('webg').value == "c" || document.getElementById('webg').value == "n")
-		setTimeout("xajax_UpdateAdminPermissions(1, document.getElementById('webg').value)",1000);
+
+	if(document.getElementById('webg').get('value') == "c" || document.getElementById('webg').get('value') == "n")
+		setTimeout("xajax_UpdateAdminPermissions(1, document.getElementById('webg').get('value'))",1000);
 	else {
-		$('web.msg').setHTML('');
+		$('web.msg').set('html', '');
 		$('web.msg').setStyle('display', 'none');
 	}
 }
 
 function update_server_groups()
 {
-	$('nsgroup').setHTML('');
-	
-	if(document.getElementById('serverg').value == "n")
+	$('nsgroup').set('html', '');
+
+	if(document.getElementById('serverg').get('value') == "n")
 	{
-		$('group.msg').setHTML('Please Wait...');
+		$('group.msg').set('html', 'Please Wait...');
 		$('group.msg').setStyle('display', 'block');
 		var height = 50;
 		Shrink('nsgroup', 500, height);
@@ -579,7 +589,7 @@ function update_server_groups()
 	{
 		height = 5;
 		Shrink('nsgroup', 500, height);
-		$('group.msg').setHTML('');
+		$('group.msg').set('html', '');
 		$('group.msg').setStyle('display', 'none');
 	}
 }
@@ -589,103 +599,103 @@ function ProcessAddAdmin()
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
 	var server_a_pass = "-1";
-	
+
 	var el = document.getElementsByName('group[]');
 	var grp = "";
   	for(i=0;i<el.length;i++){
-    	if(el[i].checked){
-       		grp = grp + "," + el[i].value;
+    	if(el[i].get('checked')){
+       		grp = grp + "," + el[i].get('value');
     	}
   	}
-  	
+
   	var el = document.getElementsByName('servers[]');
 	var svr = "";
   	for(i=0;i<el.length;i++){
-    	if(el[i].checked){
-       		svr = svr + "," + el[i].value;
+    	if(el[i].get('checked')){
+       		svr = svr + "," + el[i].get('value');
     	}
   	}
-  	
-    var serverg = document.getElementById('serverg').value;
+
+    var serverg = document.getElementById('serverg').get('value');
   	if(serverg == "-3")
   	{
   		//serverg = "c";
   		srvMask = "";
   	}
-    var webg = document.getElementById('webg').value;
+    var webg = document.getElementById('webg').get('value');
   	if(webg == "-3")
   	{
   		//webg = "c";
   		Mask = 0;
   	}
-  	
-  	if(document.getElementById('a_useserverpass').checked)
-  		server_a_pass = document.getElementById('a_serverpass').value;
-  
+
+  	if(document.getElementById('a_useserverpass').get('checked'))
+  		server_a_pass = document.getElementById('a_serverpass').get('value');
+
 	if(document.getElementById('webname') && !document.getElementById('servername'))
-	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
-					document.getElementById('steam').value, //Admin Steam
-					document.getElementById('email').value, // Email
-					document.getElementById('password').value,//passwrds
-					document.getElementById('password2').value,
+	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').get('value'), //Admin name
+					document.getElementById('steam').get('value'), //Admin Steam
+					document.getElementById('email').get('value'), // Email
+					document.getElementById('password').get('value'),//passwrds
+					document.getElementById('password2').get('value'),
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
-					document.getElementById('webname').value,
+					document.getElementById('webname').get('value'),
 					0,
 					grp,
 					svr); //server / server group
 	else if(!document.getElementById('webname') && document.getElementById('servername'))
-	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
-					document.getElementById('steam').value, //Admin Steam
-					document.getElementById('email').value, // Email
-					document.getElementById('password').value,//passwrds
-					document.getElementById('password2').value,
+	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').get('value'), //Admin name
+					document.getElementById('steam').get('value'), //Admin Steam
+					document.getElementById('email').get('value'), // Email
+					document.getElementById('password').get('value'),//passwrds
+					document.getElementById('password2').get('value'),
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
 					0,
-					document.getElementById('servername').value,
+					document.getElementById('servername').get('value'),
 					grp,
 					svr);
 	else if(document.getElementById('webname') && document.getElementById('servername'))
-	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
-					document.getElementById('steam').value, //Admin Steam
-					document.getElementById('email').value, // Email
-					document.getElementById('password').value,//passwrds
-					document.getElementById('password2').value,
+	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').get('value'), //Admin name
+					document.getElementById('steam').get('value'), //Admin Steam
+					document.getElementById('email').get('value'), // Email
+					document.getElementById('password').get('value'),//passwrds
+					document.getElementById('password2').get('value'),
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
-					document.getElementById('webname').value,
-					document.getElementById('servername').value,
+					document.getElementById('webname').get('value'),
+					document.getElementById('servername').get('value'),
 					grp,
 					svr);
 	else
-	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
-					document.getElementById('steam').value, //Admin Steam
-					document.getElementById('email').value, // Email
-					document.getElementById('password').value,//passwrds
-					document.getElementById('password2').value,
+	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').get('value'), //Admin name
+					document.getElementById('steam').get('value'), //Admin Steam
+					document.getElementById('email').get('value'), // Email
+					document.getElementById('password').get('value'),//passwrds
+					document.getElementById('password2').get('value'),
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
 					0,
 					0,
 					grp,
 					svr);
-					
+
 }
 
 function ProcessEditAdminPermissions()
 {
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
-	var aid = $('admin_id').value;
+	var aid = $('admin_id').get('value');
 
 	if($('immunity'))
 	{
-	 	if(IsNumeric($('immunity').value))
+	 	if(IsNumeric($('immunity').get('value')))
 			xajax_EditAdminPerms(aid, Mask, srvMask);
 		else
 			ShowBox("Error", "Immunity must be a numerical value (0-9)", "red", "", true);
@@ -695,33 +705,33 @@ function ProcessEditAdminPermissions()
 
 function ProcessEditGroup(type, name)
 {
-	
+
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
-	var group = $('group_id').value;
-	
+	var group = $('group_id').get('value');
+
 	if(name == "")
 	{
 		ShowBox("Error", "You have to type a name for the group.", "red", "", true);
-		$('groupname.msg').innerHTML = 'You have to type a name for the group.';
+		$('groupname.msg').set('html', 'You have to type a name for the group.');
 		$('groupname.msg').setStyle('display', 'block');
 		return;
 	}
 	else
 	{
-		$('groupname.msg').innerHTML = '';
+		$('groupname.msg').set('html', '');
 		$('groupname.msg').setStyle('display', 'none');
 	}
-	
-	if($('immunity') && !IsNumeric($('immunity').value))
+
+	if($('immunity') && !IsNumeric($('immunity').get('value')))
 	{
 		ShowBox("Error", "Immunity must be a numerical value (0-9)", "red", "", true);
 		return;
 	}
-	
+
 	var overrides = [];
 	var new_override = {};
-	
+
 	// Handle group overrides
 	if(type == "srv")
 	{
@@ -742,45 +752,45 @@ function ProcessEditGroup(type, name)
 				override_name = [override_name];
 			if($type(override_access) == "element")
 				override_access = [override_access];
-			
+
 			overrides = new Array(override_id.length);
-			
+
 			for(var i=0;i<override_id.length;i++)
 			{
-				overrides[i] = {'id': override_id[i].value, 'type': override_type[i][override_type[i].selectedIndex].value, 'name': override_name[i].value, 'access': override_access[i][override_access[i].selectedIndex].value};
+				overrides[i] = {'id': override_id[i].get('value'), 'type': override_type[i][override_type[i].selectedIndex].get('value'), 'name': override_name[i].get('value'), 'access': override_access[i][override_access[i].selectedIndex].get('value')};
 			}
 		}
-		
-		new_override = {'type': $('new_override_type')[$('new_override_type').selectedIndex].value, 'name': $('new_override_name').value, 'access': $('new_override_access')[$('new_override_access').selectedIndex].value};
+
+		new_override = {'type': $('new_override_type')[$('new_override_type').selectedIndex].get('value'), 'name': $('new_override_name').get('value'), 'access': $('new_override_access')[$('new_override_access').selectedIndex].get('value')};
 	}
-	
+
 	xajax_EditGroup(group, Mask, srvMask, type, name, overrides, new_override);
 }
 
 function update_server()
 {
-	$('serverperm').setHTML('');
-	
-	if(document.getElementById('serverg').value == "c" || document.getElementById('serverg').value == "n") {
-		$('server.msg').setHTML('Please Wait...');
+	$('serverperm').set('html', '');
+
+	if(document.getElementById('serverg').get('value') == "c" || document.getElementById('serverg').get('value') == "n") {
+		$('server.msg').set('html', 'Please Wait...');
 		$('server.msg').setStyle('display', 'block');
 	}
-	
-	if(document.getElementById('serverg').value == "c")
+
+	if(document.getElementById('serverg').get('value') == "c")
 		var height = 580;
-	else if(document.getElementById('serverg').value == "n")
+	else if(document.getElementById('serverg').get('value') == "n")
 		var height = 590;
 	else
 	{
-		$('serverperm').setHTML('');
+		$('serverperm').set('html', '');
 		var height = 1;
 	}
 	Shrink('serverperm', 1000, height);
-	
-	if(document.getElementById('serverg').value == "c" || document.getElementById('serverg').value == "n")
-		setTimeout("xajax_UpdateAdminPermissions(2, document.getElementById('serverg').value)",1000);
+
+	if(document.getElementById('serverg').get('value') == "c" || document.getElementById('serverg').get('value') == "n")
+		setTimeout("xajax_UpdateAdminPermissions(2, document.getElementById('serverg').get('value'))",1000);
 	else {
-		$('server.msg').setHTML('');
+		$('server.msg').set('html', '');
 		$('server.msg').setStyle('display', 'none');
 	}
 }
@@ -790,30 +800,30 @@ function process_add_server()
 	var el = document.getElementsByName('groups[]');
 	var grp = "";
   	for(i=0;i<el.length;i++){
-    	if(el[i].checked){
-       		grp = grp + "," + el[i].value;
+    	if(el[i].get('checked')){
+       		grp = grp + "," + el[i].get('value');
     	}
   	}
-	xajax_AddServer(document.getElementById('address').value, 
-				document.getElementById('port').value, 
-				document.getElementById('rcon').value, 
-				document.getElementById('rcon2').value, 
-				document.getElementById('mod').value, 
-				document.getElementById('enabled').checked,
-				grp, 
+	xajax_AddServer(document.getElementById('address').get('value'),
+				document.getElementById('port').get('value'),
+				document.getElementById('rcon').get('value'),
+				document.getElementById('rcon2').get('value'),
+				document.getElementById('mod').get('value'),
+				document.getElementById('enabled').get('checked'),
+				grp,
 				-1);
-	
+
 }
 
 function process_edit_server()
 {
-    if($('rcon').value != $('rcon2').value)
+    if($('rcon').get('value') != $('rcon2').get('value'))
     {
-        $('rcon2.msg').innerHTML = 'Passwords don\'t match.';
+        $('rcon2.msg').set('html', 'Passwords don\'t match.');
         $('rcon2.msg').setStyle('display', 'block');
         return;
     }
-    
+
     $('rcon2.msg').setStyle('display', 'none');
 	document.forms.editserver.submit();
 }
@@ -822,64 +832,86 @@ function search_bans()
 {
 	var type = "";
 	var input = "";
-	if($('name').checked)
+	if($('name').get('checked'))
 	{
 		type = "name";
-		input = $('nick').value;
+		input = $('nick').get('value');
 	}
-	if($('steam_').checked)
+	if($('steam_').get('checked'))
 	{
-		type = (document.getElementById('steam_match').value == "1" ? "steam" : "steamid");
-		input = $('steamid').value;
+		type = (document.getElementById('steam_match').get('value') == "1" ? "steam" : "steamid");
+		input = $('steamid').get('value');
 	}
-	if($('ip_').checked)
+	if($('ip_').get('checked'))
 	{
 		type = "ip";
-		input = $('ip').value;
+		input = $('ip').get('value');
 	}
-	if($('reason_').checked)
+	if($('reason_').get('checked'))
 	{
 		type = "reason";
-		input = $('ban_reason').value;
+		input = $('ban_reason').get('value');
 	}
-	if($('date').checked)
+	if($('date').get('checked'))
 	{
 		type = "date";
-		input = $('day').value + "," + $('month').value + "," + $('year').value;
+
+		var num = parseInt( $('day').get('value') );
+		if( num < 0 || num > 31 || isNaN( num ) ) {
+			ShowBox( 'wrong input', 'pls check your for the day field', 'red' );
+			$('date').focus( );
+			return false;
+		}
+
+		var num = parseInt( $('month').get('value') );
+		if( num < 0 || num > 12 || isNaN( num ) ) {
+			ShowBox( 'wrong input', 'pls check your for the month field', 'red' );
+			$('month').focus( );
+			return false;
+		}
+
+		var num = parseInt( $('year').get('value') );
+		if( num < 1900 || num > 2200 || isNaN( num ) ) {
+			ShowBox( 'wrong input', 'pls check your for the year field', 'red' );
+			$('year').focus( );
+			return false;
+		}
+
+		input = $('day').get('value') + "," + $('month').get('value') + "," + $('year').get('value');
 	}
-	if($('length_').checked)
+	if($('length_').get('checked'))
 	{
 		type = "length";
-		if($('length').value=="other")
-			var length = $('other_length').value;
+		if($('length').get('value') == "other")
+			var length = $('other_length').get('value');
 		else
-			var length = $('length').value
-		input = $('length_type').value + "," + length;
+			var length = $('length').get('value')
+		input = $('length_type').get('value') + "," + length;
 	}
-	if($('ban_type_').checked)
+	if($('ban_type_').get('checked'))
 	{
 		type = "btype";
-		input = $('ban_type').value;
+		input = $('ban_type').get('value');
 	}
-	if($('bancount').checked)
+	if($('bancount').get('checked'))
 	{
 		type = "bancount";
-		input = $('timesbanned').value;
+		input = $('timesbanned').get('value');
 	}
-	if($('admin').checked)
+	if($('admin').get('checked'))
 	{
 		type = "admin";
-		input = $('ban_admin').value;
+		input = $('ban_admin').get('value');
 	}
-	if($('where_banned').checked)
+	if($('where_banned').get('checked'))
 	{
 		type = "where_banned";
-		input = $('server').value;
+		input = $('server').get('value');
 	}
-	if($('comment_').checked)
+	if($('comment_').get('checked'))
 	{
 		type = "comment";
-		input = $('ban_comment').value;
+		input = $('ban_comment').get('value');
 	}
 	if(type!="" && input!="")
 		window.location = "index.php?p=banlist&advSearch=" + input + "&advType=" + type;
@@ -888,17 +920,17 @@ var webSelected = new Array();
 var srvSelected = new Array();
 function getMultiple(ob, type) {
 	if(type==1) {
-		while (ob.selectedIndex != -1) 
-		{ 
-			webSelected.push(ob.options[ob.selectedIndex].value); 
-			ob.options[ob.selectedIndex].selected = false; 
+		while (ob.selectedIndex != -1)
+		{
+			webSelected.push(ob.options[ob.selectedIndex].get('value'));
+			ob.options[ob.selectedIndex].selected = false;
 		}
 	}
 	if(type==2) {
-		while (ob.selectedIndex != -1) 
-		{ 
-			srvSelected.push(ob.options[ob.selectedIndex].value); 
-			ob.options[ob.selectedIndex].selected = false; 
+		while (ob.selectedIndex != -1)
+		{
+			srvSelected.push(ob.options[ob.selectedIndex].get('value'));
+			ob.options[ob.selectedIndex].selected = false;
 		}
 	}
 }
@@ -906,50 +938,50 @@ function search_admins()
 {
 	var type = "";
 	var input = "";
-	if($('name_').checked)
+	if($('name_').get('checked'))
 	{
 		type = "name";
-		input = $('nick').value;
+		input = $('nick').get('value');
 	}
-	if($('steam_').checked)
+	if($('steam_').get('checked'))
 	{
-		type = (document.getElementById('steam_match').value == "1" ? "steam" : "steamid");
-		input = $('steamid').value;
+		type = (document.getElementById('steam_match').get('value') == "1" ? "steam" : "steamid");
+		input = $('steamid').get('value');
 	}
-	if($('admemail_').checked)
+	if($('admemail_').get('checked'))
 	{
 		type = "admemail";
-		input = $('admemail').value;
+		input = $('admemail').get('value');
 	}
-	if($('webgroup_').checked)
+	if($('webgroup_').get('checked'))
 	{
 		type = "webgroup";
-		input = $('webgroup').value;
+		input = $('webgroup').get('value');
 	}
-	if($('srvadmgroup_').checked)
+	if($('srvadmgroup_').get('checked'))
 	{
 		type = "srvadmgroup";
-		input = $('srvadmgroup').value;
+		input = $('srvadmgroup').get('value');
 	}
-	if($('srvgroup_').checked)
+	if($('srvgroup_').get('checked'))
 	{
 		type = "srvgroup";
-		input = $('srvgroup').value;
+		input = $('srvgroup').get('value');
 	}
-	if($('admwebflags_').checked)
+	if($('admwebflags_').get('checked'))
 	{
 		type = "admwebflag";
 		input = webSelected.toString();
 	}
-	if($('admsrvflags_').checked)
+	if($('admsrvflags_').get('checked'))
 	{
 		type = "admsrvflag";
 		input = srvSelected.toString();
 	}
-	if($('admin_on_').checked)
+	if($('admin_on_').get('checked'))
 	{
 		type = "server";
-		input = $('server').value;
+		input = $('server').get('value');
 	}
 	if(type!="" && input!="")
 		window.location = "index.php?p=admin&c=admins&advSearch=" + input + "&advType=" + type;
@@ -959,25 +991,25 @@ function search_log()
 {
 	var type = "";
 	var input = "";
-	if($('admin_').checked)
+	if($('admin_').get('checked'))
 	{
 		type = "admin";
-		input = $('admin').value;
+		input = $('admin').get('value');
 	}
-	if($('message_').checked)
+	if($('message_').get('checked'))
 	{
 		type = "message";
-		input = $('message').value;
+		input = $('message').get('value');
 	}
-	if($('date_').checked)
+	if($('date_').get('checked'))
 	{
 		type = "date";
-		input = $('day').value + "," + $('month').value + "," + $('year').value + "," + $('fhour').value + "," + $('fminute').value + "," + $('thour').value + "," + $('tminute').value;
+		input = $('day').get('value') + "," + $('month').get('value') + "," + $('year').get('value') + "," + $('fhour').get('value') + "," + $('fminute').get('value') + "," + $('thour').get('value') + "," + $('tminute').get('value');
 	}
-	if($('type_').checked)
+	if($('type_').get('checked'))
 	{
 		type = "type";
-		input = $('type').value;
+		input = $('type').get('value');
 	}
 	if(type!="" && input!="")
 		window.location = "index.php?p=admin&c=settings&advSearch=" + input + "&advType=" + type + "#^2";
@@ -985,68 +1017,68 @@ function search_log()
 var icname = "";
 function icon(name)
 {
-	$('icon.msg').setHTML("Uploaded: <b>" + name + "</b>");
+	$('icon.msg').set('html', "Uploaded: <b>" + name + "</b>");
 	icname = name;
 	if($('icon_hid'))
-		$('icon_hid').value = name;
+		$('icon_hid').set('value', name);
 }
 function ProcessMod()
 {
 	var err = 0;
-	if(!$('name').value)
+	if(!$('name').get('value'))
 	{
-		$('name.msg').setHTML('You must enter the name of the mod you are adding.');
+		$('name.msg').set('html', 'You must enter the name of the mod you are adding.');
 		$('name.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('name.msg').setHTML('');
+		$('name.msg').set('html', '');
 		$('name.msg').setStyle('display', 'none');
 	}
-	
-	if(!$('folder').value)
+
+	if(!$('folder').get('value'))
 	{
-		$('folder.msg').setHTML('You must enter mod\'s folder name.');
+		$('folder.msg').set('html', 'You must enter mod\'s folder name.');
 		$('folder.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('folder.msg').setHTML('');
+		$('folder.msg').set('html', '');
 		$('folder.msg').setStyle('display', 'none');
 	}
 
 	if(err)
 		return 0;
 
-	xajax_AddMod($('name').value,
-				 $('folder').value,
+	xajax_AddMod($('name').get('value'),
+				 $('folder').get('value'),
 				 icname,
-				 $('steam_universe').value,
-				 $('enabled').checked);
+				 $('steam_universe').get('value'),
+				 $('enabled').get('checked'));
 }
 function ShowBox(title, msg, color, redir, noclose)
 {
 	var type = "";
-	
+
 	if(color == "red")
 		color = "error";
 	else if(color == "blue")
 		color = "info";
 	else if(color == "green")
 		color = "ok";
-	
+
 	$('dialog-title').setProperty("class", color);
-	
+
 	$('dialog-icon').setProperty("class", 'icon-'+color);
-	
-	$('dialog-title').setHTML(title);
-	$('dialog-content-text').setHTML(msg);
+
+	$('dialog-title').set('html', title);
+	$('dialog-content-text').set('html', msg);
 	FadeElIn('dialog-placement', 750);
-	
+
 	var jsCde = "closeMsg('" + redir + "');";
-	$('dialog-control').setHTML("<input name='dialog-close' onclick=\""+jsCde+"\" class='btn ok' onmouseover=\"ButtonOver('dialog-close')\" onmouseout='ButtonOver(\"dialog-close\")' id=\"dialog-close\" value=\"OK\" type=\"button\">");
+	$('dialog-control').set('html', "<input name='dialog-close' onclick=\""+jsCde+"\" class='btn ok' onmouseover=\"ButtonOver('dialog-close')\" onmouseout='ButtonOver(\"dialog-close\")' id=\"dialog-close\" value=\"OK\" type=\"button\">");
 	$('dialog-control').setStyle('display', 'block');
-	
+
 	if(!noclose)
 	{
 		if(redir)
@@ -1086,27 +1118,27 @@ function toggleMCE(id) {
 function CheckEmail(type, id)
 {
 	var err = 0;
-	if($('subject').value == "") {
-		$('subject.msg').setHTML("You must type a subject for the email.");
+	if($('subject').get('value') == "") {
+		$('subject.msg').set('html', "You must type a subject for the email.");
 		$('subject.msg').setStyle('display', 'block');
 		err++;
 	} else {
-		$('subject.msg').setHTML('');
+		$('subject.msg').set('html', '');
 		$('subject.msg').setStyle('display', 'none');
 	}
-		
-	if($('message').value == "") {
-		$('message.msg').setHTML("You must type a message for the email.");
+
+	if($('message').get('value') == "") {
+		$('message.msg').set('html', "You must type a message for the email.");
 		$('message.msg').setStyle('display', 'block');
 		err++;
 	} else {
-		$('message.msg').setHTML('');
+		$('message.msg').set('html', '');
 		$('message.msg').setStyle('display', 'none');
 	}
-		
+
 	if(err>0)
 		return;
-	xajax_SendMail($('subject').value, $('message').value, type, id);
+	xajax_SendMail($('subject').get('value'), $('message').get('value'), type, id);
 }
 
 function IsNumeric(sText)
@@ -1114,11 +1146,11 @@ function IsNumeric(sText)
    var ValidChars = "0123456789.";
    var IsNumber=true;
    var Char;
- 
-	for (i = 0; i < sText.length && IsNumber == true; i++) 
-	{ 
-		Char = sText.charAt(i); 
-  		if (ValidChars.indexOf(Char) == -1) 
+
+	for (i = 0; i < sText.length && IsNumber == true; i++)
+	{
+		Char = sText.charAt(i);
+  		if (ValidChars.indexOf(Char) == -1)
 		{
 			IsNumber = false;
      	}
@@ -1163,15 +1195,15 @@ function RemoveMod(name, id)
 
 function UpdateGroupPermissionCheckBoxes()
 {
-	$('perms').setHTML('');
-	if(document.getElementById('grouptype').value != 3 && document.getElementById('grouptype').value != 0) {
-		$('type.msg').setHTML('Please Wait...');
+	$('perms').set('html', '');
+	if(document.getElementById('grouptype').get('value') != 3 && document.getElementById('grouptype').get('value') != 0) {
+		$('type.msg').set('html', 'Please Wait...');
 		$('type.msg').setStyle('display', 'block');
 	}
-	if(document.getElementById('grouptype').value == 1)
+	if(document.getElementById('grouptype').get('value') == 1)
 	{
 		var height = 285;
-	}else if(document.getElementById('grouptype').value == 2)
+	}else if(document.getElementById('grouptype').get('value') == 2)
 	{
 		var height = 435;
 	}else
@@ -1180,17 +1212,17 @@ function UpdateGroupPermissionCheckBoxes()
 		var height = 2;
 	}
 	Shrink('perms', 1000, height);
-	if(document.getElementById('grouptype').value != 3 && document.getElementById('grouptype').value != 0)
-		setTimeout("xajax_UpdateGroupPermissions(document.getElementById('grouptype').value)",1000);
+	if(document.getElementById('grouptype').get('value') != 3 && document.getElementById('grouptype').get('value') != 0)
+		setTimeout("xajax_UpdateGroupPermissions(document.getElementById('grouptype').get('value'))",1000);
 }
 
 function changePage(newPage, type, advSearch, advType)
-{		
-	nextPage = newPage.options[newPage.selectedIndex].value
-	if(advSearch!="" && advType !="") { 
-		var searchlink = "&advSearch="+advSearch+"&advType="+advType; 
-	} else { 
-		var searchlink =""; 
+{
+	nextPage = newPage.options[newPage.selectedIndex].get('value')
+	if(advSearch!="" && advType !="") {
+		var searchlink = "&advSearch="+advSearch+"&advType="+advType;
+	} else {
+		var searchlink ="";
 	}
 	 if (nextPage != 0)
 	 {
@@ -1235,34 +1267,34 @@ function ShowRehashBox(servers, title, msg, color, redir)
 function ProcessComment()
 {
 	var err = 0;
-	if($('commenttext').value == "")
+	if($('commenttext').get('value') == "")
 	{
-		$('commenttext.msg').setHTML('You have to type your comment');
+		$('commenttext.msg').set('html', 'You have to type your comment');
 		$('commenttext.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('commenttext.msg').setHTML('');
+		$('commenttext.msg').set('html', '');
 		$('commenttext.msg').setStyle('display', 'none');
 		err = 0;
 	}
-	
+
 	if(err)
 		return 0;
-	
-	if($('cid').value == -1)
+
+	if($('cid').get('value') == -1)
 	{
-		xajax_AddComment($('bid').value,
-					 $('ctype').value,
-					 $('commenttext').value,
-					 $('page').value);
+		xajax_AddComment($('bid').get('value'),
+					 $('ctype').get('value'),
+					 $('commenttext').get('value'),
+					 $('page').get('value'));
 	}
 	else
 	{
-		xajax_EditComment($('cid').value,
-					 $('ctype').value,
-					 $('commenttext').value,
-					 $('page').value);
+		xajax_EditComment($('cid').get('value'),
+					 $('ctype').get('value'),
+					 $('commenttext').get('value'),
+					 $('page').get('value'));
 	}
 }
 
@@ -1354,32 +1386,32 @@ function TickSelectAll()
 {
 	for(var i=0;$('chkb_' + i);i++)
 	{
-		if($('tickswitch').value==0)
-			$('chkb_' + i).checked = true;
+		if($('tickswitch').get('value') == 0)
+			$('chkb_' + i).set('checked', true);
 		else
-			$('chkb_' + i).checked = false;
+			$('chkb_' + i).set('checked', false);
 	}
-	if($('tickswitch').value==0) {
-		$('tickswitch').value=1;
+	if($('tickswitch').get('value') == 0) {
+		$('tickswitch').set('value', 1);
 		$('tickswitch').setProperty('title','Deselect All');
 		$('tickswitchlink').setProperty('title','Deselect All');
-		$('tickswitchlink').innerHTML = 'Deselect All';
+		$('tickswitchlink').set('html', 'Deselect All');
 	} else {
-		$('tickswitch').value=0;
+		$('tickswitch').set('value', 0);
 		$('tickswitch').setProperty('title','Select All');
 		$('tickswitchlink').setProperty('title','Select All');
-		$('tickswitchlink').innerHTML = 'Select All';
+		$('tickswitchlink').set('html', 'Select All');
 	}
 }
 
 function BulkEdit(action, bankey)
 {
-	option = action.options[action.selectedIndex].value
+	option = action.options[action.selectedIndex].get('value')
 	ids = new Array();
 	for(var i=0;$('chkb_' + i);i++)
 	{
-		if($('chkb_' + i).checked===true)
-			ids.push($('chkb_' + i).value);
+		if($('chkb_' + i).get('checked')===true)
+			ids.push($('chkb_' + i).get('value'));
 	}
 	switch(option)
 	{
@@ -1406,16 +1438,16 @@ function OpenMessageBox(sid, name, popup)
 {
 	if(popup==1) {
 		ShowBox('Send Message', '<b>Please type the message you want to send to <br>\''+name+'\'.</b><br>You need to have basechat.smx enabled as we use<br><i>&lt;sm_psay&gt;</i>.<br><textarea rows="3" cols="40" name="ingamemsg" id="ingamemsg" style="overflow:auto;"></textarea><br><div id="ingamemsg.msg" class="badentry"></div>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" name="ingmsg" class="btn ok" onmouseover="ButtonOver(\'ingmsg\')" onmouseout="ButtonOver(\'ingmsg\')" id="ingmsg" value="Send Message" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').set('html', '<input type="button" name="ingmsg" class="btn ok" onmouseover="ButtonOver(\'ingmsg\')" onmouseout="ButtonOver(\'ingmsg\')" id="ingmsg" value="Send Message" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 		$('ingmsg').addEvent('click', function(){OpenMessageBox(sid, name, 0);});
 	} else if(popup==0) {
-		message = $('ingamemsg').value;
+		message = $('ingamemsg').get('value');
 		if(message == "") {
-			$('ingamemsg.msg').setHTML("Please type your message.");
+			$('ingamemsg.msg').set('html', "Please type your message.");
 			$('ingamemsg.msg').setStyle('display', 'block');
 			return;
 		} else {
-			$('ingamemsg.msg').setHTML('');
+			$('ingamemsg.msg').set('html', '');
 			$('ingamemsg.msg').setStyle('display', 'none');
 		}
 		$('dialog-control').setStyle('display', 'none');
@@ -1428,7 +1460,7 @@ function KickPlayerConfirm(sid, name, conf)
 {
 	if(conf==0)	{
 		ShowBox('Kick Player', '<b>Are you sure you want to kick player  <br>\''+name+'\'?</b>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" name="kbutton" class="btn ok" onmouseover="ButtonOver(\'kbutton\')" onmouseout="ButtonOver(\'kbutton\')" id="kbutton" value="Yes" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="No" />');
+		$('dialog-control').set('html', '<input type="button" name="kbutton" class="btn ok" onmouseover="ButtonOver(\'kbutton\')" onmouseout="ButtonOver(\'kbutton\')" id="kbutton" value="Yes" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="No" />');
 		$('kbutton').addEvent('click', function(){KickPlayerConfirm(sid, name, 1);});
 	} else if(conf==1) {
 		$('dialog-control').setStyle('display', 'none');
@@ -1438,25 +1470,25 @@ function KickPlayerConfirm(sid, name, conf)
 
 function mapimg(filename)
 {
-	$('mapimg.msg').setHTML("Uploaded: <b>" + filename + "</b>");
+	$('mapimg.msg').set('html', "Uploaded: <b>" + filename + "</b>");
 }
 
 function selectLengthTypeReason(length, type, reason)
 {
 	for(var i=0; i<=$('banlength').length ; i++) {
-		if($('banlength').options[i].value == (length / 60)) {
+		if($('banlength').options[i].get('value') == (length / 60)) {
 			$('banlength').options[i].selected=true;
 			break;
 		}
 	}
 	$('type').options[type].selected = true;
 	for(var i=0;i<=$('listReason').length;i++)	{
-		if($('listReason').options[i].innerHTML == reason) {
+		if($('listReason').options[i].get('html') == reason) {
 			$('listReason').options[i].selected=true;
 			break;
 		}
-		if($('listReason').options[i].value == 'other') {
-			$('txtReason').value = reason;
+		if($('listReason').options[i].get('value') == 'other') {
+			$('txtReason').set('value', reason);
 			$('dreason').style.display = 'block';
 			$('listReason').options[i].selected=true;
 			break;
@@ -1481,9 +1513,9 @@ function RemoveBlock(id, key, page, name, confirm)
 {
 	if(confirm==0) {
 		ShowBox('Delete Block', 'Are you sure you want to delete the block for '+ name + '?', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="RemoveBlock(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Block" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').set('html', '<input type="button" onclick="RemoveBlock(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Block" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(confirm==1) {
-		if(page != "") 
+		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
@@ -1495,19 +1527,19 @@ function UnGag(id, key, page, name, popup)
 {
 	if(popup==1) {
 		ShowBox('UnGag Reason', '<b>Please give a short comment, why you are going to ungag '+"\'"+ name +"\'"+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="UnGag(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="UnGag Player" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').set('html', '<input type="button" onclick="UnGag(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="UnGag Player" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(popup==0) {
 		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
-		reason = $('ureason').value;
+		reason = $('ureason').get('value');
 		if(reason == "") {
-			$('ureason.msg').setHTML("Please leave a comment.");
+			$('ureason.msg').set('html', "Please leave a comment.");
 			$('ureason.msg').setStyle('display', 'block');
 			return;
 		} else {
-			$('ureason.msg').setHTML('');
+			$('ureason.msg').set('html', '');
 			$('ureason.msg').setStyle('display', 'none');
 		}
 		window.location = "index.php?p=commslist" + pagelink + "&a=ungag&id="+ id +"&key="+ key +"&ureason="+ reason;
@@ -1518,19 +1550,19 @@ function UnMute(id, key, page, name, popup)
 {
 	if(popup==1) {
 		ShowBox('UnMute Reason', '<b>Please give a short comment, why you are going to unmute '+"\'"+ name +"\'"+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
-		$('dialog-control').setHTML('<input type="button" onclick="UnMute(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="UnMute Player" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
+		$('dialog-control').set('html', '<input type="button" onclick="UnMute(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="UnMute Player" />&nbsp;<input type="button" onclick="closeMsg(\'\');" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(popup==0) {
 		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
-		reason = $('ureason').value;
+		reason = $('ureason').get('value');
 		if(reason == "") {
-			$('ureason.msg').setHTML("Please leave a comment.");
+			$('ureason.msg').set('html', "Please leave a comment.");
 			$('ureason.msg').setStyle('display', 'block');
 			return;
 		} else {
-			$('ureason.msg').setHTML('');
+			$('ureason.msg').set('html', '');
 			$('ureason.msg').setStyle('display', 'none');
 		}
 		window.location = "index.php?p=commslist" + pagelink + "&a=unmute&id="+ id +"&key="+ key +"&ureason="+ reason;
@@ -1541,59 +1573,81 @@ function search_blocks()
 {
 	var type = "";
 	var input = "";
-	if($('name').checked)
+	if($('name').get('checked'))
 	{
 		type = "name";
-		input = $('nick').value;
+		input = $('nick').get('value');
 	}
-	if($('steam_').checked)
+	if($('steam_').get('checked'))
 	{
-		type = (document.getElementById('steam_match').value == "1" ? "steam" : "steamid");
-		input = $('steamid').value;
+		type = (document.getElementById('steam_match').get('value') == "1" ? "steam" : "steamid");
+		input = $('steamid').get('value');
 	}
-	if($('reason_').checked)
+	if($('reason_').get('checked'))
 	{
 		type = "reason";
-		input = $('ban_reason').value;
+		input = $('ban_reason').get('value');
 	}
-	if($('date').checked)
+	if($('date').get('checked'))
 	{
 		type = "date";
-		input = $('day').value + "," + $('month').value + "," + $('year').value;
+
+		var num = parseInt( $('day').get('value') );
+		if( num < 0 || num > 31 || isNaN( num ) ) {
+			ShowBox( 'wrong input', 'pls check your for the day field', 'red' );
+			$('date').focus( );
+			return false;
+		}
+
+		var num = parseInt( $('month').get('value') );
+		if( num < 0 || num > 12 || isNaN( num ) ) {
+			ShowBox( 'wrong input', 'pls check your for the month field', 'red' );
+			$('month').focus( );
+			return false;
+		}
+
+		var num = parseInt( $('year').get('value') );
+		if( num < 1900 || num > 2200 || isNaN( num ) ) {
+			ShowBox( 'wrong input', 'pls check your for the year field', 'red' );
+			$('year').focus( );
+			return false;
+		}
+
+		input = $('day').get('value') + "," + $('month').get('value') + "," + $('year').get('value');
 	}
-	if($('length_').checked)
+	if($('length_').get('checked'))
 	{
 		type = "length";
-		if($('length').value=="other")
-			var length = $('other_length').value;
+		if($('length').get('value') == "other")
+			var length = $('other_length').get('value');
 		else
-			var length = $('length').value
-		input = $('length_type').value + "," + length;
+			var length = $('length').get('value')
+		input = $('length_type').get('value') + "," + length;
 	}
-	if($('ban_type_').checked)
+	if($('ban_type_').get('checked'))
 	{
 		type = "btype";
-		input = $('ban_type').value;
+		input = $('ban_type').get('value');
 	}
-	if($('bancount').checked)
+	if($('bancount').get('checked'))
 	{
 		type = "bancount";
-		input = $('timesbanned').value;
+		input = $('timesbanned').get('value');
 	}
-	if($('admin').checked)
+	if($('admin').get('checked'))
 	{
 		type = "admin";
-		input = $('ban_admin').value;
+		input = $('ban_admin').get('value');
 	}
-	if($('where_banned').checked)
+	if($('where_banned').get('checked'))
 	{
 		type = "where_banned";
-		input = $('server').value;
+		input = $('server').get('value');
 	}
-	if($('comment_').checked)
+	if($('comment_').get('checked'))
 	{
 		type = "comment";
-		input = $('ban_comment').value;
+		input = $('ban_comment').get('value');
 	}
 	if(type!="" && input!="")
 		window.location = "index.php?p=commslist&advSearch=" + input + "&advType=" + type;

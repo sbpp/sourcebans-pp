@@ -2,13 +2,13 @@
 /**
  * =============================================================================
  * This file will setup our defs, and configure php
- * 
+ *
  * @author SteamFriends Development Team
  * @version 1.0.0
  * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
  * @package SourceBans
  * @link http://www.sourcebans.net
- * 
+ *
  * @version $Id: init.php 271 2009-06-24 18:48:42Z peace-maker $
  * =============================================================================
  */
@@ -40,13 +40,13 @@ include_once(INCLUDES_PATH . "/CUI.php");
 //  Fix some $_SERVER vars
 // ---------------------------------------------------
 // Fix for IIS, which doesn't set REQUEST_URI
-if(!isset($_SERVER['REQUEST_URI']) || trim($_SERVER['REQUEST_URI']) == '') 
+if(!isset($_SERVER['REQUEST_URI']) || trim($_SERVER['REQUEST_URI']) == '')
 { $_SERVER['REQUEST_URI'] = $_SERVER['SCRIPT_NAME'];
-    if (isset($_SERVER['QUERY_STRING']) && !empty($_SERVER['QUERY_STRING'])) 
-    { $_SERVER['REQUEST_URI'] .= '?' . $_SERVER['QUERY_STRING']; } 
-} 
+    if (isset($_SERVER['QUERY_STRING']) && !empty($_SERVER['QUERY_STRING']))
+    { $_SERVER['REQUEST_URI'] .= '?' . $_SERVER['QUERY_STRING']; }
+}
 // Fix for Dreamhost and other PHP as CGI hosts
-if(strstr($_SERVER['SCRIPT_NAME'], 'php.cgi')) unset($_SERVER['PATH_INFO']);
+if(mb_strstr($_SERVER['SCRIPT_NAME'], 'php.cgi')) unset($_SERVER['PATH_INFO']);
 if(trim($_SERVER['PHP_SELF']) == '') $_SERVER['PHP_SELF'] = preg_replace("/(\?.*)?$/",'', $_SERVER["REQUEST_URI"]);
 
 // ---------------------------------------------------
@@ -115,7 +115,7 @@ $GLOBALS['log'] = new CSystemLog();
 
 if( !is_object($GLOBALS['db']) )
 				die();
-				
+
 $mysql_server_info = $GLOBALS['db']->ServerInfo();
 $GLOBALS['db_version'] = $mysql_server_info['version'];
 
@@ -245,7 +245,7 @@ define('ALL_SERVER', SM_RESERVED_SLOT.SM_GENERIC.SM_KICK.SM_BAN.SM_UNBAN.SM_SLAY
 					 SM_CHEATS.SM_CUSTOM1.SM_CUSTOM2.SM_CUSTOM3. SM_CUSTOM4.SM_CUSTOM5.SM_CUSTOM6.SM_ROOT);
 
 $GLOBALS['db']->Execute("SET NAMES utf8;");
-					 
+
 $res = $GLOBALS['db']->Execute("SELECT * FROM ".DB_PREFIX."_settings GROUP BY `setting`, `value`");
 $GLOBALS['config'] = array();
 while (!$res->EOF)
@@ -273,7 +273,7 @@ if(version_compare(PHP_VERSION, "5") != -1)
         }
     }
 }
-else 
+else
 {
     if(empty($GLOBALS['config']['config.timezone']))
     {

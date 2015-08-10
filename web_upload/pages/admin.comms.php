@@ -42,51 +42,51 @@ function changeReason(szListValue)
 function ProcessBan()
 {
 	var err = 0;
-	var reason = $('listReason')[$('listReason').selectedIndex].value;
+	var reason = $('listReason')[$('listReason').selectedIndex].get('value');
 
 	if (reason == "other")
-		reason = $('txtReason').value;
+		reason = $('txtReason').get('value');
 
-	if(!$('nickname').value)
+	if(!$('nickname').get('value'))
 	{
-		$('nick.msg').setHTML('You must enter the nickname of the person you are banning');
+		$('nick.msg').set('html', 'You must enter the nickname of the person you are banning');
 		$('nick.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('nick.msg').setHTML('');
+		$('nick.msg').set('html', '');
 		$('nick.msg').setStyle('display', 'none');
 	}
 
-	if($('steam').value.length < 10)
+	if($('steam').get('value').length < 10)
 	{
-		$('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
+		$('steam.msg').set('html', 'You must enter a valid STEAM ID or Community ID');
 		$('steam.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('steam.msg').setHTML('');
+		$('steam.msg').set('html', '');
 		$('steam.msg').setStyle('display', 'none');
 	}
 
 	if(!reason)
 	{
-		$('reason.msg').setHTML('You must select or enter a reason for this block.');
+		$('reason.msg').set('html', 'You must select or enter a reason for this block.');
 		$('reason.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('reason.msg').setHTML('');
+		$('reason.msg').set('html', '');
 		$('reason.msg').setStyle('display', 'none');
 	}
 
 	if(err)
 		return 0;
 
-	xajax_AddBlock($('nickname').value,
-				 $('type').value,
-				 $('steam').value,
-				 $('banlength').value,
+	xajax_AddBlock($('nickname').get('value'),
+				 $('type').get('value'),
+				 $('steam').get('value'),
+				 $('banlength').get('value'),
 				 reason);
 }
 </script>

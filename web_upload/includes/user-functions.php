@@ -38,7 +38,7 @@ function is_taken($table, $field, $value)
  */
 function generate_salt($length=5)
 {
-	return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
+	return (mb_substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
 }
 
 /**
@@ -174,7 +174,7 @@ function get_user_admin($steam)
 	if(empty($steam))
 		return 0;
 	$admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE authid = '" . $steam . "'");
-	if(strlen($admin['srv_group']) > 1)
+	if(mb_strlen($admin['srv_group']) > 1)
 	{
 		$query = $GLOBALS['db']->GetRow("SELECT flags FROM " . DB_PREFIX . "_srvgroups WHERE name = (SELECT srv_group FROM " . DB_PREFIX . "_admins WHERE authid = '" . $steam . "')");
 		return $query['flags'] . $admin['srv_flags'];

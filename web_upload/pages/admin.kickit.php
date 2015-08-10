@@ -14,18 +14,27 @@
  */
 include_once '../init.php';
 
-if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
-{
+if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
 	echo "No Access";
 	die();
 }
-require_once(INCLUDES_PATH . '/xajax.inc.php');
+require_once(INCLUDES_PATH . '/xajax_core/xajax.inc.php');
+
 $xajax = new xajax();
-//$xajax->debugOn();
-$xajax->setRequestURI("./admin.kickit.php");
-$xajax->registerFunction("KickPlayer");
-$xajax->registerFunction("LoadServers");
-$xajax->processRequests();
+
+if( defined("DEVELOPER_MODE") )
+    $xajax->configure('debug',true);
+else
+    $xajax->configure('debug',false);
+
+    $xajax->configure('responseType','XML');
+
+    $xajax ->configure( 'javascript URI', '../scripts/' );
+    $xajax ->configure( 'requestURI', "./admin.kickit.php" );
+
+$xajax->register( XAJAX_FUNCTION, "KickPlayer");
+$xajax->register( XAJAX_FUNCTION, "LoadServers");
+$xajax->processRequest();
 $username = $userbank->GetProperty("user");
 
 function LoadServers($check, $type) {
@@ -43,13 +52,13 @@ function LoadServers($check, $type) {
 		//search for player
 		if(!empty($servers->fields["rcon"])) {
 			$text = '<font size="1">Searching...</font>';
-			$objResponse->addScript("xajax_KickPlayer('".$check."', '".$servers->fields["sid"]."', '".$id."', '".$type."');");
+			$objResponse->script("xajax_KickPlayer('".$check."', '".$servers->fields["sid"]."', '".$id."', '".$type."');");
 		}
 		else { //no rcon = servercount + 1 ;)
 			$text = '<font size="1">No rcon password.</font>';
-			$objResponse->addScript('set_counter(1);');
+			$objResponse->script('set_counter(1);');
 		}		
-		$objResponse->addAssign("srv_".$id, "innerHTML", $text);
+		$objResponse->assign("srv_".$id, "innerHTML", $text);
 		$id++;
 		$servers->MoveNext();
 	}
@@ -81,8 +90,8 @@ function KickPlayer($check, $sid, $num, $type) {
 		if(!$r->Auth())
 		{
 			$GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."' LIMIT 1;");		
-			$objResponse->addAssign("srv_$num", "innerHTML", "<font color='red' size='1'>Wrong RCON Password, please change!</font>");
-			$objResponse->addScript('set_counter(1);');
+			$objResponse->assign("srv_$num", "innerHTML", "<font color='red' size='1'>Wrong RCON Password, please change!</font>");
+			$objResponse->script('set_counter(1);');
 			return $objResponse;
 		}
 		$ret = $r->rconCommand("status");
@@ -92,7 +101,7 @@ function KickPlayer($check, $sid, $num, $type) {
 		$hostsearch = preg_match_all('/hostname:[ ]*(.+)/',$ret,$hostname,PREG_PATTERN_ORDER);
 		$hostname = trunc(htmlspecialchars($hostname[1][0]),25,false);
 		if(!empty($hostname))
-			$objResponse->addAssign("srvip_$num", "innerHTML", "<font size='1'><span title='".$sdata['ip'].":".$sdata['port']."'>".$hostname."</span></font>");
+			$objResponse->assign("srvip_$num", "innerHTML", "<font size='1'><span title='".$sdata['ip'].":".$sdata['port']."'>".$hostname."</span></font>");
 		
 		$gothim = false;
 		$search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
@@ -103,16 +112,16 @@ function KickPlayer($check, $sid, $num, $type) {
 					// gotcha!!! kick him!
 					$gothim = true;
 					$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_bans` SET sid = '".$sid."' WHERE authid = '".$check."' AND RemovedBy IS NULL;");
-					$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
+					$requri = mb_substr($_SERVER['REQUEST_URI'], 0, mb_strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
 					
-					if(strpos($match, "[U:") === 0) {
+					if(mb_strpos($match, "[U:") === 0) {
 						$kick = $r->sendCommand("kickid \"".$match."\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 					} else {
 						$kick = $r->sendCommand("kickid ".$match." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 					}
 					
-					$objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
-					$objResponse->addScript("set_counter('-1');");
+					$objResponse->assign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
+					$objResponse->script("set_counter('-1');");
 					return $objResponse;
 				}
 			}
@@ -126,23 +135,23 @@ function KickPlayer($check, $sid, $num, $type) {
 					// gotcha!!! kick him!
 					$gothim = true;
 					$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_bans` SET sid = '".$sid."' WHERE ip = '".$check."' AND RemovedBy IS NULL;");
-					$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
+					$requri = mb_substr($_SERVER['REQUEST_URI'], 0, mb_strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
 					$kick = $r->sendCommand("kickid ".$userid." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
-					$objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
-					$objResponse->addScript("set_counter('-1');");
+					$objResponse->assign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
+					$objResponse->script("set_counter('-1');");
 					return $objResponse;
 				}
 				$id++;
 			}
 		}
 		if(!$gothim) {
-			$objResponse->addAssign("srv_$num", "innerHTML", "<font size='1'>Player not found.</font>");
-			$objResponse->addScript('set_counter(1);');
+			$objResponse->assign("srv_$num", "innerHTML", "<font size='1'>Player not found.</font>");
+			$objResponse->script('set_counter(1);');
 			return $objResponse;
 		}
 	} else {
-		$objResponse->addAssign("srv_$num", "innerHTML", "<font color='red' size='1'><i>Can't connect to server.</i></font>");
-		$objResponse->addScript('set_counter(1);');
+		$objResponse->assign("srv_$num", "innerHTML", "<font color='red' size='1'><i>Can't connect to server.</i></font>");
+		$objResponse->script('set_counter(1);');
 		return $objResponse;
 	}
 }

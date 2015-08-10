@@ -256,4 +256,4 @@
 		</tr>
 	</table>
 </form>
-<script>$('sel_timezoneoffset').value = "{$config_time}";</script>
+<script>$('sel_timezoneoffset').set('value', "{$config_time}");</script>

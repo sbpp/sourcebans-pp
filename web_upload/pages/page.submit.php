@@ -40,22 +40,22 @@ else
 	$SID = (int)$_POST['server'];
 	$validsubmit = true;
 	$errors = "";
-	if((strlen($SteamID)!=0 && $SteamID != "STEAM_0:") && !validate_steam($SteamID))
+	if((mb_strlen($SteamID)!=0 && $SteamID != "STEAM_0:") && !validate_steam($SteamID))
 	{
 		$errors .= '* Please type a valid STEAM ID.<br>';
 		$validsubmit = false;
 	}
-	if(strlen($BanIP)!=0 && !validate_ip($BanIP))
+	if(mb_strlen($BanIP)!=0 && !validate_ip($BanIP))
 	{
 		$errors .= '* Please type a valid IP-address.<br>';
 		$validsubmit = false;
 	}
-	if (strlen($PlayerName) == 0)
+	if (mb_strlen($PlayerName) == 0)
 	{
 		$errors .= '* You must include a player name<br>';
 		$validsubmit = false;
 	}
-	if (strlen($BanReason) == 0)
+	if (mb_strlen($BanReason) == 0)
 	{
 		$errors .= '* You must include comments<br>';
 		$validsubmit = false;
@@ -131,7 +131,7 @@ else
 			$headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" . 'X-Mailer: PHP/' . phpversion();
 
 			$admins = $userbank->GetAllAdmins();
-			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")-5);
+			$requri = mb_substr($_SERVER['REQUEST_URI'], 0, mb_strrpos($_SERVER['REQUEST_URI'], ".php")-5);
 			foreach($admins AS $admin)
 			{
 				$message = "";

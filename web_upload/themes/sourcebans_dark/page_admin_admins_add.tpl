@@ -87,7 +87,7 @@
 		    	</td>
 		    	<td>
 		    		<div align="left">
-		        		<input type="checkbox" id="a_useserverpass" name="a_useserverpass" TABINDEX=6 onclick="$('a_serverpass').disabled = !$(this).checked;" /> <input type="password" TABINDEX=7 class="submit-fields" name="a_serverpass" id="a_serverpass" disabled="disabled" />
+		        		<input type="checkbox" id="a_useserverpass" name="a_useserverpass" TABINDEX=6 onclick="$('a_serverpass').set('disabled', !$(this).get('checked'));" /> <input type="password" TABINDEX=7 class="submit-fields" name="a_serverpass" id="a_serverpass" disabled="disabled" />
 		    		</div>
 					<div id="a_serverpass.msg" class="badentry"></div>
 		    	</td>

@@ -1,7 +1,7 @@
 <?php
 /**
  * css.php
- * 
+ *
  * This file contains all of our styles :D
  * @author SteamFriends Development Team
  * @version 1.0.0
@@ -10,18 +10,18 @@
  * @link http://www.sourcebans.net
  */
 
-if(strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 6.0"))
+if(mb_strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 6.0"))
 	$agent = "IE6";
-elseif(strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 7.0"))
+elseif(mb_strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 7.0"))
 	$agent = "IE7";
-elseif(strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/2"))
+elseif(mb_strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/2"))
 	$agent = "FF2";
-elseif(strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/1"))
+elseif(mb_strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/1"))
 	$agent = "FF1";
-else 
+else
 	$agent = "other";
-	
-$css = 
+
+$css =
 "body {
 	background: url(../images/bk.gif);
 	background-color: #FFF;
@@ -67,8 +67,8 @@ a:hover {
 
 .inputbox {
 	border: 1px solid #000000;
-	width: 105px; 
-	font-size: 14px; 
+	width: 105px;
+	font-size: 14px;
 	background-color: rgb(215, 215, 215);
 	width: 200px;
 	padding-left: 2px;
@@ -78,8 +78,8 @@ a:hover {
 	font-size: 12px;
 	font-weight: bold;
 }
-/** ================ Permissions ================ **/	
-	
+/** ================ Permissions ================ **/
+
 .tablerow1 {
 background-color:#EAEDF0;
 border-color:#FFFFFF rgb(193, 190, 190) rgb(193, 190, 190) rgb(255, 255, 255);
@@ -122,7 +122,7 @@ color:#fff;
 	height: 64px;
 	border: 0;
 }
-	
+
 #tabsWrapper {
   width: 100%;
   margin: 5px auto 0 auto;
@@ -138,7 +138,7 @@ color:#fff;
 	width: 100%;
 	height: 22px;
 	}
-	
+
 #breadcrumb {
 	width: 100%;
 	height: 22px;
@@ -150,14 +150,14 @@ color:#fff;
 	padding: 3px;
 	margin-top:10px;
 	}
-	
+
 #content {
 	background-color: #FFF;
 	padding: 8px;
 	border-top: 2px solid #aaa9a9;
 	overflow:hidden;
 	}
-	
+
 #footer {
 	clear:both;
 	color: #000;
@@ -165,7 +165,7 @@ color:#fff;
 	margin-left:15px;
 	background-image: url(../images/footerrepeatbg.png);
 	background-repeat: repeat-x;
-	
+
 	height: 68px;
 }
 
@@ -256,14 +256,14 @@ h3 {
 	background-color: #eaeaea;
 }
 /** ================ ToolTips ================ **/
-.tool-tip {
+div.tip {
 	color: #fff;
 	width: 139px;
 	z-index: 13000;
 	text-align:left;
 }
- 
-.tool-title {
+
+.tip-title {
 	font-weight: bold;
 	font-size: 14px;
 	margin: 0;
@@ -273,8 +273,8 @@ h3 {
 	padding: 8px 8px 4px;
 	background: url(../images/bubble.png) top left;
 }
- 
-.tool-text {
+
+.tip-text {
 	font-size: 11px;
 	padding: 4px 8px 8px;
 	background: url(../images/bubble.png) bottom right;
@@ -285,7 +285,7 @@ h3 {
 	z-index: 13000;
 	text-align:left;
 }
- 
+
 .perm-title {
 	font-weight: bold;
 	font-size: 14px;
@@ -296,7 +296,7 @@ h3 {
 	padding: 8px 8px 4px;
 	background: url(../images/bubble2.png) top left;
 }
- 
+
 .perm-text {
 	font-size: 11px;
 	padding: 4px 8px 8px;
@@ -452,10 +452,10 @@ div.dialog-control{
 }
 
 .clearfix:after {
-    content: "."; 
-    display: block; 
-    height: 0; 
-    clear: both; 
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
     visibility: hidden;
 }
 
@@ -590,7 +590,7 @@ $css .="
 #log_res {
 	overflow: auto;
 }
- 
+
 #log_res.ajax-loading {
 	padding: 20px 0;
 	background: url(../images/spinner.gif) no-repeat center;
@@ -621,15 +621,15 @@ border-bottom-width:1px;
 	background-position: top left;
 	background-repeat: no-repeat;
 	}
-	
-	
+
+
 #sb {
 	height: 68px;
 	width: 50%;
 	float: left;
 	text-align: center;
 	}
-	
+
 #sm {
 	height: 68px;
 	width: 20%;
@@ -641,13 +641,13 @@ border-bottom-width:1px;
 	background-position: top right;
 	background-repeat: no-repeat;
 	}
-	
+
 a.footer_link:link,
 a.footer_link:visited {
 	color: #FFF;
 	text-decoration: none;
 	}
-	
+
 a.footer_link:hover {
 	text-decoration: underline;
 	}
@@ -670,12 +670,12 @@ a.footer_link:hover {
 	padding: 12px;
 }
 
-	
+
 #loginLogo {
 	text-align: center;
 	height: 60px;
 }
-	
+
 #loginUsernameDiv,
 #loginPasswordDiv,
 #loginRememberMe,
@@ -690,11 +690,11 @@ a.footer_link:hover {
 	font-size: 18px;
 	}
 
-	
+
 #loginSubmit {
 	text-align: right;
 }
-	
+
 #loginbutton {
 	padding: 5px 10px;
 	font-size: 14px;
@@ -703,7 +703,7 @@ a.footer_link:hover {
 	color: #FFF;
 	font-weight: 700;
 }
-	
+
 #loginOtherlinks {
 	border-top: 1px solid #aaa9a9;
 	text-align: center;
@@ -739,10 +739,10 @@ a.footer_link:hover {
 #cpanel ul li a {
 	display: block;
 	height: 97px !important;
-	height: 100px; 
+	height: 100px;
 	width: 108px !important;
-	width: 110px; 
-	vertical-align: middle; 
+	width: 110px;
+	vertical-align: middle;
 	text-decoration : none;
 	border: 1px solid #DDD;
 	padding: 2px 5px 1px 5px;
@@ -750,10 +750,10 @@ a.footer_link:hover {
 }
 
 #cpanel ul li a:hover {
-	color : #333; 
-	background-color: #f1e8e6;  
+	color : #333;
+	background-color: #f1e8e6;
 	border: 1px solid #c24733;
-	padding: 3px 4px 0px 6px; 
+	padding: 3px 4px 0px 6px;
 }
 
 #cpanel ul li.active {
@@ -770,7 +770,7 @@ a.footer_link:hover {
 	float: left;
 	padding: 5px;
 	}
-	
+
 #admin-page-menu ul {
   margin: 0;
   padding: 0 10px;
@@ -783,7 +783,7 @@ a.footer_link:hover {
 
 #admin-page-menu ul .active
 {
-	color : #333; 
+	color : #333;
 	background-color: #f1e8e6;
 	font-weight: bold;
 	background-image: url(../images/admin/rightarrow.png);
@@ -806,8 +806,8 @@ a.footer_link:hover {
 }
 
 #admin-page-menu ul li a:hover {
-	color : #333; 
-	background-color: #f1e8e6;  
+	color : #333;
+	background-color: #f1e8e6;
 	border: 1px solid #c24733;
 	border-left: 5px solid #c24733;
 	background-image: url(../images/admin/rightarrow.png);
@@ -827,7 +827,7 @@ a.footer_link:hover {
 	border: 1px solid #DDD;
 	padding: 5px;
 	}
-	
+
 /** ================ Permissions ================ **/
 #permis-drop{
 	width: 676px;
@@ -841,7 +841,7 @@ a.footer_link:hover {
 .permis-container {
 	width: 690px;
 	float: none;
-	
+
 	height: 100%;
 	overflow:hidden;
 }
@@ -861,9 +861,9 @@ a.footer_link:hover {
 .permis-container ul li a {
 
 	display: block;
-	height: 37px; 
-	width: 100px; 
-	vertical-align: middle; 
+	height: 37px;
+	width: 100px;
+	vertical-align: middle;
 	text-decoration: none;
 	border: 1px solid #DDD;
 	padding: 7px 5px 1px 5px;
@@ -871,10 +871,10 @@ a.footer_link:hover {
 	margin-bottom:20px;
 }
 .permis-container ul li a:hover {
-	color : #333; 
-	background-color: #f1e8e6;  
+	color : #333;
+	background-color: #f1e8e6;
 	border: 1px solid #c24733;
-	padding: 8px 4px 0px 6px; 
+	padding: 8px 4px 0px 6px;
 	cursor:move;
 }
 
@@ -887,14 +887,14 @@ a.footer_link:hover {
 #front-servers {
 	margin: 13px;
 }
-	
+
 #front-servers hr {
 	border: 1px solid #DDD;
 	margin-bottom: 5px;
 	}
-	
+
 .front-module {
-	width: 410px;	
+	width: 410px;
 	margin: 13px;
 }
 .front-module-intro {
@@ -911,12 +911,12 @@ a.footer_link:hover {
 	font-weight: 600;
 	background-color: #eaeaea;
 }
-	
+
 .fmsd {
 	font-size: 10px;
 	}
 
-/** ================ Submit ================ **/	
+/** ================ Submit ================ **/
 
 #submit-introduction {
 	padding: 5px;
@@ -926,13 +926,13 @@ a.footer_link:hover {
 	border: 1px solid #DDD;
 	padding: 5px;
 	float: right;
-}	
+}
 #submit-main-full {
 	border: 1px solid #DDD;
 	padding: 5px;
 	float: left;
 	width: 98%;
-}	
+}
 .faux-button {
 	padding: 2px 10px;
 	font-size: 11px;
@@ -943,17 +943,17 @@ a.footer_link:hover {
 	font-weight: 600;
 	letter-spacing: 1px;
 	}
-	
+
 .submit-fields {
 	border: 1px solid #000000;
 	font-size: 14px;
 	background-color: rgb(215, 215, 215);
 	}
-	
+
 .mandatory {
 	color:#FF0000;
 	}
-	
+
 /** ================ Servers ================ **/
 
 #servers {
@@ -962,7 +962,7 @@ a.footer_link:hover {
 	border: 1px solid #DDD;
 	border-top: 2px solid #aaa9a9;
 	}
-	
+
 #singleserver {
 	width: 500px;
 	padding: 5px;
@@ -983,9 +983,9 @@ a.footer_link:hover {
 	border-top: 1px solid #DDD;
 	background-color: #eaebeb;
 	}
-	
+
 /** ================ Banlist ================ **/
-	
+
 table.listtable {
  font-family: verdana, tahoma, arial;
  font-size: 10px;
@@ -1065,7 +1065,7 @@ td.listtable_1 {
  font-family: verdana, tahoma, arial;
  font-size: 10px;
  border: #DDD solid;
- 
+
  border-width: 0px 0px 1px 1px;
  padding-top: 2px;
  padding-right: 4px;
@@ -1091,7 +1091,7 @@ td.listtable_2 {
 .ban-edit {
 	padding: 5px;
 	}
-	
+
 .ban-edit ul {
   margin: 0;
   padding: 0 10px;
@@ -1111,10 +1111,10 @@ td.listtable_2 {
 }
 
 .ban-edit ul li a:hover {
-	color : #333; 
-	background-color: #f1e8e6;  
+	color : #333;
+	background-color: #f1e8e6;
 	border: 1px solid #c24733;
-	padding: 3px 4px 0px 6px; 
+	padding: 3px 4px 0px 6px;
 }
 
 .ban-edit ul li.active {
@@ -1124,13 +1124,13 @@ td.listtable_2 {
 	width: 50%;
 	float: left;
 	}
-	
+
 #banlist-nav {
 	width: 50%;
 	float:right;
 	text-align: right;
 	}
-	
+
 #banlist {
 	width: 100%;
 	float:left;

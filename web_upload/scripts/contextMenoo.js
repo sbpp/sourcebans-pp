@@ -13,15 +13,17 @@ contextMenoo = new Class({
 	initialize: function (op) {
 		this.setOptions(op);
 		this.cont=new Element('div',{'class': this.options.className});
-		this.Fade=this.cont.effect('opacity');
-		
-		this.cont.adopt(new Element('b', {'class': 'head'}).setHTML(this.options.headline));
+//		this.Fade=this.cont.effect('opacity');
+		this.Fade= new Fx.Morph( this.cont, {transition:Fx.Transitions.Sine.easeIn});
+
+		this.cont.adopt(new Element('b', {'class': 'head'}).set('html', this.options.headline));
 		this.options.menuItems.each(function(item){
-			this.cont.adopt(item.separator ? 
+			this.cont.adopt(item.separator ?
 				new Element('div', {'class': 'separator'}) :
-				new Element('a', {	'href': '#', 'title': item.name, 'onclick': 'return false;', 'class': item.disabled ? 'disabled' : ''}).addEvent('click', this.onClick.bindWithEvent(this,[item.callback])).setHTML(item.name))
+				new Element('a', {	'href': '#', 'title': item.name, 'onclick': 'return false;', 'class': item.disabled ? 'disabled' : ''}).addEvent('click', this.onClick.bindWithEvent(this,[item.callback])).set('html', item.name))
 		}.bind(this));
-		this.Fade.set(0);
+//		this.Fade.set(0);
+		this.Fade.set({'opacity':0});
 		$(document.body).adopt(this.cont);
 		document.addEvents({
 			'click':this.hide.bind(this),'contextmenu':this.hide.bind(this)
@@ -34,7 +36,10 @@ contextMenoo = new Class({
 			}.bind(this));
 		},this);
 	},
-	hide: function(){this.Fade.set(0);},
+	hide: function(){
+//		this.Fade.set(0);
+		this.Fade.set({'opacity':0});
+	},
 	show: function(e) {
 		e=new Event(e).stop();
 		var oCont=this.cont.getCoordinates(),
@@ -44,17 +49,20 @@ contextMenoo = new Class({
 			left: ((e.page.x + size.cW + this.options.pageOffset) > size.width ? (size.width - size.cW - this.options.pageOffset) : e.page.x),
 			top: ((e.page.y - size.top + size.cH) > size.height && (e.page.y - size.top) > size.cH ? (e.page.y - size.cH) : e.page.y)
 		});
-		this.Fade.set(0);
-		this.options.fade?this.Fade.start(0,1):this.Fade.set(1);
+//		this.Fade.set(0);
+		this.Fade.set({'opacity':0});
+		this.options.fade? this.Fade.start({'opacity':1}) : this.Fade.set({'opacity':1});// this.Fade.start(0,1) : this.Fade.set(1);
 	},
 	onClick:function(e,args){
-		if (args && !e.target.hasClass('disabled')) this.Fade.set(0);args();
+		if( args && !e.target.hasClass('disabled') )
+			this.Fade.set({'opacity':0}); // this.Fade.set(0);
+
+		args();
 	}
 });
 contextMenoo.implement(new Options());
 
-function AddContextMenu(select, classNames, fader, headl, oLinks)
-{
+function AddContextMenu(select, classNames, fader, headl, oLinks) {
 	window.addEvent('domready', function(){
 
 		var menuObj = new contextMenoo({
@@ -64,6 +72,6 @@ function AddContextMenu(select, classNames, fader, headl, oLinks)
 			menuItems: oLinks,
 			headline: headl
 		});
-		
+
 	});
 }

@@ -55,17 +55,17 @@ if(isset($_POST['name']))
 	if(empty($_POST['steam']))
 	{
 		$error++;
-		$errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
+		$errorScript .= "$('steam.msg').set('html', 'You must type a Steam ID or Community ID');";
 		$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 	}
 	else if((!is_numeric($_POST['steam']) 
 	&& !validate_steam($_POST['steam']))
 	|| (is_numeric($_POST['steam']) 
-	&& (strlen($_POST['steam']) < 15
+	&& (mb_strlen($_POST['steam']) < 15
 	|| !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam'])))))
 	{
 		$error++;
-		$errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
+		$errorScript .= "$('steam.msg').set('html', 'Please enter a valid Steam ID or Community ID');";
 		$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 	}
 	
@@ -73,7 +73,7 @@ if(isset($_POST['name']))
 	if($_POST['listReason'] == "other" && empty($_POST['txtReason']))
 	{
 		$error++;
-		$errorScript .= "$('reason.msg').innerHTML = 'You must type a reason';";
+		$errorScript .= "$('reason.msg').set('html', 'You must type a reason');";
 		$errorScript .= "$('reason.msg').setStyle('display', 'block');";
 	}
 	
@@ -87,7 +87,7 @@ if(isset($_POST['name']))
 		if((int)$chk[0] > 0)
 		{
 			$error++;
-			$errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already blocked';";
+			$errorScript .= "$('steam.msg').set('html', 'This SteamID is already blocked');";
 			$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 		}
 		else
@@ -99,7 +99,7 @@ if(isset($_POST['name']))
 				if($admin['authid'] == $_POST['steam'] && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity'])
 				{
 					$error++;
-					$errorScript .= "$('steam.msg').innerHTML = 'Admin ".$admin['user']." is immune';";
+					$errorScript .= "$('steam.msg').set('html', 'Admin ".$admin['user']." is immune');";
 					$errorScript .= "$('steam.msg').setStyle('display', 'block');";
 					break;
 				}

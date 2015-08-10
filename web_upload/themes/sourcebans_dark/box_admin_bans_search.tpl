@@ -10,13 +10,13 @@
 			    <tr>
 					<td class="listtable_1" width="8%" align="center"><input id="name" name="search_type" type="radio" value="name"></td>
 			        <td class="listtable_1" width="26%">Nickname</td>
-			        <td class="listtable_1" width="66%"><input type="text" id="nick" value="" onmouseup="$('name').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
+			        <td class="listtable_1" width="66%"><input type="text" id="nick" value="" onmouseup="$('name').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
 				</tr>       
 			    <tr>
 			        <td align="center" class="listtable_1" ><input id="steam_" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Steam ID</td>
 			        <td class="listtable_1" >
-			            <input type="text" id="steamid" value="" onmouseup="$('steam_').checked = true"style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 150px;"><select id="steam_match" onmouseup="$('steam_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 100px;">
+			            <input type="text" id="steamid" value="" onmouseup="$('steam_').set('checked', true);"style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 150px;"><select id="steam_match" onmouseup="$('steam_').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 100px;">
 				        <option label="exact" value="0" selected>Exact Match</option>
 				        <option label="partial" value="1">Partial Match</option>
 				    </select>
@@ -26,21 +26,21 @@
 				<tr>
 					<td align="center" class="listtable_1" ><input id="ip_" type="radio" name="search_type" value="radiobutton"></td>
 					<td class="listtable_1" >IP</td>
-					<td class="listtable_1" ><input type="text" id="ip" value="" onmouseup="$('ip_').checked = true"style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
+					<td class="listtable_1" ><input type="text" id="ip" value="" onmouseup="$('ip_').set('checked', true);"style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
 				</tr>
 				{/if}
 			    <tr>
 			        <td align="center" class="listtable_1" ><input id="reason_" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Reason</td>
-			        <td class="listtable_1" ><input type="text" id="ban_reason" value="" onmouseup="$('reason_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
+			        <td class="listtable_1" ><input type="text" id="ban_reason" value="" onmouseup="$('reason_').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
 			    </tr>
 				<tr>
 					<td align="center" class="listtable_1" ><input id="date" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Date</td>
 			        <td class="listtable_1" >
-			        	<input type="text" id="day" value="DD" onmouseup="$('date').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 75px;">
-			            <input type="text" id="month" value="MM" onmouseup="$('date').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 75px;">
-			            <input type="text" id="year" value="YY" onmouseup="$('date').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 75px;"> 
+			        	<input type="text" id="day" value="DD" onmouseup="$('date').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 75px;">
+			            <input type="text" id="month" value="MM" onmouseup="$('date').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 75px;">
+			            <input type="text" id="year" value="YY" onmouseup="$('date').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 75px;"> 
 			        </td>
 			  	</tr>
 				<tr>
@@ -50,7 +50,7 @@
 						<table border="0" cellpadding="0" cellspacing="0">
 							<tr>
 								<td>
-						            <select id="length_type" onmouseup="$('length_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 40px;">
+						            <select id="length_type" onmouseup="$('length_').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 40px;">
 										<option value="e" title="equal to">=</option>
 										<option value="h" title="greater">&gt;</option>
 										<option value="l" title="smaller">&lt;</option>
@@ -59,10 +59,10 @@
 									</select>
 								</td>
 								<td>
-									<input type="text" id="other_length" name="other_length" onmouseup="$('length_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 190px;display:none;">
+									<input type="text" id="other_length" name="other_length" onmouseup="$('length_').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 190px;display:none;">
 								</td>
 								<td>
-									<select id="length" onmouseup="$('length_').checked = true" onchange="switch_length(this);" onmouseover="if(this.options[this.selectedIndex].value=='other')$('length').setStyle('width', '210px');if(this.options[this.selectedIndex].value=='other')this.focus();" onblur="if(this.options[this.selectedIndex].value=='other')$('length').setStyle('width', '20px');" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 210px;">
+									<select id="length" onmouseup="$('length_').set('checked', true);" onchange="switch_length(this);" onmouseover="if(this.options[this.selectedIndex].get('value') == 'other')$('length').setStyle('width', '210px');if(this.options[this.selectedIndex].get('value') == 'other')this.focus();" onblur="if(this.options[this.selectedIndex].get('value') == 'other')$('length').setStyle('width', '20px');" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 210px;">
 								        <option value="0">Permanent</option>
 										<optgroup label="minutes">
 											<option value="1">1 minute</option>
@@ -111,7 +111,7 @@
 			        <td align="center" class="listtable_1" ><input id="ban_type_" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Type</td>
 			        <td class="listtable_1" >
-			            <select id="ban_type" onmouseup="$('ban_type_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
+			            <select id="ban_type" onmouseup="$('ban_type_').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
 					        <option value="0" selected>Steam ID</option>
 					        <option value="1">IP Address</option>
 						</select>
@@ -122,7 +122,7 @@
 			    	<td class="listtable_1"  align="center"><input id="admin" name="search_type" type="radio" value="radiobutton"></td>
 			        <td class="listtable_1" >Admin</td>
 			        <td class="listtable_1" >
-						<select id="ban_admin" onmouseup="$('admin').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
+						<select id="ban_admin" onmouseup="$('admin').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
 							{foreach from="$admin_list" item="admin}
 								<option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
 							{/foreach}
@@ -134,7 +134,7 @@
 			    	<td class="listtable_1"  align="center"><input id="where_banned" name="search_type" type="radio" value="radiobutton"></td>
 					<td class="listtable_1" >Server</td>
 			        <td class="listtable_1" >
-						<select id="server" onmouseup="$('where_banned').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
+						<select id="server" onmouseup="$('where_banned').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;">
 						<option label="Web Ban" value="0">Web Ban</option>
 							{foreach from="$server_list" item="server}
 								<option value="{$server.sid}" id="ss{$server.sid}">Retrieving Hostname... ({$server.ip}:{$server.port})</option>
@@ -146,7 +146,7 @@
 				<tr>
 			        <td align="center" class="listtable_1" ><input id="comment_" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Comment</td>
-			        <td class="listtable_1" ><input type="text" id="ban_comment" value="" onmouseup="$('comment_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
+			        <td class="listtable_1" ><input type="text" id="ban_comment" value="" onmouseup="$('comment_').set('checked', true);" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 250px;"></td>
 			    </tr>
 				{/if}
 			    <tr>

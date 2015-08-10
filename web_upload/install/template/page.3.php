@@ -38,7 +38,7 @@ This page will list all of the requirements to run the SourceBans web interface,
   <td width="33%" height="16" class="listtable_top">Setting</td>
 	<td width="22%" height="16" class="listtable_top">Recomended</td>
 	<td width="22%" height="16" class="listtable_top">Required</td>
-	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
+	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
   <td width="33%" height="16" class="listtable_1">PHP Version</td>
@@ -47,58 +47,73 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(version_compare(PHP_VERSION, "5") != -1)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo PHP_VERSION;?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo PHP_VERSION;?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">File Uploads</td>
+  <tr>
+  	<td width="33%" height="16" class="listtable_1">File Uploads</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<td width="22%" height="16" class="listtable_1">On</td>
 	<?php $uploads = ini_get("file_uploads");if($uploads)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $uploads?'On':'Off';?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $uploads?'On':'Off';?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">XML Support</td>
+  <tr>
+  	<td width="33%" height="16" class="listtable_1">XML Support</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<td width="22%" height="16" class="listtable_1">Enabled</td>
 	<?php $xml = extension_loaded('xml');if($xml)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $xml?'Enabled':'Disabled';?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $xml?'Enabled':'Disabled';?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">Register Globals</td>
+  <tr>
+  	<td width="33%" height="16" class="listtable_1">Register Globals</td>
 	<td width="22%" height="16" class="listtable_1">Off</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php $rg = ini_get("register_globals");if(!$rg)
 		$class = "green";
 	  else {  $class = "yellow"; $warnings++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $rg==""?"Off":"On";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $rg==""?"Off":"On";?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">Send Mail Path</td>
+  <tr>
+  	<td width="33%" height="16" class="listtable_1">Send Mail Path</td>
 	<td width="22%" height="16" class="listtable_1">Not Empty</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php $sm = ini_get("sendmail_path");if($sm)
 		$class = "green";
 	  else {  $class = "yellow"; $warnings++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo ($sm?$sm:"Empty");?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo ($sm?$sm:"Empty");?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">Safe Mode </td>
+  <tr>
+  	<td width="33%" height="16" class="listtable_1">Safe Mode </td>
 	<td width="22%" height="16" class="listtable_1">Off</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php if(ini_get('safe_mode')==0) {
 			$class = "green";
 			$safem = "Off";
 		}
-		else {	
+		else {
 			$safem = "On";
-			$class = "yellow"; 
+			$class = "yellow";
 			$warnings++;
 		}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $safem;?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $safem;?></td>
+  </tr>
+    <tr>
+  	<td width="33%" height="16" class="listtable_1">mbstring Extension </td>
+  	<td width="22%" height="16" class="listtable_top">N/A</td>
+	<td width="22%" height="16" class="listtable_1">On</td>
+	<?php
+	 if( extension_loaded( 'mbstring' ) ) {
+				$class = "green";
+				$mbstring = "On";
+		  } else {
+					$mbstring = "Off";
+					$class = "red";
+					$errors++;
+				}?>
+	<td width="22%" height="16" class="<?= $class ?>"><?= $mbstring; ?></td>
   </tr>
 </table>
 <br /><br />
@@ -108,7 +123,7 @@ This page will list all of the requirements to run the SourceBans web interface,
   <td width="33%" height="16" class="listtable_top">Setting</td>
 	<td width="22%" height="16" class="listtable_top">Recomended</td>
 	<td width="22%" height="16" class="listtable_top">Required</td>
-	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
+	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
   <td width="33%" height="16" class="listtable_1">MySQL Version</td>
@@ -117,7 +132,7 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(version_compare($sql_version, "5") != -1)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $sql_version;?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $sql_version;?></td>
   </tr>
 </table>
 <br /><br />
@@ -127,7 +142,7 @@ This page will list all of the requirements to run the SourceBans web interface,
   <td width="33%" height="16" class="listtable_top">Setting</td>
 	<td width="22%" height="16" class="listtable_top">Recomended</td>
 	<td width="22%" height="16" class="listtable_top">Required</td>
-	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
+	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
   <td width="33%" height="16" class="listtable_1">Demo Folder Writable (/demos)</td>
@@ -136,9 +151,9 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(is_writable("../demos"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../demos")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../demos")?"Yes":"No";?></td>
   </tr>
-  
+
    <tr>
   <td width="33%" height="16" class="listtable_1">Compiled Themes Writable (/themes_c)</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
@@ -146,9 +161,9 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(is_writable("../themes_c"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../themes_c")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../themes_c")?"Yes":"No";?></td>
   </tr>
-  
+
   <tr>
   <td width="33%" height="16" class="listtable_1">Mod Icon Folder Writable (/images/games)</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
@@ -156,9 +171,9 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(is_writable("../images/games"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/games")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/games")?"Yes":"No";?></td>
   </tr>
-  
+
   <tr>
   <td width="33%" height="16" class="listtable_1">Map Image Folder Writable (/images/maps)</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
@@ -166,9 +181,9 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(is_writable("../images/maps"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/maps")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/maps")?"Yes":"No";?></td>
   </tr>
-    
+
    <tr>
   <td width="33%" height="16" class="listtable_1">Config File Writable (/config.php)</td>
 	<td width="22%" height="16" class="listtable_1">Yes</td>
@@ -176,7 +191,7 @@ This page will list all of the requirements to run the SourceBans web interface,
 	<?php if(is_writable("../config.php"))
 		$class = "green";
 	  else {  $class = "yellow"; $warnings++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../config.php")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../config.php")?"Yes":"No";?></td>
   </tr>
   </table>
 	<?php /* WhiteWolf: This is a hack to make sure the user didn't refresh the page, in the future we should tell them what they did. */
@@ -226,10 +241,11 @@ elseif($warnings > 0)
 {
 	echo "ShowBox('Warnings', 'There were some warnings while inspecting your setup. The installation can carry on, but some features may not work properly. <br />Please refer to the documentation to find possible fixes for these problems.', 'red', '', true);";
 }?>
-$E('html').onkeydown = function(event){
+document.children[0].addEvent('keydown', function(event){
 	var event = new Event(event);
 	if (event.key == 'enter' ) next();
-};
+});
+
 function next()
 {
 	var errors = <?php echo $errors?>;

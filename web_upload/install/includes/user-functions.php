@@ -103,7 +103,7 @@ function get_user_admin($steam)
 	if(empty($steam))
 		return 0;
 	$admin = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_srvadmins` WHERE identity = '$steam'");
-	if(strlen($admin['groups']) > 1)
+	if(mb_strlen($admin['groups']) > 1)
 	{
 		$query = $GLOBALS['db']->GetRow("SELECT `flags` FROM `" . DB_PREFIX . "_srvgroups` WHERE name = (SELECT `groups` FROM " . DB_PREFIX . "_srvadmins WHERE identity = '$steam')");
 		return $query['flags'] . $admin['flags'];

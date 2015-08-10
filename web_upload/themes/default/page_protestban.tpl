@@ -16,7 +16,7 @@ If you do find yourself listed on the banlist and find the reason for this to be
 <tr>
 	<td width="20%">Ban Type:</td>
 	<td>
-		<select id="Type" name="Type" class="select" style="width: 250px;" onChange="changeType(this[this.selectedIndex].value);">
+		<select id="Type" name="Type" class="select" style="width: 250px;" onChange="changeType(this[this.selectedIndex].get('value'));">
 			<option value="0">Steam ID</option>
 			<option value="1">IP Address</option>
 		</select>

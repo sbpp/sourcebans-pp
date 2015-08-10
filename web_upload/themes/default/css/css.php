@@ -1,7 +1,7 @@
 <?php
 /**
  * css.php
- * 
+ *
  * This file contains all of our styles :D
  * @author SteamFriends Development Team
  * @version 1.0.0
@@ -10,24 +10,24 @@
  * @link http://www.sourcebans.net
  */
 
-if(isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) { 
-	if(strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 6.0")) { 
-		$agent = "IE6"; 
-	} elseif(strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 7.0")) { 
-		$agent = "IE7"; 
-	} elseif(strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/2")) { 
-		$agent = "FF2"; 
-	} elseif(strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/1")) { 
-		$agent = "FF1"; 
-	} else { 
-		$agent = "other"; 
-	} 
-} else { 
-	$agent = 'other'; 
-} 
+if(isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
+	if(mb_strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 6.0")) {
+		$agent = "IE6";
+	} elseif(mb_strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 7.0")) {
+		$agent = "IE7";
+	} elseif(mb_strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/2")) {
+		$agent = "FF2";
+	} elseif(mb_strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/1")) {
+		$agent = "FF1";
+	} else {
+		$agent = "other";
+	}
+} else {
+	$agent = 'other';
+}
 
-header('Content-type: text/css'); 
-?> 
+header('Content-type: text/css');
+?>
 
 @font-face {
     font-family: tf2;
@@ -44,7 +44,7 @@ header('Content-type: text/css');
     src: url(../css/DANUBE__.TTF);
 }
 
-body { 
+body {
 	background-color: #808080;
 	color: #444;
 	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
@@ -54,7 +54,7 @@ body {
 	padding: 0px; /* required for Opera to have 0 margin */
    text-align: center /* centers board in MSIE */
 }
-		
+
 a:link {
   text-decoration: none;
   color : #4d4742;
@@ -75,8 +75,8 @@ a:hover {
 
 .inputbox {
 	border: 1px solid #000000;
-	width: 105px; 
-	font-size: 14px; 
+	width: 105px;
+	font-size: 14px;
 	background-color: rgb(215, 215, 215);
 	width: 200px;
 	padding-left: 2px;
@@ -86,8 +86,8 @@ a:hover {
 	font-size: 12px;
 	font-weight: bold;
 }
-/** ================ Permissions ================ **/	
-	
+/** ================ Permissions ================ **/
+
 .tablerow1 {
 background-color: #eaebeb;
 padding:6px;
@@ -230,10 +230,10 @@ div.dialog-control{
 }
 
 .clearfix:after {
-    content: "."; 
-    display: block; 
-    height: 0; 
-    clear: both; 
+    content: ".";
+    display: block;
+    height: 0;
+    clear: both;
     visibility: hidden;
 }
 
@@ -254,7 +254,7 @@ div.dialog-control{
 	height: 200px;
 	border: 0;
 }
-	
+
 #tabsWrapper {
   width: 100%;
   margin: 0 auto;
@@ -270,7 +270,7 @@ div.dialog-control{
 	width: 100%;
 	height: 22px;
 	}
-	
+
 #breadcrumb {
 	width: 100%;
     font-size: 12px;
@@ -282,12 +282,12 @@ div.dialog-control{
 	color: #4d4742;
 	margin-bottom: 10px;
 }
-	
+
 #content {
 	height: 100%;
 	overflow:hidden;
 	}
-	
+
 #footer {
 	color: #919191;
 	width: 100%;
@@ -304,9 +304,9 @@ div.dialog-control{
 }
 
 .searchbox {
-    width: 200px; 
+    width: 200px;
     padding: 10px 6px 12px 6px;
-    background-color: #DADFE1; 
+    background-color: #DADFE1;
     color: #34495E;
     border:0;
     margin-bottom: 5px;
@@ -378,14 +378,14 @@ h3 {
 	color: #e6e6e6;
 }
 /** ================ ToolTips ================ **/
-.tool-tip {
+div.tip {
 	color: #fff;
 	width: 139px;
 	z-index: 13000;
 	text-align:left;
 }
- 
-.tool-title {
+
+.tip-title {
 	font-weight: bold;
 	font-size: 14px;
 	margin: 0;
@@ -395,8 +395,8 @@ h3 {
 	padding: 8px 8px 4px;
 	background-color: rgba(108, 122, 137, 0.7);
 }
- 
-.tool-text {
+
+.tip-text {
 	font-size: 11px;
 	padding: 4px 8px 8px;
 	background-color: rgba(108, 122, 137, 0.7);
@@ -407,7 +407,7 @@ h3 {
 	z-index: 13000;
 	text-align:left;
 }
- 
+
 .perm-title {
 	font-weight: bold;
 	font-size: 14px;
@@ -418,7 +418,7 @@ h3 {
 	padding: 8px 8px 4px;
 	background: url(../images/tooltip_sqr.png) top left;
 }
- 
+
 .perm-text {
 	font-size: 11px;
 	padding: 4px 8px 8px;
@@ -448,7 +448,7 @@ a.nav_link:hover {
 	}
 
 #nav a:hover, #nav a.first:hover {
-	color : #666666; 
+	color : #666666;
 	text-decoration: none;
 	transition: all 0.5s ease;
 }
@@ -571,10 +571,10 @@ a.nav_link:hover {
 	position:absolute;
 	overflow:hidden;
 	top:250px;
-<?php 
-if($agent != "IE6") { 
-	echo "background: url(../images/msg-bubble.png) no-repeat center;"; 
-} 
+<?php
+if($agent != "IE6") {
+	echo "background: url(../images/msg-bubble.png) no-repeat center;";
+}
 ?>
 	padding:15px;
 	margin: auto 210px;
@@ -649,7 +649,7 @@ if($agent != "IE6") {
 #log_res {
 	overflow: auto;
 }
- 
+
 
 .front-module-line {
 background-color: #A69E97;
@@ -675,12 +675,12 @@ color: #fff;
 	background-color: #e0e0e0;
 }
 
-	
+
 #loginLogo {
 	text-align: center;
 	height: 60px;
 }
-	
+
 #loginUsernameDiv,
 #loginPasswordDiv,
 #loginRememberMeDiv,
@@ -697,11 +697,11 @@ color: #fff;
 	border-radius: 3px;
 	}
 
-	
+
 #loginSubmit {
 	text-align: right;
 }
-	
+
 #loginbutton {
 	padding: 5px 10px;
 	font-size: 14px;
@@ -710,7 +710,7 @@ color: #fff;
 	color: #FFF;
 	font-weight: 700;
 }
-	
+
 #loginOtherlinks {
 	border-top: 1px solid #aaa9a9;
 	text-align: center;
@@ -749,17 +749,17 @@ color: #fff;
 #cpanel ul li a {
 	display: block;
 	height: 97px !important;
-	height: 100px; 
+	height: 100px;
 	width: 108px !important;
-	width: 110px; 
-	vertical-align: middle; 
+	width: 110px;
+	vertical-align: middle;
 	text-decoration: none;
 	padding: 2px 5px 1px 5px;
 	margin-right: 20px;
 }
 
 #cpanel ul li a:hover {
-	color : #333; 
+	color : #333;
 	padding: 3px 4px 0px 6px;
 	text-decoration: none
 }
@@ -777,7 +777,7 @@ color: #fff;
 	width: 20%;
 	float: left;
 	}
-	
+
 #admin-page-menu ul {
   margin: 0;
   padding: 0 0px;
@@ -808,15 +808,15 @@ color: #fff;
 }
 
 #admin-page-menu ul li a:hover {
-	color : #fff; 
+	color : #fff;
 	background-color: #3d3631;
 	border: 0;
 	padding: 9px 0px 3px 8px;
 }
 
 #admin-page-menu ul li.active a:hover  {
-	color : #fff; 
-	background-color: #3d3631;  
+	color : #fff;
+	background-color: #3d3631;
 	border: 0;
 	padding: 9px 0px 3px 8px;
 }
@@ -832,7 +832,7 @@ color: #fff;
 	background-color: #e0e0e0;
 	padding: 10px;
 	}
-	
+
 /** ================ Permissions ================ **/
 #permis-drop{
 	width: 676px;
@@ -846,7 +846,7 @@ color: #fff;
 .permis-container {
 	width: 690px;
 	float: none;
-	
+
 	height: 100%;
 	overflow:hidden;
 }
@@ -866,9 +866,9 @@ color: #fff;
 .permis-container ul li a {
 
 	display: block;
-	height: 37px; 
-	width: 100px; 
-	vertical-align: middle; 
+	height: 37px;
+	width: 100px;
+	vertical-align: middle;
 	text-decoration: none;
 	border: 1px solid #DDD;
 	padding: 7px 5px 1px 5px;
@@ -876,10 +876,10 @@ color: #fff;
 	margin-bottom:20px;
 }
 .permis-container ul li a:hover {
-	color : #333; 
-	background-color: #f1e8e6;  
+	color : #333;
+	background-color: #f1e8e6;
 	border: 1px solid #c24733;
-	padding: 8px 4px 0px 6px; 
+	padding: 8px 4px 0px 6px;
 	cursor:move;
 }
 
@@ -892,30 +892,30 @@ color: #fff;
 #front-servers {
 	margin-bottom: 30px;
 }
-	
+
 #front-servers hr {
 	border: 1px solid #DDD;
 	margin-bottom: 5px;
 	}
-	
+
 .front-module {
 	width: 410px;
 }
 .front-module-intro {
 	margin: 11px;
 }
-	
+
 .fmsd {
 	font-size: 10px;
 	}
 
-/** ================ Submit ================ **/	
+/** ================ Submit ================ **/
 
 #submit-main {
 	background-color: #e0e0e0;
 	padding: 10px;
 	}
-	
+
 .faux-button {
 	padding: 2px 10px;
 	font-size: 11px;
@@ -926,11 +926,11 @@ color: #fff;
 	font-weight: 600;
 	letter-spacing: 1px;
 	}
-		
+
 .mandatory {
 	color:#FF0000;
 	}
-	
+
 /** ================ Servers ================ **/
 
 #servers {
@@ -939,7 +939,7 @@ color: #fff;
 	border: 1px solid #DDD;
 	border-top: 2px solid #aaa9a9;
 	}
-	
+
 #singleserver {
 	width: 500px;
 	padding: 5px;
@@ -960,11 +960,11 @@ color: #fff;
 	border-top: 1px solid #DDD;
 	background-color: #eaebeb;
 	}
-	
+
 /** ================ Banlist ================ **/
-	
+
 .tbl_hover {
-	cursor: pointer; 
+	cursor: pointer;
 	background-color: #eaebeb;
 }
 .tbl_out {
@@ -1065,7 +1065,7 @@ td.listtable_2 {
 .ban-edit {
 	padding: 5px;
 	}
-	
+
 .ban-edit ul {
   margin: 0;
   padding: 0 10px;
@@ -1085,28 +1085,28 @@ td.listtable_2 {
 }
 
 .ban-edit ul li a:hover {
-	color : #333; 
-	padding: 3px 4px 0px 6px; 
+	color : #333;
+	padding: 3px 4px 0px 6px;
 }
 
 #banlisttitle {
 	width: 50%;
 	float: left;
 }
-	
+
 #banlist-nav {
 	width: 60%;
 	float: right;
 	text-align: right;
 }
-	
+
 #banlist {
 	width: 100%;
 	float:left;
 	margin-top: 10px;
 }
-	
-	
+
+
 /** ================ Theme Page CSS ================ **/
 #current-theme-holder {
 	height: 235px;
@@ -1171,14 +1171,14 @@ td.listtable_2 {
 }
 
 #theme-list ul li a:hover {
-	color : #333; 
+	color : #333;
 	border-left: 5px solid #c24733;
 	padding: 2px 5px 1px 5px;
 }
 
 #theme-list ul li.active a:hover  {
-	color : #333; 
-	background-color: #f1e8e6;  
+	color : #333;
+	background-color: #f1e8e6;
 	border: 1px solid #c24733;
 	border-left: 5px solid #c24733;
 	background-image: url(../images/admin/rightarrow.png);

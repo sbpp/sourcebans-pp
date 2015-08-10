@@ -48,7 +48,7 @@ if(isset($_POST['name']))
 	if(empty($_POST['name']))
 	{
 		$error++;
-		$errorScript .= "$('name.msg').innerHTML = 'You must type a name for the mod.';";
+		$errorScript .= "$('name.msg').set('html', 'You must type a name for the mod.');";
 		$errorScript .= "$('name.msg').setStyle('display', 'block');";
 	}
 	else
@@ -58,14 +58,14 @@ if(isset($_POST['name']))
 		if(!empty($check))
 		{
 			$error++;
-			$errorScript .= "$('name.msg').innerHTML = 'A mod with that name already exists.';";
+			$errorScript .= "$('name.msg').set('html', 'A mod with that name already exists.');";
 			$errorScript .= "$('name.msg').setStyle('display', 'block');";
 		}
 	}
 	if(empty($_POST['folder']))
 	{
 		$error++;
-		$errorScript .= "$('folder.msg').innerHTML = 'You must enter mod\'s folder name.';";
+		$errorScript .= "$('folder.msg').set('html', 'You must enter mod\'s folder name.');";
 		$errorScript .= "$('folder.msg').setStyle('display', 'block');";
 	}
 	else
@@ -75,7 +75,7 @@ if(isset($_POST['name']))
 		if(!empty($check))
 		{
 			$error++;
-			$errorScript .= "$('folder.msg').innerHTML = 'A mod using that folder already exists.';";
+			$errorScript .= "$('folder.msg').set('html', 'A mod using that folder already exists.');";
 			$errorScript .= "$('folder.msg').setStyle('display', 'block');";
 		}
 	}
@@ -118,7 +118,7 @@ $theme->assign('steam_universe', $res['steam_universe']);
 <div id="1">
 <?php $theme->display('page_admin_edit_mod.tpl'); ?>
 <script>
-$('enabled').checked = <?php echo (int)$res['enabled'] ?>;
+$('enabled').set('checked', <?php echo (int)$res['enabled'] ?>);
 </script>
 </div>
 </div>

@@ -40,7 +40,7 @@
 	    </form>
 		{if !$extreq}
 		<script type="text/javascript">
-			$('friendsname').disabled = true;
+			$('friendsname').set('disabled', true);
 		</script>
 		{/if}
 {/if}

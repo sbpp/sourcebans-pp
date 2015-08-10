@@ -74,7 +74,7 @@
 			<input type="button" class="btn ok" onclick="CheckGroupBan();" name="gban" id="gban" onmouseover="ButtonOver('gban');" onmouseout="ButtonOver('gban');" value="Add Group Ban">
 		</div>
 		<div id="steamGroupStatus" name="steamGroupStatus" width="100%"></div>
-		<script type="text/javascript">$('tickswitch').value = 0;xajax_GetGroups('{$list_steam_groups}');</script>
+		<script type="text/javascript">if( $('tickswitch') ) $('tickswitch').set('value', 0);xajax_GetGroups('{$list_steam_groups}');</script>
 		{/if}
 	{/if}
 {/if}

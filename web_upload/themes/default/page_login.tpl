@@ -18,7 +18,7 @@
 		        <div id="loginPassword.msg" class="badentry"></div>
 	  	
 		        <div id="loginRememberMeDiv">
-	    	        <input id="loginRememberMe" type="checkbox" class="checkbox" name="remember" value="checked" vspace="5px" />    <span class="checkbox" style="cursor:pointer;" onclick="($('loginRememberMe').checked?$('loginRememberMe').checked=false:$('loginRememberMe').checked=true)">Remember me</span>
+	    	        <input id="loginRememberMe" type="checkbox" class="checkbox" name="remember" value="checked" vspace="5px" />    <span class="checkbox" style="cursor:pointer;" onclick="($('loginRememberMe').get('checked')?$('loginRememberMe').set('checked', false):$('loginRememberMe').set('checked', true))">Remember me</span>
   		        </div>
 		
   		        <div id="loginSubmit">	
@@ -34,14 +34,18 @@
 </table>
 	
 <script>
-	$E('html').onkeydown = function(event){
+	document.children[0].addEvent('keydown', function(event){
 	    var event = new Event(event);
 	    if (event.key == 'enter' ) -{$redir}-
-	};$('loginRememberMeDiv').onkeydown = function(event){
+	});
+	
+	$('loginRememberMeDiv').addEvent('keydown', function(event){
 	    var event = new Event(event);
-	    if (event.key == 'space' ) $('loginRememberMeDiv').checked = true;
-	};$('button').onkeydown = function(event){
+	    if (event.key == 'space' ) $('loginRememberMeDiv').set('checked', true);
+	});
+	
+	document.addEvent("keydown:relay(input[type=button])", function(event){
 	    var event = new Event(event);
 	    if (event.key == 'space' ) -{$redir}-
-	};
+	});
 </script>

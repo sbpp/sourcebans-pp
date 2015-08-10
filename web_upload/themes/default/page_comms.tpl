@@ -302,7 +302,8 @@
 InitAccordion('tr.opener', 'div.opener', 'mainwrapper');
 {/literal}
 {if $view_bans}
-$('tickswitch').value=0;
+if( $('tickswitch') )
+	$('tickswitch').set('value', 0);
 {/if}
 {literal}
 }); 

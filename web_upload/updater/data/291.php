@@ -13,7 +13,7 @@
     foreach($logs as $log)
     {
         if(preg_match("/(Submission|Protest) \(([0-9]+)\) has been moved to the/", $log['message'], $matches))
-            $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_".strtolower($matches[1])."s` set `archivedby` = '".$log['aid']."' WHERE `".(strtolower($matches[1])=="submission"?"subid":"pid")."` = '".$matches[2]."' AND `archiv` > 0;");
+            $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_".mb_strtolower($matches[1])."s` set `archivedby` = '".$log['aid']."' WHERE `".(mb_strtolower($matches[1])=="submission"?"subid":"pid")."` = '".$matches[2]."' AND `archiv` > 0;");
     }
     
 	return true;

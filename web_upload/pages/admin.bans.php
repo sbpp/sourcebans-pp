@@ -128,9 +128,9 @@ echo '<div id="admin-page-content">';
 
         $page_nav = 'displaying&nbsp;'.$PageStart.'&nbsp;-&nbsp;'.$PageEnd.'&nbsp;of&nbsp;'.$page_count.'&nbsp;results';
 
-        if (strlen($prev) > 0)
+        if (mb_strlen($prev) > 0)
             $page_nav .= ' | <b>'.$prev.'</b>';
-        if (strlen($next) > 0)
+        if (mb_strlen($next) > 0)
             $page_nav .= ' | <b>'.$next.'</b>';
 
         $pages = ceil($page_count/$ItemsPerPage);
@@ -148,9 +148,8 @@ echo '<div id="admin-page-content">';
         
         $delete = array();
 		$protest_list = array();
-		foreach($protests as $prot)
-		{
-			$prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
+		foreach($protests as $prot) {
+			$prot['reason'] = mb_wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 			$protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
 							    				FROM ".DB_PREFIX."_bans AS ba
 							    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
@@ -281,9 +280,9 @@ echo '<div id="admin-page-content">';
 
         $page_nav = 'displaying&nbsp;'.$PageStart.'&nbsp;-&nbsp;'.$PageEnd.'&nbsp;of&nbsp;'.$page_count.'&nbsp;results';
 
-        if (strlen($prev) > 0)
+        if (mb_strlen($prev) > 0)
             $page_nav .= ' | <b>'.$prev.'</b>';
-        if (strlen($next) > 0)
+        if (mb_strlen($next) > 0)
             $page_nav .= ' | <b>'.$next.'</b>';
 
         $pages = ceil($page_count/$ItemsPerPage);
@@ -303,7 +302,7 @@ echo '<div id="admin-page-content">';
 		$protest_list_archiv = array();
 		foreach($protestsarchiv as $prot)
 		{
-			$prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
+			$prot['reason'] = mb_wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 
 			if($prot['archiv'] != "2") {
 				$protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
@@ -453,9 +452,9 @@ echo '<div id="admin-page-content">';
 
             $page_nav = 'displaying&nbsp;'.$PageStart.'&nbsp;-&nbsp;'.$PageEnd.'&nbsp;of&nbsp;'.$page_count.'&nbsp;results';
 
-            if (strlen($prev) > 0)
+            if (mb_strlen($prev) > 0)
                 $page_nav .= ' | <b>'.$prev.'</b>';
-            if (strlen($next) > 0)
+            if (mb_strlen($next) > 0)
                 $page_nav .= ' | <b>'.$next.'</b>';
 
             $pages = ceil($page_count/$ItemsPerPage);
@@ -477,8 +476,8 @@ echo '<div id="admin-page-content">';
 			$submission_list = array();
 			foreach($submissions AS $sub)
 			{
-                $sub['name'] = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
-                $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
+                $sub['name'] = mb_wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
+                $sub['reason'] = mb_wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
             
 				$dem = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos
 												WHERE demtype = \"S\" AND demid = " .(int)$sub['subid']);
@@ -591,9 +590,9 @@ echo '<div id="admin-page-content">';
 
             $page_nav = 'displaying&nbsp;'.$PageStart.'&nbsp;-&nbsp;'.$PageEnd.'&nbsp;of&nbsp;'.$page_count.'&nbsp;results';
 
-            if (strlen($prev) > 0)
+            if (mb_strlen($prev) > 0)
                 $page_nav .= ' | <b>'.$prev.'</b>';
-            if (strlen($next) > 0)
+            if (mb_strlen($next) > 0)
                 $page_nav .= ' | <b>'.$next.'</b>';
 
             $pages = ceil($page_count/$ItemsPerPage);
@@ -613,10 +612,9 @@ echo '<div id="admin-page-content">';
 			$theme->assign('permissions_editsub', $userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ALL_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_OWN_BANS));
 			$theme->assign('submission_count_archiv', $page_count);
 			$submission_list_archiv = array();
-			foreach($submissionsarchiv AS $sub)
-			{
-                $sub['name'] = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
-                $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
+			foreach($submissionsarchiv AS $sub) {
+                $sub['name'] = mb_wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
+                $sub['reason'] = mb_wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
             
 				$dem = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos
 												WHERE demtype = \"S\" AND demid = " .(int)$sub['subid']);
@@ -735,7 +733,7 @@ var did = 0;
 var dname = "";
 function demo(id, name)
 {
-	$('demo.msg').setHTML("Uploaded: <b>" + name);
+	$('demo.msg').set('html', "Uploaded: <b>" + name);
 	did = id;
 	dname = name;
 }
@@ -749,80 +747,80 @@ function changeReason(szListValue)
 function ProcessBan()
 {
 	var err = 0;
-	var reason = $('listReason')[$('listReason').selectedIndex].value;
+	var reason = $('listReason')[$('listReason').selectedIndex].get('value');
 
 	if (reason == "other")
-		reason = $('txtReason').value;
+		reason = $('txtReason').get('value');
 
-	if(!$('nickname').value)
+	if(!$('nickname').get('value'))
 	{
-		$('nick.msg').setHTML('You must enter the nickname of the person you are banning');
+		$('nick.msg').set('html', 'You must enter the nickname of the person you are banning');
 		$('nick.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('nick.msg').setHTML('');
+		$('nick.msg').set('html', '');
 		$('nick.msg').setStyle('display', 'none');
 	}
 
-	if($('steam').value.length < 10 && !$('ip').value)
+	if($('steam').get('value').length < 10 && !$('ip').get('value'))
 	{
-		$('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
+		$('steam.msg').set('html', 'You must enter a valid STEAM ID or Community ID');
 		$('steam.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('steam.msg').setHTML('');
+		$('steam.msg').set('html', '');
 		$('steam.msg').setStyle('display', 'none');
 	}
 
-	if($('ip').value.length < 7 && !$('steam').value)
+	if($('ip').get('value').length < 7 && !$('steam').get('value'))
 	{
-		$('ip.msg').setHTML('You must enter a valid IP address');
+		$('ip.msg').set('html', 'You must enter a valid IP address');
 		$('ip.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('ip.msg').setHTML('');
+		$('ip.msg').set('html', '');
 		$('ip.msg').setStyle('display', 'none');
 	}
 
 
 	if(!reason)
 	{
-		$('reason.msg').setHTML('You must select or enter a reason for this ban.');
+		$('reason.msg').set('html', 'You must select or enter a reason for this ban.');
 		$('reason.msg').setStyle('display', 'block');
 		err++;
 	}else
 	{
-		$('reason.msg').setHTML('');
+		$('reason.msg').set('html', '');
 		$('reason.msg').setStyle('display', 'none');
 	}
 
 	if(err)
 		return 0;
 
-	xajax_AddBan($('nickname').value,
-				 $('type').value,
-				 $('steam').value,
-				 $('ip').value,
-				 $('banlength').value,
+	xajax_AddBan($('nickname').get('value'),
+				 $('type').get('value'),
+				 $('steam').get('value'),
+				 $('ip').get('value'),
+				 $('banlength').get('value'),
 				 did,
 				 dname,
 				 reason,
-				 $('fromsub').value);
+				 $('fromsub').get('value'));
 }
 function ProcessGroupBan()
 {
-	if(!$('groupurl').value)
+	if(!$('groupurl').get('value'))
 	{
-		$('groupurl.msg').setHTML('You must enter the group link of the group you are banning');
+		$('groupurl.msg').set('html', 'You must enter the group link of the group you are banning');
 		$('groupurl.msg').setStyle('display', 'block');
 	}else
 	{
-		$('groupurl.msg').setHTML('');
+		$('groupurl.msg').set('html', '');
 		$('groupurl.msg').setStyle('display', 'none');
-		xajax_GroupBan($('groupurl').value, "no", "no", $('groupreason').value, "");
+		xajax_GroupBan($('groupurl').get('value'), "no", "no", $('groupreason').get('value'), "");
 	}
 }
 function CheckGroupBan()
@@ -830,13 +828,13 @@ function CheckGroupBan()
 	var last = 0;
 	for(var i=0;$('chkb_' + i);i++)
 	{
-		if($('chkb_' + i).checked == true)
-			last = $('chkb_' + i).value;
+		if($('chkb_' + i).get('checked') == true)
+			last = $('chkb_' + i).get('value');
 	}
 	for(var i=0;$('chkb_' + i);i++)
 	{
-		if($('chkb_' + i).checked == true)
-			xajax_GroupBan($('chkb_' + i).value, "yes", "yes", $('groupreason').value, last);
+		if($('chkb_' + i).get('checked') == true)
+			xajax_GroupBan($('chkb_' + i).get('value'), "yes", "yes", $('groupreason').get('value'), last);
 	}
 }
 </script>
