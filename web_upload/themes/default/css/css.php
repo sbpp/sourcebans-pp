@@ -289,11 +289,12 @@ div.dialog-control{
 	}
 	
 #footer {
+	clear:both;
 	color: #919191;
 	width: 100%;
-	padding: 20px;
+	padding: 20px 0 20px 0;
 	background-color: #38322c;
-	margin-top: 25px;
+	margin-top: 40px;
 }
 
 /** ================ Header ================ **/
