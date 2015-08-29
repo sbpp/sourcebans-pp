@@ -209,9 +209,9 @@ public OnPluginStart()
 	}
 	SQL_TConnect(GotDatabase, "sourcebans");
 	
-	BuildPath(Path_SM,groupsLoc,sizeof(groupsLoc),"configs/admin_groups.cfg");
+	BuildPath(Path_SM,groupsLoc,sizeof(groupsLoc),"configs/sourcebans/sb_admin_groups.cfg");
 	
-	BuildPath(Path_SM,adminsLoc,sizeof(adminsLoc),"configs/admins.cfg");
+	BuildPath(Path_SM,adminsLoc,sizeof(adminsLoc),"configs/sourcebans/sb_admins.cfg");
 	
 	BuildPath(Path_SM,overridesLoc,sizeof(overridesLoc),"configs/sourcebans/overrides_backup.cfg");
 	
