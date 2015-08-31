@@ -4,7 +4,7 @@
 //  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans: Reloaded is free software: you can redistribute it and/or modify
-//  it under the terms of the GNU Affero General Public License as published by
+//  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
 //  
 //  SourceBans: Reloaded is distributed in the hope that it will be useful,
@@ -12,7 +12,7 @@
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
 //  
-//  You should have received a copy of the GNU Affero General Public License
+//  You should have received a copy of the GNU General Public License
 //  along with SourceBans: Reloaded. If not, see <http://www.gnu.org/licenses/>.
 //
 //  This file incorporates work covered by the following copyright(s):   
@@ -30,7 +30,7 @@
 
 public Plugin:myinfo = 
 {
-	name = "SourceBans: Admins",
+	name = "SourceBans: Admin Config Loader",
 	author = "AlliedModders LLC, Sarabveer(VEER™)",
 	description = "Reads admin files",
 	version = "1.5.3-dev",
@@ -44,8 +44,8 @@ new g_IgnoreLevel = 0;						/* Nested ignored section count, so users can screw 
 new g_CurrentLine = 0;						/* Current line we're on */
 new String:g_Filename[PLATFORM_MAX_PATH];	/* Used for error messages */
 
-#include "sb_admins_cfg/sb_admin_groups.sp"
-#include "sb_admins_cfg/sb_admin_users.sp"
+#include "sb_admcfg/sb_admin_groups.sp"
+#include "sb_admcfg/sb_admin_users.sp"
 
 public OnRebuildAdminCache(AdminCachePart:part)
 {
