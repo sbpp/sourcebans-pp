@@ -26,6 +26,7 @@
 					<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 					<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 					<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
+					<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 				</form>
 				<script>
 				$('send').submit();
@@ -89,6 +90,13 @@ Hover your mouse over the '?' buttons to see an explanation of the field.<br /><
     <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Steam API Key", "Copy & Paste Your Steam API Key Here");?>Steam API Key</div></td>
     <td><div align="left">
   	 <input type="text" TABINDEX=1 class="inputbox" id="apikey" name="apikey" value="<?php echo isset($_POST['apikey'])?$_POST['apikey']:'';?>" />
+    </div><div id="database.msg" style="color:#CC0000;"></div></td>
+  </tr>
+  
+  <tr>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("SourceBans URL", "Whats the URL of your SourceBans install (eg. http://bans.mysite.com or http://mysite.com/bans)");?>SourceBans URL</div></td>
+    <td><div align="left">
+  	 <input type="text" TABINDEX=1 class="inputbox" id="sb-wp-url" name="sb-wp-url" value="<?php echo isset($_POST['sb-wp-url'])?$_POST['sb-wp-url']:'';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>
   </tr>
   

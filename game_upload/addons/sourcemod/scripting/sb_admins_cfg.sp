@@ -44,8 +44,8 @@ new g_IgnoreLevel = 0;						/* Nested ignored section count, so users can screw 
 new g_CurrentLine = 0;						/* Current line we're on */
 new String:g_Filename[PLATFORM_MAX_PATH];	/* Used for error messages */
 
-#include "sb_admins/sb_admin_groups.sp"
-#include "sb_admins/sb_admin_users.sp"
+#include "sb_admins_cfg/sb_admin_groups.sp"
+#include "sb_admins_cfg/sb_admin_users.sp"
 
 public OnRebuildAdminCache(AdminCachePart:part)
 {

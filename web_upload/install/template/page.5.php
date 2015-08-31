@@ -21,6 +21,7 @@ define('DB_NAME', '{db}');  						// Database name
 define('DB_PREFIX', '{prefix}');					// The table prefix for SourceBans
 define('DB_PORT','{port}');							// The SQL port (Default: 3306)
 define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
+define('SB_WP_URL','{sbwpurl}');       				//URL of SourceBans Site
 
 //define('DEVELOPER_MODE', true);			// Use if you want to show debugmessages
 //define('SB_MEM', '128M'); 				// Override php memory limit, if isn't enough (Banlist is just a blank page)
@@ -47,6 +48,7 @@ define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
 	$web_cfg = str_replace("{prefix}", $_POST['prefix'], $web_cfg);
 	$web_cfg = str_replace("{port}", $_POST['port'], $web_cfg);
 	$web_cfg = str_replace("{steamapikey}", $_POST['apikey'], $web_cfg);
+	$web_cfg = str_replace("{sbwpurl}", $_POST['sb-wp-url'], $web_cfg);
 	
 	$srv_cfg = str_replace("{server}", $_POST['server'], $srv_cfg);
 	$srv_cfg = str_replace("{user}", $_POST['username'], $srv_cfg);

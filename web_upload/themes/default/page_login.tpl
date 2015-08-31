@@ -22,6 +22,8 @@
   		        </div>
 		
   		        <div id="loginSubmit">	
+					<center><a href="steamopenid.php"><img src="images/steamlogin.png"></a></center>
+					<br>
 			        -{sb_button text="Login" onclick=$redir class="ok login" id="alogin" style="width: 100%; text-transform: uppercase;" submit=false}-
 		        </div>
 		

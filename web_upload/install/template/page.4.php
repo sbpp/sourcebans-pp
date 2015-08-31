@@ -51,6 +51,7 @@ Step 5: Setup<br />
 				<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
+				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 </form>
 <div align="center">
 <input type="submit" TABINDEX=2 onclick="next()" name="button" class="btn ok" id="button" value="Ok" /></div>

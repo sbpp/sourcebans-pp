@@ -16,7 +16,9 @@
 	    	<input id="loginRememberMe" type="checkbox" class="checkbox" name="remember" value="checked" vspace="5px" />    <span class="checkbox" style="cursor:pointer;" onclick="($('loginRememberMe').checked?$('loginRememberMe').checked=false:$('loginRememberMe').checked=true)">Remember me</span>
   		</div>
 		
-  		<div id="loginSubmit">	
+  		<div id="loginSubmit">
+			<a href="steamopenid.php" style="float:left;"><img src="images/steamlogin.png"></a>
+			
 			-{sb_button text="Login" onclick=$redir class="ok" id="alogin" submit=false}-
 		</div>
 		

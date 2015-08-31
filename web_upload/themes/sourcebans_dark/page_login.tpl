@@ -17,6 +17,8 @@
   		</div>
 		
   		<div id="loginSubmit">	
+			<a href="steamopenid.php" style="float:left;"><img src="images/steamlogin.png"></a>
+			
 			-{sb_button text="Login" onclick=$redir class="ok" id="alogin" submit=false}-
 		</div>
 		
