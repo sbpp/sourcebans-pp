@@ -32,7 +32,8 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.5.3-dev"
+#define SB_VERSION "1.5.3F"
+#define SBR_VERSION "1.5.3"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sarabveer.github.io/SourceBans-Fork/updater/updatefile.txt"
@@ -133,7 +134,7 @@ public Plugin:myinfo =
 	name = "SourceBans: Reloaded",
 	author = "SourceBans Development Team, Sarabveer(VEER™)",
 	description = "Advanced ban management for the Source engine",
-	version = SB_VERSION,
+	version = SBR_VERSION,
 	url = "https://sarabveer.github.io/SourceBans-Fork/"
 };
 
@@ -164,7 +165,8 @@ public OnPluginStart()
 	
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
-	CreateConVar("sbf_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
+	CreateConVar("sbr_version", SBR_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	RegServerCmd("sm_rehash",sm_rehash,"Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");

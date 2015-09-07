@@ -45,7 +45,7 @@ header('Content-type: text/css');
 }
 
 body { 
-	background-color: #808080;
+	background-color: #bab5b2;
 	color: #444;
 	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
 	font-size: 11px;

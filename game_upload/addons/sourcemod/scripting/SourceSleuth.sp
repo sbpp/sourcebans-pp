@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "SBR-1.5.3-dev"
+#define PLUGIN_VERSION "SBR-1.5.3"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2

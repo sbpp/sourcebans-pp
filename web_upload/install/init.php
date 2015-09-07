@@ -41,7 +41,7 @@ if(trim($_SERVER['PHP_SELF']) == '') $_SERVER['PHP_SELF'] = preg_replace("/(\?.*
 //  Initial setup
 // ---------------------------------------------------
 if(!defined('SB_VERSION')){
-	define('SB_VERSION', '1.5.2F Installer');
+	define('SB_VERSION', '1.5.3 Installer');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');

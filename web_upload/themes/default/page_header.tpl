@@ -19,7 +19,7 @@
 <body>
 
 
-    <div style="background-color: #808080;">
+    <div style="background-color: #bab5b2;">
 	<div id="header">
 		<div id="head-logo">
     		<a href="index.php">

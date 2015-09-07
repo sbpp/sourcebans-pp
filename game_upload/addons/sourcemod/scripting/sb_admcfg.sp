@@ -33,7 +33,7 @@ public Plugin:myinfo =
 	name = "SourceBans: Admin Config Loader",
 	author = "AlliedModders LLC, Sarabveer(VEER™)",
 	description = "Reads admin files",
-	version = "1.5.3-dev",
+	version = "1.5.3",
 	url = "https://github.com/Sarabveer/SourceBans-Fork"
 };
 

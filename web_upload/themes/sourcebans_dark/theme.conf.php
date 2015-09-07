@@ -18,7 +18,7 @@ define('theme_name', "SourceBans Dark Theme (Legacy)");
 define('theme_author', "SourceBans Development Team, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.5.2F");
+define('theme_version', "1.5.3");
 
 // Set the link of the theme here
 define('theme_link', "https://sarabveer.github.io/SourceBans-Fork/");
