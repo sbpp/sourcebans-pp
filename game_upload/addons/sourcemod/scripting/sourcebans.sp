@@ -308,16 +308,10 @@ public OnMapEnd()
 
 public Action:OnClientPreAdminCheck(client)
 {
-	if(!DB)
+	if(!DB || GetUserAdmin(client) != INVALID_ADMIN_ID)
 		return Plugin_Continue;
-	
-	if(GetUserAdmin(client) != INVALID_ADMIN_ID)
-		return Plugin_Continue;
-	
-	if (curLoading > 0)
-		return Plugin_Handled;
-	
-	return Plugin_Continue;
+
+	return curLoading > 0 ? Plugin_Handled : Plugin_Continue;
 }
 
 public OnClientDisconnect(client)
