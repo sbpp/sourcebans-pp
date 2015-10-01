@@ -1967,10 +1967,8 @@ stock bool:DB_Conn_Lost(Handle:hndl)
         }
         return true;
     }
-    else
-    {
-        return false;
-    }
+    
+    return false;
 }
 
 stock InitializeBackupDB()
@@ -2691,18 +2689,13 @@ stock bool:AdmHasFlag(admin)
 
 stock _:GetAdmImmunity(admin)
 {
-    if (admin > 0 && GetUserAdmin(admin) != INVALID_ADMIN_ID)
-        return GetAdminImmunityLevel(GetUserAdmin(admin));
-    else
-        return 0;
+    return admin > 0 && GetUserAdmin(admin) != INVALID_ADMIN_ID ? 
+           GetAdminImmunityLevel(GetUserAdmin(admin)) : 0;
 }
 
 stock _:GetClientUserId2(client)
 {
-    if (client)
-        return GetClientUserId(client);
-    else
-        return 0;    // for CONSOLE
+    return client ? GetClientUserId(client) : 0; // 0 is for CONSOLE
 }
 
 stock ForcePlayersRecheck()
@@ -2725,10 +2718,7 @@ stock ForcePlayersRecheck()
 
 stock bool:NotApplyToThisServer(srvID)
 {
-    if (ConfigWhiteListOnly && FindValueInArray(g_hServersWhiteList, srvID) == -1)
-        return true;
-    else
-        return false;
+    return ConfigWhiteListOnly && FindValueInArray(g_hServersWhiteList, srvID) == -1;
 }
 
 stock MarkClientAsUnMuted(target)
