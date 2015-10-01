@@ -2658,29 +2658,20 @@ stock bool:IsAllowedBlockLength(admin, length, target_count = 1)
 {
     if (target_count == 1)
     {
-        if (!ConfigMaxLength)
-            return true;    // Restriction disabled
-        if (!admin)
-            return true;    // all allowed for console
-        if (AdmHasFlag(admin))
-            return true;    // all allowed for admins with special flag
-        if (!length || length > ConfigMaxLength)
-            return false;
-        else
-            return true;
+        // Restriction disabled, all allowed for console, all allowed for admins with special flag
+        if (!ConfigMaxLength || !admin || AdmHasFlag(admin))
+            return true;    
+
+        //return false if one of these statements evaluates to true; otherwise, return true
+        return !(!length || length > ConfigMaxLength);
     }
     else
     {
-        if (length < 0)
-            return true;    // session punishments allowed for mass-tergeting
-        if (!length)
-            return false;
-        if (length > MAX_TIME_MULTI)
-            return false;
-        if (length > DefaultTime)
-            return false;
-        else
+        if (length < 0) //'session punishments allowed for mass-targeting'
             return true;
+       
+        //return false if one of these statements evaluates to true; otherwise, return true
+        return !(!length || length > MAX_TIME_MULTI || length > DefaultTime);
     }
 }
 
