@@ -50,6 +50,7 @@
   {/foreach}
 </table>
 {else}
+<h3 align="left">Banlist Overview - <i>Total Bans: {$total_bans}</i></h3>
 <br />
 {php} require (TEMPLATES_PATH . "/admin.bans.search.php");{/php}
 <br />
