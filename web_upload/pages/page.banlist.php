@@ -441,6 +441,24 @@ while (!$res->EOF)
 	$data['reason'] = stripslashes($res->fields['ban_reason']);
 	$data['ban_length'] = $res->fields['ban_length'] == 0 ? 'Permanent' : SecondsToString(intval($res->fields['ban_length']));
 
+// Custom "listtable_1_banned" & "listtable_1_permanent" addition entries
+// Comment the 14 lines below out if they cause issues
+	if ($res->fields['ban_length'] == 0)
+	{
+		$data['expires'] = 'never';
+		$data['class'] = "listtable_1_permanent";
+		$data['ub_reason'] = "";
+		$data['unbanned'] = false;
+	}
+	else
+	{
+		$data['expires'] = SBDate($dateformat,$res->fields['ban_ends']);
+		$data['class'] = "listtable_1_banned";
+		$data['ub_reason'] = "";
+		$data['unbanned'] = false;
+	}
+// End custom entries
+
 	if($res->fields['row_type'] == 'D' || $res->fields['row_type'] == 'U' || $res->fields['row_type'] == 'E' || ($res->fields['ban_length'] && $res->fields['ban_ends'] < time()))
 	{
 		$data['unbanned'] = true;
@@ -460,12 +478,14 @@ while (!$res->EOF)
         if(isset($removedby[0]))
             $data['removedby'] = $removedby[0];
 	}
-	else
-	{
-		$data['unbanned'] = false;
-		$data['class'] = "listtable_1";
-		$data['ub_reason'] = "";
-	}
+// Don't need this stuff.
+// Uncomment below if the modifications above cause issues
+//	else
+//	{
+//		$data['unbanned'] = false;
+//		$data['class'] = "listtable_1";
+//		$data['ub_reason'] = "";
+//	}
 
 	$data['layer_id'] = 'layer_'.$res->fields['ban_id'];
 	if($data['type'] == "0")
