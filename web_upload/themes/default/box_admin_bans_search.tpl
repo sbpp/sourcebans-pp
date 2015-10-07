@@ -1,7 +1,7 @@
 <div align="center">
 	<table width="50%" cellpadding="0" class="listtable" cellspacing="0">
 		<tr class="sea_open">
-			<td width="2%" height="16" class="listtable_top" colspan="3" style="text-align: center;"><b>Advanced Search</b></td>
+			<td width="2%" height="16" class="listtable_top" colspan="3" style="text-align: center;"><b>Advanced Search</b> (Click)</td>
 	  	</tr>
 	  	<tr>
 	  		<td>
@@ -38,9 +38,9 @@
 					<td align="center" class="listtable_1" ><input id="date" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Date</td>
 			        <td class="listtable_1" >
-			        	<input class="textbox" type="text" id="day" value="DD" onmouseup="$('date').checked = true" style="width: 22%;">
-			            <input class="textbox" type="text" id="month" value="MM" onmouseup="$('date').checked = true" style="width: 22%;">
-			            <input class="textbox" type="text" id="year" value="YY" onmouseup="$('date').checked = true" style="width: 24%;"> 
+			        	<input class="textbox" type="text" id="day" value="DD" onmouseup="$('date').checked = true" maxlength="2" style="width: 22%;">
+			            <input class="textbox" type="text" id="month" value="MM" onmouseup="$('date').checked = true" maxlength="2" style="width: 22%;">
+			            <input class="textbox" type="text" id="year" value="YY" onmouseup="$('date').checked = true" maxlength="4" style="width: 24%;"> 
 			        </td>
 			  	</tr>
 				<tr>
