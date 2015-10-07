@@ -2117,26 +2117,25 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 			if(strcmp("website", key, false) == 0)
 			{
 				strcopy(WebsiteAddress, sizeof(WebsiteAddress), value);
-			} else if(strcmp("Addban", key, false) == 0)
+			} 
+			else if(strcmp("Addban", key, false) == 0)
 			{
 				if(StringToInt(value) == 0)
 				{
 					CommandDisable |= DISABLE_ADDBAN;
 				}
-			}
+			} 
 			else if(strcmp("AutoAddServer", key, false) == 0)
 			{
-				if(StringToInt(value) == 1)
-					AutoAdd = true;
-				else
-					AutoAdd = false;
-			} else if(strcmp("Unban", key, false) == 0)
+				AutoAdd = StringToInt(value) == 1;
+			} 
+			else if(strcmp("Unban", key, false) == 0)
 			{
 				if(StringToInt(value) == 0)
 				{
 					CommandDisable |= DISABLE_UNBAN;
 				}
-			}
+			} 
 			else if(strcmp("DatabasePrefix", key, false) == 0)
 			{
 				strcopy(DatabasePrefix, sizeof(DatabasePrefix), value);
@@ -2145,7 +2144,7 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 				{
 					DatabasePrefix = "sb";
 				}
-			}
+			} 
 			else if(strcmp("RetryTime", key, false) == 0)
 			{
 				RetryTime	= StringToFloat(value);
