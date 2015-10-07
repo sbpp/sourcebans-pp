@@ -1,4 +1,4 @@
-SourceBans: Reloaded Change Log
+SourceBans++ Change Log
 ============
 
 ```
