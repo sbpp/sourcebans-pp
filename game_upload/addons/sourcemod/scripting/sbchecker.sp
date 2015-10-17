@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <me@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 // *************************************************************************
 #include <sourcemod>
 
-#define VERSION "SBR-1.5.3"
+#define VERSION "SBR-1.5.4-dev"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define INVALID_TARGET -1
 

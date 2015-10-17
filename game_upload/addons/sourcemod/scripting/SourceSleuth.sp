@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <me@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "SBR-1.5.3"
+#define PLUGIN_VERSION "SBR-1.5.4-dev"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2

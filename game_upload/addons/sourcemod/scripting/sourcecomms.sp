@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <me@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "SBR-1.5.3"
+#define PLUGIN_VERSION "SBR-1.5.4-dev"
 #define PREFIX "\x04[SourceComms]\x01 "
 
 #define MAX_TIME_MULTI 30       // maximum mass-target punishment length

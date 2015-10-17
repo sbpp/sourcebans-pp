@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <me@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by

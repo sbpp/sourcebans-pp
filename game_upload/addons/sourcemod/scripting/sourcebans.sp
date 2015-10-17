@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <me@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -32,8 +32,8 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.5.3F"
-#define SBR_VERSION "1.5.3"
+#define SB_VERSION "1.5.4F-dev"
+#define SBR_VERSION "1.5.3-dev"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sarabveer.github.io/SourceBans-Fork/updater/updatefile.txt"
