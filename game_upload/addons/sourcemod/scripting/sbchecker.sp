@@ -105,7 +105,7 @@ public OnConnectBanCheck(Handle:owner, Handle:hndl, const String:error[], any:us
 	{
 		if (ShortMessage.BoolValue)
 		{
-			PrintToBanAdmins("\x04[SB]\x01Player \"%N\" has %d previous SB ban%s.", 
+			PrintToBanAdmins("\x04[SB]\x01Player \"%N\" has %d previous ban%s.", 
 					 client, bancount, ((bancount>0)?"s":""));
 		}
 		else
