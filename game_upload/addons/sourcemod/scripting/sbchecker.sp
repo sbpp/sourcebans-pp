@@ -33,6 +33,8 @@ new String:g_DatabasePrefix[10] = "sb";
 new Handle:g_ConfigParser;
 new Handle:g_DB;
 
+ConVar ShortMessage;
+
 public Plugin:myinfo = 
 {
 	name = "SourceBans Checker",
@@ -47,6 +49,9 @@ public OnPluginStart()
 	LoadTranslations("common.phrases");
 	
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
+	
+	ShortMessage = CreateConVar("sb_short_message", "0", "Use shorter message for displying prev bans", _, true, 0, true, 1);
+	
 	RegAdminCmd("sm_listsbbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
 	
@@ -98,7 +103,16 @@ public OnConnectBanCheck(Handle:owner, Handle:hndl, const String:error[], any:us
 	new bancount = SQL_FetchInt(hndl, 0);
 	if (bancount > 0)
 	{
-		PrintToBanAdmins("\x04[SourceBans]\x01 Warning: Player \"%N\" has %d previous SB ban%s on record.", client, bancount, ((bancount>0)?"s":""));
+		if (ShortMessage.BoolValue)
+		{
+			PrintToBanAdmins("\x04[SB]\x01Player \"%N\" has %d previous ban%s.", 
+					 client, bancount, ((bancount>0)?"s":""));
+		}
+		else
+		{
+			PrintToBanAdmins("\x04[SourceBans]\x01 Warning: Player \"%N\" has %d previous SB ban%s on record.", 
+					 client, bancount, ((bancount>0)?"s":""));
+		}
 	}
 }
 
