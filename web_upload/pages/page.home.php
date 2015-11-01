@@ -103,6 +103,56 @@ while (!$res->EOF)
 }
 
 
+
+
+$res = $GLOBALS['db']->Execute("SELECT count(bid) FROM ".DB_PREFIX."_comms");
+$CommCount = (int)$res->fields[0];
+
+$res = $GLOBALS['db']->Execute("SELECT bid, ba.authid, ba.type, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
+			    				FROM ".DB_PREFIX."_comms AS ba 
+			    				LEFT JOIN ".DB_PREFIX."_admins AS ad ON ba.aid = ad.aid
+			    				LEFT JOIN ".DB_PREFIX."_servers AS se ON se.sid = ba.sid
+			    				LEFT JOIN ".DB_PREFIX."_mods AS mo ON mo.mid = se.modid
+			    				ORDER BY created DESC LIMIT 10");
+$comms = array();
+while (!$res->EOF)
+{
+	$info = array();
+	$info['name'] = stripslashes($res->fields[3]);
+	$info['created'] = SBDate($dateformat,$res->fields['created']);
+	$ltemp = explode(",",$res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
+	$info['length'] = $ltemp[0];
+	$info['icon'] = empty($res->fields[13]) ? 'web.png' : $res->fields[13];
+	$info['authid'] = $res->fields['authid'];
+	$info['search_link'] = "index.php?p=commslist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
+	$info['link_url'] = "window.location = '" . $info['search_link'] . "';";
+	$info['short_name'] = trunc($info['name'], 25, false);
+	$info['type'] = $res->fields['type'] == 2 ? "images/type_c.png" : "images/type_v.png";
+	
+	if($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time()))
+	{
+		$info['unbanned'] = true;
+		
+		if($res->fields[14] == 'D')
+			$info['ub_reason'] = 'D';
+		elseif($res->fields[14] == 'U')
+			$info['ub_reason'] = 'U';
+		else
+			$info['ub_reason'] = 'E';
+	}
+	else
+	{
+		$info['unbanned'] = false;
+	}
+	
+	array_push($comms,$info);
+	$res->MoveNext();
+}
+
+
+
+
+
 require(TEMPLATES_PATH . "/page.servers.php"); //Set theme vars from servers page
 
 $theme->assign('dashboard_lognopopup', (isset($GLOBALS['config']['dash.lognopopup']) && $GLOBALS['config']['dash.lognopopup'] == "1"));
@@ -113,6 +163,9 @@ $theme->assign('total_blocked', $totalstopped);
 
 $theme->assign('players_banned', $bans);
 $theme->assign('total_bans', $BanCount);
+
+$theme->assign('total_comms', $CommCount);
+$theme->assign('players_commed', $comms);
 
 $theme->display('page_dashboard.tpl');
 ?>
