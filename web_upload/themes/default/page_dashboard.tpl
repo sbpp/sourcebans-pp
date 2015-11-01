@@ -13,8 +13,46 @@
 	{include file='page_servers.tpl'}
 </div>
 
-
-<div class="front-module" style="float:right">
+<div class="front-module" style="width:100%">
+	<table width="100%" cellpadding="1" class="listtable">
+		<tr>
+			<td colspan="4">
+				<table width="100%" cellpadding="0" cellspacing="0" class="front-module-header">
+					<tr>
+						<td align="left">
+							Latest Added Bans
+						</td>
+						<td align="right">
+							Total bans: {$total_bans}
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+		<tr height="16">
+			<td width="16" class="listtable_top">MOD</td>
+			<td width="24%" class="listtable_top" align="center"><strong>Date/Time</strong></td>
+			<td class="listtable_top"><strong>Name</strong></td>
+			<td width="23%" class="listtable_top"><strong>Length</strong></td>
+		</tr>
+		{foreach from=$players_banned item=player}
+		<tr onclick="{$player.link_url}" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor:pointer;" height="16">
+      <td class="listtable_1" align="center"><img src="images/games/{$player.icon}" width="16" alt="MOD" title="MOD" /></td>
+      <td class="listtable_1" align="center">{$player.created}</td>
+      <td class="listtable_1">
+        {if empty($player.short_name)}
+          <i><font color="#677882">no nickname present</font></i>
+        {else}
+          {$player.short_name|escape:'html'}
+        {/if}
+      </td>
+      <td class="listtable_1{if $player.unbanned}_unbanned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>
+		</tr>
+		{/foreach}
+	</table>
+</div>
+<br /><br /><br />
+<div class="front-module" style="float:right;width:49%">
 	<table width="100%" cellpadding="1" class="listtable">
 		<tr>
 			<td colspan="3">
@@ -45,32 +83,31 @@
 	</table>
 </div>
 
-
-<div class="front-module" style="float:left">
+<div class="front-module" style="float:left;width:49%">
 	<table width="100%" cellpadding="1" class="listtable">
 		<tr>
 			<td colspan="4">
 				<table width="100%" cellpadding="0" cellspacing="0" class="front-module-header">
 					<tr>
 						<td align="left">
-							Latest Added Bans
+							Latest Comm Blocks
 						</td>
 						<td align="right">
-							Total bans: {$total_bans}
+							Total blocks: {$total_comms}
 						</td>
 					</tr>
 				</table>
 			</td>
 		</tr>
 		<tr height="16">
-			<td width="16" class="listtable_top">MOD</td>
+			<td width="16" class="listtable_top">Type</td>
 			<td width="24%" class="listtable_top" align="center"><strong>Date/Time</strong></td>
 			<td class="listtable_top"><strong>Name</strong></td>
 			<td width="23%" class="listtable_top"><strong>Length</strong></td>
 		</tr>
-		{foreach from=$players_banned item=player}
+		{foreach from=$players_commed item=player}
 		<tr onclick="{$player.link_url}" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor:pointer;" height="16">
-      <td class="listtable_1" align="center"><img src="images/games/{$player.icon}" width="16" alt="MOD" title="MOD" /></td>
+      <td class="listtable_1" align="center"><img src="{$player.type}" width="16" alt="MOD" title="MOD" /></td>
       <td class="listtable_1">{$player.created}</td>
       <td class="listtable_1">
         {if empty($player.short_name)}
