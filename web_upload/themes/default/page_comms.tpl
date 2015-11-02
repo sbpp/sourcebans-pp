@@ -109,7 +109,7 @@
 			<tr>
         <td colspan="7" align="center">
           <div class="opener"> 
-						<table width="80%" cellspacing="0" cellpadding="0" class="listtable">
+						<table width="100%" cellspacing="0" cellpadding="0" class="listtable">
               <tr>
               	{if $view_bans}
               	<td height="16" align="left" class="listtable_top" colspan="3">
