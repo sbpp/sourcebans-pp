@@ -33,7 +33,7 @@
 			<td width="16" class="listtable_top">MOD</td>
 			<td width="24%" class="listtable_top" align="center"><strong>Date/Time</strong></td>
 			<td class="listtable_top"><strong>Name</strong></td>
-			<td width="23%" class="listtable_top"><strong>Length</strong></td>
+			<td width="14%" class="listtable_top"><strong>Length</strong></td>
 		</tr>
 		{foreach from=$players_banned item=player}
 		<tr onclick="{$player.link_url}" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor:pointer;" height="16">
@@ -46,7 +46,7 @@
           {$player.short_name|escape:'html'}
         {/if}
       </td>
-      <td class="listtable_1{if $player.unbanned}_unbanned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>
+      <td class="listtable_1{if $player.unbanned}_unbanned{elseif $player.perm}_permanent{elseif $player.temp}_banned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>
 		</tr>
 		{/foreach}
 	</table>
@@ -116,7 +116,7 @@
           {$player.short_name|escape:'html'}
         {/if}
       </td>
-      <td class="listtable_1{if $player.unbanned}_unbanned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>
+      <td class="listtable_1{if $player.unbanned}_unbanned{elseif $player.perm}_permanent{elseif $player.temp}_banned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>
 		</tr>
 		{/foreach}
 	</table>
