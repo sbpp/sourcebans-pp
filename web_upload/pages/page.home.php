@@ -65,7 +65,17 @@ $res = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created, 
 $bans = array();
 while (!$res->EOF)
 {
-	$info = array();
+        $info = array();
+	if ($res->fields['length'] == 0)
+	{
+		$info['perm'] = true;
+		$info['unbanned'] = false;
+	}
+	else
+	{
+		$info['temp'] = true;
+                $info['unbanned'] = false;
+	}
 	$info['name'] = stripslashes($res->fields[3]);
 	$info['created'] = SBDate($dateformat,$res->fields['created']);
 	$ltemp = explode(",",$res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
@@ -115,7 +125,17 @@ if(SB_THEME == 'default') {
 	$comms = array();
 	while (!$res->EOF)
 	{
-		$info = array();
+                $info = array();
+	        if ($res->fields['length'] == 0)
+	        {
+		    $info['perm'] = true;
+		    $info['unbanned'] = false;
+	        }
+	        else
+	        {
+		    $info['temp'] = true;
+                    $info['unbanned'] = false;
+	        }
 		$info['name'] = stripslashes($res->fields[3]);
 		$info['created'] = SBDate($dateformat,$res->fields['created']);
 		$ltemp = explode(",",$res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
