@@ -50,6 +50,8 @@
 
 #define FLAG_LETTERS_SIZE 26
 
+#define AUTO_RETRIEVE -1
+
 //#define DEBUG
 
 enum State /* ConfigState */
@@ -167,7 +169,7 @@ public OnPluginStart()
 	CvarPort = FindConVar("hostport");
 	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
 	CreateConVar("sbr_version", SBR_VERSION, _, FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY);
-	serverID = CreateConVar("sb_serverid", "-1", "ServerID Found in WebPanel (REQUIRED)");
+	serverID = CreateConVar("sb_serverid", AUTO_RETRIEVE, "ServerID Found in WebPanel (REQUIRED)");
 	RegServerCmd("sm_rehash",sm_rehash,"Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
@@ -1040,7 +1042,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 		if (requireSiteLogin)
 			queryLastLogin = "lastvisit IS NOT NULL AND lastvisit != '' AND";
 
-		if( serverID.IntValue == -1 )
+		if( serverID.IntValue == AUTO_RETRIEVE )
 		{
 			FormatEx(query,1024,"SELECT authid, srv_password, (SELECT name FROM %s_srvgroups WHERE name = srv_group AND flags != '') AS srv_group, srv_flags, user, immunity  \
 						FROM %s_admins_servers_groups AS asg \
@@ -1183,7 +1185,7 @@ public SelectBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:
 			PrintToServer("%s%s is already banned.",      Prefix, ip);
 		return;
 	}
-	if( serverID.IntValue == -1 )
+	if( serverID.IntValue == AUTO_RETRIEVE )
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						(1, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
@@ -1352,7 +1354,7 @@ public SelectAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any
 			PrintToServer("%s%s is already banned.",      Prefix, authid);
 		return;
 	}
-	if( serverID.IntValue == -1 )
+	if( serverID.IntValue == AUTO_RETRIEVE )
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
@@ -1443,7 +1445,7 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 		if(startTime + time * 60 > GetTime() || time == 0)
 		{
 			// This ban is still valid and should be entered into the db
-			if( serverID.IntValue == -1 )
+			if( serverID.IntValue == AUTO_RETRIEVE )
 			{
 				FormatEx(query, sizeof(query),
 						"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid) VALUES  \
@@ -1548,7 +1550,7 @@ public VerifyBan(Handle:owner, Handle:hndl, const String:error[], any:userid)
 		decl String:Query[512];
 		
 		SQL_EscapeString(DB, clientName, Name, sizeof(Name));
-		if( serverID.IntValue == -1 )
+		if( serverID.IntValue == AUTO_RETRIEVE )
 		{
 			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
 				((SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), UNIX_TIMESTAMP(), '%s', \
@@ -2327,7 +2329,7 @@ stock UTIL_InsertBan(time, const String:Name[], const String:Authid[], const Str
 	decl String:Query[1024];
 	SQL_EscapeString(DB, Name, banName, sizeof(banName));
 	SQL_EscapeString(DB, Reason, banReason, sizeof(banReason));
-	if( serverID.IntValue == -1 )
+	if( serverID.IntValue == AUTO_RETRIEVE )
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
 						('%s', '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'),'0'), '%s', \
