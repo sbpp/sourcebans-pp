@@ -137,7 +137,7 @@ public OnClientPostAdminCheck(client)
 {
 	if(CanUseSourcebans && !IsFakeClient(client))
 	{
-		new String:steamid[32];
+		decl String:steamid[32];
 		GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid));
 		
 		if (g_cVar_bypass.BoolValue && CheckCommandAccess(client, "sleuth_admin", ADMFLAG_BAN, false)) 
@@ -147,12 +147,12 @@ public OnClientPostAdminCheck(client)
 		
 		if(FindStringInArray(g_hAllowedArray, steamid) == -1)
 		{
-			new String:IP[32], String:Prefix[64];
+			decl String:IP[32], String:Prefix[64];
 			GetClientIP(client, IP, sizeof(IP));
 			
 			g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
 			
-			new String:query[1024];
+			decl String:query[1024];
 			
 			FormatEx(query, sizeof(query),  "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND ends > %d", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0);
 
@@ -232,7 +232,7 @@ stock BanPlayer(client, time)
 
 PrintToAdmins(const String:format[], any:...)
 {
-	new String:g_Buffer[256];
+	decl String:g_Buffer[256];
 	
 	for (new i=1;i<=MaxClients;i++)
 	{
