@@ -381,7 +381,7 @@ public Action:ChatHook(client, args)
 	if (g_ownReasons[client])
 	{
 		// get the reason
-		new String:reason[512];
+		decl String:reason[512];
 		GetCmdArgString(reason, sizeof(reason));
 		StripQuotes(reason);
 		
@@ -438,7 +438,7 @@ public Action:CommandBan(client, args)
 	}
 	
 	// Get the reason
-	new String:reason[128];
+	decl String:reason[128];
 	if(args >= 3)
 	{
 		for(new i=3;i<=args;i++)

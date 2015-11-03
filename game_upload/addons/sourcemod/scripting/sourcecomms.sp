@@ -300,7 +300,7 @@ public OnClientPostAdminCheck(client)
             MarkClientAsGagged(client);
         }
 
-        new String:sClAuthYZEscaped[sizeof(clientAuth) * 2 + 1];
+        decl String:sClAuthYZEscaped[sizeof(clientAuth) * 2 + 1];
         SQL_EscapeString(g_hDatabase, clientAuth[8], sClAuthYZEscaped, sizeof(sClAuthYZEscaped));
 
         decl String:Query[4096];
@@ -436,7 +436,7 @@ public Action:FWBlock(args)
 
 public Action:FWUngag(args)
 {
-    new String:arg_string[256], String:sArg[1][64];
+    decl String:arg_string[256], String:sArg[1][64];
     GetCmdArgString(arg_string, sizeof(arg_string));
     if(!ExplodeString(arg_string, " ", sArg, 1, 64))
     {
@@ -475,7 +475,7 @@ public Action:FWUngag(args)
 
 public Action:FWUnmute(args)
 {
-    new String:arg_string[256], String:sArg[1][64];
+    decl String:arg_string[256], String:sArg[1][64];
     GetCmdArgString(arg_string, sizeof(arg_string));
     if(!ExplodeString(arg_string, " ", sArg, 1, 64))
     {
@@ -542,7 +542,7 @@ public Action:CommandCallback(client, const String:command[], args)
         return Plugin_Stop;
     }
 
-    new String:sBuffer[256];
+    decl String:sBuffer[256];
     GetCmdArgString(sBuffer, sizeof(sBuffer));
 
     if (type <= TYPE_SILENCE)
@@ -1238,7 +1238,7 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
         ResetPack(data);
         new length = ReadPackCell(data);
         new type = ReadPackCell(data);
-        new String:reason[256], String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
+        decl String:reason[256], String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
         ReadPackString(data, name, sizeof(name));
         ReadPackString(data, auth, sizeof(auth));
         ReadPackString(data, reason, sizeof(reason));
@@ -1270,7 +1270,7 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
             adminUserID, admin, targetUserID, target, type, adminAuth, targetAuth, reason);
     #endif
 
-    new String:targetName[MAX_NAME_LENGTH];
+    decl String:targetName[MAX_NAME_LENGTH];
     strcopy(targetName, MAX_NAME_LENGTH, target && IsClientInGame(target) ? g_sName[target] : targetAuth);        //FIXME
 
     new bool:hasErrors = false;
@@ -1374,7 +1374,7 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
                 WritePackString(dataPack, g_sName[target]);
                 WritePackString(dataPack, targetAuth);
 
-                new String:unbanReason[sizeof(reason) * 2 + 1];
+                decl String:unbanReason[sizeof(reason) * 2 + 1];
                 SQL_EscapeString(g_hDatabase, reason, unbanReason, sizeof(unbanReason));
 
                 decl String:query[2048];
@@ -1455,7 +1455,7 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 public Query_UnBlockUpdate(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
     new admin, type;
-    new String:targetName[MAX_NAME_LENGTH], String:targetAuth[30];
+    decl String:targetName[MAX_NAME_LENGTH], String:targetAuth[30];
 
     ResetPack(data);
     admin = GetClientOfUserId(ReadPackCell(data));
@@ -1516,7 +1516,7 @@ public Query_ProcessQueue(Handle:owner, Handle:hndl, const String:error[], any:d
     }
 
     decl String:auth[64];
-    new String:name[MAX_NAME_LENGTH];
+    decl String:name[MAX_NAME_LENGTH];
     decl String:reason[256];
     decl String:adminAuth[64], String:adminIp[20];
     decl String:query[4096];
@@ -1527,11 +1527,11 @@ public Query_ProcessQueue(Handle:owner, Handle:hndl, const String:error[], any:d
         if (!SQL_FetchRow(hndl))
             continue;
 
-        new String:sAuthEscaped[sizeof(auth) * 2 + 1];
-        new String:banName[MAX_NAME_LENGTH * 2  + 1];
-        new String:banReason[sizeof(reason) * 2 + 1];
-        new String:sAdmAuthEscaped[sizeof(adminAuth) * 2 + 1];
-        new String:sAdmAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
+        decl String:sAuthEscaped[sizeof(auth) * 2 + 1];
+        decl String:banName[MAX_NAME_LENGTH * 2  + 1];
+        decl String:banReason[sizeof(reason) * 2 + 1];
+        decl String:sAdmAuthEscaped[sizeof(adminAuth) * 2 + 1];
+        decl String:sAdmAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
 
         // if we get to here then there are rows in the queue pending processing
         //steam_id TEXT, time INTEGER, start_time INTEGER, reason TEXT, name TEXT, admin_id TEXT, admin_ip TEXT, type INTEGER
@@ -1626,7 +1626,7 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
             if (NotApplyToThisServer(SQL_FetchInt(hndl, 8)))
                 continue;
 
-            new String:sReason[256], String:sAdmName[MAX_NAME_LENGTH], String:sAdmAuth[64];
+            decl String:sReason[256], String:sAdmName[MAX_NAME_LENGTH], String:sAdmAuth[64];
             new remaining_time = SQL_FetchInt(hndl, 0);
             new length =         SQL_FetchInt(hndl, 1);
             new type =           SQL_FetchInt(hndl, 2);
@@ -2013,11 +2013,11 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
     }
     else if (strlen(sArgs))
     {
-        new String:sArg[3][192];
+        decl String:sArg[3][192];
 
         if (ExplodeString(sArgs, "\"", sArg, 3, 192, true) == 3 && strlen(sArg[0]) == 0)    // exploding by quotes
         {
-            new String:sTempArg[2][192];
+            decl String:sTempArg[2][192];
             TrimString(sArg[2]);
             sArg[0] = sArg[1];        // target name
             ExplodeString(sArg[2], " ", sTempArg, 2, 192, true); // get length and reason
@@ -2206,7 +2206,7 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
     }
     else
     {
-        new String:sBuffer[256], String:sArg[3][192];
+        decl String:sBuffer[256], String:sArg[3][192];
         GetCmdArgString(sBuffer, sizeof(sBuffer));
 
         if (ExplodeString(sBuffer, "\"", sArg, 3, 192, true) == 3 && strlen(sArg[0]) == 0)
@@ -2359,10 +2359,10 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
         // Check current player status. If player has temporary punishment - don't get info from DB
         if (!dontCheckDB && DB_Connect())
         {
-            new String:sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
-            new String:sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
-            new String:sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
-            new String:sTargetAuthYZEscaped[sizeof(targetAuth) * 2 + 1];
+            decl String:sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
+            decl String:sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
+            decl String:sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
+            decl String:sTargetAuthYZEscaped[sizeof(targetAuth) * 2 + 1];
 
             SQL_EscapeString(g_hDatabase, adminAuth,     sAdminAuthEscaped,    sizeof(sAdminAuthEscaped));
             SQL_EscapeString(g_hDatabase, adminAuth[8],  sAdminAuthYZEscaped,  sizeof(sAdminAuthYZEscaped));
@@ -2506,12 +2506,12 @@ stock InsertTempBlock(length, type, const String:name[], const String:auth[], co
 {
     LogMessage("Saving punishment for %s into queue", auth);
 
-    new String:banName[MAX_NAME_LENGTH * 2 + 1];
-    new String:banReason[256 * 2 + 1];
-    new String:sAuthEscaped[64 * 2 + 1];
-    new String:sAdminAuthEscaped[64 * 2 + 1];
+    decl String:banName[MAX_NAME_LENGTH * 2 + 1];
+    decl String:banReason[256 * 2 + 1];
+    decl String:sAuthEscaped[64 * 2 + 1];
+    decl String:sAdminAuthEscaped[64 * 2 + 1];
     decl String:sQuery[4096], String:sQueryVal[2048];
-    new String:sQueryMute[2048], String:sQueryGag[2048];
+    decl String:sQueryMute[2048], String:sQueryGag[2048];
 
     // escaping everything
     SQL_EscapeString(SQLiteDB, name,      banName,           sizeof(banName));
@@ -2844,7 +2844,7 @@ stock SavePunishment(admin = 0, target, type, length = -1 , const String:reason[
         return;
 
     // target information
-    new String:targetAuth[64];
+    decl String:targetAuth[64];
     if (IsClientInGame(target))
     {
         GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
@@ -2854,8 +2854,8 @@ stock SavePunishment(admin = 0, target, type, length = -1 , const String:reason[
         return;
     }
 
-    new String:adminIp[24];
-    new String:adminAuth[64];
+    decl String:adminIp[24];
+    decl String:adminAuth[64];
     if (admin && IsClientInGame(admin))
     {
         GetClientIP(admin, adminIp, sizeof(adminIp));
@@ -2868,19 +2868,19 @@ stock SavePunishment(admin = 0, target, type, length = -1 , const String:reason[
         strcopy(adminIp, sizeof(adminIp), ServerIp);
     }
 
-    new String:sName[MAX_NAME_LENGTH];
+    decl String:sName[MAX_NAME_LENGTH];
     strcopy(sName, sizeof(sName), g_sName[target]);
 
     if (DB_Connect())
     {
         // Accepts length in minutes, writes to db in seconds! In all over places in plugin - length is in minutes.
-        new String:banName[MAX_NAME_LENGTH * 2 + 1];
-        new String:banReason[256 * 2 + 1];
-        new String:sAuthidEscaped[64 * 2 + 1];
-        new String:sAdminAuthIdEscaped[64 * 2 + 1];
-        new String:sAdminAuthIdYZEscaped[64 * 2 + 1];
+        decl String:banName[MAX_NAME_LENGTH * 2 + 1];
+        decl String:banReason[256 * 2 + 1];
+        decl String:sAuthidEscaped[64 * 2 + 1];
+        decl String:sAdminAuthIdEscaped[64 * 2 + 1];
+        decl String:sAdminAuthIdYZEscaped[64 * 2 + 1];
         decl String:sQuery[4096], String:sQueryAdm[512], String:sQueryVal[1024];
-        new String:sQueryMute[1024], String:sQueryGag[1024];
+        decl String:sQueryMute[1024], String:sQueryGag[1024];
 
         // escaping everything
         SQL_EscapeString(g_hDatabase, sName,        banName,               sizeof(banName));
@@ -2942,7 +2942,7 @@ stock ShowActivityToServer(admin, type, length = 0, String:reason[] = "", String
             admin, type, length, reason, targetName, ml);
     #endif
 
-    new String:actionName[32], String:translationName[64];
+    decl String:actionName[32], String:translationName[64];
     switch(type)
     {
         case TYPE_MUTE:
