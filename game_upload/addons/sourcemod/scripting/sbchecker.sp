@@ -205,7 +205,7 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		new String:bannedby[11]    = "<Unknown> ";
 		new String:lenstring[11]   = "N/A       ";
 		new String:enddate[11]     = "N/A       ";
-		new String:reason[28];
+		decl String:reason[28];
 		new String:RemoveType[2] = " ";
 		
 		if (!SQL_IsFieldNull(hndl, 0))
