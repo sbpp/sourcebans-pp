@@ -12,10 +12,9 @@ env:
 
 #And compile!
 before_script:
-  - SMFILE="sourcemod-$SOURCEMOD-linux.tar.gz"
-  - wget http://www.gsptalk.com/mirror/sourcemod/$SMFILE -O game_upload/$SMFILE
+  - wget "http://www.sourcemod.net/latest.php?version=1.7&os=linux" -O game_upload/sourcemod-1.7-stable-linux.tar.gz
   - cd game_upload
-  - tar -xzf $SMFILE
+  - tar -xzf sourcemod-1.7-stable-linux.tar.gz
   - cd addons/sourcemod/scripting/
   - wget https://bitbucket.org/GoD_Tony/updater/raw/53ebb3e27e5a43bc46dc52dc0de76ac2fb48cd9e/include/updater.inc -O include/updater.inc
   - chmod +x spcomp
