@@ -50,7 +50,7 @@ public OnPluginStart()
 	
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
 	
-	ShortMessage = CreateConVar("sb_short_message", "0", "Use shorter message for displying prev bans", _, true, 0, true, 1);
+	ShortMessage = CreateConVar("sb_short_message", "0", "Use shorter message for displying prev bans", _, true, 0.0, true, 1.0);
 	
 	RegAdminCmd("sm_listsbbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
