@@ -12,7 +12,7 @@ env:
 
 #And compile!
 before_script:
-  - wget http://www.sourcemod.net/latest.php?version=1.7&os=linux -O game_upload/sourcemod-1.7-stable-linux.tar.gz
+  - wget "http://www.sourcemod.net/latest.php?version=1.7&os=linux" -O game_upload/sourcemod-1.7-stable-linux.tar.gz
   - cd game_upload
   - tar -xzf sourcemod-1.7-stable-linux.tar.gz
   - cd addons/sourcemod/scripting/
