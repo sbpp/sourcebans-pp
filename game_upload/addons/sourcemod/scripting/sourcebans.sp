@@ -165,9 +165,9 @@ public OnPluginStart()
 	
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
-	CreateConVar("sb_version", SB_VERSION, _, FCVAR_PLUGIN | FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
-	CreateConVar("sbr_version", SBR_VERSION, _, FCVAR_PLUGIN | FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
-	RegServerCmd("sb_serverid", serverID_Set, "ServerID Found in WebPanel (REQUIRED)");
+	CreateConVar("sb_version", SB_VERSION, _, FCVAR_SPONLY | FCVAR_NOTIFY);
+	CreateConVar("sbr_version", SBR_VERSION, _, FCVAR_SPONLY | FCVAR_NOTIFY);
+	HookConVarChange(CreateConVar("sb_serverid", "-1", "ServerID Found in WebPanel (REQUIRED)"), serverID_Set);
 	RegServerCmd("sm_rehash", sm_rehash, "Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
@@ -305,12 +305,10 @@ public OnMapEnd()
 	}
 }
 
-public Action:serverID_Set(args)
+public serverID_Set(Handle:convar, const String:oldValue[], const String:newValue[])
 {
-	decl String:argc[32];
-	GetCmdArgString(argc, sizeof(argc));
-	serverID = StringToInt(argc);
-	ReplyToCommand(0, "[SourceBans] ServerID set to %i", serverID);
+	serverID = StringToInt(newValue);
+	PrintToServer("[SourceBans] ServerID set to %i", serverID);
 }
 
 // CLIENT CONNECTION FUNCTIONS //
