@@ -25,16 +25,16 @@
 // *************************************************************************
 
 #if defined _sourcecomms_included
-  #endinput
+#endinput
 #endif
 #define _sourcecomms_included
 
 /* Punishments types */
-enum bType{
-    bNot = 0,   // Player chat or voice is not blocked
-    bSess,      // ... blocked for player session (until reconnect)
-    bTime,      // ... blocked for some time
-    bPerm       // ... permanently blocked
+enum bType {
+	bNot = 0,  // Player chat or voice is not blocked
+	bSess,  // ... blocked for player session (until reconnect)
+	bTime,  // ... blocked for some time
+	bPerm // ... permanently blocked
 }
 
 /**
@@ -82,14 +82,14 @@ native bType:SourceComms_GetClientMuteType(client);
  */
 native bType:SourceComms_GetClientGagType(client);
 
-public SharedPlugin:__pl_sourcecomms =
+public SharedPlugin:__pl_sourcecomms = 
 {
-	name = "sourcecomms",
-	file = "sourcecomms.smx",
+	name = "sourcecomms", 
+	file = "sourcecomms.smx", 
 	#if defined REQUIRE_PLUGIN
-		required = 1
+	required = 1
 	#else
-		required = 0
+	required = 0
 	#endif
 };
 
@@ -99,5 +99,5 @@ public __pl_sourcecomms_SetNTVOptional()
 	MarkNativeAsOptional("SourceComms_SetClientGag");
 	MarkNativeAsOptional("SourceComms_GetClientMuteType");
 	MarkNativeAsOptional("SourceComms_GetClientGagType");
-
+	
 }

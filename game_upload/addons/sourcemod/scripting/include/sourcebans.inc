@@ -25,19 +25,19 @@
 // *************************************************************************
 
 #if defined _sourcebans_included
-  #endinput
+#endinput
 #endif
 #define _sourcebans_included
 
 public SharedPlugin:__pl_sourcebans = 
 {
-	name = "SourceBans",
-	file = "sourcebans.smx",
-#if defined REQUIRE_PLUGIN
-    required = 1
-#else
-    required = 0
-#endif
+	name = "SourceBans", 
+	file = "sourcebans.smx", 
+	#if defined REQUIRE_PLUGIN
+	required = 1
+	#else
+	required = 0
+	#endif
 };
 
 #if !defined REQUIRE_PLUGIN
