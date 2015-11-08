@@ -178,10 +178,8 @@ $theme->assign('total_blocked', $totalstopped);
 $theme->assign('players_banned', $bans);
 $theme->assign('total_bans', $BanCount);
 
-if(SB_THEME == 'default') {
-	$theme->assign('total_comms', $CommCount);
-	$theme->assign('players_commed', $comms);
-}
+$theme->assign('total_comms', $CommCount);
+$theme->assign('players_commed', $comms);
 
 $theme->display('page_dashboard.tpl');
 ?>
