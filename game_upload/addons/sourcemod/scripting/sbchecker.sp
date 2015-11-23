@@ -106,12 +106,12 @@ public OnConnectBanCheck(Handle:owner, Handle:hndl, const String:error[], any:us
 		if (ShortMessage.BoolValue)
 		{
 			PrintToBanAdmins("\x04[SB]\x01Player \"%N\" has %d previous ban%s.", 
-				client, bancount, Plural(bancount));
+				client, bancount, ((bancount > 0) ? "s":""));
 		}
 		else
 		{
 			PrintToBanAdmins("\x04[SourceBans]\x01 Warning: Player \"%N\" has %d previous SB ban%s on record.", 
-				client, bancount, Plural(bancount));
+				client, bancount, ((bancount > 0) ? "s":""));
 		}
 	}
 }
@@ -311,11 +311,6 @@ PrintToBanAdmins(const String:format[], any:...)
 			PrintToChat(i, "%s", msg);
 		}
 	}
-}
-
-stock String:Plural(bancount)
-{
-	return bancount > 0 ? "s" : "";
 }
 
 stock ReadConfig()
