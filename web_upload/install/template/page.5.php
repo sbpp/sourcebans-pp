@@ -192,6 +192,8 @@ Hover your mouse over the '?' buttons to see an explanation of the field.<br /><
 <input type="hidden" name="database" value="<?php echo $_POST['database']?>">
 <input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 <input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
+<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
+<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 </div>
 </form>
 
