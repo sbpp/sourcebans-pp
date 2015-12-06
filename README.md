@@ -1,4 +1,4 @@
-﻿SourceBans++ [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork)
+﻿SourceBans++ [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork) [![Join the chat at gitter.im/Sarabveer/SourceBans-Fork](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Sarabveer/SourceBans-Fork)
 ============
 
 Global admin, ban, and communication management system for the Source engine
