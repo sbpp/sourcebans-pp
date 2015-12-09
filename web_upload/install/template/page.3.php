@@ -43,8 +43,8 @@ This page will list all of the requirements to run the SourceBans web interface,
    <tr>
   <td width="33%" height="16" class="listtable_1">PHP Version</td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">5.4</td>
-	<?php if(version_compare(PHP_VERSION, "5.4") != -1)
+	<td width="22%" height="16" class="listtable_1">5.5</td>
+	<?php if(version_compare(PHP_VERSION, "5.5") != -1)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
 	<td width="22%" height="16" class="<?php echo $class?>"><?php echo PHP_VERSION;?></td> 

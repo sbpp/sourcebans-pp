@@ -1,5 +1,6 @@
-﻿SourceBans++ [![Build Status](https://travis-ci.org/Sarabveer/SourceBans-Fork.svg)](https://travis-ci.org/Sarabveer/SourceBans-Fork) [![Join the chat at gitter.im/Sarabveer/SourceBans-Fork](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/Sarabveer/SourceBans-Fork)
+﻿SourceBans++ 
 ============
+### [![GitHub release](https://img.shields.io/github/release/Sarabveer/SourceBans-Fork.svg?style=flat-square)](https://github.com/Sarabveer/SourceBans-Fork/releases/tag/1.5.3) [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Sarabveer/SourceBans-Fork/master/SOURCEMOD-LICENSE.txt) [![GitHub license](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Sarabveer/SourceBans-Fork/master/AGPLv3.txt) [![GitHub forks](https://img.shields.io/github/forks/Sarabveer/SourceBans-Fork.svg?style=flat-square)](https://github.com/Sarabveer/SourceBans-Fork/network) [![GitHub stars](https://img.shields.io/github/stars/Sarabveer/SourceBans-Fork.svg?style=flat-square)](https://github.com/Sarabveer/SourceBans-Fork/stargazers) [![GitHub commits](https://img.shields.io/github/commits-since/Sarabveer/SourceBans-Fork/1.5.3.svg?style=flat-square)](https://github.com/Sarabveer/SourceBans-Fork/compare/1.5.3...master) [![Travis](https://img.shields.io/travis/Sarabveer/SourceBans-Fork.svg?style=flat-square)](https://travis-ci.org/Sarabveer/SourceBans-Fork) [![Github All Releases](https://img.shields.io/github/downloads/Sarabveer/SourceBans-Fork/total.svg?style=flat-square)](https://github.com/Sarabveer/SourceBans-Fork/releases) [![Gitter](https://img.shields.io/gitter/room/Sarabveer/SourceBans-Fork.svg?style=flat-square)](https://gitter.im/Sarabveer/SourceBans-Fork) [![Codacy](https://img.shields.io/codacy/a167e0b3727447cea49d441fc6dac5a9.svg?style=flat-square)](https://www.codacy.com/app/sarabveer/SourceBans-Fork)
 
 Global admin, ban, and communication management system for the Source engine
 
@@ -23,4 +24,3 @@ Requirements:
    o MetaMod: Source
    o SourceMod: Greater Than or Equal To 1.7
 ```
-
