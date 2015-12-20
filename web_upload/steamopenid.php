@@ -60,8 +60,6 @@ if($data !== false){
     $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
     if(defined('DB_PREFIX')){ $prfx = DB_PREFIX ."_"; }else{ $prfx = ""; }
 
-    echo "SELECT aid,password FROM " .$prfx ."admins WHERE authid = '" .$data ."'; ";
-
     $resultado = $mysqli->query("SELECT aid,password FROM " .$prfx ."admins WHERE authid = '" .$data ."'; ");
     if($resultado->num_rows == 1){
         while($row = $resultado->fetch_assoc()) {
