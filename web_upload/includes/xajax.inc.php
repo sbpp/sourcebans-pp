@@ -165,6 +165,16 @@ class xajax
 	/**#@-*/
 	
 	/**
+ 	 * Default Constructor.
+ 	 * We define it even though it does not actually do anything. This avoids
+ 	 * getting a PHP Fatal error:  Cannot call constructor if a subclass tries
+ 	 * to call its parent constructor.
+ 	 */
+ 	public function __construct()
+ 	{
+ 	}
+ 
+	/**
 	 * Constructor. You can set some extra xajax options right away or use
 	 * individual methods later to set options.
 	 * 
@@ -637,6 +647,7 @@ class xajax
 		$aArgs = array();
 		$sPreResponse = "";
 		$bEndRequest = false;
+		
 		$requestMode = $this->getRequestMode();
 		if ($requestMode == -1) return;
 	
@@ -743,15 +754,11 @@ class xajax
 					}
 					$oResponse = $this->_callFunction($sFunctionName, $aArgs);
 				}
-				
-				
-					//if (is_string($sResponse)) {
-					//	$oResponse = new xajaxResponse();
-					//	$oResponse->addAlert("No XML Response Was Returned By Function $sFunctionName.\n\nOutput: ".$oResponse);
-					//}
-				
-				//else 
-				if ($sPreResponse != "") {
+				if (is_string($sResponse)) {
+					$oResponse = new xajaxResponse();
+					$oResponse->addAlert("No XML Response Was Returned By Function $sFunctionName.\n\nOutput: ".$oResponse);
+				}
+				else if ($sPreResponse != "") {
 					$oNewResponse = new xajaxResponse($this->sEncoding, $this->bOutputEntities);
 					$oNewResponse->loadXML($sPreResponse);
 					$oNewResponse->loadXML($oResponse);
@@ -817,7 +824,7 @@ class xajax
 	 */
 	function printJavascript($sJsURI="", $sJsFile=NULL)
 	{
-		return $this->getJavascript($sJsURI, $sJsFile);
+		print $this->getJavascript($sJsURI, $sJsFile);
 	}
 	
 	/**
