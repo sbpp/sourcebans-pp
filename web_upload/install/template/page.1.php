@@ -19,7 +19,7 @@ An explanation  of this license is available <a href="https://www.gnu.org/licens
 <textarea id="license" cols="105" rows="15" name="license">
 This program is part of SourceBans++.
 
-Copyright (C) 2014-2015 Sarabveer Singh <me@sarabveer.me>
+Copyright © 2014-2016 Sarabveer Singh <me@sarabveer.me>
   
 SourceBans++ is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published by

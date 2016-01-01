@@ -12,8 +12,6 @@ Global admin, ban, and communication management system for the Source engine
 
 - FAQ: [SourceBans++ FAQ](https://sarabveer.github.io/SourceBans-Fork/faq/)
 
-- Having trouble? [SourceBans Forums - AlliedModders](https://forums.alliedmods.net/forumdisplay.php?f=152)
-
 ```
 Requirements:
  * Webserver

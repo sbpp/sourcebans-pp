@@ -84,7 +84,7 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 define('SB_GIT', true);
 if(!defined('SB_VERSION')){
 	define('SB_VERSION', '1.5.4-dev');
-	define('SB_GITRev', '$Git: 316 $');
+	define('SB_GITRev', '$Git: 317 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
