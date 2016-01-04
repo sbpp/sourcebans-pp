@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.21dev  ??-???-2015
+@version   v5.20.3  01-Jan-2016
 @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -12,7 +12,7 @@
   and non-transactional table types. You can use this as a drop-in replacement for both
   the mysql and mysqlt drivers. As of ADOdb Version 5.20.0, all other native MySQL drivers
   are deprecated
-
+  
   Requires mysql client. Works on Windows and Unix.
 
 21 October 2003: MySQLi extension implementation by Arjen de Rijke (a.de.rijke@xs4all.nl)
@@ -253,13 +253,6 @@ class ADODB_mysqli extends ADOConnection {
 
 	function _insertid()
 	{
-		/*
-		* mysqli_insert_id does not return the last_insert_id
-		* if called after execution of a stored procedure
-		* so we execute this instead.
-		*/
-		return ADOConnection::GetOne('SELECT LAST_INSERT_ID()');
-
 		$result = @mysqli_insert_id($this->_connectionID);
 		if ($result == -1) {
 			if ($this->debug) ADOConnection::outp("mysqli_insert_id() failed : "  . $this->ErrorMsg());
@@ -823,9 +816,7 @@ class ADODB_mysqli extends ADOConnection {
 	// returns true or false
 	function _close()
 	{
-		if($this->_connectionID) {
-			mysqli_close($this->_connectionID);
-		}
+		@mysqli_close($this->_connectionID);
 		$this->_connectionID = false;
 	}
 
@@ -1042,7 +1033,10 @@ class ADORecordSet_mysqli extends ADORecordSet{
 		$this->_currentRow++;
 		$this->fields = @mysqli_fetch_array($this->_queryID,$this->fetchMode);
 
-		if (is_array($this->fields)) return true;
+		if (is_array($this->fields)) {
+			$this->_updatefields();
+			return true;
+		}
 		$this->EOF = true;
 		return false;
 	}
@@ -1059,11 +1053,15 @@ class ADORecordSet_mysqli extends ADORecordSet{
 		//if results are attached to this pointer from Stored Proceedure calls, the next standard query will die 2014
 		//only a problem with persistant connections
 
-		while(mysqli_more_results($this->connection->_connectionID)){
-			@mysqli_next_result($this->connection->_connectionID);
+		if($this->connection->_connectionID) {
+			while(mysqli_more_results($this->connection->_connectionID)){
+				mysqli_next_result($this->connection->_connectionID);
+			}
 		}
 
-		@mysqli_free_result($this->_queryID);
+		if($this->_queryID) {
+			mysqli_free_result($this->_queryID);
+		}
 		$this->_queryID = false;
 	}
 
@@ -1191,6 +1189,11 @@ class ADORecordSet_mysqli extends ADORecordSet{
 }
 
 class ADORecordSet_array_mysqli extends ADORecordSet_array {
+
+	function __construct($id=-1,$mode=false)
+	{
+		parent::__construct($id,$mode);
+	}
 
 	function MetaType($t, $len = -1, $fieldobj = false)
 	{

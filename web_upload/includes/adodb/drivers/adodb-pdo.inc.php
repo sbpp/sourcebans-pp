@@ -1,6 +1,6 @@
 <?php
 /**
-	@version   v5.21dev  ??-???-2015
+	@version   v5.20.3  01-Jan-2016
 	@copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 	@copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -86,6 +86,10 @@ class ADODB_pdo extends ADOConnection {
 	var $dsnType = '';
 	var $stmt = false;
 	var $_driver;
+
+	function __construct()
+	{
+	}
 
 	function _UpdatePDO()
 	{

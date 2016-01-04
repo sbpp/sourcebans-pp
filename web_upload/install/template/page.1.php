@@ -35,12 +35,12 @@ along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 
 This program incorporates work covered by the following copyright(s): 
  SourceBans 1.4.11
- Copyright (C) 2007-2014 SourceBans Team - Part of GameConnect
+ Copyright © 2007-2014 SourceBans Team - Part of GameConnect
  Licensed under GNU GPL version 3, or later.
  Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
  
  SourceBans TF2 Theme v1.0
- Copyright (C) 2014 IceMan
+ Copyright © 2014 IceMan
  Page: <https://forums.alliedmods.net/showthread.php?t=252533>
 </textarea>
 <br /><br />

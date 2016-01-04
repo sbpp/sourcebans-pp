@@ -6,7 +6,15 @@ Older changelogs:
 [v2.x](changelog_v2.x.md).
 
 
-## 5.21 - ??-???-2015
+## 5.20.3 - 01-Jan-2016
+
+- mssql: PHP warning when closing recordset from destructor not fixed in v5.20.2. #180
+
+## 5.20.2 - 27-Dec-2015
+
+- adodb: Remove a couple leftover PHP 4.x constructors (PHP7 compatibility). #139
+- mysql: MoveNext() now respects ADODB_ASSOC_CASE. #167
+- mssql, mysql, informix: Avoid PHP warning when closing recordset from destructor. #170
 
 ## 5.20.1 - 06-Dec-2015
 

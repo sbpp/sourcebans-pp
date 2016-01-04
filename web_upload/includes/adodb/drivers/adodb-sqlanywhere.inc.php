@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.21dev  ??-???-2015
+@version   v5.20.3  01-Jan-2016
 @copyright (c) 2000-2013  John Lim (jlim#natsoft.com).  All rights
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 reserved.
@@ -152,6 +152,11 @@ if (!defined('ADODB_SYBASE_SQLANYWHERE')){
  class  ADORecordSet_sqlanywhere extends ADORecordSet_odbc {
 
   var $databaseType = "sqlanywhere";
+
+ function __construct($id,$mode=false)
+ {
+  parent::__construct($id,$mode);
+ }
 
 
  }; //class

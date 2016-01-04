@@ -1,6 +1,6 @@
 <?php
 /**
-* @version   v5.21dev  ??-???-2015
+* @version   v5.20.3  01-Jan-2016
 * @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 * @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 * Released under both BSD license and Lesser GPL library license.
@@ -33,4 +33,9 @@ class ADODB_informix extends ADODB_informix72 {
 
 class ADORecordset_informix extends ADORecordset_informix72 {
 	var $databaseType = "informix";
+
+	function __construct($id,$mode=false)
+	{
+		parent::__construct($id,$mode);
+	}
 }

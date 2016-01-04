@@ -14,7 +14,7 @@
 /**
 	\mainpage
 
-	@version   v5.21dev  ??-???-2015
+	@version   v5.20.3  01-Jan-2016
 	@copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 	@copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
 
@@ -217,7 +217,7 @@ if (!defined('_ADODB_LAYER')) {
 		/**
 		 * ADODB version as a string.
 		 */
-		$ADODB_vers = 'v5.21dev  ??-???-2015';
+		$ADODB_vers = 'v5.20.3  01-Jan-2016';
 
 		/**
 		 * Determines whether recordset->RecordCount() is used.
@@ -505,17 +505,6 @@ if (!defined('_ADODB_LAYER')) {
 	var $_affected = false;
 	var $_logsql = false;
 	var $_transmode = ''; // transaction mode
-
-
-	/**
-	 * Default Constructor.
-	 * We define it even though it does not actually do anything. This avoids
-	 * getting a PHP Fatal error:  Cannot call constructor if a subclass tries
-	 * to call its parent constructor.
-	 */
-	public function __construct()
-	{
-	}
 
 	/*
 	 * Additional parameters that may be passed to drivers in the connect string

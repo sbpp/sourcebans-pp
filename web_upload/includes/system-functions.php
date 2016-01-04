@@ -12,7 +12,7 @@
  * @version $Id: system-functions.php 268 2009-06-20 01:39:57Z peace-maker $
  * =============================================================================
  */
-
+//error_reporting(0);
 if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 /**
 * Extended substr function. If it finds mbstring extension it will use, else

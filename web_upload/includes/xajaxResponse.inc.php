@@ -343,13 +343,14 @@ class xajaxResponse
 						$newQueryPart .= ini_get('arg_separator.output');
 					$newQueryPart .= rawurlencode($key).'='.rawurlencode($value);
 				}
-			} else if ($_SERVER['QUERY_STRING']) {
+			} else if (isset($_SERVER['QUERY_STRING']) && $_SERVER['QUERY_STRING']) {
 				//couldn't break up the query, but there's one there
 				//possibly "http://url/page.html?query1234" type of query?
 				//just encode it and hope it works
 				$newQueryPart = rawurlencode($_SERVER['QUERY_STRING']);
 			}
-			$sURL = str_replace($queryPart, $newQueryPart, $sURL);
+			//$sURL = str_replace($queryPart, $newQueryPart, $sURL);
+			$sURL = str_replace($queryPart, $queryPart, $sURL);
 		}
 		if ($iDelay)
 			$this->addScript('window.setTimeout("window.location = \''.$sURL.'\';",'.($iDelay*1000).');');

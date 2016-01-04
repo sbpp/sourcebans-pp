@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.21dev  ??-???-2015
+@version   v5.20.3  01-Jan-2016
 @copyright (c) 2000-2013 John Lim. All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -43,6 +43,10 @@ class ADODB_sybase extends ADOConnection {
 	var $rightOuter = '=*';
 
 	var $port;
+
+	function __construct()
+	{
+	}
 
 	// might require begintrans -- committrans
 	function _insertid()
@@ -387,8 +391,12 @@ class ADORecordset_sybase extends ADORecordSet {
 }
 
 class ADORecordSet_array_sybase extends ADORecordSet_array {
+	function __construct($id=-1)
+	{
+		parent::__construct($id);
+	}
 
-	// sybase/mssql uses a default date like Dec 30 2000 12:00AM
+		// sybase/mssql uses a default date like Dec 30 2000 12:00AM
 	static function UnixDate($v)
 	{
 	global $ADODB_sybase_mths;

@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.21dev  ??-???-2015
+@version   v5.20.3  01-Jan-2016
 @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -32,6 +32,10 @@ class ADODB_sqlite extends ADOConnection {
 	var $sysDate = "adodb_date('Y-m-d')";
 	var $sysTimeStamp = "adodb_date('Y-m-d H:i:s')";
 	var $fmtTimeStamp = "'Y-m-d H:i:s'";
+
+	function __construct()
+	{
+	}
 
 	function ServerInfo()
 	{

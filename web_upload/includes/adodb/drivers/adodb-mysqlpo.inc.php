@@ -1,7 +1,7 @@
 <?php
 
 /*
-@version   v5.21dev  ??-???-2015
+@version   v5.20.3  01-Jan-2016
 @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -11,8 +11,8 @@
 
   MySQL code that supports transactions. For MySQL 3.23 or later.
   Code from James Poon <jpoon88@yahoo.com>
-
-  This driver extends the deprecated mysql driver, and was originally designed to be a
+  
+  This driver extends the deprecated mysql driver, and was originally designed to be a 
   portable driver in the same manner as oci8po and mssqlpo. Its functionality
   is exactly duplicated in the mysqlt driver, which is itself deprecated.
   This driver will be removed in ADOdb version 6.0.0.
@@ -115,6 +115,11 @@ class ADORecordSet_mysqlt extends ADORecordSet_mysql{
 }
 
 class ADORecordSet_ext_mysqlt extends ADORecordSet_mysqlt {
+
+	function __construct($queryID,$mode=false)
+	{
+		parent::__construct($queryID,$mode);
+	}
 
 	function MoveNext()
 	{
