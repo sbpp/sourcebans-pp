@@ -91,16 +91,6 @@ class xajaxResponse
 	/**#@-*/
 	
 	/**
- 	 * Default Constructor.
- 	 * We define it even though it does not actually do anything. This avoids
- 	 * getting a PHP Fatal error:  Cannot call constructor if a subclass tries
- 	 * to call its parent constructor.
- 	 */
- 	public function __construct()
- 	{
- 	}
-	
-	/**
 	 * The constructor's main job is to set the character encoding for the
 	 * response.
 	 * 
@@ -113,7 +103,7 @@ class xajaxResponse
 	 *                converted to HTML entities
 	 * 
 	 */
-	function xajaxResponse($sEncoding=XAJAX_DEFAULT_CHAR_ENCODING, $bOutputEntities=false)
+	function __construct($sEncoding=XAJAX_DEFAULT_CHAR_ENCODING, $bOutputEntities=false)
 	{
 		$this->setCharEncoding($sEncoding);
 		$this->bOutputEntities = $bOutputEntities;

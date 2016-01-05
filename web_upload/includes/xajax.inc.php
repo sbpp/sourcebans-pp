@@ -165,16 +165,6 @@ class xajax
 	/**#@-*/
 	
 	/**
- 	 * Default Constructor.
- 	 * We define it even though it does not actually do anything. This avoids
- 	 * getting a PHP Fatal error:  Cannot call constructor if a subclass tries
- 	 * to call its parent constructor.
- 	 */
- 	public function __construct()
- 	{
- 	}
-	
-	/**
 	 * Constructor. You can set some extra xajax options right away or use
 	 * individual methods later to set options.
 	 * 
@@ -183,7 +173,7 @@ class xajax
 	 * @param string  defaults to XAJAX_DEFAULT_CHAR_ENCODING defined above
 	 * @param boolean defaults to false
 	 */
-	function xajax($sRequestURI="",$sWrapperPrefix="xajax_",$sEncoding=XAJAX_DEFAULT_CHAR_ENCODING,$bDebug=false)
+	function __construct($sRequestURI="",$sWrapperPrefix="xajax_",$sEncoding=XAJAX_DEFAULT_CHAR_ENCODING,$bDebug=false)
 	{
 		$this->aFunctions = array();
 		$this->aObjects = array();
