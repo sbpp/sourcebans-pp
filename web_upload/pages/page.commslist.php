@@ -415,6 +415,10 @@ while (!$res->EOF)
 	$data['player'] = addslashes($res->fields['player_name']);
 	$data['steamid'] = $res->fields['authid'];
 	$data['communityid'] = $res->fields['community_id'];
+	$steam2id = $data['steamid'];
+	$steam3parts = explode(':', $steam2id);
+	$steamid3 = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
+	$data['steamid3'] = $steamid3;
 
 	if(isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin())
 		$data['admin'] = false;

@@ -178,9 +178,19 @@
                 <td width="20%" height="16" class="listtable_1">Steam ID</td>
                 <td height="16" class="listtable_1">
                   {if empty($ban.steamid)}
-                    <i><font color="#677882">no Steam ID present</font></i>
+                    <i><font color="#677882">No Steam ID present</font></i>
                   {else}
                     {$ban.steamid}
+                  {/if}
+                </td>
+              </tr>
+              <tr align="left">
+                <td width="20%" height="16" class="listtable_1">Steam3 ID</td>
+                <td height="16" class="listtable_1">
+                  {if empty($ban.steamid3)}
+                    <i><font color="#677882">No Steam3 ID present</font></i>
+                  {else}
+                    <a href="http://steamcommunity.com/profiles/{$ban.steamid3}" target="_blank">{$ban.steamid3}</a>
                   {/if}
                 </td>
               </tr>
