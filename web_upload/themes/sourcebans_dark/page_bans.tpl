@@ -134,7 +134,7 @@
                 </td>
                 <!-- ###############[ Start Admin Controls ]################## -->
                 {if $view_bans}
-                <td width="30%" rowspan="{if $ban.unbanned}14{else}12{/if}" class="listtable_2 opener">
+                <td width="30%" rowspan="{if $ban.unbanned}15{else}13{/if}" class="listtable_2 opener">
                   <div class="ban-edit">
                     <ul>
 					  {if $ban.unbanned && $ban.reban_link != false}

@@ -130,7 +130,7 @@
                 </td>
                 <!-- ###############[ Start Admin Controls ]################## -->
                 {if $view_bans}
-                <td width="30%" rowspan="{if $ban.unbanned}12{else}10{/if}" class="listtable_2 opener">
+                <td width="30%" rowspan="{if $ban.unbanned}13{else}11{/if}" class="listtable_2 opener">
                   <div class="ban-edit">
                     <ul>
 					  {if $ban.unbanned && $ban.reban_link != false}

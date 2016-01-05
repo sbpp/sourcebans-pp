@@ -1,7 +1,7 @@
 <?php
 /**
  * =============================================================================
- * Bans page
+ * Comms page
  *
  * @author SteamFriends Development Team
  * @version 1.0.0
@@ -9,7 +9,7 @@
  * @package SourceBans
  * @link http://www.sourcebans.net
  *
- * @version $Id: admin.bans.php 286 2009-07-12 18:49:48Z peace-maker $
+ * @version $Id: admin.comms.php 286 2009-07-12 18:49:48Z peace-maker $
  * =============================================================================
  */
 
@@ -27,11 +27,11 @@ if(isset($_GET["rebanid"]))
 }
 
 echo '<div id="admin-page-content">';
-	// Add Ban
+	// Add Block
 	echo '<div id="0" style="display:none;">';
 		$theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN));
 		$theme->display('page_admin_comms_add.tpl');
-	
+	echo '</div>';
 ?>
 
 <script type="text/javascript">

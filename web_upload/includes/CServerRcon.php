@@ -25,7 +25,7 @@ class CServerRcon
   const SERVERDATA_RESPONSE_VALUE = 00;
   const SERVERDATA_AUTH_RESPONSE = 02;
 
-  function CServerRcon ($address, $port, $password)
+  function __construct($address, $port, $password)
   {
     $this->password = $password;
 

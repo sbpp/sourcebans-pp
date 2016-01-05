@@ -24,7 +24,7 @@ class CSystemLog {
 	var $parent_function = "";
 	var $query = "";
 	
-	function CSystemLog($tpe="", $ttl="", $mg="", $done=true, $HideDebug = false)
+	function __construct($tpe="", $ttl="", $mg="", $done=true, $HideDebug = false)
 	{
 		global $userbank;
 		if(!empty($tpe) && !empty($ttl) && !empty($mg))

@@ -25,7 +25,7 @@ class CUserManager
 	 * @param $password the current user's password
 	 * @return noreturn.
 	 */
-	function CUserManager($aid, $password)
+	function __construct($aid, $password)
 	{
 		if($this->CheckLogin($password, $aid))
 		{
