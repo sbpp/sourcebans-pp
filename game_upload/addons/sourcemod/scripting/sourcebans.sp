@@ -222,21 +222,9 @@ public OnPluginStart()
 	// This timer is what processes the SQLite queue when the database is unavailable
 	CreateTimer(float(ProcessQueueTime * 60), ProcessQueue);
 	
-	/* Account for late loading */
 	if (LateLoaded)
 	{
-		decl String:auth[30];
-		for (new i = 1; i <= GetMaxClients(); i++)
-		{
-			if (IsClientConnected(i) && !IsFakeClient(i))
-			{
-				PlayerStatus[i] = false;
-			}
-			if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i) && GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth)))
-			{
-				OnClientAuthorized(i, auth);
-			}
-		}
+		AccountForLateLoading();
 	}
 	
 	#if defined _updater_included
@@ -2553,6 +2541,25 @@ stock AdminFlag:CreateFlagLetters()
 	FlagLetters['z'-'a'] = Admin_Root;
 	
 	return FlagLetters;
+}
+
+stock AccountForLateLoading()
+{
+	decl String:auth[30];
+	for (new i = 1; i <= GetMaxClients(); i++)
+	{
+		if (!IsFakeClient(i))
+		{
+			if (IsClientConnected(i))
+			{
+				PlayerStatus[i] = false;
+			}
+			if (IsClientInGame(i) && IsClientAuthorized(i) && GetClientAuthId(i, AuthId_Steam2, auth, sizeof(auth)))
+			{
+				OnClientAuthorized(i, auth);
+			}
+		}
+	}
 }
 
 //Yarr!
