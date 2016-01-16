@@ -17,8 +17,8 @@
 			        <td class="listtable_1" >Steam ID</td>
 			        <td class="listtable_1" >
 			           <input class="textbox" type="text" id="steamid" value="" onmouseup="$('steam_').checked = true"style="width: 50%; margin-right: 12px;"><select class="select" id="steam_match" onmouseup="$('steam_').checked = true" style="width: 33%;">
-				        <option label="exact" value="0" selected>Exact Match</option>
-				        <option label="partial" value="1">Partial Match</option>
+				        <option value="0" selected>Exact Match</option>
+				        <option value="1">Partial Match</option>
 				    </select>
 				</td>
 			    </tr>
