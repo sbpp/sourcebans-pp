@@ -10,6 +10,17 @@ Legend:
 ? = Other stuff
 ```
 
+(14/02/16): Version 1.5.4
+-----------------------
+01. * Added Steam3 ID to Ban and Comm list
+02. * Added PHP7 Support
+03. + Updated Comms page with better CSS
+04. + Small misc theme fixes
+05. + Small plugin fixes/optimizations
+06. ! Fixed config.php bug with APIKey and URL
+07. ! Fix MariaDB Empty Ban List
+08. ? Optimized and updated IpToCountry.csv
+
 (01/09/15): Version 1.5.3
 -----------------------
 01. * Added Steam API Key to Installer for Future Use

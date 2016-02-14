@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "(SB++) 1.5.4-dev"
+#define PLUGIN_VERSION "(SB++) 1.5.4"
 #define PREFIX "\x04[SourceComms]\x01 "
 
 #define MAX_TIME_MULTI 30       // maximum mass-target punishment length
@@ -193,17 +193,17 @@ public OnPluginStart()
 	CvarPort = FindConVar("hostport");
 	g_hServersWhiteList = CreateArray();
 	
-	CreateConVar("sourcecomms_version", PLUGIN_VERSION, _, FCVAR_PLUGIN | FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
+	CreateConVar("sourcecomms_version", PLUGIN_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
 	AddCommandListener(CommandCallback, "sm_gag");
 	AddCommandListener(CommandCallback, "sm_mute");
 	AddCommandListener(CommandCallback, "sm_silence");
 	AddCommandListener(CommandCallback, "sm_ungag");
 	AddCommandListener(CommandCallback, "sm_unmute");
 	AddCommandListener(CommandCallback, "sm_unsilence");
-	RegServerCmd("sc_fw_block", FWBlock, "Blocking player comms by command from sourceban web site", FCVAR_PLUGIN);
-	RegServerCmd("sc_fw_ungag", FWUngag, "Ungagging player by command from sourceban web site", FCVAR_PLUGIN);
-	RegServerCmd("sc_fw_unmute", FWUnmute, "Unmuting player by command from sourceban web site", FCVAR_PLUGIN);
-	RegConsoleCmd("sm_comms", CommandComms, "Shows current player communications status", FCVAR_PLUGIN);
+	RegServerCmd("sc_fw_block", FWBlock, "Blocking player comms by command from sourceban web site");
+	RegServerCmd("sc_fw_ungag", FWUngag, "Ungagging player by command from sourceban web site");
+	RegServerCmd("sc_fw_unmute", FWUnmute, "Unmuting player by command from sourceban web site");
+	RegConsoleCmd("sm_comms", CommandComms, "Shows current player communications status");
 	
 	HookEvent("player_changename", Event_OnPlayerName, EventHookMode_Post);
 	
