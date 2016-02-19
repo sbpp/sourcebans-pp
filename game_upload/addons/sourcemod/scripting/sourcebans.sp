@@ -399,7 +399,7 @@ public Action:CommandBan(client, args)
 {
 	if (args < 2)
 	{
-		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
+		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> \"Reason In Quotes\"", Prefix);
 		return Plugin_Handled;
 	}
 	
@@ -426,17 +426,15 @@ public Action:CommandBan(client, args)
 	
 	// Get the reason
 	decl String:reason[128];
-	if (args >= 3)
+	switch (args)
 	{
-		for (new i = 3; i <= args; i++)
+		case 3: GetCmdArg(3, reason, sizeof(reason));
+		case 2:	Format(reason, sizeof(reason), "N/A");
+		default: 
 		{
-			GetCmdArg(i, buffer, sizeof(buffer));
-			Format(reason, sizeof(reason), "%s %s", reason, buffer);
+			ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> \"Reason In Quotes\"", Prefix);
+			return Plugin_Handled;
 		}
-	}
-	else
-	{
-		reason[0] = '\0';
 	}
 	
 	g_BanTarget[client] = target;
@@ -458,7 +456,7 @@ public Action:CommandBanIp(client, args)
 {
 	if (args < 2)
 	{
-		ReplyToCommand(client, "%sUsage: sm_banip <ip|#userid|name> <time> [reason]", Prefix);
+		ReplyToCommand(client, "%sUsage: sm_banip <ip|#userid|name> <time> \"Reason In Quotes\"", Prefix);
 		return Plugin_Handled;
 	}
 	
@@ -537,7 +535,7 @@ public Action:CommandUnban(client, args)
 {
 	if (args < 1)
 	{
-		ReplyToCommand(client, "%sUsage: sm_unban <steamid|ip> [reason]", Prefix);
+		ReplyToCommand(client, "%sUsage: sm_unban <steamid|ip> \"Reason In Quotes\"", Prefix);
 		return Plugin_Handled;
 	}
 	
@@ -586,7 +584,7 @@ public Action:CommandAddBan(client, args)
 {
 	if (args < 2)
 	{
-		ReplyToCommand(client, "%sUsage: sm_addban <time> <steamid> [reason]", Prefix);
+		ReplyToCommand(client, "%sUsage: sm_addban <time> <steamid> \"Reason In Quotes\"", Prefix);
 		return Plugin_Handled;
 	}
 	
@@ -1112,14 +1110,14 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPac
 	
 	if (!time)
 	{
-		if (Reason[0] == '\0')
+		if (StrEqual(Reason, "N/A", true))
 		{
 			ShowActivityEx(admin, Prefix, "%t", "Permabanned player", Name);
 		} else {
 			ShowActivityEx(admin, Prefix, "%t", "Permabanned player reason", Name, Reason);
 		}
 	} else {
-		if (Reason[0] == '\0')
+		if (StrEqual(Reason, "N/A", true))
 		{
 			ShowActivityEx(admin, Prefix, "%t", "Banned player", Name, time);
 		} else {
@@ -2199,7 +2197,7 @@ public Native_SBBanPlayer(Handle:plugin, numParams)
 	decl String:reason[128];
 	GetNativeString(4, reason, 128);
 	
-	if (reason[0] == '\0')
+	if (StrEqual(reason, "N/A", true))
 		strcopy(reason, sizeof(reason), "Banned by SourceBans");
 	
 	if (client && IsClientInGame(client))
@@ -2245,7 +2243,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 	// The server is the one calling the ban
 	if (!admin)
 	{
-		if (reason[0] == '\0')
+		if (StrEqual(reason, "N/A", true))
 		{
 			// We cannot pop the reason menu if the command was issued from the server
 			PrintToServer("%s%T", Prefix, "Include Reason", LANG_SERVER);
@@ -2290,7 +2288,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 	ResetPack(dataPack);
 	ResetPack(reasonPack);
 	
-	if (reason[0] != '\0')
+	if (StrEqual(reason, "N/A", true))
 	{
 		// if we have a valid reason pass move forward with the ban
 		if (DB != INVALID_HANDLE)
@@ -2417,14 +2415,14 @@ stock PrepareBan(client, target, time, String:reason[], size)
 	{
 		if (!time)
 		{
-			if (reason[0] == '\0')
+			if (StrEqual(reason, "N/A", true))
 			{
 				ShowActivity(client, "%t", "Permabanned player", name);
 			} else {
 				ShowActivity(client, "%t", "Permabanned player reason", name, reason);
 			}
 		} else {
-			if (reason[0] == '\0')
+			if (StrEqual(reason, "N/A", true))
 			{
 				ShowActivity(client, "%t", "Banned player", name, time);
 			} else {
