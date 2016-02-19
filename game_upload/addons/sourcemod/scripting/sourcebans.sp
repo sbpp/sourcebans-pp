@@ -400,7 +400,7 @@ public Action:CommandBan(client, args)
 	if (args < 2)
 	{
 		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> \"Reason In Quotes\"", Prefix);
-		return Plugin_Handled
+		return Plugin_Handled;
 	}
 	
 	// This is mainly for me sanity since client used to be called admin and target used to be called client
@@ -1110,14 +1110,14 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPac
 	
 	if (!time)
 	{
-		if (StrEqual(reason, "N/A", true))
+		if (StrEqual(Reason, "N/A", true))
 		{
 			ShowActivityEx(admin, Prefix, "%t", "Permabanned player", Name);
 		} else {
 			ShowActivityEx(admin, Prefix, "%t", "Permabanned player reason", Name, Reason);
 		}
 	} else {
-		if (StrEqual(reason, "N/A", true))
+		if (StrEqual(Reason, "N/A", true))
 		{
 			ShowActivityEx(admin, Prefix, "%t", "Banned player", Name, time);
 		} else {
