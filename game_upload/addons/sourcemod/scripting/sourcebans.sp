@@ -425,14 +425,15 @@ public Action:CommandBan(client, args)
 	}
 	
 	// Get the reason
-	decl String:reason[128];
+	new String:reason[128];
 	if (args >= 3)
 	{
-		for (new i = 3; i <= args; i++)
-		{
-			GetCmdArg(i, buffer, sizeof(buffer));
-			Format(reason, sizeof(reason), "%s %s", reason, buffer);
-		}
+		GetCmdArg(3, reason, sizeof(reason));
+	        for (new i = 4; i <= args; i++)
+	        {
+	            GetCmdArg(i, buffer, sizeof(buffer));
+	            Format(reason, sizeof(reason), "%s %s", reason, buffer);
+	        }
 	}
 	else
 	{
@@ -2290,7 +2291,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 	ResetPack(dataPack);
 	ResetPack(reasonPack);
 	
-	if (reason[0] != '\0')
+	if (reason[0] == '\0')
 	{
 		// if we have a valid reason pass move forward with the ban
 		if (DB != INVALID_HANDLE)
