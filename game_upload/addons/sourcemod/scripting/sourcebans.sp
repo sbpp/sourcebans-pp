@@ -2246,7 +2246,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 	// The server is the one calling the ban
 	if (!admin)
 	{
-		if (Reason[0] == '\0')
+		if (reason[0] == '\0')
 		{
 			// We cannot pop the reason menu if the command was issued from the server
 			PrintToServer("%s%T", Prefix, "Include Reason", LANG_SERVER);
@@ -2291,7 +2291,7 @@ public bool:CreateBan(client, target, time, String:reason[])
 	ResetPack(dataPack);
 	ResetPack(reasonPack);
 	
-	if (Reason[0] == '\0')
+	if (reason[0] == '\0')
 	{
 		// if we have a valid reason pass move forward with the ban
 		if (DB != INVALID_HANDLE)
@@ -2418,14 +2418,14 @@ stock PrepareBan(client, target, time, String:reason[], size)
 	{
 		if (!time)
 		{
-			if (Reason[0] == '\0')
+			if (reason[0] == '\0')
 			{
 				ShowActivity(client, "%t", "Permabanned player", name);
 			} else {
 				ShowActivity(client, "%t", "Permabanned player reason", name, reason);
 			}
 		} else {
-			if (Reason[0] == '\0')
+			if (reason[0] == '\0')
 			{
 				ShowActivity(client, "%t", "Banned player", name, time);
 			} else {
