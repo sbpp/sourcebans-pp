@@ -2200,7 +2200,7 @@ public Native_SBBanPlayer(Handle:plugin, numParams)
 	decl String:reason[128];
 	GetNativeString(4, reason, 128);
 	
-	if (Reason[0] == '\0')
+	if (reason[0] == '\0')
 		strcopy(reason, sizeof(reason), "Banned by SourceBans");
 	
 	if (client && IsClientInGame(client))
