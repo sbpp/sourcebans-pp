@@ -253,12 +253,20 @@ public LoadWhiteList()
 	
 	new Handle:fileHandle = OpenFile(path, "r");
 	
-	while (!IsEndOfFile(fileHandle) && ReadFileLine(fileHandle, line, sizeof(line)))
+	if (fileHandle != INVALID_HANDLE)
 	{
-		ReplaceString(line, sizeof(line), "\n", "", false);
+		while (!IsEndOfFile(fileHandle) && ReadFileLine(fileHandle, line, sizeof(line)))
+		{
+			ReplaceString(line, sizeof(line), "\n", "", false);
+			
+			PushArrayString(g_hAllowedArray, line);
+		}
 		
-		PushArrayString(g_hAllowedArray, line);
+		CloseHandle(fileHandle);
 	}
-	
-	CloseHandle(fileHandle);
+	else
+	{
+		LogError("[SM] Warning File: \"configs/sourcesleuth_whitelist.cfg\" missing or inaccessible.");
+		LogError("[SM] Continuing without loading ip address whitelists.");
+	}
 }
