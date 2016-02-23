@@ -1238,7 +1238,8 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 		ResetPack(data);
 		new length = ReadPackCell(data);
 		new type = ReadPackCell(data);
-		decl String:reason[256], String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
+		new String:reason[256];
+		decl String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
 		ReadPackString(data, name, sizeof(name));
 		ReadPackString(data, auth, sizeof(auth));
 		ReadPackString(data, reason, sizeof(reason));
@@ -1252,7 +1253,8 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 
 public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
-	decl String:adminAuth[30], String:targetAuth[30], String:reason[256];
+	decl String:adminAuth[30], String:targetAuth[30];
+	new String:reason[256];
 	
 	ResetPack(data);
 	new adminUserID = ReadPackCell(data);
@@ -1374,7 +1376,7 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 				WritePackString(dataPack, g_sName[target]);
 				WritePackString(dataPack, targetAuth);
 				
-				decl String:unbanReason[sizeof(reason) * 2 + 1];
+				new String:unbanReason[sizeof(reason) * 2 + 1];
 				SQL_EscapeString(g_hDatabase, reason, unbanReason, sizeof(unbanReason));
 				
 				decl String:query[2048];
@@ -1517,7 +1519,7 @@ public Query_ProcessQueue(Handle:owner, Handle:hndl, const String:error[], any:d
 	
 	decl String:auth[64];
 	decl String:name[MAX_NAME_LENGTH];
-	decl String:reason[256];
+	new String:reason[256];
 	decl String:adminAuth[64], String:adminIp[20];
 	decl String:query[4096];
 	
@@ -1529,7 +1531,7 @@ public Query_ProcessQueue(Handle:owner, Handle:hndl, const String:error[], any:d
 		
 		decl String:sAuthEscaped[sizeof(auth) * 2 + 1];
 		decl String:banName[MAX_NAME_LENGTH * 2 + 1];
-		decl String:banReason[sizeof(reason) * 2 + 1];
+		new String:banReason[sizeof(reason) * 2 + 1];
 		decl String:sAdmAuthEscaped[sizeof(adminAuth) * 2 + 1];
 		decl String:sAdmAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
 		
@@ -1626,7 +1628,8 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 			if (NotApplyToThisServer(SQL_FetchInt(hndl, 8)))
 				continue;
 			
-			decl String:sReason[256], String:sAdmName[MAX_NAME_LENGTH], String:sAdmAuth[64];
+			new String:sReason[256];
+			decl String:sAdmName[MAX_NAME_LENGTH], String:sAdmAuth[64];
 			new remaining_time = SQL_FetchInt(hndl, 0);
 			new length = SQL_FetchInt(hndl, 1);
 			new type = SQL_FetchInt(hndl, 2);
@@ -1999,7 +2002,8 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 	PrintToServer("CreateBlock(admin: %d, target: %d, length: %d, type: %d, reason: %s, args: %s)", client, targetId, length, type, sReason, sArgs);
 	#endif
 	
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml, String:target_name[MAX_NAME_LENGTH], String:reason[256];
+	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml, String:target_name[MAX_NAME_LENGTH];
+	new String:reason[256];
 	new bool:skipped = false;
 	
 	// checking args
@@ -2194,7 +2198,8 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 	PrintToServer("ProcessUnBlock(admin: %d, target: %d, type: %d, reason: %s, args: %s)", client, targetId, type, sReason, sArgs);
 	#endif
 	
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml, String:target_name[MAX_NAME_LENGTH], String:reason[256];
+	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml, String:target_name[MAX_NAME_LENGTH];
+	new String:reason[256];
 	
 	if (targetId)
 	{
@@ -2405,7 +2410,8 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 
 stock bool:TempUnBlock(Handle:data)
 {
-	decl String:adminAuth[30], String:targetAuth[30], String:reason[256];
+	decl String:adminAuth[30], String:targetAuth[30];
+	new String:reason[256];
 	ResetPack(data);
 	new adminUserID = ReadPackCell(data);
 	new targetUserID = ReadPackCell(data);
@@ -2507,7 +2513,7 @@ stock InsertTempBlock(length, type, const String:name[], const String:auth[], co
 	LogMessage("Saving punishment for %s into queue", auth);
 	
 	decl String:banName[MAX_NAME_LENGTH * 2 + 1];
-	decl String:banReason[256 * 2 + 1];
+	new String:banReason[256 * 2 + 1];
 	decl String:sAuthEscaped[64 * 2 + 1];
 	decl String:sAdminAuthEscaped[64 * 2 + 1];
 	decl String:sQuery[4096], String:sQueryVal[2048];
@@ -2875,7 +2881,7 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 	{
 		// Accepts length in minutes, writes to db in seconds! In all over places in plugin - length is in minutes.
 		decl String:banName[MAX_NAME_LENGTH * 2 + 1];
-		decl String:banReason[256 * 2 + 1];
+		new String:banReason[256 * 2 + 1];
 		decl String:sAuthidEscaped[64 * 2 + 1];
 		decl String:sAdminAuthIdEscaped[64 * 2 + 1];
 		decl String:sAdminAuthIdYZEscaped[64 * 2 + 1];
@@ -3054,7 +3060,7 @@ public Native_SetClientMute(Handle:hPlugin, numParams)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
 	}
 	
-	decl String:sReason[256];
+	new String:sReason[256];
 	GetNativeString(5, sReason, sizeof(sReason));
 	
 	if (muteState)
@@ -3108,7 +3114,7 @@ public Native_SetClientGag(Handle:hPlugin, numParams)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
 	}
 	
-	decl String:sReason[256];
+	new String:sReason[256];
 	GetNativeString(5, sReason, sizeof(sReason));
 	
 	if (gagState)
