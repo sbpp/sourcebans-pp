@@ -266,7 +266,7 @@ public LoadWhiteList()
 	}
 	else
 	{
-		LogError("[SM] Warning File: \"configs/sourcesleuth_whitelist.cfg\" missing or inaccessible.");
-		LogError("[SM] Continuing without loading ip address whitelists.");
+		LogError("[SM] Error Relating to File: \"configs/sourcesleuth_whitelist.cfg\".");
+		LogError("[SM] File is missing, inaccessible or has incorrect formatting.");
 	}
 }
