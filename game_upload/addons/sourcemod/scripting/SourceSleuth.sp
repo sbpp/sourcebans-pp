@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "(SB++) 1.5.4"
+#define PLUGIN_VERSION "(SB++) 1.5.4.1"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2

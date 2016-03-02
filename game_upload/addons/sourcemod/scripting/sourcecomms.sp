@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "(SB++) 1.5.4"
+#define PLUGIN_VERSION "(SB++) 1.5.4.1"
 #define PREFIX "\x04[SourceComms]\x01 "
 
 #define MAX_TIME_MULTI 30       // maximum mass-target punishment length
@@ -2886,7 +2886,7 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		decl String:sAdminAuthIdEscaped[64 * 2 + 1];
 		decl String:sAdminAuthIdYZEscaped[64 * 2 + 1];
 		decl String:sQuery[4096], String:sQueryAdm[512], String:sQueryVal[1024];
-		decl String:sQueryMute[1024], String:sQueryGag[1024];
+		new String:sQueryMute[1024], String:sQueryGag[1024];
 		
 		// escaping everything
 		SQL_EscapeString(g_hDatabase, sName, banName, sizeof(banName));

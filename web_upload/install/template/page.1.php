@@ -12,31 +12,33 @@ Step 5: Initial Setup<br />
 <div id="submit-introduction">
 
 To use this webpanel software, you are required to read and accept the following license. If you do not agree with the license, then go and make your own ban/admin system.<br /><br />
-An explanation  of this license is available <a href="https://www.gnu.org/licenses/gpl.html" target="_blank">here</a>.
+An explanation  of this license is available <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/" target="_blank">here</a>.
 </div>
 <form action="index.php?p=submit" method="POST" enctype="multipart/form-data">
-<div id="submit-main"><h3>GNU Affero General Public License - Version 3</h3>
+<div id="submit-main"><h3>Creative Commons - Attribution-NonCommercial-ShareAlike 3.0</h3>
 <textarea id="license" cols="105" rows="15" name="license">
 This program is part of SourceBans++.
 
 Copyright © 2014-2016 Sarabveer Singh <me@sarabveer.me>
-  
-SourceBans++ is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published by
-the Free Software Foundation, per version 3 of the License.
 
-SourceBans++ is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-  
-You should have received a copy of the GNU Affero General Public License
-along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
+SourceBans++ is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
-This program incorporates work covered by the following copyright(s): 
+You should have received a copy of the license along with this
+work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+This program is based off work covered by the following copyright(s): 
  SourceBans 1.4.11
  Copyright © 2007-2014 SourceBans Team - Part of GameConnect
- Licensed under GNU GPL version 3, or later.
+ Licensed under CC BY-NC-SA 3.0
  Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
  
  SourceBans TF2 Theme v1.0
