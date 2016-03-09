@@ -32,8 +32,8 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.5.4.1F"
-#define SBR_VERSION "1.5.4.1"
+#define SB_VERSION "1.5.4.2F"
+#define SBR_VERSION "1.5.4.2"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sarabveer.github.io/SourceBans-Fork/updater/updatefile.txt"
