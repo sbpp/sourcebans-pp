@@ -571,7 +571,8 @@ while (!$res->EOF)
 
 				$cdata['comname'] = $commentres->fields['comname'];
 				$cdata['added'] = SBDate($dateformat, $commentres->fields['added']);
-				$cdata['commenttxt'] = str_replace("\n", "<br />", $commentres->fields['commenttxt']);
+				$cdata['commenttxt'] = RemoveCode($commentres->fields['commenttxt']);
+				$cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 				// Parse links and wrap them in a <a href=""></a> tag to be easily clickable
 				$cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
 
