@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@
 //   Page: <http://www.sourcemod.net/>
 //
 // *************************************************************************
-
+ 
 #define USER_STATE_NONE			0
 #define USER_STATE_ADMINS		1
 #define USER_STATE_INADMIN		2
@@ -77,10 +77,10 @@ public SMCResult:ReadUsers_NewSection(Handle:smc, const String:name[], bool:opt_
 }
 
 public SMCResult:ReadUsers_KeyValue(Handle:smc, 
-	const String:key[], 
-	const String:value[], 
-	bool:key_quotes, 
-	bool:value_quotes)
+									const String:key[], 
+									const String:value[], 
+									bool:key_quotes, 
+									bool:value_quotes)
 {
 	if (g_UserState != USER_STATE_INADMIN || g_IgnoreLevel)
 	{
@@ -95,21 +95,21 @@ public SMCResult:ReadUsers_KeyValue(Handle:smc,
 	{
 		strcopy(g_CurIdent, sizeof(g_CurIdent), value);
 	}
-	else if (StrEqual(key, "password", false))
+	else if (StrEqual(key, "password", false)) 
 	{
 		strcopy(g_CurPass, sizeof(g_CurPass), value);
-	}
-	else if (StrEqual(key, "group", false))
+	} 
+	else if (StrEqual(key, "group", false)) 
 	{
 		new GroupId:id = FindAdmGroup(value);
 		if (id == INVALID_GROUP_ID)
 		{
 			ParseError("Unknown group \"%s\"", value);
 		}
-		
+
 		PushArrayCell(g_GroupArray, id);
-	}
-	else if (StrEqual(key, "flags", false))
+	} 
+	else if (StrEqual(key, "flags", false)) 
 	{
 		new len = strlen(value);
 		new AdminFlag:flag;
@@ -125,8 +125,8 @@ public SMCResult:ReadUsers_KeyValue(Handle:smc,
 				g_CurFlags |= FlagToBit(flag);
 			}
 		}
-	}
-	else if (StrEqual(key, "immunity", false))
+	} 
+	else if (StrEqual(key, "immunity", false)) 
 	{
 		g_CurImmunity = StringToInt(value);
 	}
@@ -220,11 +220,11 @@ ReadUsers()
 	InitializeUserParser();
 	
 	BuildPath(Path_SM, g_Filename, sizeof(g_Filename), "configs/sourcebans/sb_admins.cfg");
-	
+
 	/* Set states */
 	InitGlobalStates();
 	g_UserState = USER_STATE_NONE;
-	
+		
 	SMCError err = g_hUserParser.ParseFile(g_Filename);
 	if (err != SMCError_Okay)
 	{

@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -74,10 +74,10 @@ public SMCResult ReadGroups_NewSection(SMCParser smc, const char[] name, bool op
 }
 
 public SMCResult ReadGroups_KeyValue(SMCParser smc, 
-	const char[] key, 
-	const char[] value, 
-	bool key_quotes, 
-	bool value_quotes)
+										const char[] key, 
+										const char[] value, 
+										bool key_quotes, 
+										bool value_quotes)
 {
 	if (g_CurGrp == INVALID_GROUP_ID || g_IgnoreLevel)
 	{
@@ -93,7 +93,7 @@ public SMCResult ReadGroups_KeyValue(SMCParser smc,
 			if (StrEqual(key, "flags", false))
 			{
 				new len = strlen(value);
-				for (new i = 0; i < len; i++)
+				for (new i=0; i<len; i++)
 				{
 					if (!FindFlagByChar(value[i], flag))
 					{
@@ -120,7 +120,7 @@ public SMCResult ReadGroups_KeyValue(SMCParser smc,
 			}
 		}
 	} else if (g_GroupPass == GROUP_PASS_SECOND
-		 && g_GroupState == GROUP_STATE_INGROUP) {
+			   && g_GroupState == GROUP_STATE_INGROUP) {
 		/* Check for immunity again, core should handle double inserts */
 		if (StrEqual(key, "immunity", false))
 		{
@@ -206,7 +206,7 @@ static InternalReadGroups(const String:path[], pass)
 	g_CurGrp = INVALID_GROUP_ID;
 	g_GroupPass = pass;
 	g_NeedReparse = false;
-	
+		
 	SMCError err = g_hGroupParser.ParseFile(path);
 	if (err != SMCError_Okay)
 	{

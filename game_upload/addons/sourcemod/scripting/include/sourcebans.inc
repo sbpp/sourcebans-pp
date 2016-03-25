@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
 //  
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -25,19 +25,19 @@
 // *************************************************************************
 
 #if defined _sourcebans_included
-#endinput
+  #endinput
 #endif
 #define _sourcebans_included
 
 public SharedPlugin:__pl_sourcebans = 
 {
-	name = "SourceBans", 
-	file = "sourcebans.smx", 
-	#if defined REQUIRE_PLUGIN
-	required = 1
-	#else
-	required = 0
-	#endif
+	name = "SourceBans",
+	file = "sourcebans.smx",
+#if defined REQUIRE_PLUGIN
+    required = 1
+#else
+    required = 0
+#endif
 };
 
 #if !defined REQUIRE_PLUGIN
