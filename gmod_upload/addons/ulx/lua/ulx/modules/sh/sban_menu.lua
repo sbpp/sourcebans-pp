@@ -93,3 +93,72 @@ sbanid:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.o
 sbanid:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
 sbanid:defaultAccess( ULib.ACCESS_SUPERADMIN )
 sbanid:help( "Bans steamid." )
+
+
+local CATEGORY_NAME = "Source Comms"
+
+function ulx.cgag( calling_ply, target_ply, minutes, reason )
+	ULib.tsayError( calling_ply, "This feature isn't complete yet!", true )
+	return
+end
+local cgag = ulx.command( CATEGORY_NAME, "ulx cgag", ulx.cgag, "!cgag" )
+cgag:addParam{ type=ULib.cmds.PlayerArg }
+cgag:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+cgag:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+cgag:defaultAccess( ULib.ACCESS_ADMIN )
+cgag:help( "Gags target." )
+
+function ulx.cgagid( calling_ply, target_ply, minutes, reason )
+	ULib.tsayError( calling_ply, "This feature isn't complete yet!", true )
+	return
+end
+local cgagid = ulx.command( CATEGORY_NAME, "ulx cgagid", ulx.cgagid, "!cgagid" )
+cgagid:addParam{ type=ULib.cmds.StringArg, hint="steamid" }
+cgagid:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+cgagid:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+cgagid:defaultAccess( ULib.ACCESS_ADMIN )
+cgagid:help( "Gags target." )
+
+function ulx.cmute( calling_ply, target_ply, minutes, reason )
+	ULib.tsayError( calling_ply, "This feature isn't complete yet!", true )
+	return
+end
+local cmute = ulx.command( CATEGORY_NAME, "ulx cmute", ulx.cmute, "!cmute" )
+cmute:addParam{ type=ULib.cmds.PlayerArg }
+cmute:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+cmute:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+cmute:defaultAccess( ULib.ACCESS_ADMIN )
+cmute:help( "Mutes target." )
+
+function ulx.cmuteid( calling_ply, target_ply, minutes, reason )
+	ULib.tsayError( calling_ply, "This feature isn't complete yet!", true )
+	return
+end
+local cmuteid = ulx.command( CATEGORY_NAME, "ulx cmuteid", ulx.cmuteid, "!cmuteid" )
+cmuteid:addParam{ type=ULib.cmds.StringArg, hint="steamid" }
+cmuteid:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+cmuteid:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+cmuteid:defaultAccess( ULib.ACCESS_ADMIN )
+cmuteid:help( "Mutes target." )
+
+function ulx.csilence( calling_ply, target_ply, minutes, reason )
+	ULib.tsayError( calling_ply, "This feature isn't complete yet!", true )
+	return
+end
+local csilence = ulx.command( CATEGORY_NAME, "ulx csilence", ulx.csilence, "!csilence" )
+csilence:addParam{ type=ULib.cmds.PlayerArg }
+csilence:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+csilence:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+csilence:defaultAccess( ULib.ACCESS_ADMIN )
+csilence:help( "Silences target." )
+
+function ulx.csilenceid( calling_ply, target_ply, minutes, reason )
+	ULib.tsayError( calling_ply, "This feature isn't complete yet!", true )
+	return
+end
+local csilenceid = ulx.command( CATEGORY_NAME, "ulx csilenceid", ulx.csilenceid, "!csilenceid" )
+csilenceid:addParam{ type=ULib.cmds.StringArg, hint="steamid" }
+csilenceid:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+csilenceid:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+csilenceid:defaultAccess( ULib.ACCESS_ADMIN )
+csilenceid:help( "Silences target." )
