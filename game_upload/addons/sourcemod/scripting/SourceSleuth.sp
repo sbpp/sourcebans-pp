@@ -184,6 +184,7 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 	if (hndl == INVALID_HANDLE)
 	{
 		LogError("SourceSleuth: Database query error: %s", error);
+		return;
 	}
 	
 	if (SQL_FetchRow(hndl))
