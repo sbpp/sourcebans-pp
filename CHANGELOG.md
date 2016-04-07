@@ -10,6 +10,25 @@ Legend:
 ? = Other stuff
 ```
 
+(07/04/16): Version 1.5.4.4
+-----------------------
+01. ! Fix Memory Leak in SourceSleuth Plugin
+02. ? Optimized and updated IpToCountry.csv
+
+(24/03/16): Version 1.5.4.3
+-----------------------
+01. ! Downgrade plugin to 1.5.3
+02. + Add ULX Module for GMOD (Not Maintained by Me)
+
+(09/03/16): Version 1.5.4.2
+-----------------------
+01. ! Fix XSS Vulnerability in SourceComms Page
+
+(01/03/16): Version 1.5.4.1
+-----------------------
+01. ! Fix Ban/Comm Reason Issue in Plugin
+02. ? CC-BY-NC-SA-3.0
+
 (14/02/16): Version 1.5.4
 -----------------------
 01. * Added Steam3 ID to Ban and Comm list
