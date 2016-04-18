@@ -10,6 +10,11 @@ Legend:
 ? = Other stuff
 ```
 
+(18/04/16): Version 1.5.4.5
+-----------------------
+01. ! Fix Variuous Bugs in the Plugins EXCEPT SourceSleuth
+02. ? Updated ADOdb and LightOpenID Library
+
 (07/04/16): Version 1.5.4.4
 -----------------------
 01. ! Fix Memory Leak in SourceSleuth Plugin
