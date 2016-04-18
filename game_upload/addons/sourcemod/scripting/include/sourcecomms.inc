@@ -1,21 +1,21 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2015 Sarabveer Singh <sarabveer@sarabveer.me>
-//  
+//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
-//  
+//
 //  SourceBans++ is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file incorporates work covered by the following copyright(s): 
+//  This file incorporates work covered by the following copyright(s):
 //
 //   SourceComms 0.9.266
 //   Copyright (C) 2013-2014 Alexandr Duplishchev
@@ -25,16 +25,16 @@
 // *************************************************************************
 
 #if defined _sourcecomms_included
-  #endinput
+#endinput
 #endif
 #define _sourcecomms_included
 
 /* Punishments types */
-enum bType{
-    bNot = 0,   // Player chat or voice is not blocked
-    bSess,      // ... blocked for player session (until reconnect)
-    bTime,      // ... blocked for some time
-    bPerm       // ... permanently blocked
+enum bType {
+	bNot = 0,  // Player chat or voice is not blocked
+	bSess,  // ... blocked for player session (until reconnect)
+	bTime,  // ... blocked for some time
+	bPerm // ... permanently blocked
 }
 
 /**
@@ -82,14 +82,14 @@ native bType:SourceComms_GetClientMuteType(client);
  */
 native bType:SourceComms_GetClientGagType(client);
 
-public SharedPlugin:__pl_sourcecomms =
+public SharedPlugin:__pl_sourcecomms = 
 {
-	name = "sourcecomms",
-	file = "sourcecomms.smx",
+	name = "sourcecomms", 
+	file = "sourcecomms.smx", 
 	#if defined REQUIRE_PLUGIN
-		required = 1
+	required = 1
 	#else
-		required = 0
+	required = 0
 	#endif
 };
 
@@ -99,5 +99,5 @@ public __pl_sourcecomms_SetNTVOptional()
 	MarkNativeAsOptional("SourceComms_SetClientGag");
 	MarkNativeAsOptional("SourceComms_GetClientMuteType");
 	MarkNativeAsOptional("SourceComms_GetClientGagType");
-
-}
+	
+} 

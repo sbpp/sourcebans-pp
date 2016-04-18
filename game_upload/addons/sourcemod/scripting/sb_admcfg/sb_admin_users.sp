@@ -23,7 +23,8 @@
 //   Page: <http://www.sourcemod.net/>
 //
 // *************************************************************************
- 
+
+#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
 #define USER_STATE_NONE			0
 #define USER_STATE_ADMINS		1
 #define USER_STATE_INADMIN		2
@@ -48,7 +49,7 @@ public SMCResult:ReadUsers_NewSection(Handle:smc, const String:name[], bool:opt_
 	
 	if (g_UserState == USER_STATE_NONE)
 	{
-		if (StrEqual(name, "Admins", false))
+		if (StrEqual(name, "Admins"))
 		{
 			g_UserState = USER_STATE_ADMINS;
 		}
@@ -77,39 +78,39 @@ public SMCResult:ReadUsers_NewSection(Handle:smc, const String:name[], bool:opt_
 }
 
 public SMCResult:ReadUsers_KeyValue(Handle:smc, 
-									const String:key[], 
-									const String:value[], 
-									bool:key_quotes, 
-									bool:value_quotes)
+	const String:key[], 
+	const String:value[], 
+	bool:key_quotes, 
+	bool:value_quotes)
 {
 	if (g_UserState != USER_STATE_INADMIN || g_IgnoreLevel)
 	{
 		return SMCParse_Continue;
 	}
 	
-	if (StrEqual(key, "auth", false))
+	if (StrEqual(key, "auth"))
 	{
 		strcopy(g_CurAuth, sizeof(g_CurAuth), value);
 	}
-	else if (StrEqual(key, "identity", false))
+	else if (StrEqual(key, "identity"))
 	{
 		strcopy(g_CurIdent, sizeof(g_CurIdent), value);
 	}
-	else if (StrEqual(key, "password", false)) 
+	else if (StrEqual(key, "password"))
 	{
 		strcopy(g_CurPass, sizeof(g_CurPass), value);
-	} 
-	else if (StrEqual(key, "group", false)) 
+	}
+	else if (StrEqual(key, "group"))
 	{
 		new GroupId:id = FindAdmGroup(value);
 		if (id == INVALID_GROUP_ID)
 		{
 			ParseError("Unknown group \"%s\"", value);
 		}
-
+		
 		PushArrayCell(g_GroupArray, id);
-	} 
-	else if (StrEqual(key, "flags", false)) 
+	}
+	else if (StrEqual(key, "flags"))
 	{
 		new len = strlen(value);
 		new AdminFlag:flag;
@@ -125,8 +126,8 @@ public SMCResult:ReadUsers_KeyValue(Handle:smc,
 				g_CurFlags |= FlagToBit(flag);
 			}
 		}
-	} 
-	else if (StrEqual(key, "immunity", false)) 
+	}
+	else if (StrEqual(key, "immunity"))
 	{
 		g_CurImmunity = StringToInt(value);
 	}
@@ -220,11 +221,11 @@ ReadUsers()
 	InitializeUserParser();
 	
 	BuildPath(Path_SM, g_Filename, sizeof(g_Filename), "configs/sourcebans/sb_admins.cfg");
-
+	
 	/* Set states */
 	InitGlobalStates();
 	g_UserState = USER_STATE_NONE;
-		
+	
 	SMCError err = g_hUserParser.ParseFile(g_Filename);
 	if (err != SMCError_Okay)
 	{
@@ -239,3 +240,224 @@ ReadUsers()
 		}
 	}
 }
+#else
+enum UserState
+{
+	UserState_None, 
+	UserState_Admins, 
+	UserState_InAdmin, 
+}
+
+static SMCParser g_hUserParser;
+static UserState g_UserState = UserState_None;
+static char g_CurAuth[64];
+static char g_CurIdent[64];
+static char g_CurName[64];
+static char g_CurPass[64];
+static ArrayList g_GroupArray;
+static int g_CurFlags;
+static int g_CurImmunity;
+
+public SMCResult ReadUsers_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
+{
+	if (g_IgnoreLevel)
+	{
+		g_IgnoreLevel++;
+		return SMCParse_Continue;
+	}
+	
+	if (g_UserState == UserState_None)
+	{
+		if (StrEqual(name, "Admins"))
+		{
+			g_UserState = UserState_Admins;
+		}
+		else
+		{
+			g_IgnoreLevel++;
+		}
+	}
+	else if (g_UserState == UserState_Admins)
+	{
+		g_UserState = UserState_InAdmin;
+		strcopy(g_CurName, sizeof(g_CurName), name);
+		g_CurAuth[0] = '\0';
+		g_CurIdent[0] = '\0';
+		g_CurPass[0] = '\0';
+		g_GroupArray.Clear();
+		g_CurFlags = 0;
+		g_CurImmunity = 0;
+	}
+	else
+	{
+		g_IgnoreLevel++;
+	}
+	
+	return SMCParse_Continue;
+}
+
+public SMCResult ReadUsers_KeyValue(SMCParser smc, 
+	const char[] key, 
+	const char[] value, 
+	bool key_quotes, 
+	bool value_quotes)
+{
+	if (g_UserState != UserState_InAdmin || g_IgnoreLevel)
+	{
+		return SMCParse_Continue;
+	}
+	
+	if (StrEqual(key, "auth"))
+	{
+		strcopy(g_CurAuth, sizeof(g_CurAuth), value);
+	}
+	else if (StrEqual(key, "identity"))
+	{
+		strcopy(g_CurIdent, sizeof(g_CurIdent), value);
+	}
+	else if (StrEqual(key, "password"))
+	{
+		strcopy(g_CurPass, sizeof(g_CurPass), value);
+	}
+	else if (StrEqual(key, "group"))
+	{
+		GroupId id = FindAdmGroup(value);
+		if (id == INVALID_GROUP_ID)
+		{
+			ParseError("Unknown group \"%s\"", value);
+		}
+		
+		g_GroupArray.Push(id);
+	}
+	else if (StrEqual(key, "flags"))
+	{
+		int len = strlen(value);
+		AdminFlag flag;
+		
+		for (int i = 0; i < len; i++)
+		{
+			if (!FindFlagByChar(value[i], flag))
+			{
+				ParseError("Invalid flag detected: %c", value[i]);
+			}
+			else
+			{
+				g_CurFlags |= FlagToBit(flag);
+			}
+		}
+	}
+	else if (StrEqual(key, "immunity"))
+	{
+		g_CurImmunity = StringToInt(value);
+	}
+	
+	return SMCParse_Continue;
+}
+
+public SMCResult ReadUsers_EndSection(SMCParser smc)
+{
+	if (g_IgnoreLevel)
+	{
+		g_IgnoreLevel--;
+		return SMCParse_Continue;
+	}
+	
+	if (g_UserState == UserState_InAdmin)
+	{
+		/* Dump this user to memory */
+		if (g_CurIdent[0] != '\0' && g_CurAuth[0] != '\0')
+		{
+			AdminFlag flags[26];
+			AdminId id;
+			int i, num_groups, num_flags;
+			
+			if ((id = FindAdminByIdentity(g_CurAuth, g_CurIdent)) == INVALID_ADMIN_ID)
+			{
+				id = CreateAdmin(g_CurName);
+				if (!BindAdminIdentity(id, g_CurAuth, g_CurIdent))
+				{
+					RemoveAdmin(id);
+					ParseError("Failed to bind auth \"%s\" to identity \"%s\"", g_CurAuth, g_CurIdent);
+					return SMCParse_Continue;
+				}
+			}
+			
+			num_groups = g_GroupArray.Length;
+			for (i = 0; i < num_groups; i++)
+			{
+				AdminInheritGroup(id, g_GroupArray.Get(i));
+			}
+			
+			SetAdminPassword(id, g_CurPass);
+			if (GetAdminImmunityLevel(id) < g_CurImmunity)
+			{
+				SetAdminImmunityLevel(id, g_CurImmunity);
+			}
+			
+			num_flags = FlagBitsToArray(g_CurFlags, flags, sizeof(flags));
+			for (i = 0; i < num_flags; i++)
+			{
+				SetAdminFlag(id, flags[i], true);
+			}
+		}
+		else
+		{
+			ParseError("Failed to create admin: did you forget either the auth or identity properties?");
+		}
+		
+		g_UserState = UserState_Admins;
+	}
+	else if (g_UserState == UserState_Admins)
+	{
+		g_UserState = UserState_None;
+	}
+	
+	return SMCParse_Continue;
+}
+
+public SMCResult ReadUsers_CurrentLine(SMCParser smc, const char[] line, int lineno)
+{
+	g_CurrentLine = lineno;
+	
+	return SMCParse_Continue;
+}
+
+static void InitializeUserParser()
+{
+	if (!g_hUserParser)
+	{
+		g_hUserParser = new SMCParser();
+		g_hUserParser.OnEnterSection = ReadUsers_NewSection;
+		g_hUserParser.OnKeyValue = ReadUsers_KeyValue;
+		g_hUserParser.OnLeaveSection = ReadUsers_EndSection;
+		g_hUserParser.OnRawLine = ReadUsers_CurrentLine;
+		
+		g_GroupArray = CreateArray();
+	}
+}
+
+void ReadUsers()
+{
+	InitializeUserParser();
+	
+	BuildPath(Path_SM, g_Filename, sizeof(g_Filename), "configs/sourcebans/sb_admins.cfg");
+	
+	/* Set states */
+	InitGlobalStates();
+	g_UserState = UserState_None;
+	
+	SMCError err = g_hUserParser.ParseFile(g_Filename);
+	if (err != SMCError_Okay)
+	{
+		char buffer[64];
+		if (g_hUserParser.GetErrorString(err, buffer, sizeof(buffer)))
+		{
+			ParseError("%s", buffer);
+		}
+		else
+		{
+			ParseError("Fatal Parse Error");
+		}
+	}
+}
+#endif

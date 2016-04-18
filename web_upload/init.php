@@ -1,17 +1,29 @@
 <?php
-/**
- * =============================================================================
- * This file will setup our defs, and configure php
- * 
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SourceBans (C)2007 SteamFriends.com.  All rights reserved.
- * @package SourceBans
- * @link http://www.sourcebans.net
- * 
- * @version $Id: init.php 271 2009-06-24 18:48:42Z peace-maker $
- * =============================================================================
- */
+// *************************************************************************
+//  This file is part of SourceBans++.
+//
+//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//
+//  SourceBans++ is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, per version 3 of the License.
+//
+//  SourceBans++ is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
+//
+//  This file is based off work covered by the following copyright(s):  
+//
+//   SourceBans 1.4.11
+//   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
+//   Licensed under GNU GPL version 3, or later.
+//   Page: <http://www.sourcebans.net/> - <https://github.com/GameConnect/sourcebansv1>
+//
+// *************************************************************************
 
 // ---------------------------------------------------
 //  Directories
@@ -83,8 +95,8 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 // ---------------------------------------------------
 #define('SB_GIT', true);
 if(!defined('SB_VERSION')){
-	define('SB_VERSION', '1.5.4.4');
-	define('SB_GITRev', '$Git: 345 $');
+	define('SB_VERSION', '1.5.4.5');
+	define('SB_GITRev', '$Git: 346 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');

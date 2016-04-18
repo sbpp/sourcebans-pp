@@ -2,30 +2,31 @@
 //  This file is part of SourceBans++.
 //
 //  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
-//  
+//
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
-//  
+//
 //  SourceBans++ is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file incorporates work covered by the following copyright(s):
+//  This file is based off work covered by the following copyright(s):  
 //
 //   SourceBans Checker 1.0.2
-//   Copyright (C) 2010-2013 Nicholas Hastings 
+//   Copyright (C) 2010-2013 Nicholas Hastings
 //   Licensed under GNU GPL version 3, or later.
 //   Page: <https://forums.alliedmods.net/showthread.php?p=1288490>
 //
 // *************************************************************************
+
 #include <sourcemod>
 
-#define VERSION "(SB++) 1.5.4.4"
+#define VERSION "(SB++) 1.5.4.5"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define INVALID_TARGET -1
 
@@ -33,13 +34,15 @@ new String:g_DatabasePrefix[10] = "sb";
 new Handle:g_ConfigParser;
 new Handle:g_DB;
 
+ConVar ShortMessage;
+
 public Plugin:myinfo = 
 {
-	name = "SourceBans Checker",
-	author = "psychonic, Ca$h Munny, Sarabveer(VEER™)",
-	description = "Notifies admins of prior bans from Sourcebans upon player connect.",
-	version = VERSION,
-	url = "http://www.nicholashastings.com"
+	name = "SourceBans Checker", 
+	author = "psychonic, Ca$h Munny, Sarabveer(VEER™)", 
+	description = "Notifies admins of prior bans from Sourcebans upon player connect.", 
+	version = VERSION, 
+	url = "https://sarabveer.github.io/SourceBans-Fork/"
 };
 
 public OnPluginStart()
@@ -47,7 +50,10 @@ public OnPluginStart()
 	LoadTranslations("common.phrases");
 	
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
-	RegAdminCmd("sm_listsbbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
+	
+	ShortMessage = CreateConVar("sb_short_message", "0", "Use shorter message for displying prev bans", _, true, 0.0, true, 1.0);
+	
+	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
 	
 	SQL_TConnect(OnDatabaseConnected, "sourcebans");
@@ -78,7 +84,7 @@ public OnClientAuthorized(client, const String:auth[])
 		return;
 	
 	/* Do not check bots nor check player with lan steamid. */
-	if(auth[0] == 'B' || auth[9] == 'L')
+	if (auth[0] == 'B' || auth[9] == 'L')
 		return;
 	
 	decl String:query[512], String:ip[30];
@@ -94,11 +100,20 @@ public OnConnectBanCheck(Handle:owner, Handle:hndl, const String:error[], any:us
 	
 	if (!client || hndl == INVALID_HANDLE || !SQL_FetchRow(hndl))
 		return;
-		
+	
 	new bancount = SQL_FetchInt(hndl, 0);
 	if (bancount > 0)
 	{
-		PrintToBanAdmins("\x04[SourceBans]\x01 Warning: Player \"%N\" has %d previous SB ban%s on record.", client, bancount, ((bancount>0)?"s":""));
+		if (ShortMessage.BoolValue)
+		{
+			PrintToBanAdmins("\x04[SB]\x01Player \"%N\" has %d previous ban%s.", 
+				client, bancount, ((bancount > 0) ? "s":""));
+		}
+		else
+		{
+			PrintToBanAdmins("\x04[SourceBans]\x01 Warning: Player \"%N\" has %d previous ban%s on record.", 
+				client, bancount, ((bancount > 0) ? "s":""));
+		}
 	}
 }
 
@@ -127,7 +142,7 @@ public Action:OnListSourceBansCmd(client, args)
 	
 	decl String:auth[32];
 	if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth))
-		|| auth[0] == 'B' || auth[9] == 'L')
+		 || auth[0] == 'B' || auth[9] == 'L')
 	{
 		ReplyToCommand(client, "Error: Could not retrieve %N's steam id.", target);
 		return Plugin_Handled;
@@ -172,7 +187,7 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	
 	if (hndl == INVALID_HANDLE)
 	{
-		PrintListResponse(clientuid, client, "[SourceBans] DB error while retrieving bans for %s:\n%s", targetName, error);		
+		PrintListResponse(clientuid, client, "[SourceBans] DB error while retrieving bans for %s:\n%s", targetName, error);
 		return;
 	}
 	
@@ -188,10 +203,10 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 	while (SQL_FetchRow(hndl))
 	{
 		new String:createddate[11] = "<Unknown> ";
-		new String:bannedby[11]    = "<Unknown> ";
-		new String:lenstring[11]   = "N/A       ";
-		new String:enddate[11]     = "N/A       ";
-		new String:reason[28];
+		new String:bannedby[11] = "<Unknown> ";
+		new String:lenstring[11] = "N/A       ";
+		new String:enddate[11] = "N/A       ";
+		decl String:reason[28];
 		new String:RemoveType[2] = " ";
 		
 		if (!SQL_IsFieldNull(hndl, 0))
@@ -204,15 +219,15 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 			new size_bannedby = sizeof(bannedby);
 			SQL_FetchString(hndl, 1, bannedby, size_bannedby);
 			new len = SQL_FetchSize(hndl, 1);
-			if (len > size_bannedby-1)
+			if (len > size_bannedby - 1)
 			{
-				reason[size_bannedby-4] = '.';
-				reason[size_bannedby-3] = '.';
-				reason[size_bannedby-2] = '.';
+				reason[size_bannedby - 4] = '.';
+				reason[size_bannedby - 3] = '.';
+				reason[size_bannedby - 2] = '.';
 			}
 			else
 			{
-				for (new i = len; i < size_bannedby-1; i++)
+				for (new i = len; i < size_bannedby - 1; i++)
 				{
 					bannedby[i] = ' ';
 				}
@@ -229,7 +244,7 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		else
 		{
 			new len = IntToString(length, lenstring, size_lenstring);
-			if (len < size_lenstring -1)
+			if (len < size_lenstring - 1)
 			{
 				// change the '\0' to a ' '. the original \0 at the end will still be there
 				lenstring[len] = ' ';
@@ -245,15 +260,15 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		new reason_size = sizeof(reason);
 		SQL_FetchString(hndl, 4, reason, reason_size);
 		new len = SQL_FetchSize(hndl, 4);
-		if (len > reason_size-1)
+		if (len > reason_size - 1)
 		{
-			reason[reason_size-4] = '.';
-			reason[reason_size-3] = '.';
-			reason[reason_size-2] = '.';
+			reason[reason_size - 4] = '.';
+			reason[reason_size - 3] = '.';
+			reason[reason_size - 2] = '.';
 		}
 		else
 		{
-			for (new i = len; i < reason_size-1; i++)
+			for (new i = len; i < reason_size - 1; i++)
 			{
 				reason[i] = ' ';
 			}
@@ -291,7 +306,7 @@ PrintToBanAdmins(const String:format[], any:...)
 	for (new i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i)
-			&& CheckCommandAccess(i, "sm_listsourcebans", ADMFLAG_BAN)
+			 && CheckCommandAccess(i, "sm_listsourcebans", ADMFLAG_BAN)
 			)
 		{
 			PrintToChat(i, "%s", msg);
@@ -302,16 +317,16 @@ PrintToBanAdmins(const String:format[], any:...)
 stock ReadConfig()
 {
 	InitializeConfigParser();
-
+	
 	if (g_ConfigParser == INVALID_HANDLE)
 	{
 		return;
 	}
-
+	
 	decl String:ConfigFile[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans/sourcebans.cfg");
-
-	if(FileExists(ConfigFile))
+	
+	if (FileExists(ConfigFile))
 	{
 		InternalReadConfig(ConfigFile);
 	}
@@ -335,7 +350,7 @@ static InitializeConfigParser()
 static InternalReadConfig(const String:path[])
 {
 	new SMCError:err = SMC_ParseFile(g_ConfigParser, path);
-
+	
 	if (err != SMCError_Okay)
 	{
 		decl String:buffer[64];
@@ -350,10 +365,10 @@ public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt
 
 public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const String:value[], bool:key_quotes, bool:value_quotes)
 {
-	if (strcmp("DatabasePrefix", key, false) == 0) 
+	if (strcmp("DatabasePrefix", key, false) == 0)
 	{
 		strcopy(g_DatabasePrefix, sizeof(g_DatabasePrefix), value);
-
+		
 		if (g_DatabasePrefix[0] == '\0')
 		{
 			g_DatabasePrefix = "sb";
@@ -366,4 +381,4 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 public SMCResult:ReadConfig_EndSection(Handle:smc)
 {
 	return SMCParse_Continue;
-}
+} 

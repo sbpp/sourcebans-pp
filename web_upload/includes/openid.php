@@ -4,7 +4,7 @@
  * 
  * It requires PHP >= 5.1.2 with cURL or HTTP/HTTPS stream wrappers enabled.
  *
- * @version     v1.2.0 (2014-01-14)
+ * @version     v1.3.1 (2016-03-04)
  * @link        https://code.google.com/p/lightopenid/          Project URL
  * @link        https://github.com/iignatov/LightOpenID         GitHub Repo
  * @author      Mewp <mewp151 at gmail dot com>
@@ -21,7 +21,9 @@ class LightOpenID
          , $cainfo = null
          , $cnmatch = null
          , $data
-         , $oauth = array();
+         , $oauth = array()
+         , $curl_time_out = 30          // in seconds
+         , $curl_connect_time_out = 30; // in seconds
     private $identity, $claimed_id;
     protected $server, $version, $trustRoot, $aliases, $identifier_select = false
             , $ax = false, $sreg = false, $setup_url = null, $headers = array()
@@ -176,8 +178,10 @@ class LightOpenID
             $use_secure_protocol = ($_SERVER['HTTPS'] != 'off');
         } else if (isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
             $use_secure_protocol = ($_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https');
+        } else if (isset($_SERVER['HTTP__WSSC'])) {
+            $use_secure_protocol = ($_SERVER['HTTP__WSSC'] == 'https');
         } else {
-            $use_secure_protocol = false;
+                $use_secure_protocol = false;
         }
         
         return $use_secure_protocol ? 'https://' : 'http://';
@@ -198,6 +202,9 @@ class LightOpenID
         } else {
             curl_setopt($curl, CURLOPT_HTTPHEADER, array('Accept: application/xrds+xml, */*'));
         }
+        
+        curl_setopt($curl, CURLOPT_TIMEOUT, $this->curl_time_out); // defaults to infinite
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT , $this->curl_connect_time_out); // defaults to 300s
         
         if (!empty($this->proxy)) {
             curl_setopt($curl, CURLOPT_PROXY, $this->proxy['host']);
@@ -676,7 +683,13 @@ class LightOpenID
         # Apparently, some providers return XRDS documents as text/html.
         # While it is against the spec, allowing this here shouldn't break
         # compatibility with anything.
-        $allowed_types = array('application/xrds+xml', 'text/html', 'text/xml');
+        $allowed_types = array('application/xrds+xml', 'text/xml');
+        
+        # Only allow text/html content type for the Yahoo logins, since
+        # it might cause an endless redirection for the other providers.
+        if ($this->get_provider_name($this->claimed_id) == 'yahoo') {
+            $allowed_types[] = 'text/html';
+        }
         
         foreach ($allowed_types as $type) {
             if (strpos($content_type, $type) !== false) {
@@ -686,12 +699,29 @@ class LightOpenID
         
         return false;
     }
+    
+    protected function get_provider_name($provider_url) {
+    	$result = '';
+    	
+    	if (!empty($provider_url)) {
+    		$tokens = array_reverse(
+    			explode('.', parse_url($provider_url, PHP_URL_HOST))
+    		);
+    		$result = strtolower(
+    			(count($tokens) > 1 && strlen($tokens[1]) > 3)
+    				? $tokens[1]
+    				: (count($tokens) > 2 ? $tokens[2] : '')
+    		);
+    	}
+    	
+    	return $result;
+    }
 
     protected function sregParams()
     {
         $params = array();
         # We always use SREG 1.1, even if the server is advertising only support for 1.0.
-        # That's because it's fully backwards compatibile with 1.0, and some providers
+        # That's because it's fully backwards compatible with 1.0, and some providers
         # advertise 1.0 even if they accept only 1.1. One such provider is myopenid.com
         $params['openid.ns.sreg'] = 'http://openid.net/extensions/sreg/1.1';
         if ($this->required) {
@@ -741,7 +771,7 @@ class LightOpenID
                 $params['openid.ax.count.' . $alias] = $count;
             }
 
-            # Don't send empty ax.requied and ax.if_available.
+            # Don't send empty ax.required and ax.if_available.
             # Google and possibly other providers refuse to support ax when one of these is empty.
             if($required) {
                 $params['openid.ax.required'] = implode(',', $required);
@@ -874,7 +904,7 @@ class LightOpenID
 
         if ($this->data['openid_return_to'] != $this->returnUrl) {
             # The return_to url must match the url of current request.
-            # I'm assuing that noone will set the returnUrl to something that doesn't make sense.
+            # I'm assuming that no one will set the returnUrl to something that doesn't make sense.
             return false;
         }
 
@@ -883,7 +913,7 @@ class LightOpenID
         foreach (explode(',', $this->data['openid_signed']) as $item) {
             # Checking whether magic_quotes_gpc is turned on, because
             # the function may fail if it is. For example, when fetching
-            # AX namePerson, it might containg an apostrophe, which will be escaped.
+            # AX namePerson, it might contain an apostrophe, which will be escaped.
             # In such case, validation would fail, since we'd send different data than OP
             # wants to verify. stripslashes() should solve that problem, but we can't
             # use it when magic_quotes is off.
@@ -965,7 +995,7 @@ class LightOpenID
     }
 
     /**
-     * Gets AX/SREG attributes provided by OP. should be used only after successful validaton.
+     * Gets AX/SREG attributes provided by OP. should be used only after successful validation.
      * Note that it does not guarantee that any of the required/optional parameters will be present,
      * or that there will be no other attributes besides those specified.
      * In other words. OP may provide whatever information it wants to.

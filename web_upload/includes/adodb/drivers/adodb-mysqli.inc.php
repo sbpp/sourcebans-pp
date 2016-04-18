@@ -1,6 +1,6 @@
 <?php
 /*
-@version   v5.20.3  01-Jan-2016
+@version   v5.20.4  30-Mar-2016
 @copyright (c) 2000-2013 John Lim (jlim#natsoft.com). All rights reserved.
 @copyright (c) 2014      Damien Regad, Mark Newnham and the ADOdb community
   Released under both BSD license and Lesser GPL library license.
@@ -118,7 +118,8 @@ class ADODB_mysqli extends ADOConnection {
 					$argUsername,
 					$argPassword,
 					$argDatabasename,
-					$this->port,
+					# PHP7 compat: port must be int. Use default port if cast yields zero
+					(int)$this->port != 0 ? (int)$this->port : 3306,
 					$this->socket,
 					$this->clientFlags);
 
@@ -1059,7 +1060,7 @@ class ADORecordSet_mysqli extends ADORecordSet{
 			}
 		}
 
-		if($this->_queryID) {
+		if($this->_queryID instanceof mysqli_result) {
 			mysqli_free_result($this->_queryID);
 		}
 		$this->_queryID = false;
