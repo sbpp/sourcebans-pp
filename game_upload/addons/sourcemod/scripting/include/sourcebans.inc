@@ -29,10 +29,10 @@
 #endif
 #define _sourcebans_included
 
-public SharedPlugin:__pl_sourcebans = 
+public SharedPlugin:__pl_sourcebans =
 {
-	name = "SourceBans", 
-	file = "sourcebans.smx", 
+	name = "sourcebans", 
+	file = "sourcebans.smx",
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else
