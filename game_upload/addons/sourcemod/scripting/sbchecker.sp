@@ -26,7 +26,7 @@
 
 #include <sourcemod>
 
-#define VERSION "(SB++) 1.5.4.6"
+#define VERSION "(SB++) 1.5.5-dev"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define INVALID_TARGET -1
 

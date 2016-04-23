@@ -30,10 +30,10 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
-#tryinclude <updater>
+#include <updater>
 
-#define SB_VERSION "1.5.4.6F"
-#define SBR_VERSION "1.5.4.6"
+#define SB_VERSION "1.5.5F-dev"
+#define SBR_VERSION "1.5.5-dev"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sarabveer.github.io/SourceBans-Fork/updater/updatefile.txt"
@@ -225,16 +225,13 @@ public OnPluginStart()
 	{
 		AccountForLateLoading();
 	}
-	
-	#if defined _updater_included
+
 	if (LibraryExists("updater"))
 	{
 		Updater_AddPlugin(UPDATE_URL);
 	}
-	#endif
 }
 
-#if defined _updater_included
 public OnLibraryAdded(const String:name[]) {
 	if (StrEqual(name, "updater")) {
 		Updater_AddPlugin(UPDATE_URL);
@@ -244,7 +241,6 @@ public OnLibraryAdded(const String:name[]) {
 public Updater_OnPluginUpdated() {
 	ReloadPlugin();
 }
-#endif
 
 public OnAllPluginsLoaded()
 {

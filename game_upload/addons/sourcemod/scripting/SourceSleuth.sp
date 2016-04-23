@@ -24,14 +24,12 @@
 //
 // *************************************************************************
 
-/* !SOMEONE PLEASE FIX THIS BROKEN ASS PLUGIN! */
-
 #pragma semicolon 1
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "(SB++) 1.5.4.6"
+#define PLUGIN_VERSION "(SB++) 1.5.5-dev"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2
