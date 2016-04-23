@@ -31,4 +31,4 @@ before_script:
   - chmod +x spcomp
 
 script:
-  - ./compile.sh sourcebans.sp sb_admcfg.sp sourcecomms.sp sbchecker.sp SourceSleuth.sp
+  - ./compile.sh sourcebans.sp sb_admcfg.sp sourcecomms.sp sbchecker.sp sourcesleuth.sp
