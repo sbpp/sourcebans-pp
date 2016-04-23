@@ -191,34 +191,29 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 	
 	if (SQL_FetchRow(hndl))
 	{
-		new TotalBans = SQL_GetRowCount(hndl);
-		
-		if (TotalBans > g_cVar_bansAllowed.IntValue)
+		// if the total bans is greater than the allowed bans
+		if (SQL_GetRowCount(hndl) > g_cVar_bansAllowed.IntValue)
 		{
 			switch (g_cVar_actions.IntValue)
 			{
 				case LENGTH_ORIGINAL:
 				{
-					new length = SQL_FetchInt(hndl, 6);
-					new time = length * 60;
-					
-					BanPlayer(client, time);
+					//fetch the ban length integer is minutes
+					//convert it seconds and ban the player
+					BanPlayer(client, SQL_FetchInt(hndl, 6) * 60);
 				}
 				case LENGTH_CUSTOM:
 				{
-					new time = g_cVar_banduration.IntValue;
-					BanPlayer(client, time);
+					//g_cVar_banduration is the custum ban time
+					BanPlayer(client, g_cVar_banduration.IntValue);
 				}
 				case LENGTH_DOUBLE:
 				{
 					new length = SQL_FetchInt(hndl, 6);
 					
-					new time = 0;
-					
-					if (length != 0)
-					{
-						time = length / 60 * 2;
-					}
+					// if the ban length equals 0 the time is permanent
+					// otherwise, convert seconds to minutes and double it
+					new time = length == 0 ? 0 : (length / 60 * 2);
 					
 					BanPlayer(client, time);
 				}
