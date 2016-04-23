@@ -166,7 +166,6 @@ public OnClientPostAdminCheck(client)
 			ResetPack(datapack);
 			
 			SQL_TQuery(hDatabase, SQL_CheckHim, query, datapack);
-			CloseHandle(datapack);
 		}
 	}
 }
