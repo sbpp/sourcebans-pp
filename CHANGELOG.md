@@ -10,6 +10,15 @@ Legend:
 ? = Other stuff
 ```
 
+(28/04/16): Version 1.5.4.7
+-----------------------
+01. ! Fix Admins and Groups Not Loading from Config
+
+(23/04/16): Version 1.5.4.6
+-----------------------
+01. ! Fix Perm Ban bug in SourceSleuth
+02. ! Fix Updater
+
 (18/04/16): Version 1.5.4.5
 -----------------------
 01. ! Fix Variuous Bugs in the Plugins EXCEPT SourceSleuth
