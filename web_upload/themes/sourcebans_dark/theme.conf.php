@@ -32,10 +32,10 @@ define('theme_name', "SourceBans Dark Theme (Legacy)");
 define('theme_author', "SourceBans Development Team, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.5.3");
+define('theme_version', "1.5.5-dev");
 
 // Set the link of the theme here
-define('theme_link', "https://sarabveer.github.io/SourceBans-Fork/");
+define('theme_link', "https://sbpp.sarabveer.me/");
 
 // Set the screenshot filename for your theme (must be inside your theme folder) 
 // Must be:  250px wide  X 170px High

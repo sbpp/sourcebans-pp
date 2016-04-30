@@ -255,13 +255,16 @@ else
 			$friendsban = (isset($_POST['enable_friendsbanning']) && $_POST['enable_friendsbanning'] == "on" ? 1 : 0);
 			
 			$adminrehash = (isset($_POST['enable_adminrehashing']) && $_POST['enable_adminrehashing'] == "on" ? 1 : 0);
+
+			$steamloginopt = (isset($_POST['enable_steamlogin']) && $_POST['enable_steamlogin'] == "on" ? 1 : 0);
 			
 			$edit = $GLOBALS['db']->Execute("REPLACE INTO ".DB_PREFIX."_settings (`value`, `setting`) VALUES
 											(" . (int)$exportpub . ", 'config.exportpublic'),
 											(" . (int)$kickit . ", 'config.enablekickit'),
 											(" . (int)$groupban . ", 'config.enablegroupbanning'),
 											(" . (int)$friendsban . ", 'config.enablefriendsbanning'),
-											(" . (int)$adminrehash . ", 'config.enableadminrehashing')");
+											(" . (int)$adminrehash . ", 'config.enableadminrehashing'),
+											(" . (int)$steamloginopt . ", 'config.enablesteamlogin')");
 											
 
 			?><script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script><?php 
@@ -272,13 +275,13 @@ else
 	
 	#########[Settings Page]###############
 	echo '<div id="0" style="display:none;">';
-		$theme->assign('config_title',			$GLOBALS['config']['template.title']);
-		$theme->assign('config_logo',			$GLOBALS['config']['template.logo']);
+		$theme->assign('config_title',		$GLOBALS['config']['template.title']);
+		$theme->assign('config_logo',		$GLOBALS['config']['template.logo']);
 		$theme->assign('config_min_password', 	$GLOBALS['config']['config.password.minlength']);
 		$theme->assign('config_dateformat', 	$GLOBALS['config']['config.dateformat']);
 		$theme->assign('config_dash_title', 	$GLOBALS['config']['dash.intro.title']);
-		$theme->assign('config_time', 			$date_offs);
-		$theme->assign('config_dash_text', 		stripslashes($GLOBALS['config']['dash.intro.text']));
+		$theme->assign('config_time', 		$date_offs);
+		$theme->assign('config_dash_text', 	stripslashes($GLOBALS['config']['dash.intro.text']));
 		$theme->assign('config_bans_per_page',	$GLOBALS['config']['banlist.bansperpage']);
 		
 		$theme->assign('bans_customreason', ((isset($GLOBALS['config']['bans.customreasons'])&&$GLOBALS['config']['bans.customreasons']!="")?unserialize($GLOBALS['config']['bans.customreasons']):array()));
@@ -337,7 +340,9 @@ $('banlist_hideplayerips').checked = <?php echo $GLOBALS['config']['banlist.hide
 $('enable_groupbanning').checked = <?php echo $GLOBALS['config']['config.enablegroupbanning']?>;
 $('enable_friendsbanning').checked = <?php echo $GLOBALS['config']['config.enablefriendsbanning']?>;
 $('enable_adminrehashing').checked = <?php echo $GLOBALS['config']['config.enableadminrehashing']?>;
+$('enable_steamlogin').checked = <?php echo $GLOBALS['config']['config.enablesteamlogin']?>;
 <?php
+
 if(ini_get('safe_mode')==1) {
 	print "$('enable_groupbanning').disabled = true;\n";
 	print "$('enable_friendsbanning').disabled = true;\n";

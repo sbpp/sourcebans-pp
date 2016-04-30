@@ -47,6 +47,23 @@
 		    	<div id="enable_adminrehashing.msg" class="badentry"></div>
 		    </td>
 		</tr>
+
+
+<!-- added for steam login option mod -->
+
+		<tr>
+			<td valign="top"><div class="rowdesc">{help_icon title="Enable Normal Login" message="Check this box, if you want to enable the Normal login option on the login form."}Enable Normal Login</div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="checkbox" name="enable_steamlogin" id="enable_steamlogin" />
+		    	</div>
+		    	<div id="enable_steamlogin.msg" class="badentry"></div>
+		    </td>
+		</tr>
+
+<!-- end steam login option mod -->
+
+
         <tr>
             <td colspan="2" align="center">
                 {sb_button text="Save Changes" class="ok" id="fsettings" submit=true}

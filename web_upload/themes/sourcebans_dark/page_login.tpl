@@ -1,5 +1,6 @@
 <div id="login"> 
 	<div id="login-content">
+		-{if $steamlogin_show == 1}-
 	  	<div id="loginUsernameDiv">
 	    	<label for="loginUsername">Username:</label><br />
 	    	<input id="loginUsername" class="loginmedium" type="text" name="username"value="" />
@@ -15,15 +16,17 @@
 		<div id="loginRememberMeDiv">
 	    	<input id="loginRememberMe" type="checkbox" class="checkbox" name="remember" value="checked" vspace="5px" />    <span class="checkbox" style="cursor:pointer;" onclick="($('loginRememberMe').checked?$('loginRememberMe').checked=false:$('loginRememberMe').checked=true)">Remember me</span>
   		</div>
+		-{/if}-
 		
-  		<div id="loginSubmit">	
+  		<div id="loginSubmit">
 			<a href="steamopenid.php" style="float:left;"><img src="images/steamlogin.png"></a>
-			
-			-{sb_button text="Login" onclick=$redir class="ok" id="alogin" submit=false}-
+			-{if $steamlogin_show == 1}-
+				-{sb_button text="Login" onclick=$redir class="ok" id="alogin" submit=false}-
+			-{/if}-
 		</div>
 		
 		<div id="loginOtherlinks">
-			<a href="?">Back to the Homepage</a> - <a href="index.php?p=lostpassword">Lost your password?</a>
+			<a href="?">Back to the Homepage</a>-{if $steamlogin_show == 1}- - <a href="index.php?p=lostpassword">Lost your password?</a>-{/if}-
 		</div>
 	</div>
 </div>

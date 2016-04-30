@@ -365,4 +365,20 @@ function validate_ip($ip)
 {
 	return preg_match(IP_FORMAT, $ip) ? true : false;
 }
+
+/**
+ * added for the steam login option mod
+ * checks the value of the config setting
+ * called by  steamopenid.php 
+ * called by pages/pages.login.php
+ * @param int 1 or 0
+ * @return int 
+ */
+function get_steamenabled_conf($value)
+{
+	$settingvalue = "config.enablesteamlogin";
+	$query = $GLOBALS['db']->GetRow("SELECT `value` FROM `" . DB_PREFIX . "_settings` WHERE `setting` = '$settingvalue'");
+	$value = intval($query['value']);
+	return $value;
+}
 ?>

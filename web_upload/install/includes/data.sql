@@ -51,7 +51,8 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '356');
+('config.version', '356'),
+('config.enablesteamlogin', '0');
 
 
 INSERT INTO `{prefix}_admins` (

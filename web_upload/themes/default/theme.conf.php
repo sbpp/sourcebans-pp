@@ -32,10 +32,10 @@ define('theme_name', "SourceBans Default Theme");
 define('theme_author', "IceMan, Sarabveer(VEER™)");
 
 // Set the version of the theme here
-define('theme_version', "1.3-S");
+define('theme_version', "1.5.5-dev");
 
 // Set the link of the theme here
-define('theme_link', "https://forums.alliedmods.net/showthread.php?t=252533");
+define('theme_link', "https://sbpp.sarabveer.me/");
 
 // Set the screenshot filename for your theme (must be inside your theme folder) 
 // Must be:  250px wide  X 170px High

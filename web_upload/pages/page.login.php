@@ -33,8 +33,9 @@ $submenu = array( array( "title" => 'Lost Your Password?', "url" => 'index.php?p
 SubMenu( $submenu );
 if(isset($_GET['m']) && $_GET['m'] == "no_access")
 	echo "<script>ShowBox('Error - No Access', 'You dont have permission to access this page.<br />Please login with an account that has access.', 'red', '', false);</script>";
-	
-	
+
+$steam_conf_value = get_steamenabled_conf($confvalue);
+$theme->assign('steamlogin_show',  $steam_conf_value);  	
 $theme->assign('redir', "DoLogin('".(isset($_SESSION['q'])?$_SESSION['q']:'')."');");
 $theme->left_delimiter = "-{";
 $theme->right_delimiter = "}-";
