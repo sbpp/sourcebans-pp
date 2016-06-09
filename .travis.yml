@@ -20,6 +20,7 @@ notifications:
 env:
   - SOURCEMOD=1.7
   - SOURCEMOD=1.8
+  - SOURCEMOD=1.9
 
 #And compile!
 before_script:
