@@ -16,7 +16,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work covered by the following copyright(s):  
+//  This file is based off work covered by the following copyright(s):
 //
 //   SourceBans 1.4.11
 //   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
@@ -195,7 +195,7 @@ function ChangeSrvPassword($aid, $srv_pass)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
 		return $objResponse;
 	}
-    
+
 	if($srv_pass == "NULL")
 		$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = NULL WHERE `aid` = '".$aid."'");
 	else
@@ -210,14 +210,14 @@ function ChangeEmail($aid, $email, $password)
     global $userbank, $username;
 	$objResponse = new xajaxResponse();
 	$aid = (int)$aid;
-    
+
     if(!$userbank->is_logged_in() || $aid != $userbank->GetAid())
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change ".$userbank->GetProperty('user', $aid)."'s email, but doesn't have access.");
 		return $objResponse;
 	}
-    
+
     if($userbank->encrypt_password($password) != $userbank->getProperty('password'))
     {
         $objResponse->addScript("$('emailpw.msg').setStyle('display', 'block');");
@@ -228,7 +228,7 @@ function ChangeEmail($aid, $email, $password)
 		$objResponse->addScript("$('emailpw.msg').setStyle('display', 'none');");
 		$objResponse->addScript("set_error(0);");
 	}
-    
+
 	if(!check_email($email)) {
 		$objResponse->addScript("$('email1.msg').setStyle('display', 'block');");
 		$objResponse->addScript("$('email1.msg').setHTML('You must type a valid email address.');");
@@ -353,7 +353,7 @@ function RemoveGroup($gid, $type)
 		$query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid");
 		$query0 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = $gid");
 	}
-	
+
 	if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 	{
 		// rehash the settings out of the database on all servers
@@ -703,7 +703,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 
 	if($error)
 		return $objResponse;
-	
+
 	// Check for dublicates afterwards
 	$chk = $GLOBALS['db']->GetRow('SELECT sid FROM `'.DB_PREFIX.'_servers` WHERE ip = ? AND port = ?;', array($ip, (int)$port));
 	if($chk)
@@ -718,7 +718,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 	//they wanna make a new group
 	$gid = -1;
 	$sid = nextSid();
-	
+
 	$enable = ($enabled=="true"?1:0);
 
 	// Add the server
@@ -763,10 +763,10 @@ function UpdateGroupPermissions($gid)
 
 	$objResponse->addAssign("perms", "innerHTML", $permissions);
 	if(!$userbank->HasAccess(ADMIN_OWNER))
-		$objResponse->addScript('if($("wrootcheckbox")) { 
+		$objResponse->addScript('if($("wrootcheckbox")) {
 									$("wrootcheckbox").setStyle("display", "none");
 								}
-								if($("srootcheckbox")) { 
+								if($("srootcheckbox")) {
 									$("srootcheckbox").setStyle("display", "none");
 								}');
 	$objResponse->addScript("$('type.msg').setHTML('');");
@@ -816,10 +816,10 @@ function UpdateAdminPermissions($type, $value)
 
 	$objResponse->addAssign($id."perm", "innerHTML", $permissions);
 	if(!$userbank->HasAccess(ADMIN_OWNER))
-		$objResponse->addScript('if($("wrootcheckbox")) { 
+		$objResponse->addScript('if($("wrootcheckbox")) {
 									$("wrootcheckbox").setStyle("display", "none");
 								}
-								if($("srootcheckbox")) { 
+								if($("srootcheckbox")) {
 									$("srootcheckbox").setStyle("display", "none");
 								}');
 	$objResponse->addAssign($id.".msg", "innerHTML", "");
@@ -867,7 +867,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	$mask = (int)$mask;
 
 	$error=0;
-	
+
     //No name
 	if(empty($a_name))
 	{
@@ -907,9 +907,9 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	else
 	{
 		// Validate the steamid or fetch it from the community id
-		if((!is_numeric($a_steam) 
+		if((!is_numeric($a_steam)
 		&& !validate_steam($a_steam))
-		|| (is_numeric($a_steam) 
+		|| (is_numeric($a_steam)
 		&& (strlen($a_steam) < 15
 		|| !validate_steam($a_steam = FriendIDToSteamID($a_steam)))))
 		{
@@ -941,7 +941,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			}
 		}
 	}
-	
+
 	// No email
 	if(empty($a_email))
 	{
@@ -988,7 +988,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			}*/
 		}
 	}
-	
+
 	// no pass
 	if(empty($a_password))
 	{
@@ -1007,11 +1007,11 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		$objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
 		$objResponse->addScript("$('password.msg').setStyle('display', 'block');");
 	}
-	else 
+	else
 	{
 		$objResponse->addAssign("password.msg", "innerHTML", "");
 		$objResponse->addScript("$('password.msg').setStyle('display', 'none');");
-		
+
 		// No confirmation typed
 		if(empty($a_password2))
 		{
@@ -1050,7 +1050,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			$objResponse->addAssign("a_serverpass.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
 			$objResponse->addScript("$('a_serverpass.msg').setStyle('display', 'block');");
 		}
-		else 
+		else
 		{
 			$objResponse->addAssign("a_serverpass.msg", "innerHTML", "");
 			$objResponse->addScript("$('a_serverpass.msg').setStyle('display', 'none');");
@@ -1063,7 +1063,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		// Don't set "-1" as password ;)
 		$a_serverpass = "";
 	}
-	
+
     // didn't choose a server group
     if($a_sg == "-2")
     {
@@ -1076,7 +1076,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         $objResponse->addAssign("server.msg", "innerHTML", "");
         $objResponse->addScript("$('server.msg').setStyle('display', 'none');");
     }
-	
+
 	// chose to create a new server group
 	if($a_sg == 'n')
 	{
@@ -1100,7 +1100,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			$objResponse->addScript("$('servername_err').setStyle('display', 'none');");
 		}
 	}
-	
+
 	// didn't choose a web group
     if($a_wg == "-2")
 	{
@@ -1113,7 +1113,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         $objResponse->addAssign("web.msg", "innerHTML", "");
         $objResponse->addScript("$('web.msg').setStyle('display', 'none');");
     }
-    
+
 	// Choose to create a new webgroup
 	if($a_wg == 'n')
 	{
@@ -1137,7 +1137,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			$objResponse->addScript("$('webname_err').setStyle('display', 'none');");
 		}
 	}
-	
+
 	// Ohnoes! something went wrong, stop and show errs
 	if($error)
 	{
@@ -1148,13 +1148,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 // ##############################################################
 // ##                     Start adding to DB                   ##
 // ##############################################################
-	
+
 	$gid = 0;
 	$groupID = 0;
 	$inGroup = false;
 	$wgid = NextAid();
 	$immunity = 0;
-	
+
 	// Extract immunity from server mask string
 	if(strstr($srv_mask, "#"))
 	{
@@ -1162,10 +1162,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		$immunity = substr($srv_mask, strpos($srv_mask, "#")+1);
 		$srv_mask = substr($srv_mask, 0, strlen($srv_mask) - strlen($immunity)-1);
 	}
-	
+
 	// Avoid negative immunity
 	$immunity = ($immunity>0) ? $immunity : 0;
-	
+
 	// Handle Webpermissions
 	// Chose to create a new webgroup
 	if($a_wg == 'n')
@@ -1173,7 +1173,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		$add_webgroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_groups(type, name, flags)
 										VALUES (?,?,?)", array(1, $a_webname, $mask));
 		$web_group = (int)$GLOBALS['db']->Insert_ID();
-		
+
 		// We added those permissons to the group, so don't add them as custom permissions again
 		$mask = 0;
 	}
@@ -1187,17 +1187,17 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 	{
 		$web_group = -1;
 	}
-	
+
 	// Handle Serverpermissions
 	// Chose to create a new server admin group
 	if($a_sg == 'n')
 	{
 		$add_servergroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_srvgroups(immunity, flags, name, groups_immune)
 					VALUES (?,?,?,?)", array($immunity, $srv_mask, $a_servername, " "));
-		
+
 		$server_admin_group = $a_servername;
 		$server_admin_group_int = (int)$GLOBALS['db']->Insert_ID();
-		
+
 		// We added those permissons to the group, so don't add them as custom permissions again
 		$srv_mask = "";
 	}
@@ -1213,10 +1213,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 		$server_admin_group = "";
 		$server_admin_group_int = -1;
 	}
-	
+
 	// Add the admin
 	$aid = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $server_admin_group, $srv_mask, $immunity, $a_serverpass);
-	
+
 	if($aid > -1)
 	{
 		// Grant permissions to the selected server groups
@@ -1227,7 +1227,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			if(!empty($srv_group))
 				$GLOBALS['db']->Execute($addtosrvgrp,array($aid, $server_admin_group_int, substr($srv_group, 1), '-1'));
 		}
-		
+
 		// Grant permissions to individual servers
 		$srv_arr = explode(",", $singlesrv);
 		$addtosrv = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
@@ -1254,7 +1254,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 			$objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."','Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 		} else
 			$objResponse->addScript("ShowBox('Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
-		
+
 		$log = new CSystemLog("m", "Admin added", "Admin (" . $a_name . ") has been added");
 		return $objResponse;
 	}
@@ -1269,7 +1269,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 	$objResponse = new xajaxResponse();
 	global $userbank;
 	require INCLUDES_PATH.'/CServerInfo.php';
-	
+
 	$sid = (int)$sid;
 
 	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
@@ -1428,7 +1428,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
     $objResponse = new xajaxResponse();
 	global $userbank;
 	require INCLUDES_PATH.'/CServerInfo.php';
-	
+
 	$sid = (int)$sid;
     $obId = htmlspecialchars($obId);
     $obProp = htmlspecialchars($obProp);
@@ -1440,7 +1440,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
 	$info = array();
 	$sinfo = new CServerInfo($res[0],$res[1]);
 	$info = $sinfo->getInfo();
-    
+
     if(!empty($info['hostname'])) {
         $objResponse->addAssign("$obId", "$obProp", addslashes(trunc($info['hostname'], $trunchostname, false)));
     } else {
@@ -1496,7 +1496,7 @@ function ServerPlayers($sid)
 	$objResponse = new xajaxResponse();
 	require INCLUDES_PATH.'/CServerInfo.php';
 
-	
+
 	$sid = (int)$sid;
 
 	$res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
@@ -1531,9 +1531,9 @@ function KickPlayer($sid, $name)
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
 	$sid = (int)$sid;
-	
+
 	$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-		
+
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
@@ -1588,7 +1588,7 @@ function KickPlayer($sid, $name)
 
 		if($immune <= $userbank->GetProperty('srv_immunity')) {
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
-			
+
 			if(strpos($steam, "[U:") === 0) {
 				$kick = $r->sendCommand("kickid \"".$steam."\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
 			} else {
@@ -1610,7 +1610,7 @@ function PasteBan($sid, $name, $type=0)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
-	
+
 	$sid = (int)$sid;
 	$type = (int)$type;
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
@@ -1685,9 +1685,9 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a ban, but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	$steam = trim($steam);
-	
+
 	$error = 0;
 	// If they didnt type a steamid
 	if(empty($steam) && $type == 0)
@@ -1696,10 +1696,10 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 	}
-	else if(($type == 0 
-	&& !is_numeric($steam) 
+	else if(($type == 0
+	&& !is_numeric($steam)
 	&& !validate_steam($steam))
-	|| (is_numeric($steam) 
+	|| (is_numeric($steam)
 	&& (strlen($steam) < 15
 	|| !validate_steam($steam = FriendIDToSteamID($steam)))))
 	{
@@ -1726,7 +1726,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 		$objResponse->addAssign("ip.msg", "innerHTML", "");
 		$objResponse->addScript("$('ip.msg').setStyle('display', 'none');");
 	}
-	
+
 	if($error > 0)
 		return $objResponse;
 
@@ -1750,7 +1750,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 			$objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already banned.', 'red', '');");
 			return $objResponse;
 		}
-        
+
         // Check if player is immune
         $admchk = $userbank->GetAllAdmins();
         foreach($admchk as $admin)
@@ -1965,7 +1965,7 @@ function AddMod($name, $folder, $icon, $steam_universe, $enabled)
 	$folder = htmlspecialchars(strip_tags($folder));
 	$steam_universe = (int)$steam_universe;
 	$enabled = (int)$enabled;
-	
+
 	// Already there?
 	$check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE modfolder = ? OR name = ?;", array($folder, $name));
 	if(!empty($check))
@@ -2014,7 +2014,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
 		$objResponse->addScript("ShowBox('Error', 'Admins have to have a password and email set in order to get web permissions.<br /><a href=\"index.php?p=admin&c=admins&o=editdetails&id=" . $aid . "\" title=\"Edit Admin Details\">Set the details</a> first and try again.', 'red', '');");
 		return $objResponse;
 	}
-	
+
 	// Update web stuff
 	$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `extraflags` = $web_flags WHERE `aid` = $aid");
 
@@ -2062,14 +2062,14 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit group details, but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	if(empty($name))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to set group's name to nothing. This isn't possible with the normal form.");
 		return $objResponse;
 	}
-	
+
 	$gid = (int)$gid;
 	$name = RemoveCode($name);
 	$web_flags = (int)$web_flags;
@@ -2097,7 +2097,7 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 		{
 			$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_group` = ? WHERE `aid` = '" . (int)$o['aid'] . "'", array($name));
 		}
-		
+
 		// Update group overrides
 		if(!empty($overrides))
 		{
@@ -2106,7 +2106,7 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 				// Skip invalid stuff?!
 				if($override['type'] != "command" && $override['type'] != "group")
 					continue;
-			
+
 				$id = (int)$override['id'];
 				// Wants to delete this override?
 				if(empty($override['name']))
@@ -2114,7 +2114,7 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 					$GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE id = ?;", array($id));
 					continue;
 				}
-				
+
 				// Check for duplicates
 				$chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE name = ? AND type = ? AND group_id = ? AND id != ?", array($override['name'], $override['type'], $gid, $id));
 				if(!empty($chk))
@@ -2122,12 +2122,12 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 					$objResponse->addScript("ShowBox('Error', 'There already is an override with name \\\"" . htmlspecialchars(addslashes($override['name'])) . "\\\" from the selected type..', 'red', '', true);");
 					return $objResponse;
 				}
-				
+
 				// Edit the override
 				$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_srvgroups_overrides` SET name = ?, type = ?, access = ? WHERE id = ?;", array($override['name'], $override['type'], $override['access'], $id));
 			}
 		}
-		
+
 		// Add a new override
 		if(!empty($newOverride))
 		{
@@ -2140,12 +2140,12 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 					$objResponse->addScript("ShowBox('Error', 'There already is an override with name \\\"" . htmlspecialchars(addslashes($newOverride['name'])) . "\\\" from the selected type..', 'red', '', true);");
 					return $objResponse;
 				}
-				
+
 				// Insert the new override
 				$GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_srvgroups_overrides` (group_id, type, name, access) VALUES (?, ?, ?, ?);", array($gid, $newOverride['type'], $newOverride['name'], $newOverride['access']));
 			}
 		}
-		
+
 		if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
 		{
 			// rehash the settings out of the database on all servers
@@ -2190,16 +2190,16 @@ function SendRcon($sid, $command, $output)
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
 		return $objResponse;
 	}
-    
+
     if(stripos($command, "rcon_password") !== false)
 	{
         $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: You have to use this console. Don't try to cheat the rcon password!<br />");
 		$objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
 		return $objResponse;
 	}
-    
+
 	$sid = (int)$sid;
-    
+
 	$rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM `".DB_PREFIX."_servers` WHERE sid = ".$sid." LIMIT 1");
 	if(empty($rcon['rcon']))
 	{
@@ -2254,22 +2254,22 @@ function SendMail($subject, $message, $type, $id)
 {
 	$objResponse = new xajaxResponse();
     global $userbank, $username;
-	
+
 	$id = (int)$id;
-	
+
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS))
 	{
 		$objResponse->redirect("index.php?p=login&m=no_access", 0);
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send an email, but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	// Don't mind wrong types
 	if($type != 's' && $type != 'p')
 	{
 		return $objResponse;
 	}
-	
+
 	// Submission
 	$email = "";
 	if($type == 's')
@@ -2281,17 +2281,17 @@ function SendMail($subject, $message, $type, $id)
 	{
 		$email = $GLOBALS['db']->GetOne('SELECT email FROM `'.DB_PREFIX.'_protests` WHERE pid = ?', array($id));
 	}
-	
+
 	if(empty($email))
 	{
 		$objResponse->addScript("ShowBox('Error', 'There is no email to send to supplied.', 'red', 'index.php?p=admin&c=bans');");
 		return $objResponse;
 	}
-	
+
 	$headers = "From: noreply@" . $_SERVER['HTTP_HOST'] . "\n" . 'X-Mailer: PHP/' . phpversion();
 	$m = @mail($email, '[SourceBans] ' . $subject, $message, $headers);
 
-	
+
 	if($m)
 	{
 		$objResponse->addScript("ShowBox('Email Sent', 'The email has been sent to the user.', 'green', 'index.php?p=admin&c=bans');");
@@ -2299,7 +2299,7 @@ function SendMail($subject, $message, $type, $id)
 	}
 	else
 		$objResponse->addScript("ShowBox('Error', 'Failed to send the email to the user.', 'red', '');");
-	
+
 	return $objResponse;
 }
 
@@ -2352,19 +2352,19 @@ function SelTheme($theme)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to execute SelTheme() function, but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	$theme = rawurldecode($theme);
 	$theme = str_replace(array('../', '..\\', chr(0)), '', $theme);
 	$theme = basename($theme);
-	
+
 	if($theme[0] == '.' || !in_array($theme, scandir(SB_THEMES)) || !is_dir(SB_THEMES . $theme) || !file_exists(SB_THEMES . $theme . "/theme.conf.php"))
 	{
 		$objResponse->addAlert('Invalid theme selected.');
 		return $objResponse;
 	}
-	
+
 	include(SB_THEMES . $theme . "/theme.conf.php");
-	
+
 	if(!defined('theme_screenshot'))
 	{
 		$objResponse->addAlert('Bad theme selected.');
@@ -2391,19 +2391,19 @@ function ApplyTheme($theme)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change the theme to ".htmlspecialchars(addslashes($theme)).", but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	$theme = rawurldecode($theme);
 	$theme = str_replace(array('../', '..\\', chr(0)), '', $theme);
 	$theme = basename($theme);
-	
+
 	if($theme[0] == '.' || !in_array($theme, scandir(SB_THEMES)) || !is_dir(SB_THEMES . $theme) || !file_exists(SB_THEMES . $theme . "/theme.conf.php"))
 	{
 		$objResponse->addAlert('Invalid theme selected.');
 		return $objResponse;
 	}
-	
+
 	include(SB_THEMES . $theme . "/theme.conf.php");
-	
+
 	if(!defined('theme_screenshot'))
 	{
 		$objResponse->addAlert('Bad theme selected.');
@@ -2425,14 +2425,14 @@ function AddComment($bid, $ctype, $ctext, $page)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a comment, but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	$bid = (int)$bid;
 	$page = (int)$page;
-	
+
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
-		
+
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
 	elseif($ctype=="C")
@@ -2474,11 +2474,11 @@ function EditComment($cid, $ctype, $ctext, $page)
 
 	$cid = (int)$cid;
 	$page = (int)$page;
-	
+
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
-	
+
 	if($ctype=="B")
 		$redir = "?p=banlist".$pagelink;
 	elseif($ctype=="C")
@@ -2519,7 +2519,7 @@ function RemoveComment($cid, $ctype, $page)
 
 	$cid = (int)$cid;
 	$page = (int)$page;
-	
+
 	$pagelink = "";
 	if($page != -1)
 		$pagelink = "&page=".$page;
@@ -2820,7 +2820,7 @@ function GetGroups($friendid)
 				$node = $groupxml->xpath('/memberList/groupDetails');
 				$node = $node[0];
 			}
-			
+
 			// Checkbox & Groupname table cols
 			$objResponse->addScript('var e = document.getElementById("steamGroupsTable");
 													var tr = e.insertRow("-1");
@@ -2927,12 +2927,12 @@ function BanFriends($friendid, $name)
 				$steamid = FriendIDToSteamID($url[2]);
 				$urltag = $url[2];
 			}
-			
+
 			// get the name
 			$friendName = $link->parentNode->childNodes->item(5)->childNodes->item(0)->nodeValue;
 			$friendName = str_replace("&#13;", "", $friendName);
 			$friendName = trim($friendName);
-			
+
 			$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
 									(UNIX_TIMESTAMP(),?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?)");
 			$GLOBALS['db']->Execute($pre,array(0,
@@ -2967,7 +2967,7 @@ function ViewCommunityProfile($sid, $name)
 		return $objResponse;
 	}
 	$sid = (int)$sid;
-  
+
 	require INCLUDES_PATH.'/CServerRcon.php';
 	//get the server data
 	$data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
@@ -3036,7 +3036,7 @@ function SendMessage($sid, $name, $message)
 		$objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
 		return $objResponse;
 	}
-	$ret = $r->sendCommand('sm_psay "'.$name.'" "'.addslashes($message).'"');
+	$ret = $r->sendCommand('sm_psay "'.$name.'" "'.preg_replace('/[^A-Za-z0-9\ ]/', '', $message).'"');
   new CSystemLog("m", "Message sent to player", "The following message was sent to " . addslashes(htmlspecialchars($name)) . " on server " . $data['ip'] . ":" . $data['port'] . ": " . RemoveCode($message));
 	$objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
 	return $objResponse;
@@ -3051,9 +3051,9 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a block, but doesnt have access.");
 		return $objResponse;
 	}
-	
+
 	$steam = trim($steam);
-	
+
 	$error = 0;
 	// If they didnt type a steamid
 	if(empty($steam))
@@ -3062,9 +3062,9 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 		$objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
 	}
-	else if((!is_numeric($steam) 
+	else if((!is_numeric($steam)
 	&& !validate_steam($steam))
-	|| (is_numeric($steam) 
+	|| (is_numeric($steam)
 	&& (strlen($steam) < 15
 	|| !validate_steam($steam = FriendIDToSteamID($steam)))))
 	{
@@ -3077,7 +3077,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 		$objResponse->addAssign("steam.msg", "innerHTML", "");
 		$objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
 	}
-	
+
 	if($error > 0)
 		return $objResponse;
 
@@ -3110,7 +3110,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 
 	// Check if the new steamid is already banned
 	$chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_comms WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND ".$typeW, array($steam));
-	
+
 	if(intval($chk[0]) > 0)
 	{
 		$objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already blocked.', 'red', '');");
@@ -3185,7 +3185,7 @@ function PrepareBlockFromBan($bid)
 	// clear any old stuff
 	$objResponse->addScript("$('nickname').value = ''");
 	$objResponse->addScript("$('steam').value = ''");
-	$objResponse->addScript("$('txtReason').value = ''");	
+	$objResponse->addScript("$('txtReason').value = ''");
 	$objResponse->addAssign("txtReason", "innerHTML",  "");
 
 	$ban = $GLOBALS['db']->GetRow("SELECT name, authid FROM ".DB_PREFIX."_bans WHERE bid = '".$bid."';");
@@ -3193,7 +3193,7 @@ function PrepareBlockFromBan($bid)
 	// add new stuff
 	$objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
 	$objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
-	
+
 	$objResponse->addScript("SwapPane(0);");
 	return $objResponse;
 }
@@ -3202,7 +3202,7 @@ function PasteBlock($sid, $name)
 {
 	$objResponse = new xajaxResponse();
 	global $userbank, $username;
-	
+
 	$sid = (int)$sid;
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
 	{
