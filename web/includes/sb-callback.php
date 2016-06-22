@@ -1382,7 +1382,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 			}
 		}else{
 			if($userbank->HasAccess(ADMIN_OWNER))
-				$objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sarabveer.github.io/SourceBans-Fork/faq\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
+				$objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.sarabveer.me/faq\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
 			else
 				$objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
 			$objResponse->addAssign("players_$sid", "innerHTML", "N/A");
@@ -2306,10 +2306,10 @@ function SendMail($subject, $message, $type, $id)
 function CheckVersion()
 {
 	$objResponse = new xajaxResponse();
-	$relver = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/rel/");
+	$relver = @file_get_contents("https://sbpp.sarabveer.me/rel/");
 
 	if(defined('SB_GIT'))
-		$relgit = @file_get_contents("https://sarabveer.github.io/SourceBans-Fork/dev/");
+		$relgit = @file_get_contents("https://sbpp.sarabveer.me/dev/");
 
 	if(version_compare($relver, SB_VERSION) > 0)
 		$versmsg = "<span style='color:#aa0000;'><strong>A new release is available.</strong></span>";
