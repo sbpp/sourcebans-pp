@@ -282,9 +282,13 @@ class CUserManager
 	
 	function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
 	{		
+		if (!empty($password) && strlen($password) < MIN_PASS_LENGTH) {
+			throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
+		}
+		$password_hash = empty($password) ? '' : $this->encrypt_password($password);
 		$add_admin = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
 											 VALUES (?,?,?,?,?,?,?,?,?,?)");
-		$GLOBALS['db']->Execute($add_admin,array($name, $steam, $this->encrypt_password($password), $web_group, $email, $web_flags, $immunity, $srv_group, $srv_flags, $srv_password));
+		$GLOBALS['db']->Execute($add_admin,array($name, $steam, $password_hash, $web_group, $email, $web_flags, $immunity, $srv_group, $srv_flags, $srv_password));
 		return ($add_admin) ? (int)$GLOBALS['db']->Insert_ID() : -1;
 	}
 }
