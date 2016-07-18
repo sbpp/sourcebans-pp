@@ -102,9 +102,19 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 	$q = $GLOBALS['db']->GetRow("SELECT `aid`, `password` FROM `" . DB_PREFIX . "_admins` WHERE `user` = ?", array($username));
 	if($q)
 		$aid = $q[0];
-	if($q && strlen($q[1]) == 0 && count($q) != 0)
+	if($q && (strlen($q[1]) == 0 || $q[1] == $userbank->encrypt_password('')) && count($q) != 0)
 	{
-		$objResponse->addScript('ShowBox("Information", "You can\'t login. No password set.", "blue", "", true);');
+		$lostpassword_url = SB_WP_URL . '/index.php?p=lostpassword';
+		$objResponse->addScript(<<<JS
+			ShowBox(
+				'Information',
+				'You are unable to login because your account have an empty password set.<br />' +
+				'Please <a href="$lostpassword_url">restore your password</a> or ask an admin to do that for you.<br />' +
+				'Do note that you are required to have a non empty password set event if you sign in through Steam.',
+				'blue', '', true
+			);
+JS
+		);
 		return $objResponse;
 	} else if(!$q || !$userbank->CheckLogin($userbank->encrypt_password($password), $aid))
 	{
