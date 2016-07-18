@@ -178,6 +178,9 @@ class CUserManager
 
 		if(empty($password))
 			return false;
+		// Additional check for those vulnerable hashes when password was empty
+		if($password == $this->encrypt_password(''))
+			return false;
 		if(!isset($this->admins[$aid]))
 			$this->GetUserArray($aid);
 			
