@@ -34,11 +34,11 @@ public Plugin:myinfo =
 public Plugin myinfo = 
 #endif 
 {
-	name = "SourceBans: Admin Config Loader", 
-	author = "AlliedModders LLC, Sarabveer(VEER™)", 
+	name = "SourceBans++: Admin Config Loader", 
+	author = "AlliedModders LLC, SourceBans++ Dev Team", 
 	description = "Reads Admin Files", 
 	version = "(SB++) 1.5.5-dev", 
-	url = "https://github.com/Sarabveer/SourceBans-Fork"
+	url = "https://sbpp.sarabveer.me/"
 };
 
 
@@ -57,8 +57,8 @@ int g_CurrentLine = 0; /* Current line we're on */
 char g_Filename[PLATFORM_MAX_PATH]; /* Used for error messages */
 #endif
 
-#include "sb_admcfg/sb_admin_groups.sp"
-#include "sb_admcfg/sb_admin_users.sp"
+#include "sbpp_admcfg/sbpp_admin_groups.sp"
+#include "sbpp_admcfg/sbpp_admin_users.sp"
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
 public OnRebuildAdminCache(AdminCachePart:part)

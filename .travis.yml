@@ -7,15 +7,6 @@ addons:
   apt_packages:
     - lib32stdc++6
 
-#Webhooks
-notifications:
-  webhooks:
-    urls:
-      - https://webhooks.gitter.im/e/c566d34b63ca82e43bbb
-    on_success: change  # options: [always|never|change] default: always
-    on_failure: always  # options: [always|never|change] default: always
-    on_start: never     # options: [always|never|change] default: always
-
 #Set the build environment
 env:
   - SOURCEMOD=1.7
@@ -32,4 +23,4 @@ before_script:
   - chmod +x spcomp
 
 script:
-  - ./compile.sh sourcebans.sp sb_admcfg.sp sourcecomms.sp sbchecker.sp sourcesleuth.sp
+  - ./compile.sh sbpp_main.sp sbpp_admcfg.sp sbpp_comms.sp sbpp_checker.sp sbpp_sleuth.sp

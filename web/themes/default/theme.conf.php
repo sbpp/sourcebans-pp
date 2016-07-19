@@ -1,5 +1,6 @@
 <?php
 /*************************************************************************
+	
 	This file is part of SourceBans++
 	
 	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
@@ -27,13 +28,14 @@
 		SourceBans TF2 Theme v1.0
 		Copyright © 2014 IceMan
 		Page: <https://forums.alliedmods.net/showthread.php?t=252533>
+		
 *************************************************************************/
 
 // Set the name of this theme here
-define('theme_name', "SourceBans Default Theme");
+define('theme_name', "SourceBans++ Default Theme");
  
 // Set the author of this theme here
-define('theme_author', "IceMan, Sarabveer(VEER™)");
+define('theme_author', "IceMan, SourceBans++ Dev Team");
 
 // Set the version of the theme here
 define('theme_version', "1.5.5-dev");

@@ -29,7 +29,7 @@
 define('theme_name', "SourceBans Dark Theme (Legacy)"); 
 
 // Set the author of this theme here
-define('theme_author', "SourceBans Development Team, Sarabveer(VEER™)");
+define('theme_author', "SourceBans Development Team, SourceBans++ Dev Team");
 
 // Set the version of the theme here
 define('theme_version', "1.5.5-dev");
