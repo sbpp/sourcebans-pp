@@ -239,7 +239,18 @@ class CUserManager
 		else 
 			return false;
 	}
-	
+
+	/**
+	 * Generates random secure string of [A-Za-z0-9_-] chars.
+	 *
+	 * @param int $length
+	 * @return string
+	 */
+	function random_string($length = 32)
+	{
+		require_once(INCLUDES_PATH . '/random_compat/lib/random.php');
+		return strtr(substr(base64_encode(random_bytes($length)), 0, $length), '+/', '-_');
+	}
 	
 	function is_admin($aid=-2)
 	{
@@ -288,7 +299,15 @@ class CUserManager
 		if (!empty($password) && strlen($password) < MIN_PASS_LENGTH) {
 			throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
 		}
-		$password_hash = empty($password) ? '' : $this->encrypt_password($password);
+		if (empty($password)) {
+			// Silently generate a token for account if there is no password set
+			// the token is required in Steam OAuth routines.
+			// Due to ugly codebase and lack of migrations we store the token as password hash.
+			// Also we use a prefix here to prevent any possible collisions with `encrypt_password` implementation.
+			$password_hash = '$token$' . $this->random_string();
+		} else {
+			$password_hash = $this->encrypt_password($password);
+		}
 		$add_admin = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins(user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
 											 VALUES (?,?,?,?,?,?,?,?,?,?)");
 		$GLOBALS['db']->Execute($add_admin,array($name, $steam, $password_hash, $web_group, $email, $web_flags, $immunity, $srv_group, $srv_flags, $srv_password));
