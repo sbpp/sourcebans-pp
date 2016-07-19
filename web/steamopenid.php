@@ -86,9 +86,14 @@ if($data !== false){
 
     $resultado = $mysqli->query("SELECT aid,password FROM " .$prfx ."admins WHERE authid = '" .$data ."'; ");
     if($resultado->num_rows == 1){
-        while($row = $resultado->fetch_assoc()) {
-            setcookie("aid", $row['aid'], time()+LOGIN_COOKIE_LIFETIME);
-            setcookie("password", $row['password'], time()+LOGIN_COOKIE_LIFETIME);
+        list($aid, $password) = $resultado->fetch_row();
+        global $userbank;
+        if (empty($password) || $password == $userbank->encrypt_password('')) {
+            header("Location: " .SB_URL ."/index.php?p=login&m=empty_pwd");
+            die;
+        } else {
+            setcookie("aid", $aid, time() + LOGIN_COOKIE_LIFETIME);
+            setcookie("password", $password, time() + LOGIN_COOKIE_LIFETIME);
         }
     }
 
