@@ -15,7 +15,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work covered by the following copyright(s):   
+//  This file is based off work(s) covered by the following copyright(s):   
 //
 //   SourceMod Admin File Reader Plugin
 //   Copyright (C) 2004-2008 AlliedModders LLC

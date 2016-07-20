@@ -141,7 +141,7 @@ else
 		$Email = "";
 
 		// Send an email when protest was posted
-		$headers = 'From: protest@' . $_SERVER['HTTP_HOST'] . "\n" .
+		$headers = 'From: ' . $GLOBALS['sb-email'] . "\n" .
 		'X-Mailer: PHP/' . phpversion();
 
 		$emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `".DB_PREFIX."_admins` WHERE aid = (SELECT aid FROM `".DB_PREFIX."_bans` WHERE bid = '".(int)$BanId."');");

@@ -96,7 +96,7 @@ if(!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/upd
 define('SB_GIT', true);
 if(!defined('SB_VERSION')){
 	define('SB_VERSION', '1.5.5-dev');
-	define('SB_GITRev', '$Git: 376 $');
+	define('SB_GITRev', '$Git: 377 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
@@ -124,6 +124,7 @@ include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
 include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
 $GLOBALS['db'] = ADONewConnection("mysqli://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 $GLOBALS['log'] = new CSystemLog();
+$GLOBALS['sb-email'] = SB_EMAIL;
 
 if( !is_object($GLOBALS['db']) )
 				die();

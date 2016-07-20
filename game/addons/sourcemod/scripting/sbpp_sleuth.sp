@@ -54,7 +54,7 @@ new bool:CanUseSourcebans = false;
 public Plugin:myinfo = 
 {
 	name = "SourceBans++: SourceSleuth", 
-	author = "ecca, Sarabveer(VEER™)", 
+	author = "ecca, SourceBans++ Dev Team", 
 	description = "Useful for TF2 servers. Plugin will check for banned ips and ban the player.", 
 	version = PLUGIN_VERSION, 
 	url = "https://sbpp.sarabveer.me/"

@@ -201,6 +201,7 @@ This page will list all of the requirements to run the SourceBans web interface,
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
 				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
+				<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 	</form>
 	<form action="index.php?step=3" method="post" name="sendback" id="sendback">
 				<input type="hidden" name="username" value="<?php echo $_POST['username']?>">
@@ -211,6 +212,7 @@ This page will list all of the requirements to run the SourceBans web interface,
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
 				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
+				<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 	</form>
 	<?php
 	}

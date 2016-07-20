@@ -159,7 +159,7 @@ function LostPassword($email)
 
 	$message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". RemoveCode($email) . "&validation=" . $validation;
 
-	$headers = 'From: lostpwd@' . $_SERVER['HTTP_HOST'] . "\n" .
+	$headers = 'From: ' . $GLOBALS['sb-email'] . "\n" .
     'X-Mailer: PHP/' . phpversion();
 	$m = mail($email, "SourceBans Password Reset", $message, $headers);
 

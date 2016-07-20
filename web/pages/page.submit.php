@@ -141,7 +141,7 @@ else
 			$SID = -1;
 
 			// Send an email when ban was posted
-			$headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" . 'X-Mailer: PHP/' . phpversion();
+			$headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
 
 			$admins = $userbank->GetAllAdmins();
 			$requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")-5);

@@ -22,6 +22,7 @@ define('DB_PREFIX', '{prefix}');					// The table prefix for SourceBans
 define('DB_PORT','{port}');							// The SQL port (Default: 3306)
 define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
 define('SB_WP_URL','{sbwpurl}');       				//URL of SourceBans Site
+define('SB_EMAIL','{sbwpemail}');  
 
 //define('DEVELOPER_MODE', true);			// Use if you want to show debugmessages
 //define('SB_MEM', '128M'); 				// Override php memory limit, if isn't enough (Banlist is just a blank page)
@@ -49,6 +50,7 @@ define('SB_WP_URL','{sbwpurl}');       				//URL of SourceBans Site
 	$web_cfg = str_replace("{port}", $_POST['port'], $web_cfg);
 	$web_cfg = str_replace("{steamapikey}", $_POST['apikey'], $web_cfg);
 	$web_cfg = str_replace("{sbwpurl}", $_POST['sb-wp-url'], $web_cfg);
+	$web_cfg = str_replace("{sbwpemail}", $_POST['sb-email'], $web_cfg);
 	
 	$srv_cfg = str_replace("{server}", $_POST['server'], $srv_cfg);
 	$srv_cfg = str_replace("{user}", $_POST['username'], $srv_cfg);
@@ -194,6 +196,7 @@ Hover your mouse over the '?' buttons to see an explanation of the field.<br /><
 <input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
 <input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
+<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 </div>
 </form>
 

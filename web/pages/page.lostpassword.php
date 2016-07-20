@@ -26,7 +26,6 @@
 *************************************************************************/
 
 global $theme, $userbank;
-
 if(isset($_GET['validation'],$_GET['email']) && !empty($_GET['email']) && !empty($_GET['validation']))
 {  
 	$email = $_GET['email'];
@@ -66,8 +65,8 @@ if(isset($_GET['validation'],$_GET['email']) && !empty($_GET['email']) && !empty
 		$message .= "Your password reset was successful.\n";
 		$message .= "Your password was changed to: ".$newpass."\n\n";
 		$message .= "Login to your SourceBans account and change your password in Your Account.\n";
-
-		$headers = 'From: lostpwd@' . $_SERVER['HTTP_HOST'] . "\n" .
+		
+		$headers = 'From: ' . $GLOBALS['sb-email'] . "\n" .
 		'X-Mailer: PHP/' . phpversion();
 		$m = mail($email, "SourceBans Password Reset", $message, $headers);
 		
