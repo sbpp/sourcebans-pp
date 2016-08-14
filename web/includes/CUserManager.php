@@ -39,6 +39,8 @@ class CUserManager
 	 */
 	function __construct($aid, $password)
 	{
+		$aid = (int) $aid;
+
 		if($this->CheckLogin($password, $aid))
 		{
 			$this->aid = $aid;
@@ -168,14 +170,12 @@ class CUserManager
 	 * Will test the user's login stuff to check if they havnt changed their 
 	 * cookies or something along those lines.
 	 *
-	 * @param $password The admins password.
-	 * @param $aid the admins aid
+	 * @param $password string The admins password.
+	 * @param $aid int the admins aid
 	 * @return boolean.
 	 */
 	function CheckLogin($password, $aid)
 	{
-		$aid = (int)$aid;
-
 		if(empty($password))
 			return false;
 		// Additional check for those vulnerable hashes when password was empty
