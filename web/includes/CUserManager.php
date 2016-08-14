@@ -176,6 +176,8 @@ class CUserManager
 	 */
 	function CheckLogin($password, $aid)
 	{
+		$aid = (int)$aid;
+		
 		if(empty($password))
 			return false;
 		// Additional check for those vulnerable hashes when password was empty
