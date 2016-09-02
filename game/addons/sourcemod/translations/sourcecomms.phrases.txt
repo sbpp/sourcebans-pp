@@ -4,6 +4,7 @@
 	"Muted on connect"
 	{
 		"en"			"You have been muted!"
+		"hu"			"Le lettél némítva!"
 		"es"			"Has sido muteado!"
 		"ru"			"Вам был отключен микрофон!"
 		"pl"			"Zostałeś wyciszony!"
@@ -13,6 +14,7 @@
 	"Gagged on connect"
 	{
 		"en"			"You have been gagged!"
+		"hu"			"Az írás jogod elvéve!"
 		"es"			"Has sido gageado!"
 		"ru"			"Вам был отключен чат!"
 		"pl"			"Zostałeś zakneblowany!"
@@ -23,6 +25,7 @@
 	"Mute expired"
 	{
 		"en"			"Your mute has expired."
+		"hu"			"A némítás lejárt."
 		"es"			"Tu muteo ha expirado."
 		"ru"			"Вам был включен микрофон (истек срок блокировки)."
 		"pl"			"Twoje wyciszenie wygasło."
@@ -32,6 +35,7 @@
 	"Gag expired"
 	{
 		"en"			"Your gag has expired."
+		"hu"			"Az írás jog visszaadva"
 		"es"			"Tu gageo ha expirado."
 		"ru"			"Вам был включен чат (истек срок блокировки)."
 		"pl"			"Twój knebel wygasł."
@@ -42,6 +46,7 @@
 	"FWUnmute"
 	{
 		"en"			"Your mute has been removed."
+		"hu"			"A némítás törölve."
 		"es"			"Tu muteo ha sido eliminado"
 		"ru"			"Вам был включен микрофон."
 		"pl"			"Twoje wyciszenie zostało usunięte."
@@ -51,6 +56,7 @@
 	"FWUngag"
 	{
 		"en"			"Your gag has been removed."
+		"hu"			"Az írástól való eltíltás törölve"
 		"es"			"Tu gageo ha sido eliminado"
 		"ru"			"Вам был включен чат."
 		"pl"			"Twój knebel został usunięty."
@@ -62,6 +68,7 @@
 	{
 		"#format"		"{1:d}"
 		"en"			"Time: {1} minutes, if unspecified; permanent, if 0.\nIf < 0, blocks for session."
+		"hu"			"Idő: {1} perc, nem specifikált; örökre, ha 0.\nIf < 0, blocks for session."
 		"es"			"Tiempo: {1} minutos, si no es especificado el tiempo = permanente en caso de ser 0.\nSi es < 0, bloqueo sólo para la sesión."
 		"ru"			"Длительность: {1} минут, если не указана; навсегда, если 0.\nЕсли < 0, блокировка на сессию."
 		"pl"			"Czas: {1} minut, jeśli nieokreślony; permanentny, jeśli 0.\nJeśli < 0, blokada na sesje."
@@ -71,6 +78,7 @@
 	"Player Comms Not Verified"
 	{
 		"en"			"This player has not been verified. Please wait thirty seconds before retrying."
+		"hu"			"Ezt a játékost még nem igazolták. Kérlek, várj harminc másodpercet , mielőtt újra próbálkoznál."
 		"es"			"este jugador no ha podido ser verificado. Por favor, espera 30 segundos antes de volver a intentarlo"
 		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
 		"pl"			"Gracz niezweryfikowany. Proszę poczekać 30 sekund przed ponowną probą."
@@ -82,6 +90,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"Player {1} already muted!"
+		"hu"			"Játékos {1} már le van némítva!"
 		"es"			"El jugador {1} ya está muteado actualmente!"
 		"ru"			"У игрока {1} уже отключен микрофон!"
 		"pl"			"Gracz {1} jest już wyciszony!"
@@ -92,6 +101,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"Player {1} already gagged!"
+		"hu"			"Játékos {1} már el van véve az írás joga!"
 		"es"			"El jugador {1} ya está gageado actualmente!"
 		"ru"			"У игрока {1} уже отключен чат!"
 		"pl"			"Gracz {1} jest już zakneblowany!"
@@ -102,6 +112,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"Player {1} already gagged or muted!"
+		"hu"			"Játékos {1} már le van némítva és az írás jog-tól meg van fosztva!"
 		"es"			"El jugador {1} ya está gageado o muteado actualmente!"
 		"ru"			"У игрока {1} уже отключен чат или микрофон!"
 		"pl"			"Gracz {1} jest już całkowicie wyciszony!"
@@ -112,6 +123,7 @@
 	"Player not muted"
 	{
 		"en"			"Player not muted."
+		"hu"			"A játékos nincs elnémítva."
 		"es"			"Jugador no muteado."
 		"ru"			"У игрока не отключен микрофон."
 		"pl"			"Gracz nie jest wyciszony."
@@ -121,6 +133,7 @@
 	"Player not gagged"
 	{
 		"en"			"Player not gagged."
+		"hu"			"A játékos írhat a chat-be."
 		"es"			"Jugador no gageado."
 		"ru"			"У игрока не отключен чат."
 		"pl"			"Gracz nie jest zakneblowany."
@@ -130,6 +143,7 @@
 	"Player not silenced"
 	{
 		"en"			"Player not silenced."
+		"hu"			"A játékos nincs meg fosztva az írás és a hang chat-től."
 		"es"			"Jugador no silenciado."
 		"ru"			"У игрока не отключен чат или микрофон."
 		"pl"			"Gracz nie jest całkowicie wyciszony."
@@ -141,6 +155,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Issued a permanent gag on {1}."
+		"hu"			"Az írás jogtól megfosztott örökre {1}."
 		"es"			"Ha gageado permanentemente a {1}."
 		"ru"			"Игроку {1} навсегда отключен чат."
 		"pl"			"Permanentnie zakneblowano {1}."
@@ -151,6 +166,7 @@
 	{
 		"#format"		"{1:t},{2:s}"
 		"en"			"Issued a permanent gag on {1} (reason: {2})."
+		"hu"			"Az írás jogtól megfosztott örökre {1} (ok: {2})."
 		"es"			"Ha gageado permanentemente a {1} (razón: {2})."
 		"ru"			"Игроку {1} навсегда отключен чат (причина: {2})."
 		"pl"			"Permanentnie zakneblowano {1} (powód: {2})."
@@ -161,6 +177,7 @@
 	{
 		"#format"		"{1:t},{2:d}"
 		"en"			"Issued an extended gag on {1} for {2} minutes."
+		"hu"			"Az írás jogtól való eltíltás kiterjed {1} {2} percre."
 		"es"			"Ha gageado extensivamente a {1} por {2} minutos."
 		"ru"			"Игроку {1} отключен чат на {2} минут."
 		"pl"			"Zakneblowano {1} na {2} minut."
@@ -171,6 +188,7 @@
 	{
 		"#format"		"{1:t},{2:d},{3:s}"
 		"en"			"Issued an extended gag on {1} for {2} minutes (reason: {3})."
+		"hu"			"Az írás jogtól való eltíltás kiterjed {1} {2} percre (ok: {3})."
 		"es"			"Ha gageado extensivamente a {1} por {2} minutos (razón: {3})."
 		"ru"			"Игроку {1} отключен чат на {2} минут (причина: {3})."
 		"pl"			"Zakneblowano {1} na {2} minut (powód: {3})."
@@ -182,6 +200,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Issued a permanent mute on {1}."
+		"hu"			"Örök némítást kapot {1}."
 		"es"			"Ha muteado permanentemente a {1}."
 		"ru"			"Игроку {1} навсегда отключен микрофон."
 		"pl"			"Permanentnie wyciszono {1}."
@@ -192,6 +211,7 @@
 	{
 		"#format"		"{1:t},{2:s}"
 		"en"			"Issued a permanent mute on {1} (reason: {2})."
+		"hu"			"Örök némítást kapot {1} (ok: {2})."
 		"es"			"Ha muteado permanentemente a {1} (razón: {2})."
 		"ru"			"Игроку {1} навсегда отключен микрофон (причина: {2})."
 		"pl"			"Permanentnie wyciszono {1} (powód: {2})."
@@ -202,6 +222,7 @@
 	{
 		"#format"		"{1:t},{2:d}"
 		"en"			"Issued an extended mute on {1} for {2} minutes."
+		"hu"			"{1} némítva {2} percre."
 		"es"			"Ha muteado extensivamente a {1} por {2} minutos."
 		"ru"			"Игроку {1} отключен микрофон на {2} минут."
 		"pl"			"Wyciszono {1} na {2} minut."
@@ -212,6 +233,7 @@
 	{
 		"#format"		"{1:t},{2:d},{3:s}"
 		"en"			"Issued an extended mute on {1} for {2} minutes (reason: {3})."
+		"hu"			"{1} némítva {2} percre. (ok: {3})."
 		"es"			"Ha muteado extensivamente a {1} por {2} minutos (razón: {3})."
 		"ru"			"Игроку {1} отключен микрофон на {2} минут (причина: {3})."
 		"pl"			"Wyciszono {1} na {2} minut (powód: {3})."
@@ -223,6 +245,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Issued a permanent silence on {1}."
+		"hu"			"Örekre elnémítva és eltíltva a chat-től {1}."
 		"es"			"Ha silenciado permanentemente a {1}."
 		"ru"			"Игроку {1} навсегда отключен чат и микрофон."
 		"pl"			"Permanentnie całkowicie wyciszono {1}."
@@ -233,6 +256,7 @@
 	{
 		"#format"		"{1:t},{2:s}"
 		"en"			"Issued a permanent silence on {1} (reason: {2})."
+		"hu"			"Örekre elnémítva és eltíltva a chat-től {1} (ok: {2})."
 		"es"			"Ha silenciado permanentemente a {1} (razón: {2})."
 		"ru"			"Игроку {1} навсегда отключен чат и микрофон (причина: {2})."
 		"pl"			"Permanentnie całkowicie wyciszono {1} (powód: {2})."
@@ -243,6 +267,7 @@
 	{
 		"#format"		"{1:t},{2:d}"
 		"en"			"Issued an extended silence on {1} for {2} minutes."
+		"hu"			"Elnémítva és eltíltva a chat-től {1} {2} perc."
 		"es"			"Ha silenciado extensivamente a {1} por {2} minutos."
 		"ru"			"Игроку {1} отключен чат и микрофон на {2} минут."
 		"pl"			"Całkowicie wyciszono {1} na {2} minut."
@@ -253,6 +278,7 @@
 	{
 		"#format"		"{1:t},{2:d},{3:s}"
 		"en"			"Issued an extended silence on {1} for {2} minutes (reason: {3})."
+		"hu"			"Elnémítva és eltíltva a chat-től {1} {2} perc (ok: {3})."
 		"es"			"Ha silenciado extensivamente a {1} por {2} minutos (razón: {3})."
 		"ru"			"Игроку {1} отключен чат и микрофон на {2} минут (причина: {3})."
 		"pl"			"Całkowicie wyciszono {1} na {2} minut (powód: {3})."
@@ -264,6 +290,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Temporarily removed mute from {1}."
+		"hu"			"Ideiglenesen feloldva a némítás {1}."
 		"es"			"Ha eliminado el muteo temporal a {1}."
 		"ru"			"Игроку {1} временно включен микрофон."
 		"pl"			"Tymczasowo usunięto wyciszenie {1}."
@@ -274,6 +301,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Temporarily removed gag from {1}."
+		"hu"			"Ideiglenesen feloldva az írás jogtól való eltíltás {1}."
 		"es"			"Ha eliminado el gageo temporal a {1}."
 		"ru"			"Игроку {1} временно включен чат."
 		"pl"			"Tymczasowo usunięto knebel {1}."
@@ -284,6 +312,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Temporarily removed silence from {1}."
+		"hu"			"Ideiglenesen feloldva az elnémítás és az írás jogtól való eltíltás {1}."
 		"es"			"Ha eliminado el silencio temporal a {1}."
 		"ru"			"Игроку {1} временно включен чат и микрофон."
 		"pl"			"Tymczasowo usunięto całkowite wyciszenie {1}."
@@ -294,6 +323,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"An error occurred while requesting blocks for {1} from DB."
+		"hu"			"Hiba történt {1} az adatbázisban."
 		"es"			"Ha ocurrido un error durante la solicitud de los bloqueos de {1} en la Base de Datos"
 		"ru"			"Произошла ошибка при запросе блокировок для {1} из базы."
 		"pl"			"Wystąpił błąd podczas pobierania blokad {1} z bazy danych."
@@ -304,6 +334,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"No active blocks found in DB for {1}."
+		"hu"			"Nem található tiltás az adatbázisban róla {1}."
 		"es"			"No hay bloqueos activos que se encuentren en la Base de Datos para {1}."
 		"ru"			"В базе не найдено действующих блокировок для {1}."
 		"pl"			"Brak aktywnych blokad {1} w bazie danych."
@@ -313,6 +344,7 @@
 	"No db error unlock perm"
 	{
 		"en"			"You lack the permission to unblocking with DB errors."
+		"hu"			"Nincs engedélyed feloldani az adatbázis hibát."
 		"es"			"No tienes permisos para desbloquear errores de la Base de Datos."
 		"ru"			"У вас нет разрешения на разблокировку при ошибках базы."
 		"pl"			"Nie masz uprawnień do usuwania blokad z bazy danych."
@@ -323,6 +355,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"The mute on {1} was unable to be removed due to being muted by a higher administrator!"
+		"hu"			"A némítás {1} nem lehet eltávolítani mivel egy magasabb rangú admin adta!"
 		"es"			"El muteo de {1} no pudo ser eliminado debido a que fue muteado por un administrador superior a ti!"
 		"ru"			"Невозможно включить микрофон {1}, т.к. он был отключен более высоким администратором!"
 		"pl"			"Wyciszenie {1} nie może zostać usunięte, ponieważ zostało nadane przez admina z wyższymi uprawnieniami!"
@@ -333,6 +366,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"The gag on {1} was unable to be removed due to being muted by a higher administrator!"
+		"hu"			"Az írástól való eltíltást {1} nem lehet eltávolítani mivel egy magasabb rangú admin adta!"
 		"es"			"El gageo de {1} no pudo ser eliminado debido a que fue gageado por un administrador superior a ti!"
 		"ru"			"Невозможно включить чат {1}, т.к. он был отключен более высоким администратором!"
 		"pl"			"Knebel {1} nie może zostać usunięty, ponieważ został nadany przez admina z wyższymi uprawnieniami!"
@@ -343,6 +377,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Removed an extended mute from {1}."
+		"hu"			"Eltávolítva a némítás {1}."
 		"es"			"Ha eliminado el muteo extendido a {1}."
 		"ru"			"Игроку {1} включен микрофон."
 		"pl"			"Usunięto wyciszenie {1}."
@@ -353,6 +388,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Removed an extended gag from {1}."
+		"hu"			"Eltávolítva az írástól való eltíltás {1}."
 		"es"			"Ha eliminado el gageo extendido a {1}."
 		"ru"			"Игроку {1} включен чат."
 		"pl"			"Usunięto knebel {1}."
@@ -362,6 +398,7 @@
 	"Unblock insert failed"
 	{
 		"en"			"Failed to remove block from DB."
+		"hu"			"Sikertelen eltávolítás az adatbázisból."
 		"es"			"Error al eliminar este bloqueo de la Base de Datos."
 		"ru"			"Не удалось удалить блокировку из базы."
 		"pl"			"Nie udało się usunąć blokady z bazy danych."
@@ -372,6 +409,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"Successfully removed mute for {1} from DB."
+		"hu"			"Sikeresen törölve a némítás {1}-ről az adatbázisból."
 		"es"			"Eliminado con éxito el muteo de {1} desde la Base de Datos."
 		"ru"			"Успешно удалена блокировка микрофона для {1} из базы."
 		"pl"			"Usunięto wyciszenie {1} z bazy danych."
@@ -382,6 +420,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"Successfully removed gag for {1} from DB."
+		"hu"			"Sikeresen törölve az írástól való eltíltás {1}-ről az adatbázisból."
 		"es"			"Eliminado con éxito el gageo de {1} desde la Base de Datos."
 		"ru"			"Успешно удалена блокировка чата для {1} из базы."
 		"pl"			"Usunięto knebel {1} z bazy danych."
@@ -393,6 +432,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"[  ] {1}"
+		"hu"		"[  ] {1}"
 		"es"		"[  ] {1}"
 		"ru"		"[  ] {1}"
 		"pl"		"[  ] {1}"
@@ -403,6 +443,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"[M] {1}"
+		"hu"		"[M] {1}"
 		"es"		"[M] {1}"
 		"ru"		"[M] {1}"
 		"pl"		"[M] {1}"
@@ -413,6 +454,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"[G] {1}"
+		"hu"		"[G] {1}"
 		"es"		"[G] {1}"
 		"ru"		"[G] {1}"
 		"pl"		"[G] {1}"
@@ -423,6 +465,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"[S] {1}"
+		"hu"		"[S] {1}"
 		"es"		"[S] {1}"
 		"ru"		"[S] {1}"
 		"pl"		"[S] {1}"
@@ -432,6 +475,7 @@
 	"AdminMenu_Main"
 	{
 		"en"		"Comm Commands"
+		"hu"		"Kommunikációs parancsok"
 		"es"		"Comandos de Comunicación"
 		"ru"		"Чат и микрофон"
 		"pl"		"Komunikacja"
@@ -441,6 +485,7 @@
 	"AdminMenu_Select_Main"
 	{
 		"en"		"Comm Commands:"
+		"hu"		"Kommunikációs parancsok:"
 		"es"		"Comandos de Comunicación:"
 		"ru"		"Чат и микрофон:"
 		"pl"		"Komunikacja:"
@@ -450,6 +495,7 @@
 	"AdminMenu_List"
 	{
 		"en"		"View Punishments"
+		"hu"		"Részletek a büntetésről"
 		"es"		"Ver Castigos"
 		"ru"		"Посмотреть наказания"
 		"pl"		"Zobacz kary"
@@ -459,6 +505,7 @@
 	"AdminMenu_Select_List"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Игроки:"
 		"pl"		"Wybierz Gracza:"
@@ -468,6 +515,7 @@
 	"AdminMenu_Gag"
 	{
 		"en"		"Issue Gag"
+		"hu"		"Adás: Írásjog megvonása"
 		"es"		"Gagear Jugador"
 		"ru"		"Отключить чат"
 		"pl"		"Zaknebluj"
@@ -477,6 +525,7 @@
 	"AdminMenu_Select_Gag"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Отключить чат игроку:"
 		"pl"		"Wybierz Gracza:"
@@ -486,6 +535,7 @@
 	"AdminMenu_Select_Mute"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Отключить микрофон игроку:"
 		"pl"		"Wybierz Gracza:"
@@ -495,6 +545,7 @@
 	"AdminMenu_Select_Silence"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Отключить микрофон и чат игроку:"
 		"pl"		"Wybierz Gracza:"
@@ -504,6 +555,7 @@
 	"AdminMenu_Select_Ungag"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Включить чат игроку:"
 		"pl"		"Wybierz Gracza:"
@@ -513,6 +565,7 @@
 	"AdminMenu_Select_Unmute"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Включить микрофон игроку:"
 		"pl"		"Wybierz Gracza:"
@@ -522,6 +575,7 @@
 	"AdminMenu_Select_Unsilence"
 	{
 		"en"		"Select Player:"
+		"hu"		"Játékos kiválasztása:"
 		"es"		"Seleccionar Jugador:"
 		"ru"		"Включить микрофон и чат игроку:"
 		"pl"		"Wybierz Gracza:"
@@ -531,6 +585,7 @@
 	"AdminMenu_Option_Mute_Empty"
 	{
 		"en"		"No Muted Players"
+		"hu"		"Nincsenek némított játékosok"
 		"es"		"No hay jugadores muteados"
 		"ru"		"Нет игроков с отключенным микрофоном"
 		"pl"		"Brak wyciszonych graczy"
@@ -540,6 +595,7 @@
 	"AdminMenu_Option_Gag_Empty"
 	{
 		"en"		"No Gagged Players"
+		"hu"		"Nincsenek gaggolt játékosok"
 		"es"		"No hay jugadores gageados"
 		"ru"		"Нет игроков с отключенным чатом"
 		"pl"		"Brak zakneblowanych graczy"
@@ -549,6 +605,7 @@
 	"AdminMenu_Option_Silence_Empty"
 	{
 		"en"		"No Silenced Players"
+		"hu"		"Nincsenek gagg-olt és némított játékosok"
 		"es"		"No hay jugadores silenciados"
 		"ru"		"Нет игроков с отключенным микрофоном и чатом"
 		"pl"		"Brak całkowicie wyciszonych graczy"
@@ -558,6 +615,7 @@
 	"ListMenu_Option_Empty"
 	{
 		"en"		"No Punished Clients"
+		"hu"		"Nincsenek büntetett kliensek"
 		"es"		"No hay jugadores castigados"
 		"ru"		"Нет наказанных игроков"
 		"pl"		"Brak ukaranych graczy"
@@ -567,6 +625,7 @@
 	"AdminMenu_Option_Empty"
 	{
 		"en"		"No available players"
+		"hu"		"Nincsenek elérhető játékosok"
 		"es"		"No hay jugadores disponibles"
 		"ru"		"Нет доступных игроков"
 		"pl"		"Brak dostępnych graczy"
@@ -576,6 +635,7 @@
 	"AdminMenu_UnGag"
 	{
 		"en"		"Remove Gag"
+		"hu"		"Feloldás: Írásjog megvonása"
 		"es"		"Eliminar Gageo"
 		"ru"		"Включить чат"
 		"pl"		"Usuń knebel"
@@ -586,6 +646,7 @@
 	"AdminMenu_Title_Durations"
 	{
 		"en"		"Select Duration:"
+		"hu"		"Időtartam kiválasztása:"
 		"es"		"Seleccionar Duración:"
 		"ru"		"На сколько:"
 		"pl"		"Wybierz czas trwania:"
@@ -595,6 +656,7 @@
 	"AdminMenu_Title_Reasons"
 	{
 		"en"		"Select Reason:"
+		"hu"		"Ok kiválasztása:"
 		"es"		"Seleccionar Razón:"
 		"ru"		"Причина:"
 		"pl"		"Wybierz powód:"
@@ -604,6 +666,7 @@
 	"AdminMenu_Mute"
 	{
 		"en"		"Issue Mute"
+		"hu"		"Adás: Némítás"
 		"es"		"Mutear Jugador"
 		"ru"		"Отключить микрофон"
 		"pl"		"Wycisz"
@@ -613,6 +676,7 @@
 	"AdminMenu_UnMute"
 	{
 		"en"		"Remove Mute"
+		"hu"		"Feloldás: Némítás"
 		"es"		"Eliminar Muteo"
 		"ru"		"Включить микрофон"
 		"pl"		"Usuń wyciszenie"
@@ -622,6 +686,7 @@
 	"AdminMenu_Silence"
 	{
 		"en"		"Issue Silence"
+		"hu"		"Adás: Teljes Csend (Silence)"
 		"es"		"Silenciar Jugador"
 		"ru"		"Отключить микрофон и чат"
 		"pl"		"Wycisz całkowicie"
@@ -631,6 +696,7 @@
 	"AdminMenu_UnSilence"
 	{
 		"en"		"Remove Silence"
+		"hu"		"Feloldás: Teljes Csend (Silence)"
 		"es"		"Eliminar Silencio"
 		"ru"		"Включить микрофон и чат"
 		"pl"		"Usuń całkowite wyciszenie"
@@ -641,6 +707,7 @@
 	"AdminMenu_Not_Available"
 	{
 		"en"		"The player you selected is no longer available."
+		"hu"		"A kiválasztott játékos már nem elérhető."
 		"es"		"El jugador que has seleccionado ya no está disponible."
 		"ru"		"Игрок не доступен."
 		"pl"		"Wybrany gracz nie jest już dostępny."
@@ -650,6 +717,7 @@
 	"Command_Target_Not_Targetable"
 	{
 		"en"		"You cannot target this player."
+		"hu"		"Nem tudod befogni ezt a játékost."
 		"es"		"Tú no puedes controlar a este jugador."
 		"ru"		"Вы не можете выбрать этого игрока."
 		"pl"		"Nie możesz wskazać tego gracza."
@@ -660,6 +728,7 @@
 	"ListMenu_Option_Mute"
 	{
 		"en"		"Muted"
+		"hu"		"Némítva"
 		"es"		"Muteado"
 		"ru"		"Микрофон"
 		"pl"		"Wyciszony"
@@ -669,6 +738,7 @@
 	"ListMenu_Option_Gag"
 	{
 		"en"		"Gagged"
+		"hu"		"Gagg-olva"
 		"es"		"Gageado"
 		"ru"		"Чат"
 		"pl"		"Zakneblowany"
@@ -678,6 +748,7 @@
 	"ListMenu_Option_Duration"
 	{
 		"en"		"- Duration: "
+		"hu"		"- Időtartam: "
 		"es"		"- Duración: "
 		"ru"		"- На время: "
 		"pl"		"- Czas trwania: "
@@ -687,6 +758,7 @@
 	"ListMenu_Option_Duration_Perm"
 	{
 		"en"		"Permanent"
+		"hu"		"Örökre"
 		"es"		"Permanente"
 		"ru"		"Навсегда"
 		"pl"		"Permanentnie"
@@ -697,6 +769,7 @@
 	{
 		"#format"	"{1:d}"
 		"en"		"{1} Minutes"
+		"hu"		"{1} Perc"
 		"es"		"{1} Minutos"
 		"ru"		"{1} минут"
 		"pl"		"{1} minut"
@@ -706,6 +779,7 @@
 	"ListMenu_Option_Duration_Temp"
 	{
 		"en"		"Temporary"
+		"hu"		"Ideiglenes"
 		"es"		"Temporal"
 		"ru"		"Временный"
 		"pl"		"Tymczasowo"
@@ -715,6 +789,7 @@
 	"ListMenu_Option_Expire"
 	{
 		"en"		"- Expires: "
+		"hu"		"- Lejárt: "
 		"es"		"- Expira en: "
 		"ru"		"- Истекает: "
 		"pl"		"- Wygasa: "
@@ -724,6 +799,7 @@
 	"ListMenu_Option_Expire_Perm"
 	{
 		"en"		"Never"
+		"hu"		"Soha"
 		"es"		"Nunca"
 		"ru"		"Никогда"
 		"pl"		"Nigdy"
@@ -734,6 +810,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"{1}"
+		"hu"		"{1}"
 		"es"		"{1}"
 		"ru"		"{1}"
 		"pl"		"{1}"
@@ -743,6 +820,7 @@
 	"ListMenu_Option_Expire_Temp_Reconnect"
 	{
 		"en"		"Reconnect"
+		"hu"		"Újracsatlakozás"
 		"es"		"Al reconectar"
 		"ru"		"Перезаход"
 		"pl"		"Ponowne połączenie"
@@ -753,6 +831,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"- Admin: {1}"
+		"hu"		"- Admin: {1}"
 		"es"		"- Admin: {1}"
 		"ru"		"- Админ: {1}"
 		"pl"		"- Admin: {1}"
@@ -763,6 +842,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"- Issued: {1}"
+		"hu"		"- Issued: {1}"
 		"es"		"- Emitido: {1}"
 		"ru"		"- Отключен: {1}"
 		"pl"		"- Nadano: {1}"
@@ -772,6 +852,7 @@
 	"ListMenu_Option_Reason"
 	{
 		"en"		"- View Reason"
+		"hu"		"- Ok megnézése"
 		"es"		"- Ver Razón"
 		"ru"		"- Причина"
 		"pl"		"- Zobacz powód"
@@ -781,6 +862,7 @@
 	"ListMenu_Option_Reason_None"
 	{
 		"en"		"- Reason: None"
+		"hu"		"- Ok: Nincs"
 		"es"		"- Razón: Ninguna"
 		"ru"		"- Нет причины"
 		"pl"		"- Powód: Brak"
@@ -791,6 +873,7 @@
 	"ReasonPanel_Punishment_Mute"
 	{
 		"en"		"Muted: "
+		"hu"		"Némítva: "
 		"es"		"Muteado: "
 		"ru"		"Микрофон: "
 		"pl"		"Wyciszono: "
@@ -800,6 +883,7 @@
 	"ReasonPanel_Punishment_Gag"
 	{
 		"en"		"Gagged: "
+		"hu"		"Gagg-olva: "
 		"es"		"Gageado: "
 		"ru"		"Чат: "
 		"pl"		"Zakneblowano: "
@@ -809,6 +893,7 @@
 	"ReasonPanel_Perm"
 	{
 		"en"		"Permanent"
+		"hu"		"Örökre"
 		"es"		"Permanente"
 		"ru"		"Навсегда"
 		"pl"		"Permanentnie"
@@ -819,6 +904,7 @@
 	{
 		"#format"	"{1:d}"
 		"en"		"{1} Minutes"
+		"hu"		"{1} Perc"
 		"es"		"{1} Minutos"
 		"ru"		"{1} минут"
 		"pl"		"{1} minut"
@@ -828,6 +914,7 @@
 	"ReasonPanel_Temp"
 	{
 		"en"		"Temporary"
+		"hu"		"Ideiglenes"
 		"es"		"Temporal"
 		"ru"		"Временный"
 		"pl"		"Tymczasowo"
@@ -838,6 +925,7 @@
 	{
 		"#format"	"{1:s}"
 		"en"		"Reason: {1}"
+		"hu"		"Ok: {1}"
 		"es"		"Razón: {1}"
 		"ru"		"Причина: {1}"
 		"pl"		"Powód: {1}"
@@ -847,6 +935,7 @@
 	"ReasonPanel_Back"
 	{
 		"en"		"Exit"
+		"hu"		"Kilépés"
 		"es"		"Salir"
 		"ru"		"Выход"
 		"pl"		"Wyjdź"
@@ -858,6 +947,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Muted {1}."
+		"hu"			"Némítva {1}."
 		"es"			"{1} Muteado."
 		"ru"			"Игроку {1} отключен микрофон."
 		"pl"			"Wyciszono {1}."
@@ -868,6 +958,7 @@
 	{
 		"#format"		"{1:t},{2:s}"
 		"en"			"Muted {1} (reason: {2})."
+		"hu"			"Némítva {1} (Ok: {2})."
 		"es"			"{1} Muteado (razón: {2})."
 		"ru"			"Игроку {1} отключен микрофон (причина: {2})."
 		"pl"			"Wyciszono {1} (powód: {2})."
@@ -878,6 +969,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Gagged {1}."
+		"hu"			"Gagg-olva {1}."
 		"es"			"{1} Gageado."
 		"ru"			"Игроку {1} отключен чат."
 		"pl"			"Zakneblowano {1}."
@@ -888,6 +980,7 @@
 	{
 		"#format"		"{1:t},{2:s}"
 		"en"			"Gagged {1} (reason: {2})."
+		"hu"			"Gagg-olva{1} (ok: {2})."
 		"es"			"{1} Gageado (razón: {2})."
 		"ru"			"Игроку {1} отключен чат (причина: {2})."
 		"pl"			"Zakneblowano {1} (powód: {2})."
@@ -898,6 +991,7 @@
 	{
 		"#format"		"{1:t}"
 		"en"			"Silenced {1}."
+		"hu"			"Gagg-olva és némítva {1}."
 		"es"			"{1} Silenciado."
 		"ru"			"Игроку {1} отключен чат и микрофон."
 		"pl"			"Całkowicie wyciszono {1}."
@@ -908,6 +1002,7 @@
 	{
 		"#format"		"{1:t},{2:s}"
 		"en"			"Silenced {1} (reason: {2})."
+		"hu"			"Gagg-olva és némítva {1} (ok: {2})."
 		"es"			"{1} Silenciado (razón: {2})."
 		"ru"			"Игроку {1} отключен чат и микрофон (причина: {2})."
 		"pl"			"Całkowicie wyciszono {1} (powód: {2})."
@@ -918,6 +1013,7 @@
 	"CommandComms_na"
 	{
 		"en"		"Available only for players on server."
+		"hu"		"Available only for players on server."
 		"es" 		"Sólo está disponible para los jugadores que están en el servidor"
 		"ru"		"Доступно только для игроков на сервере."
 		"pl"		"Dostępne tylko dla graczy na serwerze."
@@ -927,6 +1023,7 @@
 	"CommandComms_nb"
 	{
 		"en"		"Your chat and voice isn't blocked."
+		"hu"		"Az írás és a hang chat nincs blokkolva."
 		"es"		"Tu chat y tu voz no están bloqueados."
 		"ru"		"У вас не заблокированы чат и микрофон."
 		"pl"		"Nie zostałeś wyciszony ani zakneblowany."
@@ -937,6 +1034,7 @@
 	"no access"
 	{
 		"en"		"The punishment for the specified time is not allowed for you."
+		"hu"		"A büntetés a megadott ideig nem engedélyezett a számodra."
 		"es"		"El castigo por tiempo especificado no está permitido para ti"
 		"ru"		"Блокировка на указанное время недоступна для вас."
 		"pl"		"Nie możesz nakładać kar na określony czas."
