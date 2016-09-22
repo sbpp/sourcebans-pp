@@ -305,7 +305,7 @@
           	</tr>
           	<!-- ###############[ End Sliding Panel ]################## -->
 		{/foreach}
-	</table><div align="right" style="margin-top: 3px; font-size:7pt">SourceComms plugin &#038;	integration to SourceBans made by <a href="http://steamcommunity.com/id/raleks" target="_blank">Alex</a></div>
+	</table><div align="right" style="margin-top: 3px; font-size:7pt">SourceComms plugin &#038;	integration to SourceBans made by <a href="https://github.com/ppalex7" target="_blank">Alex</a></div>
 </div>
 {literal}
 <script type="text/javascript">window.addEvent('domready', function(){	
