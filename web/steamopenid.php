@@ -81,7 +81,7 @@ $data = steamOauth();
 if($data !== false){
     $data = convert64to32($data);
 
-    $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT);
     if(defined('DB_PREFIX')){ $prfx = DB_PREFIX ."_"; }else{ $prfx = ""; }
 
     $resultado = $mysqli->query("SELECT aid,password FROM " .$prfx ."admins WHERE authid = '" .$data ."'; ");
