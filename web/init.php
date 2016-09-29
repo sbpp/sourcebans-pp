@@ -341,4 +341,3 @@ if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE") 
 // Setup our user manager
 // ---------------------------------------------------
 $userbank = new CUserManager(isset($_COOKIE['aid'])?$_COOKIE['aid']:'', isset($_COOKIE['password'])?$_COOKIE['password']:'');
-?>
