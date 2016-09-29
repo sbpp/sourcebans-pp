@@ -1,5 +1,8 @@
-<?php 
-if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
+<?php
+if (!defined("IN_SB")) {
+    echo "You should not be here. Only follow links!";
+    die();
+}
 ?>
 <table width="90%" border="0" cellspacing="0" cellpadding="4" align="center">
   <tr>

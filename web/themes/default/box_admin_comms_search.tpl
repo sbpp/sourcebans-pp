@@ -104,7 +104,7 @@
 			        <td align="center" class="listtable_1" ><input id="ban_type_" type="radio" name="search_type" value="radiobutton"></td>
 			        <td class="listtable_1" >Type</td>
 			        <td class="listtable_1" >
-			            <select class="select id="ban_type" onmouseup="$('ban_type_').checked = true" style="width: 95%;">
+			            <select class="select" id="ban_type" onmouseup="$('ban_type_').checked = true" style="width: 95%;">
 					        <option value="1" selected>Mute</option>
 					        <option value="2">Gag</option>
 						</select>

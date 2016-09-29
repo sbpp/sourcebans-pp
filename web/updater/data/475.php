@@ -1,5 +1,5 @@
 <?php
-	$create = $GLOBALS['db']->Execute("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_comms` (
+$create = $GLOBALS['db']->Execute("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_comms` (
 			`bid` int(6) NOT NULL AUTO_INCREMENT,
 			`authid` varchar(64) NOT NULL,
 			`name` varchar(128) NOT NULL DEFAULT 'unnamed',
@@ -23,7 +23,6 @@
 			KEY `created` (`created`),
 			KEY `aid` (`aid`)
 		) ENGINE=MyISAM DEFAULT CHARSET=utf8;");
-	if(!$create)
-		return false;
-	return true;
-?>
+if (!$create)
+    return false;
+return true;

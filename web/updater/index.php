@@ -25,33 +25,31 @@
 //
 // *************************************************************************
 
- define('IS_UPDATE', true);
- include "../init.php";
+define('IS_UPDATE', true);
+include "../init.php";
 //clear compiled themes
 $cachedir = dir(SB_THEMES_COMPILE);
 while (($entry = $cachedir->read()) !== false) {
-	if (is_file($cachedir->path.$entry)) {
-		unlink($cachedir->path.$entry);
-	}
+    if (is_file($cachedir->path . $entry)) {
+        unlink($cachedir->path . $entry);
+    }
 }
 $cachedir->close();
- include INCLUDES_PATH . "/CUpdate.php";
- $updater = new CUpdater();
- 
- $setup = "Checking current database version...<b> " . $updater->getCurrentRevision() . "</b>";
- if(!$updater->needsUpdate())
- {
-	$setup .= "<br />Installation up-to-date.";
-	$theme->assign('setup', $setup);
-	$theme->assign('progress', "");
-	$theme->display('updater.tpl');
-	die();
- }
- $setup .= "<br />Updating database to version: <b>" . $updater->getLatestPackageVersion() . "</b>";
- 
- $progress = $updater->doUpdates();
- 
- $theme->assign('setup', $setup);
- $theme->assign('progress', $progress);
- $theme->display('updater.tpl');
-?>
+include INCLUDES_PATH . "/CUpdate.php";
+$updater = new CUpdater();
+
+$setup = "Checking current database version...<b> " . $updater->getCurrentRevision() . "</b>";
+if (!$updater->needsUpdate()) {
+    $setup .= "<br />Installation up-to-date.";
+    $theme->assign('setup', $setup);
+    $theme->assign('progress', "");
+    $theme->display('updater.tpl');
+    die();
+}
+$setup .= "<br />Updating database to version: <b>" . $updater->getLatestPackageVersion() . "</b>";
+
+$progress = $updater->doUpdates();
+
+$theme->assign('setup', $setup);
+$theme->assign('progress', $progress);
+$theme->display('updater.tpl');
