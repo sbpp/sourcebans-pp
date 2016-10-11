@@ -154,7 +154,7 @@ public OnClientPostAdminCheck(client)
 			
 			new String:query[1024];
 			
-			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND ends > %d", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0);
+			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR length = 0)", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0);
 			
 			new Handle:datapack = CreateDataPack();
 			
