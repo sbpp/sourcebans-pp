@@ -46,6 +46,9 @@ header('Content-type: text/css');
 
 body { 
 	background-color: #bab5b2;
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
 	color: #444;
 	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
 	font-size: 11px;
@@ -242,6 +245,7 @@ div.dialog-control{
 /* ================ STRUCTURE ================ */
 
 #mainwrapper {
+    flex: 1;
 	width: 984px;
 	margin: 0 auto 0 auto;  /*centers the box, no matter the overall width */
 	text-align: left; /* re_aligns text to left second part of two part MSIE centering workaround */
