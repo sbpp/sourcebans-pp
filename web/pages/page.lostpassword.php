@@ -30,6 +30,13 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
     $email      = $_GET['email'];
     $validation = $_GET['validation'];
     
+    if (is_array($email) || is_array($validation)) {
+        CreateRedBox("Error", "Invalid request.");
+        
+        new CSystemLog("w", "Hacking attempt", "Something user tried hack SB with SQL-injection, but failed.");
+        PageDie();
+    }
+    
     preg_match("/[\w\.]*/", $_SERVER['HTTP_HOST'], $match);
     
     if ($match[0] != $_SERVER['HTTP_HOST']) {
