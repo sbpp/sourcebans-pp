@@ -32,7 +32,7 @@ Click on a row to see more details about the event.
           		</tr>
           		<tr align="left">
             		<td width="20%" height="16" class="listtable_1">Details</td>
-            		<td height="16" class="listtable_1">{$log.message|escape}</td>
+            		<td height="16" class="listtable_1">{$log.message}</td>
             	</tr>
             	<tr align="left">
             		<td width="20%" height="16" class="listtable_1">Parent Function</td>
