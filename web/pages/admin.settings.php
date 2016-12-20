@@ -126,6 +126,7 @@ foreach ($log as $l) {
     $log_item['user']     = !empty($l['user']) ? $l['user'] : 'Guest';
     $log_item['date_str'] = SBDate($dateformat, $l['created']);
     $log_item             = array_merge($l, $log_item);
+    $log_item['message']  = str_replace("\n", "<br />", htmlentities(str_replace(["<br />", "<br>", "<br/>"], "\n", $log_item['message'])));
     array_push($log_list, $log_item);
 }
 // Theme stuff
