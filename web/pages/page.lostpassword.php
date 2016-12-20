@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -29,27 +29,27 @@ global $theme, $userbank;
 if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !empty($_GET['validation'])) {
     $email      = $_GET['email'];
     $validation = $_GET['validation'];
-    
+
     if (is_array($email) || is_array($validation)) {
         CreateRedBox("Error", "Invalid request.");
-        
-        new CSystemLog("w", "Hacking attempt", "Something user tried hack SB with SQL-injection, but failed.");
+
+        new CSystemLog("w", "Hacking attempt", "Attempted SQL-Injection.");
         PageDie();
     }
-    
+
     preg_match("/[\w\.]*/", $_SERVER['HTTP_HOST'], $match);
-    
+
     if ($match[0] != $_SERVER['HTTP_HOST']) {
         echo '<div id="msg-red" style="">
 			<i><img src="./images/warning.png" alt="Warning" /></i>
 			<b>Error</b>
-			<br />			
+			<br />
 			An unknown error occured.
 			</div>';
         $log = new CSystemLog("w", "Hacking Attempt", "Attempted password reset email injection. Using: " . $_SERVER['HTTP_HOST']);
         exit();
     }
-    
+
     if (strlen($validation) < 60) {
         echo '<div id="msg-red" style="">
 			<i><img src="./images/warning.png" alt="Warning" /></i>
@@ -59,7 +59,7 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
 			</div>';
         exit();
     }
-    
+
     $q = $GLOBALS['db']->GetRow("SELECT aid, user FROM `" . DB_PREFIX . "_admins` WHERE `email` = ? && `validate` IS NOT NULL && `validate` = ?", array(
         $email,
         $validation
@@ -73,10 +73,10 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
         $message .= "Your password reset was successful.\n";
         $message .= "Your password was changed to: " . $newpass . "\n\n";
         $message .= "Login to your SourceBans account and change your password in Your Account.\n";
-        
+
         $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
         $m       = mail($email, "SourceBans Password Reset", $message, $headers);
-        
+
         echo '<div id="msg-blue" style="">
 			<i><img src="./images/info.png" alt="Info" /></i>
 			<b>Password Reset</b>
