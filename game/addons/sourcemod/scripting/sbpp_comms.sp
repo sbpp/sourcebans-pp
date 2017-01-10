@@ -248,21 +248,6 @@ public OnMapStart()
 
 public OnMapEnd()
 {
-	decl String:Query[2048];
-	Format(Query, sizeof(Query),
-		"UPDATE	%s_comms \
-		SET		RemovedBy = 0, \
-				RemoveType = 'E', \
-				RemovedOn = UNIX_TIMESTAMP() \
-		WHERE	sid = %d \
-		AND		RemovedOn IS NULL \
-		AND		length = -1",
-		DatabasePrefix, serverID);
-	#if defined LOG_QUERIES
-	LogToFile(logQuery, "OnMapEnd for: %s. QUERY: %s", clientAuth, Query);
-	#endif
-	SQL_TQuery(g_hDatabase, Query_ErrorCheck, Query);
-
 	// Clean up on map end just so we can start a fresh connection when we need it later.
 	// Also it is necessary for using SQL_SetCharset
 	if (g_hDatabase)
