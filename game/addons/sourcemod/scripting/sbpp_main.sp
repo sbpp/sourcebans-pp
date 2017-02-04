@@ -15,7 +15,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work(s) covered by the following copyright(s):  
+//  This file is based off work(s) covered by the following copyright(s):
 //
 //   SourceBans 1.4.11
 //   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
@@ -32,11 +32,11 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.5.5++-dev"
-#define SBR_VERSION "1.5.5-dev"
+#define SB_VERSION "1.6.0++"
+#define SBR_VERSION "1.6.0"
 
 #if defined _updater_included
-#define UPDATE_URL "https://github.com/sbpp/sourcebans-pp/blob/gh-pages/updater/updatefile.txt"
+#define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
 #endif
 
 //GLOBAL DEFINES
@@ -994,7 +994,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 	DB = hndl;
 
 	decl String:query[1024];
-	FormatEx(query, sizeof(query), "SET NAMES \"UTF8\"");
+	SQL_SetCharset(DB, "utf8");
 	SQL_TQuery(DB, ErrorCheckCallback, query);
 
 	InsertServerInfo();

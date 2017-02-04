@@ -2,20 +2,20 @@
 //  This file is part of SourceBans++.
 //
 //  Copyright (C) 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
-//  
+//
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
-//  
+//
 //  SourceBans++ is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work(s) covered by the following copyright(s):   
+//  This file is based off work(s) covered by the following copyright(s):
 //
 //   SourceMod Admin File Reader Plugin
 //   Copyright (C) 2004-2008 AlliedModders LLC
@@ -29,15 +29,15 @@
 #include <sourcemod>
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 7
-public Plugin:myinfo = 
+public Plugin:myinfo =
 #else
-public Plugin myinfo = 
-#endif 
+public Plugin myinfo =
+#endif
 {
-	name = "SourceBans++: Admin Config Loader", 
-	author = "AlliedModders LLC, SourceBans++ Dev Team", 
-	description = "Reads Admin Files", 
-	version = "(SB++) 1.5.5-dev", 
+	name = "SourceBans++: Admin Config Loader",
+	author = "AlliedModders LLC, SourceBans++ Dev Team",
+	description = "Reads Admin Files",
+	version = "1.6.0", 
 	url = "https://sbpp.sarabveer.me/"
 };
 
@@ -84,17 +84,17 @@ void ParseError(const char[] format, any...)
 	#else
 	char buffer[512];
 	#endif
-	
+
 	if (!g_LoggedFileName)
 	{
 		LogError("Error(s) Detected Parsing %s", g_Filename);
 		g_LoggedFileName = true;
 	}
-	
+
 	VFormat(buffer, sizeof(buffer), format, 2);
-	
+
 	LogError(" (line %d) %s", g_CurrentLine, buffer);
-	
+
 	g_ErrorCount++;
 }
 
@@ -104,4 +104,4 @@ void InitGlobalStates()
 	g_IgnoreLevel = 0;
 	g_CurrentLine = 0;
 	g_LoggedFileName = false;
-} 
+}
