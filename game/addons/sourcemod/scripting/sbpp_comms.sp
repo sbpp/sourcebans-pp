@@ -15,7 +15,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work(s) covered by the following copyright(s):  
+//  This file is based off work(s) covered by the following copyright(s):
 //
 //   SourceComms 0.9.266
 //   Copyright (C) 2013-2014 Alexandr Duplishchev
@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "(SB++) 1.5.5-dev"
+#define PLUGIN_VERSION "1.6.0"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length

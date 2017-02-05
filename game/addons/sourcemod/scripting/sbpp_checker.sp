@@ -15,7 +15,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work(s) covered by the following copyright(s):  
+//  This file is based off work(s) covered by the following copyright(s):
 //
 //   SourceBans Checker 1.0.2
 //   Copyright (C) 2010-2013 Nicholas Hastings
@@ -26,7 +26,7 @@
 
 #include <sourcemod>
 
-#define VERSION "(SB++) 1.5.5-dev"
+#define VERSION "1.6.0"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define INVALID_TARGET -1
 
