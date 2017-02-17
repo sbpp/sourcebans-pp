@@ -8,7 +8,7 @@ Global admin, ban, and communication management system for the Source engine
 
 - Forum Thread: [SourceBans++ - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
 
-- Install help: [SourceBans Manual](http://www.sourcebans.net/manual)
+- Install help: [SourceBans Manual](https://www.gameconnect.net/projects/sourcebans/manual/)
 
 - FAQ: [SourceBans++ FAQ](https://sbpp.github.io/faq/)
 
