@@ -124,6 +124,7 @@ error_reporting(E_ALL ^ E_NOTICE);
 // ---------------------------------------------------
 include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
 include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
+require_once(INCLUDES_PATH.'/Database.php');
 $GLOBALS['db'] = ADONewConnection("mysqli://".DB_USER.':'.DB_PASS.'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 $GLOBALS['log'] = new CSystemLog();
 $GLOBALS['sb-email'] = SB_EMAIL;
