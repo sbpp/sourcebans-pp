@@ -4,7 +4,7 @@
 		<tr>
 		    <td valign="top" colspan="2"><h3>Main Settings</h3>For more information or help regarding a certain subject move your mouse over the question mark.<br /><br /></td>
 		 </tr>
-		
+
 		<tr>
 		    <td valign="top"><div class="rowdesc">{help_icon title="Title" message="Define the title shown in the title of your browser."}Title </div></td>
 		    <td>
@@ -13,7 +13,7 @@
 		    	</div>
 		    </td>
 		</tr>
-		
+
 		<tr>
 		    <td valign="top"><div class="rowdesc">{help_icon title="Path to logo" message="Here you can define a new location for the logo, so you can use your own image."}Path to logo </div></td>
 		    <td>
@@ -22,7 +22,7 @@
 		    	</div>
 		    </td>
 		</tr>
-		  
+
 		<tr>
 			<td valign="top"><div class="rowdesc">{help_icon title="Min Password Length" message="Define the shortest length a password can be."}Min password length </div></td>
 			<td>
@@ -32,7 +32,7 @@
 		    	<div id="minpasslength.msg" class="badentry"></div>
 		    </td>
 		</tr>
-    
+
 		<tr>
 		    <td valign="top"><div class="rowdesc">{help_icon title="Date format" message="Here you can change the date format, displayed in the banlist and other pages."}Date format </div></td>
 		    <td>
@@ -42,21 +42,21 @@
 		    	</div>
 		    </td>
 		</tr>
-		
+
 		<tr>
 		    <td valign="top"><div class="rowdesc">{help_icon title="Timezone" message="Here you can change the default timezone that SourceBans displays times in"}Timezone </div></td>
 		    <td>
 		    	<div align="left">
 		      		<select class="select" TABINDEX=4 name="timezoneoffset" id="sel_timezoneoffset">
 						<option value="-12" class="">(GMT -12:00) Eniwetok, Kwajalein</option>
-						
+
 						<option value="-11" id="-39600" class="" >(GMT -11:00) Midway Island, Samoa</option>
 						<option value="-10" id="-36000" class="">(GMT -10:00) Hawaii</option>
 						<option value="-9" class="">(GMT -9:00) Alaska</option>
 						<option value="-8" class="">(GMT -8:00) Pacific Time (US &amp; Canada)</option>
 						<option value="-7" class="">(GMT -7:00) Mountain Time (US &amp; Canada)</option>
 						<option value="-6" class="">(GMT -6:00) Central Time (US &amp; Canada), Mexico City</option>
-						
+
 						<option value="-5" class="">(GMT -5:00) Eastern Time (US &amp; Canada), Bogota, Lima</option>
 						<option value="-4" class="">(GMT -4:00) Atlantic Time (Canada), Caracas, La Paz</option>
 						<option value="-3.5" class="">(GMT -3:30) Newfoundland</option>
@@ -65,7 +65,7 @@
 						<option value="-1" class="">(GMT -1:00 hour) Azores, Cape Verde Islands</option>
 						<option value="0" class="">(GMT) Western Europe Time, London, Lisbon, Casablanca</option>
 						<option value="1" class="">(GMT +1:00 hour) Brussels, Copenhagen, Madrid, Paris</option>
-						
+
 						<option value="2" class="">(GMT +2:00) Kaliningrad, South Africa</option>
 						<option value="3" class="">(GMT +3:00) Baghdad, Riyadh, Moscow, St. Petersburg</option>
 						<option value="3.5" class="">(GMT +3:30) Tehran</option>
@@ -75,7 +75,7 @@
 						<option value="5.5" class="">(GMT +5:30) Bombay, Calcutta, Madras, New Delhi</option>
 						<option value="6" class="">(GMT +6:00) Almaty, Dhaka, Colombo</option>
 						<option value="7" class="">(GMT +7:00) Bangkok, Hanoi, Jakarta</option>
-						
+
 						<option value="8" class="">(GMT +8:00) Beijing, Perth, Singapore, Hong Kong</option>
 						<option value="9" class="">(GMT +9:00) Tokyo, Seoul, Osaka, Sapporo, Yakutsk</option>
 						<option value="9.5" class="">(GMT +9:30) Adelaide, Darwin</option>
@@ -102,7 +102,7 @@
 		    	</div>
 		    </td>
 		</tr>
-    	
+
 		<tr>
 			<td valign="top" colspan="2"><h3>Dashboard Settings</h3></td>
 		</tr>
@@ -120,9 +120,6 @@
 		</tr>
 		<tr>
 			<td valign="top" colspan="2"> <textarea TABINDEX=6 cols="80" rows="20" id="dash_intro_text" name="dash_intro_text">{$config_dash_text}</textarea>
-				<div>
-				<a href="javascript:void(0);" onclick="toggleMCE('dash_intro_text');">Enable/Disable WYSIWYG editor</a><div id="dash.text.msg" class="badentry">
-				</div>
 			</td>
 		</tr>
 		<tr>
@@ -245,7 +242,7 @@
 		</tr>
 		<tr>
 			<td valign="top" colspan="2">&nbsp;</td>
-		</tr> 
+		</tr>
 		<tr>
 			<td>&nbsp;</td>
 		    <td>
