@@ -15,7 +15,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work covered by the following copyright(s):  
+//  This file is based off work covered by the following copyright(s):
 //
 //   SourceBans 1.4.11
 //   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
@@ -23,14 +23,22 @@
 //   Page: <http://www.sourcebans.net/> - <https://github.com/GameConnect/sourcebansv1>
 //
 // *************************************************************************
+function FadeElIn(id, time)
+{
+	$(document.getElementById(id)).setStyle('display', 'block');
+	var myEffects = $(id).effects({duration: time, transition:Fx.Transitions.Sine.easeIn});
+	myEffects.start({'opacity': [1]});
+	setTimeout("$(document.getElementById('" + id + "')).setOpacity(1);", time);
+	return;
+}
 
 function FadeElOut(id, time)
 {
-	var myEffects = $(document.getElementById(id)).effects({duration: time, transition:Fx.Transitions.Sine.easeInOut});
+	var myEffects = $(id).effects({duration: time, transition:Fx.Transitions.Sine.easeOut});
 	myEffects.start({'opacity': [0]});
 	var d = id;
-	setTimeout("$(document.getElementById('" + d + "')).setStyle('display', 'none');$(document.getElementById('" + d + "')).setOpacity(100);", time);
-	
+	setTimeout("$(document.getElementById('" + d + "')).setStyle('display', 'none');$(document.getElementById('" + d + "')).setOpacity(0);", time);
+
 	return;
 }
 
@@ -61,33 +69,33 @@ function TabToReload()
 function ShowBox(title, msg, color, redir, noclose)
 {
 	var type = "";
-	
+
 	if(color == "red")
 		color = "error";
 	else if(color == "blue")
 		color = "info";
 	else if(color == "green")
 		color = "ok";
-	
+
 	$('dialog-title').setProperty("class", color);
-	
+
 	$('dialog-icon').setProperty("class", 'icon-'+color);
-	
+
 	$('dialog-title').setHTML(title);
 	$('dialog-content-text').setHTML(msg);
-	$('dialog-placement').setStyle('display', 'block');
-	
+	FadeElIn('dialog-placement', 750);
+
 	var jsCde = "closeMsg('" + redir + "');";
 	$('dialog-control').setHTML("<input name='dialog-close' onclick=\""+jsCde+"\" class='btn ok' onmouseover=\"ButtonOver('dialog-close')\" onmouseout='ButtonOver(\"dialog-close\")' id=\"dialog-close\" value=\"OK\" type=\"button\">");
 	$('dialog-control').setStyle('display', 'block');
-	
+
 	if(!noclose)
 	{
 		if(redir)
 			setTimeout("window.location='" + redir + "'",5000);
 		else
 		{
-			setTimeout("$('dialog-placement').setStyle('display', 'none');",5000);
+			setTimeout("FadeElOut('dialog-placement', 750);",5000);
 		}
 	}
 }

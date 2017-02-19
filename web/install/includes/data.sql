@@ -52,7 +52,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
 ('config.version', '356'),
-('config.enablesteamlogin', '0');
+('config.enablesteamlogin', '1');
 
 
 INSERT INTO `{prefix}_admins` (
