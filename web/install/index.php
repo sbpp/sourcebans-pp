@@ -1,7 +1,7 @@
-<?php 
+<?php
 /*************************************************************************
 	This file is part of SourceBans++
-	
+
 	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
 	SourceBans++ is licensed under a
@@ -18,29 +18,15 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-	This program is based off work covered by the following copyright(s): 
+	This program is based off work covered by the following copyright(s):
 		SourceBans 1.4.11
 		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
-
 session_start();
 include_once 'init.php';
 include_once(INCLUDES_PATH . "/user-functions.php");
 include_once(INCLUDES_PATH . "/system-functions.php");
 include_once(INCLUDES_PATH . "/page-builder.php");
-
-
-
-
-
-
-
-
-
-
-//Yarr!
-
-?>

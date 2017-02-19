@@ -16,7 +16,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work covered by the following copyright(s):  
+//  This file is based off work covered by the following copyright(s):
 //
 //   SourceBans 1.4.11
 //   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
@@ -26,7 +26,7 @@
 // *************************************************************************
 
 /**
-* Extended substr function. If it finds mbstring extension it will use, else 
+* Extended substr function. If it finds mbstring extension it will use, else
 * it will use old substr() function
 *
 * @param string $string String that need to be fixed
@@ -35,14 +35,19 @@
 * @return string
 */
 
-if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
+if (!defined("IN_SB")) {
+    echo "You should not be here. Only follow links!";
+    die();
+}
 
-function substr_utf($string, $start = 0, $length = null) {
-$start = (integer) $start >= 0 ? (integer) $start : 0;
-if(is_null($length)) 
-	$length = strlen_utf($string) - $start;
-    return substr($string, $start, $length); 
-} 
+function substr_utf($string, $start = 0, $length = null)
+{
+    $start = (integer) $start >= 0 ? (integer) $start : 0;
+    if (is_null($length)) {
+        $length = strlen_utf($string) - $start;
+    }
+    return substr($string, $start, $length);
+}
 
 /**
 * Equivalent to htmlspecialchars(), but allows &#[0-9]+ (for unicode)
@@ -51,10 +56,11 @@ if(is_null($length))
 * @param string $str
 * @return string
 */
-function clean($str) {
-	$str = preg_replace('/&(?!#[0-9]+;)/s', '&amp;', $str);
-	$str = str_replace(array('<', '>', '"'), array('&lt;', '&gt;', '&quot;'), $str);
-	return $str;
+function clean($str)
+{
+    $str = preg_replace('/&(?!#[0-9]+;)/s', '&amp;', $str);
+    $str = str_replace(array('<', '>', '"'), array('&lt;', '&gt;', '&quot;'), $str);
+    return $str;
 }
 
 /**
@@ -63,13 +69,14 @@ function clean($str) {
 * @param string $user_email Email address
 * @return boolean
 */
-function is_valid_email($user_email) {
-	$chars = EMAIL_FORMAT;
-	if(strstr($user_email, '@') && strstr($user_email, '.')) {
-		return (boolean) preg_match($chars, $user_email);
-	}else{
-		return false;
-	}
+function is_valid_email($userEmail)
+{
+    $chars = EMAIL_FORMAT;
+    if (strstr($userEmail, '@') && strstr($userEmail, '.')) {
+        return (boolean) preg_match($chars, $userEmail);
+    }
+
+    return false;
 }
 
 /**
@@ -79,7 +86,7 @@ function is_valid_email($user_email) {
  */
 function GetLocation()
 {
-	return substr($_SERVER['SCRIPT_FILENAME'], 0, strlen($base)-strlen("index.php"));
+    return substr($_SERVER['SCRIPT_FILENAME'], 0, strlen($base)-strlen("index.php"));
 }
 
 /**
@@ -89,7 +96,7 @@ function GetLocation()
  */
 function BuildPageHeader()
 {
-	include TEMPLATES_PATH . "/header.php";
+    include TEMPLATES_PATH . "/header.php";
 }
 
 /**
@@ -99,7 +106,7 @@ function BuildPageHeader()
  */
 function BuildSubMenu()
 {
-	include TEMPLATES_PATH . "/submenu.php";
+    include TEMPLATES_PATH . "/submenu.php";
 }
 
 /**
@@ -109,11 +116,10 @@ function BuildSubMenu()
  */
 function BuildContHeader()
 {
-	if(!isset($_GET['s']))
-	{
-		$page = "<b>".(isset($GLOBALS['pagetitle'])?$GLOBALS['pagetitle']:'')."</b>";
-	}
-	include TEMPLATES_PATH . "/content.header.php";
+    if (!isset($_GET['s'])) {
+        $page = "<b>".(isset($GLOBALS['pagetitle']) ? $GLOBALS['pagetitle'] : '')."</b>";
+    }
+    include TEMPLATES_PATH . "/content.header.php";
 }
 
 
@@ -128,35 +134,29 @@ function BuildContHeader()
 
 function AddTab($title, $url, $desc, $active=false)
 {
-	global $tabs;
-	$tab_arr = array(	);
-	$tab_arr[0] = "Dashboard";
-	$tab_arr[1] = "Ban List";
-	$tab_arr[2] = "Servers";
-	$tab_arr[3] = "Submit a ban";
-	$tab_arr[4] = "Protest a ban";
-	$tabs = array();
-	$tabs['title'] = $title;
-	$tabs['url'] = $url;
-	$tabs['desc'] = $desc;
-	if(!isset($_GET['p']) && $title == $tab_arr[isset($GLOBALS['config'])?intval($GLOBALS['config']['config.defaultpage']):0])
-	{
-		$tabs['active'] = true;
-		$GLOBALS['pagetitle'] = $title;
-	}
-	else 
-	{
-		if(isset($_GET['p']) && substr($url, 3) == $_GET['p'])
-		{
-			$tabs['active'] = true;
-			$GLOBALS['pagetitle'] = $title;
-		}
-		else
-		{
-				$tabs['active'] = false;
-		}
-	}	
-	include TEMPLATES_PATH . "/tab.php";
+    global $tabs;
+    $tab_arr = array();
+    $tab_arr[0] = "Dashboard";
+    $tab_arr[1] = "Ban List";
+    $tab_arr[2] = "Servers";
+    $tab_arr[3] = "Submit a ban";
+    $tab_arr[4] = "Protest a ban";
+    $tabs = array();
+    $tabs['title'] = $title;
+    $tabs['url'] = $url;
+    $tabs['desc'] = $desc;
+    if (!isset($_GET['p']) && $title == $tab_arr[isset($GLOBALS['config']) ? intval($GLOBALS['config']['config.defaultpage']) : 0]) {
+        $tabs['active'] = true;
+        $GLOBALS['pagetitle'] = $title;
+    } else {
+        if (isset($_GET['p']) && substr($url, 3) == $_GET['p']) {
+            $tabs['active'] = true;
+            $GLOBALS['pagetitle'] = $title;
+        } else {
+            $tabs['active'] = false;
+        }
+    }
+    include TEMPLATES_PATH . "/tab.php";
 }
 
 /**
@@ -166,8 +166,9 @@ function AddTab($title, $url, $desc, $active=false)
  */
 function BuildPageTabs()
 {
-	AddTab("SourceBans", "http://www.sourcebans.net", "");
-	AddTab("SourceMod", "http://www.sourcemod.net", "");
+    AddTab("SourceBans", "https://www.gameconnect.net/projects/sourcebans/", "");
+    AddTab("SourceBans++", "https://sbpp.github.io", "");
+    AddTab("SourceMod", "https://www.sourcemod.net/", "");
 }
 
 /**
@@ -177,41 +178,36 @@ function BuildPageTabs()
  */
 function BuildBreadcrumbs()
 {
-	$base = $GLOBALS['pagetitle'];
-	
-	switch($_GET['c'])
-	{
-		case "admins":
-			$cat = "Admin management";
-			break;
-		case "servers":
-			$cat = "Server management";
-			break;
-		case "bans":
-			$cat = "Ban management";
-			break;
-		case "groups":
-			$cat = "Group management";
-			break;
-		case "settings":
-			$cat = "SourceBans settings";
-			break;
-		case "mods":
-			$cat = "Mod management";
-			break;
-	}
-		
-	if(!isset($_GET['c']))
-	{
-		$bread = "<b>" . $base . "</b>";
-	}
-	else 
-	{
-		$bread = "<a href='?p=". $_GET['p'] . "'>" . $base . "</a>  &raquo; <b>" . $cat . "</b>"; 
-	}
-	$text = "&raquo; <a href='?p=home'>Home</a> &raquo; " . $bread;
-	echo '<script>$("breadcrumb").setHTML("' . $text . '");</script>';
-	
+    $base = $GLOBALS['pagetitle'];
+
+    switch ($_GET['c']) {
+        case "admins":
+            $cat = "Admin management";
+            break;
+        case "servers":
+            $cat = "Server management";
+            break;
+        case "bans":
+            $cat = "Ban management";
+            break;
+        case "groups":
+            $cat = "Group management";
+            break;
+        case "settings":
+            $cat = "SourceBans settings";
+            break;
+        case "mods":
+            $cat = "Mod management";
+            break;
+    }
+
+    if (!isset($_GET['c'])) {
+        $bread = "<b>" . $base . "</b>";
+    } else {
+        $bread = "<a href='?p=". $_GET['p'] . "'>" . $base . "</a>  &raquo; <b>" . $cat . "</b>";
+    }
+    $text = "&raquo; <a href='?p=home'>Home</a> &raquo; " . $bread;
+    echo '<script>$("breadcrumb").setHTML("' . $text . '");</script>';
 }
 /**
  * Creates an anchor tag, and adds tooltip code if needed
@@ -224,16 +220,15 @@ function BuildBreadcrumbs()
  */
 function CreateLink($title, $url, $tooltip="", $target="_self", $wide=false)
 {
-	if($wide)
-		$class = "perm";
-	else 
-		$class = "tip";
-	if(strlen($tooltip) == 0)
-	{
-		echo '<a href="' . $url . '" target="' . $target . '">' . $title .' </a>';
-	}else{
-		echo '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
-	}
+    $class = "tip";
+    if ($wide) {
+        $class = "perm";
+    }
+    if (strlen($tooltip) == 0) {
+        echo '<a href="' . $url . '" target="' . $target . '">' . $title .' </a>';
+    } else {
+        echo '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
+    }
 }
 
 /**
@@ -247,21 +242,21 @@ function CreateLink($title, $url, $tooltip="", $target="_self", $wide=false)
  */
 function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $onclick)
 {
-	if($wide)
-		$class = "perm";
-	else 
-		$class = "tip";
-	if(strlen($tooltip) == 0)
-	{
-		return '<a href="' . $url . '" onclick="' . $onclick . '" target="' . $target . '">' . $title .' </a>';
-	}else{
-		return '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
-	}
+    $class = "tip";
+    if ($wide) {
+        $class = "perm";
+    }
+
+    if (strlen($tooltip) == 0) {
+        return '<a href="' . $url . '" onclick="' . $onclick . '" target="' . $target . '">' . $title .' </a>';
+    } else {
+        return '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
+    }
 }
 
 function HelpIcon($title, $text)
 {
-	return '<img border="0" align="absbottom" src="images/admin/help.png" class="tip" title="' .  $title . ' :: ' .  $text . '">&nbsp;&nbsp;';
+    return '<img border="0" align="absbottom" src="images/admin/help.png" class="tip" title="' .  $title . ' :: ' .  $text . '">&nbsp;&nbsp;';
 }
 
 /**
@@ -272,7 +267,7 @@ function HelpIcon($title, $text)
  */
 function RewritePageTitle($title)
 {
-	$GLOBALS['TitleRewrite'] = $title;
+    $GLOBALS['TitleRewrite'] = $title;
 }
 
 /**
@@ -283,12 +278,11 @@ function RewritePageTitle($title)
  */
 function SubMenu($el)
 {
-	$output = "";
-	foreach($el AS $e)
-	{
-		$output .= "<a class=\"nav_link\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
-	}
-	$GLOBALS['NavRewrite'] = $output;
+    $output = "";
+    foreach ($el as $e) {
+        $output .= "<a class=\"nav_link\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
+    }
+    $GLOBALS['NavRewrite'] = $output;
 }
 
 /**
@@ -299,87 +293,111 @@ function SubMenu($el)
  */
 function BitToString($mask, $masktype=0, $head=true)
 {
-	$string = "";
-		if($head)
-			$string .= "<span style='font-size:10px;color:#1b75d1;'>Web Permissions</span><br>";
-		if($mask == 0)
-		{
-			$string .= "<i>None</i>";
-			return $string;
-		}
-		if(($mask & ADMIN_LIST_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; View admins<br />";
-		if(($mask & ADMIN_ADD_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Add admins<br />";
-		if(($mask & ADMIN_EDIT_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Edit admins<br />";
-		if(($mask & ADMIN_DELETE_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Delete admins<br />";
-			
-		if(($mask & ADMIN_LIST_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; View servers<br />";
-		if(($mask & ADMIN_ADD_SERVER) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Add servers<br />";
-		if(($mask & ADMIN_EDIT_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Edit servers<br />";
-		if(($mask & ADMIN_DELETE_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Delete servers<br />";
-		
-		if(($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; Add bans<br />";
-		if(($mask & ADMIN_BAN_LIST) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; View bans<br />";
-		if(($mask & ADMIN_EDIT_OWN_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .="&bull; Edit own bans<br />";
-		if(($mask & ADMIN_EDIT_GROUP_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; Edit groups bans<br />";
-		if(($mask & ADMIN_EDIT_ALL_BANS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; Edit all bans<br />";
-		if(($mask & ADMIN_BAN_PROTESTS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; Ban protests<br />";
-		if(($mask & ADMIN_BAN_SUBMISSIONS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Ban submissions<br />";	
-		
-		if(($mask & ADMIN_LIST_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; List groups<br />";
-		if(($mask & ADMIN_ADD_GROUP) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; Add groups<br />";
-		if(($mask & ADMIN_EDIT_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)	
-			$string .= "&bull; Edit groups<br />";
-		if(($mask & ADMIN_DELETE_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Delete groups<br />";
-			
-		if(($mask & ADMIN_WEB_SETTINGS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Web settings<br />";
-			
-		if(($mask & ADMIN_LIST_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; List mods<br />";
-		if(($mask & ADMIN_ADD_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Add mods<br />";
-		if(($mask & ADMIN_EDIT_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Edit mods<br />";
-		if(($mask & ADMIN_DELETE_MODS) !=0 || ($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Delete mods<br />";
-			
-		if(($mask & ADMIN_OWNER) !=0)
-			$string .= "&bull; Owner<br />";
+    $string = "";
+    if ($head) {
+        $string .= "<span style='font-size:10px;color:#1b75d1;'>Web Permissions</span><br>";
+    }
+    if ($mask == 0) {
+        $string .= "<i>None</i>";
+        return $string;
+    }
+    if (($mask & ADMIN_LIST_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; View admins<br />";
+    }
+    if (($mask & ADMIN_ADD_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Add admins<br />";
+    }
+    if (($mask & ADMIN_EDIT_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Edit admins<br />";
+    }
+    if (($mask & ADMIN_DELETE_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Delete admins<br />";
+    }
 
-	return $string;
+    if (($mask & ADMIN_LIST_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; View servers<br />";
+    }
+    if (($mask & ADMIN_ADD_SERVER) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Add servers<br />";
+    }
+    if (($mask & ADMIN_EDIT_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Edit servers<br />";
+    }
+    if (($mask & ADMIN_DELETE_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Delete servers<br />";
+    }
+
+    if (($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Add bans<br />";
+    }
+    if (($mask & ADMIN_BAN_LIST) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; View bans<br />";
+    }
+    if (($mask & ADMIN_EDIT_OWN_BANS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .="&bull; Edit own bans<br />";
+    }
+    if (($mask & ADMIN_EDIT_GROUP_BANS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Edit groups bans<br />";
+    }
+    if (($mask & ADMIN_EDIT_ALL_BANS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Edit all bans<br />";
+    }
+    if (($mask & ADMIN_BAN_PROTESTS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Ban protests<br />";
+    }
+    if (($mask & ADMIN_BAN_SUBMISSIONS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Ban submissions<br />";
+    }
+
+    if (($mask & ADMIN_LIST_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; List groups<br />";
+    }
+    if (($mask & ADMIN_ADD_GROUP) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Add groups<br />";
+    }
+    if (($mask & ADMIN_EDIT_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Edit groups<br />";
+    }
+    if (($mask & ADMIN_DELETE_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Delete groups<br />";
+    }
+
+    if (($mask & ADMIN_WEB_SETTINGS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Web settings<br />";
+    }
+
+    if (($mask & ADMIN_LIST_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; List mods<br />";
+    }
+    if (($mask & ADMIN_ADD_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Add mods<br />";
+    }
+    if (($mask & ADMIN_EDIT_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Edit mods<br />";
+    }
+    if (($mask & ADMIN_DELETE_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Delete mods<br />";
+    }
+
+    if (($mask & ADMIN_OWNER) !=0) {
+        $string .= "&bull; Owner<br />";
+    }
+
+    return $string;
 }
 
 
 function SmFlagsToSb($flagstring, $head=true)
 {
-	
-	$string = "";
-	if($head)
-		$string .= "<span style='font-size:10px;color:#1b75d1;'>Server Permissions</span><br>";
-	if(empty($flagstring))
-		{
-			$string .= "<i>None</i>";
-			return $string;
-		}
-	if((strstr($flagstring, "a") || strstr($flagstring, "z")))
+    $string = "";
+    if ($head) {
+        $string .= "<span style='font-size:10px;color:#1b75d1;'>Server Permissions</span><br>";
+    }
+    if (empty($flagstring)) {
+        $string .= "<i>None</i>";
+        return $string;
+    }
+    if((strstr($flagstring, "a") || strstr($flagstring, "z")))
 		$string .= "&bull; Reserved slot<br />";
 	if((strstr($flagstring, "b") || strstr($flagstring, "z")))
 		$string .= "&bull; Generic admin<br />";
@@ -409,7 +427,7 @@ function SmFlagsToSb($flagstring, $head=true)
 		$string .="&bull; Enable Cheats<br />";
 	if((strstr($flagstring, "z")))
 		$string .="&bull; Full Admin<br />";
-		
+
 	if((strstr($flagstring, "o") || strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 1<br />";
 	if((strstr($flagstring, "p") || strstr($flagstring, "z")))
@@ -423,24 +441,23 @@ function SmFlagsToSb($flagstring, $head=true)
 	if((strstr($flagstring, "t") || strstr($flagstring, "z")))
 		$string .="&bull; Custom flag 6<br />";
 
-	
-	//if(($mask & SM_DEF_IMMUNITY) != 0)
-	//{
-	//	$flagstring .="&bull; Default immunity<br />";
-	//}
-	//if(($mask & SM_GLOBAL_IMMUNITY) != 0)
-	//{
-	//	$flagstring .="&bull; Global immunity<br />";
-	//}
-	return $string;	
-	
+
+    //if(($mask & SM_DEF_IMMUNITY) != 0)
+    //{
+    //	$flagstring .="&bull; Default immunity<br />";
+    //}
+    //if(($mask & SM_GLOBAL_IMMUNITY) != 0)
+    //{
+    //	$flagstring .="&bull; Global immunity<br />";
+    //}
+    return $string;
 }
 
 function PrintArray($array)
 {
-	echo "<pre>";
-		print_r($array);
-	echo "</pre>";
+    echo "<pre>";
+    print_r($array);
+    echo "</pre>";
 }
 
 function NextGid()
@@ -464,7 +481,7 @@ function NextAid()
 	return ($aid['next_aid']+1);
 }
 
-function trunc($text, $len, $byword=true) 
+function trunc($text, $len, $byword=true)
 {
 	if(strlen($text) <= $len)
 		return $text;
@@ -484,7 +501,7 @@ function CreateRedBox($title, $content)
 	<br />
 	' . $content . '</i>
 </div>';
-	
+
 	echo $text;
 }
 function CreateGreenBox($title, $contnet)
@@ -495,7 +512,7 @@ function CreateGreenBox($title, $contnet)
 	<br />
 	' . $contnet . '</i>
 </div>';
-	
+
 	echo $text;
 }
 
@@ -573,7 +590,7 @@ function SecondsToString($sec, $textual=true)
 function CreateHostnameCache()
 {
 	require_once INCLUDES_PATH.'/CServerInfo.php';
-	
+
 	$res = $GLOBALS['db']->Execute("SELECT sid, ip, port, modid, rcon FROM ".DB_PREFIX."_servers WHERE sid > 0 ORDER BY sid");
 	$servers = array();
 	while (!$res->EOF)
@@ -604,7 +621,7 @@ function GetMapImage($map)
 {
 	if(@file_exists(SB_MAP_LOCATION . "/" . $map . ".jpg"))
 		return "images/maps/" . $map . ".jpg";
-	else 
+	else
 		return "images/maps/nomap.jpg";
 }
 
