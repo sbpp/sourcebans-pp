@@ -1392,7 +1392,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 			}
 		}else{
 			if($userbank->HasAccess(ADMIN_OWNER))
-				$objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.sarabveer.me/faq\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
+				$objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
 			else
 				$objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
 			$objResponse->addAssign("players_$sid", "innerHTML", "N/A");
