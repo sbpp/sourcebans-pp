@@ -993,9 +993,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 
 	DB = hndl;
 
-	decl String:query[1024];
 	SQL_SetCharset(DB, "utf8");
-	SQL_TQuery(DB, ErrorCheckCallback, query);
 
 	InsertServerInfo();
 
