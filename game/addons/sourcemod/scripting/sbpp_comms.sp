@@ -1444,7 +1444,13 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 			if (type == TYPE_UNSILENCE)
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
-				SetPackPosition(data, 16);
+				
+				#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
+					SetPackPosition(data, view_as<DataPackPos>(16));
+				#else
+					SetPackPosition(data, 16);
+				#endif
+				
 				if (g_MuteType[target] > bNot)
 				{
 					WritePackCell(data, TYPE_UNMUTE);
