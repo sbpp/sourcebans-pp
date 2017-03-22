@@ -259,6 +259,13 @@ public LoadWhiteList()
 	BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "configs/sourcesleuth_whitelist.cfg");
 
 	new Handle:fileHandle = OpenFile(path, "r");
+	
+	if (fileHandle == INVALID_HANDLE)
+	{
+		LogError("Could not find the config file (addons/sourcemod/configs/sourcesleuth_whitelist.cfg)");
+		
+		return;
+	}
 
 	while (!IsEndOfFile(fileHandle) && ReadFileLine(fileHandle, line, sizeof(line)))
 	{
