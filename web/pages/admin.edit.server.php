@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -59,7 +59,7 @@ $errorScript = "";
 if (isset($_POST['address'])) {
     // Form validation
     $error = 0;
-    
+
     // ip
     if ((empty($_POST['address']))) {
         $error++;
@@ -72,7 +72,7 @@ if (isset($_POST['address'])) {
             $errorScript .= "$('address.msg').setStyle('display', 'block');";
         }
     }
-    
+
     // Port
     if ((empty($_POST['port']))) {
         $error++;
@@ -85,16 +85,16 @@ if (isset($_POST['address'])) {
             $errorScript .= "$('port.msg').setStyle('display', 'block');";
         }
     }
-    
+
     // rcon
     if ($_POST['rcon'] != '+-#*_' && $_POST['rcon'] != $_POST['rcon2']) {
         $error++;
         $errorScript .= "$('rcon2.msg').innerHTML = 'The passwords don't match.';";
         $errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
     }
-    
+
     $ip = RemoveCode($_POST['address']);
-    
+
     // Check for dublicates afterwards
     if ($error == 0) {
         $chk = $GLOBALS['db']->GetRow('SELECT sid FROM `' . DB_PREFIX . '_servers` WHERE ip = ? AND port = ? AND sid != ?;', array(
@@ -107,18 +107,18 @@ if (isset($_POST['address'])) {
             $errorScript .= "ShowBox('Error', 'There already is a server with that IP:Port combination.', 'red');";
         }
     }
-    
+
     $enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
-    
+
     $server['ip']      = $ip;
     $server['port']    = (int) $_POST['port'];
     $server['modid']   = (int) $_POST['mod'];
     $server['enabled'] = $enabled;
-    
+
     if ($error == 0) {
         $grps = "";
         $sg   = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}");
-        foreach ($sg AS $s) {
+        foreach ($sg as $s) {
             $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE server_id = " . (int) $s['server_id'] . " AND group_id = " . (int) $s['group_id']);
         }
         if (!empty($_POST['groups'])) {
@@ -131,8 +131,9 @@ if (isset($_POST['address'])) {
             }
         }
         $enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
-        
-        $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET
+
+        $edit = $GLOBALS['db']->Execute(
+            "UPDATE " . DB_PREFIX . "_servers SET
             `ip` = ?,
             `port` = ?,
             `modid` = ?,
@@ -146,10 +147,11 @@ if (isset($_POST['address'])) {
                 (int) $_GET['id']
             )
         );
-        
+
         // don't change rcon password if not changed
         if ($_POST['rcon'] != '+-#*_') {
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_servers SET
                 `rcon` = ?
                 WHERE `sid` = ?",
                 array(
@@ -158,7 +160,7 @@ if (isset($_POST['address'])) {
                 )
             );
         }
-        
+
         echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";
     }
 }
@@ -196,7 +198,7 @@ if (!isset($_POST['address'])) {
         $groups = array();
     }
 }
-foreach ($groups AS $g) {
+foreach ($groups as $g) {
     if ($g) {
         echo "if($('g_" . $g[0] . "')) $('g_" . $g[0] . "').checked = true;";
     }

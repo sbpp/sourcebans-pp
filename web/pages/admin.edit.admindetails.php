@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -76,10 +76,10 @@ if (isset($_POST['adminname'])) {
     $a_serverpass     = $_POST['a_useserverpass'] == "on";
     $pw_changed       = false;
     $serverpw_changed = false;
-    
+
     // Form validation
     $error = 0;
-    
+
     // Check name
     if (empty($a_name)) {
         $error++;
@@ -98,7 +98,7 @@ if (isset($_POST['adminname'])) {
             }
         }
     }
-    
+
     // If they didnt type a steamid
     if ((empty($a_steam) || strlen($a_steam) < 10)) {
         $error++;
@@ -126,7 +126,7 @@ if (isset($_POST['adminname'])) {
             }
         }
     }
-    
+
     // No email
     if (empty($a_email)) {
         // Only required, if admin has web permissions.
@@ -155,7 +155,7 @@ if (isset($_POST['adminname'])) {
         $errorScript .= "$('email.msg').setStyle('display', 'block');";
         }*/
     }
-    
+
     // Only validate passwords, if admin has access to edit it at all
     if ($userbank->HasAccess(ADMIN_OWNER) || $_GET['id'] == $userbank->GetAid()) {
         // Don't change the password, if not set
@@ -173,41 +173,41 @@ if (isset($_POST['adminname'])) {
                     $error++;
                     $errorScript .= "$('password2.msg').innerHTML = 'You must confirm the password.';";
                     $errorScript .= "$('password2.msg').setStyle('display', 'block');";
-                }
-                // Passwords match?
-                else if ($_POST['password'] != $_POST['password2']) {
+                } elseif ($_POST['password'] != $_POST['password2']) {
+                    // Passwords match?
                     $error++;
                     $errorScript .= "$('password2.msg').innerHTML = 'Your passwords don't match.';";
                     $errorScript .= "$('password2.msg').setStyle('display', 'block');";
                 }
             }
         }
-        
+
         // Check for the serverpassword
         if ($_POST['a_useserverpass'] == "on") {
-            if (!empty($_POST['a_serverpass']))
+            if (!empty($_POST['a_serverpass'])) {
                 $serverpw_changed = true;
-            
+            }
+
             // No password given and no set before?
             $srvpw = $userbank->GetProperty('srv_password', $_GET['id']);
             if (empty($_POST['a_serverpass']) && empty($srvpw)) {
                 $error++;
                 $errorScript .= "$('a_serverpass.msg').innerHTML = 'You must type a server password or uncheck the box.';";
                 $errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
-            }
-            // Password too short?
-            else if (strlen($_POST['a_serverpass']) < MIN_PASS_LENGTH) {
+            } elseif (strlen($_POST['a_serverpass']) < MIN_PASS_LENGTH) {
+                // Password too short?
                 $error++;
                 $errorScript .= "$('a_serverpass.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
                 $errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
             }
         }
     }
-    
+
     // Only proceed, if there are no errors in the form
     if ($error == 0) {
         // set the basic fields
-        $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+        $edit = $GLOBALS['db']->Execute(
+            "UPDATE " . DB_PREFIX . "_admins SET
             `user` = ?, `authid` = ?, `email` = ?
             WHERE `aid` = ?",
             array(
@@ -217,10 +217,11 @@ if (isset($_POST['adminname'])) {
                 $_GET['id']
             )
         );
-        
+
         // Password changed?
         if ($pw_changed) {
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_admins SET
                 `password` = ?
                 WHERE `aid` = ?",
                 array(
@@ -229,10 +230,11 @@ if (isset($_POST['adminname'])) {
                 )
             );
         }
-        
+
         // Server Admin Password changed?
         if ($serverpw_changed) {
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_admins SET
                 `srv_password` = ?
                 WHERE `aid` = ?",
                 array(
@@ -240,10 +242,10 @@ if (isset($_POST['adminname'])) {
                     $_GET['id']
                 )
             );
-        }
-        // Remove the server password
-        else if ($_POST['a_useserverpass'] != "on") {
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+        } elseif ($_POST['a_useserverpass'] != "on") {
+            // Remove the server password
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_admins SET
                 `srv_password` = NULL
                 WHERE `aid` = ?",
                 array(
@@ -251,12 +253,13 @@ if (isset($_POST['adminname'])) {
                 )
             );
         }
-        
+
         // to prevent rehash window to error with "no access", cause pw doesn't match
         $ownpwchanged = false;
-        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && $userbank->encrypt_password($_POST['password']) != $userbank->GetProperty("password"))
+        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && $userbank->encrypt_password($_POST['password']) != $userbank->GetProperty("password")) {
             $ownpwchanged = true;
-        
+        }
+
         if (isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1) {
             // rehash the admins on the servers
             $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
@@ -273,14 +276,14 @@ if (isset($_POST['adminname'])) {
             }
             $rehashing = true;
         }
-        
+
         $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
             (int) $_GET['id']
         ));
         $log     = new CSystemLog("m", "Admin Details Updated", "Admin (" . $admname['user'] . ") details has been changed");
         if ($ownpwchanged) {
             echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
-        } else if (isset($rehashing)) {
+        } elseif (isset($rehashing)) {
             echo '<script>ShowRehashBox("' . implode(",", $allservers) . '", "Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
         } else {
             echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';

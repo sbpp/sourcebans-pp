@@ -1,7 +1,7 @@
 <?php
 /*************************************************************************
 	This file is part of SourceBans++
-	
+
 	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
 	SourceBans++ is licensed under a
@@ -18,37 +18,36 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-	This program is based off work covered by the following copyright(s): 
+	This program is based off work covered by the following copyright(s):
 		SourceBans 1.4.11
 		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
-class CTabsMenu {
-	var $menuItems = array( );
-	
-	function addMenuItem($title, $id, $description="", $url="", $external=false)
-	{
-		$curItem = array();
-		$curItem['title'] = $title;
-		$curItem['desc'] = $description;
-		$curItem['url'] = $url;
-		$curItem['external'] = $external;
-		$curItem['id'] = $id;
-		array_push($this->menuItems, $curItem);
-	}
-	
-	function outputMenu()
-	{
-		$var = $this->menuItems;
-		include TEMPLATES_PATH . "/admin.detail.navbar.php";
-	}
-	
-	function getMenuArray()
-	{
-		return $this->menuItems;
-	}
-}
+class CTabsMenu
+{
+    private $menuItems = array();
 
-?>
+    public function addMenuItem($title, $ids, $description = "", $url = "", $external = false)
+    {
+        $curItem = array();
+        $curItem['title'] = $title;
+        $curItem['desc'] = $description;
+        $curItem['url'] = $url;
+        $curItem['external'] = $external;
+        $curItem['id'] = $ids;
+        array_push($this->menuItems, $curItem);
+    }
+
+    public function outputMenu()
+    {
+        $var = $this->menuItems;
+        include TEMPLATES_PATH . "/admin.detail.navbar.php";
+    }
+
+    public function getMenuArray()
+    {
+        return $this->menuItems;
+    }
+}

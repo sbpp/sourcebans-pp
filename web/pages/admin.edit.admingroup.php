@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -71,10 +71,10 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
     if (isset($_GET['sg'])) {
         $_POST['sg'] = $_GET['sg'];
     }
-    
+
     $_POST['wg'] = (int) $_POST['wg'];
     $_POST['sg'] = (int) $_POST['sg'];
-    
+
     // Users require a password and email to have web permissions
     $password = $GLOBALS['userbank']->GetProperty('password', $_GET['id']);
     $email    = $GLOBALS['userbank']->GetProperty('email', $_GET['id']);
@@ -86,7 +86,8 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 $_POST['wg'] = 0;
             }
             // Edit the web group
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_admins SET
                 `gid` = ?
                 WHERE `aid` = ?;",
                 array(
@@ -95,7 +96,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 )
             );
         }
-        
+
         if (isset($_POST['sg']) && $_POST['sg'] != "-2") {
             // Edit the server admin group
             $group = "";
@@ -103,11 +104,13 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 $grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = ?;", array(
                     $_POST['sg']
                 ));
-                if ($grps)
+                if ($grps) {
                     $group = $grps['name'];
+                }
             }
-            
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET
+
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_admins SET
                 `srv_group` = ?
                 WHERE aid = ?",
                 array(
@@ -115,8 +118,9 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                     $_GET['id']
                 )
             );
-            
-            $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins_servers_groups SET
+
+            $edit = $GLOBALS['db']->Execute(
+                "UPDATE " . DB_PREFIX . "_admins_servers_groups SET
                 `group_id` = ?
                 WHERE admin_id = ?;",
                 array(
@@ -124,7 +128,6 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                     $_GET['id']
                 )
             );
-            
         }
         if (isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1) {
             // rehash the admins on the servers
@@ -141,13 +144,14 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 }
             }
             echo '<script>ShowRehashBox("' . implode(",", $allservers) . '", "Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
-        } else
+        } else {
             echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
-        
+        }
+
         $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
             (int) $_GET['id']
         ));
-        $log = new CSystemLog("m", "Admin's Groups Updated", "Admin (" . $admname['user'] . ") groups has been updated");
+        $log = new CSystemLog("m", "Admin's Groups Updated", "Admin (".$admname['user'].") groups has been updated");
     }
 }
 

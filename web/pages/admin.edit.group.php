@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -103,7 +103,7 @@ Blanking out an overrides' name will delete it.<br /><br />
         <td class="tablerow4">Access</td>
     </tr>
 <?php
-    foreach ($overrides_list as $override) {
+foreach ($overrides_list as $override) {
 ?>
     <tr>
         <td class="tablerow1">
@@ -122,8 +122,8 @@ Blanking out an overrides' name will delete it.<br /><br />
             </td>
     </tr>
 <?php
-    }
-?>	
+}
+?>
     <tr>
         <td class="tablerow1">
             <select id="new_override_type">
@@ -151,8 +151,8 @@ Blanking out an overrides' name will delete it.<br /><br />
         <td>&nbsp;</td>
         <td>
             <div align="center">
-      <?=$ui->drawButton("Save Changes", "ProcessEditGroup('" . $_GET['type'] . "', $('groupname').value);", "ok", "editgroup", true)?>
-      &nbsp;<?=$ui->drawButton("Back", "history.go(-1)", "cancel", "back")?>  
+        <?=$ui->drawButton("Save Changes", "ProcessEditGroup('" . $_GET['type'] . "', $('groupname').value);", "ok", "editgroup", true)?>
+        &nbsp;<?=$ui->drawButton("Back", "history.go(-1)", "cancel", "back")?>
             </div>
         </td>
     </tr>
@@ -248,4 +248,3 @@ $('immunity').value = <?=$srv_group['immunity'] ? (int) $srv_group['immunity'] :
 ?>
 </script>
 </div></div>
-

@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -35,8 +35,9 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-if (isset($GLOBALS['IN_ADMIN']))
+if (isset($GLOBALS['IN_ADMIN'])) {
     define('CUR_AID', $userbank->GetAid());
+}
 
 
 if (isset($_GET["rebanid"])) {

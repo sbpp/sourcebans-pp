@@ -1,7 +1,7 @@
 <?php
 /*************************************************************************
 	This file is part of SourceBans++
-	
+
 	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
 	SourceBans++ is licensed under a
@@ -18,7 +18,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-	This program is based off work covered by the following copyright(s): 
+	This program is based off work covered by the following copyright(s):
 		SourceBans 1.4.11
 		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 		Licensed under CC BY-NC-SA 3.0
@@ -48,9 +48,9 @@ function is_taken($table, $field, $value)
  * @param integer $length the length of the salt
  * @return string of random chars in the length specified
  */
-function generate_salt($length=5)
+function generate_salt($length = 5)
 {
-	return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
+    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
 }
 
 /**
@@ -61,12 +61,13 @@ function generate_salt($length=5)
  * @param boolean $cookie Should we create a cookie
  * @return true.
  */
-function logout() {
-	setcookie('aid', '', time()-86400);
-	setcookie('password', '', time()-86400);
-	$_SESSION = array();
-	session_destroy();
-	return true;
+function logout()
+{
+    setcookie('aid', '', time()-86400);
+    setcookie('password', '', time()-86400);
+    $_SESSION = array();
+    session_destroy();
+    return true;
 }
 
 /**
@@ -82,14 +83,10 @@ function logout() {
 function edit_admin($aid, $username, $name, $email, $authid)
 {
     $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `user` = ?,  `authid` = ?, `email` = ? WHERE `aid` = ?", array($username, $authid, $email, $aid));
-    if($query)
-    {
+    if ($query) {
         return true;
     }
-    else
-    {
-        return false;
-    }
+    return false;
 }
 
 /**
@@ -102,14 +99,10 @@ function delete_admin($aid)
 {
     $aid = (int)$aid;
     $query = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '$aid'");
-    if($query)
-    {
+    if ($query) {
         return true;
     }
-    else
-    {
-        return false;
-    }
+    return false;
 }
 
 /**
@@ -122,29 +115,25 @@ function delete_admin($aid)
 function userdata($aid, $pass)
 {
     global $userbank;
-    if(!$userbank->CheckLogin($userbank->encrypt_password($pass), $aid))
-    {
+    if (!$userbank->CheckLogin($userbank->encrypt_password($pass), $aid)) {
         //Fill array with guest data
-      $_SESSION['user'] = array('aid' => '-1',
-        			'user' => 'Guest',
-        			'password' => '',
-        			'steam' => '',
-        			'email' => '',
-        			'gid' => '',
-        			'flags' => '0');
-
-    }
-    else
-    {
+        $_SESSION['user'] = array('aid' => '-1',
+                                  'user' => 'Guest',
+                                  'password' => '',
+                                  'steam' => '',
+                                  'email' => '',
+                                  'gid' => '',
+                                  'flags' => '0');
+    } else {
         $query = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '$aid'");
         $_SESSION['user'] = array('aid' => $aid,
-        			'user' => $query['user'],
-        			'password' => $query['password'],
-        			'steam' => $query['authid'],
-        			'email' => $query['email'],
-        			'gid' => $query['gid'],
-        			'flags' => get_user_flags($aid),
-        			'admin' => get_user_admin($query['authid']));
+                                  'user' => $query['user'],
+                                  'password' => $query['password'],
+                                  'steam' => $query['authid'],
+                                  'email' => $query['email'],
+                                  'gid' => $query['gid'],
+                                  'flags' => get_user_flags($aid),
+                                  'admin' => get_user_admin($query['authid']));
         $GLOBALS['aid'] = $aid;
         $GLOBALS['user'] = new CUser($aid);
         $GLOBALS['user']->FillData();
@@ -159,20 +148,16 @@ function userdata($aid, $pass)
  */
 function get_user_flags($aid)
 {
-	if(empty($aid))
-		return 0;
+    if (empty($aid)) {
+        return 0;
+    }
 
-	$admin = $query = $GLOBALS['db']->GetRow("SELECT `gid`, `extraflags` FROM `" . DB_PREFIX . "_admins` WHERE aid = '$aid'");
-	if(intval($admin['gid']) == -1)
-	{
-		return intval($admin['extraflags']);
-	}
-	else
-	{
-		$query = $GLOBALS['db']->GetRow("SELECT `flags` FROM `" . DB_PREFIX . "_groups` WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-		return (intval($query['flags']) | intval($admin['extraflags']));
-	}
-
+    $admin = $query = $GLOBALS['db']->GetRow("SELECT `gid`, `extraflags` FROM `" . DB_PREFIX . "_admins` WHERE aid = '$aid'");
+    if (intval($admin['gid']) == -1) {
+        return intval($admin['extraflags']);
+    }
+    $query = $GLOBALS['db']->GetRow("SELECT `flags` FROM `" . DB_PREFIX . "_groups` WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
+    return (intval($query['flags']) | intval($admin['extraflags']));
 }
 
 /**
@@ -183,18 +168,15 @@ function get_user_flags($aid)
  */
 function get_user_admin($steam)
 {
-	if(empty($steam))
-		return 0;
-	$admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE authid = '" . $steam . "'");
-	if(strlen($admin['srv_group']) > 1)
-	{
-		$query = $GLOBALS['db']->GetRow("SELECT flags FROM " . DB_PREFIX . "_srvgroups WHERE name = (SELECT srv_group FROM " . DB_PREFIX . "_admins WHERE authid = '" . $steam . "')");
-		return $query['flags'] . $admin['srv_flags'];
-	}
-	else
-	{
-		return $admin['srv_flags'];
-	}
+    if (empty($steam)) {
+        return 0;
+    }
+    $admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE authid = '" . $steam . "'");
+    if (strlen($admin['srv_group']) > 1) {
+        $query = $GLOBALS['db']->GetRow("SELECT flags FROM " . DB_PREFIX . "_srvgroups WHERE name = (SELECT srv_group FROM " . DB_PREFIX . "_admins WHERE authid = '" . $steam . "')");
+        return $query['flags'] . $admin['srv_flags'];
+    }
+    return $admin['srv_flags'];
 }
 
 /**
@@ -205,10 +187,11 @@ function get_user_admin($steam)
  */
 function get_non_inherited_admin($steam)
 {
-	if(empty($steam))
-		return 0;
-	$admin = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_admins` WHERE authid = '$steam'");
-	return $admin['srv_flags'];
+    if (empty($steam)) {
+        return 0;
+    }
+    $admin = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_admins` WHERE authid = '$steam'");
+    return $admin['srv_flags'];
 }
 
 /**
@@ -218,10 +201,10 @@ function get_non_inherited_admin($steam)
  */
 function is_logged_in()
 {
-	if($_SESSION['user']['user'] == "Guest" || $_SESSION['user']['user'] == "")
-		return false;
-	else
-		return true;
+    if ($_SESSION['user']['user'] == "Guest" || $_SESSION['user']['user'] == "") {
+        return false;
+    }
+    return true;
 }
 
 /**
@@ -231,10 +214,10 @@ function is_logged_in()
  */
 function is_admin($aid)
 {
-	if (check_flags($aid, ALL_WEB))
-		return true;
-	else
-		return false;
+    if (check_flags($aid, ALL_WEB)) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -245,19 +228,19 @@ function is_admin($aid)
  */
 function check_group($mask)
 {
-	if ($mask &
-	(ADMIN_WEB_BANS|ADMIN_WEB_ADMINS|ADMIN_WEB_AGROUPS|
-	ADMIN_SERVER_ADMINS|ADMIN_SERVER_AGROUPS|ADMIN_SERVER_SETTINGS|
-	ADMIN_SERVER_ADD|ADMIN_SERVER_REMOVE|ADMIN_SERVER_GROUPS|ADMIN_WEB_SETTINGS|
-	ADMIN_OWNER|ADMIN_MODS != 0 && $mask &
-	SM_RESERVED_SLOT|SM_GENERIC|SM_KICK|SM_BAN|SM_UNBAN|SM_SLAY|
-	SM_MAP|SM_CVAR|SM_CONFIG|SM_CHAT|SM_VOTE|SM_PASSWORD|SM_RCON|
-	SM_CHEATS|SM_ROOT|SM_DEF_IMMUNITY|SM_GLOBAL_IMMUNITY == 0))
-		return GROUP_WEB_A;
-	else if($mask == 0)
-		return GROUP_NONE_A;
-	else
-		return GROUP_SERVER_A;
+    if ($mask &
+    (ADMIN_WEB_BANS|ADMIN_WEB_ADMINS|ADMIN_WEB_AGROUPS|
+    ADMIN_SERVER_ADMINS|ADMIN_SERVER_AGROUPS|ADMIN_SERVER_SETTINGS|
+    ADMIN_SERVER_ADD|ADMIN_SERVER_REMOVE|ADMIN_SERVER_GROUPS|ADMIN_WEB_SETTINGS|
+    ADMIN_OWNER|ADMIN_MODS != 0 && $mask &
+    SM_RESERVED_SLOT|SM_GENERIC|SM_KICK|SM_BAN|SM_UNBAN|SM_SLAY|
+    SM_MAP|SM_CVAR|SM_CONFIG|SM_CHAT|SM_VOTE|SM_PASSWORD|SM_RCON|
+    SM_CHEATS|SM_ROOT|SM_DEF_IMMUNITY|SM_GLOBAL_IMMUNITY == 0)) {
+        return GROUP_WEB_A;
+    } elseif ($mask == 0) {
+        return GROUP_NONE_A;
+    }
+    return GROUP_SERVER_A;
 }
 
 
@@ -271,9 +254,9 @@ function check_group($mask)
  */
 function set_flag($aid, $flag)
 {
-	$aid = (int)$aid;
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flag' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-	userdata($aid, $_SESSION['user']['password']);
+    $aid = (int)$aid;
+    $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flag' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
+    userdata($aid, $_SESSION['user']['password']);
 }
 
 /**
@@ -285,11 +268,11 @@ function set_flag($aid, $flag)
  */
 function add_flag($aid, $flag)
 {
-	$aid = (int)$aid;
-	$flagd = get_user_flags($aid);
-	$flagd |= $flag;
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flagd' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-	userdata($aid, $_SESSION['user']['password']);
+    $aid = (int)$aid;
+    $flagd = get_user_flags($aid);
+    $flagd |= $flag;
+    $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flagd' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
+    userdata($aid, $_SESSION['user']['password']);
 }
 
 /**
@@ -301,11 +284,11 @@ function add_flag($aid, $flag)
  */
 function remove_flag($aid, $flag)
 {
-	$aid = (int)$aid;
-	$flagd = get_user_flags($aid);
-	$flagd &= ~($flag);
-	$query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flagd' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
-	userdata($aid, $_SESSION['user']['password']);
+    $aid = (int)$aid;
+    $flagd = get_user_flags($aid);
+    $flagd &= ~($flag);
+    $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_groups` SET `flags` = '$flagd' WHERE gid = (SELECT gid FROM " . DB_PREFIX . "_admins WHERE aid = '$aid')");
+    userdata($aid, $_SESSION['user']['password']);
 }
 
 /**
@@ -317,8 +300,8 @@ function remove_flag($aid, $flag)
  */
 function check_all_flags($aid, $flag)
 {
-	$mask = get_user_flags($aid);
-	return ($mask & $flag) == $flag;
+    $mask = get_user_flags($aid);
+    return ($mask & $flag) == $flag;
 }
 
 /**
@@ -330,11 +313,11 @@ function check_all_flags($aid, $flag)
  */
 function check_flags($aid, $flag)
 {
-	$mask = get_user_flags($aid);
-	if(($mask & $flag) !=0)
-		return true;
-	else
-		return false;
+    $mask = get_user_flags($aid);
+    if (($mask & $flag) !=0) {
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -346,39 +329,38 @@ function check_flags($aid, $flag)
  */
 function check_flag($mask, $flag)
 {
-	if(($mask & $flag) !=0)
-		return true;
-	else
-		return false;
+    if (($mask & $flag) !=0) {
+        return true;
+    }
+    return false;
 }
 
 function validate_steam($steam)
 {
-	return preg_match(STEAM_FORMAT, $steam) ? true : false;
+    return preg_match(STEAM_FORMAT, $steam) ? true : false;
 }
 
 function validate_email($email)
 {
-	return preg_match(EMAIL_FORMAT, $email) ? true : false;
+    return preg_match(EMAIL_FORMAT, $email) ? true : false;
 }
-function validate_ip($ip)
+function validate_ip($ips)
 {
-	return preg_match(IP_FORMAT, $ip) ? true : false;
+    return preg_match(IP_FORMAT, $ips) ? true : false;
 }
 
 /**
  * added for the steam login option mod
  * checks the value of the config setting
- * called by  steamopenid.php 
+ * called by  steamopenid.php
  * called by pages/pages.login.php
  * @param int 1 or 0
- * @return int 
+ * @return int
  */
 function get_steamenabled_conf($value)
 {
-	$settingvalue = "config.enablesteamlogin";
-	$query = $GLOBALS['db']->GetRow("SELECT `value` FROM `" . DB_PREFIX . "_settings` WHERE `setting` = '$settingvalue'");
-	$value = intval($query['value']);
-	return $value;
+    $settingvalue = "config.enablesteamlogin";
+    $query = $GLOBALS['db']->GetRow("SELECT `value` FROM `" . DB_PREFIX . "_settings` WHERE `setting` = '$settingvalue'");
+    $value = intval($query['value']);
+    return $value;
 }
-?>

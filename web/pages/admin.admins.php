@@ -19,7 +19,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -38,12 +38,13 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
 
 $AdminsStart = intval(($page - 1) * $AdminsPerPage);
 $AdminsEnd   = intval($AdminsStart + $AdminsPerPage);
-if ($AdminsEnd > $admin_count)
+if ($AdminsEnd > $admin_count) {
     $AdminsEnd = $admin_count;
+}
 
 // List Page
 $admin_list = array();
-foreach ($admins AS $admin) {
+foreach ($admins as $admin) {
     $admin['immunity']     = $userbank->GetProperty("srv_immunity", $admin['aid']);
     $admin['web_group']    = $userbank->GetProperty("group_name", $admin['aid']);
     $admin['server_group'] = $userbank->GetProperty("srv_groups", $admin['aid']);
@@ -55,15 +56,15 @@ foreach ($admins AS $admin) {
     }
     $num               = $GLOBALS['db']->GetRow("SELECT count(authid) AS num FROM `" . DB_PREFIX . "_bans` WHERE aid = '" . $admin['aid'] . "'");
     $admin['bancount'] = $num['num'];
-    
+
     $nodem                = $GLOBALS['db']->GetRow("SELECT count(B.bid) AS num FROM `" . DB_PREFIX . "_bans` AS B WHERE aid = '" . $admin['aid'] . "' AND NOT EXISTS (SELECT D.demid FROM `" . DB_PREFIX . "_demos` AS D WHERE D.demid = B.bid)");
     $admin['aid']         = $admin['aid'];
     $admin['nodemocount'] = $nodem['num'];
-    
+
     $admin['name']               = stripslashes($admin['user']);
     $admin['server_flag_string'] = SmFlagsToSb($userbank->GetProperty("srv_flags", $admin['aid']));
     $admin['web_flag_string']    = BitToString($userbank->GetProperty("extraflags", $admin['aid']));
-    
+
     $lastvisit = $userbank->GetProperty("lastvisit", $admin['aid']);
     if (!$lastvisit) {
         $admin['lastvisit'] = "Never";
@@ -124,7 +125,7 @@ $server_admin_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX 
 $server_group_list       = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type != 3");
 $server_list             = array();
 $serverscript            = "<script type=\"text/javascript\">";
-foreach ($servers AS $server) {
+foreach ($servers as $server) {
     $serverscript .= "xajax_ServerHostPlayers('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";
     $info['sid']  = $server['sid'];
     $info['ip']   = $server['ip'];
@@ -155,9 +156,10 @@ try {
             $edit_errors = "";
             foreach ($_POST['override_id'] as $index => $id) {
                 // Skip invalid stuff?!
-                if ($_POST['override_type'][$index] != "command" && $_POST['override_type'][$index] != "group")
+                if ($_POST['override_type'][$index] != "command" && $_POST['override_type'][$index] != "group") {
                     continue;
-                
+                }
+
                 $id = (int) $id;
                 // Wants to delete this override?
                 if (empty($_POST['override_name'][$index])) {
@@ -166,7 +168,7 @@ try {
                     ));
                     continue;
                 }
-                
+
                 // Check for duplicates
                 $chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides` WHERE name = ? AND type = ? AND id != ?", array(
                     $_POST['override_name'][$index],
@@ -177,7 +179,7 @@ try {
                     $edit_errors .= "&bull; There already is an override with name \\\"" . htmlspecialchars(addslashes($_POST['override_name'][$index])) . "\\\" from the selected type.<br />";
                     continue;
                 }
-                
+
                 // Edit the override
                 $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_overrides` SET name = ?, type = ?, flags = ? WHERE id = ?;", array(
                     $_POST['override_name'][$index],
@@ -186,24 +188,27 @@ try {
                     $id
                 ));
             }
-            
-            if (!empty($edit_errors))
+
+            if (!empty($edit_errors)) {
                 throw new Exception("There were errors applying your changes:<br /><br />" . $edit_errors);
+            }
         }
-        
+
         // Add a new override
         if (!empty($_POST['new_override_name'])) {
-            if ($_POST['new_override_type'] != "command" && $_POST['new_override_type'] != "group")
+            if ($_POST['new_override_type'] != "command" && $_POST['new_override_type'] != "group") {
                 throw new Exception("Invalid override type.");
-            
+            }
+
             // Check for duplicates
             $chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides` WHERE name = ? AND type = ?", array(
                 $_POST['new_override_name'],
                 $_POST['new_override_type']
             ));
-            if (!empty($chk))
+            if (!empty($chk)) {
                 throw new Exception("There already is an override with that name from the selected type.");
-            
+            }
+
             // Insert the new override
             $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_overrides` (type, name, flags) VALUES (?, ?, ?);", array(
                 $_POST['new_override_type'],
@@ -211,7 +216,7 @@ try {
                 trim($_POST['new_override_flags'])
             ));
         }
-        
+
         $overrides_save_success = true;
     }
 } catch (Exception $e) {
