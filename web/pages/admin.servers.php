@@ -42,7 +42,6 @@ $grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM `" . DB_PREFIX . "_gr
 
 // Vars for server list
 $theme->assign('permission_list', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS));
-$theme->assign('permission_config', $userbank->HasAccess(ADMIN_OWNER));
 $theme->assign('permission_editserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_SERVERS));
 $theme->assign('pemission_delserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_SERVERS));
 $theme->assign('server_count', $server_count['cnt']);
