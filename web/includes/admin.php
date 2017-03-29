@@ -254,15 +254,6 @@ else
 			include TEMPLATES_PATH . "/admin.rcon.php";
 			RewritePageTitle("Server RCON");
 		}
-		elseif($_GET['o'] == 'dbsetup')
-		{
-			$serverTabMenu = new CTabsMenu();
-			$serverTabMenu->addMenuItem("Back", 0,"", "javascript:history.go(-1);", true);
-			$serverTabMenu->outputMenu();
-						
-			include TEMPLATES_PATH . "/admin.servers.db.php";
-			RewritePageTitle("Database Config");
-		}
 		elseif($_GET['o'] == 'admincheck')
 		{
 			$serverTabMenu = new CTabsMenu();
