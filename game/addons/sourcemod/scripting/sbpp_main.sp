@@ -147,8 +147,11 @@ public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 #endif
 {
 	RegPluginLibrary("sourcebans");
-	CreateNative("SBBanPlayer", Native_SBBanPlayer);
-	g_hFwd_OnBanAdded = CreateGlobalForward("SB_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
+	CreateNative("SBBanPlayer",            Native_SBBanPlayer);
+	CreateNative("SourceBans_BanPlayer",   Native_SBBanPlayer);
+
+	g_hFwd_OnBanAdded = CreateGlobalForward("SourceBans_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
+
 	LateLoaded = late;
 
 	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
