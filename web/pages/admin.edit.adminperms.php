@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -56,7 +56,12 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 
 $_GET['id'] = (int) $_GET['id'];
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty("user") . " tried to edit " . $userbank->GetProperty('user', $_GET['id']) . "'s permissions, but doesn't have access.");
+    $log = new CSystemLog(
+        "w",
+        "Hacking Attempt",
+        $userbank->GetProperty("user")." tried to edit "
+        .$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access."
+    );
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
@@ -87,10 +92,11 @@ $name      = $userbank->GetProperty("user", $_GET['id'])?>
     <td>&nbsp;</td>
     <td>
     <div align="center">
-       <?=$ui->drawButton("Save Changes", "ProcessEditAdminPermissions();", "ok", "editadmingroup")?>
-      &nbsp;<?=$ui->drawButton("Back", "history.go(-1)", "cancel", "back")?>
-      
-      </div>	</td>
+        <?=$ui->drawButton("Save Changes", "ProcessEditAdminPermissions();", "ok", "editadmingroup")?>
+        &nbsp;<?=$ui->drawButton("Back", "history.go(-1)", "cancel", "back")?>
+
+    </div>
+    </td>
   </tr>
 </table>
 
@@ -101,12 +107,12 @@ $name      = $userbank->GetProperty("user", $_GET['id'])?>
 <?php
 if (!$userbank->HasAccess(ADMIN_OWNER)) {
 ?>
-	if($("wrootcheckbox")) { 
-		$("wrootcheckbox").setStyle('display', 'none');
-	}
-	if($("srootcheckbox")) { 
-		$("srootcheckbox").setStyle('display', 'none');
-	}
+    if($("wrootcheckbox")) {
+        $("wrootcheckbox").setStyle('display', 'none');
+    }
+    if($("srootcheckbox")) {
+        $("srootcheckbox").setStyle('display', 'none');
+    }
 <?php
 }
 ?>

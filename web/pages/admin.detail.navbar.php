@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -34,13 +34,14 @@ global $theme;
 $first = true;
 $i     = 0;
 $tabs  = array();
-foreach ($var AS $v) {
+foreach ($var as $v) {
     if (empty($v['title'])) {
         $i++;
         continue;
     }
-    if ($first)
+    if ($first) {
         $GLOBALS['enable'] = $v['id'];
+    }
     if (isset($v['external']) && $v['external'] == true) {
         $lnk   = $v['url'];
         $click = "";

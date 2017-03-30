@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -58,7 +58,7 @@ $errorScript = "";
 if (isset($_POST['name'])) {
     // Form validation
     $error = 0;
-    
+
     if (empty($_POST['name'])) {
         $error++;
         $errorScript .= "$('name.msg').innerHTML = 'You must type a name for the mod.';";
@@ -91,18 +91,20 @@ if (isset($_POST['name'])) {
             $errorScript .= "$('folder.msg').setStyle('display', 'block');";
         }
     }
-    
+
     $name           = htmlspecialchars(strip_tags($_POST['name'])); //don't want to addslashes because execute will automatically do it
     $icon           = htmlspecialchars(strip_tags($_POST['icon_hid']));
     $folder         = htmlspecialchars(strip_tags($_POST['folder']));
     $enabled        = ($_POST['enabled'] == '1' ? 1 : 0);
     $steam_universe = (int) $_POST['steam_universe'];
-    
+
     if ($error == 0) {
-        if ($res['icon'] != $_POST['icon_hid'])
+        if ($res['icon'] != $_POST['icon_hid']) {
             @unlink(SB_ICONS . "/" . $res['icon']);
-        
-        $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_mods SET
+        }
+
+        $edit = $GLOBALS['db']->Execute(
+            "UPDATE " . DB_PREFIX . "_mods SET
             `name` = ?, `modfolder` = ?, `icon` = ?, `enabled` = ?, `steam_universe` = ?
             WHERE `mid` = ?",
             array(

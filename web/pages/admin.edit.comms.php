@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -63,7 +63,7 @@ $errorScript = "";
 if (isset($_POST['name'])) {
     $_POST['steam'] = trim($_POST['steam']);
     $_POST['type']  = (int) $_POST['type'];
-    
+
     // Form Validation
     $error = 0;
     // If they didn't type a steamid
@@ -71,22 +71,22 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } else if ((!is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
+    } elseif ((!is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
     }
-    
+
     // Didn't type a custom reason
     if ($_POST['listReason'] == "other" && empty($_POST['txtReason'])) {
         $error++;
         $errorScript .= "$('reason.msg').innerHTML = 'You must type a reason';";
         $errorScript .= "$('reason.msg').setStyle('display', 'block');";
     }
-    
+
     // prune any old bans
     PruneComms();
-    
+
     if ($error == 0) {
         // Check if the new steamid is already banned
         $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_comms WHERE authid = ? AND RemovedBy IS NULL AND type = ? AND bid != ? AND (length = 0 OR ends > UNIX_TIMESTAMP())", array(
@@ -111,10 +111,10 @@ if (isset($_POST['name'])) {
             }
         }
     }
-    
+
     $_POST['name'] = RemoveCode($_POST['name']);
     $reason        = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
-    
+
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;
     } else {
@@ -123,15 +123,16 @@ if (isset($_POST['name'])) {
     // Show the new values in the form
     $res['name']   = $_POST['name'];
     $res['authid'] = $_POST['steam'];
-    
+
     $res['length'] = $_POST['banlength'];
     $res['type']   = $_POST['type'];
     $res['reason'] = $reason;
-    
+
     // Only process if there are still no errors
     if ($error == 0) {
         $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid, type FROM " . DB_PREFIX . "_comms WHERE bid = '" . (int) $_GET['id'] . "'");
-        $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_comms SET
+        $edit = $GLOBALS['db']->Execute(
+            "UPDATE " . DB_PREFIX . "_comms SET
             `name` = ?, `type` = ?, `reason` = ?, `authid` = ?,
             `length` = ?,
             `ends` 	 =  `created` + ?

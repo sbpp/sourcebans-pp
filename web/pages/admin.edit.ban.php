@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -61,7 +61,7 @@ $errorScript = "";
 if (isset($_POST['name'])) {
     $_POST['steam'] = trim($_POST['steam']);
     $_POST['type']  = (int) $_POST['type'];
-    
+
     // Form Validation
     $error = 0;
     // If they didn't type a steamid
@@ -69,32 +69,31 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } else if (($_POST['type'] == 0 && !is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
+    } elseif (($_POST['type'] == 0 && !is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    }
-    // Didn't type an IP
-    else if (empty($_POST['ip']) && $_POST['type'] == 1) {
+    } elseif (empty($_POST['ip']) && $_POST['type'] == 1) {
+        // Didn't type an IP
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type an IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
-    } else if ($_POST['type'] == 1 && !validate_ip($_POST['ip'])) {
+    } elseif ($_POST['type'] == 1 && !validate_ip($_POST['ip'])) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type a valid IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
     }
-    
+
     // Didn't type a custom reason
     if ($_POST['listReason'] == "other" && empty($_POST['txtReason'])) {
         $error++;
         $errorScript .= "$('reason.msg').innerHTML = 'You must type a reason';";
         $errorScript .= "$('reason.msg').setStyle('display', 'block');";
     }
-    
+
     // prune any old bans
     PruneBans();
-    
+
     if ($error == 0) {
         // Check if the new steamid is already banned
         if ($_POST['type'] == 0) {
@@ -102,7 +101,7 @@ if (isset($_POST['name'])) {
                 $_POST['steam'],
                 (int) $_GET['id']
             ));
-            
+
             if ((int) $chk[0] > 0) {
                 $error++;
                 $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already banned';";
@@ -119,14 +118,13 @@ if (isset($_POST['name'])) {
                     }
                 }
             }
-        }
-        // Check if the ip is already banned
-        else if ($_POST['type'] == 1) {
+        } elseif ($_POST['type'] == 1) {
+            // Check if the ip is already banned
             $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != ?", array(
                 $_POST['ip'],
                 (int) $_GET['id']
             ));
-            
+
             if ((int) $chk[0] > 0) {
                 $error++;
                 $errorScript .= "$('ip.msg').innerHTML = 'This IP is already banned';";
@@ -134,18 +132,18 @@ if (isset($_POST['name'])) {
             }
         }
     }
-    
+
     $_POST['name'] = RemoveCode($_POST['name']);
     $_POST['ip'] = preg_replace('#[^\d\.]#', '', $_POST['ip']); //strip ip of all but numbers and dots
     $_POST['dname'] = RemoveCode($_POST['dname']);
     $reason = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
-    
+
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;
     } else {
         $_POST['banlength'] = (int) $_POST['banlength'] * 60;
     }
-    
+
     // Show the new values in the form
     $res['name']   = $_POST['name'];
     $res['authid'] = $_POST['steam'];
@@ -153,13 +151,14 @@ if (isset($_POST['name'])) {
     $res['length'] = $_POST['banlength'];
     $res['type']   = $_POST['type'];
     $res['reason'] = $reason;
-    
+
     // Only process if there are still no errors
     if ($error == 0) {
         $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM " . DB_PREFIX . "_bans WHERE bid = '" . (int) $_GET['id'] . "'");
-        
-        
-        $edit = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET
+
+
+        $edit = $GLOBALS['db']->Execute(
+            "UPDATE " . DB_PREFIX . "_bans SET
             `name` = ?, `type` = ?, `reason` = ?, `authid` = ?,
             `length` = ?,
             `ip` = ?,
@@ -177,16 +176,17 @@ if (isset($_POST['name'])) {
                 (int) $_GET['id']
             )
         );
-        
+
         // Set all submissions to archived for that steamid
         $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '3', archivedby = '" . $userbank->GetAid() . "' WHERE SteamId = ?;", array(
             $_POST['steam']
         ));
-        
+
         if (!empty($_POST['dname'])) {
             $demoid = $GLOBALS['db']->GetRow("SELECT filename FROM `" . DB_PREFIX . "_demos` WHERE demid = '" . $_GET['id'] . "';");
             @unlink(SB_DEMOS . "/" . $demoid['filename']);
-            $edit         = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_demos
+            $edit         = $GLOBALS['db']->Execute(
+                "REPLACE INTO " . DB_PREFIX . "_demos
                 (`demid`, `demtype`, `filename`, `origname`)
                 VALUES
                 (?,
@@ -201,7 +201,7 @@ if (isset($_POST['name'])) {
             );
             $res['dname'] = RemoveCode($_POST['dname']);
         }
-        
+
         if ($_POST['banlength'] != $lengthrev->fields['length']) {
             $log = new CSystemLog("m", "Ban length edited", "Ban length for (" . $lengthrev->fields['authid'] . ") has been updated, before: " . $lengthrev->fields['length'] . ", now: " . $_POST['banlength']);
         }

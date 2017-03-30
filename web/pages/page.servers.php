@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -31,14 +31,12 @@ if (!defined("IN_SB")) {
     die();
 }
 
-if (defined('IN_HOME'))
-    $number = -1;
-else {
+$number = -1;
+if (!defined('IN_HOME')) {
     $GLOBALS['server_qry'] = "";
-    if (isset($_GET['s']))
+    if (isset($_GET['s'])) {
         $number = (int) $_GET['s'];
-    else
-        $number = -1;
+    }
 }
 
 $res     = $GLOBALS['db']->Execute("SELECT se.sid, se.ip, se.port, se.modid, se.rcon, md.icon FROM " . DB_PREFIX . "_servers se LEFT JOIN " . DB_PREFIX . "_mods md ON md.mid=se.modid WHERE se.sid > 0 AND se.enabled = 1 ORDER BY se.modid, se.sid");
@@ -54,9 +52,10 @@ while (!$res->EOF) {
     $info['port']  = $res->fields[2];
     $info['icon']  = $res->fields[5];
     $info['index'] = $i;
-    if (defined('IN_HOME'))
+    if (defined('IN_HOME')) {
         $info['evOnClick'] = "window.location = 'index.php?p=servers&s=" . $info['index'] . "';";
-    
+    }
+
     $GLOBALS['server_qry'] .= "xajax_ServerHostPlayers({$info['sid']}, 'servers', '', '" . $i . "', '" . $number . "', '" . defined('IN_HOME') . "', 70);";
     array_push($servers, $info);
     $i++;

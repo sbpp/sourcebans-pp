@@ -1,7 +1,7 @@
 <?php
 /*************************************************************************
 	This file is part of SourceBans++
-	
+
 	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
 	SourceBans++ is licensed under a
@@ -18,7 +18,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-	This program is based off work covered by the following copyright(s): 
+	This program is based off work covered by the following copyright(s):
 		SourceBans 1.4.11
 		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 		Licensed under CC BY-NC-SA 3.0
@@ -27,34 +27,32 @@
 
 class CUI
 {
-	function drawButton($text, $click, $class, $id="", $submit=false)
-	{
-		$type = $submit ? "submit" : "button";
-		$button = "<input type='$type' onclick=\"$click\" name='$id' class='btn $class' onmouseover='ButtonOver(\"$id\")' onmouseout='ButtonOver(\"$id\")' id='$id' value='$text' />";
-		return $button;
-	}
-	
-	function drawInlineBox($title, $text, $color)
-	{
-		$icon = "";
-		switch($color)
-		{
-			case "red":
-				$icon = "warning";
-			break;
-			case "blue":
-				$icon = "info";
-			break;
-			case "green":
-				$icon = "yay";
-		}
-		$text = '<div id="msg-'.$color.'-debug" style="">
+    public function drawButton($text, $click, $class, $ids = "", $submit = false)
+    {
+        $type = $submit ? "submit" : "button";
+        $button = "<input type='$type' onclick=\"$click\" name='$ids' class='btn $class' onmouseover='ButtonOver(\"$ids\")' onmouseout='ButtonOver(\"$ids\")' id='$ids' value='$text' />";
+        return $button;
+    }
+
+    public function drawInlineBox($title, $text, $color)
+    {
+        $icon = "";
+        switch ($color) {
+            case "red":
+                $icon = "warning";
+                break;
+            case "blue":
+                $icon = "info";
+                break;
+            case "green":
+                $icon = "yay";
+        }
+        $text = '<div id="msg-'.$color.'-debug" style="">
 				 <i><img src="./images/'.$icon.'.png" alt="MsgIcon" /></i>
 				 <b>' . $title .'</b>
 				 <br />
 		 		' . $text . '</i>
 				</div>';
-		return $text;
-	}
+        return $text;
+    }
 }
-?>

@@ -48,8 +48,9 @@ if (isset($_GET['c']) && $_GET['c'] == "settings") {
 						extended_valid_elements : "a[name|href|target|title|onclick],img[class|src|border=0|alt|title|hspace|vspace|width|height|align|onmouseover|onmouseout|name],hr[class|width|size|noshade],font[face|size|color|style],span[class|align|style]"
 					});
 					</script>');
-} else
+} else {
     $theme->assign('tiny_mce_js', '');
+}
 
 $theme->assign('xajax_functions', $xajax->printJavascript("scripts", "xajax.js"));
 $theme->assign('header_title', $GLOBALS['config']['template.title']);

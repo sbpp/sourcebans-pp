@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -90,11 +90,12 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* The player is already banned permanent.<br>';
         $validsubmit = false;
     }
-    
-    
-    if (!$validsubmit)
+
+
+    if (!$validsubmit) {
         CreateRedBox("Error", $errors);
-    
+    }
+
     if ($validsubmit) {
         $filename = md5($SteamID . time());
         //echo SB_DEMOS."/".$filename;
@@ -105,17 +106,19 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $res   = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $SID");
                 $sinfo = new CServerInfo($res[0], $res[1]);
                 $info  = $sinfo->getInfo();
-                if (!empty($info['hostname']))
+                if (!empty($info['hostname'])) {
                     $mailserver = "Server: " . $info['hostname'] . " (" . $res[0] . ":" . $res[1] . ")\n";
-                else
+                } else {
                     $mailserver = "Server: Error Connecting (" . $res[0] . ":" . $res[1] . ")\n";
+                }
                 $modid = $GLOBALS['db']->GetRow("SELECT m.mid FROM `" . DB_PREFIX . "_servers` as s LEFT JOIN `" . DB_PREFIX . "_mods` as m ON m.mid = s.modid WHERE s.sid = '" . $SID . "';");
             } else {
                 $mailserver = "Server: Other server\n";
                 $modid[0]   = 0;
             }
-            if ($SteamID == "STEAM_0:")
+            if ($SteamID == "STEAM_0:") {
                 $SteamID = "";
+            }
             $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_submissions(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)");
             $GLOBALS['db']->Execute($pre, array(
                 $SteamID,
@@ -129,13 +132,14 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $SID
             ));
             $subid = (int) $GLOBALS['db']->Insert_ID();
-            
-            if (!empty($_FILES['demo_file']['name']))
+
+            if (!empty($_FILES['demo_file']['name'])) {
                 $GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_demos(demid,demtype,filename,origname) VALUES (?, 'S', ?, ?)", array(
                     $subid,
                     $filename,
                     $_FILES['demo_file']['name']
                 ));
+            }
             $SteamID       = "";
             $BanIP         = "";
             $PlayerName    = "";
@@ -143,20 +147,21 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $SubmitterName = "";
             $Email         = "";
             $SID           = -1;
-            
+
             // Send an email when ban was posted
             $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
-            
+
             $admins = $userbank->GetAllAdmins();
             $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") - 5);
-            foreach ($admins AS $admin) {
+            foreach ($admins as $admin) {
                 $message = "";
                 $message .= "Hello " . $admin['user'] . ",\n\n";
                 $message .= "A new ban submission has been posted on your SourceBans page:\n\n";
                 $message .= "Player: " . $_POST['PlayerName'] . " (" . $_POST['SteamID'] . ")\nDemo: " . (empty($_FILES['demo_file']['name']) ? 'no' : 'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id=' . $subid . ')') . "\n" . $mailserver . "Reason: " . $_POST['BanReason'] . "\n\n";
                 $message .= "Click the link below to view the current ban submissions.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "index.php?p=admin&c=bans#^2";
-                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid']))
+                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid'])) {
                     mail($admin['email'], "[SourceBans] Ban Submission Added", $message, $headers);
+                }
             }
             CreateGreenBox("Successful", "Your submission has been added into the database, and will be reviewed by one of our admins");
         } else {

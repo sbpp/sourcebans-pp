@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -63,7 +63,7 @@ function switch_length(opt)
         $('other_length').setStyle('display', 'block');
         $('other_length').focus();
         $('length').setStyle('width', '20px');
-    } else { 
+    } else {
         $('other_length').setStyle('display', 'none');
         $('length').setStyle('width', '210px');
     }

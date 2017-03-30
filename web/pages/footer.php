@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -53,7 +53,7 @@ if (defined('DEVELOPER_MODE')) {
     $finish    = $time;
     $totaltime = ($finish - $start);
     printf("<h3>Page took %f seconds to load.</h3>", $totaltime);
-    
+
     echo '<h3>User Manager Data</h3><pre>';
     PrintArray($userbank);
     echo '</pre><h3>Post Data</h3><pre>';
@@ -69,12 +69,12 @@ if (defined('DEVELOPER_MODE')) {
 </div>
 <script type="text/javascript">
 var settab = ProcessAdminTabs();
-window.addEvent('domready', function(){	
+window.addEvent('domready', function(){
 <?php
 if (isset($GLOBALS['server_qry'])) {
     echo $GLOBALS['server_qry'];
 }
-?>	
+?>
         var Tips2 = new Tips($$('.tip'), {
             initialize:function(){
                 this.fx = new Fx.Style(this.toolTip, 'opacity', {duration: 300, wait: false}).set(0);
@@ -91,30 +91,31 @@ if (isset($GLOBALS['server_qry'])) {
         });
     });
 <?php
-if (isset($GLOBALS['NavRewrite']))
+if (isset($GLOBALS['NavRewrite'])) {
     echo "$('nav').setHTML('" . $GLOBALS['NavRewrite'] . "');";
-?>	
-					  $('content_title').setHTML('<?=$GLOBALS['TitleRewrite']?>');
-	
-
-	<?php
-if (isset($GLOBALS['enable'])) {
+}
 ?>
-	if ($('<?=$GLOBALS['enable']?>')) {
+    $('content_title').setHTML('<?=$GLOBALS['TitleRewrite']?>');
+
+
+    <?php
+    if (isset($GLOBALS['enable'])) {
+    ?>
+    if ($('<?=$GLOBALS['enable']?>')) {
         if (settab != -1) {
             $(settab).setStyle('display', 'block');
         } else {
             $('<?=$GLOBALS['enable']?>').setStyle('display', 'block');
         }
     }
-<?php
-}
-if (isset($_GET['o']) && $_GET['o'] == "rcon") {
-    echo "var scroll = new Fx.Scroll($('rcon'),{duration: 500, transition: Fx.Transitions.Cubic.easeInOut});	
+    <?php
+    }
+    if (isset($_GET['o']) && $_GET['o'] == "rcon") {
+        echo "var scroll = new Fx.Scroll($('rcon'),{duration: 500, transition: Fx.Transitions.Cubic.easeInOut});
         if(scroll)scroll.toBottom();";
-}
-?>
-	</script>
+    }
+    ?>
+    </script>
 <?php
 if (is_object($log)) {
     $log->WriteLogEntries();

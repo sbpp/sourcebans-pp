@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -49,7 +49,7 @@ while (!$webgroup_list->EOF) {
     $data         = array();
     $data['gid']  = $webgroup_list->fields['gid'];
     $data['name'] = $webgroup_list->fields['name'];
-    
+
     array_push($webgroups, $data);
     $webgroup_list->MoveNext();
 }
@@ -60,7 +60,7 @@ $srvadmgroups     = array();
 while (!$srvadmgroup_list->EOF) {
     $data         = array();
     $data['name'] = $srvadmgroup_list->fields['name'];
-    
+
     array_push($srvadmgroups, $data);
     $srvadmgroup_list->MoveNext();
 }
@@ -72,7 +72,7 @@ while (!$srvgroup_list->EOF) {
     $data         = array();
     $data['gid']  = $srvgroup_list->fields['gid'];
     $data['name'] = $srvgroup_list->fields['name'];
-    
+
     array_push($srvgroups, $data);
     $srvgroup_list->MoveNext();
 }
@@ -203,10 +203,10 @@ $webflag[] = array(
     "flag" => "ADMIN_DELETE_MODS"
 );
 $webflags  = array();
-foreach ($webflag AS $flag) {
+foreach ($webflag as $flag) {
     $data['name'] = $flag["name"];
     $data['flag'] = $flag["flag"];
-    
+
     array_push($webflags, $data);
 }
 
@@ -296,10 +296,10 @@ $serverflag[] = array(
     "flag" => "SM_CUSTOM6"
 );
 $serverflags  = array();
-foreach ($serverflag AS $flag) {
+foreach ($serverflag as $flag) {
     $data['name'] = $flag["name"];
     $data['flag'] = $flag["flag"];
-    
+
     array_push($serverflags, $data);
 }
 

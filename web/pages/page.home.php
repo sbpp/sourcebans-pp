@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -59,9 +59,9 @@ while (!$res->EOF) {
     $info['link_url'] = "window.location = '" . $info['search_link'] . "';";
     $info['name']     = htmlspecialchars(addslashes($info['name']), ENT_QUOTES, 'UTF-8');
     $info['popup']    = "ShowBox('Blocked player: " . $info['name'] . "', '" . $info['name'] . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
-    
+
     $GLOBALS['server_qry'] .= "xajax_ServerHostProperty(" . $res->fields['sid'] . ", 'block_" . $res->fields['sid'] . "_$blcount', 'title', 100);";
-    
+
     array_push($stopped, $info);
     $res->MoveNext();
     ++$blcount;
@@ -71,7 +71,7 @@ $res      = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_ba
 $BanCount = (int) $res->fields[0];
 
 $res  = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
-			    				FROM " . DB_PREFIX . "_bans AS ba 
+			    				FROM " . DB_PREFIX . "_bans AS ba
 			    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
 			    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
 			    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
@@ -100,20 +100,21 @@ while (!$res->EOF) {
     }
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
     $info['short_name'] = trunc($info['name'], 25, false);
-    
+
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;
-        
-        if ($res->fields[14] == 'D')
+
+        if ($res->fields[14] == 'D') {
             $info['ub_reason'] = 'D';
-        elseif ($res->fields[14] == 'U')
+        } elseif ($res->fields[14] == 'U') {
             $info['ub_reason'] = 'U';
-        else
+        } else {
             $info['ub_reason'] = 'E';
+        }
     } else {
         $info['unbanned'] = false;
     }
-    
+
     array_push($bans, $info);
     $res->MoveNext();
 }
@@ -122,7 +123,7 @@ $res       = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_c
 $CommCount = (int) $res->fields[0];
 
 $res   = $GLOBALS['db']->Execute("SELECT bid, ba.authid, ba.type, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
-				    				FROM " . DB_PREFIX . "_comms AS ba 
+				    				FROM " . DB_PREFIX . "_comms AS ba
 				    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
 				    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
 				    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
@@ -147,20 +148,21 @@ while (!$res->EOF) {
     $info['link_url']    = "window.location = '" . $info['search_link'] . "';";
     $info['short_name']  = trunc($info['name'], 25, false);
     $info['type']        = $res->fields['type'] == 2 ? "images/type_c.png" : "images/type_v.png";
-    
+
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;
-        
-        if ($res->fields[14] == 'D')
+
+        if ($res->fields[14] == 'D') {
             $info['ub_reason'] = 'D';
-        elseif ($res->fields[14] == 'U')
+        } elseif ($res->fields[14] == 'U') {
             $info['ub_reason'] = 'U';
-        else
+        } else {
             $info['ub_reason'] = 'E';
+        }
     } else {
         $info['unbanned'] = false;
     }
-    
+
     array_push($comms, $info);
     $res->MoveNext();
 }

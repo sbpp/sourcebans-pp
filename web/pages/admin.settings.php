@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -34,8 +34,9 @@ global $userbank, $theme;
 //Log stuff
 $logs = new CSystemLog();
 $page = 1;
-if (isset($_GET['page']) && $_GET['page'] > 0)
+if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page = intval($_GET['page']);
+}
 
 if (isset($_GET['log_clear']) && $_GET['log_clear'] == "true") {
     if ($userbank->HasAccess(ADMIN_OWNER)) {
@@ -95,7 +96,7 @@ if ($list_end < $log_count) {
 $pages = (round($log_count / intval($GLOBALS['config']['banlist.bansperpage'])) == 0) ? 1 : round($log_count / intval($GLOBALS['config']['banlist.bansperpage']));
 if ($pages > 1) {
     $page_numbers = 'Page ' . $page . ' of ' . $pages . " - " . $prev . " | " . $next;
-}else {
+} else {
     $page_numbers = 'Page ' . $page . ' of ' . $pages;
 }
 $pages = ceil($log_count / intval($GLOBALS['config']['banlist.bansperpage']));
@@ -117,12 +118,13 @@ if ($pages > 1) {
 $log_list = array();
 foreach ($log as $l) {
     $log_item = array();
-    if ($l['type'] == "m")
+    if ($l['type'] == "m") {
         $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/help.png' alt='Info'>";
-    elseif ($l['type'] == "w")
+    } elseif ($l['type'] == "w") {
         $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/warning.png' alt='Warning'>";
-    elseif ($l['type'] == "e")
+    } elseif ($l['type'] == "e") {
         $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/error.png' alt='Warning'>";
+    }
     $log_item['user']     = !empty($l['user']) ? $l['user'] : 'Guest';
     $log_item['date_str'] = SBDate($dateformat, $l['created']);
     $log_item             = array_merge($l, $log_item);
@@ -139,10 +141,11 @@ $valid_themes = array();
 foreach ($themes as $thm) {
     if (@file_exists(SB_THEMES . $thm . "/theme.conf.php")) {
         $file = file_get_contents(SB_THEMES . $thm . "/theme.conf.php");
-        if ($namesearch = preg_match_all('/define\(\'theme_name\',[ ]*\"(.+)\"\);/', $file, $thmname, PREG_PATTERN_ORDER))
+        if ($namesearch = preg_match_all('/define\(\'theme_name\',[ ]*\"(.+)\"\);/', $file, $thmname, PREG_PATTERN_ORDER)) {
             $thme['name'] = $thmname[1][0];
-        else
+        } else {
             $thme['name'] = $thm;
+        }
         $thme['dir'] = $thm;
         array_push($valid_themes, $thme);
     }
@@ -156,12 +159,14 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 } else {
     if (isset($_POST['settingsGroup'])) {
         $errors = "";
-        
+
         if ($_POST['settingsGroup'] == "mainsettings") {
-            if (!is_numeric($_POST['config_password_minlength']))
+            if (!is_numeric($_POST['config_password_minlength'])) {
                 $errors .= "Min password length must be a number<br />";
-            if (!is_numeric($_POST['banlist_bansperpage']))
+            }
+            if (!is_numeric($_POST['banlist_bansperpage'])) {
                 $errors .= "Bans per page must be a number";
+            }
             if (empty($errors)) {
                 if (isset($_POST['enable_submit']) && $_POST['enable_submit'] == "on") {
                     $submit = 1;
@@ -173,21 +178,21 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                 } else {
                     $protest = 0;
                 }
-                
+
                 $lognopopup = (isset($_POST['dash_nopopup']) && $_POST['dash_nopopup'] == "on" ? 1 : 0);
-                
+
                 $debugmode = (isset($_POST['config_debug']) && $_POST['config_debug'] == "on" ? 1 : 0);
-                
+
                 $summertime = (isset($_POST['config_summertime']) && $_POST['config_summertime'] == "on" ? 1 : 0);
-                
+
                 $hideadmname = (isset($_POST['banlist_hideadmname']) && $_POST['banlist_hideadmname'] == "on" ? 1 : 0);
-                
+
                 $hideplayerips = (isset($_POST['banlist_hideplayerips']) && $_POST['banlist_hideplayerips'] == "on" ? 1 : 0);
-                
+
                 $nocountryfetch = (isset($_POST['banlist_nocountryfetch']) && $_POST['banlist_nocountryfetch'] == "on" ? 1 : 0);
-                
+
                 $onlyinvolved = (isset($_POST['protest_emailonlyinvolved']) && $_POST['protest_emailonlyinvolved'] == "on" ? 1 : 0);
-                
+
                 $size = sizeof($_POST['bans_customreason']);
                 for ($i = 0; $i < $size; $i++) {
                     if (empty($_POST['bans_customreason'][$i])) {
@@ -202,7 +207,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $cureason = "";
                 }
                 $tz_string = $_POST['timezoneoffset'];
-                
+
                 $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
                     (?, 'template.title'),
                     (?,'template.logo'),
@@ -232,7 +237,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $summertime,
                     $cureason
                 ));
-                
+
 ?>
 <script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
 <?php
@@ -240,20 +245,20 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                 CreateRedBox("Error", $errors);
             }
         }
-        
+
         if ($_POST['settingsGroup'] == "features") {
             $kickit = (isset($_POST['enable_kickit']) && $_POST['enable_kickit'] == "on" ? 1 : 0);
-            
+
             $exportpub = (isset($_POST['export_public']) && $_POST['export_public'] == "on" ? 1 : 0);
-            
+
             $groupban = (isset($_POST['enable_groupbanning']) && $_POST['enable_groupbanning'] == "on" ? 1 : 0);
-            
+
             $friendsban = (isset($_POST['enable_friendsbanning']) && $_POST['enable_friendsbanning'] == "on" ? 1 : 0);
-            
+
             $adminrehash = (isset($_POST['enable_adminrehashing']) && $_POST['enable_adminrehashing'] == "on" ? 1 : 0);
-            
+
             $steamloginopt = (isset($_POST['enable_steamlogin']) && $_POST['enable_steamlogin'] == "on" ? 1 : 0);
-            
+
             $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
 											(" . (int) $exportpub . ", 'config.exportpublic'),
 											(" . (int) $kickit . ", 'config.enablekickit'),
@@ -261,16 +266,16 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 											(" . (int) $friendsban . ", 'config.enablefriendsbanning'),
 											(" . (int) $adminrehash . ", 'config.enableadminrehashing'),
 											(" . (int) $steamloginopt . ", 'config.enablesteamlogin')");
-            
-            
+
+
 ?>
 <script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
 <?php
         }
     }
-    
+
     $date_offs = $GLOBALS['config']['config.timezone'];
-    
+
     #########[Settings Page]###############
     echo '<div id="0" style="display:none;">';
     $theme->assign('config_title', $GLOBALS['config']['template.title']);
@@ -281,40 +286,41 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     $theme->assign('config_time', $date_offs);
     $theme->assign('config_dash_text', stripslashes($GLOBALS['config']['dash.intro.text']));
     $theme->assign('config_bans_per_page', $GLOBALS['config']['banlist.bansperpage']);
-    
+
     $theme->assign('bans_customreason', ((isset($GLOBALS['config']['bans.customreasons']) && $GLOBALS['config']['bans.customreasons'] != "") ? unserialize($GLOBALS['config']['bans.customreasons']) : array()));
-    
+
     $theme->display('page_admin_settings_settings.tpl');
     echo '</div>';
     #########/[Settings Page]###############
-    
+
     #########[Features Page]###############
     echo '<div id="3" style="display:none;">';
     $theme->display('page_admin_settings_features.tpl');
     echo '</div>';
     #########/[Features Page]###############
-    
+
     #########[Themes Page]###############
     echo '<div id="1" style="display:none;">';
     $theme->assign('theme_list', $valid_themes);
-    
+
     $theme->assign('theme_name', strip_tags(theme_name));
     $theme->assign('theme_author', strip_tags(theme_author));
     $theme->assign('theme_version', strip_tags(theme_version));
     $theme->assign('theme_link', strip_tags(theme_link));
     $theme->assign('theme_screenshot', '<img width="250px" height="170px" src="themes/' . SB_THEME . '/' . strip_tags(theme_screenshot) . '">');
-    
+
     $theme->display('page_admin_settings_themes.tpl');
     echo '</div>';
     #########/[Settings Page]###############
-    
+
     #########[Logs Page]###############
     echo '<div id="2" style="display:none;">';
-    if ($userbank->HasAccess(ADMIN_OWNER))
+    if ($userbank->HasAccess(ADMIN_OWNER)) {
         $theme->assign('clear_logs', "( <a href='javascript:ClearLogs();'>Clear Log</a> )");
+    }
     $theme->assign('page_numbers', $page_numbers);
     $theme->assign('log_items', $log_list);
-    
+
     $theme->display('page_admin_settings_logs.tpl');
     echo '</div>';
     #########/[Logs Page]###############
@@ -347,15 +353,15 @@ if (ini_get('safe_mode') == 1) {
 ?>
 function MoreFields()
 {
-	var t = document.getElementById("custom.reasons");
-	var tr = t.insertRow("-1");
-	var td = tr.insertCell("-1");
-	var inp = document.createElement("input");
-	inp.setAttribute("type","text");
-	inp.className = "submit-fields";
-	inp.setAttribute("name","bans_customreason[]");
-	inp.setAttribute("id","bans_customreason[]");
-	td.appendChild(inp);
+    var t = document.getElementById("custom.reasons");
+    var tr = t.insertRow("-1");
+    var td = tr.insertCell("-1");
+    var inp = document.createElement("input");
+    inp.setAttribute("type","text");
+    inp.className = "submit-fields";
+    inp.setAttribute("name","bans_customreason[]");
+    inp.setAttribute("id","bans_customreason[]");
+    td.appendChild(inp);
 }
 </script>
 </div>
