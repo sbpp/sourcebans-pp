@@ -52,16 +52,6 @@
 #define NOW 0
 #define TYPE_TEMP_SHIFT 10
 
-#define TYPE_MUTE 1
-#define TYPE_GAG 2
-#define TYPE_SILENCE 3
-#define TYPE_UNMUTE 4
-#define TYPE_UNGAG 5
-#define TYPE_UNSILENCE 6
-#define TYPE_TEMP_UNMUTE 14	// TYPE_TEMP_SHIFT + TYPE_UNMUTE
-#define TYPE_TEMP_UNGAG 15 // TYPE_TEMP_SHIFT + TYPE_UNGAG
-#define TYPE_TEMP_UNSILENCE 16 // TYPE_TEMP_SHIFT + TYPE_UNSILENCE
-
 #define MAX_REASONS 32
 #define DISPLAY_SIZE 64
 #define REASON_SIZE 192
@@ -162,6 +152,9 @@ new String:g_sGagAdminAuth[MAXPLAYERS + 1][64];
 
 new Handle:g_hServersWhiteList = INVALID_HANDLE;
 
+// Forward
+new Handle:g_hFwd_OnPlayerPunished;
+
 public Plugin:myinfo =
 {
 	name = "SourceBans++: SourceComms",
@@ -177,6 +170,9 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("SourceComms_SetClientGag", Native_SetClientGag);
 	CreateNative("SourceComms_GetClientMuteType", Native_GetClientMuteType);
 	CreateNative("SourceComms_GetClientGagType", Native_GetClientGagType);
+
+	g_hFwd_OnPlayerPunished = CreateGlobalForward("SourceComms_OnBlockAdded", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
+
 	MarkNativeAsOptional("SQL_SetCharset");
 	RegPluginLibrary("sourcecomms");
 	return APLRes_Success;
@@ -1241,24 +1237,53 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 
 public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
+	ResetPack(data);
+
+	decl String:reason[256];
+
+	new iAdmin			= ReadPackCell(data);
+	if (iAdmin) {
+		iAdmin = GetClientOfUserId(iAdmin);
+		if (!iAdmin) {
+			iAdmin = -1;
+		}
+	}
+	
+	new iTarget			= GetClientOfUserId(ReadPackCell(data));
+	if (!iTarget) {
+		iTarget = -1;
+	}
+
+	new Handle:hFData	= Handle:ReadPackCell(data);
+
+	ResetPack(hFData);
+	new length			= ReadPackCell(hFData);
+	new type			= ReadPackCell(hFData);
+	ReadPackString(hFData, reason, sizeof(reason));
+
+	// Fire forward
+	Call_StartForward(g_hFwd_OnPlayerPunished);
+	Call_PushCell(iAdmin);
+	Call_PushCell(iTarget);
+	Call_PushCell(length);
+	Call_PushCell(type);
+	Call_PushString(reason);
+	Call_Finish();
+
 	if (DB_Conn_Lost(hndl) || error[0])
 	{
 		LogError("Query_AddBlockInsert failed: %s", error);
 
-		ResetPack(data);
-		new length = ReadPackCell(data);
-		new type = ReadPackCell(data);
 		decl String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
-		new String:reason[256];
-		ReadPackString(data, name, sizeof(name));
-		ReadPackString(data, auth, sizeof(auth));
-		ReadPackString(data, reason, sizeof(reason));
-		ReadPackString(data, adminAuth, sizeof(adminAuth));
-		ReadPackString(data, adminIp, sizeof(adminIp));
+		ReadPackString(hFData, name, sizeof(name));
+		ReadPackString(hFData, auth, sizeof(auth));
+		ReadPackString(hFData, adminAuth, sizeof(adminAuth));
+		ReadPackString(hFData, adminIp, sizeof(adminIp));
 
 		InsertTempBlock(length, type, name, auth, reason, adminAuth, adminIp);
 	}
 	CloseHandle(data);
+	CloseHandle(hFData);
 }
 
 public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:data)
@@ -2910,7 +2935,9 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		decl String:sAdminAuthIdEscaped[64 * 2 + 1];
 		decl String:sAdminAuthIdYZEscaped[64 * 2 + 1];
 		decl String:sQuery[4096], String:sQueryAdm[512], String:sQueryVal[1024];
-		new String:sQueryMute[1024], String:sQueryGag[1024];
+		decl String:sQueryMute[1024], String:sQueryGag[1024];
+		sQueryMute[0] = 0;
+		sQueryGag[0]  = 0;
 
 		// escaping everything
 		SQL_EscapeString(g_hDatabase, sName, banName, sizeof(banName));
@@ -2960,16 +2987,20 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		#endif
 
 		// all data cached before calling asynchronous functions
-		new Handle:dataPack = CreateDataPack();
+		new Handle:dataPackFwd	= CreateDataPack();
+		new Handle:dataPack		= CreateDataPack();
+		WritePackCell(dataPackFwd, admin);
+		WritePackCell(dataPackFwd, target);
+		WritePackCell(dataPackFwd, _:dataPack);
 		WritePackCell(dataPack, length);
 		WritePackCell(dataPack, type);
+		WritePackString(dataPack, reason);
 		WritePackString(dataPack, sName);
 		WritePackString(dataPack, targetAuth);
-		WritePackString(dataPack, reason);
 		WritePackString(dataPack, adminAuth);
 		WritePackString(dataPack, adminIp);
 
-		SQL_TQuery(g_hDatabase, Query_AddBlockInsert, sQuery, dataPack, DBPrio_High);
+		SQL_TQuery(g_hDatabase, Query_AddBlockInsert, sQuery, dataPackFwd, DBPrio_High);
 	}
 	else
 		InsertTempBlock(length, type, sName, targetAuth, reason, adminAuth, adminIp);
