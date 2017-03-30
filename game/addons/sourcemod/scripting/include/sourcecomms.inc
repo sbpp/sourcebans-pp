@@ -96,6 +96,15 @@ native bType:SourceComms_GetClientMuteType(client);
  */
 native bType:SourceComms_GetClientGagType(client);
 
+/**
+ * Called when added communication block for player.
+ *
+ * @param client	The client index of the admin who is blocking the client.
+ * @param target	The client index of the player to blocked.
+ * @param time		The time to blocked the player for (in minutes, 0 = permanent).
+ * @param type		The type of block. See section "Int definitions for punishments types".
+ * @param reason	The reason to block the player.
+ */
 forward SourceComms_OnBlockAdded(client, target, time, type, String:reason[]);
 
 public SharedPlugin:__pl_sourcecomms = 
