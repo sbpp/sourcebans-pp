@@ -59,4 +59,14 @@ public __pl_sourcebans_SetNTVOptional()
  *********************************************************/
 native SBBanPlayer(client, target, time, String:reason[]);
 
+/*********************************************************
+ * Called when the admin banning the player.
+ *
+ * @param           The client index of the admin who is banning the client.
+ * @param target    The client index of the player to ban
+ * @param time      The time to ban the player for (in minutes, 0 = permanent)
+ * @param reason    The reason to ban the player from the server
+ *********************************************************/
+forward SB_OnBanPlayer(client, target, time, String:reason[]);
+
 //Yarr!
