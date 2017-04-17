@@ -4,11 +4,14 @@
 ### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/releases/tag/1.5.4.7) [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/SOURCEMOD-LICENSE.txt) [![GitHub license](https://img.shields.io/badge/license-CC_BY--NC--SA_3.0-blue.svg?style=flat-square)](https://creativecommons.org/licenses/by-nc-sa/3.0/) [![GitHub forks](https://img.shields.io/github/forks/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/network) [![GitHub stars](https://img.shields.io/github/stars/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/stargazers) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/issues) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square)](https://travis-ci.org/sbpp/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp)
 Global admin, ban, and communication management system for the Source engine
 
-## Getting Started
+### Useful Links
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+* Website: [SourceBans++](https://sbpp.github.io/)
+* Install help: [SourceBans Manual](https://www.gameconnect.net/projects/sourcebans/manual/)
+* FAQ: [SourceBans++ FAQ](https://sbpp.github.io/faq/)
+* Forum Thread: [SourceBans++ - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
 
-### Prerequisites
+### Requirements
 
 ```
 * Webserver
@@ -19,13 +22,6 @@ These instructions will get you a copy of the project up and running on your loc
   o MetaMod: Source
   o SourceMod: Greater Than or Equal To 1.7
 ```
-
-### Useful Links
-
-* Website: [SourceBans++](https://sbpp.github.io/)
-* Install help: [SourceBans Manual](https://www.gameconnect.net/projects/sourcebans/manual/)
-* FAQ: [SourceBans++ FAQ](https://sbpp.github.io/faq/)
-* Forum Thread: [SourceBans++ - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
 
 ## Built With
 
