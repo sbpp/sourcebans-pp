@@ -29,6 +29,20 @@
 #endif
 #define _sourcecomms_included
 
+/**
+ * @section Int definitions for punishments types.
+ */
+
+#define TYPE_MUTE           1   /**< Voice Mute */
+#define TYPE_GAG            2   /**< Gag (text chat) */
+#define TYPE_SILENCE        3   /**< Silence (mute + gag) */
+#define TYPE_UNMUTE         4   /**< Voice Unmute*/
+#define TYPE_UNGAG          5   /**< Ungag*/
+#define TYPE_UNSILENCE      6   /**< Unsilence */
+#define TYPE_TEMP_UNMUTE    14  /**< Temp mute removed */
+#define TYPE_TEMP_UNGAG     15  /**< Temp gag removed */
+#define TYPE_TEMP_UNSILENCE 16  /**< Temp silence removed */
+
 /* Punishments types */
 enum bType {
 	bNot = 0,  // Player chat or voice is not blocked
@@ -81,6 +95,17 @@ native bType:SourceComms_GetClientMuteType(client);
  * @return          The client's current gag type index (see enum bType in the begin).
  */
 native bType:SourceComms_GetClientGagType(client);
+
+/**
+ * Called when added communication block for player.
+ *
+ * @param client	The client index of the admin who is blocking the client.
+ * @param target	The client index of the player to blocked.
+ * @param time		The time to blocked the player for (in minutes, 0 = permanent).
+ * @param type		The type of block. See section "Int definitions for punishments types".
+ * @param reason	The reason to block the player.
+ */
+forward SourceComms_OnBlockAdded(client, target, time, type, String:reason[]);
 
 public SharedPlugin:__pl_sourcecomms = 
 {

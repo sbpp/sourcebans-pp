@@ -129,6 +129,8 @@ new bool:g_bConnecting = false;
 
 new serverID = -1;
 
+new Handle:g_hFwd_OnBanAdded;
+
 public Plugin:myinfo =
 {
 	name = "SourceBans++: Main Plugin",
@@ -145,7 +147,11 @@ public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 #endif
 {
 	RegPluginLibrary("sourcebans");
-	CreateNative("SBBanPlayer", Native_SBBanPlayer);
+	CreateNative("SBBanPlayer",            Native_SBBanPlayer);
+	CreateNative("SourceBans_BanPlayer",   Native_SBBanPlayer);
+
+	g_hFwd_OnBanAdded = CreateGlobalForward("SourceBans_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
+
 	LateLoaded = late;
 
 	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
@@ -2312,6 +2318,13 @@ public bool:CreateBan(client, target, time, String:reason[])
 		DisplayMenu(ReasonMenuHandle, admin, MENU_TIME_FOREVER);
 		ReplyToCommand(admin, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Check Menu");
 	}
+
+	Call_StartForward(g_hFwd_OnBanAdded);
+	Call_PushCell(client);
+	Call_PushCell(target);
+	Call_PushCell(time);
+	Call_PushString(reason);
+	Call_Finish();
 
 	return true;
 }

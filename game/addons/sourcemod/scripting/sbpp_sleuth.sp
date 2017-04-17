@@ -234,7 +234,7 @@ stock BanPlayer(client, time)
 {
 	decl String:Reason[255];
 	Format(Reason, sizeof(Reason), "[SourceSleuth] %t", "sourcesleuth_banreason");
-	SBBanPlayer(0, client, time, Reason);
+	SourceBans_BanPlayer(0, client, time, Reason);
 }
 
 PrintToAdmins(const String:format[], any:...)
