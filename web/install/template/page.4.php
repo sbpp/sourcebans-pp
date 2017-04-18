@@ -13,7 +13,7 @@ $db->query('SELECT VERSION() AS version');
 $version = $db->single();
 
 $charset = 'utf8';
-if ($version['version'] >= 5.5.3) {
+if (version_compare($version['version'], "5.5.3") >= 0) {
     $charset .= 'mb4';
 }
 
@@ -54,7 +54,7 @@ if ($errors > 0) {
     <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
     <input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
     <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
-    <input type="hidden" name="charset" value="<?php echo $charset; ?>">
+    <input type="hidden" name="charset" value="<?php echo $charset?>">
 </form>
     <div align="center">
         <input type="submit" TABINDEX=2 onclick="next()" name="button" class="btn ok" id="button" value="Ok" /></div>

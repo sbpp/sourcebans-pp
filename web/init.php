@@ -135,8 +135,14 @@ $GLOBALS['db'] = ADONewConnection("mysqli://".DB_USER.':'.urlencode(DB_PASS).'@'
 $GLOBALS['log'] = new CSystemLog();
 $GLOBALS['sb-email'] = SB_EMAIL;
 
-if( !is_object($GLOBALS['db']) )
-				die();
+if (!is_object($GLOBALS['db'])) {
+    die();
+}
+
+if (!defined('DB_CHARSET')) {
+    define('DB_CHARSET', 'utf8');
+}
+$GLOBALS['db']->Execute("SET NAMES ".DB_CHARSET.";");
 
 $mysql_server_info = $GLOBALS['db']->ServerInfo();
 $GLOBALS['db_version'] = $mysql_server_info['version'];
@@ -266,8 +272,6 @@ define('ALL_WEB', ADMIN_LIST_ADMINS|ADMIN_ADD_ADMINS|ADMIN_EDIT_ADMINS|ADMIN_DEL
 
 define('ALL_SERVER', SM_RESERVED_SLOT.SM_GENERIC.SM_KICK.SM_BAN.SM_UNBAN.SM_SLAY.SM_MAP.SM_CVAR.SM_CONFIG.SM_VOTE.SM_PASSWORD.SM_RCON.
                      SM_CHEATS.SM_CUSTOM1.SM_CUSTOM2.SM_CUSTOM3. SM_CUSTOM4.SM_CUSTOM5.SM_CUSTOM6.SM_ROOT);
-
-$GLOBALS['db']->Execute("SET NAMES ".DB_CHARSET.";");
 
 $res = $GLOBALS['db']->Execute("SELECT * FROM ".DB_PREFIX."_settings GROUP BY `setting`, `value`");
 $GLOBALS['config'] = array();
