@@ -16,7 +16,7 @@
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work covered by the following copyright(s):  
+//  This file is based off work covered by the following copyright(s):
 //
 //   SourceBans 1.4.11
 //   Copyright (C) 2007-2015 SourceBans Team - Part of GameConnect
@@ -55,5 +55,6 @@ return array(
     //REAL SB++ STARTS HERE
     475 => "475.php",
     476 => "476.php",
-    555 => "555.php"
-);
+    555 => "555.php",
+    600 => "600.php"
+);

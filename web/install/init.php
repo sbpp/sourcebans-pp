@@ -35,7 +35,6 @@ define('INCLUDES_PATH', ROOT . 'includes');
 define('IN_SB', true);
 define('IN_INSTALL', true);
 
-
 // ---------------------------------------------------
 //  Fix some $_SERVER vars
 // ---------------------------------------------------
