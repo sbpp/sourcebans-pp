@@ -23,6 +23,7 @@ define('DB_PASS', '{pass}');						// The password
 define('DB_NAME', '{db}');  						// Database name
 define('DB_PREFIX', '{prefix}');					// The table prefix for SourceBans
 define('DB_PORT','{port}');							// The SQL port (Default: 3306)
+define('DB_CHARSET', {charset});                    // The Database charset (Default: utf8)
 define('STEAMAPIKEY','{steamapikey}');				// Steam API Key for Shizz
 define('SB_WP_URL','{sbwpurl}');       				//URL of SourceBans Site
 define('SB_EMAIL','{sbwpemail}');
@@ -54,6 +55,7 @@ $web_cfg = str_replace("{port}", $_POST['port'], $web_cfg);
 $web_cfg = str_replace("{steamapikey}", $_POST['apikey'], $web_cfg);
 $web_cfg = str_replace("{sbwpurl}", $_POST['sb-wp-url'], $web_cfg);
 $web_cfg = str_replace("{sbwpemail}", $_POST['sb-email'], $web_cfg);
+$web_cfg = str_replace("{charset}", $_POST['charset'], $web_cfg);
 
 $srv_cfg = str_replace("{server}", $_POST['server'], $srv_cfg);
 $srv_cfg = str_replace("{user}", $_POST['username'], $srv_cfg);

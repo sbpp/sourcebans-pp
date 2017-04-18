@@ -9,8 +9,17 @@ $warnings = 0;
 require_once(ROOT.'../includes/Database.php');
 $db = new Database($_POST['server'], $_POST['port'], $_POST['database'], $_POST['username'], $_POST['password'], $_POST['prefix']);
 
+$db->query('SELECT VERSION() AS version');
+$version = $db->single();
+
+$charset = 'utf8';
+if ($version['version'] >= 5.5.3) {
+    $charset .= 'mb4';
+}
+
 $file = file_get_contents(INCLUDES_PATH . "/struc.sql");
 $file = str_replace("{prefix}", $_POST['prefix'], $file);
+$file = str_replace("{charset}", $charset, $file);
 $querys = explode(";", $file);
 foreach ($querys as $query) {
     if (strlen($query) > 2) {
@@ -45,6 +54,7 @@ if ($errors > 0) {
     <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
     <input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
     <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
+    <input type="hidden" name="charset" value="<?php echo $charset; ?>">
 </form>
     <div align="center">
         <input type="submit" TABINDEX=2 onclick="next()" name="button" class="btn ok" id="button" value="Ok" /></div>
