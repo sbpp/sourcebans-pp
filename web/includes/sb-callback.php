@@ -102,7 +102,7 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 	$q = $GLOBALS['db']->GetRow("SELECT `aid`, `password` FROM `" . DB_PREFIX . "_admins` WHERE `user` = ?", array($username));
 	if($q)
 		$aid = $q[0];
-	if($q && (strlen($q[1]) == 0 || $q[1] == $userbank->encrypt_password('')) && count($q) != 0)
+	if($q && (strlen($q[1]) == 0 || $q[1] == $userbank->encrypt_password('') || $q[1] == $userbank->hash('')) && count($q) != 0)
 	{
 		$lostpassword_url = SB_WP_URL . '/index.php?p=lostpassword';
 		$objResponse->addScript(<<<JS
@@ -116,17 +116,15 @@ function Plogin($username, $password, $remember, $redirect, $nopass)
 JS
 		);
 		return $objResponse;
-	} else if(!$q || !$userbank->CheckLogin($userbank->encrypt_password($password), $aid))
-	{
-		if($nopass!=1)
-			$objResponse->addScript('ShowBox("Login Failed", "The username or password you supplied was incorrect.<br \> If you have forgotten your password, use the <a href=\"index.php?p=lostpassword\" title=\"Lost password\">Lost Password</a> link.", "red", "", true);');
-		return $objResponse;
-	}
-	else {
-		$objResponse->addScript("$('msg-red').setStyle('display', 'none');");
 	}
 
-	$userbank->login($aid, $password, $remember);
+    if (!$q || !$userbank->login($aid, $password, $remember)) {
+        if($nopass!=1)
+			$objResponse->addScript('ShowBox("Login Failed", "The username or password you supplied was incorrect.<br \> If you have forgotten your password, use the <a href=\"index.php?p=lostpassword\" title=\"Lost password\">Lost Password</a> link.", "red", "", true);');
+		return $objResponse;
+    } else {
+		$objResponse->addScript("$('msg-red').setStyle('display', 'none');");
+	}
 
 	if(strstr($redirect, "validation") || empty($redirect))
 		$objResponse->addRedirect("?",  0);
