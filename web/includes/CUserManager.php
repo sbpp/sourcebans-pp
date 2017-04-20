@@ -255,7 +255,7 @@ class CUserManager
     public function hash($password)
     {
         if (!defined('SB_NEW_SALT')) {
-            return crypt($password, '$5$'.SB_SALT);
+            return $this->encrypt_password($password);
         }
         return crypt($password, SB_NEW_SALT);
     }
