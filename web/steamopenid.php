@@ -79,7 +79,7 @@ if ($data !== false) {
     $result = $dbs->single();
     if (count($result) == 2) {
         global $userbank;
-        if (empty($result['password']) || $result['password'] == $userbank->encrypt_password('')) {
+        if (empty($result['password']) || $result['password'] == $userbank->encrypt_password('') || $result['password'] == $userbank->hash('')) {
             header("Location: " . SB_URL . "/index.php?p=login&m=empty_pwd");
             die;
         } else {

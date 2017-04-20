@@ -184,11 +184,20 @@ class CUserManager
             return false;
         }
         // Additional check for those vulnerable hashes when password was empty
-        if ($password == $this->encrypt_password('')) {
+        if ($password == $this->encrypt_password('') || $password == $this->hash('')) {
             return false;
         }
         if (!isset($this->admins[$aid])) {
             $this->GetUserArray($aid);
+        }
+
+        if (version_compare(PHP_VERSION, "5.6") >= 0) {
+            if (hash_equals($this->admins[$aid]['password'], $password)) {
+                $this->dbh->query('UPDATE `:prefix_admins` SET `lastvisit` = UNIX_TIMESTAMP() WHERE `aid` = :aid');
+                $this->dbh->bind(':aid', $aid);
+                $this->dbh->execute();
+                return true;
+            }
         }
 
         if ($password == $this->admins[$aid]['password']) {
@@ -204,22 +213,33 @@ class CUserManager
     public function login($aid, $password, $save = true)
     {
         if ($this->CheckLogin($this->encrypt_password($password), $aid)) {
+            //Old password hash detected update it.
+            $this->dbh->query('UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid');
+            $this->dbh->bind(':password', $this->hash($password));
+            $this->dbh->bind(':aid', $aid);
+            $this->dbh->execute();
+
+            setcookie("aid", $aid);
+            setcookie("password", $this->hash($password));
+            setcookie("user", $_SESSION['user']['user']);
+            return true;
+        }
+
+        if ($this->CheckLogin($this->hash($password), $aid)) {
             if ($save) {
                 //Sets cookies
                 setcookie("aid", $aid, time()+LOGIN_COOKIE_LIFETIME);
-                setcookie("password", $this->encrypt_password($password), time()+LOGIN_COOKIE_LIFETIME);
+                setcookie("password", $this->hash($password), time()+LOGIN_COOKIE_LIFETIME);
                 setcookie("user", isset($_SESSION['user']['user'])?$_SESSION['user']['user']:null, time()+LOGIN_COOKIE_LIFETIME);
                 return true;
             }
             setcookie("aid", $aid);
-            setcookie("password", $this->encrypt_password($password));
+            setcookie("password", $this->hash($password));
             setcookie("user", $_SESSION['user']['user']);
             return true;
         }
         return false;
     }
-
-
 
     /**
      * Encrypts a password.
@@ -230,6 +250,14 @@ class CUserManager
     public function encrypt_password($password, $salt = SB_SALT)
     {
         return sha1(sha1($salt . $password));
+    }
+
+    public function hash($password)
+    {
+        if (!defined('SB_NEW_SALT')) {
+            return $this->encrypt_password($password);
+        }
+        return crypt($password, SB_NEW_SALT);
     }
 
     public function is_logged_in()
@@ -310,7 +338,7 @@ class CUserManager
             // Also we use a prefix here to prevent any possible collisions with `encrypt_password` implementation.
             $password_hash = '$token$' . $this->random_string();
         } else {
-            $password_hash = $this->encrypt_password($password);
+            $password_hash = $this->hash($password);
         }
         $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
                            VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');

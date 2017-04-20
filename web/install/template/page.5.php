@@ -27,6 +27,7 @@ define('DB_CHARSET', '{charset}');                    // The Database charset (D
 define('STEAMAPIKEY', '{steamapikey}');				// Steam API Key for Shizz
 define('SB_WP_URL', '{sbwpurl}');       				//URL of SourceBans Site
 define('SB_EMAIL', '{sbwpemail}');
+define('SB_NEW_SALT', '{sbsalt}');
 
 //define('DEVELOPER_MODE', true);			// Use if you want to show debugmessages
 //define('SB_MEM', '128M'); 				// Override php memory limit, if isn't enough (Banlist is just a blank page)
@@ -46,6 +47,14 @@ $srv_cfg = '"driver_default"		"mysql"
 	}
 ';
 
+/* Generate random salt for each SourceBans installation
+ * Note: this is not good you should assign every user a unique salt
+ * and because of the codebase we can only assign one salt without fucking parts
+ * of SoureBans up. (it's safer than the currently used salt which is the same on every instance of SourceBans)
+ */
+require_once('../includes/random_compat/lib/random.php');
+$salt = "$5$".strtr(substr(base64_encode(random_bytes(16)), 0, 16), '+/', '-_');
+
 $web_cfg = str_replace("{server}", $_POST['server'], $web_cfg);
 $web_cfg = str_replace("{user}", $_POST['username'], $web_cfg);
 $web_cfg = str_replace("{pass}", $_POST['password'], $web_cfg);
@@ -56,6 +65,7 @@ $web_cfg = str_replace("{charset}", $_POST['charset'], $web_cfg);
 $web_cfg = str_replace("{steamapikey}", $_POST['apikey'], $web_cfg);
 $web_cfg = str_replace("{sbwpurl}", $_POST['sb-wp-url'], $web_cfg);
 $web_cfg = str_replace("{sbwpemail}", $_POST['sb-email'], $web_cfg);
+$web_cfg = str_replace("{sbsalt}", $salt, $web_cfg);
 
 $srv_cfg = str_replace("{server}", $_POST['server'], $srv_cfg);
 $srv_cfg = str_replace("{user}", $_POST['username'], $srv_cfg);
@@ -82,7 +92,8 @@ if (isset($_POST['postd']) && $_POST['postd']) {
             $db->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity) VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity)');
             $db->bind(':user', $_POST['uname']);
             $db->bind(':authid', $_POST['steam']);
-            $db->bind(':password', sha1(sha1(SB_SALT . $_POST['pass1'])));
+            //$db->bind(':password', sha1(sha1(SB_SALT . $_POST['pass1'])));
+            $db->bind(':password', crypt($_POST['pass1'], $salt));
             $db->bind(':gid', -1);
             $db->bind(':email', $_POST['email']);
             $db->bind(':extraflags', (1<<24));
@@ -212,6 +223,7 @@ if (isset($_POST['postd']) && $_POST['postd']) {
 <input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 <input type="hidden" name="charset" value="<?php echo $_POST['charset']?>">
+<input type="hidden" name="sbsalt" value="<?php echo $salt?>">
 </div>
 </form>
 
