@@ -61,9 +61,12 @@ if (isset($_GET['advSearch'])) {
             break;
         case "date":
             $date  = explode(",", $value);
+            $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
+            $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
+            $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
             $time  = mktime($date[3], $date[4], 0, $date[1], $date[0], $date[2]);
             $time2 = mktime($date[5], $date[6], 59, $date[1], $date[0], $date[2]);
-            $where = "WHERE l.created > '$time' AND l.created < '$time2'";
+            $where = " WHERE l.created > '$time' AND l.created < '$time2'";
             break;
         case "type":
             $where = " WHERE l.type = '" . $value . "'";
