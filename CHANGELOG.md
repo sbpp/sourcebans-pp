@@ -9,6 +9,16 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 ```
+(23/04/17): Version 1.6.0
+01. ! Fixed some XSS exploits
+02. + Improved password hashing / security
+03. * Added utf8mb4 support
+04. + Updated tinymce
+05. + Reformatted most of the code
+06. * Added new natives (SourceBans_OnBanPlayer, SourceComms_OnBlockAdded)
+07. - Removed DB Info page (potential attack vector)
+08. ! various Plugin fixes
+09. + Updated Installer Theme
 
 (28/04/16): Version 1.5.4.7
 -----------------------
