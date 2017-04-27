@@ -2220,13 +2220,13 @@ public Native_SBBanPlayer(Handle:plugin, numParams)
 		new AdminId:aid = GetUserAdmin(client);
 		if (aid == INVALID_ADMIN_ID)
 		{
-			ThrowNativeError(1, "Ban Error: Player is not an admin.");
+			ThrowNativeError(SP_ERROR_NATIVE, "Ban Error: Player is not an admin.");
 			return 0;
 		}
 
 		if (!GetAdminFlag(aid, Admin_Ban))
 		{
-			ThrowNativeError(2, "Ban Error: Player does not have BAN flag.");
+			ThrowNativeError(SP_ERROR_NATIVE, "Ban Error: Player does not have BAN flag.");
 			return 0;
 		}
 	}
