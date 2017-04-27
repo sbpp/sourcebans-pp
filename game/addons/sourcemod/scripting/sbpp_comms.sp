@@ -3101,57 +3101,57 @@ stock ShowActivityToServer(admin, type, length = 0, String:reason[] = "", String
 // Natives //
 public Native_SetClientMute(Handle:hPlugin, numParams)
 {
-	new target = GetNativeCell(1);
-	if (target < 1 || target > MaxClients)
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
-	}
+    new target = GetNativeCell(1);
+    if (target < 1 || target > MaxClients)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+    }
 
-	if (!IsClientInGame(target))
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
-	}
+    if (!IsClientInGame(target))
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+    }
 
-	new bool:muteState = GetNativeCell(2);
-	new muteLength = GetNativeCell(3);
-	if (muteState && muteLength == 0)
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Permanent mute is not allowed!");
-	}
+    new bool:muteState = GetNativeCell(2);
+    new muteLength = GetNativeCell(3);
+    if (muteState && muteLength == 0)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Permanent mute is not allowed!");
+    }
 
-	new bool:bSaveToDB = GetNativeCell(4);
-	if (!muteState && bSaveToDB)
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
-	}
+    new bool:bSaveToDB = GetNativeCell(4);
+    if (!muteState && bSaveToDB)
+    {
+        return ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
+    }
 
-	new String:sReason[256];
-	GetNativeString(5, sReason, sizeof(sReason));
+    new String:sReason[256];
+    GetNativeString(5, sReason, sizeof(sReason));
 
-	if (muteState)
-	{
-		if (g_MuteType[target] > bNot)
-		{
-			return false;
-		}
+    if (muteState)
+    {
+        if (g_MuteType[target] > bNot)
+        {
+            return false;
+        }
 
-		PerformMute(target, _, muteLength, _, _, _, sReason);
+        PerformMute(target, _, muteLength, _, _, _, sReason);
 
-		if (bSaveToDB)
-			SavePunishment(_, target, TYPE_MUTE, muteLength, sReason);
-	}
-	else
-	{
-		if (g_MuteType[target] == bNot)
-		{
-			return false;
-		}
+        if (bSaveToDB)
+            SavePunishment(_, target, TYPE_MUTE, muteLength, sReason);
+    }
+    else
+    {
+        if (g_MuteType[target] == bNot)
+        {
+            return false;
+        }
 
-		PerformUnMute(target);
-	}
+        PerformUnMute(target);
+    }
 
-	return true;
-}
+    return true;
+}  
 
 public Native_SetClientGag(Handle:hPlugin, numParams)
 {
