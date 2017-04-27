@@ -3099,33 +3099,38 @@ stock ShowActivityToServer(admin, type, length = 0, String:reason[] = "", String
 }
 
 // Natives //
-public Native_SetClientMute(Handle:hPlugin, numParams)
+public Native_SetClientMute(Handle hPlugin, int numParams)
 {
-    new target = GetNativeCell(1);
+    int target = GetNativeCell(1);
     if (target < 1 || target > MaxClients)
     {
-        return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+        ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+        return false;
     }
 
     if (!IsClientInGame(target))
     {
-        return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+        ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+        return false;
     }
-
-    new bool:muteState = GetNativeCell(2);
-    new muteLength = GetNativeCell(3);
+        
+    bool muteState = bool:GetNativeCell(2);
+    int muteLength = GetNativeCell(3);
+        
     if (muteState && muteLength == 0)
     {
-        return ThrowNativeError(SP_ERROR_NATIVE, "Permanent mute is not allowed!");
+        ThrowNativeError(SP_ERROR_NATIVE, "Permanent mute is not allowed!");
+        return false;
     }
 
-    new bool:bSaveToDB = GetNativeCell(4);
+    bool bSaveToDB = bool:GetNativeCell(4);
     if (!muteState && bSaveToDB)
     {
-        return ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
+        ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
+        return false;
     }
 
-    new String:sReason[256];
+    char sReason[256];
     GetNativeString(5, sReason, sizeof(sReason));
 
     if (muteState)
@@ -3136,7 +3141,6 @@ public Native_SetClientMute(Handle:hPlugin, numParams)
         }
 
         PerformMute(target, _, muteLength, _, _, _, sReason);
-
         if (bSaveToDB)
             SavePunishment(_, target, TYPE_MUTE, muteLength, sReason);
     }
