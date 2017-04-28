@@ -29,7 +29,7 @@
 $_GET = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
 $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
 $_COOKIE = filter_input_array(INPUT_COOKIE, FILTER_SANITIZE_STRING);
-$_SERVER = filter_input_array(INPUT_SERVER, FILTER_SANITIZE_STRING);
+//$_SERVER = filter_input_array(INPUT_SERVER, FILTER_SANITIZE_STRING);
 
 // ---------------------------------------------------
 //  Directories
@@ -103,7 +103,7 @@ if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/up
 define('SB_GIT', true);
 if (!defined('SB_VERSION')) {
     define('SB_VERSION', '1.6.0');
-    define('SB_GITREV', '$Git: 457 $');
+    define('SB_GITREV', '$Git: 468 $');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
