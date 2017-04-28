@@ -30,3 +30,4 @@
 * PHP and MySQL version:
 * Operating System and version:
 * Link to your project:
+* Link to gist with phpinfo() output:
