@@ -87,12 +87,12 @@ $list_end   = $list_start + intval($GLOBALS['config']['banlist.bansperpage']);
 $log_count = $logs->LogCount($where);
 $log       = $logs->getAll($list_start, intval($GLOBALS['config']['banlist.bansperpage']), $where);
 if (($page > 1)) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.gif" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
+    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
 } else {
     $prev = "";
 }
 if ($list_end < $log_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.gif" style="vertical-align:middle;" />', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page + 1) . "#^2");
+    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page + 1) . "#^2");
 } else {
     $next = "";
 }

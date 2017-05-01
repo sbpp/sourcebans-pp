@@ -30,7 +30,7 @@ header('Content-type: text/css');
 ?> 
 
 body { 
-	background: url(../images/bk.gif);
+	background: url(../images/bk.jpg);
 	background-color: #FFF;
 	background-repeat: repeat-x;
 	color: #444;
@@ -87,7 +87,7 @@ padding:6px;
 
 .tablerow2 {
 background-color: rgb(236, 213, 216);
-background-image: url(../images/table_highlight_red.gif);
+background-image: url(../images/table_highlight_red.jpg);
 border-color:#FFFFFF rgb(193, 190, 190) rgb(193, 190, 190) rgb(255, 255, 255);
 border-style:solid;
 border-width:1px;
@@ -96,7 +96,7 @@ padding:6px;
 
 .tablerow4 {
 background-color:#C0CBDA;
- background-image: url(../images/table_highlight.gif);
+ background-image: url(../images/table_highlight.jpg);
 border-color:#FFFFFF rgb(209, 220, 235) rgb(209, 220, 235) rgb(255, 255, 255);
 border-style:solid;
 border-width:1px;
@@ -452,13 +452,13 @@ h3 {
 	/*text-decoration:underline;*/
 	border-bottom: #b80202 dotted 1px;
 	padding: 8px 8px 4px;
-	background: url(../images/tooltip_sqr.png) top left;
+	background: url(../images/tooltip_sqr.jpg) top left;
 }
  
 .perm-text {
 	font-size: 11px;
 	padding: 4px 8px 8px;
-	background: url(../images/tooltip_sqr.png) bottom right;
+	background: url(../images/tooltip_sqr.jpg) bottom right;
 }
 /** ================ Navigation ================ **/
 
@@ -566,19 +566,19 @@ a.nav_link:hover {
 }
 
 .game{
-	background-image: url(../images/connect.gif);
+	background-image: url(../images/connect.png);
 }
 .ok{
-	background-image: url(../images/admin/ok.gif);
+	background-image: url(../images/admin/ok.png);
 }
 .save{
-	background-image: url(../images/admin/save.gif);
+	background-image: url(../images/admin/save.png);
 }
 .cancel{
-	background-image: url(../images/admin/cancel.gif);
+	background-image: url(../images/admin/cancel.png);
 }
 .login{
-	background-image: url(../images/login.gif);
+	background-image: url(../images/login.png);
 }
 .refresh{
 	background-image: url(../images/refresh.png);
@@ -677,7 +677,7 @@ if($agent != "IE6") {
 border-bottom-color:#CCCCCC;
 border-bottom-style:solid;
 border-bottom-width:1px;
-background: url(../images/detail_head.gif);
+background: url(../images/detail_head.jpg);
 color: #fff;
 }
 .admin-row {
@@ -1107,7 +1107,7 @@ td.listtable_top {
  padding-bottom: 2px;
  padding-left: 4px;
  color: #fff;
- background-image: url(../images/detail_head.gif);
+ background-image: url(../images/detail_head.jpg);
 }
 
 a.listtable_top {
@@ -1355,5 +1355,5 @@ div.contextmenu .separator {
  padding-bottom: 3px;
  padding-left: 5px;
  color: #fff;
- background-image: url(../images/detail_head.gif);
+ background-image: url(../images/detail_head.jpg);
 }

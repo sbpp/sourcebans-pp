@@ -26,7 +26,7 @@ Plese select the file to upload. The file must either be {$formats} file format.
 	padding:1px 1px 1px 20px;
 	font-weight: bold;
 	margin: 0 0.5em;
-	background-image: url(../images/save.gif);" type="submit">Save</button>
+	background-image: url(../images/save.png);" type="submit">Save</button>
 
 </form>
 </body>

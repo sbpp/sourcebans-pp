@@ -75,12 +75,12 @@ foreach ($admins as $admin) {
 }
 
 if ($page > 1) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.gif" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=admins&page=" . ($page - 1) . $advSearchString);
+    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=admins&page=" . ($page - 1) . $advSearchString);
 } else {
     $prev = "";
 }
 if ($AdminsEnd < $admin_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.gif" style="vertical-align:middle;" />', "index.php?p=admin&c=admins&page=" . ($page + 1) . $advSearchString);
+    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=admins&page=" . ($page + 1) . $advSearchString);
 } else {
     $next = "";
 }
