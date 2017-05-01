@@ -87,7 +87,7 @@
 		  </div>
 		  <div style="float:right;">
 		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
-		  {$ban.commentdata|@count}&thinsp;<img src="images/details.gif" alt="Comments" title="Comments" style="height:12px;width:12px;" />
+		  {$ban.commentdata|@count}&thinsp;<img src="images/details.png" alt="Comments" title="Comments" style="height:12px;width:12px;" />
 		  {/if}
 		  {if $view_bans}
 		  {$ban.counts}

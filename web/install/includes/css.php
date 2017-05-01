@@ -1253,7 +1253,6 @@ div.contextmenu .separator {
  padding-bottom: 3px;
  padding-left: 5px;
  color: #fff;
- background-image: url(../images/detail_head.gif);
 }
 
 .select {

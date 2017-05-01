@@ -469,7 +469,7 @@ while (!$res->EOF) {
 
     if (!empty($res->fields['ban_ip'])) {
         if (!empty($res->fields['ban_country']) && $res->fields['ban_country'] != ' ') {
-            $data['country'] = '<img src="images/country/' . strtolower($res->fields['ban_country']) . '.gif" alt="' . $res->fields['ban_country'] . '" border="0" align="absmiddle" />';
+            $data['country'] = '<img src="images/country/' . strtolower($res->fields['ban_country']) . '.jpg" alt="' . $res->fields['ban_country'] . '" border="0" align="absmiddle" />';
         } elseif (isset($GLOBALS['config']['banlist.nocountryfetch']) && $GLOBALS['config']['banlist.nocountryfetch'] == "0") {
             $country = FetchIp($res->fields['ban_ip']);
             $edit    = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET country = ?
@@ -478,12 +478,12 @@ while (!$res->EOF) {
                 $res->fields['ban_id']
             ));
 
-            $data['country'] = '<img src="images/country/' . strtolower($country) . '.gif" alt="' . $country . '" border="0" align="absmiddle" />';
+            $data['country'] = '<img src="images/country/' . strtolower($country) . '.jpg" alt="' . $country . '" border="0" align="absmiddle" />';
         } else {
-            $data['country'] = '<img src="images/country/zz.gif" alt="Unknown Country" border="0" align="absmiddle" />';
+            $data['country'] = '<img src="images/country/zz.jpg" alt="Unknown Country" border="0" align="absmiddle" />';
         }
     } else {
-        $data['country'] = '<img src="images/country/zz.gif" alt="Unknown Country" border="0" align="absmiddle" />';
+        $data['country'] = '<img src="images/country/zz.jpg" alt="Unknown Country" border="0" align="absmiddle" />';
     }
 
     $data['ban_date']    = SBDate($dateformat, $res->fields['ban_created']);
@@ -562,10 +562,10 @@ while (!$res->EOF) {
     $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . $res->fields['ban_id']);
     $data['groups_link']     = CreateLinkR('<img src="images/groups.png" border="0" alt="" style="vertical-align:middle" /> Show Groups', "index.php?p=admin&c=bans&fid=" . $data['communityid'] . "#^4");
     $data['friend_ban_link'] = CreateLinkR('<img src="images/group_delete.png" border="0" alt="" style="vertical-align:middle" /> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . StripQuotes($data['player']) . "');return false;");
-    $data['edit_link']       = CreateLinkR('<img src="images/edit.gif" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
+    $data['edit_link']       = CreateLinkR('<img src="images/edit.png" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
-    $data['unban_link']  = CreateLinkR('<img src="images/locked.gif" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1, false);return false;");
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.gif" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0, false);return false;");
+    $data['unban_link']  = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1, false);return false;");
+    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0, false);return false;");
 
 
     $data['server_id'] = $res->fields['ban_server'];
@@ -602,11 +602,11 @@ while (!$res->EOF) {
     if ($res->fields['demo_count'] == 0) {
         $data['demo_available'] = false;
         $data['demo_quick']     = 'N/A';
-        $data['demo_link']      = CreateLinkR('<img src="images/demo.gif" border="0" alt="" style="vertical-align:middle" /> No Demos', "#");
+        $data['demo_link']      = CreateLinkR('<img src="images/demo.png" border="0" alt="" style="vertical-align:middle" /> No Demos', "#");
     } else {
         $data['demo_available'] = true;
         $data['demo_quick']     = CreateLinkR('Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
-        $data['demo_link']      = CreateLinkR('<img src="images/demo.gif" border="0" alt="" style="vertical-align:middle" /> Review Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
+        $data['demo_link']      = CreateLinkR('<img src="images/demo.png" border="0" alt="" style="vertical-align:middle" /> Review Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
     }
 
 
@@ -641,9 +641,9 @@ while (!$res->EOF) {
                 $cdata            = array();
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
                 if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.gif\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
+                    $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
                     if ($userbank->HasAccess(ADMIN_OWNER)) {
-                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'B'," . (isset($_GET["page"]) ? $page : -1) . ");\"><img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /></a>";
+                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'B'," . (isset($_GET["page"]) ? $page : -1) . ");\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
                     }
                 } else {
                     $cdata['editcomlink'] = "";
@@ -677,7 +677,7 @@ while (!$res->EOF) {
     }
 
 
-    $data['addcomment'] = CreateLinkR('<img src="images/details.gif" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B' . $pagelink);
+    $data['addcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B' . $pagelink);
     //-----------------------------------
 
     $data['ub_reason']   = (isset($data['ub_reason']) ? $data['ub_reason'] : "");
@@ -697,9 +697,9 @@ if (isset($_GET['advSearch'])) {
 
 if ($page > 1) {
     if (isset($_GET['c']) && $_GET['c'] == "bans") {
-        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.gif" style="vertical-align:middle;" /> prev', "javascript:void(0);", "", "_self", false, $prev);
+        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "javascript:void(0);", "", "_self", false, $prev);
     } else {
-        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.gif" style="vertical-align:middle;" /> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
     }
 } else {
     $prev = "";
@@ -709,9 +709,9 @@ if ($BansEnd < $BanCount) {
         if (!isset($nxt)) {
             $nxt = "";
         }
-        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.gif" style="vertical-align:middle;" />', "javascript:void(0);", "", "_self", false, $nxt);
+        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.png" style="vertical-align:middle;" />', "javascript:void(0);", "", "_self", false, $nxt);
     } else {
-        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.gif" style="vertical-align:middle;" />', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
     }
 } else {
     $next = "";
