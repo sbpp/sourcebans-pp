@@ -181,7 +181,7 @@ $theme->assign('grouplist', $grouplist);
 $theme->assign('edit_server', true);
 $theme->assign('submit_text', "Update Server");
 ?>
-    <form action="" method="post" name="editserver">';
+    <form action="" method="post" name="editserver">
 <?php $theme->display('page_admin_servers_add.tpl'); ?>
 </form>
 <script>
