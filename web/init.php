@@ -24,6 +24,10 @@
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
+//Hotfix for dash_intro_text
+if (isset($_POST['dash_intro_text'])) {
+    $dash_intro_text = $_POST['dash_intro_text'];
+}
 //Filter all user inputs
 //Should be changed to individual filtering
 $_GET = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
@@ -103,7 +107,7 @@ if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/up
 define('SB_GIT', true);
 if (!defined('SB_VERSION')) {
     define('SB_VERSION', '1.6.0');
-    define('SB_GITREV', '$Git: 472 $');
+    define('SB_GITREV', '474');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
