@@ -1923,7 +1923,7 @@ function CheckPassword($aid, $pass)
 	$objResponse = new xajaxResponse();
 	global $userbank;
 	$aid = (int)$aid;
-	if(!$userbank->CheckLogin($userbank->encrypt_password($pass), $aid))
+	if(!$userbank->CheckLogin($userbank->hash($pass), $aid))
 	{
 		$objResponse->addScript("$('current.msg').setStyle('display', 'block');");
 		$objResponse->addScript("$('current.msg').setHTML('Incorrect password.');");
