@@ -1972,7 +1972,7 @@ function AddMod($name, $folder, $icon, $steam_universe, $enabled)
 	$icon = htmlspecialchars(strip_tags($icon));
 	$folder = htmlspecialchars(strip_tags($folder));
 	$steam_universe = (int)$steam_universe;
-	$enabled = (int)$enabled;
+	$enabled = (int)(bool)$enabled;
 
 	// Already there?
 	$check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE modfolder = ? OR name = ?;", array($folder, $name));
