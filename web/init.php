@@ -106,8 +106,14 @@ if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/up
 // ---------------------------------------------------
 define('SB_GIT', true);
 if (!defined('SB_VERSION')) {
-    define('SB_VERSION', '1.6.0');
-    define('SB_GITREV', '474');
+    if (file_exists('version.json')) {
+        $json = json_decode(file_get_contents('version.json'), true);
+        define('SB_VERSION', $json['version']);
+        define('SB_GITREV', $json['git']);
+    } else {
+        define('SB_VERSION', 'N/A');
+        define('SB_GITREV', '0');
+    }
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');

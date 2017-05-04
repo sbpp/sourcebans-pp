@@ -2314,10 +2314,7 @@ function SendMail($subject, $message, $type, $id)
 function CheckVersion()
 {
 	$objResponse = new xajaxResponse();
-	$relver = @file_get_contents("https://sbpp.sarabveer.me/rel/");
-
-	if(defined('SB_GIT'))
-		$relgit = @file_get_contents("https://sbpp.sarabveer.me/dev/");
+	$version = json_decode(file_get_contents("https://sbpp.github.io/version.json"), true);
 
 	if(version_compare($relver, SB_VERSION) > 0)
 		$versmsg = "<span style='color:#aa0000;'><strong>A new release is available.</strong></span>";
@@ -2325,25 +2322,25 @@ function CheckVersion()
 		$versmsg = "<span style='color:#00aa00;'><strong>You have the latest release.</strong></span>";
 
 	$msg = $versmsg;
-	if(strlen($relver)>8 || $relver=="") {
-		$relver = "<span style='color:#aa0000;'>Error</span>";
+	if(strlen($version['version'])>8 || $version['version']=="") {
+		$version['version'] = "<span style='color:#aa0000;'>Error</span>";
 		$msg = "<span style='color:#aa0000;'><strong>Error retrieving latest release.</strong></span>";
 	}
-	$objResponse->addAssign("relver", "innerHTML",  $relver);
+	$objResponse->addAssign("relver", "innerHTML",  $version['version']);
 
 	if(defined('SB_GIT'))
 	{
-		if(intval($relgit) > GetGITRev())
+		if(intval($version['git']) > SB_GITREV)
 			$svnmsg = "<span style='color:#aa0000;'><strong>A new Dev release is available.</strong></span>";
 		else
 			$svnmsg = "<span style='color:#00aa00;'><strong>You have the latest Dev release.</strong></span>";
 
-		if(strlen($relgit)>8 || $relgit=="") {
-			$relgit = "<span style='color:#aa0000;'>Error</span>";
+		if(strlen($version['git'])>8 || $version['git']=="") {
+			$version['git'] = "<span style='color:#aa0000;'>Error</span>";
 			$svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Git Commit.</strong></span>";
 		}
 		$msg .= "<br />" . $svnmsg;
-		$objResponse->addAssign("svnrev", "innerHTML",  $relgit);
+		$objResponse->addAssign("svnrev", "innerHTML",  $version['git']);
 	}
 
 	$objResponse->addAssign("versionmsg", "innerHTML", $msg);
