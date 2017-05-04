@@ -1738,7 +1738,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 	if($error > 0)
 		return $objResponse;
 
-	$nickname = RemoveCode($nickname);
+	$nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
 	$ip = preg_replace('#[^\d\.]#', '', $ip);//strip ip of all but numbers and dots
 	$dname = RemoveCode($dname);
 	$reason = RemoveCode($reason);
@@ -1972,7 +1972,7 @@ function AddMod($name, $folder, $icon, $steam_universe, $enabled)
 	$icon = htmlspecialchars(strip_tags($icon));
 	$folder = htmlspecialchars(strip_tags($folder));
 	$steam_universe = (int)$steam_universe;
-	$enabled = (int)$enabled;
+	$enabled = (int)(bool)$enabled;
 
 	// Already there?
 	$check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE modfolder = ? OR name = ?;", array($folder, $name));

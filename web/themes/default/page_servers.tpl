@@ -14,7 +14,7 @@
 			 <tbody>
 			{foreach from=$server_list item=server}
 				  <tr id="opener_{$server.sid}" class="opener tbl_out" style="cursor:pointer;" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'"{if !$IN_SERVERS_PAGE} onclick="{$server.evOnClick}"{/if}>
-		            <td height="16" align="center" class="listtable_1"><img src="images/games/{$server.icon}" border="0" /></td>
+		            <td height="16" align="center" class="listtable_1"><img height="16px" width="16px" src="images/games/{$server.icon}" border="0" /></td>
 		            <td height="16" align="center" class="listtable_1" id="os_{$server.sid}"></td>
 		            <td height="16" align="center" class="listtable_1" id="vac_{$server.sid}"></td>
 		            <td height="16" class="listtable_1" id="host_{$server.sid}"><i>Querying Server Data...</i></td>
@@ -23,7 +23,7 @@
 		          </tr>
 				  <tr>
 		          	<td colspan="7" align="center">
-		          	
+
 		       			{if $IN_SERVERS_PAGE}
 			       			<div class="opener">
 								<div id="serverwindow_{$server.sid}">
@@ -51,7 +51,7 @@
 								  <div id="noplayer_{$server.sid}" name="noplayer_{$server.sid}" style="display:none;"><br />
 									<h2 style="color: #333;">No players in the server</h2><br />
 									<div align='center'>
-										<p style="font-size: 13px;">{$server.ip}:{$server.port}</p> 
+										<p style="font-size: 13px;">{$server.ip}:{$server.port}</p>
 										<input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0;' id='button' value='Join game' />
 										<input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' /><br /><br />
 									</div>
@@ -59,7 +59,7 @@
 							  </div>
 							</div>
 						{/if}
-						
+
 						</td>
 					</tr>
 				{/foreach}
