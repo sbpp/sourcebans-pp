@@ -35,7 +35,7 @@
 											    </table>
 										    </td>
 										    <td width="355px" class="listtable_2 opener" valign="top" style="padding-right: 0px; padding-left: 13px; padding-top: 12px;">
-										    	<img id="mapimg_{$server.sid}" style="border-radius: 6px; padding-left: 1px;" height='255' width='340' src='images/maps/nomap.jpg'>
+										    	<img id="mapimg_{$server.sid}" style="border-radius: 6px; padding-left: 1px;" width='340' src='images/maps/nomap.jpg'>
 										    	<br />
 										    	<br />
 										    	<div align='center'>
