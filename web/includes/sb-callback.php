@@ -2136,6 +2136,12 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 			}
 		}
 
+        $newOverride = explode(';', $newOverride);
+        foreach ($newOverride as $input) {
+            $input = explode('::', $input);
+            $newOverride[$input[0]] = $input[1];
+        }
+
 		// Add a new override
 		if(!empty($newOverride))
 		{
