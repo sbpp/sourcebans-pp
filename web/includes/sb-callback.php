@@ -2106,6 +2106,9 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 			$GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_group` = ? WHERE `aid` = '" . (int)$o['aid'] . "'", array($name));
 		}
 
+        $overrides = json_decode(html_entity_decode($overrides, ENT_QUOTES), true);
+        $newOverride = json_decode(html_entity_decode($newOverride, ENT_QUOTES), true);
+
 		// Update group overrides
 		if(!empty($overrides))
 		{
@@ -2135,12 +2138,6 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 				$GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_srvgroups_overrides` SET name = ?, type = ?, access = ? WHERE id = ?;", array($override['name'], $override['type'], $override['access'], $id));
 			}
 		}
-
-        $newOverride = explode(';', $newOverride);
-        foreach ($newOverride as $input) {
-            $input = explode('::', $input);
-            $newOverride[$input[0]] = $input[1];
-        }
 
 		// Add a new override
 		if(!empty($newOverride))
