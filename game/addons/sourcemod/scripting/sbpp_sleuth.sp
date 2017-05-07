@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "1.6.0"
+#define PLUGIN_VERSION "1.6.1"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2
@@ -259,11 +259,11 @@ public LoadWhiteList()
 	BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "configs/sourcesleuth_whitelist.cfg");
 
 	new Handle:fileHandle = OpenFile(path, "r");
-	
+
 	if (fileHandle == INVALID_HANDLE)
 	{
 		LogError("Could not find the config file (addons/sourcemod/configs/sourcesleuth_whitelist.cfg)");
-		
+
 		return;
 	}
 

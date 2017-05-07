@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.0"
+#define PLUGIN_VERSION "1.6.1"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length
@@ -1248,7 +1248,7 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 			iAdmin = -1;
 		}
 	}
-	
+
 	new iTarget			= GetClientOfUserId(ReadPackCell(data));
 	if (!iTarget) {
 		iTarget = -1;
@@ -1469,13 +1469,13 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 			if (type == TYPE_UNSILENCE)
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
-				
+
 				#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
 					SetPackPosition(data, view_as<DataPackPos>(16));
 				#else
 					SetPackPosition(data, 16);
 				#endif
-				
+
 				if (g_MuteType[target] > bNot)
 				{
 					WritePackCell(data, TYPE_UNMUTE);
@@ -3113,10 +3113,10 @@ public Native_SetClientMute(Handle hPlugin, int numParams)
         ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
         return false;
     }
-        
+
     bool muteState = bool:GetNativeCell(2);
     int muteLength = GetNativeCell(3);
-        
+
     if (muteState && muteLength == 0)
     {
         ThrowNativeError(SP_ERROR_NATIVE, "Permanent mute is not allowed!");
@@ -3155,7 +3155,7 @@ public Native_SetClientMute(Handle hPlugin, int numParams)
     }
 
     return true;
-}  
+}
 
 public Native_SetClientGag(Handle:hPlugin, numParams)
 {

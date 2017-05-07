@@ -32,8 +32,8 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.6.0++"
-#define SBR_VERSION "1.6.0"
+#define SB_VERSION "1.6.1++"
+#define SBR_VERSION "1.6.1"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
