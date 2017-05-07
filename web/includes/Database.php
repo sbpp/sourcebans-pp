@@ -4,7 +4,6 @@ class Database
 {
     private $prefix;
     private $dbh;
-    private $error;
     private $stmt;
 
     public function __construct($host, $port, $dbname, $user, $password, $prefix)
@@ -19,7 +18,7 @@ class Database
         try {
             $this->dbh = new \PDO($dsn, $user, $password, $options);
         } catch (PDOException $e) {
-            $this->error = $e->getMessage();
+            die($e->getMessage());
         }
     }
 

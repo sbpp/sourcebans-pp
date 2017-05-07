@@ -755,7 +755,7 @@ function ProcessEditGroup(type, name)
 			if($type(override_access) == "element")
 				override_access = [override_access];
 
-			overrides = new Array(override_id.length);
+			overrides = {};
 
 			for(var i=0;i<override_id.length;i++)
 			{
@@ -763,10 +763,10 @@ function ProcessEditGroup(type, name)
 			}
 		}
 
-		new_override = {'type::': $('new_override_type')[$('new_override_type').selectedIndex].value, ';name::': $('new_override_name').value, ';access::': $('new_override_access')[$('new_override_access').selectedIndex].value};
+		new_override = {'type': $('new_override_type')[$('new_override_type').selectedIndex].value, 'name': $('new_override_name').value, 'access': $('new_override_access')[$('new_override_access').selectedIndex].value};
 	}
 
-	xajax_EditGroup(group, Mask, srvMask, type, name, overrides, new_override);
+	xajax_EditGroup(group, Mask, srvMask, type, name, JSON.stringify(overrides), JSON.stringify(new_override));
 }
 
 function update_server()
