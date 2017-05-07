@@ -26,7 +26,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.6.0"
+#define VERSION "1.6.1"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define INVALID_TARGET -1
 

@@ -9,6 +9,17 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 ```
+(07/05/17): Version 1.6.1
+01. ! Fixed an issue while XAJAX initialized
+02. ! Fixed the 'dash intro text' not displaying custom HTML elements
+03. ! Fixed 'change password' function
+04. ! Fixed encoding issues with player names
+05. ! Fixed aspect ratio of map image
+06. ! Fixed editing groups/override pages
+07. ! Fixed display error for 'edit mod' page
+08. ! Fixed version numbering displaying 0
+09. + Improved sizes and file types of images
+
 (23/04/17): Version 1.6.0
 01. ! Fixed some XSS exploits
 02. + Improved password hashing / security
@@ -91,7 +102,7 @@ Legend:
 06. - SourceMod 1.6.x and below are not supported
 07. - Removed FamilySharing Ban Evasion Detection
 08. - MariaDB not does not work anymore (Never was supported anyways)
-09. ! Fixed Ban List lagging on MySQL 5.6+ 
+09. ! Fixed Ban List lagging on MySQL 5.6+
 10. ! Fixed Plugin Showing DataPack error
 11. ! Fixed KickId in Webpanel not working when trying to use Steam3
 12. ? Optimized and updated IpToCountry.csv
@@ -100,7 +111,7 @@ Legend:
 -----------------------
 01. * Changed licence to GNU GPL v3
 02. * Added SourceBans Connection Debugger
-03. * Added SourceComms Search Box 
+03. * Added SourceComms Search Box
 04. + Re-made SourceBans Logo in Footer
 05. ! Fixed getdemo.php spewing errors
 06. ! Fixed Invalid Query in SB Plugin
