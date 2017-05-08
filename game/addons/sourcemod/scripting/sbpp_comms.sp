@@ -174,7 +174,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	g_hFwd_OnPlayerPunished = CreateGlobalForward("SourceComms_OnBlockAdded", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 
 	MarkNativeAsOptional("SQL_SetCharset");
-	RegPluginLibrary("sourcecomms");
+	RegPluginLibrary("sourcecomms++");
 	return APLRes_Success;
 }
 
