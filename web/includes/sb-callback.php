@@ -2700,7 +2700,8 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 		return $objResponse;
 	}
 	$bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM ".DB_PREFIX."_bans WHERE RemoveType IS NULL;");
-	foreach($bans as $ban) {
+    $already = array();
+    foreach($bans as $ban) {
 		$already[] = $ban["community_id"];
 	}
 	$doc = new DOMDocument();
