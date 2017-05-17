@@ -2688,10 +2688,11 @@ function GroupBan($groupuri, $isgrpurl="no", $queue="no", $reason="", $last="")
 
 function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 {
-	set_time_limit(0);
+    set_time_limit(0);
 	$objResponse = new xajaxResponse();
-	if($GLOBALS['config']['config.enablegroupbanning']==0)
+	if($GLOBALS['config']['config.enablegroupbanning'] == 0) {
 		return $objResponse;
+	}
 	global $userbank, $username;
 	if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
 	{
@@ -2699,98 +2700,70 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 		$log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban group '".$grpurl."', but doesnt have access.");
 		return $objResponse;
 	}
-	$bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM ".DB_PREFIX."_bans WHERE RemoveType IS NULL;");
+	$GLOBALS['PDO']->query("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM `:prefix_bans` WHERE RemoveType IS NULL;");
+	$bans = $GLOBALS['PDO']->resultset();
     $already = array();
     foreach($bans as $ban) {
 		$already[] = $ban["community_id"];
 	}
-	$doc = new DOMDocument();
-	// This could be changed to use the memberlistxml
-	// https://partner.steamgames.com/documentation/community_data
-	// http://steamcommunity.com/groups/<GroupName>/memberslistxml/?xml=1
-	// but we'd need to open every single profile of every member to get the name..
-	$raw = file_get_contents("http://steamcommunity.com/groups/".$grpurl."/members"); // get the members page
-	@$doc->loadHTML($raw); // load it into a handy object so we can maintain it
-	// the memberlist is paginated, so we need to check the number of pages
-	$pagetag = $doc->getElementsByTagName('div');
-	foreach($pagetag as $pageclass) {
-		if($pageclass->getAttribute('class') == "pageLinks") { //search for the pageLinks div
-			$pageclasselmt = $pageclass;
-			break;
-		}
+
+	$xml = file_get_contents("https://steamcommunity.com/groups/".$grpurl."/memberslistxml?xml=1");
+	$xml = simplexml_load_string($xml);
+	$steamids = (array)$xml->members->steamID64;
+	$steamids = array_chunk($steamids, 100);
+	$data = array();
+
+	foreach ($steamids as $package) {
+		$package = rawurlencode(json_encode($package));
+		$url = "https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2?key=".STEAMAPIKEY."&steamids=".$package;
+		$raw = json_decode(file_get_contents($url), true);
+		$data = array_merge($data, $raw['response']['players']);
 	}
-	$pagelinks = $pageclasselmt->getElementsByTagName('a'); // get all page links
-	$pagenumbers = array();
-	$pagenumbers[] = 1; // add at least one page for the loop. if the group doesn't have 50 members -> no paginating
-	foreach($pagelinks as $pagelink) {
-		$pagenumber = str_replace("?p=", "", $pagelink->childNodes->item(0)->nodeValue); // remove the get variable stuff so we only have the pagenumber
-		if(strpos($pagenumber, ">") === false) // don't want the "next" button ;)
-			$pagenumbers[] = $pagenumber;
-	}
-	$members = array();
-	$total = 0;
-	$bannedbefore = 0;
-	$error = 0;
-	for($i=1;$i<=max($pagenumbers);$i++) { // loop through all the pages
-		if($i!=1) { // if we are on page 1 we don't need to reget the content as we did above already.
-			$raw = file_get_contents("http://steamcommunity.com/groups/".$grpurl."/members?p=".$i); // open the memberpage
-			@$doc->loadHTML($raw);
+
+	$amount = array(
+		"total" => count($data),
+		"banned" => 0,
+		"before" => 0,
+		"failed" => 0
+	);
+
+	foreach ($data as $player) {
+		if (in_array($player['steamid'], $already)) {
+			$amount['before']++;
+			continue;
 		}
-		$tags = $doc->getElementsByTagName('a');
-		foreach ($tags as $tag) {
-			// search for the member profile links
-			if((strstr($tag->getAttribute('href'), "http://steamcommunity.com/id/") || strstr($tag->getAttribute('href'), "http://steamcommunity.com/profiles/")) && $tag->hasChildNodes() && $tag->childNodes->length == 1 && $tag->childNodes->item(0)->nodeValue != "") {
-				$total++;
-				$url = parse_url($tag->getAttribute('href'), PHP_URL_PATH);
-				$url = explode("/", $url);
-				if(in_array($url[2], $already)) {
-					$bannedbefore++;
-					continue;
-				}
-				if(strstr($tag->getAttribute('href'), "http://steamcommunity.com/id/")) {
-					// we don't have the friendid as this player is using a custom id :S need to get the friendid
-					if($tfriend = GetFriendIDFromCommunityID($url[2])) {
-						if(in_array($tfriend, $already)) {
-							$bannedbefore++;
-							continue;
-						}
-						$cust = $url[2];
-						$steamid = FriendIDToSteamID($tfriend);
-						$urltag = $tfriend;
-					} else {
-						$error++;
-						continue;
-					}
-				} else {
-					// just a normal friendid profile =)
-					$cust = NULL;
-					$steamid = FriendIDToSteamID($url[2]);
-					$urltag = $url[2];
-				}
-				$pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
-									(UNIX_TIMESTAMP(),?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?)");
-				$GLOBALS['db']->Execute($pre,array(0,
-												   "",
-												   $steamid,
-												   utf8_decode($tag->childNodes->item(0)->nodeValue),
-												   0,
-												   "Steam Community Group Ban (".$grpurl.") ".$reason,
-												   $userbank->GetAid(),
-												   $_SERVER['REMOTE_ADDR']));
-			}
+
+		$GLOBALS['PDO']->query(
+			"INSERT INTO `:prefix_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp)
+			VALUES (UNIX_TIMESTAMP(), :type, :ip, :authid, :name, UNIX_TIMESTAMP(), :length, :reason, :aid, :adminIp)"
+		);
+
+		$GLOBALS['PDO']->bind(':type', 0);
+		$GLOBALS['PDO']->bind(':ip', '');
+		$GLOBALS['PDO']->bind(':authid', FriendIDToSteamID($player['steamid']));
+		$GLOBALS['PDO']->bind(':name', $player['personaname']);
+		$GLOBALS['PDO']->bind(':length', 0);
+		$GLOBALS['PDO']->bind(':reason', "Steam Community Group Ban (".$grpurl."): ".$reason);
+		$GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
+		$GLOBALS['PDO']->bind(':adminIp', $_SERVER['REMOTE_ADDR']);
+		if ($GLOBALS['PDO']->execute()) {
+			$amount['banned']++;
+			continue;
 		}
+		$amount['failed']++;
 	}
+
 	if($queue=="yes") {
-		$objResponse->addAppend("steamGroupStatus", "innerHTML", "<p>Banned ".($total-$bannedbefore-$error)."/".$total." players of group '".$grpurl."'. | ".$bannedbefore." were banned already. | ".$error." failed.</p>");
+		$objResponse->addAppend("steamGroupStatus", "innerHTML", "<p>Banned ".($amount['total'] - $amount['before'] - $amount['failed'])."/".$amount['total']." players of group '".$grpurl."'. | ".$amount['before']." were banned already. | ".$amount['failed']." failed.</p>");
 		if($grpurl==$last) {
 			$objResponse->addScript("ShowBox('Groups banned successfully', 'The selected Groups were banned successfully. For detailed info check below.', 'green', '', true);");
 			$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 		}
 	} else {
-		$objResponse->addScript("ShowBox('Group banned successfully', 'Banned ".($total-$bannedbefore-$error)."/".$total." players of group \'".$grpurl."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.', 'green', '', true);");
+		$objResponse->addScript("ShowBox('Group banned successfully', 'Banned ".($amount['total'] - $amount['before'] - $amount['failed'])."/".$amount['total']." players of group \'".$grpurl."\'.<br>".$amount['before']." were banned already.<br>".$amount['failed']." failed.', 'green', '', true);");
 		$objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 	}
-	$log = new CSystemLog("m", "Group Banned", "Banned ".($total-$bannedbefore-$error)."/".$total." players of group \'".$grpurl."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.");
+	$log = new CSystemLog("m", "Group Banned", "Banned ".($amount['total'] - $amount['before'] - $amount['failed'])."/".$amount['total']." players of group \'".$grpurl."\'.<br>".$amount['before']." were banned already.<br>".$amount['failed']." failed.");
 	return $objResponse;
 }
 
