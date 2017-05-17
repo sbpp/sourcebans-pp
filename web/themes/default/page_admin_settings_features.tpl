@@ -24,7 +24,12 @@
 			<td valign="top"><div class="rowdesc">{help_icon title="Enable Group Banning" message="Check this box, if you want to enable banning of whole steam community groups."}Enable Group Banning</div></td>
 		    <td>
 		    	<div align="left">
-		      		<input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" />
+                    {if $steamapi}
+		      		    <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" />
+                    {else}
+                        <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" disabled />
+                        <br/>You haven't set a valid steamapi key in the config
+                    {/if}
 		    	</div>
 		    	<div id="enable_groupbanning.msg" class="badentry"></div>
 		    </td>
