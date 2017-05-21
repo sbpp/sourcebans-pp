@@ -235,7 +235,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $_POST['template_logo'],
                     $_POST['config_dateformat'],
                     $_POST['dash_intro_title'],
-                    $_POST['dash_intro_text'],
+                    $dash_intro_text,
                     $tz_string,
                     $summertime,
                     $cureason
@@ -298,6 +298,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 
     #########[Features Page]###############
     echo '<div id="3" style="display:none;">';
+    $theme->assign('steamapi', (defined('STEAMAPIKEY') && STEAMAPIKEY != '') ? true : false);
     $theme->display('page_admin_settings_features.tpl');
     echo '</div>';
     #########/[Features Page]###############
