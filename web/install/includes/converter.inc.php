@@ -38,7 +38,7 @@ function convertAmxbans($oldDB, $newDB)
         die("Failed to connect to AMX Bans database");
     }
 
-    echo "Converting ".$oldDB.getPrefix()."_bans... ";
+    echo "Converting ".$oldDB->getPrefix()."_bans... ";
     ob_flush();
     flush();
     $oldDB->query('SELECT `player_ip`, `player_id`, `player_nick`, `ban_created`, `ban_length`, `ban_reason`, `admin_ip` FROM `:prefix_bans`');

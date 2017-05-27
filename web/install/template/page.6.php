@@ -9,8 +9,8 @@ if (isset($_POST['postd']) && $_POST['postd']) {
         echo "<script>ShowBox('Error', 'There is some missing data. All feilds are required.', 'red', '', true);</script>";
     } else {
         include_once(INCLUDES_PATH . "/converter.inc.php");
-            $oldDB = new Datbase($_POST['amx_server'], $_POST['amx_port'], $_POST['amx_database'], $_POST['amx_username'], $_POST['amx_password'], $_POST['amx_prefix']);
-            $newDB = new Datbase(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+            $oldDB = new Database($_POST['amx_server'], $_POST['amx_port'], $_POST['amx_database'], $_POST['amx_username'], $_POST['amx_password'], $_POST['amx_prefix']);
+            $newDB = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
 
             convertAmxbans($oldDB, $newDB);
     }
