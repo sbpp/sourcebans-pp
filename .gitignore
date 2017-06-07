@@ -44,3 +44,7 @@ Temporary Items
 
 # Netbeans
 /nbproject/
+
+# SourceBans++
+/web/config.php
+/web/themes_c/*.php
