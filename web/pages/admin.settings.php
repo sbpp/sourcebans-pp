@@ -181,6 +181,11 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                 } else {
                     $protest = 0;
                 }
+                if (isset($_POST['enable_commslist']) && $_POST['enable_commslist'] == "on") {
+                    $commslist = 1;
+                } else {
+                    $commslist = 0;
+                }
 
                 $lognopopup = (isset($_POST['dash_nopopup']) && $_POST['dash_nopopup'] == "on" ? 1 : 0);
 
@@ -225,6 +230,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     (?, 'dash.intro.text'),
                     (" . (int) $lognopopup . ", 'dash.lognopopup'),
                     (" . (int) $protest . ", 'config.enableprotest'),
+                    (" . (int) $commslist . ", 'config.enablecomms'),
                     (" . (int) $submit . ", 'config.enablesubmit'),
                     (" . (int) $onlyinvolved . ", 'protest.emailonlyinvolved'),
                     (?, 'config.timezone'),
@@ -335,6 +341,7 @@ $('config_debug').checked = <?=$GLOBALS['config']['config.debug']?>;
 $('config_summertime').checked = <?=$GLOBALS['config']['config.summertime']?>;
 $('enable_submit').checked = <?=$GLOBALS['config']['config.enablesubmit']?>;
 $('enable_protest').checked = <?=$GLOBALS['config']['config.enableprotest']?>;
+$('enable_commslist').checked = <?=$GLOBALS['config']['config.enablecomms']?>;
 $('enable_kickit').checked = <?=$GLOBALS['config']['config.enablekickit']?>;
 $('export_public').checked = <?=$GLOBALS['config']['config.exportpublic']?>;
 $('dash_nopopup').checked = <?=$GLOBALS['config']['dash.lognopopup']?>;

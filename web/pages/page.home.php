@@ -46,7 +46,7 @@ $blcount               = 0;
 while (!$res->EOF) {
     $info               = array();
     $info['date']       = SBDate($dateformat, $res->fields[1]);
-    $info['name']       = stripslashes($res->fields[0]);
+    $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
     $info['short_name'] = trunc($info['name'], 40, false);
     $info['auth']       = $res->fields['authid'];
     $info['ip']         = $res->fields['ip'];
