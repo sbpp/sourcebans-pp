@@ -149,6 +149,14 @@
 		    	</div>
 		    </td>
 		</tr>
+        <tr>
+			<td valign="top"><div class="rowdesc">{help_icon title="Enable Commslist" message="Check this box to enable the commslist page."}Enable Commslist</div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="checkbox" TABINDEX=10 name="enable_commslist" id="enable_commslist" />
+		    	</div>
+		    </td>
+		</tr>
 		<tr>
 			<td valign="top"><div class="rowdesc">{help_icon title="Enable Submit Ban" message="Check this box to enable the submit ban page."}Enable Submit Ban</div></td>
 		    <td>

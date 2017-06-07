@@ -39,6 +39,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('template.logo', 'logos/sb-large.png'),
 ('template.title', 'SourceBans'),
 ('config.enableprotest', '1'),
+('config.enablecomms', '1'),
 ('config.enablesubmit', '1'),
 ('config.exportpublic', '0'),
 ('config.enablekickit', '1'),
@@ -51,7 +52,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '602'),
+('config.version', '603'),
 ('config.enablesteamlogin', '1');
 
 
