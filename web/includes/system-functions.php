@@ -1162,6 +1162,14 @@ function GetCommunityName($steamid)
     return "";
 }
 
+function steam2to3($authid)
+{
+    $GLOBALS['PDO']->query("SELECT CONCAT(CAST('".$authid."' AS UNSIGNED) % 2, \":\", CAST('".$authid."' AS UNSIGNED) / 2) AS id");
+    $result = $GLOBALS['PDO']->single();
+    $result = explode(':', $result['id']);
+    return 'STEAM_0:' . $result[0] . ':' . floor($result[1]);
+}
+
 function SendRconSilent($rcon, $sid)
 {
     require_once(INCLUDES_PATH.'/CServerRcon.php');
