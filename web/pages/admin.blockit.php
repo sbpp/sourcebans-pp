@@ -107,15 +107,20 @@ function BlockPlayer($check, $sid, $num, $type, $length)
 
         $gothim = false;
         $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
+
         //search for the steamid on the server
-        foreach ($matches[3] AS $match) {
+        foreach ($matches[3] as $match) {
+            if (!preg_match(STEAM_FORMAT, $match)) {
+                $match = explode(':', $match);
+                $match = steam2to3(rtrim($match[2], ']'));
+            }
             if (substr($match, 8) == substr($check, 8)) {
                 // gotcha!!! kick him!
                 $gothim = true;
                 $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");
                 $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.blockit.php"));
                 $kick   = $r->sendCommand("sc_fw_block " . $type . " " . $length . " " . $match);
-                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & blocked!!!</u></b></font>");
+                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & blocked!</u></b></font>");
                 $objResponse->addScript("set_counter('-1');");
                 return $objResponse;
             }
