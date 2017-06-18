@@ -1,5 +1,5 @@
 <h1 align="center">
-    <a href="https://sbpp.github.io"><img src="https://raw.githubusercontent.com/Groruk/sourcebans-pp/master/.github/logo.png" height="25%" width="25%"/></a>
+    <a href="https://sbpp.github.io"><img src="https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/logo.png" height="25%" width="25%"/></a>
     <br/>
     SourceBans++
 </h1>
