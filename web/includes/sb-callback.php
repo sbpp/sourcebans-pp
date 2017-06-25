@@ -2319,31 +2319,32 @@ function CheckVersion()
     $objResponse = new xajaxResponse();
     $version = json_decode(file_get_contents("https://sbpp.github.io/version.json"), true);
 
-    if(version_compare($relver, SB_VERSION) > 0)
-    $versmsg = "<span style='color:#aa0000;'><strong>A new release is available.</strong></span>";
-    else
-    $versmsg = "<span style='color:#00aa00;'><strong>You have the latest release.</strong></span>";
-
-    $msg = $versmsg;
-    if(strlen($version['version'])>8 || $version['version']=="") {
-    $version['version'] = "<span style='color:#aa0000;'>Error</span>";
-    $msg = "<span style='color:#aa0000;'><strong>Error retrieving latest release.</strong></span>";
+    if(version_compare($version['version'], SB_VERSION) > 0) {
+        $msg = "<span style='color:#aa0000;'><strong>A New Release is Available.</strong></span>";
+    } else {
+        $msg = "<span style='color:#00aa00;'><strong>You have the Latest Release.</strong></span>";
     }
+    
+    if(strlen($version['version']) > 8 || $version['version'] == "") {
+        $version['version'] = "<span style='color:#aa0000;'>Error</span>";
+        $msg = "<span style='color:#aa0000;'><strong>Error Retrieving Latest Release.</strong></span>";
+    }
+    
     $objResponse->addAssign("relver", "innerHTML",  $version['version']);
 
-    if(defined('SB_GIT'))
-    {
-    if(intval($version['git']) > SB_GITREV)
-    $svnmsg = "<span style='color:#aa0000;'><strong>A new Dev release is available.</strong></span>";
-    else
-    $svnmsg = "<span style='color:#00aa00;'><strong>You have the latest Dev release.</strong></span>";
-
-    if(strlen($version['git'])>8 || $version['git']=="") {
-    $version['git'] = "<span style='color:#aa0000;'>Error</span>";
-    $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Git Commit.</strong></span>";
-    }
-    $msg .= "<br />" . $svnmsg;
-    $objResponse->addAssign("svnrev", "innerHTML",  $version['git']);
+    if(defined('SB_GIT') {
+        if(intval($version['git']) > SB_GITREV)
+            $svnmsg = "<span style='color:#aa0000;'><strong>A New Beta Version is Available.</strong></span>";
+        } else {
+            $svnmsg = "<span style='color:#00aa00;'><strong>You have the Latest Beta Version.</strong></span>";
+        }
+       
+        if(strlen($version['git']) > 8 || $version['git'] == "")    {
+            $version['git'] = "<span style='color:#aa0000;'>Error</span>";
+            $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Beta Release.</strong></span>";
+        }
+        $msg .= "<br>".$svnmsg;
+        $objResponse->addAssign("svnrev", "innerHTML",  $version['git']);
     }
 
     $objResponse->addAssign("versionmsg", "innerHTML", $msg);
