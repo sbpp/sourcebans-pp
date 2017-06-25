@@ -2324,22 +2324,22 @@ function CheckVersion()
     } else {
         $msg = "<span style='color:#00aa00;'><strong>You have the Latest Release.</strong></span>";
     }
-    
+
     if(strlen($version['version']) > 8 || $version['version'] == "") {
         $version['version'] = "<span style='color:#aa0000;'>Error</span>";
         $msg = "<span style='color:#aa0000;'><strong>Error Retrieving Latest Release.</strong></span>";
     }
-    
+
     $objResponse->addAssign("relver", "innerHTML",  $version['version']);
 
-    if(defined('SB_GIT') {
-        if(intval($version['git']) > SB_GITREV)
+    if (defined('SB_GIT')) {
+        if (intval($version['git']) > SB_GITREV) {
             $svnmsg = "<span style='color:#aa0000;'><strong>A New Beta Version is Available.</strong></span>";
         } else {
             $svnmsg = "<span style='color:#00aa00;'><strong>You have the Latest Beta Version.</strong></span>";
         }
-       
-        if(strlen($version['git']) > 8 || $version['git'] == "")    {
+
+        if (strlen($version['git']) > 8 || $version['git'] == "") {
             $version['git'] = "<span style='color:#aa0000;'>Error</span>";
             $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Beta Release.</strong></span>";
         }
