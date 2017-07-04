@@ -9,6 +9,21 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 ```
+(04/07/17): Version 1.6.2
+-----------------------
+```
+01. ! Fixed issue with group Banning
+02. ! Fixed AmxBans import issue
+03. ! Fixed possible XSS Injection
+04. + Adjusted regex for CSGO
+05. + Added option to disable 'comms' tab
+06. ! Fixed bugs with SteamID format
+07. ! Fixed version checks
+08. ? Git version is now only shown in dev builds
+09. ! Fixed issue with email links
+10. * Added session based logins
+```
+
 (07/05/17): Version 1.6.1
 -----------------------
 ```
