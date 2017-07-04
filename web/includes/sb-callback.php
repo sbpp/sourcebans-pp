@@ -2285,16 +2285,16 @@ function CheckVersion()
 
     $objResponse->addAssign("relver", "innerHTML",  $version['version']);
 
-    if (defined('SB_GIT')) {
+    if (SB_DEV) {
         if (intval($version['git']) > SB_GITREV) {
-            $svnmsg = "<span style='color:#aa0000;'><strong>A New Beta Version is Available.</strong></span>";
+            $svnmsg = "<span style='color:#aa0000;'><strong>A New Dev Version is Available.</strong></span>";
         } else {
-            $svnmsg = "<span style='color:#00aa00;'><strong>You have the Latest Beta Version.</strong></span>";
+            $svnmsg = "<span style='color:#00aa00;'><strong>You have the Latest Dev Version.</strong></span>";
         }
 
         if (strlen($version['git']) > 8 || $version['git'] == "") {
             $version['git'] = "<span style='color:#aa0000;'>Error</span>";
-            $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Beta Release.</strong></span>";
+            $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Dev Version.</strong></span>";
         }
         $msg .= "<br>".$svnmsg;
         $objResponse->addAssign("svnrev", "innerHTML",  $version['git']);

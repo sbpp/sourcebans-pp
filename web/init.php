@@ -113,9 +113,11 @@ if (!defined('SB_VERSION')) {
         $json = json_decode(file_get_contents('version.json'), true);
         define('SB_VERSION', $json['version']);
         define('SB_GITREV', $json['git']);
+        define('SB_DEV', $json['dev']);
     } else {
         define('SB_VERSION', 'N/A');
         define('SB_GITREV', '0');
+        define('SB_DEV', false);
     }
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
