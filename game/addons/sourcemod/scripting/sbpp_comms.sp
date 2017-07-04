@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.1"
+#define PLUGIN_VERSION "1.6.2"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length
@@ -161,7 +161,7 @@ public Plugin:myinfo =
 	author = "Alex, SourceBans++ Dev Team",
 	description = "Advanced punishments management for the Source engine in SourceBans style",
 	version = PLUGIN_VERSION,
-	url = "https://sbpp.sarabveer.me/"
+	url = "https://sbpp.github.io"
 };
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)

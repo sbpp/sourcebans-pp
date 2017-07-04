@@ -26,7 +26,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.6.1"
+#define VERSION "1.6.2"
 #define LISTBANS_USAGE "sm_listsbbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define INVALID_TARGET -1
 
@@ -42,7 +42,7 @@ public Plugin:myinfo =
 	author = "psychonic, Ca$h Munny, SourceBans++ Dev Team",
 	description = "Notifies admins of prior bans from Sourcebans upon player connect.",
 	version = VERSION,
-	url = "https://sbpp.sarabveer.me/"
+	url = "https://sbpp.github.io"
 };
 
 public OnPluginStart()
