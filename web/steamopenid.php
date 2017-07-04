@@ -26,7 +26,6 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 // Steam Login by @duhowpi 2015
 
-session_start();
 include_once 'init.php';
 include_once 'config.php';
 require_once 'includes/openid.php';
@@ -83,8 +82,8 @@ if ($data !== false) {
             header("Location: " . SB_URL . "/index.php?p=login&m=empty_pwd");
             die;
         } else {
-            setcookie("aid", $result['aid'], time() + LOGIN_COOKIE_LIFETIME);
-            setcookie("password", $result['password'], time() + LOGIN_COOKIE_LIFETIME);
+            \SessionManager::sessionStart('login', 604800, 0);
+            $_SESSION['aid'] = $result['aid'];
         }
     }
 } else {

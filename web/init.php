@@ -24,6 +24,8 @@
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
+session_start();
+
 //Hotfix for dash_intro_text
 if (isset($_POST['dash_intro_text'])) {
     $dash_intro_text = $_POST['dash_intro_text'];
@@ -55,6 +57,7 @@ define('IN_SB', true);
 define('SB_AID', isset($_COOKIE['aid'])?$_COOKIE['aid']:null);
 define('XAJAX_REQUEST_URI', './index.php');
 
+require_once(INCLUDES_PATH.'/SessionManager.php');
 include_once(INCLUDES_PATH . "/CSystemLog.php");
 include_once(INCLUDES_PATH . "/CUserManager.php");
 include_once(INCLUDES_PATH . "/CUI.php");
@@ -361,4 +364,4 @@ if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE"))
 // ---------------------------------------------------
 // Setup our user manager
 // ---------------------------------------------------
-$userbank = new CUserManager(isset($_COOKIE['aid'])?$_COOKIE['aid']:'', isset($_COOKIE['password'])?$_COOKIE['password']:'');
+$userbank = new CUserManager(isset($_SESSION['aid']) ? $_SESSION['aid'] : -1);

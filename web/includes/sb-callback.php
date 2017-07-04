@@ -28,13 +28,13 @@
 require_once('xajax.inc.php');
 include_once('system-functions.php');
 include_once('user-functions.php');
+session_start();
 $xajax = new xajax();
 //$xajax->debugOn();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);
 global $userbank;
 
-if(isset($_COOKIE['aid'], $_COOKIE['password']) && $userbank->CheckLogin($_COOKIE['password'], $_COOKIE['aid']))
-{
+if (\SessionManager::checkSession()) {
     $xajax->registerFunction("AddMod");
     $xajax->registerFunction("RemoveMod");
     $xajax->registerFunction("AddGroup");
@@ -93,7 +93,6 @@ $xajax->registerFunction("RefreshServer");
 
 global $userbank;
 $username = $userbank->GetProperty("user");
-
 
 function Plogin($username, $password, $remember, $redirect, $nopass)
 {
