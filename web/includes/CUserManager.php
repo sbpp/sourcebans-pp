@@ -324,19 +324,13 @@ class CUserManager
             throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
         }
         if (empty($password)) {
-            // Silently generate a token for account if there is no password set
-            // the token is required in Steam OAuth routines.
-            // Due to ugly codebase and lack of migrations we store the token as password hash.
-            // Also we use a prefix here to prevent any possible collisions with `encrypt_password` implementation.
-            $password_hash = '$token$' . $this->random_string();
-        } else {
-            $password_hash = $this->hash($password);
+            throw new RuntimeException('Password must not be empty!');
         }
         $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
                            VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');
         $this->dbh->bind(':user', $name);
         $this->dbh->bind(':authid', $steam);
-        $this->dbh->bind(':password', $password_hash);
+        $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
         $this->dbh->bind(':gid', $web_group);
         $this->dbh->bind(':email', $email);
         $this->dbh->bind(':extraflags', $web_flags);
