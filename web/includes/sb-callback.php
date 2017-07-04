@@ -28,13 +28,13 @@
 require_once('xajax.inc.php');
 include_once('system-functions.php');
 include_once('user-functions.php');
+session_start();
 $xajax = new xajax();
 //$xajax->debugOn();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);
 global $userbank;
 
-if(isset($_COOKIE['aid'], $_COOKIE['password']) && $userbank->CheckLogin($_COOKIE['password'], $_COOKIE['aid']))
-{
+if (\SessionManager::checkSession()) {
     $xajax->registerFunction("AddMod");
     $xajax->registerFunction("RemoveMod");
     $xajax->registerFunction("AddGroup");
@@ -93,7 +93,6 @@ $xajax->registerFunction("RefreshServer");
 
 global $userbank;
 $username = $userbank->GetProperty("user");
-
 
 function Plogin($username, $password, $remember, $redirect, $nopass)
 {
@@ -861,11 +860,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_ADMINS))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add an admin, but doesnt have access.");
-    return $objResponse;
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_ADMINS)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add an admin, but doesnt have access.");
+        return $objResponse;
     }
     $a_name = RemoveCode($a_name);
     $a_steam = RemoveCode($a_steam);
@@ -877,168 +875,124 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     $error=0;
 
     //No name
-    if(empty($a_name))
-    {
-    $error++;
-    $objResponse->addAssign("name.msg", "innerHTML", "You must type a name for the admin.");
-    $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
-    }
-    else{
-    if(strstr($a_name, "'"))
-    {
-    $error++;
-    $objResponse->addAssign("name.msg", "innerHTML", "An admin name can not contain a \" ' \".");
-    $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    if(is_taken("admins", "user", $a_name))
-    {
-    $error++;
-    $objResponse->addAssign("name.msg", "innerHTML", "An admin with this name already exists");
-    $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("name.msg", "innerHTML", "");
-    $objResponse->addScript("$('name.msg').setStyle('display', 'none');");
-    }
-    }
+    if (empty($a_name)) {
+        $error++;
+        $objResponse->addAssign("name.msg", "innerHTML", "You must type a name for the admin.");
+        $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
+    } else {
+        if (strstr($a_name, "'")) {
+            $error++;
+            $objResponse->addAssign("name.msg", "innerHTML", "An admin name can not contain a \" ' \".");
+            $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
+        } else {
+            if (is_taken("admins", "user", $a_name)) {
+                $error++;
+                $objResponse->addAssign("name.msg", "innerHTML", "An admin with this name already exists");
+                $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
+            } else {
+                $objResponse->addAssign("name.msg", "innerHTML", "");
+                $objResponse->addScript("$('name.msg').setStyle('display', 'none');");
+            }
+        }
     }
     // If they didnt type a steamid
-    if((empty($a_steam) || strlen($a_steam) < 10))
-    {
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID for the admin.");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    // Validate the steamid or fetch it from the community id
-    if((!is_numeric($a_steam)
-    && !validate_steam($a_steam))
-    || (is_numeric($a_steam)
-    && (strlen($a_steam) < 15
-    || !validate_steam($a_steam = FriendIDToSteamID($a_steam)))))
-    {
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    if(is_taken("admins", "authid", $a_steam))
-    {
-    $admins = $userbank->GetAllAdmins();
-    foreach($admins as $admin)
-    {
-    if($admin['authid'] == $a_steam)
-    {
-    $name = $admin['user'];
-    break;
-    }
-    }
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "Admin ".htmlspecialchars(addslashes($name))." already uses this Steam ID.");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("steam.msg", "innerHTML", "");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
-    }
-    }
+    if ((empty($a_steam) || strlen($a_steam) < 10)) {
+        $error++;
+        $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID for the admin.");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+    } else {
+        // Validate the steamid or fetch it from the community id
+        if ((!is_numeric($a_steam)
+         && !validate_steam($a_steam))
+         || (is_numeric($a_steam)
+         && (strlen($a_steam) < 15
+         || !validate_steam($a_steam = FriendIDToSteamID($a_steam)))))
+        {
+            $error++;
+            $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
+            $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+        } else {
+            if (is_taken("admins", "authid", $a_steam)) {
+                $admins = $userbank->GetAllAdmins();
+                foreach ($admins as $admin) {
+                    if ($admin['authid'] == $a_steam) {
+                        $name = $admin['user'];
+                        break;
+                    }
+                }
+                $error++;
+                $objResponse->addAssign("steam.msg", "innerHTML", "Admin ".htmlspecialchars(addslashes($name))." already uses this Steam ID.");
+                $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+            } else {
+                $objResponse->addAssign("steam.msg", "innerHTML", "");
+                $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
+            }
+        }
     }
 
     // No email
-    if(empty($a_email))
-    {
-    // An E-Mail address is only required for users with web permissions.
-    if($mask != 0)
-    {
-    $error++;
-    $objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
-    $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
-    }
-    }
-    else{
-    // Is an other admin already registred with that email address?
-    if(is_taken("admins", "email", $a_email))
-    {
-    $admins = $userbank->GetAllAdmins();
-    foreach($admins as $admin)
-    {
-    if($admin['email'] == $a_email)
-    {
-    $name = $admin['user'];
-    break;
-    }
-    }
-    $error++;
-    $objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used by ".htmlspecialchars(addslashes($name)).".");
-    $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("email.msg", "innerHTML", "");
-    $objResponse->addScript("$('email.msg').setStyle('display', 'none');");
-    /*	if(!validate_email($a_email))
-    {
-    $error++;
-    $objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
-    $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("email.msg", "innerHTML", "");
-    $objResponse->addScript("$('email.msg').setStyle('display', 'none');");
-
-    }*/
-    }
+    if (empty($a_email)) {
+        // An E-Mail address is only required for users with web permissions.
+        if ($mask != 0) {
+            $error++;
+            $objResponse->addAssign("email.msg", "innerHTML", "You must type an e-mail address.");
+            $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+        }
+    } else {
+        // Is an other admin already registred with that email address?
+        if (is_taken("admins", "email", $a_email)) {
+            $admins = $userbank->GetAllAdmins();
+            foreach ($admins as $admin) {
+                if ($admin['email'] == $a_email) {
+                    $name = $admin['user'];
+                    break;
+                }
+            }
+            $error++;
+            $objResponse->addAssign("email.msg", "innerHTML", "This email address is already being used by ".htmlspecialchars(addslashes($name)).".");
+            $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+    } else {
+        $objResponse->addAssign("email.msg", "innerHTML", "");
+        $objResponse->addScript("$('email.msg').setStyle('display', 'none');");
+        /*	if (!validate_email($a_email)) {
+                $error++;
+                $objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
+                $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
+            } else {
+                $objResponse->addAssign("email.msg", "innerHTML", "");
+                $objResponse->addScript("$('email.msg').setStyle('display', 'none');");
+            }*/
+        }
     }
 
     // no pass
-    if(empty($a_password))
-    {
-    // A password is only required for users with web permissions.
-    if($mask != 0)
-    {
-    $error++;
-    $objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
-    $objResponse->addScript("$('password.msg').setStyle('display', 'block');");
-    }
-    }
-    // Password too short?
-    else if(strlen($a_password) < MIN_PASS_LENGTH)
-    {
-    $error++;
-    $objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
-    $objResponse->addScript("$('password.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("password.msg", "innerHTML", "");
-    $objResponse->addScript("$('password.msg').setStyle('display', 'none');");
+    if (empty($a_password)) {
+        $error++;
+        $objResponse->addAssign("password.msg", "innerHTML", "You must type a password.");
+        $objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+    } elseif (strlen($a_password) < MIN_PASS_LENGTH) {
+        // Password too short?
+        $error++;
+        $objResponse->addAssign("password.msg", "innerHTML", "Your password must be at-least " . MIN_PASS_LENGTH . " characters long.");
+        $objResponse->addScript("$('password.msg').setStyle('display', 'block');");
+    } else {
+        $objResponse->addAssign("password.msg", "innerHTML", "");
+        $objResponse->addScript("$('password.msg').setStyle('display', 'none');");
 
-    // No confirmation typed
-    if(empty($a_password2))
-    {
-    $error++;
-    $objResponse->addAssign("password2.msg", "innerHTML", "You must confirm the password");
-    $objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
-    }
-    // Passwords match?
-    else if($a_password != $a_password2)
-    {
-    $error++;
-    $objResponse->addAssign("password2.msg", "innerHTML", "Your passwords don't match");
-    $objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("password2.msg", "innerHTML", "");
-    $objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
-    }
+        // No confirmation typed
+        if (empty($a_password2)) {
+            $error++;
+            $objResponse->addAssign("password2.msg", "innerHTML", "You must confirm the password");
+            $objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+        } elseif ($a_password != $a_password2) {
+            // Passwords match?
+            $error++;
+            $objResponse->addAssign("password2.msg", "innerHTML", "Your passwords don't match");
+            $objResponse->addScript("$('password2.msg').setStyle('display', 'block');");
+        } else {
+            $objResponse->addAssign("password2.msg", "innerHTML", "");
+            $objResponse->addScript("$('password2.msg').setStyle('display', 'none');");
+        }
     }
 
     // Choose to use a server password
@@ -1164,11 +1118,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     $immunity = 0;
 
     // Extract immunity from server mask string
-    if(strstr($srv_mask, "#"))
-    {
-    $immunity = "0";
-    $immunity = substr($srv_mask, strpos($srv_mask, "#")+1);
-    $srv_mask = substr($srv_mask, 0, strlen($srv_mask) - strlen($immunity)-1);
+    if (strstr($srv_mask, "#")) {
+        $immunity = "0";
+        $immunity = substr($srv_mask, strpos($srv_mask, "#")+1);
+        $srv_mask = substr($srv_mask, 0, strlen($srv_mask) - strlen($immunity)-1);
     }
 
     // Avoid negative immunity
@@ -1176,24 +1129,19 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 
     // Handle Webpermissions
     // Chose to create a new webgroup
-    if($a_wg == 'n')
-    {
-    $add_webgroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_groups(type, name, flags)
-    VALUES (?,?,?)", array(1, $a_webname, $mask));
-    $web_group = (int)$GLOBALS['db']->Insert_ID();
+    if ($a_wg == 'n') {
+        $add_webgroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_groups(type, name, flags)
+        VALUES (?,?,?)", array(1, $a_webname, $mask));
+        $web_group = (int)$GLOBALS['db']->Insert_ID();
 
-    // We added those permissons to the group, so don't add them as custom permissions again
-    $mask = 0;
-    }
-    // Chose an existing group
-    else if($a_wg != 'c' && $a_wg > 0)
-    {
-    $web_group = (int)$a_wg;
-    }
-    // Custom permissions -> no group
-    else
-    {
-    $web_group = -1;
+        // We added those permissons to the group, so don't add them as custom permissions again
+        $mask = 0;
+    } elseif ($a_wg != 'c' && $a_wg > 0) {
+        // Chose an existing group
+        $web_group = (int)$a_wg;
+    } else {
+        // Custom permissions -> no group
+        $web_group = -1;
     }
 
     // Handle Serverpermissions
@@ -1221,6 +1169,11 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     $server_admin_group = "";
     $server_admin_group_int = -1;
     }
+
+    //make sure steamid starts with STEAM_0
+    $steam = explode(':', $a_steam);
+    $steam[0] = "STEAM_0";
+    $a_steam = implode(':', $steam);
 
     // Add the admin
     $aid = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $server_admin_group, $srv_mask, $immunity, $a_serverpass);
@@ -2332,16 +2285,16 @@ function CheckVersion()
 
     $objResponse->addAssign("relver", "innerHTML",  $version['version']);
 
-    if (defined('SB_GIT')) {
+    if (SB_DEV) {
         if (intval($version['git']) > SB_GITREV) {
-            $svnmsg = "<span style='color:#aa0000;'><strong>A New Beta Version is Available.</strong></span>";
+            $svnmsg = "<span style='color:#aa0000;'><strong>A New Dev Version is Available.</strong></span>";
         } else {
-            $svnmsg = "<span style='color:#00aa00;'><strong>You have the Latest Beta Version.</strong></span>";
+            $svnmsg = "<span style='color:#00aa00;'><strong>You have the Latest Dev Version.</strong></span>";
         }
 
         if (strlen($version['git']) > 8 || $version['git'] == "") {
             $version['git'] = "<span style='color:#aa0000;'>Error</span>";
-            $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Beta Release.</strong></span>";
+            $svnmsg = "<span style='color:#aa0000;'><strong>Error retrieving latest Dev Version.</strong></span>";
         }
         $msg .= "<br>".$svnmsg;
         $objResponse->addAssign("svnrev", "innerHTML",  $version['git']);

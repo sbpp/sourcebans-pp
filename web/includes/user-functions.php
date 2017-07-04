@@ -63,8 +63,6 @@ function generate_salt($length = 5)
  */
 function logout()
 {
-    setcookie('aid', '', time()-86400);
-    setcookie('password', '', time()-86400);
     $_SESSION = array();
     session_destroy();
     return true;

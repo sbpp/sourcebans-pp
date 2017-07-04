@@ -42,7 +42,7 @@
 				<a href="index.php?p=admin&amp;c=settings">
 				<img src="themes/default/images/admin/settings.png" alt="SourceBans Settings" border="0" /><br />
 				Webpanel Settings
-		  		</a> 
+		  		</a>
 			</li>
 		{/if}
 		{if $access_mods}
@@ -54,7 +54,7 @@
 			</li>
 		{/if}
 	</ul>
-</div>	
+</div>
 <br />
 
 <table width="100%" border="0" cellpadding="3" cellspacing="0">
@@ -70,9 +70,9 @@
 	</tr>
 	<tr>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6;">
-			{if $sb_svn}
+			{if $dev}
 				Latest Git: <strong id='svnrev'>Please Wait...</strong>
-			{/if}		
+			{/if}
 		</td>
 		<td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">&nbsp;</td>
 		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Connections Blocked: <strong>{$total_blocks}</strong></td>
