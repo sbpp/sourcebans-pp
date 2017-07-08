@@ -1875,18 +1875,16 @@ function CheckPassword($aid, $pass)
 {
     $objResponse = new xajaxResponse();
     global $userbank;
-    $aid = (int)$aid;
-    if(!$userbank->CheckLogin($userbank->hash($pass), $aid))
-    {
-    $objResponse->addScript("$('current.msg').setStyle('display', 'block');");
-    $objResponse->addScript("$('current.msg').setHTML('Incorrect password.');");
-    $objResponse->addScript("set_error(1);");
-
-    }
-    else
-    {
-    $objResponse->addScript("$('current.msg').setStyle('display', 'none');");
-    $objResponse->addScript("set_error(0);");
+    $GLOBALS['PDO']->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $hash = $GLOBALS['PDO']->single();
+    if (!password_verify($pass, $hash['password'])) {
+        $objResponse->addScript("$('current.msg').setStyle('display', 'block');");
+        $objResponse->addScript("$('current.msg').setHTML('Incorrect password.');");
+        $objResponse->addScript("set_error(1);");
+    } else {
+        $objResponse->addScript("$('current.msg').setStyle('display', 'none');");
+        $objResponse->addScript("set_error(0);");
     }
     return $objResponse;
 }
@@ -1894,20 +1892,25 @@ function ChangePassword($aid, $pass)
 {
     global $userbank;
     $objResponse = new xajaxResponse();
-    $aid = (int)$aid;
 
-    if($aid != $userbank->GetAid() && !$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $_SERVER["REMOTE_ADDR"] . " tried to change a password that doesn't have permissions.");
-    return $objResponse;
+    if ($aid != $userbank->GetAid() && !$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        $log = new CSystemLog("w", "Hacking Attempt", $_SERVER["REMOTE_ADDR"] . " tried to change a password that doesn't have permissions.");
+        return $objResponse;
     }
 
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `password` = '" . $userbank->encrypt_password($pass) . "' WHERE `aid` = $aid");
-    $admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':password', password_hash($pass, PASSWORD_BCRYPT));
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
+
+    $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $admname = $GLOBALS['PDO']->single();
     $objResponse->addAlert("Password changed successfully");
     $objResponse->addRedirect("index.php?p=login", 0);
     $log = new CSystemLog("m", "Password Changed", "Password changed for admin (".$admname['user'].")");
+    logout();
     return $objResponse;
 }
 
