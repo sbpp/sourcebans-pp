@@ -24,11 +24,9 @@
     Licensed under CC BY-NC-SA 3.0
     Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-
 require_once('xajax.inc.php');
 include_once('system-functions.php');
 include_once('user-functions.php');
-session_start();
 $xajax = new xajax();
 //$xajax->debugOn();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);

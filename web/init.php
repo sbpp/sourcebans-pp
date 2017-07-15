@@ -24,8 +24,6 @@
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-session_start();
-
 //Hotfix for dash_intro_text
 if (isset($_POST['dash_intro_text'])) {
     $dash_intro_text = $_POST['dash_intro_text'];
@@ -61,6 +59,9 @@ require_once(INCLUDES_PATH.'/SessionManager.php');
 include_once(INCLUDES_PATH . "/CSystemLog.php");
 include_once(INCLUDES_PATH . "/CUserManager.php");
 include_once(INCLUDES_PATH . "/CUI.php");
+
+\SessionManager::sessionStart('SourceBans');
+
 // ---------------------------------------------------
 //  Fix some $_SERVER vars
 // ---------------------------------------------------

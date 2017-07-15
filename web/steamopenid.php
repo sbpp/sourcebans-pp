@@ -82,7 +82,8 @@ if ($data !== false) {
             header("Location: " . SB_URL . "/index.php?p=login&m=empty_pwd");
             die;
         } else {
-            \SessionManager::sessionStart('login', 604800, 0);
+            session_destroy();
+            \SessionManager::sessionStart('SourceBans', (60*60*24*7));
             $_SESSION['aid'] = $result['aid'];
         }
     }
