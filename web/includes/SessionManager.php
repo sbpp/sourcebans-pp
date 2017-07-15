@@ -1,19 +1,30 @@
 <?php
 class SessionManager
 {
-    public static function sessionStart($name, $expires = 86400, $limit = 0, $path = '/', $domain = null)
+    public static function sessionStart($name, $expires = 86400, $path = '/', $domain = null)
     {
-        $secure = false;
         session_name($name.'_Session');
+
         $domain = isset($domain) ? $domain : $_SERVER['SERVER_NAME'];
-        if ($_SERVER['SERVER_PORT'] == 443) {
-            $secure = true;
-        }
-        session_set_cookie_params($limit, $path, $domain, $secure, true);
+        $secure = ($_SERVER['SERVER_PORT'] === 443) ? true : false;
+
+        session_set_cookie_params($expires, $path, $domain, $secure, true);
         session_start();
 
-        $_SESSION['userAgent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT']);
-        $_SESSION['EXPIRES'] = time()+$expires;
+        if (self::validateSession()) {
+            if (!self::preventHijacking()) {
+                $_SESSION = array();
+                $_SESSION['userAgent'] = hash('sha256', $_SERVER['HTTP_USER_AGENT']);
+                $_SESSION['EXPIRES'] = time()+$expires;
+                self::regenerateSession();
+            } elseif (rand(1, 100) <= 10) {
+                self::regenerateSession();
+            }
+        } else {
+            $_SESSION = array();
+            session_destroy();
+            session_start();
+        }
     }
     public static function checkSession()
     {
@@ -24,8 +35,6 @@ class SessionManager
             session_destroy();
             session_start();
             return false;
-        } elseif (rand(1, 100) <= 10) {
-            self::regenerateSession();
         }
         return true;
     }

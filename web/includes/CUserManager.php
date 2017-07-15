@@ -216,8 +216,9 @@ class CUserManager
             $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
             $this->dbh->bind(':aid', $aid);
             $this->dbh->execute();
-
-            \SessionManager::sessionStart('login', 604800, 0);
+            if ($save) {
+                $_COOKIE['lifetime'] = (60*60*24*7);
+            }
             $_SESSION['aid'] = $aid;
             return true;
         }
@@ -226,7 +227,6 @@ class CUserManager
         $this->dbh->bind(':aid', $aid);
         $hash = $this->dbh->single();
         if (password_verify($password, $hash['password'])) {
-            \SessionManager::sessionStart('login', 604800, 0);
             $_SESSION['aid'] = $aid;
             return true;
         }
