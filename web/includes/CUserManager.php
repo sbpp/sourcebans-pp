@@ -210,15 +210,16 @@ class CUserManager
 
     public function login($aid, $password, $save = true)
     {
+        //Some Xajax error prevents setting this right TODO: fix this
+        $time = 604800;
         if ($this->CheckLogin($this->encrypt_password($password), $aid) || $this->CheckLogin($this->hash($password), $aid)) {
             //Old password hash detected update it.
             $this->dbh->query('UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid');
             $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
             $this->dbh->bind(':aid', $aid);
             $this->dbh->execute();
-            if ($save) {
-                $_COOKIE['lifetime'] = (60*60*24*7);
-            }
+            session_destroy();
+            \SessionManager::sessionStart('SourceBans', $time);
             $_SESSION['aid'] = $aid;
             return true;
         }
@@ -227,6 +228,8 @@ class CUserManager
         $this->dbh->bind(':aid', $aid);
         $hash = $this->dbh->single();
         if (password_verify($password, $hash['password'])) {
+            session_destroy();
+            \SessionManager::sessionStart('SourceBans', $time);
             $_SESSION['aid'] = $aid;
             return true;
         }

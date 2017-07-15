@@ -60,8 +60,7 @@ include_once(INCLUDES_PATH . "/CSystemLog.php");
 include_once(INCLUDES_PATH . "/CUserManager.php");
 include_once(INCLUDES_PATH . "/CUI.php");
 
-(isset($_COOKIE['lifetime'])) ? '' : $_COOKIE['lifetime'] = 86400;
-\SessionManager::sessionStart('SourceBans', $_COOKIE['lifetime']);
+\SessionManager::sessionStart('SourceBans');
 
 // ---------------------------------------------------
 //  Fix some $_SERVER vars
