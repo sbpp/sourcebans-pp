@@ -11,6 +11,7 @@
 		"ru"			"Вы были забанены на этом сервере, для получения информации посетите: {1}"
 		"da"			"Du er blevet udlukket fra denne server, check {1} for mere info"
 		"no"			"Du har blitt stengt ute fra denne serveren, sjekk {1} for mer info."
+		"hu"			"Bannolva vagy erről a szerverről, látogass el {1} honlapra a további információkért."
 	}
 	"DB Connect Fail"
 	{
@@ -22,6 +23,7 @@
 		"ru"			"Не удалось подключиться к базе данных. Свяжитесь с администратором сервера."
 		"da"			"Database tilslutningen fejlede. Kontakt venligst server bestyrren."
 		"no"			"Kommunikasjon med databasen feilet. Vennligst kontakt serveradmin."
+		"hu"			"Sikertelen adatbázis csatlakozás. Kérlek vedd fel a kapcsolatott egy szerver operátorral."
 	}
 	"Not In Game"
 	{
@@ -33,6 +35,7 @@
 		"ru"			"Так как игрок не в игре вы должны посетить веб-панель, чтобы забанить его."
 		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
 		"no"			"Spilleren er ikke på serveren, vennligst besøk web panelet for og stenge han ute."
+		"hu"			"A játékos nincs játékban, kérlek nézd meg a honlapon a bannolásért."
 	}
 	"Ban Not Verified"
 	{
@@ -44,6 +47,7 @@
 		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
 		"da"			"Denne spiller er ikke blevet identificeret. Vent venligst 30 sekunder før du prøver igen."
 		"no"			"Denne spilleren har ikke blitt indentifisert. Vennligst vent 30 sekunder før du prøver igjen."
+		"hu"			"Ez a játékos nincs hitelesítve. Kérlek várj 30 másodpercet mielőtt újra próbálnád."
 	}
 	"Can Not Unban"
 	{
@@ -56,6 +60,7 @@
 		"ru"			"Вы не можете разбанить игрока на сервере, зайдите на {1} для удаления бана."
 		"da"			"Du kan ikke fjerne udelukkelserne inde fra serveren, besøg {1} for at fjerne udelukkelsen."
 		"no"			"Du kan ikke fjerne utestengelsen inne fra serveren, besøk {1} for og fjerne utestengelsen."
+		"hu"			"Nem tudsz unbannolni a szerverről, látogasd meg {1} a ban feloldásért."
 	}
 	"Can Not Add Ban"
 	{
@@ -68,6 +73,7 @@
 		"ru"			"Вы не можете дать бан на сервере, зайдите на {1} для добавления бана."
 		"da"			"Du kan ikke tilføje en udelukkelse fra serveren, besøg {1} for at tilføje en udelukkelse."
 		"no"			"Du kan ikke legge til en utestengelse fra serveren, besøk {1} for og legge til en utestengelse."
+		"hu"			"Nem tudsz a szerverről bannolni, látogasd meg {1} a bannolásért."
 	}
 	"Check Menu"
 	{
@@ -79,6 +85,7 @@
 		"ru"			"Выберите причину бана из меню."
 		"da"			"Check venligst menuen for en grund til udelukkelse"
 		"no"			"Venligst sjekk menyen for en grunn til utestengelse"
+		"hu"			"Kérjük, ellenőrizze a menüt, hogy kiválassza a tilalom okait."
 	}
 	"Include Reason"
 	{
@@ -90,6 +97,7 @@
 		"ru"			"Добавьте причину бана игрока."
 		"da"			"Indkludere venligst en grund for at udelukke klienten."
 		"no"			"Inkluder vennligst en grunn for og utelukke klienten."
+		"hu"			"Kérlek írj indokot is a kliens bannolásához."
 	}
 	"Ban Fail"
 	{
@@ -101,6 +109,7 @@
 		"ru"			"Не удалось забанить игрока, попробуйте еще раз."
 		"da"			"Fejlede udelukkelsen, prøv venligst igen."
 		"no"			"Utestengelse feilet, vennligst prøv igjen."
+		"hu"			"Sikertelen bannolás, próbáld újra."
 	}
 	"Chat Reason"
 	{
@@ -112,6 +121,7 @@
 		"ru"			"Введите причину бана и нажмите Ввод. Введите '!noreason' для отмены бана."
 		"da"			"Skriv venligst din grund for udelukkelsen ind i chatten og tryk enter. Skriv '!noreason' for at annullere."
 		"no"			"Vennligst skriv din grunn for utestengelse i chaten og trykk enter. Skriv 'noreason' for og annulere."
+		"hu"			"Írd be a chatre az indokot, majd nyomj entert. Írd '!noreason' a megszakításhoz."
 	}
 	"Chat Reason Aborted"
 	{
@@ -123,5 +133,6 @@
 		"ru"			"Бан отменён."
 		"da"			"Udelukkelses proceduren blev stoppet med success"
 		"no"			"Utestengelses prossedyren ble stoppet vellykket."
+		"hu"			"A ban eljárás sikeresen leállítva."
 	}
 }
