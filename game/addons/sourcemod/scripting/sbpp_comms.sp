@@ -2989,8 +2989,8 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		// all data cached before calling asynchronous functions
 		new Handle:dataPackFwd	= CreateDataPack();
 		new Handle:dataPack		= CreateDataPack();
-		WritePackCell(dataPackFwd, admin);
-		WritePackCell(dataPackFwd, target);
+		WritePackCell(dataPackFwd, admin ? GetClientUserId(admin) : admin);
+		WritePackCell(dataPackFwd, GetClientUserId(target));
 		WritePackCell(dataPackFwd, _:dataPack);
 		WritePackCell(dataPack, length);
 		WritePackCell(dataPack, type);
