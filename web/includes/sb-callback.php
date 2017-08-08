@@ -2663,9 +2663,20 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
         $already[] = $ban["community_id"];
     }
 
-    $xml = file_get_contents("https://steamcommunity.com/groups/".$grpurl."/memberslistxml?xml=1");
-    $xml = simplexml_load_string($xml);
-    $steamids = (array)$xml->members->steamID64;
+    $steamids = [];
+
+    function getGroupMembers($url, &$members)
+    {
+        $xml = simplexml_load_file($url);
+
+        $members = array_merge($members, (array) $xml->members->steamID64);
+
+        if ($xml->nextPageLink)
+            getGroupMembers($xml->nextPageLink, $members);
+    }
+
+    getGroupMembers('https://steamcommunity.com/groups/' . $grpurl . '/memberslistxml?xml=1', $steamids);
+
     $steamids = array_chunk($steamids, 100);
     $data = array();
 
