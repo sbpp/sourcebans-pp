@@ -1241,10 +1241,11 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 	
 	decl String:reason[256];
 	
-	new iAdmin = GetClientOfUserId(ReadPackCell(data));
+	new iAdminUserId = ReadPackCell(data);
+	new iAdmin = 0;
 	
-	if (!iAdmin) {
-		iAdmin = -1;
+	if(iAdminUserId > 0) {
+		iAdmin = GetClientOfUserId(iAdminUserId);
 	}
 	
 	new iTarget = GetClientOfUserId(ReadPackCell(data));
@@ -2983,7 +2984,7 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 
 		// all data cached before calling asynchronous functions
 		new Handle:dataPack = CreateDataPack();
-		WritePackCell(dataPack, GetClientUserId(admin));
+		WritePackCell(dataPack, admin > 0 ? GetClientUserId(admin) : 0);
 		WritePackCell(dataPack, GetClientUserId(target));
 		WritePackCell(dataPack, length);
 		WritePackCell(dataPack, type);
