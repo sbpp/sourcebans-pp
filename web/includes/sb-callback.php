@@ -1638,100 +1638,90 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a ban, but doesnt have access.");
-    return $objResponse;
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        new CSystemLog("w", "Hacking Attempt", $username . " tried to add a ban, but doesnt have access.");
+        return $objResponse;
     }
 
     $steam = trim($steam);
+    $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
+    $ip = preg_replace('#[^\d\.]#', '', $ip);//strip ip of all but numbers and dots
+    $dname = htmlspecialchars_decode($dname, ENT_QUOTES);
+    $reason = htmlspecialchars_decode($reason, ENT_QUOTES);
 
     $error = 0;
     // If they didnt type a steamid
-    if(empty($steam) && $type == 0)
-    {
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else if(($type == 0
+    if (empty($steam) && $type == 0) {
+        $error++;
+        $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+    } elseif (($type == 0
     && !is_numeric($steam)
     && !validate_steam($steam))
     || (is_numeric($steam)
     && (strlen($steam) < 15
-    || !validate_steam($steam = FriendIDToSteamID($steam)))))
-    {
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else if (empty($ip) && $type == 1)
-    {
-    $error++;
-    $objResponse->addAssign("ip.msg", "innerHTML", "You must type an IP");
-    $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
-    }
-    else if($type == 1 && !validate_ip($ip))
-    {
-    $error++;
-    $objResponse->addAssign("ip.msg", "innerHTML", "You must type a valid IP");
-    $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("steam.msg", "innerHTML", "");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
-    $objResponse->addAssign("ip.msg", "innerHTML", "");
-    $objResponse->addScript("$('ip.msg').setStyle('display', 'none');");
+    || !validate_steam($steam = FriendIDToSteamID($steam))))) {
+        $error++;
+        $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+    } elseif (empty($ip) && $type == 1) {
+        $error++;
+        $objResponse->addAssign("ip.msg", "innerHTML", "You must type an IP");
+        $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
+    } elseif ($type == 1 && !validate_ip($ip)) {
+        $error++;
+        $objResponse->addAssign("ip.msg", "innerHTML", "You must type a valid IP");
+        $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
+    } else {
+        $objResponse->addAssign("steam.msg", "innerHTML", "");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
+        $objResponse->addAssign("ip.msg", "innerHTML", "");
+        $objResponse->addScript("$('ip.msg').setStyle('display', 'none');");
     }
 
-    if($error > 0)
-    return $objResponse;
+    if ($error > 0) {
+        return $objResponse;
+    }
 
-    $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
-    $ip = preg_replace('#[^\d\.]#', '', $ip);//strip ip of all but numbers and dots
-    $dname = RemoveCode($dname);
-    $reason = RemoveCode($reason);
-    if(!$length)
-    $len = 0;
-    else
-    $len = $length*60;
+    if (!$length) {
+        $len = 0;
+    } else {
+        $len = $length*60;
+    }
 
     // prune any old bans
     PruneBans();
-    if((int)$type==0) {
-    // Check if the new steamid is already banned
-    $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($steam));
+    if ((int)$type==0) {
+        // Check if the new steamid is already banned
+        $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($steam));
 
-    if(intval($chk[0]) > 0)
-    {
-    $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already banned.', 'red', '');");
-    return $objResponse;
-    }
+        if (intval($chk[0]) > 0) {
+            $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already banned.', 'red', '');");
+            return $objResponse;
+        }
 
         // Check if player is immune
         $admchk = $userbank->GetAllAdmins();
-        foreach($admchk as $admin)
-            if($admin['authid'] == $steam && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity'])
-            {
+        foreach ($admchk as $admin) {
+            if ($admin['authid'] == $steam && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity']) {
                 $objResponse->addScript("ShowBox('Error', 'SteamID: Admin ".$admin['user']." ($steam) is immune.', 'red', '');");
                 return $objResponse;
             }
+        }
     }
-    if((int)$type==1) {
-    $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'", array($ip));
+    if ((int)$type==1) {
+        $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'", array($ip));
 
-    if(intval($chk[0]) > 0)
-    {
-    $objResponse->addScript("ShowBox('Error', 'IP: $ip is already banned.', 'red', '');");
-    return $objResponse;
-    }
+        if (intval($chk[0]) > 0) {
+            $objResponse->addScript("ShowBox('Error', 'IP: $ip is already banned.', 'red', '');");
+            return $objResponse;
+        }
     }
 
     $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
     (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
-    $GLOBALS['db']->Execute($pre,array($type,
+    $GLOBALS['db']->Execute($pre, array($type,
        $ip,
        $steam,
        $nickname,
@@ -1742,37 +1732,38 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
        $_SERVER['REMOTE_ADDR']));
     $subid = $GLOBALS['db']->Insert_ID();
 
-    if($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile))
-    //Thanks jsifuentes: http://jacobsifuentes.com/sourcebans-1-4-lfi-exploit/
-    //Official Fix: https://code.google.com/p/sourcebans/source/detail?r=165
-    {
-    $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname)
+    if ($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile)) {
+        //Thanks jsifuentes: http://jacobsifuentes.com/sourcebans-1-4-lfi-exploit/
+        //Official Fix: https://code.google.com/p/sourcebans/source/detail?r=165
+
+        $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname)
          VALUES(?,'B', ?, ?)", array((int)$subid, $dfile, $dname));
     }
-    if($fromsub) {
-    $submail = $GLOBALS['db']->Execute("SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'");
-    // Send an email when ban is accepted
-    $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
-    $headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
-    'X-Mailer: PHP/' . phpversion();
+    if ($fromsub) {
+        $submail = $GLOBALS['db']->Execute("SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'");
+        // Send an email when ban is accepted
+        $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
+        $headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
+        'X-Mailer: PHP/' . phpversion();
 
-    $message = "Hello,\n";
-    $message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
+        $message = "Hello,\n";
+        $message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
 
-    mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
-    $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
+        mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
+        $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
     }
 
     $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
 
     $kickit = isset($GLOBALS['config']['config.enablekickit']) && $GLOBALS['config']['config.enablekickit'] == "1";
-    if ($kickit)
-    $objResponse->addScript("ShowKickBox('".((int)$type==0?$steam:$ip)."', '".(int)$type."');");
-    else
-    $objResponse->addScript("ShowBox('Ban Added', 'The ban has been successfully added', 'green', 'index.php?p=admin&c=bans');");
+    if ($kickit) {
+        $objResponse->addScript("ShowKickBox('".((int)$type==0?$steam:$ip)."', '".(int)$type."');");
+    } else {
+        $objResponse->addScript("ShowBox('Ban Added', 'The ban has been successfully added', 'green', 'index.php?p=admin&c=bans');");
+    }
 
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Ban Added", "Ban against (" . ((int)$type==0?$steam:$ip) . ") has been added, reason: $reason, length: $length", true, $kickit);
+    new CSystemLog("m", "Ban Added", "Ban against (" . ((int)$type==0?$steam:$ip) . ") has been added, reason: $reason, length: $length", true, $kickit);
     return $objResponse;
 }
 
@@ -2995,115 +2986,107 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a block, but doesnt have access.");
-    return $objResponse;
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        new CSystemLog("w", "Hacking Attempt", $username . " tried to add a block, but doesnt have access.");
+        return $objResponse;
     }
 
     $steam = trim($steam);
+    $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
+    $reason = htmlspecialchars_decode($reason, ENT_QUOTES);
 
     $error = 0;
     // If they didnt type a steamid
-    if(empty($steam))
-    {
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else if((!is_numeric($steam)
+    if (empty($steam)) {
+        $error++;
+        $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+    } elseif ((!is_numeric($steam)
     && !validate_steam($steam))
     || (is_numeric($steam)
     && (strlen($steam) < 15
-    || !validate_steam($steam = FriendIDToSteamID($steam)))))
-    {
-    $error++;
-    $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    }
-    else
-    {
-    $objResponse->addAssign("steam.msg", "innerHTML", "");
-    $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
+    || !validate_steam($steam = FriendIDToSteamID($steam))))) {
+        $error++;
+        $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+    } else {
+        $objResponse->addAssign("steam.msg", "innerHTML", "");
+        $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
     }
 
-    if($error > 0)
-    return $objResponse;
+    if ($error > 0) {
+        return $objResponse;
+    }
 
-    $nickname = RemoveCode($nickname);
-    $reason = RemoveCode($reason);
-    if(!$length)
-    $len = 0;
-    else
-    $len = $length*60;
+    if (!$length) {
+        $len = 0;
+    } else {
+        $len = $length*60;
+    }
 
     // prune any old bans
     PruneComms();
 
     $typeW = "";
-    switch ((int)$type)
-    {
-    case 1:
-    $typeW = "type = 1";
-    break;
-    case 2:
-    $typeW = "type = 2";
-    break;
-    case 3:
-    $typeW = "(type = 1 OR type = 2)";
-    break;
-    default:
-    $typeW = "";
-    break;
+    switch ((int)$type) {
+        case 1:
+            $typeW = "type = 1";
+            break;
+        case 2:
+            $typeW = "type = 2";
+            break;
+        case 3:
+            $typeW = "(type = 1 OR type = 2)";
+            break;
+        default:
+            $typeW = "";
+            break;
     }
 
     // Check if the new steamid is already banned
     $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_comms WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND ".$typeW, array($steam));
 
-    if(intval($chk[0]) > 0)
-    {
-    $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already blocked.', 'red', '');");
-    return $objResponse;
+    if (intval($chk[0]) > 0) {
+        $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already blocked.', 'red', '');");
+        return $objResponse;
     }
 
     // Check if player is immune
     $admchk = $userbank->GetAllAdmins();
-    foreach($admchk as $admin)
-    if($admin['authid'] == $steam && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity'])
-    {
-    $objResponse->addScript("ShowBox('Error', 'SteamID: Admin ".$admin['user']." ($steam) is immune.', 'red', '');");
-    return $objResponse;
+    foreach ($admchk as $admin) {
+        if ($admin['authid'] == $steam && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity']) {
+            $objResponse->addScript("ShowBox('Error', 'SteamID: Admin ".$admin['user']." ($steam) is immune.', 'red', '');");
+            return $objResponse;
+        }
     }
 
-    if((int)$type == 1 || (int)$type == 3)
-    {
-    $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
+    if ((int)$type == 1 || (int)$type == 3) {
+        $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
       (UNIX_TIMESTAMP(),1,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
-    $GLOBALS['db']->Execute($pre,array($steam,
-       $nickname,
-       $length*60,
-       $len,
-       $reason,
-       $userbank->GetAid(),
-       $_SERVER['REMOTE_ADDR']));
+        $GLOBALS['db']->Execute($pre, array($steam,
+        $nickname,
+        $length*60,
+        $len,
+        $reason,
+        $userbank->GetAid(),
+        $_SERVER['REMOTE_ADDR']));
     }
-    if ((int)$type == 2 || (int)$type ==3)
-    {
-    $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
+    if ((int)$type == 2 || (int)$type ==3) {
+        $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
       (UNIX_TIMESTAMP(),2,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
-    $GLOBALS['db']->Execute($pre,array($steam,
-       $nickname,
-       $length*60,
-       $len,
-       $reason,
-       $userbank->GetAid(),
-       $_SERVER['REMOTE_ADDR']));
+        $GLOBALS['db']->Execute($pre, array($steam,
+        $nickname,
+        $length*60,
+        $len,
+        $reason,
+        $userbank->GetAid(),
+        $_SERVER['REMOTE_ADDR']));
     }
 
     $objResponse->addScript("ShowBlockBox('".$steam."', '".(int)$type."', '".(int)$len."');");
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Block Added", "Block against (" . $steam . ") has been added, reason: $reason, length: $length", true, $kickit);
+    new CSystemLog("m", "Block Added", "Block against (" . $steam . ") has been added, reason: $reason, length: $length", true, $kickit);
     return $objResponse;
 }
 
