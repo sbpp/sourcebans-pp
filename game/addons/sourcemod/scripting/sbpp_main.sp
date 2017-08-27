@@ -57,7 +57,8 @@ enum State/* ConfigState */
 	ConfigStateNone = 0,
 	ConfigStateConfig,
 	ConfigStateReasons,
-	ConfigStateHacking
+	ConfigStateHacking,
+    ConfigStateTime
 }
 
 new g_BanTarget[MAXPLAYERS + 1] =  { -1, ... };
@@ -97,6 +98,7 @@ new Handle:DB;
 new Handle:SQLiteDB;
 
 /* Menu file globals */
+new Handle:TimeMenuHandle;
 new Handle:ReasonMenuHandle;
 new Handle:HackingMenuHandle;
 
@@ -186,6 +188,12 @@ public OnPluginStart()
 
 	RegConsoleCmd("say", ChatHook);
 	RegConsoleCmd("say_team", ChatHook);
+
+	if ((TimeMenuHandle = CreateMenu(MenuHandler_BanTimeList, MenuAction_Select|MenuAction_Cancel|MenuAction_DrawItem)) != INVALID_HANDLE)
+	{
+		SetMenuPagination(TimeMenuHandle, 8);
+		SetMenuExitBackButton(TimeMenuHandle, true);
+	}
 
 	if ((ReasonMenuHandle = CreateMenu(ReasonSelected)) != INVALID_HANDLE)
 	{
@@ -738,7 +746,7 @@ public AdminMenu_Ban(Handle:topmenu,
 		// We are only being displayed, We only need to show the option name
 		case TopMenuAction_DisplayOption:
 		{
-			Format(buffer, maxlength, "%T", "Ban player", param);
+			FormatEx(buffer, maxlength, "%T", "Ban player", param);
 
 			#if defined DEBUG
 			LogToFile(logFile, "AdminMenu_Ban() -> Formatted the Ban option text");
@@ -901,11 +909,6 @@ public MenuHandler_BanTimeList(Handle:menu, MenuAction:action, param1, param2)
 
 	switch (action)
 	{
-		case MenuAction_End:
-		{
-			CloseHandle(menu);
-		}
-
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
@@ -924,7 +927,17 @@ public MenuHandler_BanTimeList(Handle:menu, MenuAction:action, param1, param2)
 			//DisplayBanReasonMenu(param1);
 			DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
 		}
+
+		case MenuAction_DrawItem:
+		{
+			decl String:time[16];
+			GetMenuItem(menu, param2, time, sizeof(time));
+
+			return (StringToInt(time) > 0 || CheckCommandAccess(param1, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED;
+		}
 	}
+
+	return 0;
 }
 
 stock DisplayBanTargetMenu(client)
@@ -935,9 +948,8 @@ stock DisplayBanTargetMenu(client)
 	new Handle:menu = CreateMenu(MenuHandler_BanPlayerList); // Create a new menu, pass it the handler.
 
 	decl String:title[100];
-	Format(title, sizeof(title), "%T:", "Ban player", client);
+	FormatEx(title, sizeof(title), "%T:", "Ban player", client);
 
-	//Format(title, sizeof(title), "Ban player", client);	// Create the title of the menu
 	SetMenuTitle(menu, title); // Set the title
 	SetMenuExitBackButton(menu, true); // Yes we want back/exit
 
@@ -955,31 +967,28 @@ stock DisplayBanTimeMenu(client)
 	LogToFile(logFile, "DisplayBanTimeMenu()");
 	#endif
 
-	new Handle:menu = CreateMenu(MenuHandler_BanTimeList);
-
 	decl String:title[100];
-	Format(title, sizeof(title), "%T:", "Ban player", client);
-	//Format(title, sizeof(title), "Ban player", client);
-	SetMenuTitle(menu, title);
-	SetMenuExitBackButton(menu, true);
+	FormatEx(title, sizeof(title), "%T:", "Ban player", client);
+	SetMenuTitle(TimeMenuHandle, title);
 
-	if (CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT))
-		AddMenuItem(menu, "0", "Permanent");
-	AddMenuItem(menu, "10", "10 Minutes");
-	AddMenuItem(menu, "30", "30 Minutes");
-	AddMenuItem(menu, "60", "1 Hour");
-	AddMenuItem(menu, "240", "4 Hours");
-	AddMenuItem(menu, "1440", "1 Day");
-	AddMenuItem(menu, "10080", "1 Week");
-
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	DisplayMenu(TimeMenuHandle, client, MENU_TIME_FOREVER);
 }
 
 stock ResetMenu()
 {
+	if (TimeMenuHandle != INVALID_HANDLE)
+	{
+		RemoveAllMenuItems(TimeMenuHandle);
+	}
+
 	if (ReasonMenuHandle != INVALID_HANDLE)
 	{
 		RemoveAllMenuItems(ReasonMenuHandle);
+	}
+
+	if (HackingMenuHandle != INVALID_HANDLE)
+	{
+		RemoveAllMenuItems(HackingMenuHandle);
 	}
 }
 
@@ -2088,14 +2097,15 @@ public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt
 {
 	if (name[0])
 	{
-		if (strcmp("Config", name, false) == 0)
-		{
+		if (strcmp("Config", name, false) == 0) {
 			ConfigState = ConfigStateConfig;
 		} else if (strcmp("BanReasons", name, false) == 0) {
 			ConfigState = ConfigStateReasons;
 		} else if (strcmp("HackingReasons", name, false) == 0) {
 			ConfigState = ConfigStateHacking;
-		}
+		} else if (strcmp("BanTime", name, false) == 0) {
+            ConfigState = ConfigStateTime;
+        }
 	}
 	return SMCParse_Continue;
 }
@@ -2184,6 +2194,13 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 			if (HackingMenuHandle != INVALID_HANDLE)
 			{
 				AddMenuItem(HackingMenuHandle, key, value);
+			}
+		}
+		case ConfigStateTime:
+		{
+			if (StringToInt(key) > -1 && TimeMenuHandle != INVALID_HANDLE)
+			{
+				AddMenuItem(TimeMenuHandle, key, value);
 			}
 		}
 	}
