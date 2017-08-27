@@ -2104,8 +2104,8 @@ public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt
 		} else if (strcmp("HackingReasons", name, false) == 0) {
 			ConfigState = ConfigStateHacking;
 		} else if (strcmp("BanTime", name, false) == 0) {
-            ConfigState = ConfigStateTime;
-        }
+			ConfigState = ConfigStateTime;
+		}
 	}
 	return SMCParse_Continue;
 }
