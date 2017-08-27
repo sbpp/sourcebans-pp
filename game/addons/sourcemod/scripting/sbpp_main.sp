@@ -58,7 +58,7 @@ enum State/* ConfigState */
 	ConfigStateConfig,
 	ConfigStateReasons,
 	ConfigStateHacking,
-    ConfigStateTime
+	ConfigStateTime
 }
 
 new g_BanTarget[MAXPLAYERS + 1] =  { -1, ... };
