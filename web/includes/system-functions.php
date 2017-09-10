@@ -615,13 +615,6 @@ function trunc($text, $len, $byword=true)
     return $text;
 }
 
-function StripQuotes($str)
-{
-    $str = str_replace("'", "", $str);
-    $str = str_replace('"', "", $str);
-    return $str;
-}
-
 function CreateRedBox($title, $content)
 {
     $text = '<div id="msg-red-debug" style="">
