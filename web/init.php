@@ -55,9 +55,13 @@ define('IN_SB', true);
 define('SB_AID', isset($_COOKIE['aid'])?$_COOKIE['aid']:null);
 define('XAJAX_REQUEST_URI', './index.php');
 
+require_once(INCLUDES_PATH.'/SessionManager.php');
 include_once(INCLUDES_PATH . "/CSystemLog.php");
 include_once(INCLUDES_PATH . "/CUserManager.php");
 include_once(INCLUDES_PATH . "/CUI.php");
+
+\SessionManager::sessionStart('SourceBans');
+
 // ---------------------------------------------------
 //  Fix some $_SERVER vars
 // ---------------------------------------------------
@@ -110,9 +114,11 @@ if (!defined('SB_VERSION')) {
         $json = json_decode(file_get_contents('version.json'), true);
         define('SB_VERSION', $json['version']);
         define('SB_GITREV', $json['git']);
+        define('SB_DEV', $json['dev']);
     } else {
         define('SB_VERSION', 'N/A');
         define('SB_GITREV', '0');
+        define('SB_DEV', false);
     }
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
@@ -209,7 +215,7 @@ function sbError($errno, $errstr, $errfile, $errline)
 define('EMAIL_FORMAT', "/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/");
 define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i");
 define('STEAM_FORMAT', "/^STEAM_[0-9]:[0-9]:[0-9]+$/");
-define('STATUS_PARSE', '/# +([0-9 ]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+) +([0-9.:]+)/');
+define('STATUS_PARSE', '/#.* +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+).* +([0-9.:]+)/');
 define('IP_FORMAT', '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
 define('SERVER_QUERY', 'http://www.sourcebans.net/public/query/');
 
@@ -361,4 +367,4 @@ if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE"))
 // ---------------------------------------------------
 // Setup our user manager
 // ---------------------------------------------------
-$userbank = new CUserManager(isset($_COOKIE['aid'])?$_COOKIE['aid']:'', isset($_COOKIE['password'])?$_COOKIE['password']:'');
+$userbank = new CUserManager(isset($_SESSION['aid']) ? $_SESSION['aid'] : -1);

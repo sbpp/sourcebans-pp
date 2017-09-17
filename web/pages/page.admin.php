@@ -49,7 +49,7 @@ $theme->assign('access_groups', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GR
 $theme->assign('access_settings', $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS));
 $theme->assign('access_mods', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS | ADMIN_ADD_MODS | ADMIN_EDIT_MODS | ADMIN_DELETE_MODS));
 
-$theme->assign('sb_svn', defined('SB_GIT'));
+$theme->assign('dev', SB_DEV);
 
 $theme->assign('demosize', sizeFormat($demsi['size']));
 $theme->assign('total_admins', $counts['admins']);

@@ -31,7 +31,7 @@ if (!defined("IN_SB")) {
 }
 
 global $theme;
-$theme->assign('SB_REV', defined('SB_GIT') ? "-git" . SB_GITREV : '');
+$theme->assign('SB_REV', (SB_DEV) ? "-git" . SB_GITREV : '');
 $theme->assign('SB_VERSION', SB_VERSION);
 $theme->assign('SB_QUOTE', CreateQuote());
 $theme->display('page_footer.tpl');

@@ -37,8 +37,8 @@ public Plugin myinfo =
 	name = "SourceBans++: Admin Config Loader",
 	author = "AlliedModders LLC, SourceBans++ Dev Team",
 	description = "Reads Admin Files",
-	version = "1.6.1",
-	url = "https://sbpp.sarabveer.me/"
+	version = "1.6.2",
+	url = "https://sbpp.github.io"
 };
 
 

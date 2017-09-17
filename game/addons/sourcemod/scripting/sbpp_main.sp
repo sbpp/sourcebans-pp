@@ -32,8 +32,8 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.6.1++"
-#define SBR_VERSION "1.6.1"
+#define SB_VERSION "1.6.2++"
+#define SBR_VERSION "1.6.2"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
@@ -137,7 +137,7 @@ public Plugin:myinfo =
 	author = "SourceBans Development Team, SourceBans++ Dev Team",
 	description = "Advanced ban management for the Source engine",
 	version = SBR_VERSION,
-	url = "https://sbpp.sarabveer.me/"
+	url = "https://sbpp.github.io"
 };
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3

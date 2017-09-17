@@ -153,7 +153,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             $message .= "Hello " . $admin['user'] . ",\n\n";
             $message .= "A new ban protest has been posted on your SourceBans page.\n\n";
             $message .= "Player: " . $_POST['PlayerName'] . " (" . $_POST['SteamID'] . ")\nBanned by: " . $protadmin['user'] . "\nMessage: " . $_POST['BanReason'] . "\n\n";
-            $message .= "Click the link below to view the current ban protests.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=admin&c=bans#^1";
+            $message .= "Click the link below to view the current ban protests.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=admin&c=bans#%5E1";
             if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid'])) {
                 mail($admin['email'], "[SourceBans] Ban Protest Added", $message, $headers);
             }

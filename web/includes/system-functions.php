@@ -182,7 +182,9 @@ function BuildPageTabs()
     AddTab("Dashboard", "index.php?p=home", "This page shows an overview of your bans and servers.");
     AddTab("Servers", "index.php?p=servers", "All of your servers and their status can be viewed here");
     AddTab("Bans", "index.php?p=banlist", "All of the bans in the database can be viewed from here.");
-    AddTab("Comms", "index.php?p=commslist", "All of the communication bans (such as chat gags and voice mutes) in the database can be viewed from here.");
+    if ($GLOBALS['config']['config.enablecomms'] == "1") {
+        AddTab("Comms", "index.php?p=commslist", "All of the communication bans (such as chat gags and voice mutes) in the database can be viewed from here.");
+    }
     if ($GLOBALS['config']['config.enablesubmit']=="1") {
         AddTab("Report Player", "index.php?p=submit", "You can submit a demo or screenshot of a suspected cheater here. It will then be up for review by one of the admins");
     }
@@ -1158,6 +1160,14 @@ function GetCommunityName($steamid)
         return $friendid;
     }
     return "";
+}
+
+function steam2to3($authid)
+{
+    $GLOBALS['PDO']->query("SELECT CONCAT(CAST('".$authid."' AS UNSIGNED) % 2, \":\", CAST('".$authid."' AS UNSIGNED) / 2) AS id");
+    $result = $GLOBALS['PDO']->single();
+    $result = explode(':', $result['id']);
+    return 'STEAM_0:' . $result[0] . ':' . floor($result[1]);
 }
 
 function SendRconSilent($rcon, $sid)

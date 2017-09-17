@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.1"
+#define PLUGIN_VERSION "1.6.2"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length
@@ -161,7 +161,7 @@ public Plugin:myinfo =
 	author = "Alex, SourceBans++ Dev Team",
 	description = "Advanced punishments management for the Source engine in SourceBans style",
 	version = PLUGIN_VERSION,
-	url = "https://sbpp.sarabveer.me/"
+	url = "https://sbpp.github.io"
 };
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
@@ -1238,29 +1238,26 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	ResetPack(data);
-
+	
 	decl String:reason[256];
-
-	new iAdmin			= ReadPackCell(data);
-	if (iAdmin) {
-		iAdmin = GetClientOfUserId(iAdmin);
-		if (!iAdmin) {
-			iAdmin = -1;
-		}
+	
+	new iAdminUserId = ReadPackCell(data);
+	new iAdmin = 0;
+	
+	if(iAdminUserId > 0) {
+		iAdmin = GetClientOfUserId(iAdminUserId);
 	}
-
-	new iTarget			= GetClientOfUserId(ReadPackCell(data));
+	
+	new iTarget = GetClientOfUserId(ReadPackCell(data));
+	
 	if (!iTarget) {
 		iTarget = -1;
 	}
-
-	new Handle:hFData	= Handle:ReadPackCell(data);
-
-	ResetPack(hFData);
-	new length			= ReadPackCell(hFData);
-	new type			= ReadPackCell(hFData);
-	ReadPackString(hFData, reason, sizeof(reason));
-
+	
+	new length = ReadPackCell(data);
+	new type = ReadPackCell(data);
+	ReadPackString(data, reason, sizeof(reason));
+	
 	// Fire forward
 	Call_StartForward(g_hFwd_OnPlayerPunished);
 	Call_PushCell(iAdmin);
@@ -1269,21 +1266,20 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 	Call_PushCell(type);
 	Call_PushString(reason);
 	Call_Finish();
-
+	
 	if (DB_Conn_Lost(hndl) || error[0])
 	{
 		LogError("Query_AddBlockInsert failed: %s", error);
-
+		
 		decl String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
-		ReadPackString(hFData, name, sizeof(name));
-		ReadPackString(hFData, auth, sizeof(auth));
-		ReadPackString(hFData, adminAuth, sizeof(adminAuth));
-		ReadPackString(hFData, adminIp, sizeof(adminIp));
-
+		ReadPackString(data, name, sizeof(name));
+		ReadPackString(data, auth, sizeof(auth));
+		ReadPackString(data, adminAuth, sizeof(adminAuth));
+		ReadPackString(data, adminIp, sizeof(adminIp));
+		
 		InsertTempBlock(length, type, name, auth, reason, adminAuth, adminIp);
 	}
 	CloseHandle(data);
-	CloseHandle(hFData);
 }
 
 public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:data)
@@ -2987,11 +2983,9 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		#endif
 
 		// all data cached before calling asynchronous functions
-		new Handle:dataPackFwd	= CreateDataPack();
-		new Handle:dataPack		= CreateDataPack();
-		WritePackCell(dataPackFwd, admin);
-		WritePackCell(dataPackFwd, target);
-		WritePackCell(dataPackFwd, _:dataPack);
+		new Handle:dataPack = CreateDataPack();
+		WritePackCell(dataPack, admin > 0 ? GetClientUserId(admin) : 0);
+		WritePackCell(dataPack, GetClientUserId(target));
 		WritePackCell(dataPack, length);
 		WritePackCell(dataPack, type);
 		WritePackString(dataPack, reason);
@@ -2999,8 +2993,8 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		WritePackString(dataPack, targetAuth);
 		WritePackString(dataPack, adminAuth);
 		WritePackString(dataPack, adminIp);
-
-		SQL_TQuery(g_hDatabase, Query_AddBlockInsert, sQuery, dataPackFwd, DBPrio_High);
+		
+		SQL_TQuery(g_hDatabase, Query_AddBlockInsert, sQuery, dataPack, DBPrio_High);
 	}
 	else
 		InsertTempBlock(length, type, sName, targetAuth, reason, adminAuth, adminIp);

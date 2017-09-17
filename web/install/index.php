@@ -25,7 +25,6 @@
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
-session_start();
 include_once 'init.php';
 include_once(INCLUDES_PATH . "/user-functions.php");
 include_once(INCLUDES_PATH . "/system-functions.php");

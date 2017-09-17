@@ -38,14 +38,12 @@ class CUserManager
      * @param $password the current user's password
      * @return noreturn.
      */
-    public function __construct($aid, $password)
+    public function __construct($aid)
     {
         $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
 
-        if ($this->CheckLogin($password, $aid)) {
-            $this->aid = $aid;
-            $this->GetUserArray($aid);
-        }
+        $this->aid = $aid;
+        $this->GetUserArray($aid);
     }
 
 
@@ -63,7 +61,7 @@ class CUserManager
         }
         // Invalid aid
         if ($aid < 0 || empty($aid)) {
-            return 0;
+            return false;
         }
 
         // We already got the data from the DB, and its saved in the manager
@@ -82,7 +80,7 @@ class CUserManager
         $res = $this->dbh->single();
 
         if (!$res) {
-            return 0;  // ohnoes some type of db error
+            return false;  // ohnoes some type of db error
         }
 
         $user = array();
@@ -212,30 +210,27 @@ class CUserManager
 
     public function login($aid, $password, $save = true)
     {
-        if ($this->CheckLogin($this->encrypt_password($password), $aid)) {
+        //Some Xajax error prevents setting this right TODO: fix this
+        $time = 604800;
+        if ($this->CheckLogin($this->encrypt_password($password), $aid) || $this->CheckLogin($this->hash($password), $aid)) {
             //Old password hash detected update it.
             $this->dbh->query('UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid');
-            $this->dbh->bind(':password', $this->hash($password));
+            $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
             $this->dbh->bind(':aid', $aid);
             $this->dbh->execute();
-
-            setcookie("aid", $aid);
-            setcookie("password", $this->hash($password));
-            setcookie("user", $_SESSION['user']['user']);
+            session_destroy();
+            \SessionManager::sessionStart('SourceBans', $time);
+            $_SESSION['aid'] = $aid;
             return true;
         }
 
-        if ($this->CheckLogin($this->hash($password), $aid)) {
-            if ($save) {
-                //Sets cookies
-                setcookie("aid", $aid, time()+LOGIN_COOKIE_LIFETIME);
-                setcookie("password", $this->hash($password), time()+LOGIN_COOKIE_LIFETIME);
-                setcookie("user", isset($_SESSION['user']['user'])?$_SESSION['user']['user']:null, time()+LOGIN_COOKIE_LIFETIME);
-                return true;
-            }
-            setcookie("aid", $aid);
-            setcookie("password", $this->hash($password));
-            setcookie("user", $_SESSION['user']['user']);
+        $this->dbh->query('SELECT password FROM `:prefix_admins` WHERE aid = :aid');
+        $this->dbh->bind(':aid', $aid);
+        $hash = $this->dbh->single();
+        if (password_verify($password, $hash['password'])) {
+            session_destroy();
+            \SessionManager::sessionStart('SourceBans', $time);
+            $_SESSION['aid'] = $aid;
             return true;
         }
         return false;
@@ -332,19 +327,13 @@ class CUserManager
             throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
         }
         if (empty($password)) {
-            // Silently generate a token for account if there is no password set
-            // the token is required in Steam OAuth routines.
-            // Due to ugly codebase and lack of migrations we store the token as password hash.
-            // Also we use a prefix here to prevent any possible collisions with `encrypt_password` implementation.
-            $password_hash = '$token$' . $this->random_string();
-        } else {
-            $password_hash = $this->hash($password);
+            throw new RuntimeException('Password must not be empty!');
         }
         $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
                            VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');
         $this->dbh->bind(':user', $name);
         $this->dbh->bind(':authid', $steam);
-        $this->dbh->bind(':password', $password_hash);
+        $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
         $this->dbh->bind(':gid', $web_group);
         $this->dbh->bind(':email', $email);
         $this->dbh->bind(':extraflags', $web_flags);

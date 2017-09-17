@@ -35,6 +35,10 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+if ($GLOBALS['config']['config.enablecomms'] != "1") {
+    CreateRedBox("Error", "This page is disabled. You should not be here.");
+    PageDie();
+}
 $BansPerPage = SB_BANS_PER_PAGE;
 $servers     = array();
 global $userbank;

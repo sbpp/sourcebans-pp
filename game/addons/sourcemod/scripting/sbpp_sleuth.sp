@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebans>
 
-#define PLUGIN_VERSION "1.6.1"
+#define PLUGIN_VERSION "1.6.2"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2
@@ -57,7 +57,7 @@ public Plugin:myinfo =
 	author = "ecca, SourceBans++ Dev Team",
 	description = "Useful for TF2 servers. Plugin will check for banned ips and ban the player.",
 	version = PLUGIN_VERSION,
-	url = "https://sbpp.sarabveer.me/"
+	url = "https://sbpp.github.io"
 };
 
 public OnPluginStart()
