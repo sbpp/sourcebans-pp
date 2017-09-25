@@ -148,7 +148,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
 #endif
 {
-	RegPluginLibrary("sourcebans");
+	RegPluginLibrary("sourcebans++");
 	CreateNative("SBBanPlayer",            Native_SBBanPlayer);
 	CreateNative("SourceBans_BanPlayer",   Native_SBBanPlayer);
 
