@@ -107,10 +107,10 @@ native bType:SourceComms_GetClientGagType(client);
  */
 forward SourceComms_OnBlockAdded(client, target, time, type, String:reason[]);
 
-public SharedPlugin:__pl_sourcecomms = 
+public SharedPlugin:__pl_sourcecomms =
 {
-	name = "sourcecomms", 
-	file = "sourcecomms.smx", 
+	name = "sourcecomms++",
+	file = "sbpp_comms.smx", 
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else
@@ -124,5 +124,5 @@ public __pl_sourcecomms_SetNTVOptional()
 	MarkNativeAsOptional("SourceComms_SetClientGag");
 	MarkNativeAsOptional("SourceComms_GetClientMuteType");
 	MarkNativeAsOptional("SourceComms_GetClientGagType");
-	
-} 
+
+}

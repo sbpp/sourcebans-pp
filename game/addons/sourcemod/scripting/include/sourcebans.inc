@@ -31,8 +31,8 @@
 
 public SharedPlugin:__pl_sourcebans =
 {
-	name = "sourcebans", 
-	file = "sourcebans.smx",
+	name = "sourcebans++",
+	file = "sbpp_main.smx",
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else
