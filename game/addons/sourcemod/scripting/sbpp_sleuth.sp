@@ -47,6 +47,8 @@ ConVar g_cVar_sbprefix;
 ConVar g_cVar_bansAllowed;
 ConVar g_cVar_bantype;
 ConVar g_cVar_bypass;
+ConVar g_cVar_excludeOld;
+ConVar g_cVar_excludeTime;
 
 //- Bools -//
 new bool:CanUseSourcebans = false;
@@ -72,6 +74,8 @@ public OnPluginStart()
 	g_cVar_bansAllowed = CreateConVar("sm_sleuth_bansallowed", "0", "How many active bans are allowed before we act", 0);
 	g_cVar_bantype = CreateConVar("sm_sleuth_bantype", "0", "0 - ban all type of lengths, 1 - ban only permanent bans", 0, true, 0.0, true, 1.0);
 	g_cVar_bypass = CreateConVar("sm_sleuth_adminbypass", "0", "0 - Inactivated, 1 - Allow all admins with ban flag to pass the check", 0, true, 0.0, true, 1.0);
+	g_cVar_excludeOld = CreateConVar("sm_sleuth_excludeold", "0", "0 - Inactivated, 1 - Allow old bans to be excluded from ban check", 0, true, 0.0, true, 1.0);
+	g_cVar_excludeTime = CreateConVar("sm_sleuth_excludetime", "31536000", "Amount of time in seconds to allow old bans to be excluded from ban check", 0, true, 1.0, false);
 
 	g_hAllowedArray = CreateArray(256);
 
@@ -154,7 +158,7 @@ public OnClientPostAdminCheck(client)
 
 			new String:query[1024];
 
-			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR length = 0)", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0);
+			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0)))", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue);
 
 			new Handle:datapack = CreateDataPack();
 
