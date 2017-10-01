@@ -1729,11 +1729,12 @@ public Action:ClientRecheck(Handle:timer, any:userid)
 	g_hPlayerRecheck[client] = INVALID_HANDLE;
 }
 
-public Action:Timer_MuteExpire(Handle:timer, any:userid)
+public Action:Timer_MuteExpire(Handle:timer, Handle:hPack)
 {
-	g_hMuteExpireTimer[client] = INVALID_HANDLE;
+	ResetPack(hPack);
+	g_hMuteExpireTimer[ReadPackCell(hPack)] = INVALID_HANDLE;
 
-	new client = GetClientOfUserId(userid);
+	new client = GetClientOfUserId(ReadPackCell(hPack));
 	if (!client)
 		return;
 
@@ -1750,11 +1751,12 @@ public Action:Timer_MuteExpire(Handle:timer, any:userid)
 		BaseComm_SetClientMute(client, false);
 }
 
-public Action:Timer_GagExpire(Handle:timer, any:userid)
+public Action:Timer_GagExpire(Handle:timer, Handle:hPack)
 {
-	g_hGagExpireTimer[client] = INVALID_HANDLE;
+	ResetPack(hPack);
+	g_hGagExpireTimer[ReadPackCell(hPack)] = INVALID_HANDLE;
 
-	new client = GetClientOfUserId(userid);
+	new client = GetClientOfUserId(ReadPackCell(hPack));
 	if (!client)
 		return;
 
@@ -2845,10 +2847,15 @@ stock CreateMuteExpireTimer(target, remainingTime = 0)
 {
 	if (g_iMuteLength[target] > 0)
 	{
+		new Handle:hPack;
+
 		if (remainingTime)
-			g_hMuteExpireTimer[target] = CreateTimer(float(remainingTime), Timer_MuteExpire, GetClientUserId(target), TIMER_FLAG_NO_MAPCHANGE);
+			g_hMuteExpireTimer[target] = CreateDataTimer(float(remainingTime), Timer_MuteExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
 		else
-			g_hMuteExpireTimer[target] = CreateTimer(float(g_iMuteLength[target] * 60), Timer_MuteExpire, GetClientUserId(target), TIMER_FLAG_NO_MAPCHANGE);
+			g_hMuteExpireTimer[target] = CreateDataTimer(float(g_iMuteLength[target] * 60), Timer_MuteExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
+
+		WritePackCell(hPack, target);
+		WritePackCell(hPack, GetClientUserId(target));
 	}
 }
 
@@ -2856,10 +2863,15 @@ stock CreateGagExpireTimer(target, remainingTime = 0)
 {
 	if (g_iGagLength[target] > 0)
 	{
+		new Handle:hPack;
+
 		if (remainingTime)
-			g_hGagExpireTimer[target] = CreateTimer(float(remainingTime), Timer_GagExpire, GetClientUserId(target), TIMER_FLAG_NO_MAPCHANGE);
+			g_hGagExpireTimer[target] = CreateDataTimer(float(remainingTime), Timer_GagExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
 		else
-			g_hGagExpireTimer[target] = CreateTimer(float(g_iGagLength[target] * 60), Timer_GagExpire, GetClientUserId(target), TIMER_FLAG_NO_MAPCHANGE);
+			g_hGagExpireTimer[target] = CreateDataTimer(float(g_iGagLength[target] * 60), Timer_GagExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
+
+		WritePackCell(hPack, target);
+		WritePackCell(hPack, GetClientUserId(target));
 	}
 }
 
