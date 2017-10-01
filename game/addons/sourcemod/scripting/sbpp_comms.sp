@@ -1731,6 +1731,8 @@ public Action:ClientRecheck(Handle:timer, any:userid)
 
 public Action:Timer_MuteExpire(Handle:timer, any:userid)
 {
+	g_hMuteExpireTimer[client] = INVALID_HANDLE;
+
 	new client = GetClientOfUserId(userid);
 	if (!client)
 		return;
@@ -1743,7 +1745,6 @@ public Action:Timer_MuteExpire(Handle:timer, any:userid)
 
 	PrintToChat(client, "%s%t", PREFIX, "Mute expired");
 
-	g_hMuteExpireTimer[client] = INVALID_HANDLE;
 	MarkClientAsUnMuted(client);
 	if (IsClientInGame(client))
 		BaseComm_SetClientMute(client, false);
@@ -1751,6 +1752,8 @@ public Action:Timer_MuteExpire(Handle:timer, any:userid)
 
 public Action:Timer_GagExpire(Handle:timer, any:userid)
 {
+	g_hGagExpireTimer[client] = INVALID_HANDLE;
+
 	new client = GetClientOfUserId(userid);
 	if (!client)
 		return;
@@ -1763,7 +1766,6 @@ public Action:Timer_GagExpire(Handle:timer, any:userid)
 
 	PrintToChat(client, "%s%t", PREFIX, "Gag expired");
 
-	g_hGagExpireTimer[client] = INVALID_HANDLE;
 	MarkClientAsUnGagged(client);
 	if (IsClientInGame(client))
 		BaseComm_SetClientGag(client, false);
