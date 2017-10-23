@@ -728,26 +728,6 @@ function SecondsToString($sec, $textual=true)
     }
 }
 
-// unused, as loading too slowly.
-function CreateHostnameCache()
-{
-    require_once INCLUDES_PATH.'/CServerInfo.php';
-    $res = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM ".DB_PREFIX."_servers ORDER BY sid");
-    $servers = array();
-    while (!$res->EOF) {
-        $info = array();
-        $sinfo = new CServerInfo($res->fields[1], $res->fields[2]);
-        $info = $sinfo->getInfo();
-        if (!empty($info['hostname'])) {
-            $servers[$res->fields[0]] = $info['hostname'];
-        } else {
-            $servers[$res->fields[0]] = $res->fields[1].":".$res->fields[2];
-        }
-        $res->MoveNext();
-    }
-    return($servers);
-}
-
 function FetchIp($ip)
 {
     $ip = sprintf('%u', ip2long($ip));
