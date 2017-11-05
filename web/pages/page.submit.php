@@ -130,7 +130,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $modid = $GLOBALS['PDO']->single();
             } else {
                 $mailserver = "Server: Other server\n";
-                $modid[0]   = 0;
+                $modid['mid']   = 0;
             }
             if ($SteamID == "STEAM_0:") {
                 $SteamID = "";
@@ -140,7 +140,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $SteamID,
                 $PlayerName,
                 $Email,
-                $modid[0],
+                $modid['mid'],
                 $BanReason,
                 $_SERVER['REMOTE_ADDR'],
                 $SubmitterName,
