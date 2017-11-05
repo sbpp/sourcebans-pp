@@ -1261,6 +1261,9 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
             $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '64px');");
             $objResponse->addScript("if($('sid_$sid'))$('sid_$sid').setStyle('color', '#adadad');");
         }
+        if ($type == "id") {
+            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']. "</i>)");
+        }
         return $objResponse;
     } finally {
         $query->Disconnect();
@@ -1383,6 +1386,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
                 $objResponse->addScript("if($('sid_$sid'))$('sid_$sid').setStyle('color', '#adadad');");
             }
         }
+    }
     if ($tplsid != "" && $open != "" && $tplsid==$open) {
         $objResponse->addScript("InitAccordion('tr.opener', 'div.opener', 'mainwrapper', '".$open."');");
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
@@ -1399,7 +1403,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
         }else{
             $objResponse->addAssign("ban_server_$type", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)");
         }
-    }}
+    }
     return $objResponse;
 }
 
