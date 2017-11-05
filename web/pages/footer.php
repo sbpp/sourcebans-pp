@@ -36,12 +36,6 @@ $theme->assign('SB_VERSION', SB_VERSION);
 $theme->assign('SB_QUOTE', CreateQuote());
 $theme->display('page_footer.tpl');
 
-print strftime('%D')."<br/>";
-print "Timezone INI: ".ini_get('date.timezone')." | ".date_default_timezone_get()."<br/>";
-print "Timezone: ".date('T')." | Offset: ".date('Z')."<br/>";
-print "Date: ".date('d.m.Y')."<br/>";
-print "Time: ".strftime("%H:%M:%S")."<br/>";
-
 if (isset($_GET['p'])) {
     $_SESSION['p'] = $_GET['p'];
 }
