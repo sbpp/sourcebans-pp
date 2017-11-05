@@ -201,11 +201,11 @@ foreach ($protests as $prot) {
     $prot['authid'] = $protestb[2];
     $prot['ip']     = $protestb['ip'];
 
-    $prot['date'] = SBDate($dateformat, $protestb['created']);
+    $prot['date'] = date($dateformat, $protestb['created']);
     if ($protestb['ends'] == 'never') {
         $prot['ends'] = 'never';
     } else {
-        $prot['ends'] = SBDate($dateformat, $protestb['ends']);
+        $prot['ends'] = date($dateformat, $protestb['ends']);
     }
     $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
 
@@ -215,7 +215,7 @@ foreach ($protests as $prot) {
     } else {
         $prot['server'] = $protestb[12];
     }
-    $prot['datesubmitted'] = SBDate($dateformat, $prot['datesubmitted']);
+    $prot['datesubmitted'] = date($dateformat, $prot['datesubmitted']);
     //COMMENT STUFF
     //-----------------------------------
     $view_comments         = true;
@@ -242,12 +242,12 @@ foreach ($protests as $prot) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = SBDate($dateformat, $commentres->fields['added']);
+            $cdata['added']      = date($dateformat, $commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -352,11 +352,11 @@ foreach ($protestsarchiv as $prot) {
             $prot['authid'] = $protestb[2];
             $prot['ip']     = $protestb['ip'];
 
-            $prot['date'] = SBDate($dateformat, $protestb['created']);
+            $prot['date'] = date($dateformat, $protestb['created']);
             if ($protestb['ends'] == 'never') {
                 $prot['ends'] = 'never';
             } else {
-                $prot['ends'] = SBDate($dateformat, $protestb['ends']);
+                $prot['ends'] = date($dateformat, $protestb['ends']);
             }
             $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
             $prot['admin']      = $protestb[11];
@@ -376,7 +376,7 @@ foreach ($protestsarchiv as $prot) {
     } else {
         $prot['archive'] = "ban has been deleted.";
     }
-    $prot['datesubmitted'] = SBDate($dateformat, $prot['datesubmitted']);
+    $prot['datesubmitted'] = date($dateformat, $prot['datesubmitted']);
     //COMMENT STUFF
     //-----------------------------------
     $view_comments         = true;
@@ -403,12 +403,12 @@ foreach ($protestsarchiv as $prot) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = SBDate($dateformat, $commentres->fields['added']);
+            $cdata['added']      = date($dateformat, $commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -519,7 +519,7 @@ foreach ($submissions as $sub) {
         $sub['demo'] = "<a href=\"#\"><img src=\"images/demo.png\" border=\"0\" style=\"vertical-align:middle\" /> No Demo</a>";
     }
 
-    $sub['submitted'] = SBDate($dateformat, $sub['submitted']);
+    $sub['submitted'] = date($dateformat, $sub['submitted']);
 
     $mod        = $GLOBALS['db']->GetRow("SELECT m.name FROM `" . DB_PREFIX . "_submissions` AS s
 												LEFT JOIN `" . DB_PREFIX . "_mods` AS m ON m.mid = s.ModID
@@ -557,12 +557,12 @@ foreach ($submissions as $sub) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = SBDate($dateformat, $commentres->fields['added']);
+            $cdata['added']      = date($dateformat, $commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -653,7 +653,7 @@ foreach ($submissionsarchiv as $sub) {
         $sub['demo'] = "<a href=\"#\"><img src=\"images/demo.png\" border=\"0\" style=\"vertical-align:middle\" /> No Demo</a>";
     }
 
-    $sub['submitted'] = SBDate($dateformat, $sub['submitted']);
+    $sub['submitted'] = date($dateformat, $sub['submitted']);
 
     $mod        = $GLOBALS['db']->GetRow("SELECT m.name FROM `" . DB_PREFIX . "_submissions` AS s
 												LEFT JOIN `" . DB_PREFIX . "_mods` AS m ON m.mid = s.ModID
@@ -697,12 +697,12 @@ foreach ($submissionsarchiv as $sub) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = SBDate($dateformat, $commentres->fields['added']);
+            $cdata['added']      = date($dateformat, $commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";

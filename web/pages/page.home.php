@@ -45,7 +45,7 @@ $stopped               = array();
 $blcount               = 0;
 while (!$res->EOF) {
     $info               = array();
-    $info['date']       = SBDate($dateformat, $res->fields[1]);
+    $info['date']       = date($dateformat, $res->fields[1]);
     $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
     $info['short_name'] = trunc($info['name'], 40, false);
     $info['auth']       = $res->fields['authid'];
@@ -87,7 +87,7 @@ while (!$res->EOF) {
         $info['unbanned'] = false;
     }
     $info['name']    = stripslashes($res->fields[3]);
-    $info['created'] = SBDate($dateformat, $res->fields['created']);
+    $info['created'] = date($dateformat, $res->fields['created']);
     $ltemp           = explode(",", $res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
     $info['length']  = $ltemp[0];
     $info['icon']    = empty($res->fields[13]) ? 'web.png' : $res->fields[13];
@@ -139,7 +139,7 @@ while (!$res->EOF) {
         $info['unbanned'] = false;
     }
     $info['name']        = stripslashes($res->fields[3]);
-    $info['created']     = SBDate($dateformat, $res->fields['created']);
+    $info['created']     = date($dateformat, $res->fields['created']);
     $ltemp               = explode(",", $res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
     $info['length']      = $ltemp[0];
     $info['icon']        = empty($res->fields[13]) ? 'web.png' : $res->fields[13];

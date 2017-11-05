@@ -46,8 +46,6 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.dateformat', ''),
 ('config.theme', 'default'),
 ('config.defaultpage', '0'),
-('config.timezone', '0'),
-('config.summertime', '0'),
 ('config.enablegroupbanning', '0'),
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
