@@ -129,7 +129,7 @@ foreach ($log as $l) {
         $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/error.png' alt='Warning'>";
     }
     $log_item['user']     = !empty($l['user']) ? $l['user'] : 'Guest';
-    $log_item['date_str'] = SBDate($dateformat, $l['created']);
+    $log_item['date_str'] = date($dateformat, $l['created']);
     $log_item             = array_merge($l, $log_item);
     $log_item['message']  = str_replace("\n", "<br />", htmlentities(str_replace(["<br />", "<br>", "<br/>"], "\n", $log_item['message'])));
     array_push($log_list, $log_item);
@@ -191,8 +191,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 
                 $debugmode = (isset($_POST['config_debug']) && $_POST['config_debug'] == "on" ? 1 : 0);
 
-                $summertime = (isset($_POST['config_summertime']) && $_POST['config_summertime'] == "on" ? 1 : 0);
-
                 $hideadmname = (isset($_POST['banlist_hideadmname']) && $_POST['banlist_hideadmname'] == "on" ? 1 : 0);
 
                 $hideplayerips = (isset($_POST['banlist_hideplayerips']) && $_POST['banlist_hideplayerips'] == "on" ? 1 : 0);
@@ -214,7 +212,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                 } else {
                     $cureason = "";
                 }
-                $tz_string = $_POST['timezoneoffset'];
 
                 $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
                     (?, 'template.title'),
@@ -233,8 +230,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     (" . (int) $commslist . ", 'config.enablecomms'),
                     (" . (int) $submit . ", 'config.enablesubmit'),
                     (" . (int) $onlyinvolved . ", 'protest.emailonlyinvolved'),
-                    (?, 'config.timezone'),
-                    (?, 'config.summertime'),
                     (?, 'bans.customreasons'),
                     (" . (int) $_POST['default_page'] . ", 'config.defaultpage')", array(
                     $_POST['template_title'],
@@ -242,8 +237,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $_POST['config_dateformat'],
                     $_POST['dash_intro_title'],
                     $dash_intro_text,
-                    $tz_string,
-                    $summertime,
                     $cureason
                 ));
 
@@ -283,8 +276,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
         }
     }
 
-    $date_offs = $GLOBALS['config']['config.timezone'];
-
     #########[Settings Page]###############
     echo '<div id="0" style="display:none;">';
     $theme->assign('config_title', $GLOBALS['config']['template.title']);
@@ -292,7 +283,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     $theme->assign('config_min_password', $GLOBALS['config']['config.password.minlength']);
     $theme->assign('config_dateformat', $GLOBALS['config']['config.dateformat']);
     $theme->assign('config_dash_title', $GLOBALS['config']['dash.intro.title']);
-    $theme->assign('config_time', $date_offs);
     $theme->assign('config_dash_text', stripslashes($GLOBALS['config']['dash.intro.text']));
     $theme->assign('config_bans_per_page', $GLOBALS['config']['banlist.bansperpage']);
 
@@ -338,7 +328,6 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 ?>
 <script>
 $('config_debug').checked = <?=$GLOBALS['config']['config.debug']?>;
-$('config_summertime').checked = <?=$GLOBALS['config']['config.summertime']?>;
 $('enable_submit').checked = <?=$GLOBALS['config']['config.enablesubmit']?>;
 $('enable_protest').checked = <?=$GLOBALS['config']['config.enableprotest']?>;
 $('enable_commslist').checked = <?=$GLOBALS['config']['config.enablecomms']?>;

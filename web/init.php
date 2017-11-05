@@ -131,7 +131,6 @@ define('SB_SALT', 'SourceBans');
 //  Setup PHP
 // ---------------------------------------------------
 ini_set('include_path', '.:/php/includes:' . INCLUDES_PATH .'/adodb');
-ini_set('date.timezone', 'GMT');
 
 if (defined("SB_MEM")) {
     ini_set('memory_limit', SB_MEM);
@@ -304,34 +303,6 @@ while (!$res->EOF) {
 define('SB_BANS_PER_PAGE', $GLOBALS['config']['banlist.bansperpage']);
 define('MIN_PASS_LENGTH', $GLOBALS['config']['config.password.minlength']);
 $dateformat = !empty($GLOBALS['config']['config.dateformat'])?$GLOBALS['config']['config.dateformat']:"m-d-y H:i";
-
-if (version_compare(PHP_VERSION, "5") != -1) {
-    $offset = (empty($GLOBALS['config']['config.timezone'])?0:$GLOBALS['config']['config.timezone'])*3600;
-    date_default_timezone_set("GMT");
-    $abbrarray = timezone_abbreviations_list();
-    foreach ($abbrarray as $abbr) {
-        foreach ($abbr as $city) {
-            if ($city['offset'] == $offset && $city['dst'] == $GLOBALS['config']['config.summertime']) {
-                date_default_timezone_set($city['timezone_id']);
-                break 2;
-            }
-        }
-    }
-} else {
-    if (empty($GLOBALS['config']['config.timezone'])) {
-        define('SB_TIMEZONE', 0);
-    } else {
-        define('SB_TIMEZONE', $GLOBALS['config']['config.timezone']);
-    }
-}
-
-// if(empty($GLOBALS['config']['config.timezone']))
-// {
-    // date_default_timezone_set("Europe/London");
-// }else{
-    // date_default_timezone_set($GLOBALS['config']['config.timezone']);
-// }
-
 
 // ---------------------------------------------------
 // Setup our templater
