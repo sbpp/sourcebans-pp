@@ -72,7 +72,7 @@
 		{foreach from=$ban_list item=ban name=banlist}
 			<tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'"
 			{if $ban.server_id != 0}
-				onclick="xajax_ServerHostPlayers({$ban.server_id}, {$ban.ban_id});"
+				onclick="xajax_ServerHostPlayers({$ban.server_id}, 'id', 'host_{$ban.ban_id}');"
 			{/if}
 			>
 		<td height="16" align="center" class="listtable_1">{$ban.mod_icon}</td>
