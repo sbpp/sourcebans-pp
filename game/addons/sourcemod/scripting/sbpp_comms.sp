@@ -1689,7 +1689,20 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 			{
 				case TYPE_MUTE:
 				{
-					if (g_MuteType[client] < bTime)
+					//Set mute type based on length	
+					if (length > 0)
+						g_MuteType[client] = bTime;
+					else if (length == 0)
+						g_MuteType[client] = bPerm;
+					else
+						g_MuteType[client] = bSess;
+
+					//Perform mute/unmute
+					if (g_MuteType[client] == bSess)
+					{
+						PerformUnMute(client);
+					}
+					else if (g_MuteType[client] > bSess)
 					{
 						PerformMute(client, time, length / 60, sAdmName, sAdmAuth, immunity, sReason, remaining_time);
 						PrintToChat(client, "%s%t", PREFIX, "Muted on connect");
@@ -1697,7 +1710,20 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 				}
 				case TYPE_GAG:
 				{
-					if (g_GagType[client] < bTime)
+					//Set gag type based on length
+					if (length > 0)
+						g_GagType[client] = bTime;
+					else if (length == 0)
+						g_GagType[client] = bPerm;
+					else
+						g_GagType[client] = bSess;
+
+					//Perform gag/ungag
+					if (g_GagType[client] == bSess)
+					{
+						PerformUnGag(client);
+					}
+					else if (g_GagType[client] > bSess)
 					{
 						PerformGag(client, time, length / 60, sAdmName, sAdmAuth, immunity, sReason, remaining_time);
 						PrintToChat(client, "%s%t", PREFIX, "Gagged on connect");
