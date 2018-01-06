@@ -24,6 +24,8 @@
     Licensed under CC BY-NC-SA 3.0
     Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
+use xPaw\SourceQuery\SourceQuery;
+
 require_once('xajax.inc.php');
 include_once('system-functions.php');
 include_once('user-functions.php');
@@ -1225,261 +1227,309 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
 
 function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open="", $inHome=false, $trunchostname=48)
 {
-    $objResponse = new xajaxResponse();
     global $userbank;
-    require INCLUDES_PATH.'/CServerInfo.php';
+    require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
-    $sid = (int)$sid;
+    $objResponse = new xajaxResponse();
 
-    $res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-    if(empty($res[1]) || empty($res[2]))
-    return $objResponse;
-    $info = array();
-    $sinfo = new CServerInfo($res[1],$res[2]);
-    $info = $sinfo->getInfo();
-    if($type == "servers")
-    {
-    if(!empty($info['hostname']))
-    {
-    $objResponse->addAssign("host_$sid", "innerHTML", trunc($info['hostname'], $trunchostname, false));
-    $objResponse->addAssign("players_$sid", "innerHTML", $info['numplayers'] . "/" . $info['maxplayers']);
-    $objResponse->addAssign("os_$sid", "innerHTML", "<img src='images/" . (!empty($info['os'])?$info['os']:'server_small') . ".png'>");
-    if( $info['secure'] == 1 )
-    {
-    $objResponse->addAssign("vac_$sid", "innerHTML", "<img src='images/shield.png'>");
+    $GLOBALS['PDO']->query('SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid');
+    $GLOBALS['PDO']->bind(':sid', $sid, \PDO::PARAM_INT);
+    $server = $GLOBALS['PDO']->single();
+
+    if (empty($server['ip']) || empty($server['port'])) {
+        return $objResponse;
     }
-    $objResponse->addAssign("map_$sid", "innerHTML", basename($info['map'])); // Strip Steam Workshop folder
-    if(!$inHome) {
-    $objResponse->addScript("$('mapimg_$sid').setProperty('src', '".GetMapImage($info['map'])."').setProperty('alt', '".$info['map']."').setProperty('title', '".basename($info['map'])."');");
-    if($info['numplayers'] == 0 || empty($info['numplayers']))
-    {
-    $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
-    $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'block');");
-    $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '64px');");
+
+    $query = new SourceQuery();
+    try {
+        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+        $info = $query->GetInfo();
+        $players = $query->GetPlayers();
+    } catch (Exception $e) {
+        if ($userbank->HasAccess(ADMIN_OWNER)) {
+            $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
+        } else {
+            $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)");
+            $objResponse->addAssign("players_$sid", "innerHTML", "N/A");
+            $objResponse->addAssign("os_$sid", "innerHTML", "N/A");
+            $objResponse->addAssign("vac_$sid", "innerHTML", "N/A");
+            $objResponse->addAssign("map_$sid", "innerHTML", "N/A");
+        }
+        if (!$inHome) {
+            $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
+            $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'block');");
+            $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '64px');");
+            $objResponse->addScript("if($('sid_$sid'))$('sid_$sid').setStyle('color', '#adadad');");
+        }
+        if ($type == "id") {
+            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']. "</i>)");
+        }
+        return $objResponse;
+    } finally {
+        $query->Disconnect();
+    }
+
+    if ($type == "servers") {
+        if (!empty($info['HostName'])) {
+            $objResponse->addAssign("host_$sid", "innerHTML", trunc($info['HostName'], $trunchostname, false));
+            $objResponse->addAssign("players_$sid", "innerHTML", $info['Players'] . "/" . $info['MaxPlayers']);
+            $objResponse->addAssign("os_$sid", "innerHTML", "<img src='images/" . (!empty($info['Os'])?$info['Os']:'server_small') . ".png'>");
+            if ($info['Secure']) {
+                $objResponse->addAssign("vac_$sid", "innerHTML", "<img src='images/shield.png'>");
+            }
+            $objResponse->addAssign("map_$sid", "innerHTML", basename($info['Map']));
+            if (!$inHome) {
+                $objResponse->addScript("$('mapimg_$sid').setProperty('src', '".GetMapImage($info['Map'])."').setProperty('alt', '".$info['Map']."').setProperty('title', '".basename($info['Map'])."');");
+                if ($info['Players'] == 0 || empty($info['Players'])) {
+                    $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
+                    $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'block');");
+                    $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '64px');");
+                } else {
+                    $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'block');");
+                    $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'none');");
+                    if (!defined('IN_HOME')) {
+
+                        // remove childnodes
+                        $objResponse->addScript('var toempty = document.getElementById("playerlist_'.$sid.'");
+                        var empty = toempty.cloneNode(false);
+                        toempty.parentNode.replaceChild(empty,toempty);');
+                        //draw table headlines
+                        $objResponse->addScript('var e = document.getElementById("playerlist_'.$sid.'");
+                        var tr = e.insertRow("-1");
+                        // Name Top TD
+                        var td = tr.insertCell("-1");
+                        td.setAttribute("width","45%");
+                        td.setAttribute("height","16");
+                        td.className = "listtable_top";
+                        var b = document.createElement("b");
+                        var txt = document.createTextNode("Name");
+                        b.appendChild(txt);
+                        td.appendChild(b);
+                        // Score Top TD
+                        var td = tr.insertCell("-1");
+                        td.setAttribute("width","10%");
+                        td.setAttribute("height","16");
+                        td.className = "listtable_top";
+                        var b = document.createElement("b");
+                        var txt = document.createTextNode("Score");
+                        b.appendChild(txt);
+                        td.appendChild(b);
+                        // Time Top TD
+                        var td = tr.insertCell("-1");
+                        td.setAttribute("height","16");
+                        td.className = "listtable_top";
+                        var b = document.createElement("b");
+                        var txt = document.createTextNode("Time");
+                        b.appendChild(txt);
+                        td.appendChild(b);');
+                        // add players
+                        $playercount = 0;
+                        foreach ($players as $player) {
+                            $objResponse->addScript('var e = document.getElementById("playerlist_'.$sid.'");
+                            var tr = e.insertRow("-1");
+                            tr.className="tbl_out";
+                            tr.onmouseout = function(){this.className="tbl_out"};
+                            tr.onmouseover = function(){this.className="tbl_hover"};
+                            tr.id = "player_s'.$sid.'p'.$player["Id"].'";
+                            // Name TD
+                            var td = tr.insertCell("-1");
+                            td.className = "listtable_1";
+                            var txt = document.createTextNode("'.str_replace('"', '\"', $player["Name"]).'");
+                            td.appendChild(txt);
+                            // Score TD
+                            var td = tr.insertCell("-1");
+                            td.className = "listtable_1";
+                            var txt = document.createTextNode("'.$player["Frags"].'");
+                            td.appendChild(txt);
+                            // Time TD
+                            var td = tr.insertCell("-1");
+                            td.className = "listtable_1";
+                            var txt = document.createTextNode("'.$player["Time"].'");
+                            td.appendChild(txt);
+                            ');
+                            if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
+                                $objResponse->addScript('AddContextMenu("#player_s'.$sid.'p'.$player["Id"].'", "contextmenu", true, "Player Commands", [
+                                    {name: "Kick", callback: function(){KickPlayerConfirm('.$sid.', "'.str_replace('"', '\"', $player["Name"]).'", 0);}},
+                                    {name: "Block Comms", callback: function(){window.location = "index.php?p=admin&c=comms&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["Name"]).'"}},
+                                    {name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["Name"]).'"}},
+                                    {separator: true},
+                                    '.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile('.$sid.', "'.str_replace('"', '\"', $player["Name"]).'")}},':'').'
+                                    {name: "Send Message", callback: function(){OpenMessageBox('.$sid.', "'.str_replace('"', '\"', $player["Name"]).'", 1)}}
+                                ]);');
+                            }
+                            $playercount++;
+                        }
+                    }
+                    if ($playercount > 15) {
+                        $height = 329 + 16 * ($playercount-15) + 4 * ($playercount-15) . "px";
+                    } else {
+                        $height = 329 . "px";
+                    }
+                    $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '".$height."');");
+                }
+            }
+        } else {
+            if ($userbank->HasAccess(ADMIN_OWNER)) {
+                $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
+            } else {
+                $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
+                $objResponse->addAssign("players_$sid", "innerHTML", "N/A");
+                $objResponse->addAssign("os_$sid", "innerHTML", "N/A");
+                $objResponse->addAssign("vac_$sid", "innerHTML", "N/A");
+                $objResponse->addAssign("map_$sid", "innerHTML", "N/A");
+            }
+            if (!$inHome) {
+                $connect = "onclick = \"document.location = 'steam://connect/" .  $res['ip'] . ":" . $res['port'] . "'\"";
+                $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
+                $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'block');");
+                $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '64px');");
+                $objResponse->addScript("if($('sid_$sid'))$('sid_$sid').setStyle('color', '#adadad');");
+            }
+        }
+    }
+    if ($tplsid != "" && $open != "" && $tplsid==$open) {
+        $objResponse->addScript("InitAccordion('tr.opener', 'div.opener', 'mainwrapper', '".$open."');");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
+    } elseif ($type=="id") {
+        if (!empty($info['HostName'])) {
+            $objResponse->addAssign("$obId", "innerHTML", trunc($info['HostName'], $trunchostname, false));
+        } else {
+            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']. "</i>)");
+        }
     } else {
-    $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'block');");
-    $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'none');");
-    if(!defined('IN_HOME')) {
-    $players = $sinfo->getPlayers();
-    // remove childnodes
-    $objResponse->addScript('var toempty = document.getElementById("playerlist_'.$sid.'");
-    var empty = toempty.cloneNode(false);
-    toempty.parentNode.replaceChild(empty,toempty);');
-    //draw table headlines
-    $objResponse->addScript('var e = document.getElementById("playerlist_'.$sid.'");
-    var tr = e.insertRow("-1");
-    // Name Top TD
-    var td = tr.insertCell("-1");
-    td.setAttribute("width","45%");
-    td.setAttribute("height","16");
-    td.className = "listtable_top";
-    var b = document.createElement("b");
-    var txt = document.createTextNode("Name");
-    b.appendChild(txt);
-    td.appendChild(b);
-    // Score Top TD
-    var td = tr.insertCell("-1");
-    td.setAttribute("width","10%");
-    td.setAttribute("height","16");
-    td.className = "listtable_top";
-    var b = document.createElement("b");
-    var txt = document.createTextNode("Score");
-    b.appendChild(txt);
-    td.appendChild(b);
-    // Time Top TD
-    var td = tr.insertCell("-1");
-    td.setAttribute("height","16");
-    td.className = "listtable_top";
-    var b = document.createElement("b");
-    var txt = document.createTextNode("Time");
-    b.appendChild(txt);
-    td.appendChild(b);');
-    // add players
-    $playercount = 0;
-    foreach($players AS $player) {
-    $objResponse->addScript('var e = document.getElementById("playerlist_'.$sid.'");
-    var tr = e.insertRow("-1");
-    tr.className="tbl_out";
-    tr.onmouseout = function(){this.className="tbl_out"};
-    tr.onmouseover = function(){this.className="tbl_hover"};
-    tr.id = "player_s'.$sid.'p'.$player["index"].'";
-    // Name TD
-    var td = tr.insertCell("-1");
-    td.className = "listtable_1";
-    var txt = document.createTextNode("'.str_replace('"', '\"', $player["name"]).'");
-    td.appendChild(txt);
-    // Score TD
-    var td = tr.insertCell("-1");
-    td.className = "listtable_1";
-    var txt = document.createTextNode("'.$player["kills"].'");
-    td.appendChild(txt);
-    // Time TD
-    var td = tr.insertCell("-1");
-    td.className = "listtable_1";
-    var txt = document.createTextNode("'.$player["time"].'");
-    td.appendChild(txt);
-    ');
-    if($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
-    $objResponse->addScript('AddContextMenu("#player_s'.$sid.'p'.$player["index"].'", "contextmenu", true, "Player Commands", [
-    {name: "Kick", callback: function(){KickPlayerConfirm('.$sid.', "'.str_replace('"', '\"', $player["name"]).'", 0);}},
-    {name: "Block Comms", callback: function(){window.location = "index.php?p=admin&c=comms&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["name"]).'"}},
-    {name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["name"]).'"}},
-    {separator: true},
-    '.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile('.$sid.', "'.str_replace('"', '\"', $player["name"]).'")}},':'').'
-    {name: "Send Message", callback: function(){OpenMessageBox('.$sid.', "'.str_replace('"', '\"', $player["name"]).'", 1)}}
-    ]);');
-    }
-    $playercount++;
-    }
-    }
-    if($playercount>15)
-    $height = 329 + 16 * ($playercount-15) + 4 * ($playercount-15) . "px";
-    else
-    $height = 329 . "px";
-    $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '".$height."');");
-    }
-    }
-    }else{
-    if($userbank->HasAccess(ADMIN_OWNER))
-    $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
-    else
-    $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
-    $objResponse->addAssign("players_$sid", "innerHTML", "N/A");
-    $objResponse->addAssign("os_$sid", "innerHTML", "N/A");
-    $objResponse->addAssign("vac_$sid", "innerHTML", "N/A");
-    $objResponse->addAssign("map_$sid", "innerHTML", "N/A");
-    if(!$inHome) {
-    $connect = "onclick = \"document.location = 'steam://connect/" .  $res['ip'] . ":" . $res['port'] . "'\"";
-    $objResponse->addScript("$('sinfo_$sid').setStyle('display', 'none');");
-    $objResponse->addScript("$('noplayer_$sid').setStyle('display', 'block');");
-    $objResponse->addScript("$('serverwindow_$sid').setStyle('height', '64px');");
-    $objResponse->addScript("if($('sid_$sid'))$('sid_$sid').setStyle('color', '#adadad');");
-    }
-    }
-    if($tplsid != "" && $open != "" && $tplsid==$open)
-    $objResponse->addScript("InitAccordion('tr.opener', 'div.opener', 'mainwrapper', '".$open."');");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
-    }
-    elseif($type=="id")
-    {
-    if(!empty($info['hostname']))
-    {
-    $objResponse->addAssign("$obId", "innerHTML", trunc($info['hostname'], $trunchostname, false));
-    }else{
-    $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
-    }
-    }
-    else
-    {
-    if(!empty($info['hostname']))
-    {
-    $objResponse->addAssign("ban_server_$type", "innerHTML", trunc($info['hostname'], $trunchostname, false));
-    }else{
-    $objResponse->addAssign("ban_server_$type", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
-    }
+        if (!empty($info['HostName'])) {
+            $objResponse->addAssign("ban_server_$type", "innerHTML", trunc($info['HostName'], $trunchostname, false));
+        }else{
+            $objResponse->addAssign("ban_server_$type", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)");
+        }
     }
     return $objResponse;
 }
 
 function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
 {
-    $objResponse = new xajaxResponse();
     global $userbank;
-    require INCLUDES_PATH.'/CServerInfo.php';
+    require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
-    $sid = (int)$sid;
-    $obId = htmlspecialchars($obId);
-    $obProp = htmlspecialchars($obProp);
-    $trunchostname = (int)$trunchostname;
+    $objResponse = new xajaxResponse();
 
-    $res = $GLOBALS['db']->GetRow("SELECT ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-    if(empty($res[0]) || empty($res[1]))
-    return $objResponse;
-    $info = array();
-    $sinfo = new CServerInfo($res[0],$res[1]);
-    $info = $sinfo->getInfo();
+    $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid, \PDO::PARAM_INT);
+    $server = $GLOBALS['PDO']->single();
 
-    if(!empty($info['hostname'])) {
-        $objResponse->addAssign("$obId", "$obProp", addslashes(trunc($info['hostname'], $trunchostname, false)));
+    if (empty($server['ip']) || empty($server['port'])) {
+        return $objResponse;
+    }
+
+    $query = new SourceQuery();
+    try {
+        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+        $info = $query->GetInfo();
+    } catch (Exception $e) {
+        $objResponse->addAssign("$obId", "$obProp", "Error connecting (".$server['ip'].":".$server['port'].")");
+        return $objResponse;
+    } finally {
+        $query->Disconnect();
+    }
+
+    if(!empty($info['HostName'])) {
+        $objResponse->addAssign("$obId", "$obProp", addslashes(trunc($info['HostName'], $trunchostname, false)));
     } else {
-        $objResponse->addAssign("$obId", "$obProp", "Error connecting (" . $res[0] . ":" . $res[1]. ")");
+        $objResponse->addAssign("$obId", "$obProp", "Error connecting (".$server['ip'].":".$server['port'].")");
     }
     return $objResponse;
 }
 
 function ServerHostPlayers_list($sid, $type="servers", $obId="")
 {
-    $objResponse = new xajaxResponse();
-    require INCLUDES_PATH.'/CServerInfo.php';
+    global $userbank;
+    require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
-    $sids = explode(";", $sid, -1);
-    if(count($sids) < 1)
-    return $objResponse;
+    $objResponse = new xajaxResponse();
+
+    $ids = explode(";", $sid, -1);
+    if (count($ids) < 1) {
+        return $objResponse;
+    }
 
     $ret = "";
-    for($i=0;$i<count($sids);$i++)
-    {
-    $sid = (int)$sids[$i];
+    foreach ($ids as $sid) {
+        $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+        $GLOBALS['PDO']->bind(':sid', $sid, \PDO::PARAM_INT);
+        $server = $GLOBALS['PDO']->single();
 
-    $res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-    if(empty($res[1]) || empty($res[2]))
-    return $objResponse;
-    $info = array();
-    $sinfo = new CServerInfo($res[1],$res[2]);
-    $info = $sinfo->getInfo();
+        if (empty($server['ip']) || empty($server['port'])) {
+            return $objResponse;
+        }
 
-    if(!empty($info['hostname']))
-    {
-    $ret .= trunc($info['hostname'], 48, false) . "<br />";
-    }else{
-    $ret .= "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)<br />";
-    }
+        $query = new SourceQuery();
+        try {
+            $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+            $info = $query->GetInfo();
+        } catch (Exception $e) {
+            $ret .= "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)<br />";
+            continue;
+        } finally {
+            $query->Disconnect();
+        }
+
+        if (!empty($info['HostName'])) {
+            $ret .= trunc($info['HostName'], 48, false) . "<br />";
+        } else {
+            $ret .= "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)<br />";
+        }
     }
 
-    if($type=="id")
-    {
-    $objResponse->addAssign("$obId", "innerHTML", $ret);
-    }
-    else
-    {
-    $objResponse->addAssign("ban_server_$type", "innerHTML", $ret);
+    if ($type=="id") {
+        $objResponse->addAssign("$obId", "innerHTML", $ret);
+    } else {
+        $objResponse->addAssign("ban_server_$type", "innerHTML", $ret);
     }
 
     return $objResponse;
 }
 
-
 function ServerPlayers($sid)
 {
+    global $userbank;
+    require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
+
     $objResponse = new xajaxResponse();
-    require INCLUDES_PATH.'/CServerInfo.php';
 
+    $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid, \PDO::PARAM_INT);
+    $server = $GLOBALS['PDO']->single();
 
-    $sid = (int)$sid;
-
-    $res = $GLOBALS['db']->GetRow("SELECT sid, ip, port FROM ".DB_PREFIX."_servers WHERE sid = $sid");
-    if(empty($res[1]) || empty($res[2]))
-    {
-    $objResponse->addAlert('IP or Port not set :o');
-    return $objResponse;
+    if (empty($server['ip']) || empty($server['port'])) {
+        return $objResponse;
     }
-    $info = array();
-    $sinfo = new CServerInfo($res[1],$res[2]);
-    $info = $sinfo->getPlayers();
+
+    $query = new SourceQuery();
+    try {
+        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+        $players = $query->GetPlayers();
+    } catch (Exception $e) {
+        return $objResponse;
+    } finally {
+        $query->Disconnect();
+    }
+
+    if (empty($players)) {
+        return $objResponse;
+    }
 
     $html = "";
-    if(empty($info))
-    return $objResponse;
-    foreach($info AS $player)
-    {
-    $html .= '<tr> <td class="listtable_1">'.htmlentities($player['name']).'</td>
-    <td class="listtable_1">'.(int)$player['kills'].'</td>
-    <td class="listtable_1">'.$player['time'].'</td>
-      </tr>';
+    foreach ($players as $player) {
+        $html .= '
+            <tr>
+                <td class="listtable_1">'.htmlentities($player['Name']).'</td>
+                <td class="listtable_1">'.(int)$player['Frags'].'</td>
+                <td class="listtable_1">'.$player['Time'].'</td>
+            </tr>';
     }
+
     $objResponse->addAssign("player_detail_$sid", "innerHTML", $html);
-    //$objResponse->addScript("document.getElementById('player_detail_$sid').innerHTML = 'hi';");
     $objResponse->addScript("setTimeout('xajax_ServerPlayers($sid)', 5000);");
     $objResponse->addScript("$('opener_$sid').setProperty('onclick', '');");
     return $objResponse;

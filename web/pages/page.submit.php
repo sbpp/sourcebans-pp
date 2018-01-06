@@ -26,6 +26,9 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $ui, $theme;
+use xPaw\SourceQuery\SourceQuery;
+require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
+
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
@@ -102,19 +105,32 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $demo     = move_uploaded_file($_FILES['demo_file']['tmp_name'], SB_DEMOS . "/" . $filename);
         if ($demo || empty($_FILES['demo_file']['name'])) {
             if ($SID != 0) {
-                require_once(INCLUDES_PATH . '/CServerInfo.php');
-                $res   = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $SID");
-                $sinfo = new CServerInfo($res[0], $res[1]);
-                $info  = $sinfo->getInfo();
-                if (!empty($info['hostname'])) {
-                    $mailserver = "Server: " . $info['hostname'] . " (" . $res[0] . ":" . $res[1] . ")\n";
-                } else {
-                    $mailserver = "Server: Error Connecting (" . $res[0] . ":" . $res[1] . ")\n";
+                $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+                $GLOBALS['PDO']->bind(':sid', $SID);
+                $server = $GLOBALS['PDO']->single();
+
+                $query = new SourceQuery();
+                try {
+                    $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+                    $info = $query->GetInfo();
+                } catch (Exception $e) {
+                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
+                } finally {
+                    $query->Disconnect();
                 }
-                $modid = $GLOBALS['db']->GetRow("SELECT m.mid FROM `" . DB_PREFIX . "_servers` as s LEFT JOIN `" . DB_PREFIX . "_mods` as m ON m.mid = s.modid WHERE s.sid = '" . $SID . "';");
+
+                if (!empty($info['HostName'])) {
+                    $mailserver = "Server: ".$info['HostName']." (".$server['ip'].":".$server['port'].")\n";
+                } else {
+                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
+                }
+
+                $GLOBALS['PDO']->query("SELECT m.mid FROM `:prefix_servers` as s LEFT JOIN `:prefix_mods` as m ON m.mid = s.modid WHERE s.sid = :sid");
+                $GLOBALS['PDO']->bind(':sid', $SID);
+                $modid = $GLOBALS['PDO']->single();
             } else {
                 $mailserver = "Server: Other server\n";
-                $modid[0]   = 0;
+                $modid['mid']   = 0;
             }
             if ($SteamID == "STEAM_0:") {
                 $SteamID = "";
@@ -124,7 +140,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $SteamID,
                 $PlayerName,
                 $Email,
-                $modid[0],
+                $modid['mid'],
                 $BanReason,
                 $_SERVER['REMOTE_ADDR'],
                 $SubmitterName,
@@ -171,21 +187,24 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     }
 }
 
-//$mod_list = $GLOBALS['db']->GetAssoc("SELECT mid,name FROM ".DB_PREFIX."_mods WHERE `mid` > 0 AND `enabled`= 1 ORDER BY mid ");
-require_once INCLUDES_PATH . '/CServerInfo.php';
 //serverlist
-$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1 ORDER BY modid, sid");
-$servers     = array();
-while (!$server_list->EOF) {
-    $info  = array();
-    $sinfo = new CServerInfo($server_list->fields[1], $server_list->fields[2]);
-    $info  = $sinfo->getInfo();
-    if (empty($info['hostname'])) {
-        $info['hostname'] = "Error Connecting (" . $server_list->fields[1] . ":" . $server_list->fields[2] . ")";
+$GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid");
+$servers = $GLOBALS['PDO']->resultset();
+
+foreach ($servers as $key => $server) {
+    $query = new SourceQuery();
+    try {
+        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+        $info = $query->GetInfo();
+    } catch (Exception $e) {
+        $servers[$key]['hostname'] = "Error Connecting (".$server['ip'].":".$server['port'].")";
+    } finally {
+        $query->Disconnect();
     }
-    $info['sid'] = $server_list->fields[0];
-    array_push($servers, $info);
-    $server_list->MoveNext();
+
+    if (!empty($info['HostName'])) {
+        $servers[$key]['hostname'] = $info['HostName'];
+    }
 }
 
 $theme->assign('STEAMID', $SteamID == "" ? "STEAM_0:" : $SteamID);

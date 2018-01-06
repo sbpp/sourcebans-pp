@@ -29,7 +29,6 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-require INCLUDES_PATH . '/CServerInfo.php';
 global $theme;
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >

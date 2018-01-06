@@ -69,7 +69,7 @@ foreach ($admins as $admin) {
     if (!$lastvisit) {
         $admin['lastvisit'] = "Never";
     } else {
-        $admin['lastvisit'] = SBDate($dateformat, $userbank->GetProperty("lastvisit", $admin['aid']));
+        $admin['lastvisit'] = date($dateformat, $userbank->GetProperty("lastvisit", $admin['aid']));
     }
     array_push($admin_list, $admin);
 }

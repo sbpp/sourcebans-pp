@@ -26,8 +26,7 @@
 *************************************************************************/
 
 if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
+    die("You should not be here. Only follow links!");
 }
 /**
 * Extended substr function. If it finds mbstring extension it will use, else
@@ -728,26 +727,6 @@ function SecondsToString($sec, $textual=true)
     }
 }
 
-// unused, as loading too slowly.
-function CreateHostnameCache()
-{
-    require_once INCLUDES_PATH.'/CServerInfo.php';
-    $res = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM ".DB_PREFIX."_servers ORDER BY sid");
-    $servers = array();
-    while (!$res->EOF) {
-        $info = array();
-        $sinfo = new CServerInfo($res->fields[1], $res->fields[2]);
-        $info = $sinfo->getInfo();
-        if (!empty($info['hostname'])) {
-            $servers[$res->fields[0]] = $info['hostname'];
-        } else {
-            $servers[$res->fields[0]] = $res->fields[1].":".$res->fields[2];
-        }
-        $res->MoveNext();
-    }
-    return($servers);
-}
-
 function FetchIp($ip)
 {
     $ip = sprintf('%u', ip2long($ip));
@@ -1072,32 +1051,6 @@ function getAccountId($steamid)
 function renderSteam2($accountId, $universe)
 {
     return "STEAM_" . $universe . ":" . ($accountId & 1) . ":" . ($accountId >> 1);
-}
-
-function SBDate($format, $timestamp="")
-{
-    if (version_compare(PHP_VERSION, "5") != -1) {
-        if ($GLOBALS['config']['config.summertime'] == "1") {
-            $str = date("r", $timestamp);
-            $date = new DateTime($str);
-            $date->modify("+1 hour");
-            return $date->format($format);
-        } elseif (empty($timestamp)) {
-            return date($format);
-        }
-    } else {
-        if ($GLOBALS['config']['config.summertime'] == "1") {
-            $summertime = 3600;
-        } else {
-            $summertime = 0;
-        }
-        if (empty($timestamp)) {
-            $timestamp = time() + SB_TIMEZONE*3600 + $summertime;
-        } else {
-            $timestamp = $timestamp + SB_TIMEZONE*3600 + $summertime;
-        }
-    }
-    return date($format, $timestamp);
 }
 
 /**
