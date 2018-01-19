@@ -1325,6 +1325,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
                         // add players
                         $playercount = 0;
                         foreach ($players as $player) {
+                            $player["Id"] = $playercount;
                             $objResponse->addScript('var e = document.getElementById("playerlist_'.$sid.'");
                             var tr = e.insertRow("-1");
                             tr.className="tbl_out";
@@ -1344,7 +1345,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
                             // Time TD
                             var td = tr.insertCell("-1");
                             td.className = "listtable_1";
-                            var txt = document.createTextNode("'.$player["Time"].'");
+                            var txt = document.createTextNode("'.$player["TimeF"].'");
                             td.appendChild(txt);
                             ');
                             if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
@@ -2800,16 +2801,16 @@ function GetGroups($friendid)
     $xml = simplexml_load_string($raw); // parse xml
     $result = $xml->xpath('/profile/groups/group'); // go to the group nodes
     $i = 0;
-    while(list( , $node) = each($result)) {
-    // Steam only provides the details of the first 3 groups of a players profile. We need to fetch the individual groups seperately to get the correct information.
-    if(empty($node->groupName)) {
-    $memberlistxml = file_get_contents("http://steamcommunity.com/gid/".$node->groupID64."/memberslistxml/?xml=1");
-    $memberlistxml = str_replace("&", "", $memberlistxml);
-    $memberlistxml = strip_31_ascii($memberlistxml);
-    $memberlistxml = utf8_encode($memberlistxml);
-    $groupxml = simplexml_load_string($memberlistxml); // parse xml
-    $node = $groupxml->xpath('/memberList/groupDetails');
-    $node = $node[0];
+    foreach ($result as $k => $node) {
+        // Steam only provides the details of the first 3 groups of a players profile. We need to fetch the individual groups seperately to get the correct information.
+        if(empty($node->groupName)) {
+        $memberlistxml = file_get_contents("http://steamcommunity.com/gid/".$node->groupID64."/memberslistxml/?xml=1");
+        $memberlistxml = str_replace("&", "", $memberlistxml);
+        $memberlistxml = strip_31_ascii($memberlistxml);
+        $memberlistxml = utf8_encode($memberlistxml);
+        $groupxml = simplexml_load_string($memberlistxml); // parse xml
+        $node = $groupxml->xpath('/memberList/groupDetails');
+        $node = $node[0];
     }
 
     // Checkbox & Groupname table cols

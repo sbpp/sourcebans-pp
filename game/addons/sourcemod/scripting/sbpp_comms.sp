@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.2"
+#define PLUGIN_VERSION "1.6.3-PRE"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length
@@ -1238,26 +1238,26 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any:data)
 {
 	ResetPack(data);
-	
+
 	decl String:reason[256];
-	
+
 	new iAdminUserId = ReadPackCell(data);
 	new iAdmin = 0;
-	
+
 	if(iAdminUserId > 0) {
 		iAdmin = GetClientOfUserId(iAdminUserId);
 	}
-	
+
 	new iTarget = GetClientOfUserId(ReadPackCell(data));
-	
+
 	if (!iTarget) {
 		iTarget = -1;
 	}
-	
+
 	new length = ReadPackCell(data);
 	new type = ReadPackCell(data);
 	ReadPackString(data, reason, sizeof(reason));
-	
+
 	// Fire forward
 	Call_StartForward(g_hFwd_OnPlayerPunished);
 	Call_PushCell(iAdmin);
@@ -1266,17 +1266,17 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 	Call_PushCell(type);
 	Call_PushString(reason);
 	Call_Finish();
-	
+
 	if (DB_Conn_Lost(hndl) || error[0])
 	{
 		LogError("Query_AddBlockInsert failed: %s", error);
-		
+
 		decl String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
 		ReadPackString(data, name, sizeof(name));
 		ReadPackString(data, auth, sizeof(auth));
 		ReadPackString(data, adminAuth, sizeof(adminAuth));
 		ReadPackString(data, adminIp, sizeof(adminIp));
-		
+
 		InsertTempBlock(length, type, name, auth, reason, adminAuth, adminIp);
 	}
 	CloseHandle(data);
@@ -3033,7 +3033,7 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		WritePackString(dataPack, targetAuth);
 		WritePackString(dataPack, adminAuth);
 		WritePackString(dataPack, adminIp);
-		
+
 		SQL_TQuery(g_hDatabase, Query_AddBlockInsert, sQuery, dataPack, DBPrio_High);
 	}
 	else

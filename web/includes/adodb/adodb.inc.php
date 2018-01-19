@@ -1142,15 +1142,15 @@ if (!defined('_ADODB_LAYER')) {
 					);
 					return false;
 				}
-				
+
 				// clean memory
 				unset($element0);
 
 				foreach($inputarr as $arr) {
 					$sql = ''; $i = 0;
 					//Use each() instead of foreach to reduce memory usage -mikefedyk
-					while(list(, $v) = each($arr)) {
-						$sql .= $sqlarr[$i];
+                    foreach ($arr as $k => $v) {
+                        $sql .= $sqlarr[$i];
 						// from Ron Baldwin <ron.baldwin#sourceprose.com>
 						// Only quote string types
 						$typ = gettype($v);
@@ -1177,7 +1177,7 @@ if (!defined('_ADODB_LAYER')) {
 						if ($i == $nparams) {
 							break;
 						}
-					} // while
+                    }
 					if (isset($sqlarr[$i])) {
 						$sql .= $sqlarr[$i];
 						if ($i+1 != sizeof($sqlarr)) {
