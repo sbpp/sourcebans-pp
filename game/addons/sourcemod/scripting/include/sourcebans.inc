@@ -44,6 +44,7 @@ public SharedPlugin:__pl_sourcebans =
 public __pl_sourcebans_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
+	MarkNativeAsOptional("SourceBans_BanPlayer");
 }
 #endif
 
