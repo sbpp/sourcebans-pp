@@ -28,6 +28,7 @@
 
 #define VERSION "1.6.3-PRE"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
+#define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
 
 new String:g_DatabasePrefix[10] = "sb";
@@ -55,6 +56,7 @@ public OnPluginStart()
 
 	RegAdminCmd("sm_listsbbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE); // for backward compatibility with the old version
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
+	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_BAN, LISTCOMMS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
 
 	SQL_TConnect(OnDatabaseConnected, "sourcebans");
@@ -207,7 +209,7 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		new String:bannedby[11] = "<Unknown> ";
 		new String:lenstring[11] = "N/A       ";
 		new String:enddate[11] = "N/A       ";
-		decl String:reason[28];
+		new String:reason[28];
 		new String:RemoveType[2] = " ";
 
 		if (!SQL_IsFieldNull(hndl, 0))
@@ -281,6 +283,180 @@ public OnListBans(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		}
 
 		PrintListResponse(clientuid, client, "%s  %s  %s  %s  %s  %s", createddate, bannedby, lenstring, enddate, RemoveType, reason);
+	}
+}
+
+public Action:OnListSourceCommsCmd(client, args)
+{
+	if (args < 1)
+	{
+		ReplyToCommand(client, LISTCOMMS_USAGE);
+	}
+
+	if (g_DB == INVALID_HANDLE)
+	{
+		ReplyToCommand(client, "Error: Database not ready.");
+		return Plugin_Handled;
+	}
+
+	decl String:targetarg[64];
+	GetCmdArg(1, targetarg, sizeof(targetarg));
+
+	new target = FindTarget(client, targetarg, true, true);
+	if (target == INVALID_TARGET)
+	{
+		ReplyToCommand(client, "Error: Could not find a target matching '%s'.", targetarg);
+		return Plugin_Handled;
+	}
+
+	decl String:auth[32];
+	if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth))
+		 || auth[0] == 'B' || auth[9] == 'L')
+	{
+		ReplyToCommand(client, "Error: Could not retrieve %N's steam id.", target);
+		return Plugin_Handled;
+	}
+
+	decl String:query[1024];
+	FormatEx(query, sizeof(query), "SELECT created, %s_admins.user, ends, length, reason, RemoveType, type FROM %s_comms LEFT JOIN %s_admins ON %s_comms.aid = %s_admins.aid WHERE %s_comms.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8]);
+
+	decl String:targetName[MAX_NAME_LENGTH];
+	GetClientName(target, targetName, sizeof(targetName));
+
+	new Handle:pack = CreateDataPack();
+	WritePackCell(pack, (client == 0) ? 0 : GetClientUserId(client));
+	WritePackString(pack, targetName);
+
+	SQL_TQuery(g_DB, OnListComms, query, pack, DBPrio_Low);
+
+	if (client == 0)
+	{
+		ReplyToCommand(client, "[SourceBans++] Note: if you are using this command through an rcon tool, you will not see results.");
+	}
+	else
+	{
+		ReplyToCommand(client, "\x04[SourceBans++]\x01 Look for %N's comm results in console.", target);
+	}
+
+	return Plugin_Handled;
+}
+
+public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
+{
+	ResetPack(pack);
+	new clientuid = ReadPackCell(pack);
+	new client = GetClientOfUserId(clientuid);
+	decl String:targetName[MAX_NAME_LENGTH];
+	ReadPackString(pack, targetName, sizeof(targetName));
+	CloseHandle(pack);
+
+	if (clientuid > 0 && client == 0)
+		return;
+
+	if (hndl == INVALID_HANDLE)
+	{
+		PrintListResponse(clientuid, client, "[SourceBans++] DB error while retrieving comms for %s:\n%s", targetName, error);
+		return;
+	}
+
+	if (SQL_GetRowCount(hndl) == 0)
+	{
+		PrintListResponse(clientuid, client, "[SourceBans++] No comms found for %s.", targetName);
+		return;
+	}
+
+	PrintListResponse(clientuid, client, "[SourceBans++] Listing comms for %s", targetName);
+	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    T  R  Reason");
+	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
+	while (SQL_FetchRow(hndl))
+	{
+		new String:createddate[11] = "<Unknown> ";
+		new String:bannedby[11] = "<Unknown> ";
+		new String:lenstring[11] = "N/A       ";
+		new String:enddate[11] = "N/A       ";
+		new String:reason[23];
+		new String:CommType[2] = " ";
+		new String:RemoveType[2] = " ";
+
+		if (!SQL_IsFieldNull(hndl, 0))
+		{
+			FormatTime(createddate, sizeof(createddate), "%Y-%m-%d", SQL_FetchInt(hndl, 0));
+		}
+
+		if (!SQL_IsFieldNull(hndl, 1))
+		{
+			new size_bannedby = sizeof(bannedby);
+			SQL_FetchString(hndl, 1, bannedby, size_bannedby);
+			new len = SQL_FetchSize(hndl, 1);
+			if (len > size_bannedby - 1)
+			{
+				reason[size_bannedby - 4] = '.';
+				reason[size_bannedby - 3] = '.';
+				reason[size_bannedby - 2] = '.';
+			}
+			else
+			{
+				for (new i = len; i < size_bannedby - 1; i++)
+				{
+					bannedby[i] = ' ';
+				}
+			}
+		}
+
+		// NOT NULL
+		new size_lenstring = sizeof(lenstring);
+		new length = SQL_FetchInt(hndl, 3);
+		if (length == 0)
+		{
+			strcopy(lenstring, size_lenstring, "Permanent ");
+		}
+		else
+		{
+			new len = IntToString(length, lenstring, size_lenstring);
+			if (len < size_lenstring - 1)
+			{
+				// change the '\0' to a ' '. the original \0 at the end will still be there
+				lenstring[len] = ' ';
+			}
+		}
+
+		if (!SQL_IsFieldNull(hndl, 2))
+		{
+			FormatTime(enddate, sizeof(enddate), "%Y-%m-%d", SQL_FetchInt(hndl, 2));
+		}
+
+		// NOT NULL
+		new reason_size = sizeof(reason);
+		SQL_FetchString(hndl, 4, reason, reason_size);
+		new len = SQL_FetchSize(hndl, 4);
+		if (len > reason_size - 1)
+		{
+			reason[reason_size - 4] = '.';
+			reason[reason_size - 3] = '.';
+			reason[reason_size - 2] = '.';
+		}
+		else
+		{
+			for (new i = len; i < reason_size - 1; i++)
+			{
+				reason[i] = ' ';
+			}
+		}
+
+		if (!SQL_IsFieldNull(hndl, 5))
+		{
+			SQL_FetchString(hndl, 5, RemoveType, sizeof(RemoveType));
+		}
+		// NOT NULL
+		SQL_FetchString(hndl, 6, CommType, sizeof(RemoveType));
+		if(StrEqual(CommType,"1"))
+			strcopy(CommType, sizeof(CommType), "M");
+		if(StrEqual(CommType,"2"))
+			strcopy(CommType, sizeof(CommType), "G");
+
+		PrintListResponse(clientuid, client, "%s  %s  %s  %s  %s  %s  %s", createddate, bannedby, lenstring, enddate, CommType, RemoveType, reason);
+		//PrintListResponse(clientuid, client, "%s  %s  %s  %s  %s  %s ", createddate, bannedby, lenstring, enddate, CommType, RemoveType);
+
 	}
 }
 
