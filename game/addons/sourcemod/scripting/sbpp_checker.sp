@@ -455,7 +455,6 @@ public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
 			strcopy(CommType, sizeof(CommType), "G");
 
 		PrintListResponse(clientuid, client, "%s  %s  %s  %s  %s  %s  %s", createddate, bannedby, lenstring, enddate, CommType, RemoveType, reason);
-		//PrintListResponse(clientuid, client, "%s  %s  %s  %s  %s  %s ", createddate, bannedby, lenstring, enddate, CommType, RemoveType);
 
 	}
 }
