@@ -35,7 +35,7 @@ new String:g_DatabasePrefix[10] = "sb";
 new Handle:g_ConfigParser;
 new Handle:g_DB;
 
-ConVar ShortMessage;
+
 
 public Plugin:myinfo =
 {
@@ -51,8 +51,6 @@ public OnPluginStart()
 	LoadTranslations("common.phrases");
 
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
-
-	ShortMessage = CreateConVar("sb_short_message", "0", "Use shorter message for displying prev bans", _, true, 0.0, true, 1.0);
 
 	RegAdminCmd("sm_listsbbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE); // for backward compatibility with the old version
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
@@ -83,42 +81,46 @@ public OnDatabaseConnected(Handle:owner, Handle:hndl, const String:error[], any:
 
 public OnClientAuthorized(client, const String:auth[])
 {
-	if (g_DB == INVALID_HANDLE)
-		return;
-
-	/* Do not check bots nor check player with lan steamid. */
-	if (auth[0] == 'B' || auth[9] == 'L')
-		return;
-
-	decl String:query[512], String:ip[30];
-	GetClientIP(client, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, auth[8], ip);
-
-	SQL_TQuery(g_DB, OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
+    if (g_DB == INVALID_HANDLE)
+        return;
+    /* Do not check bots nor check player with lan steamid. */
+    if (auth[0] == 'B' || auth[9] == 'L')
+        return;
+    decl String:query[512], String:ip[30];
+    GetClientIP(client, ip, sizeof(ip));
+    FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM %s_comms WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
+    SQL_TQuery(g_DB, OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
 }
-
 public OnConnectBanCheck(Handle:owner, Handle:hndl, const String:error[], any:userid)
 {
-	new client = GetClientOfUserId(userid);
-
-	if (!client || hndl == INVALID_HANDLE || !SQL_FetchRow(hndl))
-		return;
-
-	new bancount = SQL_FetchInt(hndl, 0);
-	if (bancount > 0)
-	{
-		if (ShortMessage.BoolValue)
-		{
-			PrintToBanAdmins("\x04[SB++]\x01Player \"%N\" has %d previous ban%s.",
-				client, bancount, ((bancount > 0) ? "s":""));
-		}
-		else
-		{
-			PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous ban%s on record.",
-				client, bancount, ((bancount > 0) ? "s":""));
-		}
-	}
+    new client = GetClientOfUserId(userid);
+    if (!client || hndl == INVALID_HANDLE || !SQL_FetchRow(hndl))
+        return;
+    new bancount = SQL_FetchInt(hndl, 0);
+    new commcount = 0;
+    if(SQL_FetchRow(hndl)){
+        commcount = SQL_FetchInt(hndl, 0);
+    }
+    if (bancount > 0 || commcount > 0)
+    {
+        if(bancount == 0){
+            PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous commban%s.",
+                client,commcount,((commcount > 1 || commcount == 0) ? "s":""));
+        }
+        else if(commcount == 0){
+            PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous ban%s.",
+                client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
+        }
+        else{
+            PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous ban%s and %d previous commban%s.",
+                client, bancount, ((bancount > 1 || bancount == 0) ? "s":""),commcount,((commcount > 1 || commcount == 0) ? "s":""));
+        } 
+    }
 }
+
+
+
+
 
 public Action:OnListSourceBansCmd(client, args)
 {
@@ -365,6 +367,7 @@ public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		return;
 	}
 
+	
 	PrintListResponse(clientuid, client, "[SourceBans++] Listing comms for %s", targetName);
 	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    T  R  Reason");
 	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
@@ -377,6 +380,8 @@ public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		new String:reason[23];
 		new String:CommType[2] = " ";
 		new String:RemoveType[2] = " ";
+
+		
 
 		if (!SQL_IsFieldNull(hndl, 0))
 		{
@@ -455,6 +460,7 @@ public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
 			strcopy(CommType, sizeof(CommType), "G");
 
 		PrintListResponse(clientuid, client, "%s  %s  %s  %s  %s  %s  %s", createddate, bannedby, lenstring, enddate, CommType, RemoveType, reason);
+
 
 	}
 }
