@@ -15,7 +15,7 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 ### Useful Links
 
 * Website: [SourceBans++](https://sbpp.github.io/)
-* Install help: [SourceBans Manual](https://www.gameconnect.net/projects/sourcebans/manual/)
+* Install help: [SourceBans++ Docs](https://sbpp.github.io/docs/)
 * FAQ: [SourceBans++ FAQ](https://sbpp.github.io/faq/)
 * Forum Thread: [SourceBans++ - AlliedModders](https://forums.alliedmods.net/showthread.php?p=2303384)
 * Discord Server: [SourceBans++ - Discord](https://discord.gg/4Bhj6NU)
