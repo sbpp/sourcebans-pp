@@ -1,4 +1,4 @@
-version: '{branch}-$(APPVEYOR_REPO_COMMIT)'
+version: '{branch}-{build}'
 
 environment:
   SOURCEMOD: 1.8
@@ -21,8 +21,8 @@ test_script:
   
 after_test:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
-  - cmd: 7z a sourcebans-pp.%APPVEYOR_REPO_BRANCH%-git%APPVEYOR_REPO_COMMIT%.zip %APPVEYOR_BUILD_FOLDER%\game\addons\sourcemod\scripting\compiled\*.smx
+  - cmd: 7z a sourcebans-pp.%APPVEYOR_REPO_BRANCH%-%APPVEYOR_REPO_COMMIT%.plugin-only.zip %APPVEYOR_BUILD_FOLDER%\game\addons\sourcemod\scripting\*.smx
   
 artifacts:
-  - path: sourcebans-pp.$(APPVEYOR_REPO_BRANCH)-git$(APPVEYOR_REPO_COMMIT).zip
+  - path: sourcebans-pp.$(appveyor_repo_branch)-$(appveyor_repo_commit).plugin-only.zip
     name: sourcebans-pp
