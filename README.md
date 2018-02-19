@@ -24,7 +24,7 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ```
 * Webserver
-  o PHP 5.5 or higher
+  o PHP 5.6 or higher
     * ini setting: memory_limit greater than or equal to 64M
   o MySQL 5.0 or MariaDB 10 and higher
 * Source Dedicated Server
