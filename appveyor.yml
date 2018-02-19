@@ -1,9 +1,7 @@
 version: '{branch}.{build}'
 
 environment:
-  SOURCEMOD: 1.7
   SOURCEMOD: 1.8
-  SOURCEMOD: 1.9
   
 install:
   - ps: (new-object net.webclient).DownloadFile('https://www.sourcemod.net/latest.php?version=$env:SOURCEMOD&os=windows', 'sourcemod-$env:SOURCEMOD-windows.zip')
