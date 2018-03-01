@@ -49,3 +49,5 @@ Temporary Items
 /web/config.php
 /web/themes_c/*.php
 /web/themes_c/*.tmp
+/web/cache/*.tmp
+/web/cache/*.php
