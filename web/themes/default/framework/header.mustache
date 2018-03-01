@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>{{title}}</title>
+
+        <link rel="Shortcut Icon" href="themes/{{theme}}/images/favicon.ico" />
+        <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+        <script type="text/javascript" src="./scripts/sourcebans.js"></script>
+        <link href="themes/{{theme}}/css/css.php" rel="stylesheet" type="text/css" />
+        <script type="text/javascript" src="./scripts/mootools.js"></script>
+        <script type="text/javascript" src="./scripts/contextMenoo.js"></script>
+
+        <!-- Todo: move tinymce in the only page that needs it -->
+        <!-- Todo: find better alternative to tinymce -->
+        <script type="text/javascript" src="./includes/tinymce/tinymce.min.js"></script>
+        <script language="javascript" type="text/javascript">
+            tinyMCE.init({
+                selector: "textarea",
+                height: 500,
+    			theme : "modern",
+    			plugins : "advlist, autolink, lists, link, image, charmap, print, preview, hr, anchor, pagebreak, searchreplace, wordcount, visualblocks, visualchars, code, fullscreen, insertdatetime, media, nonbreaking, save, table, contextmenu, directionality, emoticons, template, paste, textcolor, colorpicker, textpattern, imagetools, codesample, toc",
+    			extended_valid_elements : "a[name|href|target|title|onclick],img[class|src|border=0|alt|title|hspace|vspace|width|height|align|onmouseover|onmouseout|name],hr[class|width|size|noshade],font[face|size|color|style],span[class|align|style]"
+    		});
+        </script>
+
+        {{xajax}}
+    </head>
+    <body>
+        <header id="header">
+            <div id="head-logo">
+                <a href="./">
+                    <img src="images/{{logo}}" border="0" alt="SourceBans Logo" />
+                </a>
+            </div>
+        </header>
