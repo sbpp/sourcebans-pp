@@ -1,4 +1,4 @@
-<?php
+ <?php
 /*************************************************************************
 	This file is part of SourceBans++
 
@@ -108,42 +108,6 @@ class CUserManager
         $this->admins[$aid] = $user;
         return $user;
     }
-
-
-    /**
-     * Will check to see if an admin has any of the flags given
-     *
-     * @param $flags The flags to check for.
-     * @param $aid The user to check flags for.
-     * @return boolean.
-     */
-    public function HasAccess($flags, $aid = null)
-    {
-        if (is_null($aid)) {
-            $aid = $this->aid;
-        }
-
-        if (empty($flags) || $aid <= 0) {
-            return false;
-        }
-
-        if (!isset($this->admins[$aid])) {
-            $this->GetUserArray($aid);
-        }
-
-        if (is_numeric($flags)) {
-            return ($this->admins[$aid]['extraflags'] & $flags) != 0 ? true : false;
-        }
-
-        for ($i=0; $i < strlen($this->admins[$aid]['srv_flags']); $i++) {
-            for ($a=0; $a < strlen($flags); $a++) {
-                if (strstr($this->admins[$aid]['srv_flags'][$i], $flags[$a])) {
-                    return true;
-                }
-            }
-        }
-    }
-
 
     /**
      * Gets a 'property' from the user array eg. 'authid'
@@ -318,30 +282,5 @@ class CUserManager
             $this->GetUserArray($aid);
         }
         return $this->admins[$aid];
-    }
-
-
-    public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
-    {
-        if (!empty($password) && strlen($password) < MIN_PASS_LENGTH) {
-            throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
-        }
-        if (empty($password)) {
-            throw new RuntimeException('Password must not be empty!');
-        }
-        $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
-                           VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');
-        $this->dbh->bind(':user', $name);
-        $this->dbh->bind(':authid', $steam);
-        $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
-        $this->dbh->bind(':gid', $web_group);
-        $this->dbh->bind(':email', $email);
-        $this->dbh->bind(':extraflags', $web_flags);
-        $this->dbh->bind(':immunity', $immunity);
-        $this->dbh->bind(':srv_group', $srv_group);
-        $this->dbh->bind(':srv_flags', $srv_flags);
-        $this->dbh->bind(':srv_password', $srv_password);
-
-        return ($this->dbh->execute()) ? (int)$this->dbh->lastInsertId() : -1;
     }
 }
