@@ -25,15 +25,6 @@ Licensed under CC BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
-global $theme;
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-define('IN_HOME', true);
-
-$res          = $GLOBALS['db']->Execute("SELECT count(name) FROM " . DB_PREFIX . "_banlog");
-$totalstopped = (int) $res->fields[0];
 
 $res = $GLOBALS['db']->Execute("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.authid, b.ip
 								FROM " . DB_PREFIX . "_banlog AS bl
@@ -66,9 +57,6 @@ while (!$res->EOF) {
     $res->MoveNext();
     ++$blcount;
 }
-
-$res      = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_bans");
-$BanCount = (int) $res->fields[0];
 
 $res  = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
 			    				FROM " . DB_PREFIX . "_bans AS ba
@@ -118,9 +106,6 @@ while (!$res->EOF) {
     array_push($bans, $info);
     $res->MoveNext();
 }
-
-$res       = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_comms");
-$CommCount = (int) $res->fields[0];
 
 $res   = $GLOBALS['db']->Execute("SELECT bid, ba.authid, ba.type, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
 				    				FROM " . DB_PREFIX . "_comms AS ba
