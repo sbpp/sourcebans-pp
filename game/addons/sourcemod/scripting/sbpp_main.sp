@@ -94,8 +94,8 @@ new Handle:CvarHostIp;
 new Handle:CvarPort;
 
 /* Database handle */
-new Handle:DB;
-new Handle:SQLiteDB;
+Database DB;
+Database SQLiteDB;
 
 /* Menu file globals */
 new Handle:TimeMenuHandle;
@@ -223,7 +223,8 @@ public OnPluginStart()
 		SetFailState("Database failure: Could not find Database conf \"sourcebans\"");
 		return;
 	}
-	SQL_TConnect(GotDatabase, "sourcebans");
+	
+	Database.Connect(GotDatabase, "sourcebans");
 
 	BuildPath(Path_SM, groupsLoc, sizeof(groupsLoc), "configs/sourcebans/sb_admin_groups.cfg");
 
@@ -341,12 +342,17 @@ public OnClientAuthorized(client, const String:auth[])
 		return;
 	}
 
-	decl String:Query[256], String:ip[30];
+	char Query[256], ip[30];
+	
 	GetClientIP(client, ip, sizeof(ip));
+	
 	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, auth[8], ip);
+	
 	#if defined DEBUG
 	LogToFile(logFile, "Checking ban for: %s", auth);
 	#endif
+	
+	// DB.Query(VerifyBan, Query, GetClientUserId(client), DBPrio_High);
 
 	SQL_TQuery(DB, VerifyBan, Query, GetClientUserId(client), DBPrio_High);
 }
@@ -366,11 +372,11 @@ public OnRebuildAdminCache(AdminCachePart:part)
 	if (DB == INVALID_HANDLE) {
 		if (!g_bConnecting) {
 			g_bConnecting = true;
-			SQL_TConnect(GotDatabase, "sourcebans");
+			Database.Connect(GotDatabase, "sourcebans");
 		}
 	}
 	else {
-		GotDatabase(DB, DB, "", 0);
+		GotDatabase(DB, "", 0);
 	}
 }
 
@@ -994,9 +1000,9 @@ stock ResetMenu()
 
 // QUERY CALL BACKS //
 
-public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void GotDatabase(Database db, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (db == INVALID_HANDLE)
 	{
 		LogToFile(logFile, "Database failure: %s. See FAQ: https://sbpp.sarabveer.me/faq/", error);
 		g_bConnecting = false;
@@ -1006,7 +1012,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 		return;
 	}
 
-	DB = hndl;
+	DB = db;
 
 	decl String:query[1024];
 	SQL_SetCharset(DB, "utf8");
