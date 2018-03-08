@@ -29,7 +29,7 @@
 #endif
 #define _sourcebans_included
 
-public SharedPlugin:__pl_sourcebans =
+public SharedPlugin __pl_sourcebans =
 {
 	name = "sourcebans++",
 	file = "sbpp_main.smx",
@@ -59,7 +59,7 @@ public __pl_sourcebans_SetNTVOptional()
  * @noreturn
  *********************************************************/
 #pragma deprecated Use SourceBans_BanPlayer() instead.
-native SBBanPlayer(client, target, time, String:reason[]);
+native SBBanPlayer(int iClient, int iTarget, int iTime, char[] reason);
 
 /*********************************************************
  * Ban Player from server
@@ -70,7 +70,7 @@ native SBBanPlayer(client, target, time, String:reason[]);
  * @param reason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-native SourceBans_BanPlayer(client, target, time, String:reason[]);
+native SourceBans_BanPlayer(int iClient, int iTarget, int iTime, char[] reason);
 
 /*********************************************************
  * Called when the admin banning the player.
@@ -80,6 +80,6 @@ native SourceBans_BanPlayer(client, target, time, String:reason[]);
  * @param time      The time to ban the player for (in minutes, 0 = permanent)
  * @param reason    The reason to ban the player from the server
  *********************************************************/
-forward SourceBans_OnBanPlayer(client, target, time, String:reason[]);
+forward SourceBans_OnBanPlayer(int iClient, int iTarget, int iTime, char[] reason);
 
 //Yarr!
