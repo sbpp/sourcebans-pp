@@ -143,14 +143,16 @@ public Plugin:myinfo =
 };
 
 #if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 #else
-public bool:AskPluginLoad(Handle:myself, bool:late, String:error[], err_max)
+public bool AskPluginLoad(Handle myself, bool late, char[] error, int err_max)
 #endif
 {
 	RegPluginLibrary("sourcebans++");
-	CreateNative("SBBanPlayer",            Native_SBBanPlayer);
-	CreateNative("SourceBans_BanPlayer",   Native_SBBanPlayer);
+	
+	CreateNative("SBBanPlayer", Native_SBBanPlayer);
+	CreateNative("SourceBans_BanPlayer", Native_SBBanPlayer);
+	CreateNative("SourceBans_ReportPlayer", Native_SBReportPlayer);
 
 	g_hFwd_OnBanAdded = CreateGlobalForward("SourceBans_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
 
