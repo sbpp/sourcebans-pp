@@ -94,8 +94,8 @@ new Handle:CvarHostIp;
 new Handle:CvarPort;
 
 /* Database handle */
-new Handle:DB;
-new Handle:SQLiteDB;
+Database DB;
+Database SQLiteDB;
 
 /* Menu file globals */
 new Handle:TimeMenuHandle;
@@ -223,7 +223,8 @@ public OnPluginStart()
 		SetFailState("Database failure: Could not find Database conf \"sourcebans\"");
 		return;
 	}
-	SQL_TConnect(GotDatabase, "sourcebans");
+	
+	Database.Connect(GotDatabase, "sourcebans");
 
 	BuildPath(Path_SM, groupsLoc, sizeof(groupsLoc), "configs/sourcebans/sb_admin_groups.cfg");
 
@@ -341,14 +342,17 @@ public OnClientAuthorized(client, const String:auth[])
 		return;
 	}
 
-	decl String:Query[256], String:ip[30];
+	char Query[256], ip[30];
+	
 	GetClientIP(client, ip, sizeof(ip));
-	FormatEx(Query, sizeof(Query), "SELECT bid FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, auth[8], ip);
+	
+	FormatEx(Query, sizeof(Query), "SELECT bid, ip FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, auth[8], ip);
+	
 	#if defined DEBUG
 	LogToFile(logFile, "Checking ban for: %s", auth);
 	#endif
-
-	SQL_TQuery(DB, VerifyBan, Query, GetClientUserId(client), DBPrio_High);
+	
+	DB.Query(VerifyBan, Query, GetClientUserId(client), DBPrio_High);
 }
 
 public OnRebuildAdminCache(AdminCachePart:part)
@@ -366,11 +370,11 @@ public OnRebuildAdminCache(AdminCachePart:part)
 	if (DB == INVALID_HANDLE) {
 		if (!g_bConnecting) {
 			g_bConnecting = true;
-			SQL_TConnect(GotDatabase, "sourcebans");
+			Database.Connect(GotDatabase, "sourcebans");
 		}
 	}
 	else {
-		GotDatabase(DB, DB, "", 0);
+		GotDatabase(DB, "", 0);
 	}
 }
 
@@ -994,9 +998,9 @@ stock ResetMenu()
 
 // QUERY CALL BACKS //
 
-public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void GotDatabase(Database db, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (db == INVALID_HANDLE)
 	{
 		LogToFile(logFile, "Database failure: %s. See FAQ: https://sbpp.sarabveer.me/faq/", error);
 		g_bConnecting = false;
@@ -1006,7 +1010,7 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 		return;
 	}
 
-	DB = hndl;
+	DB = db;
 
 	decl String:query[1024];
 	SQL_SetCharset(DB, "utf8");
@@ -1530,33 +1534,51 @@ public ErrorCheckCallback(Handle:owner, Handle:hndle, const String:error[], any:
 	}
 }
 
-public VerifyBan(Handle:owner, Handle:hndl, const String:error[], any:userid)
+public void VerifyBan(Database db, DBResultSet results, const char[] error, int userid)
 {
-	decl String:clientName[64];
-	decl String:clientAuth[64];
-	decl String:clientIp[64];
-	new client = GetClientOfUserId(userid);
+	char clientName[64], clientAuth[64], clientIp[64];
+	
+	int client = GetClientOfUserId(userid);
 
 	if (!client)
 		return;
 
 	/* Failure happen. Do retry with delay */
-	if (hndl == INVALID_HANDLE)
+	if (results == null)
 	{
 		LogToFile(logFile, "Verify Ban Query Failed: %s", error);
 		PlayerRecheck[client] = CreateTimer(RetryTime, ClientRecheck, client);
 		return;
 	}
+	
 	GetClientIP(client, clientIp, sizeof(clientIp));
 	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	GetClientName(client, clientName, sizeof(clientName));
-	if (SQL_GetRowCount(hndl) > 0)
+	
+	if (results.RowCount > 0)
 	{
-		decl String:buffer[40];
-		decl String:Name[128];
-		decl String:Query[512];
+		char buffer[40], Name[128], Query[512];
+		
+		// Amending to ban record's IP field
+		if (results.FetchRow())
+		{
+			char sIP[32];
+			
+			int iBid = results.FetchInt(0);
+			results.FetchString(1, sIP, sizeof sIP);
+			
+			if (StrEqual(sIP, ""))
+			{
+				char sQuery[256];
+				
+				FormatEx(sQuery, sizeof sQuery, "UPDATE %s_bans SET `ip` = '%s' WHERE `bid` = '%d'", DatabasePrefix, clientIp, iBid);
+				
+				DB.Query(SQL_OnIPMend, sQuery, client);
+			}
+		}
 
-		SQL_EscapeString(DB, clientName, Name, sizeof(Name));
+		DB.Escape(clientName, Name, sizeof Name);
+		
 		if (serverID == -1)
 		{
 			FormatEx(Query, sizeof(Query), "INSERT INTO %s_banlog (sid ,time ,name ,bid) VALUES  \
@@ -1573,16 +1595,32 @@ public VerifyBan(Handle:owner, Handle:hndl, const String:error[], any:userid)
 		}
 
 		SQL_TQuery(DB, ErrorCheckCallback, Query, client, DBPrio_High);
+		
 		FormatEx(buffer, sizeof(buffer), "banid 5 %s", clientAuth);
 		ServerCommand(buffer);
 		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+		
 		return;
 	}
+	
 	#if defined DEBUG
 	LogToFile(logFile, "%s is NOT banned.", clientAuth);
 	#endif
 
 	PlayerStatus[client] = true;
+}
+
+public void SQL_OnIPMend(Database db, DBResultSet results, const char[] error, int iClient)
+{
+	if (results == null)
+	{
+		char sIP[32], sSteamID[32];
+		
+		GetClientAuthId(iClient, AuthId_Steam3, sSteamID, sizeof sSteamID);
+		GetClientIP(iClient, sIP, sizeof sIP);
+		
+		LogToFile(logFile, "Failed to mend IP address for %s (%s): %s", sSteamID, sIP, error);
+	}
 }
 
 public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)

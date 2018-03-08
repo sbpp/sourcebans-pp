@@ -49,3 +49,4 @@ Temporary Items
 /web/config.php
 /web/themes_c/*.php
 /web/themes_c/*.tmp
+*.smx
