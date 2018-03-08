@@ -52,34 +52,34 @@ public __pl_sourcebans_SetNTVOptional()
 /*********************************************************
  * Ban Player from server
  *
- * @param client	The client index of the admin who is banning the client
- * @param target	The client index of the player to ban
- * @param time		The time to ban the player for (in minutes, 0 = permanent)
- * @param reason	The reason to ban the player from the server
+ * @param iClient	The client index of the admin who is banning the client
+ * @param iTarget	The client index of the player to ban
+ * @param iTime		The time to ban the player for (in minutes, 0 = permanent)
+ * @param sReason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
 #pragma deprecated Use SourceBans_BanPlayer() instead.
-native SBBanPlayer(int iClient, int iTarget, int iTime, const char[] reason);
+native SBBanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
  * Ban Player from server
  *
- * @param client	The client index of the admin who is banning the client
- * @param target	The client index of the player to ban
- * @param time		The time to ban the player for (in minutes, 0 = permanent)
- * @param reason	The reason to ban the player from the server
+ * @param iClient	The client index of the admin who is banning the client
+ * @param iTarget	The client index of the player to ban
+ * @param iTime		The time to ban the player for (in minutes, 0 = permanent)
+ * @param sReason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-native SourceBans_BanPlayer(int iClient, int iTarget, int iTime, const char[] reason);
+native SourceBans_BanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
  * Called when the admin banning the player.
  *
  * @param           The client index of the admin who is banning the client.
- * @param target    The client index of the player to ban
- * @param time      The time to ban the player for (in minutes, 0 = permanent)
- * @param reason    The reason to ban the player from the server
+ * @param iTarget    The client index of the player to ban
+ * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
+ * @param sReason    The reason to ban the player from the server
  *********************************************************/
-forward SourceBans_OnBanPlayer(int iClient, int iTarget, int iTime, const char[] reason);
+forward SourceBans_OnBanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
 
 //Yarr!
