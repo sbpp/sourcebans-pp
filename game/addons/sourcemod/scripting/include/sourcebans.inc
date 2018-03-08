@@ -59,7 +59,7 @@ public __pl_sourcebans_SetNTVOptional()
  * @noreturn
  *********************************************************/
 #pragma deprecated Use SourceBans_BanPlayer() instead.
-native SBBanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
+native bool SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
  * Ban Player from server
@@ -70,7 +70,17 @@ native SBBanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
  * @param sReason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-native SourceBans_BanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
+native bool SourceBans_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+
+/*********************************************************
+ * Reports a player
+ *
+ * @param iReporter	The client index of the reporter
+ * @param iTarget	The client index of the player to report
+ * @param sReason	The reason to report the player
+ * @noreturn
+ *********************************************************/
+native bool SourceBans_ReportPlayer(int iReporter, int iTarget, const char[] sReason);
 
 /*********************************************************
  * Called when the admin banning the player.
@@ -80,6 +90,6 @@ native SourceBans_BanPlayer(int iClient, int iTarget, int iTime, const char[] sR
  * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
  * @param sReason    The reason to ban the player from the server
  *********************************************************/
-forward SourceBans_OnBanPlayer(int iClient, int iTarget, int iTime, const char[] sReason);
+forward SourceBans_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 //Yarr!

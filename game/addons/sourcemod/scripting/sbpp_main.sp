@@ -2261,12 +2261,12 @@ public SMCResult:ReadConfig_EndSection(Handle:smc)
  * @param reason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-public Native_SBBanPlayer(Handle:plugin, numParams)
+public Native_SBBanPlayer(Handle plugin, int numParams)
 {
-	new client = GetNativeCell(1);
-	new target = GetNativeCell(2);
-	new time = GetNativeCell(3);
-	new String:reason[128];
+	int client = GetNativeCell(1);
+	int target = GetNativeCell(2);
+	int time = GetNativeCell(3);
+	char reason[128];
 	GetNativeString(4, reason, 128);
 
 	if (reason[0] == '\0')
@@ -2274,7 +2274,7 @@ public Native_SBBanPlayer(Handle:plugin, numParams)
 
 	if (client && IsClientInGame(client))
 	{
-		new AdminId:aid = GetUserAdmin(client);
+		AdminId aid = GetUserAdmin(client);
 		if (aid == INVALID_ADMIN_ID)
 		{
 			ThrowNativeError(SP_ERROR_NATIVE, "Ban Error: Player is not an admin.");
@@ -2290,6 +2290,11 @@ public Native_SBBanPlayer(Handle:plugin, numParams)
 
 	PrepareBan(client, target, time, reason, sizeof(reason));
 	return true;
+}
+
+public int Native_SBReportPlayer(Handle plugin, int numParams)
+{
+	
 }
 
 
