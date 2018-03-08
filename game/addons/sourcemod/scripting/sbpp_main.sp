@@ -2294,9 +2294,69 @@ public Native_SBBanPlayer(Handle plugin, int numParams)
 
 public int Native_SBReportPlayer(Handle plugin, int numParams)
 {
+	if (numParams < 3)
+	{
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid amount of arguments. Received %d arguments", numParams);
+		return;
+	}
 	
+	int iReporter = GetNativeCell(1)
+	  , iTarget = GetNativeCell(2)
+	  , iReasonLen;
+	  
+	int iTimes[2];
+	
+	GetTime(iTimes);
+	  
+	GetNativeStringLength(3, iReasonLen);
+	
+	char[] sReason = new char[iReasonLen];
+	
+	GetNativeString(3, sReason, iReasonLen);
+	
+	char sRAuth[32], sTAuth[32], sRName[MAX_NAME_LENGTH + 1], sTName[MAX_NAME_LENGTH + 1], 
+	sRIP[16], sTIP[16], sREscapedName[MAX_NAME_LENGTH * 2 + 1], sTEscapedName[MAX_NAME_LENGTH * 2 + 1],
+	sTime[32], sTime2[16];
+	
+	char[] sEscapedReason = new char[iReasonLen * 2 + 1];
+	
+	GetClientAuthId(iReporter, AuthId_Steam2, sRAuth, sizeof sRAuth);
+	GetClientAuthId(iTarget, AuthId_Steam2, sTAuth, sizeof sTAuth);
+	
+	GetClientName(iReporter, sRName, sizeof sRName);
+	GetClientName(iTarget, sTName, sizeof sTName);
+	
+	GetClientIP(iReporter, sRIP, sizeof sRIP);
+	GetClientIP(iTarget, sTIP, sizeof sTIP);
+	
+	IntToString(iTimes[0], sTime, sizeof sTime);
+	IntToString(iTimes[1], sTime2, sizeof sTime2);
+	
+	StrCat(sTime, sizeof sTime, sTime2);
+	
+	DB.Escape(sRName, sREscapedName, sizeof sREscapedName);
+	DB.Escape(sTName, sTEscapedName, sizeof sTEscapedName);
+	DB.Escape(sReason, sEscapedReason, iReasonLen * 2 + 1);
+	
+	char[] sQuery = new char[128 + (iReasonLen * 2 + 1)];
+	
+	Format(sQuery, 128 + (iReasonLen * 2 + 1), "INSERT INTO %s_submissions (`submitted`, `modid`, `SteamId`, `name`, `email`, `reason`, `ip`, `subname`, `sip`, `archiv`, `server`)"
+	... "VALUES ('%s', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, 0)", DatabasePrefix, sTime, sTAuth, sTEscapedName, sRAuth, sEscapedReason, sRIP, sREscapedName, sTIP);
+	
+	DB.Query(SQL_OnReportPlayer, sQuery, iReporter);
 }
 
+public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, int iReporter)
+{
+	if (results == null)
+	{
+		PrintToChat(iReporter, "%sFailed to submit report", Prefix);
+		LogToFile(logFile, "Failed to submit report: %s", error);
+		return;
+	}
+	
+	PrintToChat(iReporter, "%sSuccessfully submitted your report", Prefix);
+}
 
 // STOCK FUNCTIONS //
 
