@@ -52,7 +52,7 @@ public __pl_sourcebans_SetNTVOptional()
 /*********************************************************
  * Ban Player from server
  *
- * @param iClient	The client index of the admin who is banning the client
+ * @param iAdmin	The client index of the admin who is banning the client
  * @param iTarget	The client index of the player to ban
  * @param iTime		The time to ban the player for (in minutes, 0 = permanent)
  * @param sReason	The reason to ban the player from the server
@@ -64,7 +64,7 @@ native void SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason
 /*********************************************************
  * Ban Player from server
  *
- * @param iClient	The client index of the admin who is banning the client
+ * @param iAdmin	The client index of the admin who is banning the client
  * @param iTarget	The client index of the player to ban
  * @param iTime		The time to ban the player for (in minutes, 0 = permanent)
  * @param sReason	The reason to ban the player from the server
@@ -85,7 +85,7 @@ native void SourceBans_ReportPlayer(int iReporter, int iTarget, const char[] sRe
 /*********************************************************
  * Called when the admin banning the player.
  *
- * @param           The client index of the admin who is banning the client.
+ * @param iAdmin	The client index of the admin who is banning the client
  * @param iTarget    The client index of the player to ban
  * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
  * @param sReason    The reason to ban the player from the server
