@@ -1127,8 +1127,8 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], DataPack da
 		dataPack.ReadString(adminAuth, sizeof adminAuth);
 		dataPack.ReadString(adminIp, sizeof adminIp);
 		
-		ResetPack(dataPack);
-		ResetPack(reasonPack);
+		dataPack.Reset();
+		reasonPack.Reset();
 
 		PlayerDataPack[admin] = INVALID_HANDLE;
 		UTIL_InsertTempBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
@@ -2372,6 +2372,8 @@ public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] er
 		LogToFile(logFile, "Failed to submit report: %s", error);
 	else
 	{
+		ForwardPack.Reset();
+		
 		int iReporter = ForwardPack.ReadCell();
 		int iTarget = ForwardPack.ReadCell();
 		int iReasonLen = ForwardPack.ReadCell();
@@ -2454,8 +2456,8 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 
-	ResetPack(dataPack);
-	ResetPack(reasonPack);
+	dataPack.Reset();
+	reasonPack.Reset();
 
 	if (reason[0] != '\0')
 	{
