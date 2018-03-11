@@ -26,7 +26,7 @@
 
 #pragma semicolon 1
 #include <sourcemod>
-#include <sourcebans>
+#include <sourcebanspp>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>

@@ -27,7 +27,7 @@
 #pragma semicolon 1
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
-#include <sourcebans>
+#include <sourcebanspp>
 
 #define PLUGIN_VERSION "1.6.3-PRE"
 
