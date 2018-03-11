@@ -2353,14 +2353,24 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	
 	Format(sQuery, 512 + (iReasonLen * 2 + 1), "INSERT INTO %s_submissions (`submitted`, `modid`, `SteamId`, `name`, `email`, `reason`, `ip`, `subname`, `sip`, `archiv`, `server`)"
 	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, 0)", DatabasePrefix, iTime, sTAuth, sTEscapedName, sRAuth, sEscapedReason, sRIP, sREscapedName, sTIP);
+	
+	DataPack ForwardPack = new DataPack();
+	
+	ForwardPack.WriteCell(iReporter);
+	ForwardPack.WriteCell(iTarget);
+	ForwardPack.WriteString(sReason);
 
-	DB.Query(SQL_OnReportPlayer, sQuery, iReporter);
+	DB.Query(SQL_OnReportPlayer, sQuery, ForwardPack);
 }
 
-public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, int iReporter)
+public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack ForwardPack)
 {
 	if (results == null)
 		LogToFile(logFile, "Failed to submit report: %s", error);
+	else
+	{
+		// char 
+	}
 }
 
 // STOCK FUNCTIONS //
