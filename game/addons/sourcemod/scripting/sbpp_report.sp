@@ -49,6 +49,8 @@ public void OnPluginStart()
 	Convars[Cooldown] = CreateConVar("sbpp_report_cooldown", "60.0", "Cooldown in seconds between per report per user", FCVAR_NONE, true, 0.0, false);
 	Convars[MinLen] = CreateConVar("sbpp_report_minlen", "10", "Minimum reason length", FCVAR_NONE, true, 0.0, false);
 	
+	LoadTranslations("sbpp_report.phrases");
+	
 	RegConsoleCmd("sm_report", CmdReport, "Initialize Report");
 	
 	Convars[Prefix].AddChangeHook(OnConvarChanged);
@@ -63,7 +65,7 @@ public Action CmdReport(int iClient, int iArgs)
 		
 	if (OnCooldown(iClient))
 	{
-		PrintToChat(iClient, "%sPlease wait %.0f seconds before reporting again", Chat_Prefix, GetRemainingTime(iClient));
+		PrintToChat(iClient, "%s%T", Chat_Prefix, "In Cooldown", GetRemainingTime(iClient));
 		
 		return Plugin_Handled;
 	}
@@ -99,7 +101,7 @@ public int ReportMenu(Menu menu, MenuAction action, int iClient, int iItem)
 			
 			bInReason[iClient] = true;
 			
-			PrintToChat(iClient, "%sPlease enter the reason for the report or \"cancel\" to cancel", Chat_Prefix);
+			PrintToChat(iClient, "%s%T", Chat_Prefix, "Reason Prompt");
 		}
 		case MenuAction_End:
 			delete menu;
@@ -120,7 +122,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	
 	if (StrEqual(sArgs, "cancel", false))
 	{
-		PrintToChat(iClient, "%sReport cancelled", Chat_Prefix);
+		PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Canceled");
 		
 		ResetInReason(iClient);
 		
@@ -129,7 +131,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	
 	if (strlen(sArgs) < iMinLen)
 	{
-		PrintToChat(iClient, "%sReason is too short. More details is required", Chat_Prefix);
+		PrintToChat(iClient, "%s%T", Chat_Prefix, "Reason Short Need More");
 
 		return Plugin_Stop;
 	}
@@ -139,6 +141,8 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	AddCooldown(iClient);
 	
 	ResetInReason(iClient);
+	
+	PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Sent");
 	
 	return Plugin_Stop;
 }
