@@ -7,10 +7,15 @@ addons:
   apt_packages:
     - lib32stdc++6
     
+matrix:
+  allow_failures:
+    - env: SOURCEMOD=1.10
+    
 #Set the build environment
 env:
   - SOURCEMOD=1.8
   - SOURCEMOD=1.9
+  - SOURCEMOD=1.10
 
 #And compile!
 before_script:
