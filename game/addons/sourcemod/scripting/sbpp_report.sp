@@ -1,7 +1,5 @@
 #pragma semicolon 1
 
-#define DEBUG
-
 #define PLUGIN_AUTHOR "RumbleFrog, SourceBans++ Dev Team"
 #define PLUGIN_VERSION "1.6.3-rc.1"
 
@@ -14,15 +12,12 @@
 
 enum
 {
-	Prefix = 0,
-	Cooldown,
+	Cooldown = 0,
 	MinLen,
 	Settings_Count
 };
 
 ConVar Convars[Settings_Count];
-
-char sPrefix[16];
 
 bool bInReason[MAXPLAYERS + 1];
 
@@ -45,7 +40,6 @@ public void OnPluginStart()
 {
 	CreateConVar("sbpp_report_version", PLUGIN_VERSION, "SBPP Report Version", FCVAR_REPLICATED | FCVAR_SPONLY | FCVAR_DONTRECORD | FCVAR_NOTIFY);
 	
-	Convars[Prefix] = CreateConVar("sbpp_report_prefix", "sb", "SourceBans++ Database Table Prefix", FCVAR_NONE);
 	Convars[Cooldown] = CreateConVar("sbpp_report_cooldown", "60.0", "Cooldown in seconds between per report per user", FCVAR_NONE, true, 0.0, false);
 	Convars[MinLen] = CreateConVar("sbpp_report_minlen", "10", "Minimum reason length", FCVAR_NONE, true, 0.0, false);
 	
@@ -53,7 +47,6 @@ public void OnPluginStart()
 	
 	RegConsoleCmd("sm_report", CmdReport, "Initialize Report");
 	
-	Convars[Prefix].AddChangeHook(OnConvarChanged);
 	Convars[Cooldown].AddChangeHook(OnConvarChanged);
 	Convars[MinLen].AddChangeHook(OnConvarChanged);
 }
@@ -175,9 +168,7 @@ float GetRemainingTime(int iClient)
 
 public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
-	if (convar == Convars[Prefix])
-		Convars[Prefix].GetString(sPrefix, sizeof sPrefix);
-	else if (convar == Convars[Cooldown])
+	if (convar == Convars[Cooldown])
 		fCooldown = Convars[Cooldown].FloatValue;
 	else if (convar == Convars[MinLen])
 		iMinLen = Convars[MinLen].IntValue;
