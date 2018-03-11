@@ -1097,7 +1097,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 	g_bConnecting = false;
 }
 
-public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPack)
+public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], DataPack dataPack)
 {
 	if (dataPack == INVALID_HANDLE)
 	{
@@ -1108,48 +1108,50 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], any:dataPac
 	if (hndl == INVALID_HANDLE || error[0])
 	{
 		LogToFile(logFile, "Verify Insert Query Failed: %s", error);
-		new admin = ReadPackCell(dataPack);
-		ReadPackCell(dataPack); // target
-		ReadPackCell(dataPack); // admin userid
-		ReadPackCell(dataPack); // target userid
-		new time = ReadPackCell(dataPack);
-		new Handle:reasonPack = Handle:ReadPackCell(dataPack);
-		new String:reason[128];
-		ReadPackString(reasonPack, reason, sizeof(reason));
-		decl String:name[50];
-		ReadPackString(dataPack, name, sizeof(name));
-		decl String:auth[30];
-		ReadPackString(dataPack, auth, sizeof(auth));
-		decl String:ip[20];
-		ReadPackString(dataPack, ip, sizeof(ip));
-		decl String:adminAuth[30];
-		ReadPackString(dataPack, adminAuth, sizeof(adminAuth));
-		decl String:adminIp[20];
-		ReadPackString(dataPack, adminIp, sizeof(adminIp));
+		
+		int admin = dataPack.ReadCell();
+		dataPack.ReadCell(); // target
+		dataPack.ReadCell(); // admin userid
+		dataPack.ReadCell(); // target userid
+		int time = dataPack.ReadCell();
+		
+		DataPack reasonPack = dataPack.ReadCell();
+		
+		char reason[128], name[50], auth[30], ip[20], adminAuth[30], adminIp[20];
+		
+		reasonPack.ReadString(reason, sizeof reason);
+		
+		dataPack.ReadString(name, sizeof name);
+		dataPack.ReadString(auth, sizeof auth);
+		dataPack.ReadString(ip, sizeof ip);
+		dataPack.ReadString(adminAuth, sizeof adminAuth);
+		dataPack.ReadString(adminIp, sizeof adminIp);
+		
 		ResetPack(dataPack);
 		ResetPack(reasonPack);
 
 		PlayerDataPack[admin] = INVALID_HANDLE;
-		UTIL_InsertTempBan(time, name, auth, ip, reason, adminAuth, adminIp, Handle:dataPack);
+		UTIL_InsertTempBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
 		return;
 	}
 
-	new admin = ReadPackCell(dataPack);
-	new client = ReadPackCell(dataPack);
+	int admin = dataPack.ReadCell();
+	int client = dataPack.ReadCell();
 
 	if (!IsClientConnected(client) || IsFakeClient(client))
 		return;
 
-	ReadPackCell(dataPack); // admin userid
-	new UserId = ReadPackCell(dataPack);
-	new time = ReadPackCell(dataPack);
-	new Handle:ReasonPack = Handle:ReadPackCell(dataPack);
+	dataPack.ReadCell(); // admin userid
+	
+	int UserId = dataPack.ReadCell();
+	int time = dataPack.ReadCell();
+	
+	DataPack ReasonPack = dataPack.ReadCell();
 
-	decl String:Name[64];
-	new String:Reason[128];
+	char Name[64], Reason[128];
 
-	ReadPackString(dataPack, Name, sizeof(Name));
-	ReadPackString(ReasonPack, Reason, sizeof(Reason));
+	dataPack.ReadString(Name, sizeof(Name));
+	ReasonPack.ReadString(Reason, sizeof(Reason));
 
 	if (!time)
 	{
@@ -2506,34 +2508,40 @@ stock UTIL_InsertBan(time, const String:Name[], const String:Authid[], const Str
 	SQL_TQuery(DB, VerifyInsert, Query, Pack, DBPrio_High);
 }
 
-stock UTIL_InsertTempBan(time, const String:name[], const String:auth[], const String:ip[], const String:reason[], const String:adminAuth[], const String:adminIp[], Handle:dataPack)
+stock UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp, DataPack dataPack)
 {
-	ReadPackCell(dataPack); // admin index
-	new client = ReadPackCell(dataPack);
-	ReadPackCell(dataPack); // admin userid
-	ReadPackCell(dataPack); // target userid
-	ReadPackCell(dataPack); // time
-	new Handle:reasonPack = Handle:ReadPackCell(dataPack);
+	dataPack.ReadCell(); // admin index
+	
+	int client = ReadPackCell(dataPack);
+	
+	dataPack.ReadCell(); // admin userid
+	dataPack.ReadCell(); // target userid
+	dataPack.ReadCell(); // time
+	
+	DataPack reasonPack = view_as<DataPack>(dataPack.ReadCell());
+	
 	if (reasonPack != INVALID_HANDLE)
-	{
 		CloseHandle(reasonPack);
-	}
 	CloseHandle(dataPack);
 
 	// we add a temporary ban and then add the record into the queue to be processed when the database is available
-	decl String:buffer[50];
+	char buffer[50];
+	
 	Format(buffer, sizeof(buffer), "banid %d %s", ProcessQueueTime, auth);
+	
 	ServerCommand(buffer);
+	
 	if (IsClientInGame(client))
 		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
 
-	decl String:banName[128];
-	decl String:banReason[256];
-	decl String:query[512];
+	char banName[128], banReason[256], query[512];
+	
 	SQL_EscapeString(SQLiteDB, name, banName, sizeof(banName));
 	SQL_EscapeString(SQLiteDB, reason, banReason, sizeof(banReason));
+	
 	FormatEx(query, sizeof(query), "INSERT INTO queue VALUES ('%s', %i, %i, '%s', '%s', '%s', '%s', '%s')",
 		auth, time, GetTime(), banReason, banName, ip, adminAuth, adminIp);
+		
 	SQL_TQuery(SQLiteDB, ErrorCheckCallback, query);
 }
 
@@ -2556,12 +2564,14 @@ stock InsertServerInfo()
 		return;
 	}
 
-	decl String:query[100], pieces[4];
-	new longip = GetConVarInt(CvarHostIp);
+	char query[100], pieces[4];
+	int longip = GetConVarInt(CvarHostIp);
+	
 	pieces[0] = (longip >> 24) & 0x000000FF;
 	pieces[1] = (longip >> 16) & 0x000000FF;
 	pieces[2] = (longip >> 8) & 0x000000FF;
 	pieces[3] = longip & 0x000000FF;
+	
 	FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
 	GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
 
@@ -2572,14 +2582,14 @@ stock InsertServerInfo()
 	}
 }
 
-stock PrepareBan(client, target, time, String:reason[], size)
+stock void PrepareBan(int client, int target, int time, char[] reason, int size)
 {
 	#if defined DEBUG
 	LogToFile(logFile, "PrepareBan()");
 	#endif
 	if (!target || !IsClientInGame(target))
 		return;
-	decl String:authid[64], String:name[32], String:bannedSite[512];
+	char authid[64], name[32], bannedSite[512];
 	if (!GetClientAuthId(target, AuthId_Steam2, authid, sizeof(authid)))
 		return;
 	GetClientName(target, name, sizeof(name));
@@ -2615,7 +2625,7 @@ stock PrepareBan(client, target, time, String:reason[], size)
 	g_BanTime[client] = -1;
 }
 
-stock ReadConfig()
+stock void ReadConfig()
 {
 	InitializeConfigParser();
 
@@ -2624,7 +2634,7 @@ stock ReadConfig()
 		return;
 	}
 
-	decl String:ConfigFile[PLATFORM_MAX_PATH];
+	char ConfigFile[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans/sourcebans.cfg");
 
 	if (FileExists(ConfigFile))
@@ -2632,14 +2642,14 @@ stock ReadConfig()
 		InternalReadConfig(ConfigFile);
 		PrintToServer("%sLoading configs/sourcebans.cfg config file", Prefix);
 	} else {
-		decl String:Error[PLATFORM_MAX_PATH + 64];
+		char Error[PLATFORM_MAX_PATH + 64];
 		FormatEx(Error, sizeof(Error), "%sFATAL *** ERROR *** can not find %s", Prefix, ConfigFile);
 		LogToFile(logFile, "FATAL *** ERROR *** can not find %s", ConfigFile);
 		SetFailState(Error);
 	}
 }
 
-stock ResetSettings()
+stock void ResetSettings()
 {
 	CommandDisable = 0;
 
@@ -2647,17 +2657,19 @@ stock ResetSettings()
 	ReadConfig();
 }
 
-stock ParseBackupConfig_Overrides()
+stock void ParseBackupConfig_Overrides()
 {
-	new Handle:hKV = CreateKeyValues("SB_Overrides");
+	Handle hKV = CreateKeyValues("SB_Overrides");
+	
 	if (!FileToKeyValues(hKV, overridesLoc))
 		return;
 
 	if (!KvGotoFirstSubKey(hKV))
 		return;
 
-	decl String:sSection[16], String:sFlags[32], String:sName[64];
-	decl OverrideType:type;
+	char sSection[16], sFlags[32], sName[64];
+	OverrideType type;
+	
 	do
 	{
 		KvGetSectionName(hKV, sSection, sizeof(sSection));
@@ -2686,9 +2698,9 @@ stock ParseBackupConfig_Overrides()
 	CloseHandle(hKV);
 }
 
-stock AdminFlag:CreateFlagLetters()
+stock AdminFlag CreateFlagLetters()
 {
-	new AdminFlag:FlagLetters[FLAG_LETTERS_SIZE];
+	AdminFlag FlagLetters[FLAG_LETTERS_SIZE];
 
 	FlagLetters['a'-'a'] = Admin_Reservation;
 	FlagLetters['b'-'a'] = Admin_Generic;
@@ -2717,7 +2729,8 @@ stock AdminFlag:CreateFlagLetters()
 
 stock AccountForLateLoading()
 {
-	decl String:auth[30];
+	char auth[30];
+	
 	for (new i = 1; i <= GetMaxClients(); i++)
 	{
 		if (IsClientConnected(i) && !IsFakeClient(i))
