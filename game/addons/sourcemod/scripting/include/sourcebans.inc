@@ -92,4 +92,14 @@ native void SourceBans_ReportPlayer(int iReporter, int iTarget, const char[] sRe
  *********************************************************/
 forward void SourceBans_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
+/*********************************************************
+ * Called when a new report is inserted
+ *
+ * @param iReporter	The client index of the reporter
+ * @param iTarget	The client index of the player to report
+ * @param sReason	The reason to report the player
+ * @noreturn
+ *********************************************************/
+forward void SourceBans_OnReportPlayer(int iReporter, int iTarget, const char[] sReason);
+
 //Yarr!
