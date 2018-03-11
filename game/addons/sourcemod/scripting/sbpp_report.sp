@@ -95,6 +95,40 @@ public int ReportMenu(Menu menu, MenuAction action, int iClient, int iItem)
 	}
 }
 
+public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[] sArgs)
+{
+	if (!bInReason[iClient])
+		return Plugin_Continue;
+		
+	if (!IsValidClient(iClient) || (iTargetCache[iClient] != -1 && !IsValidClient(iTargetCache[iClient])))
+	{
+		ResetInReason(iClient);
+		
+		return Plugin_Continue;
+	}
+	
+	if (StrEqual(sArgs, "cancel", false))
+	{
+		PrintToChat(iClient, "%sReport cancelled", Chat_Prefix);
+		
+		ResetInReason(iClient);
+		
+		return Plugin_Stop;
+	}
+	
+	SourceBans_ReportPlayer(iClient, iTargetCache[iClient], sArgs);
+	
+	ResetInReason(iClient);
+	
+	return Plugin_Stop;
+}
+
+void ResetInReason(int iClient)
+{
+	bInReason[iClient] = false;
+	iTargetCache[iClient] = -1;
+}
+
 public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (convar == Convars[Prefix])
