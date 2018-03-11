@@ -1,0 +1,29 @@
+"Phrases"
+{
+	"In Cooldown"
+	{
+		"#format"	"{1:.0f}"
+		
+		"en"	"Please wait {1} seconds before reporting again"
+	}
+	
+	"Report Canceled"
+	{
+		"en"	"Report canceled"
+	}
+	
+	"Report Sent"
+	{
+		"en"	"Your report has been sent"
+	}
+	
+	"Reason Prompt"
+	{
+		"en"	"Please enter the reason for the report or \"cancel\" to cancel"
+	}
+	
+	"Reason Short Need More"
+	{
+		"en"	"Reason is too short, more details is required"
+	}
+}
