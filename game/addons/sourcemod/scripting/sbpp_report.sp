@@ -69,6 +69,9 @@ public Action CmdReport(int iClient, int iArgs)
 	
 	for (int i = 0; i <= MaxClients; i++)
 	{
+		if (!IsValidClient(i))
+			continue;
+		
 		GetClientName(i, sName, sizeof sName);
 		IntToString(i, sIndex, sizeof sIndex);
 		
