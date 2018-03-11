@@ -58,7 +58,7 @@ public Action CmdReport(int iClient, int iArgs)
 		
 	if (OnCooldown(iClient))
 	{
-		PrintToChat(iClient, "%s%T", Chat_Prefix, "In Cooldown", GetRemainingTime(iClient));
+		PrintToChat(iClient, "%s%T", Chat_Prefix, "In Cooldown", iClient, GetRemainingTime(iClient));
 		
 		return Plugin_Handled;
 	}
@@ -97,7 +97,7 @@ public int ReportMenu(Menu menu, MenuAction action, int iClient, int iItem)
 			
 			bInReason[iClient] = true;
 			
-			PrintToChat(iClient, "%s%T", Chat_Prefix, "Reason Prompt");
+			PrintToChat(iClient, "%s%T", Chat_Prefix, "Reason Prompt", iClient);
 		}
 		case MenuAction_End:
 			delete menu;
@@ -118,7 +118,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	
 	if (StrEqual(sArgs, "cancel", false))
 	{
-		PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Canceled");
+		PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Canceled", iClient);
 		
 		ResetInReason(iClient);
 		
@@ -127,7 +127,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	
 	if (strlen(sArgs) < iMinLen)
 	{
-		PrintToChat(iClient, "%s%T", Chat_Prefix, "Reason Short Need More");
+		PrintToChat(iClient, "%s%T", Chat_Prefix, "Reason Short Need More", iClient);
 
 		return Plugin_Stop;
 	}
@@ -138,7 +138,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	
 	ResetInReason(iClient);
 	
-	PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Sent");
+	PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Sent", iClient);
 	
 	return Plugin_Stop;
 }
