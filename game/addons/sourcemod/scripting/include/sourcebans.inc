@@ -45,6 +45,7 @@ public __pl_sourcebans_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
 	MarkNativeAsOptional("SourceBans_BanPlayer");
+	MarkNativeAsOptional("SourceBans_ReportPlayer");
 }
 #endif
 
