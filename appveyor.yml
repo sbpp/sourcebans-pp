@@ -18,6 +18,7 @@ test_script:
   - cmd: spcomp sbpp_comms.sp
   - cmd: spcomp sbpp_checker.sp
   - cmd: spcomp sbpp_sleuth.sp
+  - cmd: spcomp sbpp_report.sp
   
 after_test:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
