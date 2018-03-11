@@ -2358,6 +2358,7 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	
 	ForwardPack.WriteCell(iReporter);
 	ForwardPack.WriteCell(iTarget);
+	ForwardPack.WriteCell(iReasonLen);
 	ForwardPack.WriteString(sReason);
 
 	DB.Query(SQL_OnReportPlayer, sQuery, ForwardPack);
@@ -2369,7 +2370,19 @@ public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] er
 		LogToFile(logFile, "Failed to submit report: %s", error);
 	else
 	{
-		// char 
+		int iReporter = ForwardPack.ReadCell();
+		int iTarget = ForwardPack.ReadCell();
+		int iReasonLen = ForwardPack.ReadCell();
+		
+		char[] sReason = new char[iReasonLen];
+		
+		ForwardPack.ReadString(sReason, iReasonLen);
+		
+		Call_StartForward(g_hFwd_OnReportAdded);
+		Call_PushCell(iReporter);
+		Call_PushCell(iTarget);
+		Call_PushString(sReason);
+		Call_Finish();
 	}
 }
 
