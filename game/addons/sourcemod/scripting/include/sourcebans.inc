@@ -90,6 +90,6 @@ native void SourceBans_ReportPlayer(int iReporter, int iTarget, const char[] sRe
  * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
  * @param sReason    The reason to ban the player from the server
  *********************************************************/
-forward SourceBans_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+forward void SourceBans_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 //Yarr!
