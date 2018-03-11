@@ -2349,13 +2349,7 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, int iReporter)
 {
 	if (results == null)
-	{
-		PrintToChat(iReporter, "%sFailed to submit report", Prefix);
 		LogToFile(logFile, "Failed to submit report: %s", error);
-		return;
-	}
-	
-	PrintToChat(iReporter, "%sSuccessfully submitted your report", Prefix);
 }
 
 // STOCK FUNCTIONS //

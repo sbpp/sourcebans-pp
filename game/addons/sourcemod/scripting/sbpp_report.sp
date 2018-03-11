@@ -12,7 +12,7 @@
 
 #define Chat_Prefix "[SourceBans++] "
 
-enum Settings
+enum
 {
 	Prefix = 0,
 	Cooldown,
@@ -23,8 +23,12 @@ ConVar Convars[Settings_Count];
 
 char sPrefix[16];
 
-float fCooldown = 60.0;
-float fLastUse[MAXPLAYERS + 1];
+bool bInReason[MAXPLAYERS + 1];
+
+int iTargetCache[MAXPLAYERS + 1];
+
+float fCooldown = 60.0
+	, fLastUse[MAXPLAYERS + 1];
 
 public Plugin myinfo = 
 {
@@ -37,7 +41,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	CreateConVar("sbpp_report_version", "SBPP Report Version", FCVAR_REPLICATED | FCVAR_SPONLY | FCVAR_DONTRECORD | FCVAR_NOTIFY);
+	CreateConVar("sbpp_report_version", PLUGIN_VERSION, "SBPP Report Version", FCVAR_REPLICATED | FCVAR_SPONLY | FCVAR_DONTRECORD | FCVAR_NOTIFY);
 	
 	Convars[Prefix] = CreateConVar("sbpp_report_prefix", "sb", "SourceBans++ Database Table Prefix", FCVAR_NONE);
 	Convars[Cooldown] = CreateConVar("sbpp_report_cooldown", "60.0", "Cooldown in seconds between per report per user", FCVAR_NONE, true, 0.0, false);
@@ -50,7 +54,45 @@ public void OnPluginStart()
 
 public Action CmdReport(int iClient, int iArgs)
 {
+	if (!IsValidClient(iClient))
+		return Plugin_Handled;
 	
+	Menu PList = new Menu(ReportMenu);
+	
+	char sName[MAX_NAME_LENGTH], sIndex[4];
+	
+	for (int i = 0; i <= MaxClients; i++)
+	{
+		GetClientName(i, sName, sizeof sName);
+		IntToString(i, sIndex, sizeof sIndex);
+		
+		PList.AddItem(sIndex, sName);
+	}
+	
+	PList.Display(iClient, MENU_TIME_FOREVER);
+	
+	return Plugin_Handled;
+}
+
+public int ReportMenu(Menu menu, MenuAction action, int iClient, int iItem)
+{
+	switch (action)
+	{
+		case MenuAction_Select:
+		{
+			char sIndex[4];
+			
+			menu.GetItem(iItem, sIndex, sizeof sIndex);
+			
+			iTargetCache[iClient] = StringToInt(sIndex);
+			
+			bInReason[iClient] = true;
+			
+			PrintToChat(iClient, "%sPlease enter the reason for the report or \"cancel\" to cancel", Chat_Prefix);
+		}
+		case MenuAction_End:
+			delete menu;
+	}
 }
 
 public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
@@ -59,4 +101,19 @@ public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] n
 		Convars[Prefix].GetString(sPrefix, sizeof sPrefix);
 	else if (convar == Convars[Cooldown])
 		fCooldown = Convars[Cooldown].FloatValue;
+}
+
+stock bool IsValidClient(int iClient, bool bAlive = false)
+{
+	if (iClient >= 1 &&
+	iClient <= MaxClients &&
+	IsClientConnected(iClient) &&
+	IsClientInGame(iClient) &&
+	!IsFakeClient(iClient) &&
+	(bAlive == false || IsPlayerAlive(iClient)))
+	{
+		return true;
+	}
+
+	return false;
 }
