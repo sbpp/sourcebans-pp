@@ -5,25 +5,30 @@
 		"#format"	"{1:.0f}"
 		
 		"en"	"Please wait {1} seconds before reporting again"
+		"fr"	"Veuillez patienter {1} secondes avant de rapporter à nouveau"
 	}
 	
 	"Report Canceled"
 	{
 		"en"	"Report canceled"
+		"fr"	"Report annulé"
 	}
 	
 	"Report Sent"
 	{
 		"en"	"Your report has been sent"
+		"fr"	"Votre report a été envoyé"
 	}
 	
 	"Reason Prompt"
 	{
 		"en"	"Please enter the reason for the report or \"cancel\" to cancel"
+		"fr"	"Veuillez entrer la raison du rapport ou \"cancel\" pour annuler
 	}
 	
 	"Reason Short Need More"
 	{
 		"en"	"Reason is too short, more details is required"
+		"fr"	"La raison est trop courte, plus de détails sont requis"
 	}
 }
