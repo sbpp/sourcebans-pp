@@ -16,6 +16,7 @@ enum
 {
 	Prefix = 0,
 	Cooldown,
+	MinLen,
 	Settings_Count
 };
 
@@ -25,10 +26,11 @@ char sPrefix[16];
 
 bool bInReason[MAXPLAYERS + 1];
 
-int iTargetCache[MAXPLAYERS + 1];
+int iMinLen = 10
+	, iTargetCache[MAXPLAYERS + 1];
 
 float fCooldown = 60.0
-	, fLastUse[MAXPLAYERS + 1];
+	, fNextUse[MAXPLAYERS + 1];
 
 public Plugin myinfo = 
 {
@@ -45,17 +47,26 @@ public void OnPluginStart()
 	
 	Convars[Prefix] = CreateConVar("sbpp_report_prefix", "sb", "SourceBans++ Database Table Prefix", FCVAR_NONE);
 	Convars[Cooldown] = CreateConVar("sbpp_report_cooldown", "60.0", "Cooldown in seconds between per report per user", FCVAR_NONE, true, 0.0, false);
+	Convars[MinLen] = CreateConVar("sbpp_report_minlen", "10", "Minimum reason length", FCVAR_NONE, true, 0.0, false);
 	
 	RegConsoleCmd("sm_report", CmdReport, "Initialize Report");
 	
 	Convars[Prefix].AddChangeHook(OnConvarChanged);
 	Convars[Cooldown].AddChangeHook(OnConvarChanged);
+	Convars[MinLen].AddChangeHook(OnConvarChanged);
 }
 
 public Action CmdReport(int iClient, int iArgs)
 {
 	if (!IsValidClient(iClient))
 		return Plugin_Handled;
+		
+	if (OnCooldown(iClient))
+	{
+		PrintToChat(iClient, "%sPlease wait %.0f seconds before reporting again", Chat_Prefix, GetRemainingTime(iClient));
+		
+		return Plugin_Handled;
+	}
 	
 	Menu PList = new Menu(ReportMenu);
 	
@@ -116,7 +127,16 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 		return Plugin_Stop;
 	}
 	
+	if (strlen(sArgs) < iMinLen)
+	{
+		PrintToChat(iClient, "%sReason is too short. More details is required", Chat_Prefix);
+
+		return Plugin_Stop;
+	}
+	
 	SourceBans_ReportPlayer(iClient, iTargetCache[iClient], sArgs);
+	
+	AddCooldown(iClient);
 	
 	ResetInReason(iClient);
 	
@@ -129,12 +149,34 @@ void ResetInReason(int iClient)
 	iTargetCache[iClient] = -1;
 }
 
+void AddCooldown(int iClient)
+{
+	fNextUse[iClient] = GetGameTime() + fCooldown;
+}
+
+bool OnCooldown(int iClient)
+{
+	return (fNextUse[iClient] - GetGameTime()) > 0.0;
+}
+
+float GetRemainingTime(int iClient)
+{
+	float fOffset = fNextUse[iClient] - GetGameTime();
+	
+	if (fOffset > 0.0)
+		return fOffset;
+	else
+		return 0.0;
+}
+
 public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (convar == Convars[Prefix])
 		Convars[Prefix].GetString(sPrefix, sizeof sPrefix);
 	else if (convar == Convars[Cooldown])
 		fCooldown = Convars[Cooldown].FloatValue;
+	else if (convar == Convars[MinLen])
+		iMinLen = Convars[MinLen].IntValue;
 }
 
 stock bool IsValidClient(int iClient, bool bAlive = false)
