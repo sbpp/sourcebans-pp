@@ -138,9 +138,15 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	
 	ResetInReason(iClient);
 	
-	PrintToChat(iClient, "%s%T", Chat_Prefix, "Report Sent", iClient);
-	
 	return Plugin_Stop;
+}
+
+public void SourceBans_OnReportPlayer(int iReporter, int iTarget, const char[] sReason)
+{
+	if (!IsValidClient(iReporter))
+		return;
+		
+	PrintToChat(iReporter, "%s%T", Chat_Prefix, "Report Sent", iReporter);
 }
 
 void ResetInReason(int iClient)
