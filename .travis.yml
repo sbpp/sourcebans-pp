@@ -24,6 +24,8 @@ before_script:
   - tar -xzf sourcemod-$SOURCEMOD-linux.tar.gz
   - cd addons/sourcemod/scripting/
   - wget https://bitbucket.org/GoD_Tony/updater/raw/53ebb3e27e5a43bc46dc52dc0de76ac2fb48cd9e/include/updater.inc -O include/updater.inc
+  - wget https://raw.githubusercontent.com/KyleSanderson/SteamWorks/master/Pawn/includes/SteamWorks.inc -O includes/SteamWorks.inc
+  - wget https://raw.githubusercontent.com/thraaawn/SMJansson/master/pawn/scripting/include/smjansson.inc -O include/smjansson.inc
   - chmod +x spcomp
 
 script:
