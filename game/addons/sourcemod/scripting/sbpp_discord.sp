@@ -35,4 +35,15 @@ public void OnPluginStart()
 	
 	Convars[Ban] = CreateConVar("sbpp_discord_banhook", "", "Discord web hook endpoint for ban forward", FCVAR_NONE);
 	Convars[Report] = CreateConVar("sbpp_discord_reporthook", "", "Discord web hook endpoint for report forward. If left empty, the ban endpoint will be used instead", FCVAR_NONE);
+
+	Convars[Ban].AddChangeHook(OnConvarChanged);
+	Convars[Report].AddChangeHook(OnConvarChanged);
+}
+
+public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
+{
+	if (convar == Convars[Ban])
+		Convars[Ban].GetString(sEndpoints[Ban], sizeof sEndpoints[]);
+	else if (convar == Convars[Report])
+		Convars[Report].GetString(sEndpoints[Report], sizeof sEndpoints[]);
 }
