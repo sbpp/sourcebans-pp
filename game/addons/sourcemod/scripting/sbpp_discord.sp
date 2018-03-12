@@ -5,6 +5,7 @@
 
 #include <sourcemod>
 #include <SteamWorks>
+#include <smjansson>
 
 #pragma newdecls required
 
