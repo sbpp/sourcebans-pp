@@ -129,7 +129,7 @@
 		"pt"			"Jogador {1} já amordaçado ou emudecido!"
 		"de"			"Der Spieler {1} ist bereits im Chat oder im Voice-Chat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté ou muté du chat!"
-
+	}
 	//--------------------------------------------------------------------------------
 	"Player not muted"
 	{
