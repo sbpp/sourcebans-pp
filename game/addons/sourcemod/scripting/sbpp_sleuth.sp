@@ -27,7 +27,7 @@
 #pragma semicolon 1
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
-#include <sourcebans>
+#include <sourcebanspp>
 
 #define PLUGIN_VERSION "1.6.3-PRE"
 
@@ -235,7 +235,7 @@ stock BanPlayer(client, time)
 {
 	decl String:Reason[255];
 	Format(Reason, sizeof(Reason), "[SourceSleuth] %T", "sourcesleuth_banreason", client);
-	SourceBans_BanPlayer(0, client, time, Reason);
+	SBPP_BanPlayer(0, client, time, Reason);
 }
 
 PrintToAdmins(const String:format[], any:...)

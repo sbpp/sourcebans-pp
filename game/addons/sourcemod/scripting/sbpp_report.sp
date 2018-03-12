@@ -4,7 +4,7 @@
 #define PLUGIN_VERSION "1.6.3-rc.1"
 
 #include <sourcemod>
-#include <sourcebans>
+#include <sourcebanspp>
 
 #pragma newdecls required
 
@@ -132,7 +132,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 		return Plugin_Stop;
 	}
 	
-	SourceBans_ReportPlayer(iClient, iTargetCache[iClient], sArgs);
+	SBPP_ReportPlayer(iClient, iTargetCache[iClient], sArgs);
 	
 	AddCooldown(iClient);
 	
@@ -141,7 +141,7 @@ public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[
 	return Plugin_Stop;
 }
 
-public void SourceBans_OnReportPlayer(int iReporter, int iTarget, const char[] sReason)
+public void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReason)
 {
 	if (!IsValidClient(iReporter))
 		return;

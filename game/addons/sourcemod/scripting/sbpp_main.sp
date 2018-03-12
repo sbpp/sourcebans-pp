@@ -26,7 +26,7 @@
 
 #pragma semicolon 1
 #include <sourcemod>
-#include <sourcebans>
+#include <sourcebanspp>
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
@@ -141,11 +141,11 @@ public bool AskPluginLoad(Handle myself, bool late, char[] error, int err_max)
 	RegPluginLibrary("sourcebans++");
 	
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
-	CreateNative("SourceBans_BanPlayer", Native_SBBanPlayer);
-	CreateNative("SourceBans_ReportPlayer", Native_SBReportPlayer);
+	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
+	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
 
-	g_hFwd_OnBanAdded = CreateGlobalForward("SourceBans_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
-	g_hFwd_OnReportAdded = CreateGlobalForward("SourceBans_OnReportPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_String);
+	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
+	g_hFwd_OnReportAdded = CreateGlobalForward("SBPP_OnReportPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_String);
 
 	LateLoaded = late;
 

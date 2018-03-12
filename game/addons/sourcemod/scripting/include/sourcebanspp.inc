@@ -44,8 +44,8 @@ public SharedPlugin __pl_sourcebans =
 public __pl_sourcebans_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
-	MarkNativeAsOptional("SourceBans_BanPlayer");
-	MarkNativeAsOptional("SourceBans_ReportPlayer");
+	MarkNativeAsOptional("SBPP_BanPlayer");
+	MarkNativeAsOptional("SBPP_ReportPlayer");
 }
 #endif
 
@@ -59,7 +59,7 @@ public __pl_sourcebans_SetNTVOptional()
  * @param sReason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-#pragma deprecated Use SourceBans_BanPlayer() instead.
+#pragma deprecated Use SBPP_BanPlayer() instead.
 native void SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
@@ -71,7 +71,7 @@ native void SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason
  * @param sReason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-native void SourceBans_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
  * Reports a player
@@ -81,7 +81,7 @@ native void SourceBans_BanPlayer(int iAdmin, int iTarget, int iTime, const char[
  * @param sReason	The reason to report the player
  * @noreturn
  *********************************************************/
-native void SourceBans_ReportPlayer(int iReporter, int iTarget, const char[] sReason);
+native void SBPP_ReportPlayer(int iReporter, int iTarget, const char[] sReason);
 
 /*********************************************************
  * Called when the admin banning the player.
@@ -91,7 +91,7 @@ native void SourceBans_ReportPlayer(int iReporter, int iTarget, const char[] sRe
  * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
  * @param sReason    The reason to ban the player from the server
  *********************************************************/
-forward void SourceBans_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+forward void SBPP_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
  * Called when a new report is inserted
@@ -101,6 +101,6 @@ forward void SourceBans_OnBanPlayer(int iAdmin, int iTarget, int iTime, const ch
  * @param sReason	The reason to report the player
  * @noreturn
  *********************************************************/
-forward void SourceBans_OnReportPlayer(int iReporter, int iTarget, const char[] sReason);
+forward void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReason);
 
 //Yarr!
