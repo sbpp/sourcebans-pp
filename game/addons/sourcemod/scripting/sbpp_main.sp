@@ -2329,6 +2329,8 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	  
 	GetNativeStringLength(3, iReasonLen);
 	
+	iReasonLen++;
+	
 	char[] sReason = new char[iReasonLen];
 	
 	GetNativeString(3, sReason, iReasonLen);
@@ -2474,7 +2476,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 		DisplayMenu(ReasonMenuHandle, admin, MENU_TIME_FOREVER);
 		ReplyToCommand(admin, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Check Menu");
 	}
-
+	
 	Call_StartForward(g_hFwd_OnBanAdded);
 	Call_PushCell(client);
 	Call_PushCell(target);

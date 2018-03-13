@@ -8,6 +8,8 @@ install:
   - ps: Expand-Archive -Path "sourcemod-$env:SOURCEMOD-windows.zip" -DestinationPath "game"
   - ps: cd game\addons\sourcemod\scripting\include\
   - ps: Invoke-WebRequest "https://bitbucket.org/GoD_Tony/updater/raw/53ebb3e27e5a43bc46dc52dc0de76ac2fb48cd9e/include/updater.inc" -OutFile "updater.inc"
+  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/KyleSanderson/SteamWorks/master/Pawn/includes/SteamWorks.inc" -OutFile "SteamWorks.inc"
+  - ps: Invoke-WebRequest "https://raw.githubusercontent.com/thraaawn/SMJansson/master/pawn/scripting/include/smjansson.inc" -OutFile "smjansson.inc"
   - ps: cd ..
 
 build: off
@@ -19,6 +21,7 @@ test_script:
   - cmd: spcomp sbpp_checker.sp
   - cmd: spcomp sbpp_sleuth.sp
   - cmd: spcomp sbpp_report.sp
+  - cmd: spcomp sbpp_discord.sp
   
 after_test:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
