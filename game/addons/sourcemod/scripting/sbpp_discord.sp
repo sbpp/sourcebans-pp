@@ -45,13 +45,30 @@ public void OnPluginStart()
 	Convars[Report].AddChangeHook(OnConvarChanged);
 }
 
-void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
+public void SBPP_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason)
 {
+	SendReport(iAdmin, iTarget, sReason, iTime);
+}
+
+public void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReason)
+{
+	SendReport(iReporter, iTarget, sReason);
+}
+
+void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
+{	
 	if (!IsValidClient(iClient))
 		return;
 		
 	if (iTarget != -1 && !IsValidClient(iTarget))
 		return;
+		
+	if (StrEqual(sEndpoints[Ban], ""))
+	{
+		LogError("Missing ban hook endpoint");
+		
+		return;
+	}
 		
 	char sAuthor[MAX_NAME_LENGTH], sTarget[MAX_NAME_LENGTH], sAuthorID[32], sAuthorID64[32], sTargetID[32], sJson[2048], sBuffer[256];
 	
@@ -84,7 +101,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	
 	Handle jFieldAuthor = json_object();
-	json_object_set_new(jFieldAuthor, "name", json_string("Reporter"));
+	json_object_set_new(jFieldAuthor, "name", json_string("Author"));
 	Format(sBuffer, sizeof sBuffer, "%s (%s)", sAuthor, sAuthorID);
 	json_object_set_new(jFieldAuthor, "value", json_string(sBuffer));
 	json_object_set_new(jFieldAuthor, "inline", json_boolean(true));
@@ -145,7 +162,8 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	CloseHandle(jRequest);
 	
-	Handle hRequest = SteamWorks_CreateHTTPRequest(k_EHTTPMethodPOST, sHook);
+	Handle hRequest = SteamWorks_CreateHTTPRequest(k_EHTTPMethodPOST, (iTime != -1) ? sEndpoints[Ban] : (StrEqual(sEndpoints[Report], "")) ? sEndpoints[Ban] : sEndpoints[Report]);
+	
 	SteamWorks_SetHTTPRequestContextValue(hRequest, iClient, iTarget);
 	SteamWorks_SetHTTPRequestGetOrPostParameter(hRequest, "payload_json", sJson);
 	SteamWorks_SetHTTPCallbacks(hRequest, OnHTTPRequestComplete);
@@ -154,10 +172,48 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 		LogError("HTTP request failed for %s against %s", sAuthor, sTarget);
 }
 
+public int OnHTTPRequestComplete(Handle hRequest, bool bFailure, bool bRequestSuccessful, EHTTPStatusCode eStatusCode, int iClient, int iTarget)
+{
+	if (!bRequestSuccessful || eStatusCode != k_EHTTPStatusCode204NoContent)
+	{
+		LogError("HTTP request failed for %N against %N", iClient, iTarget);
+		
+		#if defined DEBUG
+			int iSize;
+		
+			SteamWorks_GetHTTPResponseBodySize(hRequest, iSize);
+			
+			char[] sBody = new char[iSize];
+		
+			SteamWorks_GetHTTPResponseBodyData(hRequest, sBody, iSize);
+			
+			PrintToServer(sBody);
+			PrintToServer("%d", eStatusCode);
+		#endif
+	}
+	
+	CloseHandle(hRequest);
+}
+
 public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	if (convar == Convars[Ban])
 		Convars[Ban].GetString(sEndpoints[Ban], sizeof sEndpoints[]);
 	else if (convar == Convars[Report])
 		Convars[Report].GetString(sEndpoints[Report], sizeof sEndpoints[]);
+}
+
+stock bool IsValidClient(int iClient, bool bAlive = false)
+{
+	if (iClient >= 1 &&
+	iClient <= MaxClients &&
+	IsClientConnected(iClient) &&
+	IsClientInGame(iClient) &&
+	!IsFakeClient(iClient) &&
+	(bAlive == false || IsPlayerAlive(iClient)))
+	{
+		return true;
+	}
+
+	return false;
 }
