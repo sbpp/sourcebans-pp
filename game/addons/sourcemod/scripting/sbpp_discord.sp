@@ -110,6 +110,23 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	json_array_append_new(jFields, jFieldServer);
 	json_array_append_new(jFields, jFieldReason);
 	
+	if (iTime != -1)
+	{
+		Handle jFieldDuration = json_object();
+		
+		json_object_set_new(jFieldDuration, "name", json_string("Duration"));
+		
+		if (iTime > 0)
+			Format(sBuffer, sizeof sBuffer, "%d minutes", iTime);
+		else
+			Format(sBuffer, sizeof sBuffer, "Permanent");
+			
+		json_object_set_new(jFieldDuration, "value", json_string(sBuffer));
+		json_object_set_new(jFieldDuration, "inline", json_boolean(true));
+		
+		json_array_append_new(jFields, jFieldDuration);
+	}
+	
 	
 	json_object_set_new(jContent, "fields", jFields);
 	
