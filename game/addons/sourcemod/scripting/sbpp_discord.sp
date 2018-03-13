@@ -66,7 +66,6 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	if (StrEqual(sEndpoints[Ban], ""))
 	{
 		LogError("Missing ban hook endpoint");
-		
 		return;
 	}
 		
@@ -86,7 +85,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	Handle jContent = json_object();
 	
-	json_object_set(jContent, "description", json_string("New Forward"));
+	json_object_set(jContent, "description", json_string("New Notification"));
 	json_object_set(jContent, "color", json_integer(1402304));
 	
 	Handle jContentAuthor = json_object();
