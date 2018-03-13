@@ -67,7 +67,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 		return;
 	}
 		
-	char sAuthor[MAX_NAME_LENGTH], sTarget[MAX_NAME_LENGTH], sAuthorID[32], sTargetID64[32], sTargetID[32], sJson[2048], sBuffer[256];
+	char sAuthor[MAX_NAME_LENGTH], sTarget[MAX_NAME_LENGTH], sAuthorID[32], sTargetID64[32], sTargetID[32], sJson[2048], sBuffer[256], sTime[32];
 	
 	if (IsValidClient(iClient))
 	{
@@ -83,6 +83,8 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	GetClientName(iTarget, sTarget, sizeof sTarget);
 	GetClientAuthId(iTarget, AuthId_Steam2, sTargetID, sizeof sTargetID);
 	
+	FormatTime(sTime, sizeof sTime, "%FT%TZ");
+	
 	Handle jRequest = json_object();
 	
 	Handle jEmbeds = json_array();
@@ -90,15 +92,23 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	Handle jContent = json_object();
 	
-	json_object_set(jContent, "description", json_string("New Notification"));
-	json_object_set(jContent, "color", json_integer(1402304));
+	json_object_set(jContent, "color", json_integer(16374082));
+	json_object_set(jContent, "timestamp", json_string(sTime));
 	
 	Handle jContentAuthor = json_object();
 	
 	json_object_set_new(jContentAuthor, "name", json_string(sTarget));
 	Format(sBuffer, sizeof sBuffer, "https://steamcommunity.com/profiles/%s", sTargetID64);
 	json_object_set_new(jContentAuthor, "url", json_string(sBuffer));
+	json_object_set_new(jContentAuthor, "icon_url", json_string("https://sbpp.github.io/img/favicons/android-chrome-512x512.png"));
 	json_object_set_new(jContent, "author", jContentAuthor);
+	
+	Handle jContentFooter = json_object();
+	
+	Format(sBuffer, sizeof sBuffer, "%s (%s)", sHostname, sHost);
+	json_object_set_new(jContentFooter, "text", json_string(sBuffer));
+	json_object_set_new(jContentFooter, "icon_url", json_string("https://sbpp.github.io/img/favicons/android-chrome-512x512.png"));
+	json_object_set_new(jContent, "footer", jContentFooter);
 	
 	
 	Handle jFields = json_array();
@@ -116,21 +126,12 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	json_object_set_new(jFieldTarget, "value", json_string(sBuffer));
 	json_object_set_new(jFieldTarget, "inline", json_boolean(true));
 	
-	Handle jFieldServer = json_object();
-	json_object_set_new(jFieldServer, "name", json_string("Server"));
-	Format(sBuffer, sizeof sBuffer, "%s (%s)", sHostname, sHost);
-	json_object_set_new(jFieldServer, "value", json_string(sBuffer));
-	json_object_set_new(jFieldServer, "inline", json_boolean(true));
-	
 	Handle jFieldReason = json_object();
 	json_object_set_new(jFieldReason, "name", json_string("Reason"));
 	json_object_set_new(jFieldReason, "value", json_string(sReason));
-	json_object_set_new(jFieldReason, "inline", json_boolean(true));
 	
 	json_array_append_new(jFields, jFieldAuthor);
 	json_array_append_new(jFields, jFieldTarget);
-	json_array_append_new(jFields, jFieldServer);
-	json_array_append_new(jFields, jFieldReason);
 	
 	if (iTime != -1)
 	{
@@ -139,15 +140,16 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 		json_object_set_new(jFieldDuration, "name", json_string("Duration"));
 		
 		if (iTime > 0)
-			Format(sBuffer, sizeof sBuffer, "%d minutes", iTime);
+			Format(sBuffer, sizeof sBuffer, "%d Minutes", iTime);
 		else
 			Format(sBuffer, sizeof sBuffer, "Permanent");
 			
 		json_object_set_new(jFieldDuration, "value", json_string(sBuffer));
-		json_object_set_new(jFieldDuration, "inline", json_boolean(true));
 		
 		json_array_append_new(jFields, jFieldDuration);
 	}
+	
+	json_array_append_new(jFields, jFieldReason);
 	
 	
 	json_object_set_new(jContent, "fields", jFields);
@@ -155,6 +157,9 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	
 	json_array_append_new(jEmbeds, jContent);
+	
+	json_object_set_new(jRequest, "username", json_string("SourceBans++"));
+	json_object_set_new(jRequest, "avatar_url", json_string("https://sbpp.github.io/img/favicons/android-chrome-512x512.png"));
 	json_object_set_new(jRequest, "embeds", jEmbeds);
 	
 	
