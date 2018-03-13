@@ -4,6 +4,7 @@
 #define PLUGIN_VERSION "1.6.3-rc.1"
 
 #include <sourcemod>
+#include <sourcebanspp>
 #include <SteamWorks>
 #include <smjansson>
 
