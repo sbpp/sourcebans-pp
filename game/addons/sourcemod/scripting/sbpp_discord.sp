@@ -18,7 +18,7 @@ enum
 
 ConVar Convars[Type_Count];
 
-char sEndpoints[Type_Count][256];
+char sEndpoints[Type_Count][256], sHostname[64], sHost[64];
 
 public Plugin myinfo = 
 {
@@ -36,11 +36,16 @@ public void OnPluginStart()
 	Convars[Ban] = CreateConVar("sbpp_discord_banhook", "", "Discord web hook endpoint for ban forward", FCVAR_NONE);
 	Convars[Report] = CreateConVar("sbpp_discord_reporthook", "", "Discord web hook endpoint for report forward. If left empty, the ban endpoint will be used instead", FCVAR_NONE);
 
+	FindConVar("hostname").GetString(sHostname, sizeof sHostname);
+	
+	int iIPB = FindConVar("hostip").IntValue;
+	Format(sHost, sizeof sHost, "%d.%d.%d.%d:%d", iIPB >> 24 & 0x000000FF, iIPB >> 16 & 0x000000FF, iIPB >> 8 & 0x000000FF, iIPB & 0x000000FF, FindConVar("hostport").IntValue);
+
 	Convars[Ban].AddChangeHook(OnConvarChanged);
 	Convars[Report].AddChangeHook(OnConvarChanged);
 }
 
-void SendReport(int iClient, int iTarget, const char[] sReason)
+void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 {
 	if (!IsValidClient(iClient))
 		return;
@@ -53,8 +58,9 @@ void SendReport(int iClient, int iTarget, const char[] sReason)
 	GetClientName(iClient, sAuthor, sizeof sAuthor);
 	GetClientAuthId(iClient, AuthId_Steam2, sAuthorID, sizeof sAuthorID);
 	GetClientAuthId(iTarget, AuthId_SteamID64, sAuthorID64, sizeof sAuthorID64);
-		
-	AddCoolDown(iClient);
+	
+	GetClientName(iTarget, sTarget, sizeof sTarget);
+	GetClientAuthId(iTarget, AuthId_Steam2, sTargetID, sizeof sTargetID);
 	
 	Handle jRequest = json_object();
 	
@@ -63,7 +69,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason)
 	
 	Handle jContent = json_object();
 	
-	json_object_set(jContent, "description", json_string("New Report"));
+	json_object_set(jContent, "description", json_string("New Forward"));
 	json_object_set(jContent, "color", json_integer(1402304));
 	
 	Handle jContentAuthor = json_object();
@@ -83,19 +89,11 @@ void SendReport(int iClient, int iTarget, const char[] sReason)
 	json_object_set_new(jFieldAuthor, "value", json_string(sBuffer));
 	json_object_set_new(jFieldAuthor, "inline", json_boolean(true));
 	
-	if (iTarget != -1)
-	{
-		GetClientName(iTarget, sTarget, sizeof sTarget);
-		GetClientAuthId(iTarget, AuthId_Steam2, sTargetID, sizeof sTargetID);
-		
-		Handle jFieldTarget = json_object();
-		json_object_set_new(jFieldTarget, "name", json_string("Target"));
-		Format(sBuffer, sizeof sBuffer, "%s (%s)", sTarget, sTargetID);
-		json_object_set_new(jFieldTarget, "value", json_string(sBuffer));
-		json_object_set_new(jFieldTarget, "inline", json_boolean(true));
-		
-		json_array_append_new(jFields, jFieldTarget);
-	}
+	Handle jFieldTarget = json_object();
+	json_object_set_new(jFieldTarget, "name", json_string("Target"));
+	Format(sBuffer, sizeof sBuffer, "%s (%s)", sTarget, sTargetID);
+	json_object_set_new(jFieldTarget, "value", json_string(sBuffer));
+	json_object_set_new(jFieldTarget, "inline", json_boolean(true));
 	
 	Handle jFieldServer = json_object();
 	json_object_set_new(jFieldServer, "name", json_string("Server"));
@@ -108,6 +106,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason)
 	json_object_set_new(jFieldReason, "value", json_string(sReason));
 	
 	json_array_append_new(jFields, jFieldAuthor);
+	json_array_append_new(jFields, jFieldTarget);
 	json_array_append_new(jFields, jFieldServer);
 	json_array_append_new(jFields, jFieldReason);
 	
@@ -135,10 +134,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason)
 	SteamWorks_SetHTTPCallbacks(hRequest, OnHTTPRequestComplete);
 	
 	if (!SteamWorks_SendHTTPRequest(hRequest))
-	{
-		CPrintToChat(iClient, "{lightseagreen}[Report] {grey}Failed to send a report against %s, please try again later", sTarget);
 		LogError("HTTP request failed for %s against %s", sAuthor, sTarget);
-	}
 }
 
 public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] newValue)
