@@ -59,10 +59,16 @@ public void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReason
 void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 {	
 	if (!IsValidClient(iClient))
+	{
+		PrintToServer("Invalid client");
 		return;
+	}
 		
 	if (iTarget != -1 && !IsValidClient(iTarget))
+	{
+		PrintToServer("Invalid target");
 		return;
+	}
 		
 	if (StrEqual(sEndpoints[Ban], ""))
 	{
