@@ -92,7 +92,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	Handle jContent = json_object();
 	
-	json_object_set(jContent, "color", json_integer(16374082));
+	json_object_set(jContent, "color", json_integer((iTime != -1) ? 14294407 : 16374082));
 	json_object_set(jContent, "timestamp", json_string(sTime));
 	
 	Handle jContentAuthor = json_object();
