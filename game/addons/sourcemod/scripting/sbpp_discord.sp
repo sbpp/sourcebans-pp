@@ -57,18 +57,9 @@ public void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReason
 }
 
 void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
-{	
-	if (!IsValidClient(iClient))
-	{
-		PrintToServer("Invalid client");
-		return;
-	}
-		
+{		
 	if (iTarget != -1 && !IsValidClient(iTarget))
-	{
-		PrintToServer("Invalid target");
 		return;
-	}
 		
 	if (StrEqual(sEndpoints[Ban], ""))
 	{
@@ -76,12 +67,19 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 		return;
 	}
 		
-	char sAuthor[MAX_NAME_LENGTH], sTarget[MAX_NAME_LENGTH], sAuthorID[32], sAuthorID64[32], sTargetID[32], sJson[2048], sBuffer[256];
+	char sAuthor[MAX_NAME_LENGTH], sTarget[MAX_NAME_LENGTH], sAuthorID[32], sTargetID64[32], sTargetID[32], sJson[2048], sBuffer[256];
 	
-	GetClientName(iClient, sAuthor, sizeof sAuthor);
-	GetClientAuthId(iClient, AuthId_Steam2, sAuthorID, sizeof sAuthorID);
-	GetClientAuthId(iTarget, AuthId_SteamID64, sAuthorID64, sizeof sAuthorID64);
+	if (IsValidClient(iClient))
+	{
+		GetClientName(iClient, sAuthor, sizeof sAuthor);
+		GetClientAuthId(iClient, AuthId_Steam2, sAuthorID, sizeof sAuthorID);
+	} else
+	{
+		Format(sAuthor, sizeof sAuthor, "Console");
+		Format(sAuthorID, sizeof sAuthorID, "N/A");
+	}
 	
+	GetClientAuthId(iTarget, AuthId_SteamID64, sTargetID64, sizeof sTargetID64);
 	GetClientName(iTarget, sTarget, sizeof sTarget);
 	GetClientAuthId(iTarget, AuthId_Steam2, sTargetID, sizeof sTargetID);
 	
@@ -97,8 +95,8 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	
 	Handle jContentAuthor = json_object();
 	
-	json_object_set_new(jContentAuthor, "name", json_string(sAuthor));
-	Format(sBuffer, sizeof sBuffer, "https://steamcommunity.com/profiles/%s", sAuthorID64);
+	json_object_set_new(jContentAuthor, "name", json_string(sTarget));
+	Format(sBuffer, sizeof sBuffer, "https://steamcommunity.com/profiles/%s", sTargetID64);
 	json_object_set_new(jContentAuthor, "url", json_string(sBuffer));
 	json_object_set_new(jContent, "author", jContentAuthor);
 	
@@ -127,6 +125,7 @@ void SendReport(int iClient, int iTarget, const char[] sReason, int iTime = -1)
 	Handle jFieldReason = json_object();
 	json_object_set_new(jFieldReason, "name", json_string("Reason"));
 	json_object_set_new(jFieldReason, "value", json_string(sReason));
+	json_object_set_new(jFieldReason, "inline", json_boolean(true));
 	
 	json_array_append_new(jFields, jFieldAuthor);
 	json_array_append_new(jFields, jFieldTarget);

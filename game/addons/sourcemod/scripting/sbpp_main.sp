@@ -144,7 +144,7 @@ public bool AskPluginLoad(Handle myself, bool late, char[] error, int err_max)
 	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
 	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
 
-	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_String, Param_String, Param_Cell, Param_String);
+	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hFwd_OnReportAdded = CreateGlobalForward("SBPP_OnReportPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_String);
 
 	LateLoaded = late;
@@ -2479,12 +2479,11 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	
 	Call_StartForward(g_hFwd_OnBanAdded);
 	Call_PushCell(client);
-	Call_PushString(name);
-	Call_PushString(auth);
+	Call_PushCell(target);
 	Call_PushCell(time);
 	Call_PushString(reason);
 	Call_Finish();
-	
+
 	return true;
 }
 

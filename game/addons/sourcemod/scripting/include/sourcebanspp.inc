@@ -84,17 +84,14 @@ native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sRea
 native void SBPP_ReportPlayer(int iReporter, int iTarget, const char[] sReason);
 
 /*********************************************************
- * Called when the admin banning the player. 
+ * Called when the admin banning the player.
  *
- * @note Use SourceMod's OnBan forward if you wish to obtain the target ID before kick
- *
- * @param iAdmin		 The client index of the admin who is banning the client
- * @param sTargetName    The client name of the player banned
- * @param sTargetAuthID2 The client SteamID2 of the player banned
- * @param iTime      	 The time to ban the player for (in minutes, 0 = permanent)
- * @param sReason    	 The reason to ban the player from the server
+ * @param iAdmin	The client index of the admin who is banning the client
+ * @param iTarget    The client index of the player to ban
+ * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
+ * @param sReason    The reason to ban the player from the server
  *********************************************************/
-forward void SBPP_OnBanPlayer(int iAdmin, const char[] sTargetName, const char[] sTargetAuthID2, int iTime, const char[] sReason);
+forward void SBPP_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
  * Called when a new report is inserted
