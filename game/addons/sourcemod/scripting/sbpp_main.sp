@@ -2329,6 +2329,8 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	  
 	GetNativeStringLength(3, iReasonLen);
 	
+	iReasonLen++;
+	
 	char[] sReason = new char[iReasonLen];
 	
 	GetNativeString(3, sReason, iReasonLen);
