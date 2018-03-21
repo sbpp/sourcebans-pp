@@ -6,29 +6,34 @@
 		
 		"en"	"Please wait {1} seconds before reporting again"
 		"fr"	"Veuillez patienter {1} secondes avant de rapporter à nouveau"
+		"pl"	"Zaczekaj {1} sekund przed ponownym wysłaniem zgłoszenia"
 	}
 	
 	"Report Canceled"
 	{
 		"en"	"Report canceled"
 		"fr"	"Report annulé"
+		"pl"	"Raport został anulowany"
 	}
 	
 	"Report Sent"
 	{
 		"en"	"Your report has been sent"
 		"fr"	"Votre report a été envoyé"
+		"pl"	"Twój raport został wysłany"
 	}
 	
 	"Reason Prompt"
 	{
 		"en"	"Please enter the reason for the report or \"cancel\" to cancel"
 		"fr"	"Veuillez entrer la raison du rapport ou \"cancel\" pour annuler
+		"pl"	"Podaj przyczynę zgłoszenia lub \"cancel\", aby anulować"
 	}
 	
 	"Reason Short Need More"
 	{
 		"en"	"Reason is too short, more details is required"
 		"fr"	"La raison est trop courte, plus de détails sont requis"
+		"pl"	"Powód jest za krótki, więcej szczegółów jest wymaganych"
 	}
 }
