@@ -24,12 +24,12 @@
 //
 // *************************************************************************
 
-#if defined _sourcebans_included
+#if defined _sourcebanspp_included
 #endinput
 #endif
-#define _sourcebans_included
+#define _sourcebanspp_included
 
-public SharedPlugin __pl_sourcebans =
+public SharedPlugin __pl_sourcebanspp =
 {
 	name = "sourcebans++",
 	file = "sbpp_main.smx",
@@ -41,7 +41,7 @@ public SharedPlugin __pl_sourcebans =
 };
 
 #if !defined REQUIRE_PLUGIN
-public __pl_sourcebans_SetNTVOptional()
+public __pl_sourcebanspp_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
 	MarkNativeAsOptional("SBPP_BanPlayer");
