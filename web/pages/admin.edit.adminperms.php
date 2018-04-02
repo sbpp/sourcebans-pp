@@ -129,8 +129,8 @@ $('p11').checked = <?=check_flag($web_flags, ADMIN_EDIT_SERVERS) ? "true" : "fal
 $('p12').checked = <?=check_flag($web_flags, ADMIN_DELETE_SERVERS) ? "true" : "false"?>;
 
 $('p14').checked = <?=check_flag($web_flags, ADMIN_ADD_BAN) ? "true" : "false"?>;
-$('p16').checked = <?=check_flag($web_flags, ADMIN_EDIT_OWN_BANS) ? "true" : "false"?>;
 $('p35').checked = <?=check_flag($web_flags, ADMIN_ADD_GROUP_BANS) ? "true" : "false"?>;
+$('p16').checked = <?=check_flag($web_flags, ADMIN_EDIT_OWN_BANS) ? "true" : "false"?>;
 $('p17').checked = <?=check_flag($web_flags, ADMIN_EDIT_GROUP_BANS) ? "true" : "false"?>;
 $('p18').checked = <?=check_flag($web_flags, ADMIN_EDIT_ALL_BANS) ? "true" : "false"?>;
 $('p19').checked = <?=check_flag($web_flags, ADMIN_BAN_PROTESTS) ? "true" : "false"?>;

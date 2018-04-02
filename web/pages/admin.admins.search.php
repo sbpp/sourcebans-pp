@@ -119,6 +119,10 @@ $webflag[] = array(
     "flag" => "ADMIN_ADD_BAN"
 );
 $webflag[] = array(
+    "name" => "Add group bans",
+    "flag" => "ADMIN_ADD_GROUP_BANS"
+);
+$webflag[] = array(
     "name" => "Edit own bans",
     "flag" => "ADMIN_EDIT_OWN_BANS"
 );
