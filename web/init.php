@@ -219,44 +219,45 @@ define('IP_FORMAT', '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0
 define('SERVER_QUERY', 'http://www.sourcebans.net/public/query/');
 
 // Web admin-flags
-define('ADMIN_LIST_ADMINS', (1<<0));
-define('ADMIN_ADD_ADMINS', (1<<1));
-define('ADMIN_EDIT_ADMINS', (1<<2));
-define('ADMIN_DELETE_ADMINS', (1<<3));
+define('ADMIN_LIST_ADMINS', (1 << 0));
+define('ADMIN_ADD_ADMINS', (1 << 1));
+define('ADMIN_EDIT_ADMINS', (1 << 2));
+define('ADMIN_DELETE_ADMINS', (1 << 3));
 
-define('ADMIN_LIST_SERVERS', (1<<4));
-define('ADMIN_ADD_SERVER', (1<<5));
-define('ADMIN_EDIT_SERVERS', (1<<6));
-define('ADMIN_DELETE_SERVERS', (1<<7));
+define('ADMIN_LIST_SERVERS', (1 << 4));
+define('ADMIN_ADD_SERVER', (1 << 5));
+define('ADMIN_EDIT_SERVERS', (1 << 6));
+define('ADMIN_DELETE_SERVERS', (1 << 7));
 
-define('ADMIN_ADD_BAN', (1<<8));
-define('ADMIN_EDIT_OWN_BANS', (1<<10));
-define('ADMIN_EDIT_GROUP_BANS', (1<<11));
-define('ADMIN_EDIT_ALL_BANS', (1<<12));
-define('ADMIN_BAN_PROTESTS', (1<<13));
-define('ADMIN_BAN_SUBMISSIONS', (1<<14));
-define('ADMIN_DELETE_BAN', (1<<25));
-define('ADMIN_UNBAN', (1<<26));
-define('ADMIN_BAN_IMPORT', (1<<27));
-define('ADMIN_UNBAN_OWN_BANS', (1<<30));
-define('ADMIN_UNBAN_GROUP_BANS', (1<<31));
+define('ADMIN_ADD_BAN', (1 << 8));
+define('ADMIN_EDIT_OWN_BANS', (1 << 9));
+define('ADMIN_ADD_GROUP_BANS', (1 << 10));
+define('ADMIN_EDIT_GROUP_BANS', (1 << 11));
+define('ADMIN_EDIT_ALL_BANS', (1 << 12));
+define('ADMIN_BAN_PROTESTS', (1 << 13));
+define('ADMIN_BAN_SUBMISSIONS', (1 << 14));
+define('ADMIN_DELETE_BAN', (1 << 25));
+define('ADMIN_UNBAN', (1 << 26));
+define('ADMIN_BAN_IMPORT', (1 << 27));
+define('ADMIN_UNBAN_OWN_BANS', (1 << 30));
+define('ADMIN_UNBAN_GROUP_BANS', (1 << 31));
 
-define('ADMIN_LIST_GROUPS', (1<<15));
-define('ADMIN_ADD_GROUP', (1<<16));
-define('ADMIN_EDIT_GROUPS', (1<<17));
-define('ADMIN_DELETE_GROUPS', (1<<18));
+define('ADMIN_LIST_GROUPS', (1 << 15));
+define('ADMIN_ADD_GROUP', (1 << 16));
+define('ADMIN_EDIT_GROUPS', (1 << 17));
+define('ADMIN_DELETE_GROUPS', (1 << 18));
 
-define('ADMIN_WEB_SETTINGS', (1<<19));
+define('ADMIN_WEB_SETTINGS', (1 << 19));
 
-define('ADMIN_LIST_MODS', (1<<20));
-define('ADMIN_ADD_MODS', (1<<21));
-define('ADMIN_EDIT_MODS', (1<<22));
-define('ADMIN_DELETE_MODS', (1<<23));
+define('ADMIN_LIST_MODS', (1 << 20));
+define('ADMIN_ADD_MODS', (1 << 21));
+define('ADMIN_EDIT_MODS', (1 << 22));
+define('ADMIN_DELETE_MODS', (1 << 23));
 
-define('ADMIN_NOTIFY_SUB', (1<<28));
-define('ADMIN_NOTIFY_PROTEST', (1<<29));
+define('ADMIN_NOTIFY_SUB', (1 << 28));
+define('ADMIN_NOTIFY_PROTEST', (1 << 29));
 
-define('ADMIN_OWNER', (1<<24));
+define('ADMIN_OWNER', (1 << 24));
 
 // Server admin-flags
 define('SM_RESERVED_SLOT', "a");
