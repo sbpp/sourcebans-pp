@@ -2651,7 +2651,7 @@ function GroupBan($groupuri, $isgrpurl="no", $queue="no", $reason="", $last="")
     if($GLOBALS['config']['config.enablegroupbanning']==0)
     return $objResponse;
     global $userbank, $username;
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
+    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_GROUP_BANS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
     $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to initiate a groupban '".htmlspecialchars(addslashes(trim($groupuri)))."', but doesnt have access.");
@@ -2692,9 +2692,9 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
         return $objResponse;
     }
     global $userbank, $username;
-    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_GROUP_BANS)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban group '".$grpurl."', but doesnt have access.");
+        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban group '".htmlspecialchars(addslashes(trim($grpurl)))."', but doesnt have access.");
         return $objResponse;
     }
 
@@ -2782,13 +2782,13 @@ function GetGroups($friendid)
     set_time_limit(0);
     $objResponse = new xajaxResponse();
     if($GLOBALS['config']['config.enablegroupbanning']==0 || !is_numeric($friendid))
-    return $objResponse;
+        return $objResponse;
     global $userbank, $username;
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
+    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_GROUP_BANS))
     {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to list groups of '".$friendid."', but doesnt have access.");
-    return $objResponse;
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to list groups of '".$friendid."', but doesnt have access.");
+        return $objResponse;
     }
     // check if we're getting redirected, if so there is $result["Location"] (the player uses custom id)  else just use the friendid. !We can't get the xml with the friendid url if the player has a custom one!
     $result = get_headers("http://steamcommunity.com/profiles/".$friendid."/", 1);

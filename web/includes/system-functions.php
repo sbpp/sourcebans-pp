@@ -204,10 +204,10 @@ function BuildPageTabs()
     if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_SERVERS|ADMIN_ADD_SERVER|ADMIN_EDIT_SERVERS|ADMIN_DELETE_SERVERS)) {
         $submenu->addMenuItem("Servers", 0, "", "index.php?p=admin&amp;c=servers", true);
     }
-    if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_ALL_BANS|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS)) {
+    if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_ADD_GROUP_BANS|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_ALL_BANS|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS)) {
         $submenu->addMenuItem("Bans", 0, "", "index.php?p=admin&amp;c=bans", true);
     }
-    if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_ALL_BANS)) {
+    if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_ADD_GROUP_BANS|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_ALL_BANS)) {
         $submenu->addMenuItem("Comms", 0, "", "index.php?p=admin&amp;c=comms", true);
     }
     if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_LIST_GROUPS|ADMIN_ADD_GROUP|ADMIN_EDIT_GROUPS|ADMIN_DELETE_GROUPS)) {
@@ -407,6 +407,9 @@ function BitToString($mask, $masktype=0, $head=true)
 
     if (($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
         $string .= "&bull; Add bans<br />";
+    }
+    if (($mask & ADMIN_ADD_GROUP_BANS) != 0 || ($mask & ADMIN_OWNER) != 0) {
+        $string .= "&bull; Add groups bans<br />";
     }
     if (($mask & ADMIN_EDIT_OWN_BANS) !=0 && ($mask & ADMIN_EDIT_ALL_BANS) ==0) {
         $string .="&bull; Edit own bans<br />";

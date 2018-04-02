@@ -38,6 +38,7 @@ var ADMIN_EDIT_SERVERS = 	(1<<6);
 var ADMIN_DELETE_SERVERS = 	(1<<7);
 
 var ADMIN_ADD_BAN = 		(1<<8);
+var ADMIN_ADD_GROUP_BANS =  (1<<9);
 var ADMIN_EDIT_OWN_BANS = 	(1<<10);
 var ADMIN_EDIT_GROUP_BANS = (1<<11);
 var ADMIN_EDIT_ALL_BANS = 	(1<<12);
@@ -461,6 +462,8 @@ function BoxToMask()
 
 		if(document.getElementById('p14').checked)
 			Mask |= ADMIN_ADD_BAN;
+		if(document.getElementById('p35').checked)
+			Mask |= ADMIN_ADD_GROUP_BANS;
 		if(document.getElementById('p16').checked)
 			Mask |= ADMIN_EDIT_OWN_BANS;
 		if(document.getElementById('p17').checked)

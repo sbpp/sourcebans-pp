@@ -244,7 +244,7 @@ if ($_GET['c'] == "groups") {
     }
 } elseif ($_GET['c'] == "bans") {
     // ###################[ Bans ]##################################################################
-    CheckAdminAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_ALL_BANS|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS);
+    CheckAdminAccess(ADMIN_OWNER|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_ADD_GROUP_BANS|ADMIN_EDIT_GROUP_BANS|ADMIN_EDIT_ALL_BANS|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS);
 
     if (!isset($_GET['o'])) {
         // ====================[ ADMIN SIDE MENU START ] ===================
