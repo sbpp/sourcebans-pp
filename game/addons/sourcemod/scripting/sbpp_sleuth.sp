@@ -29,7 +29,7 @@
 #undef REQUIRE_PLUGIN
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION "1.6.3-PRE"
+#define PLUGIN_VERSION "1.6.3"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2
