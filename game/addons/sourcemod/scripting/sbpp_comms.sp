@@ -42,7 +42,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.3-PRE"
+#define PLUGIN_VERSION "1.6.3"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length
@@ -1689,7 +1689,7 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 			{
 				case TYPE_MUTE:
 				{
-					//Set mute type based on length	
+					//Set mute type based on length
 					if (length > 0)
 						g_MuteType[client] = bTime;
 					else if (length == 0)

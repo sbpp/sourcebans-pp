@@ -26,7 +26,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.6.3-PRE"
+#define VERSION "1.6.3"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
@@ -112,7 +112,7 @@ public OnConnectBanCheck(Handle:owner, Handle:hndl, const String:error[], any:us
         else{
             PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous ban%s and %d previous commban%s.",
                 client, bancount, ((bancount > 1 || bancount == 0) ? "s":""),commcount,((commcount > 1 || commcount == 0) ? "s":""));
-        } 
+        }
     }
 }
 
@@ -365,7 +365,7 @@ public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		return;
 	}
 
-	
+
 	PrintListResponse(clientuid, client, "[SourceBans++] Listing comms for %s", targetName);
 	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    T  R  Reason");
 	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
@@ -379,7 +379,7 @@ public OnListComms(Handle:owner, Handle:hndl, const String:error[], any:pack)
 		new String:CommType[2] = " ";
 		new String:RemoveType[2] = " ";
 
-		
+
 
 		if (!SQL_IsFieldNull(hndl, 0))
 		{
