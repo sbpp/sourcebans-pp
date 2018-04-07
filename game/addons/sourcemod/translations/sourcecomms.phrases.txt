@@ -11,7 +11,7 @@
 		"pt"			"Você foi silenciado!"
 		"de"			"Sie wurden im Voice-Chat gesperrt!"
 		"fr"			"Vous avez été muté!"
-		"en"			"你已被静音!"
+		"chi"			"你已被静音!"
 	}
 	"Gagged on connect"
 	{
@@ -23,7 +23,7 @@
 		"pt"			"Você foi amordaçado!"
 		"de"			"Sie wurden im Chat gesperrt!"
 		"fr"			"Vous avez été mis en muté du chat!"
-		"en"			"你已被禁言!"
+		"chi"			"你已被禁言!"
 	}
 	//--------------------------------------------------------------------------------
 	"Mute expired"
@@ -36,7 +36,7 @@
 		"pt"			"Seu emudecimento expirou."
 		"de"			"Sie wurden im Voice-Chat entsperrt (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute a expiré."
-		"en"			"静音已过期."
+		"chi"			"静音已过期."
 	}
 	"Gag expired"
 	{
@@ -48,7 +48,7 @@
 		"pt"			"Seu amordaçamento expirou."
 		"de"			"Sie wurden im Chat entsperrt. (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute du chat a expiré."
-		"en"			"禁言已过期."
+		"chi"			"禁言已过期."
 	}
 	//--------------------------------------------------------------------------------
 	"FWUnmute"
@@ -61,7 +61,7 @@
 		"pt"			"Seu emudecimento foi removido."
 		"de"			"Sie wurden im Voice-Chat entsperrt."
 		"fr"			"Votre mute a été supprimée."
-		"en"			"对你的静音已取消."
+		"chi"			"对你的静音已取消."
 	}
 	"FWUngag"
 	{
@@ -73,7 +73,7 @@
 		"pt"			"Seu amordaçamento foi removido."
 		"de"			"Sie wurden im Chat entsperrt."
 		"fr"			"Votre mute du chat a été supprimé."
-		"en"			"对你的禁言已取消."
+		"chi"			"对你的禁言已取消."
 	}
 	//--------------------------------------------------------------------------------
 	"Usage_time"
@@ -256,7 +256,7 @@
 		"pt"			"{1} foi permanentemente emudecido, (motivo: {2})."
 		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt (Grund: {2})."
 		"fr"			"Un mute permanent a été appliqué a {1} (raison: {2})."
-		"en"			"已对玩家 {1} 永久静音 (原因: {3})."
+		"chi"			"已对玩家 {1} 永久静音 (原因: {3})."
 	}
 	"Muted player"
 	{
@@ -848,7 +848,7 @@
 		"pt"		"O jogador que você selecionou não está mais disponível."
 		"de"		"Der Spieler ist nicht zugänglich."
 		"fr"		"Le joueur que vous avez sélectionné n'est plus disponible."
-		"en"		"你选择的玩家目前不可用."
+		"chi"		"你选择的玩家目前不可用."
 	}
 	"Command_Target_Not_Targetable"
 	{
