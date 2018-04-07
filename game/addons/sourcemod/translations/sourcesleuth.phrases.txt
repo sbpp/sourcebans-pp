@@ -8,6 +8,7 @@
 		"ru"		"Аккаунт дубликат"
 		"fr"		"Compte dupliquer"
 		"pl"		"Zduplikowane konto"
+		"chi"		"马甲/多重账户"
 	}
 	
 	"sourcesleuth_admintext"
@@ -19,5 +20,6 @@
 		"sv"		"Spelare {1} (ID: {2} | IP: {3}) har aktiva bannlysningar på IP"
 		"fr"		"Le joueur {1} (ID: {2} | IP: {3}) a des bannissements actives sur IP"
 		"pl"		"Gracz {1} (ID: {2} | IP: {3}) ma aktywne blokady na IP"
+		"chi"		"玩家 {1} (ID: {2} | IP: {3}) 目前有多次IP封禁"
 	}
 }
