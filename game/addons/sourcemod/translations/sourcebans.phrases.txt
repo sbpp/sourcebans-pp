@@ -12,6 +12,7 @@
 		"da"			"Du er blevet udlukket fra denne server, check {1} for mere info"
 		"no"			"Du har blitt stengt ute fra denne serveren, sjekk {1} for mer info."
 		"hu"			"Bannolva vagy erről a szerverről, látogass el {1} honlapra a további információkért."
+		"chi"			"你已被此服务器封禁,详情请参阅: {1}."
 	}
 	"DB Connect Fail"
 	{
@@ -24,6 +25,7 @@
 		"da"			"Database tilslutningen fejlede. Kontakt venligst server bestyrren."
 		"no"			"Kommunikasjon med databasen feilet. Vennligst kontakt serveradmin."
 		"hu"			"Sikertelen adatbázis csatlakozás. Kérlek vedd fel a kapcsolatott egy szerver operátorral."
+		"chi"			"数据库连接失败，请联系服务器管理员."
 	}
 	"Not In Game"
 	{
@@ -36,6 +38,7 @@
 		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
 		"no"			"Spilleren er ikke på serveren, vennligst besøk web panelet for og stenge han ute."
 		"hu"			"A játékos nincs játékban, kérlek nézd meg a honlapon a bannolásért."
+		"chi"			"此玩家目前不在游戏内,请通过web管理面板来进行封禁."
 	}
 	"Ban Not Verified"
 	{
@@ -48,6 +51,7 @@
 		"da"			"Denne spiller er ikke blevet identificeret. Vent venligst 30 sekunder før du prøver igen."
 		"no"			"Denne spilleren har ikke blitt indentifisert. Vennligst vent 30 sekunder før du prøver igjen."
 		"hu"			"Ez a játékos nincs hitelesítve. Kérlek várj 30 másodpercet mielőtt újra próbálnád."
+		"chi"			"此玩家尚未被认证,请等待30秒后再试."
 	}
 	"Can Not Unban"
 	{
@@ -61,6 +65,7 @@
 		"da"			"Du kan ikke fjerne udelukkelserne inde fra serveren, besøg {1} for at fjerne udelukkelsen."
 		"no"			"Du kan ikke fjerne utestengelsen inne fra serveren, besøk {1} for og fjerne utestengelsen."
 		"hu"			"Nem tudsz unbannolni a szerverről, látogasd meg {1} a ban feloldásért."
+		"chi"			"你无法从游戏中解除封禁,请访问此链接来解除: {1} ."
 	}
 	"Can Not Add Ban"
 	{
@@ -74,6 +79,7 @@
 		"da"			"Du kan ikke tilføje en udelukkelse fra serveren, besøg {1} for at tilføje en udelukkelse."
 		"no"			"Du kan ikke legge til en utestengelse fra serveren, besøk {1} for og legge til en utestengelse."
 		"hu"			"Nem tudsz a szerverről bannolni, látogasd meg {1} a bannolásért."
+		"chi"			"你不能在游戏中添加封禁,请访问此链接来封禁: {1} ."
 	}
 	"Check Menu"
 	{
@@ -86,6 +92,7 @@
 		"da"			"Check venligst menuen for en grund til udelukkelse"
 		"no"			"Venligst sjekk menyen for en grunn til utestengelse"
 		"hu"			"Kérjük, ellenőrizze a menüt, hogy kiválassza a tilalom okait."
+		"chi"			"请从菜单中选择封禁理由."
 	}
 	"Include Reason"
 	{
@@ -98,6 +105,7 @@
 		"da"			"Indkludere venligst en grund for at udelukke klienten."
 		"no"			"Inkluder vennligst en grunn for og utelukke klienten."
 		"hu"			"Kérlek írj indokot is a kliens bannolásához."
+		"chi"			"请填写封禁此玩家的理由."
 	}
 	"Ban Fail"
 	{
@@ -110,6 +118,7 @@
 		"da"			"Fejlede udelukkelsen, prøv venligst igen."
 		"no"			"Utestengelse feilet, vennligst prøv igjen."
 		"hu"			"Sikertelen bannolás, próbáld újra."
+		"chi"			"无法封禁此玩家,请重试."
 	}
 	"Chat Reason"
 	{
@@ -122,6 +131,7 @@
 		"da"			"Skriv venligst din grund for udelukkelsen ind i chatten og tryk enter. Skriv '!noreason' for at annullere."
 		"no"			"Vennligst skriv din grunn for utestengelse i chaten og trykk enter. Skriv 'noreason' for og annulere."
 		"hu"			"Írd be a chatre az indokot, majd nyomj entert. Írd '!noreason' a megszakításhoz."
+		"chi"			"请在聊天框中填写封禁理由并提交或输入 '!noreason' 放弃操作."
 	}
 	"Chat Reason Aborted"
 	{
@@ -134,5 +144,6 @@
 		"da"			"Udelukkelses proceduren blev stoppet med success"
 		"no"			"Utestengelses prossedyren ble stoppet vellykket."
 		"hu"			"A ban eljárás sikeresen leállítva."
+		"chi"			"封禁操作已成功取消."
 	}
 }
