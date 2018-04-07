@@ -569,7 +569,6 @@
 		"pt"		"Comandos de Comunicação"
 		"de"		"Chat und Voice-Chat"
 		"fr"		"Commandes de communication"
-		"en"		"Comm Commands"
 		"chi"		"禁言和静音"
 	}
 	"AdminMenu_Select_Main"
