@@ -2563,27 +2563,26 @@ stock CheckLoadAdmins()
 
 stock InsertServerInfo()
 {
-	if (DB == INVALID_HANDLE)
-	{
-		return;
-	}
+    if (DB == INVALID_HANDLE) {
+        return;
+    }
+    
+    char query[100];
+    int pieces[4];
+    int longip = GetConVarInt(CvarHostIp);
 
-	char query[100], pieces[4];
-	int longip = GetConVarInt(CvarHostIp);
+    pieces[0] = (longip >> 24) & 0x000000FF;
+    pieces[1] = (longip >> 16) & 0x000000FF;
+    pieces[2] = (longip >> 8) & 0x000000FF;
+    pieces[3] = longip & 0x000000FF;
 
-	pieces[0] = (longip >> 24) & 0x000000FF;
-	pieces[1] = (longip >> 16) & 0x000000FF;
-	pieces[2] = (longip >> 8) & 0x000000FF;
-	pieces[3] = longip & 0x000000FF;
+    FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
+    GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
 
-	FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-	GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
-
-	if (AutoAdd != false)
-	{
-		FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
-		SQL_TQuery(DB, ServerInfoCallback, query);
-	}
+    if (AutoAdd != false) {
+        FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
+        SQL_TQuery(DB, ServerInfoCallback, query);
+    }
 }
 
 stock void PrepareBan(int client, int target, int time, char[] reason, int size)
