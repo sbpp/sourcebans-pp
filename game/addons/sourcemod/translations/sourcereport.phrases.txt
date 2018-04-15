@@ -8,6 +8,7 @@
 		"fr"	"Veuillez patienter {1} secondes avant de rapporter à nouveau"
 		"pl"	"Zaczekaj {1} sekund przed ponownym wysłaniem zgłoszenia"
 		"chi"	"请等待 {1} 秒后再试"
+		"hu"	"Kérlek várj {1} másodperced mielőtt report-olnád újra"
 	}
 	
 	"Report Canceled"
@@ -16,6 +17,7 @@
 		"fr"	"Report annulé"
 		"pl"	"Raport został anulowany"
 		"chi"	"报告已取消"
+		"hu"	"Report megszakítva"
 	}
 	
 	"Report Sent"
@@ -24,6 +26,7 @@
 		"fr"	"Votre report a été envoyé"
 		"pl"	"Twój raport został wysłany"
 		"chi"	"你的报告已发送"
+		"hu"	"A Report-ot elküldtük"
 	}
 	
 	"Reason Prompt"
@@ -32,6 +35,7 @@
 		"fr"	"Veuillez entrer la raison du rapport ou \"cancel\" pour annuler
 		"pl"	"Podaj przyczynę zgłoszenia lub \"cancel\", aby anulować"
 		"chi"	"请填写报告填写理由或者 \"cancel\" 来取消"
+		"hu"	"Írd be az indokot vagy írd \"cancel\" a megszakításhoz"
 	}
 	
 	"Reason Short Need More"
@@ -40,5 +44,6 @@
 		"fr"	"La raison est trop courte, plus de détails sont requis"
 		"pl"	"Powód jest za krótki, więcej szczegółów jest wymaganych"
 		"chi"	"理由过于简短,请做更多说明"
+		"hu"	"Az indoklás túl rövid, több információra van szükség"
 	}
 }
