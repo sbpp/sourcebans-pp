@@ -8,7 +8,7 @@
 		"fr"	"Veuillez patienter {1} secondes avant de rapporter à nouveau"
 		"pl"	"Zaczekaj {1} sekund przed ponownym wysłaniem zgłoszenia"
 		"chi"	"请等待 {1} 秒后再试"
-		"hu"	"Kérlek várj {1} másodperced mielőtt report-olnád újra"
+		"hu"	"Kérlek várj {1} másodpercet mielőtt report-olnád újra"
 	}
 	
 	"Report Canceled"
