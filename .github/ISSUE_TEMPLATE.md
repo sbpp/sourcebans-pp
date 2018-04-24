@@ -1,5 +1,10 @@
 <!--- Provide a general summary of the issue in the Title above -->
 
+## Help us help you
+
+* [ ] I have checked that my issue does not [exist](https://github.com/sbpp/sourcebans-pp/issues) yet
+* [ ] I have provided a reproducible test case (if applicable)
+
 ## Expected Behavior
 <!--- If you're describing a bug, tell us what should happen -->
 <!--- If you're suggesting a change/improvement, tell us how it should work -->
@@ -26,8 +31,9 @@
 
 ## Your Environment
 <!--- Include as many relevant details about the environment you experienced the bug in -->
-* Version used:
+* SourceBans++ Version:
+* SourceMod Version (for plugin issues):
 * PHP and MySQL version:
 * Operating System and version:
-* Link to your project:
-* Link to gist with phpinfo() output:
+* Link to your project (for web panel issues):
+* Link to gist with phpinfo() output (for web panel issues):
