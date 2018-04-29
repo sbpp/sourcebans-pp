@@ -104,8 +104,6 @@ switch ($_GET['p']) {
         }
 }
 
-global $ui;
-$ui = new CUI();
 BuildPageHeader();
 BuildPageTabs();
 BuildSubMenu();
