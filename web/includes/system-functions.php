@@ -61,12 +61,7 @@ function BuildSubMenu()
  */
 function BuildContHeader()
 {
-    global $theme, $userbank;
-    if (isset($_GET['p']) && $_GET['p'] == "admin" && !$userbank->is_admin()) {
-        echo "You dont have admin. Be gone!";
-        RedirectJS('index.php?p=login');
-        PageDie();
-    }
+    global $theme;
 
     if (!isset($_GET['s']) && isset($GLOBALS['pagetitle'])) {
         $page = "<b>".$GLOBALS['pagetitle']."</b>";
@@ -623,14 +618,9 @@ function CheckAdminAccess($mask)
 {
     global $userbank;
     if (!$userbank->HasAccess($mask)) {
-        RedirectJS("index.php?p=login&m=no_access");
+        header("Location: index.php?p=login&m=no_access");
         die();
     }
-}
-
-function RedirectJS($url)
-{
-    echo '<script>window.location = "' . $url .'";</script>';
 }
 
 function RemoveCode($text)

@@ -482,20 +482,6 @@ function CreateQuote()
 	return '"' . $quote[$num][0] . '" - <i>' . $quote[$num][1] . '</i>';
 }
 
-function CheckAdminAccess($mask)
-{
-	if(!check_flags( $_SESSION['user']['aid'], $mask ))
-	{
-		RedirectJS("?p=login&msg=You dont have access. Login with an account with access");
-		die();
-	}
-}
-
-function RedirectJS($url)
-{
-	echo '<script>window.location = "' . $url .'";</script>';
-}
-
 function RemoveCode($text)
 {
 	return addslashes(htmlspecialchars(strip_tags($text)));
