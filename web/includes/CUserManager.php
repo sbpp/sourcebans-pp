@@ -40,7 +40,7 @@ class CUserManager
      */
     public function __construct($aid)
     {
-        $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+        $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
         $this->aid = $aid;
         $this->GetUserArray($aid);
