@@ -37,19 +37,6 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
         PageDie();
     }
 
-    preg_match("/[\w\.]*/", $_SERVER['HTTP_HOST'], $match);
-
-    if ($match[0] != $_SERVER['HTTP_HOST']) {
-        echo '<div id="msg-red" style="">
-			<i><img src="./images/warning.png" alt="Warning" /></i>
-			<b>Error</b>
-			<br />
-			An unknown error occured.
-			</div>';
-        $log = new CSystemLog("w", "Hacking Attempt", "Attempted password reset email injection. Using: " . $_SERVER['HTTP_HOST']);
-        exit();
-    }
-
     if (strlen($validation) < 60) {
         echo '<div id="msg-red" style="">
 			<i><img src="./images/warning.png" alt="Warning" /></i>
