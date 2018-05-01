@@ -24,19 +24,10 @@
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
+use xPaw\SourceQuery\SourceQuery;
 
 if (!defined("IN_SB")) {
     die("You should not be here. Only follow links!");
-}
-
-/**
- * Displays the header of SourceBans
- *
- * @return noreturn
- */
-function BuildPageHeader()
-{
-    include TEMPLATES_PATH . "/header.php";
 }
 
 /**

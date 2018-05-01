@@ -30,16 +30,6 @@ if (!defined("IN_SB")) {
 }
 
 /**
- * Displays the header of SourceBans
- *
- * @return noreturn
- */
-function BuildPageHeader()
-{
-    include TEMPLATES_PATH . "/header.php";
-}
-
-/**
  * Displays the sub-nav menu of SourceBans
  *
  * @return noreturn

@@ -104,7 +104,7 @@ switch ($_GET['p']) {
         }
 }
 
-BuildPageHeader();
+require_once(TEMPLATES_PATH . "/header.php");
 BuildPageTabs();
 BuildSubMenu();
 BuildContHeader();
