@@ -1,9 +1,10 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'bans.customreasons';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('bans.customreasons', '');");
-    if (!$ret)
-        return false;
+$this->db->query("SELECT * FROM `:prefix_settings` WHERE setting = 'bans.customreasons'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('bans.customreasons', '')");
+    $this->db->execute();
 }
 
-return true;
+return true;

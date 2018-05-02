@@ -1,16 +1,16 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.enablekickit'");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.enablekickit', '1')");
-    if (!$ret)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.enablekickit'");
+$data = $this->db->single();
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablekickit', '1')");
+    $this->db->execute();
 }
 
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.dateformat'");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.dateformat', '')");
-    if (!$ret)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.dateformat'");
+$data = $this->db->single();
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.dateformat', '')");
+    $this->db->execute();
 }
 
-return true;
+return true;

@@ -1,9 +1,10 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE `modfolder` = 'zps';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_mods` (`name`, `icon`, `modfolder`) VALUES ('Zombie Panic', 'zps.gif', 'zps');");
-    if (!$ret)
-        return false;
+$this->db->query("SELECT mid FROM `:prefix_mods` WHERE `modfolder` = 'zps'");
+$data = $this->db->single();
+
+if (!$data['mid']) {
+    $this->db->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Zombie Panic', 'zps.gif', 'zps')");
+    $this->db->execute();
 }
 
-return true;
+return true;

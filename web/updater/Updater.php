@@ -66,7 +66,7 @@ class Updater
 
         foreach ($this->updateList as $version => $file) {
             if ($version > $this->currentVersion) {
-                $this->stack[] = 'Running Update: <b>v. '.$version.'</b>';
+                $this->stack[] = 'Running Update: <b>'.$version.'</b>';
 
                 if (!file_exists('data/'.$file)) {
                     $this->stack[] = '<b>Error executing: /updater/data/'.$file.'</b>. Stopping Update!';

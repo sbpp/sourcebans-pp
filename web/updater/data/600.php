@@ -1,26 +1,25 @@
 <?php
-$database = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
-
-$database->query('SELECT VERSION() AS version');
-$version = $database->single();
+$this->db->query('SELECT VERSION() AS version');
+$version = $this->db->single();
 
 $charset = 'utf8';
 if (version_compare($version['version'], "5.5.3") >= 0) {
     $charset .= 'mb4';
 
-    $database->query("SHOW tables");
-    $data = $database->resultset();
+    $this->db->query("SHOW tables");
+    $data = $this->db->resultset();
 
     foreach ($data as $table) {
         $table = $table['Tables_in_'.DB_NAME];
 
-        $alter = "ALTER TABLE ".$table." CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;";
-        $repair = "REPAIR TABLE ".$table.";";
-        $optimize = "OPTIMIZE TABLE ".$table.";";
+        $this->db->query("ALTER TABLE `".$table."` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $this->db->execute();
 
-        $GLOBALS['db']->Execute($alter);
-        $GLOBALS['db']->Execute($repair);
-        $GLOBALS['db']->Execute($optimize);
+        $this->db->query("REPAIR TABLE ".$table);
+        $this->db->execute();
+
+        $this->db->query("OPTIMIZE TABLE ".$table);
+        $this->db->execute();
     }
 }
 
@@ -67,5 +66,4 @@ $config = fopen("../config.php", "w");
 fwrite($config, $web_cfg);
 fclose($config);
 
-define('UPDATE_CHARSET', $charset);
 return true;

@@ -1,14 +1,18 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.enableadminrehashing';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.enableadminrehashing', '1');");
-    if (!$ret)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.enableadminrehashing'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enableadminrehashing', '1')");
+    $this->db->execute();
 }
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'protest.emailonlyinvolved';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('protest.emailonlyinvolved', '0');");
-    if (!$ret)
-        return false;
+
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'protest.emailonlyinvolved'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('protest.emailonlyinvolved', '0')");
+    $this->db->execute();
 }
-return true;
+
+return true;

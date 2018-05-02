@@ -1,6 +1,3 @@
 <?php
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_protests` ADD `pip` varchar(64) NOT NULL;");
-if (!$ret)
-    return false;
-
-return true;
+$this->db->query("ALTER TABLE `:prefix_protests` ADD `pip` varchar(64) NOT NULL");
+return $this->db->execute();

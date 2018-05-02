@@ -1,71 +1,70 @@
 <?php
-$ret = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.uri'");
-if (!$ret)
-    return false;
+$this->db->query("DELETE FROM `:prefix_settings` WHERE setting = 'config.uri'");
+$this->db->execute();
 
-$ret1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.publicexport'");
-if (!$ret1)
-    return false;
+$this->db->query("DELETE FROM `:prefix_settings` WHERE setting = 'config.publicexport'");
+$this->db->execute();
 
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'dash.lognopopup'");
-if (count($temp) == 0) {
-    $ret2 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('dash.lognopopup', '0')");
-    if (!$ret2)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'dash.lognopopup'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('dash.lognopopup', '0')");
+    $this->db->execute();
 }
 
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.exportpublic'");
-if (count($temp) == 0) {
-    $ret3 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.exportpublic', '0')");
-    if (!$ret3)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.exportpublic'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.exportpublic', '0')");
+    $this->db->execute();
 }
 
-$admins = $GLOBALS['db']->GetAll("SELECT * FROM   " . DB_PREFIX . "_admins");
-foreach ($admins as $adm) {
-    $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_admins SET lastvisit = '0000-00-00 00:00:00' WHERE aid = " . $adm['aid']);
+$this->db->query("SELECT aid FROM `:prefix_admins`");
+$admins = $this->db->resultset();
+
+$this->db->query("UPDATE `:prefix_admins` SET lastvisit = '0000-00-00 00:00:00' WHERE aid = :aid");
+foreach ($admins as $admin) {
+    $this->db->bind(':aid', $admin['aid'], \PDO::PARAM_INT);
+    $this->db->execute();
 }
 
-$ret4 = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_admins` CHANGE `lastvisit` `lastvisit` INT( 11 ) NULL DEFAULT NULL");
-if (!$ret4)
-    return false;
+$this->db->query("ALTER TABLE `:prefix_admins` CHANGE `lastvisit` `lastvisit` INT(11) NULL DEFAULT NULL");
+$this->db->execute();
 
-$ret5 = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_bans` ADD `type` TINYINT NOT NULL DEFAULT '0'");
-if (!$ret5)
-    return false;
+$this->db->query("ALTER TABLE `:prefix_bans` ADD `type` TINYINT NOT NULL DEFAULT '0'");
+$this->db->execute();
 
-$ret6 = $GLOBALS['db']->Execute("CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "_comments` (
-									  `cid` int(6) NOT NULL auto_increment,
-									  `bid` int(6) NOT NULL,
-									  `type` varchar(1) NOT NULL,
-									  `aid` int(6) NOT NULL,
-									  `commenttxt` longtext NOT NULL,
-									  `added` datetime NOT NULL,
-									  `editaid` int(6) default NULL,
-									  `edittime` datetime default NULL,
-									  KEY `cid` (`cid`)
-									) ENGINE=MyISAM  DEFAULT CHARSET=utf8;");
-if (!$ret6)
-    return false;
+$this->db->query(
+    "CREATE TABLE IF NOT EXISTS `:prefix_comments` (
+        `cid` int(6) NOT NULL AUTO_INCREMENT,
+        `bid` int(6) NOT NULL,
+        `type` varchar(1) NOT NULL,
+        `aid` int(6) NOT NULL,
+        `commenttxt` longtext NOT NULL,
+        `added` datetime NOT NULL,
+        `editaid` int(6) DEFAULT NULL,
+        `edittime` datetime DEFAULT NULL,
+        KEY `cid` (`cid`)
+    ) ENGINE=MyISAM DEFAULT CHARSET=utf8"
+);
+$this->db->execute();
 
-$ret7 = $GLOBALS['db']->Execute("ALTER TABLE " . DB_PREFIX . "_mods ADD enabled TINYINT NOT NULL DEFAULT '1'");
-if (!$ret7)
-    return false;
+$this->db->query("ALTER TABLE `:prefix_mods` ADD enabled TINYINT NOT NULL DEFAULT '1'");
+$this->db->execute();
 
+$this->db->query(
+    "SELECT bid FROM `:prefix_bans` AS ba
+    WHERE RemoveType = 'U' AND RemovedOn IS NOT NULL AND
+    (SELECT COUNT(*) FROM `:prefix_bans` AS ba2 WHERE ba.RemoveType = ba2.RemoveType AND ba.RemovedOn = ba2.RemovedOn) > 1"
+);
+$bans = $this->db->resultset();
 
-$bans = $GLOBALS['db']->GetAll("SELECT bid
-                     FROM   " . DB_PREFIX . "_bans AS ba
-                     WHERE  RemoveType = 'U'
-                       AND  RemovedON IS NOT NULL
-                       AND  (SELECT COUNT(*)
-                             FROM   " . DB_PREFIX . "_bans AS ba2
-                             WHERE  ba.RemoveType = ba2.RemoveType
-                               AND  ba.RemovedOn  = ba2.RemovedOn) > 1");
-
+$this->db->query("UPDATE `:prefix_bans` SET RemovedOn = NULL, RemoveType = NULL WHERE bid = :bid");
 foreach ($bans as $ban) {
-    $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans
-									SET    RemovedOn = NULL, RemoveType = NULL
-									WHERE  bid = " . $ban['bid']);
+    $this->db->bind(':bid', $ban['bid'], \PDO::PARAM_INT);
+    $this->db->execute();
 }
 
 return true;

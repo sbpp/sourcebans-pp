@@ -1,15 +1,18 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.enablefriendsbanning';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.enablefriendsbanning', '0');");
-    if (!$ret)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.enablefriendsbanning'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablefriendsbanning', '0')");
+    $this->db->execute();
 }
 
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE `modfolder` = 'garrysmod';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute('INSERT INTO `' . DB_PREFIX . '_mods` (`name`, `icon`, `modfolder`) VALUES ("Garry\'s Mod", "gmod.png", "garrysmod");');
-    if (!$ret)
-        return false;
+$this->db->query("SELECT mid FROM `:prefix_mods` WHERE modfolder = 'garrysmod'");
+$data = $this->db->single();
+
+if (!$data['mid']) {
+    $this->db->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Garrys\'s Mod', 'gmod.png', 'garrysmod')");
+    $this->db->execute();
 }
-return true;
+
+return true;

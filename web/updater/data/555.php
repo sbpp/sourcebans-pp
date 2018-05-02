@@ -1,8 +1,10 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE `setting` = 'config.enablesteamlogin';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute('INSERT INTO `' . DB_PREFIX . '_settings` (`setting`, `value`) VALUES ("config.enablesteamlogin", "0");');
-    if (!$ret)
-        return false;
+$this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.enablesteamlogin'");
+$data = $this->db->single();
+
+if (!$data['value']) {
+    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablesteamlogin', '0')");
+    $this->db->execute();
 }
-return true;
+
+return true;
