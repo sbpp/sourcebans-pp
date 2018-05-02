@@ -10,7 +10,7 @@ if (!defined("IN_SB")) {
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>SourceBans++</title>
-        <link href="includes/css.php" rel="stylesheet" type="text/css" />
+        <link href="includes/main.css" rel="stylesheet" type="text/css" />
         <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
         <script type="text/javascript" src="./scripts/mootools.js"></script>
         <script type="text/javascript" src="./scripts/sourcebans.js"></script>

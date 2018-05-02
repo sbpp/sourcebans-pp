@@ -33,7 +33,7 @@ require_once 'includes/openid.php';
 define('SB_HOST', SB_WP_URL);
 define('SB_URL', SB_WP_URL);
 
-$dbs = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+$dbs = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
 function steamOauth()
 {

@@ -1,9 +1,10 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'banlist.hideadminname';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('banlist.hideadminname', '0');");
-    if (!$ret)
-        return false;
+$this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'banlist.hideadminname'");
+$data = $this->dbs->single();
+
+if (!$data['value']) {
+    $this->dbs->query("INSERT INTO `:prefix-settings` (`setting`, `value`) VALUES ('banlist.hideadminname', '0')");
+    $this->dbs->execute();
 }
 
-return true;
+return true;
