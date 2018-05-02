@@ -45,8 +45,5 @@ window.addEvent('domready', function() {
 });
 $('content_title').setHTML('<?php echo $GLOBALS['TitleRewrite'] ?>');
 </script>
-<!--[if lt IE 7]>
-<script defer type="text/javascript" src="./scripts/pngfix.js"></script>
-<![endif]-->
 </body>
 </html>
