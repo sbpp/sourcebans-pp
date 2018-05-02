@@ -1,5 +1,5 @@
 <?php
-$this->db->query(
+$this->dbs->query(
     "CREATE TABLE IF NOT EXISTS `:prefix_comms` (
         `bid` int(6) NOT NULL AUTO_INCREMENT,
         `authid` varchar(64) NOT NULL,
@@ -26,4 +26,4 @@ $this->db->query(
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8;"
 );
 
-return $this->db->execute();
+return $this->dbs->execute();

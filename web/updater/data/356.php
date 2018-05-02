@@ -1,5 +1,5 @@
 <?php
-$this->db->query(
+$this->dbs->query(
     "CREATE TABLE IF NOT EXISTS `:prefix_overrides` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `type` enum('command', 'group') NOT NULL,
@@ -9,9 +9,9 @@ $this->db->query(
         UNIQUE KEY `type` (`type`, `name`)
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8"
 );
-$this->db->execute();
+$this->dbs->execute();
 
-$this->db->query(
+$this->dbs->query(
     "CREATE TABLE IF NOT EXISTS `:prefix_srvgroups_overrides` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
         `group_id` smallint(5) unsigned NOT NULL,
@@ -23,6 +23,6 @@ $this->db->query(
     ) ENGINE=MyISAM DEFAULT CHARSET=utf8"
 );
 
-$this->db->execute();
+$this->dbs->execute();
 
 return true;

@@ -6,12 +6,12 @@ class Updater
     private $latestVersion = 0;
     private $updateList = null;
 
-    private $db = null;
+    private $dbs = null;
     private $stack = [];
 
-    public function __construct(Database $db)
+    public function __construct(Database $dbs)
     {
-        $this->db = $db;
+        $this->dbs = $dbs;
 
         $this->getUpdateList('store.json');
         $this->getLatestVersion();
@@ -40,21 +40,20 @@ class Updater
 
     private function getCurrentVersion()
     {
-        $this->db->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.version'");
-        $version = $this->db->single();
+        $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.version'");
+        $version = $this->dbs->single();
         $this->currentVersion = (int)$version['value'];
     }
 
     private function updateDBVersion($version)
     {
-        $this->db->query("UPDATE `:prefix_settings` SET value = :value WHERE setting = 'config.version'");
-        $this->db->bind(':value', $version, \PDO::PARAM_INT);
-        return $this->db->execute();
+        $this->dbs->query("UPDATE `:prefix_settings` SET value = :value WHERE setting = 'config.version'");
+        $this->dbs->bind(':value', $version, \PDO::PARAM_INT);
+        return $this->dbs->execute();
     }
 
     private function update()
     {
-        $stack = [];
         $this->stack[] = "Checking current database version... <b> ".$this->currentVersion."</b>";
 
         if (!$this->needUpdate()) {

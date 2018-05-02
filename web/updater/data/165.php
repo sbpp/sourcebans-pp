@@ -1,10 +1,10 @@
 <?php
-$this->db->query("SELECT * FROM `:prefix_settings` WHERE setting = 'bans.customreasons'");
-$data = $this->db->single();
+$this->dbs->query("SELECT * FROM `:prefix_settings` WHERE setting = 'bans.customreasons'");
+$data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->db->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('bans.customreasons', '')");
-    $this->db->execute();
+    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('bans.customreasons', '')");
+    $this->dbs->execute();
 }
 
 return true;

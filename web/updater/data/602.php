@@ -10,12 +10,12 @@ $data = [
     'Zombie Panic' => 'zps.png'
 ];
 
-$this->db->query("UPDATE `:prefix_mods` SET icon = :icon WHERE name = :name");
+$this->dbs->query("UPDATE `:prefix_mods` SET icon = :icon WHERE name = :name");
 
 foreach ($data as $name => $icon) {
-    $this->db->bind(':icon', $icon);
-    $this->db->bind(':name', $name);
-    $this->db->execute();
+    $this->dbs->bind(':icon', $icon);
+    $this->dbs->bind(':name', $name);
+    $this->dbs->execute();
 }
 
 return true;

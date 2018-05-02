@@ -1,10 +1,10 @@
 <?php
-$this->db->query("SELECT mid FROM `:prefix_mods` WHERE `modfolder` = 'zps'");
-$data = $this->db->single();
+$this->dbs->query("SELECT mid FROM `:prefix_mods` WHERE `modfolder` = 'zps'");
+$data = $this->dbs->single();
 
 if (!$data['mid']) {
-    $this->db->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Zombie Panic', 'zps.gif', 'zps')");
-    $this->db->execute();
+    $this->dbs->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Zombie Panic', 'zps.gif', 'zps')");
+    $this->dbs->execute();
 }
 
 return true;

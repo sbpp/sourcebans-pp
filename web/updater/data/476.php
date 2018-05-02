@@ -1,10 +1,10 @@
 <?php
-$this->db->query("SELECT mid FROM `:prefix_mods` WHERE modfolder = 'synergy'");
-$data = $this->db->single();
+$this->dbs->query("SELECT mid FROM `:prefix_mods` WHERE modfolder = 'synergy'");
+$data = $this->dbs->single();
 
 if (!$data['mid']) {
-    $this->db->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Synergy', 'synergy.png', 'synergy')");
-    $this->db->execute();
+    $this->dbs->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Synergy', 'synergy.png', 'synergy')");
+    $this->dbs->execute();
 }
 
 return true;

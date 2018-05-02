@@ -1,25 +1,25 @@
 <?php
-$this->db->query('SELECT VERSION() AS version');
-$version = $this->db->single();
+$this->dbs->query('SELECT VERSION() AS version');
+$version = $this->dbs->single();
 
 $charset = 'utf8';
 if (version_compare($version['version'], "5.5.3") >= 0) {
     $charset .= 'mb4';
 
-    $this->db->query("SHOW tables");
-    $data = $this->db->resultset();
+    $this->dbs->query("SHOW tables");
+    $data = $this->dbs->resultset();
 
     foreach ($data as $table) {
         $table = $table['Tables_in_'.DB_NAME];
 
-        $this->db->query("ALTER TABLE `".$table."` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-        $this->db->execute();
+        $this->dbs->query("ALTER TABLE `".$table."` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $this->dbs->execute();
 
-        $this->db->query("REPAIR TABLE ".$table);
-        $this->db->execute();
+        $this->dbs->query("REPAIR TABLE ".$table);
+        $this->dbs->execute();
 
-        $this->db->query("OPTIMIZE TABLE ".$table);
-        $this->db->execute();
+        $this->dbs->query("OPTIMIZE TABLE ".$table);
+        $this->dbs->execute();
     }
 }
 
