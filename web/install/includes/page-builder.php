@@ -54,7 +54,7 @@ switch ($_GET['step']) {
         break;
 }
 
-BuildPageHeader();
+require_once(TEMPLATES_PATH . "/header.php");
 BuildPageTabs();
 BuildSubMenu();
 BuildContHeader();

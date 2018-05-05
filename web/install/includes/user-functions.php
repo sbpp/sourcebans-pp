@@ -45,40 +45,6 @@ function is_taken($table, $field, $value)
     return (count($result) > 0);
 }
 
-
-/**
- * Changes the admins data
- *
- * @param integer $aid The admin id to change the details of
- * @param string $username The new username of the admin
- * @param string $name The new realname of the admin
- * @param string $email The email of the admin
- * @param string $authid the STEAM of the admin
- * @return true on success.
- */
-function edit_admin($aid, $username, $name, $email, $authid)
-{
-    $GLOBALS['db']->query('UPDATE `:prefix_admins` SET `user` = `:user`, `authid` = `:authid`, `email` = `:email` WHERE `aid` = `:aid`');
-    $GLOBALS['db']->bind(':user', $username);
-    $GLOBALS['db']->bind(':authid', $authid);
-    $GLOBALS['db']->bind(':email', $email);
-    $GLOBALS['db']->bind(':aid', $aid);
-    return $GLOBALS['db']->execute();
-}
-
-/**
- * Removes an admin from the system
- *
- * @param integer $aid The admin id of the admin to delete
- * @return true on success.
- */
-function delete_admin($aid)
-{
-    $GLOBALS['db']->query('DELETE FROM `:prefix_admins` WHERE `aid` = `:aid`');
-    $GLOBALS['db']->bind(':aid', $aid);
-    return $GLOBALS['db']->execute();
-}
-
 /**
  * Returns the current flags associated with the user
  *
@@ -170,44 +136,6 @@ function is_admin($aid)
         return true;
     }
     return false;
-}
-
-/**
- * Checks which admin type the admin is
- * using the given mask
- *
- * @return integer.
- */
-function check_group($mask)
-{
-    if ($mask &
-    (ADMIN_WEB_BANS|ADMIN_WEB_ADMINS|ADMIN_WEB_AGROUPS|
-    ADMIN_SERVER_ADMINS|ADMIN_SERVER_AGROUPS|ADMIN_SERVER_SETTINGS|
-    ADMIN_SERVER_ADD|ADMIN_SERVER_REMOVE|ADMIN_SERVER_GROUPS|ADMIN_WEB_SETTINGS|
-    ADMIN_OWNER|ADMIN_MODS != 0 && $mask &
-    SM_RESERVED_SLOT|SM_GENERIC|SM_KICK|SM_BAN|SM_UNBAN|SM_SLAY|
-    SM_MAP|SM_CVAR|SM_CONFIG|SM_CHAT|SM_VOTE|SM_PASSWORD|SM_RCON|
-    SM_CHEATS|SM_ROOT|SM_DEF_IMMUNITY|SM_GLOBAL_IMMUNITY == 0)) {
-        return GROUP_WEB_A;
-    } elseif ($mask == 0) {
-        return GROUP_NONE_A;
-    }
-    return GROUP_SERVER_A;
-}
-
-
-
-/**
- * Checks if the admin has ALL the specified flags
- *
- * @param integet $aid the admin id to check the flags of
- * @param integer $flag the flag to check
- * @return boolean
- */
-function check_all_flags($aid, $flag)
-{
-    $mask = get_user_flags($aid);
-    return ($mask & $flag) == $flag;
 }
 
 /**

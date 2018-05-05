@@ -121,8 +121,5 @@ if (is_object($log)) {
     $log->WriteLogEntries();
 }
 ?>
-<!--[if lt IE 7]>
-<script defer type="text/javascript" src="./scripts/pngfix.js"></script>
-<![endif]-->
 </body>
 </html>

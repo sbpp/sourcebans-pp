@@ -25,78 +25,8 @@
 //
 // *************************************************************************
 
-/**
-* Extended substr function. If it finds mbstring extension it will use, else
-* it will use old substr() function
-*
-* @param string $string String that need to be fixed
-* @param integer $start Start extracting from
-* @param integer $length Extract number of characters
-* @return string
-*/
-
 if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-
-function substr_utf($string, $start = 0, $length = null)
-{
-    $start = (integer) $start >= 0 ? (integer) $start : 0;
-    if (is_null($length)) {
-        $length = strlen_utf($string) - $start;
-    }
-    return substr($string, $start, $length);
-}
-
-/**
-* Equivalent to htmlspecialchars(), but allows &#[0-9]+ (for unicode)
-* This function was taken from punBB codebase <http://www.punbb.org/>
-*
-* @param string $str
-* @return string
-*/
-function clean($str)
-{
-    $str = preg_replace('/&(?!#[0-9]+;)/s', '&amp;', $str);
-    $str = str_replace(array('<', '>', '"'), array('&lt;', '&gt;', '&quot;'), $str);
-    return $str;
-}
-
-/**
-* Check if selected email has valid email format
-*
-* @param string $user_email Email address
-* @return boolean
-*/
-function is_valid_email($userEmail)
-{
-    $chars = EMAIL_FORMAT;
-    if (strstr($userEmail, '@') && strstr($userEmail, '.')) {
-        return (boolean) preg_match($chars, $userEmail);
-    }
-
-    return false;
-}
-
-/**
- * Returns the full location that the website is running in
- *
- * @return string location of SourceBans
- */
-function GetLocation()
-{
-    return substr($_SERVER['SCRIPT_FILENAME'], 0, strlen($base)-strlen("index.php"));
-}
-
-/**
- * Displays the header of SourceBans
- *
- * @return noreturn
- */
-function BuildPageHeader()
-{
-    include TEMPLATES_PATH . "/header.php";
+    die("You should not be here. Only follow links!");
 }
 
 /**
@@ -540,20 +470,6 @@ function CreateQuote()
 	);
 	$num = rand(0, sizeof($quote)-1);
 	return '"' . $quote[$num][0] . '" - <i>' . $quote[$num][1] . '</i>';
-}
-
-function CheckAdminAccess($mask)
-{
-	if(!check_flags( $_SESSION['user']['aid'], $mask ))
-	{
-		RedirectJS("?p=login&msg=You dont have access. Login with an account with access");
-		die();
-	}
-}
-
-function RedirectJS($url)
-{
-	echo '<script>window.location = "' . $url .'";</script>';
 }
 
 function RemoveCode($text)

@@ -24,75 +24,10 @@
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
+use xPaw\SourceQuery\SourceQuery;
 
 if (!defined("IN_SB")) {
     die("You should not be here. Only follow links!");
-}
-/**
-* Extended substr function. If it finds mbstring extension it will use, else
-* it will use old substr() function
-*
-* @param string $string String that need to be fixed
-* @param integer $start Start extracting from
-* @param integer $length Extract number of characters
-* @return string
-*/
-function substr_utf($string, $start = 0, $length = null)
-{
-    $start = (integer) $start >= 0 ? (integer) $start : 0;
-    if (is_null($length)) {
-        $length = strlen_utf($string) - $start;
-    }
-    return substr($string, $start, $length);
-}
-
-/**
-* Equivalent to htmlspecialchars(), but allows &#[0-9]+ (for unicode)
-* This function was taken from punBB codebase <http://www.punbb.org/>
-*
-* @param string $str
-* @return string
-*/
-function clean($str)
-{
-    $str = preg_replace('/&(?!#[0-9]+;)/s', '&amp;', $str);
-    $str = str_replace(array('<', '>', '"'), array('&lt;', '&gt;', '&quot;'), $str);
-    return $str;
-}
-
-/**
-* Check if selected email has valid email format
-*
-* @param string $user_email Email address
-* @return boolean
-*/
-function is_valid_email($user_email)
-{
-    $chars = EMAIL_FORMAT;
-    if (strstr($user_email, '@') && strstr($user_email, '.')) {
-        return (boolean) preg_match($chars, $user_email);
-    }
-    return false;
-}
-
-/**
- * Returns the full location that the website is running in
- *
- * @return string location of SourceBans
- */
-function GetLocation()
-{
-    return substr($_SERVER['SCRIPT_FILENAME'], 0, strlen($base)-strlen("index.php"));
-}
-
-/**
- * Displays the header of SourceBans
- *
- * @return noreturn
- */
-function BuildPageHeader()
-{
-    include TEMPLATES_PATH . "/header.php";
 }
 
 /**
@@ -117,12 +52,7 @@ function BuildSubMenu()
  */
 function BuildContHeader()
 {
-    global $theme, $userbank;
-    if (isset($_GET['p']) && $_GET['p'] == "admin" && !$userbank->is_admin()) {
-        echo "You dont have admin. Be gone!";
-        RedirectJS('index.php?p=login');
-        PageDie();
-    }
+    global $theme;
 
     if (!isset($_GET['s']) && isset($GLOBALS['pagetitle'])) {
         $page = "<b>".$GLOBALS['pagetitle']."</b>";
@@ -579,16 +509,6 @@ function PrintArray($array)
     echo "</pre>";
 }
 
-function NextGid()
-{
-    $gid = $GLOBALS['db']->GetRow("SELECT MAX(gid) AS next_gid FROM `" . DB_PREFIX . "_groups`");
-    return ($gid['next_gid']+1);
-}
-function NextSGid()
-{
-    $gid = $GLOBALS['db']->GetRow("SELECT MAX(id) AS next_id FROM `" . DB_PREFIX . "_srvgroups`");
-    return ($gid['next_id']+1);
-}
 function NextSid()
 {
     $sid = $GLOBALS['db']->GetRow("SELECT MAX(sid) AS next_sid FROM `" . DB_PREFIX . "_servers`");
@@ -689,14 +609,9 @@ function CheckAdminAccess($mask)
 {
     global $userbank;
     if (!$userbank->HasAccess($mask)) {
-        RedirectJS("index.php?p=login&m=no_access");
+        header("Location: index.php?p=login&m=no_access");
         die();
     }
-}
-
-function RedirectJS($url)
-{
-    echo '<script>window.location = "' . $url .'";</script>';
 }
 
 function RemoveCode($text)
@@ -806,21 +721,6 @@ function PruneComms()
     $res = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_comms` SET `RemovedBy` = 0, `RemoveType` = \'E\', `RemovedOn` = UNIX_TIMESTAMP() WHERE `length` != 0 and `ends` < UNIX_TIMESTAMP() and `RemoveType` IS NULL');
     return $res?true:false;
 }
-
-/*
-function GetSVNRev()
-{
-	preg_match('/\\$Rev:[\\s]+([\\d]+)/', SB_REV, $rev, PREG_OFFSET_CAPTURE);
-	return (int)$rev[1][0];
-}*/
-
-function GetGITRev()
-{
-    preg_match('/\\$Git:[\\s]+([\\d]+)/', SB_GITRev, $gitrev, PREG_OFFSET_CAPTURE);
-    return (int)$gitrev[1][0];
-}
-
-
 
 // Function by Luman (http://snipplr.com/users/luman)
 function array_qsort(&$array, $column=0, $order=SORT_ASC, $first=0, $last= -2)
@@ -949,42 +849,6 @@ function check_email($email) {
     $regex         = "$protocol?$user_part\@$domain_part";
 
     return preg_match("/^$regex$/", $email);
-}
-
-// check, if one steamid is online on one specific server
-function checkSinglePlayer($sid, $steamid)
-{
-    require_once(INCLUDES_PATH.'/CServerRcon.php');
-    $serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if (empty($serv['rcon'])) {
-        return false;
-    }
-    $test = @fsockopen($serv['ip'], $serv['port'], $errno, $errstr, 2);
-    if (!$test) {
-        return false;
-    }
-    $r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
-    if (!$r->Auth()) {
-        $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
-        return false;
-    }
-
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
-    $i = 0;
-    foreach ($matches[3] as $match) {
-        if (getAccountId($match) == getAccountId($steamid)) {
-            $steam = $matches[3][$i];
-            $name = $matches[2][$i];
-            $time = $matches[4][$i];
-            $ip = explode(":", $matches[8][$i]);
-            $ip = $ip[0];
-            $ping = $matches[5][$i];
-            return array('name' => $name, 'steam' => $steamid, 'ip' => $ip, 'time' => $time, 'ping' => $ping);
-        }
-        $i++;
-    }
-    return false;
 }
 
 //function to check for multiple steamids on one server.

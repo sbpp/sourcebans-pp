@@ -58,7 +58,6 @@ define('XAJAX_REQUEST_URI', './index.php');
 require_once(INCLUDES_PATH.'/SessionManager.php');
 include_once(INCLUDES_PATH . "/CSystemLog.php");
 include_once(INCLUDES_PATH . "/CUserManager.php");
-include_once(INCLUDES_PATH . "/CUI.php");
 
 \SessionManager::sessionStart('SourceBans');
 

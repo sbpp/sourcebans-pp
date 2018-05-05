@@ -28,9 +28,13 @@
 global $userbank;
 
 if (!isset($_GET['c'])) {
-    include TEMPLATES_PATH . "/page.admin.php";
-    RewritePageTitle("Administration");
-    return;
+    if ($userbank->is_admin()) {
+        include TEMPLATES_PATH . "/page.admin.php";
+        RewritePageTitle("Administration");
+        return;
+    }
+    header("Location: index.php?p=login&m=no_access");
+    die();
 }
 
 // ###################[ Admin Groups ]##################################################################
