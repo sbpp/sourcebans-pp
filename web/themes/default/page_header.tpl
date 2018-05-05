@@ -4,9 +4,9 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>{if $header_title != ""}{$header_title}{else}SourceBans{/if}</title>
 <link rel="Shortcut Icon" href="themes/{$theme_name}/images/favicon.ico" />
-<link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+<script type="text/javascript" src="./scripts/fontawesome-all.min.js"></script>
 <script type="text/javascript" src="./scripts/sourcebans.js"></script>
-<link href="themes/{$theme_name}/css/css.php" rel="stylesheet" type="text/css" />
+<link href="themes/{$theme_name}/css/main.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="./scripts/mootools.js"></script>
 <script type="text/javascript" src="./scripts/contextMenoo.js"></script>
 

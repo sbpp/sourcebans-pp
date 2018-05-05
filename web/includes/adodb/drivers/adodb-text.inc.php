@@ -209,9 +209,9 @@ class ADODB_text extends ADOConnection {
 			$where_arr = array();
 
 			reset($this->_origarray);
-			while (list($k_arr,$arr) = each($this->_origarray)) {
 
-				if ($i == 0 && $this->_skiprow1)
+            foreach ($this->_origarray as $k_arr => $arr) {
+                if ($i == 0 && $this->_skiprow1)
 					$where_arr[] = $arr;
 				else {
 					eval($eval);
@@ -219,7 +219,7 @@ class ADODB_text extends ADOConnection {
 					if ($rez) $where_arr[] = $arr;
 				}
 				$i += 1;
-			}
+            }
 			$this->_rezarray = $where_arr;
 		}else
 			$where_arr = $this->_origarray;
@@ -247,11 +247,11 @@ class ADODB_text extends ADOConnection {
 				$i = 0;
 				$n = '';
 				reset($this->_colnames);
-				while (list($k_n,$n) = each($this->_colnames)) {
 
-					if ($col == strtoupper(trim($n))) break;
+                foreach($this->_colnames as $k_n => $n) {
+                    if ($col == strtoupper(trim($n))) break;
 					$i += 1;
-				}
+                }
 
 				if ($n && $col) {
 					$distarr = array();
@@ -260,8 +260,9 @@ class ADODB_text extends ADOConnection {
 					$projnames = array($n);
 
 					reset($where_arr);
-					while (list($k_a,$a) = each($where_arr)) {
-						if ($i == 0 && $this->_skiprow1) {
+
+                    foreach ($where_arr as $k_a => $a) {
+                        if ($i == 0 && $this->_skiprow1) {
 							$projarray[] = array($n);
 							continue;
 						}
@@ -274,8 +275,7 @@ class ADODB_text extends ADOConnection {
 							}
 						} else
 							$projarray[] = array($a[$i]);
-
-					} //foreach
+                    } //foreach
 					//print_r($projarray);
 				}
 			} // check 1 column in projection
@@ -302,13 +302,14 @@ class ADODB_text extends ADOConnection {
 		if ($at == 0) {
 			$i = 0;
 			reset($projnames);
-			while (list($k_n,$n) = each($projnames)) {
-				if (strtoupper(trim($n)) == $col) {
+
+            foreach ($projnames as $k_n => $n) {
+                if (strtoupper(trim($n)) == $col) {
 					$at = $i+1;
 					break;
 				}
 				$i += 1;
-			}
+            }
 		}
 
 		if ($at <= 0 || $at > sizeof($projarray[0])) return $this; // cannot find sort column

@@ -27,7 +27,7 @@
  * @author Monte Ohrt <monte at ohrt dot com>
  * @author Andrei Zmievski <andrei@php.net>
  * @package Smarty
- * @version 2.6.29
+ * @version 2.6.31-dev
  */
 
 /* $Id$ */
@@ -465,7 +465,7 @@ class Smarty
      *
      * @var string
      */
-    var $_version              = '2.6.29';
+    var $_version              = '2.6.31';
 
     /**
      * current template inclusion depth
@@ -562,6 +562,12 @@ class Smarty
      */
     var $_cache_including = false;
 
+    /**
+     * plugin filepath cache
+     *
+     * @var array
+     */
+    var $_filepaths_cache = array();
     /**#@-*/
     /**
      * The class constructor.
@@ -1738,7 +1744,12 @@ class Smarty
     function _get_auto_filename($auto_base, $auto_source = null, $auto_id = null)
     {
         $_compile_dir_sep =  $this->use_sub_dirs ? DIRECTORY_SEPARATOR : '^';
-        $_return = $auto_base . DIRECTORY_SEPARATOR;
+        $_return = $auto_base;
+	    
+	if(substr($_return, -1) != DIRECTORY_SEPARATOR)
+	{
+	    $_return .= DIRECTORY_SEPARATOR;
+	}
 
         if(isset($auto_id)) {
             // make auto_id safe for directory names

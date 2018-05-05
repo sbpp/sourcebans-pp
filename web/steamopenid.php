@@ -33,19 +33,19 @@ require_once 'includes/openid.php';
 define('SB_HOST', SB_WP_URL);
 define('SB_URL', SB_WP_URL);
 
-$dbs = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+$dbs = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
 function steamOauth()
 {
     $openid = new LightOpenID(SB_HOST);
     if (!$openid->mode) {
-        $openid->identity = 'http://steamcommunity.com/openid';
+        $openid->identity = 'https://steamcommunity.com/openid';
         header("Location: " . $openid->authUrl());
         exit();
     }
     if ($openid->validate()) {
         $ids = $openid->identity;
-        $ptn = "/^http:\/\/steamcommunity\.com\/openid\/id\/(7[0-9]{15,25}+)$/";
+        $ptn = "/^https:\/\/steamcommunity\.com\/openid\/id\/(7[0-9]{15,25}+)$/";
         preg_match($ptn, $ids, $matches);
 
         if (!empty($matches[1])) {

@@ -248,8 +248,8 @@ class ADODB_ado extends ADOConnection {
 			$oCmd->CommandText = $sql;
 			$oCmd->CommandType = 1;
 
-			while(list(, $val) = each($inputarr)) {
-				$type = gettype($val);
+            foreach ($inputarr as $key => $val) {
+                $type = gettype($val);
 				$len=strlen($val);
 				if ($type == 'boolean')
 					$this->adoParameterType = 11;
@@ -268,7 +268,7 @@ class ADODB_ado extends ADOConnection {
         		$p = $oCmd->CreateParameter('name',$this->adoParameterType,1,$len,$val);
 
 				$oCmd->Parameters->Append($p);
-			}
+            }
 
 			$p = false;
 			$rs = $oCmd->Execute();

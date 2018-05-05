@@ -27,9 +27,9 @@
 #pragma semicolon 1
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
-#include <sourcebans>
+#include <sourcebanspp>
 
-#define PLUGIN_VERSION "1.6.2"
+#define PLUGIN_VERSION "1.6.3"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2
@@ -177,13 +177,10 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 	new client;
 	decl String:steamid[32], String:IP[32];
 
-	if (datapack != INVALID_HANDLE)
-	{
-		client = GetClientOfUserId(ReadPackCell(datapack));
-		ReadPackString(datapack, steamid, sizeof(steamid));
-		ReadPackString(datapack, IP, sizeof(IP));
-		CloseHandle(datapack);
-	}
+	client = GetClientOfUserId(ReadPackCell(datapack));
+	ReadPackString(datapack, steamid, sizeof(steamid));
+	ReadPackString(datapack, IP, sizeof(IP));
+	CloseHandle(datapack);
 
 	if (hndl == INVALID_HANDLE)
 	{
@@ -237,8 +234,8 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 stock BanPlayer(client, time)
 {
 	decl String:Reason[255];
-	Format(Reason, sizeof(Reason), "[SourceSleuth] %t", "sourcesleuth_banreason");
-	SourceBans_BanPlayer(0, client, time, Reason);
+	Format(Reason, sizeof(Reason), "[SourceSleuth] %T", "sourcesleuth_banreason", client);
+	SBPP_BanPlayer(0, client, time, Reason);
 }
 
 PrintToAdmins(const String:format[], any:...)
@@ -247,8 +244,10 @@ PrintToAdmins(const String:format[], any:...)
 
 	for (new i = 1; i <= MaxClients; i++)
 	{
-		if (CheckCommandAccess(i, "sm_sourcesleuth_printtoadmins", ADMFLAG_BAN) && IsClientInGame(i))
+		if (IsClientInGame(i) && CheckCommandAccess(i, "sm_sourcesleuth_printtoadmins", ADMFLAG_BAN))
 		{
+			SetGlobalTransTarget(i);
+
 			VFormat(g_Buffer, sizeof(g_Buffer), format, 2);
 
 			PrintToChat(i, "%s", g_Buffer);
@@ -260,13 +259,13 @@ public LoadWhiteList()
 {
 	decl String:path[PLATFORM_MAX_PATH], String:line[256];
 
-	BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "configs/sourcesleuth_whitelist.cfg");
+	BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "configs/sourcebans/sourcesleuth_whitelist.cfg");
 
 	new Handle:fileHandle = OpenFile(path, "r");
 
 	if (fileHandle == INVALID_HANDLE)
 	{
-		LogError("Could not find the config file (addons/sourcemod/configs/sourcesleuth_whitelist.cfg)");
+		LogError("Could not find the config file (%s)", path);
 
 		return;
 	}

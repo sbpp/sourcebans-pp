@@ -104,9 +104,7 @@ switch ($_GET['p']) {
         }
 }
 
-global $ui;
-$ui = new CUI();
-BuildPageHeader();
+require_once(TEMPLATES_PATH . "/header.php");
 BuildPageTabs();
 BuildSubMenu();
 BuildContHeader();

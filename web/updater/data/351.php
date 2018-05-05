@@ -1,5 +1,3 @@
 <?php
-$ret2 = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_comments` ADD FULLTEXT `commenttxt` (`commenttxt`);");
-if (!$ret2)
-    return false;
-return true;
+$this->dbs->query("ALTER TABLE `:prefix_comments` ADD FULLTEXT `commenttxt` (`commenttxt`)");
+return $this->dbs->execute();

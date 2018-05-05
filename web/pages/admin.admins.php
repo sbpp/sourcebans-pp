@@ -30,7 +30,7 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-global $userbank, $ui;
+global $userbank;
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page = intval($_GET['page']);
