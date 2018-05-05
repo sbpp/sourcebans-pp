@@ -1744,10 +1744,11 @@ class Smarty
     function _get_auto_filename($auto_base, $auto_source = null, $auto_id = null)
     {
         $_compile_dir_sep =  $this->use_sub_dirs ? DIRECTORY_SEPARATOR : '^';
-        $_return = $auto_base;	//. DIRECTORY_SEPARATOR;
+        $_return = $auto_base;
+	    
 	if(substr($_return, -1) != DIRECTORY_SEPARATOR)
 	{
-		$_return .= DIRECTORY_SEPARATOR;
+	    $_return .= DIRECTORY_SEPARATOR;
 	}
 
         if(isset($auto_id)) {
