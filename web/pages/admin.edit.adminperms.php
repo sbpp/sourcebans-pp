@@ -92,9 +92,8 @@ $name      = $userbank->GetProperty("user", $_GET['id'])?>
     <td>&nbsp;</td>
     <td>
     <div align="center">
-        <?=$ui->drawButton("Save Changes", "ProcessEditAdminPermissions();", "ok", "editadmingroup")?>
-        &nbsp;<?=$ui->drawButton("Back", "history.go(-1)", "cancel", "back")?>
-
+        <input type='button' onclick="ProcessEditAdminPermissions();" name='editadmingroup' class='btn ok' onmouseover='ButtonOver("editadmingroup")' onmouseout='ButtonOver("editadmingroup")' id='editadmingroup' value='Save Changes' />
+        <input type='button' onclick="history.go(-1);" name='back' class='btn cancel' onmouseover='ButtonOver("back")' onmouseout='ButtonOver("back")' id='back' value='Back' />
     </div>
     </td>
   </tr>

@@ -1,26 +1,25 @@
 <?php
-$oldcomments = $GLOBALS['db']->GetAll('SELECT cid, added, edittime FROM `' . DB_PREFIX . '_comments`');
+$this->dbs->query("SELECT cid, added, edittime FROM `:prefix_comments`");
+$old = $this->dbs->resultset();
 
-$res = $GLOBALS['db']->Execute('ALTER TABLE `' . DB_PREFIX . '_comments` DROP `added`, DROP `edittime`');
-if (!$res)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_comments` DROP `added`, DROP `edittime`");
+$this->dbs->execute();
 
-$res = $GLOBALS['db']->Execute('ALTER TABLE `' . DB_PREFIX . '_comments` ADD `added` INT( 11 ) NOT NULL DEFAULT \'0\' AFTER `commenttxt`, ADD `edittime` INT( 11 ) NOT NULL DEFAULT \'0\' AFTER `editaid`');
-if (!$res)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_comments` ADD `added` INT(11) NOT NULL DEFAULT 0 AFTER `commenttxt`, ADD `edittime` INT(11) NOT NULL DEFAULT 0 AFTER `editaid`");
+$this->dbs->execute();
 
-$res = $GLOBALS['db']->Execute('ALTER TABLE `' . DB_PREFIX . '_comments` CHANGE `added` `added` INT( 11 ) NOT NULL');
-if (!$res)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_comments` CHANGE `added` `added` INT(11) NOT NULL");
+$this->dbs->execute();
 
-$res = $GLOBALS['db']->Execute('ALTER TABLE `' . DB_PREFIX . '_comments` CHANGE `edittime` `edittime` INT( 11 ) NULL DEFAULT NULL ');
-if (!$res)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_comments` CHANGE `edittime` `edittime` INT(11) NULL DEFAULT NULL");
+$this->dbs->execute();
 
-foreach ($oldcomments AS $oldcomment)
-    if (empty($oldcomment['edittime']))
-        $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comments` SET added = '" . strtotime($oldcomment['added']) . "' WHERE cid = '" . $oldcomment['cid'] . "'");
-    else
-        $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comments` SET added = '" . strtotime($oldcomment['added']) . "', edittime = '" . strtotime($oldcomment['edittime']) . "' WHERE cid = '" . $oldcomment['cid'] . "'");
+$this->dbs->query("UPDATE `:prefix_comments` SET added = :added, edittime = :edittime WHERE cid = :cid");
+foreach ($old as $comment) {
+    $this->dbs->bind(':added', $comment['added']);
+    $this->dbs->bind(':edittime', $comment['edittime']);
+    $this->dbs->bind(':cid', $comment['cid']);
+    $this->dbs->execute();
+}
 
-return true;
+return true;

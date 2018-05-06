@@ -1,8 +1,10 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'banlist.hideplayerips'");
-if (count($temp) == 0) {
-    $ret2 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('banlist.hideplayerips', '0')");
-    if (!$ret2)
-        return false;
+$this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'banlist.hideplayerips'");
+$data = $this->dbs->single();
+
+if (!$data['value']) {
+    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('banlist.hideplayerips', '0')");
+    $this->dbs->execute();
 }
-return true;
+
+return true;

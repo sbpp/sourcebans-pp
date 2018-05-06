@@ -1,34 +1,3 @@
-<?php
-/**
- * css.php
- *
- * This file contains all of our styles :D
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SteamFriends (www.steamfriends.com)
- * @package SourceBans
- * @link http://www.sourcebans.net
- */
-
-if(isset($_SERVER['HTTP_USER_AGENT']) && !empty($_SERVER['HTTP_USER_AGENT'])) {
-	if(strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 6.0")) {
-		$agent = "IE6";
-	} elseif(strstr($_SERVER['HTTP_USER_AGENT'], "MSIE 7.0")) {
-		$agent = "IE7";
-	} elseif(strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/2")) {
-		$agent = "FF2";
-	} elseif(strstr($_SERVER['HTTP_USER_AGENT'], "Firefox/1")) {
-		$agent = "FF1";
-	} else {
-		$agent = "other";
-	}
-} else {
-	$agent = 'other';
-}
-
-header('Content-type: text/css');
-?>
-
 @font-face {
     font-family: tf2;
     src: url(../css/tf2build.ttf);
@@ -576,11 +545,6 @@ a.nav_link:hover {
 	position:absolute;
 	overflow:hidden;
 	top:250px;
-<?php
-if($agent != "IE6") {
-	echo "background: url(../images/msg-bubble.png) no-repeat center;";
-}
-?>
 	padding:15px;
 	margin: auto 210px;
 	width: 520px;

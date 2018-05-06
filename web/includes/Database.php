@@ -6,10 +6,10 @@ class Database
     private $dbh;
     private $stmt;
 
-    public function __construct($host, $port, $dbname, $user, $password, $prefix)
+    public function __construct($host, $port, $dbname, $user, $password, $prefix, $charset = 'utf8')
     {
         $this->prefix = $prefix;
-        $dsn = 'mysql:host='.$host.';port='.$port.';dbname='.$dbname;
+        $dsn = 'mysql:host='.$host.';port='.$port.';dbname='.$dbname.';charset='.$charset;
         $options = array(
             \PDO::ATTR_PERSISTENT => true,
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
