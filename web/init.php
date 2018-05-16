@@ -146,6 +146,10 @@ if (!defined('DB_CHARSET')) {
     define('DB_CHARSET', 'utf8');
 }
 
+if (!defined('SB_EMAIL')) {
+    define('SB_EMAIL', '');
+}
+
 include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
 include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
 require_once(INCLUDES_PATH.'/Database.php');

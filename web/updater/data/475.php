@@ -14,7 +14,7 @@ $this->dbs->query(
         `RemovedBy` int(8) DEFAULT NULL,
         `RemoveType` varchar(3) DEFAULT NULL,
         `RemovedOn` int(11) DEFAULT NULL,
-        `type` tinyint(4) NOT NULL DEFAULT `0` COMMENT '1 - Mute, 2 - Gag',
+        `type` tinyint(4) NOT NULL DEFAULT 0 COMMENT '1 - Mute, 2 - Gag',
         `ureason` text,
         PRIMARY KEY (`bid`),
         KEY `sid` (`sid`),
