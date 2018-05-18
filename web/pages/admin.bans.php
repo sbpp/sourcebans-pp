@@ -64,15 +64,8 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                     ));
                 }
             } else { // if its an banned_user.cfg
-                if (!validate_steam($line[2])) {
-                    if (($accountId = getAccountId($line[2])) !== -1) {
-                        $steam = renderSteam2($accountId, 0);
-                    } else {
-                        continue;
-                    }
-                } else {
-                    $steam = $line[2];
-                }
+                $steam = \SteamID\SteamID::toSteam2($line[2]);
+                
                 $check = $GLOBALS['db']->Execute("SELECT authid FROM `" . DB_PREFIX . "_bans` WHERE authid = ? AND RemoveType IS NULL", array(
                     $steam
                 ));

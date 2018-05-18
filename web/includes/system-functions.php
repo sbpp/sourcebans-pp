@@ -600,6 +600,7 @@ function CreateQuote()
         array("People do crazy things all the time... Like eat a Arby's", "Marge Simpson"),
         array("I wish my lawn was emo, so it would cut itself", "SirTiger"),
         array("Oh no! I've overflowed my balls!", "Olly"),
+        array("Pump me full of your precious information, Senpai!", "ISSUE_TEMPLATE.md")
     );
     $num = rand(0, sizeof($quote)-1);
     return '"' . $quote[$num][0] . '" - <i>' . $quote[$num][1] . '</i>';
@@ -878,7 +879,7 @@ function checkMultiplePlayers($sid, $steamids)
     $found = array();
     foreach ($matches[3] as $match) {
         foreach ($steamids as $steam) {
-            if (getAccountId($match) == getAccountId($steam)) {
+            if (\SteamID\SteamID::toSteam64($match) === \SteamID\SteamID::toSteam64($steam)) {
                 $steam = $matches[3][$i];
                 $name = $matches[2][$i];
                 $time = $matches[4][$i];
@@ -894,97 +895,11 @@ function checkMultiplePlayers($sid, $steamids)
     return $found;
 }
 
-function getAccountId($steamid)
-{
-    if (strpos($steamid, "STEAM_") === 0) {
-        $parts = explode(":", $steamid);
-        if (count($parts) != 3) {
-            return -1;
-        }
-        return (int)$parts[2]*2 + (int)$parts[1];
-    } elseif (strpos($steamid, "[U:") === 0) {
-        $parts = explode(":", $steamid);
-        if (count($parts) != 3) {
-            return -1;
-        }
-        return (int)substr($parts[2], 0, -1);
-    }
-    return -1;
-}
-
-function renderSteam2($accountId, $universe)
-{
-    return "STEAM_" . $universe . ":" . ($accountId & 1) . ":" . ($accountId >> 1);
-}
-
-/**
-* Converts a SteamID to a FriendID
-*
-* @param string $authid the steamid to convert
-* @return string
-*/
-function SteamIDToFriendID($authid)
-{
-    $friendid = $GLOBALS['db']->GetRow("SELECT CAST(MID('".$authid."', 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID('".$authid."', 11, 10) * 2 AS UNSIGNED) AS friend_id");
-    return $friendid["friend_id"];
-}
-
-/**
-* Converts a FriendID to a SteamID
-*
-* @param string $friendid the friendid to convert
-* @return string
-*/
-function FriendIDToSteamID($friendid)
-{
-    $steamid = $GLOBALS['db']->GetRow("SELECT CONCAT(\"STEAM_0:\", (CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2, \":\", CAST(((CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) - ((CAST('".$friendid."' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2)) / 2 AS UNSIGNED)) AS steam_id;");
-    return $steamid['steam_id'];
-}
-
-/**
-* Gets the friendid from a custom user id
-*
-* @param string $comid the customid to get the friendid for
-* @return string
-*/
-function GetFriendIDFromCommunityID($comid)
-{
-    $raw = @file_get_contents("http://steamcommunity.com/id/".$comid."/?xml=1");
-    preg_match("/<privacyState>([^\]]*)<\/privacyState>/", $raw, $status);
-    if (($status && $status[1] != "public") || strstr($raw, "</profile>")) {
-        $raw = str_replace("&", "", $raw);
-        $raw = strip_31_ascii($raw);
-        $raw = utf8_encode($raw);
-        $xml = simplexml_load_string($raw);
-        $result = $xml->xpath('/profile/steamID64');
-        $friendid = (string)$result[0];
-        return $friendid;
-    }
-    return false;
-}
 function GetCommunityName($steamid)
 {
-    $friendid = SteamIDToFriendID($steamid);
-    $result = get_headers("http://steamcommunity.com/profiles/".$friendid."/", 1);
-    $raw = file_get_contents(($result["Location"]!=""?$result["Location"]:"http://steamcommunity.com/profiles/".$friendid."/")."?xml=1");
-    if (strstr($raw, "</profile>")) {
-        $raw = str_replace("&", "", $raw);
-        $raw = strip_31_ascii($raw);
-        $raw = utf8_encode($raw);
-        $xml = simplexml_load_string($raw);
-        $result = $xml->xpath('/profile/steamID');
-        $friendid = (string)$result[0];
-        return $friendid;
-    }
-    return "";
-}
-
-function steam2to3($authid)
-{
-    $GLOBALS['PDO']->query("SELECT CONCAT(CAST('".$authid."' AS UNSIGNED) % 2, \":\", CAST('".$authid."' AS UNSIGNED) / 2) AS id");
-    $result = $GLOBALS['PDO']->single();
-    $result = explode(':', $result['id']);
-    return 'STEAM_0:' . $result[0] . ':' . floor($result[1]);
+    $endpoint = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=".STEAMAPIKEY.'&steamids='.\SteamID\SteamID::toSteam64($steamid);
+    $data = json_decode(file_get_contents($endpoint), true);
+    return (isset($data['response']['players'][0]['personaname'])) ? $data['response']['players'][0]['personaname'] : '';
 }
 
 function SendRconSilent($rcon, $sid)

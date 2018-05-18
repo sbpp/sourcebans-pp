@@ -109,7 +109,7 @@ function KickPlayer($check, $sid, $num, $type)
         //search for the steamid on the server
         if ((int) $type == 0) {
             foreach ($matches[3] AS $match) {
-                if (getAccountId($match) == getAccountId($check)) {
+                if (\SteamID\SteamID::toSteam64($match) === \SteamID\SteamID::toSteam64($check)) {
                     // gotcha!!! kick him!
                     $gothim = true;
                     $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");

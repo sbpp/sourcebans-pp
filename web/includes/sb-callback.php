@@ -906,7 +906,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
          && !validate_steam($a_steam))
          || (is_numeric($a_steam)
          && (strlen($a_steam) < 15
-         || !validate_steam($a_steam = FriendIDToSteamID($a_steam)))))
+         || !validate_steam($a_steam = \SteamID\SteamID::toSteam2($a_steam)))))
         {
             $error++;
             $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
@@ -1585,7 +1585,7 @@ function KickPlayer($sid, $name)
     $steam2 = $steam;
     // Hack to support steam3 [U:1:X] representation.
     if(strpos($steam, "[U:") === 0) {
-    $steam2 = renderSteam2(getAccountId($steam), 0);
+        $steam2 = \SteamID\SteamID::toSteam2($steam);
     }
     // check for immunity
     $admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam2."' LIMIT 1;");
@@ -1664,7 +1664,7 @@ function PasteBan($sid, $name, $type=0)
     $steam = $matches[3][$index];
     // Hack to support steam3 [U:1:X] representation.
     if(strpos($steam, "[U:") === 0) {
-    $steam = renderSteam2(getAccountId($steam), 0);
+        $steam = \SteamID\SteamID::toSteam2($steam);
     }
     $name = $matches[2][$index];
     $ip = explode(":", $matches[8][$index]);
@@ -1712,7 +1712,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
     && !validate_steam($steam))
     || (is_numeric($steam)
     && (strlen($steam) < 15
-    || !validate_steam($steam = FriendIDToSteamID($steam))))) {
+    || !validate_steam($steam = \SteamID\SteamID::toSteam2($steam))))) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -2749,7 +2749,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 
         $GLOBALS['PDO']->bind(':type', 0);
         $GLOBALS['PDO']->bind(':ip', '');
-        $GLOBALS['PDO']->bind(':authid', FriendIDToSteamID($player['steamid']));
+        $GLOBALS['PDO']->bind(':authid', \SteamID\SteamID::toSteam2($player['steamid']));
         $GLOBALS['PDO']->bind(':name', $player['personaname']);
         $GLOBALS['PDO']->bind(':length', 0);
         $GLOBALS['PDO']->bind(':reason', "Steam Community Group Ban (".$grpurl."): ".$reason);
@@ -2901,13 +2901,13 @@ function BanFriends($friendid, $name)
     }
     if(strstr($link->getAttribute('href'), "http://steamcommunity.com/id/")) {
     // we don't have the friendid as this player is using a custom id :S need to get the friendid
-    if($tfriend = GetFriendIDFromCommunityID($url[2])) {
+    if($tfriend = \SteamID\VanityURL::resolve($url[2], STEAMAPIKEY)) {
     if(in_array($tfriend, $already)) {
     $bannedbefore++;
     continue;
     }
     $cust = $url[2];
-    $steamid = FriendIDToSteamID($tfriend);
+    $steamid = \SteamID\SteamID::toSteam2($tfriend);
     $urltag = $tfriend;
     } else {
     $error++;
@@ -2916,7 +2916,7 @@ function BanFriends($friendid, $name)
     } else {
     // just a normal friendid profile =)
     $cust = NULL;
-    $steamid = FriendIDToSteamID($url[2]);
+    $steamid = \SteamID\SteamID::toSteam2($url[2]);
     $urltag = $url[2];
     }
 
@@ -2993,10 +2993,10 @@ function ViewCommunityProfile($sid, $name)
     $steam = $matches[3][$index];
     // Hack to support steam3 [U:1:X] representation.
     if(strpos($steam, "[U:") === 0) {
-    $steam = renderSteam2(getAccountId($steam), 0);
+        $steam = \SteamID\SteamID::toSteam2($steam);
     }
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
-    $objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".SteamIDToFriendID($steam)."/', 'Community_".$steam."');");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
+    $objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/', 'Community_".$steam."');");
     } else {
     $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
     }
@@ -3057,7 +3057,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
     && !validate_steam($steam))
     || (is_numeric($steam)
     && (strlen($steam) < 15
-    || !validate_steam($steam = FriendIDToSteamID($steam))))) {
+    || !validate_steam($steam = \SteamID\SteamID::toSteam2($steam))))) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -3226,8 +3226,7 @@ function PasteBlock($sid, $name)
     if($found) {
         $steam = $matches[3][$index];
         if (!preg_match(STEAM_FORMAT, $steam)) {
-            $steam = explode(':', $steam);
-            $steam = steam2to3(rtrim($steam[2], ']'));
+            $steam = \SteamID\SteamID::toSteam2($steam);
         }
         $name = $matches[2][$index];
         $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");

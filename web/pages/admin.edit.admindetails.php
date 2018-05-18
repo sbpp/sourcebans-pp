@@ -106,7 +106,7 @@ if (isset($_POST['adminname'])) {
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
     } else {
         // Validate the steamid or fetch it from the community id
-        if ((!is_numeric($a_steam) && !validate_steam($a_steam)) || (is_numeric($a_steam) && (strlen($a_steam) < 15 || !validate_steam($a_steam = FriendIDToSteamID($a_steam))))) {
+        if ((!is_numeric($a_steam) && !validate_steam($a_steam)) || (is_numeric($a_steam) && (strlen($a_steam) < 15 || !validate_steam($a_steam = \SteamID\SteamID::toSteam2($a_steam))))) {
             $error++;
             $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID.';";
             $errorScript .= "$('steam.msg').setStyle('display', 'block');";

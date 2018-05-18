@@ -111,8 +111,7 @@ function BlockPlayer($check, $sid, $num, $type, $length)
         //search for the steamid on the server
         foreach ($matches[3] as $match) {
             if (!preg_match(STEAM_FORMAT, $match)) {
-                $match = explode(':', $match);
-                $match = steam2to3(rtrim($match[2], ']'));
+                $match = \SteamID\SteamID::toSteam2($match);
             }
             if (substr($match, 8) == substr($check, 8)) {
                 // gotcha!!! kick him!
