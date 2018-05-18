@@ -15,9 +15,9 @@ class SQL
         $steamid = explode(':', $steamid);
 
         self::$dbs->query("SELECT ($steamid[2] * 2 + $steamid[1]) AS z");
-        $id = self::$dbs->single();
+        $sid = self::$dbs->single();
 
-        return "[U:1:$id[z]]";
+        return "[U:1:$sid[z]]";
     }
 
     public static function Steam2toSteam64($steamid)
@@ -25,9 +25,9 @@ class SQL
         $steamid = explode(':', $steamid);
 
         self::$dbs->query("SELECT ($steamid[2] * 2 + 76561197960265728 + $steamid[1]) AS id");
-        $id = self::$dbs->single();
+        $sid = self::$dbs->single();
 
-        return $id['id'];
+        return $sid['id'];
     }
 
     public static function Steam3toSteam2($steamid)
@@ -35,9 +35,9 @@ class SQL
         $steamid = explode(':', trim($steamid, '[]'));
 
         self::$dbs->query("SELECT ($steamid[2] % 2) AS y, ($steamid[2] DIV 2) AS z");
-        $id = self::$dbs->single();
+        $sid = self::$dbs->single();
 
-        return "STEAM_0:$id[y]:$id[z]";
+        return "STEAM_0:$sid[y]:$sid[z]";
     }
 
     public static function Steam3toSteam64($steamid)
@@ -45,24 +45,24 @@ class SQL
         $steamid = explode(':', trim($steamid, '[]'));
 
         self::$dbs->query("SELECT ($steamid[2] + 76561197960265728) AS id");
-        $id = self::$dbs->single();
+        $sid = self::$dbs->single();
 
-        return $id['id'];
+        return $sid['id'];
     }
 
     public static function Steam64toSteam2($steamid)
     {
         self::$dbs->query("SELECT ($steamid % 2) AS y, (($steamid - 76561197960265728) DIV 2) AS z");
-        $id = self::$dbs->single();
+        $sid = self::$dbs->single();
 
-        return "STEAM_0:$id[y]:$id[z]";
+        return "STEAM_0:$sid[y]:$sid[z]";
     }
 
     public static function Steam64toSteam3($steamid)
     {
         self::$dbs->query("SELECT ($steamid - 76561197960265728) AS z");
-        $id = self::$dbs->single();
+        $sid = self::$dbs->single();
 
-        return "[U:1:$id[z]]";
+        return "[U:1:$sid[z]]";
     }
 }
