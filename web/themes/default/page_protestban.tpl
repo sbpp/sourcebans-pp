@@ -5,7 +5,7 @@
 </table>
 <div id="submit-main">
 In order to appeal a ban, you must make sure you are banned via clicking <a href="index.php?p=banlist">here</a> to see if you are banned and for what reason.<br />
-If you are indeed on our ban list and you feel it is unjust or feel you have the right to be forgiven, please fill out the appeal format below.<br /><br />
+If you are indeed on our ban list and you feel it is unjust or any other circumstances, please fill out the appeal format below.<br /><br />
 <form action="index.php?p=protest" method="post">
 <input type="hidden" name="subprotest" value="1">
 <table cellspacing='10' width='100%' align='center'>
