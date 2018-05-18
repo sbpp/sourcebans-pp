@@ -80,8 +80,8 @@ function AddTab($title, $url, $desc, $active=false)
     $tab_arr[1] = "Servers";
     $tab_arr[2] = "&nbsp;Bans&nbsp;";
     $tab_arr[3] = "Comms";
-    $tab_arr[4] = "Report Player";
-    $tab_arr[5] = "Appeal Ban";
+    $tab_arr[4] = "Report a Player";
+    $tab_arr[5] = "Appeal a Ban";
     $tabs = array();
     $tabs['title'] = $title;
     $tabs['url'] = $url;
@@ -115,10 +115,10 @@ function BuildPageTabs()
         AddTab("Comms", "index.php?p=commslist", "All of the communication bans (such as chat gags and voice mutes) in the database can be viewed from here.");
     }
     if ($GLOBALS['config']['config.enablesubmit']=="1") {
-        AddTab("Report Player", "index.php?p=submit", "You can submit a demo or screenshot of a suspected cheater here. It will then be up for review by one of the admins");
+        AddTab("Report a Player", "index.php?p=submit", "You can submit a demo or screenshot of a suspected cheater here. It will then be up for review by one of the admins");
     }
     if ($GLOBALS['config']['config.enableprotest']=="1") {
-        AddTab("Appeal Ban", "index.php?p=protest", "Here you can appeal your ban. And prove your case as to why you should be unbanned.");
+        AddTab("Appeal a Ban", "index.php?p=protest", "Here you can appeal your ban. And prove your case as to why you should be unbanned.");
     }
     if ($userbank->is_admin()) {
         AddTab(" Admin Panel ", "index.php?p=admin", "This is the control panel for SourceBans where you can setup new admins, add new server, etc.");
@@ -163,25 +163,25 @@ function BuildBreadcrumbs()
     if (isset($_GET['c'])) {
         switch ($_GET['c']) {
             case "admins":
-                $cat = "Admin management";
+                $cat = "Admin Management";
                 break;
             case "servers":
-                $cat = "Server management";
+                $cat = "Server Management";
                 break;
             case "bans":
-                $cat = "Ban management";
+                $cat = "Ban Management";
                 break;
             case "comms":
-                $cat = "Communication blocks management";
+                $cat = "Communication Blocks Management";
                 break;
             case "groups":
-                $cat = "Group management";
+                $cat = "Group Management";
                 break;
             case "settings":
-                $cat = "SourceBans settings";
+                $cat = "SourceBans Settings";
                 break;
             case "mods":
-                $cat = "Mod management";
+                $cat = "Mod Management";
                 break;
             default:
                 unset($_GET['c']);
@@ -310,101 +310,101 @@ function BitToString($mask, $masktype=0, $head=true)
         return $string;
     }
     if (($mask & ADMIN_LIST_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View admins<br />";
+        $string .= "&bull; View Admins<br />";
     }
     if (($mask & ADMIN_ADD_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add admins<br />";
+        $string .= "&bull; Add Admins<br />";
     }
     if (($mask & ADMIN_EDIT_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit admins<br />";
+        $string .= "&bull; Edit Admins<br />";
     }
     if (($mask & ADMIN_DELETE_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete admins<br />";
+        $string .= "&bull; Delete Admins<br />";
     }
 
     if (($mask & ADMIN_LIST_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View servers<br />";
+        $string .= "&bull; View Servers<br />";
     }
     if (($mask & ADMIN_ADD_SERVER) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add servers<br />";
+        $string .= "&bull; Add Servers<br />";
     }
     if (($mask & ADMIN_EDIT_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit servers<br />";
+        $string .= "&bull; Edit Servers<br />";
     }
     if (($mask & ADMIN_DELETE_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete servers<br />";
+        $string .= "&bull; Delete Servers<br />";
     }
 
     if (($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add bans<br />";
+        $string .= "&bull; Add Bans<br />";
     }
     if (($mask & ADMIN_EDIT_OWN_BANS) !=0 && ($mask & ADMIN_EDIT_ALL_BANS) ==0) {
-        $string .="&bull; Edit own bans<br />";
+        $string .="&bull; Edit Own Bans<br />";
     }
     if (($mask & ADMIN_EDIT_GROUP_BANS) !=0 && ($mask & ADMIN_EDIT_ALL_BANS) ==0) {
-        $string .= "&bull; Edit groups bans<br />";
+        $string .= "&bull; Edit Group Bans<br />";
     }
     if (($mask & ADMIN_EDIT_ALL_BANS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit all bans<br />";
+        $string .= "&bull; Edit All Bans<br />";
     }
     if (($mask & ADMIN_BAN_PROTESTS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Ban protests<br />";
+        $string .= "&bull; Ban Appeals<br />";
     }
     if (($mask & ADMIN_BAN_SUBMISSIONS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Ban submissions<br />";
+        $string .= "&bull; Ban Reports<br />";
     }
 
     if (($mask & ADMIN_UNBAN_OWN_BANS) !=0 && ($mask & ADMIN_UNBAN) ==0) {
-        $string .= "&bull; Unban own bans<br />";
+        $string .= "&bull; Unban Own Bans<br />";
     }
     if (($mask & ADMIN_UNBAN_GROUP_BANS) !=0 && ($mask & ADMIN_UNBAN) ==0) {
-        $string .= "&bull; Unban group bans<br />";
+        $string .= "&bull; Unban Group Bans<br />";
     }
     if (($mask & ADMIN_UNBAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Unban all bans<br />";
+        $string .= "&bull; Unban All Bans<br />";
     }
     if (($mask & ADMIN_DELETE_BAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete All bans<br />";
+        $string .= "&bull; Delete All Bans<br />";
     }
     if (($mask & ADMIN_BAN_IMPORT) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Import bans<br />";
+        $string .= "&bull; Import Bans<br />";
     }
 
     if (($mask & ADMIN_LIST_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View groups<br />";
+        $string .= "&bull; View Groups<br />";
     }
     if (($mask & ADMIN_ADD_GROUP) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add groups<br />";
+        $string .= "&bull; Add Groups<br />";
     }
     if (($mask & ADMIN_EDIT_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit groups<br />";
+        $string .= "&bull; Edit Groups<br />";
     }
     if (($mask & ADMIN_DELETE_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete groups<br />";
+        $string .= "&bull; Delete Groups<br />";
     }
 
     if (($mask & ADMIN_NOTIFY_SUB) !=0 || ($mask & ADMIN_NOTIFY_SUB) !=0) {
-        $string .= "&bull; Submission email notifying<br />";
+        $string .= "&bull; Ban Report Email Notifications<br />";
     }
     if (($mask & ADMIN_NOTIFY_PROTEST) !=0 || ($mask & ADMIN_NOTIFY_PROTEST) !=0) {
-        $string .= "&bull; Protest email notifying<br />";
+        $string .= "&bull; Ban Appeal Email Notifications<br />";
     }
 
     if (($mask & ADMIN_WEB_SETTINGS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Web settings<br />";
+        $string .= "&bull; Web Settings<br />";
     }
 
     if (($mask & ADMIN_LIST_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View mods<br />";
+        $string .= "&bull; View Mods<br />";
     }
     if (($mask & ADMIN_ADD_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add mods<br />";
+        $string .= "&bull; Add Mods<br />";
     }
     if (($mask & ADMIN_EDIT_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit mods<br />";
+        $string .= "&bull; Edit Mods<br />";
     }
     if (($mask & ADMIN_DELETE_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete mods<br />";
+        $string .= "&bull; Delete Mods<br />";
     }
 
     if (($mask & ADMIN_OWNER) !=0) {
@@ -426,10 +426,10 @@ function SmFlagsToSb($flagstring, $head=true)
         return $string;
     }
     if ((strstr($flagstring, "a") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Reserved slot<br />";
+        $string .= "&bull; Reserved Slot<br />";
     }
     if ((strstr($flagstring, "b") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Generic admin<br />";
+        $string .= "&bull; Generic Admin<br />";
     }
     if ((strstr($flagstring, "c") || strstr($flagstring, "z"))) {
         $string .= "&bull; Kick<br />";
@@ -444,22 +444,22 @@ function SmFlagsToSb($flagstring, $head=true)
         $string .= "&bull; Slay<br />";
     }
     if ((strstr($flagstring, "g") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Map change<br />";
+        $string .= "&bull; Map Change<br />";
     }
     if ((strstr($flagstring, "h") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Change cvars<br />";
+        $string .= "&bull; Change CVars<br />";
     }
     if ((strstr($flagstring, "i") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Run configs<br />";
+        $string .= "&bull; Run Configs<br />";
     }
     if ((strstr($flagstring, "j") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Admin chat<br />";
+        $string .= "&bull; Admin Chat<br />";
     }
     if ((strstr($flagstring, "k") || strstr($flagstring, "z"))) {
-        $string .="&bull; Start votes<br />";
+        $string .="&bull; Start Votes<br />";
     }
     if ((strstr($flagstring, "l") || strstr($flagstring, "z"))) {
-        $string .="&bull; Password server<br />";
+        $string .="&bull; Password Server<br />";
     }
     if ((strstr($flagstring, "m") || strstr($flagstring, "z"))) {
         $string .="&bull; RCON<br />";
@@ -472,32 +472,32 @@ function SmFlagsToSb($flagstring, $head=true)
     }
 
     if ((strstr($flagstring, "o") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom flag 1<br />";
+        $string .="&bull; Custom Flag 1<br />";
     }
     if ((strstr($flagstring, "p") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom flag 2<br />";
+        $string .="&bull; Custom Flag 2<br />";
     }
     if ((strstr($flagstring, "q") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom flag 3<br />";
+        $string .="&bull; Custom Flag 3<br />";
     }
     if ((strstr($flagstring, "r") || strstr($flagstring, "z"))) {
         $string .="&bull; Custom flag 4<br />";
     }
     if ((strstr($flagstring, "s") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom flag 5<br />";
+        $string .="&bull; Custom Flag 5<br />";
     }
     if ((strstr($flagstring, "t") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom flag 6<br />";
+        $string .="&bull; Custom Flag 6<br />";
     }
 
 
     //if(($mask & SM_DEF_IMMUNITY) != 0)
     //{
-    //	$flagstring .="&bull; Default immunity<br />";
+    //	$flagstring .="&bull; Default Immunity<br />";
     //}
     //if(($mask & SM_GLOBAL_IMMUNITY) != 0)
     //{
-    //	$flagstring .="&bull; Global immunity<br />";
+    //	$flagstring .="&bull; Global Immunity<br />";
     //}
     return $string;
 }
