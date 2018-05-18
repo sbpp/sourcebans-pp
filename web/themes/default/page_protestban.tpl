@@ -1,11 +1,11 @@
 <table style="width: 101%; margin: 0 0 -2px -2px;">
 	<tr>
-		<td colspan="3" class="listtable_top"><b>Protest a ban</b></td>
+		<td colspan="3" class="listtable_top"><b>Appeal a Ban</b></td>
 	</tr>
 </table>
 <div id="submit-main">
-Before you proceed make sure you first check our banlist and search it by clicking <a href="index.php?p=banlist">here</a> if you are listed and for what reason.<br />
-If you do find yourself listed on the banlist and find the reason for this to be untrue you can write a protest.<br /><br />
+In order to appeal a ban, you must make sure you are banned via clicking <a href="index.php?p=banlist">here</a> to see if you are banned and for what reason.<br />
+If you are indeed on our ban list and you feel it is unjust or feel you have the right to be forgiven, please fill out the appeal format below.<br /><br />
 <form action="index.php?p=protest" method="post">
 <input type="hidden" name="subprotest" value="1">
 <table cellspacing='10' width='100%' align='center'>
@@ -62,7 +62,7 @@ If you do find yourself listed on the banlist and find the reason for this to be
 </tr>
 </table>
 </form>
-<b>What happens after you posted your protest?</b><br />
-  The admins will get notified of your protest. They will then review if the ban is conclusive. After reviewing you will get a reply, which usally means within 24 hours.<br /><br />
-  <b>Note:</b> Sending emails with threats to our admins, scolding or shouting will not get you unbanned and in fact we will delete your protest right away! 
+<br /><b>What happens after I post my appeal?</b><br />
+	The staff team will be notified of your appeal. They will then review if the ban is conclusive. After reviewing you will get a reply, which usally means within 24 hours.<br />
+	<b>Note:</b> Sending emails with threats to our admins, scolding or shouting will not get you unbanned and you will be permanently denied from using any of our services.
 </div>
