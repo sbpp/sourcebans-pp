@@ -2847,92 +2847,71 @@ function GetGroups($friendid)
 function BanFriends($friendid, $name)
 {
     set_time_limit(0);
-    $objResponse = new xajaxResponse();
-    if($GLOBALS['config']['config.enablefriendsbanning']==0 || !is_numeric($friendid))
-    return $objResponse;
     global $userbank, $username;
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban friends of '".RemoveCode($friendid)."', but doesnt have access.");
-    return $objResponse;
-    }
-    $bans = $GLOBALS['db']->GetAll("SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM ".DB_PREFIX."_bans WHERE RemoveType IS NULL;");
-    foreach($bans as $ban) {
-    $already[] = $ban["community_id"];
-    }
-    $doc = new DOMDocument();
-    $result = get_headers("http://steamcommunity.com/profiles/".$friendid."/", 1);
-    $raw = file_get_contents(($result["Location"]!=""?$result["Location"]:"http://steamcommunity.com/profiles/".$friendid."/")."friends"); // get the friends page
-    @$doc->loadHTML($raw);
-    $divs = $doc->getElementsByTagName('div');
-    foreach($divs as $div) {
-    if($div->getAttribute('id') == "memberList") {
-    $memberdiv = $div;
-    break;
-    }
+    $objResponse = new xajaxResponse();
+    $name = filter_var($name, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+    if ($GLOBALS['config']['config.enablefriendsbanning'] == 0 || !is_numeric($friendid)) {
+        return $objResponse;
     }
 
-    $total = 0;
-    $bannedbefore = 0;
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban friends of '".RemoveCode($friendid)."', but doesnt have access.");
+        return $objResponse;
+    }
+
+    $steam = \SteamID\SteamID::toSteam64($friendid);
+    $friends = @json_decode(file_get_contents("http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key=".STEAMAPIKEY."&steamid=".$steam."&relationship=friend"), true);
+    $friends = $friends['friendslist']['friends'];
+
+    if (is_null($friends)) {
+        $objResponse->addScript("ShowBox('Error private profile', 'There was an error retrieving the friend list.', 'red', 'index.php?p=banlist', true);");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        return $objResponse;
+    }
+
+    $total = count($friends);
+    $before = 0;
     $error = 0;
-    $links = $memberdiv->getElementsByTagName('a');
-    foreach ($links as $link) {
-    if(strstr($link->getAttribute('href'), "http://steamcommunity.com/id/") || strstr($link->getAttribute('href'), "http://steamcommunity.com/profiles/"))
-    {
-    $total++;
-    $url = parse_url($link->getAttribute('href'), PHP_URL_PATH);
-    $url = explode("/", $url);
-    if(in_array($url[2], $already)) {
-    $bannedbefore++;
-    continue;
-    }
-    if(strstr($link->getAttribute('href'), "http://steamcommunity.com/id/")) {
-    // we don't have the friendid as this player is using a custom id :S need to get the friendid
-    if($tfriend = \SteamID\VanityURL::resolve($url[2], STEAMAPIKEY)) {
-    if(in_array($tfriend, $already)) {
-    $bannedbefore++;
-    continue;
-    }
-    $cust = $url[2];
-    $steamid = \SteamID\SteamID::toSteam2($tfriend);
-    $urltag = $tfriend;
-    } else {
-    $error++;
-    continue;
-    }
-    } else {
-    // just a normal friendid profile =)
-    $cust = NULL;
-    $steamid = \SteamID\SteamID::toSteam2($url[2]);
-    $urltag = $url[2];
+
+    foreach ($friends as $friend) {
+        $steam = \SteamID\SteamID::toSteam2($friend['steamid']);
+        $fname = GetCommunityName($friend['steamid']);
+
+        $GLOBALS['PDO']->query("SELECT 1 FROM `:prefix_bans` WHERE authid = :authid");
+        $GLOBALS['PDO']->bind(':authid', $steam);
+        $banned = $GLOBALS['PDO']->single();
+
+        if ((bool)$banned[1]) {
+            $before++;
+            continue;
+        }
+
+        $GLOBALS['PDO']->query(
+            "INSERT INTO `:prefix_bans` (`created`, `type`, `ip`, `authid`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`)
+            VALUES(UNIX_TIMESTAMP(), 0, '', :authid, :name, (UNIX_TIMESTAMP() + 0), 0, :reason, :aid, :admip)"
+        );
+        $GLOBALS['PDO']->bindMultiple([
+            ':authid' => $steam,
+            ':name' => filter_var($fname, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+            ':reason' => "Steam Community Friend Ban (".$name.")",
+            ':aid' => $_SESSION['aid'],
+            ':admip' => $_SERVER['REMOTE_ADDR']
+        ]);
+        if (!$GLOBALS['PDO']->execute()) {
+            $error++;
+        }
     }
 
-    // get the name
-    $friendName = $link->parentNode->childNodes->item(5)->childNodes->item(0)->nodeValue;
-    $friendName = str_replace("&#13;", "", $friendName);
-    $friendName = trim($friendName);
+    if ($total === 0) {
+        $objResponse->addScript("ShowBox('Error retrieving friends', 'There was an error retrieving the friend list. Check if the profile isn\'t private or if he hasn\'t got any friends!', 'red', 'index.php?p=banlist', true);");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        return $objResponse;
+    }
 
-    $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
-    (UNIX_TIMESTAMP(),?,?,?,?,UNIX_TIMESTAMP(),?,?,?,?)");
-    $GLOBALS['db']->Execute($pre,array(0,
-       "",
-       $steamid,
-       utf8_decode($friendName),
-       0,
-       "Steam Community Friend Ban (".htmlspecialchars($name).")",
-       $userbank->GetAid(),
-       $_SERVER['REMOTE_ADDR']));
-    }
-    }
-    if($total==0) {
-    $objResponse->addScript("ShowBox('Error retrieving friends', 'There was an error retrieving the friend list. Check if the profile isn\'t private or if he hasn\'t got any friends!', 'red', 'index.php?p=banlist', true);");
+    $objResponse->addScript("ShowBox('Friends banned successfully', 'Banned ".($total-$before-$error)."/".$total." friends of \'".$name."\'.<br>".$before." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    return $objResponse;
-    }
-    $objResponse->addScript("ShowBox('Friends banned successfully', 'Banned ".($total-$bannedbefore-$error)."/".$total." friends of \'".htmlspecialchars($name)."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $log = new CSystemLog("m", "Friends Banned", "Banned ".($total-$bannedbefore-$error)."/".$total." friends of \'".htmlspecialchars($name)."\'.<br>".$bannedbefore." were banned already.<br>".$error." failed.");
+    $log = new CSystemLog("m", "Friends Banned", "Banned ".($total-$before-$error)."/".$total." friends of \'".$name."\'.<br>".$before." were banned already.<br>".$error." failed.");
     return $objResponse;
 }
 
