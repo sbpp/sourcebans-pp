@@ -65,6 +65,13 @@ class Database
         $this->stmt->bindValue($param, $value, $type);
     }
 
+    public function bindMultiple($params = [])
+    {
+        foreach ($params as $key => $value) {
+            $this->bind($key, $value);
+        }
+    }
+
     public function execute()
     {
         return $this->stmt->execute();
