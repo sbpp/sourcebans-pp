@@ -61,7 +61,7 @@ isset($_GET["page"]) ? $pagelink = "&page=" . $_GET["page"] : $pagelink = "";
 $errorScript = "";
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = trim($_POST['steam']);
+    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
     $_POST['type']  = (int) $_POST['type'];
 
     // Form Validation
@@ -71,7 +71,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } elseif ((!is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
+    } elseif (!validate_steam($_POST['steam'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";

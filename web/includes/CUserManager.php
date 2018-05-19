@@ -332,7 +332,7 @@ class CUserManager
         $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
                            VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');
         $this->dbh->bind(':user', $name);
-        $this->dbh->bind(':authid', $steam);
+        $this->dbh->bind(':authid', str_replace('STEAM_1', 'STEAM_0', $steam));
         $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
         $this->dbh->bind(':gid', $web_group);
         $this->dbh->bind(':email', $email);

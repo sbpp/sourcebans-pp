@@ -172,6 +172,9 @@ if ($debug->fields['value']=="1") {
     define("DEVELOPER_MODE", true);
 }
 
+require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
+\SteamID\SteamID::init($GLOBALS['PDO']);
+
 // ---------------------------------------------------
 //  Setup our custom error handler
 // ---------------------------------------------------

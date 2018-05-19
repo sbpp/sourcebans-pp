@@ -106,20 +106,17 @@ function KickPlayer($check, $sid, $num, $type)
 
         $gothim = false;
         $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
+        
         //search for the steamid on the server
         if ((int) $type == 0) {
             foreach ($matches[3] AS $match) {
-                if (getAccountId($match) == getAccountId($check)) {
+                if (\SteamID\SteamID::toSteam2($match) === \SteamID\SteamID::toSteam2($check)) {
                     // gotcha!!! kick him!
                     $gothim = true;
                     $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");
                     $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
 
-                    if (strpos($match, "[U:") === 0) {
-                        $kick = $r->sendCommand("kickid \"" . $match . "\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
-                    } else {
-                        $kick = $r->sendCommand("kickid " . $match . " \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
-                    }
+                    $kick = $r->sendCommand("kickid " . $match . " \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
 
                     $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
                     $objResponse->addScript("set_counter('-1');");

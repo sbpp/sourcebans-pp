@@ -41,61 +41,50 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
     foreach ($bannedcfg as $ban) {
         $line = explode(" ", trim($ban));
 
-        if ($line[1] == "0") {
-            if (validate_ip($line[2])) {// if its an banned_ip.cfg
-                $check = $GLOBALS['db']->Execute("SELECT ip FROM `" . DB_PREFIX . "_bans` WHERE ip = ? AND RemoveType IS NULL", array(
-                    $line[2]
-                ));
+        if ($line[0] === 'addip') {
+            if (filter_var($line[2], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+                $GLOBALS['PDO']->query("SELECT ip FROM `:prefix_bans` WHERE ip = :ip AND RemoveType IS NULL");
+                $GLOBALS['PDO']->bind(':ip', $line[2]);
+                $check = $GLOBALS['PDO']->single();
 
-                if ($check->RecordCount() == 0) {
+                if (!$check) {
                     $bancnt++;
-                    $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
-										(UNIX_TIMESTAMP(),?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)");
-                    $GLOBALS['db']->Execute($pre, array(
-                        "",
-                        $line[2],
-                        "Imported Ban",
-                        0,
-                        0,
-                        "banned_ip.cfg import",
-                        $_COOKIE['aid'],
-                        $_SERVER['REMOTE_ADDR'],
-                        1
-                    ));
-                }
-            } else { // if its an banned_user.cfg
-                if (!validate_steam($line[2])) {
-                    if (($accountId = getAccountId($line[2])) !== -1) {
-                        $steam = renderSteam2($accountId, 0);
-                    } else {
-                        continue;
-                    }
-                } else {
-                    $steam = $line[2];
-                }
-                $check = $GLOBALS['db']->Execute("SELECT authid FROM `" . DB_PREFIX . "_bans` WHERE authid = ? AND RemoveType IS NULL", array(
-                    $steam
-                ));
-                if ($check->RecordCount() == 0) {
-                    if (!isset($_POST['friendsname']) || $_POST['friendsname'] != "on" || ($pname = GetCommunityName($steam)) == "") {
-                        $pname = "Imported Ban";
-                    }
 
-                    $bancnt++;
-                    $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_bans(created,authid,ip,name,ends,length,reason,aid,adminIp,type) VALUES
-										(UNIX_TIMESTAMP(),?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?,?)");
-                    $GLOBALS['db']->Execute($pre, array(
-                        $steam,
-                        "",
-                        $pname,
-                        0,
-                        0,
-                        "banned_user.cfg import",
-                        $_COOKIE['aid'],
-                        $_SERVER['REMOTE_ADDR'],
-                        0
-                    ));
+                    $GLOBALS['PDO']->query(
+                        "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `type`)
+                        VALUES (UNIX_TIMESTAMP(), '', :ip, 'Imported Ban', (UNIX_TIMESTAMP() + 0), 0, 'banned_ip.cfg import', :aid, :admip, 1)"
+                    );
+                    $GLOBALS['PDO']->bindMultiple([
+                        ':ip' => $line[2],
+                        ':aid' => $_SESSION['aid'],
+                        ':admip' => $_SERVER['REMOTE_ADDR']
+                    ]);
+                    $GLOBALS['PDO']->execute();
                 }
+            }
+        } elseif ($line[0] === 'banid') {
+            $steam = \SteamID\SteamID::toSteam2($line[2]);
+
+            $GLOBALS['PDO']->query("SELECT authid FROM `:prefix_bans` WHERE authid = :authid AND RemoveType IS NULL");
+            $GLOBALS['PDO']->bind(':authid', $steam);
+            $check = $GLOBALS['PDO']->single();
+
+            if (!$check) {
+                if (!isset($_POST['friendsname']) || $_POST['friendsname'] !== 'on' || ($name = GetCommunityName($steam)) === '') {
+                    $name = "Imported Ban";
+                }
+                $bancnt++;
+                $GLOBALS['PDO']->query(
+                    "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `type`)
+                    VALUES (UNIX_TIMESTAMP(), :authid, '', :name, (UNIX_TIMESTAMP() + 0), 0, 'banned_user.cfg import', :aid, :ip, 0)"
+                );
+                $GLOBALS['PDO']->bindMultiple([
+                    ':authid' => $steam,
+                    ':name' => $name,
+                    ':aid' => $_SESSION['aid'],
+                    ':ip' => $_SERVER['REMOTE_ADDR']
+                ]);
+                $GLOBALS['PDO']->execute();
             }
         }
     }
@@ -791,7 +780,7 @@ function ProcessBan()
         $('nick.msg').setStyle('display', 'none');
     }
 
-    if ($('steam').value.length < 10 && !$('ip').value) {
+    if ($('steam').value.length < 18 && !$('ip').value) {
         $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
         $('steam.msg').setStyle('display', 'block');
         err++;

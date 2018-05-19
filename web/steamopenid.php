@@ -30,14 +30,9 @@ include_once 'init.php';
 include_once 'config.php';
 require_once 'includes/openid.php';
 
-define('SB_HOST', SB_WP_URL);
-define('SB_URL', SB_WP_URL);
-
-$dbs = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
-
 function steamOauth()
 {
-    $openid = new LightOpenID(SB_HOST);
+    $openid = new LightOpenID(SB_WP_URL);
     if (!$openid->mode) {
         $openid->identity = 'https://steamcommunity.com/openid';
         header("Location: " . $openid->authUrl());
@@ -55,31 +50,16 @@ function steamOauth()
     return false;
 }
 
-function convert64to32(Database $dbs, $communityID)
-{
-    $query = "SELECT CONCAT(\"STEAM_0:\", (CAST(':communityID' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2, \":\", CAST(((CAST(':communityID' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) - ((CAST(':communityID' AS UNSIGNED) - CAST('76561197960265728' AS UNSIGNED)) % 2)) / 2 AS UNSIGNED)) AS steam_id";
-    $query = str_replace(':communityID', $communityID, $query);
-    $dbs->query($query);
-    $steamid = $dbs->single();
-    return $steamid['steam_id'];
-}
-
-if (isset($_COOKIE['aid'])) {
-    header("Location: " . SB_URL);
-}
-
 $data = steamOauth();
 
 if ($data !== false) {
-    $data = convert64to32($dbs, $data);
-
-    $dbs->query('SELECT aid, password FROM `:prefix_admins` WHERE authid = :authid');
-    $dbs->bind(':authid', $data);
-    $result = $dbs->single();
+    $GLOBALS['PDO']->query('SELECT aid, password FROM `:prefix_admins` WHERE authid = :authid');
+    $GLOBALS['PDO']->bind(':authid', \SteamID\SteamID::toSteam2($data));
+    $result = $GLOBALS['PDO']->single();
     if (count($result) == 2) {
         global $userbank;
         if (empty($result['password']) || $result['password'] == $userbank->encrypt_password('') || $result['password'] == $userbank->hash('')) {
-            header("Location: " . SB_URL . "/index.php?p=login&m=empty_pwd");
+            header("Location: ".SB_WP_URL."/index.php?p=login&m=empty_pwd");
             die;
         } else {
             session_destroy();
@@ -88,6 +68,6 @@ if ($data !== false) {
         }
     }
 } else {
-    header("Location: " . SB_URL . "/index.php?p=login");
+    header("Location: ".SB_WP_URL."/index.php?p=login");
 }
-header("Location: " . SB_URL);
+header("Location: ".SB_WP_URL);
