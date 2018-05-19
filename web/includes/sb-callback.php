@@ -1581,12 +1581,8 @@ function KickPlayer($sid, $name)
     $i++;
     }
     if($found) {
-    $steam = $matches[3][$index];
-    $steam2 = $steam;
-    // Hack to support steam3 [U:1:X] representation.
-    if(strpos($steam, "[U:") === 0) {
-        $steam2 = \SteamID\SteamID::toSteam2($steam);
-    }
+    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
+
     // check for immunity
     $admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam2."' LIMIT 1;");
     if($admin && $admin['gimmune']>$admin['pimmune'])
@@ -1661,11 +1657,8 @@ function PasteBan($sid, $name, $type=0)
     $i++;
     }
     if($found) {
-    $steam = $matches[3][$index];
-    // Hack to support steam3 [U:1:X] representation.
-    if(strpos($steam, "[U:") === 0) {
-        $steam = \SteamID\SteamID::toSteam2($steam);
-    }
+    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
+
     $name = $matches[2][$index];
     $ip = explode(":", $matches[8][$index]);
     $ip = $ip[0];
@@ -1695,7 +1688,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         return $objResponse;
     }
 
-    $steam = trim($steam);
+    $steam = \SteamID\SteamID::toSteam2(trim($steam));
     $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
     $ip = preg_replace('#[^\d\.]#', '', $ip);//strip ip of all but numbers and dots
     $dname = htmlspecialchars_decode($dname, ENT_QUOTES);
@@ -1707,12 +1700,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    } elseif (($type == 0
-    && !is_numeric($steam)
-    && !validate_steam($steam))
-    || (is_numeric($steam)
-    && (strlen($steam) < 15
-    || !validate_steam($steam = \SteamID\SteamID::toSteam2($steam))))) {
+    } elseif ($type == 0 && !validate_steam($steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -2990,12 +2978,8 @@ function ViewCommunityProfile($sid, $name)
     $i++;
     }
     if($found) {
-    $steam = $matches[3][$index];
-    // Hack to support steam3 [U:1:X] representation.
-    if(strpos($steam, "[U:") === 0) {
-        $steam = \SteamID\SteamID::toSteam2($steam);
-    }
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
+    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
+    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
     $objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/', 'Community_".$steam."');");
     } else {
     $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
@@ -3043,7 +3027,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
         return $objResponse;
     }
 
-    $steam = trim($steam);
+    $steam = \SteamID\SteamID::toSteam2(trim($steam));
     $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
     $reason = htmlspecialchars_decode($reason, ENT_QUOTES);
 
@@ -3053,11 +3037,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    } elseif ((!is_numeric($steam)
-    && !validate_steam($steam))
-    || (is_numeric($steam)
-    && (strlen($steam) < 15
-    || !validate_steam($steam = \SteamID\SteamID::toSteam2($steam))))) {
+    } elseif (!validate_steam($steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -3224,10 +3204,7 @@ function PasteBlock($sid, $name)
         $i++;
     }
     if($found) {
-        $steam = $matches[3][$index];
-        if (!preg_match(STEAM_FORMAT, $steam)) {
-            $steam = \SteamID\SteamID::toSteam2($steam);
-        }
+        $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
         $name = $matches[2][$index];
         $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
         $objResponse->addScript("$('steam').value = '" . $steam . "'");
