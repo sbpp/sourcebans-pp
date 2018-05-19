@@ -81,7 +81,7 @@ if (isset($_POST['postd']) && $_POST['postd']) {
             // Setup Admin
             $db->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity) VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity)');
             $db->bind(':user', $_POST['uname']);
-            $db->bind(':authid', $_POST['steam']);
+            $db->bind(':authid', str_replace('STEAM_1', 'STEAM_0', $_POST['steam']));
             $db->bind(':password', password_hash($_POST['pass1'], PASSWORD_BCRYPT));
             $db->bind(':gid', -1);
             $db->bind(':email', $_POST['email']);
