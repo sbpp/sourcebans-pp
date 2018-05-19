@@ -879,7 +879,7 @@ function checkMultiplePlayers($sid, $steamids)
     $found = array();
     foreach ($matches[3] as $match) {
         foreach ($steamids as $steam) {
-            if (\SteamID\SteamID::toSteam64($match) === \SteamID\SteamID::toSteam64($steam)) {
+            if (\SteamID\SteamID::toSteam2($match) === \SteamID\SteamID::toSteam2($steam)) {
                 $steam = $matches[3][$i];
                 $name = $matches[2][$i];
                 $time = $matches[4][$i];
