@@ -44,7 +44,7 @@ $_GET['id'] = (int) $_GET['id'];
 
 $server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = {$_GET['id']}");
 if (!$server) {
-    $log = new CSystemLog("e", "Getting server data failed", "Can't find data for server with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>

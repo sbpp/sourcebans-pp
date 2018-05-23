@@ -172,7 +172,7 @@ function CheckSrvPassword($aid, $srv_pass)
     if(!$userbank->is_logged_in() || $aid != $userbank->GetAid())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to check ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to check ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
     return $objResponse;
     }
     $res = $GLOBALS['db']->Execute("SELECT `srv_password` FROM `".DB_PREFIX."_admins` WHERE `aid` = '".$aid."'");
@@ -199,7 +199,7 @@ function ChangeSrvPassword($aid, $srv_pass)
     if(!$userbank->is_logged_in() || $aid != $userbank->GetAid())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to change ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
     return $objResponse;
     }
 
@@ -208,7 +208,7 @@ function ChangeSrvPassword($aid, $srv_pass)
     else
     $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = ? WHERE `aid` = ?", array($srv_pass, $aid));
     $objResponse->addScript("ShowBox('Server Password changed', 'Your server password has been changed successfully.', 'green', 'index.php?p=account', true);");
-    $log = new CSystemLog("m", "Srv Password Changed", "Password changed for admin (".$aid.")");
+    Log::add("m", "Srv Password Changed", "Password changed for admin ($aid)");
     return $objResponse;
 }
 
@@ -221,7 +221,7 @@ function ChangeEmail($aid, $email, $password)
     if(!$userbank->is_logged_in() || $aid != $userbank->GetAid())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change ".$userbank->GetProperty('user', $aid)."'s email, but doesn't have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to change ".$userbank->GetProperty('user', $aid)."'s email, but doesn't have access.");
     return $objResponse;
     }
 
@@ -248,7 +248,7 @@ function ChangeEmail($aid, $email, $password)
 
     $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `email` = ? WHERE `aid` = ?", array($email, $aid));
     $objResponse->addScript("ShowBox('E-mail address changed', 'Your E-mail address has been changed successfully.', 'green', 'index.php?p=account', true);");
-    $log = new CSystemLog("m", "E-mail Changed", "E-mail changed for admin (".$aid.")");
+    Log::add("m", "E-mail Changed", "E-mail changed for admin ($aid).");
     return $objResponse;
 }
 
@@ -259,7 +259,7 @@ function AddGroup($name, $type, $bitmask, $srvflags)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_GROUP))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to Add a new group, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to Add a new group, but doesnt have access.");
     return $objResponse;
     }
 
@@ -327,7 +327,7 @@ function AddGroup($name, $type, $bitmask, $srvflags)
     $query1 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_groups` (`gid`, `type`, `name`, `flags`) VALUES (". ($query['next_gid']+1) .", '3', ?, '0')", array($name));
     }
 
-    $log = new CSystemLog("m", "Group Created", "A new group was created ($name)");
+    Log::add("m", "Group Created", "A new group was created ($name).");
     $objResponse->addScript("ShowBox('Group Created', 'Your group has been successfully created.', 'green', 'index.php?p=admin&c=groups', true);");
     $objResponse->addScript("TabToReload();");
     return $objResponse;
@@ -340,7 +340,7 @@ function RemoveGroup($gid, $type)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_DELETE_GROUPS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove a group, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove a group, but doesnt have access.");
     return $objResponse;
     }
 
@@ -381,7 +381,7 @@ function RemoveGroup($gid, $type)
     $objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Group Deleted', 'The selected group has been deleted from the database', 'green', 'index.php?p=admin&c=groups', true);");
     else
     $objResponse->addScript("ShowBox('Group Deleted', 'The selected group has been deleted from the database', 'green', 'index.php?p=admin&c=groups', true);");
-    $log = new CSystemLog("m", "Group Deleted", "Group (" . $gid . ") has been deleted");
+    Log::add("m", "Group Deleted", "Group ($gid) has been deleted.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the group from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=groups', true);");
@@ -396,7 +396,7 @@ function RemoveSubmission($sid, $archiv)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_SUBMISSIONS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove a submission, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove a submission, but doesnt have access.");
     return $objResponse;
     }
     $sid = (int)$sid;
@@ -411,7 +411,7 @@ function RemoveSubmission($sid, $archiv)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Submission Archived', 'The selected submission has been moved to the archive!', 'green', 'index.php?p=admin&c=bans', true);");
-    $log = new CSystemLog("m", "Submission Archived", "Submission (" . $sid . ") has been moved to the archive");
+    Log::add("m", "Submission Archived", "Submission ($sid) has been moved to the archive.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem moving the submission to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
@@ -427,7 +427,7 @@ function RemoveSubmission($sid, $archiv)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Submission Deleted', 'The selected submission has been deleted from the database', 'green', 'index.php?p=admin&c=bans', true);");
-    $log = new CSystemLog("m", "Submission Deleted", "Submission (" . $sid . ") has been deleted");
+    Log::add("m", "Submission Deleted", "Submission ($sid) has been deleted.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the submission from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
@@ -442,7 +442,7 @@ function RemoveSubmission($sid, $archiv)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Submission Restored', 'The selected submission has been restored from the archive!', 'green', 'index.php?p=admin&c=bans', true);");
-    $log = new CSystemLog("m", "Submission Restored", "Submission (" . $sid . ") has been restored from the archive");
+    Log::add("m", "Submission Restored", "Submission ($sid) has been restored from the archive.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem restoring the submission from the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
@@ -457,7 +457,7 @@ function RemoveProtest($pid, $archiv)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_PROTESTS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove a protest, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove a protest, but doesnt have access.");
     return $objResponse;
     }
     $pid = (int)$pid;
@@ -472,7 +472,7 @@ function RemoveProtest($pid, $archiv)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Protest Deleted', 'The selected protest has been deleted from the database', 'green', 'index.php?p=admin&c=bans', true);");
-    $log = new CSystemLog("m", "Protest Deleted", "Protest (" . $pid . ") has been deleted");
+    Log::add("m", "Protest Deleted", "Protest ($pid) has been deleted.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the protest from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
@@ -486,7 +486,7 @@ function RemoveProtest($pid, $archiv)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Protest Archived', 'The selected protest has been moved to the archive.', 'green', 'index.php?p=admin&c=bans', true);");
-    $log = new CSystemLog("m", "Protest Archived", "Protest (" . $pid . ") has been moved to the archive.");
+    Log::add("m", "Protest Archived", "Protest ($pid) has been moved to the archive.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem moving the protest to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
@@ -500,7 +500,7 @@ function RemoveProtest($pid, $archiv)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Protest Restored', 'The selected protest has been restored from the archive.', 'green', 'index.php?p=admin&c=bans', true);");
-    $log = new CSystemLog("m", "Protest Deleted", "Protest (" . $pid . ") has been restored from the archive.");
+    Log::add("m", "Protest Deleted", "Protest ($pid) has been restored from the archive.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem restoring the protest from the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
@@ -515,7 +515,7 @@ function RemoveServer($sid)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_DELETE_SERVERS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove a server, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove a server, but doesnt have access.");
     return $objResponse;
     }
     $sid = (int)$sid;
@@ -532,7 +532,7 @@ function RemoveServer($sid)
     if($query1)
     {
     $objResponse->addScript("ShowBox('Server Deleted', 'The selected server has been deleted from the database', 'green', 'index.php?p=admin&c=servers', true);");
-    $log = new CSystemLog("m", "Server Deleted", "Server (" . $servinfo['ip'] . ":" . $servinfo['port'] . ") has been deleted");
+    Log::add("m", "Server Deleted", "Server ($servinfo[ip]:$servinfo[port]) has been deleted.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the server from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=servers', true);");
@@ -546,7 +546,7 @@ function RemoveMod($mid)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_DELETE_MODS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove a mod, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove a mod, but doesnt have access.");
     return $objResponse;
     }
     $mid = (int)$mid;
@@ -560,7 +560,7 @@ function RemoveMod($mid)
     if($query1)
     {
     $objResponse->addScript("ShowBox('MOD Deleted', 'The selected MOD has been deleted from the database', 'green', 'index.php?p=admin&c=mods', true);");
-    $log = new CSystemLog("m", "MOD Deleted", "MOD (" . $modicon['name'] . ") has been deleted");
+    Log::add("m", "MOD Deleted", "MOD ($modicon[name]) has been deleted.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the MOD from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=mods', true);");
@@ -574,7 +574,7 @@ function RemoveAdmin($aid)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_DELETE_ADMINS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove an admin, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove an admin, but doesnt have access.");
     return $objResponse;
     }
     $aid = (int)$aid;
@@ -617,7 +617,7 @@ function RemoveAdmin($aid)
     $objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Admin Deleted', 'The selected admin has been deleted from the database', 'green', 'index.php?p=admin&c=admins', true);");
     else
     $objResponse->addScript("ShowBox('Admin Deleted', 'The selected admin has been deleted from the database', 'green', 'index.php?p=admin&c=admins', true);");
-    $log = new CSystemLog("m", "Admin Deleted", "Admin (" . $gid['user'] . ") has been deleted");
+    Log::add("m", "Admin Deleted", "Admin ($gid[user]) has been deleted.");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was an error removing the admin from the database, please check the logs', 'red', 'index.php?p=admin&c=admins', true);");
@@ -631,7 +631,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_SERVER))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a server, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to add a server, but doesnt have access.");
     return $objResponse;
     }
     $ip = RemoveCode($ip);
@@ -745,7 +745,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
 
     $objResponse->addScript("ShowBox('Server Added', 'Your server has been successfully created.', 'green', 'index.php?p=admin&c=servers');");
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Server Added", "Server (" . $ip . ":" . $port . ") has been added");
+    Log::add("m", "Server Added", "Server ($ip:$port) has been added.");
     return $objResponse;
 }
 
@@ -841,7 +841,7 @@ function AddServerGroupName()
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_GROUPS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit group name, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to edit group name, but doesnt have access.");
     return $objResponse;
     }
     $inject = '<td valign="top"><div class="rowdesc">' . HelpIcon("Server Group Name", "Please type the name of the new group you wish to create.") . 'Group Name </div></td>';
@@ -862,7 +862,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_ADMINS)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add an admin, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to add an admin, but doesnt have access.");
         return $objResponse;
     }
     $a_name = RemoveCode($a_name);
@@ -954,14 +954,6 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     } else {
         $objResponse->addAssign("email.msg", "innerHTML", "");
         $objResponse->addScript("$('email.msg').setStyle('display', 'none');");
-        /*	if (!validate_email($a_email)) {
-                $error++;
-                $objResponse->addAssign("email.msg", "innerHTML", "Please enter a valid email address.");
-                $objResponse->addScript("$('email.msg').setStyle('display', 'block');");
-            } else {
-                $objResponse->addAssign("email.msg", "innerHTML", "");
-                $objResponse->addScript("$('email.msg').setStyle('display', 'none');");
-            }*/
         }
     }
 
@@ -1216,7 +1208,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     } else
     $objResponse->addScript("ShowBox('Admin Added', 'The admin has been added successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
 
-    $log = new CSystemLog("m", "Admin added", "Admin (" . $a_name . ") has been added");
+    Log::add("m", "Admin added", "Admin ($a_name) has been added.");
     return $objResponse;
     }
     else
@@ -1547,7 +1539,7 @@ function KickPlayer($sid, $name)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to kick ".htmlspecialchars($name).", but doesn't have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to kick $name, but doesn't have access.");
     return $objResponse;
     }
 
@@ -1601,7 +1593,7 @@ function KickPlayer($sid, $name)
     $kick = $r->sendCommand("kickid ".$steam." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
     }
 
-    $log = new CSystemLog("m", "Player kicked", $username . " kicked player '".htmlspecialchars($name)."' (".$steam.") from ".$data['ip'].":".$data['port'].".", true, true);
+    Log::add("m", "Player kicked", "$username kicked player $name ($steam) from $data[ip]:$data[port]");
     $objResponse->addScript("ShowBox('Player kicked', 'Player \'".addslashes(htmlspecialchars($name))."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
     } else {
     $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player is immune!', 'red', '', true);");
@@ -1622,7 +1614,7 @@ function PasteBan($sid, $name, $type=0)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried paste a ban, but doesn't have access.");
+    Log::add("w", "Hacking Attempt", "$username tried paste a ban, but doesn't have access.");
     return $objResponse;
     }
     require INCLUDES_PATH.'/CServerRcon.php';
@@ -1684,7 +1676,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        new CSystemLog("w", "Hacking Attempt", $username . " tried to add a ban, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to add a ban, but doesnt have access.");
         return $objResponse;
     }
 
@@ -1802,7 +1794,8 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
     }
 
     $objResponse->addScript("TabToReload();");
-    new CSystemLog("m", "Ban Added", "Ban against (" . ((int)$type==0?$steam:$ip) . ") has been added, reason: $reason, length: $length", true, $kickit);
+    $type = ($type == 0) ? $steam : $ip;
+    Log::add("m", "Ban Added", "Ban against ($type) has been added. Reason: $reason; Length: $length");
     return $objResponse;
 }
 
@@ -1923,7 +1916,7 @@ function ChangePassword($aid, $pass)
 
     if ($aid != $userbank->GetAid() && !$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $_SERVER["REMOTE_ADDR"] . " tried to change a password that doesn't have permissions.");
+        Log::add("w", "Hacking Attempt", "$_SERVER[REMOTE_ADDR] tried to change a password that doesn't have permissions.");
         return $objResponse;
     }
 
@@ -1937,7 +1930,7 @@ function ChangePassword($aid, $pass)
     $admname = $GLOBALS['PDO']->single();
     $objResponse->addAlert("Password changed successfully");
     $objResponse->addRedirect("index.php?p=login", 0);
-    $log = new CSystemLog("m", "Password Changed", "Password changed for admin (".$admname['user'].")");
+    Log::add("m", "Password Changed", "Password changed for admin ($admname[user])");
     logout();
     return $objResponse;
 }
@@ -1949,7 +1942,7 @@ function AddMod($name, $folder, $icon, $steam_universe, $enabled)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_MODS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a mod, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to add a mod, but doesnt have access.");
     return $objResponse;
     }
     $name = htmlspecialchars(strip_tags($name));//don't want to addslashes because execute will automatically do it
@@ -1971,7 +1964,7 @@ function AddMod($name, $folder, $icon, $steam_universe, $enabled)
 
     $objResponse->addScript("ShowBox('Mod Added', 'The game mod has been successfully added', 'green', 'index.php?p=admin&c=mods');");
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Mod Added", "Mod ($name) has been added");
+    Log::add("m", "Mod Added", "Mod ($name) has been added.");
     return $objResponse;
 }
 
@@ -1987,14 +1980,14 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit admin permissions, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to edit admin permissions, but doesnt have access.");
     return $objResponse;
     }
 
     if(!$userbank->HasAccess(ADMIN_OWNER) && (int)$web_flags & ADMIN_OWNER )
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to gain OWNER admin permissions, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to gain OWNER admin permissions, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2040,7 +2033,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     } else
     $objResponse->addScript("ShowBox('Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
     $admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
-    $log = new CSystemLog("m", "Permissions Changed", "Permissions have been changed for (".$admname['user'].")");
+    Log::add("m", "Permissions Changed", "Permissions have been changed for ($admname[user])");
     return $objResponse;
 }
 
@@ -2051,14 +2044,14 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_GROUPS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit group details, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to edit group details, but doesnt have access.");
     return $objResponse;
     }
 
     if(empty($name))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to set group's name to nothing. This isn't possible with the normal form.");
+    Log::add("w", "Hacking Attempt", "$username tried to set group's name to nothing. This isn't possible with the normal form.");
     return $objResponse;
     }
 
@@ -2154,12 +2147,12 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     $objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Group updated', 'The group has been updated successfully', 'green', 'index.php?p=admin&c=groups');TabToReload();");
     } else
     $objResponse->addScript("ShowBox('Group updated', 'The group has been updated successfully', 'green', 'index.php?p=admin&c=groups');TabToReload();");
-    $log = new CSystemLog("m", "Group Updated", "Group ($name) has been updated");
+    Log::add("m", "Group Updated", "Group ($name) has been updated.");
     return $objResponse;
     }
 
     $objResponse->addScript("ShowBox('Group updated', 'The group has been updated successfully', 'green', 'index.php?p=admin&c=groups');TabToReload();");
-    $log = new CSystemLog("m", "Group Updated", "Group ($name) has been updated");
+    Log::add("m", "Group Updated", "Group ($name) has been updated.");
     return $objResponse;
 }
 
@@ -2171,7 +2164,7 @@ function SendRcon($sid, $command, $output)
     if(!$userbank->HasAccess(SM_RCON . SM_ROOT))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send an rcon command, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to send an rcon command, but doesnt have access.");
     return $objResponse;
     }
     if(empty($command))
@@ -2240,7 +2233,7 @@ function SendRcon($sid, $command, $output)
     }
     }
     $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled=''; $('rcon_btn').disabled=''");
-    $log = new CSystemLog("m", "RCON Sent", "RCON Command was sent to server (".$rcon['ip'].":".$rcon['port']."): $command", true, true);
+    Log::add("m", "RCON Sent", "RCON Command was sent to server ($rcon[ip]:$rcon[port])");
     return $objResponse;
 }
 
@@ -2255,7 +2248,7 @@ function SendMail($subject, $message, $type, $id)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send an email, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to send an email, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2290,7 +2283,7 @@ function SendMail($subject, $message, $type, $id)
     if($m)
     {
     $objResponse->addScript("ShowBox('Email Sent', 'The email has been sent to the user.', 'green', 'index.php?p=admin&c=bans');");
-    $log = new CSystemLog("m", "Email Sent", $username . " send an email to ".htmlspecialchars($email).".<br />Subject: '[SourceBans] " . htmlspecialchars($subject) . "'<br />Message: '" . nl2br(htmlspecialchars($message)) . "'");
+    Log::add("m", "Email Sent", "$username send an email to $email. Subject: '[SourceBans] $subject'; Message: $message");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'Failed to send the email to the user.', 'red', '');");
@@ -2342,7 +2335,7 @@ function SelTheme($theme)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_WEB_SETTINGS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to execute SelTheme() function, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to execute SelTheme() function, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2381,7 +2374,7 @@ function ApplyTheme($theme)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_WEB_SETTINGS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to change the theme to ".htmlspecialchars(addslashes($theme)).", but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to change the theme to $theme, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2415,7 +2408,7 @@ function AddComment($bid, $ctype, $ctext, $page)
     if(!$userbank->is_admin())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to add a comment, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to add a comment, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2450,7 +2443,7 @@ function AddComment($bid, $ctype, $ctext, $page)
 
     $objResponse->addScript("ShowBox('Comment Added', 'The comment has been successfully published', 'green', 'index.php$redir');");
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Comment Added", $username." added a comment for ban #".$bid);
+    Log::add("m", "Comment Added", "$username added a comment for ban #$bid");
     return $objResponse;
 }
 
@@ -2461,7 +2454,7 @@ function EditComment($cid, $ctype, $ctext, $page)
     if(!$userbank->is_admin())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit a comment, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to edit a comment, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2495,7 +2488,7 @@ function EditComment($cid, $ctype, $ctext, $page)
 
     $objResponse->addScript("ShowBox('Comment Edited', 'The comment #".$cid." has been successfully edited', 'green', 'index.php$redir');");
     $objResponse->addScript("TabToReload();");
-    $log = new CSystemLog("m", "Comment Edited", $username." edited comment #".$cid);
+    Log::add("m", "Comment Edited", "$username edited comment #$cid");
     return $objResponse;
 }
 
@@ -2506,7 +2499,7 @@ function RemoveComment($cid, $ctype, $page)
     if (!$userbank->HasAccess(ADMIN_OWNER))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to remove a comment, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to remove a comment, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2528,7 +2521,7 @@ function RemoveComment($cid, $ctype, $page)
     if($res)
     {
     $objResponse->addScript("ShowBox('Comment Deleted', 'The selected comment has been deleted from the database', 'green', 'index.php$redir', true);");
-    $log = new CSystemLog("m", "Comment Deleted", $username." deleted comment #".$cid);
+    Log::add("m", "Comment Deleted", "$username deleted comment #$cid");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the comment from the database. Check the logs for more info', 'red', 'index.php$redir', true);");
@@ -2542,7 +2535,7 @@ function ClearCache()
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_WEB_SETTINGS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to clear the cache, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to clear the cache, but doesnt have access.");
     return $objResponse;
     }
 
@@ -2579,7 +2572,7 @@ function RehashAdmins($server, $do=0)
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS|ADMIN_EDIT_GROUPS|ADMIN_ADD_ADMINS))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to rehash admins, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to rehash admins, but doesnt have access.");
     return $objResponse;
     }
     $servers = explode(",",$server);
@@ -2642,7 +2635,7 @@ function GroupBan($groupuri, $isgrpurl="no", $queue="no", $reason="", $last="")
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to initiate a groupban '".htmlspecialchars(addslashes(trim($groupuri)))."', but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to initiate a groupban ($groupuri), but doesnt have access.");
     return $objResponse;
     }
     if($isgrpurl=="yes")
@@ -2682,7 +2675,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban group '".$grpurl."', but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to ban group ($grpurl), but doesnt have access.");
         return $objResponse;
     }
 
@@ -2761,7 +2754,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     }
 
-    $log = new CSystemLog("m", "Group Banned", "Banned ".($amount['total'] - $amount['before'] - $amount['failed'])."/".$amount['total']." players of group \'".$grpurl."\'.<br>".$amount['before']." were banned already.<br>".$amount['failed']." failed.");
+    Log::add("m", "Group Banned", "Banned ".($amount['total'] - $amount['before'] - $amount['failed'])."/$amount[total] players of group ($grpurl). $amount[before] were banned already. $amount[failed] failed.");
     return $objResponse;
 }
 
@@ -2775,7 +2768,7 @@ function GetGroups($friendid)
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to list groups of '".$friendid."', but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to list groups of '$friendid', but doesnt have access.");
     return $objResponse;
     }
     // check if we're getting redirected, if so there is $result["Location"] (the player uses custom id)  else just use the friendid. !We can't get the xml with the friendid url if the player has a custom one!
@@ -2856,7 +2849,7 @@ function BanFriends($friendid, $name)
 
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to ban friends of '".RemoveCode($friendid)."', but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to ban friends of '$friendid', but doesnt have access.");
         return $objResponse;
     }
 
@@ -2911,7 +2904,7 @@ function BanFriends($friendid, $name)
 
     $objResponse->addScript("ShowBox('Friends banned successfully', 'Banned ".($total-$before-$error)."/".$total." friends of \'".$name."\'.<br>".$before." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $log = new CSystemLog("m", "Friends Banned", "Banned ".($total-$before-$error)."/".$total." friends of \'".$name."\'.<br>".$before." were banned already.<br>".$error." failed.");
+    Log::add("m", "Friends Banned", "Banned ".($total-$before-$error)."/$total friends of $name. $before were banned already. $error failed.");
     return $objResponse;
 }
 
@@ -2922,7 +2915,7 @@ function ViewCommunityProfile($sid, $name)
     if(!$userbank->is_admin())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to view profile of '".htmlspecialchars($name)."', but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to view profile of '$name', but doesnt have access.");
     return $objResponse;
     }
     $sid = (int)$sid;
@@ -2973,7 +2966,7 @@ function SendMessage($sid, $name, $message)
     if(!$userbank->is_admin())
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to send ingame message to '".addslashes(htmlspecialchars($name))."' (\"".RemoveCode($message)."\"), but doesnt have access.");
+    Log::add("w", "Hacking Attempt", "$username tried to send ingame message to '$name', but doesnt have access. Message: $message");
     return $objResponse;
     }
     $sid = (int)$sid;
@@ -2992,7 +2985,7 @@ function SendMessage($sid, $name, $message)
     return $objResponse;
     }
     $ret = $r->sendCommand('sm_psay "'.$name.'" "'.preg_replace('/[^A-Za-z0-9\ ]/', '', $message).'"');
-  new CSystemLog("m", "Message sent to player", "The following message was sent to " . addslashes(htmlspecialchars($name)) . " on server " . $data['ip'] . ":" . $data['port'] . ": " . RemoveCode($message));
+    Log::add("m", "Message sent to player", "The following message was sent to $name on server ($data[ip]:$data[port]): $message");
     $objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
     return $objResponse;
 }
@@ -3002,7 +2995,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        new CSystemLog("w", "Hacking Attempt", $username . " tried to add a block, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to add a block, but doesnt have access.");
         return $objResponse;
     }
 
@@ -3096,7 +3089,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 
     $objResponse->addScript("ShowBlockBox('".$steam."', '".(int)$type."', '".(int)$len."');");
     $objResponse->addScript("TabToReload();");
-    new CSystemLog("m", "Block Added", "Block against (" . $steam . ") has been added, reason: $reason, length: $length", true, $kickit);
+    Log::add("m", "Block Added", "Block against ($steam) has been added. Reason: $reason; Length: $length");
     return $objResponse;
 }
 
@@ -3149,7 +3142,7 @@ function PasteBlock($sid, $name)
     $sid = (int)$sid;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried paste a block, but doesn't have access.");
+        Log::add("w", "Hacking Attempt", "$username tried paste a block, but doesn't have access.");
         return $objResponse;
     }
     require INCLUDES_PATH.'/CServerRcon.php';

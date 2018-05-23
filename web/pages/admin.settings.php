@@ -31,8 +31,6 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-//Log stuff
-$logs = new CSystemLog();
 $page = 1;
 if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page = intval($_GET['page']);
@@ -42,7 +40,7 @@ if (isset($_GET['log_clear']) && $_GET['log_clear'] == "true") {
     if ($userbank->HasAccess(ADMIN_OWNER)) {
         $result = $GLOBALS['db']->Execute("TRUNCATE TABLE `" . DB_PREFIX . "_log`");
     } else {
-        $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
+        Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to clear the logs, but doesn't have access.");
     }
 }
 
@@ -84,8 +82,8 @@ if (isset($_GET['advSearch'])) {
 $list_start = ($page - 1) * intval($GLOBALS['config']['banlist.bansperpage']);
 $list_end   = $list_start + intval($GLOBALS['config']['banlist.bansperpage']);
 
-$log_count = $logs->LogCount($where);
-$log       = $logs->getAll($list_start, intval($GLOBALS['config']['banlist.bansperpage']), $where);
+$log_count = Log::getCount($where);
+$log       = Log::getAll($list_start, intval($GLOBALS['config']['banlist.bansperpage']), $where);
 if (($page > 1)) {
     $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
 } else {

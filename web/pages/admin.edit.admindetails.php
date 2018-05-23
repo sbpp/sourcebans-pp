@@ -43,7 +43,7 @@ if (!isset($_GET['id'])) {
 $_GET['id'] = (int) $_GET['id'];
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    $log = new CSystemLog("e", "Getting admin data failed", "Can't find data for admin with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
@@ -56,7 +56,7 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 // Skip all checks if root
 if (!$userbank->HasAccess(ADMIN_OWNER)) {
     if (!$userbank->HasAccess(ADMIN_EDIT_ADMINS) || ($userbank->HasAccess(ADMIN_OWNER, $_GET['id']) && $_GET['id'] != $userbank->GetAid())) {
-        $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty("user") . " tried to edit " . $userbank->GetProperty('user', $_GET['id']) . "'s details, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s details, but doesnt have access.");
         echo '<div id="msg-red" >
 		<i><img src="./images/warning.png" alt="Warning" /></i>
 		<b>Error</b>
@@ -280,7 +280,7 @@ if (isset($_POST['adminname'])) {
         $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
             (int) $_GET['id']
         ));
-        $log     = new CSystemLog("m", "Admin Details Updated", "Admin (" . $admname['user'] . ") details has been changed");
+        Log::add("m", "Admin Details Updated", "Admin ($admname[user]) details has been changed.");
         if ($ownpwchanged) {
             echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
         } elseif (isset($rehashing)) {

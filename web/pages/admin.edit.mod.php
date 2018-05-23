@@ -35,7 +35,7 @@ if (!isset($_GET['id'])) {
     PageDie();
 }
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS)) {
-    $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty("user") . " tried to edit a mod, but doesnt have access.");
+    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit a mod, but doesnt have access.");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>

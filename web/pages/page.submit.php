@@ -182,7 +182,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             CreateGreenBox("Successful", "Your submission has been added into the database, and will be reviewed by one of our admins");
         } else {
             CreateRedBox("Error", "There was an error uploading your demo to the server. Please try again later.");
-            $log = new CSystemLog("e", "Demo Upload Failed", "A demo failed to upload for a submission from (" . $Email . ")");
+            Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }
     }
 }

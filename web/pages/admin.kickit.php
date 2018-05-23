@@ -46,7 +46,7 @@ function LoadServers($check, $type)
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to use kickit, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", $username." tried to use the kick function, but doesnt have access.");
         return $objResponse;
     }
     $id      = 0;
@@ -75,7 +75,7 @@ function KickPlayer($check, $sid, $num, $type)
 
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to process a playerkick, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", $username." tried to process a kick, but doesnt have access.");
         return $objResponse;
     }
 
@@ -106,7 +106,7 @@ function KickPlayer($check, $sid, $num, $type)
 
         $gothim = false;
         $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
-        
+
         //search for the steamid on the server
         if ((int) $type == 0) {
             foreach ($matches[3] AS $match) {
