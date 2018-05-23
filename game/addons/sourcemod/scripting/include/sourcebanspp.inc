@@ -68,12 +68,10 @@ native void SBPP_ReportPlayer(int iReporter, int iTarget, const char[] sReason);
 forward void SBPP_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
 
 /*********************************************************
- * Called when the admin banning the player.
+ * Called when a player was blocked from server because he is banned.
  *
- * @param iAdmin	The client index of the admin who is banning the client
- * @param iTarget    The client index of the player to ban
- * @param iTime      The time to ban the player for (in minutes, 0 = permanent)
- * @param sReason    The reason to ban the player from the server
+ * @param client	 The client index of user that gets blocked from the server
+ * @param iTarget    The name of user.
  *********************************************************/
 forward void SBPP_OnPlayerBlocked(int client, const char[] name);
 
