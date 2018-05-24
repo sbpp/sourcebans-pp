@@ -74,9 +74,8 @@ AdminCachePart loadPart;
 AdminFlag g_FlagLetters[FLAG_LETTERS_SIZE];
 
 /* Cvar handle*/
-ConVar
-	CvarHostIp
-	, CvarPort;
+ConVar CvarHostIp;
+ConVar CvarPort;
 
 /* Database handle */
 Database DB;
