@@ -15,7 +15,7 @@ public SharedPlugin __pl_sourcebanspp =
 };
 
 #if !defined REQUIRE_PLUGIN
-public __pl_sourcebanspp_SetNTVOptional()
+public void __pl_sourcebanspp_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
 	MarkNativeAsOptional("SBPP_BanPlayer");
@@ -69,11 +69,11 @@ forward void SBPP_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] s
 
 /*********************************************************
  * Called when a player was blocked from server because he is banned.
- *
+ * (game = csgo: you where banned not includes, only if loading screen appiers it counts.)
  * @param client	 The client index of user that gets blocked from the server
  * @param iTarget    The name of user.
  *********************************************************/
-forward void SBPP_OnPlayerBlocked(int client, const char[] name);
+forward void SBPP_OnPlayerBlocked(int client);
 
 /*********************************************************
  * Called when a new report is inserted

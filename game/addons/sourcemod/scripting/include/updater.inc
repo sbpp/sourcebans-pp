@@ -1,6 +1,3 @@
-#if defined _updater_included
-  #endinput
-#endif
 #define _updater_included
 
 /**
