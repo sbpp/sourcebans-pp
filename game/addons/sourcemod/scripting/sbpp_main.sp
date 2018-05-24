@@ -112,7 +112,7 @@ int ProcessQueueTime = 5;
 int g_ownReasons[MAXPLAYERS + 1] =  { false, ... }; /* Own Chat Reason */
 int CommandDisable; /* Disable of addban and unban */
 
-Handle ConfigParser;
+SMCParser ConfigParser;
 Handle hTopMenu = INVALID_HANDLE;
 Handle TimeMenuHandle; /* Menu file globals */
 Handle ReasonMenuHandle;
@@ -2082,7 +2082,7 @@ static void InternalReadConfig(const char[] path)
 	}
 }
 
-public SMCResult ReadConfig_NewSection(Handle smc, const char[] name, bool opt_quotes)
+public SMCResult ReadConfig_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
 {
 	if (name[0])
 	{
@@ -2107,7 +2107,7 @@ public SMCResult ReadConfig_NewSection(Handle smc, const char[] name, bool opt_q
 	return SMCParse_Continue;
 }
 
-public SMCResult ReadConfig_KeyValue(Handle smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
+public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
 {
 	if (!key[0])
 		return SMCParse_Continue;
@@ -2201,10 +2201,11 @@ public SMCResult ReadConfig_KeyValue(Handle smc, const char[] key, const char[] 
 			}
 		}
 	}
+	
 	return SMCParse_Continue;
 }
 
-public SMCResult ReadConfig_EndSection(Handle smc)
+public SMCResult ReadConfig_EndSection(SMCParser smc)
 {
 	return SMCParse_Continue;
 }
