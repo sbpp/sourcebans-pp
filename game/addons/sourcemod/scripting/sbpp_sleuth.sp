@@ -90,7 +90,7 @@ public OnPluginStart()
 
 public OnAllPluginsLoaded()
 {
-	CanUseSourcebans = LibraryExists("sourcebans");
+	CanUseSourcebans = LibraryExists("sourcebans++");
 }
 
 public OnLibraryAdded(const String:name[])
