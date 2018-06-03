@@ -95,7 +95,7 @@ public OnAllPluginsLoaded()
 
 public OnLibraryAdded(const String:name[])
 {
-	if (StrEqual("sourcebans", name))
+	if (StrEqual("sourcebans++", name))
 	{
 		CanUseSourcebans = true;
 	}
@@ -103,7 +103,7 @@ public OnLibraryAdded(const String:name[])
 
 public OnLibraryRemoved(const String:name[])
 {
-	if (StrEqual("sourcebans", name))
+	if (StrEqual("sourcebans++", name))
 	{
 		CanUseSourcebans = false;
 	}
