@@ -105,7 +105,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Player UnGagged', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add("m", "Player UnGagged", "$row['name'] ($row['authid']) has been ungagged.");
+        Log::add("m", "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
     } else {
         echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
@@ -150,7 +150,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Player UnMuted', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add("m", "Player UnMuted", "$row['name'] ($row['authid']) has been unmuted.");
+        Log::add("m", "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
     } else {
         echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
@@ -200,7 +200,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Block Deleted', 'The block for \'" . StripQuotes($steam['name']) . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add("m", "Block Deleted", "Block $steam['name'] ($steam['authid']) has been deleted.");
+        Log::add("m", "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
         echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
     }

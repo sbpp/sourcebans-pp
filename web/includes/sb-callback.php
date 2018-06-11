@@ -2283,7 +2283,7 @@ function SendMail($subject, $message, $type, $id)
     if($m)
     {
     $objResponse->addScript("ShowBox('Email Sent', 'The email has been sent to the user.', 'green', 'index.php?p=admin&c=bans');");
-    Log::add("m", "Email Sent", "$username send an email to $email. Subject: '[SourceBans] $subject'; Message: $message");
+    Log::add("m", "Email Sent", "$username send an email to $email. Subject: '[SourceBans++] $subject'; Message: $message");
     }
     else
     $objResponse->addScript("ShowBox('Error', 'Failed to send the email to the user.', 'red', '');");
