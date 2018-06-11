@@ -44,7 +44,7 @@ $admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE ai
 
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    $log = new CSystemLog("e", "Getting admin data failed", "Can't find data for admin with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
@@ -56,12 +56,7 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 
 $_GET['id'] = (int) $_GET['id'];
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    $log = new CSystemLog(
-        "w",
-        "Hacking Attempt",
-        $userbank->GetProperty("user")." tried to edit "
-        .$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access."
-    );
+    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access.");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>

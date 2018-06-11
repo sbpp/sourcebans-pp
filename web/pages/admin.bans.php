@@ -89,7 +89,7 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
         }
     }
     if ($bancnt > 0) {
-        $log = new CSystemLog("m", "Bans imported", "$bancnt Ban(s) imported");
+        Log::add("m", "Bans imported", "$bancnt Ban(s) imported");
     }
 
     echo "<script>ShowBox('Bans Import', '$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.', 'green', '');</script>";

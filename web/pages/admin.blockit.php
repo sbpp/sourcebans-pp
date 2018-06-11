@@ -46,7 +46,7 @@ function LoadServers2($check, $type, $length)
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to use blockit, but doesn't have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to use blockit, but doesn't have access.");
         return $objResponse;
     }
     $id      = 0;
@@ -76,7 +76,7 @@ function BlockPlayer($check, $sid, $num, $type, $length)
 
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to process a playerblock, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to process a playerblock, but doesnt have access.");
         return $objResponse;
     }
 

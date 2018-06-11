@@ -148,7 +148,7 @@ if (isset($_POST['name'])) {
             )
         );
         if ($_POST['banlength'] != $lengthrev->fields['length']) {
-            $log = new CSystemLog("m", "Block edited", "Block for (" . $lengthrev->fields['authid'] . ") has been updated, before: length " . $lengthrev->fields['length'] . ", type " . $lengthrev->fields['type'] . "; now: length " . $_POST['banlength'] . " type " . $_POST->fields['type']);
+            Log::add("m", "Block edited", "Block for ($lengthrev[authid]) has been updated. Before: length ($lengthrev[length]), type ($lengthrev[type]); Now: length ($_POST[banlength]), type ($_POST[type])");
         }
         echo '<script>ShowBox("Block updated", "The block has been updated successfully", "green", "index.php?p=commslist' . $pagelink . '");</script>';
     }

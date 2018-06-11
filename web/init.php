@@ -52,11 +52,9 @@ define('SB_THEMES', ROOT . 'themes/');
 define('SB_THEMES_COMPILE', ROOT . 'themes_c/');
 
 define('IN_SB', true);
-define('SB_AID', isset($_COOKIE['aid'])?$_COOKIE['aid']:null);
 define('XAJAX_REQUEST_URI', './index.php');
 
 require_once(INCLUDES_PATH.'/SessionManager.php');
-include_once(INCLUDES_PATH . "/CSystemLog.php");
 include_once(INCLUDES_PATH . "/CUserManager.php");
 
 \SessionManager::sessionStart('SourceBans');
@@ -155,7 +153,6 @@ include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
 require_once(INCLUDES_PATH.'/Database.php');
 $GLOBALS['db'] = ADONewConnection("mysqli://".DB_USER.':'.urlencode(DB_PASS).'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 $GLOBALS['PDO'] = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
-$GLOBALS['log'] = new CSystemLog();
 $GLOBALS['sb-email'] = SB_EMAIL;
 
 if (!is_object($GLOBALS['db'])) {
@@ -175,33 +172,33 @@ if ($debug->fields['value']=="1") {
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 \SteamID\SteamID::init($GLOBALS['PDO']);
 
+require_once(INCLUDES_PATH.'/Log.php');
+Log::init($GLOBALS['PDO']);
+
 // ---------------------------------------------------
 //  Setup our custom error handler
 // ---------------------------------------------------
 set_error_handler('sbError');
 function sbError($errno, $errstr, $errfile, $errline)
 {
-    if (!is_object($GLOBALS['log'])) {
-        return false;
-    }
     switch ($errno) {
         case E_USER_ERROR:
             $msg = "[$errno] $errstr<br />\n";
             $msg .= "Fatal error on line $errline in file $errfile";
-            $log = new CSystemLog("e", "PHP Error", $msg);
+            Log::add("e", "PHP Error", $msg);
             exit(1);
             break;
 
         case E_USER_WARNING:
             $msg = "[$errno] $errstr<br />\n";
             $msg .= "Error on line $errline in file $errfile";
-            $GLOBALS['log']->AddLogItem("w", "PHP Warning", $msg);
+            Log::add("w", "PHP Warning", $msg);
             break;
 
         case E_USER_NOTICE:
             $msg = "[$errno] $errstr<br />\n";
             $msg .= "Notice on line $errline in file $errfile";
-            $GLOBALS['log']->AddLogItem("m", "PHP Notice", $msg);
+            Log::add("m", "PHP Notice", $msg);
             break;
 
         default:

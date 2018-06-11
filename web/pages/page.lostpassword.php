@@ -32,8 +32,7 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
 
     if (is_array($email) || is_array($validation)) {
         CreateRedBox("Error", "Invalid request.");
-
-        new CSystemLog("w", "Hacking attempt", "Attempted SQL-Injection.");
+        Log::add("w", "Hacking attempt", "Attempted SQL-Injection.");
         PageDie();
     }
 

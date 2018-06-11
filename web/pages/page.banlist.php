@@ -123,10 +123,11 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         }
 
         if ($res) {
+            $type = $row['type'] == 0 ? $row['authid'] : $row['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player Unbanned', '" . StripQuotes($row['name']) . " (" . ($row['type'] == 0 ? $row['authid'] : $row['ip']) . ") has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
+                echo "<script>ShowBox('Player Unbanned', '" . StripQuotes($row['name']) . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            $log = new CSystemLog("m", "Player Unbanned", "'" . StripQuotes($row['name']) . "' (" . ($row['type'] == 0 ? $row['authid'] : $row['ip']) . ") has been unbanned");
+            Log::add("m", "Player Unbanned", "$row[name] ($type) has been unbanned.");
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {
@@ -189,10 +190,11 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         }
 
         if ($res) {
+            $type = $steam['type'] == 0 ? $steam['authid'] : $steam['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' (" . ($steam['type'] == 0 ? $steam['authid'] : $steam['ip']) . ") has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
+                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' ($type) has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            $log = new CSystemLog("m", "Ban Deleted", "Ban '" . StripQuotes($steam['name']) . "' (" . ($steam['type'] == 0 ? $steam['authid'] : $steam['ip']) . ") has been deleted.");
+            Log::add("m", "Ban Deleted", "Ban $steam[name] ($type) has been deleted.");
             $dcount++;
         } else {
             if (!isset($_GET['bulk'])) {
