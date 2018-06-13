@@ -2356,7 +2356,7 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	char[] sQuery = new char[512 + (iReasonLen * 2 + 1)];
 
 	Format(sQuery, 512 + (iReasonLen * 2 + 1), "INSERT INTO %s_submissions (`submitted`, `modid`, `SteamId`, `name`, `email`, `reason`, `ip`, `subname`, `sip`, `archiv`, `server`)"
-	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, 0)", DatabasePrefix, iTime, sTAuth, sTEscapedName, sRAuth, sEscapedReason, sRIP, sREscapedName, sTIP);
+	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, '%d')", DatabasePrefix, iTime, sTAuth, sTEscapedName, sRAuth, sEscapedReason, sRIP, sREscapedName, sTIP, (serverID != -1) ? serverID : 0);
 
 	DataPack ForwardPack = new DataPack();
 
