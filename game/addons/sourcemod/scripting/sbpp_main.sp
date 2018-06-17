@@ -1725,7 +1725,7 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 		{
 			curAdm = CreateAdmin(name);
 			// That should never happen!
-			if (!BindAdminIdentity(curAdm, authType, identity))
+			if (!curAdm.BindIdentity(authType, identity))
 			{
 				LogToFile(logFile, "Unable to bind admin %s to identity %s", name, identity);
 				RemoveAdmin(curAdm);
@@ -1799,7 +1799,7 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 				}
 
 				// Only try to inherit the group, if it's a new one.
-				if (numGroups != -2 && !AdminInheritGroup(curAdm, curGrp))
+				if (numGroups != -2 && !curAdm.InheritGroup(curGrp))
 				{
 					LogToFile(logFile, "Unable to inherit group \"%s\"", groups[curPos]);
 				}
