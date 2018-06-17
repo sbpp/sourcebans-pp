@@ -573,9 +573,9 @@ public void OnAdminMenuReady(Handle hTemp)
 
 	/* Save the Handle */
 	hTopMenu = topmenu;
-
-	// FIXME
-	TopMenuObject MenuObject = AddToTopMenu(hTopMenu, "sourcecomm_cmds", TopMenuObject_Category, Handle_Commands, INVALID_TOPMENUOBJECT);
+	
+	TopMenuObject MenuObject = hTopMenu.AddCategory("sourcecomm_cmds", Handle_Commands);
+	
 	if (MenuObject == INVALID_TOPMENUOBJECT)
 		return;
 
