@@ -186,11 +186,11 @@ public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] n
 stock bool IsValidClient(int iClient, bool bAlive = false)
 {
 	if (iClient >= 1 &&
-	iClient <= MaxClients &&
-	IsClientConnected(iClient) &&
-	IsClientInGame(iClient) &&
-	!IsFakeClient(iClient) &&
-	(bAlive == false || IsPlayerAlive(iClient)))
+		iClient <= MaxClients &&
+		IsClientConnected(iClient) &&
+		IsClientInGame(iClient) &&
+		!IsFakeClient(iClient) &&
+		(bAlive == false || IsPlayerAlive(iClient)))
 	{
 		return true;
 	}

@@ -41,7 +41,7 @@ public SharedPlugin __pl_sourcebanspp =
 };
 
 #if !defined REQUIRE_PLUGIN
-public __pl_sourcebanspp_SetNTVOptional()
+public void __pl_sourcebanspp_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
 	MarkNativeAsOptional("SBPP_BanPlayer");
