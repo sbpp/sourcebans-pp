@@ -1517,11 +1517,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
 
-				#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-					dataPack.Position = view_as<DataPackPos>(16);
-				#else
-					dataPack.Position = 16;
-				#endif
+				dataPack.Position = view_as<DataPackPos>(16);
 
 				if (g_MuteType[target] > bNot)
 				{
@@ -2216,7 +2212,7 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 		int target = target_list[i];
 
 		#if defined DEBUG
-		cgar auth[64];
+		char auth[64];
 		GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth));
 		PrintToServer("Processing block for %s", auth);
 		#endif
@@ -3259,11 +3255,13 @@ public int Native_SetClientGag(Handle hPlugin, int numParams)
 	if (target < 1 || target > MaxClients)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		return false;
 	}
 
 	if (!IsClientInGame(target))
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		return false;
 	}
 
 	bool gagState = GetNativeCell(2);
@@ -3271,12 +3269,14 @@ public int Native_SetClientGag(Handle hPlugin, int numParams)
 	if (gagState && gagLength == 0)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Permanent gag is not allowed!");
+		return false;
 	}
 
 	bool bSaveToDB = GetNativeCell(4);
 	if (!gagState && bSaveToDB)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
+		return false;
 	}
 
 	char sReason[256];
@@ -3313,11 +3313,13 @@ public int Native_GetClientMuteType(Handle hPlugin, int numParams)
 	if (target < 1 || target > MaxClients)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		return bNot;
 	}
 
 	if (!IsClientInGame(target))
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		return bNot;
 	}
 
 	return g_MuteType[target];
@@ -3329,11 +3331,13 @@ public int Native_GetClientGagType(Handle hPlugin, int numParams)
 	if (target < 1 || target > MaxClients)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		return bNot;
 	}
 
 	if (!IsClientInGame(target))
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		return bNot;
 	}
 
 	return g_GagType[target];
