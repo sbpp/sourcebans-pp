@@ -2690,13 +2690,13 @@ stock void InsertTempBlock(int length, int type, const char[] name, const char[]
 stock void ServerInfo()
 {
 	int pieces[4];
-	int longip = GetConVarInt(CvarHostIp);
+	int longip = CvarHostIp.IntValue;
 	pieces[0] = (longip >> 24) & 0x000000FF;
 	pieces[1] = (longip >> 16) & 0x000000FF;
 	pieces[2] = (longip >> 8) & 0x000000FF;
 	pieces[3] = longip & 0x000000FF;
 	FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-	GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
+	CvarPort.GetString(ServerPort, sizeof(ServerPort));
 }
 
 stock void ReadConfig()

@@ -2584,7 +2584,7 @@ stock void InsertServerInfo()
     
     char query[100];
     int pieces[4];
-    int longip = GetConVarInt(CvarHostIp);
+    int longip = CvarHostIp.IntValue;
 
     pieces[0] = (longip >> 24) & 0x000000FF;
     pieces[1] = (longip >> 16) & 0x000000FF;
@@ -2592,7 +2592,7 @@ stock void InsertServerInfo()
     pieces[3] = longip & 0x000000FF;
 
     FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-    GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
+    CvarPort.GetString(ServerPort, sizeof(ServerPort));
 
     if (AutoAdd != false) {
         FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
