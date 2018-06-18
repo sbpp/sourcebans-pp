@@ -25,6 +25,7 @@
 // *************************************************************************
 
 #pragma semicolon 1
+#pragma newdecls required
 
 #include <sourcemod>
 #include <basecomm>
@@ -56,12 +57,12 @@
 #define DISPLAY_SIZE 64
 #define REASON_SIZE 192
 
-new iNumReasons;
-new String:g_sReasonDisplays[MAX_REASONS][DISPLAY_SIZE], String:g_sReasonKey[MAX_REASONS][REASON_SIZE];
+int iNumReasons;
+char g_sReasonDisplays[MAX_REASONS][DISPLAY_SIZE], g_sReasonKey[MAX_REASONS][REASON_SIZE];
 
 #define MAX_TIMES 32
-new iNumTimes, g_iTimeMinutes[MAX_TIMES];
-new String:g_sTimeDisplays[MAX_TIMES][DISPLAY_SIZE];
+int iNumTimes, g_iTimeMinutes[MAX_TIMES];
+char g_sTimeDisplays[MAX_TIMES][DISPLAY_SIZE];
 
 enum State/* ConfigState */
 {
@@ -79,46 +80,46 @@ enum DatabaseState/* Database connection state */
 	DatabaseState_Connected,
 }
 
-new DatabaseState:g_DatabaseState;
-new g_iConnectLock = 0;
-new g_iSequence = 0;
+DatabaseState g_DatabaseState;
+int g_iConnectLock = 0;
+int g_iSequence = 0;
 
-new State:ConfigState;
-new Handle:ConfigParser;
+State ConfigState;
+SMCParser ConfigParser;
 
-new Handle:hTopMenu = INVALID_HANDLE;
+TopMenu hTopMenu = null;
 
 /* Cvar handle*/
-new Handle:CvarHostIp;
-new Handle:CvarPort;
+ConVar CvarHostIp;
+ConVar CvarPort;
 
-new String:ServerIp[24];
-new String:ServerPort[7];
+char ServerIp[24];
+char ServerPort[7];
 
 /* Database handle */
-new Handle:g_hDatabase;
-new Handle:SQLiteDB;
+Database g_hDatabase;
+Database SQLiteDB;
 
-new String:DatabasePrefix[10] = "sb";
+char DatabasePrefix[10] = "sb";
 
 /* Timer handles */
-new Handle:g_hPlayerRecheck[MAXPLAYERS + 1] = { INVALID_HANDLE, ... };
-new Handle:g_hGagExpireTimer[MAXPLAYERS + 1] = { INVALID_HANDLE, ... };
-new Handle:g_hMuteExpireTimer[MAXPLAYERS + 1] = { INVALID_HANDLE, ... };
+Handle g_hPlayerRecheck[MAXPLAYERS + 1] = { null, ... };
+Handle g_hGagExpireTimer[MAXPLAYERS + 1] = { null, ... };
+Handle g_hMuteExpireTimer[MAXPLAYERS + 1] = { null, ... };
 
 
 /* Log Stuff */
 #if defined LOG_QUERIES
-new String:logQuery[256];
+char logQuery[256];
 #endif
 
-new Float:RetryTime = 15.0;
-new DefaultTime = 30;
-new DisUBImCheck = 0;
-new ConsoleImmunity = 0;
-new ConfigMaxLength = 0;
-new ConfigWhiteListOnly = 0;
-new serverID = 0;
+float RetryTime = 15.0;
+int DefaultTime = 30;
+int DisUBImCheck = 0;
+int ConsoleImmunity = 0;
+int ConfigMaxLength = 0;
+int ConfigWhiteListOnly = 0;
+int serverID = 0;
 
 /* List menu */
 enum PeskyPanels
@@ -129,33 +130,33 @@ enum PeskyPanels
 	viewingGag,
 	viewingList,
 }
-new g_iPeskyPanels[MAXPLAYERS + 1][PeskyPanels];
+int g_iPeskyPanels[MAXPLAYERS + 1][PeskyPanels];
 
-new bool:g_bPlayerStatus[MAXPLAYERS + 1]; // Player block check status
-new String:g_sName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
+bool g_bPlayerStatus[MAXPLAYERS + 1]; // Player block check status
+char g_sName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
 
-new bType:g_MuteType[MAXPLAYERS + 1];
-new g_iMuteTime[MAXPLAYERS + 1];
-new g_iMuteLength[MAXPLAYERS + 1]; // in sec
-new g_iMuteLevel[MAXPLAYERS + 1]; // immunity level of admin
-new String:g_sMuteAdminName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
-new String:g_sMuteReason[MAXPLAYERS + 1][256];
-new String:g_sMuteAdminAuth[MAXPLAYERS + 1][64];
+bType g_MuteType[MAXPLAYERS + 1];
+int g_iMuteTime[MAXPLAYERS + 1];
+int g_iMuteLength[MAXPLAYERS + 1]; // in sec
+int g_iMuteLevel[MAXPLAYERS + 1]; // immunity level of admin
+char g_sMuteAdminName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
+char g_sMuteReason[MAXPLAYERS + 1][256];
+char g_sMuteAdminAuth[MAXPLAYERS + 1][64];
 
-new bType:g_GagType[MAXPLAYERS + 1];
-new g_iGagTime[MAXPLAYERS + 1];
-new g_iGagLength[MAXPLAYERS + 1]; // in sec
-new g_iGagLevel[MAXPLAYERS + 1]; // immunity level of admin
-new String:g_sGagAdminName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
-new String:g_sGagReason[MAXPLAYERS + 1][256];
-new String:g_sGagAdminAuth[MAXPLAYERS + 1][64];
+bType g_GagType[MAXPLAYERS + 1];
+int g_iGagTime[MAXPLAYERS + 1];
+int g_iGagLength[MAXPLAYERS + 1]; // in sec
+int g_iGagLevel[MAXPLAYERS + 1]; // immunity level of admin
+char g_sGagAdminName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
+char g_sGagReason[MAXPLAYERS + 1][256];
+char g_sGagAdminAuth[MAXPLAYERS + 1][64];
 
-new Handle:g_hServersWhiteList = INVALID_HANDLE;
+ArrayList g_hServersWhiteList = null;
 
 // Forward
-new Handle:g_hFwd_OnPlayerPunished;
+Handle g_hFwd_OnPlayerPunished;
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "SourceBans++: SourceComms",
 	author = "Alex, SourceBans++ Dev Team",
@@ -164,7 +165,7 @@ public Plugin:myinfo =
 	url = "https://sbpp.github.io"
 };
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
 	CreateNative("SourceComms_SetClientMute", Native_SetClientMute);
 	CreateNative("SourceComms_SetClientGag", Native_SetClientGag);
@@ -178,18 +179,18 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	return APLRes_Success;
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 	LoadTranslations("sourcecomms.phrases");
 
-	new Handle:hTemp = INVALID_HANDLE;
+	TopMenu hTemp = null;
 	if (LibraryExists("adminmenu") && ((hTemp = GetAdminTopMenu()) != INVALID_HANDLE))
 		OnAdminMenuReady(hTemp);
 
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
-	g_hServersWhiteList = CreateArray();
+	g_hServersWhiteList = new ArrayList();
 
 	CreateConVar("sourcecomms_version", PLUGIN_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
 	AddCommandListener(CommandCallback, "sm_gag");
@@ -224,53 +225,53 @@ public OnPluginStart()
 
 	ServerInfo();
 
-	for (new client = 1; client <= MaxClients; client++)
+	for (int client = 1; client <= MaxClients; client++)
 	{
 		if (IsClientInGame(client) && IsClientAuthorized(client))
 			OnClientPostAdminCheck(client);
 	}
 }
 
-public OnLibraryRemoved(const String:name[])
+public void OnLibraryRemoved(const char[] name)
 {
 	if (StrEqual(name, "adminmenu"))
-		hTopMenu = INVALID_HANDLE;
+		hTopMenu = null;
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	ReadConfig();
 }
 
-public OnMapEnd()
+public void OnMapEnd()
 {
 	// Clean up on map end just so we can start a fresh connection when we need it later.
 	// Also it is necessary for using SQL_SetCharset
 	if (g_hDatabase)
-		CloseHandle(g_hDatabase);
+		delete g_hDatabase;
 
-	g_hDatabase = INVALID_HANDLE;
+	g_hDatabase = null;
 }
 
 
 // CLIENT CONNECTION FUNCTIONS //
 
-public OnClientDisconnect(client)
+public void OnClientDisconnect(int client)
 {
-	if (g_hPlayerRecheck[client] != INVALID_HANDLE && CloseHandle(g_hPlayerRecheck[client]))
-		g_hPlayerRecheck[client] = INVALID_HANDLE;
+	if (g_hPlayerRecheck[client] != null)
+		delete g_hPlayerRecheck[client];
 
 	CloseMuteExpireTimer(client);
 	CloseGagExpireTimer(client);
 }
 
-public bool:OnClientConnect(client, String:rejectmsg[], maxlen)
+public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 {
 	g_bPlayerStatus[client] = false;
 	return true;
 }
 
-public OnClientConnected(client)
+public void OnClientConnected(int client)
 {
 	g_sName[client][0] = '\0';
 
@@ -278,9 +279,9 @@ public OnClientConnected(client)
 	MarkClientAsUnGagged(client);
 }
 
-public OnClientPostAdminCheck(client)
+public void OnClientPostAdminCheck(int client)
 {
-	decl String:clientAuth[64];
+	char clientAuth[64];
 	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	GetClientName(client, g_sName[client], sizeof(g_sName[]));
 
@@ -303,10 +304,10 @@ public OnClientPostAdminCheck(client)
 			MarkClientAsGagged(client);
 		}
 
-		decl String:sClAuthYZEscaped[sizeof(clientAuth) * 2 + 1];
-		SQL_EscapeString(g_hDatabase, clientAuth[8], sClAuthYZEscaped, sizeof(sClAuthYZEscaped));
+		char sClAuthYZEscaped[sizeof(clientAuth) * 2 + 1];
+		g_hDatabase.Escape(clientAuth[8], sClAuthYZEscaped, sizeof(sClAuthYZEscaped));
 
-		decl String:Query[4096];
+		char Query[4096];
 		FormatEx(Query, sizeof(Query),
 			"SELECT		(c.ends - UNIX_TIMESTAMP()) AS remaining, \
 						c.length, c.type, c.created, c.reason, a.user, \
@@ -322,21 +323,21 @@ public OnClientPostAdminCheck(client)
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "OnClientPostAdminCheck for: %s. QUERY: %s", clientAuth, Query);
 		#endif
-		SQL_TQuery(g_hDatabase, Query_VerifyBlock, Query, GetClientUserId(client), DBPrio_High);
+		g_hDatabase.Query(Query_VerifyBlock, Query, GetClientUserId(client), DBPrio_High);
 	}
 }
 
 
 // OTHER CLIENT CODE //
 
-public Action:Event_OnPlayerName(Handle:event, const String:name[], bool:dontBroadcast)
+public Action Event_OnPlayerName(Handle event, const char[] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0 && IsClientInGame(client))
 		GetEventString(event, "newname", g_sName[client], sizeof(g_sName[]));
 }
 
-public BaseComm_OnClientMute(client, bool:muteState)
+public void BaseComm_OnClientMute(int client, bool muteState)
 {
 	if (client > 0 && client <= MaxClients)
 	{
@@ -358,7 +359,7 @@ public BaseComm_OnClientMute(client, bool:muteState)
 	}
 }
 
-public BaseComm_OnClientGag(client, bool:gagState)
+public void BaseComm_OnClientGag(int client, bool gagState)
 {
 	if (client > 0 && client <= MaxClients)
 	{
@@ -382,7 +383,7 @@ public BaseComm_OnClientGag(client, bool:gagState)
 
 // COMMAND CODE //
 
-public Action:CommandComms(client, args)
+public Action CommandComms(int client, int args)
 {
 	if (!client)
 	{
@@ -398,13 +399,13 @@ public Action:CommandComms(client, args)
 	return Plugin_Handled;
 }
 
-public Action:FWBlock(args)
+public Action FWBlock(int args)
 {
-	decl String:arg_string[256];
-	new String:sArg[3][64];
+	char arg_string[256];
+	char sArg[3][64];
 	GetCmdArgString(arg_string, sizeof(arg_string));
 
-	decl type, length;
+	int type, length;
 	if (ExplodeString(arg_string, " ", sArg, 3, 64) != 3 || !StringToIntEx(sArg[0], type) || type < 1 || type > 3 || !StringToIntEx(sArg[1], length))
 	{
 		LogError("Wrong usage of sc_fw_block");
@@ -413,8 +414,8 @@ public Action:FWBlock(args)
 
 	LogMessage("Received block command from web: steam %s, type %d, length %d", sArg[2], type, length);
 
-	decl String:clientAuth[64];
-	for (new i = 1; i <= MaxClients; i++)
+	char clientAuth[64];
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
 		{
@@ -438,10 +439,10 @@ public Action:FWBlock(args)
 	return Plugin_Handled;
 }
 
-public Action:FWUngag(args)
+public Action FWUngag(int args)
 {
-	decl String:arg_string[256];
-	new String:sArg[1][64];
+	char arg_string[256];
+	char sArg[1][64];
 	GetCmdArgString(arg_string, sizeof(arg_string));
 	if (!ExplodeString(arg_string, " ", sArg, 1, 64))
 	{
@@ -451,11 +452,11 @@ public Action:FWUngag(args)
 
 	LogMessage("Received ungag command from web: steam %s", sArg[0]);
 
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
 		{
-			decl String:clientAuth[64];
+			char clientAuth[64];
 			GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 			if (strcmp(clientAuth, sArg[0], false) == 0)
 			{
@@ -478,10 +479,10 @@ public Action:FWUngag(args)
 	return Plugin_Handled;
 }
 
-public Action:FWUnmute(args)
+public Action FWUnmute(int args)
 {
-	decl String:arg_string[256];
-	new String:sArg[1][64];
+	char arg_string[256];
+	char sArg[1][64];
 	GetCmdArgString(arg_string, sizeof(arg_string));
 	if (!ExplodeString(arg_string, " ", sArg, 1, 64))
 	{
@@ -491,11 +492,11 @@ public Action:FWUnmute(args)
 
 	LogMessage("Received unmute command from web: steam %s", sArg[0]);
 
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i))
 		{
-			decl String:clientAuth[64];
+			char clientAuth[64];
 			GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 			if (strcmp(clientAuth, sArg[0], false) == 0)
 			{
@@ -519,12 +520,12 @@ public Action:FWUnmute(args)
 }
 
 
-public Action:CommandCallback(client, const String:command[], args)
+public Action CommandCallback(int client, const char[] command, int args)
 {
 	if (client && !CheckCommandAccess(client, command, ADMFLAG_CHAT))
 		return Plugin_Continue;
 
-	new type;
+	int type;
 	if (StrEqual(command, "sm_gag", false))
 		type = TYPE_GAG;
 	else if (StrEqual(command, "sm_mute", false))
@@ -548,7 +549,7 @@ public Action:CommandCallback(client, const String:command[], args)
 		return Plugin_Stop;
 	}
 
-	decl String:sBuffer[256];
+	char sBuffer[256];
 	GetCmdArgString(sBuffer, sizeof(sBuffer));
 
 	if (type <= TYPE_SILENCE)
@@ -562,151 +563,175 @@ public Action:CommandCallback(client, const String:command[], args)
 
 // MENU CODE //
 
-public OnAdminMenuReady(Handle:topmenu)
+public void OnAdminMenuReady(Handle hTemp)
 {
+	TopMenu topmenu = view_as<TopMenu>(hTemp);
+	
 	/* Block us from being called twice */
 	if (topmenu == hTopMenu)
 		return;
 
 	/* Save the Handle */
 	hTopMenu = topmenu;
-
-	new TopMenuObject:MenuObject = AddToTopMenu(hTopMenu, "sourcecomm_cmds", TopMenuObject_Category, Handle_Commands, INVALID_TOPMENUOBJECT);
+	
+	TopMenuObject MenuObject = hTopMenu.AddCategory("sourcecomm_cmds", Handle_Commands);
+	
 	if (MenuObject == INVALID_TOPMENUOBJECT)
 		return;
 
-	AddToTopMenu(hTopMenu, "sourcecomm_gag", TopMenuObject_Item, Handle_MenuGag, MenuObject, "sm_gag", ADMFLAG_CHAT);
-	AddToTopMenu(hTopMenu, "sourcecomm_ungag", TopMenuObject_Item, Handle_MenuUnGag, MenuObject, "sm_ungag", ADMFLAG_CHAT);
-	AddToTopMenu(hTopMenu, "sourcecomm_mute", TopMenuObject_Item, Handle_MenuMute, MenuObject, "sm_mute", ADMFLAG_CHAT);
-	AddToTopMenu(hTopMenu, "sourcecomm_unmute", TopMenuObject_Item, Handle_MenuUnMute, MenuObject, "sm_unmute", ADMFLAG_CHAT);
-	AddToTopMenu(hTopMenu, "sourcecomm_silence", TopMenuObject_Item, Handle_MenuSilence, MenuObject, "sm_silence", ADMFLAG_CHAT);
-	AddToTopMenu(hTopMenu, "sourcecomm_unsilence", TopMenuObject_Item, Handle_MenuUnSilence, MenuObject, "sm_unsilence", ADMFLAG_CHAT);
-	AddToTopMenu(hTopMenu, "sourcecomm_list", TopMenuObject_Item, Handle_MenuList, MenuObject, "sm_commlist", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_gag", Handle_MenuGag, MenuObject, "sm_gag", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_ungag", Handle_MenuUnGag, MenuObject, "sm_ungag", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_mute", Handle_MenuMute, MenuObject, "sm_mute", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_unmute", Handle_MenuUnMute, MenuObject, "sm_unmute", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_silence", Handle_MenuSilence, MenuObject, "sm_silence", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_unsilence", Handle_MenuUnSilence, MenuObject, "sm_unsilence", ADMFLAG_CHAT);
+	hTopMenu.AddItem("sourcecomm_list", Handle_MenuList, MenuObject, "sm_commlist", ADMFLAG_CHAT);
 }
 
-public Handle_Commands(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
+public int Handle_Commands(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
 {
 	switch (action)
 	{
 		case TopMenuAction_DisplayOption:
-		Format(buffer, maxlength, "%T", "AdminMenu_Main", param1);
+			Format(buffer, maxlength, "%T", "AdminMenu_Main", param1);
 		case TopMenuAction_DisplayTitle:
-		Format(buffer, maxlength, "%T", "AdminMenu_Select_Main", param1);
+			Format(buffer, maxlength, "%T", "AdminMenu_Select_Main", param1);
 	}
 }
 
-public Handle_MenuGag(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
+public int Handle_MenuGag(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
 {
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_Gag", param1);
-	else if (action == TopMenuAction_SelectOption)
-		AdminMenu_Target(param1, TYPE_GAG);
-}
-
-public Handle_MenuUnGag(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
-{
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_UnGag", param1);
-	else if (action == TopMenuAction_SelectOption)
-		AdminMenu_Target(param1, TYPE_UNGAG);
-}
-
-public Handle_MenuMute(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
-{
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_Mute", param1);
-	else if (action == TopMenuAction_SelectOption)
-		AdminMenu_Target(param1, TYPE_MUTE);
-}
-
-public Handle_MenuUnMute(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
-{
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_UnMute", param1);
-	else if (action == TopMenuAction_SelectOption)
-		AdminMenu_Target(param1, TYPE_UNMUTE);
-}
-
-public Handle_MenuSilence(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
-{
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_Silence", param1);
-	else if (action == TopMenuAction_SelectOption)
-		AdminMenu_Target(param1, TYPE_SILENCE);
-}
-
-public Handle_MenuUnSilence(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
-{
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_UnSilence", param1);
-	else if (action == TopMenuAction_SelectOption)
-		AdminMenu_Target(param1, TYPE_UNSILENCE);
-}
-
-public Handle_MenuList(Handle:menu, TopMenuAction:action, TopMenuObject:object_id, param1, String:buffer[], maxlength)
-{
-	if (action == TopMenuAction_DisplayOption)
-		Format(buffer, maxlength, "%T", "AdminMenu_List", param1);
-	else if (action == TopMenuAction_SelectOption)
+	switch (action)
 	{
-		g_iPeskyPanels[param1][viewingList] = false;
-		AdminMenu_List(param1, 0);
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_Gag", param1);
+		case TopMenuAction_SelectOption:
+			AdminMenu_Target(param1, TYPE_GAG);
 	}
 }
 
-AdminMenu_Target(client, type)
+public int Handle_MenuUnGag(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
 {
-	decl String:Title[192], String:Option[32];
+	switch (action)
+	{
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_UnGag", param1);
+		case TopMenuAction_SelectOption:
+			AdminMenu_Target(param1, TYPE_UNGAG);
+	}
+}
+
+public int Handle_MenuMute(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
+{
+	switch (action)
+	{
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_Mute", param1);
+		case TopMenuAction_SelectOption:
+			AdminMenu_Target(param1, TYPE_MUTE);
+	}
+}
+
+public int Handle_MenuUnMute(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
+{
+	switch (action)
+	{
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_UnMute", param1);
+		case TopMenuAction_SelectOption:
+			AdminMenu_Target(param1, TYPE_UNMUTE);
+	}
+}
+
+public int Handle_MenuSilence(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
+{
+	switch (action)
+	{
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_Silence", param1);
+		case TopMenuAction_SelectOption:
+			AdminMenu_Target(param1, TYPE_SILENCE);
+	}
+}
+
+public int Handle_MenuUnSilence(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
+{
+	switch (action)
+	{
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_UnSilence", param1);
+		case TopMenuAction_SelectOption:
+			AdminMenu_Target(param1, TYPE_UNSILENCE);
+	}
+}
+
+public int Handle_MenuList(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
+{
+	switch (action)
+	{
+		case TopMenuAction_DisplayOption:
+			Format(buffer, maxlength, "%T", "AdminMenu_List", param1);
+		case TopMenuAction_SelectOption:
+		{
+			g_iPeskyPanels[param1][viewingList] = false;
+			AdminMenu_List(param1, 0);
+		}
+	}
+}
+
+void AdminMenu_Target(int client, int type)
+{
+	char Title[192], Option[32];
 	switch (type)
 	{
 		case TYPE_GAG:
-		Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Gag", client);
+			Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Gag", client);
 		case TYPE_MUTE:
-		Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Mute", client);
+			Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Mute", client);
 		case TYPE_SILENCE:
-		Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Silence", client);
+			Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Silence", client);
 		case TYPE_UNGAG:
-		Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Ungag", client);
+			Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Ungag", client);
 		case TYPE_UNMUTE:
-		Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Unmute", client);
+			Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Unmute", client);
 		case TYPE_UNSILENCE:
-		Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Unsilence", client);
+			Format(Title, sizeof(Title), "%T", "AdminMenu_Select_Unsilence", client);
 	}
 
-	new Handle:hMenu = CreateMenu(MenuHandler_MenuTarget); // Common menu - players list. Almost full for blocking, and almost empty for unblocking
-	SetMenuTitle(hMenu, Title);
-	SetMenuExitBackButton(hMenu, true);
+	Menu hMenu = new Menu(MenuHandler_MenuTarget); // Common menu - players list. Almost full for blocking, and almost empty for unblocking
+	hMenu.SetTitle(Title);
+	hMenu.ExitBackButton = true;
 
-	new iClients;
+	int iClients;
 	if (type <= 3) // Mute, gag, silence
 	{
-		for (new i = 1; i <= MaxClients; i++)
+		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientInGame(i) && !IsFakeClient(i))
 			{
 				switch (type)
 				{
 					case TYPE_MUTE:
-					if (g_MuteType[i] > bNot)
-						continue;
+						if (g_MuteType[i] > bNot)
+							continue;
 					case TYPE_GAG:
-					if (g_GagType[i] > bNot)
-						continue;
+						if (g_GagType[i] > bNot)
+							continue;
 					case TYPE_SILENCE:
-					if (g_MuteType[i] > bNot || g_GagType[i] > bNot)
-						continue;
+						if (g_MuteType[i] > bNot || g_GagType[i] > bNot)
+							continue;
 				}
 				iClients++;
 				strcopy(Title, sizeof(Title), g_sName[i]);
 				AdminMenu_GetPunishPhrase(client, i, Title, sizeof(Title));
 				Format(Option, sizeof(Option), "%d %d", GetClientUserId(i), type);
-				AddMenuItem(hMenu, Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
+				hMenu.AddItem(Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
 			}
 		}
 	}
 	else // UnMute, ungag, unsilence
 	{
-		for (new i = 1; i <= MaxClients; i++)
+		for (int i = 1; i <= MaxClients; i++)
 		{
 			if (IsClientInGame(i) && !IsFakeClient(i))
 			{
@@ -719,7 +744,7 @@ AdminMenu_Target(client, type)
 							iClients++;
 							strcopy(Title, sizeof(Title), g_sName[i]);
 							Format(Option, sizeof(Option), "%d %d", GetClientUserId(i), type);
-							AddMenuItem(hMenu, Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
+							hMenu.AddItem(Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
 						}
 					}
 					case TYPE_UNGAG:
@@ -729,7 +754,7 @@ AdminMenu_Target(client, type)
 							iClients++;
 							strcopy(Title, sizeof(Title), g_sName[i]);
 							Format(Option, sizeof(Option), "%d %d", GetClientUserId(i), type);
-							AddMenuItem(hMenu, Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
+							hMenu.AddItem(Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
 						}
 					}
 					case TYPE_UNSILENCE:
@@ -739,7 +764,7 @@ AdminMenu_Target(client, type)
 							iClients++;
 							strcopy(Title, sizeof(Title), g_sName[i]);
 							Format(Option, sizeof(Option), "%d %d", GetClientUserId(i), type);
-							AddMenuItem(hMenu, Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
+							hMenu.AddItem(Option, Title, (CanUserTarget(client, i) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED));
 						}
 					}
 				}
@@ -751,41 +776,41 @@ AdminMenu_Target(client, type)
 		switch (type)
 		{
 			case TYPE_UNMUTE:
-			Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Mute_Empty", client);
+				Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Mute_Empty", client);
 			case TYPE_UNGAG:
-			Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Gag_Empty", client);
+				Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Gag_Empty", client);
 			case TYPE_UNSILENCE:
-			Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Silence_Empty", client);
+				Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Silence_Empty", client);
 			default:
-			Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Empty", client);
+				Format(Title, sizeof(Title), "%T", "AdminMenu_Option_Empty", client);
 		}
 		AddMenuItem(hMenu, "0", Title, ITEMDRAW_DISABLED);
 	}
 
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	hMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-public MenuHandler_MenuTarget(Handle:menu, MenuAction:action, param1, param2)
+public int MenuHandler_MenuTarget(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
-		CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
-				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+			if (param2 == MenuCancel_ExitBack && hTopMenu != null)
+				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
 		{
-			decl String:Option[32], String:Temp[2][8];
-			GetMenuItem(menu, param2, Option, sizeof(Option));
+			char Option[32], Temp[2][8];
+			menu.GetItem(param2, Option, sizeof(Option));
 			ExplodeString(Option, " ", Temp, 2, 8);
-			new target = GetClientOfUserId(StringToInt(Temp[0]));
+			int target = GetClientOfUserId(StringToInt(Temp[0]));
 
 			if (Bool_ValidMenuTarget(param1, target))
 			{
-				new type = StringToInt(Temp[1]);
+				int type = StringToInt(Temp[1]);
 				if (type <= TYPE_SILENCE)
 					AdminMenu_Duration(param1, target, type);
 				else
@@ -795,49 +820,49 @@ public MenuHandler_MenuTarget(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-AdminMenu_Duration(client, target, type)
+void AdminMenu_Duration(int client, int target, int type)
 {
-	new Handle:hMenu = CreateMenu(MenuHandler_MenuDuration);
-	decl String:sBuffer[192], String:sTemp[64];
+	Menu hMenu = new Menu(MenuHandler_MenuDuration);
+	char sBuffer[192], sTemp[64];
 	Format(sBuffer, sizeof(sBuffer), "%T", "AdminMenu_Title_Durations", client);
-	SetMenuTitle(hMenu, sBuffer);
-	SetMenuExitBackButton(hMenu, true);
+	hMenu.SetTitle(sBuffer);
+	hMenu.ExitBackButton = true;
 
-	for (new i = 0; i <= iNumTimes; i++)
+	for (int i = 0; i <= iNumTimes; i++)
 	{
 		if (IsAllowedBlockLength(client, g_iTimeMinutes[i]))
 		{
 			Format(sTemp, sizeof(sTemp), "%d %d %d", GetClientUserId(target), type, i); // TargetID TYPE_BLOCK index_of_Time
-			AddMenuItem(hMenu, sTemp, g_sTimeDisplays[i]);
+			hMenu.AddItem(sTemp, g_sTimeDisplays[i]);
 		}
 	}
 
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	hMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-public MenuHandler_MenuDuration(Handle:menu, MenuAction:action, param1, param2)
+public int MenuHandler_MenuDuration(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
-		CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
-				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
 		{
-			decl String:sOption[32], String:sTemp[3][8];
-			GetMenuItem(menu, param2, sOption, sizeof(sOption));
+			char sOption[32], sTemp[3][8];
+			menu.GetItem(param2, sOption, sizeof(sOption));
 			ExplodeString(sOption, " ", sTemp, 3, 8);
 			// TargetID TYPE_BLOCK index_of_Time
-			new target = GetClientOfUserId(StringToInt(sTemp[0]));
+			int target = GetClientOfUserId(StringToInt(sTemp[0]));
 
 			if (Bool_ValidMenuTarget(param1, target))
 			{
-				new type = StringToInt(sTemp[1]);
-				new lengthIndex = StringToInt(sTemp[2]);
+				int type = StringToInt(sTemp[1]);
+				int lengthIndex = StringToInt(sTemp[2]);
 
 				if (iNumReasons) // we have reasons to show
 					AdminMenu_Reason(param1, target, type, lengthIndex);
@@ -848,48 +873,48 @@ public MenuHandler_MenuDuration(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-AdminMenu_Reason(client, target, type, lengthIndex)
+void AdminMenu_Reason(int client, int target, int type, int lengthIndex)
 {
-	new Handle:hMenu = CreateMenu(MenuHandler_MenuReason);
-	decl String:sBuffer[192], String:sTemp[64];
+	Menu hMenu = new Menu(MenuHandler_MenuReason);
+	char sBuffer[192], sTemp[64];
 	Format(sBuffer, sizeof(sBuffer), "%T", "AdminMenu_Title_Reasons", client);
-	SetMenuTitle(hMenu, sBuffer);
-	SetMenuExitBackButton(hMenu, true);
+	hMenu.SetTitle(sBuffer);
+	hMenu.ExitBackButton = true;
 
-	for (new i = 0; i <= iNumReasons; i++)
+	for (int i = 0; i <= iNumReasons; i++)
 	{
 		Format(sTemp, sizeof(sTemp), "%d %d %d %d", GetClientUserId(target), type, i, lengthIndex); // TargetID TYPE_BLOCK ReasonIndex LenghtIndex
-		AddMenuItem(hMenu, sTemp, g_sReasonDisplays[i]);
+		hMenu.AddItem(sTemp, g_sReasonDisplays[i]);
 	}
 
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	hMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-public MenuHandler_MenuReason(Handle:menu, MenuAction:action, param1, param2)
+public int MenuHandler_MenuReason(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
-		CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
-				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
 		{
-			decl String:sOption[64], String:sTemp[4][8];
-			GetMenuItem(menu, param2, sOption, sizeof(sOption));
+			char sOption[64], sTemp[4][8];
+			menu.GetItem(param2, sOption, sizeof(sOption));
 			ExplodeString(sOption, " ", sTemp, 4, 8);
 			// TargetID TYPE_BLOCK ReasonIndex LenghtIndex
-			new target = GetClientOfUserId(StringToInt(sTemp[0]));
+			int target = GetClientOfUserId(StringToInt(sTemp[0]));
 
 			if (Bool_ValidMenuTarget(param1, target))
 			{
-				new type = StringToInt(sTemp[1]);
-				new reasonIndex = StringToInt(sTemp[2]);
-				new lengthIndex = StringToInt(sTemp[3]);
-				new length;
+				int type = StringToInt(sTemp[1]);
+				int reasonIndex = StringToInt(sTemp[2]);
+				int lengthIndex = StringToInt(sTemp[3]);
+				int length;
 				if (lengthIndex >= 0 && lengthIndex <= iNumTimes)
 					length = g_iTimeMinutes[lengthIndex];
 				else
@@ -904,16 +929,19 @@ public MenuHandler_MenuReason(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-AdminMenu_List(client, index)
+void AdminMenu_List(int client, int index)
 {
-	decl String:sTitle[192], String:sOption[32];
+	char sTitle[192], sOption[32];
 	Format(sTitle, sizeof(sTitle), "%T", "AdminMenu_Select_List", client);
-	new iClients, Handle:hMenu = CreateMenu(MenuHandler_MenuList);
-	SetMenuTitle(hMenu, sTitle);
+	int iClients;
+	
+	Menu hMenu = new Menu(MenuHandler_MenuList);
+	hMenu.SetTitle(sTitle);
+	
 	if (!g_iPeskyPanels[client][viewingList])
-		SetMenuExitBackButton(hMenu, true);
+		hMenu.ExitBackButton = true;
 
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i) && (g_MuteType[i] > bNot || g_GagType[i] > bNot))
 		{
@@ -921,36 +949,35 @@ AdminMenu_List(client, index)
 			strcopy(sTitle, sizeof(sTitle), g_sName[i]);
 			AdminMenu_GetPunishPhrase(client, i, sTitle, sizeof(sTitle));
 			Format(sOption, sizeof(sOption), "%d", GetClientUserId(i));
-			AddMenuItem(hMenu, sOption, sTitle);
+			hMenu.AddItem(sOption, sTitle);
 		}
 	}
 
 	if (!iClients)
 	{
 		Format(sTitle, sizeof(sTitle), "%T", "ListMenu_Option_Empty", client);
-		AddMenuItem(hMenu, "0", sTitle, ITEMDRAW_DISABLED);
+		hMenu.AddItem("0", sTitle, ITEMDRAW_DISABLED);
 	}
 
-	DisplayMenuAtItem(hMenu, client, index, MENU_TIME_FOREVER);
+	hMenu.DisplayAt(client, index, MENU_TIME_FOREVER);
 }
 
-public MenuHandler_MenuList(Handle:menu, MenuAction:action, param1, param2)
+public int MenuHandler_MenuList(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
-		CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
-			if (!g_iPeskyPanels[param1][viewingList])
-				if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
-				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+			if (!g_iPeskyPanels[param1][viewingList] && param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
 		{
-			decl String:sOption[32];
-			GetMenuItem(menu, param2, sOption, sizeof(sOption));
-			new target = GetClientOfUserId(StringToInt(sOption));
+			char sOption[32];
+			menu.GetItem(param2, sOption, sizeof(sOption));
+			int target = GetClientOfUserId(StringToInt(sOption));
 
 			if (Bool_ValidMenuTarget(param1, target))
 				AdminMenu_ListTarget(param1, target, GetMenuSelectionPosition());
@@ -960,40 +987,47 @@ public MenuHandler_MenuList(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-AdminMenu_ListTarget(client, target, index, viewMute = 0, viewGag = 0)
+void AdminMenu_ListTarget(int client, int target, int index, int viewMute = 0, int viewGag = 0)
 {
-	new userid = GetClientUserId(target), Handle:hMenu = CreateMenu(MenuHandler_MenuListTarget);
-	decl String:sBuffer[192], String:sOption[32];
-	SetMenuTitle(hMenu, g_sName[target]);
-	SetMenuPagination(hMenu, MENU_NO_PAGINATION);
-	SetMenuExitButton(hMenu, true);
-	SetMenuExitBackButton(hMenu, false);
+	int userid = GetClientUserId(target);
+	Menu hMenu = CreateMenu(MenuHandler_MenuListTarget);
+	
+	char sBuffer[192], sOption[32];
+	
+	hMenu.SetTitle(g_sName[target]);
+	hMenu.Pagination = MENU_NO_PAGINATION;
+	hMenu.ExitButton = true;
+	hMenu.ExitBackButton = false;
 
 	if (g_MuteType[target] > bNot)
 	{
 		Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Mute", client);
 		Format(sOption, sizeof(sOption), "0 %d %d %b %b", userid, index, viewMute, viewGag);
-		AddMenuItem(hMenu, sOption, sBuffer);
+		hMenu.AddItem(sOption, sBuffer);
 
 		if (viewMute)
 		{
 			Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Admin", client, g_sMuteAdminName[target]);
-			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
-			decl String:sMuteTemp[192], String:_sMuteTime[192];
+			char sMuteTemp[192], _sMuteTime[192];
 			Format(sMuteTemp, sizeof(sMuteTemp), "%T", "ListMenu_Option_Duration", client);
 			switch (g_MuteType[target])
 			{
-				case bPerm:Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Duration_Perm", client);
-				case bTime:Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Duration_Time", client, g_iMuteLength[target]);
-				case bSess:Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Duration_Temp", client);
-				default:Format(sBuffer, sizeof(sBuffer), "error");
+				case bPerm:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Duration_Perm", client);
+				case bTime:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Duration_Time", client, g_iMuteLength[target]);
+				case bSess:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Duration_Temp", client);
+				default:
+					Format(sBuffer, sizeof(sBuffer), "error");
 			}
-			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
 			FormatTime(_sMuteTime, sizeof(_sMuteTime), NULL_STRING, g_iMuteTime[target]);
 			Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Issue", client, _sMuteTime);
-			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
 			Format(sMuteTemp, sizeof(sMuteTemp), "%T", "ListMenu_Option_Expire", client);
 			switch (g_MuteType[target])
@@ -1003,22 +1037,26 @@ AdminMenu_ListTarget(client, target, index, viewMute = 0, viewGag = 0)
 					FormatTime(_sMuteTime, sizeof(_sMuteTime), NULL_STRING, (g_iMuteTime[target] + g_iMuteLength[target] * 60));
 					Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Expire_Time", client, _sMuteTime);
 				}
-				case bPerm:Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Expire_Perm", client);
-				case bSess:Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Expire_Temp_Reconnect", client);
-				default:Format(sBuffer, sizeof(sBuffer), "error");
+				case bPerm:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Expire_Perm", client);
+				case bSess:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sMuteTemp, "ListMenu_Option_Expire_Temp_Reconnect", client);
+				default:
+					Format(sBuffer, sizeof(sBuffer), "error");
 			}
-			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+			
+			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
 			if (strlen(g_sMuteReason[target]) > 0)
 			{
 				Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Reason", client);
 				Format(sOption, sizeof(sOption), "1 %d %d %b %b", userid, index, viewMute, viewGag);
-				AddMenuItem(hMenu, sOption, sBuffer);
+				hMenu.AddItem(sOption, sBuffer);
 			}
 			else
 			{
 				Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Reason_None", client);
-				AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+				hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 			}
 		}
 	}
@@ -1027,22 +1065,26 @@ AdminMenu_ListTarget(client, target, index, viewMute = 0, viewGag = 0)
 	{
 		Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Gag", client);
 		Format(sOption, sizeof(sOption), "2 %d %d %b %b", userid, index, viewMute, viewGag);
-		AddMenuItem(hMenu, sOption, sBuffer);
+		hMenu.AddItem(sOption, sBuffer);
 
 		if (viewGag)
 		{
 			Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Admin", client, g_sGagAdminName[target]);
-			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
-			decl String:sGagTemp[192], String:_sGagTime[192];
+			char sGagTemp[192], _sGagTime[192];
 			Format(sGagTemp, sizeof(sGagTemp), "%T", "ListMenu_Option_Duration", client);
 
 			switch (g_GagType[target])
 			{
-				case bPerm:Format(sBuffer, sizeof(sBuffer), "%s%T", sGagTemp, "ListMenu_Option_Duration_Perm", client);
-				case bTime:Format(sBuffer, sizeof(sBuffer), "%s%T", sGagTemp, "ListMenu_Option_Duration_Time", client, g_iGagLength[target]);
-				case bSess:Format(sBuffer, sizeof(sBuffer), "%s%T", sGagTemp, "ListMenu_Option_Duration_Temp", client);
-				default:Format(sBuffer, sizeof(sBuffer), "error");
+				case bPerm:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sGagTemp, "ListMenu_Option_Duration_Perm", client);
+				case bTime:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sGagTemp, "ListMenu_Option_Duration_Time", client, g_iGagLength[target]);
+				case bSess:
+					Format(sBuffer, sizeof(sBuffer), "%s%T", sGagTemp, "ListMenu_Option_Duration_Temp", client);
+				default:
+					Format(sBuffer, sizeof(sBuffer), "error");
 			}
 
 			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
@@ -1065,18 +1107,18 @@ AdminMenu_ListTarget(client, target, index, viewMute = 0, viewGag = 0)
 				default:Format(sBuffer, sizeof(sBuffer), "error");
 			}
 
-			AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
 			if (strlen(g_sGagReason[target]) > 0)
 			{
 				Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Reason", client);
 				Format(sOption, sizeof(sOption), "3 %d %d %b %b", userid, index, viewMute, viewGag);
-				AddMenuItem(hMenu, sOption, sBuffer);
+				hMenu.AddItem(sOption, sBuffer);
 			}
 			else
 			{
 				Format(sBuffer, sizeof(sBuffer), "%T", "ListMenu_Option_Reason_None", client);
-				AddMenuItem(hMenu, "", sBuffer, ITEMDRAW_DISABLED);
+				hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 			}
 		}
 	}
@@ -1085,15 +1127,15 @@ AdminMenu_ListTarget(client, target, index, viewMute = 0, viewGag = 0)
 	g_iPeskyPanels[client][curTarget] = target;
 	g_iPeskyPanels[client][viewingGag] = viewGag;
 	g_iPeskyPanels[client][viewingMute] = viewMute;
-	DisplayMenu(hMenu, client, MENU_TIME_FOREVER);
+	hMenu.Display(client, MENU_TIME_FOREVER);
 }
 
-public MenuHandler_MenuListTarget(Handle:menu, MenuAction:action, param1, param2)
+public int MenuHandler_MenuListTarget(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
 		case MenuAction_End:
-		CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack)
@@ -1101,21 +1143,21 @@ public MenuHandler_MenuListTarget(Handle:menu, MenuAction:action, param1, param2
 		}
 		case MenuAction_Select:
 		{
-			decl String:sOption[64], String:sTemp[5][8];
-			GetMenuItem(menu, param2, sOption, sizeof(sOption));
+			char sOption[64], sTemp[5][8];
+			menu.GetItem(param2, sOption, sizeof(sOption));
 			ExplodeString(sOption, " ", sTemp, 5, 8);
 
-			new target = GetClientOfUserId(StringToInt(sTemp[1]));
+			int target = GetClientOfUserId(StringToInt(sTemp[1]));
 			if (param1 == target || Bool_ValidMenuTarget(param1, target))
 			{
 				switch (StringToInt(sTemp[0]))
 				{
 					case 0:
-					AdminMenu_ListTarget(param1, target, StringToInt(sTemp[2]), !(StringToInt(sTemp[3])), 0);
+						AdminMenu_ListTarget(param1, target, StringToInt(sTemp[2]), !(StringToInt(sTemp[3])), 0);
 					case 1, 3:
-					AdminMenu_ListTargetReason(param1, target, g_iPeskyPanels[param1][viewingMute], g_iPeskyPanels[param1][viewingGag]);
+						AdminMenu_ListTargetReason(param1, target, g_iPeskyPanels[param1][viewingMute], g_iPeskyPanels[param1][viewingGag]);
 					case 2:
-					AdminMenu_ListTarget(param1, target, StringToInt(sTemp[2]), 0, !(StringToInt(sTemp[4])));
+						AdminMenu_ListTarget(param1, target, StringToInt(sTemp[2]), 0, !(StringToInt(sTemp[4])));
 				}
 			}
 			else
@@ -1125,53 +1167,61 @@ public MenuHandler_MenuListTarget(Handle:menu, MenuAction:action, param1, param2
 	}
 }
 
-AdminMenu_ListTargetReason(client, target, showMute, showGag)
+void AdminMenu_ListTargetReason(int client, int target, int showMute, int showGag)
 {
-	decl String:sTemp[192], String:sBuffer[192];
-	new Handle:hPanel = CreatePanel();
-	SetPanelTitle(hPanel, g_sName[target]);
-	DrawPanelItem(hPanel, " ", ITEMDRAW_SPACER | ITEMDRAW_RAWLINE);
+	char sTemp[192], sBuffer[192];
+	Panel hPanel = new Panel();
+	hPanel.SetTitle(g_sName[target]);
+	hPanel.DrawItem(" ", ITEMDRAW_SPACER | ITEMDRAW_RAWLINE);
 
 	if (showMute)
 	{
 		Format(sTemp, sizeof(sTemp), "%T", "ReasonPanel_Punishment_Mute", client);
 		switch (g_MuteType[target])
 		{
-			case bPerm:Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Perm", client);
-			case bTime:Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Time", client, g_iMuteLength[target]);
-			case bSess:Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Temp", client);
-			default:Format(sBuffer, sizeof(sBuffer), "error");
+			case bPerm:
+				Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Perm", client);
+			case bTime:
+				Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Time", client, g_iMuteLength[target]);
+			case bSess:
+				Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Temp", client);
+			default:
+				Format(sBuffer, sizeof(sBuffer), "error");
 		}
-		DrawPanelText(hPanel, sBuffer);
+		hPanel.DrawText(sBuffer);
 
 		Format(sBuffer, sizeof(sBuffer), "%T", "ReasonPanel_Reason", client, g_sMuteReason[target]);
-		DrawPanelText(hPanel, sBuffer);
+		hPanel.DrawText(sBuffer);
 	}
 	else if (showGag)
 	{
 		Format(sTemp, sizeof(sTemp), "%T", "ReasonPanel_Punishment_Gag", client);
 		switch (g_GagType[target])
 		{
-			case bPerm:Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Perm", client);
-			case bTime:Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Time", client, g_iGagLength[target]);
-			case bSess:Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Temp", client);
-			default:Format(sBuffer, sizeof(sBuffer), "error");
+			case bPerm:
+				Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Perm", client);
+			case bTime:
+				Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Time", client, g_iGagLength[target]);
+			case bSess:
+				Format(sBuffer, sizeof(sBuffer), "%s%T", sTemp, "ReasonPanel_Temp", client);
+			default:
+				Format(sBuffer, sizeof(sBuffer), "error");
 		}
-		DrawPanelText(hPanel, sBuffer);
+		hPanel.DrawText(sBuffer);
 
 		Format(sBuffer, sizeof(sBuffer), "%T", "ReasonPanel_Reason", client, g_sGagReason[target]);
-		DrawPanelText(hPanel, sBuffer);
+		hPanel.DrawText(sBuffer);
 	}
 
-	DrawPanelItem(hPanel, " ", ITEMDRAW_SPACER | ITEMDRAW_RAWLINE);
-	SetPanelCurrentKey(hPanel, 10);
+	hPanel.DrawItem(" ", ITEMDRAW_SPACER | ITEMDRAW_RAWLINE);
+	hPanel.CurrentKey = 10;
 	Format(sBuffer, sizeof(sBuffer), "%T", "ReasonPanel_Back", client);
-	DrawPanelItem(hPanel, sBuffer);
-	SendPanelToClient(hPanel, client, PanelHandler_ListTargetReason, MENU_TIME_FOREVER);
-	CloseHandle(hPanel);
+	hPanel.DrawItem(sBuffer);
+	hPanel.Send(client, PanelHandler_ListTargetReason, MENU_TIME_FOREVER);
+	delete hPanel;
 }
 
-public PanelHandler_ListTargetReason(Handle:menu, MenuAction:action, param1, param2)
+public int PanelHandler_ListTargetReason(Menu menu, MenuAction action, int param1, int param2)
 {
 	if (action == MenuAction_Select)
 	{
@@ -1185,7 +1235,7 @@ public PanelHandler_ListTargetReason(Handle:menu, MenuAction:action, param1, par
 
 // SQL CALLBACKS //
 
-public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void GotDatabase(Database db, const char[] error, any data)
 {
 	#if defined DEBUG
 	PrintToServer("GotDatabase(data: %d, lock: %d, g_h: %d, hndl: %d)", data, g_iConnectLock, g_hDatabase, hndl);
@@ -1194,14 +1244,14 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 	// If this happens to be an old connection request, ignore it.
 	if (data != g_iConnectLock || g_hDatabase)
 	{
-		if (hndl)
-			CloseHandle(hndl);
+		if (db)
+			delete db;
 		return;
 	}
 
 	g_iConnectLock = 0;
 	g_DatabaseState = DatabaseState_Connected;
-	g_hDatabase = hndl;
+	g_hDatabase = db;
 
 	// See if the connection is valid. If not, don't un-mark the caches
 	// as needing rebuilding, in case the next connection request works.
@@ -1214,20 +1264,20 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 	// Set character set to UTF-8 in the database
 	if (GetFeatureStatus(FeatureType_Native, "SQL_SetCharset") == FeatureStatus_Available)
 	{
-		SQL_SetCharset(g_hDatabase, "utf8");
+		db.SetCharset("utf8");
 	}
 	else
 	{
-		decl String:query[128];
+		char query[128];
 		FormatEx(query, sizeof(query), "SET NAMES 'UTF8'");
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Set encoding. QUERY: %s", query);
 		#endif
-		SQL_TQuery(g_hDatabase, Query_ErrorCheck, query);
+		db.Query(Query_ErrorCheck, query);
 	}
 
 	// Process queue
-	SQL_TQuery(SQLiteDB, Query_ProcessQueue,
+	SQLiteDB.Query(Query_ProcessQueue,
 		"SELECT	id, steam_id, time, start_time, reason, name, admin_id, admin_ip, type \
 		FROM	queue2");
 
@@ -1235,28 +1285,28 @@ public GotDatabase(Handle:owner, Handle:hndl, const String:error[], any:data)
 	ForcePlayersRecheck();
 }
 
-public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void Query_AddBlockInsert(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	ResetPack(data);
+	dataPack.Reset();
 
-	decl String:reason[256];
+	char reason[256];
 
-	new iAdminUserId = ReadPackCell(data);
-	new iAdmin = 0;
+	int iAdminUserId = dataPack.ReadCell();
+	int iAdmin = 0;
 
 	if(iAdminUserId > 0) {
 		iAdmin = GetClientOfUserId(iAdminUserId);
 	}
 
-	new iTarget = GetClientOfUserId(ReadPackCell(data));
+	int iTarget = GetClientOfUserId(dataPack.ReadCell());
 
 	if (!iTarget) {
 		iTarget = -1;
 	}
 
-	new length = ReadPackCell(data);
-	new type = ReadPackCell(data);
-	ReadPackString(data, reason, sizeof(reason));
+	int length = dataPack.ReadCell();
+	int type = dataPack.ReadCell();
+	dataPack.ReadString(reason, sizeof(reason));
 
 	// Fire forward
 	Call_StartForward(g_hFwd_OnPlayerPunished);
@@ -1267,48 +1317,49 @@ public Query_AddBlockInsert(Handle:owner, Handle:hndl, const String:error[], any
 	Call_PushString(reason);
 	Call_Finish();
 
-	if (DB_Conn_Lost(hndl) || error[0])
+	if (DB_Conn_Lost(results) || error[0])
 	{
 		LogError("Query_AddBlockInsert failed: %s", error);
 
-		decl String:name[MAX_NAME_LENGTH], String:auth[64], String:adminAuth[32], String:adminIp[20];
-		ReadPackString(data, name, sizeof(name));
-		ReadPackString(data, auth, sizeof(auth));
-		ReadPackString(data, adminAuth, sizeof(adminAuth));
-		ReadPackString(data, adminIp, sizeof(adminIp));
+		char name[MAX_NAME_LENGTH], auth[64], adminAuth[32], adminIp[20];
+		dataPack.ReadString(name, sizeof(name));
+		dataPack.ReadString(auth, sizeof(auth));
+		dataPack.ReadString(adminAuth, sizeof(adminAuth));
+		dataPack.ReadString(adminIp, sizeof(adminIp));
 
 		InsertTempBlock(length, type, name, auth, reason, adminAuth, adminIp);
 	}
-	CloseHandle(data);
+	
+	delete dataPack;
 }
 
-public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	decl String:adminAuth[30], String:targetAuth[30];
-	new String:reason[256];
+	char adminAuth[30], targetAuth[30];
+	char reason[256];
 
-	ResetPack(data);
-	new adminUserID = ReadPackCell(data);
-	new targetUserID = ReadPackCell(data);
-	new type = ReadPackCell(data); // not in use unless DEBUG
-	ReadPackString(data, adminAuth, sizeof(adminAuth));
-	ReadPackString(data, targetAuth, sizeof(targetAuth));
-	ReadPackString(data, reason, sizeof(reason));
+	dataPack.Reset();
+	int adminUserID = dataPack.ReadCell();
+	int targetUserID = dataPack.ReadCell();
+	int type = dataPack.ReadCell(); // not in use unless DEBUG
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+	dataPack.ReadString(targetAuth, sizeof(targetAuth));
+	dataPack.ReadString(reason, sizeof(reason));
 
-	new admin = GetClientOfUserId(adminUserID);
-	new target = GetClientOfUserId(targetUserID);
+	int admin = GetClientOfUserId(adminUserID);
+	int target = GetClientOfUserId(targetUserID);
 
 	#if defined DEBUG
 	PrintToServer("Query_UnBlockSelect(adminUID: %d/%d, targetUID: %d/%d, type: %d, adminAuth: %s, targetAuth: %s, reason: %s)",
 		adminUserID, admin, targetUserID, target, type, adminAuth, targetAuth, reason);
 	#endif
 
-	decl String:targetName[MAX_NAME_LENGTH];
+	char targetName[MAX_NAME_LENGTH];
 	strcopy(targetName, MAX_NAME_LENGTH, target && IsClientInGame(target) ? g_sName[target] : targetAuth); //FIXME
 
-	new bool:hasErrors = false;
+	bool hasErrors = false;
 	// If error is not an empty string the query failed
-	if (DB_Conn_Lost(hndl) || error[0] != '\0')
+	if (DB_Conn_Lost(results) || error[0] != '\0')
 	{
 		LogError("Query_UnBlockSelect failed: %s", error);
 		if (admin && IsClientInGame(admin))
@@ -1324,7 +1375,7 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 	}
 
 	// If there was no results then a ban does not exist for that id
-	if (!DB_Conn_Lost(hndl) && !SQL_GetRowCount(hndl))
+	if (!DB_Conn_Lost(results) && !results.RowCount)
 	{
 		if (admin && IsClientInGame(admin))
 		{
@@ -1344,24 +1395,24 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 		PrintToServer("Calling TempUnBlock from Query_UnBlockSelect");
 		#endif
 
-		TempUnBlock(data); // Datapack closed inside.
+		TempUnBlock(dataPack); // Datapack closed inside.
 		return;
 	}
 	else
 	{
-		new bool:b_success = false;
+		bool b_success = false;
 		// Get the values from the founded blocks.
-		while (SQL_MoreRows(hndl))
+		while (results.MoreRows)
 		{
 			// Oh noes! What happened?!
-			if (!SQL_FetchRow(hndl))
+			if (!results.FetchRow())
 				continue;
 
-			new bid = SQL_FetchInt(hndl, 0);
-			new iAID = SQL_FetchInt(hndl, 1);
-			new cAID = SQL_FetchInt(hndl, 2);
-			new cImmunity = SQL_FetchInt(hndl, 3);
-			new cType = SQL_FetchInt(hndl, 4);
+			int bid = results.FetchInt(0);
+			int iAID = results.FetchInt(1);
+			int cAID = results.FetchInt(2);
+			int cImmunity = results.FetchInt(3);
+			int cType = results.FetchInt(4);
 
 			#if defined DEBUG
 			PrintToServer("Fetched from DB: bid %d, iAID: %d, cAID: %d, cImmunity: %d, cType: %d", bid, iAID, cAID, cImmunity, cType);
@@ -1401,16 +1452,16 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 					}
 				}
 
-				new Handle:dataPack = CreateDataPack();
-				WritePackCell(dataPack, adminUserID);
-				WritePackCell(dataPack, cType);
-				WritePackString(dataPack, g_sName[target]);
-				WritePackString(dataPack, targetAuth);
+				DataPack newDataPack = new DataPack();
+				newDataPack.WriteCell(adminUserID);
+				newDataPack.WriteCell(cType);
+				newDataPack.WriteString(g_sName[target]);
+				newDataPack.WriteString(targetAuth);
 
-				decl String:unbanReason[sizeof(reason) * 2 + 1];
-				SQL_EscapeString(g_hDatabase, reason, unbanReason, sizeof(unbanReason));
+				char unbanReason[sizeof(reason) * 2 + 1];
+				db.Escape(reason, unbanReason, sizeof(unbanReason));
 
-				decl String:query[2048];
+				char query[2048];
 				Format(query, sizeof(query),
 					"UPDATE	%s_comms \
 					SET		RemovedBy = %d, \
@@ -1422,7 +1473,7 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 				#if defined LOG_QUERIES
 				LogToFile(logQuery, "Query_UnBlockSelect. QUERY: %s", query);
 				#endif
-				SQL_TQuery(g_hDatabase, Query_UnBlockUpdate, query, dataPack);
+				db.Query(Query_UnBlockUpdate, query, newDataPack);
 			}
 			else
 			{
@@ -1466,44 +1517,39 @@ public Query_UnBlockSelect(Handle:owner, Handle:hndl, const String:error[], any:
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
 
-				#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 8
-					SetPackPosition(data, view_as<DataPackPos>(16));
-				#else
-					SetPackPosition(data, 16);
-				#endif
+				dataPack.Position = view_as<DataPackPos>(16);
 
 				if (g_MuteType[target] > bNot)
 				{
-					WritePackCell(data, TYPE_UNMUTE);
-					TempUnBlock(data);
-					data = INVALID_HANDLE;
+					dataPack.WriteCell(TYPE_UNMUTE);
+					TempUnBlock(dataPack);
 				}
 				else if (g_GagType[target] > bNot)
 				{
-					WritePackCell(data, TYPE_UNGAG);
-					TempUnBlock(data);
-					data = INVALID_HANDLE;
+					dataPack.WriteCell(TYPE_UNGAG);
+					TempUnBlock(dataPack);
 				}
 			}
 		}
 	}
-	if (data != INVALID_HANDLE)
-		CloseHandle(data);
+	
+	if (dataPack != null)
+		delete dataPack;
 }
 
-public Query_UnBlockUpdate(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void Query_UnBlockUpdate(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	new admin, type;
-	decl String:targetName[MAX_NAME_LENGTH], String:targetAuth[30];
+	int admin, type;
+	char targetName[MAX_NAME_LENGTH], targetAuth[30];
 
-	ResetPack(data);
-	admin = GetClientOfUserId(ReadPackCell(data));
-	type = ReadPackCell(data);
-	ReadPackString(data, targetName, sizeof(targetName));
-	ReadPackString(data, targetAuth, sizeof(targetAuth));
-	CloseHandle(data);
+	dataPack.Reset();
+	admin = GetClientOfUserId(dataPack.ReadCell());
+	type = dataPack.ReadCell();
+	dataPack.ReadString(targetName, sizeof(targetName));
+	dataPack.ReadString(targetAuth, sizeof(targetAuth));
+	delete dataPack;
 
-	if (DB_Conn_Lost(hndl) || error[0] != '\0')
+	if (DB_Conn_Lost(results) || error[0] != '\0')
 	{
 		LogError("Query_UnBlockUpdate failed: %s", error);
 		if (admin && IsClientInGame(admin))
@@ -1546,50 +1592,50 @@ public Query_UnBlockUpdate(Handle:owner, Handle:hndl, const String:error[], any:
 }
 
 // ProcessQueueCallback is called as the result of selecting all the rows from the queue table
-public Query_ProcessQueue(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void Query_ProcessQueue(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE || error[0])
+	if (results == null || error[0])
 	{
 		LogError("Query_ProcessQueue failed: %s", error);
 		return;
 	}
 
-	decl String:auth[64];
-	decl String:name[MAX_NAME_LENGTH];
-	new String:reason[256];
-	decl String:adminAuth[64], String:adminIp[20];
-	decl String:query[4096];
+	char auth[64];
+	char name[MAX_NAME_LENGTH];
+	char reason[256];
+	char adminAuth[64], adminIp[20];
+	char query[4096];
 
-	while (SQL_MoreRows(hndl))
+	while (results.MoreRows)
 	{
 		// Oh noes! What happened?!
-		if (!SQL_FetchRow(hndl))
+		if (!results.FetchRow())
 			continue;
 
-		decl String:sAuthEscaped[sizeof(auth) * 2 + 1];
-		decl String:banName[MAX_NAME_LENGTH * 2 + 1];
-		decl String:banReason[sizeof(reason) * 2 + 1];
-		decl String:sAdmAuthEscaped[sizeof(adminAuth) * 2 + 1];
-		decl String:sAdmAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
+		char sAuthEscaped[sizeof(auth) * 2 + 1];
+		char banName[MAX_NAME_LENGTH * 2 + 1];
+		char banReason[sizeof(reason) * 2 + 1];
+		char sAdmAuthEscaped[sizeof(adminAuth) * 2 + 1];
+		char sAdmAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
 
 		// if we get to here then there are rows in the queue pending processing
 		//steam_id TEXT, time INTEGER, start_time INTEGER, reason TEXT, name TEXT, admin_id TEXT, admin_ip TEXT, type INTEGER
-		new id = SQL_FetchInt(hndl, 0);
-		SQL_FetchString(hndl, 1, auth, sizeof(auth));
-		new time = SQL_FetchInt(hndl, 2);
-		new startTime = SQL_FetchInt(hndl, 3);
-		SQL_FetchString(hndl, 4, reason, sizeof(reason));
-		SQL_FetchString(hndl, 5, name, sizeof(name));
-		SQL_FetchString(hndl, 6, adminAuth, sizeof(adminAuth));
-		SQL_FetchString(hndl, 7, adminIp, sizeof(adminIp));
-		new type = SQL_FetchInt(hndl, 8);
+		int id = results.FetchInt(0);
+		results.FetchString(1, auth, sizeof(auth));
+		int time = results.FetchInt(2);
+		int startTime = results.FetchInt(3);
+		results.FetchString(4, reason, sizeof(reason));
+		results.FetchString(5, name, sizeof(name));
+		results.FetchString(6, adminAuth, sizeof(adminAuth));
+		results.FetchString(7, adminIp, sizeof(adminIp));
+		int type = results.FetchInt(8);
 
 		if (DB_Connect()) {
-			SQL_EscapeString(g_hDatabase, auth, sAuthEscaped, sizeof(sAuthEscaped));
-			SQL_EscapeString(g_hDatabase, name, banName, sizeof(banName));
-			SQL_EscapeString(g_hDatabase, reason, banReason, sizeof(banReason));
-			SQL_EscapeString(g_hDatabase, adminAuth, sAdmAuthEscaped, sizeof(sAdmAuthEscaped));
-			SQL_EscapeString(g_hDatabase, adminAuth[8], sAdmAuthYZEscaped, sizeof(sAdmAuthYZEscaped));
+			db.Escape(auth, sAuthEscaped, sizeof(sAuthEscaped));
+			db.Escape(name, banName, sizeof(banName));
+			db.Escape(reason, banReason, sizeof(banReason));
+			db.Escape(adminAuth, sAdmAuthEscaped, sizeof(sAdmAuthEscaped));
+			db.Escape(adminAuth[8], sAdmAuthYZEscaped, sizeof(sAdmAuthYZEscaped));
 		}
 		else
 			continue;
@@ -1604,13 +1650,13 @@ public Query_ProcessQueue(Handle:owner, Handle:hndl, const String:error[], any:d
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Query_ProcessQueue. QUERY: %s", query);
 		#endif
-		SQL_TQuery(g_hDatabase, Query_AddBlockFromQueue, query, id);
+		db.Query(Query_AddBlockFromQueue, query, id);
 	}
 }
 
-public Query_AddBlockFromQueue(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void Query_AddBlockFromQueue(Database db, DBResultSet results, const char[] error, any data)
 {
-	decl String:query[512];
+	char query[512];
 	if (error[0] == '\0')
 	{
 		// The insert was successful so delete the record from the queue
@@ -1621,20 +1667,20 @@ public Query_AddBlockFromQueue(Handle:owner, Handle:hndl, const String:error[], 
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Query_AddBlockFromQueue. QUERY: %s", query);
 		#endif
-		SQL_TQuery(SQLiteDB, Query_ErrorCheck, query);
+		SQLiteDB.Query(Query_ErrorCheck, query);
 	}
 }
 
-public Query_ErrorCheck(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void Query_ErrorCheck(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (DB_Conn_Lost(hndl) || error[0])
+	if (DB_Conn_Lost(results) || error[0])
 		LogError("%T (%s)", "Failed to query database", LANG_SERVER, error);
 }
 
-public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:userid)
+public void Query_VerifyBlock(Database db, DBResultSet results, const char[] error, any userid)
 {
-	decl String:clientAuth[64];
-	new client = GetClientOfUserId(userid);
+	char clientAuth[64];
+	int client = GetClientOfUserId(userid);
 
 	#if defined DEBUG
 	PrintToServer("Query_VerifyBlock(userid: %d, client: %d)", userid, client);
@@ -1644,7 +1690,7 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 		return;
 
 	/* Failure happen. Do retry with delay */
-	if (DB_Conn_Lost(hndl))
+	if (DB_Conn_Lost(results))
 	{
 		LogError("Query_VerifyBlock failed: %s", error);
 		if (g_hPlayerRecheck[client] == INVALID_HANDLE)
@@ -1658,24 +1704,24 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 	//IF (a.immunity>=g.immunity, a.immunity, IFNULL(g.immunity,0)) as immunity, c.aid, c.sid, c.authid
 	//FROM %s_comms c LEFT JOIN %s_admins a ON a.aid=c.aid LEFT JOIN %s_srvgroups g ON g.name = a.srv_group
 	//WHERE c.authid REGEXP '^STEAM_[0-9]:%s$' AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
-	if (SQL_GetRowCount(hndl) > 0)
+	if (results.RowCount > 0)
 	{
-		while (SQL_FetchRow(hndl))
+		while (results.FetchRow())
 		{
-			if (NotApplyToThisServer(SQL_FetchInt(hndl, 8)))
+			if (NotApplyToThisServer(results.FetchInt(8)))
 				continue;
 
-			decl String:sAdmName[MAX_NAME_LENGTH], String:sAdmAuth[64];
-			new String:sReason[256];
-			new remaining_time = SQL_FetchInt(hndl, 0);
-			new length = SQL_FetchInt(hndl, 1);
-			new type = SQL_FetchInt(hndl, 2);
-			new time = SQL_FetchInt(hndl, 3);
-			SQL_FetchString(hndl, 4, sReason, sizeof(sReason));
-			SQL_FetchString(hndl, 5, sAdmName, sizeof(sAdmName));
-			new immunity = SQL_FetchInt(hndl, 6);
-			new aid = SQL_FetchInt(hndl, 7);
-			SQL_FetchString(hndl, 9, sAdmAuth, sizeof(sAdmAuth));
+			char sAdmName[MAX_NAME_LENGTH], sAdmAuth[64];
+			char sReason[256];
+			int remaining_time = results.FetchInt(0);
+			int length = results.FetchInt(1);
+			int type = results.FetchInt(2);
+			int time = results.FetchInt(3);
+			results.FetchString(4, sReason, sizeof(sReason));
+			results.FetchString(5, sAdmName, sizeof(sAdmName));
+			int immunity = results.FetchInt(6);
+			int aid = results.FetchInt(7);
+			results.FetchString(9, sAdmAuth, sizeof(sAdmAuth));
 
 			// Block from CONSOLE (aid=0) and we have `console immunity` value in config
 			if (!aid && ConsoleImmunity > immunity)
@@ -1739,33 +1785,33 @@ public Query_VerifyBlock(Handle:owner, Handle:hndl, const String:error[], any:us
 
 // TIMER CALL BACKS //
 
-public Action:ClientRecheck(Handle:timer, any:userid)
+public Action ClientRecheck(Handle timer, any userid)
 {
 	#if defined DEBUG
 	PrintToServer("ClientRecheck(userid: %d)", userid);
 	#endif
 
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if (!client)
 		return;
 
 	if (IsClientConnected(client))
 		OnClientPostAdminCheck(client);
 
-	g_hPlayerRecheck[client] = INVALID_HANDLE;
+	g_hPlayerRecheck[client] = null;
 }
 
-public Action:Timer_MuteExpire(Handle:timer, Handle:hPack)
+public Action Timer_MuteExpire(Handle timer, DataPack dataPack)
 {
-	ResetPack(hPack);
-	g_hMuteExpireTimer[ReadPackCell(hPack)] = INVALID_HANDLE;
+	dataPack.Reset();
+	g_hMuteExpireTimer[dataPack.ReadCell()] = INVALID_HANDLE;
 
-	new client = GetClientOfUserId(ReadPackCell(hPack));
+	int client = GetClientOfUserId(dataPack.ReadCell());
 	if (!client)
 		return;
 
 	#if defined DEBUG
-	decl String:clientAuth[64];
+	char clientAuth[64];
 	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	PrintToServer("Mute expired for %s", clientAuth);
 	#endif
@@ -1777,17 +1823,17 @@ public Action:Timer_MuteExpire(Handle:timer, Handle:hPack)
 		BaseComm_SetClientMute(client, false);
 }
 
-public Action:Timer_GagExpire(Handle:timer, Handle:hPack)
+public Action Timer_GagExpire(Handle timer, DataPack dataPack)
 {
-	ResetPack(hPack);
-	g_hGagExpireTimer[ReadPackCell(hPack)] = INVALID_HANDLE;
+	dataPack.Reset();
+	g_hGagExpireTimer[dataPack.ReadCell()] = null;
 
-	new client = GetClientOfUserId(ReadPackCell(hPack));
+	int client = GetClientOfUserId(dataPack.ReadCell());
 	if (!client)
 		return;
 
 	#if defined DEBUG
-	decl String:clientAuth[64];
+	char clientAuth[64];
 	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	PrintToServer("Gag expired for %s", clientAuth);
 	#endif
@@ -1799,7 +1845,7 @@ public Action:Timer_GagExpire(Handle:timer, Handle:hPack)
 		BaseComm_SetClientGag(client, false);
 }
 
-public Action:Timer_StopWait(Handle:timer, any:data)
+public Action Timer_StopWait(Handle timer, any data)
 {
 	g_DatabaseState = DatabaseState_None;
 	DB_Connect();
@@ -1807,29 +1853,31 @@ public Action:Timer_StopWait(Handle:timer, any:data)
 
 // PARSER //
 
-static InitializeConfigParser()
+static void InitializeConfigParser()
 {
 	if (ConfigParser == INVALID_HANDLE)
 	{
-		ConfigParser = SMC_CreateParser();
-		SMC_SetReaders(ConfigParser, ReadConfig_NewSection, ReadConfig_KeyValue, ReadConfig_EndSection);
+		ConfigParser = new SMCParser();
+		ConfigParser.OnEnterSection = ReadConfig_NewSection;
+		ConfigParser.OnKeyValue = ReadConfig_KeyValue;
+		ConfigParser.OnLeaveSection = ReadConfig_EndSection;
 	}
 }
 
-static InternalReadConfig(const String:path[])
+static void InternalReadConfig(const char[] path)
 {
 	ConfigState = ConfigStateNone;
 
-	new SMCError:err = SMC_ParseFile(ConfigParser, path);
+	SMCError err = ConfigParser.ParseFile(path);
 
 	if (err != SMCError_Okay)
 	{
-		decl String:buffer[64];
+		char buffer[64];
 		PrintToServer("%s", SMC_GetErrorString(err, buffer, sizeof(buffer)) ? buffer : "Fatal parse error");
 	}
 }
 
-public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt_quotes)
+public SMCResult ReadConfig_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
 {
 	if (name[0])
 	{
@@ -1850,10 +1898,11 @@ public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt
 			ConfigState = ConfigStateServers;
 		}
 	}
+	
 	return SMCParse_Continue;
 }
 
-public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const String:value[], bool:key_quotes, bool:value_quotes)
+public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
 {
 	if (!key[0])
 		return SMCParse_Continue;
@@ -1953,10 +2002,10 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 		{
 			if (strcmp("id", key, false) == 0)
 			{
-				new srvID = StringToInt(value);
+				int srvID = StringToInt(value);
 				if (srvID >= 0)
 				{
-					PushArrayCell(g_hServersWhiteList, srvID);
+					g_hServersWhiteList.Push(srvID);
 					#if defined DEBUG
 					PrintToServer("Loaded white list server id %d", srvID);
 					#endif
@@ -1967,13 +2016,13 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 	return SMCParse_Continue;
 }
 
-public SMCResult:ReadConfig_EndSection(Handle:smc)
+public SMCResult ReadConfig_EndSection(SMCParser smc)
 {
 	return SMCParse_Continue;
 }
 
 // STOCK FUNCTIONS //
-stock setGag(client, length, const String:clientAuth[])
+stock void setGag(int client, int length, const char[] clientAuth)
 {
 	if (g_GagType[client] == bNot)
 	{
@@ -1983,7 +2032,7 @@ stock setGag(client, length, const String:clientAuth[])
 	}
 }
 
-stock setMute(client, length, const String:clientAuth[])
+stock void setMute(int client, int length, const char[] clientAuth)
 {
 	if (g_MuteType[client] == bNot)
 	{
@@ -1993,7 +2042,7 @@ stock setMute(client, length, const String:clientAuth[])
 	}
 }
 
-stock bool:DB_Connect()
+stock bool DB_Connect()
 {
 	#if defined DEBUG
 	PrintToServer("DB_Connect(handle %d, state %d, lock %d)", g_hDatabase, g_DatabaseState, g_iConnectLock);
@@ -2014,43 +2063,45 @@ stock bool:DB_Connect()
 		g_DatabaseState = DatabaseState_Connecting;
 		g_iConnectLock = ++g_iSequence;
 		// Connect using the "sourcebans" section, or the "default" section if "sourcebans" does not exist
-		SQL_TConnect(GotDatabase, DATABASE, g_iConnectLock);
+		Database.Connect(GotDatabase, DATABASE, g_iConnectLock);
 	}
 
 	return false;
 }
 
-stock bool:DB_Conn_Lost(Handle:hndl)
+stock bool DB_Conn_Lost(DBResultSet db)
 {
-	if (hndl == INVALID_HANDLE)
+	if (db == null)
 	{
-		if (g_hDatabase != INVALID_HANDLE)
+		if (g_hDatabase != null)
 		{
 			LogError("Lost connection to DB. Reconnect after delay.");
-			CloseHandle(g_hDatabase);
-			g_hDatabase = INVALID_HANDLE;
+			delete g_hDatabase;
+			g_hDatabase = null;
 		}
+		
 		if (g_DatabaseState != DatabaseState_Wait)
 		{
 			g_DatabaseState = DatabaseState_Wait;
 			CreateTimer(RetryTime, Timer_StopWait, _, TIMER_FLAG_NO_MAPCHANGE);
 		}
+		
 		return true;
 	}
 
 	return false;
 }
 
-stock InitializeBackupDB()
+stock void InitializeBackupDB()
 {
-	decl String:error[255];
+	char error[255];
 	SQLiteDB = SQLite_UseDatabase("sourcecomms-queue", error, sizeof(error));
 	if (SQLiteDB == INVALID_HANDLE)
 	{
 		SetFailState(error);
 	}
 
-	SQL_TQuery(SQLiteDB, Query_ErrorCheck,
+	SQLiteDB.Query(Query_ErrorCheck,
 		"CREATE TABLE IF NOT EXISTS queue2 ( \
 			id INTEGER PRIMARY KEY, \
 			steam_id TEXT, \
@@ -2063,15 +2114,17 @@ stock InitializeBackupDB()
 			type INTEGER)");
 }
 
-stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[] = "", const String:sArgs[] = "")
+stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, const char[] sReason = "", const char[] sArgs = "")
 {
 	#if defined DEBUG
 	PrintToServer("CreateBlock(admin: %d, target: %d, length: %d, type: %d, reason: %s, args: %s)", client, targetId, length, type, sReason, sArgs);
 	#endif
 
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml, String:target_name[MAX_NAME_LENGTH];
-	new String:reason[256];
-	new bool:skipped = false;
+	int target_list[MAXPLAYERS], target_count;
+	bool tn_is_ml;
+	char target_name[MAX_NAME_LENGTH];
+	char reason[256];
+	bool skipped = false;
 
 	// checking args
 	if (targetId)
@@ -2084,11 +2137,11 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 	}
 	else if (strlen(sArgs))
 	{
-		new String:sArg[3][192];
+		char sArg[3][192];
 
 		if (ExplodeString(sArgs, "\"", sArg, 3, 192, true) == 3 && strlen(sArg[0]) == 0) // exploding by quotes
 		{
-			decl String:sTempArg[2][192];
+			char sTempArg[2][192];
 			TrimString(sArg[2]);
 			sArg[0] = sArg[1]; // target name
 			ExplodeString(sArg[2], " ", sTempArg, 2, 192, true); // get length and reason
@@ -2141,8 +2194,8 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 		return;
 	}
 
-	new admImmunity = GetAdmImmunity(client);
-	decl String:adminAuth[64];
+	int admImmunity = GetAdmImmunity(client);
+	char adminAuth[64];
 
 	if (client && IsClientInGame(client))
 	{
@@ -2154,12 +2207,12 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 		strcopy(adminAuth, sizeof(adminAuth), "STEAM_ID_SERVER");
 	}
 
-	for (new i = 0; i < target_count; i++)
+	for (int i = 0; i < target_count; i++)
 	{
-		new target = target_list[i];
+		int target = target_list[i];
 
 		#if defined DEBUG
-		decl String:auth[64];
+		char auth[64];
 		GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth));
 		PrintToServer("Processing block for %s", auth);
 		#endif
@@ -2259,14 +2312,16 @@ stock CreateBlock(client, targetId = 0, length = -1, type, const String:sReason[
 	return;
 }
 
-stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const String:sArgs[] = "")
+stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason = "", const char[] sArgs = "")
 {
 	#if defined DEBUG
 	PrintToServer("ProcessUnBlock(admin: %d, target: %d, type: %d, reason: %s, args: %s)", client, targetId, type, sReason, sArgs);
 	#endif
 
-	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml, String:target_name[MAX_NAME_LENGTH];
-	new String:reason[256];
+	int target_list[MAXPLAYERS], target_count;
+	bool tn_is_ml;
+	char target_name[MAX_NAME_LENGTH];
+	char reason[256];
 
 	if (targetId)
 	{
@@ -2278,8 +2333,8 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 	}
 	else
 	{
-		decl String:sBuffer[256];
-		new String:sArg[3][192];
+		char sBuffer[256];
+		char sArg[3][192];
 		GetCmdArgString(sBuffer, sizeof(sBuffer));
 
 		if (ExplodeString(sBuffer, "\"", sArg, 3, 192, true) == 3 && strlen(sArg[0]) == 0)
@@ -2313,8 +2368,8 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 		}
 	}
 
-	decl String:adminAuth[64];
-	decl String:targetAuth[64];
+	char adminAuth[64];
+	char targetAuth[64];
 
 	if (client && IsClientInGame(client))
 	{
@@ -2332,9 +2387,9 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 		PrintToServer("ProcessUnBlock - targets_count > 1");
 		#endif
 
-		for (new i = 0; i < target_count; i++)
+		for (int i = 0; i < target_count; i++)
 		{
-			new target = target_list[i];
+			int target = target_list[i];
 
 			if (IsClientInGame(target))
 				GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
@@ -2361,13 +2416,13 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 				}
 			}
 
-			new Handle:dataPack = CreateDataPack();
-			WritePackCell(dataPack, GetClientUserId2(client));
-			WritePackCell(dataPack, GetClientUserId(target));
-			WritePackCell(dataPack, type);
-			WritePackString(dataPack, adminAuth);
-			WritePackString(dataPack, targetAuth); // not in use in this case
-			WritePackString(dataPack, reason);
+			DataPack dataPack = new DataPack();
+			dataPack.WriteCell(GetClientUserId2(client));
+			dataPack.WriteCell(GetClientUserId(target));
+			dataPack.WriteCell(type);
+			dataPack.WriteString(adminAuth);
+			dataPack.WriteString(targetAuth); // not in use in this case
+			dataPack.WriteString(reason);
 
 			TempUnBlock(dataPack);
 		}
@@ -2379,8 +2434,8 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 	}
 	else
 	{
-		decl String:typeWHERE[100];
-		new target = target_list[0];
+		char typeWHERE[100];
+		int target = target_list[0];
 
 		if (IsClientInGame(target))
 		{
@@ -2428,28 +2483,28 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 		}
 
 		// Pack everything into a data pack so we can retain it
-		new Handle:dataPack = CreateDataPack();
-		WritePackCell(dataPack, GetClientUserId2(client));
-		WritePackCell(dataPack, GetClientUserId(target));
-		WritePackCell(dataPack, type);
-		WritePackString(dataPack, adminAuth);
-		WritePackString(dataPack, targetAuth);
-		WritePackString(dataPack, reason);
+		DataPack dataPack = new DataPack();
+		dataPack.WriteCell(GetClientUserId2(client));
+		dataPack.WriteCell(GetClientUserId(target));
+		dataPack.WriteCell(type);
+		dataPack.WriteString(adminAuth);
+		dataPack.WriteString(targetAuth);
+		dataPack.WriteString(reason);
 
 		// Check current player status. If player has temporary punishment - don't get info from DB
 		if (DB_Connect())
 		{
-			decl String:sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
-			decl String:sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
-			decl String:sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
-			decl String:sTargetAuthYZEscaped[sizeof(targetAuth) * 2 + 1];
+			char sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
+			char sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
+			char sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
+			char sTargetAuthYZEscaped[sizeof(targetAuth) * 2 + 1];
 
-			SQL_EscapeString(g_hDatabase, adminAuth, sAdminAuthEscaped, sizeof(sAdminAuthEscaped));
-			SQL_EscapeString(g_hDatabase, adminAuth[8], sAdminAuthYZEscaped, sizeof(sAdminAuthYZEscaped));
-			SQL_EscapeString(g_hDatabase, targetAuth, sTargetAuthEscaped, sizeof(sTargetAuthEscaped));
-			SQL_EscapeString(g_hDatabase, targetAuth[8], sTargetAuthYZEscaped, sizeof(sTargetAuthYZEscaped));
+			g_hDatabase.Escape(adminAuth, sAdminAuthEscaped, sizeof(sAdminAuthEscaped));
+			g_hDatabase.Escape(adminAuth[8], sAdminAuthYZEscaped, sizeof(sAdminAuthYZEscaped));
+			g_hDatabase.Escape(targetAuth, sTargetAuthEscaped, sizeof(sTargetAuthEscaped));
+			g_hDatabase.Escape(targetAuth[8], sTargetAuthYZEscaped, sizeof(sTargetAuthYZEscaped));
 
-			decl String:query[4096];
+			char query[4096];
 			Format(query, sizeof(query),
 				"SELECT		c.bid, \
 							IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '0') as iaid, \
@@ -2469,7 +2524,7 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 			LogToFile(logQuery, "ProcessUnBlock. QUERY: %s", query);
 			#endif
 
-			SQL_TQuery(g_hDatabase, Query_UnBlockSelect, query, dataPack);
+			g_hDatabase.Query(Query_UnBlockSelect, query, dataPack);
 		}
 		else
 		{
@@ -2483,30 +2538,31 @@ stock ProcessUnBlock(client, targetId = 0, type, String:sReason[] = "", const St
 	}
 }
 
-stock bool:TempUnBlock(Handle:data)
+stock bool TempUnBlock(DataPack dataPack)
 {
-	decl String:adminAuth[30], String:targetAuth[30];
-	new String:reason[256];
-	ResetPack(data);
-	new adminUserID = ReadPackCell(data);
-	new targetUserID = ReadPackCell(data);
-	new type = ReadPackCell(data);
-	ReadPackString(data, adminAuth, sizeof(adminAuth));
-	ReadPackString(data, targetAuth, sizeof(targetAuth));
-	ReadPackString(data, reason, sizeof(reason));
-	CloseHandle(data); // Need to close datapack
+	char adminAuth[30], targetAuth[30];
+	char reason[256];
+	
+	dataPack.Reset();
+	int adminUserID = dataPack.ReadCell();
+	int targetUserID = dataPack.ReadCell();
+	int type = dataPack.ReadCell();
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+	dataPack.ReadString(targetAuth, sizeof(targetAuth));
+	dataPack.ReadString(reason, sizeof(reason));
+	delete dataPack; // Need to close datapack
 
 	#if defined DEBUG
 	PrintToServer("TempUnBlock(adminUID: %d, targetUID: %d, type: %d, adminAuth: %s, targetAuth: %s, reason: %s)", adminUserID, targetUserID, type, adminAuth, targetAuth, reason);
 	#endif
 
-	new admin = GetClientOfUserId(adminUserID);
-	new target = GetClientOfUserId(targetUserID);
+	int admin = GetClientOfUserId(adminUserID);
+	int target = GetClientOfUserId(targetUserID);
 	if (!target)
 		return false; // target has gone away
 
-	new AdmImmunity = GetAdmImmunity(admin);
-	new bool:AdmImCheck = (DisUBImCheck == 0
+	int AdmImmunity = GetAdmImmunity(admin);
+	bool AdmImCheck = (DisUBImCheck == 0
 		 && ((type == TYPE_UNMUTE && AdmImmunity >= g_iMuteLevel[target])
 			 || (type == TYPE_UNGAG && AdmImmunity >= g_iGagLevel[target])
 			 || (type == TYPE_UNSILENCE && AdmImmunity >= g_iMuteLevel[target]
@@ -2523,7 +2579,7 @@ stock bool:TempUnBlock(Handle:data)
 	#endif
 
 	// Check access for unblock without db changes (temporary unblock)
-	new bool:bHasPermission = (!admin && StrEqual(adminAuth, "STEAM_ID_SERVER")) || AdmHasFlag(admin) || AdmImCheck;
+	bool bHasPermission = (!admin && StrEqual(adminAuth, "STEAM_ID_SERVER")) || AdmHasFlag(admin) || AdmImCheck;
 	// can, if we are console or have special flag. else - deep checking by issuer authid
 	if (!bHasPermission) {
 		switch (type)
@@ -2583,22 +2639,22 @@ stock bool:TempUnBlock(Handle:data)
 	}
 }
 
-stock InsertTempBlock(length, type, const String:name[], const String:auth[], const String:reason[], const String:adminAuth[], const String:adminIp[])
+stock void InsertTempBlock(int length, int type, const char[] name, const char[] auth, const char[] reason, const char[] adminAuth, const char[] adminIp)
 {
 	LogMessage("Saving punishment for %s into queue", auth);
 
-	decl String:banName[MAX_NAME_LENGTH * 2 + 1];
-	decl String:banReason[256 * 2 + 1];
-	decl String:sAuthEscaped[64 * 2 + 1];
-	decl String:sAdminAuthEscaped[64 * 2 + 1];
-	decl String:sQuery[4096], String:sQueryVal[2048];
-	new String:sQueryMute[2048], String:sQueryGag[2048];
+	char banName[MAX_NAME_LENGTH * 2 + 1];
+	char banReason[256 * 2 + 1];
+	char sAuthEscaped[64 * 2 + 1];
+	char sAdminAuthEscaped[64 * 2 + 1];
+	char sQuery[4096], sQueryVal[2048];
+	char sQueryMute[2048], sQueryGag[2048];
 
 	// escaping everything
-	SQL_EscapeString(SQLiteDB, name, banName, sizeof(banName));
-	SQL_EscapeString(SQLiteDB, reason, banReason, sizeof(banReason));
-	SQL_EscapeString(SQLiteDB, auth, sAuthEscaped, sizeof(sAuthEscaped));
-	SQL_EscapeString(SQLiteDB, adminAuth, sAdminAuthEscaped, sizeof(sAdminAuthEscaped));
+	SQLiteDB.Escape(name, banName, sizeof(banName));
+	SQLiteDB.Escape(reason, banReason, sizeof(banReason));
+	SQLiteDB.Escape(auth, sAuthEscaped, sizeof(sAuthEscaped));
+	SQLiteDB.Escape(adminAuth, sAdminAuthEscaped, sizeof(sAdminAuthEscaped));
 
 	// steam_id time start_time reason name admin_id admin_ip
 	FormatEx(sQueryVal, sizeof(sQueryVal),
@@ -2624,31 +2680,31 @@ stock InsertTempBlock(length, type, const String:name[], const String:auth[], co
 	LogToFile(logQuery, "InsertTempBlock. QUERY: %s", sQuery);
 	#endif
 
-	SQL_TQuery(SQLiteDB, Query_ErrorCheck, sQuery);
+	SQLiteDB.Query(Query_ErrorCheck, sQuery);
 }
 
-stock ServerInfo()
+stock void ServerInfo()
 {
-	decl pieces[4];
-	new longip = GetConVarInt(CvarHostIp);
+	int pieces[4];
+	int longip = CvarHostIp.IntValue;
 	pieces[0] = (longip >> 24) & 0x000000FF;
 	pieces[1] = (longip >> 16) & 0x000000FF;
 	pieces[2] = (longip >> 8) & 0x000000FF;
 	pieces[3] = longip & 0x000000FF;
 	FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-	GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
+	CvarPort.GetString(ServerPort, sizeof(ServerPort));
 }
 
-stock ReadConfig()
+stock void ReadConfig()
 {
 	InitializeConfigParser();
 
-	if (ConfigParser == INVALID_HANDLE)
+	if (ConfigParser == null)
 	{
 		return;
 	}
 
-	decl String:ConfigFile1[PLATFORM_MAX_PATH], String:ConfigFile2[PLATFORM_MAX_PATH];
+	char ConfigFile1[PLATFORM_MAX_PATH], ConfigFile2[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, ConfigFile1, sizeof(ConfigFile1), "configs/sourcebans/sourcebans.cfg");
 	BuildPath(Path_SM, ConfigFile2, sizeof(ConfigFile2), "configs/sourcebans/sourcecomms.cfg");
 
@@ -2694,9 +2750,9 @@ stock ReadConfig()
 
 // some more
 
-AdminMenu_GetPunishPhrase(client, target, String:name[], length)
+void AdminMenu_GetPunishPhrase(int client, int target, char[] name, int length)
 {
-	decl String:Buffer[192];
+	char Buffer[192];
 	if (g_MuteType[target] > bNot && g_GagType[target] > bNot)
 		Format(Buffer, sizeof(Buffer), "%T", "AdminMenu_Display_Silenced", client, name);
 	else if (g_MuteType[target] > bNot)
@@ -2709,7 +2765,7 @@ AdminMenu_GetPunishPhrase(client, target, String:name[], length)
 	strcopy(name, length, Buffer);
 }
 
-bool:Bool_ValidMenuTarget(client, target)
+bool Bool_ValidMenuTarget(int client, int target)
 {
 	if (target <= 0)
 	{
@@ -2733,7 +2789,7 @@ bool:Bool_ValidMenuTarget(client, target)
 	return true;
 }
 
-stock bool:IsAllowedBlockLength(admin, length, target_count = 1)
+stock bool IsAllowedBlockLength(int admin, int length, int target_count = 1)
 {
 	if (target_count == 1)
 	{
@@ -2754,31 +2810,31 @@ stock bool:IsAllowedBlockLength(admin, length, target_count = 1)
 	}
 }
 
-stock bool:AdmHasFlag(admin)
+stock bool AdmHasFlag(int admin)
 {
 	return admin && CheckCommandAccess(admin, "", UNBLOCK_FLAG, true);
 }
 
-stock _:GetAdmImmunity(admin)
+stock int GetAdmImmunity(int admin)
 {
 	return admin > 0 && GetUserAdmin(admin) != INVALID_ADMIN_ID ?
-	GetAdminImmunityLevel(GetUserAdmin(admin)) : 0;
+		GetAdminImmunityLevel(GetUserAdmin(admin)) : 0;
 }
 
-stock _:GetClientUserId2(client)
+stock int GetClientUserId2(int client)
 {
 	return client ? GetClientUserId(client) : 0; // 0 is for CONSOLE
 }
 
-stock ForcePlayersRecheck()
+stock void ForcePlayersRecheck()
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && IsClientAuthorized(i) && !IsFakeClient(i) && g_hPlayerRecheck[i] == INVALID_HANDLE)
 		{
 			#if defined DEBUG
 			{
-				decl String:clientAuth[64];
+				char clientAuth[64];
 				GetClientAuthId(i, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 				PrintToServer("Creating Recheck timer for %s", clientAuth);
 			}
@@ -2788,12 +2844,12 @@ stock ForcePlayersRecheck()
 	}
 }
 
-stock bool:NotApplyToThisServer(srvID)
+stock bool NotApplyToThisServer(int srvID)
 {
 	return ConfigWhiteListOnly && FindValueInArray(g_hServersWhiteList, srvID) == -1;
 }
 
-stock MarkClientAsUnMuted(target)
+stock void MarkClientAsUnMuted(int target)
 {
 	g_MuteType[target] = bNot;
 	g_iMuteTime[target] = 0;
@@ -2804,7 +2860,7 @@ stock MarkClientAsUnMuted(target)
 	g_sMuteAdminAuth[target][0] = '\0';
 }
 
-stock MarkClientAsUnGagged(target)
+stock void MarkClientAsUnGagged(int target)
 {
 	g_GagType[target] = bNot;
 	g_iGagTime[target] = 0;
@@ -2815,7 +2871,7 @@ stock MarkClientAsUnGagged(target)
 	g_sGagAdminAuth[target][0] = '\0';
 }
 
-stock MarkClientAsMuted(target, time = NOW, length = -1, const String:adminName[] = "CONSOLE", const String:adminAuth[] = "STEAM_ID_SERVER", adminImmunity = 0, const String:reason[] = "")
+stock void MarkClientAsMuted(int target, int time = NOW, int length = -1, const char[] adminName = "CONSOLE", const char[] adminAuth = "STEAM_ID_SERVER", int adminImmunity = 0, const char[] reason = "")
 {
 	if (time)
 		g_iMuteTime[target] = time;
@@ -2836,7 +2892,7 @@ stock MarkClientAsMuted(target, time = NOW, length = -1, const String:adminName[
 		g_MuteType[target] = bSess;
 }
 
-stock MarkClientAsGagged(target, time = NOW, length = -1, const String:adminName[] = "CONSOLE", const String:adminAuth[] = "STEAM_ID_SERVER", adminImmunity = 0, const String:reason[] = "")
+stock void MarkClientAsGagged(int target, int time = NOW, int length = -1, const char[] adminName = "CONSOLE", const char[] adminAuth = "STEAM_ID_SERVER", int adminImmunity = 0, const char[] reason = "")
 {
 	if (time)
 		g_iGagTime[target] = time;
@@ -2857,85 +2913,85 @@ stock MarkClientAsGagged(target, time = NOW, length = -1, const String:adminName
 		g_GagType[target] = bSess;
 }
 
-stock CloseMuteExpireTimer(target)
+stock void CloseMuteExpireTimer(int target)
 {
 	if (g_hMuteExpireTimer[target] != INVALID_HANDLE && CloseHandle(g_hMuteExpireTimer[target]))
 		g_hMuteExpireTimer[target] = INVALID_HANDLE;
 }
 
-stock CloseGagExpireTimer(target)
+stock void CloseGagExpireTimer(int target)
 {
 	if (g_hGagExpireTimer[target] != INVALID_HANDLE && CloseHandle(g_hGagExpireTimer[target]))
 		g_hGagExpireTimer[target] = INVALID_HANDLE;
 }
 
-stock CreateMuteExpireTimer(target, remainingTime = 0)
+stock void CreateMuteExpireTimer(int target, int remainingTime = 0)
 {
 	if (g_iMuteLength[target] > 0)
 	{
-		new Handle:hPack;
+		DataPack dataPack;
 
 		if (remainingTime)
-			g_hMuteExpireTimer[target] = CreateDataTimer(float(remainingTime), Timer_MuteExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
+			g_hMuteExpireTimer[target] = CreateDataTimer(float(remainingTime), Timer_MuteExpire, dataPack, TIMER_FLAG_NO_MAPCHANGE);
 		else
-			g_hMuteExpireTimer[target] = CreateDataTimer(float(g_iMuteLength[target] * 60), Timer_MuteExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
+			g_hMuteExpireTimer[target] = CreateDataTimer(float(g_iMuteLength[target] * 60), Timer_MuteExpire, dataPack, TIMER_FLAG_NO_MAPCHANGE);
 
-		WritePackCell(hPack, target);
-		WritePackCell(hPack, GetClientUserId(target));
+		dataPack.WriteCell(target);
+		dataPack.WriteCell(GetClientUserId(target));
 	}
 }
 
-stock CreateGagExpireTimer(target, remainingTime = 0)
+stock void CreateGagExpireTimer(int target, int remainingTime = 0)
 {
 	if (g_iGagLength[target] > 0)
 	{
-		new Handle:hPack;
+		DataPack dataPack;
 
 		if (remainingTime)
-			g_hGagExpireTimer[target] = CreateDataTimer(float(remainingTime), Timer_GagExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
+			g_hGagExpireTimer[target] = CreateDataTimer(float(remainingTime), Timer_GagExpire, dataPack, TIMER_FLAG_NO_MAPCHANGE);
 		else
-			g_hGagExpireTimer[target] = CreateDataTimer(float(g_iGagLength[target] * 60), Timer_GagExpire, hPack, TIMER_FLAG_NO_MAPCHANGE);
+			g_hGagExpireTimer[target] = CreateDataTimer(float(g_iGagLength[target] * 60), Timer_GagExpire, dataPack, TIMER_FLAG_NO_MAPCHANGE);
 
-		WritePackCell(hPack, target);
-		WritePackCell(hPack, GetClientUserId(target));
+		dataPack.WriteCell(target);
+		dataPack.WriteCell(GetClientUserId(target));
 	}
 }
 
-stock PerformUnMute(target)
+stock void PerformUnMute(int target)
 {
 	MarkClientAsUnMuted(target);
 	BaseComm_SetClientMute(target, false);
 	CloseMuteExpireTimer(target);
 }
 
-stock PerformUnGag(target)
+stock void PerformUnGag(int target)
 {
 	MarkClientAsUnGagged(target);
 	BaseComm_SetClientGag(target, false);
 	CloseGagExpireTimer(target);
 }
 
-stock PerformMute(target, time = NOW, length = -1, const String:adminName[] = "CONSOLE", const String:adminAuth[] = "STEAM_ID_SERVER", adminImmunity = 0, const String:reason[] = "", remaining_time = 0)
+stock void PerformMute(int target, int time = NOW, int length = -1, const char[] adminName = "CONSOLE", const char[] adminAuth = "STEAM_ID_SERVER", int adminImmunity = 0, const char[] reason = "", int remaining_time = 0)
 {
 	MarkClientAsMuted(target, time, length, adminName, adminAuth, adminImmunity, reason);
 	BaseComm_SetClientMute(target, true);
 	CreateMuteExpireTimer(target, remaining_time);
 }
 
-stock PerformGag(target, time = NOW, length = -1, const String:adminName[] = "CONSOLE", const String:adminAuth[] = "STEAM_ID_SERVER", adminImmunity = 0, const String:reason[] = "", remaining_time = 0)
+stock void PerformGag(int target, int time = NOW, int length = -1, const char[] adminName = "CONSOLE", const char[] adminAuth = "STEAM_ID_SERVER", int adminImmunity = 0, const char[] reason = "", int remaining_time = 0)
 {
 	MarkClientAsGagged(target, time, length, adminName, adminAuth, adminImmunity, reason);
 	BaseComm_SetClientGag(target, true);
 	CreateGagExpireTimer(target, remaining_time);
 }
 
-stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[] = "")
+stock void SavePunishment(int admin = 0, int target, int type, int length = -1, const char[] reason = "")
 {
 	if (type < TYPE_MUTE || type > TYPE_SILENCE)
 		return;
 
 	// target information
-	decl String:targetAuth[64];
+	char targetAuth[64];
 	if (IsClientInGame(target))
 	{
 		GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
@@ -2945,8 +3001,8 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		return;
 	}
 
-	decl String:adminIp[24];
-	decl String:adminAuth[64];
+	char adminIp[24];
+	char adminAuth[64];
 	if (admin && IsClientInGame(admin))
 	{
 		GetClientIP(admin, adminIp, sizeof(adminIp));
@@ -2959,28 +3015,28 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		strcopy(adminIp, sizeof(adminIp), ServerIp);
 	}
 
-	decl String:sName[MAX_NAME_LENGTH];
+	char sName[MAX_NAME_LENGTH];
 	strcopy(sName, sizeof(sName), g_sName[target]);
 
 	if (DB_Connect())
 	{
 		// Accepts length in minutes, writes to db in seconds! In all over places in plugin - length is in minutes.
-		decl String:banName[MAX_NAME_LENGTH * 2 + 1];
-		decl String:banReason[256 * 2 + 1];
-		decl String:sAuthidEscaped[64 * 2 + 1];
-		decl String:sAdminAuthIdEscaped[64 * 2 + 1];
-		decl String:sAdminAuthIdYZEscaped[64 * 2 + 1];
-		decl String:sQuery[4096], String:sQueryAdm[512], String:sQueryVal[1024];
-		decl String:sQueryMute[1024], String:sQueryGag[1024];
+		char banName[MAX_NAME_LENGTH * 2 + 1];
+		char banReason[256 * 2 + 1];
+		char sAuthidEscaped[64 * 2 + 1];
+		char sAdminAuthIdEscaped[64 * 2 + 1];
+		char sAdminAuthIdYZEscaped[64 * 2 + 1];
+		char sQuery[4096], sQueryAdm[512], sQueryVal[1024];
+		char sQueryMute[1024], sQueryGag[1024];
 		sQueryMute[0] = 0;
 		sQueryGag[0]  = 0;
 
 		// escaping everything
-		SQL_EscapeString(g_hDatabase, sName, banName, sizeof(banName));
-		SQL_EscapeString(g_hDatabase, reason, banReason, sizeof(banReason));
-		SQL_EscapeString(g_hDatabase, targetAuth, sAuthidEscaped, sizeof(sAuthidEscaped));
-		SQL_EscapeString(g_hDatabase, adminAuth, sAdminAuthIdEscaped, sizeof(sAdminAuthIdEscaped));
-		SQL_EscapeString(g_hDatabase, adminAuth[8], sAdminAuthIdYZEscaped, sizeof(sAdminAuthIdYZEscaped));
+		g_hDatabase.Escape(sName, banName, sizeof(banName));
+		g_hDatabase.Escape(reason, banReason, sizeof(banReason));
+		g_hDatabase.Escape(targetAuth, sAuthidEscaped, sizeof(sAuthidEscaped));
+		g_hDatabase.Escape(adminAuth, sAdminAuthIdEscaped, sizeof(sAdminAuthIdEscaped));
+		g_hDatabase.Escape(adminAuth[8], sAdminAuthIdYZEscaped, sizeof(sAdminAuthIdYZEscaped));
 
 		// bid	authid	name	created ends lenght reason aid adminip	sid	removedBy removedType removedon type ureason
 		FormatEx(sQueryAdm, sizeof(sQueryAdm),
@@ -3004,8 +3060,10 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 
 		switch (type)
 		{
-			case TYPE_GAG:FormatEx(sQueryGag, sizeof(sQueryGag), "(%s, %d)", sQueryVal, type);
-			case TYPE_MUTE:FormatEx(sQueryMute, sizeof(sQueryMute), "(%s, %d)", sQueryVal, type);
+			case TYPE_GAG:
+				FormatEx(sQueryGag, sizeof(sQueryGag), "(%s, %d)", sQueryVal, type);
+			case TYPE_MUTE:
+				FormatEx(sQueryMute, sizeof(sQueryMute), "(%s, %d)", sQueryVal, type);
 			case TYPE_SILENCE:
 			{
 				FormatEx(sQueryMute, sizeof(sQueryMute), "(%s, %d)", sQueryVal, TYPE_MUTE);
@@ -3023,31 +3081,31 @@ stock SavePunishment(admin = 0, target, type, length = -1, const String:reason[]
 		#endif
 
 		// all data cached before calling asynchronous functions
-		new Handle:dataPack = CreateDataPack();
-		WritePackCell(dataPack, admin > 0 ? GetClientUserId(admin) : 0);
-		WritePackCell(dataPack, GetClientUserId(target));
-		WritePackCell(dataPack, length);
-		WritePackCell(dataPack, type);
-		WritePackString(dataPack, reason);
-		WritePackString(dataPack, sName);
-		WritePackString(dataPack, targetAuth);
-		WritePackString(dataPack, adminAuth);
-		WritePackString(dataPack, adminIp);
+		DataPack dataPack = new DataPack();
+		dataPack.WriteCell(admin > 0 ? GetClientUserId(admin) : 0);
+		dataPack.WriteCell(GetClientUserId(target));
+		dataPack.WriteCell(length);
+		dataPack.WriteCell(type);
+		dataPack.WriteString(reason);
+		dataPack.WriteString(sName);
+		dataPack.WriteString(targetAuth);
+		dataPack.WriteString(adminAuth);
+		dataPack.WriteString(adminIp);
 
-		SQL_TQuery(g_hDatabase, Query_AddBlockInsert, sQuery, dataPack, DBPrio_High);
+		g_hDatabase.Query(Query_AddBlockInsert, sQuery, dataPack, DBPrio_High);
 	}
 	else
 		InsertTempBlock(length, type, sName, targetAuth, reason, adminAuth, adminIp);
 }
 
-stock ShowActivityToServer(admin, type, length = 0, String:reason[] = "", String:targetName[], bool:ml = false)
+stock void ShowActivityToServer(int admin, int type, int length = 0, char[] reason = "", char[] targetName, bool ml = false)
 {
 	#if defined DEBUG
 	PrintToServer("ShowActivityToServer(admin: %d, type: %d, length: %d, reason: %s, name: %s, ml: %b",
 		admin, type, length, reason, targetName, ml);
 	#endif
 
-	decl String:actionName[32], String:translationName[64];
+	char actionName[32], translationName[64];
 	switch (type)
 	{
 		case TYPE_MUTE:
@@ -3133,7 +3191,7 @@ stock ShowActivityToServer(admin, type, length = 0, String:reason[] = "", String
 }
 
 // Natives //
-public Native_SetClientMute(Handle hPlugin, int numParams)
+public int Native_SetClientMute(Handle hPlugin, int numParams)
 {
     int target = GetNativeCell(1);
     if (target < 1 || target > MaxClients)
@@ -3148,7 +3206,7 @@ public Native_SetClientMute(Handle hPlugin, int numParams)
         return false;
     }
 
-    bool muteState = bool:GetNativeCell(2);
+    bool muteState = GetNativeCell(2);
     int muteLength = GetNativeCell(3);
 
     if (muteState && muteLength == 0)
@@ -3157,7 +3215,7 @@ public Native_SetClientMute(Handle hPlugin, int numParams)
         return false;
     }
 
-    bool bSaveToDB = bool:GetNativeCell(4);
+    bool bSaveToDB = GetNativeCell(4);
     if (!muteState && bSaveToDB)
     {
         ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
@@ -3191,33 +3249,37 @@ public Native_SetClientMute(Handle hPlugin, int numParams)
     return true;
 }
 
-public Native_SetClientGag(Handle:hPlugin, numParams)
+public int Native_SetClientGag(Handle hPlugin, int numParams)
 {
-	new target = GetNativeCell(1);
+	int target = GetNativeCell(1);
 	if (target < 1 || target > MaxClients)
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		return false;
 	}
 
 	if (!IsClientInGame(target))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		return false;
 	}
 
-	new bool:gagState = GetNativeCell(2);
-	new gagLength = GetNativeCell(3);
+	bool gagState = GetNativeCell(2);
+	int gagLength = GetNativeCell(3);
 	if (gagState && gagLength == 0)
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Permanent gag is not allowed!");
+		ThrowNativeError(SP_ERROR_NATIVE, "Permanent gag is not allowed!");
+		return false;
 	}
 
-	new bool:bSaveToDB = GetNativeCell(4);
+	bool bSaveToDB = GetNativeCell(4);
 	if (!gagState && bSaveToDB)
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
+		ThrowNativeError(SP_ERROR_NATIVE, "Removing punishments from DB is not allowed!");
+		return false;
 	}
 
-	new String:sReason[256];
+	char sReason[256];
 	GetNativeString(5, sReason, sizeof(sReason));
 
 	if (gagState)
@@ -3245,35 +3307,39 @@ public Native_SetClientGag(Handle:hPlugin, numParams)
 	return true;
 }
 
-public Native_GetClientMuteType(Handle:hPlugin, numParams)
+public int Native_GetClientMuteType(Handle hPlugin, int numParams)
 {
-	new target = GetNativeCell(1);
+	int target = GetNativeCell(1);
 	if (target < 1 || target > MaxClients)
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		return bNot;
 	}
 
 	if (!IsClientInGame(target))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		return bNot;
 	}
 
-	return bType:g_MuteType[target];
+	return g_MuteType[target];
 }
 
-public Native_GetClientGagType(Handle:hPlugin, numParams)
+public int Native_GetClientGagType(Handle hPlugin, int numParams)
 {
-	new target = GetNativeCell(1);
+	int target = GetNativeCell(1);
 	if (target < 1 || target > MaxClients)
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		ThrowNativeError(SP_ERROR_NATIVE, "Invalid client index %d", target);
+		return bNot;
 	}
 
 	if (!IsClientInGame(target))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		ThrowNativeError(SP_ERROR_NATIVE, "Client %d is not in game", target);
+		return bNot;
 	}
 
-	return bType:g_GagType[target];
+	return g_GagType[target];
 }
 //Yarr!
