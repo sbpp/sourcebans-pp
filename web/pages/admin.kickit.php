@@ -124,11 +124,11 @@ function KickPlayer($check, $sid, $num, $type)
                     return $objResponse;
                 }
             }
-        } else if ((int) $type == 1) { // search for the ip on the server
+        } else if ((int) $type == 1) { // search for the ip address on the server
             for ($index=0; $index<$search; $index++) {
-                $ip = explode(":", $matches[8][$index]);
-                $ip = $ip[0];
-                if ($ip == $check) {
+                $ipaddress = explode(":", $matches[8][$index]);
+                $ipaddress = $ipaddress[0];
+                if ($ipaddress == $check) {
                     $userid = $matches[1][$index];
                     // gotcha!!! kick him!
                     $gothim = true;
