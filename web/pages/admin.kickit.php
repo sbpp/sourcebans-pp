@@ -109,37 +109,38 @@ function KickPlayer($check, $sid, $num, $type)
 
         //search for the steamid on the server
         if ((int) $type == 0) {
-            foreach ($matches[3] AS $match) {
-                if (\SteamID\SteamID::toSteam2($match) === \SteamID\SteamID::toSteam2($check)) {
+            for ($i=0; $i<$search; $i++) {
+                if (\SteamID\SteamID::toSteam2($matches[3][$i]) === \SteamID\SteamID::toSteam2($check)) {
+                    $userid = $matches[1][$i];
                     // gotcha!!! kick him!
                     $gothim = true;
                     $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");
                     $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
 
-                    $kick = $r->sendCommand("kickid " . $match . " \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
-
+                    $kick = $r->sendCommand("kickid $userid \"You have been banned by this server, check " . ($_SERVER['HTTPS'] ? 'https' : 'http') . "://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
+                    
                     $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
                     $objResponse->addScript("set_counter('-1');");
                     return $objResponse;
                 }
             }
         } else if ((int) $type == 1) { // search for the ip on the server
-            $id = 0;
-            foreach ($matches[8] AS $match) {
-                $ip = explode(":", $match);
+            for ($i=0; $i<$search; $i++) {
+                $ip = explode(":", $matches[8][$i]);
                 $ip = $ip[0];
                 if ($ip == $check) {
-                    $userid = $matches[1][$id];
+                    $userid = $matches[1][$i];
                     // gotcha!!! kick him!
                     $gothim = true;
                     $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE ip = '" . $check . "' AND RemovedBy IS NULL;");
                     $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
-                    $kick   = $r->sendCommand("kickid " . $userid . " \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
+                    
+                    $kick   = $r->sendCommand("kickid $userid \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
+                    
                     $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
                     $objResponse->addScript("set_counter('-1');");
                     return $objResponse;
                 }
-                $id++;
             }
         }
         if (!$gothim) {
