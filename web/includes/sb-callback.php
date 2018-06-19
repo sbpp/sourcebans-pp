@@ -1673,7 +1673,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         return $objResponse;
     }
     $steam = trim($steam);
-    if (empty($steam))
+    if (!empty($steam))
         $steam = \SteamID\SteamID::toSteam2($steam);
     $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
     $ip = preg_replace('#[^\d\.]#', '', $ip);//strip ip of all but numbers and dots
