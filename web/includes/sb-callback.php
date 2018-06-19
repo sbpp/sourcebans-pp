@@ -1562,10 +1562,10 @@ function KickPlayer($sid, $name)
     $ret = $r->rconCommand("status");
     $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
     $found = false;
-    for ($i=0; $i<$search && !$found; $i++) {
-        if($matches[2][$i] == $name) {
-            $steam = \SteamID\SteamID::toSteam2($matches[3][$i]);
-            $userid = $matches[1][$i];
+    for ($index=0; $index<$search && !$found; $index++) {
+        if($matches[2][$index] == $name) {
+            $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
+            $userid = $matches[1][$index];
             
             // check for immunity
             $admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam."' LIMIT 1;");

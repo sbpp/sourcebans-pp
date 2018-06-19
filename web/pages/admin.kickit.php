@@ -109,9 +109,9 @@ function KickPlayer($check, $sid, $num, $type)
 
         //search for the steamid on the server
         if ((int) $type == 0) {
-            for ($i=0; $i<$search; $i++) {
-                if (\SteamID\SteamID::toSteam2($matches[3][$i]) === \SteamID\SteamID::toSteam2($check)) {
-                    $userid = $matches[1][$i];
+            for ($index=0; $index<$search; $index++) {
+                if (\SteamID\SteamID::toSteam2($matches[3][$index]) === \SteamID\SteamID::toSteam2($check)) {
+                    $userid = $matches[1][$index];
                     // gotcha!!! kick him!
                     $gothim = true;
                     $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");
@@ -125,11 +125,11 @@ function KickPlayer($check, $sid, $num, $type)
                 }
             }
         } else if ((int) $type == 1) { // search for the ip on the server
-            for ($i=0; $i<$search; $i++) {
-                $ip = explode(":", $matches[8][$i]);
+            for ($index=0; $index<$search; $index++) {
+                $ip = explode(":", $matches[8][$index]);
                 $ip = $ip[0];
                 if ($ip == $check) {
-                    $userid = $matches[1][$i];
+                    $userid = $matches[1][$index];
                     // gotcha!!! kick him!
                     $gothim = true;
                     $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE ip = '" . $check . "' AND RemovedBy IS NULL;");
