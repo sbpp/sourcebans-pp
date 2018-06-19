@@ -1672,8 +1672,9 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         Log::add("w", "Hacking Attempt", "$username tried to add a ban, but doesnt have access.");
         return $objResponse;
     }
-
-    $steam = \SteamID\SteamID::toSteam2(trim($steam));
+    $steam = trim($steam);
+    if ($steam)
+        $steam = \SteamID\SteamID::toSteam2($steam);
     $nickname = htmlspecialchars_decode($nickname, ENT_QUOTES);
     $ip = preg_replace('#[^\d\.]#', '', $ip);//strip ip of all but numbers and dots
     $dname = htmlspecialchars_decode($dname, ENT_QUOTES);
