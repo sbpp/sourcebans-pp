@@ -1538,68 +1538,61 @@ function KickPlayer($sid, $name)
 
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
     {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to kick $name, but doesn't have access.");
-    return $objResponse;
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to kick $name, but doesn't have access.");
+        return $objResponse;
     }
 
     require INCLUDES_PATH.'/CServerRcon.php';
     //get the server data
     $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
     if(empty($data['rcon'])) {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
-    return $objResponse;
+        $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
+        return $objResponse;
     }
     $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 
     if(!$r->Auth())
     {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
-    return $objResponse;
+        $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
+        $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
+        return $objResponse;
     }
     // search for the playername
     $ret = $r->rconCommand("status");
     $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
     $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-    if($match == $name) {
-    $found = true;
-    $index = $i;
-    break;
-    }
-    $i++;
-    }
-    if($found) {
-    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
+    for ($i=0; $i<$search && !$found; $i++) {
+        if($matches[2][$i] == $name) {
+            $steam = \SteamID\SteamID::toSteam2($matches[3][$i]);
+            $userid = $matches[1][$i];
+            
+            // check for immunity
+            $admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam."' LIMIT 1;");
+            if($admin && $admin['gimmune']>$admin['pimmune'])
+                $immune = $admin['gimmune'];
+            elseif($admin)
+                $immune = $admin['pimmune'];
+            else
+                $immune = 0;
 
-    // check for immunity
-    $admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam2."' LIMIT 1;");
-    if($admin && $admin['gimmune']>$admin['pimmune'])
-    $immune = $admin['gimmune'];
-    elseif($admin)
-    $immune = $admin['pimmune'];
-    else
-    $immune = 0;
+            if($immune <= $userbank->GetProperty('srv_immunity')) {
+                $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
 
-    if($immune <= $userbank->GetProperty('srv_immunity')) {
-    $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
+                $kick = $r->sendCommand("kickid $userid");
 
-    if(strpos($steam, "[U:") === 0) {
-    $kick = $r->sendCommand("kickid \"".$steam."\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
-    } else {
-    $kick = $r->sendCommand("kickid ".$steam." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
+                Log::add("m", "Player kicked", "$username kicked player $name ($steam) from $data[ip]:$data[port]");
+                $objResponse->addScript("ShowBox('Player kicked', 'Player \'".addslashes(htmlspecialchars($name))."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
+            } else {
+                $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player is immune!', 'red', '', true);");
+            }
+            
+            $found = true;
+        }
     }
-
-    Log::add("m", "Player kicked", "$username kicked player $name ($steam) from $data[ip]:$data[port]");
-    $objResponse->addScript("ShowBox('Player kicked', 'Player \'".addslashes(htmlspecialchars($name))."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
-    } else {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player is immune!', 'red', '', true);");
-    }
-    } else {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
+    
+    if (!$found) {
+        $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
     }
     return $objResponse;
 }
