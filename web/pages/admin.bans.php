@@ -780,7 +780,7 @@ function ProcessBan()
         $('nick.msg').setStyle('display', 'none');
     }
 
-    if ($('steam').value.length < 18 && !$('ip').value) {
+    if (!/^STEAM_[0-1]:[0-1]:[0-9]+$/.test($('steam').value) && !(/^[0-9]+$/.test($('steam').value) && $('steam').value.length >= 17) && !$('ip').value) {
         $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
         $('steam.msg').setStyle('display', 'block');
         err++;
@@ -789,7 +789,7 @@ function ProcessBan()
         $('steam.msg').setStyle('display', 'none');
     }
 
-    if ($('ip').value.length < 7 && !$('steam').value) {
+    if (!/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/.test($('ip').value) && !$('steam').value) {
         $('ip.msg').setHTML('You must enter a valid IP address');
         $('ip.msg').setStyle('display', 'block');
         err++;
