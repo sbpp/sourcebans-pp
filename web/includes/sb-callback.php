@@ -865,6 +865,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         Log::add("w", "Hacking Attempt", "$username tried to add an admin, but doesnt have access.");
         return $objResponse;
     }
+    $a_steam = \SteamID\SteamID::toSteam2($a_steam);
     $a_name = RemoveCode($a_name);
     $a_steam = RemoveCode($a_steam);
     $a_email = RemoveCode($a_email);
@@ -896,18 +897,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         }
     }
     // If they didnt type a steamid
-    if ((empty($a_steam) || strlen($a_steam) < 10)) {
+    if ((empty($a_steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID for the admin.");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
     } else {
         // Validate the steamid or fetch it from the community id
-        if ((!is_numeric($a_steam)
-         && !validate_steam($a_steam))
-         || (is_numeric($a_steam)
-         && (strlen($a_steam) < 15
-         || !validate_steam($a_steam = \SteamID\SteamID::toSteam2($a_steam)))))
-        {
+        if (!\SteamID\SteamID::isValidID($a_steam)) {
             $error++;
             $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
             $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -1692,7 +1688,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    } elseif ($type == 0 && !validate_steam($steam)) {
+    } elseif ($type == 0 && !\SteamID\SteamID::isValidID($steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -3009,7 +3005,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    } elseif (!validate_steam($steam)) {
+    } elseif (!\SteamID\SteamID::isValidID($steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");

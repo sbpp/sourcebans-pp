@@ -64,6 +64,18 @@ class SteamID
         }
     }
 
+    public static function isValidID($steamid)
+    {
+        switch (true) {
+            case preg_match("/STEAM_[0|1]:[0:1]:\d*/", $steamid):
+            case preg_match("/\[U:1:\d*\]/", $steamid):
+            case preg_match("/\d{17}/", $steamid):
+                return true;
+            default:
+                return false;
+        }
+    }
+
     private static function getCalcMethod()
     {
         switch (true) {

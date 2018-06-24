@@ -55,7 +55,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     $SID           = (int) $_POST['server'];
     $validsubmit   = true;
     $errors        = "";
-    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !validate_steam($SteamID)) {
+    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     }

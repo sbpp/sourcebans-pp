@@ -106,7 +106,7 @@ if (isset($_POST['adminname'])) {
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
     } else {
         // Validate the steamid or fetch it from the community id
-        if (!validate_steam($a_steam)) {
+        if (!\SteamID\SteamID::isValidID($a_steam)) {
             $error++;
             $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID.';";
             $errorScript .= "$('steam.msg').setStyle('display', 'block');";

@@ -56,7 +56,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $UnbanReason = stripslashes($UnbanReason);
     }
 
-    if ($Type == 0 && !validate_steam($SteamID)) {
+    if ($Type == 0 && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     } elseif ($Type == 0) {
