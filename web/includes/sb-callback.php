@@ -235,7 +235,7 @@ function ChangeEmail($aid, $email, $password)
     $objResponse->addScript("set_error(0);");
     }
 
-    if(!check_email($email)) {
+    if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $objResponse->addScript("$('email1.msg').setStyle('display', 'block');");
     $objResponse->addScript("$('email1.msg').setHTML('You must type a valid email address.');");
     $objResponse->addScript("set_error(1);");

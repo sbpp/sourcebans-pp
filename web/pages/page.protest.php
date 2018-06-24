@@ -104,7 +104,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }

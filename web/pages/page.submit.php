@@ -71,7 +71,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }

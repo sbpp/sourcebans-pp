@@ -830,28 +830,6 @@ function sizeFormat($size)
     }
 }
 
-function check_email($email) {
-    $nonascii      = "\x80-\xff"; # Non-ASCII-Chars are not allowed
-
-    $nqtext        = "[^\\\\$nonascii\015\012\"]";
-    $qchar         = "\\\\[^$nonascii]";
-
-    $protocol      = '(?:mailto:)';
-
-    $normuser      = '[a-zA-Z0-9][a-zA-Z0-9_.-]*';
-    $quotedstring  = "\"(?:$nqtext|$qchar)+\"";
-    $user_part     = "(?:$normuser|$quotedstring)";
-
-    $dom_mainpart  = '[a-zA-Z0-9][a-zA-Z0-9._-]*\\.';
-    $dom_subpart   = '(?:[a-zA-Z0-9][a-zA-Z0-9._-]*\\.)*';
-    $dom_tldpart   = '[a-zA-Z]{2,5}';
-    $domain_part   = "$dom_subpart$dom_mainpart$dom_tldpart";
-
-    $regex         = "$protocol?$user_part\@$domain_part";
-
-    return preg_match("/^$regex$/", $email);
-}
-
 //function to check for multiple steamids on one server.
 // param $steamids needs to be an array of steamids.
 //returns array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => array()....)
