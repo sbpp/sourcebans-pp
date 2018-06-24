@@ -78,7 +78,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type an IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
-    } elseif ($_POST['type'] == 1 && !validate_ip($_POST['ip'])) {
+    } elseif ($_POST['type'] == 1 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type a valid IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";

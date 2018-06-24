@@ -648,7 +648,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     else
     {
     $objResponse->addAssign("address.msg", "innerHTML", "");
-    if(!validate_ip($ip) && !is_string($ip))
+    if(!filter_var($ip, FILTER_VALIDATE_IP) && !is_string($ip))
     {
     $error++;
     $objResponse->addAssign("address.msg", "innerHTML", "You must type a valid IP.");
@@ -1157,11 +1157,6 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     $server_admin_group = "";
     $server_admin_group_int = -1;
     }
-
-    //make sure steamid starts with STEAM_0
-    $steam = explode(':', $a_steam);
-    $steam[0] = "STEAM_0";
-    $a_steam = implode(':', $steam);
 
     // Add the admin
     $aid = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $server_admin_group, $srv_mask, $immunity, $a_serverpass);
@@ -1696,7 +1691,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $error++;
         $objResponse->addAssign("ip.msg", "innerHTML", "You must type an IP");
         $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
-    } elseif ($type == 1 && !validate_ip($ip)) {
+    } elseif ($type == 1 && !filter_var($ip, FILTER_VALIDATE_IP)) {
         $error++;
         $objResponse->addAssign("ip.msg", "innerHTML", "You must type a valid IP");
         $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");

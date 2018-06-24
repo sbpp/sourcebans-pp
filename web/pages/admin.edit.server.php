@@ -66,7 +66,7 @@ if (isset($_POST['address'])) {
         $errorScript .= "$('address.msg').innerHTML = 'You must type the server address.';";
         $errorScript .= "$('address.msg').setStyle('display', 'block');";
     } else {
-        if (!validate_ip($_POST['address']) && !is_string($_POST['address'])) {
+        if (!filter_var($_POST['address'], FILTER_VALIDATE_IP) && !is_string($_POST['address'])) {
             $error++;
             $errorScript .= "$('address.msg').innerHTML = 'You must type a valid IP.';";
             $errorScript .= "$('address.msg').setStyle('display', 'block');";

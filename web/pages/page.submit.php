@@ -59,7 +59,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     }
-    if (strlen($BanIP) != 0 && !validate_ip($BanIP)) {
+    if (strlen($BanIP) != 0 && !filter_var($BanIP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP-address.<br>';
         $validsubmit = false;
     }

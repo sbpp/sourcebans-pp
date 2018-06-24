@@ -76,7 +76,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
     }
-    if ($Type == 1 && !validate_ip($IP)) {
+    if ($Type == 1 && !filter_var($IP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP.<br>';
         $validsubmit = false;
     } elseif ($Type == 1) {
