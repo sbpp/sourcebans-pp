@@ -28,7 +28,6 @@ use xPaw\SourceQuery\SourceQuery;
 
 require_once('xajax.inc.php');
 include_once('system-functions.php');
-include_once('user-functions.php');
 $xajax = new xajax();
 //$xajax->debugOn();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);
