@@ -1922,7 +1922,8 @@ function ChangePassword($aid, $pass)
     $objResponse->addAlert("Password changed successfully");
     $objResponse->addRedirect("index.php?p=login", 0);
     Log::add("m", "Password Changed", "Password changed for admin ($admname[user])");
-    logout();
+    $_SESSION = [];
+    session_destroy();
     return $objResponse;
 }
 
