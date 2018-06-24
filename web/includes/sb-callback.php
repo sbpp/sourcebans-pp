@@ -1084,8 +1084,8 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     // Ohnoes! something went wrong, stop and show errs
     if($error)
     {
-    ShowBox_ajx("Error", "There are some errors in your input. Please correct them.", "red", "", true, $objResponse);
-    return $objResponse;
+        $objResponse->AddScript("ShowBox('Error', 'There are some errors in your input. Please correct them.', 'red', '', true);");
+        return $objResponse;
     }
 
 // ##############################################################

@@ -624,15 +624,6 @@ function CheckExt($filename, $ext)
     return false;
 }
 
-function ShowBox($title, $msg, $color, $redir="", $noclose=false)
-{
-    echo "<script>ShowBox('$title', '$msg', '$color', '$redir', $noclose);</script>";
-}
-function ShowBox_ajx($title, $msg, $color, $redir="", $noclose=false, &$response)
-{
-    $response->AddScript("ShowBox('$title', '$msg', '$color', '$redir', $noclose);");
-}
-
 function PruneBans()
 {
     global $userbank;
@@ -828,24 +819,6 @@ function SendRconSilent($rcon, $sid)
     $ret = $r->rconCommand($rcon);
     if ($ret) {
         return true;
-    }
-    return false;
-}
-
-/* Function to check if a needle is inside a 2 layered recursive array
-* like the one from ADODB->GetAll
-* @param string $needle The string to search for
-* @param array $array The array to search in
-* @return boolean
-*/
-function in_array_dim($needle, $array)
-{
-    foreach ($array as $secarray) {
-        foreach ($secarray as $part) {
-            if ($part == $needle) {
-                return true;
-            }
-        }
     }
     return false;
 }
