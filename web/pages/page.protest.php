@@ -27,7 +27,7 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 global $userbank, $theme;
 if ($GLOBALS['config']['config.enableprotest'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 if (!defined("IN_SB")) {
@@ -110,7 +110,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     }
 
     if (!$validsubmit) {
-        CreateRedBox("Error", $errors);
+        print "<script>ShowBox('Error', '$errors', 'red');</script>";
     }
 
     if ($validsubmit && $BanId != -1) {
@@ -159,7 +159,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
 
-        CreateGreenBox("Successful", "Your protest has been sent.");
+        print "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
     }
 }
 

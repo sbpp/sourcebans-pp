@@ -534,29 +534,6 @@ function trunc($text, $len, $byword=true)
     return $text;
 }
 
-function CreateRedBox($title, $content)
-{
-    $text = '<div id="msg-red-debug" style="">
-	<i><img src="./images/warning.png" alt="Warning" /></i>
-	<b>' . $title .'</b>
-	<br />
-	' . $content . '</i>
-</div>';
-
-    echo $text;
-}
-function CreateGreenBox($title, $contnet)
-{
-    $text = '<div id="msg-green-dbg" style="">
-	<i><img src="./images/yay.png" alt="Yay!" /></i>
-	<b>' . $title .'</b>
-	<br />
-	' . $contnet . '</i>
-</div>';
-
-    echo $text;
-}
-
 function CreateQuote()
 {
     global $userbank;

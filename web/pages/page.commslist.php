@@ -36,7 +36,7 @@ if (!defined("IN_SB")) {
     die();
 }
 if ($GLOBALS['config']['config.enablecomms'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 $BansPerPage = SB_BANS_PER_PAGE;
