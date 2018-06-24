@@ -112,8 +112,7 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['name'] = RemoveCode($_POST['name']);
-    $reason        = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
+    $reason        = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;

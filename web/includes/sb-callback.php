@@ -153,7 +153,7 @@ function LostPassword($email)
     $message .= "To complete this process, please click the following link.\n";
     $message .= "NOTE: If you didnt request this reset, then simply ignore this email.\n\n";
 
-    $message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". RemoveCode($email) . "&validation=" . $validation;
+    $message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". $email . "&validation=" . $validation;
 
     $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" .
     'X-Mailer: PHP/' . phpversion();
@@ -633,8 +633,6 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     Log::add("w", "Hacking Attempt", "$username tried to add a server, but doesnt have access.");
     return $objResponse;
     }
-    $ip = RemoveCode($ip);
-    $group_name = RemoveCode($group_name);
 
     $error = 0;
     // ip
@@ -865,11 +863,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         return $objResponse;
     }
     $a_steam = \SteamID\SteamID::toSteam2($a_steam);
-    $a_name = RemoveCode($a_name);
-    $a_steam = RemoveCode($a_steam);
-    $a_email = RemoveCode($a_email);
-    $a_servername = ($a_servername=="0" ? null : RemoveCode($a_servername));
-    $a_webname = RemoveCode($a_webname);
+    $a_servername = ($a_servername=="0" ? null : $a_servername);
     $mask = (int)$mask;
 
     $error=0;
@@ -2047,7 +2041,6 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     }
 
     $gid = (int)$gid;
-    $name = RemoveCode($name);
     $web_flags = (int)$web_flags;
     if($type == "web" || $type == "server" )
     // Update web stuff
@@ -2768,7 +2761,6 @@ function GetGroups($friendid)
     preg_match("/<privacyState>([^\]]*)<\/privacyState>/", $raw, $status);
     if(($status && $status[1] != "public") || strstr($raw, "<groups>")) {
     $raw = str_replace("&", "", $raw);
-    $raw = strip_31_ascii($raw);
     $raw = utf8_encode($raw);
     $xml = simplexml_load_string($raw); // parse xml
     $result = $xml->xpath('/profile/groups/group'); // go to the group nodes
@@ -2778,7 +2770,6 @@ function GetGroups($friendid)
         if(empty($node->groupName)) {
         $memberlistxml = file_get_contents("http://steamcommunity.com/gid/".$node->groupID64."/memberslistxml/?xml=1");
         $memberlistxml = str_replace("&", "", $memberlistxml);
-        $memberlistxml = strip_31_ascii($memberlistxml);
         $memberlistxml = utf8_encode($memberlistxml);
         $groupxml = simplexml_load_string($memberlistxml); // parse xml
         $node = $groupxml->xpath('/memberList/groupDetails');

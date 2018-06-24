@@ -93,7 +93,7 @@ if (isset($_POST['address'])) {
         $errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
     }
 
-    $ip = RemoveCode($_POST['address']);
+    $ip = $_POST['address'];
 
     // Check for dublicates afterwards
     if ($error == 0) {

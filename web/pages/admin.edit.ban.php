@@ -133,10 +133,8 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['name'] = RemoveCode($_POST['name']);
     $_POST['ip'] = preg_replace('#[^\d\.]#', '', $_POST['ip']); //strip ip of all but numbers and dots
-    $_POST['dname'] = RemoveCode($_POST['dname']);
-    $reason = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
+    $reason = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;
@@ -199,7 +197,7 @@ if (isset($_POST['name'])) {
                     $_POST['dname']
                 )
             );
-            $res['dname'] = RemoveCode($_POST['dname']);
+            $res['dname'] = $_POST['dname'];
         }
 
         if ($_POST['banlength'] != $lengthrev->fields['length']) {

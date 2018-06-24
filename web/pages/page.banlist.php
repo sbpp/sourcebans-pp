@@ -125,13 +125,13 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         if ($res) {
             $type = $row['type'] == 0 ? $row['authid'] : $row['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player Unbanned', '" . StripQuotes($row['name']) . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
+                echo "<script>ShowBox('Player Unbanned', '" . $row['name'] . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
             Log::add("m", "Player Unbanned", "$row[name] ($type) has been unbanned.");
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player NOT Unbanned', 'There was an error unbanning " . StripQuotes($row['name']) . "', 'red', 'index.php?p=banlist$pagelink', true);</script>";
+                echo "<script>ShowBox('Player NOT Unbanned', 'There was an error unbanning " . $row['name'] . "', 'red', 'index.php?p=banlist$pagelink', true);</script>";
             }
             $fail++;
         }
@@ -192,13 +192,13 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         if ($res) {
             $type = $steam['type'] == 0 ? $steam['authid'] : $steam['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' ($type) has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
+                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . $steam['name'] . "\' ($type) has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
             Log::add("m", "Ban Deleted", "Ban $steam[name] ($type) has been deleted.");
             $dcount++;
         } else {
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' had an error while being removed.', 'red', 'index.php?p=banlist$pagelink', true);</script>";
+                echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=banlist$pagelink', true);</script>";
             }
             $fail++;
         }
@@ -563,11 +563,11 @@ while (!$res->EOF) {
     $data['blockcomm_link']  = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
     $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . $res->fields['ban_id']);
     $data['groups_link']     = CreateLinkR('<img src="images/groups.png" border="0" alt="" style="vertical-align:middle" /> Show Groups', "index.php?p=admin&c=bans&fid=" . $data['communityid'] . "#^4");
-    $data['friend_ban_link'] = CreateLinkR('<img src="images/group_delete.png" border="0" alt="" style="vertical-align:middle" /> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . StripQuotes($data['player']) . "');return false;");
+    $data['friend_ban_link'] = CreateLinkR('<img src="images/group_delete.png" border="0" alt="" style="vertical-align:middle" /> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
     $data['edit_link']       = CreateLinkR('<img src="images/edit.png" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
-    $data['unban_link']  = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1, false);return false;");
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0, false);return false;");
+    $data['unban_link']  = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1, false);return false;");
+    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0, false);return false;");
 
 
     $data['server_id'] = $res->fields['ban_server'];

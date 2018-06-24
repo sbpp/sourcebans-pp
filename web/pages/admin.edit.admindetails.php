@@ -70,9 +70,9 @@ $errorScript = "";
 
 // Form submitted?
 if (isset($_POST['adminname'])) {
-    $a_name           = RemoveCode($_POST['adminname']);
-    $a_steam          = \SteamID\SteamID::toSteam2(trim(RemoveCode($_POST['steam'])));
-    $a_email          = trim(RemoveCode($_POST['email']));
+    $a_name           = $_POST['adminname'];
+    $a_steam          = \SteamID\SteamID::toSteam2($_POST['steam']);
+    $a_email          = $_POST['email'];
     $a_serverpass     = $_POST['a_useserverpass'] == "on";
     $pw_changed       = false;
     $serverpw_changed = false;

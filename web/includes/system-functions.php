@@ -534,13 +534,6 @@ function trunc($text, $len, $byword=true)
     return $text;
 }
 
-function StripQuotes($str)
-{
-    $str = str_replace("'", "", $str);
-    $str = str_replace('"', "", $str);
-    return $str;
-}
-
 function CreateRedBox($title, $content)
 {
     $text = '<div id="msg-red-debug" style="">
@@ -613,11 +606,6 @@ function CheckAdminAccess($mask)
         header("Location: index.php?p=login&m=no_access");
         die();
     }
-}
-
-function RemoveCode($text)
-{
-    return htmlspecialchars(strip_tags($text));
 }
 
 function SecondsToString($sec, $textual=true)
@@ -921,15 +909,6 @@ function in_array_dim($needle, $array)
         }
     }
     return false;
-}
-
-// Strip all undisplayable chars from a string. e.g.  or 
-function strip_31_ascii($string)
-{
-    for ($i=0; $i<32; $i++) {
-        $string = str_replace(chr($i), "", $string);
-    }
-    return $string;
 }
 
 function generate_salt($length = 5)

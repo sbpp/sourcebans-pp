@@ -104,10 +104,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Player UnGagged', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        echo "<script>ShowBox('Player UnGagged', '" . $row['name'] . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
         Log::add("m", "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "unmute" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -149,10 +149,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Player UnMuted', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        echo "<script>ShowBox('Player UnMuted', '" . $row['name'] . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
         Log::add("m", "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "delete") {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -199,10 +199,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Block Deleted', 'The block for \'" . StripQuotes($steam['name']) . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
+        echo "<script>ShowBox('Block Deleted', 'The block for \'" . $steam['name'] . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
         Log::add("m", "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
-        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
+        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
     }
 }
 
@@ -539,16 +539,16 @@ while (!$res->EOF) {
 
     switch ($data['type']) {
         case 2:
-            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         case 1:
-            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         default:
             break;
     }
 
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0);return false;");
+    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0);return false;");
 
     $data['server_id'] = $res->fields['ban_server'];
 
@@ -611,7 +611,7 @@ while (!$res->EOF) {
 
                 $cdata['comname']    = $commentres->fields['comname'];
                 $cdata['added']      = date($dateformat, $commentres->fields['added']);
-                $cdata['commenttxt'] = RemoveCode($commentres->fields['commenttxt']);
+                $cdata['commenttxt'] = $commentres->fields['commenttxt'];
                 $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
