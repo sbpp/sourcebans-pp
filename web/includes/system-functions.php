@@ -641,67 +641,6 @@ function PruneComms()
     return $res?true:false;
 }
 
-// Function by Luman (http://snipplr.com/users/luman)
-function array_qsort(&$array, $column=0, $order=SORT_ASC, $first=0, $last= -2)
-{
-    // $array  - the array to be sorted
-    // $column - index (column) on which to sort
-    //          can be a string if using an associative array
-    // $order  - SORT_ASC (default) for ascending or SORT_DESC for descending
-    // $first  - start index (row) for partial array sort
-    // $last  - stop  index (row) for partial array sort
-    // $keys  - array of key values for hash array sort
-
-    $keys = array_keys($array);
-    if ($last == -2) {
-        $last = count($array) - 1;
-    }
-    if ($last > $first) {
-        $alpha = $first;
-        $omega = $last;
-        $key_alpha = $keys[$alpha];
-        $key_omega = $keys[$omega];
-        $guess = $array[$key_alpha][$column];
-        while ($omega >= $alpha) {
-            if ($order == SORT_ASC) {
-                while ($array[$key_alpha][$column] < $guess) {
-                    $alpha++;
-                    $key_alpha = $keys[$alpha];
-                }
-
-                while ($array[$key_omega][$column] > $guess) {
-                    $omega--;
-                    $key_omega = $keys[$omega];
-                }
-            } else {
-                while ($array[$key_alpha][$column] > $guess) {
-                    $alpha++;
-                    $key_alpha = $keys[$alpha];
-                }
-                while ($array[$key_omega][$column] < $guess) {
-                    $omega--;
-                    $key_omega = $keys[$omega];
-                }
-            }
-            if ($alpha > $omega) {
-                break;
-            }
-            $temporary = $array[$key_alpha];
-            $array[$key_alpha] = $array[$key_omega];
-            $alpha++;
-            $key_alpha = $keys[$alpha];
-            $array[$key_omega] = $temporary;
-            $omega--;
-            if ($omega > 0) {
-                $key_omega = $keys[$omega];
-            }
-        }
-        array_qsort($array, $column, $order, $first, $omega);
-        array_qsort($array, $column, $order, $alpha, $last);
-    }
-}
-
-
 function getDirectorySize($path)
 {
     $totalsize = 0;
