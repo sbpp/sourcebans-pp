@@ -885,7 +885,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
             $objResponse->addAssign("name.msg", "innerHTML", "An admin name can not contain a \" ' \".");
             $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
         } else {
-            if (is_taken("admins", "user", $a_name)) {
+            if ($userbank->isNameTaken($a_name)) {
                 $error++;
                 $objResponse->addAssign("name.msg", "innerHTML", "An admin with this name already exists");
                 $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
@@ -912,7 +912,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
             $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
             $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
         } else {
-            if (is_taken("admins", "authid", $a_steam)) {
+            if ($userbank->isSteamIDTaken($a_steam)) {
                 $admins = $userbank->GetAllAdmins();
                 foreach ($admins as $admin) {
                     if ($admin['authid'] == $a_steam) {
@@ -940,7 +940,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         }
     } else {
         // Is an other admin already registred with that email address?
-        if (is_taken("admins", "email", $a_email)) {
+        if ($userbank->isEmailTaken($a_email)) {
             $admins = $userbank->GetAllAdmins();
             foreach ($admins as $admin) {
                 if ($admin['email'] == $a_email) {
