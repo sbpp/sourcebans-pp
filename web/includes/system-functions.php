@@ -209,28 +209,6 @@ function BuildBreadcrumbs()
     }
     echo '<script type="text/javascript">$("breadcrumb").setHTML("' . $text . '");</script>';
 }
-/**
- * Creates an anchor tag, and adds tooltip code if needed
- *
- * @param string $title The title of the tooltip/text to link
- * @param string $url The link
- * @param string $tooltip The tooltip message
- * @param string $target The new links target
- * @return noreturn
- */
-function CreateLink($title, $url, $tooltip="", $target="_self", $wide=false)
-{
-    if ($wide) {
-        $class = "perm";
-    } else {
-        $class = "tip";
-    }
-    if (strlen($tooltip) == 0) {
-        echo '<a href="' . $url . '" target="' . $target . '">' . $title .' </a>';
-    } else {
-        echo '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
-    }
-}
 
 /**
  * Creates an anchor tag, and adds tooltip code if needed
@@ -490,23 +468,7 @@ function SmFlagsToSb($flagstring, $head=true)
         $string .="&bull; Custom Flag 6<br />";
     }
 
-
-    //if(($mask & SM_DEF_IMMUNITY) != 0)
-    //{
-    //	$flagstring .="&bull; Default Immunity<br />";
-    //}
-    //if(($mask & SM_GLOBAL_IMMUNITY) != 0)
-    //{
-    //	$flagstring .="&bull; Global Immunity<br />";
-    //}
     return $string;
-}
-
-function PrintArray($array)
-{
-    echo "<pre>";
-    print_r($array);
-    echo "</pre>";
 }
 
 function NextSid()
