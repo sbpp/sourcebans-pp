@@ -953,3 +953,8 @@ function strip_31_ascii($string)
     }
     return $string;
 }
+
+function generate_salt($length = 5)
+{
+    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
+}
