@@ -139,14 +139,14 @@ if ($_GET['c'] == "groups") {
                     $alladmins = $GLOBALS['db']->Execute("SELECT aid, authid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
                     while (!$alladmins->EOF) {
                         foreach ($flags as $fla) {
-                            if (strstr(get_user_admin($alladmins->fields["authid"]), $fla)) {
+                            if ($userbank->HasAccess($fla, $alladmins->fields["authid"])) {
                                 if (!isset($accessaid)) {
                                     $accessaid = $alladmins->fields["aid"];
                                 }
                                 $accessaid .= ",".$alladmins->fields["aid"];
                             }
                         }
-                        if (strstr(get_user_admin($alladmins->fields["authid"]), 'z')) {
+                        if ($userbank->HasAccess(SM_ROOT, $alladmins->fields["authid"])) {
                             if (!isset($accessaid)) {
                                 $accessaid = $alladmins->fields["aid"];
                             }

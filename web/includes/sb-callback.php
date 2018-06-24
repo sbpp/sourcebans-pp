@@ -897,7 +897,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         }
     }
     // If they didnt type a steamid
-    if ((empty($a_steam)) {
+    if (empty($a_steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID for the admin.");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
