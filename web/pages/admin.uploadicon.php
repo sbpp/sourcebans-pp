@@ -36,7 +36,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS | ADMIN_ADD_MODS)) {
 
 $message = "";
 if (isset($_POST['upload'])) {
-    if (CheckExt($_FILES['icon_file']['name'], "gif") || CheckExt($_FILES['icon_file']['name'], "jpg") || CheckExt($_FILES['icon_file']['name'], "png")) {
+    if (checkExtension($_FILES['icon_file']['name'], ['gif', 'jpg', 'png'])) {
         move_uploaded_file($_FILES['icon_file']['tmp_name'], SB_ICONS . "/" . $_FILES['icon_file']['name']);
         $message = "<script>window.opener.icon('" . $_FILES['icon_file']['name'] . "');self.close()</script>";
         Log::add("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");

@@ -80,7 +80,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $validsubmit = false;
     }
     if (!empty($_FILES['demo_file']['name'])) {
-        if (!CheckExt($_FILES['demo_file']['name'], "zip") && !CheckExt($_FILES['demo_file']['name'], "rar") && !CheckExt($_FILES['demo_file']['name'], "dem") && !CheckExt($_FILES['demo_file']['name'], "7z") && !CheckExt($_FILES['demo_file']['name'], "bz2") && !CheckExt($_FILES['demo_file']['name'], "gz")) {
+        if (!checkExtension($_FILES['demo_file']['name'], ['zip', 'rar', 'dem', '7z', 'bz2', 'gz'])) {
             $errors .= '* A demo can only be a dem, zip, rar, 7z, bz2 or a gz filetype.<br>';
             $validsubmit = false;
         }

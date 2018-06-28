@@ -609,14 +609,10 @@ function GetMapImage($map)
     return "images/maps/nomap.jpg";
 }
 
-function CheckExt($filename, $ext)
+function checkExtension($file, array $validExts)
 {
-    $filename = str_replace(chr(0), '', $filename);
-    $path_info = pathinfo($filename);
-    if (strtolower($path_info['extension']) == strtolower($ext)) {
-        return true;
-    }
-    return false;
+    $file = pathinfo($file, PATHINFO_EXTENSION);
+    return in_array(strtolower($file), $validExts);
 }
 
 function PruneBans()
