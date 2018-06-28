@@ -636,50 +636,21 @@ function PruneComms()
     return $res?true:false;
 }
 
-function getDirectorySize($path)
+function getDirSize($dir)
 {
-    $totalsize = 0;
-    $totalcount = 0;
-    $dircount = 0;
-    if ($handle = opendir($path)) {
-        while (false !== ($file = readdir($handle))) {
-            $nextpath = $path . '/' . $file;
-            if ($file != '.' && $file != '..' && !is_link($nextpath)) {
-                if (is_dir($nextpath)) {
-                    $dircount++;
-                    $result = getDirectorySize($nextpath);
-                    $totalsize += $result['size'];
-                    $totalcount += $result['count'];
-                    $dircount += $result['dircount'];
-                } elseif (is_file($nextpath)) {
-                    $totalsize += filesize($nextpath);
-                    $totalcount++;
-                }
-            }
-        }
+    foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $object) {
+        $size += is_file($object) ? filesize($object) : getDirSize($object);
     }
-    closedir($handle);
-    $total['size'] = $totalsize;
-    $total['count'] = $totalcount;
-    $total['dircount'] = $dircount;
-    return $total;
+    return sizeFormat((int)$size);
 }
 
-
-function sizeFormat($size)
+function sizeFormat($bytes)
 {
-    if ($size<1024) {
-        return $size." bytes";
-    } elseif ($size<(1024*1024)) {
-        $size=round($size/1024, 1);
-        return $size." KB";
-    } elseif ($size<(1024*1024*1024)) {
-        $size=round($size/(1024*1024), 2);
-        return $size." MB";
-    } else {
-        $size=round($size/(1024*1024*1024), 2);
-        return $size." GB";
+    if ($bytes <= 0) {
+        return '0 B';
     }
+    $i = floor(log($bytes, 1024));
+    return round($bytes / pow(1024, $i), [0, 0, 2, 2, 3][$i]).[' B', ' kB', ' MB', ' GB', ' TB'][$i];
 }
 
 //function to check for multiple steamids on one server.
