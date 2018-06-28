@@ -52,13 +52,10 @@ class SteamID
         switch (true) {
             case preg_match("/STEAM_[0|1]:[0:1]:\d*/", $steamid):
                 return 'Steam2';
-                break;
             case preg_match("/\[U:1:\d*\]/", $steamid):
                 return 'Steam3';
-                break;
             case preg_match("/\d{17}/", $steamid):
                 return 'Steam64';
-                break;
             default:
                 throw new Exception("Invalid SteamID input!");
         }
@@ -74,6 +71,11 @@ class SteamID
             default:
                 return false;
         }
+    }
+
+    public static function compare($steam1, $steam2)
+    {
+        return strcasecmp(self::toSteam64($steam1), self::toSteam64($steam2)) === 0;
     }
 
     private static function getCalcMethod()
