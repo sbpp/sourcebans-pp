@@ -65,7 +65,9 @@ $name = $userbank->GetProperty("user", $_GET['id'])?>
 <input type="hidden" id="group_id" value=<?=$_GET['id']?>>
 <table width="90%" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?=HelpIcon("Group Name", "Type the name of the new group you want to create.")?>Group Name </div></td>
+    <td valign="top" width="35%"><div class="rowdesc">
+        <img align='absbottom' src='images/help.png' class='tip' title='Group Name::Type the name of the new group you want to create.'/>
+        Group Name </div></td>
     <td><div align="left">
       <input type="text" TABINDEX=1 class="inputbox" id="groupname" name="groupname" />
     </div><div id="groupname.msg" style="color:#CC0000;"></div></td>

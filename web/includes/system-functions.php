@@ -233,11 +233,6 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
     }
 }
 
-function HelpIcon($title, $text)
-{
-    return '<img border="0" align="absbottom" src="themes/' . SB_THEME .'/images/admin/help.png" class="tip" title="' .  $title . ' :: ' .  $text . '">&nbsp;&nbsp;';
-}
-
 /**
  * Allows the title of the page to change wherever the code is being executed from
  *

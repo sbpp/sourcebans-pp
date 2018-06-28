@@ -841,7 +841,7 @@ function AddServerGroupName()
     Log::add("w", "Hacking Attempt", "$username tried to edit group name, but doesnt have access.");
     return $objResponse;
     }
-    $inject = '<td valign="top"><div class="rowdesc">' . HelpIcon("Server Group Name", "Please type the name of the new group you wish to create.") . 'Group Name </div></td>';
+    $inject = "<td valign='top'><div class='rowdesc'><img align='absbottom' src='images/help.png' class='tip' title='Server Group Name::Please type the name of the new group you wish to create.'/></div></td>";
     $inject .= '<td><div align="left">
         <input type="text" style="border: 1px solid #000000; width: 105px; font-size: 14px; background-color: rgb(215, 215, 215);width: 200px;" id="sgroup" name="sgroup" />
       </div>
