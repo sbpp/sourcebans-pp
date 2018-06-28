@@ -603,10 +603,8 @@ function PageDie()
 
 function GetMapImage($map)
 {
-    if (@file_exists(SB_MAP_LOCATION . "/" . $map . ".jpg")) {
-        return "images/maps/" . $map . ".jpg";
-    }
-    return "images/maps/nomap.jpg";
+    $map = (@file_exists(SB_MAP_LOCATION."/$map.jpg")) ? $map : 'nomap';
+    return SB_MAP_LOCATION."/$map.jpg";
 }
 
 function checkExtension($file, array $validExts)
