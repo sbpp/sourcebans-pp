@@ -9,5 +9,5 @@
 
 ## I Found a Security Hole, what do I do?
 
-1. Open an issue on the GitHub repo, with all nessesary info.
+1. Open an issue on the GitHub repo, with all necessary info.
 2. If possible, open a Pull Request with a fix for the said Security Hole while following the instrucions in [CONTRIBUTING.md](https://github.com/sbpp/sourcebans-pp/blob/v1.x/CONTRIBUTING.md).
