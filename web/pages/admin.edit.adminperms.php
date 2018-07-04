@@ -110,68 +110,68 @@ if (!$userbank->HasAccess(ADMIN_OWNER)) {
 <?php
 }
 ?>
-$('p2').checked = <?=check_flag($web_flags, ADMIN_OWNER) ? "true" : "false"?>;
+$('p2').checked = <?=$userbank->HasAccess(ADMIN_OWNER, $_GET['id']) ? "true" : "false"?>;
 
-$('p4').checked = <?=check_flag($web_flags, ADMIN_LIST_ADMINS) ? "true" : "false"?>;
-$('p5').checked = <?=check_flag($web_flags, ADMIN_ADD_ADMINS) ? "true" : "false"?>;
-$('p6').checked = <?=check_flag($web_flags, ADMIN_EDIT_ADMINS) ? "true" : "false"?>;
-$('p7').checked = <?=check_flag($web_flags, ADMIN_DELETE_ADMINS) ? "true" : "false"?>;
+$('p4').checked = <?=$userbank->HasAccess(ADMIN_LIST_ADMINS, $_GET['id']) ? "true" : "false"?>;
+$('p5').checked = <?=$userbank->HasAccess(ADMIN_ADD_ADMINS, $_GET['id']) ? "true" : "false"?>;
+$('p6').checked = <?=$userbank->HasAccess(ADMIN_EDIT_ADMINS, $_GET['id']) ? "true" : "false"?>;
+$('p7').checked = <?=$userbank->HasAccess(ADMIN_DELETE_ADMINS, $_GET['id']) ? "true" : "false"?>;
 
-$('p9').checked = <?=check_flag($web_flags, ADMIN_LIST_SERVERS) ? "true" : "false"?>;
-$('p10').checked = <?=check_flag($web_flags, ADMIN_ADD_SERVER) ? "true" : "false"?>;
-$('p11').checked = <?=check_flag($web_flags, ADMIN_EDIT_SERVERS) ? "true" : "false"?>;
-$('p12').checked = <?=check_flag($web_flags, ADMIN_DELETE_SERVERS) ? "true" : "false"?>;
+$('p9').checked = <?=$userbank->HasAccess(ADMIN_LIST_SERVERS, $_GET['id']) ? "true" : "false"?>;
+$('p10').checked = <?=$userbank->HasAccess(ADMIN_ADD_SERVER, $_GET['id']) ? "true" : "false"?>;
+$('p11').checked = <?=$userbank->HasAccess(ADMIN_EDIT_SERVERS, $_GET['id']) ? "true" : "false"?>;
+$('p12').checked = <?=$userbank->HasAccess(ADMIN_DELETE_SERVERS, $_GET['id']) ? "true" : "false"?>;
 
-$('p14').checked = <?=check_flag($web_flags, ADMIN_ADD_BAN) ? "true" : "false"?>;
-$('p16').checked = <?=check_flag($web_flags, ADMIN_EDIT_OWN_BANS) ? "true" : "false"?>;
-$('p17').checked = <?=check_flag($web_flags, ADMIN_EDIT_GROUP_BANS) ? "true" : "false"?>;
-$('p18').checked = <?=check_flag($web_flags, ADMIN_EDIT_ALL_BANS) ? "true" : "false"?>;
-$('p19').checked = <?=check_flag($web_flags, ADMIN_BAN_PROTESTS) ? "true" : "false"?>;
-$('p20').checked = <?=check_flag($web_flags, ADMIN_BAN_SUBMISSIONS) ? "true" : "false"?>;
-$('p33').checked = <?=check_flag($web_flags, ADMIN_DELETE_BAN) ? "true" : "false"?>;
-$('p32').checked = <?=check_flag($web_flags, ADMIN_UNBAN) ? "true" : "false"?>;
-$('p34').checked = <?=check_flag($web_flags, ADMIN_BAN_IMPORT) ? "true" : "false"?>;
-$('p38').checked = <?=check_flag($web_flags, ADMIN_UNBAN_OWN_BANS) ? "true" : "false"?>;
-$('p39').checked = <?=check_flag($web_flags, ADMIN_UNBAN_GROUP_BANS) ? "true" : "false"?>;
+$('p14').checked = <?=$userbank->HasAccess(ADMIN_ADD_BAN, $_GET['id']) ? "true" : "false"?>;
+$('p16').checked = <?=$userbank->HasAccess(ADMIN_EDIT_OWN_BANS, $_GET['id']) ? "true" : "false"?>;
+$('p17').checked = <?=$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS, $_GET['id']) ? "true" : "false"?>;
+$('p18').checked = <?=$userbank->HasAccess(ADMIN_EDIT_ALL_BANS, $_GET['id']) ? "true" : "false"?>;
+$('p19').checked = <?=$userbank->HasAccess(ADMIN_BAN_PROTESTS, $_GET['id']) ? "true" : "false"?>;
+$('p20').checked = <?=$userbank->HasAccess(ADMIN_BAN_SUBMISSIONS, $_GET['id']) ? "true" : "false"?>;
+$('p33').checked = <?=$userbank->HasAccess(ADMIN_DELETE_BAN, $_GET['id']) ? "true" : "false"?>;
+$('p32').checked = <?=$userbank->HasAccess(ADMIN_UNBAN, $_GET['id']) ? "true" : "false"?>;
+$('p34').checked = <?=$userbank->HasAccess(ADMIN_BAN_IMPORT, $_GET['id']) ? "true" : "false"?>;
+$('p38').checked = <?=$userbank->HasAccess(ADMIN_UNBAN_OWN_BANS, $_GET['id']) ? "true" : "false"?>;
+$('p39').checked = <?=$userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS, $_GET['id']) ? "true" : "false"?>;
 
-$('p36').checked = <?=check_flag($web_flags, ADMIN_NOTIFY_SUB) ? "true" : "false"?>;
-$('p37').checked = <?=check_flag($web_flags, ADMIN_NOTIFY_PROTEST) ? "true" : "false"?>;
+$('p36').checked = <?=$userbank->HasAccess(ADMIN_NOTIFY_SUB, $_GET['id']) ? "true" : "false"?>;
+$('p37').checked = <?=$userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $_GET['id']) ? "true" : "false"?>;
 
-$('p22').checked = <?=check_flag($web_flags, ADMIN_LIST_GROUPS) ? "true" : "false"?>;
-$('p23').checked = <?=check_flag($web_flags, ADMIN_ADD_GROUP) ? "true" : "false"?>;
-$('p24').checked = <?=check_flag($web_flags, ADMIN_EDIT_GROUPS) ? "true" : "false"?>;
-$('p25').checked = <?=check_flag($web_flags, ADMIN_DELETE_GROUPS) ? "true" : "false"?>;
+$('p22').checked = <?=$userbank->HasAccess(ADMIN_LIST_GROUPS, $_GET['id']) ? "true" : "false"?>;
+$('p23').checked = <?=$userbank->HasAccess(ADMIN_ADD_GROUP, $_GET['id']) ? "true" : "false"?>;
+$('p24').checked = <?=$userbank->HasAccess(ADMIN_EDIT_GROUPS, $_GET['id']) ? "true" : "false"?>;
+$('p25').checked = <?=$userbank->HasAccess(ADMIN_DELETE_GROUPS, $_GET['id']) ? "true" : "false"?>;
 
-$('p26').checked = <?=check_flag($web_flags, ADMIN_WEB_SETTINGS) ? "true" : "false"?>;
+$('p26').checked = <?=$userbank->HasAccess(ADMIN_WEB_SETTINGS, $_GET['id']) ? "true" : "false"?>;
 
-$('p28').checked = <?=check_flag($web_flags, ADMIN_LIST_MODS) ? "true" : "false"?>;
-$('p29').checked = <?=check_flag($web_flags, ADMIN_ADD_MODS) ? "true" : "false"?>;
-$('p30').checked = <?=check_flag($web_flags, ADMIN_EDIT_MODS) ? "true" : "false"?>;
-$('p31').checked = <?=check_flag($web_flags, ADMIN_DELETE_MODS) ? "true" : "false"?>;
+$('p28').checked = <?=$userbank->HasAccess(ADMIN_LIST_MODS, $_GET['id']) ? "true" : "false"?>;
+$('p29').checked = <?=$userbank->HasAccess(ADMIN_ADD_MODS, $_GET['id']) ? "true" : "false"?>;
+$('p30').checked = <?=$userbank->HasAccess(ADMIN_EDIT_MODS, $_GET['id']) ? "true" : "false"?>;
+$('p31').checked = <?=$userbank->HasAccess(ADMIN_DELETE_MODS, $_GET['id']) ? "true" : "false"?>;
 
 
-$('s14').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_ROOT) ? "true" : "false"?>;
-$('s1').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_RESERVED_SLOT) ? "true" : "false"?>;
-$('s23').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_GENERIC) ? "true" : "false"?>;
-$('s2').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_KICK) ? "true" : "false"?>;
-$('s3').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_BAN) ? "true" : "false"?>;
-$('s4').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_UNBAN) ? "true" : "false"?>;
-$('s5').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_SLAY) ? "true" : "false"?>;
-$('s6').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_MAP) ? "true" : "false"?>;
-$('s7').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CVAR) ? "true" : "false"?>;
-$('s8').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CONFIG) ? "true" : "false"?>;
-$('s9').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CHAT) ? "true" : "false"?>;
-$('s10').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_VOTE) ? "true" : "false"?>;
-$('s11').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_PASSWORD) ? "true" : "false"?>;
-$('s12').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_RCON) ? "true" : "false"?>;
-$('s13').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CHEATS) ? "true" : "false"?>;
+$('s14').checked = <?=$userbank->HasAccess(SM_ROOT, $_GET['id']) ? "true" : "false"?>;
+$('s1').checked = <?=$userbank->HasAccess(SM_RESERVED_SLOT, $_GET['id']) ? "true" : "false"?>;
+$('s23').checked = <?=$userbank->HasAccess(SM_GENERIC, $_GET['id']) ? "true" : "false"?>;
+$('s2').checked = <?=$userbank->HasAccess(SM_KICK, $_GET['id']) ? "true" : "false"?>;
+$('s3').checked = <?=$userbank->HasAccess(SM_BAN, $_GET['id']) ? "true" : "false"?>;
+$('s4').checked = <?=$userbank->HasAccess(SM_UNBAN, $_GET['id']) ? "true" : "false"?>;
+$('s5').checked = <?=$userbank->HasAccess(SM_SLAY, $_GET['id']) ? "true" : "false"?>;
+$('s6').checked = <?=$userbank->HasAccess(SM_MAP, $_GET['id']) ? "true" : "false"?>;
+$('s7').checked = <?=$userbank->HasAccess(SM_CVAR, $_GET['id']) ? "true" : "false"?>;
+$('s8').checked = <?=$userbank->HasAccess(SM_CONFIG, $_GET['id']) ? "true" : "false"?>;
+$('s9').checked = <?=$userbank->HasAccess(SM_CHAT, $_GET['id']) ? "true" : "false"?>;
+$('s10').checked = <?=$userbank->HasAccess(SM_VOTE, $_GET['id']) ? "true" : "false"?>;
+$('s11').checked = <?=$userbank->HasAccess(SM_PASSWORD, $_GET['id']) ? "true" : "false"?>;
+$('s12').checked = <?=$userbank->HasAccess(SM_RCON, $_GET['id']) ? "true" : "false"?>;
+$('s13').checked = <?=$userbank->HasAccess(SM_CHEATS, $_GET['id']) ? "true" : "false"?>;
 
-$('s17').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM1) ? "true" : "false"?>;
-$('s18').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM2) ? "true" : "false"?>;
-$('s19').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM3) ? "true" : "false"?>;
-$('s20').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM4) ? "true" : "false"?>;
-$('s21').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM5) ? "true" : "false"?>;
-$('s22').checked = <?=strstr(get_non_inherited_admin($admin['authid']), SM_CUSTOM6) ? "true" : "false"?>;
+$('s17').checked = <?=$userbank->HasAccess(SM_CUSTOM1, $_GET['id']) ? "true" : "false"?>;
+$('s18').checked = <?=$userbank->HasAccess(SM_CUSTOM2, $_GET['id']) ? "true" : "false"?>;
+$('s19').checked = <?=$userbank->HasAccess(SM_CUSTOM3, $_GET['id']) ? "true" : "false"?>;
+$('s20').checked = <?=$userbank->HasAccess(SM_CUSTOM4, $_GET['id']) ? "true" : "false"?>;
+$('s21').checked = <?=$userbank->HasAccess(SM_CUSTOM5, $_GET['id']) ? "true" : "false"?>;
+$('s22').checked = <?=$userbank->HasAccess(SM_CUSTOM6, $_GET['id']) ? "true" : "false"?>;
 
 $('immunity').value = <?=$admin['immunity'] ? $admin['immunity'] : "0"?>;
 </script>

@@ -28,7 +28,6 @@ use xPaw\SourceQuery\SourceQuery;
 
 require_once('xajax.inc.php');
 include_once('system-functions.php');
-include_once('user-functions.php');
 $xajax = new xajax();
 //$xajax->debugOn();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);
@@ -154,7 +153,7 @@ function LostPassword($email)
     $message .= "To complete this process, please click the following link.\n";
     $message .= "NOTE: If you didnt request this reset, then simply ignore this email.\n\n";
 
-    $message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". RemoveCode($email) . "&validation=" . $validation;
+    $message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". $email . "&validation=" . $validation;
 
     $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" .
     'X-Mailer: PHP/' . phpversion();
@@ -236,7 +235,7 @@ function ChangeEmail($aid, $email, $password)
     $objResponse->addScript("set_error(0);");
     }
 
-    if(!check_email($email)) {
+    if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $objResponse->addScript("$('email1.msg').setStyle('display', 'block');");
     $objResponse->addScript("$('email1.msg').setHTML('You must type a valid email address.');");
     $objResponse->addScript("set_error(1);");
@@ -634,8 +633,6 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     Log::add("w", "Hacking Attempt", "$username tried to add a server, but doesnt have access.");
     return $objResponse;
     }
-    $ip = RemoveCode($ip);
-    $group_name = RemoveCode($group_name);
 
     $error = 0;
     // ip
@@ -648,7 +645,7 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     else
     {
     $objResponse->addAssign("address.msg", "innerHTML", "");
-    if(!validate_ip($ip) && !is_string($ip))
+    if(!filter_var($ip, FILTER_VALIDATE_IP) && !is_string($ip))
     {
     $error++;
     $objResponse->addAssign("address.msg", "innerHTML", "You must type a valid IP.");
@@ -844,7 +841,7 @@ function AddServerGroupName()
     Log::add("w", "Hacking Attempt", "$username tried to edit group name, but doesnt have access.");
     return $objResponse;
     }
-    $inject = '<td valign="top"><div class="rowdesc">' . HelpIcon("Server Group Name", "Please type the name of the new group you wish to create.") . 'Group Name </div></td>';
+    $inject = "<td valign='top'><div class='rowdesc'><img align='absbottom' src='images/help.png' class='tip' title='Server Group Name::Please type the name of the new group you wish to create.'/></div></td>";
     $inject .= '<td><div align="left">
         <input type="text" style="border: 1px solid #000000; width: 105px; font-size: 14px; background-color: rgb(215, 215, 215);width: 200px;" id="sgroup" name="sgroup" />
       </div>
@@ -865,11 +862,8 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         Log::add("w", "Hacking Attempt", "$username tried to add an admin, but doesnt have access.");
         return $objResponse;
     }
-    $a_name = RemoveCode($a_name);
-    $a_steam = RemoveCode($a_steam);
-    $a_email = RemoveCode($a_email);
-    $a_servername = ($a_servername=="0" ? null : RemoveCode($a_servername));
-    $a_webname = RemoveCode($a_webname);
+    $a_steam = \SteamID\SteamID::toSteam2($a_steam);
+    $a_servername = ($a_servername=="0" ? null : $a_servername);
     $mask = (int)$mask;
 
     $error=0;
@@ -885,7 +879,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
             $objResponse->addAssign("name.msg", "innerHTML", "An admin name can not contain a \" ' \".");
             $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
         } else {
-            if (is_taken("admins", "user", $a_name)) {
+            if ($userbank->isNameTaken($a_name)) {
                 $error++;
                 $objResponse->addAssign("name.msg", "innerHTML", "An admin with this name already exists");
                 $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
@@ -896,23 +890,18 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         }
     }
     // If they didnt type a steamid
-    if ((empty($a_steam) || strlen($a_steam) < 10)) {
+    if (empty($a_steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID for the admin.");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
     } else {
         // Validate the steamid or fetch it from the community id
-        if ((!is_numeric($a_steam)
-         && !validate_steam($a_steam))
-         || (is_numeric($a_steam)
-         && (strlen($a_steam) < 15
-         || !validate_steam($a_steam = \SteamID\SteamID::toSteam2($a_steam)))))
-        {
+        if (!\SteamID\SteamID::isValidID($a_steam)) {
             $error++;
             $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID.");
             $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
         } else {
-            if (is_taken("admins", "authid", $a_steam)) {
+            if ($userbank->isSteamIDTaken($a_steam)) {
                 $admins = $userbank->GetAllAdmins();
                 foreach ($admins as $admin) {
                     if ($admin['authid'] == $a_steam) {
@@ -940,7 +929,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
         }
     } else {
         // Is an other admin already registred with that email address?
-        if (is_taken("admins", "email", $a_email)) {
+        if ($userbank->isEmailTaken($a_email)) {
             $admins = $userbank->GetAllAdmins();
             foreach ($admins as $admin) {
                 if ($admin['email'] == $a_email) {
@@ -1095,8 +1084,8 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     // Ohnoes! something went wrong, stop and show errs
     if($error)
     {
-    ShowBox_ajx("Error", "There are some errors in your input. Please correct them.", "red", "", true, $objResponse);
-    return $objResponse;
+        $objResponse->AddScript("ShowBox('Error', 'There are some errors in your input. Please correct them.', 'red', '', true);");
+        return $objResponse;
     }
 
 // ##############################################################
@@ -1161,11 +1150,6 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     $server_admin_group = "";
     $server_admin_group_int = -1;
     }
-
-    //make sure steamid starts with STEAM_0
-    $steam = explode(':', $a_steam);
-    $steam[0] = "STEAM_0";
-    $a_steam = implode(':', $steam);
 
     // Add the admin
     $aid = $userbank->AddAdmin($a_name, $a_steam, $a_password, $a_email, $web_group, $mask, $server_admin_group, $srv_mask, $immunity, $a_serverpass);
@@ -1686,7 +1670,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    } elseif ($type == 0 && !validate_steam($steam)) {
+    } elseif ($type == 0 && !\SteamID\SteamID::isValidID($steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
@@ -1694,7 +1678,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $error++;
         $objResponse->addAssign("ip.msg", "innerHTML", "You must type an IP");
         $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
-    } elseif ($type == 1 && !validate_ip($ip)) {
+    } elseif ($type == 1 && !filter_var($ip, FILTER_VALIDATE_IP)) {
         $error++;
         $objResponse->addAssign("ip.msg", "innerHTML", "You must type a valid IP");
         $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
@@ -1925,7 +1909,8 @@ function ChangePassword($aid, $pass)
     $objResponse->addAlert("Password changed successfully");
     $objResponse->addRedirect("index.php?p=login", 0);
     Log::add("m", "Password Changed", "Password changed for admin ($admname[user])");
-    logout();
+    $_SESSION = [];
+    session_destroy();
     return $objResponse;
 }
 
@@ -2050,7 +2035,6 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     }
 
     $gid = (int)$gid;
-    $name = RemoveCode($name);
     $web_flags = (int)$web_flags;
     if($type == "web" || $type == "server" )
     // Update web stuff
@@ -2771,7 +2755,6 @@ function GetGroups($friendid)
     preg_match("/<privacyState>([^\]]*)<\/privacyState>/", $raw, $status);
     if(($status && $status[1] != "public") || strstr($raw, "<groups>")) {
     $raw = str_replace("&", "", $raw);
-    $raw = strip_31_ascii($raw);
     $raw = utf8_encode($raw);
     $xml = simplexml_load_string($raw); // parse xml
     $result = $xml->xpath('/profile/groups/group'); // go to the group nodes
@@ -2781,7 +2764,6 @@ function GetGroups($friendid)
         if(empty($node->groupName)) {
         $memberlistxml = file_get_contents("http://steamcommunity.com/gid/".$node->groupID64."/memberslistxml/?xml=1");
         $memberlistxml = str_replace("&", "", $memberlistxml);
-        $memberlistxml = strip_31_ascii($memberlistxml);
         $memberlistxml = utf8_encode($memberlistxml);
         $groupxml = simplexml_load_string($memberlistxml); // parse xml
         $node = $groupxml->xpath('/memberList/groupDetails');
@@ -3003,7 +2985,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "You must type a Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
-    } elseif (!validate_steam($steam)) {
+    } elseif (!\SteamID\SteamID::isValidID($steam)) {
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");

@@ -38,9 +38,11 @@ $srv_admins = $GLOBALS['db']->GetAll("SELECT authid, user
     GROUP BY aid, authid, srv_password, srv_group, srv_flags, user ");
 $i = 0;
 foreach ($srv_admins as $admin) {
-    $admsteam[] = $admin['authid'];
+    if (!is_null($admin['authid'])) {
+        $admsteam[] = $admin['authid'];
+    }
 }
-if (sizeof($admsteam) > 0 && $serverdata = checkMultiplePlayers((int) $_GET['id'], $admsteam)) {
+if (@count($admsteam) > 0 && $serverdata = checkMultiplePlayers((int) $_GET['id'], $admsteam)) {
     $noproblem = true;
 }
 foreach ($srv_admins as $admin) {

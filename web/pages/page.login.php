@@ -71,8 +71,7 @@ HTML;
     }
 }
 
-$steam_conf_value = get_steamenabled_conf($confvalue);
-$theme->assign('steamlogin_show', $steam_conf_value);
+$theme->assign('steamlogin_show', $GLOBALS['config']['config.enablesteamlogin']);
 $theme->assign('redir', "DoLogin('" . (isset($_SESSION['q']) ? $_SESSION['q'] : '') . "');");
 $theme->left_delimiter  = "-{";
 $theme->right_delimiter = "}-";

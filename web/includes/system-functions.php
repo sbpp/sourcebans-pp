@@ -209,28 +209,6 @@ function BuildBreadcrumbs()
     }
     echo '<script type="text/javascript">$("breadcrumb").setHTML("' . $text . '");</script>';
 }
-/**
- * Creates an anchor tag, and adds tooltip code if needed
- *
- * @param string $title The title of the tooltip/text to link
- * @param string $url The link
- * @param string $tooltip The tooltip message
- * @param string $target The new links target
- * @return noreturn
- */
-function CreateLink($title, $url, $tooltip="", $target="_self", $wide=false)
-{
-    if ($wide) {
-        $class = "perm";
-    } else {
-        $class = "tip";
-    }
-    if (strlen($tooltip) == 0) {
-        echo '<a href="' . $url . '" target="' . $target . '">' . $title .' </a>';
-    } else {
-        echo '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
-    }
-}
 
 /**
  * Creates an anchor tag, and adds tooltip code if needed
@@ -253,11 +231,6 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
     } else {
         return '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
     }
-}
-
-function HelpIcon($title, $text)
-{
-    return '<img border="0" align="absbottom" src="themes/' . SB_THEME .'/images/admin/help.png" class="tip" title="' .  $title . ' :: ' .  $text . '">&nbsp;&nbsp;';
 }
 
 /**
@@ -490,23 +463,7 @@ function SmFlagsToSb($flagstring, $head=true)
         $string .="&bull; Custom Flag 6<br />";
     }
 
-
-    //if(($mask & SM_DEF_IMMUNITY) != 0)
-    //{
-    //	$flagstring .="&bull; Default Immunity<br />";
-    //}
-    //if(($mask & SM_GLOBAL_IMMUNITY) != 0)
-    //{
-    //	$flagstring .="&bull; Global Immunity<br />";
-    //}
     return $string;
-}
-
-function PrintArray($array)
-{
-    echo "<pre>";
-    print_r($array);
-    echo "</pre>";
 }
 
 function NextSid()
@@ -532,36 +489,6 @@ function trunc($text, $len, $byword=true)
     }
     $text = $text."...";
     return $text;
-}
-
-function StripQuotes($str)
-{
-    $str = str_replace("'", "", $str);
-    $str = str_replace('"', "", $str);
-    return $str;
-}
-
-function CreateRedBox($title, $content)
-{
-    $text = '<div id="msg-red-debug" style="">
-	<i><img src="./images/warning.png" alt="Warning" /></i>
-	<b>' . $title .'</b>
-	<br />
-	' . $content . '</i>
-</div>';
-
-    echo $text;
-}
-function CreateGreenBox($title, $contnet)
-{
-    $text = '<div id="msg-green-dbg" style="">
-	<i><img src="./images/yay.png" alt="Yay!" /></i>
-	<b>' . $title .'</b>
-	<br />
-	' . $contnet . '</i>
-</div>';
-
-    echo $text;
 }
 
 function CreateQuote()
@@ -613,11 +540,6 @@ function CheckAdminAccess($mask)
         header("Location: index.php?p=login&m=no_access");
         die();
     }
-}
-
-function RemoveCode($text)
-{
-    return htmlspecialchars(strip_tags($text));
 }
 
 function SecondsToString($sec, $textual=true)
@@ -681,175 +603,64 @@ function PageDie()
 
 function GetMapImage($map)
 {
-    if (@file_exists(SB_MAP_LOCATION . "/" . $map . ".jpg")) {
-        return "images/maps/" . $map . ".jpg";
-    }
-    return "images/maps/nomap.jpg";
+    $map = (@file_exists(SB_MAP_LOCATION."/$map.jpg")) ? $map : 'nomap';
+    return SB_MAP_LOCATION."/$map.jpg";
 }
 
-function CheckExt($filename, $ext)
+function checkExtension($file, array $validExts)
 {
-    $filename = str_replace(chr(0), '', $filename);
-    $path_info = pathinfo($filename);
-    if (strtolower($path_info['extension']) == strtolower($ext)) {
-        return true;
-    }
-    return false;
-}
-
-function ShowBox($title, $msg, $color, $redir="", $noclose=false)
-{
-    echo "<script>ShowBox('$title', '$msg', '$color', '$redir', $noclose);</script>";
-}
-function ShowBox_ajx($title, $msg, $color, $redir="", $noclose=false, &$response)
-{
-    $response->AddScript("ShowBox('$title', '$msg', '$color', '$redir', $noclose);");
+    $file = pathinfo($file, PATHINFO_EXTENSION);
+    return in_array(strtolower($file), $validExts);
 }
 
 function PruneBans()
 {
     global $userbank;
-
-    $res = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_bans` SET `RemovedBy` = 0, `RemoveType` = \'E\', `RemovedOn` = UNIX_TIMESTAMP() WHERE `length` != 0 and `ends` < UNIX_TIMESTAMP() and `RemoveType` IS NULL');
-    $prot = $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_protests` SET archiv = '3', archivedby = ".($userbank->GetAid()<0?0:$userbank->GetAid())." WHERE archiv = '0' AND bid IN((SELECT bid FROM `".DB_PREFIX."_bans` WHERE `RemoveType` = 'E'))");
-    $submission = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_submissions` SET archiv = \'3\', archivedby = '.($userbank->GetAid()<0?0:$userbank->GetAid()).' WHERE archiv = \'0\' AND (SteamId IN((SELECT authid FROM `'.DB_PREFIX.'_bans` WHERE `type` = 0 AND `RemoveType` IS NULL)) OR sip IN((SELECT ip FROM `'.DB_PREFIX.'_bans` WHERE `type` = 1 AND `RemoveType` IS NULL)))');
-    return $res?true:false;
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_bans` SET `RemovedBy` = 0, `RemoveType` = 'E', `RemovedOn` = UNIX_TIMESTAMP()
+        WHERE `length` != 0 AND `ends` < UNIX_TIMESTAMP() AND `RemoveType` IS NULL"
+    );
+    $GLOBALS['PDO']->execute();
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_protests` SET `archiv` = 3, `archivedby` = :id
+        WHERE `archiv` = 0 AND bid IN(SELECT bid FROM `:prefix_bans` WHERE `RemoveType` = 'E')"
+    );
+    $GLOBALS['PDO']->bind(':id', $userbank->GetAid() < 0 ? 0 : $userbank->GetAid());
+    $GLOBALS['PDO']->execute();
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_submissions` SET `archiv` = 3, `archivedby` = :id
+        WHERE `archiv` = 0 AND
+        (SteamId IN(SELECT authid FROM `:prefix_bans` WHERE type = 0 AND RemoveType IS NULL)
+        OR sip IN(SELECT ip FROM `:prefix_bans` WHERE type = 1 AND RemoveType IS NULL))"
+    );
+    $GLOBALS['PDO']->bind(':id', $userbank->GetAid() < 0 ? 0 : $userbank->GetAid());
+    $GLOBALS['PDO']->execute();
 }
 
 function PruneComms()
 {
-    global $userbank;
-    $res = $GLOBALS['db']->Execute('UPDATE `'.DB_PREFIX.'_comms` SET `RemovedBy` = 0, `RemoveType` = \'E\', `RemovedOn` = UNIX_TIMESTAMP() WHERE `length` != 0 and `ends` < UNIX_TIMESTAMP() and `RemoveType` IS NULL');
-    return $res?true:false;
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_comms` SET `RemovedBy` = 0, `RemoveType` = 'E', `RemovedOn` = UNIX_TIMESTAMP()
+        WHERE `length` != 0 AND `ends` < UNIX_TIMESTAMP() AND `RemoveType` IS NULL"
+    );
+    $GLOBALS['PDO']->execute();
 }
 
-// Function by Luman (http://snipplr.com/users/luman)
-function array_qsort(&$array, $column=0, $order=SORT_ASC, $first=0, $last= -2)
+function getDirSize($dir)
 {
-    // $array  - the array to be sorted
-    // $column - index (column) on which to sort
-    //          can be a string if using an associative array
-    // $order  - SORT_ASC (default) for ascending or SORT_DESC for descending
-    // $first  - start index (row) for partial array sort
-    // $last  - stop  index (row) for partial array sort
-    // $keys  - array of key values for hash array sort
-
-    $keys = array_keys($array);
-    if ($last == -2) {
-        $last = count($array) - 1;
+    foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $object) {
+        $size += is_file($object) ? filesize($object) : getDirSize($object);
     }
-    if ($last > $first) {
-        $alpha = $first;
-        $omega = $last;
-        $key_alpha = $keys[$alpha];
-        $key_omega = $keys[$omega];
-        $guess = $array[$key_alpha][$column];
-        while ($omega >= $alpha) {
-            if ($order == SORT_ASC) {
-                while ($array[$key_alpha][$column] < $guess) {
-                    $alpha++;
-                    $key_alpha = $keys[$alpha];
-                }
-
-                while ($array[$key_omega][$column] > $guess) {
-                    $omega--;
-                    $key_omega = $keys[$omega];
-                }
-            } else {
-                while ($array[$key_alpha][$column] > $guess) {
-                    $alpha++;
-                    $key_alpha = $keys[$alpha];
-                }
-                while ($array[$key_omega][$column] < $guess) {
-                    $omega--;
-                    $key_omega = $keys[$omega];
-                }
-            }
-            if ($alpha > $omega) {
-                break;
-            }
-            $temporary = $array[$key_alpha];
-            $array[$key_alpha] = $array[$key_omega];
-            $alpha++;
-            $key_alpha = $keys[$alpha];
-            $array[$key_omega] = $temporary;
-            $omega--;
-            if ($omega > 0) {
-                $key_omega = $keys[$omega];
-            }
-        }
-        array_qsort($array, $column, $order, $first, $omega);
-        array_qsort($array, $column, $order, $alpha, $last);
-    }
+    return sizeFormat((int)$size);
 }
 
-
-function getDirectorySize($path)
+function sizeFormat($bytes)
 {
-    $totalsize = 0;
-    $totalcount = 0;
-    $dircount = 0;
-    if ($handle = opendir($path)) {
-        while (false !== ($file = readdir($handle))) {
-            $nextpath = $path . '/' . $file;
-            if ($file != '.' && $file != '..' && !is_link($nextpath)) {
-                if (is_dir($nextpath)) {
-                    $dircount++;
-                    $result = getDirectorySize($nextpath);
-                    $totalsize += $result['size'];
-                    $totalcount += $result['count'];
-                    $dircount += $result['dircount'];
-                } elseif (is_file($nextpath)) {
-                    $totalsize += filesize($nextpath);
-                    $totalcount++;
-                }
-            }
-        }
+    if ($bytes <= 0) {
+        return '0 B';
     }
-    closedir($handle);
-    $total['size'] = $totalsize;
-    $total['count'] = $totalcount;
-    $total['dircount'] = $dircount;
-    return $total;
-}
-
-
-function sizeFormat($size)
-{
-    if ($size<1024) {
-        return $size." bytes";
-    } elseif ($size<(1024*1024)) {
-        $size=round($size/1024, 1);
-        return $size." KB";
-    } elseif ($size<(1024*1024*1024)) {
-        $size=round($size/(1024*1024), 2);
-        return $size." MB";
-    } else {
-        $size=round($size/(1024*1024*1024), 2);
-        return $size." GB";
-    }
-}
-
-function check_email($email) {
-    $nonascii      = "\x80-\xff"; # Non-ASCII-Chars are not allowed
-
-    $nqtext        = "[^\\\\$nonascii\015\012\"]";
-    $qchar         = "\\\\[^$nonascii]";
-
-    $protocol      = '(?:mailto:)';
-
-    $normuser      = '[a-zA-Z0-9][a-zA-Z0-9_.-]*';
-    $quotedstring  = "\"(?:$nqtext|$qchar)+\"";
-    $user_part     = "(?:$normuser|$quotedstring)";
-
-    $dom_mainpart  = '[a-zA-Z0-9][a-zA-Z0-9._-]*\\.';
-    $dom_subpart   = '(?:[a-zA-Z0-9][a-zA-Z0-9._-]*\\.)*';
-    $dom_tldpart   = '[a-zA-Z]{2,5}';
-    $domain_part   = "$dom_subpart$dom_mainpart$dom_tldpart";
-
-    $regex         = "$protocol?$user_part\@$domain_part";
-
-    return preg_match("/^$regex$/", $email);
+    $i = floor(log($bytes, 1024));
+    return round($bytes / pow(1024, $i), [0, 0, 2, 2, 3][$i]).[' B', ' kB', ' MB', ' GB', ' TB'][$i];
 }
 
 //function to check for multiple steamids on one server.
@@ -927,29 +738,7 @@ function SendRconSilent($rcon, $sid)
     return false;
 }
 
-/* Function to check if a needle is inside a 2 layered recursive array
-* like the one from ADODB->GetAll
-* @param string $needle The string to search for
-* @param array $array The array to search in
-* @return boolean
-*/
-function in_array_dim($needle, $array)
+function generate_salt($length = 5)
 {
-    foreach ($array as $secarray) {
-        foreach ($secarray as $part) {
-            if ($part == $needle) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-// Strip all undisplayable chars from a string. e.g.  or 
-function strip_31_ascii($string)
-{
-    for ($i=0; $i<32; $i++) {
-        $string = str_replace(chr($i), "", $string);
-    }
-    return $string;
+    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
 }

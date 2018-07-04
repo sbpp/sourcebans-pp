@@ -20,11 +20,11 @@
 					{if $sub.archiv != "2" and $sub.archiv != "3"}
 		            <a href="#" onclick="xajax_SetupBan({$sub.subid});">Ban</a> -
 					{if $permissions_editsub}
-					<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes|stripquotes}', '2');">Restore</a> -
+					<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes}', '2');">Restore</a> -
 					{/if}
 					{/if}
 		            {if $permissions_editsub}
-		           		<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes|stripquotes}', '0');">Delete</a> -
+		           		<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes}', '0');">Delete</a> -
 		           	{/if}
 					<a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid}">Contact</a>
 				</td>
@@ -35,7 +35,7 @@
 						<table width="90%" cellspacing="0" cellpadding="0" class="listtable">
           					<tr>
             					<td height="16" align="left" class="listtable_top" colspan="3">
-									<b>Ban Details</b>            
+									<b>Ban Details</b>
 								</td>
           					</tr>
 							<tr align="left">
@@ -45,8 +45,8 @@
 									<td width="30%" rowspan="11" class="listtable_2">
 									<div class="ban-edit">
 					                    <ul>
-					                      <li>{$sub.demo}</li>		
-					                      <li>{$sub.subaddcomment}</li>	
+					                      <li>{$sub.demo}</li>
+					                      <li>{$sub.subaddcomment}</li>
 					                    </ul>
 									</div>
 			  					</td>

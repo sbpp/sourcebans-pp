@@ -69,7 +69,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } elseif ($_POST['type'] == 0 && !validate_steam($_POST['steam'])) {
+    } elseif ($_POST['type'] == 0 && !\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -78,7 +78,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type an IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
-    } elseif ($_POST['type'] == 1 && !validate_ip($_POST['ip'])) {
+    } elseif ($_POST['type'] == 1 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type a valid IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
@@ -133,10 +133,8 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['name'] = RemoveCode($_POST['name']);
     $_POST['ip'] = preg_replace('#[^\d\.]#', '', $_POST['ip']); //strip ip of all but numbers and dots
-    $_POST['dname'] = RemoveCode($_POST['dname']);
-    $reason = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
+    $reason = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;
@@ -199,7 +197,7 @@ if (isset($_POST['name'])) {
                     $_POST['dname']
                 )
             );
-            $res['dname'] = RemoveCode($_POST['dname']);
+            $res['dname'] = $_POST['dname'];
         }
 
         if ($_POST['banlength'] != $lengthrev->fields['length']) {

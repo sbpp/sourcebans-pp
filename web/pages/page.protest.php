@@ -27,7 +27,7 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 global $userbank, $theme;
 if ($GLOBALS['config']['config.enableprotest'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 if (!defined("IN_SB")) {
@@ -56,7 +56,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $UnbanReason = stripslashes($UnbanReason);
     }
 
-    if ($Type == 0 && !validate_steam($SteamID)) {
+    if ($Type == 0 && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     } elseif ($Type == 0) {
@@ -76,7 +76,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
     }
-    if ($Type == 1 && !validate_ip($IP)) {
+    if ($Type == 1 && !filter_var($IP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP.<br>';
         $validsubmit = false;
     } elseif ($Type == 1) {
@@ -104,13 +104,13 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }
 
     if (!$validsubmit) {
-        CreateRedBox("Error", $errors);
+        print "<script>ShowBox('Error', '$errors', 'red');</script>";
     }
 
     if ($validsubmit && $BanId != -1) {
@@ -159,7 +159,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
 
-        CreateGreenBox("Successful", "Your protest has been sent.");
+        print "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
     }
 }
 

@@ -36,7 +36,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER)) {
 
 $message = "";
 if (isset($_POST['upload'])) {
-    if (CheckExt($_FILES['mapimg_file']['name'], "jpg")) {
+    if (checkExtension($_FILES['mapimg_file']['name'], ['jpg'])) {
         move_uploaded_file($_FILES['mapimg_file']['tmp_name'], SB_MAP_LOCATION . "/" . $_FILES['mapimg_file']['name']);
         $message = "<script>window.opener.mapimg('" . $_FILES['mapimg_file']['name'] . "');self.close()</script>";
         Log::add("m", "Map Image Uploaded", "A new map image has been uploaded: $_FILES[mapimg_file][name]");
