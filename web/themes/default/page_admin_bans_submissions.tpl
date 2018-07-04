@@ -3,7 +3,7 @@
 {else}
 	<h3 style="margin-top:0px;">Ban Submissions (<span id="subcount">{$submission_count}</span>)</h3>
 	Click a player's nickname to view information about their submission<br /><br />
-    <div id="banlist-nav"> 
+    <div id="banlist-nav">
     {$submission_nav}
     </div>
 	<table width="100%" cellpadding="0" cellspacing="0">
@@ -16,10 +16,10 @@
 			<tr id="sid_{$sub.subid}" class="opener3 tbl_out" {if $sub.hostname == ""}onclick="xajax_ServerHostPlayers('{$sub.server}', 'id', 'sub{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
 	            <td class="listtable_1" height='16'>{$sub.name}</td>
 				      <td class="listtable_1" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
-	            <td class="listtable_1" height='16'> 
-		            <a href="#" onclick="xajax_SetupBan({$sub.subid});return false;">Ban</a> - 
+	            <td class="listtable_1" height='16'>
+		            <a href="#" onclick="xajax_SetupBan({$sub.subid});return false;">Ban</a> -
 		            {if $permissions_editsub}
-		           		<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes|stripquotes}', '1');return false;">Remove</a> -
+		           		<a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes}', '1');return false;">Remove</a> -
 		           	{/if}
 					<a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid}">Contact</a>
 				</td>
@@ -30,7 +30,7 @@
 						<table width="90%" cellspacing="0" cellpadding="0" class="listtable">
           					<tr>
             					<td height="16" align="left" class="listtable_top" colspan="3">
-									<b>Ban Details</b>            
+									<b>Ban Details</b>
 								</td>
           					</tr>
           					<tr align="left">
@@ -39,8 +39,8 @@
 		      					<td width="30%" rowspan="9" class="listtable_2">
 									<div class="ban-edit">
 					                    <ul>
-					                      <li>{$sub.demo}</li>		
-					                      <li>{$sub.subaddcomment}</li>	
+					                      <li>{$sub.demo}</li>
+					                      <li>{$sub.subaddcomment}</li>
 					                    </ul>
 									</div>
 			  					</td>
