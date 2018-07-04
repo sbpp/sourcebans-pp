@@ -12,7 +12,7 @@ class SteamID
 
         if (self::$calcMethod === 'SQL') {
             if (is_null($dbs)) {
-                throw new Exception('No suitable calculation Method found!');
+                throw new \Exception('No suitable calculation Method found!');
             }
             SteamID\calc\SQL::setDB($dbs);
         }
@@ -36,7 +36,7 @@ class SteamID
     private static function to($format, $steamid)
     {
         if (!in_array($format, self::$validFormat)) {
-            throw new Exception("No valid fromat input!");
+            throw new \Exception("No valid fromat input!");
         }
         $from = self::resolveInputID($steamid);
 
@@ -57,7 +57,7 @@ class SteamID
             case preg_match("/\d{17}/", $steamid):
                 return 'Steam64';
             default:
-                throw new Exception("Invalid SteamID input!");
+                throw new \Exception("Invalid SteamID input!");
         }
     }
 
