@@ -71,7 +71,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } elseif (!validate_steam($_POST['steam'])) {
+    } elseif (!\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -112,8 +112,7 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['name'] = RemoveCode($_POST['name']);
-    $reason        = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
+    $reason        = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;

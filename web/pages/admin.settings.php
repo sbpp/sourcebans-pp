@@ -242,7 +242,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 <script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
 <?php
             } else {
-                CreateRedBox("Error", $errors);
+                print "<script>ShowBox('Error', '$errors', 'red');</script>";
             }
         }
 

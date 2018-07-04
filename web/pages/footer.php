@@ -55,7 +55,7 @@ if (defined('DEVELOPER_MODE')) {
     printf("<h3>Page took %f seconds to load.</h3>", $totaltime);
 
     echo '<h3>User Manager Data</h3><pre>';
-    PrintArray($userbank);
+    print_r($userbank);
     echo '</pre><h3>Post Data</h3><pre>';
     print_r($_POST);
     echo '</pre><h3>Session Data</h3><pre>';

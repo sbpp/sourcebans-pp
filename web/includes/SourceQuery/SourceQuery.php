@@ -390,7 +390,12 @@
 				$Players[ ] = $Player;
 			}
 
-            array_qsort( $Players, 'Frags', SORT_DESC );
+            usort($Players, function($a, $b) {
+                if ($a['Frags'] == $b['Frags']) {
+                    return 0;
+                }
+                return ($a['Frags'] < $b['Frags']) ? -1 : 1;
+            });
 			return $Players;
 		}
 

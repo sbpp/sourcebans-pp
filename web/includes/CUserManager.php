@@ -320,6 +320,32 @@ class CUserManager
         return $this->admins[$aid];
     }
 
+    public function isNameTaken($name)
+    {
+        $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE user = :user");
+        $this->dbh->bind(':user', $name);
+        $data = $this->dbh->single();
+
+        return (bool)$data[1];
+    }
+
+    public function isSteamIDTaken($steamid)
+    {
+        $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE authid = :steamid");
+        $this->dbh->bind(':steamid', $steamid);
+        $data = $this->dbh->single();
+
+        return (bool)$data[1];
+    }
+
+    public function isEmailTaken($email)
+    {
+        $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE email = :email");
+        $this->dbh->bind(':email', $email);
+        $data = $this->dbh->single();
+
+        return (bool)$data[1];
+    }
 
     public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
     {

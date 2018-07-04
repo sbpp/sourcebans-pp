@@ -70,9 +70,9 @@ $errorScript = "";
 
 // Form submitted?
 if (isset($_POST['adminname'])) {
-    $a_name           = RemoveCode($_POST['adminname']);
-    $a_steam          = \SteamID\SteamID::toSteam2(trim(RemoveCode($_POST['steam'])));
-    $a_email          = trim(RemoveCode($_POST['email']));
+    $a_name           = $_POST['adminname'];
+    $a_steam          = \SteamID\SteamID::toSteam2($_POST['steam']);
+    $a_email          = $_POST['email'];
     $a_serverpass     = $_POST['a_useserverpass'] == "on";
     $pw_changed       = false;
     $serverpw_changed = false;
@@ -91,7 +91,7 @@ if (isset($_POST['adminname'])) {
             $errorScript .= "$('adminname.msg').innerHTML = 'An admin name can not contain a \" \' \".';";
             $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
         } else {
-            if ($a_name != $userbank->GetProperty('user', $_GET['id']) && is_taken("admins", "user", $a_name)) {
+            if ($a_name != $userbank->GetProperty('user', $_GET['id']) && $userbank->isNameTaken($a_name)) {
                 $error++;
                 $errorScript .= "$('adminname.msg').innerHTML = 'An admin with this name already exists.';";
                 $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
@@ -106,13 +106,13 @@ if (isset($_POST['adminname'])) {
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
     } else {
         // Validate the steamid or fetch it from the community id
-        if (!validate_steam($a_steam)) {
+        if (!\SteamID\SteamID::isValidID($a_steam)) {
             $error++;
             $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID.';";
             $errorScript .= "$('steam.msg').setStyle('display', 'block');";
         } else {
             // Is an other admin already registred with that steam id?
-            if ($a_steam != $userbank->GetProperty('authid', $_GET['id']) && is_taken("admins", "authid", $a_steam)) {
+            if ($a_steam != $userbank->GetProperty('authid', $_GET['id']) && $userbank->isSteamIDTaken($a_steam)) {
                 $admins = $userbank->GetAllAdmins();
                 foreach ($admins as $admin) {
                     if ($admin['authid'] == $a_steam) {
@@ -137,7 +137,7 @@ if (isset($_POST['adminname'])) {
         }
     } else {
         // Is an other admin already registred with that email address?
-        if ($a_email != $userbank->GetProperty('email', $_GET['id']) && is_taken("admins", "email", $a_email)) {
+        if ($a_email != $userbank->GetProperty('email', $_GET['id']) && $userbank->isEmailTaken($a_email)) {
             $admins = $userbank->GetAllAdmins();
             foreach ($admins as $admin) {
                 if ($admin['email'] == $a_email) {
@@ -149,11 +149,6 @@ if (isset($_POST['adminname'])) {
             $errorScript .= "$('email.msg').innerHTML = 'This email address is already being used by " . htmlspecialchars(addslashes($name)) . ".';";
             $errorScript .= "$('email.msg').setStyle('display', 'block');";
         }
-        /*else if(!validate_email($a_email))
-        $error++;
-        $errorScript .= "$('email.msg').innerHTML = 'Please enter a valid email address.';";
-        $errorScript .= "$('email.msg').setStyle('display', 'block');";
-        }*/
     }
 
     // Only validate passwords, if admin has access to edit it at all

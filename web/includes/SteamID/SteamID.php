@@ -12,7 +12,7 @@ class SteamID
 
         if (self::$calcMethod === 'SQL') {
             if (is_null($dbs)) {
-                throw new Exception('No suitable calculation Method found!');
+                throw new \Exception('No suitable calculation Method found!');
             }
             SteamID\calc\SQL::setDB($dbs);
         }
@@ -36,7 +36,7 @@ class SteamID
     private static function to($format, $steamid)
     {
         if (!in_array($format, self::$validFormat)) {
-            throw new Exception("No valid fromat input!");
+            throw new \Exception("No valid fromat input!");
         }
         $from = self::resolveInputID($steamid);
 
@@ -52,16 +52,30 @@ class SteamID
         switch (true) {
             case preg_match("/STEAM_[0|1]:[0:1]:\d*/", $steamid):
                 return 'Steam2';
-                break;
             case preg_match("/\[U:1:\d*\]/", $steamid):
                 return 'Steam3';
-                break;
             case preg_match("/\d{17}/", $steamid):
                 return 'Steam64';
-                break;
             default:
-                throw new Exception("Invalid SteamID input!");
+                throw new \Exception("Invalid SteamID input!");
         }
+    }
+
+    public static function isValidID($steamid)
+    {
+        switch (true) {
+            case preg_match("/STEAM_[0|1]:[0:1]:\d*/", $steamid):
+            case preg_match("/\[U:1:\d*\]/", $steamid):
+            case preg_match("/\d{17}/", $steamid):
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public static function compare($steam1, $steam2)
+    {
+        return strcasecmp(self::toSteam64($steam1), self::toSteam64($steam2)) === 0;
     }
 
     private static function getCalcMethod()

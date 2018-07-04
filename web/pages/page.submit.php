@@ -34,7 +34,7 @@ if (!defined("IN_SB")) {
     die();
 }
 if ($GLOBALS['config']['config.enablesubmit'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
@@ -55,11 +55,11 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     $SID           = (int) $_POST['server'];
     $validsubmit   = true;
     $errors        = "";
-    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !validate_steam($SteamID)) {
+    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     }
-    if (strlen($BanIP) != 0 && !validate_ip($BanIP)) {
+    if (strlen($BanIP) != 0 && !filter_var($BanIP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP-address.<br>';
         $validsubmit = false;
     }
@@ -71,7 +71,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }
@@ -80,7 +80,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $validsubmit = false;
     }
     if (!empty($_FILES['demo_file']['name'])) {
-        if (!CheckExt($_FILES['demo_file']['name'], "zip") && !CheckExt($_FILES['demo_file']['name'], "rar") && !CheckExt($_FILES['demo_file']['name'], "dem") && !CheckExt($_FILES['demo_file']['name'], "7z") && !CheckExt($_FILES['demo_file']['name'], "bz2") && !CheckExt($_FILES['demo_file']['name'], "gz")) {
+        if (!checkExtension($_FILES['demo_file']['name'], ['zip', 'rar', 'dem', '7z', 'bz2', 'gz'])) {
             $errors .= '* A demo can only be a dem, zip, rar, 7z, bz2 or a gz filetype.<br>';
             $validsubmit = false;
         }
@@ -96,7 +96,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
 
 
     if (!$validsubmit) {
-        CreateRedBox("Error", $errors);
+        print "<script>ShowBox('Error', '$errors', 'red');</script>";
     }
 
     if ($validsubmit) {
@@ -179,9 +179,9 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                     mail($admin['email'], "[SourceBans] Ban Submission Added", $message, $headers);
                 }
             }
-            CreateGreenBox("Successful", "Your submission has been added into the database, and will be reviewed by one of our admins");
+            print "<script>ShowBox('Successful', 'Your submission has been added into the database, and will be reviewed by one of our admins.', 'green');</script>";
         } else {
-            CreateRedBox("Error", "There was an error uploading your demo to the server. Please try again later.");
+            print "<script>ShowBox('Error', 'There was an error uploading your demo to the server. Please try again later.', 'red');</script>";
             Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }
     }
