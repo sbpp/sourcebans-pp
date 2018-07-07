@@ -30,7 +30,7 @@ require_once('xajax.inc.php');
 include_once('system-functions.php');
 $xajax = new xajax();
 //$xajax->debugOn();
-$xajax->setRequestURI(XAJAX_REQUEST_URI);
+$xajax->setRequestURI('./index.php');
 global $userbank;
 
 if (\SessionManager::checkSession()) {
@@ -155,7 +155,7 @@ function LostPassword($email)
 
     $message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". $email . "&validation=" . $validation;
 
-    $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" .
+    $headers = 'From: ' . SB_EMAIL . "\n" .
     'X-Mailer: PHP/' . phpversion();
     $m = mail($email, "SourceBans Password Reset", $message, $headers);
 

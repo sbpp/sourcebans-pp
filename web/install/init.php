@@ -60,11 +60,7 @@ if (trim($_SERVER['PHP_SELF']) == '') {
 if (!defined('SB_VERSION')) {
     define('SB_VERSION', '1.6.3-Installer');
 }
-define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
-define('COOKIE_PATH', '/');
-define('COOKIE_DOMAIN', '');
-define('COOKIE_SECURE', false);
-define('SB_SALT', 'SourceBans');
+
 // ---------------------------------------------------
 //  Setup PHP
 // ---------------------------------------------------
@@ -84,11 +80,3 @@ if (!file_exists("../config.php") && is_writable('../')) {
     $handle = fopen("../config.php", "w");
     fclose($handle);
 }
-
-// ---------------------------------------------------
-//  Some defs
-// ---------------------------------------------------
-define('EMAIL_FORMAT', "/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/");
-define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i");
-define('STEAM_FORMAT', "/^STEAM_[0-9]:[0-9]:[0-9]+$/");
-define('STATUS_PARSE', '/#[ ]*([0-9]+) "(.+)" (STEAM_0:[0-1]:[0-9]+)[ ]{1,2}([0-9]+[:[0-9]+) ([0-9]+)[ ]([0-9]+) ([a-zA-Z]+) ([0-9.:]+)/');

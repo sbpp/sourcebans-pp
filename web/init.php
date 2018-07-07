@@ -52,7 +52,6 @@ define('SB_THEMES', ROOT . 'themes/');
 define('SB_THEMES_COMPILE', ROOT . 'themes_c/');
 
 define('IN_SB', true);
-define('XAJAX_REQUEST_URI', './index.php');
 
 require_once(INCLUDES_PATH.'/SessionManager.php');
 include_once(INCLUDES_PATH . "/CUserManager.php");
@@ -105,24 +104,10 @@ if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/up
 // ---------------------------------------------------
 //  Initial setup
 // ---------------------------------------------------
-define('SB_GIT', true);
-if (!defined('SB_VERSION')) {
-    if (file_exists('version.json')) {
-        $json = json_decode(file_get_contents('version.json'), true);
-        define('SB_VERSION', $json['version']);
-        define('SB_GITREV', $json['git']);
-        define('SB_DEV', $json['dev']);
-    } else {
-        define('SB_VERSION', 'N/A');
-        define('SB_GITREV', '0');
-        define('SB_DEV', false);
-    }
-}
-define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
-define('COOKIE_PATH', '/');
-define('COOKIE_DOMAIN', '');
-define('COOKIE_SECURE', false);
-define('SB_SALT', 'SourceBans');
+$version = @json_decode(file_get_contents('version.json'), true);
+define('SB_VERSION', isset($version['version']) ? $version['version'] : 'N/A');
+define('SB_GITREV', isset($version['git']) ? $version['git'] : 0);
+define('SB_DEV', isset($version['dev']) ? $version['dev'] : false);
 
 // ---------------------------------------------------
 //  Setup PHP
@@ -210,12 +195,7 @@ function sbError($errno, $errstr, $errfile, $errline)
 // ---------------------------------------------------
 //  Some defs
 // ---------------------------------------------------
-define('EMAIL_FORMAT', "/^([a-zA-Z0-9])+([a-zA-Z0-9\._-])*@([a-zA-Z0-9_-])+([a-zA-Z0-9\._-]+)+$/");
-define('URL_FORMAT', "/^(http|https):\/\/[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}((:[0-9]{1,5})?\/.*)?$/i");
-define('STEAM_FORMAT', "/^STEAM_[0-9]:[0-9]:[0-9]+$/");
 define('STATUS_PARSE', '/#.* +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+).* +([0-9.:]+)/');
-define('IP_FORMAT', '/\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/');
-define('SERVER_QUERY', 'http://www.sourcebans.net/public/query/');
 
 // Web admin-flags
 define('ADMIN_LIST_ADMINS', (1<<0));
@@ -291,12 +271,6 @@ define('ALL_WEB', ADMIN_LIST_ADMINS|ADMIN_ADD_ADMINS|ADMIN_EDIT_ADMINS|ADMIN_DEL
 define('ALL_SERVER', SM_RESERVED_SLOT.SM_GENERIC.SM_KICK.SM_BAN.SM_UNBAN.SM_SLAY.SM_MAP.SM_CVAR.SM_CONFIG.SM_VOTE.SM_PASSWORD.SM_RCON.
                      SM_CHEATS.SM_CUSTOM1.SM_CUSTOM2.SM_CUSTOM3. SM_CUSTOM4.SM_CUSTOM5.SM_CUSTOM6.SM_ROOT);
 
-$res = $GLOBALS['db']->Execute("SELECT * FROM ".DB_PREFIX."_settings GROUP BY `setting`, `value`");
-$GLOBALS['config'] = array();
-while (!$res->EOF) {
-    $setting = array($res->fields['setting'] => $res->fields['value']);
-    $GLOBALS['config'] = array_merge_recursive($GLOBALS['config'], $setting);
-    $res->MoveNext();
 }
 
 define("DEVELOPER_MODE", Config::getBool('config.debug'));
