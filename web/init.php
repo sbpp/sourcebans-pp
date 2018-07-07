@@ -162,31 +162,17 @@ function sbError($errno, $errstr, $errfile, $errline)
 {
     switch ($errno) {
         case E_USER_ERROR:
-            $msg = "[$errno] $errstr<br />\n";
-            $msg .= "Fatal error on line $errline in file $errfile";
-            Log::add("e", "PHP Error", $msg);
-            exit(1);
-            break;
-
+            Log::add('e', 'PHP Error', "[$errno] $errstr\nFatal Error on line $errline in file $errfile");
+            return true;
         case E_USER_WARNING:
-            $msg = "[$errno] $errstr<br />\n";
-            $msg .= "Error on line $errline in file $errfile";
-            Log::add("w", "PHP Warning", $msg);
-            break;
-
+            Log::add('w', 'PHP Warning', "[$errno] $errstr\nError on line $errline in file $errfile");
+            return true;
         case E_USER_NOTICE:
-            $msg = "[$errno] $errstr<br />\n";
-            $msg .= "Notice on line $errline in file $errfile";
-            Log::add("m", "PHP Notice", $msg);
-            break;
-
+            Log::add('m', 'PHP Notice', "[$errno] $errstr\nNotice on line $errline in file $errfile");
+            return true;
         default:
             return false;
-            break;
     }
-
-    /* Don't execute PHP internal error handler */
-    return true;
 }
 // ---------------------------------------------------
 //  Some defs
