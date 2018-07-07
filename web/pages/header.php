@@ -53,9 +53,9 @@ if (isset($_GET['c']) && $_GET['c'] == "settings") {
 }
 
 $theme->assign('xajax_functions', $xajax->printJavascript("scripts", "xajax.js"));
-$theme->assign('header_title', $GLOBALS['config']['template.title']);
-$theme->assign('header_logo', $GLOBALS['config']['template.logo']);
+$theme->assign('header_title', Config::get('template.title'));
+$theme->assign('header_logo', Config::get('template.logo'));
 $theme->assign('username', $userbank->GetProperty("user"));
 $theme->assign('logged_in', $userbank->is_logged_in());
-$theme->assign('theme_name', isset($GLOBALS['config']['config.theme']) ? $GLOBALS['config']['config.theme'] : 'default');
+$theme->assign('theme_name', (Config::get('config.theme')) ? Config::get('config.theme') : 'default');
 $theme->display('page_header.tpl');

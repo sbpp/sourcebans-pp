@@ -360,7 +360,7 @@ function RemoveGroup($gid, $type)
     $query0 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = $gid");
     }
 
-    if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+    if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the settings out of the database on all servers
     $serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
@@ -586,7 +586,7 @@ function RemoveAdmin($aid)
 
     $delquery = $GLOBALS['db']->Execute(sprintf("DELETE FROM `%s_admins` WHERE aid = %d LIMIT 1", DB_PREFIX, $aid));
     if($delquery) {
-    if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+    if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the admins for the servers where this admin was on
     $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
@@ -1173,7 +1173,7 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     if(!empty($server))
     $GLOBALS['db']->Execute($addtosrv,array($aid, $server_admin_group_int, '-1', substr($server, 1)));
     }
-    if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+    if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the admins on the servers
     $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
@@ -1770,7 +1770,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
 
     $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
 
-    $kickit = isset($GLOBALS['config']['config.enablekickit']) && $GLOBALS['config']['config.enablekickit'] == "1";
+    $kickit = Config::getBool('config.enablekickit');
     if ($kickit) {
         $objResponse->addScript("ShowKickBox('".((int)$type==0?$steam:$ip)."', '".(int)$type."');");
     } else {
@@ -1999,7 +1999,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     // Update server stuff
     $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_flags` = ?, `immunity` = ? WHERE `aid` = $aid", array($srv_flags, $immunity));
 
-    if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+    if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the admins on the servers
     $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
@@ -2118,7 +2118,7 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     }
     }
 
-    if(isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1)
+    if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the settings out of the database on all servers
     $serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
@@ -2613,7 +2613,7 @@ function RehashAdmins($server, $do=0)
 function GroupBan($groupuri, $isgrpurl="no", $queue="no", $reason="", $last="")
 {
     $objResponse = new xajaxResponse();
-    if($GLOBALS['config']['config.enablegroupbanning']==0)
+    if(!Config::getBool('config.enablegroupbanning'))
     return $objResponse;
     global $userbank, $username;
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
@@ -2653,7 +2653,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
 {
     set_time_limit(0);
     $objResponse = new xajaxResponse();
-    if ($GLOBALS['config']['config.enablegroupbanning'] == 0 || !defined('STEAMAPIKEY') || STEAMAPIKEY == '') {
+    if (!Config::getBool('config.enablegroupbanning') || !defined('STEAMAPIKEY') || STEAMAPIKEY == '') {
         return $objResponse;
     }
     global $userbank, $username;
@@ -2746,7 +2746,7 @@ function GetGroups($friendid)
 {
     set_time_limit(0);
     $objResponse = new xajaxResponse();
-    if($GLOBALS['config']['config.enablegroupbanning']==0 || !is_numeric($friendid))
+    if(!Config::getBool('config.enablegroupbanning') || !is_numeric($friendid))
     return $objResponse;
     global $userbank, $username;
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
@@ -2825,7 +2825,7 @@ function BanFriends($friendid, $name)
     global $userbank, $username;
     $objResponse = new xajaxResponse();
     $name = filter_var($name, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-    if ($GLOBALS['config']['config.enablefriendsbanning'] == 0 || !is_numeric($friendid)) {
+    if (!Config::getBool('config.enablefriendsbanning') || !is_numeric($friendid)) {
         return $objResponse;
     }
 

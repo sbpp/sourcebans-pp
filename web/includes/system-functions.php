@@ -86,7 +86,7 @@ function AddTab($title, $url, $desc, $active=false)
     $tabs['title'] = $title;
     $tabs['url'] = $url;
     $tabs['desc'] = $desc;
-    if ($_GET['p'] == "default" && $title == $tab_arr[intval($GLOBALS['config']['config.defaultpage'])]) {
+    if ($_GET['p'] == "default" && $title == $tab_arr[intval(Config::get('config.defaultpage'))]) {
         $tabs['active'] = true;
         $GLOBALS['pagetitle'] = $title;
     } else {
@@ -111,13 +111,13 @@ function BuildPageTabs()
     AddTab("Dashboard", "index.php?p=home", "This page shows an overview of your bans and servers.");
     AddTab("Servers", "index.php?p=servers", "All of your servers and their status can be viewed here");
     AddTab("Bans", "index.php?p=banlist", "All of the bans in the database can be viewed from here.");
-    if ($GLOBALS['config']['config.enablecomms'] == "1") {
+    if (Config::getBool('config.enablecomms')) {
         AddTab("Comms", "index.php?p=commslist", "All of the communication bans (such as chat gags and voice mutes) in the database can be viewed from here.");
     }
-    if ($GLOBALS['config']['config.enablesubmit']=="1") {
+    if (Config::getBool('config.enablesubmit')) {
         AddTab("Report a Player", "index.php?p=submit", "You can submit a demo or screenshot of a suspected cheater here. It will then be up for review by one of the admins");
     }
-    if ($GLOBALS['config']['config.enableprotest']=="1") {
+    if (Config::getBool('config.enableprotest')) {
         AddTab("Appeal a Ban", "index.php?p=protest", "Here you can appeal your ban. And prove your case as to why you should be unbanned.");
     }
     if ($userbank->is_admin()) {

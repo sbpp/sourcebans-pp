@@ -160,7 +160,7 @@ if (!$res) {
 $theme->assign('ban_name', $res['name']);
 $theme->assign('ban_reason', $res['reason']);
 $theme->assign('ban_authid', trim($res['authid']));
-$theme->assign('customreason', ((isset($GLOBALS['config']['bans.customreasons']) && $GLOBALS['config']['bans.customreasons'] != "") ? unserialize($GLOBALS['config']['bans.customreasons']) : false));
+$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
 
 $theme->left_delimiter  = "-{";
 $theme->right_delimiter = "}-";

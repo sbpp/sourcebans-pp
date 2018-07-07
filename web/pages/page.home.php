@@ -170,9 +170,9 @@ while (!$res->EOF) {
 
 require(TEMPLATES_PATH . "/page.servers.php"); //Set theme vars from servers page
 
-$theme->assign('dashboard_lognopopup', (isset($GLOBALS['config']['dash.lognopopup']) && $GLOBALS['config']['dash.lognopopup'] == "1"));
-$theme->assign('dashboard_title', stripslashes($GLOBALS['config']['dash.intro.title']));
-$theme->assign('dashboard_text', stripslashes($GLOBALS['config']['dash.intro.text']));
+$theme->assign('dashboard_lognopopup', Config::getBool('dash.lognopopup'));
+$theme->assign('dashboard_title', Config::get('dash.intro.title'));
+$theme->assign('dashboard_text', Config::get('dash.intro.text'));
 $theme->assign('players_blocked', $stopped);
 $theme->assign('total_blocked', $totalstopped);
 

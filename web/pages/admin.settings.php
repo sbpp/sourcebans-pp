@@ -79,11 +79,11 @@ if (isset($_GET['advSearch'])) {
 } else {
     $searchlink = "";
 }
-$list_start = ($page - 1) * intval($GLOBALS['config']['banlist.bansperpage']);
-$list_end   = $list_start + intval($GLOBALS['config']['banlist.bansperpage']);
+$list_start = ($page - 1) * SB_BANS_PER_PAGE;
+$list_end   = $list_start + SB_BANS_PER_PAGE;
 
 $log_count = Log::getCount($where);
-$log       = Log::getAll($list_start, intval($GLOBALS['config']['banlist.bansperpage']), $where);
+$log       = Log::getAll($list_start, SB_BANS_PER_PAGE, $where);
 if (($page > 1)) {
     $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
 } else {
@@ -94,13 +94,13 @@ if ($list_end < $log_count) {
 } else {
     $next = "";
 }
-$pages = (round($log_count / intval($GLOBALS['config']['banlist.bansperpage'])) == 0) ? 1 : round($log_count / intval($GLOBALS['config']['banlist.bansperpage']));
+$pages = (round($log_count / SB_BANS_PER_PAGE) == 0) ? 1 : round($log_count / SB_BANS_PER_PAGE);
 if ($pages > 1) {
     $page_numbers = 'Page ' . $page . ' of ' . $pages . " - " . $prev . " | " . $next;
 } else {
     $page_numbers = 'Page ' . $page . ' of ' . $pages;
 }
-$pages = ceil($log_count / intval($GLOBALS['config']['banlist.bansperpage']));
+$pages = ceil($log_count / SB_BANS_PER_PAGE);
 if ($pages > 1) {
     if (!isset($_GET['advSearch']) || !isset($_GET['advType'])) {
         $_GET['advSearch'] = "";
@@ -276,15 +276,15 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 
     #########[Settings Page]###############
     echo '<div id="0" style="display:none;">';
-    $theme->assign('config_title', $GLOBALS['config']['template.title']);
-    $theme->assign('config_logo', $GLOBALS['config']['template.logo']);
-    $theme->assign('config_min_password', $GLOBALS['config']['config.password.minlength']);
-    $theme->assign('config_dateformat', $GLOBALS['config']['config.dateformat']);
-    $theme->assign('config_dash_title', $GLOBALS['config']['dash.intro.title']);
-    $theme->assign('config_dash_text', stripslashes($GLOBALS['config']['dash.intro.text']));
-    $theme->assign('config_bans_per_page', $GLOBALS['config']['banlist.bansperpage']);
+    $theme->assign('config_title', Config::get('template.title'));
+    $theme->assign('config_logo', Config::get('template.logo'));
+    $theme->assign('config_min_password', MIN_PASS_LENGTH);
+    $theme->assign('config_dateformat', Config::get('config.dateformat'));
+    $theme->assign('config_dash_title', Config::get('dash.intro.title'));
+    $theme->assign('config_dash_text', Config::get('dash.intro.text'));
+    $theme->assign('config_bans_per_page', SB_BANS_PER_PAGE);
 
-    $theme->assign('bans_customreason', ((isset($GLOBALS['config']['bans.customreasons']) && $GLOBALS['config']['bans.customreasons'] != "") ? unserialize($GLOBALS['config']['bans.customreasons']) : array()));
+    $theme->assign('bans_customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : []);
 
     $theme->display('page_admin_settings_settings.tpl');
     echo '</div>';
@@ -325,22 +325,22 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 }
 ?>
 <script>
-$('config_debug').checked = <?=$GLOBALS['config']['config.debug']?>;
-$('enable_submit').checked = <?=$GLOBALS['config']['config.enablesubmit']?>;
-$('enable_protest').checked = <?=$GLOBALS['config']['config.enableprotest']?>;
-$('enable_commslist').checked = <?=$GLOBALS['config']['config.enablecomms']?>;
-$('enable_kickit').checked = <?=$GLOBALS['config']['config.enablekickit']?>;
-$('export_public').checked = <?=$GLOBALS['config']['config.exportpublic']?>;
-$('dash_nopopup').checked = <?=$GLOBALS['config']['dash.lognopopup']?>;
-$('default_page').value = <?=$GLOBALS['config']['config.defaultpage']?>;
-$('protest_emailonlyinvolved').checked = <?=$GLOBALS['config']['protest.emailonlyinvolved']?>;
-$('banlist_hideadmname').checked = <?=$GLOBALS['config']['banlist.hideadminname']?>;
-$('banlist_nocountryfetch').checked = <?=$GLOBALS['config']['banlist.nocountryfetch']?>;
-$('banlist_hideplayerips').checked = <?=$GLOBALS['config']['banlist.hideplayerips']?>;
-$('enable_groupbanning').checked = <?=$GLOBALS['config']['config.enablegroupbanning']?>;
-$('enable_friendsbanning').checked = <?=$GLOBALS['config']['config.enablefriendsbanning']?>;
-$('enable_adminrehashing').checked = <?=$GLOBALS['config']['config.enableadminrehashing']?>;
-$('enable_steamlogin').checked = <?=$GLOBALS['config']['config.enablesteamlogin']?>;
+$('config_debug').checked = <?=(int)Config::getBool('config.debug');?>;
+$('enable_submit').checked = <?=(int)Config::getBool('config.enablesubmit');?>;
+$('enable_protest').checked = <?=(int)Config::getBool('config.enableprotest');?>;
+$('enable_commslist').checked = <?=(int)Config::getBool('config.enablecomms');?>;
+$('enable_kickit').checked = <?=(int)Config::getBool('config.enablekickit');?>;
+$('export_public').checked = <?=(int)Config::getBool('config.exportpublic');?>;
+$('dash_nopopup').checked = <?=(int)Config::getBool('dash.lognopopup');?>;
+$('default_page').value = <?=(int)Config::getBool('config.defaultpage');?>;
+$('protest_emailonlyinvolved').checked = <?=(int)Config::getBool('protest.emailonlyinvolved');?>;
+$('banlist_hideadmname').checked = <?=(int)Config::getBool('banlist.hideadminname');?>;
+$('banlist_nocountryfetch').checked = <?=(int)Config::getBool('banlist.nocountryfetch');?>;
+$('banlist_hideplayerips').checked = <?=(int)Config::getBool('banlist.hideplayerips');?>;
+$('enable_groupbanning').checked = <?=(int)Config::getBool('config.enablegroupbanning');?>;
+$('enable_friendsbanning').checked = <?=(int)Config::getBool('config.enablefriendsbanning');?>;
+$('enable_adminrehashing').checked = <?=(int)Config::getBool('config.enableadminrehashing');?>;
+$('enable_steamlogin').checked = <?=(int)Config::getBool('config.enablesteamlogin');?>;
 <?php
 if (ini_get('safe_mode') == 1) {
     print "$('enable_groupbanning').disabled = true;\n";

@@ -164,16 +164,15 @@ $GLOBALS['db']->Execute("SET NAMES ".DB_CHARSET.";");
 $mysql_server_info = $GLOBALS['db']->ServerInfo();
 $GLOBALS['db_version'] = $mysql_server_info['version'];
 
-$debug = $GLOBALS['db']->Execute("SELECT value FROM `".DB_PREFIX."_settings` WHERE setting = 'config.debug';");
-if ($debug->fields['value']=="1") {
-    define("DEVELOPER_MODE", true);
-}
 
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 \SteamID\SteamID::init($GLOBALS['PDO']);
 
 require_once(INCLUDES_PATH.'/Log.php');
 Log::init($GLOBALS['PDO']);
+
+require_once(INCLUDES_PATH.'/Config.php');
+Config::init($GLOBALS['PDO']);
 
 // ---------------------------------------------------
 //  Setup our custom error handler
@@ -301,9 +300,11 @@ while (!$res->EOF) {
     $res->MoveNext();
 }
 
-define('SB_BANS_PER_PAGE', $GLOBALS['config']['banlist.bansperpage']);
-define('MIN_PASS_LENGTH', $GLOBALS['config']['config.password.minlength']);
-$dateformat = !empty($GLOBALS['config']['config.dateformat'])?$GLOBALS['config']['config.dateformat']:"m-d-y H:i";
+define("DEVELOPER_MODE", Config::getBool('config.debug'));
+define('SB_BANS_PER_PAGE', Config::get('banlist.bansperpage'));
+define('MIN_PASS_LENGTH', Config::get('config.password.minlength'));
+
+$dateformat = (Config::getBool('config.dateformat')) ? Config::get('config.dateformat') : 'm-d-y H:i';
 
 // ---------------------------------------------------
 // Setup our templater
@@ -312,7 +313,7 @@ require(INCLUDES_PATH . '/smarty/Smarty.class.php');
 
 global $theme, $userbank;
 
-$theme_name = isset($GLOBALS['config']['config.theme'])?$GLOBALS['config']['config.theme']:'default';
+$theme_name = (Config::getBool('config.theme')) ? Config::get('config.theme') : 'default';
 if (defined("IS_UPDATE")) {
     $theme_name = "default";
 }

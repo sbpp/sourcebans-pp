@@ -35,7 +35,7 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-if ($GLOBALS['config']['config.enablecomms'] != "1") {
+if (!Config::getBool('config.enablecomms')) {
     print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
@@ -359,7 +359,7 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "admin":
-            if ($GLOBALS['config']['banlist.hideadminname'] && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -470,7 +470,7 @@ while (!$res->EOF) {
     $steam3parts         = explode(':', $steam2id);
     $data['steamid3']    = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
 
-    if (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()) {
+    if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
         $data['admin'] = stripslashes($res->fields['admin_name']);
@@ -760,7 +760,7 @@ $theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideadminname', (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()));
+$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
 $theme->assign('can_delete', $userbank->HasAccess(ADMIN_DELETE_BAN));
 $theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));

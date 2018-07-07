@@ -106,7 +106,7 @@ echo '<div id="admin-page-content">';
 // Add Ban
 echo '<div id="0" style="display:none;">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
-$theme->assign('customreason', ((isset($GLOBALS['config']['bans.customreasons']) && $GLOBALS['config']['bans.customreasons'] != "") ? unserialize($GLOBALS['config']['bans.customreasons']) : false));
+$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
 $theme->display('page_admin_bans_add.tpl');
 echo '</div>';
 
@@ -731,7 +731,7 @@ echo '</div>';
 
 echo '<div id="4" style="display:none;">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
-$theme->assign('groupbanning_enabled', $GLOBALS['config']['config.enablegroupbanning'] == 1 ? true : false);
+$theme->assign('groupbanning_enabled', Config::getBool('config.enablegroupbanning'));
 if (isset($_GET['fid'])) {
     $theme->assign('list_steam_groups', $_GET['fid']);
 } else {

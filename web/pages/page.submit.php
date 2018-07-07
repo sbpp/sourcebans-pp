@@ -33,7 +33,7 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-if ($GLOBALS['config']['config.enablesubmit'] != "1") {
+if (!Config::getBool('config.enablesubmit')) {
     print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
