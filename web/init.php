@@ -58,24 +58,7 @@ include_once(INCLUDES_PATH . "/CUserManager.php");
 
 \SessionManager::sessionStart('SourceBans');
 
-// ---------------------------------------------------
-//  Fix some $_SERVER vars
-// ---------------------------------------------------
-// Fix for IIS, which doesn't set REQUEST_URI
-if (!isset($_SERVER['REQUEST_URI']) || trim($_SERVER['REQUEST_URI']) == '') {
-    $_SERVER['REQUEST_URI'] = $_SERVER['SCRIPT_NAME'];
-    if (isset($_SERVER['QUERY_STRING']) && !empty($_SERVER['QUERY_STRING'])) {
-        $_SERVER['REQUEST_URI'] .= '?' . $_SERVER['QUERY_STRING'];
-    }
-}
-// Fix for Dreamhost and other PHP as CGI hosts
-if (strstr($_SERVER['SCRIPT_NAME'], 'php.cgi')) {
-    unset($_SERVER['PATH_INFO']);
-}
-
-if (trim($_SERVER['PHP_SELF']) == '') {
-    $_SERVER['PHP_SELF'] = preg_replace("/(\?.*)?$/", '', $_SERVER["REQUEST_URI"]);
-}
+require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
 // ---------------------------------------------------
 //  Are we installed?
@@ -179,80 +162,9 @@ function sbError($errno, $errstr, $errfile, $errline)
 // ---------------------------------------------------
 define('STATUS_PARSE', '/#.* +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+).* +([0-9.:]+)/');
 
-// Web admin-flags
-define('ADMIN_LIST_ADMINS', (1<<0));
-define('ADMIN_ADD_ADMINS', (1<<1));
-define('ADMIN_EDIT_ADMINS', (1<<2));
-define('ADMIN_DELETE_ADMINS', (1<<3));
-
-define('ADMIN_LIST_SERVERS', (1<<4));
-define('ADMIN_ADD_SERVER', (1<<5));
-define('ADMIN_EDIT_SERVERS', (1<<6));
-define('ADMIN_DELETE_SERVERS', (1<<7));
-
-define('ADMIN_ADD_BAN', (1<<8));
-define('ADMIN_EDIT_OWN_BANS', (1<<10));
-define('ADMIN_EDIT_GROUP_BANS', (1<<11));
-define('ADMIN_EDIT_ALL_BANS', (1<<12));
-define('ADMIN_BAN_PROTESTS', (1<<13));
-define('ADMIN_BAN_SUBMISSIONS', (1<<14));
-define('ADMIN_DELETE_BAN', (1<<25));
-define('ADMIN_UNBAN', (1<<26));
-define('ADMIN_BAN_IMPORT', (1<<27));
-define('ADMIN_UNBAN_OWN_BANS', (1<<30));
-define('ADMIN_UNBAN_GROUP_BANS', (1<<31));
-
-define('ADMIN_LIST_GROUPS', (1<<15));
-define('ADMIN_ADD_GROUP', (1<<16));
-define('ADMIN_EDIT_GROUPS', (1<<17));
-define('ADMIN_DELETE_GROUPS', (1<<18));
-
-define('ADMIN_WEB_SETTINGS', (1<<19));
-
-define('ADMIN_LIST_MODS', (1<<20));
-define('ADMIN_ADD_MODS', (1<<21));
-define('ADMIN_EDIT_MODS', (1<<22));
-define('ADMIN_DELETE_MODS', (1<<23));
-
-define('ADMIN_NOTIFY_SUB', (1<<28));
-define('ADMIN_NOTIFY_PROTEST', (1<<29));
-
-define('ADMIN_OWNER', (1<<24));
-
-// Server admin-flags
-define('SM_RESERVED_SLOT', "a");
-define('SM_GENERIC', "b");
-define('SM_KICK', "c");
-define('SM_BAN', "d");
-define('SM_UNBAN', "e");
-define('SM_SLAY', "f");
-define('SM_MAP', "g");
-define('SM_CVAR', "h");
-define('SM_CONFIG', "i");
-define('SM_CHAT', "j");
-define('SM_VOTE', "k");
-define('SM_PASSWORD', "l");
-define('SM_RCON', "m");
-define('SM_CHEATS', "n");
-define('SM_ROOT', "z");
-
-define('SM_CUSTOM1', "o");
-define('SM_CUSTOM2', "p");
-define('SM_CUSTOM3', "q");
-define('SM_CUSTOM4', "r");
-define('SM_CUSTOM5', "s");
-define('SM_CUSTOM6', "t");
-
-
-define('ALL_WEB', ADMIN_LIST_ADMINS|ADMIN_ADD_ADMINS|ADMIN_EDIT_ADMINS|ADMIN_DELETE_ADMINS|ADMIN_LIST_SERVERS|ADMIN_ADD_SERVER|
-                  ADMIN_EDIT_SERVERS|ADMIN_DELETE_SERVERS|ADMIN_ADD_BAN|ADMIN_EDIT_OWN_BANS|ADMIN_EDIT_GROUP_BANS|
-                  ADMIN_EDIT_ALL_BANS|ADMIN_BAN_PROTESTS|ADMIN_BAN_SUBMISSIONS|ADMIN_LIST_GROUPS|ADMIN_ADD_GROUP|ADMIN_EDIT_GROUPS|
-                  ADMIN_DELETE_GROUPS|ADMIN_WEB_SETTINGS|ADMIN_LIST_MODS|ADMIN_ADD_MODS|ADMIN_EDIT_MODS|ADMIN_DELETE_MODS|ADMIN_OWNER|
-                  ADMIN_DELETE_BAN|ADMIN_UNBAN|ADMIN_BAN_IMPORT|ADMIN_UNBAN_OWN_BANS|ADMIN_UNBAN_GROUP_BANS|ADMIN_NOTIFY_SUB|ADMIN_NOTIFY_PROTEST);
-
-define('ALL_SERVER', SM_RESERVED_SLOT.SM_GENERIC.SM_KICK.SM_BAN.SM_UNBAN.SM_SLAY.SM_MAP.SM_CVAR.SM_CONFIG.SM_VOTE.SM_PASSWORD.SM_RCON.
-                     SM_CHEATS.SM_CUSTOM1.SM_CUSTOM2.SM_CUSTOM3. SM_CUSTOM4.SM_CUSTOM5.SM_CUSTOM6.SM_ROOT);
-
+$flags = json_decode(file_get_contents('permissions.json'), true);
+foreach ($flags as $flag => $value) {
+    define($flag, $value);
 }
 
 define("DEVELOPER_MODE", Config::getBool('config.debug'));

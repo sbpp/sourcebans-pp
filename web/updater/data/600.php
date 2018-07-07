@@ -46,9 +46,6 @@ define('DB_CHARSET', '{charset}');                    // The Database charset (D
 define('STEAMAPIKEY', '{steamapikey}');                // Steam API Key for Shizz
 define('SB_WP_URL', '{sbwpurl}');                       //URL of SourceBans Site
 define('SB_EMAIL', '{sbwpemail}');
-
-//define('DEVELOPER_MODE', true);            // Use if you want to show debugmessages
-//define('SB_MEM', '128M');                 // Override php memory limit, if isn't enough (Banlist is just a blank page)
 ?>";
 
 if (!defined('SB_EMAIL')) {
