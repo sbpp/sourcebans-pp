@@ -165,7 +165,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $SID           = -1;
 
             // Send an email when ban was posted
-            $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
+            $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
 
             $admins = $userbank->GetAllAdmins();
             $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") - 5);

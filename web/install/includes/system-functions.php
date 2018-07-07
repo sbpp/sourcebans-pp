@@ -75,7 +75,7 @@ function AddTab($title, $url, $desc, $active=false)
     $tabs['title'] = $title;
     $tabs['url'] = $url;
     $tabs['desc'] = $desc;
-    if (!isset($_GET['p']) && $title == $tab_arr[isset($GLOBALS['config']) ? intval($GLOBALS['config']['config.defaultpage']) : 0]) {
+    if (!isset($_GET['p']) && $title == $tab_arr[is_null(Config::get('config.defaultpage')) ? 0 : Config::get('config.defaultpage')]) {
         $tabs['active'] = true;
         $GLOBALS['pagetitle'] = $title;
     } else {

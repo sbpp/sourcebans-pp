@@ -60,7 +60,7 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
         $message .= "Your password was changed to: " . $newpass . "\n\n";
         $message .= "Login to your SourceBans account and change your password in Your Account.\n";
 
-        $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
+        $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
         $m       = mail($email, "SourceBans Password Reset", $message, $headers);
 
         echo '<div id="msg-blue" style="">
