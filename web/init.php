@@ -145,10 +145,6 @@ if (!is_object($GLOBALS['db'])) {
 
 $GLOBALS['db']->Execute("SET NAMES ".DB_CHARSET.";");
 
-$mysql_server_info = $GLOBALS['db']->ServerInfo();
-$GLOBALS['db_version'] = $mysql_server_info['version'];
-
-
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 \SteamID\SteamID::init($GLOBALS['PDO']);
 
