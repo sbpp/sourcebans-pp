@@ -14,7 +14,7 @@ class SteamID
             if (is_null($dbs)) {
                 throw new \Exception('No suitable calculation Method found!');
             }
-            SteamID\calc\SQL::setDB($dbs);
+            calc\SQL::setDB($dbs);
         }
     }
 
