@@ -53,8 +53,9 @@ function steamOauth()
 $data = steamOauth();
 
 if ($data !== false) {
+    $steamid = \SteamID\SteamID::toSteam2($data);
     $GLOBALS['PDO']->query('SELECT aid, password FROM `:prefix_admins` WHERE authid = :authid');
-    $GLOBALS['PDO']->bind(':authid', \SteamID\SteamID::toSteam2($data));
+    $GLOBALS['PDO']->bind(':authid', $steamid);
     $result = $GLOBALS['PDO']->single();
     if (count($result) == 2) {
         global $userbank;
