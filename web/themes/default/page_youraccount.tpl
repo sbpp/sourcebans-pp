@@ -6,8 +6,28 @@
 The following is a list of the permissions that you have on this system.<br /><br /> <br />
 <table width="100%" border="0">
   <tr>
-    <td width="35%" valign="top">-{$web_permissions}-</td>
-    <td valign="top">-{$server_permissions}-</td>
+    <td width="35%" valign="top">
+        <span style='font-size:10px;color:#1b75d1;'>Web Permissions</span>
+        <br/>
+        -{if $web_permissions}-
+            -{foreach from=$web_permissions item=permission}-
+                &bull; -{$permission}- <br/>
+            -{/foreach}-
+        -{else}-
+            <i>None</i>
+        -{/if}-
+    </td>
+    <td valign="top">
+        <span style='font-size:10px;color:#1b75d1;'>Server Permissions</span>
+        <br/>
+        -{if $server_permissions}-
+            -{foreach from=$server_permissions item=permission}-
+                &bull; -{$permission}- <br/>
+            -{/foreach}-
+        -{else}-
+            <i>None</i>
+        -{/if}-
+    </td>
   </tr>
 </table>
 </div>
@@ -40,7 +60,7 @@ The following is a list of the permissions that you have on this system.<br /><b
       </div>
         <div id="pass2.msg" class="badentry"></div></td>
   </tr>
-  
+
   <tr>
     <td>&nbsp;</td>
     <td>
@@ -143,7 +163,7 @@ var error = 0;
 function checkYourAcctPass()
 	{
 		var err = 0;
-		
+
 		if($('pass1').value.length < -{$min_pass_len}-)
 		{
 			$('pass1.msg').setStyle('display', 'block');
@@ -155,7 +175,7 @@ function checkYourAcctPass()
 			$('pass1.msg').setStyle('display', 'none');
 		}
 		if($('pass2').value != "" && $('pass2').value != $('pass1').value)
-		{	
+		{
 			$('pass2.msg').setStyle('display', 'block');
 			$('pass2.msg').setHTML('Your passwords dont match');
 			err++;
@@ -171,7 +191,7 @@ function checkYourAcctPass()
 		{
 			set_error(0);
 			return true;
-		}	
+		}
 	}
 	function dispatch()
 	{
@@ -190,7 +210,7 @@ function checkYourAcctPass()
 		if(!$('delspass') || $('delspass').checked == false)
 		{
 			var err = 0;
-			
+
 			if($('spass1').value.length < -{$min_pass_len}-)
 			{
 				$('spass1.msg').setStyle('display', 'block');
@@ -202,7 +222,7 @@ function checkYourAcctPass()
 				$('spass1.msg').setStyle('display', 'none');
 			}
 			if($('spass2').value != "" && $('spass2').value != $('spass1').value)
-			{	
+			{
 				$('spass2.msg').setStyle('display', 'block');
 				$('spass2.msg').setHTML('Your passwords dont match');
 				err++;
@@ -218,13 +238,13 @@ function checkYourAcctPass()
 			{
 				set_error(0);
 				return true;
-			}	
+			}
 		}
 		else
 		{
 			set_error(0);
 			return true;
-		}	
+		}
 	}
 	function srvdispatch()
 	{
@@ -255,7 +275,7 @@ function checkYourAcctPass()
 		}else{
 			$('email1.msg').setStyle('display', 'none');
 		}
-        
+
         if($('email2').value == "")
         {
             $('email2.msg').setStyle('display', 'block');
@@ -264,14 +284,14 @@ function checkYourAcctPass()
 		}else{
 			$('email2.msg').setStyle('display', 'none');
 		}
-         
+
 		if(err == 0 && $('email2').value != $('email1').value)
-		{	
+		{
 			$('email2.msg').setStyle('display', 'block');
 			$('email2.msg').setHTML('The typed E-mails doesn\'t match.');
 			err++;
 		}
-        
+
         if($('emailpw').value == "")
         {
             $('emailpw.msg').setStyle('display', 'block');
@@ -280,7 +300,7 @@ function checkYourAcctPass()
 		}else{
 			$('emailpw.msg').setStyle('display', 'none');
 		}
-        
+
 		if(err > 0)
 		{
 			set_error(1);
@@ -296,4 +316,4 @@ function checkYourAcctPass()
 		}
 	}
 </script>
-</div>	
+</div>

@@ -244,226 +244,41 @@ function RewritePageTitle($title)
     $GLOBALS['TitleRewrite'] = $title;
 }
 
-/**
- * Build sub-menu
- *
- * @param array $el The array of elements for the menu
- * @return noreturn
- */
-function SubMenu($el)
+function BitToString($mask)
 {
-    $output = "";
-    $first = true;
-    foreach ($el as $e) {
-        preg_match('/.*?&c=(.*)/', html_entity_decode($e['url']), $matches);
-        if (!empty($matches[1])) {
-            $c = $matches[1];
-        }
+    $perms = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);
 
-        $output .= "<a class=\"nav_link".($first?" first":"").(isset($_GET['c'])&&$_GET['c']==$c?" active":"")."\" href=\"" . $e['url'] . "\">" . $e['title']. "</a>";
-        $first = false;
-    }
-    $GLOBALS['NavRewrite'] = $output;
-}
-
-/**
- * Converts a flag bitmask into a string
- *
- * @param integer $mask The mask to convert
- * @return string
- */
-function BitToString($mask, $masktype=0, $head=true)
-{
-    $string = "";
-    if ($head) {
-        $string .= "<span style='font-size:10px;color:#1b75d1;'>Web Permissions</span><br>";
-    }
     if ($mask == 0) {
-        $string .= "<i>None</i>";
-        return $string;
-    }
-    if (($mask & ADMIN_LIST_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View Admins<br />";
-    }
-    if (($mask & ADMIN_ADD_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add Admins<br />";
-    }
-    if (($mask & ADMIN_EDIT_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit Admins<br />";
-    }
-    if (($mask & ADMIN_DELETE_ADMINS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete Admins<br />";
+        return false;
     }
 
-    if (($mask & ADMIN_LIST_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View Servers<br />";
-    }
-    if (($mask & ADMIN_ADD_SERVER) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add Servers<br />";
-    }
-    if (($mask & ADMIN_EDIT_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit Servers<br />";
-    }
-    if (($mask & ADMIN_DELETE_SERVERS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete Servers<br />";
+    foreach ($perms as $perm) {
+        if (($mask & $perm['value']) != 0 || ($mask & ADMIN_OWNER) != 0) {
+            if ($perm['value'] != ALL_WEB) {
+                $out[] = $perm['display'];
+            }
+        }
     }
 
-    if (($mask & ADMIN_ADD_BAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add Bans<br />";
-    }
-    if (($mask & ADMIN_EDIT_OWN_BANS) !=0 && ($mask & ADMIN_EDIT_ALL_BANS) ==0) {
-        $string .="&bull; Edit Own Bans<br />";
-    }
-    if (($mask & ADMIN_EDIT_GROUP_BANS) !=0 && ($mask & ADMIN_EDIT_ALL_BANS) ==0) {
-        $string .= "&bull; Edit Group Bans<br />";
-    }
-    if (($mask & ADMIN_EDIT_ALL_BANS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit All Bans<br />";
-    }
-    if (($mask & ADMIN_BAN_PROTESTS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Ban Appeals<br />";
-    }
-    if (($mask & ADMIN_BAN_SUBMISSIONS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Ban Reports<br />";
-    }
-
-    if (($mask & ADMIN_UNBAN_OWN_BANS) !=0 && ($mask & ADMIN_UNBAN) ==0) {
-        $string .= "&bull; Unban Own Bans<br />";
-    }
-    if (($mask & ADMIN_UNBAN_GROUP_BANS) !=0 && ($mask & ADMIN_UNBAN) ==0) {
-        $string .= "&bull; Unban Group Bans<br />";
-    }
-    if (($mask & ADMIN_UNBAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Unban All Bans<br />";
-    }
-    if (($mask & ADMIN_DELETE_BAN) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete All Bans<br />";
-    }
-    if (($mask & ADMIN_BAN_IMPORT) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Import Bans<br />";
-    }
-
-    if (($mask & ADMIN_LIST_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View Groups<br />";
-    }
-    if (($mask & ADMIN_ADD_GROUP) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add Groups<br />";
-    }
-    if (($mask & ADMIN_EDIT_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit Groups<br />";
-    }
-    if (($mask & ADMIN_DELETE_GROUPS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete Groups<br />";
-    }
-
-    if (($mask & ADMIN_NOTIFY_SUB) !=0 || ($mask & ADMIN_NOTIFY_SUB) !=0) {
-        $string .= "&bull; Ban Report Email Notifications<br />";
-    }
-    if (($mask & ADMIN_NOTIFY_PROTEST) !=0 || ($mask & ADMIN_NOTIFY_PROTEST) !=0) {
-        $string .= "&bull; Ban Appeal Email Notifications<br />";
-    }
-
-    if (($mask & ADMIN_WEB_SETTINGS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Web Settings<br />";
-    }
-
-    if (($mask & ADMIN_LIST_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; View Mods<br />";
-    }
-    if (($mask & ADMIN_ADD_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Add Mods<br />";
-    }
-    if (($mask & ADMIN_EDIT_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Edit Mods<br />";
-    }
-    if (($mask & ADMIN_DELETE_MODS) !=0 || ($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Delete Mods<br />";
-    }
-
-    if (($mask & ADMIN_OWNER) !=0) {
-        $string .= "&bull; Owner<br />";
-    }
-
-    return $string;
+    return $out;
 }
 
 
-function SmFlagsToSb($flagstring, $head=true)
+function SmFlagsToSb($flagstring)
 {
-    $string = "";
-    if ($head) {
-        $string .= "<span style='font-size:10px;color:#1b75d1;'>Server Permissions</span><br>";
-    }
+    $flags = json_decode(file_get_contents(ROOT.'/configs/permissions/sourcemod.json'), true);
+
     if (empty($flagstring)) {
-        $string .= "<i>None</i>";
-        return $string;
-    }
-    if ((strstr($flagstring, "a") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Reserved Slot<br />";
-    }
-    if ((strstr($flagstring, "b") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Generic Admin<br />";
-    }
-    if ((strstr($flagstring, "c") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Kick<br />";
-    }
-    if ((strstr($flagstring, "d") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Ban<br />";
-    }
-    if ((strstr($flagstring, "e") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Unban<br />";
-    }
-    if ((strstr($flagstring, "f") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Slay<br />";
-    }
-    if ((strstr($flagstring, "g") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Map Change<br />";
-    }
-    if ((strstr($flagstring, "h") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Change CVars<br />";
-    }
-    if ((strstr($flagstring, "i") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Run Configs<br />";
-    }
-    if ((strstr($flagstring, "j") || strstr($flagstring, "z"))) {
-        $string .= "&bull; Admin Chat<br />";
-    }
-    if ((strstr($flagstring, "k") || strstr($flagstring, "z"))) {
-        $string .="&bull; Start Votes<br />";
-    }
-    if ((strstr($flagstring, "l") || strstr($flagstring, "z"))) {
-        $string .="&bull; Password Server<br />";
-    }
-    if ((strstr($flagstring, "m") || strstr($flagstring, "z"))) {
-        $string .="&bull; RCON<br />";
-    }
-    if ((strstr($flagstring, "n") || strstr($flagstring, "z"))) {
-        $string .="&bull; Enable Cheats<br />";
-    }
-    if ((strstr($flagstring, "z"))) {
-        $string .="&bull; Full Admin<br />";
+        return false;
     }
 
-    if ((strstr($flagstring, "o") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom Flag 1<br />";
-    }
-    if ((strstr($flagstring, "p") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom Flag 2<br />";
-    }
-    if ((strstr($flagstring, "q") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom Flag 3<br />";
-    }
-    if ((strstr($flagstring, "r") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom flag 4<br />";
-    }
-    if ((strstr($flagstring, "s") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom Flag 5<br />";
-    }
-    if ((strstr($flagstring, "t") || strstr($flagstring, "z"))) {
-        $string .="&bull; Custom Flag 6<br />";
+    foreach ($flags as $flag) {
+        if (strstr($flagstring, $flag['value']) || strstr($flagstring, 'z')) {
+            $out[] = $flag['display'];
+        }
     }
 
-    return $string;
+    return $out;
 }
 
 function NextSid()
