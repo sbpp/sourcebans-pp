@@ -87,7 +87,7 @@ if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/up
 // ---------------------------------------------------
 //  Initial setup
 // ---------------------------------------------------
-$version = @json_decode(file_get_contents('version.json'), true);
+$version = @json_decode(file_get_contents('configs/version.json'), true);
 define('SB_VERSION', isset($version['version']) ? $version['version'] : 'N/A');
 define('SB_GITREV', isset($version['git']) ? $version['git'] : 0);
 define('SB_DEV', isset($version['dev']) ? $version['dev'] : false);
