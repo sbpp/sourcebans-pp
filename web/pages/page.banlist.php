@@ -54,9 +54,6 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page     = intval($_GET['page']);
     $pagelink = "&page=" . $page;
 }
-if (version_compare($GLOBALS['db_version'], "5.6.0") >= 0 && version_compare($GLOBALS['db_version'], "10.0.0") < 0) {
-    $GLOBALS['db']->Execute("set session optimizer_switch='block_nested_loop=off';");
-}
 if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
@@ -236,7 +233,7 @@ if (isset($_GET['searchText'])) {
     // disable ip search if hiding player ips
     $search_ips   = "";
     $search_array = array();
-    if (!isset($GLOBALS['config']['banlist.hideplayerips']) || $GLOBALS['config']['banlist.hideplayerips'] != "1" || $userbank->is_admin()) {
+    if (!Config::getBool('banlist.hideplayerips') || $userbank->is_admin()) {
         $search_ips     = "BA.ip LIKE ? OR ";
         $search_array[] = $search;
     }
@@ -319,7 +316,7 @@ if (isset($_GET['advSearch'])) {
             break;
         case "ip":
             // disable ip search if hiding player ips
-            if (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -379,7 +376,7 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "admin":
-            if ($GLOBALS['config']['banlist.hideadminname'] && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -469,10 +466,10 @@ while (!$res->EOF) {
 
     $data['ban_id'] = $res->fields['ban_id'];
 
-    if (!empty($res->fields['ban_ip'])) {
+    if (!empty($res->fields['ban_ip']) && !Config::getBool('banlist.nocountryfetch')) {
         if (!empty($res->fields['ban_country']) && $res->fields['ban_country'] != ' ') {
             $data['country'] = '<img src="images/country/' . strtolower($res->fields['ban_country']) . '.jpg" alt="' . $res->fields['ban_country'] . '" border="0" align="absmiddle" />';
-        } elseif (isset($GLOBALS['config']['banlist.nocountryfetch']) && $GLOBALS['config']['banlist.nocountryfetch'] == "0") {
+        } elseif (!Config::getBool('banlist.nocountryfetch')) {
             $country = FetchIp($res->fields['ban_ip']);
             $edit    = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET country = ?
 				                            WHERE bid = ?", array(
@@ -497,7 +494,7 @@ while (!$res->EOF) {
     $steam3parts         = explode(':', $steam2id);
     $data['steamid3']    = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
 
-    if (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()) {
+    if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
         $data['admin'] = stripslashes($res->fields['admin_name']);
@@ -536,7 +533,7 @@ while (!$res->EOF) {
 
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
-        if (isset($removedby[0])) {
+        if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
         }
     }
@@ -809,12 +806,12 @@ $theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideplayerips', (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()));
-$theme->assign('hideadminname', (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()));
-$theme->assign('groupban', ($GLOBALS['config']['config.enablegroupbanning'] == 1 && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
-$theme->assign('friendsban', ($GLOBALS['config']['config.enablefriendsbanning'] == 1 && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
+$theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
+$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
+$theme->assign('groupban', (Config::getBool('config.enablegroupbanning') && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
+$theme->assign('friendsban', (Config::getBool('config.enablefriendsbanning') && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
 $theme->assign('can_delete', $userbank->HasAccess(ADMIN_DELETE_BAN));
 $theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));
-$theme->assign('can_export', ($userbank->HasAccess(ADMIN_OWNER) || (isset($GLOBALS['config']['config.exportpublic']) && $GLOBALS['config']['config.exportpublic'] == "1")));
+$theme->assign('can_export', ($userbank->HasAccess(ADMIN_OWNER) || Config::getBool('config.exportpublic')));
 $theme->display('page_bans.tpl');

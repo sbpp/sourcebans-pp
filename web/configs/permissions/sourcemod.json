@@ -1,0 +1,106 @@
+{
+    "SM_RESERVED_SLOT": {
+        "value": "a",
+        "display": "Reserved Slot"
+    },
+
+    "SM_GENERIC": {
+        "value": "b",
+        "display": "Generic Admin"
+    },
+
+    "SM_KICK": {
+        "value": "c",
+        "display": "Kick"
+    },
+
+    "SM_BAN": {
+        "value": "d",
+        "display": "Ban"
+    },
+
+    "SM_UNBAN": {
+        "value": "e",
+        "display": "Unban"
+    },
+
+    "SM_SLAY": {
+        "value": "f",
+        "display": "Slay"
+    },
+
+    "SM_MAP": {
+        "value": "g",
+        "display": "Map Change"
+    },
+
+    "SM_CVAR": {
+        "value": "h",
+        "display": "Change ConVars"
+    },
+
+    "SM_CONFIG": {
+        "value": "i",
+        "display": "Run Configs"
+    },
+
+    "SM_CHAT": {
+        "value": "j",
+        "display": "Admin Chat"
+    },
+
+    "SM_VOTE": {
+        "value": "k",
+        "display": "Start Votes"
+    },
+
+    "SM_PASSWORD": {
+        "value": "l",
+        "display": "Password Server"
+    },
+
+    "SM_RCON": {
+        "value": "m",
+        "display": "RCON"
+    },
+
+    "SM_CHEATS": {
+        "value": "n",
+        "display": "Enable Cheats"
+    },
+
+    "SM_ROOT": {
+        "value": "z",
+        "display": "Full Admin"
+    },
+
+    "SM_CUSTOM1": {
+        "value": "o",
+        "display": "Custom Flag 1"
+    },
+
+    "SM_CUSTOM2": {
+        "value": "p",
+        "display": "Custom Flag 2"
+    },
+
+    "SM_CUSTOM3": {
+        "value": "q",
+        "display": "Custom Flag 3"
+    },
+
+    "SM_CUSTOM4": {
+        "value": "r",
+        "display": "Custom flag 4"
+    },
+
+    "SM_CUSTOM5": {
+        "value": "s",
+        "display": "Custom Flag 5"
+    },
+
+    "SM_CUSTOM6": {
+        "value": "t",
+        "display": "Custom Flag 6"
+    }
+}

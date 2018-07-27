@@ -242,7 +242,7 @@ class CUserManager
      * @param $password password to encrypt.
      * @return string.
      */
-    public function encrypt_password($password, $salt = SB_SALT)
+    public function encrypt_password($password, $salt = 'SourceBans')
     {
         return sha1(sha1($salt . $password));
     }

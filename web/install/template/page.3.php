@@ -1,8 +1,4 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
 $errors = 0;
 $warnings = 0;
 

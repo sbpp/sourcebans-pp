@@ -26,7 +26,7 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $theme;
-if ($GLOBALS['config']['config.enableprotest'] != "1") {
+if (!Config::getBool('config.enableprotest')) {
     print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
@@ -133,11 +133,11 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $Email       = "";
 
         // Send an email when protest was posted
-        $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
+        $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
 
         $emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `" . DB_PREFIX . "_admins` WHERE aid = (SELECT aid FROM `" . DB_PREFIX . "_bans` WHERE bid = '" . (int) $BanId . "');");
         $requri    = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
-        if (isset($GLOBALS['config']['protest.emailonlyinvolved']) && $GLOBALS['config']['protest.emailonlyinvolved'] == 1 && !empty($emailinfo->fields['email'])) {
+        if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo->fields['email'])) {
             $admins = array(
                 array(
                     'aid' => $emailinfo->fields['aid'],

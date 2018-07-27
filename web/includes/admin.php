@@ -255,7 +255,7 @@ if ($_GET['c'] == "groups") {
         $banTabMenu = new CTabsMenu();
         if ($userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
             $banTabMenu->addMenuItem("Add a ban", 0);
-            if ($GLOBALS['config']['config.enablegroupbanning']==1) {
+            if (Config::getBool('config.enablegroupbanning')) {
                 $banTabMenu->addMenuItem("Group ban", 4);
             }
         }

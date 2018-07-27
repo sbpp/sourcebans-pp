@@ -1,17 +1,3 @@
-<?php
-if (!defined("IN_SB")) {
-    print "You should not be here. Only follow links!";
-    die();
-}
-?>
-<div id="msg-red-debug" style="display:none;" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
-	<b>Debug</b>
-	<br />
-	<div id="debug-text">
-	</div>
-</div>
-
 <div id="dialog-placement" style="vertical-align:middle;display:none;opacity:0;text-align:center;width:892px;margin:0 auto;position:fixed !important;position:absolute;overflow:hidden;top:10px;left:100px;">
 <table width="460px" id="dialog-holder" class="dialog-holder" border="0" cellspacing="0" cellpadding="0" >
 	<tbody width="460px">
@@ -52,8 +38,6 @@ if (!defined("IN_SB")) {
 
 
 <div id="content_title">
-    <?php
-        print isset($GLOBALS['pagetitle']) ? $GLOBALS['pagetitle'] : null;
-    ?>
+    <b><?php print $title;?></b>
 </div>
 <div id="content">

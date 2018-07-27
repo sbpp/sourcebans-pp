@@ -129,7 +129,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 )
             );
         }
-        if (isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1) {
+        if (Config::getBool('config.enableadminrehashing')) {
             // rehash the admins on the servers
             $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
                 LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` asg ON asg.admin_id = '" . (int) $_GET['id'] . "'

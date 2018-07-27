@@ -45,7 +45,7 @@ if (isset($_GET['c'])) {
 if (isset($_GET['p']) && $_GET['p'] != "login") {
     $_SESSION['q'] = $_SERVER['QUERY_STRING'];
 }
-if (defined('DEVELOPER_MODE')) {
+if (DEVELOPER_MODE) {
     global $start;
     $time      = microtime();
     $time      = explode(" ", $time);

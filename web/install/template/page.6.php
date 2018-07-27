@@ -1,9 +1,4 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-
 if (isset($_POST['postd']) && $_POST['postd']) {
     if (empty($_POST['amx_server']) ||empty($_POST['amx_port']) ||empty($_POST['amx_username']) ||empty($_POST['amx_password']) ||empty($_POST['amx_database']) ||empty($_POST['amx_prefix'])) {
         echo "<script>ShowBox('Error', 'There is some missing data. All feilds are required.', 'red', '', true);</script>";

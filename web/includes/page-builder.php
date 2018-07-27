@@ -76,7 +76,7 @@ switch ($_GET['p']) {
         $page = TEMPLATES_PATH . "/page.home.php";
         break;
     default:
-        switch ($GLOBALS['config']['config.defaultpage']) {
+        switch (Config::get('config.defaultpage')) {
             case 1:
                 RewritePageTitle("Ban List");
                 $page = TEMPLATES_PATH . "/page.banlist.php";

@@ -1,7 +1,6 @@
 <?php
 include_once("init.php");
-$exportpublic = (isset($GLOBALS['config']['config.exportpublic']) && $GLOBALS['config']['config.exportpublic'] == "1");
-if (!$userbank->HasAccess(ADMIN_OWNER) && !$exportpublic) {
+if (!$userbank->HasAccess(ADMIN_OWNER) && !Config::getBool('config.exportpublic')) {
     echo "Don't have access to this feature.";
 } else if (!isset($_GET['type'])) {
     echo "You have to specify the type. Only follow links!";
