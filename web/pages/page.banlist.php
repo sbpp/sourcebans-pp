@@ -466,7 +466,7 @@ while (!$res->EOF) {
 
     $data['ban_id'] = $res->fields['ban_id'];
 
-    if (!empty($res->fields['ban_ip'])) {
+    if (!empty($res->fields['ban_ip']) && !Config::getBool('banlist.nocountryfetch')) {
         if (!empty($res->fields['ban_country']) && $res->fields['ban_country'] != ' ') {
             $data['country'] = '<img src="images/country/' . strtolower($res->fields['ban_country']) . '.jpg" alt="' . $res->fields['ban_country'] . '" border="0" align="absmiddle" />';
         } elseif (!Config::getBool('banlist.nocountryfetch')) {
@@ -533,7 +533,7 @@ while (!$res->EOF) {
 
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
-        if (isset($removedby[0])) {
+        if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
         }
     }

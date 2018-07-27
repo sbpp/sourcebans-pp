@@ -505,7 +505,7 @@ while (!$res->EOF) {
 
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
-        if (isset($removedby[0])) {
+        if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
         }
     } else if ($data['ban_length'] == 'Permanent') {
