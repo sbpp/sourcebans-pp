@@ -162,9 +162,13 @@ function sbError($errno, $errstr, $errfile, $errline)
 // ---------------------------------------------------
 define('STATUS_PARSE', '/#.* +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+).* +([0-9.:]+)/');
 
-$flags = json_decode(file_get_contents('permissions.json'), true);
-foreach ($flags as $flag => $value) {
-    define($flag, $value);
+$webflags = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);
+foreach ($webflags as $flag => $perm) {
+    define($flag, $perm['value']);
+}
+$smflags = json_decode(file_get_contents(ROOT.'/configs/permissions/sourcemod.json'), true);
+foreach ($smflags as $flag => $perm) {
+    define($flag, $perm['value']);
 }
 
 define("DEVELOPER_MODE", Config::getBool('config.debug'));
