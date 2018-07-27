@@ -1,9 +1,3 @@
-<?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-?>
     <b><p>To use this webpanel software, you are required to read and accept the following license. If you do not agree with the license, then go and make your own ban/admin system.<br /><br />
     An explanation  of this license is available <u><a href="https://creativecommons.org/licenses/by-nc-sa/3.0/">here</a></u>.</p></b>
 
