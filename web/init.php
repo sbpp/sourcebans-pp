@@ -54,7 +54,8 @@ define('SB_THEMES_COMPILE', ROOT . 'themes_c/');
 define('IN_SB', true);
 
 require_once(INCLUDES_PATH.'/SessionManager.php');
-include_once(INCLUDES_PATH . "/CUserManager.php");
+require_once(INCLUDES_PATH.'/CUserManager.php');
+require_once(INCLUDES_PATH.'/AdminTabs.php');
 
 \SessionManager::sessionStart('SourceBans');
 

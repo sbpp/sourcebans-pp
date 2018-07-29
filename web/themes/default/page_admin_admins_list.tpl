@@ -1,7 +1,8 @@
+<div id="admin-page-content">
+    <div class="tabcontent" id="List admins">
 {if not $permission_listadmin}
 	Access Denied
 {else}
-
 <h3>Admins (<span id="admincount">{$admin_count}</span>)</h3>
 Click on an admin to see more detailed information and actions to perform on them.<br /><br />
 
@@ -97,3 +98,4 @@ Click on an admin to see more detailed information and actions to perform on the
 </div>
 <script type="text/javascript">InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
 {/if}
+</div>

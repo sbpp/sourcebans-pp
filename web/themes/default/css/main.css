@@ -438,12 +438,8 @@ a.nav_link:hover {
 }
 
 #search {
-	padding: 2px 0 0 0;
 	text-align: right;
-	position: relative;
-	right: -684px;
-	top: -180px;
-	width: 300px;
+	margin-top: 55px;
 }
 
 #searchbtn{
@@ -746,52 +742,6 @@ color: #fff;
 	width: 20%;
 	float: left;
 	}
-
-#admin-page-menu ul {
-  margin: 0;
-  padding: 0 0px;
-  list-style: none;
-}
-
-#admin-page-menu ul li {
-  text-align: left;
-}
-
-#admin-page-menu ul .active
-{
-	font-weight: bold;
-}
-
-#admin-page-menu ul li a {
-	display: block;
-	height: 20px;
-	text-decoration : none;
-	padding: 9px 0px 3px 8px;
-	background-color: #4f463e;
-	color: #fff;
-}
-
-#admin-page-menu ul li a .tab-img {
-	vertical-align:baseline;
-	border:none;
-}
-
-#admin-page-menu ul li a:hover {
-	color : #fff;
-	background-color: #3d3631;
-	border: 0;
-	padding: 9px 0px 3px 8px;
-}
-
-#admin-page-menu ul li.active a:hover  {
-	color : #fff;
-	background-color: #3d3631;
-	border: 0;
-	padding: 9px 0px 3px 8px;
-}
-
-#admin-page-menu ul li.active {
-}
 
 /* Admin Page Content */
 
@@ -1259,6 +1209,37 @@ div.contextmenu .separator {
 	font-weight: 600;
 }
 
+#breadcrumb > a:last-child {
+    font-weight: 600;
+}
+
 hr {
 	border: 1px solid #ddd;
+}
+
+#admin-page-menu > a {
+    display: block;
+	height: 20px;
+	text-decoration : none;
+	padding: 9px 0px 3px 8px;
+	background-color: #4f463e;
+	color: #fff;
+    cursor: pointer;
+}
+
+#admin-page-menu > a:hover {
+    color : #fff;
+    background-color: #3d3631;
+}
+
+#admin-page-menu > .active {
+	font-weight: bold;
+}
+
+.tabcontent {
+    display: none;
+}
+
+.tabcontent:first-of-type {
+    display: block;
 }

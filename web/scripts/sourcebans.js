@@ -1615,3 +1615,21 @@ function ShowBlockBox(check, type, length)
 {
 	ShowBox('Block Added', 'The block has been successfully added<br><iframe id="srvkicker" frameborder="0" width="100%" src="pages/admin.blockit.php?check='+check+'&type='+type+'&length='+length+'"></iframe>', 'green', 'index.php?p=admin&c=comms', true);
 }
+
+function openTab(event, target) {
+    var menu = document.getElementById("admin-page-menu");
+    for (var i = 0; i < menu.children.length - 1; i++) {
+        menu.children[i].classList.remove("active");
+    }
+
+    event.classList.add("active");
+
+    var content = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < content.length; i++) {
+        if (content[i].id === target) {
+            content[i].style.display = "block";
+        } else {
+            content[i].style.display = "none";
+        }
+    }
+}

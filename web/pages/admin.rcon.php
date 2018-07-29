@@ -32,6 +32,8 @@ if (!defined("IN_SB")) {
 
 global $theme, $userbank;
 
+new AdminTabs([], $userbank);
+
 $sid = (int) $_GET['id'];
 
 // Access on that server?

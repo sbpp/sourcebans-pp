@@ -36,12 +36,12 @@ if ($userbank->GetAid() == -1) {
     die();
 }
 
-$groupsTabMenu = new CTabsMenu();
-$groupsTabMenu->addMenuItem("View Permissions", 0);
-$groupsTabMenu->addMenuItem("Change Password", 1);
-$groupsTabMenu->addMenuItem("Server Password", 2);
-$groupsTabMenu->addMenuItem("Change Email", 3);
-$groupsTabMenu->outputMenu();
+new AdminTabs([
+    ['name' => 'View Permissions', 'permission' => ALL_WEB],
+    ['name' => 'Change Password', 'permission' => ALL_WEB],
+    ['name' => 'Server Password', 'permission' => ALL_WEB],
+    ['name' => 'Change Email', 'permission' => ALL_WEB]
+], $userbank);
 
 $res      = $GLOBALS['db']->Execute("SELECT `srv_password`, `email` FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '" . $userbank->GetAid() . "'");
 $srvpwset = (!empty($res->fields['srv_password']) ? true : false);

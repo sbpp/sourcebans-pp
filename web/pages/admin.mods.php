@@ -30,10 +30,19 @@ if (!defined("IN_SB")) {
     die();
 }
 global $userbank, $theme;
+
+new AdminTabs([
+    ['name' => 'List MODs', 'permission' => ADMIN_OWNER|ADMIN_LIST_MODS],
+    ['name' => 'Add new MOD', 'permission' => ADMIN_OWNER|ADMIN_ADD_MODS]
+], $userbank);
+
+$mod_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE mid > 0 ORDER BY name ASC") ;
+$query = $GLOBALS['db']->GetRow("SELECT COUNT(mid) AS cnt FROM `" . DB_PREFIX . "_mods`") ;
+$mod_count = $query['cnt'];
 ?>
 <div id="admin-page-content">
     <!-- List Mods -->
-    <div id="0" style="display:none;">
+    <div class="tabcontent" id="List MODs">
 <?php
 $theme->assign('mod_count', $mod_count);
 $theme->assign('permission_listmods', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS));
@@ -45,7 +54,7 @@ $theme->display('page_admin_mods_list.tpl');
 ?>
     </div>
     <!-- Add Mods -->
-    <div id="1" style="display:none;">
+    <div class="tabcontent" id="Add new MOD">
 <?php
 $theme->assign('permission_add', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_MODS));
 $theme->display('page_admin_mods_add.tpl');

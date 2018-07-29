@@ -26,6 +26,9 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $theme;
+
+new AdminTabs([], $userbank);
+
 $srv_admins = $GLOBALS['db']->GetAll("SELECT authid, user
     FROM " . DB_PREFIX . "_admins_servers_groups AS asg
     LEFT JOIN " . DB_PREFIX . "_admins AS a ON a.aid = asg.admin_id
@@ -63,7 +66,7 @@ $theme->assign('admin_count', count($srv_admins));
 $theme->assign('admin_list', $admins);
 ?>
 <div id="admin-page-content">
-    <div id="0" style="display:none;">
+    <div class="tabcontent">
         <?php $theme->display('page_admin_servers_adminlist.tpl');?>
     </div>
 </div>
