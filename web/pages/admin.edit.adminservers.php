@@ -30,6 +30,9 @@ if (!defined("IN_SB")) {
     die();
 }
 global $theme;
+
+new AdminTabs([], $userbank);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>

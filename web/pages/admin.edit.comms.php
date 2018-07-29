@@ -37,6 +37,8 @@ if (!defined("IN_SB")) {
 
 global $theme;
 
+new AdminTabs([], $userbank);
+
 if ($_GET['key'] != $_SESSION['banlist_postkey']) {
     echo '<script>ShowBox("Error", "Possible hacking attempt (URL Key mismatch)!", "red", "index.php?p=admin&c=comms");</script>';
     PageDie();

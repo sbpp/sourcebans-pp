@@ -1,7 +1,7 @@
 <div id="admin-page-content">
 
 
-<div id="0"> <!-- div ID 0 is the first 'panel' to be shown -->
+<div class="tabcontent" id="View Permissions"> <!-- div ID 0 is the first 'panel' to be shown -->
 <h3>Your Permissions</h3>
 The following is a list of the permissions that you have on this system.<br /><br /> <br />
 <table width="100%" border="0">
@@ -33,7 +33,7 @@ The following is a list of the permissions that you have on this system.<br /><b
 </div>
 
 
-<div id="1" style="display:none;"> <!-- div ID 1 is the second 'panel' to be shown -->
+<div class="tabcontent" id="Change Password"> <!-- div ID 1 is the second 'panel' to be shown -->
 <h3>Change Password</h3>
 <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>
@@ -71,7 +71,7 @@ The following is a list of the permissions that you have on this system.<br /><b
 </div>
 
 
-<div id="2" style="display:none;"> <!-- div ID 2 is the third 'panel' to be shown -->
+<div class="tabcontent" id="Server Password"> <!-- div ID 2 is the third 'panel' to be shown -->
 <h3>Change Server Password</h3>
 You will need to specify this password in the game server before you can use your admin rights.<br />Click <a href="http://wiki.alliedmods.net/Adding_Admins_%28SourceMod%29#Passwords" title="SourceMod Password Info" target="_blank"><b>here</b></a> for more infos.
 <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
@@ -120,7 +120,7 @@ You will need to specify this password in the game server before you can use you
 </div>
 
 
-<div id="3" style="display:none;"> <!-- div ID 3 is the fourth 'panel' to be shown -->
+<div class="tabcontent" id="Change Email"> <!-- div ID 3 is the fourth 'panel' to be shown -->
 <h3>Change E-Mail</h3>
 <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>

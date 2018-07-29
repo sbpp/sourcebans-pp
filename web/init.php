@@ -54,7 +54,8 @@ define('SB_THEMES_COMPILE', ROOT . 'themes_c/');
 define('IN_SB', true);
 
 require_once(INCLUDES_PATH.'/SessionManager.php');
-include_once(INCLUDES_PATH . "/CUserManager.php");
+require_once(INCLUDES_PATH.'/CUserManager.php');
+require_once(INCLUDES_PATH.'/AdminTabs.php');
 
 \SessionManager::sessionStart('SourceBans');
 
@@ -208,6 +209,17 @@ $theme->compile_dir = SB_THEMES_COMPILE;
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE")) {
     $theme->force_compile = true;
 }
+
+
+require_once(INCLUDES_PATH.'/Mustache/Autoloader.php');
+Mustache_Autoloader::register();
+
+require_once(INCLUDES_PATH.'/Template.php');
+Template::init(new Mustache_Engine([
+    'cache' => SB_THEMES_COMPILE,
+    'loader' => new Mustache_Loader_FilesystemLoader(SB_THEMES.$theme_name)
+]));
+
 // ---------------------------------------------------
 // Setup our user manager
 // ---------------------------------------------------

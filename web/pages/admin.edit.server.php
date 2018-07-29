@@ -1,4 +1,3 @@
-<div id="admin-page-content">
 <?php
 /*************************************************************************
 This file is part of SourceBans++
@@ -31,6 +30,9 @@ if (!defined("IN_SB")) {
     die();
 }
 global $theme;
+
+new AdminTabs([], $userbank);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
@@ -181,6 +183,7 @@ $theme->assign('grouplist', $grouplist);
 $theme->assign('edit_server', true);
 $theme->assign('submit_text', "Update Server");
 ?>
+<div id="admin-page-content">
     <form action="" method="post" name="editserver">
 <?php $theme->display('page_admin_servers_add.tpl'); ?>
 </form>

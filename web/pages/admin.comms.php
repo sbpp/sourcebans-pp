@@ -35,6 +35,17 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+
+new AdminTabs([
+    ['name' => 'Add a block', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN]
+], $userbank);
+
+if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
+    echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+} elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
+    echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+}
+
 if (isset($GLOBALS['IN_ADMIN'])) {
     define('CUR_AID', $userbank->GetAid());
 }
@@ -49,8 +60,7 @@ if (isset($_GET["rebanid"])) {
 }
 
 echo '<div id="admin-page-content">';
-// Add Block
-echo '<div id="0" style="display:none;">';
+echo '<div class="tabcontent" id="Add a block">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
 $theme->display('page_admin_comms_add.tpl');
 ?>
@@ -65,7 +75,7 @@ function ProcessBan()
     var reason = $('listReason')[$('listReason').selectedIndex].value;
 
     if (reason == "other") {
-        reason = $('txtReason').value; 
+        reason = $('txtReason').value;
     }
     xajax_AddBlock($('nickname').value,
         $('type').value,

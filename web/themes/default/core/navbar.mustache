@@ -1,0 +1,41 @@
+<div id="tabsWrapper">
+    <div id="mainwrapper">
+        <div id="tabs">
+            <ul>
+                {{#navbar}}
+                    <li class="{{state}}">
+                        <a href="index.php?p={{endpoint}}" class="tip" title="{{title}}::{{description}}" target="_self">{{title}}</a>
+                    </li>
+                {{/navbar}}
+            </ul>
+            <div id="nav">
+                {{#isAdmin}}
+                    {{#adminbar}}
+                        <a class="nav_link {{state}}" href="index.php?p=admin&c={{endpoint}}">{{title}}</a>
+                    {{/adminbar}}
+                {{/isAdmin}}
+            </div>
+            {{#login}}
+            <div style="float: right;">
+                <ul>
+                    <li>
+                        <a style="background-color: #B8383B;" href='index.php?p=logout'>Logout</a>
+                    </li>
+                </ul>
+            </div>
+            <div class="user">Welcome, <a href='index.php?p=account'>{{username}}</a></div>
+            {{/login}}
+            {{^login}}
+            <div style="float: right;">
+                <ul>
+                    <li>
+                        <a style="background-color: #70B04A;" href='index.php?p=login'>Login</a>
+                    </li>
+                </ul>
+            </div>
+            {{/login}}
+        </div>
+    </div>
+</div>
+<div id="mainwrapper">
+    <div id="innerwrapper">

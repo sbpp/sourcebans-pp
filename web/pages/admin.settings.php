@@ -31,6 +31,13 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
+new AdminTabs([
+    ['name' => 'Main Settings', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS],
+    ['name' => 'Themes', 'permission' => ALL_WEB],
+    ['name' => 'System Log', 'permission' => ALL_WEB],
+    ['name' => 'Features', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS]
+], $userbank);
+
 $page = 1;
 if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page = intval($_GET['page']);
@@ -275,7 +282,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     }
 
     #########[Settings Page]###############
-    echo '<div id="0" style="display:none;">';
+    echo '<div class="tabcontent" id="Main Settings">';
     $theme->assign('config_title', Config::get('template.title'));
     $theme->assign('config_logo', Config::get('template.logo'));
     $theme->assign('config_min_password', MIN_PASS_LENGTH);
@@ -291,14 +298,14 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     #########/[Settings Page]###############
 
     #########[Features Page]###############
-    echo '<div id="3" style="display:none;">';
+    echo '<div class="tabcontent" id="Features">';
     $theme->assign('steamapi', (defined('STEAMAPIKEY') && STEAMAPIKEY != '') ? true : false);
     $theme->display('page_admin_settings_features.tpl');
     echo '</div>';
     #########/[Features Page]###############
 
     #########[Themes Page]###############
-    echo '<div id="1" style="display:none;">';
+    echo '<div class="tabcontent" id="Themes">';
     $theme->assign('theme_list', $valid_themes);
 
     $theme->assign('theme_name', strip_tags(theme_name));
@@ -312,7 +319,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     #########/[Settings Page]###############
 
     #########[Logs Page]###############
-    echo '<div id="2" style="display:none;">';
+    echo '<div class="tabcontent" id="System Log">';
     if ($userbank->HasAccess(ADMIN_OWNER)) {
         $theme->assign('clear_logs', "( <a href='javascript:ClearLogs();'>Clear Log</a> )");
     }

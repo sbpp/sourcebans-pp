@@ -30,6 +30,21 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+
+new AdminTabs([
+    ['name' => 'Add a ban', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN],
+    ['name' => 'Ban protests', 'permission' => ADMIN_OWNER|ADMIN_BAN_PROTESTS],
+    ['name' => 'Ban submissions', 'permission' => ADMIN_OWNER|ADMIN_BAN_SUBMISSIONS],
+    ['name' => 'Import bans', 'permission' => ADMIN_OWNER|ADMIN_BAN_IMPORT],
+    ['name' => 'Group ban', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN, 'config' => Config::getBool('config.enablegroupbanning')]
+], $userbank);
+
+if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
+    echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+} elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
+    echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+}
+
 if (isset($GLOBALS['IN_ADMIN'])) {
     define('CUR_AID', $userbank->GetAid());
 }
@@ -104,14 +119,14 @@ if ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pN
 
 echo '<div id="admin-page-content">';
 // Add Ban
-echo '<div id="0" style="display:none;">';
+echo '<div class="tabcontent" id="Add a ban">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
 $theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
 $theme->display('page_admin_bans_add.tpl');
 echo '</div>';
 
 // Protests
-echo '<div id="1" style="display:none;">';
+echo '<div class="tabcontent" id="Ban protests">';
 echo '<div id="tabsWrapper" style="margin:0px;">
     <div id="tabs">
 	<ul>
@@ -431,7 +446,7 @@ echo '</div>';
 
 
 //Submissions page
-echo '<div id="2" style="display:none;">';
+echo '<div class="tabcontent" id="Ban submissions">';
 echo '<div id="tabsWrapper" style="margin:0px;">
     <div id="tabs">
 	<ul>
@@ -718,7 +733,7 @@ $theme->display('page_admin_bans_submissions_archiv.tpl');
 echo '</div>';
 echo '</div>';
 
-echo '<div id="3" style="display:none;">';
+echo '<div class="tabcontent" id="Import bans">';
 $theme->assign('permission_import', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT));
 if (ini_get('safe_mode') == 1) {
     $requirements = false;
@@ -729,7 +744,7 @@ $theme->assign('extreq', $requirements);
 $theme->display('page_admin_bans_import.tpl');
 echo '</div>';
 
-echo '<div id="4" style="display:none;">';
+echo '<div class="tabcontent" id="Group ban">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
 $theme->assign('groupbanning_enabled', Config::getBool('config.enablegroupbanning'));
 if (isset($_GET['fid'])) {
