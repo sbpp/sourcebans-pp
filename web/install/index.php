@@ -10,5 +10,5 @@ $options = [
 ];
 $step = filter_input(INPUT_GET, 'step', FILTER_VALIDATE_INT, ['options' => $options]);
 
-[$title, $page] = route($step);
-build($title, $page, $step);
+$route = route($step);
+build($route[0], $route[1], $step);
