@@ -1,3 +1,5 @@
+SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';
+
 INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe`) VALUES
 (0, 'Web', 'web.png', 'NULL', '0'),
 (1, 'Half-Life 2 Deathmatch', 'hl2dm.png', 'hl2mp', '0'),
