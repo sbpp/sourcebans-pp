@@ -35,8 +35,8 @@ class Log
                   LIMIT :start, :lim";
         $query = str_replace(':search', filter_var($search, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES), $query);
         self::$dbs->query($query);
-        self::$dbs->bind(':start', $start, \PDO::PARAM_INT);
-        self::$dbs->bind(':lim', $limit, \PDO::PARAM_INT);
+        self::$dbs->bind(':start', (int)$start, \PDO::PARAM_INT);
+        self::$dbs->bind(':lim', (int)$limit, \PDO::PARAM_INT);
         return self::$dbs->resultset();
     }
 
