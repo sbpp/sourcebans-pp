@@ -1178,7 +1178,15 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 
 	// Kick player
 	if (GetClientUserId(client) == UserId)
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+	{
+		char disconnect_reason[256], length[32];
+		if(time == 0)
+			Format(length, sizeof(length), "permament");
+		else
+			Format(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+		Format(disconnect_reason, sizeof(disconnect_reason), "%t\nADMIN: %N\nREASON: %s\nLENGTH: %s", "Banned Check Site", WebsiteAddress, admin, Reason, length);
+		KickClient(client, disconnect_reason);
+	}
 }
 
 public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -2529,7 +2537,7 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 
 stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp, DataPack dataPack)
 {
-	dataPack.ReadCell(); // admin index
+	int admin = dataPack.ReadCell(); // admin index
 
 	int client = dataPack.ReadCell();
 
@@ -2551,7 +2559,15 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 	ServerCommand(buffer);
 
 	if (IsClientInGame(client))
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+	{
+		char disconnect_reason[256], length[32];
+		if(time == 0)
+			Format(length, sizeof(length), "permament");
+		else
+			Format(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+		Format(disconnect_reason, sizeof(disconnect_reason), "%t\nADMIN: %N\nREASON: %s\nLENGTH: %s", "Banned Check Site", WebsiteAddress, admin, reason, length);
+		KickClient(client, disconnect_reason);
+	}
 
 	char banName[128], banReason[256], query[512];
 
