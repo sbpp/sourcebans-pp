@@ -1179,13 +1179,12 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 	// Kick player
 	if (GetClientUserId(client) == UserId)
 	{
-		char disconnect_reason[256], length[32];
+		char length[32];
 		if(time == 0)
 			Format(length, sizeof(length), "permament");
 		else
 			Format(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
-		Format(disconnect_reason, sizeof(disconnect_reason), "%t\nADMIN: %N\nREASON: %s\nLENGTH: %s", "Banned Check Site", WebsiteAddress, admin, Reason, length);
-		KickClient(client, disconnect_reason);
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, Reason, length);
 	}
 }
 
@@ -2560,13 +2559,12 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 
 	if (IsClientInGame(client))
 	{
-		char disconnect_reason[256], length[32];
+		char length[32];
 		if(time == 0)
 			Format(length, sizeof(length), "permament");
 		else
 			Format(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
-		Format(disconnect_reason, sizeof(disconnect_reason), "%t\nADMIN: %N\nREASON: %s\nLENGTH: %s", "Banned Check Site", WebsiteAddress, admin, reason, length);
-		KickClient(client, disconnect_reason);
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
 	}
 
 	char banName[128], banReason[256], query[512];
