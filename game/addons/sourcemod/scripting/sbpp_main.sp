@@ -1181,9 +1181,9 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 	{
 		char length[32];
 		if(time == 0)
-			Format(length, sizeof(length), "permament");
+			FormatEx(length, sizeof(length), "permament");
 		else
-			Format(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
 		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, Reason, length);
 	}
 }
@@ -2561,9 +2561,9 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 	{
 		char length[32];
 		if(time == 0)
-			Format(length, sizeof(length), "permament");
+			FormatEx(length, sizeof(length), "permament");
 		else
-			Format(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
 		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
 	}
 
