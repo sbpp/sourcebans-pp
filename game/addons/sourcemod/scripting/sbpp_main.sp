@@ -2646,10 +2646,14 @@ stock void PrepareBan(int client, int target, int time, char[] reason, int size)
 			}
 		}
 		LogAction(client, target, "\"%L\" banned \"%L\" (minutes \"%d\") (reason \"%s\")", client, target, time, reason);
-
+		char length[32];
+		if(time == 0)
+			FormatEx(length, sizeof(length), "permament");
+		else
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
 		if (time > 5 || time == 0)
 			time = 5;
-		Format(bannedSite, sizeof(bannedSite), "%T", "Banned Check Site", target, WebsiteAddress);
+		Format(bannedSite, sizeof(bannedSite), "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", client, reason, length);//temp
 		BanClient(target, time, BANFLAG_AUTO, bannedSite, bannedSite, "sm_ban", client);
 	}
 
