@@ -1264,12 +1264,12 @@ public void GotDatabase(Database db, const char[] error, any data)
 	// Set character set to UTF-8 in the database
 	if (GetFeatureStatus(FeatureType_Native, "SQL_SetCharset") == FeatureStatus_Available)
 	{
-		db.SetCharset("utf8");
+		db.SetCharset("utf8mb4");
 	}
 	else
 	{
 		char query[128];
-		FormatEx(query, sizeof(query), "SET NAMES 'UTF8'");
+		FormatEx(query, sizeof(query), "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci''");
 		#if defined LOG_QUERIES
 		LogToFile(logQuery, "Set encoding. QUERY: %s", query);
 		#endif
