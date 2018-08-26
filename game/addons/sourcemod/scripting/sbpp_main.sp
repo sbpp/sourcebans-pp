@@ -1032,7 +1032,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 
 	char query[1024];
 
-	DB.SetCharset("utf8");
+	DB.SetCharset("utf8mb4");
 
 	InsertServerInfo();
 
