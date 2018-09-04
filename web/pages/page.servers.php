@@ -48,7 +48,7 @@ while (!$res->EOF) {
     }
     $info          = array();
     $info['sid']   = $res->fields[0];
-    $info['ip']    = $res->fields[1];
+    $info['ip']    = gethostbyname($res->fields[1]);
     $info['port']  = $res->fields[2];
     $info['icon']  = $res->fields[5];
     $info['index'] = $i;
