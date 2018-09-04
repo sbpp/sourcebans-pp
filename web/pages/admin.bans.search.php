@@ -34,7 +34,7 @@ while (!$server_list->EOF) {
     $info = array();
     $serverscript .= "xajax_ServerHostPlayers('" . $server_list->fields[0] . "', 'id', 'ss" . $server_list->fields[0] . "', '', '', false, 200);";
     $info['sid']  = $server_list->fields[0];
-    $info['ip']   = $server_list->fields[1];
+    $info['ip']   = gethostbyname($server_list->fields[1]);
     $info['port'] = $server_list->fields[2];
     array_push($servers, $info);
     $server_list->MoveNext();
