@@ -114,7 +114,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                     $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
                     $info = $query->GetInfo();
                 } catch (Exception $e) {
-                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
+                    $mailserver = "Server: Error Connecting (".gethostbyname($server['ip']).":".$server['port'].")\n";
                 } finally {
                     $query->Disconnect();
                 }
@@ -122,7 +122,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 if (!empty($info['HostName'])) {
                     $mailserver = "Server: ".$info['HostName']." (".$server['ip'].":".$server['port'].")\n";
                 } else {
-                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
+                    $mailserver = "Server: Error Connecting (".gethostbyname($server['ip']).":".$server['port'].")\n";
                 }
 
                 $GLOBALS['PDO']->query("SELECT m.mid FROM `:prefix_servers` as s LEFT JOIN `:prefix_mods` as m ON m.mid = s.modid WHERE s.sid = :sid");
@@ -197,7 +197,7 @@ foreach ($servers as $key => $server) {
         $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
         $info = $query->GetInfo();
     } catch (Exception $e) {
-        $servers[$key]['hostname'] = "Error Connecting (".gethostbyname($server['ip']).":".$server['port'].")";
+        $servers[$key]['hostname'] = "Error Connecting (".gethostbyname($server['ip'].":".$server['port'].")";
     } finally {
         $query->Disconnect();
     }
