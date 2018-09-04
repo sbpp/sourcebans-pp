@@ -1223,9 +1223,9 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
         $players = $query->GetPlayers();
     } catch (Exception $e) {
         if ($userbank->HasAccess(ADMIN_OWNER)) {
-            $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
+            $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']."</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
         } else {
-            $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)");
+            $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']."</i>)");
             $objResponse->addAssign("players_$sid", "innerHTML", "N/A");
             $objResponse->addAssign("os_$sid", "innerHTML", "N/A");
             $objResponse->addAssign("vac_$sid", "innerHTML", "N/A");
@@ -1238,7 +1238,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
             $objResponse->addScript("if($('sid_$sid'))$('sid_$sid').setStyle('color', '#adadad');");
         }
         if ($type == "id") {
-            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']. "</i>)");
+            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']. "</i>)");
         }
         return $objResponse;
     } finally {
@@ -1347,9 +1347,9 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
             }
         } else {
             if ($userbank->HasAccess(ADMIN_OWNER)) {
-                $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
+                $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . gethostbyname($res[1]) . ":" . $res[2]. "</i>) <small><a href=\"https://sbpp.github.io/faq/\" title=\"Which ports does the SourceBans webpanel require to be open?\">Help</a></small>");
             } else {
-                $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . $res[1] . ":" . $res[2]. "</i>)");
+                $objResponse->addAssign("host_$sid", "innerHTML", "<b>Error connecting</b> (<i>" . gethostbyname($res[1]) . ":" . $res[2]. "</i>)");
                 $objResponse->addAssign("players_$sid", "innerHTML", "N/A");
                 $objResponse->addAssign("os_$sid", "innerHTML", "N/A");
                 $objResponse->addAssign("vac_$sid", "innerHTML", "N/A");
@@ -1372,13 +1372,13 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
         if (!empty($info['HostName'])) {
             $objResponse->addAssign("$obId", "innerHTML", trunc($info['HostName'], $trunchostname, false));
         } else {
-            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']. "</i>)");
+            $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']. "</i>)");
         }
     } else {
         if (!empty($info['HostName'])) {
             $objResponse->addAssign("ban_server_$type", "innerHTML", trunc($info['HostName'], $trunchostname, false));
         }else{
-            $objResponse->addAssign("ban_server_$type", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)");
+            $objResponse->addAssign("ban_server_$type", "innerHTML", "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']."</i>)");
         }
     }
     return $objResponse;
@@ -1404,7 +1404,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
         $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
         $info = $query->GetInfo();
     } catch (Exception $e) {
-        $objResponse->addAssign("$obId", "$obProp", "Error connecting (".$server['ip'].":".$server['port'].")");
+        $objResponse->addAssign("$obId", "$obProp", "Error connecting (".gethostbyname($server['ip']).":".$server['port'].")");
         return $objResponse;
     } finally {
         $query->Disconnect();
@@ -1413,7 +1413,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
     if(!empty($info['HostName'])) {
         $objResponse->addAssign("$obId", "$obProp", addslashes(trunc($info['HostName'], $trunchostname, false)));
     } else {
-        $objResponse->addAssign("$obId", "$obProp", "Error connecting (".$server['ip'].":".$server['port'].")");
+        $objResponse->addAssign("$obId", "$obProp", "Error connecting (".gethostbyname($server['ip']).":".$server['port'].")");
     }
     return $objResponse;
 }
@@ -1445,7 +1445,7 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
             $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
             $info = $query->GetInfo();
         } catch (Exception $e) {
-            $ret .= "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)<br />";
+            $ret .= "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']."</i>)<br />";
             continue;
         } finally {
             $query->Disconnect();
@@ -1454,7 +1454,7 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
         if (!empty($info['HostName'])) {
             $ret .= trunc($info['HostName'], 48, false) . "<br />";
         } else {
-            $ret .= "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)<br />";
+            $ret .= "<b>Error connecting</b> (<i>".gethostbyname($server['ip']).":".$server['port']."</i>)<br />";
         }
     }
 
