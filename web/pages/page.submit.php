@@ -197,7 +197,7 @@ foreach ($servers as $key => $server) {
         $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
         $info = $query->GetInfo();
     } catch (Exception $e) {
-        $servers[$key]['hostname'] = "Error Connecting (".$server['ip'].":".$server['port'].")";
+        $servers[$key]['hostname'] = "Error Connecting (".gethostbyname($server['ip']).":".$server['port'].")";
     } finally {
         $query->Disconnect();
     }
