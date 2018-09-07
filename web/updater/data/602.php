@@ -1,20 +1,21 @@
 <?php
-$database = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+$data = [
+    'Insurgency: Source' => 'ins.png',
+    'Dystopia' => 'dys.png',
+    'Pirates Vikings and Knights II' => 'pvkii.png',
+    'Perfect Dark: Source' => 'pdark.png',
+    'The Ship' => 'ship.png',
+    'Fortress Forever' => 'hl2-fortressforever.png',
+    'Team Fortress 2' => 'tf2.png',
+    'Zombie Panic' => 'zps.png'
+];
 
-$database->query("UPDATE `:prefix_mods` SET icon = 'ins.png' WHERE name = 'Insurgency: Source'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'dys.png' WHERE name = 'Dystopia'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'pvkii.png' WHERE name = 'Pirates Vikings and Knights II'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'pdark.png' WHERE name = 'Perfect Dark: Source'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'ship.png' WHERE name = 'The Ship'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'hl2-fortressforever.png' WHERE name = 'Fortress Forever'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'tf2.png' WHERE name = 'Team Fortress 2'");
-$database->execute();
-$database->query("UPDATE `:prefix_mods` SET icon = 'zps.png' WHERE name = 'Zombie Panic'");
-$database->execute();
+$this->dbs->query("UPDATE `:prefix_mods` SET icon = :icon WHERE name = :name");
+
+foreach ($data as $name => $icon) {
+    $this->dbs->bind(':icon', $icon);
+    $this->dbs->bind(':name', $name);
+    $this->dbs->execute();
+}
+
 return true;

@@ -1,8 +1,4 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
 if (isset($_POST['postd'])) {
     if (empty($_POST['server']) ||empty($_POST['port']) ||empty($_POST['username']) ||empty($_POST['database']) ||empty($_POST['prefix'])) {
         echo "<script>ShowBox('Error', 'There is some missing data. All fields are required.', 'red', '', true);</script>";

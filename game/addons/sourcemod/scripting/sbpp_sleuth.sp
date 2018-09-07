@@ -25,11 +25,13 @@
 // *************************************************************************
 
 #pragma semicolon 1
+#pragma newdecls required
+
 #include <sourcemod>
 #undef REQUIRE_PLUGIN
 #include <sourcebanspp>
 
-#define PLUGIN_VERSION "1.6.3-PRE"
+#define PLUGIN_VERSION "1.6.3"
 
 #define LENGTH_ORIGINAL 1
 #define LENGTH_CUSTOM 2
@@ -37,8 +39,8 @@
 #define LENGTH_NOTIFY 4
 
 //- Handles -//
-new Handle:hDatabase = INVALID_HANDLE;
-new Handle:g_hAllowedArray = INVALID_HANDLE;
+Database hDatabase = null;
+ArrayList g_hAllowedArray = null;
 
 //- ConVars -//
 ConVar g_cVar_actions;
@@ -51,9 +53,9 @@ ConVar g_cVar_excludeOld;
 ConVar g_cVar_excludeTime;
 
 //- Bools -//
-new bool:CanUseSourcebans = false;
+bool CanUseSourcebans = false;
 
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "SourceBans++: SourceSleuth",
 	author = "ecca, SourceBans++ Dev Team",
@@ -62,7 +64,7 @@ public Plugin:myinfo =
 	url = "https://sbpp.github.io"
 };
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("sourcesleuth.phrases");
 
@@ -77,53 +79,53 @@ public OnPluginStart()
 	g_cVar_excludeOld = CreateConVar("sm_sleuth_excludeold", "0", "0 - Inactivated, 1 - Allow old bans to be excluded from ban check", 0, true, 0.0, true, 1.0);
 	g_cVar_excludeTime = CreateConVar("sm_sleuth_excludetime", "31536000", "Amount of time in seconds to allow old bans to be excluded from ban check", 0, true, 1.0, false);
 
-	g_hAllowedArray = CreateArray(256);
+	g_hAllowedArray = new ArrayList(256);
 
 	AutoExecConfig(true, "Sm_SourceSleuth");
 
-	SQL_TConnect(SQL_OnConnect, "sourcebans");
+	Database.Connect(SQL_OnConnect, "sourcebans");
 
 	RegAdminCmd("sm_sleuth_reloadlist", ReloadListCallBack, ADMFLAG_ROOT);
 
 	LoadWhiteList();
 }
 
-public OnAllPluginsLoaded()
+public void OnAllPluginsLoaded()
 {
-	CanUseSourcebans = LibraryExists("sourcebans");
+	CanUseSourcebans = LibraryExists("sourcebans++");
 }
 
-public OnLibraryAdded(const String:name[])
+public void OnLibraryAdded(const char[] name)
 {
-	if (StrEqual("sourcebans", name))
+	if (StrEqual("sourcebans++", name))
 	{
 		CanUseSourcebans = true;
 	}
 }
 
-public OnLibraryRemoved(const String:name[])
+public void OnLibraryRemoved(const char[] name)
 {
-	if (StrEqual("sourcebans", name))
+	if (StrEqual("sourcebans++", name))
 	{
 		CanUseSourcebans = false;
 	}
 }
 
-public SQL_OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void SQL_OnConnect(Database db, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (db == null)
 	{
 		LogError("SourceSleuth: Database connection error: %s", error);
 	}
 	else
 	{
-		hDatabase = hndl;
+		hDatabase = db;
 	}
 }
 
-public Action:ReloadListCallBack(client, args)
+public Action ReloadListCallBack(int client, int args)
 {
-	ClearArray(g_hAllowedArray);
+	g_hAllowedArray.Clear();
 
 	LoadWhiteList();
 
@@ -137,11 +139,11 @@ public Action:ReloadListCallBack(client, args)
 	return Plugin_Continue;
 }
 
-public OnClientPostAdminCheck(client)
+public void OnClientPostAdminCheck(int client)
 {
 	if (CanUseSourcebans && !IsFakeClient(client))
 	{
-		new String:steamid[32];
+		char steamid[32];
 		GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid));
 
 		if (g_cVar_bypass.BoolValue && CheckCommandAccess(client, "sleuth_admin", ADMFLAG_BAN, false))
@@ -149,48 +151,48 @@ public OnClientPostAdminCheck(client)
 			return;
 		}
 
-		if (FindStringInArray(g_hAllowedArray, steamid) == -1)
+		if (g_hAllowedArray.FindString(steamid) == -1)
 		{
-			new String:IP[32], String:Prefix[64];
+			char IP[32], Prefix[64];
 			GetClientIP(client, IP, sizeof(IP));
 
 			g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
 
-			new String:query[1024];
+			char query[1024];
 
 			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0)))", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue);
 
-			new Handle:datapack = CreateDataPack();
+			DataPack datapack = new DataPack();
 
-			WritePackCell(datapack, GetClientUserId(client));
-			WritePackString(datapack, steamid);
-			WritePackString(datapack, IP);
-			ResetPack(datapack);
+			datapack.WriteCell(GetClientUserId(client));
+			datapack.WriteString(steamid);
+			datapack.WriteString(IP);
+			datapack.Reset();
 
-			SQL_TQuery(hDatabase, SQL_CheckHim, query, datapack);
+			hDatabase.Query(SQL_CheckHim, query, datapack);
 		}
 	}
 }
 
-public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapack)
+public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	new client;
-	decl String:steamid[32], String:IP[32];
+	int client;
+	char steamid[32], IP[32];
 
-	client = GetClientOfUserId(ReadPackCell(datapack));
-	ReadPackString(datapack, steamid, sizeof(steamid));
-	ReadPackString(datapack, IP, sizeof(IP));
-	CloseHandle(datapack);
+	client = GetClientOfUserId(ReadPackCell(dataPack));
+	dataPack.ReadString(steamid, sizeof(steamid));
+	dataPack.ReadString(IP, sizeof(IP));
+	delete dataPack;
 
-	if (hndl == INVALID_HANDLE)
+	if (results == null)
 	{
 		LogError("SourceSleuth: Database query error: %s", error);
 		return;
 	}
 
-	if (SQL_FetchRow(hndl))
+	if (results.FetchRow())
 	{
-		new TotalBans = SQL_GetRowCount(hndl);
+		int TotalBans = results.RowCount;
 
 		if (TotalBans > g_cVar_bansAllowed.IntValue)
 		{
@@ -198,21 +200,21 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 			{
 				case LENGTH_ORIGINAL:
 				{
-					new length = SQL_FetchInt(hndl, 6);
-					new time = length * 60;
+					int length = results.FetchInt(6);
+					int time = length * 60;
 
 					BanPlayer(client, time);
 				}
 				case LENGTH_CUSTOM:
 				{
-					new time = g_cVar_banduration.IntValue;
+					int time = g_cVar_banduration.IntValue;
 					BanPlayer(client, time);
 				}
 				case LENGTH_DOUBLE:
 				{
-					new length = SQL_FetchInt(hndl, 6);
+					int length = results.FetchInt(6);
 
-					new time = 0;
+					int time = 0;
 
 					if (length != 0)
 					{
@@ -231,18 +233,18 @@ public SQL_CheckHim(Handle:owner, Handle:hndl, const String:error[], any:datapac
 	}
 }
 
-stock BanPlayer(client, time)
+stock void BanPlayer(int client, int time)
 {
-	decl String:Reason[255];
+	char Reason[255];
 	Format(Reason, sizeof(Reason), "[SourceSleuth] %T", "sourcesleuth_banreason", client);
 	SBPP_BanPlayer(0, client, time, Reason);
 }
 
-PrintToAdmins(const String:format[], any:...)
+void PrintToAdmins(const char[] format, any ...)
 {
-	new String:g_Buffer[256];
+	char g_Buffer[256];
 
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && CheckCommandAccess(i, "sm_sourcesleuth_printtoadmins", ADMFLAG_BAN))
 		{
@@ -255,27 +257,27 @@ PrintToAdmins(const String:format[], any:...)
 	}
 }
 
-public LoadWhiteList()
+public void LoadWhiteList()
 {
-	decl String:path[PLATFORM_MAX_PATH], String:line[256];
+	char path[PLATFORM_MAX_PATH], line[256];
 
 	BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "configs/sourcebans/sourcesleuth_whitelist.cfg");
 
-	new Handle:fileHandle = OpenFile(path, "r");
+	File fileHandle = OpenFile(path, "r");
 
-	if (fileHandle == INVALID_HANDLE)
+	if (fileHandle == null)
 	{
 		LogError("Could not find the config file (%s)", path);
 
 		return;
 	}
 
-	while (!IsEndOfFile(fileHandle) && ReadFileLine(fileHandle, line, sizeof(line)))
+	while (!fileHandle.EndOfFile() && fileHandle.ReadLine(line, sizeof(line)))
 	{
 		ReplaceString(line, sizeof(line), "\n", "", false);
 
-		PushArrayString(g_hAllowedArray, line);
+		g_hAllowedArray.PushString(line);
 	}
 
-	CloseHandle(fileHandle);
+	delete fileHandle;
 }

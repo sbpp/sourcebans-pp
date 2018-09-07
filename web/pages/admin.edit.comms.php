@@ -37,6 +37,8 @@ if (!defined("IN_SB")) {
 
 global $theme;
 
+new AdminTabs([], $userbank);
+
 if ($_GET['key'] != $_SESSION['banlist_postkey']) {
     echo '<script>ShowBox("Error", "Possible hacking attempt (URL Key mismatch)!", "red", "index.php?p=admin&c=comms");</script>';
     PageDie();
@@ -61,7 +63,7 @@ isset($_GET["page"]) ? $pagelink = "&page=" . $_GET["page"] : $pagelink = "";
 $errorScript = "";
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = trim($_POST['steam']);
+    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
     $_POST['type']  = (int) $_POST['type'];
 
     // Form Validation
@@ -71,7 +73,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } elseif ((!is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
+    } elseif (!\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -112,8 +114,7 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['name'] = RemoveCode($_POST['name']);
-    $reason        = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
+    $reason        = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;
@@ -148,7 +149,7 @@ if (isset($_POST['name'])) {
             )
         );
         if ($_POST['banlength'] != $lengthrev->fields['length']) {
-            $log = new CSystemLog("m", "Block edited", "Block for (" . $lengthrev->fields['authid'] . ") has been updated, before: length " . $lengthrev->fields['length'] . ", type " . $lengthrev->fields['type'] . "; now: length " . $_POST['banlength'] . " type " . $_POST->fields['type']);
+            Log::add("m", "Block edited", "Block for ($lengthrev[authid]) has been updated. Before: length ($lengthrev[length]), type ($lengthrev[type]); Now: length ($_POST[banlength]), type ($_POST[type])");
         }
         echo '<script>ShowBox("Block updated", "The block has been updated successfully", "green", "index.php?p=commslist' . $pagelink . '");</script>';
     }
@@ -161,7 +162,7 @@ if (!$res) {
 $theme->assign('ban_name', $res['name']);
 $theme->assign('ban_reason', $res['reason']);
 $theme->assign('ban_authid', trim($res['authid']));
-$theme->assign('customreason', ((isset($GLOBALS['config']['bans.customreasons']) && $GLOBALS['config']['bans.customreasons'] != "") ? unserialize($GLOBALS['config']['bans.customreasons']) : false));
+$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
 
 $theme->left_delimiter  = "-{";
 $theme->right_delimiter = "}-";

@@ -304,22 +304,14 @@
 					$SteamIDInstance = $Buffer->GetUnsignedLong( ); // This gets shifted by 32 bits, which should be steamid instance
 					$SteamID = 0;
 
-					if( PHP_INT_SIZE === 4 )
-					{
-						if( extension_loaded( 'gmp' ) )
-						{
-							$SteamIDLower    = gmp_abs( $SteamIDLower );
-							$SteamIDInstance = gmp_abs( $SteamIDInstance );
-							$SteamID         = gmp_strval( gmp_or( $SteamIDLower, gmp_mul( $SteamIDInstance, gmp_pow( 2, 32 ) ) ) );
+					if (PHP_INT_SIZE === 4) {
+						if (extension_loaded('gmp')) {
+							$SteamIDLower    = gmp_abs($SteamIDLower);
+							$SteamIDInstance = gmp_abs($SteamIDInstance);
+							$SteamID         = gmp_strval(gmp_or($SteamIDLower, gmp_mul($SteamIDInstance, gmp_pow(2, 32))));
 						}
-						else
-						{
-							throw new \RuntimeException( 'Either 64-bit PHP installation or "gmp" module is required to correctly parse server\'s steamid.' );
-						}
-					}
-					else
-					{
-						$SteamID = $SteamIDLower | ( $SteamIDInstance << 32 );
+					} else {
+						$SteamID = $SteamIDLower | ($SteamIDInstance << 32);
 					}
 
 					$Server[ 'SteamID' ] = $SteamID;
@@ -398,7 +390,12 @@
 				$Players[ ] = $Player;
 			}
 
-            array_qsort( $Players, 'Frags', SORT_DESC );
+            usort($Players, function($a, $b) {
+                if ($a['Frags'] == $b['Frags']) {
+                    return 0;
+                }
+                return ($a['Frags'] < $b['Frags']) ? -1 : 1;
+            });
 			return $Players;
 		}
 

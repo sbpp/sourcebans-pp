@@ -31,6 +31,8 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
+new AdminTabs([], $userbank);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
@@ -43,7 +45,7 @@ if (!isset($_GET['id'])) {
 
 $_GET['id'] = (int) $_GET['id'];
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty("user") . " tried to edit " . $userbank->GetProperty('user', $_GET['id']) . "'s groups, but doesn't have access.");
+    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s groups, but doesn't have access.");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
@@ -54,7 +56,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
 }
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    $log = new CSystemLog("e", "Getting admin data failed", "Can't find data for admin with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
@@ -129,7 +131,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 )
             );
         }
-        if (isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1) {
+        if (Config::getBool('config.enableadminrehashing')) {
             // rehash the admins on the servers
             $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
                 LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` asg ON asg.admin_id = '" . (int) $_GET['id'] . "'
@@ -151,7 +153,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
         $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
             (int) $_GET['id']
         ));
-        $log = new CSystemLog("m", "Admin's Groups Updated", "Admin (".$admname['user'].") groups has been updated");
+        Log::add("m", "Admin's Groups Updated", "Admin ($admname[user]) groups has been updated.");
     }
 }
 

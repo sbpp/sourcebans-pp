@@ -30,6 +30,12 @@ if (!defined("IN_SB")) {
     die();
 }
 global $userbank, $theme;
+
+new AdminTabs([
+    ['name' => 'List groups', 'permission' => ADMIN_OWNER|ADMIN_LIST_GROUPS],
+    ['name' => 'Add a group', 'permission' => ADMIN_OWNER|ADMIN_ADD_GROUP]
+], $userbank);
+
 ?>
 <div id="admin-page-content">
 <?php
@@ -70,7 +76,7 @@ for ($i = 0; $i < count($server_group_list); $i++) {
 }
 // List Group
 ?>
-<div id="0" style="display:none;">
+<div class="tabcontent" id="List groups">
 <?php
 $theme->assign('permission_listgroups', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS));
 $theme->assign('permission_editgroup', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS));
@@ -92,11 +98,11 @@ $theme->display('page_admin_groups_list.tpl');
 // Add Groups
 ?>
 </div>
-    <div id="1" style="display:none;">
+<div class="tabcontent" id="Add a group">
 <?php
 $theme->assign('permission_addgroup', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP));
 $theme->display('page_admin_groups_add.tpl');
 ?>
-    </div>
-    <script>InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
+</div>
+<script>InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
 </div>

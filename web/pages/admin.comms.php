@@ -35,6 +35,17 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+
+new AdminTabs([
+    ['name' => 'Add a block', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN]
+], $userbank);
+
+if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
+    echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+} elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
+    echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+}
+
 if (isset($GLOBALS['IN_ADMIN'])) {
     define('CUR_AID', $userbank->GetAid());
 }
@@ -49,8 +60,7 @@ if (isset($_GET["rebanid"])) {
 }
 
 echo '<div id="admin-page-content">';
-// Add Block
-echo '<div id="0" style="display:none;">';
+echo '<div class="tabcontent" id="Add a block">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
 $theme->display('page_admin_comms_add.tpl');
 ?>
@@ -62,48 +72,11 @@ function changeReason(szListValue)
 }
 function ProcessBan()
 {
-    var err = 0;
     var reason = $('listReason')[$('listReason').selectedIndex].value;
 
     if (reason == "other") {
         reason = $('txtReason').value;
     }
-    if(!$('nickname').value)
-    {
-        $('nick.msg').setHTML('You must enter the nickname of the person you are banning');
-        $('nick.msg').setStyle('display', 'block');
-        err++;
-    }else
-    {
-        $('nick.msg').setHTML('');
-        $('nick.msg').setStyle('display', 'none');
-    }
-
-    if($('steam').value.length < 10)
-    {
-        $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
-        $('steam.msg').setStyle('display', 'block');
-        err++;
-    }else
-    {
-        $('steam.msg').setHTML('');
-        $('steam.msg').setStyle('display', 'none');
-    }
-
-    if(!reason)
-    {
-        $('reason.msg').setHTML('You must select or enter a reason for this block.');
-        $('reason.msg').setStyle('display', 'block');
-        err++;
-    }else
-    {
-        $('reason.msg').setHTML('');
-        $('reason.msg').setStyle('display', 'none');
-    }
-
-    if(err)
-        return 0;
-
     xajax_AddBlock($('nickname').value,
         $('type').value,
         $('steam').value,

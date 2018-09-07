@@ -40,7 +40,7 @@ class CUserManager
      */
     public function __construct($aid)
     {
-        $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+        $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
         $this->aid = $aid;
         $this->GetUserArray($aid);
@@ -242,7 +242,7 @@ class CUserManager
      * @param $password password to encrypt.
      * @return string.
      */
-    public function encrypt_password($password, $salt = SB_SALT)
+    public function encrypt_password($password, $salt = 'SourceBans')
     {
         return sha1(sha1($salt . $password));
     }
@@ -320,6 +320,32 @@ class CUserManager
         return $this->admins[$aid];
     }
 
+    public function isNameTaken($name)
+    {
+        $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE user = :user");
+        $this->dbh->bind(':user', $name);
+        $data = $this->dbh->single();
+
+        return (bool)$data[1];
+    }
+
+    public function isSteamIDTaken($steamid)
+    {
+        $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE authid = :steamid");
+        $this->dbh->bind(':steamid', $steamid);
+        $data = $this->dbh->single();
+
+        return (bool)$data[1];
+    }
+
+    public function isEmailTaken($email)
+    {
+        $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE email = :email");
+        $this->dbh->bind(':email', $email);
+        $data = $this->dbh->single();
+
+        return (bool)$data[1];
+    }
 
     public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
     {
@@ -332,7 +358,7 @@ class CUserManager
         $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
                            VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');
         $this->dbh->bind(':user', $name);
-        $this->dbh->bind(':authid', $steam);
+        $this->dbh->bind(':authid', str_replace('STEAM_1', 'STEAM_0', $steam));
         $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
         $this->dbh->bind(':gid', $web_group);
         $this->dbh->bind(':email', $email);

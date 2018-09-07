@@ -1,10 +1,3 @@
-<?php
-if (!defined("IN_SB")) {
-    print "You should not be here. Only follow links!";
-    die();
-}
-?>
-
 </div></div>
 <div id="footer">
     <div id="mainwrapper" style="text-align: center;">
@@ -14,17 +7,7 @@ if (!defined("IN_SB")) {
         <span style="line-height: 20px;"><?php print CreateQuote();?><span>
     </div>
 </div>
-<?php
-if (isset($_GET['debug']) && $_GET['debug'] == 1) {
-    echo '<h3>Session Data</h3><pre>';
-    print_r($_SESSION);
-    echo '</pre><h3>Post Data</h3><pre>';
-    print_r($_POST);
-    echo '</pre><h3>Cookie Data</h3><pre>';
-    print_r($_COOKIE);
-    echo'</pre>';
-}
-?>
+
 </div>
 <script type="text/javascript">
 window.addEvent('domready', function() {
@@ -43,10 +26,6 @@ window.addEvent('domready', function() {
         className: 'perm'
     });
 });
-$('content_title').setHTML('<?php echo $GLOBALS['TitleRewrite'] ?>');
 </script>
-<!--[if lt IE 7]>
-<script defer type="text/javascript" src="./scripts/pngfix.js"></script>
-<![endif]-->
 </body>
 </html>

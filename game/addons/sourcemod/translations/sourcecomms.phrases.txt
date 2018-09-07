@@ -11,6 +11,7 @@
 		"pt"			"Você foi silenciado!"
 		"de"			"Sie wurden im Voice-Chat gesperrt!"
 		"fr"			"Vous avez été muté!"
+		"chi"			"你已被静音!"
 	}
 	"Gagged on connect"
 	{
@@ -22,6 +23,7 @@
 		"pt"			"Você foi amordaçado!"
 		"de"			"Sie wurden im Chat gesperrt!"
 		"fr"			"Vous avez été mis en muté du chat!"
+		"chi"			"你已被禁言!"
 	}
 	//--------------------------------------------------------------------------------
 	"Mute expired"
@@ -34,6 +36,7 @@
 		"pt"			"Seu emudecimento expirou."
 		"de"			"Sie wurden im Voice-Chat entsperrt (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute a expiré."
+		"chi"			"静音已过期."
 	}
 	"Gag expired"
 	{
@@ -45,6 +48,7 @@
 		"pt"			"Seu amordaçamento expirou."
 		"de"			"Sie wurden im Chat entsperrt. (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute du chat a expiré."
+		"chi"			"禁言已过期."
 	}
 	//--------------------------------------------------------------------------------
 	"FWUnmute"
@@ -57,6 +61,7 @@
 		"pt"			"Seu emudecimento foi removido."
 		"de"			"Sie wurden im Voice-Chat entsperrt."
 		"fr"			"Votre mute a été supprimée."
+		"chi"			"对你的静音已取消."
 	}
 	"FWUngag"
 	{
@@ -68,6 +73,7 @@
 		"pt"			"Seu amordaçamento foi removido."
 		"de"			"Sie wurden im Chat entsperrt."
 		"fr"			"Votre mute du chat a été supprimé."
+		"chi"			"对你的禁言已取消."
 	}
 	//--------------------------------------------------------------------------------
 	"Usage_time"
@@ -81,6 +87,7 @@
 		"pt"			"Tempo: {1} minutos se não for especificado, permanente se for 0 \.nSe for < 0, bloqueia na sessão."
 		"de"			"Dauer: {1} Minuten, wenn nicht festgelegt; für immer, wenn 0. \.nWenn < 0, Blockierung für nächste Periode."
 		"fr"			"Temps: {1} minutes, si non spécifié; permanent, si 0.\nIf <0, bloque pour la session."
+		"chi"			"时间: {1} 分钟, 如果未做选择的话; 如果 0.\n 永久; 如果 < 0, 则在此局中封禁."
 	}
 	"Player Comms Not Verified"
 	{
@@ -92,6 +99,7 @@
 		"pt"			"Este jogador não foi verificado. Por favor, aguarde trinta segundos antes de tentar novamente."
 		"de"			"Der Spieler ist noch nicht identifiziert. Warten Sie 30 Sekunden vor dem nächsten Versuch."
 		"fr"			"Ce joueur n'a pas été vérifié. Veuillez attendre 30 secondes avant de réessayer."
+		"chi"			"此用户尚未认证,请等待30秒后再试."
 	}
 	//--------------------------------------------------------------------------------
 	"Player already muted"
@@ -105,6 +113,7 @@
 		"pt"			"Jogador {1} já foi emudecido!"
 		"de"			"Der Spieler {1} ist bereits im Voice-Chat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté!"
+		"chi"			"玩家 {1} 已被静音!"
 	}
 	"Player already gagged"
 	{
@@ -117,6 +126,7 @@
 		"pt"			"Jogador {1} já foi amordaçado!"
 		"de"			"Der Spieler {1} ist bereits im Chat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté du chat!"
+		"chi"			"玩家 {1} 已被禁言!"
 	}
 	"Player already silenced"
 	{
@@ -129,6 +139,7 @@
 		"pt"			"Jogador {1} já amordaçado ou emudecido!"
 		"de"			"Der Spieler {1} ist bereits im Chat oder im Voice-Chat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté ou muté du chat!"
+		"chi"			"玩家 {1} 已被禁言或静音!"
 	}
 	//--------------------------------------------------------------------------------
 	"Player not muted"
@@ -141,6 +152,7 @@
 		"pt"			"Jogador não emudecido."
 		"de"			"Der Spieler ist im Voice-Chat nicht gesperrt."
 		"fr"			"Le joueur n'est pas muté."
+		"chi"			"玩家尚未被静音."
 	}
 	"Player not gagged"
 	{
@@ -152,6 +164,7 @@
 		"pt"			"Jogador não amordaçado."
 		"de"			"Der Spieler ist im Chat nicht gesperrt."
 		"fr"			"Le joueur n'est pas muté du chat."
+		"chi"			"玩家尚未被禁言."
 	}
 	"Player not silenced"
 	{
@@ -163,6 +176,7 @@
 		"pt"			"Jogador não silenciado."
 		"de"			"Der Spieler ist im Chat oder im Voice-Chat nicht gesperrt."
 		"fr"			"Le joueur n'est pas silence."
+		"chi"			"玩家尚未被禁言或静音."
 	}
 	//--------------------------------------------------------------------------------
 	"Permagagged player"
@@ -176,6 +190,7 @@
 		"pt"			"{1} foi permanentemente amordaçado."
 		"de"			"Der Spieler {1} ist für immer im Chat gesperrt."
 		"fr"			"Un mute du chat permanent a été appliqué a {1}."
+		"chi"			"已对玩家 {1} 做永久禁言."
 	}
 	"Permagagged player reason"
 	{
@@ -188,6 +203,7 @@
 		"pt"			"{1} foi permanentemente amordaçado, (motivo: {2})."
 		"de"			"Der Spieler {1} ist für immer im Chat gesperrt (Grund: {2})."
 		"fr"			"Un mute du chat permanent a été appliqué a {1} (raison: {2})."
+		"chi"			"已对玩家 {1} 做永久禁言 (原因: {2})."
 	}
 	"Gagged player"
 	{
@@ -200,6 +216,7 @@
 		"pt"			"Amordaçamento de {1} foi estendido por {2} minutos."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Chat gesperrt."
 		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes."
+		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟."
 	}
 	"Gagged player reason"
 	{
@@ -212,6 +229,7 @@
 		"pt"			"Amordaçamento de {1} foi estendido por {2} minutos, (motivo: {3})."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Chat gesperrt (Grund: {3})."
 		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes (raison: {3})."
+		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟 (原因: {3})."
 	}
 	//--------------------------------------------------------------------------------
 	"Permamuted player"
@@ -225,6 +243,7 @@
 		"pt"			"{1} foi permanentemente emudecido."
 		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt."
 		"fr"			"Un mute permanent a été appliqué a {1}."
+		"en"			"已对玩家 {1} 永久静音."
 	}
 	"Permamuted player reason"
 	{
@@ -237,6 +256,7 @@
 		"pt"			"{1} foi permanentemente emudecido, (motivo: {2})."
 		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt (Grund: {2})."
 		"fr"			"Un mute permanent a été appliqué a {1} (raison: {2})."
+		"chi"			"已对玩家 {1} 永久静音 (原因: {3})."
 	}
 	"Muted player"
 	{
@@ -249,6 +269,7 @@
 		"pt"			"Emudecimento de {1} foi estendido por {2} minutos."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat gesperrt."
 		"fr"			"Un mute a été appliqué a {1} pour {2} minutes."
+		"chi"			"已对玩家 {1} 的静音延长了 {2} 分钟."
 	}
 	"Muted player reason"
 	{
@@ -261,6 +282,7 @@
 		"pt"			"Emudecimento de {1} foi estendido por {2} minutos, (motivo: {3})."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat gesperrt (Grund: {3})."
 		"fr"			"Un mute a été appliqué a {1} pour {2} minutes (raison: {3})."
+		"chi"			"已对玩家 {1} 的静音延长了 {2} 分钟 (原因: {3})."
 	}
 	//--------------------------------------------------------------------------------
 	"Permasilenced player"
@@ -274,6 +296,7 @@
 		"pt"			"{1} foi permanentemente silenciado."
 		"de"			"Der Spieler {1} ist für immer im Voice-Chat und im Chat gesperrt."
 		"fr"			"Un silence permanent a été appliqué a {1}."
+		"chi"			"已对玩家 {1} 进行永久禁言和静音."
 	}
 	"Permasilenced player reason"
 	{
@@ -286,6 +309,7 @@
 		"pt"			"{1} foi permanentemente silenciado, (motivo: {2})."
 		"de"			"Der Spieler {1} ist im Chat und im Voice-Chat gesperrt (Grund: {2})."
 		"fr"			"Un silence permanent a été appliqué a {1} (raison: {2})."
+		"chi"			"已对玩家 {1} 进行永久禁言和静音 (原因: {2})."
 	}
 	"Silenced player"
 	{
@@ -298,6 +322,7 @@
 		"pt"			"Silenciamento de {1} foi estendido por {2} minutos."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat und im Chat gesperrt."
 		"fr"			"Un silence a été appliqué a {1} pour {2} minutes."
+		"chi"			"已对玩家 {1} 的禁言和静音延长了 {2} 分钟."
 	}
 	"Silenced player reason"
 	{
@@ -310,6 +335,7 @@
 		"pt"			"Silenciamento de {1} foi estendido por {2} minutos, (motivo: {3})."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat und im Chat gesperrt (Grund: {3})."
 		"fr"			"Un silence a été appliqué a {1} pour {2} minutes (raison: {3})."
+		"chi"			"已对玩家 {1} 的禁言和静音延长了 {2} 分钟 (原因: {3})."
 	}
 	//--------------------------------------------------------------------------------
 	"Temp unmuted player"
@@ -323,7 +349,9 @@
 		"pt"			"Emudecimento de {1} foi temporariamente removido."
 		"de"			"Der Spieler {1} ist zeitweilig im Voice-Chat entsperrt."
 		"fr"			"Suppression temporaire du mute depuis {1}."
+		"chi"			"已对玩家 {1} 暂时解除静音."
 	}
+
 	"Temp ungagged player"
 	{
 		"#format"		"{1:t}"
@@ -335,6 +363,7 @@
 		"pt"			"Amordaçamento de {1} foi temporariamente removido."
 		"de"			"Der Spieler {1} ist zeitweilig im Chat entsperrt."
 		"fr"			"Suppression temporaire du mute du chat depuis {1}."
+		"chi"			"已对玩家 {1} 暂时解除禁言."
 	}
 	"Temp unsilenced player"
 	{
@@ -347,6 +376,7 @@
 		"pt"			"Silenciamento de {1} foi temporariamente removido."
 		"de"			"Der Spieler {1} ist zeitweilig im Voice-Chat und im Chat entsperrt."
 		"fr"			"Suppression temporaire du silence depuis {1}."
+		"chi"			"已对玩家 {1} 暂时解除禁言和静音."
 	}
 	"Unblock Select Failed"
 	{
@@ -359,6 +389,7 @@
 		"pt"			"Ocorreu um erro no DB durante a pedido de bloqueio de {1}."
 		"de"			"Es ist ein Fehler bei der Anfrage der Sperren für {1} aus der Datenbank passiert"
 		"fr"			"Une erreur s'est produite lors de la demande de blocs pour {1} à partir de DB."
+		"chi"			"在数据库中对 {1} 进行禁止时出现错误."
 	}
 	"No blocks found"
 	{
@@ -371,6 +402,7 @@
 		"pt"			"Nenhum bloqueio ativo foi encontrado no DB para {1}."
 		"de"			"Es wurde keine gültige Sperre für {1}in der Datenbank gefunden."
 		"fr"			"Aucun bloc actif trouvé dans DB pour {1}."
+		"chi"			"在数据库中未找到对 {1} 的禁止."
 	}
 	"No db error unlock perm"
 	{
@@ -382,6 +414,7 @@
 		"pt"			"Você não tem permissão para desbloquear com erros de DB."
 		"de"			"Sie haben keine Erlaubnis zur Entsperrung bei den Fehlern in der Datenbank."
 		"fr"			"Vous n'avez pas la permission de débloquer avec des erreurs de DB."
+		"chi"			"你没有权限解除对 {1} 的封禁."
 	}
 	"No permission unmute"
 	{
@@ -394,6 +427,7 @@
 		"pt"			"O emudecimento de {1} não pôde ser removido porque foi efetuado por um administrador de nível mais alto!"
 		"de"			"Es ist unmöglich {1} im Voice-Chat zu entsperren, weil er von höherem Administrator gesperrt wurde!"
 		"fr"			"Le mute sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
+		"chi"			"对玩家 {1} 的静音是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
 	}
 	"No permission ungag"
 	{
@@ -406,6 +440,7 @@
 		"pt"			"O amordaçamento de {1} não pôde ser removido porque foi efetuado por um administrador de nível mais alto!"
 		"de"			"Es ist unmöglich {1}im Chat zu entsperren, weil er von höherem Administrator gesperrt wurde!"
 		"fr"			"Le mute du chat sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
+		"chi"			"对玩家 {1} 的禁言是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
 	}
 	"Unmuted player"
 	{
@@ -418,6 +453,7 @@
 		"pt"			"Removido um emudecimento estendido de {1}."
 		"de"			"Der Spieler {1} wurde im Voice-Chat entsperrt."
 		"fr"			"Suppression du mute étendu de {1}."
+		"chi"			"已取消对玩家 {1} 的静音延长."
 	}
 	"Ungagged player"
 	{
@@ -430,6 +466,7 @@
 		"pt"			"Removido um amordaçamento estendido de {1}."
 		"de"			"Der Spieler {1} wurde im Chat entsperrt."
 		"fr"			"Suppression du silence étendu de {1}. "
+		"chi"			"已取消对玩家 {1} 的禁言延长."
 	}
 	"Unblock insert failed"
 	{
@@ -441,6 +478,7 @@
 		"pt"			"Falha ao remover o bloqueio do DB."
 		"de"			"Es ist ein Fehler beim Entfernen der Sperre aus der Datenbank passiert."
 		"fr"			"Impossible de supprimer le bloc de la base de données."
+		"chi"			"从数据库中取消禁止失败."
 	}
 	"successfully unmuted"
 	{
@@ -453,6 +491,7 @@
 		"pt"			"Removido com sucesso o emudecimento de {1} do DB."
 		"de"			"Die Sperre {1} im Voice-Chat wurde erfolgreich aus der Datenbank entfernt."
 		"fr"			"Suppression réussie du mute pour {1} de la base de données."
+		"chi"			"已成功从数据库中取消对 {1} 的静音."
 	}
 	"successfully ungagged"
 	{
@@ -465,6 +504,7 @@
 		"pt"			"Removido com sucesso o amordaçamento de {1} do DB."
 		"de"			"Die Sperre {1} im Chat wurde erfolgreich aus der Datenbank entfernt."
 		"fr"			"Suppression réussie du mute du chat pour {1} de la base de données."
+		"chi"			"已成功从数据库中取消对 {1} 的禁言."
 	}
 	//--------------------------------------------------------------------------------
 	"AdminMenu_Display_None"
@@ -478,6 +518,7 @@
 		"pt"		"[  ] {1}"
 		"de"		"[  ] {1}"
 		"fr"		"[  ] {1}"
+		"chi"		"[  ] {1}"
 	}
 	"AdminMenu_Display_Muted"
 	{
@@ -490,6 +531,7 @@
 		"pt"		"[M] {1}"
 		"de"		"[M] {1}"
 		"fr"		"[M] {1}"
+		"chi"		"[M] {1}"
 	}
 	"AdminMenu_Display_Gagged"
 	{
@@ -502,6 +544,7 @@
 		"pt"		"[G] {1}"
 		"de"		"[G] {1}"
 		"fr"		"[G] {1}"
+		"chi"		"[G] {1}"
 	}
 	"AdminMenu_Display_Silenced"
 	{
@@ -514,6 +557,7 @@
 		"pt"		"[S] {1}"
 		"de"		"[S] {1}"
 		"fr"		"[S] {1}"
+		"chi"		"[S] {1}"
 	}
 	"AdminMenu_Main"
 	{
@@ -525,6 +569,7 @@
 		"pt"		"Comandos de Comunicação"
 		"de"		"Chat und Voice-Chat"
 		"fr"		"Commandes de communication"
+		"chi"		"禁言和静音"
 	}
 	"AdminMenu_Select_Main"
 	{
@@ -536,6 +581,7 @@
 		"pt"		"Comandos de Comunicação:"
 		"de"		"Chat und Voice-Chat:"
 		"fr"		"Commandes de communication:"
+		"chi"		"禁言和静音:"
 	}
 	"AdminMenu_List"
 	{
@@ -547,6 +593,7 @@
 		"pt"		"Ver Punições"
 		"de"		"Die Bestrafungen zeigen"
 		"fr"		"Voir Les sanctions"
+		"chi"		"显示惩罚"
 	}
 	"AdminMenu_Select_List"
 	{
@@ -558,6 +605,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Die Spieler:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Gag"
 	{
@@ -569,6 +617,7 @@
 		"pt"		"Emitir Amordaçar"
 		"de"		"Chat sperren"
 		"fr"		"Sanction chat"
+		"chi"		"进行禁言"
 	}
 	"AdminMenu_Select_Gag"
 	{
@@ -580,6 +629,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Spieler im Chat sperren:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Select_Mute"
 	{
@@ -591,6 +641,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Spieler im Voice-Chat sperren:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Select_Silence"
 	{
@@ -602,6 +653,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Spieler im Voice-Chat und im Chat sperren:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Select_Ungag"
 	{
@@ -613,6 +665,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Spieler im Chat entsperren:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Select_Unmute"
 	{
@@ -624,6 +677,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Spieler im Voice-Chat entsperren:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Select_Unsilence"
 	{
@@ -635,6 +689,7 @@
 		"pt"		"Selecionar Jogador:"
 		"de"		"Spieler im Voice-Chat und im Chat entsperren:"
 		"fr"		"Sélectionner un joueur:"
+		"chi"		"选择玩家:"
 	}
 	"AdminMenu_Option_Mute_Empty"
 	{
@@ -646,6 +701,7 @@
 		"pt"		"Nenhum Jogador Emudecido"
 		"de"		"Es gibt keinen Spieler, der im Chat gesperrt wurde"
 		"fr"		"Aucun joueur de mute"
+		"chi"		"没有玩家被静音"
 	}
 	"AdminMenu_Option_Gag_Empty"
 	{
@@ -657,6 +713,7 @@
 		"pt"		"Nenhum Jogador Amordaçado"
 		"de"		"Es gibt keinen Spieler, der im Voice-Chat gesperrt wurde"
 		"fr"		"Aucun joueur de mute du chat"
+		"chi"		"没有玩家被禁言"
 	}
 	"AdminMenu_Option_Silence_Empty"
 	{
@@ -668,6 +725,7 @@
 		"pt"		"Nenhum Jogador Silenciado"
 		"de"		"Es gibt keinen Spieler, der im Voice-Chat und im Chat gesperrt wurde"
 		"fr"		"Aucun joueur en silence"
+		"chi"		"没有玩家被禁言和静音"
 	}
 	"ListMenu_Option_Empty"
 	{
@@ -679,6 +737,7 @@
 		"pt"		"Nenhum Cliente Punido"
 		"de"		"Es gibt keinen bestraften Spieler"
 		"fr"		"Aucun client puni"
+		"chi"		"没有玩家被惩罚"
 	}
 	"AdminMenu_Option_Empty"
 	{
@@ -690,6 +749,7 @@
 		"pt"		"Não há jogadores disponíveis"
 		"de"		"Es gibt keinen zugänglichen Spieler"
 		"fr"		"Aucun joueur disponible"
+		"chi"		"没有可用的玩家"
 	}
 	"AdminMenu_UnGag"
 	{
@@ -701,6 +761,7 @@
 		"pt"		"Remover Amordaçar"
 		"de"		"Chat entsperren"
 		"fr"		"Enleve un mute du chat"
+		"chi"		"取消禁言"
 
 	}
 	"AdminMenu_Title_Durations"
@@ -713,6 +774,7 @@
 		"pt"		"Selecionar Duração:"
 		"de"		"Dauer auswählen:"
 		"fr"		"Sélectionnez la durée:"
+		"chi"		"选择时长:"
 	}
 	"AdminMenu_Title_Reasons"
 	{
@@ -724,6 +786,7 @@
 		"pt"		"Selecionar Motivo:"
 		"de"		"Grund auswählen:"
 		"fr"		"Choisir la raison:"
+		"chi"		"选择原因:"
 	}
 	"AdminMenu_Mute"
 	{
@@ -735,6 +798,7 @@
 		"pt"		"Emitir Emudecer"
 		"de"		"Voice-Chat sperren"
 		"fr"		"Sanction mute"
+		"chi"		"进行静音"
 	}
 	"AdminMenu_UnMute"
 	{
@@ -746,6 +810,7 @@
 		"pt"		"Remover Emudecer"
 		"de"		"Voice-Chat entsperren"
 		"fr"		"Enleve un mute"
+		"chi"		"取消静音"
 	}
 	"AdminMenu_Silence"
 	{
@@ -757,6 +822,7 @@
 		"pt"		"Emitir Silenciar"
 		"de"		"Voice-Chat und Chat sperren"
 		"fr"		"Santion en silence"
+		"chi"		"进行禁言和静音"
 	}
 	"AdminMenu_UnSilence"
 	{
@@ -768,6 +834,7 @@
 		"pt"		"Remover Silenciar"
 		"de"		"Voice-Chat und Chat entsperren"
 		"fr"		"Enleve un silence"
+		"chi"		"取消禁言和静音"
 	}
 	//--------------------------------------------------------------------------------
 	"AdminMenu_Not_Available"
@@ -780,6 +847,7 @@
 		"pt"		"O jogador que você selecionou não está mais disponível."
 		"de"		"Der Spieler ist nicht zugänglich."
 		"fr"		"Le joueur que vous avez sélectionné n'est plus disponible."
+		"chi"		"你选择的玩家目前不可用."
 	}
 	"Command_Target_Not_Targetable"
 	{
@@ -791,6 +859,7 @@
 		"pt"		"Você não pode marcar este jogador."
 		"de"		"Sie können diesen Spieler nicht auswählen."
 		"fr"		"Vous ne pouvez pas attendre ce joueur."
+		"chi"		"你无法选择此玩家."
 	}
 	//---------------------------------------------------------------------------------
 	"ListMenu_Option_Mute"
@@ -803,6 +872,7 @@
 		"pt"		"Emudecido"
 		"de"		"Voice-Chat"
 		"fr"		"Muté"
+		"chi"		"静音"
 	}
 	"ListMenu_Option_Gag"
 	{
@@ -814,6 +884,7 @@
 		"pt"		"Amordaçado"
 		"de"		"Chat"
 		"fr"		"Muté du chat"
+		"chi"		"禁言"
 	}
 	"ListMenu_Option_Duration"
 	{
@@ -825,6 +896,7 @@
 		"pt"		"- Duração: "
 		"de"		"- Dauer: "
 		"fr"		"- Durée: "
+		"chi"		"- 时长:"
 	}
 	"ListMenu_Option_Duration_Perm"
 	{
@@ -836,6 +908,7 @@
 		"pt"		"Permanente"
 		"de"		"Für immer"
 		"fr"		"Permanent"
+		"chi"		"永久"
 	}
 	"ListMenu_Option_Duration_Time"
 	{
@@ -848,6 +921,7 @@
 		"pt"		"{1} Minutos"
 		"de"		"{1} Minuten"
 		"fr"		"{1} Minutes"
+		"chi"		"{1} 分钟"
 	}
 	"ListMenu_Option_Duration_Temp"
 	{
@@ -859,6 +933,7 @@
 		"pt"		"Temporário"
 		"de"		"Zeitweilig"
 		"fr"		"Temporaire"
+		"chi"		"临时"
 	}
 	"ListMenu_Option_Expire"
 	{
@@ -870,6 +945,7 @@
 		"pt"		"- Expira: "
 		"de"		"- Läuft ab: "
 		"fr"		"- Expire: "
+		"chi"		"- 解除: "
 	}
 	"ListMenu_Option_Expire_Perm"
 	{
@@ -881,6 +957,7 @@
 		"pt"		"Nunca"
 		"de"		"Nie"
 		"fr"		"Jamais"
+		"chi"		"永不"
 	}
 	"ListMenu_Option_Expire_Time"
 	{
@@ -893,6 +970,7 @@
 		"pt"		"{1}"
 		"de"		"{1}"
 		"fr"		"{1}"
+		"chi"		"{1}"
 	}
 	"ListMenu_Option_Expire_Temp_Reconnect"
 	{
@@ -904,6 +982,7 @@
 		"pt"		"Reconectar"
 		"de"		"Wiederverbinden"
 		"fr"		"Reconnecter"
+		"chi"		"重新连接"
 	}
 	"ListMenu_Option_Admin"
 	{
@@ -916,6 +995,7 @@
 		"pt"		"- Admin: {1}"
 		"de"		"- Admin: {1}"
 		"fr"		"- Admin: {1}"
+		"chi"		"- 管理员: {1}"
 	}
 	"ListMenu_Option_Issue"
 	{
@@ -928,6 +1008,7 @@
 		"pt"		"- Emitido: {1}"
 		"de"		"- Gesperrt: {1}"
 		"fr"		"- Publié: {1}"
+		"chi"		"- 已封禁: {1}"
 	}
 	"ListMenu_Option_Reason"
 	{
@@ -939,6 +1020,7 @@
 		"pt"		"- Ver Motivo"
 		"de"		"- Grund"
 		"fr"		"- Voir la raison"
+		"chi"		"- 查看原因"
 	}
 	"ListMenu_Option_Reason_None"
 	{
@@ -950,6 +1032,7 @@
 		"pt"		"- Motivo: Nenhum"
 		"de"		"- Kein Grund"
 		"fr"		"- Raison: Aucun"
+		"chi"		"- 原因: 无"
 	}
 	//---------------------------------------------------------------------------------
 	"ReasonPanel_Punishment_Mute"
@@ -962,6 +1045,7 @@
 		"pt"		"Emudecido: "
 		"de"		"Voice-Chat: "
 		"fr"		"Muté: "
+		"chi"		"静音: "
 	}
 	"ReasonPanel_Punishment_Gag"
 	{
@@ -973,6 +1057,7 @@
 		"pt"		"Amordaçado: "
 		"de"		"Chat: "
 		"fr"		"Mute du chat: "
+		"chi"		"禁言: "
 	}
 	"ReasonPanel_Perm"
 	{
@@ -984,6 +1069,7 @@
 		"pt"		"Permanente"
 		"de"		"Für immer"
 		"fr"		"Permanent"
+		"chi"		"永久"
 	}
 	"ReasonPanel_Time"
 	{
@@ -996,6 +1082,7 @@
 		"pt"		"{1} Minutos"
 		"de"		"{1} Minuten"
 		"fr"		"{1} Minutes"
+		"chi"		"{1} 分钟"
 	}
 	"ReasonPanel_Temp"
 	{
@@ -1007,6 +1094,7 @@
 		"pt"		"Temporário"
 		"de"		"Zeitweihlig"
 		"fr"		"Temporaire"
+		"chi"		"临时"
 	}
 	"ReasonPanel_Reason"
 	{
@@ -1019,6 +1107,7 @@
 		"pt"		"Motivo: {1}"
 		"de"		"Grund: {1}"
 		"fr"		"Raison: {1}"
+		"chi"		"原因: {1}"
 	}
 	"ReasonPanel_Back"
 	{
@@ -1030,6 +1119,7 @@
 		"pt"		"Sair"
 		"de"		"Ausgang"
 		"fr"		"Sorti"
+		"chi"		"退出"
 	}
 	//---------------------------------------------------------------------------------
 	"Temp muted player"
@@ -1043,6 +1133,7 @@
 		"pt"			"{1} Emudecido."
 		"de"			"Der Spieler {1} wurde im Voice-Chat gesperrt."
 		"fr"			"Muté {1}."
+		"chi"			"玩家 {1} 已被静音."
 	}
 	"Temp muted player reason"
 	{
@@ -1055,6 +1146,7 @@
 		"pt"			"{1} Emudecido (motivo: {2})."
 		"de"			"Der Spieler {1} wurde im Voice-Chat gesperrt (Grund: {2}}."
 		"fr"			"Muté {1} (raison: {2})."
+		"chi"			"玩家 {1} 已被静音 (原因: {2})."
 	}
 	"Temp gagged player"
 	{
@@ -1067,6 +1159,7 @@
 		"pt"			"{1} Amordaçado."
 		"de"			"Der Spieler {1} wurde im Chat gesperrt."
 		"fr"			"Mute du chat {1}."
+		"chi"			"玩家 {1} 已被禁言."
 	}
 	"Temp gagged player reason"
 	{
@@ -1079,6 +1172,7 @@
 		"pt"			"{1} Amordaçado (motivo: {2})."
 		"de"			"Der Spieler {1} wurde im Chat gesperrt (Grund: {2}}."
 		"fr"			"Mute du chat {1} (raison: {2})."
+		"chi"			"玩家 {1} 已被禁言 (原因: {2})."
 	}
 	"Temp silenced player"
 	{
@@ -1091,6 +1185,7 @@
 		"pt"			"{1} Silenciado."
 		"de"			"Der Spieler {1} wurde im Chat und im Voice-Chat gesperrt."
 		"fr"			"Silence {1}."
+		"chi"			"玩家 {1} 已被禁言和静音."
 	}
 	"Temp silenced player reason"
 	{
@@ -1103,6 +1198,7 @@
 		"pt"			"{1} Silenciado (motivo: {2})."
 		"de"			"Der Spieler {1} wurde im Chat und im Voice-Chat gesperrt (Grund: {2}}."
 		"fr"			"Silence {1} (raison: {2})."
+		"chi"			"玩家 {1} 已被禁言和静音 (原因: {2})."
 	}
 	//---------------------------------------------------------------------------------
 	"CommandComms_na"
@@ -1115,6 +1211,7 @@
 		"pt"		"Disponível apenas para os jogadores no servidor."
 		"de"		"Es ist nur für die Spieler auf dem Server zugänglich."
 		"fr"		"Disponible uniquement pour les joueurs sur le serveur."
+		"chi"		"只对在游戏中的玩家可用."
 	}
 	"CommandComms_nb"
 	{
@@ -1126,6 +1223,7 @@
 		"pt"		"Seu chat de texto e voz e não estão bloqueados."
 		"de"		"Sie sind im Chat und Voice-Chat nicht gesperrt."
 		"fr"		"Votre chat et votre voix ne sont pas bloquées."
+		"chi"		"你没有被禁言或静音."
 	}
 	//---------------------------------------------------------------------------------
 	"no access"
@@ -1138,5 +1236,6 @@
 		"pt"		"O tempo de punição especificado não é permitido para você."
 		"de"		"Die Sperre für festgelegte Zeit ist für Sie nicht zugänglich."
 		"fr"		"La punition pour le temps spécifié n'est pas autorisée pour vous."
+		"chi"		"你不能指定惩罚时长."
 	}
 }

@@ -1,16 +1,11 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-
 if (isset($_POST['postd']) && $_POST['postd']) {
     if (empty($_POST['amx_server']) ||empty($_POST['amx_port']) ||empty($_POST['amx_username']) ||empty($_POST['amx_password']) ||empty($_POST['amx_database']) ||empty($_POST['amx_prefix'])) {
         echo "<script>ShowBox('Error', 'There is some missing data. All feilds are required.', 'red', '', true);</script>";
     } else {
         include_once(INCLUDES_PATH . "/converter.inc.php");
             $oldDB = new Database($_POST['amx_server'], $_POST['amx_port'], $_POST['amx_database'], $_POST['amx_username'], $_POST['amx_password'], $_POST['amx_prefix']);
-            $newDB = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
+            $newDB = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
             convertAmxbans($oldDB, $newDB);
     }

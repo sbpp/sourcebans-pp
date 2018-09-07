@@ -30,17 +30,16 @@ include_once("../includes/system-functions.php");
 global $theme, $userbank;
 
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS | ADMIN_ADD_MODS)) {
-    $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty('user') . " tried to upload a mod icon, but doesn't have access.");
-    echo 'You don\'t have access to this!';
-    die();
+    Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a mod icon, but doesn't have access.");
+    die("You don't have access to this!");
 }
 
 $message = "";
 if (isset($_POST['upload'])) {
-    if (CheckExt($_FILES['icon_file']['name'], "gif") || CheckExt($_FILES['icon_file']['name'], "jpg") || CheckExt($_FILES['icon_file']['name'], "png")) {
+    if (checkExtension($_FILES['icon_file']['name'], ['gif', 'jpg', 'png'])) {
         move_uploaded_file($_FILES['icon_file']['tmp_name'], SB_ICONS . "/" . $_FILES['icon_file']['name']);
         $message = "<script>window.opener.icon('" . $_FILES['icon_file']['name'] . "');self.close()</script>";
-        $log     = new CSystemLog("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: " . htmlspecialchars($_FILES['icon_file']['name']));
+        Log::add("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");
     } else {
         $message = "<b> File must be gif, jpg or png filetype.</b><br><br>";
     }

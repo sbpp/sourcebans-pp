@@ -46,7 +46,7 @@ function LoadServers2($check, $type, $length)
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to use blockit, but doesn't have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to use blockit, but doesn't have access.");
         return $objResponse;
     }
     $id      = 0;
@@ -76,7 +76,7 @@ function BlockPlayer($check, $sid, $num, $type, $length)
 
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to process a playerblock, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to process a playerblock, but doesnt have access.");
         return $objResponse;
     }
 
@@ -110,10 +110,7 @@ function BlockPlayer($check, $sid, $num, $type, $length)
 
         //search for the steamid on the server
         foreach ($matches[3] as $match) {
-            if (!preg_match(STEAM_FORMAT, $match)) {
-                $match = explode(':', $match);
-                $match = steam2to3(rtrim($match[2], ']'));
-            }
+            $match = \SteamID\SteamID::toSteam2($match);
             if (substr($match, 8) == substr($check, 8)) {
                 // gotcha!!! kick him!
                 $gothim = true;

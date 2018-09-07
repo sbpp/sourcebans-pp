@@ -1,33 +1,40 @@
-<!--- Provide a general summary of the issue in the Title above -->
+<!--(Thanks for reporting an issue! Please make sure you click the link above to view the issue guidelines, then fill out the blanks below.)-->
+<!--(Remember, an issue is not the place to ask questions! You can use the official SourceBans++ Discord https://discord.gg/4Bhj6NU for that.)-->
 
-## Expected Behavior
-<!--- If you're describing a bug, tell us what should happen -->
-<!--- If you're suggesting a change/improvement, tell us how it should work -->
-
-## Current Behavior
-<!--- If describing a bug, tell us what happens instead of the expected behavior -->
-<!--- If suggesting a change/improvement, explain the difference from current behavior -->
-
-## Possible Solution
-<!--- Not obligatory, but suggest a fix/reason for the bug, -->
-<!--- or ideas how to implement the addition or change -->
-
-## Steps to Reproduce (for bugs)
-<!--- Provide a link to a live example, or an unambiguous set of steps to -->
-<!--- reproduce this bug. Include code to reproduce, if relevant -->
+What are the steps to reproduce this issue?
+-------------------------------------------
 1.
 2.
 3.
 4.
 
-## Context
-<!--- How has this issue affected you? What are you trying to accomplish? -->
-<!--- Providing context helps us come up with a solution that is most useful in the real world -->
 
-## Your Environment
-<!--- Include as many relevant details about the environment you experienced the bug in -->
-* Version used:
-* PHP and MySQL version:
-* Operating System and version:
-* Link to your project:
-* Link to gist with phpinfo() output:
+What happens?
+-------------
+
+
+What were you expecting to happen?
+----------------------------------
+
+
+Any logs, error output, etc.?
+----------------------------
+<!--(If it’s long, please paste to https://gist.github.com/ and insert the link here.)-->
+
+
+Any other comments?
+-------------------
+
+
+What versions of software are you using?
+----------------------------------------
+**Operating System:**
+**SourceBans++ Version:**
+<!--For WebPanel issues-->
+**PHP Version:**
+**MySQL Version:**
+**Link to your project:**
+**Link to a phpinfo() output:**
+<!--For SourceMod Plugin issues-->
+**SourceMod Version:**
+**MetaMod Version:**

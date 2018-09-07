@@ -54,9 +54,6 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page     = intval($_GET['page']);
     $pagelink = "&page=" . $page;
 }
-if (version_compare($GLOBALS['db_version'], "5.6.0") >= 0 && version_compare($GLOBALS['db_version'], "10.0.0") < 0) {
-    $GLOBALS['db']->Execute("set session optimizer_switch='block_nested_loop=off';");
-}
 if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
@@ -118,19 +115,20 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         foreach ($blocked as $tempban) {
             SendRconSilent(($row['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $tempban['sid']);
         }
-        if (((int) $row['now'] - (int) $row['created']) <= 300 && $row['sid'] != "0" && !in_array_dim($row['sid'], $blocked)) {
+        if (((int) $row['now'] - (int) $row['created']) <= 300 && $row['sid'] != "0" && !in_array($row['sid'], $blocked)) {
             SendRconSilent(($row['type'] == 0 ? "removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $row['sid']);
         }
 
         if ($res) {
+            $type = $row['type'] == 0 ? $row['authid'] : $row['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player Unbanned', '" . StripQuotes($row['name']) . " (" . ($row['type'] == 0 ? $row['authid'] : $row['ip']) . ") has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
+                echo "<script>ShowBox('Player Unbanned', '" . $row['name'] . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            $log = new CSystemLog("m", "Player Unbanned", "'" . StripQuotes($row['name']) . "' (" . ($row['type'] == 0 ? $row['authid'] : $row['ip']) . ") has been unbanned");
+            Log::add("m", "Player Unbanned", "$row[name] ($type) has been unbanned.");
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player NOT Unbanned', 'There was an error unbanning " . StripQuotes($row['name']) . "', 'red', 'index.php?p=banlist$pagelink', true);</script>";
+                echo "<script>ShowBox('Player NOT Unbanned', 'There was an error unbanning " . $row['name'] . "', 'red', 'index.php?p=banlist$pagelink', true);</script>";
             }
             $fail++;
         }
@@ -183,20 +181,21 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             foreach ($blocked as $tempban) {
                 SendRconSilent(($steam['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $tempban['sid']);
             }
-            if (((int) $steam['now'] - (int) $steam['created']) <= 300 && $steam['sid'] != "0" && !in_array_dim($steam['sid'], $blocked)) {
+            if (((int) $steam['now'] - (int) $steam['created']) <= 300 && $steam['sid'] != "0" && !in_array($steam['sid'], $blocked)) {
                 SendRconSilent(($steam['type'] == 0 ? "removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $steam['sid']);
             }
         }
 
         if ($res) {
+            $type = $steam['type'] == 0 ? $steam['authid'] : $steam['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' (" . ($steam['type'] == 0 ? $steam['authid'] : $steam['ip']) . ") has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
+                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . $steam['name'] . "\' ($type) has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            $log = new CSystemLog("m", "Ban Deleted", "Ban '" . StripQuotes($steam['name']) . "' (" . ($steam['type'] == 0 ? $steam['authid'] : $steam['ip']) . ") has been deleted.");
+            Log::add("m", "Ban Deleted", "Ban $steam[name] ($type) has been deleted.");
             $dcount++;
         } else {
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' had an error while being removed.', 'red', 'index.php?p=banlist$pagelink', true);</script>";
+                echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=banlist$pagelink', true);</script>";
             }
             $fail++;
         }
@@ -234,7 +233,7 @@ if (isset($_GET['searchText'])) {
     // disable ip search if hiding player ips
     $search_ips   = "";
     $search_array = array();
-    if (!isset($GLOBALS['config']['banlist.hideplayerips']) || $GLOBALS['config']['banlist.hideplayerips'] != "1" || $userbank->is_admin()) {
+    if (!Config::getBool('banlist.hideplayerips') || $userbank->is_admin()) {
         $search_ips     = "BA.ip LIKE ? OR ";
         $search_array[] = $search;
     }
@@ -317,7 +316,7 @@ if (isset($_GET['advSearch'])) {
             break;
         case "ip":
             // disable ip search if hiding player ips
-            if (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -377,7 +376,7 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "admin":
-            if ($GLOBALS['config']['banlist.hideadminname'] && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -467,10 +466,10 @@ while (!$res->EOF) {
 
     $data['ban_id'] = $res->fields['ban_id'];
 
-    if (!empty($res->fields['ban_ip'])) {
+    if (!empty($res->fields['ban_ip']) && !Config::getBool('banlist.nocountryfetch')) {
         if (!empty($res->fields['ban_country']) && $res->fields['ban_country'] != ' ') {
             $data['country'] = '<img src="images/country/' . strtolower($res->fields['ban_country']) . '.jpg" alt="' . $res->fields['ban_country'] . '" border="0" align="absmiddle" />';
-        } elseif (isset($GLOBALS['config']['banlist.nocountryfetch']) && $GLOBALS['config']['banlist.nocountryfetch'] == "0") {
+        } elseif (!Config::getBool('banlist.nocountryfetch')) {
             $country = FetchIp($res->fields['ban_ip']);
             $edit    = $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_bans SET country = ?
 				                            WHERE bid = ?", array(
@@ -495,7 +494,7 @@ while (!$res->EOF) {
     $steam3parts         = explode(':', $steam2id);
     $data['steamid3']    = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
 
-    if (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()) {
+    if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
         $data['admin'] = stripslashes($res->fields['admin_name']);
@@ -534,7 +533,7 @@ while (!$res->EOF) {
 
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
-        if (isset($removedby[0])) {
+        if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
         }
     }
@@ -561,11 +560,11 @@ while (!$res->EOF) {
     $data['blockcomm_link']  = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
     $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . $res->fields['ban_id']);
     $data['groups_link']     = CreateLinkR('<img src="images/groups.png" border="0" alt="" style="vertical-align:middle" /> Show Groups', "index.php?p=admin&c=bans&fid=" . $data['communityid'] . "#^4");
-    $data['friend_ban_link'] = CreateLinkR('<img src="images/group_delete.png" border="0" alt="" style="vertical-align:middle" /> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . StripQuotes($data['player']) . "');return false;");
+    $data['friend_ban_link'] = CreateLinkR('<img src="images/group_delete.png" border="0" alt="" style="vertical-align:middle" /> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
     $data['edit_link']       = CreateLinkR('<img src="images/edit.png" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
-    $data['unban_link']  = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1, false);return false;");
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0, false);return false;");
+    $data['unban_link']  = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1, false);return false;");
+    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0, false);return false;");
 
 
     $data['server_id'] = $res->fields['ban_server'];
@@ -807,12 +806,12 @@ $theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideplayerips', (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()));
-$theme->assign('hideadminname', (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()));
-$theme->assign('groupban', ($GLOBALS['config']['config.enablegroupbanning'] == 1 && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
-$theme->assign('friendsban', ($GLOBALS['config']['config.enablefriendsbanning'] == 1 && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
+$theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
+$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
+$theme->assign('groupban', (Config::getBool('config.enablegroupbanning') && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
+$theme->assign('friendsban', (Config::getBool('config.enablefriendsbanning') && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
 $theme->assign('can_delete', $userbank->HasAccess(ADMIN_DELETE_BAN));
 $theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));
-$theme->assign('can_export', ($userbank->HasAccess(ADMIN_OWNER) || (isset($GLOBALS['config']['config.exportpublic']) && $GLOBALS['config']['config.exportpublic'] == "1")));
+$theme->assign('can_export', ($userbank->HasAccess(ADMIN_OWNER) || Config::getBool('config.exportpublic')));
 $theme->display('page_bans.tpl');

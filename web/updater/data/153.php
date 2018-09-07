@@ -1,13 +1,11 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'template.title';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('template.title', 'SourceBans');");
-    if (!$ret)
-        return false;
+$this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'template.title'");
+$data = $this->dbs->single();
+
+if (!$data['value']) {
+    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('template.title', 'SourceBans++')");
+    $this->dbs->execute();
 }
 
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_submissions` ADD `server` tinyint(3);");
-if (!$ret)
-    return false;
-
-return true;
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `server` tinyint(3)");
+return $this->dbs->execute();

@@ -47,7 +47,7 @@ while (!$server_list->EOF) {
 $serverscript .= "</script>";
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 
-$theme->assign('hideplayerips', (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()));
+$theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
 $theme->assign('is_admin', $userbank->is_admin());
 $theme->assign('admin_list', $admin_list);
 $theme->assign('server_list', $servers);

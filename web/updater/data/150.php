@@ -1,76 +1,95 @@
 <?php
-$temp = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.summertime';");
-if (count($temp) == 0) {
-    $ret = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_settings` (`setting`, `value`) VALUES ('config.summertime', '0');");
-    if (!$ret)
-        return false;
+$this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.summertime'");
+$data = $this->dbs->single();
+
+if (!$data['value']) {
+    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.summertime', '0')");
+    $this->dbs->execute();
 }
 
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_bans` ADD `ureason` text;");
-if (!$ret)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_bans` ADD `ureason` text");
+$this->dbs->execute();
 
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_protests` ADD `archiv` tinyint(1) default '0';");
-if (!$ret)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_protests` ADD `archiv` tinyint(1) DEFAULT '0'");
+$this->dbs->execute();
 
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_submissions` ADD `subname` varchar(128) default NULL;");
-if (!$ret)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `subname` varchar(128) DEFAULT NULL");
+$this->dbs->execute();
 
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_submissions` ADD `sip` varchar(64) default NULL;");
-if (!$ret)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `sip` varchar(64) DEFAULT NULL");
+$this->dbs->execute();
 
-$ret = $GLOBALS['db']->Execute("ALTER TABLE `" . DB_PREFIX . "_submissions` ADD `archiv` tinyint(1) default '0';");
-if (!$ret)
-    return false;
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `archiv` tinyint(1) DEFAULT '0'");
+$this->dbs->execute();
 
-$timezone = $GLOBALS['db']->GetRow("SELECT value FROM `" . DB_PREFIX . "_settings` WHERE setting = 'config.timezone'");
-if ($timezone['value'] == 'Pacific/Apia')
-    $ver = '-11';
-else if ($timezone['value'] == 'Pacific/Honolulu')
-    $ver = '-10';
-else if ($timezone['value'] == 'America/Anchorage')
-    $ver = '-9';
-else if ($timezone['value'] == 'America/Los_Angeles')
-    $ver = '-8';
-else if ($timezone['value'] == 'America/Denver')
-    $ver = '-7';
-else if ($timezone['value'] == 'America/Chicago')
-    $ver = '-6';
-else if ($timezone['value'] == 'America/New_York')
-    $ver = '-5';
-else if ($timezone['value'] == 'America/Halifax')
-    $ver = '-4';
-else if ($timezone['value'] == 'America/Sao_Paulo')
-    $ver = '-3';
-else if ($timezone['value'] == 'Atlantic/Azores')
-    $ver = '-1';
-else if ($timezone['value'] == 'Europe/London')
-    $ver = '0';
-else if ($timezone['value'] == 'Europe/Paris')
-    $ver = '1';
-else if ($timezone['value'] == 'Europe/Helsinki')
-    $ver = '2';
-else if ($timezone['value'] == 'Europe/Moscow')
-    $ver = '3';
-else if ($timezone['value'] == 'Asia/Dubai')
-    $ver = '4';
-else if ($timezone['value'] == 'Asia/Karachi')
-    $ver = '5';
-else if ($timezone['value'] == 'Asia/Krasnoyarsk')
-    $ver = '7';
-else if ($timezone['value'] == 'Asia/Tokyo')
-    $ver = '9';
-else if ($timezone['value'] == 'Australia/Melbourne')
-    $ver = '10';
-else if ($timezone['value'] == 'Pacific/Auckland')
-    $ver = '12';
-else
-    $ver = '0';
-$ret = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_settings` SET value = '" . $ver . "' WHERE setting = 'config.timezone';");
-if (!$ret)
-    return false;
+$this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.timezone'");
+$data = $this->dbs->single();
 
-return true;
+switch ($data['value']) {
+    case 'Pacific/Apia':
+        $ver = '-11';
+        break;
+    case 'Pacific/Honolulu':
+        $ver = '-10';
+        break;
+    case 'America/Anchorage':
+        $ver = '-9';
+        break;
+    case 'America/Los_Angeles':
+        $ver = '-8';
+        break;
+    case 'America/Denver':
+        $ver = '-7';
+        break;
+    case 'America/Chicago':
+        $ver = '-6';
+        break;
+    case 'America/New_York':
+        $ver = '-5';
+        break;
+    case 'America/Halifax':
+        $ver = '-4';
+        break;
+    case 'America/Sao_Paulo':
+        $ver = '-3';
+        break;
+    case 'Atlantic/Azores':
+        $ver = '-1';
+        break;
+    case 'Europe/London':
+        $ver = '0';
+        break;
+    case 'Europe/Paris':
+        $ver = '1';
+        break;
+    case 'Europe/Helsinki':
+        $ver = '2';
+        break;
+    case 'Europe/Moscow':
+        $ver = '3';
+        break;
+    case 'Asia/Dubai':
+        $ver = '4';
+        break;
+    case 'Asia/Karachi':
+        $ver = '5';
+        break;
+    case 'Asia/Krasnoyarsk':
+        $ver = '7';
+        break;
+    case 'Asia/Tokyo':
+        $ver = '9';
+        break;
+    case 'Australia/Melbourne':
+        $ver = '10';
+        break;
+    case 'Pacific/Auckland':
+        $ver = '12';
+        break;
+    default:
+        $ver = '0';
+}
+
+$this->dbs->query("UPDATE `:prefix_settings` SET value = :value WHERE setting = 'config.timezone'");
+$this->dbs->bind(':value', $ver);
+return $this->dbs->execute();

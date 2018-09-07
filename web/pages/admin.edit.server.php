@@ -1,4 +1,3 @@
-<div id="admin-page-content">
 <?php
 /*************************************************************************
 This file is part of SourceBans++
@@ -31,6 +30,9 @@ if (!defined("IN_SB")) {
     die();
 }
 global $theme;
+
+new AdminTabs([], $userbank);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
@@ -44,7 +46,7 @@ $_GET['id'] = (int) $_GET['id'];
 
 $server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = {$_GET['id']}");
 if (!$server) {
-    $log = new CSystemLog("e", "Getting server data failed", "Can't find data for server with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i><img src="./images/warning.png" alt="Warning" /></i>
 	<b>Error</b>
@@ -66,7 +68,7 @@ if (isset($_POST['address'])) {
         $errorScript .= "$('address.msg').innerHTML = 'You must type the server address.';";
         $errorScript .= "$('address.msg').setStyle('display', 'block');";
     } else {
-        if (!validate_ip($_POST['address']) && !is_string($_POST['address'])) {
+        if (!filter_var($_POST['address'], FILTER_VALIDATE_IP) && !is_string($_POST['address'])) {
             $error++;
             $errorScript .= "$('address.msg').innerHTML = 'You must type a valid IP.';";
             $errorScript .= "$('address.msg').setStyle('display', 'block');";
@@ -93,7 +95,7 @@ if (isset($_POST['address'])) {
         $errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
     }
 
-    $ip = RemoveCode($_POST['address']);
+    $ip = $_POST['address'];
 
     // Check for dublicates afterwards
     if ($error == 0) {
@@ -181,6 +183,7 @@ $theme->assign('grouplist', $grouplist);
 $theme->assign('edit_server', true);
 $theme->assign('submit_text', "Update Server");
 ?>
+<div id="admin-page-content">
     <form action="" method="post" name="editserver">
 <?php $theme->display('page_admin_servers_add.tpl'); ?>
 </form>

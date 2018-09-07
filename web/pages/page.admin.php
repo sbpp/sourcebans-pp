@@ -40,8 +40,6 @@ $counts = $GLOBALS['db']->GetRow("SELECT
 								 (SELECT COUNT(pid) FROM `" . DB_PREFIX . "_protests` WHERE archiv > 0) AS archiv_protests,
 								 (SELECT COUNT(sid) FROM `" . DB_PREFIX . "_servers`) AS servers");
 
-$demsi = getDirectorySize(SB_DEMOS);
-
 $theme->assign('access_admins', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS | ADMIN_ADD_ADMINS | ADMIN_EDIT_ADMINS | ADMIN_DELETE_ADMINS));
 $theme->assign('access_servers', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS | ADMIN_ADD_SERVER | ADMIN_EDIT_SERVERS | ADMIN_DELETE_SERVERS));
 $theme->assign('access_bans', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_ALL_BANS | ADMIN_BAN_PROTESTS | ADMIN_BAN_SUBMISSIONS));
@@ -51,7 +49,7 @@ $theme->assign('access_mods', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS
 
 $theme->assign('dev', SB_DEV);
 
-$theme->assign('demosize', sizeFormat($demsi['size']));
+$theme->assign('demosize', getDirSize(SB_DEMOS));
 $theme->assign('total_admins', $counts['admins']);
 $theme->assign('total_bans', $counts['bans']);
 $theme->assign('total_blocks', $counts['blocks']);

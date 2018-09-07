@@ -9,6 +9,11 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 ```
+(06/04/18): Version 1.6.3
+```
+Full Changelog: https://sbpp.github.io/blog/1.6.3_release/
+```
+
 (04/07/17): Version 1.6.2
 -----------------------
 ```

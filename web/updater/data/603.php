@@ -1,5 +1,10 @@
 <?php
-$database = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX);
-$database->query("INSERT INTO `:prefix_settings` (value, setting) VALUES ('1', 'config.enablecomms')");
-$database->execute();
+$this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.enablecomms'");
+$data = $this->dbs->single();
+
+if (!$data['value']) {
+    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablecomms', '1')");
+    $this->dbs->execute();
+}
+
 return true;

@@ -1,3 +1,4 @@
+<div class="tabcontent" id="Add new admin">
 {if NOT $permission_addadmin}
 	Access Denied!
 {else}
@@ -8,8 +9,8 @@
 		The new admin has been successfully added to the system.<br /><br />
 		<i>Redirecting back to admins page</i>
 	</div>
-	
-	
+
+
 	<div id="add-group">
 		<h3>Admin Details</h3>
 		For more information or help regarding a certain subject move your mouse over the question mark.<br /><br />
@@ -17,7 +18,7 @@
 			<tr>
 		    	<td valign="top" width="35%">
 		    		<div class="rowdesc">
-		    			{help_icon title="Admin Login" message="This is the username the admin will use to login-to their admin panel. Also this will identify the admin on any bans they make."}Admin Login 
+		    			{help_icon title="Admin Login" message="This is the username the admin will use to login-to their admin panel. Also this will identify the admin on any bans they make."}Admin Login
 		    		</div>
 		    	</td>
 		    	<td>
@@ -43,7 +44,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Admin Email" message="Set the admins e-mail address. This will be used for sending out any automated messages from the system and changing of forgotten passwords. This is only required, if you set webpanel permissions."}Admin Email 
+		    			{help_icon title="Admin Email" message="Set the admins e-mail address. This will be used for sending out any automated messages from the system and changing of forgotten passwords. This is only required, if you set webpanel permissions."}Admin Email
 		    		</div>
 		    	</td>
 		    	<td>
@@ -56,7 +57,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Password" message="The password the admin will need to access the admin panel. This is only required, if you set webpanel permissions."}Admin Password 
+		    			{help_icon title="Password" message="The password the admin will need to access the admin panel. This is only required, if you set webpanel permissions."}Admin Password
 		    		</div>
 		    	</td>
 		    	<td>
@@ -69,7 +70,7 @@
 		  	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Password" message="Type the password again to confirm."}Admin Password (confirm) 
+		    			{help_icon title="Password" message="Type the password again to confirm."}Admin Password (confirm)
 		    		</div>
 		    	</td>
 		    	<td>
@@ -93,17 +94,17 @@
 		    	</td>
 		  	</tr>
 		</table>
-	
-		
+
+
 		<br />
-	
-		
+
+
 		<h3>Admin Access</h3>
 			<table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
 		  	<tr>
 		    	<td valign="top" width="35%">
 		    		<div class="rowdesc">
-		    			{help_icon title="Server" message="<b>Server: </b><br>Choose the server, or server group that this admin will be able to administer."}Server Access 
+		    			{help_icon title="Server" message="<b>Server: </b><br>Choose the server, or server group that this admin will be able to administer."}Server Access
 		    		</div>
 		    	</td>
 		    	<td>&nbsp;</td>
@@ -117,32 +118,32 @@
 								<td align="center" class="tablerow4"><input type="checkbox" id="group[]" name="group[]" value="g{$group.gid}" /></td>
 							</tr>
 						{/foreach}
-					
+
 						{foreach from="$server_list" item="server"}
 							<tr class="tablerow1">
 								<td colspan="2" class="tablerow1" id="sa{$server.sid}"><i>Retrieving Hostname... {$server.ip}:{$server.port}</i></td>
 								<td align="center" class="tablerow1">
 									<input type="checkbox" name="servers[]" id="servers[]" value="s{$server.sid}" />
-						  		</td> 
+						  		</td>
 							</tr>
 						{/foreach}
 			  		</table>
 		  		</td>
 			</tr>
 		</table>
-	
-		
-		
+
+
+
 		<br />
-		
-		
-		
+
+
+
 		<h3>Admin Permissions</h3>
 		<table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
 			<tr>
 			    <td valign="top" width="35%">
 			    	<div class="rowdesc">
-			    		{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose custom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose custom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Server Admin Group 
+			    		{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose custom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose custom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Server Admin Group
 			    	</div>
 			    </td>
 			    <td>
@@ -168,7 +169,7 @@
 		   	<tr>
 		    	<td valign="top">
 		    		<div class="rowdesc">
-		    			{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose custom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose custom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Web Admin Group 
+		    			{help_icon title="Admin Group" message="<b>Custom Permisions: </b><br>Select this to choose custom permissions for this admin.<br><br><b>New Group: </b><br>Select this to choose custom permissions and then save the permissions as a new group.<br><br><b>Groups: </b><br>Select a pre-made group to add the admin to."}Web Admin Group
 		    		</div>
 		    	</td>
 		    	<td>
@@ -203,3 +204,4 @@
         {$server_script}
 	</div>
 {/if}
+</div>

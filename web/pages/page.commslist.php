@@ -35,8 +35,8 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-if ($GLOBALS['config']['config.enablecomms'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+if (!Config::getBool('config.enablecomms')) {
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 $BansPerPage = SB_BANS_PER_PAGE;
@@ -104,10 +104,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Player UnGagged', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        $log = new CSystemLog("m", "Player UnGagged", "'" . StripQuotes($row['name']) . "' (" . $row['authid'] . ") has been ungagged");
+        echo "<script>ShowBox('Player UnGagged', '" . $row['name'] . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        Log::add("m", "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "unmute" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -149,10 +149,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Player UnMuted', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        $log = new CSystemLog("m", "Player UnMuted", "'" . StripQuotes($row['name']) . "' (" . $row['authid'] . ") has been unmuted");
+        echo "<script>ShowBox('Player UnMuted', '" . $row['name'] . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        Log::add("m", "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "delete") {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -199,10 +199,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Block Deleted', 'The block for \'" . StripQuotes($steam['name']) . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
-        $log = new CSystemLog("m", "Block Deleted", "Block '" . StripQuotes($steam['name']) . "' (" . $steam['authid'] . ") has been deleted.");
+        echo "<script>ShowBox('Block Deleted', 'The block for \'" . $steam['name'] . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
+        Log::add("m", "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
-        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
+        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
     }
 }
 
@@ -359,7 +359,7 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "admin":
-            if ($GLOBALS['config']['banlist.hideadminname'] && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -470,7 +470,7 @@ while (!$res->EOF) {
     $steam3parts         = explode(':', $steam2id);
     $data['steamid3']    = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
 
-    if (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()) {
+    if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
         $data['admin'] = stripslashes($res->fields['admin_name']);
@@ -505,7 +505,7 @@ while (!$res->EOF) {
 
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
-        if (isset($removedby[0])) {
+        if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
         }
     } else if ($data['ban_length'] == 'Permanent') {
@@ -539,16 +539,16 @@ while (!$res->EOF) {
 
     switch ($data['type']) {
         case 2:
-            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         case 1:
-            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         default:
             break;
     }
 
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0);return false;");
+    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0);return false;");
 
     $data['server_id'] = $res->fields['ban_server'];
 
@@ -611,7 +611,7 @@ while (!$res->EOF) {
 
                 $cdata['comname']    = $commentres->fields['comname'];
                 $cdata['added']      = date($dateformat, $commentres->fields['added']);
-                $cdata['commenttxt'] = RemoveCode($commentres->fields['commenttxt']);
+                $cdata['commenttxt'] = $commentres->fields['commenttxt'];
                 $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
@@ -760,7 +760,7 @@ $theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideadminname', (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()));
+$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
 $theme->assign('can_delete', $userbank->HasAccess(ADMIN_DELETE_BAN));
 $theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));

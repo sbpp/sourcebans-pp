@@ -32,13 +32,6 @@ if (!defined("IN_SB")) {
 RewritePageTitle("Admin Login");
 
 global $userbank, $theme;
-$submenu = array(
-    array(
-        "title" => 'Lost Your Password?',
-        "url" => 'index.php?p=lostpassword'
-    )
-);
-SubMenu($submenu);
 if (isset($_GET['m'])) {
     switch ($_GET['m']) {
         case 'no_access':
@@ -71,9 +64,8 @@ HTML;
     }
 }
 
-$steam_conf_value = get_steamenabled_conf($confvalue);
-$theme->assign('steamlogin_show', $steam_conf_value);
-$theme->assign('redir', "DoLogin('" . (isset($_SESSION['q']) ? $_SESSION['q'] : '') . "');");
+$theme->assign('steamlogin_show', Config::getBool('config.enablesteamlogin'));
+$theme->assign('redir', "DoLogin('');");
 $theme->left_delimiter  = "-{";
 $theme->right_delimiter = "}-";
 $theme->display('page_login.tpl');
