@@ -2,7 +2,7 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+Copyright ï¿½ 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
 SourceBans++ is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
@@ -18,9 +18,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Copyright ï¿½ 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
@@ -42,7 +42,7 @@ while (!$server_list->EOF) {
 $serverscript .= "</script>";
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
 
-$theme->assign('hideplayerips', (isset($GLOBALS['config']['banlist.hideplayerips']) && $GLOBALS['config']['banlist.hideplayerips'] == "1" && !$userbank->is_admin()));
+$theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
 $theme->assign('is_admin', $userbank->is_admin());
 $theme->assign('admin_list', $admin_list);
 $theme->assign('server_list', $servers);
@@ -53,14 +53,13 @@ $theme->display('box_admin_bans_search.tpl');
 <script type="text/javascript">
 function switch_length(opt)
 {
-	if(opt.options[opt.selectedIndex].value=='other')
-	{
-		$('other_length').setStyle('display', 'block');
-		$('other_length').focus();
-		$('length').setStyle('width', '20px');
-	} else { 
-		$('other_length').setStyle('display', 'none');
-		$('length').setStyle('width', '210px');
-	}
+    if (opt.options[opt.selectedIndex].value=='other') {
+        $('other_length').setStyle('display', 'block');
+        $('other_length').focus();
+        $('length').setStyle('width', '20px');
+    } else {
+        $('other_length').setStyle('display', 'none');
+        $('length').setStyle('width', '210px');
+    }
 }
-</script>
+</script>

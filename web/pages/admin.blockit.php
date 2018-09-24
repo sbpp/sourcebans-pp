@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -46,7 +46,7 @@ function LoadServers2($check, $type, $length)
     global $userbank, $username;
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to use blockit, but doesn't have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to use blockit, but doesn't have access.");
         return $objResponse;
     }
     $id      = 0;
@@ -73,23 +73,23 @@ function BlockPlayer($check, $sid, $num, $type, $length)
     global $userbank, $username;
     $sid    = (int) $sid;
     $length = (int) $length;
-    
+
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
-        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to process a playerblock, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", "$username tried to process a playerblock, but doesnt have access.");
         return $objResponse;
     }
-    
+
     //get the server data
     $sdata = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '" . $sid . "';");
-    
+
     //test if server is online
     if ($test = @fsockopen($sdata['ip'], $sdata['port'], $errno, $errstr, 2)) {
         @fclose($test);
         require_once(INCLUDES_PATH . "/CServerRcon.php");
-        
+
         $r = new CServerRcon($sdata['ip'], $sdata['port'], $sdata['rcon']);
-        
+
         if (!$r->Auth()) {
             $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '" . $sid . "' LIMIT 1;");
             $objResponse->addAssign("srv_$num", "innerHTML", "<font color='red' size='1'>Wrong RCON Password, please change!</font>");
@@ -97,30 +97,32 @@ function BlockPlayer($check, $sid, $num, $type, $length)
             return $objResponse;
         }
         $ret = $r->rconCommand("status");
-        
+
         // show hostname instead of the ip, but leave the ip in the title
         require_once("../includes/system-functions.php");
         $hostsearch = preg_match_all('/hostname:[ ]*(.+)/', $ret, $hostname, PREG_PATTERN_ORDER);
         $hostname   = trunc(htmlspecialchars($hostname[1][0]), 25, false);
         if (!empty($hostname))
             $objResponse->addAssign("srvip_$num", "innerHTML", "<font size='1'><span title='" . $sdata['ip'] . ":" . $sdata['port'] . "'>" . $hostname . "</span></font>");
-        
+
         $gothim = false;
         $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
+
         //search for the steamid on the server
-        foreach ($matches[3] AS $match) {
+        foreach ($matches[3] as $match) {
+            $match = \SteamID\SteamID::toSteam2($match);
             if (substr($match, 8) == substr($check, 8)) {
                 // gotcha!!! kick him!
                 $gothim = true;
                 $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");
                 $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.blockit.php"));
                 $kick   = $r->sendCommand("sc_fw_block " . $type . " " . $length . " " . $match);
-                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & blocked!!!</u></b></font>");
+                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & blocked!</u></b></font>");
                 $objResponse->addScript("set_counter('-1');");
                 return $objResponse;
             }
         }
-        
+
         if (!$gothim) {
             $objResponse->addAssign("srv_$num", "innerHTML", "<font size='1'>Player not found.</font>");
             $objResponse->addScript('set_counter(1);');

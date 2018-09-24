@@ -1,13 +1,14 @@
+<div id="admin-page-content">
+    <div class="tabcontent" id="List admins">
 {if not $permission_listadmin}
 	Access Denied
 {else}
-
 <h3>Admins (<span id="admincount">{$admin_count}</span>)</h3>
 Click on an admin to see more detailed information and actions to perform on them.<br /><br />
 
 {php} require (TEMPLATES_PATH . "/admin.admins.search.php");{/php}
 
-<div id="banlist-nav"> 
+<div id="banlist-nav">
 {$admin_nav}
 </div>
 <div id="banlist">
@@ -38,8 +39,28 @@ Click on an admin to see more detailed information and actions to perform on the
 				            <td width="30%" valign="top" class="front-module-line"><b>Action</b></td>
 			          	</tr>
 			          	<tr align="left">
-				            <td valign="top">{$admin.server_flag_string}</td>
-				            <td valign="top">{$admin.web_flag_string}</td>
+				            <td valign="top">
+                                <span style='font-size:10px;color:#1b75d1;'>Web Permissions</span>
+                                <br/>
+                                {if $admin.server_flag_string}
+                                    {foreach from=$admin.server_flag_string item=permission}
+                                        &bull; {$permission} <br/>
+                                    {/foreach}
+                                {else}
+                                    <i>None</i>
+                                {/if}
+                            </td>
+				            <td valign="top">
+                                <span style='font-size:10px;color:#1b75d1;'>Server Permissions</span>
+                                <br/>
+                                {if $admin.web_flag_string}
+                                    {foreach from=$admin.web_flag_string item=permission}
+                                        &bull; {$permission} <br/>
+                                    {/foreach}
+                                {else}
+                                    <i>None</i>
+                                {/if}
+                            </td>
 				            <td width="30%" valign="top">
 								<div class="ban-edit">
 						        	<ul>
@@ -77,3 +98,4 @@ Click on an admin to see more detailed information and actions to perform on the
 </div>
 <script type="text/javascript">InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
 {/if}
+</div>

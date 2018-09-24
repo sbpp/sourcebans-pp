@@ -31,23 +31,9 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
     $validation = $_GET['validation'];
 
     if (is_array($email) || is_array($validation)) {
-        CreateRedBox("Error", "Invalid request.");
-
-        new CSystemLog("w", "Hacking attempt", "Attempted SQL-Injection.");
+        print "<script>ShowBox('Error', 'Invalid request.', 'red');</script>";
+        Log::add("w", "Hacking attempt", "Attempted SQL-Injection.");
         PageDie();
-    }
-
-    preg_match("/[\w\.]*/", $_SERVER['HTTP_HOST'], $match);
-
-    if ($match[0] != $_SERVER['HTTP_HOST']) {
-        echo '<div id="msg-red" style="">
-			<i><img src="./images/warning.png" alt="Warning" /></i>
-			<b>Error</b>
-			<br />
-			An unknown error occured.
-			</div>';
-        $log = new CSystemLog("w", "Hacking Attempt", "Attempted password reset email injection. Using: " . $_SERVER['HTTP_HOST']);
-        exit();
     }
 
     if (strlen($validation) < 60) {
@@ -74,7 +60,7 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
         $message .= "Your password was changed to: " . $newpass . "\n\n";
         $message .= "Login to your SourceBans account and change your password in Your Account.\n";
 
-        $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
+        $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
         $m       = mail($email, "SourceBans Password Reset", $message, $headers);
 
         echo '<div id="msg-blue" style="">

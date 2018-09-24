@@ -29,6 +29,20 @@
 #endif
 #define _sourcecomms_included
 
+/**
+ * @section Int definitions for punishments types.
+ */
+
+#define TYPE_MUTE           1   /**< Voice Mute */
+#define TYPE_GAG            2   /**< Gag (text chat) */
+#define TYPE_SILENCE        3   /**< Silence (mute + gag) */
+#define TYPE_UNMUTE         4   /**< Voice Unmute*/
+#define TYPE_UNGAG          5   /**< Ungag*/
+#define TYPE_UNSILENCE      6   /**< Unsilence */
+#define TYPE_TEMP_UNMUTE    14  /**< Temp mute removed */
+#define TYPE_TEMP_UNGAG     15  /**< Temp gag removed */
+#define TYPE_TEMP_UNSILENCE 16  /**< Temp silence removed */
+
 /* Punishments types */
 enum bType {
 	bNot = 0,  // Player chat or voice is not blocked
@@ -49,7 +63,7 @@ enum bType {
  * @param reason		Reason for punishment.
  * @return				True if this caused a change in mute state, false otherwise.
  */
-native bool:SourceComms_SetClientMute(client, bool:muteState, muteLength = -1, bool:saveToDB = false, const String:reason[] = "Muted through natives");
+native bool SourceComms_SetClientMute(int client, bool muteState, int muteLength = -1, bool saveToDB = false, const char[] reason = "Muted through natives");
 
 /**
  * Sets a client's gag state.
@@ -63,7 +77,7 @@ native bool:SourceComms_SetClientMute(client, bool:muteState, muteLength = -1, b
  * @param reason		Reason for punishment.
  * @return				True if this caused a change in gag state, false otherwise.
  */
-native bool:SourceComms_SetClientGag(client, bool:gagState, gagLength = -1, bool:saveToDB = false, const String:reason[] = "Gagged through natives");
+native bool SourceComms_SetClientGag(int client, bool gagState, int gagLength = -1, bool saveToDB = false, const char[] reason = "Gagged through natives");
 
 /**
  * Returns the client's mute type
@@ -71,7 +85,7 @@ native bool:SourceComms_SetClientGag(client, bool:gagState, gagLength = -1, bool
  * @param client	The client index of the player to check mute status
  * @return          The client's current mute type index (see enum bType in the begin).
  */
-native bType:SourceComms_GetClientMuteType(client);
+native bType SourceComms_GetClientMuteType(int client);
 
 
 /**
@@ -80,12 +94,23 @@ native bType:SourceComms_GetClientMuteType(client);
  * @param client	The client index of the player to check gag status
  * @return          The client's current gag type index (see enum bType in the begin).
  */
-native bType:SourceComms_GetClientGagType(client);
+native bType SourceComms_GetClientGagType(int client);
 
-public SharedPlugin:__pl_sourcecomms = 
+/**
+ * Called when added communication block for player.
+ *
+ * @param client	The client index of the admin who is blocking the client.
+ * @param target	The client index of the player to blocked.
+ * @param time		The time to blocked the player for (in minutes, 0 = permanent).
+ * @param type		The type of block. See section "Int definitions for punishments types".
+ * @param reason	The reason to block the player.
+ */
+forward void SourceComms_OnBlockAdded(int client, int target, int time, int type, char[] reason);
+
+public SharedPlugin __pl_sourcecomms =
 {
-	name = "sourcecomms", 
-	file = "sourcecomms.smx", 
+	name = "sourcecomms++",
+	file = "sbpp_comms.smx", 
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else
@@ -93,11 +118,11 @@ public SharedPlugin:__pl_sourcecomms =
 	#endif
 };
 
-public __pl_sourcecomms_SetNTVOptional()
+public void __pl_sourcecomms_SetNTVOptional()
 {
 	MarkNativeAsOptional("SourceComms_SetClientMute");
 	MarkNativeAsOptional("SourceComms_SetClientGag");
 	MarkNativeAsOptional("SourceComms_GetClientMuteType");
 	MarkNativeAsOptional("SourceComms_GetClientGagType");
-	
-} 
+
+}

@@ -18,20 +18,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
-global $userbank, $ui, $theme;
+global $userbank, $theme;
+use xPaw\SourceQuery\SourceQuery;
+require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
+
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-if ($GLOBALS['config']['config.enablesubmit'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+if (!Config::getBool('config.enablesubmit')) {
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
@@ -52,11 +55,11 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     $SID           = (int) $_POST['server'];
     $validsubmit   = true;
     $errors        = "";
-    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !validate_steam($SteamID)) {
+    if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     }
-    if (strlen($BanIP) != 0 && !validate_ip($BanIP)) {
+    if (strlen($BanIP) != 0 && !filter_var($BanIP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP-address.<br>';
         $validsubmit = false;
     }
@@ -68,7 +71,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }
@@ -77,7 +80,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $validsubmit = false;
     }
     if (!empty($_FILES['demo_file']['name'])) {
-        if (!CheckExt($_FILES['demo_file']['name'], "zip") && !CheckExt($_FILES['demo_file']['name'], "rar") && !CheckExt($_FILES['demo_file']['name'], "dem") && !CheckExt($_FILES['demo_file']['name'], "7z") && !CheckExt($_FILES['demo_file']['name'], "bz2") && !CheckExt($_FILES['demo_file']['name'], "gz")) {
+        if (!checkExtension($_FILES['demo_file']['name'], ['zip', 'rar', 'dem', '7z', 'bz2', 'gz'])) {
             $errors .= '* A demo can only be a dem, zip, rar, 7z, bz2 or a gz filetype.<br>';
             $validsubmit = false;
         }
@@ -90,38 +93,54 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* The player is already banned permanent.<br>';
         $validsubmit = false;
     }
-    
-    
-    if (!$validsubmit)
-        CreateRedBox("Error", $errors);
-    
+
+
+    if (!$validsubmit) {
+        print "<script>ShowBox('Error', '$errors', 'red');</script>";
+    }
+
     if ($validsubmit) {
         $filename = md5($SteamID . time());
         //echo SB_DEMOS."/".$filename;
         $demo     = move_uploaded_file($_FILES['demo_file']['tmp_name'], SB_DEMOS . "/" . $filename);
         if ($demo || empty($_FILES['demo_file']['name'])) {
             if ($SID != 0) {
-                require_once(INCLUDES_PATH . '/CServerInfo.php');
-                $res   = $GLOBALS['db']->GetRow("SELECT ip, port FROM " . DB_PREFIX . "_servers WHERE sid = $SID");
-                $sinfo = new CServerInfo($res[0], $res[1]);
-                $info  = $sinfo->getInfo();
-                if (!empty($info['hostname']))
-                    $mailserver = "Server: " . $info['hostname'] . " (" . $res[0] . ":" . $res[1] . ")\n";
-                else
-                    $mailserver = "Server: Error Connecting (" . $res[0] . ":" . $res[1] . ")\n";
-                $modid = $GLOBALS['db']->GetRow("SELECT m.mid FROM `" . DB_PREFIX . "_servers` as s LEFT JOIN `" . DB_PREFIX . "_mods` as m ON m.mid = s.modid WHERE s.sid = '" . $SID . "';");
+                $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+                $GLOBALS['PDO']->bind(':sid', $SID);
+                $server = $GLOBALS['PDO']->single();
+
+                $query = new SourceQuery();
+                try {
+                    $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+                    $info = $query->GetInfo();
+                } catch (Exception $e) {
+                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
+                } finally {
+                    $query->Disconnect();
+                }
+
+                if (!empty($info['HostName'])) {
+                    $mailserver = "Server: ".$info['HostName']." (".$server['ip'].":".$server['port'].")\n";
+                } else {
+                    $mailserver = "Server: Error Connecting (".$server['ip'].":".$server['port'].")\n";
+                }
+
+                $GLOBALS['PDO']->query("SELECT m.mid FROM `:prefix_servers` as s LEFT JOIN `:prefix_mods` as m ON m.mid = s.modid WHERE s.sid = :sid");
+                $GLOBALS['PDO']->bind(':sid', $SID);
+                $modid = $GLOBALS['PDO']->single();
             } else {
                 $mailserver = "Server: Other server\n";
-                $modid[0]   = 0;
+                $modid['mid']   = 0;
             }
-            if ($SteamID == "STEAM_0:")
+            if ($SteamID == "STEAM_0:") {
                 $SteamID = "";
+            }
             $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_submissions(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)");
             $GLOBALS['db']->Execute($pre, array(
                 $SteamID,
                 $PlayerName,
                 $Email,
-                $modid[0],
+                $modid['mid'],
                 $BanReason,
                 $_SERVER['REMOTE_ADDR'],
                 $SubmitterName,
@@ -129,13 +148,14 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 $SID
             ));
             $subid = (int) $GLOBALS['db']->Insert_ID();
-            
-            if (!empty($_FILES['demo_file']['name']))
+
+            if (!empty($_FILES['demo_file']['name'])) {
                 $GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_demos(demid,demtype,filename,origname) VALUES (?, 'S', ?, ?)", array(
                     $subid,
                     $filename,
                     $_FILES['demo_file']['name']
                 ));
+            }
             $SteamID       = "";
             $BanIP         = "";
             $PlayerName    = "";
@@ -143,44 +163,48 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $SubmitterName = "";
             $Email         = "";
             $SID           = -1;
-            
+
             // Send an email when ban was posted
-            $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
-            
+            $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
+
             $admins = $userbank->GetAllAdmins();
             $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") - 5);
-            foreach ($admins AS $admin) {
+            foreach ($admins as $admin) {
                 $message = "";
                 $message .= "Hello " . $admin['user'] . ",\n\n";
                 $message .= "A new ban submission has been posted on your SourceBans page:\n\n";
                 $message .= "Player: " . $_POST['PlayerName'] . " (" . $_POST['SteamID'] . ")\nDemo: " . (empty($_FILES['demo_file']['name']) ? 'no' : 'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id=' . $subid . ')') . "\n" . $mailserver . "Reason: " . $_POST['BanReason'] . "\n\n";
-                $message .= "Click the link below to view the current ban submissions.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "index.php?p=admin&c=bans#^2";
-                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid']))
+                $message .= "Click the link below to view the current ban submissions.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "index.php?p=admin&c=bans#%5E2";
+                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid'])) {
                     mail($admin['email'], "[SourceBans] Ban Submission Added", $message, $headers);
+                }
             }
-            CreateGreenBox("Successful", "Your submission has been added into the database, and will be reviewed by one of our admins");
+            print "<script>ShowBox('Successful', 'Your submission has been added into the database, and will be reviewed by one of our admins.', 'green');</script>";
         } else {
-            CreateRedBox("Error", "There was an error uploading your demo to the server. Please try again later.");
-            $log = new CSystemLog("e", "Demo Upload Failed", "A demo failed to upload for a submission from (" . $Email . ")");
+            print "<script>ShowBox('Error', 'There was an error uploading your demo to the server. Please try again later.', 'red');</script>";
+            Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }
     }
 }
 
-//$mod_list = $GLOBALS['db']->GetAssoc("SELECT mid,name FROM ".DB_PREFIX."_mods WHERE `mid` > 0 AND `enabled`= 1 ORDER BY mid ");
-require_once INCLUDES_PATH . '/CServerInfo.php';
 //serverlist
-$server_list = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1 ORDER BY modid, sid");
-$servers     = array();
-while (!$server_list->EOF) {
-    $info  = array();
-    $sinfo = new CServerInfo($server_list->fields[1], $server_list->fields[2]);
-    $info  = $sinfo->getInfo();
-    if (empty($info['hostname'])) {
-        $info['hostname'] = "Error Connecting (" . $server_list->fields[1] . ":" . $server_list->fields[2] . ")";
+$GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid");
+$servers = $GLOBALS['PDO']->resultset();
+
+foreach ($servers as $key => $server) {
+    $query = new SourceQuery();
+    try {
+        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+        $info = $query->GetInfo();
+    } catch (Exception $e) {
+        $servers[$key]['hostname'] = "Error Connecting (".$server['ip'].":".$server['port'].")";
+    } finally {
+        $query->Disconnect();
     }
-    $info['sid'] = $server_list->fields[0];
-    array_push($servers, $info);
-    $server_list->MoveNext();
+
+    if (!empty($info['HostName'])) {
+        $servers[$key]['hostname'] = $info['HostName'];
+    }
 }
 
 $theme->assign('STEAMID', $SteamID == "" ? "STEAM_0:" : $SteamID);

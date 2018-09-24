@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright � 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -26,8 +26,8 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $theme;
-if ($GLOBALS['config']['config.enableprotest'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+if (!Config::getBool('config.enableprotest')) {
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 if (!defined("IN_SB")) {
@@ -51,11 +51,12 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     $validsubmit = true;
     $errors      = "";
     $BanId       = -1;
-    
-    if (get_magic_quotes_gpc())
+
+    if (get_magic_quotes_gpc()) {
         $UnbanReason = stripslashes($UnbanReason);
-    
-    if ($Type == 0 && !validate_steam($SteamID)) {
+    }
+
+    if ($Type == 0 && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     } elseif ($Type == 0) {
@@ -75,7 +76,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
     }
-    if ($Type == 1 && !validate_ip($IP)) {
+    if ($Type == 1 && !filter_var($IP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP.<br>';
         $validsubmit = false;
     } elseif ($Type == 1) {
@@ -103,14 +104,15 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }
-    
-    if (!$validsubmit)
-        CreateRedBox("Error", $errors);
-    
+
+    if (!$validsubmit) {
+        print "<script>ShowBox('Error', '$errors', 'red');</script>";
+    }
+
     if ($validsubmit && $BanId != -1) {
         $UnbanReason = trim($UnbanReason);
         $pre         = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_protests(bid,datesubmitted,reason,email,archiv,pip) VALUES (?,UNIX_TIMESTAMP(),?,?,0,?)");
@@ -122,20 +124,20 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         ));
         $protid      = $GLOBALS['db']->Insert_ID();
         $protadmin   = $GLOBALS['db']->GetRow("SELECT ad.user FROM " . DB_PREFIX . "_protests p, " . DB_PREFIX . "_admins ad, " . DB_PREFIX . "_bans b WHERE p.pid = '" . $protid . "' AND b.bid = p.bid AND ad.aid = b.aid");
-        
+
         $Type        = 0;
         $SteamID     = "";
         $IP          = "";
         $PlayerName  = "";
         $UnbanReason = "";
         $Email       = "";
-        
+
         // Send an email when protest was posted
-        $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
-        
+        $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
+
         $emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `" . DB_PREFIX . "_admins` WHERE aid = (SELECT aid FROM `" . DB_PREFIX . "_bans` WHERE bid = '" . (int) $BanId . "');");
         $requri    = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
-        if (isset($GLOBALS['config']['protest.emailonlyinvolved']) && $GLOBALS['config']['protest.emailonlyinvolved'] == 1 && !empty($emailinfo->fields['email']))
+        if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo->fields['email'])) {
             $admins = array(
                 array(
                     'aid' => $emailinfo->fields['aid'],
@@ -143,19 +145,21 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
                     'email' => $emailinfo->fields['email']
                 )
             );
-        else
+        } else {
             $admins = $userbank->GetAllAdmins();
-        foreach ($admins AS $admin) {
+        }
+        foreach ($admins as $admin) {
             $message = "";
             $message .= "Hello " . $admin['user'] . ",\n\n";
             $message .= "A new ban protest has been posted on your SourceBans page.\n\n";
             $message .= "Player: " . $_POST['PlayerName'] . " (" . $_POST['SteamID'] . ")\nBanned by: " . $protadmin['user'] . "\nMessage: " . $_POST['BanReason'] . "\n\n";
-            $message .= "Click the link below to view the current ban protests.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=admin&c=bans#^1";
-            if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid']))
+            $message .= "Click the link below to view the current ban protests.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=admin&c=bans#%5E1";
+            if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid'])) {
                 mail($admin['email'], "[SourceBans] Ban Protest Added", $message, $headers);
+            }
         }
-        
-        CreateGreenBox("Successful", "Your protest has been sent.");
+
+        print "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
     }
 }
 
@@ -170,8 +174,8 @@ $theme->display('page_protestban.tpl');
 <script type="text/javascript">
 function changeType(szListValue)
 {
-	$('steam.row').style.display = (szListValue == "0" ? "" : "none");
-	$('ip.row').style.display    = (szListValue == "1" ? "" : "none");
+    $('steam.row').style.display = (szListValue == "0" ? "" : "none");
+    $('ip.row').style.display    = (szListValue == "1" ? "" : "none");
 }
 $('Type').options[<?=$Type;?>].selected = true;
 changeType(<?=$Type?>);

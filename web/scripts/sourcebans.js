@@ -1,6 +1,6 @@
 /*************************************************************************
 	This file is part of SourceBans++
-	
+
 	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
 	SourceBans++ is licensed under a
@@ -17,7 +17,7 @@
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-	This program is based off work covered by the following copyright(s): 
+	This program is based off work covered by the following copyright(s):
 		SourceBans 1.4.11
 		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 		Licensed under CC BY-NC-SA 3.0
@@ -74,12 +74,12 @@ function ProcessAdminTabs()
 	var pos = url.indexOf('^')+1;
 	var tabNo = url.charAt(pos);
 	SwapPane(tabNo);
-	
+
 	var upos = url.indexOf('~')+1;
 	var utabNo = url.charAt(upos+1);
 	var utabType = url.charAt(upos)
 	Swap2ndPane(utabNo, utabType);
-	
+
 	if(parseInt(pos) == 0)
 	{
 		return -1;
@@ -135,7 +135,7 @@ function SwapPane(id)
 			i2++;
 		}
 		$(document.getElementById("tab-" + id)).addClass('active');
-		$(document.getElementById(id)).setStyle('display', 'block');	
+		$(document.getElementById(id)).setStyle('display', 'block');
 	}
 }
 
@@ -175,7 +175,7 @@ function InitAccordion(opener, element, container, num)
 		}, this);
 		return this.start(obj);
 	}
-  }); 
+  });
 
 	accordion = new ExtendedAccordion(opener, element, {
 		opacity: true,
@@ -186,10 +186,10 @@ function InitAccordion(opener, element, container, num)
 			toggler.setStyle('cursor', 'pointer');
 			toggler.setStyle('background-color', '');
 		},
-	 
+
 		onBackground: function(toggler, element){
 			toggler.setStyle('cursor', 'pointer');
-			toggler.setStyle('background-color', '');		
+			toggler.setStyle('background-color', '');
 		}
 	}, $(container));
 	accordion.hideAll();
@@ -214,7 +214,7 @@ function FadeElOut(id, time)
 	myEffects.start({'opacity': [0]});
 	var d = id;
 	setTimeout("$(document.getElementById('" + d + "')).setStyle('display', 'none');$(document.getElementById('" + d + "')).setOpacity(0);", time);
-	
+
 	return;
 }
 function FadeElIn(id, time)
@@ -247,7 +247,7 @@ function DoLogin(redir)
 		$('loginUsername.msg').setHTML('');
 		$('loginUsername.msg').setStyle('display', 'none');
 	}
-	
+
 	if(!$('loginPassword').value)
 	{
 		$('loginPassword.msg').setHTML('You must enter your password!');
@@ -261,10 +261,10 @@ function DoLogin(redir)
 
 	if(err)
 		return 0;
-		
+
 	if(redir == "undefined")
 		redir = "";
-	xajax_Plogin(document.getElementById('loginUsername').value, 
+	xajax_Plogin(document.getElementById('loginUsername').value,
 				document.getElementById('loginPassword').value,
 				 document.getElementById('loginRememberMe').checked,
 				 redir,
@@ -314,7 +314,7 @@ function RemoveSubmission(id, name, archiv)
 	}
 	if(noPerm == false)
 		return;
-		
+
 	xajax_RemoveSubmission(id, archiv);
 }
 
@@ -352,7 +352,7 @@ function RemoveBan(id, key, page, name, confirm, bulk)
 		ShowBox('Delete Ban', 'Are you sure you want to delete the ban'+(bulk=="true"?"s":"")+' for '+(bulk=="true"?"those players":"\'"+ name +"\'")+'?', 'blue', '', true);
 		$('dialog-control').setHTML('<input type="button" onclick="RemoveBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+(bulk=="true"?", \'true\'":"")+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(confirm==1) {
-		if(page != "") 
+		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
@@ -366,7 +366,7 @@ function UnbanBan(id, key, page, name, popup, bulk)
 		ShowBox('Unban Reason', '<b>Please give a short comment, why you are going to unban '+(bulk=="true"?"those players":"\'"+ name +"\'")+'!</b><br><textarea rows="3" cols="40" name="ureason" id="ureason" style="overflow:auto;"></textarea><br><div id="ureason.msg" class="badentry"></div>', 'blue', '', true);
 		$('dialog-control').setHTML('<input type="button" onclick="UnbanBan(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'0\''+(bulk=="true"?", \'true\'":"")+');" name="uban" class="btn ok" onmouseover="ButtonOver(\'uban\')" onmouseout="ButtonOver(\'uban\')" id="uban" value="Unban Ban" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(popup==0) {
-		if(page != "") 
+		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
@@ -384,7 +384,7 @@ function UnbanBan(id, key, page, name, popup, bulk)
 }
 
 function BoxToSrvMask()
-{	
+{
 	var string = "";
 	if(document.getElementById('s1'))
 	{
@@ -449,7 +449,7 @@ function BoxToMask()
 			Mask |= ADMIN_EDIT_ADMINS;
 		if(document.getElementById('p7').checked)
 			Mask |= ADMIN_DELETE_ADMINS;
-			
+
 		if(document.getElementById('p9').checked)
 			Mask |= ADMIN_LIST_SERVERS;
 		if(document.getElementById('p10').checked)
@@ -458,7 +458,7 @@ function BoxToMask()
 			Mask |= ADMIN_EDIT_SERVERS;
 		if(document.getElementById('p12').checked)
 			Mask |= ADMIN_DELETE_SERVERS;
-			
+
 		if(document.getElementById('p14').checked)
 			Mask |= ADMIN_ADD_BAN;
 		if(document.getElementById('p16').checked)
@@ -495,10 +495,10 @@ function BoxToMask()
 			Mask |= ADMIN_EDIT_GROUPS;
 		if(document.getElementById('p25').checked)
 			Mask |= ADMIN_DELETE_GROUPS;
-			
+
 		if(document.getElementById('p26').checked)
 			Mask |= ADMIN_WEB_SETTINGS;
-			
+
 		if(document.getElementById('p28').checked)
 			Mask |= ADMIN_LIST_MODS;
 		if(document.getElementById('p29').checked)
@@ -507,7 +507,7 @@ function BoxToMask()
 			Mask |= ADMIN_EDIT_MODS;
 		if(document.getElementById('p31').checked)
 			Mask |= ADMIN_DELETE_MODS;
-			
+
 		if(document.getElementById('p2').checked)
 			Mask |= ADMIN_OWNER;
 	}
@@ -524,7 +524,7 @@ function UpdateCheckBox(tgl, start, stop)
 				$('p' + i).checked = true;
 			else
 				$('p' + i).checked = false;
-		}	
+		}
 	}
 
 	// Other Arguments is individual items not available in the range
@@ -550,12 +550,12 @@ function ProcessGroup()
 function update_web()
 {
 	$('webperm').setHTML('');
-	
+
 	if(document.getElementById('webg').value == "c" || document.getElementById('webg').value == "n") {
 		$('web.msg').setHTML('Please Wait...');
 		$('web.msg').setStyle('display', 'block');
 	}
-	
+
 	if(document.getElementById('webg').value == "c")
 		var height = 390;
 	else if(document.getElementById('webg').value == "n")
@@ -566,7 +566,7 @@ function update_web()
 		var height = 1;
 	}
 	Shrink('webperm', 1000, height);
-	
+
 	if(document.getElementById('webg').value == "c" || document.getElementById('webg').value == "n")
 		setTimeout("xajax_UpdateAdminPermissions(1, document.getElementById('webg').value)",1000);
 	else {
@@ -578,7 +578,7 @@ function update_web()
 function update_server_groups()
 {
 	$('nsgroup').setHTML('');
-	
+
 	if(document.getElementById('serverg').value == "n")
 	{
 		$('group.msg').setHTML('Please Wait...');
@@ -601,7 +601,7 @@ function ProcessAddAdmin()
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
 	var server_a_pass = "-1";
-	
+
 	var el = document.getElementsByName('group[]');
 	var grp = "";
   	for(i=0;i<el.length;i++){
@@ -609,7 +609,7 @@ function ProcessAddAdmin()
        		grp = grp + "," + el[i].value;
     	}
   	}
-  	
+
   	var el = document.getElementsByName('servers[]');
 	var svr = "";
   	for(i=0;i<el.length;i++){
@@ -617,7 +617,7 @@ function ProcessAddAdmin()
        		svr = svr + "," + el[i].value;
     	}
   	}
-  	
+
     var serverg = document.getElementById('serverg').value;
   	if(serverg == "-3")
   	{
@@ -630,10 +630,10 @@ function ProcessAddAdmin()
   		//webg = "c";
   		Mask = 0;
   	}
-  	
+
   	if(document.getElementById('a_useserverpass').checked)
   		server_a_pass = document.getElementById('a_serverpass').value;
-  
+
 	if(document.getElementById('webname') && !document.getElementById('servername'))
 	xajax_AddAdmin(Mask,srvMask, document.getElementById('adminname').value, //Admin name
 					document.getElementById('steam').value, //Admin Steam
@@ -641,7 +641,7 @@ function ProcessAddAdmin()
 					document.getElementById('password').value,//passwrds
 					document.getElementById('password2').value,
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
 					document.getElementById('webname').value,
 					0,
@@ -654,7 +654,7 @@ function ProcessAddAdmin()
 					document.getElementById('password').value,//passwrds
 					document.getElementById('password2').value,
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
 					0,
 					document.getElementById('servername').value,
@@ -667,7 +667,7 @@ function ProcessAddAdmin()
 					document.getElementById('password').value,//passwrds
 					document.getElementById('password2').value,
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
 					document.getElementById('webname').value,
 					document.getElementById('servername').value,
@@ -680,13 +680,13 @@ function ProcessAddAdmin()
 					document.getElementById('password').value,//passwrds
 					document.getElementById('password2').value,
 					serverg, //servergroup
-					webg, 
+					webg,
 					server_a_pass,
 					0,
 					0,
 					grp,
 					svr);
-					
+
 }
 
 function ProcessEditAdminPermissions()
@@ -707,11 +707,11 @@ function ProcessEditAdminPermissions()
 
 function ProcessEditGroup(type, name)
 {
-	
+
 	var Mask = BoxToMask();
 	var srvMask = BoxToSrvMask();
 	var group = $('group_id').value;
-	
+
 	if(name == "")
 	{
 		ShowBox("Error", "You have to type a name for the group.", "red", "", true);
@@ -724,16 +724,16 @@ function ProcessEditGroup(type, name)
 		$('groupname.msg').innerHTML = '';
 		$('groupname.msg').setStyle('display', 'none');
 	}
-	
+
 	if($('immunity') && !IsNumeric($('immunity').value))
 	{
 		ShowBox("Error", "Immunity must be a numerical value (0-9)", "red", "", true);
 		return;
 	}
-	
+
 	var overrides = [];
 	var new_override = {};
-	
+
 	// Handle group overrides
 	if(type == "srv")
 	{
@@ -754,30 +754,30 @@ function ProcessEditGroup(type, name)
 				override_name = [override_name];
 			if($type(override_access) == "element")
 				override_access = [override_access];
-			
-			overrides = new Array(override_id.length);
-			
+
+			overrides = {};
+
 			for(var i=0;i<override_id.length;i++)
 			{
 				overrides[i] = {'id': override_id[i].value, 'type': override_type[i][override_type[i].selectedIndex].value, 'name': override_name[i].value, 'access': override_access[i][override_access[i].selectedIndex].value};
 			}
 		}
-		
+
 		new_override = {'type': $('new_override_type')[$('new_override_type').selectedIndex].value, 'name': $('new_override_name').value, 'access': $('new_override_access')[$('new_override_access').selectedIndex].value};
 	}
-	
-	xajax_EditGroup(group, Mask, srvMask, type, name, overrides, new_override);
+
+	xajax_EditGroup(group, Mask, srvMask, type, name, JSON.stringify(overrides), JSON.stringify(new_override));
 }
 
 function update_server()
 {
 	$('serverperm').setHTML('');
-	
+
 	if(document.getElementById('serverg').value == "c" || document.getElementById('serverg').value == "n") {
 		$('server.msg').setHTML('Please Wait...');
 		$('server.msg').setStyle('display', 'block');
 	}
-	
+
 	if(document.getElementById('serverg').value == "c")
 		var height = 580;
 	else if(document.getElementById('serverg').value == "n")
@@ -788,7 +788,7 @@ function update_server()
 		var height = 1;
 	}
 	Shrink('serverperm', 1000, height);
-	
+
 	if(document.getElementById('serverg').value == "c" || document.getElementById('serverg').value == "n")
 		setTimeout("xajax_UpdateAdminPermissions(2, document.getElementById('serverg').value)",1000);
 	else {
@@ -806,15 +806,15 @@ function process_add_server()
        		grp = grp + "," + el[i].value;
     	}
   	}
-	xajax_AddServer(document.getElementById('address').value, 
-				document.getElementById('port').value, 
-				document.getElementById('rcon').value, 
-				document.getElementById('rcon2').value, 
-				document.getElementById('mod').value, 
+	xajax_AddServer(document.getElementById('address').value,
+				document.getElementById('port').value,
+				document.getElementById('rcon').value,
+				document.getElementById('rcon2').value,
+				document.getElementById('mod').value,
 				document.getElementById('enabled').checked,
-				grp, 
+				grp,
 				-1);
-	
+
 }
 
 function process_edit_server()
@@ -825,7 +825,7 @@ function process_edit_server()
         $('rcon2.msg').setStyle('display', 'block');
         return;
     }
-    
+
     $('rcon2.msg').setStyle('display', 'none');
 	document.forms.editserver.submit();
 }
@@ -900,17 +900,17 @@ var webSelected = new Array();
 var srvSelected = new Array();
 function getMultiple(ob, type) {
 	if(type==1) {
-		while (ob.selectedIndex != -1) 
-		{ 
-			webSelected.push(ob.options[ob.selectedIndex].value); 
-			ob.options[ob.selectedIndex].selected = false; 
+		while (ob.selectedIndex != -1)
+		{
+			webSelected.push(ob.options[ob.selectedIndex].value);
+			ob.options[ob.selectedIndex].selected = false;
 		}
 	}
 	if(type==2) {
-		while (ob.selectedIndex != -1) 
-		{ 
-			srvSelected.push(ob.options[ob.selectedIndex].value); 
-			ob.options[ob.selectedIndex].selected = false; 
+		while (ob.selectedIndex != -1)
+		{
+			srvSelected.push(ob.options[ob.selectedIndex].value);
+			ob.options[ob.selectedIndex].selected = false;
 		}
 	}
 }
@@ -1015,7 +1015,7 @@ function ProcessMod()
 		$('name.msg').setHTML('');
 		$('name.msg').setStyle('display', 'none');
 	}
-	
+
 	if(!$('folder').value)
 	{
 		$('folder.msg').setHTML('You must enter mod\'s folder name.');
@@ -1039,26 +1039,26 @@ function ProcessMod()
 function ShowBox(title, msg, color, redir, noclose)
 {
 	var type = "";
-	
+
 	if(color == "red")
 		color = "error";
 	else if(color == "blue")
 		color = "info";
 	else if(color == "green")
 		color = "ok";
-	
+
 	$('dialog-title').setProperty("class", color);
-	
+
 	$('dialog-icon').setProperty("class", 'icon-'+color);
-	
+
 	$('dialog-title').setHTML(title);
 	$('dialog-content-text').setHTML(msg);
 	FadeElIn('dialog-placement', 750);
-	
+
 	var jsCde = "closeMsg('" + redir + "');";
 	$('dialog-control').setHTML("<input name='dialog-close' onclick=\""+jsCde+"\" class='btn ok' onmouseover=\"ButtonOver('dialog-close')\" onmouseout='ButtonOver(\"dialog-close\")' id=\"dialog-close\" value=\"OK\" type=\"button\">");
 	$('dialog-control').setStyle('display', 'block');
-	
+
 	if(!noclose)
 	{
 		if(redir)
@@ -1106,7 +1106,7 @@ function CheckEmail(type, id)
 		$('subject.msg').setHTML('');
 		$('subject.msg').setStyle('display', 'none');
 	}
-		
+
 	if($('message').value == "") {
 		$('message.msg').setHTML("You must type a message for the email.");
 		$('message.msg').setStyle('display', 'block');
@@ -1115,7 +1115,7 @@ function CheckEmail(type, id)
 		$('message.msg').setHTML('');
 		$('message.msg').setStyle('display', 'none');
 	}
-		
+
 	if(err>0)
 		return;
 	xajax_SendMail($('subject').value, $('message').value, type, id);
@@ -1126,11 +1126,11 @@ function IsNumeric(sText)
    var ValidChars = "0123456789.";
    var IsNumber=true;
    var Char;
- 
-	for (i = 0; i < sText.length && IsNumber == true; i++) 
-	{ 
-		Char = sText.charAt(i); 
-  		if (ValidChars.indexOf(Char) == -1) 
+
+	for (i = 0; i < sText.length && IsNumber == true; i++)
+	{
+		Char = sText.charAt(i);
+  		if (ValidChars.indexOf(Char) == -1)
 		{
 			IsNumber = false;
      	}
@@ -1197,12 +1197,12 @@ function UpdateGroupPermissionCheckBoxes()
 }
 
 function changePage(newPage, type, advSearch, advType)
-{		
+{
 	nextPage = newPage.options[newPage.selectedIndex].value
-	if(advSearch!="" && advType !="") { 
-		var searchlink = "&advSearch="+advSearch+"&advType="+advType; 
-	} else { 
-		var searchlink =""; 
+	if(advSearch!="" && advType !="") {
+		var searchlink = "&advSearch="+advSearch+"&advType="+advType;
+	} else {
+		var searchlink ="";
 	}
 	 if (nextPage != 0)
 	 {
@@ -1258,10 +1258,10 @@ function ProcessComment()
 		$('commenttext.msg').setStyle('display', 'none');
 		err = 0;
 	}
-	
+
 	if(err)
 		return 0;
-	
+
 	if($('cid').value == -1)
 	{
 		xajax_AddComment($('bid').value,
@@ -1495,7 +1495,7 @@ function RemoveBlock(id, key, page, name, confirm)
 		ShowBox('Delete Block', 'Are you sure you want to delete the block for '+ name + '?', 'blue', '', true);
 		$('dialog-control').setHTML('<input type="button" onclick="RemoveBlock(\''+id+'\', \''+key+'\', \''+page+'\', \''+addslashes(name.replace(/\'/g,'\\\''))+'\', \'1\''+');" name="rban" class="btn ok" onmouseover="ButtonOver(\'rban\')" onmouseout="ButtonOver(\'rban\')" id="rban" value="Remove Block" />&nbsp;<input type="button" onclick="closeMsg(\'\');$(\'bulk_action\').options[0].selected=true;" name="astop" class="btn cancel" onmouseover="ButtonOver(\'astop\')" onmouseout="ButtonOver(\'astop\')" id="astop" value="Cancel" />');
 	} else if(confirm==1) {
-		if(page != "") 
+		if(page != "")
 			var pagelink = page;
 		else
 			var pagelink = "";
@@ -1614,4 +1614,22 @@ function search_blocks()
 function ShowBlockBox(check, type, length)
 {
 	ShowBox('Block Added', 'The block has been successfully added<br><iframe id="srvkicker" frameborder="0" width="100%" src="pages/admin.blockit.php?check='+check+'&type='+type+'&length='+length+'"></iframe>', 'green', 'index.php?p=admin&c=comms', true);
+}
+
+function openTab(event, target) {
+    var menu = document.getElementById("admin-page-menu");
+    for (var i = 0; i < menu.children.length - 1; i++) {
+        menu.children[i].classList.remove("active");
+    }
+
+    event.classList.add("active");
+
+    var content = document.getElementsByClassName("tabcontent");
+    for (var i = 0; i < content.length; i++) {
+        if (content[i].id === target) {
+            content[i].style.display = "block";
+        } else {
+            content[i].style.display = "none";
+        }
+    }
 }

@@ -54,13 +54,13 @@
 <br />
 {php} require (TEMPLATES_PATH . "/admin.comms.search.php");{/php}
 <br />
-<div id="banlist-nav"> 
+<div id="banlist-nav">
 {$ban_nav}
 </div>
 <a href="index.php?p=commslist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a>
 <div id="banlist">
 	<table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
-		<tr>			
+		<tr>
 			<td width="8%" height="16" class="listtable_top" align="center"><b>MOD/Type</b></td>
 			<td width="14%" height="16" class="listtable_top" align="center"><b>Date</b></td>
 			<td height="16" class="listtable_top"><b>Player</b></td>
@@ -70,11 +70,11 @@
 			<td width="16%" height="16" class="listtable_top" align="center"><b>Length</b></td>
 		</tr>
 		{foreach from=$ban_list item=ban name=banlist}
-			<tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" 
+			<tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'"
 			{if $ban.server_id != 0}
-				onclick="xajax_ServerHostPlayers({$ban.server_id}, {$ban.ban_id});"
+				onclick="xajax_ServerHostPlayers({$ban.server_id}, 'id', 'host_{$ban.ban_id}');"
 			{/if}
-			>		
+			>
 		<td height="16" align="center" class="listtable_1">{$ban.mod_icon}</td>
         <td height="16" align="center" class="listtable_1">{$ban.ban_date}</td>
         <td height="16" class="listtable_1">
@@ -87,7 +87,7 @@
 		  </div>
 		  <div style="float:right;">
 		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
-		  {$ban.commentdata|@count}&thinsp;<img src="images/details.gif" alt="Comments" title="Comments" style="height:12px;width:12px;" />
+		  {$ban.commentdata|@count}&thinsp;<img src="images/details.png" alt="Comments" title="Comments" style="height:12px;width:12px;" />
 		  {/if}
 		  {if $view_bans}
 		  {$ban.counts}
@@ -108,7 +108,7 @@
 			<!-- ###############[ Start Sliding Panel ]################## -->
 			<tr>
         <td colspan="7" align="center">
-          <div class="opener"> 
+          <div class="opener">
 						<table width="100%" cellspacing="0" cellpadding="0" class="listtable">
               <tr>
               	{if $view_bans}
@@ -116,7 +116,7 @@
               	{else}
               	<td height="16" align="left" class="listtable_top" colspan="2">
               	{/if}
-									<b>Block Details</b>            
+									<b>Block Details</b>
 								</td>
               </tr>
               <tr align="left">
@@ -137,7 +137,7 @@
 					  <li>{$ban.reban_link}</li>
 					  {/if}
                       <li>{$ban.addcomment}</li>
-                      {if ($ban.view_edit && !$ban.unbanned)} 
+                      {if ($ban.view_edit && !$ban.unbanned)}
                       <li>{$ban.edit_link}</li>
                       {/if}
                       {if ($ban.unbanned == false && $ban.view_unban)}
@@ -235,7 +235,7 @@
 							{/if}
 							<tr align="left">
 								<td width="20%" height="16" class="listtable_1">Blocked from</td>
-								<td height="16" class="listtable_1" id="ban_server_{$ban.ban_id}">
+								<td height="16" class="listtable_1" {if $ban.server_id != 0}id="host_{$ban.ban_id}"{/if}>
 									{if $ban.server_id == 0}
 										Web Ban
 									{else}
@@ -299,7 +299,7 @@
 								</td>
 							</tr>
 							{/if}
-						</table>	
+						</table>
 					</div>
           		</td>
           	</tr>
@@ -308,14 +308,14 @@
 	</table><div align="right" style="margin-top: 3px; font-size:7pt">SourceComms plugin &#038;	integration to SourceBans made by <a href="https://github.com/ppalex7" target="_blank">Alex</a></div>
 </div>
 {literal}
-<script type="text/javascript">window.addEvent('domready', function(){	
+<script type="text/javascript">window.addEvent('domready', function(){
 InitAccordion('tr.opener', 'div.opener', 'mainwrapper');
 {/literal}
 {if $view_bans}
 $('tickswitch').value=0;
 {/if}
 {literal}
-}); 
+});
 </script>
 {/literal}
 {/if}

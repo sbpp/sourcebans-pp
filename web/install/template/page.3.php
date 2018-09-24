@@ -1,184 +1,190 @@
 <?php
-if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();}
 $errors = 0;
 $warnings = 0;
 
-if(isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port'], $_POST['database'])) {
-	require(ROOT . "../includes/adodb/adodb.inc.php");
-	include_once(ROOT . "../includes/adodb/adodb-errorhandler.inc.php");
-	$server = "mysqli://" . $_POST['username'] . ":" . $_POST['password'] . "@" . $_POST['server'] . ":" . $_POST['port'] . "/" . $_POST['database'];
-	$db = ADONewConnection($server);
-	$vars = $db->Execute("SHOW VARIABLES");
-	$sql_version = "";
-	while(!$vars->EOF)
-	{
-		if($vars->fields['Variable_name'] == "version")
-		{
-			$sql_version = $vars->fields['Value'];
-			break;
-		}
-		$vars->MoveNext();
-	}
-} else {
-	$sql_version = "Could not connect, database information missing. (Please go back and submit the form.)";
+if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port'], $_POST['database'])) {
+    require_once(ROOT.'../includes/Database.php');
+    $db = new Database($_POST['server'], $_POST['port'], $_POST['database'], $_POST['username'], $_POST['password'], $_POST['prefix']);
+    $db->query('SELECT VERSION();');
+    $version = $db->single();
+    $sql_version = "Could not connect, database information missing. (Please go back and submit the form.)";
+
+    if (!empty($version['VERSION()'])) {
+        $sql_version = $version['VERSION()'];
+    }
 }
 ?>
-<div id="install-progress">
-<b><u>Installation Progress</u></b><br />
-<strike>Step 1: License Agreement</strike><br />
-<strike>Step 2: Database Information</strike><br />
-<b>Step 3: System Requirements</b><br />
-Step 4: Table Creation<br />
-Step 5: Setup<br />
-</div>
-This page will list all of the requirements to run the SourceBans web interface, and compare them with your current values. This page will also list some recomendations. These arn't required to run SourceBans web interface, but they are highly recomended.
-<div id="submit-main-full"><h3>PHP Requirements</h3>
+
+<b><p>This page will list all of the requirements to run the SourceBans web interface, and compare them with your current values. This page will also list some recomendations. These arn't required to run SourceBans web interface, but they are highly recomended.</p></b>
+<table style="width: 101%; margin: 0 0 -2px -2px;">
+    <tr>
+        <td colspan="3" class="listtable_top"><b>PHP Requirements</b></td>
+    </tr>
+</table>
+<div id="submit-main">
 <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top:3px;">
   <tr>
   <td width="33%" height="16" class="listtable_top">Setting</td>
 	<td width="22%" height="16" class="listtable_top">Recomended</td>
 	<td width="22%" height="16" class="listtable_top">Required</td>
-	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
+	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
-  <td width="33%" height="16" class="listtable_1">PHP Version</td>
-	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">5.5</td>
-	<?php if(version_compare(PHP_VERSION, "5.5") != -1)
-		$class = "green";
-	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo PHP_VERSION;?></td> 
+  <td width="33%" height="16" class="listtable_1"><b>PHP Version</b></td>
+  <td width="22%" height="16" class="listtable_top">N/A</td>
+    <td width="22%" height="16" class="listtable_1"><b>5.5</b></td>
+    <?php
+    if (version_compare(PHP_VERSION, "5.5") != -1) {
+        $class = "green";
+    } else {
+        $class = "red";
+        $errors++;
+    }
+    ?>
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo PHP_VERSION;?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">File Uploads</td>
+
+  <td width="33%" height="16" class="listtable_1"><b>File Uploads</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">On</td>
+	<td width="22%" height="16" class="listtable_1"><b>On</b></td>
 	<?php $uploads = ini_get("file_uploads");if($uploads)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $uploads?'On':'Off';?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $uploads?'On':'Off';?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">XML Support</td>
+
+  <td width="33%" height="16" class="listtable_1"><b>XML Support</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">Enabled</td>
+	<td width="22%" height="16" class="listtable_1"><b>Enabled</b></td>
 	<?php $xml = extension_loaded('xml');if($xml)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $xml?'Enabled':'Disabled';?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $xml?'Enabled':'Disabled';?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">Register Globals</td>
-	<td width="22%" height="16" class="listtable_1">Off</td>
+
+  <td width="33%" height="16" class="listtable_1"><b>Register Globals</b></td>
+	<td width="22%" height="16" class="listtable_1"><b>Off</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php $rg = ini_get("register_globals");if(!$rg)
 		$class = "green";
 	  else {  $class = "yellow"; $warnings++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $rg==""?"Off":"On";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $rg==""?"Off":"On";?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">Send Mail Path</td>
-	<td width="22%" height="16" class="listtable_1">Not Empty</td>
+
+  <td width="33%" height="16" class="listtable_1"><b>Send Mail Path</b></td>
+	<td width="22%" height="16" class="listtable_1"><b>Not Empty</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php $sm = ini_get("sendmail_path");if($sm)
 		$class = "green";
 	  else {  $class = "yellow"; $warnings++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo ($sm?$sm:"Empty");?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo ($sm?$sm:"Empty");?></td>
   </tr>
-  
-  <td width="33%" height="16" class="listtable_1">Safe Mode </td>
-	<td width="22%" height="16" class="listtable_1">Off</td>
+
+  <td width="33%" height="16" class="listtable_1"><b>Safe Mode</b></td>
+	<td width="22%" height="16" class="listtable_1"><b>Off</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php if(ini_get('safe_mode')==0) {
 			$class = "green";
 			$safem = "Off";
 		}
-		else {	
+		else {
 			$safem = "On";
-			$class = "yellow"; 
+			$class = "yellow";
 			$warnings++;
 		}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $safem;?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $safem;?></td>
   </tr>
 </table>
+</div>
 <br /><br />
-<h3>MySQL Requirements</h3>
+<table style="width: 101%; margin: 0 0 -2px -2px;">
+    <tr>
+        <td colspan="3" class="listtable_top"><b>MySQL Requirements</b></td>
+    </tr>
+</table>
+<div id="submit-main">
 <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top:3px;">
   <tr>
   <td width="33%" height="16" class="listtable_top">Setting</td>
 	<td width="22%" height="16" class="listtable_top">Recomended</td>
 	<td width="22%" height="16" class="listtable_top">Required</td>
-	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
+	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
-  <td width="33%" height="16" class="listtable_1">MySQL Version</td>
+  <td width="33%" height="16" class="listtable_1"><b>MySQL Version</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">5.0</td>
+	<td width="22%" height="16" class="listtable_1"><b>5.0</b></td>
 	<?php if(version_compare($sql_version, "5") != -1)
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $sql_version;?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $sql_version;?></td>
   </tr>
 </table>
+</div>
 <br /><br />
-<h3>Filesystem Requirements</h3>
+<table style="width: 101%; margin: 0 0 -2px -2px;">
+    <tr>
+        <td colspan="3" class="listtable_top"><b>Filesystem Requirements</b></td>
+    </tr>
+</table>
+<div id="submit-main">
 <table width="98%" cellspacing="0" cellpadding="0" align="center" class="listtable" style="margin-top:3px;">
   <tr>
   <td width="33%" height="16" class="listtable_top">Setting</td>
 	<td width="22%" height="16" class="listtable_top">Recomended</td>
 	<td width="22%" height="16" class="listtable_top">Required</td>
-	 <td width="22%" height="16" class="listtable_top">Your Value</td> 
+	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
-  <td width="33%" height="16" class="listtable_1">Demo Folder Writable (/demos)</td>
+  <td width="33%" height="16" class="listtable_1"><b>Demo Folder Writable (/demos)</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">Yes</td>
+	<td width="22%" height="16" class="listtable_1"><b>Yes</b></td>
 	<?php if(is_writable("../demos"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../demos")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../demos")?"Yes":"No";?></td>
   </tr>
-  
+
    <tr>
-  <td width="33%" height="16" class="listtable_1">Compiled Themes Writable (/themes_c)</td>
+  <td width="33%" height="16" class="listtable_1"><b>Compiled Themes Writable (/themes_c)</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">Yes</td>
+	<td width="22%" height="16" class="listtable_1"><b>Yes</b></td>
 	<?php if(is_writable("../themes_c"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../themes_c")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../themes_c")?"Yes":"No";?></td>
   </tr>
-  
+
   <tr>
-  <td width="33%" height="16" class="listtable_1">Mod Icon Folder Writable (/images/games)</td>
+  <td width="33%" height="16" class="listtable_1"><b>Mod Icon Folder Writable (/images/games)</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">Yes</td>
+	<td width="22%" height="16" class="listtable_1"><b>Yes</b></td>
 	<?php if(is_writable("../images/games"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/games")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/games")?"Yes":"No";?></td>
   </tr>
-  
+
   <tr>
-  <td width="33%" height="16" class="listtable_1">Map Image Folder Writable (/images/maps)</td>
+  <td width="33%" height="16" class="listtable_1"><b>Map Image Folder Writable (/images/maps)</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1">Yes</td>
+	<td width="22%" height="16" class="listtable_1"><b>Yes</b></td>
 	<?php if(is_writable("../images/maps"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/maps")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../images/maps")?"Yes":"No";?></td>
   </tr>
-    
+
    <tr>
-  <td width="33%" height="16" class="listtable_1">Config File Writable (/config.php)</td>
-	<td width="22%" height="16" class="listtable_1">Yes</td>
+  <td width="33%" height="16" class="listtable_1"><b>Config File Writable (/config.php)</b></td>
+	<td width="22%" height="16" class="listtable_1"><b>Yes</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<?php if(is_writable("../config.php"))
 		$class = "green";
 	  else {  $class = "yellow"; $warnings++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../config.php")?"Yes":"No";?></td> 
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../config.php")?"Yes":"No";?></td>
   </tr>
-  </table>
+  </table><br/><br/>
 	<?php /* WhiteWolf: This is a hack to make sure the user didn't refresh the page, in the future we should tell them what they did. */
 	if(!isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['database'], $_POST['port'], $_POST['prefix'])) {
 	?>
@@ -187,6 +193,7 @@ This page will list all of the requirements to run the SourceBans web interface,
 	</form>
 	<form action="index.php?step=2" method="post" name="sendback" id="sendback">
 	</form>
+</div>
 	<?php
 	}
 	else
@@ -218,7 +225,7 @@ This page will list all of the requirements to run the SourceBans web interface,
 	}
 	?>
 <div align="center">
-<input type="button" TABINDEX=2 onclick="next()" name="button" class="btn ok" id="button" value="Ok" /> <input type="button" TABINDEX=2 onclick="$('sendback').submit();" name="button" class="btn" id="button" value="Recheck" /></div>
+<input type="button" TABINDEX=2 onclick="next()" name="button" class="btn ok" id="button" value="Ok" /> <input type="button" TABINDEX=2 onclick="$('sendback').submit();" name="button" class="btn cancel" id="button" value="Recheck" /></div>
 </div>
 </form>
 <script type="text/javascript">

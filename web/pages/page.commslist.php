@@ -18,7 +18,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 
-This program is based off work covered by the following copyright(s): 
+This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
 Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC BY-NC-SA 3.0
@@ -35,18 +35,24 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+if (!Config::getBool('config.enablecomms')) {
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
+    PageDie();
+}
 $BansPerPage = SB_BANS_PER_PAGE;
 $servers     = array();
 global $userbank;
 function setPostKey()
 {
-    if (isset($_SERVER['REMOTE_IP']))
+    if (isset($_SERVER['REMOTE_IP'])) {
         $_SESSION['banlist_postkey'] = md5($_SERVER['REMOTE_IP'] . time() . rand(0, 100000));
-    else
+    } else {
         $_SESSION['banlist_postkey'] = md5(time() . rand(0, 100000));
+    }
 }
-if (!isset($_SESSION['banlist_postkey']) || strlen($_SESSION['banlist_postkey']) < 4)
+if (!isset($_SESSION['banlist_postkey']) || strlen($_SESSION['banlist_postkey']) < 4) {
     setPostKey();
+}
 
 $page     = 1;
 $pagelink = "";
@@ -59,15 +65,16 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
 }
 
 if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
-    if ($_GET['key'] != $_SESSION['banlist_postkey'])
+    if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
+    }
     //we have a multiple unban asking
     $bid = intval($_GET['id']);
     $res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `" . DB_PREFIX . "_comms` c INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = c.aid WHERE bid = '" . $bid . "' AND c.type = 2;");
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
-    
+
     $row = $GLOBALS['db']->GetRow("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
 										FROM " . DB_PREFIX . "_comms b
 										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
@@ -78,7 +85,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         echo "<script>ShowBox('Player Not UnGagged', 'The player was not ungagged, either already ungagged or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
-    
+
     $unbanReason = htmlspecialchars(trim($_GET['ureason']));
     $ins         = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET
 										`RemovedBy` = ?,
@@ -90,28 +97,29 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         $unbanReason,
         $bid
     ));
-    
+
     $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
     foreach ($blocked as $tempban) {
         SendRconSilent(("sc_fw_ungag " . $row['authid']), $tempban['sid']);
     }
-    
+
     if ($res) {
-        echo "<script>ShowBox('Player UnGagged', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        $log = new CSystemLog("m", "Player UnGagged", "'" . StripQuotes($row['name']) . "' (" . $row['authid'] . ") has been ungagged");
+        echo "<script>ShowBox('Player UnGagged', '" . $row['name'] . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        Log::add("m", "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "unmute" && isset($_GET['id'])) {
-    if ($_GET['key'] != $_SESSION['banlist_postkey'])
+    if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
+    }
     //we have a multiple unban asking
     $bid = intval($_GET['id']);
     $res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `" . DB_PREFIX . "_comms` c INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = c.aid WHERE bid = '" . $bid . "' AND c.type = 1;");
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
-    
+
     $row = $GLOBALS['db']->GetRow("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
 										FROM " . DB_PREFIX . "_comms b
 										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
@@ -122,7 +130,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         echo "<script>ShowBox('Player Not UnGagged', 'The player was not unmuted, either already unmuted or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
-    
+
     $unbanReason = htmlspecialchars(trim($_GET['ureason']));
     $ins         = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET
 										`RemovedBy` = ?,
@@ -134,29 +142,30 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         $unbanReason,
         $bid
     ));
-    
+
     $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
     foreach ($blocked as $tempban) {
         SendRconSilent(("sc_fw_unmute " . $row['authid']), $tempban['sid']);
     }
-    
+
     if ($res) {
-        echo "<script>ShowBox('Player UnMuted', '" . StripQuotes($row['name']) . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        $log = new CSystemLog("m", "Player UnMuted", "'" . StripQuotes($row['name']) . "' (" . $row['authid'] . ") has been unmuted");
+        echo "<script>ShowBox('Player UnMuted', '" . $row['name'] . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        Log::add("m", "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . StripQuotes($row['name']) . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "delete") {
-    if ($_GET['key'] != $_SESSION['banlist_postkey'])
+    if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
-    
+    }
+
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN)) {
         echo "<script>ShowBox('Error', 'You do not have access to this.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
-    
+
     $bid = intval($_GET['id']);
-    
+
     $steam  = $GLOBALS['db']->GetRow("SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now
 									FROM " . DB_PREFIX . "_comms WHERE bid=?", array(
         $bid
@@ -164,9 +173,9 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $end    = (int) $steam['ends'];
     $length = (int) $steam['length'];
     $now    = (int) $steam['now'];
-    
+
     $cmd = "";
-    
+
     switch ($steam['type']) {
         case 1:
             $cmd = "sc_fw_unmute";
@@ -177,23 +186,23 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         default:
             break;
     }
-    
+
     $res = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_comms` WHERE `bid` = ?", array(
         $bid
     ));
-    
+
     if (empty($steam['RemoveType']) && ($length == 0 || $end > $now)) {
         $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
         foreach ($blocked as $tempban) {
             SendRconSilent(($cmd . " " . $steam['authid']), $tempban['sid']);
         }
     }
-    
+
     if ($res) {
-        echo "<script>ShowBox('Block Deleted', 'The block for \'" . StripQuotes($steam['name']) . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
-        $log = new CSystemLog("m", "Block Deleted", "Block '" . StripQuotes($steam['name']) . "' (" . $steam['authid'] . ") has been deleted.");
+        echo "<script>ShowBox('Block Deleted', 'The block for \'" . $steam['name'] . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
+        Log::add("m", "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
-        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . StripQuotes($steam['name']) . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
+        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
     }
 }
 
@@ -222,7 +231,7 @@ if (isset($_SESSION["hideinactive"])) {
 
 if (isset($_GET['searchText'])) {
     $search = '%' . trim($_GET['searchText']) . '%';
-    
+
     $res = $GLOBALS['db']->Execute("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -241,8 +250,8 @@ if (isset($_GET['searchText'])) {
         intval($BansStart),
         intval($BansPerPage)
     ));
-    
-    
+
+
     $res_count  = $GLOBALS['db']->Execute("SELECT count(CO.bid) FROM " . DB_PREFIX . "_comms AS CO WHERE CO.authid LIKE ? OR CO.name LIKE ? OR CO.reason LIKE ?" . $hideinactive, array(
         $search,
         $search,
@@ -266,7 +275,7 @@ if (isset($_GET['searchText'])) {
         intval($BansStart),
         intval($BansPerPage)
     ));
-    
+
     $res_count  = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_comms" . $hideinactiven);
     $searchlink = "";
 }
@@ -350,7 +359,7 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "admin":
-            if ($GLOBALS['config']['banlist.hideadminname'] && !$userbank->is_admin()) {
+            if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
                 $advcrit = array();
             } else {
@@ -390,7 +399,7 @@ if (isset($_GET['advSearch'])) {
             $advcrit           = array();
             break;
     }
-    
+
     $res = $GLOBALS['db']->Execute("SELECT CO.bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 			CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -408,15 +417,16 @@ if (isset($_GET['advSearch'])) {
         intval($BansStart),
         intval($BansPerPage)
     )));
-    
+
     $res_count  = $GLOBALS['db']->Execute("SELECT count(CO.bid) FROM " . DB_PREFIX . "_comms AS CO
 										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN " . DB_PREFIX . "_comments AS CM ON CO.bid = CM.bid" : "") . " " . $where . $hideinactive, $advcrit);
     $searchlink = "&advSearch=" . $_GET['advSearch'] . "&advType=" . $_GET['advType'];
 }
 
 $BanCount = $res_count->fields[0];
-if ($BansEnd > $BanCount)
+if ($BansEnd > $BanCount) {
     $BansEnd = $BanCount;
+}
 if (!$res) {
     echo "No Blocks Found.";
     PageDie();
@@ -426,17 +436,17 @@ $view_comments = false;
 $bans          = array();
 while (!$res->EOF) {
     $data = array();
-    
+
     $data['ban_id'] = $res->fields['ban_id'];
     $data['type']   = $res->fields['type'];
     $data['c_time'] = $res->fields['c_time'];
-    
+
     $mute_count    = (int) $res->fields['mute_count'];
     $gag_count     = (int) $res->fields['gag_count'];
     $history_count = $mute_count + $gag_count;
-    
+
     $delimiter = "";
-    
+
     // заюзаем иконку страны под отображение TYPE_MUTE or TYPE_GAG
     switch ((int) $data['type']) {
         case 1:
@@ -448,27 +458,28 @@ while (!$res->EOF) {
             $gag_count         = $gag_count - 1;
             break;
         default:
-            $data['type_icon'] = '<img src="images/country/zz.gif" alt="Unknown block type" border="0" align="absmiddle" />';
+            $data['type_icon'] = '<img src="images/country/zz.jpg" alt="Unknown block type" border="0" align="absmiddle" />';
             break;
     }
-    
-    $data['ban_date']    = SBDate($dateformat, $res->fields['ban_created']);
+
+    $data['ban_date']    = date($dateformat, $res->fields['ban_created']);
     $data['player']      = addslashes($res->fields['player_name']);
     $data['steamid']     = $res->fields['authid'];
     $data['communityid'] = $res->fields['community_id'];
     $steam2id            = $data['steamid'];
     $steam3parts         = explode(':', $steam2id);
     $data['steamid3']    = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
-    
-    if (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin())
+
+    if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
-    else
+    } else {
         $data['admin'] = stripslashes($res->fields['admin_name']);
+    }
     $data['reason'] = stripslashes($res->fields['ban_reason']);
-    
+
     if ($res->fields['ban_length'] > 0) {
         $data['ban_length'] = SecondsToString(intval($res->fields['ban_length']));
-        $data['expires']    = SBDate($dateformat, $res->fields['ban_ends']);
+        $data['expires']    = date($dateformat, $res->fields['ban_ends']);
     } else if ($res->fields['ban_length'] == 0) {
         $data['ban_length'] = 'Permanent';
         $data['expires']    = 'never';
@@ -476,25 +487,27 @@ while (!$res->EOF) {
         $data['ban_length'] = 'Session';
         $data['expires']    = 'n/a';
     }
-    
+
     // Что за тип разбана - D? Я такой не видел, но оставлю так и быть.. for feature use...
     if ($res->fields['row_type'] == 'D' || $res->fields['row_type'] == 'U' || $res->fields['row_type'] == 'E' || ($res->fields['ban_length'] && $res->fields['ban_ends'] < $data['c_time'])) {
         $data['unbanned'] = true;
         $data['class']    = "listtable_1_unbanned";
-        
-        if ($res->fields['row_type'] == "D")
+
+        if ($res->fields['row_type'] == "D") {
             $data['ub_reason'] = "(Deleted)";
-        elseif ($res->fields['row_type'] == "U")
+        } elseif ($res->fields['row_type'] == "U") {
             $data['ub_reason'] = "(Unbanned)";
-        else
+        } else {
             $data['ub_reason'] = "(Expired)";
-        
+        }
+
         $data['ureason'] = stripslashes($res->fields['unban_reason']);
-        
+
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
-        if (isset($removedby[0]))
+        if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
+        }
     } else if ($data['ban_length'] == 'Permanent') {
         $data['class'] = "listtable_1_permanent";
     } else {
@@ -502,7 +515,7 @@ while (!$res->EOF) {
         $data['class']     = "listtable_1_banned";
         $data['ub_reason'] = "";
     }
-    
+
     $data['layer_id'] = 'layer_' . $res->fields['ban_id'];
     // Запрос текущего статуса игрока для рисования ссылки на мьют или гаг
     $alrdybnd         = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `" . DB_PREFIX . "_comms` WHERE authid = '" . $data['steamid'] . "' AND RemovedBy IS NULL AND type = '" . $data['type'] . "' AND (length = 0 OR ends > UNIX_TIMESTAMP());");
@@ -517,52 +530,56 @@ while (!$res->EOF) {
             default:
                 break;
         }
-    } else
+    } else {
         $data['reban_link'] = false;
-    
-    
-    $data['edit_link'] = CreateLinkR('<img src="images/edit.gif" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=comms&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
-    
+    }
+
+
+    $data['edit_link'] = CreateLinkR('<img src="images/edit.png" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=comms&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
+
     switch ($data['type']) {
         case 2:
-            $data['unban_link'] = CreateLinkR('<img src="images/locked.gif" border="0" alt="" style="vertical-align:middle" /> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         case 1:
-            $data['unban_link'] = CreateLinkR('<img src="images/locked.gif" border="0" alt="" style="vertical-align:middle" /> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         default:
             break;
     }
-    
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.gif" border="0" alt="" style="vertical-align:middle" /> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . StripQuotes($data['player']) . "', 0);return false;");
-    
+
+    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0);return false;");
+
     $data['server_id'] = $res->fields['ban_server'];
-    
+
     if (empty($res->fields['mod_icon'])) {
         $modicon = "web.png";
     } else {
         $modicon = $res->fields['mod_icon'];
     }
-    
+
     $data['mod_icon'] = '<img src="images/games/' . $modicon . '" alt="MOD" border="0" align="absmiddle" />&nbsp;' . $data['type_icon'];
-    
-    if ($history_count > 1)
+
+    if ($history_count > 1) {
         $data['prevoff_link'] = $history_count . " " . CreateLinkR("(search)", "index.php?p=commslist&searchText=" . $data['steamid'] . "&Submit");
-    else
+    } else {
         $data['prevoff_link'] = "No previous blocks";
-    
+    }
+
     $mutes = "";
     $gags  = "";
     if ($mute_count > 0) {
         $mutes = $mute_count . '&thinsp;<img src="images/type_v.png" alt="Another mutes" border="0" align="absmiddle" />';
-        if ($gag_count > 0)
+        if ($gag_count > 0) {
             $mutes = $mutes . "&ensp;";
+        }
     }
-    if ($gag_count > 0)
+    if ($gag_count > 0) {
         $gags = $gag_count . '&thinsp;<img src="images/type_c.png" alt="Another gags" border="0" align="absmiddle" />';
-    
+    }
+
     $data['server_id'] = $res->fields['ban_server'];
-    
+
     //COMMENT STUFF
     //-----------------------------------
     if ($userbank->is_admin()) {
@@ -572,54 +589,56 @@ while (!$res->EOF) {
 											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
 											FROM `" . DB_PREFIX . "_comments` AS C
 											WHERE C.type = 'C' AND bid = '" . $data['ban_id'] . "' ORDER BY added desc");
-        
+
         if ($commentres->RecordCount() > 0) {
-            if ($mute_count > 0 || $gag_count > 0)
+            if ($mute_count > 0 || $gag_count > 0) {
                 $delimiter = "&ensp;";
+            }
             $comment = array();
             $morecom = 0;
             while (!$commentres->EOF) {
                 $cdata            = array();
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
                 if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.gif\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
+                    $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
                     if ($userbank->HasAccess(ADMIN_OWNER)) {
-                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'C'," . (isset($_GET["page"]) ? $_GET["page"] : -1) . ");\"><img src='images/delete.gif' border='0' alt='' style='vertical-align:middle' /></a>";
+                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'C'," . (isset($_GET["page"]) ? $_GET["page"] : -1) . ");\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
                     }
                 } else {
                     $cdata['editcomlink'] = "";
                     $cdata['delcomlink']  = "";
                 }
-                
+
                 $cdata['comname']    = $commentres->fields['comname'];
-                $cdata['added']      = SBDate($dateformat, $commentres->fields['added']);
-                $cdata['commenttxt'] = RemoveCode($commentres->fields['commenttxt']);
+                $cdata['added']      = date($dateformat, $commentres->fields['added']);
+                $cdata['commenttxt'] = $commentres->fields['commenttxt'];
                 $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
-                
+
                 if (!empty($commentres->fields['edittime'])) {
-                    $cdata['edittime'] = SBDate($dateformat, $commentres->fields['edittime']);
+                    $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
                     $cdata['editname'] = $commentres->fields['editname'];
                 } else {
                     $cdata['edittime'] = "";
                     $cdata['editname'] = "";
                 }
-                
+
                 $morecom = 1;
                 array_push($comment, $cdata);
                 $commentres->MoveNext();
             }
-        } else
+        } else {
             $comment = "None";
-        
+        }
+
         $data['commentdata'] = $comment;
     }
-    
-    $data['addcomment'] = CreateLinkR('<img src="images/details.gif" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C' . $pagelink);
+
+    $data['addcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C' . $pagelink);
     //-----------------------------------
     $data['counts']     = $delimiter . $mutes . $gags;
-    
+
     $data['ub_reason']   = (isset($data['ub_reason']) ? $data['ub_reason'] : "");
     $data['banlength']   = $data['ban_length'] . " " . $data['ub_reason'];
     $data['view_edit']   = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid')));
@@ -629,28 +648,33 @@ while (!$res->EOF) {
     $res->MoveNext();
 }
 
-if (isset($_GET['advSearch']))
+if (isset($_GET['advSearch'])) {
     $advSearchString = "&advSearch=" . (isset($_GET['advSearch']) ? $_GET['advSearch'] : '') . "&advType=" . (isset($_GET['advType']) ? $_GET['advType'] : '');
-else
+} else {
     $advSearchString = '';
+}
 
 if ($page > 1) {
-    if (isset($_GET['c']) && $_GET['c'] == "comms")
-        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.gif" style="vertical-align:middle;" /> prev', "javascript:void(0);", "", "_self", false, $prev);
-    else
-        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.gif" style="vertical-align:middle;" /> prev', "index.php?p=commslist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+    if (isset($_GET['c']) && $_GET['c'] == "comms") {
+        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "javascript:void(0);", "", "_self", false, $prev);
+    } else {
+        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=commslist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+    }
 } else {
     $prev = "";
 }
 if ($BansEnd < $BanCount) {
     if (isset($_GET['c']) && $_GET['c'] == "comms") {
-        if (!isset($nxt))
+        if (!isset($nxt)) {
             $nxt = "";
-        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.gif" style="vertical-align:middle;" />', "javascript:void(0);", "", "_self", false, $nxt);
-    } else
-        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.gif" style="vertical-align:middle;" />', "index.php?p=commslist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
-} else
+        }
+        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.png" style="vertical-align:middle;" />', "javascript:void(0);", "", "_self", false, $nxt);
+    } else {
+        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=commslist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+    }
+} else {
     $next = "";
+}
 
 //=================[ Start Layout ]==================================
 $ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
@@ -694,17 +718,17 @@ if (isset($_GET["comment"])) {
         $_GET["ctype"],
         $_GET["comment"]
     ));
-    
+
     $ocomments = array();
     while (!$cotherdata->EOF) {
         $coment               = array();
         $coment['comname']    = $cotherdata->fields['comname'];
-        $coment['added']      = SBDate($dateformat, $cotherdata->fields['added']);
+        $coment['added']      = date($dateformat, $cotherdata->fields['added']);
         $coment['commenttxt'] = str_replace("\n", "<br />", $cotherdata->fields['commenttxt']);
         // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
         $coment['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $coment['commenttxt']);
         if ($cotherdata->fields['editname'] != "") {
-            $coment['edittime'] = SBDate($dateformat, $cotherdata->fields['edittime']);
+            $coment['edittime'] = date($dateformat, $cotherdata->fields['edittime']);
             $coment['editname'] = $cotherdata->fields['editname'];
         } else {
             $coment['editname'] = "";
@@ -713,7 +737,7 @@ if (isset($_GET["comment"])) {
         array_push($ocomments, $coment);
         $cotherdata->MoveNext();
     }
-    
+
     $theme->assign('page', (isset($_GET["page"]) ? $_GET["page"] : -1));
     $theme->assign('othercomments', $ocomments);
     $theme->assign('commenttext', (isset($ctext) ? $ctext : ""));
@@ -736,7 +760,7 @@ $theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideadminname', (isset($GLOBALS['config']['banlist.hideadminname']) && $GLOBALS['config']['banlist.hideadminname'] == "1" && !$userbank->is_admin()));
+$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
 $theme->assign('can_delete', $userbank->HasAccess(ADMIN_DELETE_BAN));
 $theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));

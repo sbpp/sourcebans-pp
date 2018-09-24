@@ -1,13 +1,4 @@
-<?php if(!defined("IN_SB")){echo "You should not be here. Only follow links!";die();} ?>
-<div id="msg-red-debug" style="display:none;" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
-	<b>Debug</b>
-	<br />
-	<div id="debug-text">
-	</div></i>
-</div>
-
-<div id="dialog-placement" style="vertical-align:middle;display:none;text-align:center;width:892px;margin:0 auto;position:fixed !important;position:absolute;overflow:hidden;top:10px;left:100px;"> 
+<div id="dialog-placement" style="vertical-align:middle;display:none;opacity:0;text-align:center;width:892px;margin:0 auto;position:fixed !important;position:absolute;overflow:hidden;top:10px;left:100px;">
 <table width="460px" id="dialog-holder" class="dialog-holder" border="0" cellspacing="0" cellpadding="0" >
 	<tbody width="460px">
 	  <tr>
@@ -30,7 +21,7 @@
 	                    <div style="width:360px;float: right; padding-bottom: 5px; font-size: 11px;" id="dialog-content-text"></div>
 	                </div>
 	            </div>
-	            <div class="dialog-control" id="dialog-control">    
+	            <div class="dialog-control" id="dialog-control">
 	            </div>
 	        </div>
 		</td>
@@ -45,8 +36,8 @@
 </table>
 </div>
 
-<div id="content_title">
-<?php echo isset($GLOBALS['pagetitle'])?$GLOBALS['pagetitle']:null;?>
-</div>
 
+<div id="content_title">
+    <b><?php print $title;?></b>
+</div>
 <div id="content">

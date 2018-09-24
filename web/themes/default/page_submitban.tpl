@@ -1,11 +1,13 @@
 <table style="width: 101%; margin: 0 0 -2px -2px;">
 	<tr>
-		<td colspan="3" class="listtable_top"><b>Submit a player</b></td>
+		<td colspan="3" class="listtable_top"><b>Submit a Report</b></td>
 	</tr>
 </table>
 <div id="submit-main">
-	Here you will be able to submit a ban for a player who is breaking the rules of the gameserver. When submitting a ban we request you to fill out all the fields to be as descriptive as possible in your comments. This will ensure that your ban submission is processed much faster.<br /><br />
-    For a short explination on how to create a demo, click <a href="javascript:void(0)" onclick="ShowBox('How To Record A Demo', 'While you are spectating the offending player, press the ` key on your keyboard. Then type record [demoname] and hit enter. Also type sb_status for extra information in SteamBans servers. The file will be in your mod folder.', 'blue', '', true);">here</a><br /><br />
+	In order to keep our servers running smoothly, offenders of our rules should be punished and we can't always be on call to help.<br />
+	When submitting a player report, we ask you to fill out the report as detailed as possible to help ban the offender as this will help us process your report quickly.<br />
+    If you are unsure on how to record evidence within in-game, please click 
+	<a href="javascript:void(0)" onclick="ShowBox('How To Record Evidence', 'The best way to record evidence on someone breaking the rules would be to use Shadow Play or Plays.TV. Both pieces of software will record your game 24/7 with little to no impact on your game and you simply press a keybind to record the last X amount of minutes of gameplay which is perfect for catching rule breakers.<br /><br /> Alternatively, you can use the old method of using demos. While you are spectating the offending player, press the ` key on your keyboard to show the Developers Console. If this does not show, you will need to go into your Game Settings and enable this. Then type `record [demoname]` and hit enter, the file will then be in your mod folder of your game directory.', 'blue', '', true);">here</a> for an explanation.<br /><br />
 <form action="index.php?p=submit" method="post" enctype="multipart/form-data">
 <input type="hidden" name="subban" value="1">
 <table cellspacing='10' width='100%' align='center'>
@@ -29,7 +31,7 @@
 </tr>
 <tr>
 	<td width="20%">
-        Players Nick Name<span class="mandatory">*</span>:</td>
+        Players Nickname<span class="mandatory">*</span>:</td>
 	<td>
         <input type="text" size="40" maxlength="70" name="PlayerName" value="{$player_name}" class="textbox" style="width: 250px;" /></td>
 </tr>
@@ -82,5 +84,5 @@
 </table>
 </form>
 <b>What happens if someone gets banned?</b><br />
-If someone gets banned, the specific STEAMID or IP will be included in this SourceBans database and everytime this player tries to connect to one of our servers he/she will be blocked and will receive a message that they are blocked by SourceBans. 
+If someone you reported gets banned, the SteamID or IP will be included onto the ban on the main bans list and everytime they try to connect to any server they will be blocked from joining and it will be logged into our database.
 </div>
