@@ -51,6 +51,7 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
+	LoadTranslations("sourcechecker.phrases");
 
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
@@ -108,13 +109,13 @@ public void OnConnectBanCheck(Database db, DBResultSet results, const char[] err
     if (bancount > 0 || commcount > 0)
     {
         if(bancount == 0){
-            PrintToBanAdmins("\x04%s\x01 Warning: Player \"%N\" has %d previous comm ban%s.", Prefix, client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
+			PrintToBanAdmins("%s%t", Prefix, "Comm Warning", client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
         }
         else if(commcount == 0){
-            PrintToBanAdmins("\x04%s\x01 Warning: Player \"%N\" has %d previous ban%s.", Prefix, client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
+            PrintToBanAdmins("%s%t", Prefix, "Ban Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
         }
         else{
-            PrintToBanAdmins("\x04%s\x01 Warning: Player \"%N\" has %d previous ban%s and %d previous comm ban%s.", Prefix, client, bancount, ((bancount > 1 || bancount == 0) ? "s":""),commcount,((commcount > 1 || commcount == 0) ? "s":""));
+            PrintToBanAdmins("%s%t", Prefix, "Ban and Comm Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""), commcount, ((commcount > 1 || commcount == 0) ? "s":""));
         }
     }
 }
