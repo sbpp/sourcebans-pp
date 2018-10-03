@@ -33,6 +33,7 @@
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
+#define Prefix "[SourceBans++] "
 
 char g_DatabasePrefix[10] = "sb";
 SMCParser g_ConfigParser;
@@ -107,16 +108,13 @@ public void OnConnectBanCheck(Database db, DBResultSet results, const char[] err
     if (bancount > 0 || commcount > 0)
     {
         if(bancount == 0){
-            PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous commban%s.",
-                client,commcount,((commcount > 1 || commcount == 0) ? "s":""));
+            PrintToBanAdmins("\x04%s\x01 Warning: Player \"%N\" has %d previous comm ban%s.", Prefix, client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
         }
         else if(commcount == 0){
-            PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous ban%s.",
-                client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
+            PrintToBanAdmins("\x04%s\x01 Warning: Player \"%N\" has %d previous ban%s.", Prefix, client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
         }
         else{
-            PrintToBanAdmins("\x04[SourceBans++]\x01 Warning: Player \"%N\" has %d previous ban%s and %d previous commban%s.",
-                client, bancount, ((bancount > 1 || bancount == 0) ? "s":""),commcount,((commcount > 1 || commcount == 0) ? "s":""));
+            PrintToBanAdmins("\x04%s\x01 Warning: Player \"%N\" has %d previous ban%s and %d previous comm ban%s.", Prefix, client, bancount, ((bancount > 1 || bancount == 0) ? "s":""),commcount,((commcount > 1 || commcount == 0) ? "s":""));
         }
     }
 }
@@ -167,11 +165,11 @@ public Action OnListSourceBansCmd(int client, int args)
 
 	if (client == 0)
 	{
-		ReplyToCommand(client, "[SourceBans++] Note: if you are using this command through an rcon tool, you will not see results.");
+		ReplyToCommand(client, "%sNote: if you are using this command through an rcon tool, you will not see results.", Prefix);
 	}
 	else
 	{
-		ReplyToCommand(client, "\x04[SourceBans++]\x01 Look for %N's ban results in console.", target);
+		ReplyToCommand(client, "\x04%s\x01 Look for %N's ban results in console.", Prefix, target);
 	}
 
 	return Plugin_Handled;
@@ -191,17 +189,17 @@ public void OnListBans(Database db, DBResultSet results, const char[] error, Dat
 
 	if (results == null)
 	{
-		PrintListResponse(clientuid, client, "[SourceBans++] DB error while retrieving bans for %s:\n%s", targetName, error);
+		PrintListResponse(clientuid, client, "%sDB error while retrieving bans for %s:\n%s", Prefix, targetName, error);
 		return;
 	}
 
 	if (results.RowCount == 0)
 	{
-		PrintListResponse(clientuid, client, "[SourceBans++] No bans found for %s.", targetName);
+		PrintListResponse(clientuid, client, "%sNo bans found for %s.", Prefix, targetName);
 		return;
 	}
 
-	PrintListResponse(clientuid, client, "[SourceBans++] Listing bans for %s", targetName);
+	PrintListResponse(clientuid, client, "%sListing bans for %s", Prefix, targetName);
 	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    R  Reason");
 	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
 	while (results.FetchRow())
@@ -332,11 +330,11 @@ public Action OnListSourceCommsCmd(int client, int args)
 
 	if (client == 0)
 	{
-		ReplyToCommand(client, "[SourceBans++] Note: if you are using this command through an rcon tool, you will not see results.");
+		ReplyToCommand(client, "%sNote: if you are using this command through an rcon tool, you will not see results.", Prefix);
 	}
 	else
 	{
-		ReplyToCommand(client, "\x04[SourceBans++]\x01 Look for %N's comm results in console.", target);
+		ReplyToCommand(client, "\x04%s\x01 Look for %N's comm results in console.", Prefix, target);
 	}
 
 	return Plugin_Handled;
@@ -356,17 +354,17 @@ public void OnListComms(Database db, DBResultSet results, const char[] error, Da
 
 	if (results == null)
 	{
-		PrintListResponse(clientuid, client, "[SourceBans++] DB error while retrieving comms for %s:\n%s", targetName, error);
+		PrintListResponse(clientuid, client, "%sDB error while retrieving comms for %s:\n%s", Prefix, targetName, error);
 		return;
 	}
 
 	if (results.RowCount == 0)
 	{
-		PrintListResponse(clientuid, client, "[SourceBans++] No comms found for %s.", targetName);
+		PrintListResponse(clientuid, client, "%sNo comms found for %s.", Prefix, targetName);
 		return;
 	}
 
-	PrintListResponse(clientuid, client, "[SourceBans++] Listing comms for %s", targetName);
+	PrintListResponse(clientuid, client, "%sListing comms for %s", Prefix, targetName);
 	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    T  R  Reason");
 	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
 	while (results.FetchRow())
