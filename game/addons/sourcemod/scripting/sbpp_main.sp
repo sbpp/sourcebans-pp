@@ -1178,7 +1178,14 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 
 	// Kick player
 	if (GetClientUserId(client) == UserId)
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+	{
+		char length[32];
+		if(time == 0)
+			FormatEx(length, sizeof(length), "permament");
+		else
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, Reason, length);
+	}
 }
 
 public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -2529,7 +2536,7 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 
 stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp, DataPack dataPack)
 {
-	dataPack.ReadCell(); // admin index
+	int admin = dataPack.ReadCell(); // admin index
 
 	int client = dataPack.ReadCell();
 
@@ -2551,7 +2558,14 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 	ServerCommand(buffer);
 
 	if (IsClientInGame(client))
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+	{
+		char length[32];
+		if(time == 0)
+			FormatEx(length, sizeof(length), "permament");
+		else
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
+	}
 
 	char banName[128], banReason[256], query[512];
 
@@ -2632,10 +2646,14 @@ stock void PrepareBan(int client, int target, int time, char[] reason, int size)
 			}
 		}
 		LogAction(client, target, "\"%L\" banned \"%L\" (minutes \"%d\") (reason \"%s\")", client, target, time, reason);
-
+		char length[32];
+		if(time == 0)
+			FormatEx(length, sizeof(length), "permament");
+		else
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
 		if (time > 5 || time == 0)
 			time = 5;
-		Format(bannedSite, sizeof(bannedSite), "%T", "Banned Check Site", target, WebsiteAddress);
+		Format(bannedSite, sizeof(bannedSite), "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", client, reason, length);//temp
 		BanClient(target, time, BANFLAG_AUTO, bannedSite, bannedSite, "sm_ban", client);
 	}
 

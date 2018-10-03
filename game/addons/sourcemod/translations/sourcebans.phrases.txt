@@ -146,4 +146,9 @@
 		"hu"			"A ban eljárás sikeresen leállítva."
 		"chi"			"封禁操作已成功取消."
 	}
+	"Kick Reason"
+	{
+		"#format"		"{1:N},{2:s},{3:s}"
+		"en"			"Admin: {1}\nReason: {2}\nLength: {3}"
+	}
 }
