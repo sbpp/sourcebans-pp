@@ -9,7 +9,7 @@
 		"ru"			"Вам был отключен микрофон!"
 		"pl"			"Zostałeś wyciszony!"
 		"pt"			"Você foi silenciado!"
-		"de"			"Sie wurden im Voice-Chat gesperrt!"
+		"de"			"Sie wurden im Sprachchat gesperrt!"
 		"fr"			"Vous avez été muté!"
 		"chi"			"你已被静音!"
 	}
@@ -21,7 +21,7 @@
 		"ru"			"Вам был отключен чат!"
 		"pl"			"Zostałeś zakneblowany!"
 		"pt"			"Você foi amordaçado!"
-		"de"			"Sie wurden im Chat gesperrt!"
+		"de"			"Sie wurden im Textchat gesperrt!"
 		"fr"			"Vous avez été mis en muté du chat!"
 		"chi"			"你已被禁言!"
 	}
@@ -34,7 +34,7 @@
 		"ru"			"Вам был включен микрофон (истек срок блокировки)."
 		"pl"			"Twoje wyciszenie wygasło."
 		"pt"			"Seu emudecimento expirou."
-		"de"			"Sie wurden im Voice-Chat entsperrt (Die Sperrzeit ist abgelaufen)."
+		"de"			"Sie wurden im Sprachchat entsperrt (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute a expiré."
 		"chi"			"静音已过期."
 	}
@@ -46,7 +46,7 @@
 		"ru"			"Вам был включен чат (истек срок блокировки)."
 		"pl"			"Twój knebel wygasł."
 		"pt"			"Seu amordaçamento expirou."
-		"de"			"Sie wurden im Chat entsperrt. (Die Sperrzeit ist abgelaufen)."
+		"de"			"Sie wurden im Textchat entsperrt. (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute du chat a expiré."
 		"chi"			"禁言已过期."
 	}
@@ -59,7 +59,7 @@
 		"ru"			"Вам был включен микрофон."
 		"pl"			"Twoje wyciszenie zostało usunięte."
 		"pt"			"Seu emudecimento foi removido."
-		"de"			"Sie wurden im Voice-Chat entsperrt."
+		"de"			"Sie wurden im Sprachchat entsperrt."
 		"fr"			"Votre mute a été supprimée."
 		"chi"			"对你的静音已取消."
 	}
@@ -71,7 +71,7 @@
 		"ru"			"Вам был включен чат."
 		"pl"			"Twój knebel został usunięty."
 		"pt"			"Seu amordaçamento foi removido."
-		"de"			"Sie wurden im Chat entsperrt."
+		"de"			"Sie wurden im Textchat entsperrt."
 		"fr"			"Votre mute du chat a été supprimé."
 		"chi"			"对你的禁言已取消."
 	}
@@ -85,7 +85,7 @@
 		"ru"			"Длительность: {1} минут, если не указана; навсегда, если 0.\nЕсли < 0, блокировка на сессию."
 		"pl"			"Czas: {1} minut, jeśli nieokreślony; permanentny, jeśli 0.\nJeśli < 0, blokada na sesje."
 		"pt"			"Tempo: {1} minutos se não for especificado, permanente se for 0 \.nSe for < 0, bloqueia na sessão."
-		"de"			"Dauer: {1} Minuten, wenn nicht festgelegt; für immer, wenn 0. \.nWenn < 0, Blockierung für nächste Periode."
+		"de"			"Dauer: {1} Minuten, wenn nicht festgelegt; Permanent, wenn 0. \.nWenn < 0, Blockierung für nächste Periode."
 		"fr"			"Temps: {1} minutes, si non spécifié; permanent, si 0.\nIf <0, bloque pour la session."
 		"chi"			"时间: {1} 分钟, 如果未做选择的话; 如果 0.\n 永久; 如果 < 0, 则在此局中封禁."
 	}
@@ -111,7 +111,7 @@
 		"ru"			"У игрока {1} уже отключен микрофон!"
 		"pl"			"Gracz {1} jest już wyciszony!"
 		"pt"			"Jogador {1} já foi emudecido!"
-		"de"			"Der Spieler {1} ist bereits im Voice-Chat gesperrt!"
+		"de"			"Der Spieler {1} ist bereits im Sprachchat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté!"
 		"chi"			"玩家 {1} 已被静音!"
 	}
@@ -124,7 +124,7 @@
 		"ru"			"У игрока {1} уже отключен чат!"
 		"pl"			"Gracz {1} jest już zakneblowany!"
 		"pt"			"Jogador {1} já foi amordaçado!"
-		"de"			"Der Spieler {1} ist bereits im Chat gesperrt!"
+		"de"			"Der Spieler {1} ist bereits im Textchat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté du chat!"
 		"chi"			"玩家 {1} 已被禁言!"
 	}
@@ -137,7 +137,7 @@
 		"ru"			"У игрока {1} уже отключен чат или микрофон!"
 		"pl"			"Gracz {1} jest już całkowicie wyciszony!"
 		"pt"			"Jogador {1} já amordaçado ou emudecido!"
-		"de"			"Der Spieler {1} ist bereits im Chat oder im Voice-Chat gesperrt!"
+		"de"			"Der Spieler {1} ist bereits im Text- oder Sprachchat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté ou muté du chat!"
 		"chi"			"玩家 {1} 已被禁言或静音!"
 	}
@@ -150,7 +150,7 @@
 		"ru"			"У игрока не отключен микрофон."
 		"pl"			"Gracz nie jest wyciszony."
 		"pt"			"Jogador não emudecido."
-		"de"			"Der Spieler ist im Voice-Chat nicht gesperrt."
+		"de"			"Der Spieler ist im Sprachchat nicht gesperrt."
 		"fr"			"Le joueur n'est pas muté."
 		"chi"			"玩家尚未被静音."
 	}
@@ -162,7 +162,7 @@
 		"ru"			"У игрока не отключен чат."
 		"pl"			"Gracz nie jest zakneblowany."
 		"pt"			"Jogador não amordaçado."
-		"de"			"Der Spieler ist im Chat nicht gesperrt."
+		"de"			"Der Spieler ist im Textchat nicht gesperrt."
 		"fr"			"Le joueur n'est pas muté du chat."
 		"chi"			"玩家尚未被禁言."
 	}
@@ -174,7 +174,7 @@
 		"ru"			"У игрока не отключен чат или микрофон."
 		"pl"			"Gracz nie jest całkowicie wyciszony."
 		"pt"			"Jogador não silenciado."
-		"de"			"Der Spieler ist im Chat oder im Voice-Chat nicht gesperrt."
+		"de"			"Der Spieler ist im Text- oder Sprachchat nicht gesperrt."
 		"fr"			"Le joueur n'est pas silence."
 		"chi"			"玩家尚未被禁言或静音."
 	}
@@ -188,7 +188,7 @@
 		"ru"			"Игроку {1} навсегда отключен чат."
 		"pl"			"Permanentnie zakneblowano {1}."
 		"pt"			"{1} foi permanentemente amordaçado."
-		"de"			"Der Spieler {1} ist für immer im Chat gesperrt."
+		"de"			"Der Spieler {1} ist für immer im Textchat gesperrt."
 		"fr"			"Un mute du chat permanent a été appliqué a {1}."
 		"chi"			"已对玩家 {1} 做永久禁言."
 	}
@@ -201,7 +201,7 @@
 		"ru"			"Игроку {1} навсегда отключен чат (причина: {2})."
 		"pl"			"Permanentnie zakneblowano {1} (powód: {2})."
 		"pt"			"{1} foi permanentemente amordaçado, (motivo: {2})."
-		"de"			"Der Spieler {1} ist für immer im Chat gesperrt (Grund: {2})."
+		"de"			"Der Spieler {1} ist für immer im Textchat gesperrt (Grund: {2})."
 		"fr"			"Un mute du chat permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 做永久禁言 (原因: {2})."
 	}
@@ -214,7 +214,7 @@
 		"ru"			"Игроку {1} отключен чат на {2} минут."
 		"pl"			"Zakneblowano {1} na {2} minut."
 		"pt"			"Amordaçamento de {1} foi estendido por {2} minutos."
-		"de"			"Der Spieler {1} ist für {2} Minuten im Chat gesperrt."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Textchat gesperrt."
 		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟."
 	}
@@ -227,7 +227,7 @@
 		"ru"			"Игроку {1} отключен чат на {2} минут (причина: {3})."
 		"pl"			"Zakneblowano {1} na {2} minut (powód: {3})."
 		"pt"			"Amordaçamento de {1} foi estendido por {2} minutos, (motivo: {3})."
-		"de"			"Der Spieler {1} ist für {2} Minuten im Chat gesperrt (Grund: {3})."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Textchat gesperrt (Grund: {3})."
 		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟 (原因: {3})."
 	}
@@ -241,7 +241,7 @@
 		"ru"			"Игроку {1} навсегда отключен микрофон."
 		"pl"			"Permanentnie wyciszono {1}."
 		"pt"			"{1} foi permanentemente emudecido."
-		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt."
+		"de"			"Der Spieler {1} ist für immer im Sprachchat gesperrt."
 		"fr"			"Un mute permanent a été appliqué a {1}."
 		"en"			"已对玩家 {1} 永久静音."
 	}
@@ -254,7 +254,7 @@
 		"ru"			"Игроку {1} навсегда отключен микрофон (причина: {2})."
 		"pl"			"Permanentnie wyciszono {1} (powód: {2})."
 		"pt"			"{1} foi permanentemente emudecido, (motivo: {2})."
-		"de"			"Der Spieler {1} ist für immer im Voice-Chat gesperrt (Grund: {2})."
+		"de"			"Der Spieler {1} ist für immer im Sprachchat gesperrt (Grund: {2})."
 		"fr"			"Un mute permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 永久静音 (原因: {3})."
 	}
@@ -267,7 +267,7 @@
 		"ru"			"Игроку {1} отключен микрофон на {2} минут."
 		"pl"			"Wyciszono {1} na {2} minut."
 		"pt"			"Emudecimento de {1} foi estendido por {2} minutos."
-		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat gesperrt."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Sprachchat gesperrt."
 		"fr"			"Un mute a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的静音延长了 {2} 分钟."
 	}
@@ -280,7 +280,7 @@
 		"ru"			"Игроку {1} отключен микрофон на {2} минут (причина: {3})."
 		"pl"			"Wyciszono {1} na {2} minut (powód: {3})."
 		"pt"			"Emudecimento de {1} foi estendido por {2} minutos, (motivo: {3})."
-		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat gesperrt (Grund: {3})."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Sprachchat gesperrt (Grund: {3})."
 		"fr"			"Un mute a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的静音延长了 {2} 分钟 (原因: {3})."
 	}
@@ -294,7 +294,7 @@
 		"ru"			"Игроку {1} навсегда отключен чат и микрофон."
 		"pl"			"Permanentnie całkowicie wyciszono {1}."
 		"pt"			"{1} foi permanentemente silenciado."
-		"de"			"Der Spieler {1} ist für immer im Voice-Chat und im Chat gesperrt."
+		"de"			"Der Spieler {1} ist für immer im Sprachchat und im Textchat gesperrt."
 		"fr"			"Un silence permanent a été appliqué a {1}."
 		"chi"			"已对玩家 {1} 进行永久禁言和静音."
 	}
@@ -307,7 +307,7 @@
 		"ru"			"Игроку {1} навсегда отключен чат и микрофон (причина: {2})."
 		"pl"			"Permanentnie całkowicie wyciszono {1} (powód: {2})."
 		"pt"			"{1} foi permanentemente silenciado, (motivo: {2})."
-		"de"			"Der Spieler {1} ist im Chat und im Voice-Chat gesperrt (Grund: {2})."
+		"de"			"Der Spieler {1} ist im Text- und Sprachchat gesperrt (Grund: {2})."
 		"fr"			"Un silence permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 进行永久禁言和静音 (原因: {2})."
 	}
@@ -320,7 +320,7 @@
 		"ru"			"Игроку {1} отключен чат и микрофон на {2} минут."
 		"pl"			"Całkowicie wyciszono {1} na {2} minut."
 		"pt"			"Silenciamento de {1} foi estendido por {2} minutos."
-		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat und im Chat gesperrt."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Text- und Sprachchat gesperrt."
 		"fr"			"Un silence a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的禁言和静音延长了 {2} 分钟."
 	}
@@ -333,7 +333,7 @@
 		"ru"			"Игроку {1} отключен чат и микрофон на {2} минут (причина: {3})."
 		"pl"			"Całkowicie wyciszono {1} na {2} minut (powód: {3})."
 		"pt"			"Silenciamento de {1} foi estendido por {2} minutos, (motivo: {3})."
-		"de"			"Der Spieler {1} ist für {2} Minuten im Voice-Chat und im Chat gesperrt (Grund: {3})."
+		"de"			"Der Spieler {1} ist für {2} Minuten im Text- und Sprachchat gesperrt (Grund: {3})."
 		"fr"			"Un silence a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的禁言和静音延长了 {2} 分钟 (原因: {3})."
 	}
@@ -347,7 +347,7 @@
 		"ru"			"Игроку {1} временно включен микрофон."
 		"pl"			"Tymczasowo usunięto wyciszenie {1}."
 		"pt"			"Emudecimento de {1} foi temporariamente removido."
-		"de"			"Der Spieler {1} ist zeitweilig im Voice-Chat entsperrt."
+		"de"			"Der Spieler {1} ist zeitweilig im Sprachchat entsperrt."
 		"fr"			"Suppression temporaire du mute depuis {1}."
 		"chi"			"已对玩家 {1} 暂时解除静音."
 	}
@@ -361,7 +361,7 @@
 		"ru"			"Игроку {1} временно включен чат."
 		"pl"			"Tymczasowo usunięto knebel {1}."
 		"pt"			"Amordaçamento de {1} foi temporariamente removido."
-		"de"			"Der Spieler {1} ist zeitweilig im Chat entsperrt."
+		"de"			"Der Spieler {1} ist zeitweilig im Textchat entsperrt."
 		"fr"			"Suppression temporaire du mute du chat depuis {1}."
 		"chi"			"已对玩家 {1} 暂时解除禁言."
 	}
@@ -374,7 +374,7 @@
 		"ru"			"Игроку {1} временно включен чат и микрофон."
 		"pl"			"Tymczasowo usunięto całkowite wyciszenie {1}."
 		"pt"			"Silenciamento de {1} foi temporariamente removido."
-		"de"			"Der Spieler {1} ist zeitweilig im Voice-Chat und im Chat entsperrt."
+		"de"			"Der Spieler {1} ist zeitweilig im Text- und Sprachchat entsperrt."
 		"fr"			"Suppression temporaire du silence depuis {1}."
 		"chi"			"已对玩家 {1} 暂时解除禁言和静音."
 	}
@@ -400,7 +400,7 @@
 		"ru"			"В базе не найдено действующих блокировок для {1}."
 		"pl"			"Brak aktywnych blokad {1} w bazie danych."
 		"pt"			"Nenhum bloqueio ativo foi encontrado no DB para {1}."
-		"de"			"Es wurde keine gültige Sperre für {1}in der Datenbank gefunden."
+		"de"			"Es wurde keine gültige Sperre für {1} in der Datenbank gefunden."
 		"fr"			"Aucun bloc actif trouvé dans DB pour {1}."
 		"chi"			"在数据库中未找到对 {1} 的禁止."
 	}
@@ -425,7 +425,7 @@
 		"ru"			"Невозможно включить микрофон {1}, т.к. он был отключен более высоким администратором!"
 		"pl"			"Wyciszenie {1} nie może zostać usunięte, ponieważ zostało nadane przez admina z wyższymi uprawnieniami!"
 		"pt"			"O emudecimento de {1} não pôde ser removido porque foi efetuado por um administrador de nível mais alto!"
-		"de"			"Es ist unmöglich {1} im Voice-Chat zu entsperren, weil er von höherem Administrator gesperrt wurde!"
+		"de"			"Es ist unmöglich {1} im Sprachchat zu entsperren, weil er von einem höheren Administrator gesperrt wurde!"
 		"fr"			"Le mute sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
 		"chi"			"对玩家 {1} 的静音是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
 	}
@@ -438,7 +438,7 @@
 		"ru"			"Невозможно включить чат {1}, т.к. он был отключен более высоким администратором!"
 		"pl"			"Knebel {1} nie może zostać usunięty, ponieważ został nadany przez admina z wyższymi uprawnieniami!"
 		"pt"			"O amordaçamento de {1} não pôde ser removido porque foi efetuado por um administrador de nível mais alto!"
-		"de"			"Es ist unmöglich {1}im Chat zu entsperren, weil er von höherem Administrator gesperrt wurde!"
+		"de"			"Es ist unmöglich {1} im Textchat zu entsperren, weil er von einem höheren Administrator gesperrt wurde!"
 		"fr"			"Le mute du chat sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
 		"chi"			"对玩家 {1} 的禁言是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
 	}
@@ -451,7 +451,7 @@
 		"ru"			"Игроку {1} включен микрофон."
 		"pl"			"Usunięto wyciszenie {1}."
 		"pt"			"Removido um emudecimento estendido de {1}."
-		"de"			"Der Spieler {1} wurde im Voice-Chat entsperrt."
+		"de"			"Der Spieler {1} wurde im Sprachchat entsperrt."
 		"fr"			"Suppression du mute étendu de {1}."
 		"chi"			"已取消对玩家 {1} 的静音延长."
 	}
@@ -464,7 +464,7 @@
 		"ru"			"Игроку {1} включен чат."
 		"pl"			"Usunięto knebel {1}."
 		"pt"			"Removido um amordaçamento estendido de {1}."
-		"de"			"Der Spieler {1} wurde im Chat entsperrt."
+		"de"			"Der Spieler {1} wurde im Textchat entsperrt."
 		"fr"			"Suppression du silence étendu de {1}. "
 		"chi"			"已取消对玩家 {1} 的禁言延长."
 	}
@@ -489,7 +489,7 @@
 		"ru"			"Успешно удалена блокировка микрофона для {1} из базы."
 		"pl"			"Usunięto wyciszenie {1} z bazy danych."
 		"pt"			"Removido com sucesso o emudecimento de {1} do DB."
-		"de"			"Die Sperre {1} im Voice-Chat wurde erfolgreich aus der Datenbank entfernt."
+		"de"			"Die Sperre {1} im Sprachchat wurde erfolgreich aus der Datenbank entfernt."
 		"fr"			"Suppression réussie du mute pour {1} de la base de données."
 		"chi"			"已成功从数据库中取消对 {1} 的静音."
 	}
@@ -502,7 +502,7 @@
 		"ru"			"Успешно удалена блокировка чата для {1} из базы."
 		"pl"			"Usunięto knebel {1} z bazy danych."
 		"pt"			"Removido com sucesso o amordaçamento de {1} do DB."
-		"de"			"Die Sperre {1} im Chat wurde erfolgreich aus der Datenbank entfernt."
+		"de"			"Die Sperre {1} im Textchat wurde erfolgreich aus der Datenbank entfernt."
 		"fr"			"Suppression réussie du mute du chat pour {1} de la base de données."
 		"chi"			"已成功从数据库中取消对 {1} 的禁言."
 	}
@@ -567,7 +567,7 @@
 		"ru"		"Чат и микрофон"
 		"pl"		"Komunikacja"
 		"pt"		"Comandos de Comunicação"
-		"de"		"Chat und Voice-Chat"
+		"de"		"Text- und Sprachchat"
 		"fr"		"Commandes de communication"
 		"chi"		"禁言和静音"
 	}
@@ -579,7 +579,7 @@
 		"ru"		"Чат и микрофон:"
 		"pl"		"Komunikacja:"
 		"pt"		"Comandos de Comunicação:"
-		"de"		"Chat und Voice-Chat:"
+		"de"		"Text- und Sprachchat:"
 		"fr"		"Commandes de communication:"
 		"chi"		"禁言和静音:"
 	}
@@ -615,7 +615,7 @@
 		"ru"		"Отключить чат"
 		"pl"		"Zaknebluj"
 		"pt"		"Emitir Amordaçar"
-		"de"		"Chat sperren"
+		"de"		"Textchat sperren"
 		"fr"		"Sanction chat"
 		"chi"		"进行禁言"
 	}
@@ -627,7 +627,7 @@
 		"ru"		"Отключить чат игроку:"
 		"pl"		"Wybierz Gracza:"
 		"pt"		"Selecionar Jogador:"
-		"de"		"Spieler im Chat sperren:"
+		"de"		"Spieler im Textchat sperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
 	}
@@ -639,7 +639,7 @@
 		"ru"		"Отключить микрофон игроку:"
 		"pl"		"Wybierz Gracza:"
 		"pt"		"Selecionar Jogador:"
-		"de"		"Spieler im Voice-Chat sperren:"
+		"de"		"Spieler im Sprachchat sperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
 	}
@@ -651,7 +651,7 @@
 		"ru"		"Отключить микрофон и чат игроку:"
 		"pl"		"Wybierz Gracza:"
 		"pt"		"Selecionar Jogador:"
-		"de"		"Spieler im Voice-Chat und im Chat sperren:"
+		"de"		"Spieler im Text- und Sprachchat sperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
 	}
@@ -663,7 +663,7 @@
 		"ru"		"Включить чат игроку:"
 		"pl"		"Wybierz Gracza:"
 		"pt"		"Selecionar Jogador:"
-		"de"		"Spieler im Chat entsperren:"
+		"de"		"Spieler im Textchat entsperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
 	}
@@ -675,7 +675,7 @@
 		"ru"		"Включить микрофон игроку:"
 		"pl"		"Wybierz Gracza:"
 		"pt"		"Selecionar Jogador:"
-		"de"		"Spieler im Voice-Chat entsperren:"
+		"de"		"Spieler im Sprachchat entsperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
 	}
@@ -687,7 +687,7 @@
 		"ru"		"Включить микрофон и чат игроку:"
 		"pl"		"Wybierz Gracza:"
 		"pt"		"Selecionar Jogador:"
-		"de"		"Spieler im Voice-Chat und im Chat entsperren:"
+		"de"		"Spieler im Text- und Sprachchat entsperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
 	}
@@ -699,7 +699,7 @@
 		"ru"		"Нет игроков с отключенным микрофоном"
 		"pl"		"Brak wyciszonych graczy"
 		"pt"		"Nenhum Jogador Emudecido"
-		"de"		"Es gibt keinen Spieler, der im Chat gesperrt wurde"
+		"de"		"Es gibt keinen Spieler, der im Textchat gesperrt wurde"
 		"fr"		"Aucun joueur de mute"
 		"chi"		"没有玩家被静音"
 	}
@@ -711,7 +711,7 @@
 		"ru"		"Нет игроков с отключенным чатом"
 		"pl"		"Brak zakneblowanych graczy"
 		"pt"		"Nenhum Jogador Amordaçado"
-		"de"		"Es gibt keinen Spieler, der im Voice-Chat gesperrt wurde"
+		"de"		"Es gibt keinen Spieler, der im Sprachchat gesperrt wurde"
 		"fr"		"Aucun joueur de mute du chat"
 		"chi"		"没有玩家被禁言"
 	}
@@ -723,7 +723,7 @@
 		"ru"		"Нет игроков с отключенным микрофоном и чатом"
 		"pl"		"Brak całkowicie wyciszonych graczy"
 		"pt"		"Nenhum Jogador Silenciado"
-		"de"		"Es gibt keinen Spieler, der im Voice-Chat und im Chat gesperrt wurde"
+		"de"		"Es gibt keinen Spieler, der im Text- und Sprachchat gesperrt wurde"
 		"fr"		"Aucun joueur en silence"
 		"chi"		"没有玩家被禁言和静音"
 	}
@@ -759,7 +759,7 @@
 		"ru"		"Включить чат"
 		"pl"		"Usuń knebel"
 		"pt"		"Remover Amordaçar"
-		"de"		"Chat entsperren"
+		"de"		"Textchat entsperren"
 		"fr"		"Enleve un mute du chat"
 		"chi"		"取消禁言"
 
@@ -796,7 +796,7 @@
 		"ru"		"Отключить микрофон"
 		"pl"		"Wycisz"
 		"pt"		"Emitir Emudecer"
-		"de"		"Voice-Chat sperren"
+		"de"		"Sprachchat sperren"
 		"fr"		"Sanction mute"
 		"chi"		"进行静音"
 	}
@@ -808,7 +808,7 @@
 		"ru"		"Включить микрофон"
 		"pl"		"Usuń wyciszenie"
 		"pt"		"Remover Emudecer"
-		"de"		"Voice-Chat entsperren"
+		"de"		"Sprachchat entsperren"
 		"fr"		"Enleve un mute"
 		"chi"		"取消静音"
 	}
@@ -820,7 +820,7 @@
 		"ru"		"Отключить микрофон и чат"
 		"pl"		"Wycisz całkowicie"
 		"pt"		"Emitir Silenciar"
-		"de"		"Voice-Chat und Chat sperren"
+		"de"		"Text- und Sprachchat sperren"
 		"fr"		"Santion en silence"
 		"chi"		"进行禁言和静音"
 	}
@@ -832,7 +832,7 @@
 		"ru"		"Включить микрофон и чат"
 		"pl"		"Usuń całkowite wyciszenie"
 		"pt"		"Remover Silenciar"
-		"de"		"Voice-Chat und Chat entsperren"
+		"de"		"Text- und Sprachchat entsperren"
 		"fr"		"Enleve un silence"
 		"chi"		"取消禁言和静音"
 	}
@@ -870,7 +870,7 @@
 		"ru"		"Микрофон"
 		"pl"		"Wyciszony"
 		"pt"		"Emudecido"
-		"de"		"Voice-Chat"
+		"de"		"Sprachchat"
 		"fr"		"Muté"
 		"chi"		"静音"
 	}
@@ -882,7 +882,7 @@
 		"ru"		"Чат"
 		"pl"		"Zakneblowany"
 		"pt"		"Amordaçado"
-		"de"		"Chat"
+		"de"		"Textchat"
 		"fr"		"Muté du chat"
 		"chi"		"禁言"
 	}
@@ -906,7 +906,7 @@
 		"ru"		"Навсегда"
 		"pl"		"Permanentnie"
 		"pt"		"Permanente"
-		"de"		"Für immer"
+		"de"		"Permanent"
 		"fr"		"Permanent"
 		"chi"		"永久"
 	}
@@ -1043,7 +1043,7 @@
 		"ru"		"Микрофон: "
 		"pl"		"Wyciszono: "
 		"pt"		"Emudecido: "
-		"de"		"Voice-Chat: "
+		"de"		"Sprachchat: "
 		"fr"		"Muté: "
 		"chi"		"静音: "
 	}
@@ -1055,7 +1055,7 @@
 		"ru"		"Чат: "
 		"pl"		"Zakneblowano: "
 		"pt"		"Amordaçado: "
-		"de"		"Chat: "
+		"de"		"Textchat: "
 		"fr"		"Mute du chat: "
 		"chi"		"禁言: "
 	}
@@ -1067,7 +1067,7 @@
 		"ru"		"Навсегда"
 		"pl"		"Permanentnie"
 		"pt"		"Permanente"
-		"de"		"Für immer"
+		"de"		"Permanent"
 		"fr"		"Permanent"
 		"chi"		"永久"
 	}
@@ -1131,7 +1131,7 @@
 		"ru"			"Игроку {1} отключен микрофон."
 		"pl"			"Wyciszono {1}."
 		"pt"			"{1} Emudecido."
-		"de"			"Der Spieler {1} wurde im Voice-Chat gesperrt."
+		"de"			"Der Spieler {1} wurde im Sprachchat gesperrt."
 		"fr"			"Muté {1}."
 		"chi"			"玩家 {1} 已被静音."
 	}
@@ -1144,7 +1144,7 @@
 		"ru"			"Игроку {1} отключен микрофон (причина: {2})."
 		"pl"			"Wyciszono {1} (powód: {2})."
 		"pt"			"{1} Emudecido (motivo: {2})."
-		"de"			"Der Spieler {1} wurde im Voice-Chat gesperrt (Grund: {2}}."
+		"de"			"Der Spieler {1} wurde im Sprachchat gesperrt (Grund: {2}}."
 		"fr"			"Muté {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被静音 (原因: {2})."
 	}
@@ -1157,7 +1157,7 @@
 		"ru"			"Игроку {1} отключен чат."
 		"pl"			"Zakneblowano {1}."
 		"pt"			"{1} Amordaçado."
-		"de"			"Der Spieler {1} wurde im Chat gesperrt."
+		"de"			"Der Spieler {1} wurde im Textchat gesperrt."
 		"fr"			"Mute du chat {1}."
 		"chi"			"玩家 {1} 已被禁言."
 	}
@@ -1170,7 +1170,7 @@
 		"ru"			"Игроку {1} отключен чат (причина: {2})."
 		"pl"			"Zakneblowano {1} (powód: {2})."
 		"pt"			"{1} Amordaçado (motivo: {2})."
-		"de"			"Der Spieler {1} wurde im Chat gesperrt (Grund: {2}}."
+		"de"			"Der Spieler {1} wurde im Textchat gesperrt (Grund: {2}}."
 		"fr"			"Mute du chat {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被禁言 (原因: {2})."
 	}
@@ -1183,7 +1183,7 @@
 		"ru"			"Игроку {1} отключен чат и микрофон."
 		"pl"			"Całkowicie wyciszono {1}."
 		"pt"			"{1} Silenciado."
-		"de"			"Der Spieler {1} wurde im Chat und im Voice-Chat gesperrt."
+		"de"			"Der Spieler {1} wurde im Text- und Sprachchat gesperrt."
 		"fr"			"Silence {1}."
 		"chi"			"玩家 {1} 已被禁言和静音."
 	}
@@ -1196,7 +1196,7 @@
 		"ru"			"Игроку {1} отключен чат и микрофон (причина: {2})."
 		"pl"			"Całkowicie wyciszono {1} (powód: {2})."
 		"pt"			"{1} Silenciado (motivo: {2})."
-		"de"			"Der Spieler {1} wurde im Chat und im Voice-Chat gesperrt (Grund: {2}}."
+		"de"			"Der Spieler {1} wurde im Text- und Sprachchat gesperrt (Grund: {2}}."
 		"fr"			"Silence {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被禁言和静音 (原因: {2})."
 	}
@@ -1221,7 +1221,7 @@
 		"ru"		"У вас не заблокированы чат и микрофон."
 		"pl"		"Nie zostałeś wyciszony ani zakneblowany."
 		"pt"		"Seu chat de texto e voz e não estão bloqueados."
-		"de"		"Sie sind im Chat und Voice-Chat nicht gesperrt."
+		"de"		"Sie sind im Text- und Sprachchat nicht gesperrt."
 		"fr"		"Votre chat et votre voix ne sont pas bloquées."
 		"chi"		"你没有被禁言或静音."
 	}
