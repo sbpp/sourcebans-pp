@@ -150,5 +150,6 @@
 	{
 		"#format"		"{1:N},{2:s},{3:s}"
 		"en"			"Admin: {1}\nReason: {2}\nLength: {3}"
+		"fr"			"Administrateur: {1}\nRaison: {2}\nDurée: {3}"
 	}
 }
