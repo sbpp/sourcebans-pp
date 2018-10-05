@@ -2817,8 +2817,29 @@ stock bool AdmHasFlag(int admin)
 
 stock int GetAdmImmunity(int admin)
 {
-	return admin > 0 && GetUserAdmin(admin) != INVALID_ADMIN_ID ?
-		GetAdminImmunityLevel(GetUserAdmin(admin)) : 0;
+	if (admin == 0)
+		return 0;
+
+	AdminId aid = GetUserAdmin(admin);
+	if (aid == INVALID_ADMIN_ID)
+		return 0;
+
+	int iImmunity = aid.ImmunityLevel;
+	int iGroupCount = aid.GroupCount;
+	if (iGroupCount > 0)
+	{
+		int iGroupImmunity;
+		char szDummy[4]; // for AdminId.GetGroup()
+
+		for (int iGroupID; iGroupID < iGroupCount; iGroupID++)
+		{
+			iGroupImmunity = (aid.GetGroup(iGroupID, szDummy, sizeof(szDummy))).ImmunityLevel;
+			if (iGroupImmunity > iImmunity)
+				iImmunity = iGroupImmunity;
+		}
+	}
+
+	return iImmunity;
 }
 
 stock int GetClientUserId2(int client)
