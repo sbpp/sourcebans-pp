@@ -43,7 +43,7 @@ public void OnPluginStart()
 	Convars[Cooldown] = CreateConVar("sbpp_report_cooldown", "60.0", "Cooldown in seconds between per report per user", FCVAR_NONE, true, 0.0, false);
 	Convars[MinLen] = CreateConVar("sbpp_report_minlen", "10", "Minimum reason length", FCVAR_NONE, true, 0.0, false);
 
-	LoadTranslations("sourcereport.phrases");
+	LoadTranslations("sbpp_report.phrases");
 
 	RegConsoleCmd("sm_report", CmdReport, "Initialize Report");
 

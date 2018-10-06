@@ -182,7 +182,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	LoadTranslations("sourcecomms.phrases");
+	LoadTranslations("sbpp_comms.phrases");
 
 	TopMenu hTemp = null;
 	if (LibraryExists("adminmenu") && ((hTemp = GetAdminTopMenu()) != INVALID_HANDLE))
@@ -566,16 +566,16 @@ public Action CommandCallback(int client, const char[] command, int args)
 public void OnAdminMenuReady(Handle hTemp)
 {
 	TopMenu topmenu = view_as<TopMenu>(hTemp);
-	
+
 	/* Block us from being called twice */
 	if (topmenu == hTopMenu)
 		return;
 
 	/* Save the Handle */
 	hTopMenu = topmenu;
-	
+
 	TopMenuObject MenuObject = hTopMenu.AddCategory("sourcecomm_cmds", Handle_Commands);
-	
+
 	if (MenuObject == INVALID_TOPMENUOBJECT)
 		return;
 
@@ -934,10 +934,10 @@ void AdminMenu_List(int client, int index)
 	char sTitle[192], sOption[32];
 	Format(sTitle, sizeof(sTitle), "%T", "AdminMenu_Select_List", client);
 	int iClients;
-	
+
 	Menu hMenu = new Menu(MenuHandler_MenuList);
 	hMenu.SetTitle(sTitle);
-	
+
 	if (!g_iPeskyPanels[client][viewingList])
 		hMenu.ExitBackButton = true;
 
@@ -991,9 +991,9 @@ void AdminMenu_ListTarget(int client, int target, int index, int viewMute = 0, i
 {
 	int userid = GetClientUserId(target);
 	Menu hMenu = CreateMenu(MenuHandler_MenuListTarget);
-	
+
 	char sBuffer[192], sOption[32];
-	
+
 	hMenu.SetTitle(g_sName[target]);
 	hMenu.Pagination = MENU_NO_PAGINATION;
 	hMenu.ExitButton = true;
@@ -1044,7 +1044,7 @@ void AdminMenu_ListTarget(int client, int target, int index, int viewMute = 0, i
 				default:
 					Format(sBuffer, sizeof(sBuffer), "error");
 			}
-			
+
 			hMenu.AddItem("", sBuffer, ITEMDRAW_DISABLED);
 
 			if (strlen(g_sMuteReason[target]) > 0)
@@ -1329,7 +1329,7 @@ public void Query_AddBlockInsert(Database db, DBResultSet results, const char[] 
 
 		InsertTempBlock(length, type, name, auth, reason, adminAuth, adminIp);
 	}
-	
+
 	delete dataPack;
 }
 
@@ -1532,7 +1532,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			}
 		}
 	}
-	
+
 	if (dataPack != null)
 		delete dataPack;
 }
@@ -1898,7 +1898,7 @@ public SMCResult ReadConfig_NewSection(SMCParser smc, const char[] name, bool op
 			ConfigState = ConfigStateServers;
 		}
 	}
-	
+
 	return SMCParse_Continue;
 }
 
@@ -2079,13 +2079,13 @@ stock bool DB_Conn_Lost(DBResultSet db)
 			delete g_hDatabase;
 			g_hDatabase = null;
 		}
-		
+
 		if (g_DatabaseState != DatabaseState_Wait)
 		{
 			g_DatabaseState = DatabaseState_Wait;
 			CreateTimer(RetryTime, Timer_StopWait, _, TIMER_FLAG_NO_MAPCHANGE);
 		}
-		
+
 		return true;
 	}
 
@@ -2542,7 +2542,7 @@ stock bool TempUnBlock(DataPack dataPack)
 {
 	char adminAuth[30], targetAuth[30];
 	char reason[256];
-	
+
 	dataPack.Reset();
 	int adminUserID = dataPack.ReadCell();
 	int targetUserID = dataPack.ReadCell();
