@@ -122,7 +122,7 @@ Handle
 	g_hFwd_OnBanAdded
 	, g_hFwd_OnReportAdded
 	, PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
-	
+
 DataPack PlayerDataPack[MAXPLAYERS + 1] =  { null, ... };
 
 TopMenu	hTopMenu = null;
@@ -161,7 +161,7 @@ public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 	LoadTranslations("plugin.basecommands");
-	LoadTranslations("sourcebans.phrases");
+	LoadTranslations("sbpp_main.phrases");
 	LoadTranslations("basebans.phrases");
 	loadAdmins = loadGroups = loadOverrides = false;
 
@@ -1193,7 +1193,7 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 	int admin, minutes;
 	char adminAuth[30], adminIp[30], banReason[256], ip[16], Query[512];
 	char reason[128];
-	
+
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
@@ -1242,7 +1242,7 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 	int admin, minutes;
 	char reason[128];
 	char arg[30];
-	
+
 	if (dataPack != null)
 	{
 		dataPack.Reset();
@@ -1280,17 +1280,17 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 
 public void SelectUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	int admin; 
+	int admin;
 	char arg[30], adminAuth[30], unbanReason[256];
 	char reason[128];
-	
+
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(arg, sizeof(arg));
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	delete dataPack;
-	
+
 	db.Escape(reason, unbanReason, sizeof(unbanReason));
 
 	// If error is not an empty string the query failed
@@ -1337,7 +1337,7 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 	int admin;
 	char arg[30];
 	char reason[128];
-	
+
 	if (dataPack != null)
 	{
 		dataPack.Reset();
@@ -1375,7 +1375,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	int admin, minutes;
 	char adminAuth[30], adminIp[30], authid[20], banReason[256], Query[512];
 	char reason[128];
-	
+
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
@@ -1423,14 +1423,14 @@ public void InsertAddbanCallback(Database db, DBResultSet results, const char[] 
 	int admin, minutes;
 	char authid[20];
 	char reason[128];
-	
+
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(authid, sizeof(authid));
 	delete dataPack;
-	
+
 	// If error is not an empty string the query failed
 	if (results == null)
 	{
@@ -1531,7 +1531,7 @@ public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char
 {
 	char buffer[512];
 	char auth[40];
-	
+
 	dataPack.ReadString(auth, sizeof(auth));
 	if (results == null)
 	{
@@ -1858,7 +1858,7 @@ public void GroupsDone(Database db, DBResultSet results, const char[] error, any
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s", error);
 		return;
 	}
-	
+
 	char grpName[128], immuneGrpName[128];
 	char grpFlags[32];
 	int Immunity;
@@ -1960,7 +1960,7 @@ public void GroupsSecondPass(Database db, DBResultSet results, const char[] erro
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s", error);
 		return;
 	}
-	
+
 	char grpName[128], immunityGrpName[128];
 
 	GroupId curGrp = INVALID_GROUP_ID;
@@ -2005,7 +2005,7 @@ public void LoadGroupsOverrides(Database db, DBResultSet results, const char[] e
 		LogToFile(logFile, "Failed to retrieve group overrides from the database, %s", error);
 		return;
 	}
-	
+
 	char sGroupName[128], sType[16], sCommand[64], sAllowed[16];
 	OverrideRule iRule;
 	OverrideType iType;
@@ -2595,7 +2595,7 @@ stock void InsertServerInfo()
     if (DB == INVALID_HANDLE) {
         return;
     }
-    
+
     char query[100];
     int pieces[4];
     int longip = CvarHostIp.IntValue;

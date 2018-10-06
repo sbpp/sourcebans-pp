@@ -66,7 +66,7 @@ public Plugin myinfo =
 
 public void OnPluginStart()
 {
-	LoadTranslations("sourcesleuth.phrases");
+	LoadTranslations("sbpp_sleuth.phrases");
 
 	CreateConVar("sm_sourcesleuth_version", PLUGIN_VERSION, "SourceSleuth plugin version", FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
