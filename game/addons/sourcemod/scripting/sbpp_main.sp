@@ -410,7 +410,14 @@ public Action CommandBan(int client, int args)
 {
 	if (args < 2)
 	{
-		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
+		if ((GetCmdReplySource() == SM_REPLY_TO_CHAT) && (client != 0) && (args == 0))
+		{
+			DisplayBanTargetMenu(client);
+		}
+		else
+		{
+			ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
+		}
 		return Plugin_Handled;
 	}
 
