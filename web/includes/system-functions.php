@@ -53,17 +53,6 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
     }
 }
 
-/**
- * Allows the title of the page to change wherever the code is being executed from
- *
- * @param string $title The new title
- * @return noreturn
- */
-function RewritePageTitle($title)
-{
-    $GLOBALS['TitleRewrite'] = $title;
-}
-
 function BitToString($mask)
 {
     $perms = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);

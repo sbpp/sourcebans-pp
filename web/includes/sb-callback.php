@@ -2523,7 +2523,7 @@ function ClearCache()
     return $objResponse;
     }
 
-    $cachedir = dir(SB_THEMES_COMPILE);
+    $cachedir = dir(SB_CACHE);
     while (($entry = $cachedir->read()) !== false) {
     if (is_file($cachedir->path.$entry)) {
     unlink($cachedir->path.$entry);

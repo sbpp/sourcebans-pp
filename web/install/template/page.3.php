@@ -146,13 +146,13 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
   </tr>
 
    <tr>
-  <td width="33%" height="16" class="listtable_1"><b>Compiled Themes Writable (/themes_c)</b></td>
+  <td width="33%" height="16" class="listtable_1"><b>Cache Writable (/cache)</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<td width="22%" height="16" class="listtable_1"><b>Yes</b></td>
-	<?php if(is_writable("../themes_c"))
+	<?php if(is_writable("../cache"))
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
-	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../themes_c")?"Yes":"No";?></td>
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo is_writable("../cache")?"Yes":"No";?></td>
   </tr>
 
   <tr>
