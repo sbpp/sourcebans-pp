@@ -63,8 +63,7 @@ if ($data !== false) {
             header("Location: ".SB_WP_URL."/index.php?p=login&m=empty_pwd");
             die;
         } else {
-            session_destroy();
-            \SessionManager::sessionStart('SourceBans', (60*60*24*7));
+            setcookie('remember_me', 604800, time() + 604800);
             $_SESSION['aid'] = $result['aid'];
         }
     }

@@ -33,7 +33,7 @@ $xajax = new xajax();
 $xajax->setRequestURI('./index.php');
 global $userbank;
 
-if (\SessionManager::checkSession()) {
+if ($userbank->is_admin()) {
     $xajax->registerFunction("AddMod");
     $xajax->registerFunction("RemoveMod");
     $xajax->registerFunction("AddGroup");

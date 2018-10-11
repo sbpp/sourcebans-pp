@@ -9,6 +9,7 @@ function route($fallback)
         case 'login':
             return ['Login', '/page.login.php'];
         case 'logout':
+            unset($_COOKIE['remember_me']);
             $_SESSION = [];
             session_destroy();
             return ['Dashboard', '/page.home.php'];
