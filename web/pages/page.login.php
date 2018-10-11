@@ -29,7 +29,6 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-RewritePageTitle("Admin Login");
 
 global $userbank, $theme;
 if (isset($_GET['m'])) {
