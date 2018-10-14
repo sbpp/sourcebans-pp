@@ -462,7 +462,7 @@ while (!$res->EOF) {
             break;
     }
 
-    $data['ban_date']    = date($dateformat, $res->fields['ban_created']);
+    $data['ban_date']    = Config::time($res->fields['ban_created']);
     $data['player']      = addslashes($res->fields['player_name']);
     $data['steamid']     = $res->fields['authid'];
     $data['communityid'] = $res->fields['community_id'];
@@ -479,7 +479,7 @@ while (!$res->EOF) {
 
     if ($res->fields['ban_length'] > 0) {
         $data['ban_length'] = SecondsToString(intval($res->fields['ban_length']));
-        $data['expires']    = date($dateformat, $res->fields['ban_ends']);
+        $data['expires']    = Config::time($res->fields['ban_ends']);
     } else if ($res->fields['ban_length'] == 0) {
         $data['ban_length'] = 'Permanent';
         $data['expires']    = 'never';
@@ -610,14 +610,14 @@ while (!$res->EOF) {
                 }
 
                 $cdata['comname']    = $commentres->fields['comname'];
-                $cdata['added']      = date($dateformat, $commentres->fields['added']);
+                $cdata['added']      = Config::time($commentres->fields['added']);
                 $cdata['commenttxt'] = $commentres->fields['commenttxt'];
                 $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
 
                 if (!empty($commentres->fields['edittime'])) {
-                    $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                    $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                     $cdata['editname'] = $commentres->fields['editname'];
                 } else {
                     $cdata['edittime'] = "";
@@ -723,12 +723,12 @@ if (isset($_GET["comment"])) {
     while (!$cotherdata->EOF) {
         $coment               = array();
         $coment['comname']    = $cotherdata->fields['comname'];
-        $coment['added']      = date($dateformat, $cotherdata->fields['added']);
+        $coment['added']      = Config::time($cotherdata->fields['added']);
         $coment['commenttxt'] = str_replace("\n", "<br />", $cotherdata->fields['commenttxt']);
         // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
         $coment['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $coment['commenttxt']);
         if ($cotherdata->fields['editname'] != "") {
-            $coment['edittime'] = date($dateformat, $cotherdata->fields['edittime']);
+            $coment['edittime'] = Config::time($cotherdata->fields['edittime']);
             $coment['editname'] = $cotherdata->fields['editname'];
         } else {
             $coment['editname'] = "";

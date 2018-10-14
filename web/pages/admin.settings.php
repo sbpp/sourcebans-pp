@@ -134,7 +134,7 @@ foreach ($log as $l) {
         $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/error.png' alt='Warning'>";
     }
     $log_item['user']     = !empty($l['user']) ? $l['user'] : 'Guest';
-    $log_item['date_str'] = date($dateformat, $l['created']);
+    $log_item['date_str'] = Config::time($l['created']);
     $log_item             = array_merge($l, $log_item);
     $log_item['message']  = str_replace("\n", "<br />", htmlentities(str_replace(["<br />", "<br>", "<br/>"], "\n", $log_item['message'])));
     array_push($log_list, $log_item);

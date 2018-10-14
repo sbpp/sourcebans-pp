@@ -485,7 +485,7 @@ while (!$res->EOF) {
         $data['country'] = '<img src="images/country/zz.jpg" alt="Unknown Country" border="0" align="absmiddle" />';
     }
 
-    $data['ban_date']    = date($dateformat, $res->fields['ban_created']);
+    $data['ban_date']    = Config::time($res->fields['ban_created']);
     $data['player']      = addslashes($res->fields['player_name']);
     $data['type']        = $res->fields['type'];
     $data['steamid']     = $res->fields['authid'];
@@ -510,7 +510,7 @@ while (!$res->EOF) {
         $data['ub_reason'] = "";
         $data['unbanned']  = false;
     } else {
-        $data['expires']   = date($dateformat, $res->fields['ban_ends']);
+        $data['expires']   = Config::time($res->fields['ban_ends']);
         $data['class']     = "listtable_1_banned";
         $data['ub_reason'] = "";
         $data['unbanned']  = false;
@@ -594,7 +594,7 @@ while (!$res->EOF) {
     if ($res->fields['ban_length'] == 0) {
         $data['expires'] = 'never';
     } else {
-        $data['expires'] = date($dateformat, $res->fields['ban_ends']);
+        $data['expires'] = Config::time($res->fields['ban_ends']);
     }
 
 
@@ -619,7 +619,7 @@ while (!$res->EOF) {
         if (!empty($logstring)) {
             $logstring .= ", ";
         }
-        $logstring .= '<span title="Server: ' . $logged["ip"] . ':' . $logged["port"] . ', Date: ' . date($dateformat, $logged["time"]) . '">' . ($logged["name"] != "" ? htmlspecialchars($logged["name"]) : "<i>no name</i>") . '</span>';
+        $logstring .= '<span title="Server: ' . $logged["ip"] . ':' . $logged["port"] . ', Date: ' . Config::time($logged["time"]) . '">' . ($logged["name"] != "" ? htmlspecialchars($logged["name"]) : "<i>no name</i>") . '</span>';
     }
     $data['banlog'] = $logstring;
 
@@ -650,14 +650,14 @@ while (!$res->EOF) {
                 }
 
                 $cdata['comname']    = $commentres->fields['comname'];
-                $cdata['added']      = date($dateformat, $commentres->fields['added']);
+                $cdata['added']      = Config::time($commentres->fields['added']);
                 $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
                 $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
 
                 if (!empty($commentres->fields['edittime'])) {
-                    $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                    $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                     $cdata['editname'] = $commentres->fields['editname'];
                 } else {
                     $cdata['edittime'] = "";
@@ -768,13 +768,13 @@ if (isset($_GET["comment"])) {
     while (!$cotherdata->EOF) {
         $coment               = array();
         $coment['comname']    = $cotherdata->fields['comname'];
-        $coment['added']      = date($dateformat, $cotherdata->fields['added']);
+        $coment['added']      = Config::time($cotherdata->fields['added']);
         $coment['commenttxt'] = htmlspecialchars($cotherdata->fields['commenttxt']);
         $coment['commenttxt'] = str_replace("\n", "<br />", $coment['commenttxt']);
         // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
         $coment['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $coment['commenttxt']);
         if ($cotherdata->fields['editname'] != "") {
-            $coment['edittime'] = date($dateformat, $cotherdata->fields['edittime']);
+            $coment['edittime'] = Config::time($cotherdata->fields['edittime']);
             $coment['editname'] = $cotherdata->fields['editname'];
         } else {
             $coment['editname'] = "";
