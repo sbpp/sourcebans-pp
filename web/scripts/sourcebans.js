@@ -225,14 +225,7 @@ function FadeElIn(id, time)
 	setTimeout("$(document.getElementById('" + id + "')).setOpacity(1);", time);
 	return;
 }
-function FXShow(id)
-{
-	$(document.getElementById(id)).setStyle('display', 'block');
-}
-function FXHide(id)
-{
-	$(document.getElementById(id)).setStyle('display', 'none');
-}
+
 function DoLogin(redir)
 {
 	var err = 0;
@@ -1084,15 +1077,6 @@ function TabToReload()
 	var url = window.location.toString();
 	var nurl = "window.location = '" + url.replace("#^" + url[url.length-1],"") + "'";
 	$('admin_tab_0').setProperty('onclick', nurl);
-}
-
-
-function toggleMCE(id) {
-	var elm = document.getElementById(id);
-	if (tinyMCE.getInstanceById(id) == null)
-		tinyMCE.execCommand('mceAddControl', false, id);
-	else
-		tinyMCE.execCommand('mceRemoveControl', false, id);
 }
 
 function CheckEmail(type, id)
