@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins` (
   `lastvisit` int(11) NULL,
   PRIMARY KEY  (`aid`),
   UNIQUE KEY `user` (`user`)
-) ENGINE=MyISAM  DEFAULT CHARSET={charset};
+) ENGINE=InnoDB  DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_admins_servers_groups` (
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins_servers_groups` (
   `group_id` int(10) NOT NULL,
   `srv_group_id` int(10) NOT NULL,
   `server_id` int(10) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_banlog` (
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_banlog` (
   `name` varchar(128) NOT NULL,
   `bid` int(6) NOT NULL,
   PRIMARY KEY  (`sid`,`time`,`bid`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_bans` (
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_bans` (
   KEY `sid` (`sid`),
   FULLTEXT KEY `reason` (`reason`),
   FULLTEXT KEY `authid_2` (`authid`)
-) ENGINE=MyISAM  DEFAULT CHARSET={charset};
+) ENGINE=InnoDB  DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_comments` (
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_comments` (
   `edittime` int(11) default NULL,
   FULLTEXT `commenttxt` (`commenttxt`),
   KEY `cid` (`cid`)
-) ENGINE=MyISAM  DEFAULT CHARSET={charset};
+) ENGINE=InnoDB  DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_demos` (
@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_demos` (
   `filename` varchar(128) character set {charset} NOT NULL,
   `origname` varchar(128) NOT NULL,
   PRIMARY KEY  (`demid`,`demtype`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_groups` (
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_groups` (
   `name` varchar(128) character set {charset} NOT NULL default 'unnamed',
   `flags` int(10) NOT NULL,
   PRIMARY KEY  (`gid`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_log` (
@@ -104,7 +104,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_log` (
   `host` text NOT NULL,
   `created` int(11) NOT NULL,
   PRIMARY KEY  (`lid`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_mods` (
@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_mods` (
   UNIQUE (`modfolder`),
   UNIQUE (`name`),
   INDEX (`steam_universe`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_overrides` (
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_overrides` (
   `flags` varchar(30) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `type` (`type`,`name`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_protests` (
@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_protests` (
   `pip` varchar(64) NOT NULL,
   PRIMARY KEY  (`pid`),
   KEY `bid` (`bid`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_servers` (
@@ -154,21 +154,21 @@ CREATE TABLE IF NOT EXISTS `{prefix}_servers` (
   `enabled` TINYINT NOT NULL DEFAULT '1',
   PRIMARY KEY  (`sid`),
   UNIQUE KEY `ip` (`ip`,`port`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_servers_groups` (
   `server_id` int(10) NOT NULL,
   `group_id` int(10) NOT NULL,
   PRIMARY KEY  (`server_id`,`group_id`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_settings` (
   `setting` varchar(128) NOT NULL,
   `value` text NOT NULL,
   UNIQUE KEY `setting` (`setting`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_srvgroups` (
@@ -178,7 +178,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_srvgroups` (
   `name` varchar(120) NOT NULL,
   `groups_immune` varchar(255) NOT NULL,
   PRIMARY KEY  (`id`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_srvgroups_overrides` (
@@ -189,7 +189,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_srvgroups_overrides` (
   `access` enum('allow','deny') NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `group_id` (`group_id`,`type`,`name`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_submissions` (
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_submissions` (
   `archivedby` INT(11) NULL,
   `server` tinyint(3) default NULL,
   PRIMARY KEY  (`subid`)
-) ENGINE=MyISAM DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
 CREATE TABLE IF NOT EXISTS `{prefix}_comms` (
   `bid` int(6) NOT NULL AUTO_INCREMENT,
@@ -232,4 +232,4 @@ CREATE TABLE IF NOT EXISTS `{prefix}_comms` (
   KEY `authid` (`authid`),
   KEY `created` (`created`),
   KEY `aid` (`aid`)
-) ENGINE=MyISAM  DEFAULT CHARSET={charset};
+) ENGINE=InnoDB  DEFAULT CHARSET={charset};

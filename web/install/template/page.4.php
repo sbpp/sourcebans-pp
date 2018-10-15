@@ -13,7 +13,7 @@ if (version_compare($version['version'], "5.5.3") >= 0) {
     $charset .= 'mb4';
 }
 
-$file = file_get_contents(INCLUDES_PATH . "/struc.sql");
+$file = file_get_contents(INCLUDES_PATH . "/sql/struc.sql");
 $file = str_replace("{prefix}", $_POST['prefix'], $file);
 $file = str_replace("{charset}", $charset, $file);
 $querys = explode(";", $file);
