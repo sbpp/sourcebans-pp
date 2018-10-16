@@ -3,7 +3,7 @@
 	Access Denied!
 {else}
 	<div id="msg-green" style="display:none;">
-		<i><img src="./images/yay.png" alt="Warning" /></i>
+		<i class="fas fa-check fa-2x"></i>
 		<b>Admin Added</b>
 		<br />
 		The new admin has been successfully added to the system.<br /><br />

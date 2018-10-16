@@ -225,14 +225,7 @@ function FadeElIn(id, time)
 	setTimeout("$(document.getElementById('" + id + "')).setOpacity(1);", time);
 	return;
 }
-function FXShow(id)
-{
-	$(document.getElementById(id)).setStyle('display', 'block');
-}
-function FXHide(id)
-{
-	$(document.getElementById(id)).setStyle('display', 'none');
-}
+
 function DoLogin(redir)
 {
 	var err = 0;
@@ -1086,15 +1079,6 @@ function TabToReload()
 	$('admin_tab_0').setProperty('onclick', nurl);
 }
 
-
-function toggleMCE(id) {
-	var elm = document.getElementById(id);
-	if (tinyMCE.getInstanceById(id) == null)
-		tinyMCE.execCommand('mceAddControl', false, id);
-	else
-		tinyMCE.execCommand('mceRemoveControl', false, id);
-}
-
 function CheckEmail(type, id)
 {
 	var err = 0;
@@ -1285,82 +1269,6 @@ function RemoveComment(cid, type, page)
 		return;
 	xajax_RemoveComment(cid, type, page);
 }
-
-
-// drag and drop function, make the dialog window movable!
-var ns4=document.layers;
-var ie4=document.all;
-var ns6=document.getElementById&&!document.all;
-
-//NS 4
-var dragswitch=0;
-var nsx;
-var nsy;
-var nstemp;
-function drag_drop_ns(name)
-{
-	if(!ns4)
-		return;
-	temp=eval(name);
-	temp.captureEvents(Event.MOUSEDOWN | Event.MOUSEUP);
-	temp.onmousedown=gons;
-	temp.onmousemove=dragns;
-	temp.onmouseup=stopns;
-}
-function gons(e)
-{
-	temp.captureEvents(Event.MOUSEMOVE);
-	nsx=e.x;
-	nsy=e.y;
-}
-function dragns(e)
-{
-	if(dragswitch==1) {
-		temp.moveBy(e.x-nsx,e.y-nsy);
-		return false;
-	}
-}
-function stopns()
-{
-	temp.releaseEvents(Event.MOUSEMOVE);
-}
-
-//IE4 || NS6
-function drag_drop(e)
-{
-	if(ie4&&dragapproved) {
-		crossobj.style.left=tempx+event.clientX-offsetx+'px';
-		crossobj.style.top=tempy+event.clientY-offsety+'px';
-		return false;
-	}
-	else if(ns6&&dragapproved) {
-		crossobj.style.left=tempx+e.clientX-offsetx+'px';
-		crossobj.style.top=tempy+e.clientY-offsety+'px';
-		return false;
-	}
-}
-function initializiere_drag(e)
-{
-	crossobj=ns6? document.getElementById("dialog-placement") : document.all["dialog-placement"];
-	var firedobj=ns6? e.target : event.srcElement;
-	var topelement=ns6? "HTML" : "BODY";
-
-	while (firedobj!=null&&firedobj.tagName!=topelement&&firedobj.id!="dragbar") {
-		firedobj=ns6? firedobj.parentNode : firedobj.parentElement;
-	}
-	if(firedobj!=null&&firedobj.id=="dragbar")
-	{
-		offsetx=ie4? event.clientX : e.clientX;
-		offsety=ie4? event.clientY : e.clientY;
-		tempx=parseInt(crossobj.style.left);
-		tempy=parseInt(crossobj.style.top);
-		dragapproved=true;
-		document.onmousemove=drag_drop;
-	}
-
-}
-document.onmousedown=initializiere_drag;
-document.onmouseup=new Function("dragapproved=false");
 
 function TickSelectAll()
 {

@@ -90,12 +90,12 @@
 		  </div>
 		  {if $ban.demo_available}
 		  <div style="float:right;">
-		  <img src="images/demo.png" alt="Demo" title="Demo available" style="height:14px;width:14px;" />
+		  <i class="fas fa-video fa-lg"></i>
 		  </div>
 		  {/if}
 		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
 		  <div style="float:right;">
-		  {$ban.commentdata|@count} <img src="images/details.png" alt="Comments" title="Comments" style="height:12px;width:12px;" />
+		  {$ban.commentdata|@count} <i class="fas fa-clipboard-list fa-lg"></i>
 		  </div>
 		  {/if}
         </td>

@@ -2,12 +2,12 @@
   Access Denied!
 {else}
   <div id="msg-green" style="display:none;">
-    <i><img src="./images/yay.png" alt="Success" /></i>
+    <i class="fas fa-check fa-2x"></i>
     <b>Ban Added</b><br />
     The new ban has been added to the system.<br /><br />
     <i>Redirecting back to bans page</i>
   </div>
-  
+
   <div id="add-group1">
     <h3>Add Ban</h3>
     For more information or help regarding a certain subject move your mouse over the question mark.<br /><br />
@@ -15,7 +15,7 @@
     <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">
-            {help_icon title="Nickname" message="Type the nickname of the person that you are banning."}Nickname 
+            {help_icon title="Nickname" message="Type the nickname of the person that you are banning."}Nickname
           </div>
         </td>
         <td>
@@ -29,7 +29,7 @@
       <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">
-            {help_icon title="Ban Type" message="Choose whether to ban by Steam ID or IP address."}Ban Type 
+            {help_icon title="Ban Type" message="Choose whether to ban by Steam ID or IP address."}Ban Type
           </div>
         </td>
         <td>
@@ -57,7 +57,7 @@
       <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">
-            {help_icon title="IP Address" message="Type the IP address of the person you want to ban."}IP Address 
+            {help_icon title="IP Address" message="Type the IP address of the person you want to ban."}IP Address
           </div>
         </td>
         <td>
@@ -70,7 +70,7 @@
       <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">
-            {help_icon title="Ban Reason" message="Explain in detail, why this ban is being made."}Ban Reason 
+            {help_icon title="Ban Reason" message="Explain in detail, why this ban is being made."}Ban Reason
           </div>
         </td>
         <td>
@@ -115,7 +115,7 @@
       <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">
-            {help_icon title="Ban Length" message="Select how long you want to ban this person for."}Ban Length 
+            {help_icon title="Ban Length" message="Select how long you want to ban this person for."}Ban Length
           </div>
         </td>
         <td>
@@ -163,8 +163,8 @@
           <div id="length.msg" ></div>
         </td>
       </tr>
-      
-      
+
+
       <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">

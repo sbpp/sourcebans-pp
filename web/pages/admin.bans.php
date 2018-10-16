@@ -155,12 +155,12 @@ if ($PageEnd > $page_count) {
     $PageEnd = $page_count;
 }
 if ($page > 1) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=bans&ppage=" . ($page - 1) . "#^1");
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=bans&ppage=" . ($page - 1) . "#^1");
 } else {
     $prev = "";
 }
 if ($PageEnd < $page_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=bans&ppage=" . ($page + 1) . "#^1");
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=bans&ppage=" . ($page + 1) . "#^1");
 } else {
     $next = "";
 }
@@ -205,11 +205,11 @@ foreach ($protests as $prot) {
     $prot['authid'] = $protestb[2];
     $prot['ip']     = $protestb['ip'];
 
-    $prot['date'] = date($dateformat, $protestb['created']);
+    $prot['date'] = Config::time($protestb['created']);
     if ($protestb['ends'] == 'never') {
         $prot['ends'] = 'never';
     } else {
-        $prot['ends'] = date($dateformat, $protestb['ends']);
+        $prot['ends'] = Config::time($protestb['ends']);
     }
     $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
 
@@ -219,7 +219,7 @@ foreach ($protests as $prot) {
     } else {
         $prot['server'] = $protestb[12];
     }
-    $prot['datesubmitted'] = date($dateformat, $prot['datesubmitted']);
+    $prot['datesubmitted'] = Config::time($prot['datesubmitted']);
     //COMMENT STUFF
     //-----------------------------------
     $view_comments         = true;
@@ -236,9 +236,9 @@ foreach ($protests as $prot) {
             $cdata            = array();
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'P',-1);\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'P',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
@@ -246,12 +246,12 @@ foreach ($protests as $prot) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = date($dateformat, $commentres->fields['added']);
+            $cdata['added']      = Config::time($commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -267,7 +267,7 @@ foreach ($protests as $prot) {
     }
 
     $prot['commentdata']    = $comment;
-    $prot['protaddcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P');
+    $prot['protaddcomment'] = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P');
     //-----------------------------------------
 
     array_push($protest_list, $prot);
@@ -304,12 +304,12 @@ if ($PageEnd > $page_count) {
     $PageEnd = $page_count;
 }
 if ($page > 1) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=bans&papage=" . ($page - 1) . "#^1~p1");
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=bans&papage=" . ($page - 1) . "#^1~p1");
 } else {
     $prev = "";
 }
 if ($PageEnd < $page_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=bans&papage=" . ($page + 1) . "#^1~p1");
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=bans&papage=" . ($page + 1) . "#^1~p1");
 } else {
     $next = "";
 }
@@ -356,11 +356,11 @@ foreach ($protestsarchiv as $prot) {
             $prot['authid'] = $protestb[2];
             $prot['ip']     = $protestb['ip'];
 
-            $prot['date'] = date($dateformat, $protestb['created']);
+            $prot['date'] = Config::time($protestb['created']);
             if ($protestb['ends'] == 'never') {
                 $prot['ends'] = 'never';
             } else {
-                $prot['ends'] = date($dateformat, $protestb['ends']);
+                $prot['ends'] = Config::time($protestb['ends']);
             }
             $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
             $prot['admin']      = $protestb[11];
@@ -380,7 +380,7 @@ foreach ($protestsarchiv as $prot) {
     } else {
         $prot['archive'] = "ban has been deleted.";
     }
-    $prot['datesubmitted'] = date($dateformat, $prot['datesubmitted']);
+    $prot['datesubmitted'] = Config::time($prot['datesubmitted']);
     //COMMENT STUFF
     //-----------------------------------
     $view_comments         = true;
@@ -397,9 +397,9 @@ foreach ($protestsarchiv as $prot) {
             $cdata            = array();
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'P',-1);\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'P',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
@@ -407,12 +407,12 @@ foreach ($protestsarchiv as $prot) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = date($dateformat, $commentres->fields['added']);
+            $cdata['added']      = Config::time($commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -428,7 +428,7 @@ foreach ($protestsarchiv as $prot) {
     }
 
     $prot['commentdata']    = $comment;
-    $prot['protaddcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P');
+    $prot['protaddcomment'] = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P');
     //-----------------------------------------
 
     array_push($protest_list_archiv, $prot);
@@ -474,12 +474,12 @@ if ($PageEnd > $page_count) {
     $PageEnd = $page_count;
 }
 if ($page > 1) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=bans&spage=" . ($page - 1) . "#^2");
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=bans&spage=" . ($page - 1) . "#^2");
 } else {
     $prev = "";
 }
 if ($PageEnd < $page_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=bans&spage=" . ($page + 1) . "#^2");
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=bans&spage=" . ($page + 1) . "#^2");
 } else {
     $next = "";
 }
@@ -518,12 +518,12 @@ foreach ($submissions as $sub) {
 												WHERE demtype = \"S\" AND demid = " . (int) $sub['subid']);
 
     if ($dem && !empty($dem['filename']) && @file_exists(SB_DEMOS . "/" . $dem['filename'])) {
-        $sub['demo'] = "<a href=\"getdemo.php?id=" . $sub['subid'] . "&type=S\"><img src=\"images/demo.png\" border=\"0\" style=\"vertical-align:middle\" /> Get Demo</a>";
+        $sub['demo'] = "<a href=\"getdemo.php?id=" . $sub['subid'] . "&type=S\"><i class='fas fa-video fa-lg'></i> Get Demo</a>";
     } else {
-        $sub['demo'] = "<a href=\"#\"><img src=\"images/demo.png\" border=\"0\" style=\"vertical-align:middle\" /> No Demo</a>";
+        $sub['demo'] = "<a href=\"#\"><i class='fas fa-video-slash fa-lg'></i> No Demo</a>";
     }
 
-    $sub['submitted'] = date($dateformat, $sub['submitted']);
+    $sub['submitted'] = Config::time($sub['submitted']);
 
     $mod        = $GLOBALS['db']->GetRow("SELECT m.name FROM `" . DB_PREFIX . "_submissions` AS s
 												LEFT JOIN `" . DB_PREFIX . "_mods` AS m ON m.mid = s.ModID
@@ -551,9 +551,9 @@ foreach ($submissions as $sub) {
             $cdata            = array();
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'S',-1);\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'S',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
@@ -561,12 +561,12 @@ foreach ($submissions as $sub) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = date($dateformat, $commentres->fields['added']);
+            $cdata['added']      = Config::time($commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -582,7 +582,7 @@ foreach ($submissions as $sub) {
     }
 
     $sub['commentdata']   = $comment;
-    $sub['subaddcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S');
+    $sub['subaddcomment'] = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S');
     //----------------------------------------
 
     array_push($submission_list, $sub);
@@ -608,12 +608,12 @@ if ($PageEnd > $page_count) {
     $PageEnd = $page_count;
 }
 if ($page > 1) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=bans&sapage=" . ($page - 1) . "#^2~s1");
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=bans&sapage=" . ($page - 1) . "#^2~s1");
 } else {
     $prev = "";
 }
 if ($PageEnd < $page_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=bans&sapage=" . ($page + 1) . "#^2~s1");
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=bans&sapage=" . ($page + 1) . "#^2~s1");
 } else {
     $next = "";
 }
@@ -652,12 +652,12 @@ foreach ($submissionsarchiv as $sub) {
 												WHERE demtype = \"S\" AND demid = " . (int) $sub['subid']);
 
     if ($dem && !empty($dem['filename']) && @file_exists(SB_DEMOS . "/" . $dem['filename'])) {
-        $sub['demo'] = "<a href=\"getdemo.php?id=" . $sub['subid'] . "&type=S\"><img src=\"images/demo.png\" border=\"0\" style=\"vertical-align:middle\" /> Get Demo</a>";
+        $sub['demo'] = "<a href=\"getdemo.php?id=" . $sub['subid'] . "&type=S\"><i class='fas fa-video fa-lg'></i> Get Demo</a>";
     } else {
-        $sub['demo'] = "<a href=\"#\"><img src=\"images/demo.png\" border=\"0\" style=\"vertical-align:middle\" /> No Demo</a>";
+        $sub['demo'] = "<a href=\"#\"><i class='fas fa-video-slash fa-lg'></i> No Demo</a>";
     }
 
-    $sub['submitted'] = date($dateformat, $sub['submitted']);
+    $sub['submitted'] = Config::time($sub['submitted']);
 
     $mod        = $GLOBALS['db']->GetRow("SELECT m.name FROM `" . DB_PREFIX . "_submissions` AS s
 												LEFT JOIN `" . DB_PREFIX . "_mods` AS m ON m.mid = s.ModID
@@ -691,9 +691,9 @@ foreach ($submissionsarchiv as $sub) {
             $cdata            = array();
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'S',-1);\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'S',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
@@ -701,12 +701,12 @@ foreach ($submissionsarchiv as $sub) {
             }
 
             $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = date($dateformat, $commentres->fields['added']);
+            $cdata['added']      = Config::time($commentres->fields['added']);
             $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
             $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
 
             if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                 $cdata['editname'] = $commentres->fields['editname'];
             } else {
                 $cdata['edittime'] = "";
@@ -722,7 +722,7 @@ foreach ($submissionsarchiv as $sub) {
     }
 
     $sub['commentdata']   = $comment;
-    $sub['subaddcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S');
+    $sub['subaddcomment'] = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S');
     //----------------------------------------
 
     array_push($submission_list_archiv, $sub);

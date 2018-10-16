@@ -70,7 +70,7 @@ if (isset($_POST['postd']) && $_POST['postd']) {
             $db->execute();
 
             // Setup Settings
-            $file = file_get_contents(INCLUDES_PATH . "/data.sql");
+            $file = file_get_contents(INCLUDES_PATH . "/sql/data.sql");
             $file = str_replace("{prefix}", $_POST['prefix'], $file);
             $querys = explode(";", $file);
             foreach ($querys as $query) {

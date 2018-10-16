@@ -21,6 +21,13 @@ class Config
         return (bool)self::get($setting);
     }
 
+    public static function time($timestamp)
+    {
+        $format = self::get('config.dateformat');
+        $format = (!empty($format) && !is_null($format)) ? $format : 'Y-m-d H:i:s';
+        return date($format, $timestamp);
+    }
+
     private static function getAll()
     {
         self::$dbh->query("SELECT * FROM `:prefix_settings`");

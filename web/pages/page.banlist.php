@@ -485,7 +485,7 @@ while (!$res->EOF) {
         $data['country'] = '<img src="images/country/zz.jpg" alt="Unknown Country" border="0" align="absmiddle" />';
     }
 
-    $data['ban_date']    = date($dateformat, $res->fields['ban_created']);
+    $data['ban_date']    = Config::time($res->fields['ban_created']);
     $data['player']      = addslashes($res->fields['player_name']);
     $data['type']        = $res->fields['type'];
     $data['steamid']     = $res->fields['authid'];
@@ -510,7 +510,7 @@ while (!$res->EOF) {
         $data['ub_reason'] = "";
         $data['unbanned']  = false;
     } else {
-        $data['expires']   = date($dateformat, $res->fields['ban_ends']);
+        $data['expires']   = Config::time($res->fields['ban_ends']);
         $data['class']     = "listtable_1_banned";
         $data['ub_reason'] = "";
         $data['unbanned']  = false;
@@ -553,18 +553,18 @@ while (!$res->EOF) {
         $alrdybnd = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `" . DB_PREFIX . "_bans` WHERE ip = '" . $res->fields['ban_ip'] . "' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1';");
     }
     if ($alrdybnd->fields['count'] == 0) {
-        $data['reban_link'] = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Reban', "index.php?p=admin&c=bans" . $pagelink . "&rebanid=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+        $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> Reban', "index.php?p=admin&c=bans" . $pagelink . "&rebanid=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
     } else {
         $data['reban_link'] = false;
     }
-    $data['blockcomm_link']  = CreateLinkR('<img src="images/forbidden.png" border="0" alt="" style="vertical-align:middle" /> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+    $data['blockcomm_link']  = CreateLinkR('<i class="fas fa-ban fa-lg"></i> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
     $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . $res->fields['ban_id']);
-    $data['groups_link']     = CreateLinkR('<img src="images/groups.png" border="0" alt="" style="vertical-align:middle" /> Show Groups', "index.php?p=admin&c=bans&fid=" . $data['communityid'] . "#^4");
-    $data['friend_ban_link'] = CreateLinkR('<img src="images/group_delete.png" border="0" alt="" style="vertical-align:middle" /> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
-    $data['edit_link']       = CreateLinkR('<img src="images/edit.png" border="0" alt="" style="vertical-align:middle" /> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
+    $data['groups_link']     = CreateLinkR('<i class="fas fa-users fa-lg"></i> Show Groups', "index.php?p=admin&c=bans&fid=" . $data['communityid'] . "#^4");
+    $data['friend_ban_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
+    $data['edit_link']       = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
-    $data['unban_link']  = CreateLinkR('<img src="images/locked.png" border="0" alt="" style="vertical-align:middle" /> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1, false);return false;");
-    $data['delete_link'] = CreateLinkR('<img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0, false);return false;");
+    $data['unban_link']  = CreateLinkR('<i class="fas fa-undo fa-lg"></i> Unban', "#", "", "_self", false, "UnbanBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1, false);return false;");
+    $data['delete_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0, false);return false;");
 
 
     $data['server_id'] = $res->fields['ban_server'];
@@ -594,18 +594,18 @@ while (!$res->EOF) {
     if ($res->fields['ban_length'] == 0) {
         $data['expires'] = 'never';
     } else {
-        $data['expires'] = date($dateformat, $res->fields['ban_ends']);
+        $data['expires'] = Config::time($res->fields['ban_ends']);
     }
 
 
     if ($res->fields['demo_count'] == 0) {
         $data['demo_available'] = false;
         $data['demo_quick']     = 'N/A';
-        $data['demo_link']      = CreateLinkR('<img src="images/demo.png" border="0" alt="" style="vertical-align:middle" /> No Demos', "#");
+        $data['demo_link']      = CreateLinkR('<i class="fas fa-video-slash fa-lg"></i> No Demos', "#");
     } else {
         $data['demo_available'] = true;
         $data['demo_quick']     = CreateLinkR('Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
-        $data['demo_link']      = CreateLinkR('<img src="images/demo.png" border="0" alt="" style="vertical-align:middle" /> Review Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
+        $data['demo_link']      = CreateLinkR('<i class="fas fa-video fa-lg"></i> Review Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
     }
 
 
@@ -619,7 +619,7 @@ while (!$res->EOF) {
         if (!empty($logstring)) {
             $logstring .= ", ";
         }
-        $logstring .= '<span title="Server: ' . $logged["ip"] . ':' . $logged["port"] . ', Date: ' . date($dateformat, $logged["time"]) . '">' . ($logged["name"] != "" ? htmlspecialchars($logged["name"]) : "<i>no name</i>") . '</span>';
+        $logstring .= '<span title="Server: ' . $logged["ip"] . ':' . $logged["port"] . ', Date: ' . Config::time($logged["time"]) . '">' . ($logged["name"] != "" ? htmlspecialchars($logged["name"]) : "<i>no name</i>") . '</span>';
     }
     $data['banlog'] = $logstring;
 
@@ -640,9 +640,9 @@ while (!$res->EOF) {
                 $cdata            = array();
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
                 if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['editcomlink'] = CreateLinkR('<img src=\'images/edit.png\' border=\'0\' alt=\'\' style=\'vertical-align:middle\' />', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
+                    $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
                     if ($userbank->HasAccess(ADMIN_OWNER)) {
-                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"<img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /> :: Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'B'," . (isset($_GET["page"]) ? $page : -1) . ");\"><img src='images/delete.png' border='0' alt='' style='vertical-align:middle' /></a>";
+                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'B'," . (isset($_GET["page"]) ? $page : -1) . ");\"><i class='fas fa-trash fa-lg'></i></a>";
                     }
                 } else {
                     $cdata['editcomlink'] = "";
@@ -650,14 +650,14 @@ while (!$res->EOF) {
                 }
 
                 $cdata['comname']    = $commentres->fields['comname'];
-                $cdata['added']      = date($dateformat, $commentres->fields['added']);
+                $cdata['added']      = Config::time($commentres->fields['added']);
                 $cdata['commenttxt'] = htmlspecialchars($commentres->fields['commenttxt']);
                 $cdata['commenttxt'] = str_replace("\n", "<br />", $cdata['commenttxt']);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $cdata['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $cdata['commenttxt']);
 
                 if (!empty($commentres->fields['edittime'])) {
-                    $cdata['edittime'] = date($dateformat, $commentres->fields['edittime']);
+                    $cdata['edittime'] = Config::time($commentres->fields['edittime']);
                     $cdata['editname'] = $commentres->fields['editname'];
                 } else {
                     $cdata['edittime'] = "";
@@ -676,7 +676,7 @@ while (!$res->EOF) {
     }
 
 
-    $data['addcomment'] = CreateLinkR('<img src="images/details.png" border="0" alt="" style="vertical-align:middle" /> Add Comment', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B' . $pagelink);
+    $data['addcomment'] = CreateLinkR('<i class="fas fa-comment-dots fa-lg"></i> Add Comment', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B' . $pagelink);
     //-----------------------------------
 
     $data['ub_reason']   = (isset($data['ub_reason']) ? $data['ub_reason'] : "");
@@ -696,9 +696,9 @@ if (isset($_GET['advSearch'])) {
 
 if ($page > 1) {
     if (isset($_GET['c']) && $_GET['c'] == "bans") {
-        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "javascript:void(0);", "", "_self", false, $prev);
+        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "javascript:void(0);", "", "_self", false, $prev);
     } else {
-        $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
     }
 } else {
     $prev = "";
@@ -708,9 +708,9 @@ if ($BansEnd < $BanCount) {
         if (!isset($nxt)) {
             $nxt = "";
         }
-        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.png" style="vertical-align:middle;" />', "javascript:void(0);", "", "_self", false, $nxt);
+        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "javascript:void(0);", "", "_self", false, $nxt);
     } else {
-        $next = CreateLinkR('next <img border="0" alt="next" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
     }
 } else {
     $next = "";
@@ -768,13 +768,13 @@ if (isset($_GET["comment"])) {
     while (!$cotherdata->EOF) {
         $coment               = array();
         $coment['comname']    = $cotherdata->fields['comname'];
-        $coment['added']      = date($dateformat, $cotherdata->fields['added']);
+        $coment['added']      = Config::time($cotherdata->fields['added']);
         $coment['commenttxt'] = htmlspecialchars($cotherdata->fields['commenttxt']);
         $coment['commenttxt'] = str_replace("\n", "<br />", $coment['commenttxt']);
         // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
         $coment['commenttxt'] = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $coment['commenttxt']);
         if ($cotherdata->fields['editname'] != "") {
-            $coment['edittime'] = date($dateformat, $cotherdata->fields['edittime']);
+            $coment['edittime'] = Config::time($cotherdata->fields['edittime']);
             $coment['editname'] = $cotherdata->fields['editname'];
         } else {
             $coment['editname'] = "";

@@ -2,7 +2,7 @@
 	<div id="admin-page-content">
 		<div id="0">
 			<div id="msg-green" style="display:none;">
-				<i><img src="./images/yay.png" alt="Warning" /></i>
+				<i class="fas fa-check fa-2x"></i>
 				<b>Block updated</b>
 				<br />
 				The block details have been updated.<br /><br />

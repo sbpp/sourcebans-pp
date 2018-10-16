@@ -2,18 +2,9 @@
 <table width="460px" id="dialog-holder" class="dialog-holder" border="0" cellspacing="0" cellpadding="0" >
 	<tbody width="460px">
 	  <tr>
-	    <td class="dialog-topleft"></td>
-	    <td class="dialog-border"></td>
-	    <td class="dialog-topright"></td>
-	  </tr>
-	  <tr>
 	    <td class="dialog-border"></td>
 	    <td class="box-content">
-			<div id="dragbar" style="cursor:pointer">
-			<ilayer width="100%" onSelectStart="return false">
-			<layer width="100%" onMouseover="dragswitch=1;if (ns4) drag_drop_ns(dialog-placement)" onMouseout="dragswitch=0">
-	    	<h2 align="left" id="dialog-title" class="ok"></h2>
-	        </layer></ilayer></div>
+			<h2 align="left" id="dialog-title" class="ok"></h2>
 	        <div class="dialog-content" align="left">
 	        	<div class="dialog-body">
 	            	<div class="clearfix">
@@ -26,11 +17,6 @@
 	        </div>
 		</td>
 	    <td class="dialog-border"></td>
-	  </tr>
-	  <tr>
-	    <td class="dialog-bottomleft"></td>
-	    <td class="dialog-border"></td>
-	    <td class="dialog-bottomright"></td>
 	  </tr>
 	</tbody>
 </table>

@@ -38,7 +38,7 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
 
     if (strlen($validation) < 60) {
         echo '<div id="msg-red" style="">
-			<i><img src="./images/warning.png" alt="Warning" /></i>
+			<i class="fas fa-times fa-2x"></i>
 			<b>Error</b>
 			<br />
 			The validation string is too short.
@@ -71,7 +71,7 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
 			</div>';
     } else {
         echo '<div id="msg-red" style="">
-			<i><img src="./images/warning.png" alt="Warning" /></i>
+			<i class="fas fa-times fa-2x"></i>
 			<b>Error</b>
 			<br />
 			The validation string does not match the email for this reset request.

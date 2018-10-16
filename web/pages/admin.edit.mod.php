@@ -40,7 +40,7 @@ if (!isset($_GET['id'])) {
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS)) {
     Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit a mod, but doesnt have access.");
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	You are not allowed to edit mods.

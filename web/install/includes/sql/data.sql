@@ -43,7 +43,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablesubmit', '1'),
 ('config.exportpublic', '0'),
 ('config.enablekickit', '1'),
-('config.dateformat', ''),
+('config.dateformat', 'Y-m-d H:i:s'),
 ('config.theme', 'default'),
 ('config.defaultpage', '0'),
 ('config.enablegroupbanning', '0'),

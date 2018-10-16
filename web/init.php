@@ -176,8 +176,6 @@ define("DEVELOPER_MODE", Config::getBool('config.debug'));
 define('SB_BANS_PER_PAGE', Config::get('banlist.bansperpage'));
 define('MIN_PASS_LENGTH', Config::get('config.password.minlength'));
 
-$dateformat = (Config::getBool('config.dateformat')) ? Config::get('config.dateformat') : 'm-d-y H:i';
-
 // ---------------------------------------------------
 // Setup our templater
 // ---------------------------------------------------

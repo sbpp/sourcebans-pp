@@ -45,7 +45,7 @@ $stopped               = array();
 $blcount               = 0;
 while (!$res->EOF) {
     $info               = array();
-    $info['date']       = date($dateformat, $res->fields[1]);
+    $info['date']       = Config::time($res->fields[1]);
     $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
     $info['short_name'] = trunc($info['name'], 40, false);
     $info['auth']       = $res->fields['authid'];
@@ -87,7 +87,7 @@ while (!$res->EOF) {
         $info['unbanned'] = false;
     }
     $info['name']    = stripslashes($res->fields[3]);
-    $info['created'] = date($dateformat, $res->fields['created']);
+    $info['created'] = Config::time($res->fields['created']);
     $ltemp           = explode(",", $res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
     $info['length']  = $ltemp[0];
     $info['icon']    = empty($res->fields[13]) ? 'web.png' : $res->fields[13];
@@ -139,7 +139,7 @@ while (!$res->EOF) {
         $info['unbanned'] = false;
     }
     $info['name']        = stripslashes($res->fields[3]);
-    $info['created']     = date($dateformat, $res->fields['created']);
+    $info['created']     = Config::time($res->fields['created']);
     $ltemp               = explode(",", $res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
     $info['length']      = $ltemp[0];
     $info['icon']        = empty($res->fields[13]) ? 'web.png' : $res->fields[13];
@@ -147,7 +147,7 @@ while (!$res->EOF) {
     $info['search_link'] = "index.php?p=commslist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     $info['link_url']    = "window.location = '" . $info['search_link'] . "';";
     $info['short_name']  = trunc($info['name'], 25, false);
-    $info['type']        = $res->fields['type'] == 2 ? "images/type_c.png" : "images/type_v.png";
+    $info['type']        = $res->fields['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;

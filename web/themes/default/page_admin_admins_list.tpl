@@ -66,21 +66,21 @@ Click on an admin to see more detailed information and actions to perform on the
 						        	<ul>
 						        	{if $permission_editadmin}
 							        	<li>
-							        		<a href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid}"><img src="images/details.png" border="0" alt="" style="vertical-align:middle"/> Edit Details</a>
+							        		<a href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid}"><i class="fas fa-clipboard-list fa-lg"></i> Edit Details</a>
 							        	</li>
 							        	<li>
-							        		<a href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid}"><img src="images/permissions.png" border="0" alt="" style="vertical-align:middle" /> Edit Permissions</a>
+							        		<a href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid}"><i class="fas fa-subscript fa-lg"></i> Edit Permissions</a>
 							        	</li>
 							        	<li>
-							        		<a href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid}"><img src="images/server_small.png" border="0" alt="" style="vertical-align:middle" /> Edit Server Access</a>
+							        		<a href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid}"><i class="fas fa-server fa-lg"></i> Edit Server Access</a>
 							        	</li>
 							        	<li>
-							        		<a href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid}"><img src="images/groups.png" border="0" alt="" style="vertical-align:middle" /> Edit Groups</a>
+							        		<a href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid}"><i class="fas fa-users fa-lg"></i> Edit Groups</a>
 							        	</li>
 						        	{/if}
 						        	{if $permission_deleteadmin}
 						            	<li>
-							        		<a href="#" onclick="RemoveAdmin({$admin.aid}, '{$admin.user}');"><img src="images/delete.png" border="0" alt="" style="vertical-align:middle" /> Delete Admin</a>
+							        		<a href="#" onclick="RemoveAdmin({$admin.aid}, '{$admin.user}');"><i class="fas fa-trash fa-lg"></i> Delete Admin</a>
 							        	</li>
 						            {/if}
 						          	</ul>

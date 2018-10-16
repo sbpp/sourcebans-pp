@@ -35,7 +35,7 @@ new AdminTabs([], $userbank);
 
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No server id specified. Please only follow links
@@ -48,7 +48,7 @@ $server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE 
 if (!$server) {
     Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	Error getting current data.

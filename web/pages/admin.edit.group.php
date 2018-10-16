@@ -34,7 +34,7 @@ new AdminTabs([], $userbank);
 
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No server id specified. Please only follow links
@@ -44,7 +44,7 @@ if (!isset($_GET['id'])) {
 
 if (!isset($_GET['type']) || ($_GET['type'] != 'web' && $_GET['type'] != 'srv' && $_GET['type'] != 'server')) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No valid group type specified. Please only follow links
