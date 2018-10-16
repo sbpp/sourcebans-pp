@@ -92,12 +92,12 @@ $list_end   = $list_start + SB_BANS_PER_PAGE;
 $log_count = Log::getCount($where);
 $log       = Log::getAll($list_start, SB_BANS_PER_PAGE, $where);
 if (($page > 1)) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
 } else {
     $prev = "";
 }
 if ($list_end < $log_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page + 1) . "#^2");
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page + 1) . "#^2");
 } else {
     $next = "";
 }

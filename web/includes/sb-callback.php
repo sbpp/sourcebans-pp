@@ -1249,9 +1249,19 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
         if (!empty($info['HostName'])) {
             $objResponse->addAssign("host_$sid", "innerHTML", trunc($info['HostName'], $trunchostname, false));
             $objResponse->addAssign("players_$sid", "innerHTML", $info['Players'] . "/" . $info['MaxPlayers']);
-            $objResponse->addAssign("os_$sid", "innerHTML", "<img src='images/" . (!empty($info['Os'])?$info['Os']:'server_small') . ".png'>");
+            switch ($info['Os']) {
+                case 'w':
+                    $os = 'fab fa-windows';
+                    break;
+                case 'l':
+                    $os = 'fab fa-linux';
+                    break;
+                default:
+                    $os = 'fas fa-server';
+            }
+            $objResponse->addAssign("os_$sid", "innerHTML", "<i class='$os fa-2x'></i>");
             if ($info['Secure']) {
-                $objResponse->addAssign("vac_$sid", "innerHTML", "<img src='images/shield.png'>");
+                $objResponse->addAssign("vac_$sid", "innerHTML", "<i class='fas fa-shield-alt fa-2x'></i>");
             }
             $objResponse->addAssign("map_$sid", "innerHTML", basename($info['Map']));
             if (!$inHome) {

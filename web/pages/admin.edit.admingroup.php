@@ -35,7 +35,7 @@ new AdminTabs([], $userbank);
 
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No admin id specified. Please only follow links
@@ -47,7 +47,7 @@ $_GET['id'] = (int) $_GET['id'];
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
     Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s groups, but doesn't have access.");
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	You are not allowed to edit other admin\'s groups.
@@ -58,7 +58,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
 if (!$userbank->GetProperty("user", $_GET['id'])) {
     Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	Error getting current data.</div>';

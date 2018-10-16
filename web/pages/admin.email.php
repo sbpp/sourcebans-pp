@@ -36,7 +36,7 @@ new AdminTabs([], $userbank);
 
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No submission or protest id specified. Please only follow links
@@ -46,7 +46,7 @@ if (!isset($_GET['id'])) {
 
 if (!isset($_GET['type']) || ($_GET['type'] != 's' && $_GET['type'] != 'p')) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	Invalid type. Please only follow links
@@ -69,7 +69,7 @@ if ($_GET['type'] == 's') {
 
 if (empty($email)) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	There is no email to send to supplied.

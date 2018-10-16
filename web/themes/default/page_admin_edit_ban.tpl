@@ -2,7 +2,7 @@
 	<div id="admin-page-content">
 		<div id="0">
 			<div id="msg-green" style="display:none;">
-				<i><img src="./images/yay.png" alt="Warning" /></i>
+				<i class="fas fa-check fa-2x"></i>
 				<b>Ban Updated</b>
 				<br />
 				The ban details have been updated.<br /><br />
@@ -28,7 +28,7 @@
 			  <tr>
     		<td valign="top" width="35%">
     			<div class="rowdesc">
-    				-{help_icon title="Ban Type" message="Choose whether to ban by Steam ID or IP address."}-Ban Type 
+    				-{help_icon title="Ban Type" message="Choose whether to ban by Steam ID or IP address."}-Ban Type
     			</div>
     		</td>
     		<td>
@@ -110,7 +110,7 @@
     			</div>
     			<div id="reason.msg" class="badentry"></div>
     		</td>
-      </tr>			  
+      </tr>
 			 <tr>
 			    <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Ban Length" message="Select how long you want to ban this person for."}-Ban Length </div></td>
 			    <td><div align="left">
@@ -150,7 +150,7 @@
 									</optgroup></select>
 			    </div><div id="length.msg" class="badentry"></div></td>
 			  </tr>
-			  
+
 			   <tr>
 			    <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Upload Demo" message="Click here to upload a demo with this ban submission."}-Upload Demo
 			    </div></td>
@@ -158,12 +158,12 @@
 			    	-{sb_button text="Upload a Demo" onclick="childWindow=open('pages/admin.uploaddemo.php','upload','resizable=no,width=300,height=130');" class="save" id="uploaddemo" submit=false}-
 			    </div><div id="demo.msg" style="color:#CC0000;">-{$ban_demo}-</div></td>
 			  </tr>
-			 
+
 			  <tr>
 			    <td>&nbsp;</td>
 			    <td>
 			      <input type="hidden" name="did" id="did" value="" />
-			      <input type="hidden" name="dname" id="dname" value="" /> 
+			      <input type="hidden" name="dname" id="dname" value="" />
 			      	-{sb_button text="Save Changes" class="ok" id="editban" submit=true}-
 			     	 &nbsp;
 			     	 -{sb_button text="Back" onclick="history.go(-1)" class="cancel" id="back" submit=false}-
@@ -177,14 +177,13 @@
 			function demo(id, name)
 			{
 				$('demo.msg').setHTML("Uploaded: <b>" + name + "</b>");
-			
+
 				$('did').value = id;
 				$('dname').value = name;
 			}
 			</script>
-			
+
 			</div>
 		</div>
 	</div>
 </form>
-	
