@@ -479,11 +479,10 @@ void PrintToBanAdmins(const char[] format, any ...)
 	
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		SetGlobalTransTarget(i);
-		VFormat(msg, sizeof(msg), format, 2);
-		
 		if (IsClientInGame(i) && !IsFakeClient(i) && CheckCommandAccess(i, "sm_listsourcebans", ADMFLAG_BAN))
 		{
+			SetGlobalTransTarget(i);
+			VFormat(msg, sizeof(msg), format, 2);
 			PrintToChat(i, "%s", msg);
 		}
 	}

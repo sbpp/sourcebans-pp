@@ -228,7 +228,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 				case LENGTH_NOTIFY:
 				{
 					/* Notify Admins when a client with an ip on the bans list connects */
-					PrintToAdmins("%s%t", "sourcesleuth_admintext", PREFIX, client, steamid, IP);
+					PrintToAdmins("%s%t", PREFIX, "sourcesleuth_admintext", client, steamid, IP);
 				}
 			}
 		}
@@ -238,7 +238,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 stock void BanPlayer(int client, int time)
 {
 	char Reason[255];
-	Format(Reason, sizeof(Reason), "%s%T", "sourcesleuth_banreason", PREFIX, client);
+	Format(Reason, sizeof(Reason), "%s%T", PREFIX, "sourcesleuth_banreason", client);
 	SBPP_BanPlayer(0, client, time, Reason);
 }
 
