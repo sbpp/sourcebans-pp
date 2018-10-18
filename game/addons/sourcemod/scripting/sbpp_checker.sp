@@ -51,7 +51,7 @@ public Plugin myinfo =
 public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
-	LoadTranslations("sourcechecker.phrases");
+	LoadTranslations("sbpp_checker.phrases");
 
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
