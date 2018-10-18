@@ -24,10 +24,6 @@
 		Licensed under CC BY-NC-SA 3.0
 		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-//Hotfix for dash_intro_text
-if (isset($_POST['dash_intro_text'])) {
-    $dash_intro_text = $_POST['dash_intro_text'];
-}
 //Filter all user inputs
 //Should be changed to individual filtering
 $_GET = filter_input_array(INPUT_GET, FILTER_SANITIZE_STRING);
@@ -35,6 +31,10 @@ $_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
 $_COOKIE = filter_input_array(INPUT_COOKIE, FILTER_SANITIZE_STRING);
 //$_SERVER = filter_input_array(INPUT_SERVER, FILTER_SANITIZE_STRING);
 
+//Hotfix for dash_intro_text
+if (isset($_POST['dash_intro_text'])) {
+    $dash_intro_text = $_POST['dash_intro_text'];
+}
 // ---------------------------------------------------
 //  Directories
 // ---------------------------------------------------
