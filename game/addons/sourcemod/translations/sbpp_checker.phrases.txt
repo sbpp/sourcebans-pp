@@ -1,0 +1,18 @@
+"Phrases"
+{
+	"Ban Warning"
+	{
+		"#format"		"{1:N},{2:d},{3:s}"
+		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3}."
+	}
+	"Comm Warning"
+	{
+		"#format"		"{1:N},{2:d},{3:s}"
+		"en"			"Warning: Player \"{1:N}\" has {2} previous comm block{3}."
+	}
+	"Ban and Comm Warning"
+	{
+		"#format"		"{1:N},{2:d},{3:s},{4:d},{5:s}"
+		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3} and {4} previous comm block{5}."
+	}
+}

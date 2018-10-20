@@ -38,6 +38,8 @@
 #define LENGTH_DOUBLE 3
 #define LENGTH_NOTIFY 4
 
+#define PREFIX "[SourceSleuth] "
+
 //- Handles -//
 Database hDatabase = null;
 ArrayList g_hAllowedArray = null;
@@ -133,7 +135,7 @@ public Action ReloadListCallBack(int client, int args)
 
 	if (client != 0)
 	{
-		PrintToChat(client, "[SourceSleuth] WhiteList has been reloaded!");
+		PrintToChat(client, "%sWhiteList has been reloaded!", PREFIX);
 	}
 
 	return Plugin_Continue;
@@ -226,7 +228,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 				case LENGTH_NOTIFY:
 				{
 					/* Notify Admins when a client with an ip on the bans list connects */
-					PrintToAdmins("[SourceSleuth] %t", "sourcesleuth_admintext", client, steamid, IP);
+					PrintToAdmins("%s%t", PREFIX, "sourcesleuth_admintext", client, steamid, IP);
 				}
 			}
 		}
@@ -236,7 +238,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 stock void BanPlayer(int client, int time)
 {
 	char Reason[255];
-	Format(Reason, sizeof(Reason), "[SourceSleuth] %T", "sourcesleuth_banreason", client);
+	Format(Reason, sizeof(Reason), "%s%T", PREFIX, "sourcesleuth_banreason", client);
 	SBPP_BanPlayer(0, client, time, Reason);
 }
 
