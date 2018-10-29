@@ -100,7 +100,7 @@ function KickPlayer($check, $sid, $num, $type)
         // show hostname instead of the ip, but leave the ip in the title
         require_once("../includes/system-functions.php");
         $hostsearch = preg_match_all('/hostname:[ ]*(.+)/', $ret, $hostname, PREG_PATTERN_ORDER);
-        $hostname   = trunc(htmlspecialchars($hostname[1][0]), 25, false);
+        $hostname   = trunc(htmlspecialchars($hostname[1][0]), 25);
         if (!empty($hostname))
             $objResponse->addAssign("srvip_$num", "innerHTML", "<font size='1'><span title='" . $sdata['ip'] . ":" . $sdata['port'] . "'>" . $hostname . "</span></font>");
 

@@ -101,18 +101,9 @@ function NextAid()
     return ($aid['next_aid']+1);
 }
 
-function trunc($text, $len, $byword=true)
+function trunc(string $text, int $len)
 {
-    if (strlen($text) <= $len) {
-        return $text;
-    }
-    $text = $text." ";
-    $text = substr($text, 0, $len);
-    if ($byword) {
-        $text = substr($text, 0, strrpos($text, ' '));
-    }
-    $text = $text."...";
-    return $text;
+    return (strlen($text) > $len) ? substr($text, 0, $len).'...' : $text;
 }
 
 function CreateQuote()

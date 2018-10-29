@@ -47,7 +47,7 @@ while (!$res->EOF) {
     $info               = array();
     $info['date']       = Config::time($res->fields[1]);
     $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
-    $info['short_name'] = trunc($info['name'], 40, false);
+    $info['short_name'] = trunc($info['name'], 40);
     $info['auth']       = $res->fields['authid'];
     $info['ip']         = $res->fields['ip'];
     $info['server']     = "block_" . $res->fields['sid'] . "_$blcount";
@@ -99,7 +99,7 @@ while (!$res->EOF) {
         $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     }
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
-    $info['short_name'] = trunc($info['name'], 25, false);
+    $info['short_name'] = trunc($info['name'], 25);
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;
@@ -146,7 +146,7 @@ while (!$res->EOF) {
     $info['authid']      = $res->fields['authid'];
     $info['search_link'] = "index.php?p=commslist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     $info['link_url']    = "window.location = '" . $info['search_link'] . "';";
-    $info['short_name']  = trunc($info['name'], 25, false);
+    $info['short_name']  = trunc($info['name'], 25);
     $info['type']        = $res->fields['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
