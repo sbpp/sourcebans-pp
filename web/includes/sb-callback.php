@@ -1247,7 +1247,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 
     if ($type == "servers") {
         if (!empty($info['HostName'])) {
-            $objResponse->addAssign("host_$sid", "innerHTML", trunc($info['HostName'], $trunchostname, false));
+            $objResponse->addAssign("host_$sid", "innerHTML", trunc((array)$info['HostName'], $trunchostname));
             $objResponse->addAssign("players_$sid", "innerHTML", $info['Players'] . "/" . $info['MaxPlayers']);
             switch ($info['Os']) {
                 case 'w':
@@ -1380,13 +1380,13 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
         $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     } elseif ($type=="id") {
         if (!empty($info['HostName'])) {
-            $objResponse->addAssign("$obId", "innerHTML", trunc($info['HostName'], $trunchostname, false));
+            $objResponse->addAssign("$obId", "innerHTML", trunc($info['HostName'], $trunchostname));
         } else {
             $objResponse->addAssign("$obId", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']. "</i>)");
         }
     } else {
         if (!empty($info['HostName'])) {
-            $objResponse->addAssign("ban_server_$type", "innerHTML", trunc($info['HostName'], $trunchostname, false));
+            $objResponse->addAssign("ban_server_$type", "innerHTML", trunc($info['HostName'], $trunchostname));
         }else{
             $objResponse->addAssign("ban_server_$type", "innerHTML", "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)");
         }
@@ -1421,7 +1421,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
     }
 
     if(!empty($info['HostName'])) {
-        $objResponse->addAssign("$obId", "$obProp", addslashes(trunc($info['HostName'], $trunchostname, false)));
+        $objResponse->addAssign("$obId", "$obProp", trunc($info['HostName'], $trunchostname));
     } else {
         $objResponse->addAssign("$obId", "$obProp", "Error connecting (".$server['ip'].":".$server['port'].")");
     }
@@ -1462,7 +1462,7 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
         }
 
         if (!empty($info['HostName'])) {
-            $ret .= trunc($info['HostName'], 48, false) . "<br />";
+            $ret .= trunc($info['HostName'], 48) . "<br />";
         } else {
             $ret .= "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)<br />";
         }
