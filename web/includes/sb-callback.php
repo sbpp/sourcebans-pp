@@ -1247,7 +1247,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 
     if ($type == "servers") {
         if (!empty($info['HostName'])) {
-            $objResponse->addAssign("host_$sid", "innerHTML", trunc((array)$info['HostName'], $trunchostname));
+            $objResponse->addAssign("host_$sid", "innerHTML", trunc($info['HostName'], $trunchostname));
             $objResponse->addAssign("players_$sid", "innerHTML", $info['Players'] . "/" . $info['MaxPlayers']);
             switch ($info['Os']) {
                 case 'w':
