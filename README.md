@@ -4,7 +4,9 @@
     SourceBans++
 </h1>
 
-### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/releases) [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/SOURCEMOD-LICENSE.txt) [![GitHub license](https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE) [![GitHub forks](https://img.shields.io/github/forks/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/network) [![GitHub stars](https://img.shields.io/github/stars/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/stargazers) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/issues) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square)](https://travis-ci.org/sbpp/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp)
+### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![GitHub license](https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/pulls) [![GitHub All Releases](https://img.shields.io/github/downloads/sbpp/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square&logo=travis)](https://travis-ci.org/sbpp/sourcebans-pp) [![AppVeyor](https://img.shields.io/appveyor/ci/Sarabveer/sourcebans-pp.svg?style=flat-square&logo=appveyor)](https://ci.appveyor.com/project/Sarabveer/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp) [![Discord](https://img.shields.io/discord/298914017135689728.svg?style=flat-square&logo=discord&label=discord)](https://discord.gg/4Bhj6NU)
+
+
 Global admin, ban, and communication management system for the Source engine
 
 ### Issues
@@ -51,4 +53,4 @@ See also the list of [contributors](https://github.com/sbpp/sourcebans-pp/graphs
 
 ## License
 
-The web-panel portion of this project is licensed under the CC-BY-NC-SA License - see the [LICENSE.md](LICENSE.md) file for details
+The web-panel portion of this project is licensed under the CC-BY-NC-SA License - see the [LICENSE](LICENSE) file for details
