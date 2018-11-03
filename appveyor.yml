@@ -1,7 +1,7 @@
 version: '{branch}-{build}'
 
 environment:
-  SOURCEMOD: 1.8
+  SOURCEMOD: 1.9
   
 install:
   - ps: Invoke-WebRequest "https://www.sourcemod.net/latest.php?version=$env:SOURCEMOD&os=windows" -OutFile "sourcemod-$env:SOURCEMOD-windows.zip"
