@@ -2416,15 +2416,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 				}
 			}
 
-			DataPack dataPack = new DataPack();
-			dataPack.WriteCell(GetClientUserId2(client));
-			dataPack.WriteCell(GetClientUserId(target));
-			dataPack.WriteCell(type);
-			dataPack.WriteString(adminAuth);
-			dataPack.WriteString(targetAuth); // not in use in this case
-			dataPack.WriteString(reason);
-
-			TempUnBlock(dataPack);
+			ProcessUnBlock(GetClientUserId2(client), GetClientUserId(target), type, reason);
 		}
 
 		#if defined DEBUG
