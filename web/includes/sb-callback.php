@@ -1698,6 +1698,10 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $error++;
         $objResponse->addAssign("ip.msg", "innerHTML", "You must type a valid IP");
         $objResponse->addScript("$('ip.msg').setStyle('display', 'block');");
+    } elseif ($length < 0) {
+        $error++;
+        $objResponse->addAssign("length.msg", "innerHTML", "Length must be positive or 0");
+        $objResponse->addScript("$('length.msg').setStyle('display', 'block');");
     } else {
         $objResponse->addAssign("steam.msg", "innerHTML", "");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
@@ -3005,6 +3009,10 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
         $error++;
         $objResponse->addAssign("steam.msg", "innerHTML", "Please enter a valid Steam ID or Community ID");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'block');");
+    } elseif ($length < 0) {
+        $error++;
+        $objResponse->addAssign("length.msg", "innerHTML", "Length must be positive or 0");
+        $objResponse->addScript("$('length.msg').setStyle('display', 'block');");
     } else {
         $objResponse->addAssign("steam.msg", "innerHTML", "");
         $objResponse->addScript("$('steam.msg').setStyle('display', 'none');");
