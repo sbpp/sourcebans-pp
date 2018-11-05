@@ -124,6 +124,9 @@ function CheckAdminAccess($mask)
 
 function SecondsToString($sec, $textual=true)
 {
+    if ($sec < 0) {
+        return 'Session';
+    }
     if ($textual) {
         $div = array( 2592000, 604800, 86400, 3600, 60, 1 );
         $desc = array('mo','wk','d','hr','min','sec');
