@@ -86,27 +86,27 @@ $admin = [
 
 $active = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_STRING);
 foreach ($navbar as $key => $tab) {
+    $navbar[$key]['state'] = ($active === $tab['endpoint']) ? 'active' : 'nonactive';
+
     if (!$tab['permission']) {
         unset($navbar[$key]);
     }
-
-    $navbar[$key]['state'] = ($active === $tab['endpoint']) ? 'active' : 'nonactive';
 }
 
 if ($userbank->is_admin()) {
     $cat = filter_input(INPUT_GET, 'c', FILTER_SANITIZE_STRING);
     foreach ($admin as $key => $tab) {
+        $admin[$key]['state'] = ($cat === $tab['endpoint']) ? 'active' : '';
+
         if (!$userbank->HasAccess($tab['permission'])) {
             unset($admin[$key]);
         }
-
-        $admin[$key]['state'] = ($cat === $tab['endpoint']) ? 'active' : '';
     }
 }
 
 Template::render('core/navbar', [
-    'navbar' => $navbar,
-    'adminbar' => $admin,
+    'navbar' => array_values($navbar),
+    'adminbar' => array_values($admin),
     'isAdmin' => $userbank->is_admin(),
     'login' => $userbank->is_logged_in(),
     'username' => $userbank->GetProperty("user")
