@@ -160,7 +160,7 @@
             </optgroup>
           </select>
           </div>
-          <div id="length.msg" ></div>
+          <div id="length.msg" class="badentry"></div>
         </td>
       </tr>
 
