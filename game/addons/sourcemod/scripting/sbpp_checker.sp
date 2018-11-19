@@ -33,7 +33,7 @@
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
-#define Prefix "[SourceBans++] "
+#define Prefix "\x04[SourceBans++]\x01 "
 
 char g_DatabasePrefix[10] = "sb";
 SMCParser g_ConfigParser;
