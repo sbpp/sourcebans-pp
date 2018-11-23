@@ -1039,7 +1039,8 @@ public void GotDatabase(Database db, const char[] error, any data)
 
 	char query[1024];
 
-	DB.SetCharset("utf8");
+	Format(query, sizeof(query), "SET NAMES utf8mb4");
+	DB.Query(ErrorCheckCallback, query);
 
 	InsertServerInfo();
 
@@ -2537,7 +2538,6 @@ stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, cons
 						%d, ' ')",
 			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, serverID);
 	}
-
 	DB.Query(VerifyInsert, Query, dataPack, DBPrio_High);
 }
 
