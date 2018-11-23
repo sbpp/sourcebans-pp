@@ -53,7 +53,7 @@
 
 #define FLAG_LETTERS_SIZE 26
 
-#define DEBUG
+//#define DEBUG
 
 enum State/* ConfigState */
 {
