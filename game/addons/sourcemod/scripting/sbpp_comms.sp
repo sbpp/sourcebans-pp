@@ -174,7 +174,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	g_hFwd_OnPlayerPunished = CreateGlobalForward("SourceComms_OnBlockAdded", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 
-	MarkNativeAsOptional("SQL_SetCharset");
 	RegPluginLibrary("sourcecomms++");
 	return APLRes_Success;
 }
@@ -1261,20 +1260,10 @@ public void GotDatabase(Database db, const char[] error, any data)
 		return;
 	}
 
-	// Set character set to UTF-8 in the database
-	if (GetFeatureStatus(FeatureType_Native, "SQL_SetCharset") == FeatureStatus_Available)
-	{
-		db.SetCharset("utf8");
-	}
-	else
-	{
-		char query[128];
-		FormatEx(query, sizeof(query), "SET NAMES 'UTF8'");
-		#if defined LOG_QUERIES
-		LogToFile(logQuery, "Set encoding. QUERY: %s", query);
-		#endif
-		db.Query(Query_ErrorCheck, query);
-	}
+	// Set character set to UTF8MB4 in the database
+	char query[128];
+	Format(query, sizeof(query), "SET NAMES utf8mb4");
+	db.Query(Query_ErrorCheck, query);
 
 	// Process queue
 	SQLiteDB.Query(Query_ProcessQueue,
