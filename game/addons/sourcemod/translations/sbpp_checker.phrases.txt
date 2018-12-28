@@ -4,15 +4,18 @@
 	{
 		"#format"		"{1:N},{2:d},{3:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3}."
+		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁."
 	}
 	"Comm Warning"
 	{
 		"#format"		"{1:N},{2:d},{3:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous comm block{3}."
+		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次禁言."
 	}
 	"Ban and Comm Warning"
 	{
 		"#format"		"{1:N},{2:d},{3:s},{4:d},{5:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3} and {4} previous comm block{5}."
+		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁和 {4} 次禁言."
 	}
 }
