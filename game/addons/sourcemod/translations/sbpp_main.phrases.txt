@@ -150,7 +150,7 @@
 	{
 		"#format"		"{1:N},{2:s},{3:s}"
 		"en"			"Admin: {1}\nReason: {2}\nLength: {3}"
-		"en"			"Администратор: {1}\nReason: {2}\nLength: {3}"
+		"ru"			"Администратор: {1}\nReason: {2}\nLength: {3}"
 		"fr"			"Administrateur: {1}\nRaison: {2}\nDurée: {3}"
 		"de"			"Administrator: {1}\nGrund: {2}\nDauer: {3}"
 	}
