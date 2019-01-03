@@ -6,6 +6,7 @@
 		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3}."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kitiltása{3}."
 		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁."
+		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3}."
 	}
 	"Comm Warning"
 	{
@@ -13,6 +14,8 @@
 		"en"			"Warning: Player \"{1:N}\" has {2} previous comm block{3}."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kommunikációs tiltása{3}."
 		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次禁言."
+		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie blokady czatu{3}."
+		
 	}
 	"Ban and Comm Warning"
 	{
@@ -20,5 +23,6 @@
 		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3} and {4} previous comm block{5}."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kitiltása és {4} korábbi kommunikációs tiltása."
 		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁和 {4} 次禁言."
+		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3} oraz {4} poprzednie blokady czatu{5}."
 	}
 }
