@@ -34,7 +34,7 @@
 		"fr"			"Le joueur n'est pas en jeu, merci d'aller sur le panel internet pour le bannir."
 		"pl"			"Gracz nie znajduje się w grze, odwiedź panel www aby go zbanować."
 		"de"			"Der Spieler ist nicht im Spiel. Bitte benutzen Sie das Webpanel um ihn zu bannen."
-		"ru"			"Так как игрок не в игре вы должны посетить веб-панель, чтобы забанить его."
+		"ru"			"Игрок не в игре. Пожалуйста, посетите веб-панель чтобы забанить его."
 		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
 		"no"			"Spilleren er ikke på serveren, vennligst besøk web panelet for og stenge han ute."
 		"hu"			"A játékos nincs játékban, kérlek nézd meg a honlapon a bannolásért."
@@ -61,7 +61,7 @@
 		"fr"			"Vous ne pouvez pas annuler de ban depuis ce serveur, allez sur {1} pour le faire."
 		"pl"			"Nie możesz odbanować z serwera, odwiedź {1} by zdjąć bana."
 		"de"			"Sie können nicht vom Server aus entbannen, entbannen Sie auf {1} ."
-		"ru"			"Вы не можете разбанить игрока на сервере, зайдите на {1} для удаления бана."
+		"ru"			"Вы не можете разбанить игрока на сервере. Посетите {1} для этого."
 		"da"			"Du kan ikke fjerne udelukkelserne inde fra serveren, besøg {1} for at fjerne udelukkelsen."
 		"no"			"Du kan ikke fjerne utestengelsen inne fra serveren, besøk {1} for og fjerne utestengelsen."
 		"hu"			"Nem tudsz unbannolni a szerverről, látogasd meg {1} a ban feloldásért."
@@ -75,7 +75,7 @@
 		"fr"			"Vous ne pouvez pas ajouter de ban depuis ce serveur, allez sur {1} pour ajouter un ban."
 		"pl"			"Nie możesz dodać bana z serwera, odwiedź {1} by dodać bana."
 		"de"			"Sie können keinen Ban vom Server aus hinzufügen, bannen Sie auf {1} ."
-		"ru"			"Вы не можете дать бан на сервере, зайдите на {1} для добавления бана."
+		"ru"			"Вы не можете забанить на сервере. Посетите {1} для этого."
 		"da"			"Du kan ikke tilføje en udelukkelse fra serveren, besøg {1} for at tilføje en udelukkelse."
 		"no"			"Du kan ikke legge til en utestengelse fra serveren, besøk {1} for og legge til en utestengelse."
 		"hu"			"Nem tudsz a szerverről bannolni, látogasd meg {1} a bannolásért."
@@ -150,7 +150,8 @@
 	{
 		"#format"		"{1:N},{2:s},{3:s}"
 		"en"			"Admin: {1}\nReason: {2}\nLength: {3}"
+		"en"			"Администратор: {1}\nReason: {2}\nLength: {3}"
 		"fr"			"Administrateur: {1}\nRaison: {2}\nDurée: {3}"
-        "de"            "Administrator: {1}\nGrund: {2}\nDauer: {3}"
+		"de"			"Administrator: {1}\nGrund: {2}\nDauer: {3}"
 	}
 }

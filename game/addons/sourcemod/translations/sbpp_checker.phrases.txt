@@ -4,16 +4,18 @@
 	{
 		"#format"		"{1:N},{2:d},{3:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3}."
+		"ru"			"Внимание: Игрок \"{1:N}\" ранее был забанен {2} раз."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kitiltása{3}."
-		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁."
+		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3}."
 	}
 	"Comm Warning"
 	{
 		"#format"		"{1:N},{2:d},{3:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous comm block{3}."
+		"ru"			"Внимание: Игроку \"{1:N}\" ранее отключали чат или микрофрон {2} раз."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kommunikációs tiltása{3}."
-		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次禁言."
+		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次禁言."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie blokady czatu{3}."
 		
 	}
@@ -21,8 +23,9 @@
 	{
 		"#format"		"{1:N},{2:d},{3:s},{4:d},{5:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous ban{3} and {4} previous comm block{5}."
+		"ru"			"Внимание: Игрок \"{1:N}\" ранее был забанен {2} раз и ему отключали чат или микрофон {4} раз."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kitiltása és {4} korábbi kommunikációs tiltása."
-		"chi"                   "警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁和 {4} 次禁言."
+		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁和 {4} 次禁言."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3} oraz {4} poprzednie blokady czatu{5}."
 	}
 }

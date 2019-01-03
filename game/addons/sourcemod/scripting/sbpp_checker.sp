@@ -82,42 +82,39 @@ public void OnDatabaseConnected(Database db, const char[] error, any data)
 
 public void OnClientAuthorized(int client, const char[] auth)
 {
-    if (g_DB == null)
-        return;
-        
-    /* Do not check bots nor check player with lan steamid. */
-    if (auth[0] == 'B' || auth[9] == 'L')
-        return;
-        
-    char query[512], ip[30];
-    GetClientIP(client, ip, sizeof(ip));
-    FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM %s_comms WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
-    g_DB.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
+	if (g_DB == null)
+		return;
+		
+	/* Do not check bots nor check player with lan steamid. */
+	if (auth[0] == 'B' || auth[9] == 'L')
+		return;
+		
+	char query[512], ip[30];
+	GetClientIP(client, ip, sizeof(ip));
+	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM %s_comms WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
+	g_DB.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
 }
 
 public void OnConnectBanCheck(Database db, DBResultSet results, const char[] error, any userid)
 {
-    int client = GetClientOfUserId(userid);
-    if (!client || results == null || !results.FetchRow())
-        return;
-        
-    int bancount = results.FetchInt(0);
-    int commcount = 0;
-    if(results.FetchRow()){
-        commcount = results.FetchInt(0);
-    }
-    if (bancount > 0 || commcount > 0)
-    {
-        if(bancount == 0){
-			PrintToBanAdmins("%s%t", Prefix, "Comm Warning", client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
-        }
-        else if(commcount == 0){
-            PrintToBanAdmins("%s%t", Prefix, "Ban Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
-        }
-        else{
-            PrintToBanAdmins("%s%t", Prefix, "Ban and Comm Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""), commcount, ((commcount > 1 || commcount == 0) ? "s":""));
-        }
-    }
+	int client = GetClientOfUserId(userid);
+	if (!client || results == null || !results.FetchRow())
+		return;
+		
+	int bancount = results.FetchInt(0);
+	int commcount = 0;
+	if(results.FetchRow()){
+		commcount = results.FetchInt(0);
+	}
+	if ( bancount && commcount ) {
+		PrintToBanAdmins("%s%t", Prefix, "Ban and Comm Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""), commcount, ((commcount > 1 || commcount == 0) ? "s":""));
+	}
+	else if ( commcount ) {
+		PrintToBanAdmins("%s%t", Prefix, "Comm Warning", client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
+	}
+	else if ( bancount ) {
+		PrintToBanAdmins("%s%t", Prefix, "Ban Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
+	}
 }
 
 public Action OnListSourceBansCmd(int client, int args)
@@ -475,7 +472,7 @@ void PrintListResponse(int userid, int client, const char[] format, any ...)
 
 void PrintToBanAdmins(const char[] format, any ...)
 {
-	char msg[128];
+	char msg[256];
 	
 	for (int i = 1; i <= MaxClients; i++)
 	{

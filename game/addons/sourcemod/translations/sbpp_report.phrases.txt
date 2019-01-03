@@ -5,7 +5,8 @@
 		"#format"	"{1:.0f}"
 
 		"en"	"Please wait {1} seconds before reporting again"
-        "de"    "Bitte warten Sie {1} Sekunden bevor Sie eine erneute Meldung durchführen können"
+		"ru"	"Пожалуйста, подождите {1} секунд до отправки жалобы вновь."
+		"de"	"Bitte warten Sie {1} Sekunden bevor Sie eine erneute Meldung durchführen können"
 		"fr"	"Veuillez patienter {1} secondes avant de rapporter à nouveau"
 		"pl"	"Zaczekaj {1} sekund przed ponownym wysłaniem zgłoszenia"
 		"chi"	"请等待 {1} 秒后再试"
@@ -15,7 +16,8 @@
 	"Report Canceled"
 	{
 		"en"	"Report canceled"
-        "de"    "Meldung abbrechen"
+		"ru"	"Отправка жалобы отменена."
+		"de"	"Meldung abbrechen"
 		"fr"	"Report annulé"
 		"pl"	"Raport został anulowany"
 		"chi"	"报告已取消"
@@ -25,7 +27,8 @@
 	"Report Sent"
 	{
 		"en"	"Your report has been sent"
-        "de"    "Ihre Meldung wurde gesendet"
+		"ru"	"Ваша жалоба отправлена."
+		"de"	"Ihre Meldung wurde gesendet"
 		"fr"	"Votre report a été envoyé"
 		"pl"	"Twój raport został wysłany"
 		"chi"	"你的报告已发送"
@@ -35,7 +38,8 @@
 	"Reason Prompt"
 	{
 		"en"	"Please enter the reason for the report or \"cancel\" to cancel"
-        "de"    "Bitte geben sie einen Grund für die Meldung ein oder \"cancel\" um die Meldung abzubrechen"
+		"ru"	"Пожалуйста, напишите причину жалобы или \"cancel\" для отмены."
+		"de"	"Bitte geben sie einen Grund für die Meldung ein oder \"cancel\" um die Meldung abzubrechen"
 		"fr"	"Veuillez entrer la raison du rapport ou \"cancel\" pour annuler
 		"pl"	"Podaj przyczynę zgłoszenia lub \"cancel\", aby anulować"
 		"chi"	"请填写报告填写理由或者 \"cancel\" 来取消"
@@ -45,7 +49,8 @@
 	"Reason Short Need More"
 	{
 		"en"	"Reason is too short, more details is required"
-        "de"    "Der Grund ist leider zu kurz, es werden mehr Details benötigt."
+		"ru"	"Текст причины слишком мал, требуется больше информации."
+		"de"	"Der Grund ist leider zu kurz, es werden mehr Details benötigt."
 		"fr"	"La raison est trop courte, plus de détails sont requis"
 		"pl"	"Powód jest za krótki, więcej szczegółów jest wymaganych"
 		"chi"	"理由过于简短,请做更多说明"
