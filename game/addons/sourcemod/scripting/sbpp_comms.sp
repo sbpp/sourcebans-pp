@@ -43,7 +43,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.3"
+#define PLUGIN_VERSION "1.7.0"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length
@@ -2360,7 +2360,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 	char adminAuth[64];
 	char targetAuth[64];
 
-	if (client && IsClientInGame(client))
+	if (client && IsClientConnected(client))
 	{
 		GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
@@ -2380,7 +2380,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			int target = target_list[i];
 
-			if (IsClientInGame(target))
+			if (IsClientConnected(target))
 				GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
 			else
 				continue;
@@ -2405,7 +2405,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 				}
 			}
 
-			ProcessUnBlock(GetClientUserId2(client), GetClientUserId(target), type, reason);
+			ProcessUnBlock(client, target, type, reason);
 		}
 
 		#if defined DEBUG

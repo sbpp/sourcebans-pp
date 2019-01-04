@@ -35,8 +35,7 @@
 
 #pragma newdecls required
 
-#define SB_VERSION "1.6.3"
-#define SBR_VERSION "1.6.3"
+#define SB_VERSION "1.7.0"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
@@ -137,7 +136,7 @@ public Plugin myinfo =
 	name = "SourceBans++: Main Plugin",
 	author = "SourceBans Development Team, SourceBans++ Dev Team",
 	description = "Advanced ban management for the Source engine",
-	version = SBR_VERSION,
+	version = SB_VERSION,
 	url = "https://sbpp.github.io"
 };
 
@@ -168,7 +167,6 @@ public void OnPluginStart()
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
 	CreateConVar("sb_version", SB_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
-	CreateConVar("sbr_version", SBR_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
 	RegServerCmd("sm_rehash", sm_rehash, "Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");

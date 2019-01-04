@@ -29,7 +29,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.6.3"
+#define VERSION "1.7.0"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
@@ -84,11 +84,11 @@ public void OnClientAuthorized(int client, const char[] auth)
 {
 	if (g_DB == null)
 		return;
-		
+
 	/* Do not check bots nor check player with lan steamid. */
 	if (auth[0] == 'B' || auth[9] == 'L')
 		return;
-		
+
 	char query[512], ip[30];
 	GetClientIP(client, ip, sizeof(ip));
 	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM %s_comms WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
@@ -100,7 +100,7 @@ public void OnConnectBanCheck(Database db, DBResultSet results, const char[] err
 	int client = GetClientOfUserId(userid);
 	if (!client || results == null || !results.FetchRow())
 		return;
-		
+
 	int bancount = results.FetchInt(0);
 	int commcount = 0;
 	if(results.FetchRow()){
@@ -473,7 +473,7 @@ void PrintListResponse(int userid, int client, const char[] format, any ...)
 void PrintToBanAdmins(const char[] format, any ...)
 {
 	char msg[256];
-	
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i) && CheckCommandAccess(i, "sm_listsourcebans", ADMFLAG_BAN))

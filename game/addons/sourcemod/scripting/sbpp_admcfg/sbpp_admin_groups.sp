@@ -2,20 +2,20 @@
 //  This file is part of SourceBans++.
 //
 //  Copyright (C) 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
-//  
+//
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
-//  
+//
 //  SourceBans++ is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file based off work(s) covered by the following copyright(s):   
+//  This file based off work(s) covered by the following copyright(s):
 //
 //   SourceMod Admin File Reader Plugin
 //   Copyright (C) 2004-2008 AlliedModders LLC
@@ -26,17 +26,17 @@
 
 enum GroupState
 {
-	GroupState_None, 
-	GroupState_Groups, 
-	GroupState_InGroup, 
-	GroupState_Overrides, 
+	GroupState_None,
+	GroupState_Groups,
+	GroupState_InGroup,
+	GroupState_Overrides,
 }
 
 enum GroupPass
 {
-	GroupPass_Invalid, 
-	GroupPass_First, 
-	GroupPass_Second, 
+	GroupPass_Invalid,
+	GroupPass_First,
+	GroupPass_Second,
 }
 
 static SMCParser g_hGroupParser;
@@ -52,7 +52,7 @@ public SMCResult ReadGroups_NewSection(SMCParser smc, const char[] name, bool op
 		g_IgnoreLevel++;
 		return SMCParse_Continue;
 	}
-	
+
 	if (g_GroupState == GroupState_None)
 	{
 		if (StrEqual(name, "Groups", false))
@@ -77,23 +77,23 @@ public SMCResult ReadGroups_NewSection(SMCParser smc, const char[] name, bool op
 	} else {
 		g_IgnoreLevel++;
 	}
-	
+
 	return SMCParse_Continue;
 }
 
-public SMCResult ReadGroups_KeyValue(SMCParser smc, 
-	const char[] key, 
-	const char[] value, 
-	bool key_quotes, 
+public SMCResult ReadGroups_KeyValue(SMCParser smc,
+	const char[] key,
+	const char[] value,
+	bool key_quotes,
 	bool value_quotes)
 {
 	if (g_CurGrp == INVALID_GROUP_ID || g_IgnoreLevel)
 	{
 		return SMCParse_Continue;
 	}
-	
+
 	AdminFlag flag;
-	
+
 	if (g_GroupPass == GroupPass_First)
 	{
 		if (g_GroupState == GroupState_InGroup)
@@ -114,12 +114,12 @@ public SMCResult ReadGroups_KeyValue(SMCParser smc,
 			}
 		} else if (g_GroupState == GroupState_Overrides) {
 			OverrideRule rule = Command_Deny;
-			
+
 			if (StrEqual(value, "allow", false))
 			{
 				rule = Command_Allow;
 			}
-			
+
 			if (key[0] == '@')
 			{
 				g_CurGrp.AddCommandOverride(key[1], Override_CommandGroup, rule);
@@ -161,7 +161,7 @@ public SMCResult ReadGroups_KeyValue(SMCParser smc,
 			}
 		}
 	}
-	
+
 	return SMCParse_Continue;
 }
 
@@ -173,7 +173,7 @@ public SMCResult ReadGroups_EndSection(SMCParser smc)
 		g_IgnoreLevel--;
 		return SMCParse_Continue;
 	}
-	
+
 	if (g_GroupState == GroupState_Overrides)
 	{
 		g_GroupState = GroupState_InGroup;
@@ -183,14 +183,14 @@ public SMCResult ReadGroups_EndSection(SMCParser smc)
 	} else if (g_GroupState == GroupState_Groups) {
 		g_GroupState = GroupState_None;
 	}
-	
+
 	return SMCParse_Continue;
 }
 
 public SMCResult ReadGroups_CurrentLine(SMCParser smc, const char[] line, int lineno)
 {
 	g_CurrentLine = lineno;
-	
+
 	return SMCParse_Continue;
 }
 
@@ -214,7 +214,7 @@ static void InternalReadGroups(const char[] path, GroupPass pass)
 	g_CurGrp = INVALID_GROUP_ID;
 	g_GroupPass = pass;
 	g_NeedReparse = false;
-	
+
 	SMCError err = g_hGroupParser.ParseFile(path);
 	if (err != SMCError_Okay)
 	{
@@ -231,9 +231,9 @@ static void InternalReadGroups(const char[] path, GroupPass pass)
 void ReadGroups()
 {
 	InitializeGroupParser();
-	
+
 	BuildPath(Path_SM, g_Filename, sizeof(g_Filename), "configs/sourcebans/sb_admin_groups.cfg");
-	
+
 	InternalReadGroups(g_Filename, GroupPass_First);
 	if (g_NeedReparse)
 	{
