@@ -8,7 +8,7 @@
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kitiltása{3}."
 		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3}."
-		"de"			"Warnung: Spieler \"{1:N}\" hatte bisher {2} ban{3}".
+		"de"			"Warnung: Spieler \"{1:N}\" hatte bisher {2} ban{3}."
 	}
 	"Comm Warning"
 	{
