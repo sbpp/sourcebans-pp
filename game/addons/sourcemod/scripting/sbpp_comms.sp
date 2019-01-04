@@ -43,7 +43,7 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.6.3"
+#define PLUGIN_VERSION "1.7.0"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 #define MAX_TIME_MULTI 30 // maximum mass-target punishment length

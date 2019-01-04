@@ -35,7 +35,7 @@
 
 #pragma newdecls required
 
-#define SB_VERSION "1.6.3"
+#define SB_VERSION "1.7.0"
 #define SBR_VERSION "1.6.3"
 
 #if defined _updater_included
