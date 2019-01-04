@@ -110,7 +110,7 @@ forward void SourceComms_OnBlockAdded(int client, int target, int time, int type
 public SharedPlugin __pl_sourcecomms =
 {
 	name = "sourcecomms++",
-	file = "sbpp_comms.smx", 
+	file = "sbpp_comms.smx",
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else

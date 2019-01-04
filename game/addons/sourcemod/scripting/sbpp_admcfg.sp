@@ -61,7 +61,7 @@ public void OnRebuildAdminCache(AdminCachePart part)
 void ParseError(const char[] format, any...)
 {
 	char buffer[512];
-	
+
 	if (!g_LoggedFileName)
 	{
 		LogError("Error(s) Detected Parsing %s", g_Filename);

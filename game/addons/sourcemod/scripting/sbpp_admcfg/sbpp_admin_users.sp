@@ -2,20 +2,20 @@
 //  This file is part of SourceBans++.
 //
 //  Copyright (C) 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
-//  
+//
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
 //  the Free Software Foundation, per version 3 of the License.
-//  
+//
 //  SourceBans++ is distributed in the hope that it will be useful,
 //  but WITHOUT ANY WARRANTY; without even the implied warranty of
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 //  GNU General Public License for more details.
-//  
+//
 //  You should have received a copy of the GNU General Public License
 //  along with SourceBans++. If not, see <http://www.gnu.org/licenses/>.
 //
-//  This file is based off work(s) covered by the following copyright(s):   
+//  This file is based off work(s) covered by the following copyright(s):
 //
 //   SourceMod Admin File Reader Plugin
 //   Copyright (C) 2004-2008 AlliedModders LLC
@@ -26,9 +26,9 @@
 
 enum UserState
 {
-	UserState_None, 
-	UserState_Admins, 
-	UserState_InAdmin, 
+	UserState_None,
+	UserState_Admins,
+	UserState_InAdmin,
 }
 
 static SMCParser g_hUserParser;
@@ -48,7 +48,7 @@ public SMCResult ReadUsers_NewSection(SMCParser smc, const char[] name, bool opt
 		g_IgnoreLevel++;
 		return SMCParse_Continue;
 	}
-	
+
 	if (g_UserState == UserState_None)
 	{
 		if (StrEqual(name, "Admins", false))
@@ -75,21 +75,21 @@ public SMCResult ReadUsers_NewSection(SMCParser smc, const char[] name, bool opt
 	{
 		g_IgnoreLevel++;
 	}
-	
+
 	return SMCParse_Continue;
 }
 
-public SMCResult ReadUsers_KeyValue(SMCParser smc, 
-	const char[] key, 
-	const char[] value, 
-	bool key_quotes, 
+public SMCResult ReadUsers_KeyValue(SMCParser smc,
+	const char[] key,
+	const char[] value,
+	bool key_quotes,
 	bool value_quotes)
 {
 	if (g_UserState != UserState_InAdmin || g_IgnoreLevel)
 	{
 		return SMCParse_Continue;
 	}
-	
+
 	if (StrEqual(key, "auth", false))
 	{
 		strcopy(g_CurAuth, sizeof(g_CurAuth), value);
@@ -98,25 +98,25 @@ public SMCResult ReadUsers_KeyValue(SMCParser smc,
 	{
 		strcopy(g_CurIdent, sizeof(g_CurIdent), value);
 	}
-	else if (StrEqual(key, "password", false)) 
+	else if (StrEqual(key, "password", false))
 	{
 		strcopy(g_CurPass, sizeof(g_CurPass), value);
 	}
-	else if (StrEqual(key, "group", false)) 
+	else if (StrEqual(key, "group", false))
 	{
 		GroupId id = FindAdmGroup(value);
 		if (id == INVALID_GROUP_ID)
 		{
 			ParseError("Unknown group \"%s\"", value);
 		}
-		
+
 		g_GroupArray.Push(id);
 	}
-	else if (StrEqual(key, "flags", false)) 
+	else if (StrEqual(key, "flags", false))
 	{
 		int len = strlen(value);
 		AdminFlag flag;
-		
+
 		for (int i = 0; i < len; i++)
 		{
 			if (!FindFlagByChar(value[i], flag))
@@ -129,11 +129,11 @@ public SMCResult ReadUsers_KeyValue(SMCParser smc,
 			}
 		}
 	}
-	else if (StrEqual(key, "immunity", false)) 
+	else if (StrEqual(key, "immunity", false))
 	{
 		g_CurImmunity = StringToInt(value);
 	}
-	
+
 	return SMCParse_Continue;
 }
 
@@ -144,7 +144,7 @@ public SMCResult ReadUsers_EndSection(SMCParser smc)
 		g_IgnoreLevel--;
 		return SMCParse_Continue;
 	}
-	
+
 	if (g_UserState == UserState_InAdmin)
 	{
 		/* Dump this user to memory */
@@ -153,7 +153,7 @@ public SMCResult ReadUsers_EndSection(SMCParser smc)
 			AdminFlag flags[26];
 			AdminId id;
 			int i, num_groups, num_flags;
-			
+
 			if ((id = FindAdminByIdentity(g_CurAuth, g_CurIdent)) == INVALID_ADMIN_ID)
 			{
 				id = CreateAdmin(g_CurName);
@@ -164,19 +164,19 @@ public SMCResult ReadUsers_EndSection(SMCParser smc)
 					return SMCParse_Continue;
 				}
 			}
-			
+
 			num_groups = g_GroupArray.Length;
 			for (i = 0; i < num_groups; i++)
 			{
 				id.InheritGroup(g_GroupArray.Get(i));
 			}
-			
+
 			id.SetPassword(g_CurPass);
 			if (id.ImmunityLevel < g_CurImmunity)
 			{
 				id.ImmunityLevel = g_CurImmunity;
 			}
-			
+
 			num_flags = FlagBitsToArray(g_CurFlags, flags, sizeof(flags));
 			for (i = 0; i < num_flags; i++)
 			{
@@ -187,21 +187,21 @@ public SMCResult ReadUsers_EndSection(SMCParser smc)
 		{
 			ParseError("Failed to create admin: did you forget either the auth or identity properties?");
 		}
-		
+
 		g_UserState = UserState_Admins;
 	}
 	else if (g_UserState == UserState_Admins)
 	{
 		g_UserState = UserState_None;
 	}
-	
+
 	return SMCParse_Continue;
 }
 
 public SMCResult ReadUsers_CurrentLine(SMCParser smc, const char[] line, int lineno)
 {
 	g_CurrentLine = lineno;
-	
+
 	return SMCParse_Continue;
 }
 
@@ -214,7 +214,7 @@ static void InitializeUserParser()
 		g_hUserParser.OnKeyValue = ReadUsers_KeyValue;
 		g_hUserParser.OnLeaveSection = ReadUsers_EndSection;
 		g_hUserParser.OnRawLine = ReadUsers_CurrentLine;
-		
+
 		g_GroupArray = new ArrayList();
 	}
 }
@@ -222,13 +222,13 @@ static void InitializeUserParser()
 void ReadUsers()
 {
 	InitializeUserParser();
-	
+
 	BuildPath(Path_SM, g_Filename, sizeof(g_Filename), "configs/sourcebans/sb_admins.cfg");
-	
+
 	/* Set states */
 	InitGlobalStates();
 	g_UserState = UserState_None;
-	
+
 	SMCError err = g_hUserParser.ParseFile(g_Filename);
 	if (err != SMCError_Okay)
 	{
