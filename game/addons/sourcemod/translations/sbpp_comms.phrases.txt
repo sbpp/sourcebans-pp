@@ -12,6 +12,7 @@
 		"de"			"Sie wurden im Sprachchat gesperrt!"
 		"fr"			"Vous avez été muté!"
 		"chi"			"你已被静音!"
+		"tr"			"Mikrofonunuz susturuldu!"
 	}
 	"Gagged on connect"
 	{
@@ -24,6 +25,7 @@
 		"de"			"Sie wurden im Textchat gesperrt!"
 		"fr"			"Vous avez été mis en muté du chat!"
 		"chi"			"你已被禁言!"
+		"tr"			"Sohbet etmeniz yasaklandı."
 	}
 	//--------------------------------------------------------------------------------
 	"Mute expired"
@@ -37,6 +39,7 @@
 		"de"			"Sie wurden im Sprachchat entsperrt (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute a expiré."
 		"chi"			"静音已过期."
+		"tr"			"Mikrofon yasaklama süresi sona erdi."
 	}
 	"Gag expired"
 	{
@@ -49,6 +52,7 @@
 		"de"			"Sie wurden im Textchat entsperrt. (Die Sperrzeit ist abgelaufen)."
 		"fr"			"Votre mute du chat a expiré."
 		"chi"			"禁言已过期."
+		"tr"			"Sohbet yasaklama süresi sona erdi."
 	}
 	//--------------------------------------------------------------------------------
 	"FWUnmute"
@@ -62,6 +66,7 @@
 		"de"			"Sie wurden im Sprachchat entsperrt."
 		"fr"			"Votre mute a été supprimée."
 		"chi"			"对你的静音已取消."
+		"tr"			"Mikrofon yasaklamanız kaldırıldı."
 	}
 	"FWUngag"
 	{
@@ -74,6 +79,7 @@
 		"de"			"Sie wurden im Textchat entsperrt."
 		"fr"			"Votre mute du chat a été supprimé."
 		"chi"			"对你的禁言已取消."
+		"tr"			"Sohbet yasaklamanız kaldırıldı."
 	}
 	//--------------------------------------------------------------------------------
 	"Usage_time"
@@ -88,6 +94,7 @@
 		"de"			"Dauer: {1} Minuten, wenn nicht festgelegt; Permanent, wenn 0. \.nWenn < 0, Blockierung für nächste Periode."
 		"fr"			"Temps: {1} minutes, si non spécifié; permanent, si 0.\nIf <0, bloque pour la session."
 		"chi"			"时间: {1} 分钟, 如果未做选择的话; 如果 0.\n 永久; 如果 < 0, 则在此局中封禁."
+		"tr"			"Süre: Belirtilmemişse, {1} dakika; 0 ise süresiz.\nEğer < 0, harita boyunca yasaklı."
 	}
 	"Player Comms Not Verified"
 	{
@@ -100,6 +107,7 @@
 		"de"			"Der Spieler ist noch nicht identifiziert. Warten Sie 30 Sekunden vor dem nächsten Versuch."
 		"fr"			"Ce joueur n'a pas été vérifié. Veuillez attendre 30 secondes avant de réessayer."
 		"chi"			"此用户尚未认证,请等待30秒后再试."
+		"tr"			"Bu oyuncu doğrulanamadı. Lütfen tekrar denemeden önce 30 saniye bekleyiniz."
 	}
 	//--------------------------------------------------------------------------------
 	"Player already muted"
@@ -114,6 +122,7 @@
 		"de"			"Der Spieler {1} ist bereits im Sprachchat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté!"
 		"chi"			"玩家 {1} 已被静音!"
+		"tr"			"Oyuncu {1} zaten mikrofon yasaklı!"
 	}
 	"Player already gagged"
 	{
@@ -127,6 +136,7 @@
 		"de"			"Der Spieler {1} ist bereits im Textchat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté du chat!"
 		"chi"			"玩家 {1} 已被禁言!"
+		"tr"			"Oyuncu {1] zaten sohbet yasaklı!"
 	}
 	"Player already silenced"
 	{
@@ -140,6 +150,7 @@
 		"de"			"Der Spieler {1} ist bereits im Text- oder Sprachchat gesperrt!"
 		"fr"			"Le joueur {1} est déjà muté ou muté du chat!"
 		"chi"			"玩家 {1} 已被禁言或静音!"
+		"tr"			"Oyuncu {1} zaten sohbet ve mikrofon yasaklı!"
 	}
 	//--------------------------------------------------------------------------------
 	"Player not muted"
@@ -153,6 +164,7 @@
 		"de"			"Der Spieler ist im Sprachchat nicht gesperrt."
 		"fr"			"Le joueur n'est pas muté."
 		"chi"			"玩家尚未被静音."
+		"tr"			"Oyuncunun mikrofon yasağı yok."
 	}
 	"Player not gagged"
 	{
@@ -165,6 +177,7 @@
 		"de"			"Der Spieler ist im Textchat nicht gesperrt."
 		"fr"			"Le joueur n'est pas muté du chat."
 		"chi"			"玩家尚未被禁言."
+		"tr"			"Oyuncunun sohbet yasağı yok."
 	}
 	"Player not silenced"
 	{
@@ -177,6 +190,7 @@
 		"de"			"Der Spieler ist im Text- oder Sprachchat nicht gesperrt."
 		"fr"			"Le joueur n'est pas silence."
 		"chi"			"玩家尚未被禁言或静音."
+		"tr"			"Oyuncunun sessizlik yasağı yok."
 	}
 	//--------------------------------------------------------------------------------
 	"Permagagged player"
@@ -191,6 +205,7 @@
 		"de"			"Der Spieler {1} ist für immer im Textchat gesperrt."
 		"fr"			"Un mute du chat permanent a été appliqué a {1}."
 		"chi"			"已对玩家 {1} 做永久禁言."
+		"tr"			"{1} üzerinde kalıcı sohbet yasağı uygulandı."
 	}
 	"Permagagged player reason"
 	{
@@ -204,6 +219,7 @@
 		"de"			"Der Spieler {1} ist für immer im Textchat gesperrt (Grund: {2})."
 		"fr"			"Un mute du chat permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 做永久禁言 (原因: {2})."
+		"tr"			"{1} üzerinde kalıcı sohbet yasağı uygulandı (Sebep: {2})."
 	}
 	"Gagged player"
 	{
@@ -217,6 +233,7 @@
 		"de"			"Der Spieler {1} ist für {2} Minuten im Textchat gesperrt."
 		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟."
+		"tr"			"{1} üzerinde {2} dakikalığına sohbet yasağı uygulandı."
 	}
 	"Gagged player reason"
 	{
@@ -230,6 +247,7 @@
 		"de"			"Der Spieler {1} ist für {2} Minuten im Textchat gesperrt (Grund: {3})."
 		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟 (原因: {3})."
+		"tr"			"{1} üzerinde {2} dakikalığına sohbet yasağı uygulandı (Sebep: {3})."
 	}
 	//--------------------------------------------------------------------------------
 	"Permamuted player"
@@ -243,7 +261,8 @@
 		"pt"			"{1} foi permanentemente emudecido."
 		"de"			"Der Spieler {1} ist für immer im Sprachchat gesperrt."
 		"fr"			"Un mute permanent a été appliqué a {1}."
-		"en"			"已对玩家 {1} 永久静音."
+		"chi"			"已对玩家 {1} 永久静音."
+		"tr"			"{1} üzerinde kalıcı mikrofon yasağı uygulandı."
 	}
 	"Permamuted player reason"
 	{
@@ -257,6 +276,7 @@
 		"de"			"Der Spieler {1} ist für immer im Sprachchat gesperrt (Grund: {2})."
 		"fr"			"Un mute permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 永久静音 (原因: {3})."
+		"tr"			"{1} üzerinde kalıcı mikrofon yasağı uygulandı (Sebep: {2})."
 	}
 	"Muted player"
 	{
@@ -270,6 +290,7 @@
 		"de"			"Der Spieler {1} ist für {2} Minuten im Sprachchat gesperrt."
 		"fr"			"Un mute a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的静音延长了 {2} 分钟."
+		"tr"			"{1} üzerinde {2} dakikalığına mikrofon yasağı uygulandı."
 	}
 	"Muted player reason"
 	{
@@ -283,6 +304,7 @@
 		"de"			"Der Spieler {1} ist für {2} Minuten im Sprachchat gesperrt (Grund: {3})."
 		"fr"			"Un mute a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的静音延长了 {2} 分钟 (原因: {3})."
+		"tr"			"{1} üzerinde {2} dakikalığına mikrofon yasağı uygulandı (Sebep: {3})."
 	}
 	//--------------------------------------------------------------------------------
 	"Permasilenced player"
@@ -297,6 +319,7 @@
 		"de"			"Der Spieler {1} ist für immer im Sprachchat und im Textchat gesperrt."
 		"fr"			"Un silence permanent a été appliqué a {1}."
 		"chi"			"已对玩家 {1} 进行永久禁言和静音."
+		"tr"			"{1} üzerinde kalıcı sessizlik yasağı uygulandı."
 	}
 	"Permasilenced player reason"
 	{
@@ -310,6 +333,7 @@
 		"de"			"Der Spieler {1} ist im Text- und Sprachchat gesperrt (Grund: {2})."
 		"fr"			"Un silence permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 进行永久禁言和静音 (原因: {2})."
+		"tr"			"{1} üzerinde kalıcı sessizlik yasağı uygulandı (Sebep: {2})."
 	}
 	"Silenced player"
 	{
@@ -323,6 +347,7 @@
 		"de"			"Der Spieler {1} ist für {2} Minuten im Text- und Sprachchat gesperrt."
 		"fr"			"Un silence a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的禁言和静音延长了 {2} 分钟."
+		"tr"			"{1} üzerinde {2} dakikalığına sessizlik yasağı uygulandı."
 	}
 	"Silenced player reason"
 	{
@@ -336,6 +361,7 @@
 		"de"			"Der Spieler {1} ist für {2} Minuten im Text- und Sprachchat gesperrt (Grund: {3})."
 		"fr"			"Un silence a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的禁言和静音延长了 {2} 分钟 (原因: {3})."
+		"tr"			"{1} üzerinde {2} dakikalığına sessizlik yasağı uygulandı (Sebep: {3})."
 	}
 	//--------------------------------------------------------------------------------
 	"Temp unmuted player"
@@ -350,6 +376,7 @@
 		"de"			"Der Spieler {1} ist zeitweilig im Sprachchat entsperrt."
 		"fr"			"Suppression temporaire du mute depuis {1}."
 		"chi"			"已对玩家 {1} 暂时解除静音."
+		"tr"			"{1} üzerinden mikrofon yasağı geçici olarak kaldırıldı."
 	}
 
 	"Temp ungagged player"
@@ -364,6 +391,7 @@
 		"de"			"Der Spieler {1} ist zeitweilig im Textchat entsperrt."
 		"fr"			"Suppression temporaire du mute du chat depuis {1}."
 		"chi"			"已对玩家 {1} 暂时解除禁言."
+		"tr"			"{1} üzerinden sohbet yasağı geçici olarak kaldırıldı."
 	}
 	"Temp unsilenced player"
 	{
@@ -377,6 +405,7 @@
 		"de"			"Der Spieler {1} ist zeitweilig im Text- und Sprachchat entsperrt."
 		"fr"			"Suppression temporaire du silence depuis {1}."
 		"chi"			"已对玩家 {1} 暂时解除禁言和静音."
+		"tr"			"{1} üzerinden sessizlik yasağı geçici olarak kaldırıldı."
 	}
 	"Unblock Select Failed"
 	{
@@ -390,6 +419,7 @@
 		"de"			"Es ist ein Fehler bei der Anfrage der Sperren für {1} aus der Datenbank passiert"
 		"fr"			"Une erreur s'est produite lors de la demande de blocs pour {1} à partir de DB."
 		"chi"			"在数据库中对 {1} 进行禁止时出现错误."
+		"tr"			"Veritabanından {1} için yasaklamalar alınırken hata oluştu."
 	}
 	"No blocks found"
 	{
@@ -403,6 +433,7 @@
 		"de"			"Es wurde keine gültige Sperre für {1} in der Datenbank gefunden."
 		"fr"			"Aucun bloc actif trouvé dans DB pour {1}."
 		"chi"			"在数据库中未找到对 {1} 的禁止."
+		"tr"			"Veritabanında {1} için yasaklama bulunamadı."
 	}
 	"No db error unlock perm"
 	{
@@ -414,7 +445,8 @@
 		"pt"			"Você não tem permissão para desbloquear com erros de DB."
 		"de"			"Sie haben keine Erlaubnis zur Entsperrung bei den Fehlern in der Datenbank."
 		"fr"			"Vous n'avez pas la permission de débloquer avec des erreurs de DB."
-		"chi"			"你没有权限解除对 {1} 的封禁."
+		"chi"			"你没有权限解除对  的封禁."
+		"tr"			"Veritabanı hatalarıyla yasaklama kaldırmak için yetkiniz bulunmuyor."
 	}
 	"No permission unmute"
 	{
@@ -428,6 +460,7 @@
 		"de"			"Es ist unmöglich {1} im Sprachchat zu entsperren, weil er von einem höheren Administrator gesperrt wurde!"
 		"fr"			"Le mute sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
 		"chi"			"对玩家 {1} 的静音是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
+		"tr"			"{1} üzerindeki mikrofon yasağı sizden daha yetkili biri tarafından oluşturulduğu için kaldırılamadı!"
 	}
 	"No permission ungag"
 	{
@@ -441,6 +474,7 @@
 		"de"			"Es ist unmöglich {1} im Textchat zu entsperren, weil er von einem höheren Administrator gesperrt wurde!"
 		"fr"			"Le mute du chat sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
 		"chi"			"对玩家 {1} 的禁言是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
+		"tr"			"{1} üzerindeki sohbet yasağı sizden daha yetkili biri tarafından oluşturulduğu için kaldırılamadı!"
 	}
 	"Unmuted player"
 	{
@@ -454,6 +488,7 @@
 		"de"			"Der Spieler {1} wurde im Sprachchat entsperrt."
 		"fr"			"Suppression du mute étendu de {1}."
 		"chi"			"已取消对玩家 {1} 的静音延长."
+		"tr"			"{1} üzerindeki mikrofon yasağı kaldırıldı."
 	}
 	"Ungagged player"
 	{
@@ -467,6 +502,7 @@
 		"de"			"Der Spieler {1} wurde im Textchat entsperrt."
 		"fr"			"Suppression du silence étendu de {1}. "
 		"chi"			"已取消对玩家 {1} 的禁言延长."
+		"tr"			"{1} üzerindeki sohbet yasağı kaldırıldı."
 	}
 	"Unblock insert failed"
 	{
@@ -479,6 +515,7 @@
 		"de"			"Es ist ein Fehler beim Entfernen der Sperre aus der Datenbank passiert."
 		"fr"			"Impossible de supprimer le bloc de la base de données."
 		"chi"			"从数据库中取消禁止失败."
+		"tr"			"Yasaklama veritabanından kaldırılamadı."
 	}
 	"successfully unmuted"
 	{
@@ -492,6 +529,7 @@
 		"de"			"Die Sperre {1} im Sprachchat wurde erfolgreich aus der Datenbank entfernt."
 		"fr"			"Suppression réussie du mute pour {1} de la base de données."
 		"chi"			"已成功从数据库中取消对 {1} 的静音."
+		"tr"			"{1} için mikrofon yasaklaması veritabanından başarıyla silindi."
 	}
 	"successfully ungagged"
 	{
@@ -505,6 +543,7 @@
 		"de"			"Die Sperre {1} im Textchat wurde erfolgreich aus der Datenbank entfernt."
 		"fr"			"Suppression réussie du mute du chat pour {1} de la base de données."
 		"chi"			"已成功从数据库中取消对 {1} 的禁言."
+		"tr"			"{1} için sohbet yasaklaması veritabanından başarıyla silindi."
 	}
 	//--------------------------------------------------------------------------------
 	"AdminMenu_Display_None"
@@ -519,6 +558,7 @@
 		"de"		"[  ] {1}"
 		"fr"		"[  ] {1}"
 		"chi"		"[  ] {1}"
+		"tr"		"[  ] {1}"
 	}
 	"AdminMenu_Display_Muted"
 	{
@@ -532,6 +572,7 @@
 		"de"		"[M] {1}"
 		"fr"		"[M] {1}"
 		"chi"		"[M] {1}"
+		"tr"		"[M] {1}"
 	}
 	"AdminMenu_Display_Gagged"
 	{
@@ -545,6 +586,7 @@
 		"de"		"[G] {1}"
 		"fr"		"[G] {1}"
 		"chi"		"[G] {1}"
+		"tr"		"[G] {1}"
 	}
 	"AdminMenu_Display_Silenced"
 	{
@@ -558,6 +600,7 @@
 		"de"		"[S] {1}"
 		"fr"		"[S] {1}"
 		"chi"		"[S] {1}"
+		"tr"		"[S] {1}"
 	}
 	"AdminMenu_Main"
 	{
@@ -570,6 +613,7 @@
 		"de"		"Text- und Sprachchat"
 		"fr"		"Commandes de communication"
 		"chi"		"禁言和静音"
+		"tr"		"İletişim Komutları"
 	}
 	"AdminMenu_Select_Main"
 	{
@@ -582,6 +626,7 @@
 		"de"		"Text- und Sprachchat:"
 		"fr"		"Commandes de communication:"
 		"chi"		"禁言和静音:"
+		"tr"		"İletişim Komutları:"
 	}
 	"AdminMenu_List"
 	{
@@ -594,6 +639,7 @@
 		"de"		"Die Bestrafungen zeigen"
 		"fr"		"Voir Les sanctions"
 		"chi"		"显示惩罚"
+		"tr"		"Cezaları Görüntüle"
 	}
 	"AdminMenu_Select_List"
 	{
@@ -606,6 +652,7 @@
 		"de"		"Die Spieler:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Gag"
 	{
@@ -618,6 +665,7 @@
 		"de"		"Textchat sperren"
 		"fr"		"Sanction chat"
 		"chi"		"进行禁言"
+		"tr"		"Sohbet Yasağı"
 	}
 	"AdminMenu_Select_Gag"
 	{
@@ -630,6 +678,7 @@
 		"de"		"Spieler im Textchat sperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Select_Mute"
 	{
@@ -642,6 +691,7 @@
 		"de"		"Spieler im Sprachchat sperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Select_Silence"
 	{
@@ -654,6 +704,7 @@
 		"de"		"Spieler im Text- und Sprachchat sperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Select_Ungag"
 	{
@@ -666,6 +717,7 @@
 		"de"		"Spieler im Textchat entsperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Select_Unmute"
 	{
@@ -678,6 +730,7 @@
 		"de"		"Spieler im Sprachchat entsperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Select_Unsilence"
 	{
@@ -690,6 +743,7 @@
 		"de"		"Spieler im Text- und Sprachchat entsperren:"
 		"fr"		"Sélectionner un joueur:"
 		"chi"		"选择玩家:"
+		"tr"		"Oyuncu Seç:"
 	}
 	"AdminMenu_Option_Mute_Empty"
 	{
@@ -702,6 +756,7 @@
 		"de"		"Es gibt keinen Spieler, der im Textchat gesperrt wurde"
 		"fr"		"Aucun joueur de mute"
 		"chi"		"没有玩家被静音"
+		"tr"		"Mikrofonu susturulmuş oyuncu yok"
 	}
 	"AdminMenu_Option_Gag_Empty"
 	{
@@ -714,6 +769,7 @@
 		"de"		"Es gibt keinen Spieler, der im Sprachchat gesperrt wurde"
 		"fr"		"Aucun joueur de mute du chat"
 		"chi"		"没有玩家被禁言"
+		"tr"		"Mikrofon yasaklı oyuncu yok"
 	}
 	"AdminMenu_Option_Silence_Empty"
 	{
@@ -726,6 +782,7 @@
 		"de"		"Es gibt keinen Spieler, der im Text- und Sprachchat gesperrt wurde"
 		"fr"		"Aucun joueur en silence"
 		"chi"		"没有玩家被禁言和静音"
+		"tr"		"Sessize alınmış oyuncu yok"
 	}
 	"ListMenu_Option_Empty"
 	{
@@ -738,6 +795,7 @@
 		"de"		"Es gibt keinen bestraften Spieler"
 		"fr"		"Aucun client puni"
 		"chi"		"没有玩家被惩罚"
+		"tr"		"Cezalı oyuncu yok"
 	}
 	"AdminMenu_Option_Empty"
 	{
@@ -750,6 +808,7 @@
 		"de"		"Es gibt keinen zugänglichen Spieler"
 		"fr"		"Aucun joueur disponible"
 		"chi"		"没有可用的玩家"
+		"tr"		"Mevcut oyuncu yok"
 	}
 	"AdminMenu_UnGag"
 	{
@@ -762,6 +821,7 @@
 		"de"		"Textchat entsperren"
 		"fr"		"Enleve un mute du chat"
 		"chi"		"取消禁言"
+		"tr"		"Sohbet yasağını kaldır"
 
 	}
 	"AdminMenu_Title_Durations"
@@ -775,6 +835,7 @@
 		"de"		"Dauer auswählen:"
 		"fr"		"Sélectionnez la durée:"
 		"chi"		"选择时长:"
+		"tr"		"Süre Seç:"
 	}
 	"AdminMenu_Title_Reasons"
 	{
@@ -787,6 +848,7 @@
 		"de"		"Grund auswählen:"
 		"fr"		"Choisir la raison:"
 		"chi"		"选择原因:"
+		"tr"		"Sebep Seç:"
 	}
 	"AdminMenu_Mute"
 	{
@@ -799,6 +861,7 @@
 		"de"		"Sprachchat sperren"
 		"fr"		"Sanction mute"
 		"chi"		"进行静音"
+		"tr"		"Mikrofon Yasağı"
 	}
 	"AdminMenu_UnMute"
 	{
@@ -811,6 +874,7 @@
 		"de"		"Sprachchat entsperren"
 		"fr"		"Enleve un mute"
 		"chi"		"取消静音"
+		"tr"		"Mikrofon yasağını kaldır"
 	}
 	"AdminMenu_Silence"
 	{
@@ -823,6 +887,7 @@
 		"de"		"Text- und Sprachchat sperren"
 		"fr"		"Santion en silence"
 		"chi"		"进行禁言和静音"
+		"tr"		"Sessize Al"
 	}
 	"AdminMenu_UnSilence"
 	{
@@ -835,6 +900,7 @@
 		"de"		"Text- und Sprachchat entsperren"
 		"fr"		"Enleve un silence"
 		"chi"		"取消禁言和静音"
+		"tr"		"Sessizlik yasağını kaldır"
 	}
 	//--------------------------------------------------------------------------------
 	"AdminMenu_Not_Available"
@@ -848,6 +914,7 @@
 		"de"		"Der Spieler ist nicht zugänglich."
 		"fr"		"Le joueur que vous avez sélectionné n'est plus disponible."
 		"chi"		"你选择的玩家目前不可用."
+		"tr"		"Seçtiğiniz oyuncu artık mevcut değil."
 	}
 	"Command_Target_Not_Targetable"
 	{
@@ -860,6 +927,7 @@
 		"de"		"Sie können diesen Spieler nicht auswählen."
 		"fr"		"Vous ne pouvez pas attendre ce joueur."
 		"chi"		"你无法选择此玩家."
+		"tr"		"Bu oyuncuyu hedefleyemezsiniz."
 	}
 	//---------------------------------------------------------------------------------
 	"ListMenu_Option_Mute"
@@ -873,6 +941,7 @@
 		"de"		"Sprachchat"
 		"fr"		"Muté"
 		"chi"		"静音"
+		"tr"		"Mikrofon Yasaklı"
 	}
 	"ListMenu_Option_Gag"
 	{
@@ -885,6 +954,7 @@
 		"de"		"Textchat"
 		"fr"		"Muté du chat"
 		"chi"		"禁言"
+		"tr"		"Sohbet Yasaklı"
 	}
 	"ListMenu_Option_Duration"
 	{
@@ -897,6 +967,7 @@
 		"de"		"- Dauer: "
 		"fr"		"- Durée: "
 		"chi"		"- 时长:"
+		"tr"		"- Süre: "
 	}
 	"ListMenu_Option_Duration_Perm"
 	{
@@ -909,6 +980,7 @@
 		"de"		"Permanent"
 		"fr"		"Permanent"
 		"chi"		"永久"
+		"tr"		"Süresiz"
 	}
 	"ListMenu_Option_Duration_Time"
 	{
@@ -922,6 +994,7 @@
 		"de"		"{1} Minuten"
 		"fr"		"{1} Minutes"
 		"chi"		"{1} 分钟"
+		"tr"		"{1} Dakika"
 	}
 	"ListMenu_Option_Duration_Temp"
 	{
@@ -934,6 +1007,7 @@
 		"de"		"Zeitweilig"
 		"fr"		"Temporaire"
 		"chi"		"临时"
+		"tr"		"Geçici"
 	}
 	"ListMenu_Option_Expire"
 	{
@@ -946,6 +1020,7 @@
 		"de"		"- Läuft ab: "
 		"fr"		"- Expire: "
 		"chi"		"- 解除: "
+		"tr"		"- Sona Erme: "
 	}
 	"ListMenu_Option_Expire_Perm"
 	{
@@ -958,6 +1033,7 @@
 		"de"		"Nie"
 		"fr"		"Jamais"
 		"chi"		"永不"
+		"tr"		"Asla"
 	}
 	"ListMenu_Option_Expire_Time"
 	{
@@ -971,6 +1047,7 @@
 		"de"		"{1}"
 		"fr"		"{1}"
 		"chi"		"{1}"
+		"tr"		"{1}"
 	}
 	"ListMenu_Option_Expire_Temp_Reconnect"
 	{
@@ -983,6 +1060,7 @@
 		"de"		"Wiederverbinden"
 		"fr"		"Reconnecter"
 		"chi"		"重新连接"
+		"tr"		"Yeniden bağlan"
 	}
 	"ListMenu_Option_Admin"
 	{
@@ -996,6 +1074,7 @@
 		"de"		"- Admin: {1}"
 		"fr"		"- Admin: {1}"
 		"chi"		"- 管理员: {1}"
+		"tr"		"- Admin: {1}"
 	}
 	"ListMenu_Option_Issue"
 	{
@@ -1009,6 +1088,7 @@
 		"de"		"- Gesperrt: {1}"
 		"fr"		"- Publié: {1}"
 		"chi"		"- 已封禁: {1}"
+		"tr"		"- Oluşturma: {1}"
 	}
 	"ListMenu_Option_Reason"
 	{
@@ -1021,6 +1101,7 @@
 		"de"		"- Grund"
 		"fr"		"- Voir la raison"
 		"chi"		"- 查看原因"
+		"tr"		"- Sebebi Gör"
 	}
 	"ListMenu_Option_Reason_None"
 	{
@@ -1033,6 +1114,7 @@
 		"de"		"- Kein Grund"
 		"fr"		"- Raison: Aucun"
 		"chi"		"- 原因: 无"
+		"tr"		"- Sebep: Yok"
 	}
 	//---------------------------------------------------------------------------------
 	"ReasonPanel_Punishment_Mute"
@@ -1046,6 +1128,7 @@
 		"de"		"Sprachchat: "
 		"fr"		"Muté: "
 		"chi"		"静音: "
+		"tr"		"Mikrofon Yasağı: "
 	}
 	"ReasonPanel_Punishment_Gag"
 	{
@@ -1058,6 +1141,7 @@
 		"de"		"Textchat: "
 		"fr"		"Mute du chat: "
 		"chi"		"禁言: "
+		"tr"		"Sohbet Yasağı: "
 	}
 	"ReasonPanel_Perm"
 	{
@@ -1070,6 +1154,7 @@
 		"de"		"Permanent"
 		"fr"		"Permanent"
 		"chi"		"永久"
+		"tr"		"Süresiz"
 	}
 	"ReasonPanel_Time"
 	{
@@ -1083,6 +1168,7 @@
 		"de"		"{1} Minuten"
 		"fr"		"{1} Minutes"
 		"chi"		"{1} 分钟"
+		"tr"		"{1} Dakika"
 	}
 	"ReasonPanel_Temp"
 	{
@@ -1095,6 +1181,7 @@
 		"de"		"Zeitweihlig"
 		"fr"		"Temporaire"
 		"chi"		"临时"
+		"tr"		"Geçici"
 	}
 	"ReasonPanel_Reason"
 	{
@@ -1108,6 +1195,7 @@
 		"de"		"Grund: {1}"
 		"fr"		"Raison: {1}"
 		"chi"		"原因: {1}"
+		"tr"		"Sebep: {1}"
 	}
 	"ReasonPanel_Back"
 	{
@@ -1120,6 +1208,7 @@
 		"de"		"Ausgang"
 		"fr"		"Sorti"
 		"chi"		"退出"
+		"tr"		"Çıkış"
 	}
 	//---------------------------------------------------------------------------------
 	"Temp muted player"
@@ -1134,6 +1223,7 @@
 		"de"			"Der Spieler {1} wurde im Sprachchat gesperrt."
 		"fr"			"Muté {1}."
 		"chi"			"玩家 {1} 已被静音."
+		"tr"			"Mikrofon yasağı {1}."
 	}
 	"Temp muted player reason"
 	{
@@ -1147,6 +1237,7 @@
 		"de"			"Der Spieler {1} wurde im Sprachchat gesperrt (Grund: {2}}."
 		"fr"			"Muté {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被静音 (原因: {2})."
+		"tr"			"Mikrofon yasağı {1} (sebep: {2})."
 	}
 	"Temp gagged player"
 	{
@@ -1160,6 +1251,7 @@
 		"de"			"Der Spieler {1} wurde im Textchat gesperrt."
 		"fr"			"Mute du chat {1}."
 		"chi"			"玩家 {1} 已被禁言."
+		"tr"			"Sohbet yasağı {1}."
 	}
 	"Temp gagged player reason"
 	{
@@ -1173,6 +1265,7 @@
 		"de"			"Der Spieler {1} wurde im Textchat gesperrt (Grund: {2}}."
 		"fr"			"Mute du chat {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被禁言 (原因: {2})."
+		"tr"			"Sohbet yasağı {1} (sebep: {2})."
 	}
 	"Temp silenced player"
 	{
@@ -1186,6 +1279,7 @@
 		"de"			"Der Spieler {1} wurde im Text- und Sprachchat gesperrt."
 		"fr"			"Silence {1}."
 		"chi"			"玩家 {1} 已被禁言和静音."
+		"tr"			"Sessizlik yasağı {1}."
 	}
 	"Temp silenced player reason"
 	{
@@ -1199,6 +1293,7 @@
 		"de"			"Der Spieler {1} wurde im Text- und Sprachchat gesperrt (Grund: {2}}."
 		"fr"			"Silence {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被禁言和静音 (原因: {2})."
+		"tr"			"Sessizlik yasağı {1} (sebep: {2})."
 	}
 	//---------------------------------------------------------------------------------
 	"CommandComms_na"
@@ -1212,6 +1307,7 @@
 		"de"		"Es ist nur für die Spieler auf dem Server zugänglich."
 		"fr"		"Disponible uniquement pour les joueurs sur le serveur."
 		"chi"		"只对在游戏中的玩家可用."
+		"tr"		"Yalnızca sunucudaki oyuncular için kullanılabilir."
 	}
 	"CommandComms_nb"
 	{
@@ -1224,6 +1320,7 @@
 		"de"		"Sie sind im Text- und Sprachchat nicht gesperrt."
 		"fr"		"Votre chat et votre voix ne sont pas bloquées."
 		"chi"		"你没有被禁言或静音."
+		"tr"		"Sohbet ve mikrofon yasağınız yok."
 	}
 	//---------------------------------------------------------------------------------
 	"no access"
@@ -1237,5 +1334,6 @@
 		"de"		"Die Sperre für festgelegte Zeit ist für Sie nicht zugänglich."
 		"fr"		"La punition pour le temps spécifié n'est pas autorisée pour vous."
 		"chi"		"你不能指定惩罚时长."
+		"tr"		"Belirtilen yasaklama süresi için yetkiniz bulunmamaktadır."
 	}
 }

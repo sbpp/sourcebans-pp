@@ -9,6 +9,7 @@
 		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3}."
 		"de"			"Warnung: Spieler \"{1:N}\" hatte bisher {2} ban{3}."
+		"tr"			"Uyarı: Oyuncu \"{1:N}\" daha önceden {2} defa yasaklandı."
 	}
 	"Comm Warning"
 	{
@@ -19,6 +20,7 @@
 		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次禁言."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie blokady czatu{3}."
 		"de"			"Warnung: Spieler \"{1:N}\" hatte bisher {2} Sprachchat ban{3}."
+		"tr"			"Uyarı: Oyuncu \"{1:N}\" daha önceden {2} defa iletişim yasağı aldı."
 	}
 	"Ban and Comm Warning"
 	{
@@ -29,5 +31,6 @@
 		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次封禁和 {4} 次禁言."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie bany{3} oraz {4} poprzednie blokady czatu{5}."
 		"de"			"Warnung: Spieler \"{1:N}\" hatte bisher {2} ban{3} und {4} Sprachchat ban{5}."
+		"tr"			"Uyarı: Oyuncu \"{1:N}\" daha önceden {2} defa yasaklandı ve {4} defa iletişim yasağı aldı."
 	}
 }
