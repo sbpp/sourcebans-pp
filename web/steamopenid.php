@@ -32,7 +32,7 @@ require_once 'includes/openid.php';
 
 function steamOauth()
 {
-    $openid = new LightOpenID(SB_WP_URL);
+    $openid = new LightOpenID(Host::complete());
     if (!$openid->mode) {
         $openid->identity = 'https://steamcommunity.com/openid';
         header("Location: " . $openid->authUrl());
@@ -60,7 +60,7 @@ if ($data !== false) {
     if (count($result) == 2) {
         global $userbank;
         if (empty($result['password']) || $result['password'] == $userbank->encrypt_password('') || $result['password'] == $userbank->hash('')) {
-            header("Location: ".SB_WP_URL."/index.php?p=login&m=empty_pwd");
+            header("Location: ".Host::complete()."/index.php?p=login&m=empty_pwd");
             die;
         } else {
             setcookie('remember_me', 604800, time() + 604800);
@@ -68,6 +68,6 @@ if ($data !== false) {
         }
     }
 } else {
-    header("Location: ".SB_WP_URL."/index.php?p=login");
+    header("Location: ".Host::complete()."/index.php?p=login");
 }
-header("Location: ".SB_WP_URL);
+header("Location: ".Host::complete());

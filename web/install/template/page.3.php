@@ -207,7 +207,6 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 				<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 				<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 	</form>
 	<form action="index.php?step=3" method="post" name="sendback" id="sendback">
@@ -218,7 +217,6 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 				<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 				<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 	</form>
 	<?php

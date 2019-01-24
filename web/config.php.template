@@ -38,6 +38,5 @@ define('DB_PREFIX', 'sb'); // The table prefix for SourceBans
 define('DB_PORT', '3306'); // The SQL port (Default: 3306)
 define('DB_CHARSET', 'utf8'); // The Database charset (Default: utf8)
 define('STEAMAPIKEY', ''); // Steam API Key for Shizz
-define('SB_WP_URL', ''); //URL of SourceBans Site
 define('SB_EMAIL', '');
 define('SB_NEW_SALT', '$5$'); //Salt for passwords
