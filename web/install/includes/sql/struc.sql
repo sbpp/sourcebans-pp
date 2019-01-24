@@ -232,4 +232,12 @@ CREATE TABLE IF NOT EXISTS `{prefix}_comms` (
   KEY `authid` (`authid`),
   KEY `created` (`created`),
   KEY `aid` (`aid`)
-) ENGINE=InnoDB  DEFAULT CHARSET={charset};
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
+
+CREATE TABLE IF NOT EXISTS `{prefix}_login_tokens` (
+    `jti` varchar(16) NOT NULL,
+    `secret` varchar(64) NOT NULL,
+    `lastAccessed` int(11) NOT NULL,
+    PRIMARY KEY (`jti`),
+    UNIQUE KEY `secret` (`secret`)
+) ENGINE=InnoDB DEFAULT CHARSET={charset};
