@@ -9,10 +9,9 @@ function route($fallback)
         case 'login':
             return ['Login', '/page.login.php'];
         case 'logout':
-            unset($_COOKIE['remember_me']);
-            $_SESSION = [];
-            session_destroy();
-            return ['Dashboard', '/page.home.php'];
+            Auth::logout();
+            header('Location: index.php?p=home');
+            exit();
         case 'submit':
             return ['Submit a Ban', '/page.submit.php'];
         case 'banlist':
