@@ -167,113 +167,12 @@ class CUserManager
         return $this->admins[$aid][$name];
     }
 
-
-    /**
-     * Will test the user's login stuff to check if they havnt changed their
-     * cookies or something along those lines.
-     *
-     * @param $password string The admins password.
-     * @param $aid int the admins aid
-     * @return boolean.
-     */
-    public function CheckLogin($password, $aid)
-    {
-        if (empty($password)) {
-            return false;
-        }
-        // Additional check for those vulnerable hashes when password was empty
-        if ($password == $this->encrypt_password('') || $password == $this->hash('')) {
-            return false;
-        }
-        if (!isset($this->admins[$aid])) {
-            $this->GetUserArray($aid);
-        }
-
-        if (version_compare(PHP_VERSION, "5.6") >= 0) {
-            if (hash_equals($this->admins[$aid]['password'], $password)) {
-                $this->dbh->query('UPDATE `:prefix_admins` SET `lastvisit` = UNIX_TIMESTAMP() WHERE `aid` = :aid');
-                $this->dbh->bind(':aid', $aid);
-                $this->dbh->execute();
-                return true;
-            }
-        }
-
-        if ($password == $this->admins[$aid]['password']) {
-            $this->dbh->query('UPDATE `:prefix_admins` SET `lastvisit` = UNIX_TIMESTAMP() WHERE `aid` = :aid');
-            $this->dbh->bind(':aid', $aid);
-            $this->dbh->execute();
-            return true;
-        }
-        return false;
-    }
-
-
-    public function login($aid, $password, $save = false)
-    {
-        $time = ((bool)$save) ? 604800 : 3600;
-        setcookie('remember_me', $time, time() + $time);
-
-        if ($this->CheckLogin($this->encrypt_password($password), $aid) || $this->CheckLogin($this->hash($password), $aid)) {
-            //Old password hash detected update it.
-            $this->dbh->query('UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid');
-            $this->dbh->bind(':password', password_hash($password, PASSWORD_BCRYPT));
-            $this->dbh->bind(':aid', $aid);
-            $this->dbh->execute();
-
-            $_SESSION['aid'] = $aid;
-
-            return true;
-        }
-
-        $this->dbh->query('SELECT password FROM `:prefix_admins` WHERE aid = :aid');
-        $this->dbh->bind(':aid', $aid);
-        $hash = $this->dbh->single();
-        if (password_verify($password, $hash['password'])) {
-
-            $_SESSION['aid'] = $aid;
-
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Encrypts a password.
-     *
-     * @param $password password to encrypt.
-     * @return string.
-     */
-    public function encrypt_password($password, $salt = 'SourceBans')
-    {
-        return sha1(sha1($salt . $password));
-    }
-
-    public function hash($password)
-    {
-        if (!defined('SB_NEW_SALT')) {
-            return $this->encrypt_password($password);
-        }
-        return crypt($password, SB_NEW_SALT);
-    }
-
     public function is_logged_in()
     {
         if ($this->aid != -1) {
             return true;
         }
         return false;
-    }
-
-    /**
-     * Generates random secure string of [A-Za-z0-9_-] chars.
-     *
-     * @param int $length
-     * @return string
-     */
-    public function random_string($length = 32)
-    {
-        require_once(INCLUDES_PATH . '/random_compat/lib/random.php');
-        return strtr(substr(base64_encode(random_bytes($length)), 0, $length), '+/', '-_');
     }
 
     public function is_admin($aid = null)
@@ -354,7 +253,7 @@ class CUserManager
             throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
         }
         if (empty($password)) {
-            throw new RuntimeException('Password must not be empty!');
+            throw new RuntimeException('Password cannot be empty.');
         }
         $this->dbh->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity, srv_group, srv_flags, srv_password)
                            VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity, :srv_group, :srv_flags, :srv_password)');
