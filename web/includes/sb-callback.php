@@ -80,6 +80,8 @@ if ($userbank->is_admin()) {
     $xajax->registerFunction("PrepareReblock");
     $xajax->registerFunction("PrepareBlockFromBan");
     $xajax->registerFunction("PasteBlock");
+
+    $xajax->registerFunction("generatePassword");
 }
 
 $xajax->registerFunction("Plogin");
@@ -3111,6 +3113,15 @@ function PrepareReblock($bid)
     $objResponse->addScriptCall("selectLengthTypeReason", $ban['length'], $ban['type']-1, addslashes($ban['reason']));
 
     $objResponse->addScript("SwapPane(0);");
+    return $objResponse;
+}
+
+function generatePassword()
+{
+    $objResponse = new xajaxResponse();
+    $password = Crypto::genPassword();
+    $objResponse->addScript("$('password').value = '$password'");
+    $objResponse->addScript("$('password2').value = '$password'");
     return $objResponse;
 }
 
