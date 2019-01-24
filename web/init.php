@@ -53,11 +53,8 @@ define('SB_CACHE', ROOT . 'cache/');
 
 define('IN_SB', true);
 
-require_once(INCLUDES_PATH.'/session/SessionManager.php');
 require_once(INCLUDES_PATH.'/CUserManager.php');
 require_once(INCLUDES_PATH.'/AdminTabs.php');
-
-\SessionManager::start();
 
 require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
