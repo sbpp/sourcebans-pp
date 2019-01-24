@@ -95,41 +95,24 @@ $xajax->registerFunction("RefreshServer");
 global $userbank;
 $username = $userbank->GetProperty("user");
 
-function Plogin($username, $password, $remember, $redirect, $nopass)
+function Plogin(string $username, string $password, bool $remember = false, string $redirect = '')
 {
     global $userbank;
     $objResponse = new xajaxResponse();
-    $q = $GLOBALS['db']->GetRow("SELECT `aid`, `password` FROM `" . DB_PREFIX . "_admins` WHERE `user` = ?", array($username));
-    if($q)
-    $aid = $q[0];
-    if($q && (strlen($q[1]) == 0 || $q[1] == $userbank->encrypt_password('') || $q[1] == $userbank->hash('')) && count($q) != 0)
-    {
-    $lostpassword_url = SB_WP_URL . '/index.php?p=lostpassword';
-    $objResponse->addScript(<<<JS
-    ShowBox(
-    'Information',
-    'You are unable to login because your account have an empty password set.<br />' +
-    'Please <a href="$lostpassword_url">restore your password</a> or ask an admin to do that for you.<br />' +
-    'Do note that you are required to have a non empty password set event if you sign in through Steam.',
-    'blue', '', true
-    );
-JS
-    );
-    return $objResponse;
+
+    if (empty($password)) {
+        $objResponse->addRedirect('?p=login&m=empty_pwd', 0);
+        return $objResponse;
     }
 
-    if (!$q || !$userbank->login($aid, $password, $remember)) {
-        if($nopass!=1)
-    $objResponse->addScript('ShowBox("Login Failed", "The username or password you supplied was incorrect.<br \> If you have forgotten your password, use the <a href=\"index.php?p=lostpassword\" title=\"Lost password\">Lost Password</a> link.", "red", "", true);');
-    return $objResponse;
-    } else {
-    $objResponse->addScript("$('msg-red').setStyle('display', 'none');");
+    $auth = new NormalAuthHandler($GLOBALS['PDO'], $username, $password, (bool)$remeber);
+
+    if (!$auth->getResult()) {
+        $objResponse->addRedirect("?p=login&m=failed",  0);
+        return $objResponse;
     }
 
-    if(strstr($redirect, "validation") || empty($redirect))
-    $objResponse->addRedirect("?",  0);
-    else
-    $objResponse->addRedirect("?" . $redirect, 0);
+    $objResponse->addRedirect("?".$redirect,  0);
     return $objResponse;
 }
 
@@ -147,7 +130,7 @@ function LostPassword($email)
     $objResponse->addScript("$('msg-red').setStyle('display', 'none');");
     }
 
-    $validation = md5(generate_salt(20).generate_salt(20)).md5(generate_salt(20).generate_salt(20));
+    $validation = Crypto::recoveryHash();
     $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `validate` = ? WHERE `email` = ?", array($validation, $email));
     $message = "";
     $message .= "Hello " . $q['user'] . "\n";
