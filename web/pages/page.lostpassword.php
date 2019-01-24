@@ -51,8 +51,8 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
         $validation
     ));
     if ($q) {
-        $newpass = generate_salt(MIN_PASS_LENGTH + 8);
-        $query   = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `password` = '" . $userbank->encrypt_password($newpass) . "', validate = NULL WHERE `aid` = ?", array(
+        $newpass = Crypto::genSecret(MIN_PASS_LENGTH + 8);
+        $query   = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `password` = '" . password_hash($newpass, PASSWORD_BCRYPT) . "', validate = NULL WHERE `aid` = ?", array(
             $q['aid']
         ));
         $message = "Hello " . $q['user'] . ",\n\n";

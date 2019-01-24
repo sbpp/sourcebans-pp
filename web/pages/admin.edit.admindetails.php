@@ -222,7 +222,7 @@ if (isset($_POST['adminname'])) {
                 `password` = ?
                 WHERE `aid` = ?",
                 array(
-                    $userbank->encrypt_password($_POST['password']),
+                    password_hash($_POST['password'], PASSWORD_BCRYPT),
                     $_GET['id']
                 )
             );
@@ -253,7 +253,7 @@ if (isset($_POST['adminname'])) {
 
         // to prevent rehash window to error with "no access", cause pw doesn't match
         $ownpwchanged = false;
-        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && $userbank->encrypt_password($_POST['password']) != $userbank->GetProperty("password")) {
+        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && password_verify($_POST['password'], $userbank->GetProperty("password"))) {
             $ownpwchanged = true;
         }
 

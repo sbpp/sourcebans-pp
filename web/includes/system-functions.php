@@ -320,8 +320,3 @@ function SendRconSilent($rcon, $sid)
     }
     return false;
 }
-
-function generate_salt($length = 5)
-{
-    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
-}
