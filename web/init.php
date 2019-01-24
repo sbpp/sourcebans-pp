@@ -53,6 +53,16 @@ define('SB_CACHE', ROOT . 'cache/');
 
 define('IN_SB', true);
 
+require_once(INCLUDES_PATH.'/security/Crypto.php');
+
+require_once(INCLUDES_PATH.'/auth/JWT.php');
+
+require_once(INCLUDES_PATH.'/auth/handler/NormalAuthHandler.php');
+require_once(INCLUDES_PATH.'/auth/handler/SteamAuthHandler.php');
+
+require_once(INCLUDES_PATH.'/auth/Auth.php');
+require_once(INCLUDES_PATH.'/auth/Host.php');
+
 require_once(INCLUDES_PATH.'/CUserManager.php');
 require_once(INCLUDES_PATH.'/AdminTabs.php');
 
@@ -134,6 +144,8 @@ Log::init($GLOBALS['PDO']);
 
 require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);
+
+Auth::init($GLOBALS['PDO']);
 
 // ---------------------------------------------------
 //  Setup our custom error handler
@@ -218,4 +230,5 @@ Template::init(new Mustache_Engine([
 // ---------------------------------------------------
 // Setup our user manager
 // ---------------------------------------------------
-$userbank = new CUserManager(isset($_SESSION['aid']) ? $_SESSION['aid'] : -1);
+
+$userbank = new CUserManager(Auth::verify());
