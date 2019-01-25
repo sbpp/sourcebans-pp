@@ -42,6 +42,37 @@
 		    	</div>
 		    </td>
 		</tr>
+
+		<tr>
+		    <td valign="top"><div class="rowdesc">{help_icon title="Auth Maxlife" message="Max lifetime for auth tokens."}Auth Maxlife </div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="text" TABINDEX=4 class="textbox" id="auth_maxlife" name="auth_maxlife" value="{$auth_maxlife}" />
+		            (in minutes)
+		    	</div>
+		    </td>
+		</tr>
+
+		<tr>
+		    <td valign="top"><div class="rowdesc">{help_icon title="Auth Maxlife (remember me)" message="Max lifetime for auth tokens with remember me enabled."}Auth Maxlife (remember me) </div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="text" TABINDEX=4 class="textbox" id="auth_maxlife_remember" name="auth_maxlife_remember" value="{$auth_maxlife_remember}" />
+             		(in minutes)
+		    	</div>
+		    </td>
+		</tr>
+
+		<tr>
+		    <td valign="top"><div class="rowdesc">{help_icon title="Auth Maxlife (steam login)" message="Max lifetime for auth tokens via steam login."}Auth Maxlife (steam login) </div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="text" TABINDEX=4 class="textbox" id="auth_maxlife_steam" name="auth_maxlife_steam" value="{$auth_maxlife_steam}" />
+              		(in minutes)
+		    	</div>
+		    </td>
+		</tr>
+
 		<tr>
 			<td valign="top"><div class="rowdesc">{help_icon title="Enable Debugmode" message="Check this box to enable the debugmode permanently."}Debugmode</div></td>
 		    <td>

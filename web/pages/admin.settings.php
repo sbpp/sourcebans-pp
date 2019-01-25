@@ -236,13 +236,19 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     (" . (int) $submit . ", 'config.enablesubmit'),
                     (" . (int) $onlyinvolved . ", 'protest.emailonlyinvolved'),
                     (?, 'bans.customreasons'),
+                    (?, 'auth.maxlife'),
+                    (?, 'auth.maxlife.remember'),
+                    (?, 'auth.maxlife.steam'),
                     (" . (int) $_POST['default_page'] . ", 'config.defaultpage')", array(
                     $_POST['template_title'],
                     $_POST['template_logo'],
                     $_POST['config_dateformat'],
                     $_POST['dash_intro_title'],
                     $_POST['dash_intro_text'],
-                    $cureason
+                    $cureason,
+                    $_POST['auth_maxlife'],
+                    $_POST['auth_maxlife_remember'],
+                    $_POST['auth_maxlife_steam']
                 ));
 
 ?>
@@ -289,6 +295,9 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     $theme->assign('config_dateformat', Config::get('config.dateformat'));
     $theme->assign('config_dash_title', Config::get('dash.intro.title'));
     $theme->assign('config_dash_text', Config::get('dash.intro.text'));
+    $theme->assign('auth_maxlife', Config::get('auth.maxlife'));
+    $theme->assign('auth_maxlife_remember', Config::get('auth.maxlife.remember'));
+    $theme->assign('auth_maxlife_steam', Config::get('auth.maxlife.steam'));
     $theme->assign('config_bans_per_page', SB_BANS_PER_PAGE);
 
     $theme->assign('bans_customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : []);
