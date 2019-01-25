@@ -241,7 +241,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $_POST['template_logo'],
                     $_POST['config_dateformat'],
                     $_POST['dash_intro_title'],
-                    $dash_intro_text,
+                    $_POST['dash_intro_text'],
                     $cureason
                 ));
 

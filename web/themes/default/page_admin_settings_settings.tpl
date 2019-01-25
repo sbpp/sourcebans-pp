@@ -209,10 +209,10 @@
 		</tr>
 	</table>
 </form>
-<script>$('sel_timezoneoffset').value = "{$config_time}";</script>
 <script type="text/javascript" src="./includes/tinymce/tinymce.min.js"></script>
+{literal}
 <script language="javascript" type="text/javascript">
-    tinyMCE.init({
+	tinyMCE.init({
         selector: "textarea",
         height: 500,
         theme : "modern",
@@ -220,3 +220,4 @@
         extended_valid_elements : "a[name|href|target|title|onclick],img[class|src|border=0|alt|title|hspace|vspace|width|height|align|onmouseover|onmouseout|name],hr[class|width|size|noshade],font[face|size|color|style],span[class|align|style]"
     });
 </script>
+{/literal}
