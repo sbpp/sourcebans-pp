@@ -4,7 +4,6 @@
         <a href="https://sbpp.github.io/" target="_blank"><img src="images/logos/sb-small.png" alt="SourceBans" border="0" /></a><br/>
         <div id="footqversion" style="line-height: 20px;"><a style="color: #C1C1C1" href="https://sbpp.github.io/" target="_blank">SourceBans++</a> <?php print SB_VERSION;?></div>
         <span style="line-height: 20px;">Powered by <a href="http://www.sourcemod.net" target="_blank" style="color: #C1C1C1">SourceMod</a></span><br />
-        <span style="line-height: 20px;"><?php print CreateQuote();?><span>
     </div>
 </div>
 

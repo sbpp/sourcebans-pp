@@ -6,6 +6,5 @@ if (!defined("IN_SB")) {
 Template::render('core/footer', [
     'git' => (SB_DEV) ? ' | Git: '.SB_GITREV : '',
     'version' => SB_VERSION,
-    'quote' => CreateQuote(),
     'query' => $GLOBALS['server_qry']
 ]);

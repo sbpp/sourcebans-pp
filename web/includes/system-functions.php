@@ -106,13 +106,6 @@ function trunc(string $text, int $len)
     return (strlen($text) > $len) ? substr($text, 0, $len).'...' : $text;
 }
 
-function CreateQuote()
-{
-    $quotes = json_decode(file_get_contents('configs/quotes.json'), true);
-    $num = rand(0, count($quotes) - 1);
-    return '"'.$quotes[$num]['quote'].'" - <i>'.$quotes[$num]['author'].'</i>';
-}
-
 function CheckAdminAccess($mask)
 {
     global $userbank;
