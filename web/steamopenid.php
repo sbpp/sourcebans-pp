@@ -28,7 +28,7 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 include_once 'init.php';
 include_once 'config.php';
-require_once 'includes/openid.php';
+require_once 'includes/auth/openid.php';
 
 function steamOauth()
 {
