@@ -53,6 +53,21 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $uploads?'On':'Off';?></td>
   </tr>
 
+  <td width="33%" height="16" class="listtable_1"><b>OpenSSL Support</b></td>
+	<td width="22%" height="16" class="listtable_top">N/A</td>
+	<td width="22%" height="16" class="listtable_1"><b>Enabled</b></td>
+	<?php
+        $openssl = extension_loaded('OpenSSL');
+        if ($openssl) {
+            $class = "green";
+        } else {
+            $class = 'red';
+            $errors++;
+        }
+     ?>
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $openssl?'Enabled':'Disabled';?></td>
+  </tr>
+
   <td width="33%" height="16" class="listtable_1"><b>XML Support</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
 	<td width="22%" height="16" class="listtable_1"><b>Enabled</b></td>
