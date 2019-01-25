@@ -61,16 +61,28 @@ HTML;
 HTML;
             break;
 
-            case 'failed':
-                echo <<<HTML
-    				<script>
-    					ShowBox(
-                            'Error',
-    						'The username or password you supplied was incorrect.<br \>'+
-                            'If you have forgotten your password, use the <a href="$lostpassword_url">Lost Password</a> link.',
-    						'red', '', false
-    					);
-    				</script>
+        case 'failed':
+            echo <<<HTML
+    			<script>
+    				ShowBox(
+                        'Error',
+    					'The username or password you supplied was incorrect.<br \>'+
+                        'If you have forgotten your password, use the <a href="$lostpassword_url">Lost Password</a> link.',
+    					'red', '', false
+    				);
+    			</script>
+HTML;
+            break;
+
+        case 'steam_failed':
+            echo <<<HTML
+                <script>
+                    ShowBox(
+                        'Error',
+                        'Steam login was sucessful, but your SteamID isn\'t associated with any account.',
+                        'red', '', false
+                    );
+                </script>
 HTML;
             break;
     }

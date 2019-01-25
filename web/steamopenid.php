@@ -68,6 +68,6 @@ if ($data !== false) {
         }
     }
 } else {
-    header("Location: ".Host::complete()."/index.php?p=login");
+    header("Location: ".Host::complete()."/index.php?p=login&m=steam_failed");
 }
 header("Location: ".Host::complete());
