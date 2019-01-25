@@ -29,7 +29,7 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-global $userbank, $theme;
+global $userbank, $theme, $dash_intro_text;
 
 new AdminTabs([
     ['name' => 'Main Settings', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS],
@@ -244,7 +244,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $_POST['template_logo'],
                     $_POST['config_dateformat'],
                     $_POST['dash_intro_title'],
-                    $_POST['dash_intro_text'],
+                    $dash_intro_text,
                     $cureason,
                     $_POST['auth_maxlife'],
                     $_POST['auth_maxlife_remember'],
