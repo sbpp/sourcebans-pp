@@ -95,7 +95,7 @@ $xajax->registerFunction("RefreshServer");
 global $userbank;
 $username = $userbank->GetProperty("user");
 
-function Plogin(string $username, string $password, bool $remember = false, string $redirect = '')
+function Plogin(string $username, string $password, string $remember = '', string $redirect = '')
 {
     global $userbank;
     $objResponse = new xajaxResponse();
@@ -105,7 +105,9 @@ function Plogin(string $username, string $password, bool $remember = false, stri
         return $objResponse;
     }
 
-    $auth = new NormalAuthHandler($GLOBALS['PDO'], $username, $password, (bool)$remeber);
+    $remember = ($remember === 'true') ? true : false;
+
+    $auth = new NormalAuthHandler($GLOBALS['PDO'], $username, $password, $remember);
 
     if (!$auth->getResult()) {
         $objResponse->addRedirect("?p=login&m=failed",  0);
