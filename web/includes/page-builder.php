@@ -7,7 +7,14 @@ function route($fallback)
 
     switch ($page) {
         case 'login':
-            return ['Login', '/page.login.php'];
+            switch ($option) {
+                case 'steam':
+                    require_once 'includes/auth/openid.php';
+                    new SteamAuthHandler(new LightOpenID(Host::complete()), $GLOBALS['PDO']);
+                    exit();
+                default:
+                    return ['Login', '/page.login.php'];
+            }
         case 'logout':
             Auth::logout();
             header('Location: index.php?p=home');
