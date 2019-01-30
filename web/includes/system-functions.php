@@ -173,7 +173,7 @@ function FetchIp($ip)
 
 function PageDie()
 {
-    include TEMPLATES_PATH.'/footer.php';
+    require_once(TEMPLATES_PATH.'/core/footer.php');
     die();
 }
 
