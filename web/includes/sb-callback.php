@@ -121,30 +121,37 @@ function Plogin(string $username, string $password, string $remember = '', strin
 function LostPassword($email)
 {
     $objResponse = new xajaxResponse();
-    $q = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_admins` WHERE `email` = ?", array($email));
+    $GLOBALS['PDO']->query('SELECT aid, user FROM `:prefix_admins` WHERE `email` = :email');
+    $GLOBALS['PDO']->bind(':email', $email);
+    $result = $GLOBALS['PDO']->single();
 
-    if(!$q[0])
-    {
-    $objResponse->addScript("ShowBox('Error', 'The email address you supplied is not registered on the system', 'red', '');");
-    return $objResponse;
-    }
-    else {
-    $objResponse->addScript("$('msg-red').setStyle('display', 'none');");
+    if (empty($result['aid']) || is_null($result['aid'])) {
+        $objResponse->addScript("ShowBox('Error', 'The email address you supplied is not registered on the system', 'red', '');");
+        return $objResponse;
     }
 
     $validation = Crypto::recoveryHash();
-    $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `validate` = ? WHERE `email` = ?", array($validation, $email));
-    $message = "";
-    $message .= "Hello " . $q['user'] . "\n";
-    $message .= "You have requested to have your password reset for your SourceBans account.\n";
-    $message .= "To complete this process, please click the following link.\n";
-    $message .= "NOTE: If you didnt request this reset, then simply ignore this email.\n\n";
+    $GLOBALS['PDO']->query('UPDATE `:prefix_admins` SET `validate` = :validate WHERE `email` = :email');
+    $GLOBALS['PDO']->bind(':validate', $validation);
+    $GLOBALS['PDO']->bind(':email', $email);
+    $GLOBALS['PDO']->execute();
 
-    $message .= "http://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . "?p=lostpassword&email=". $email . "&validation=" . $validation;
+    $host = Host::complete();
 
-    $headers = 'From: ' . SB_EMAIL . "\n" .
-    'X-Mailer: PHP/' . phpversion();
-    $m = mail($email, "SourceBans Password Reset", $message, $headers);
+    $message = "
+        Hello $result[user],\n
+        You have requested to have your password reset for your SourceBans++ account.\n
+        To complete this process, please click the following link.\n
+        NOTE: If you didnt request this reset, then simply ignore this email.\n\n
+        $host/index.php?p=lostpassword&email=$email&validation=$validation
+    ";
+
+    $headers = [
+        'From' => SB_EMAIL,
+        'X-Mailer' => 'PHP/'.phpversion()
+    ];
+
+    mail($email, "[SourceBans++] Password Reset", $message, $headers);
 
     $objResponse->addScript("ShowBox('Check E-Mail', 'Please check your email inbox (and spam) for a link which will help you reset your password.', 'blue', '');");
     return $objResponse;
@@ -1916,8 +1923,7 @@ function ChangePassword($aid, $pass)
     $objResponse->addAlert("Password changed successfully");
     $objResponse->addRedirect("index.php?p=login", 0);
     Log::add("m", "Password Changed", "Password changed for admin ($admname[user])");
-    $_SESSION = [];
-    session_destroy();
+    Auth::logout();
     return $objResponse;
 }
 
