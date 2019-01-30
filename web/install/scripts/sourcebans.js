@@ -43,8 +43,6 @@ function TabToReload()
 
 function ShowBox(title, msg, color, redir, noclose)
 {
-	var type = "";
-
 	if(color == "red")
 		color = "error";
 	else if(color == "blue")
