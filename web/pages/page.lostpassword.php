@@ -1,33 +1,9 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+global $theme;
 
-SourceBans++ is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-global $theme, $userbank;
-if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !empty($_GET['validation'])) {
-    $email      = $_GET['email'];
+if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !empty($_GET['validation']))) {
+    $email = $_GET['email'];
     $validation = $_GET['validation'];
 
     if (is_array($email) || is_array($validation)) {
@@ -36,47 +12,43 @@ if (isset($_GET['validation'], $_GET['email']) && !empty($_GET['email']) && !emp
         PageDie();
     }
 
-    if (strlen($validation) < 60) {
-        echo '<div id="msg-red" style="">
-			<i class="fas fa-times fa-2x"></i>
-			<b>Error</b>
-			<br />
-			The validation string is too short.
-			</div>';
-        exit();
+    if (strlen($validation) < 10) {
+        print "<script>ShowBox('Error', 'Invalid validation string.', 'red');</script>";
+        PageDie();
     }
 
-    $q = $GLOBALS['db']->GetRow("SELECT aid, user FROM `" . DB_PREFIX . "_admins` WHERE `email` = ? && `validate` IS NOT NULL && `validate` = ?", array(
-        $email,
-        $validation
-    ));
-    if ($q) {
-        $newpass = generate_salt(MIN_PASS_LENGTH + 8);
-        $query   = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET `password` = '" . $userbank->encrypt_password($newpass) . "', validate = NULL WHERE `aid` = ?", array(
-            $q['aid']
-        ));
-        $message = "Hello " . $q['user'] . ",\n\n";
-        $message .= "Your password reset was successful.\n";
-        $message .= "Your password was changed to: " . $newpass . "\n\n";
-        $message .= "Login to your SourceBans account and change your password in Your Account.\n";
+    $GLOBALS['PDO']->query("SELECT aid, user FROM `:prefix_admins` WHERE `email` = :email AND `validate` = :validate");
+    $GLOBALS['PDO']->bind(':email', $email);
+    $GLOBALS['PDO']->bind(':validate', $validation);
+    $result = $GLOBALS['PDO']->single();
 
-        $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
-        $m       = mail($email, "SourceBans Password Reset", $message, $headers);
-
-        echo '<div id="msg-blue" style="">
-			<i><img src="./images/info.png" alt="Info" /></i>
-			<b>Password Reset</b>
-			<br />
-			Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.
-			</div>';
-    } else {
-        echo '<div id="msg-red" style="">
-			<i class="fas fa-times fa-2x"></i>
-			<b>Error</b>
-			<br />
-			The validation string does not match the email for this reset request.
-			</div>';
+    if (empty($result['aid']) || is_null($result['aid'])) {
+        print "<script>ShowBox('Error', 'The validation string does not match the email for this reset request.', 'red');</script>";
+        PageDie();
     }
+
+    $password = Crypto::genSecret(MIN_PASS_LENGTH + 8);
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET `password` = :password, `validate` = NULL WHERE `aid` = :aid");
+    $GLOBALS['PDO']->bind(':password', password_hash($password, PASSWORD_BCRYPT));
+    $GLOBALS['PDO']->bind(':aid', $result['aid']);
+    $GLOBALS['PDO']->execute();
+
+    $message = "
+        Hello $result[user],\n
+        Your password reset was successful.\n
+        Your password was changed to: $password\n\n
+        Login to your SourceBans++ account and change your password in Your Account.
+    ";
+
+    $headers = [
+        'From' => SB_EMAIL,
+        'X-Mailer' => 'PHP/'.phpversion()
+    ];
+
+    mail($email, "[SourceBans++] Password Reset", $message, $headers);
+
+    print "<script>ShowBox('Password Reset', 'Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.', 'blue');</script>";
+    PageDie();
 } else {
     $theme->display('page_lostpassword.tpl');
 }

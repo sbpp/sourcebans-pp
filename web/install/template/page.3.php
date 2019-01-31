@@ -32,9 +32,9 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
    <tr>
   <td width="33%" height="16" class="listtable_1"><b>PHP Version</b></td>
   <td width="22%" height="16" class="listtable_top">N/A</td>
-    <td width="22%" height="16" class="listtable_1"><b>5.5</b></td>
+    <td width="22%" height="16" class="listtable_1"><b>7.1</b></td>
     <?php
-    if (version_compare(PHP_VERSION, "5.5") != -1) {
+    if (version_compare(PHP_VERSION, "7.1") != -1) {
         $class = "green";
     } else {
         $class = "red";
@@ -51,6 +51,21 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 		$class = "green";
 	  else {  $class = "red"; $errors++;}?>
 	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $uploads?'On':'Off';?></td>
+  </tr>
+
+  <td width="33%" height="16" class="listtable_1"><b>OpenSSL Support</b></td>
+	<td width="22%" height="16" class="listtable_top">N/A</td>
+	<td width="22%" height="16" class="listtable_1"><b>Enabled</b></td>
+	<?php
+        $openssl = extension_loaded('OpenSSL');
+        if ($openssl) {
+            $class = "green";
+        } else {
+            $class = 'red';
+            $errors++;
+        }
+     ?>
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $openssl?'Enabled':'Disabled';?></td>
   </tr>
 
   <td width="33%" height="16" class="listtable_1"><b>XML Support</b></td>
@@ -207,7 +222,6 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 				<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 				<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 	</form>
 	<form action="index.php?step=3" method="post" name="sendback" id="sendback">
@@ -218,7 +232,6 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 				<input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 				<input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 				<input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-				<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 				<input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 	</form>
 	<?php

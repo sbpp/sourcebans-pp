@@ -51,7 +51,10 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
 ('config.version', '605'),
-('config.enablesteamlogin', '1');
+('config.enablesteamlogin', '1'),
+('auth.maxlife', '1440'),
+('auth.maxlife.remember', '10080'),
+('auth.maxlife.steam', '10080');
 
 INSERT INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
 (0 , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);

@@ -229,7 +229,6 @@ function FadeElIn(id, time)
 function DoLogin(redir)
 {
 	var err = 0;
-	var nopw = 0;
 	if(!$('loginUsername').value)
 	{
 		$('loginUsername.msg').setHTML('You must enter your loginname!');
@@ -245,7 +244,7 @@ function DoLogin(redir)
 	{
 		$('loginPassword.msg').setHTML('You must enter your password!');
 		$('loginPassword.msg').setStyle('display', 'block');
-		nopw = 1;
+		err++;
 	}else
 	{
 		$('loginPassword.msg').setHTML('');
@@ -260,8 +259,7 @@ function DoLogin(redir)
 	xajax_Plogin(document.getElementById('loginUsername').value,
 				document.getElementById('loginPassword').value,
 				 document.getElementById('loginRememberMe').checked,
-				 redir,
-				 nopw);
+				 redir);
 }
 
 function SlideUp(id)

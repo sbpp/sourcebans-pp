@@ -32,6 +32,7 @@ if (!defined("IN_SB")) {
 
 global $userbank, $theme;
 if (isset($_GET['m'])) {
+    $lostpassword_url = Host::complete() . '/index.php?p=lostpassword';
     switch ($_GET['m']) {
         case 'no_access':
             echo <<<HTML
@@ -47,7 +48,6 @@ HTML;
             break;
 
         case 'empty_pwd':
-            $lostpassword_url = SB_WP_URL . '/index.php?p=lostpassword';
             echo <<<HTML
 				<script>
 					ShowBox(
@@ -60,7 +60,34 @@ HTML;
 				</script>
 HTML;
             break;
+
+        case 'failed':
+            echo <<<HTML
+    			<script>
+    				ShowBox(
+                        'Error',
+    					'The username or password you supplied was incorrect.<br \>'+
+                        'If you have forgotten your password, use the <a href="$lostpassword_url">Lost Password</a> link.',
+    					'red', '', false
+    				);
+    			</script>
+HTML;
+            break;
+
+        case 'steam_failed':
+            echo <<<HTML
+                <script>
+                    ShowBox(
+                        'Error',
+                        'Steam login was sucessful, but your SteamID isn\'t associated with any account.',
+                        'red', '', false
+                    );
+                </script>
+HTML;
+            break;
     }
+
+
 }
 
 $theme->assign('steamlogin_show', Config::getBool('config.enablesteamlogin'));

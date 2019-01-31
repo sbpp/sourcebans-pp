@@ -106,13 +106,6 @@ function trunc(string $text, int $len)
     return (strlen($text) > $len) ? substr($text, 0, $len).'...' : $text;
 }
 
-function CreateQuote()
-{
-    $quotes = json_decode(file_get_contents('configs/quotes.json'), true);
-    $num = rand(0, count($quotes) - 1);
-    return '"'.$quotes[$num]['quote'].'" - <i>'.$quotes[$num]['author'].'</i>';
-}
-
 function CheckAdminAccess($mask)
 {
     global $userbank;
@@ -180,7 +173,7 @@ function FetchIp($ip)
 
 function PageDie()
 {
-    include TEMPLATES_PATH.'/footer.php';
+    require_once(TEMPLATES_PATH.'/core/footer.php');
     die();
 }
 
@@ -319,9 +312,4 @@ function SendRconSilent($rcon, $sid)
         return true;
     }
     return false;
-}
-
-function generate_salt($length = 5)
-{
-    return (substr(str_shuffle('qwertyuiopasdfghjklmnbvcxz0987612345'), 0, $length));
 }

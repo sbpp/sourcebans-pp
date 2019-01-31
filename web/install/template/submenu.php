@@ -1,6 +1,5 @@
 <div id="mainwrapper">
     <div id="navigation">
-        <div id="nav"></div>
         <div id="search">
             <b><u>Installation Progress</u></b><br/><br/>
             <?php
