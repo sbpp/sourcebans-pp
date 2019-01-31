@@ -50,7 +50,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablefriendsbanning', '0'),
 ('config.enableadminrehashing', '1'),
 ('protest.emailonlyinvolved', '0'),
-('config.version', '605'),
+('config.version', '700'),
 ('config.enablesteamlogin', '1'),
 ('auth.maxlife', '1440'),
 ('auth.maxlife.remember', '10080'),
