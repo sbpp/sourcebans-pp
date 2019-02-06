@@ -17,14 +17,7 @@ class Auth
         self::insertNewToken($jti, $secret);
         self::updateLastVisit($aid);
 
-        setcookie('sbpp_auth', $token, [
-            'expires' => time() + $maxlife,
-            'path' => '/',
-            'domain' => Host::domain(),
-            'secure' => ((bool)$_SERVER['HTTPS']) ? true : false,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
+        self::setCookie($token, time() + $maxlife, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
 
         //Login / Logout requests will trigger GC routine
         self::gc();
@@ -45,14 +38,7 @@ class Auth
             self::$dbs->execute();
         }
 
-        setcookie('sbpp_auth', '', [
-            'expires' => 1,
-            'path' => '/',
-            'domain' => Host::domain(),
-            'secure' => ((bool)$_SERVER['HTTPS']) ? true : false,
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
+        self::setCookie('', 1, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
 
         //Login / Logout requests will trigger GC routine
         self::gc();
@@ -73,6 +59,22 @@ class Auth
         }
 
         return false;
+    }
+
+    private static function setCookie(string $data, int $lifetime, string $domain, bool $secure)
+    {
+        if (version_compare(PHP_VERSION, '7.3.0') >= 0) {
+            setcookie('sbpp_auth', $data, [
+                'expires' => $lifetime,
+                'path' => '/',
+                'domain' => $domain,
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        } else {
+            setcookie('sbpp_auth', $data, $lifetime, '/', $domain, $secure, true);
+        }
     }
 
     private static function gc()
