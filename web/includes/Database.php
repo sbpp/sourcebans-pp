@@ -11,7 +11,6 @@ class Database
         $this->prefix = $prefix;
         $dsn = 'mysql:host='.$host.';port='.$port.';dbname='.$dbname.';charset='.$charset;
         $options = array(
-            \PDO::ATTR_PERSISTENT => true,
             \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION
         );
 
