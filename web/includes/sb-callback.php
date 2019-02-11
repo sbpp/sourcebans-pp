@@ -2876,7 +2876,7 @@ function BanFriends($friendid, $name)
             ':authid' => $steam,
             ':name' => filter_var($fname, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
             ':reason' => "Steam Community Friend Ban (".$name.")",
-            ':aid' => $_SESSION['aid'],
+            ':aid' => $userbank->GetAid(),
             ':admip' => $_SERVER['REMOTE_ADDR']
         ]);
         if (!$GLOBALS['PDO']->execute()) {

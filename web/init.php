@@ -139,13 +139,19 @@ $GLOBALS['db']->Execute("SET NAMES ".DB_CHARSET.";");
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 \SteamID\SteamID::init($GLOBALS['PDO']);
 
-require_once(INCLUDES_PATH.'/Log.php');
-Log::init($GLOBALS['PDO']);
-
 require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);
 
 Auth::init($GLOBALS['PDO']);
+
+// ---------------------------------------------------
+// Setup our user manager
+// ---------------------------------------------------
+
+$userbank = new CUserManager(Auth::verify());
+
+require_once(INCLUDES_PATH.'/Log.php');
+Log::init($GLOBALS['PDO'], $userbank);
 
 // ---------------------------------------------------
 //  Setup our custom error handler
@@ -226,9 +232,3 @@ Template::init(new Mustache_Engine([
     'cache' => SB_CACHE,
     'loader' => new Mustache_Loader_FilesystemLoader(SB_THEMES.$theme_name)
 ]));
-
-// ---------------------------------------------------
-// Setup our user manager
-// ---------------------------------------------------
-
-$userbank = new CUserManager(Auth::verify());
