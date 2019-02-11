@@ -3,14 +3,15 @@
 class Log
 {
     private static $dbs = null;
-    public static function init(\Database $dbs)
+    private static $user = null;
+    public static function init(\Database $dbs, \CUserManager $user)
     {
         self::$dbs = $dbs;
+        self::$user = $user;
     }
 
     public static function add($type, $title, $message)
     {
-        $aid = filter_var($_SESSION['aid'], FILTER_VALIDATE_INT) ? $_SESSION['aid'] : -1;
         $host = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP) ? $_SERVER['REMOTE_ADDR'] : '';
 
         self::$dbs->query(
@@ -22,7 +23,7 @@ class Log
         self::$dbs->bind(':message', filter_var($message, FILTER_SANITIZE_STRING));
         self::$dbs->bind(':function', filter_var(self::getCaller(), FILTER_SANITIZE_STRING));
         self::$dbs->bind(':query', filter_var($_SERVER['QUERY_STRING'], FILTER_SANITIZE_STRING));
-        self::$dbs->bind(':aid', $aid);
+        self::$dbs->bind(':aid', self::$user->GetAid());
         self::$dbs->bind(':host', $host);
         self::$dbs->execute();
     }

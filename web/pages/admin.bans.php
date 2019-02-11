@@ -71,7 +71,7 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                     );
                     $GLOBALS['PDO']->bindMultiple([
                         ':ip' => $line[2],
-                        ':aid' => $_SESSION['aid'],
+                        ':aid' => $userbank->GetAid(),
                         ':admip' => $_SERVER['REMOTE_ADDR']
                     ]);
                     $GLOBALS['PDO']->execute();
@@ -96,7 +96,7 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                 $GLOBALS['PDO']->bindMultiple([
                     ':authid' => $steam,
                     ':name' => $name,
-                    ':aid' => $_SESSION['aid'],
+                    ':aid' => $userbank->GetAid(),
                     ':ip' => $_SERVER['REMOTE_ADDR']
                 ]);
                 $GLOBALS['PDO']->execute();

@@ -43,9 +43,6 @@ $res     = $GLOBALS['db']->Execute("SELECT se.sid, se.ip, se.port, se.modid, se.
 $servers = array();
 $i       = 0;
 while (!$res->EOF) {
-    if (isset($_SESSION['getInfo.' . $res->fields[1] . '.' . $res->fields[2]])) {
-        $_SESSION['getInfo.' . $res->fields[1] . '.' . $res->fields[2]] = "";
-    }
     $info          = array();
     $info['sid']   = $res->fields[0];
     $info['ip']    = $res->fields[1];
