@@ -54,8 +54,8 @@ public void OnPluginStart()
 	LoadTranslations("sbpp_checker.phrases");
 
 	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
-	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_BAN, LISTBANS_USAGE);
-	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_BAN, LISTCOMMS_USAGE);
+	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_GENERIC, LISTBANS_USAGE);
+	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_GENERIC, LISTCOMMS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
 
 	Database.Connect(OnDatabaseConnected, "sourcebans");
@@ -476,7 +476,7 @@ void PrintToBanAdmins(const char[] format, any ...)
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
-		if (IsClientInGame(i) && !IsFakeClient(i) && CheckCommandAccess(i, "sm_listsourcebans", ADMFLAG_BAN))
+		if (IsClientInGame(i) && !IsFakeClient(i) && CheckCommandAccess(i, "sm_listsourcebans", ADMFLAG_GENERIC))
 		{
 			SetGlobalTransTarget(i);
 			VFormat(msg, sizeof(msg), format, 2);
