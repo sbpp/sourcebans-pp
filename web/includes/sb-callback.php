@@ -218,15 +218,15 @@ function ChangeEmail($aid, $email, $password)
     return $objResponse;
     }
 
-    if($userbank->encrypt_password($password) != $userbank->getProperty('password'))
+    if(!password_verify($password, $userbank->getProperty('password')))
     {
         $objResponse->addScript("$('emailpw.msg').setStyle('display', 'block');");
-    $objResponse->addScript("$('emailpw.msg').setHTML('The password you supplied is wrong.');");
-    $objResponse->addScript("set_error(1);");
-    return $objResponse;
+        $objResponse->addScript("$('emailpw.msg').setHTML('The password you supplied is wrong.');");
+        $objResponse->addScript("set_error(1);");
+        return $objResponse;
     } else {
-    $objResponse->addScript("$('emailpw.msg').setStyle('display', 'none');");
-    $objResponse->addScript("set_error(0);");
+        $objResponse->addScript("$('emailpw.msg').setStyle('display', 'none');");
+        $objResponse->addScript("set_error(0);");
     }
 
     if(!filter_var($email, FILTER_VALIDATE_EMAIL)) {
