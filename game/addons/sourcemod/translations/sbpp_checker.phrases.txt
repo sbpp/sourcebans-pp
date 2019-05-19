@@ -15,7 +15,7 @@
 	{
 		"#format"		"{1:N},{2:d},{3:s}"
 		"en"			"Warning: Player \"{1:N}\" has {2} previous comm block{3}."
-		"ru"			"Внимание: Игроку \"{1:N}\" ранее отключали чат или микрофрон {2} раз."
+		"ru"			"Внимание: Игроку \"{1:N}\" ранее отключали чат или микрофон {2} раз."
 		"hu"			"Figyelem: Játékosnak \"{1:N}\" van {2} korábbi kommunikációs tiltása{3}."
 		"chi"			"警告: 玩家 \"{1:N}\" 之前有 {2} 次禁言."
 		"pl"			"Uwaga: Gracz \"{1:N}\" posiada {2} poprzednie blokady czatu{3}."
