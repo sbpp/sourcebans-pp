@@ -57,4 +57,4 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('auth.maxlife.steam', '10080');
 
 INSERT INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
-(0 , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);
+(0 , 'Server', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);
