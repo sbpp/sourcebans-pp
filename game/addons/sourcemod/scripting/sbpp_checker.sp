@@ -145,7 +145,7 @@ stock Action sb_reload_Handler (int iClient, int iArgs)
 	return Plugin_Handled;
 }
 
-stock void PrintToAdmins (const char[] szFormat, any...)
+stock void PrintToAdmins (const char[] szFormat, any ...)
 {
 	char szMsg[256];
 	for ( int i = 1; i <= MaxClients; ++i )
