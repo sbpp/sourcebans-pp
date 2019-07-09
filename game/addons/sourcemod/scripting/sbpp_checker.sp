@@ -75,61 +75,64 @@ public void OnClientAuthorized (int iClient, const char[] szAuth)
 
 stock Action sm_list_Handler (int iClient, int iArgs)
 {
-	char szBuf[30];
-	GetCmdArg( 0, szBuf, sizeof szBuf );
-	bool bBans = StrEqual( "sm_listbans", szBuf, false );
-	if ( iArgs < 1 )
-	{
-		ReplyToCommand( iClient, bBans ? LISTBANS_USAGE : LISTBANS_USAGE );
-	}
-	else if ( !g_DB )
+	if ( !g_DB )
 	{
 		DB_Connect();
 		ReplyToCommand( iClient, "Plugin not connected to database. Try later." );
 	}
 	else
 	{
-		char szTarget[64];
-		GetCmdArg( 1, szTarget, sizeof szTarget );
-		int iTarget = FindTarget( iClient, szTarget, true, true );
-		if ( iTarget != -1 )
+		char szBuf[30];
+		GetCmdArg( 0, szBuf, sizeof szBuf );
+		bool bBans = StrEqual( "sm_listbans", szBuf, false );
+		if ( iArgs )
 		{
-			char szAuth[32];
-			if ( GetClientAuthId( iTarget, AuthId_Steam2, szAuth, sizeof szAuth ) && szAuth[0] != 'B' && szAuth[9] != 'L' )
+			char szTarget[64];
+			GetCmdArg( 1, szTarget, sizeof szTarget );
+			int iTarget = FindTarget( iClient, szTarget, true, true );
+			if ( iTarget != -1 )
 			{
-				char szQuery[1024], szTargetName[MAX_NAME_LENGTH];
-				GetClientName( iTarget, szTargetName, sizeof szTargetName );
-				if ( bBans )
+				char szAuth[32];
+				if ( GetClientAuthId( iTarget, AuthId_Steam2, szAuth, sizeof szAuth ) && szAuth[0] != 'B' && szAuth[9] != 'L' )
 				{
-					GetClientIP( iTarget, szBuf, sizeof szBuf );
-					FormatEx( szQuery, sizeof szQuery, "SELECT created, %s_admins.user, ends, length, reason, RemoveType FROM %s_bans LEFT JOIN %s_admins ON %s_bans.aid = %s_admins.aid WHERE ((type = 0 AND %s_bans.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8], szBuf );
+					char szQuery[1024], szTargetName[MAX_NAME_LENGTH];
+					GetClientName( iTarget, szTargetName, sizeof szTargetName );
+					if ( bBans )
+					{
+						GetClientIP( iTarget, szBuf, sizeof szBuf );
+						FormatEx( szQuery, sizeof szQuery, "SELECT created, %s_admins.user, ends, length, reason, RemoveType FROM %s_bans LEFT JOIN %s_admins ON %s_bans.aid = %s_admins.aid WHERE ((type = 0 AND %s_bans.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8], szBuf );
+					}
+					else
+					{
+						FormatEx( szQuery, sizeof szQuery, "SELECT created, %s_admins.user, ends, length, reason, RemoveType, type FROM %s_comms LEFT JOIN %s_admins ON %s_comms.aid = %s_admins.aid WHERE %s_comms.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8] );
+					}
+					DataPack hPack = new DataPack();
+					hPack.WriteCell( !iClient ? 0 : GetClientUserId( iClient ) );
+					hPack.WriteCell( bBans );
+					hPack.WriteString( szTargetName );
+					g_DB.Query( DB_list_Callback, szQuery, hPack, DBPrio_Low );
+					if ( iClient )
+					{
+						ReplyToCommand( iClient, "\x04%s\x01 Look for %N's %s results in console.", PREFIX, iTarget, bBans ? "ban" : "comm" );
+					}
+					else
+					{
+						ReplyToCommand( iClient, "%sNote: if you are using this command through an rcon tool, you will not see results.", PREFIX );
+					}
 				}
 				else
 				{
-					FormatEx( szQuery, sizeof szQuery, "SELECT created, %s_admins.user, ends, length, reason, RemoveType, type FROM %s_comms LEFT JOIN %s_admins ON %s_comms.aid = %s_admins.aid WHERE %s_comms.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8] );
-				}
-				DataPack hPack = new DataPack();
-				hPack.WriteCell( !iClient ? 0 : GetClientUserId( iClient ) );
-				hPack.WriteCell( bBans );
-				hPack.WriteString( szTargetName );
-				g_DB.Query( DB_list_Callback, szQuery, hPack, DBPrio_Low );
-				if ( iClient )
-				{
-					ReplyToCommand( iClient, "\x04%s\x01 Look for %N's %s results in console.", PREFIX, iTarget, bBans ? "ban" : "comm" );
-				}
-				else
-				{
-					ReplyToCommand( iClient, "%sNote: if you are using this command through an rcon tool, you will not see results.", PREFIX );
+					ReplyToCommand( iClient, "Error: Could not retrieve %N's steam id.", iTarget );
 				}
 			}
 			else
 			{
-				ReplyToCommand( iClient, "Error: Could not retrieve %N's steam id.", iTarget );
+				ReplyToCommand( iClient, "Error: Could not find a target matching '%s'.", szTarget );
 			}
 		}
 		else
 		{
-			ReplyToCommand( iClient, "Error: Could not find a target matching '%s'.", szTarget );
+			ReplyToCommand( iClient, bBans ? LISTBANS_USAGE : LISTBANS_USAGE );
 		}
 	}
 	return Plugin_Handled;
