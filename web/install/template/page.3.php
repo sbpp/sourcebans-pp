@@ -15,7 +15,7 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 }
 ?>
 
-<b><p>This page will list all of the requirements to run the SourceBans web interface, and compare them with your current values. This page will also list some recomendations. These arn't required to run SourceBans web interface, but they are highly recomended.</p></b>
+<b><p>This page will list all of the requirements to run the SourceBans web interface, and compare them with your current values. This page will also list some recomendations. These aren't required to run SourceBans web interface, but they are highly recomended.</p></b>
 <table style="width: 101%; margin: 0 0 -2px -2px;">
     <tr>
         <td colspan="3" class="listtable_top"><b>PHP Requirements</b></td>
