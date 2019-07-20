@@ -795,7 +795,8 @@ function ProcessBan()
         $('nick.msg').setStyle('display', 'none');
     }
 
-    if ($('steam').value.length < 18 && !$('ip').value) {
+    // Ugly checks, maybe we should use regex here instead of checking for ID length
+    if ($('steam').value.length < 11 && !$('ip').value) {
         $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
         $('steam.msg').setStyle('display', 'block');
         err++;
