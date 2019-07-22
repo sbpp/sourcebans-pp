@@ -1295,7 +1295,6 @@ public void SelectUnbanCallback(Database db, DBResultSet results, const char[] e
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(arg, sizeof(arg));
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
-	delete dataPack;
 
 	db.Escape(reason, unbanReason, sizeof(unbanReason));
 
@@ -1307,6 +1306,7 @@ public void SelectUnbanCallback(Database db, DBResultSet results, const char[] e
 		{
 			PrintToChat(admin, "%ssm_unban failed", Prefix);
 		}
+		delete dataPack;
 		return;
 	}
 
@@ -1319,6 +1319,7 @@ public void SelectUnbanCallback(Database db, DBResultSet results, const char[] e
 		} else {
 			PrintToServer("%sNo active bans found for that filter", Prefix);
 		}
+		delete dataPack;
 		return;
 	}
 
