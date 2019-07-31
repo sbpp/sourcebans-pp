@@ -2,7 +2,7 @@
 /*************************************************************************
     This file is part of SourceBans++
 
-    Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+    Copyright © 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
 
     SourceBans++ is licensed under a
     GNU GENERAL PUBLIC LICENSE Version 3.
