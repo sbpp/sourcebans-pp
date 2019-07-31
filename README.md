@@ -4,7 +4,7 @@
     SourceBans++
 </h1>
 
-### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![GitHub license](https://img.shields.io/github/license/sbpp/sourcebans-pp?color=blue&style=for-the-badge)](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/pulls) [![GitHub All Releases](https://img.shields.io/github/downloads/sbpp/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square&logo=travis)](https://travis-ci.org/sbpp/sourcebans-pp) [![AppVeyor](https://img.shields.io/appveyor/ci/Sarabveer/sourcebans-pp.svg?style=flat-square&logo=appveyor)](https://ci.appveyor.com/project/Sarabveer/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp) [![Discord](https://img.shields.io/discord/298914017135689728.svg?style=flat-square&logo=discord&label=discord)](https://discord.gg/4Bhj6NU)
+### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![GitHub license](https://img.shields.io/github/license/sbpp/sourcebans-pp?color=blue&style=flat-square)](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/pulls) [![GitHub All Releases](https://img.shields.io/github/downloads/sbpp/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square&logo=travis)](https://travis-ci.org/sbpp/sourcebans-pp) [![AppVeyor](https://img.shields.io/appveyor/ci/Sarabveer/sourcebans-pp.svg?style=flat-square&logo=appveyor)](https://ci.appveyor.com/project/Sarabveer/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp) [![Discord](https://img.shields.io/discord/298914017135689728.svg?style=flat-square&logo=discord&label=discord)](https://discord.gg/4Bhj6NU)
 
 
 Global admin, ban, and communication management system for the Source engine
@@ -36,7 +36,10 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ## Built With
 
-* [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/SOURCEMOD-LICENSE.txt) - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
+* [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/SOURCEMOD-LICENSE.txt) - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
+* [SourceBans 1.4.11](https://github.com/GameConnect/sourcebansv1) - Base of this project - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
+* [SourceComms](https://github.com/d-ai/SourceComms) - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
+* [SourceBans TF2 Theme](https://forums.alliedmods.net/showthread.php?t=252533)
 
 ## Contributing
 
