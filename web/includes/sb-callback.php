@@ -5,10 +5,10 @@
     Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 
     SourceBans++ is licensed under a
-    Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+    GNU GENERAL PUBLIC LICENSE Version 3.
 
     You should have received a copy of the license along with this
-    work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
+    work.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -21,7 +21,7 @@
     This program is based off work covered by the following copyright(s):
     SourceBans 1.4.11
     Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-    Licensed under CC BY-NC-SA 3.0
+    Licensed under GPLv3
     Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 use xPaw\SourceQuery\SourceQuery;
