@@ -910,7 +910,7 @@
 		"es"		"El jugador que has seleccionado ya no está disponible."
 		"ru"		"Игрок не доступен."
 		"pl"		"Wybrany gracz nie jest już dostępny."
-		"pt"		"O(a) jogador(a) que você selecionou não está mais disponível."
+		"pt"		"O(A) jogador(a) que você selecionou não está mais disponível."
 		"de"		"Der Spieler ist nicht zugänglich."
 		"fr"		"Le joueur que vous avez sélectionné n'est plus disponible."
 		"chi"		"你选择的玩家目前不可用."
