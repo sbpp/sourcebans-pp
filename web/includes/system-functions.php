@@ -37,7 +37,7 @@ if (!defined("IN_SB")) {
  * @param string $url The link
  * @param string $tooltip The tooltip message
  * @param string $target The new links target
- * @return URL
+ * @return string URL
  */
 function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $onclick="")
 {
@@ -47,9 +47,9 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
         $class = "tip";
     }
     if (strlen($tooltip) == 0) {
-        return '<a href="' . $url . '" onclick="' . $onclick . '" target="' . $target . '">' . $title .' </a>';
+        return "<a href='{$url}' onclick='{$onclick}' target='{$target}'> {$title} </a>";
     } else {
-        return '<a href="' . $url . '" class="' . $class .'" title="' .  $title . ' :: ' .  $tooltip . '" target="' . $target . '">' . $title .' </a>';
+        return "<a href='{$url}' class='{$class}' title='{$title} :: {$tooltip }' target='{$target}'> {$title} </a>";
     }
 }
 
