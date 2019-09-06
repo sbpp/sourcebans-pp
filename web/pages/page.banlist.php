@@ -625,7 +625,7 @@ while (!$res->EOF) {
 
     //COMMENT STUFF
     //-----------------------------------
-    if ($userbank->is_admin()) {
+    if ((Config::getBool('config.enablepubliccomments') || $userbank->is_admin())) {
         $view_comments = true;
         $commentres    = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
 											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
