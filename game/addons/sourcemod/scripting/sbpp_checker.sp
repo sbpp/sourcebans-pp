@@ -68,7 +68,7 @@ public void OnClientAuthorized (int iClient, const char[] szAuth)
 		/* Do not check bots nor check player with lan steamid. */
 		char szIP[30], szQuery[320 + sizeof g_DatabasePrefix * 2 + sizeof szIP];
 		GetClientIP( iClient, szIP, sizeof szIP );
-		FormatEx( szQuery, sizeof szQuery, "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM %s_comms WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, szAuth[8], szIP, g_DatabasePrefix, szAuth[8] );
+		FormatEx( szQuery, sizeof szQuery, "SELECT COUNT(bid) FROM `%s_bans` WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM `%s_comms` WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, szAuth[8], szIP, g_DatabasePrefix, szAuth[8] );
 		g_DB.Query( DB_OnClientAuthorized_Callback, szQuery, GetClientUserId( iClient ), DBPrio_Low );
 	}
 }
@@ -100,11 +100,11 @@ stock Action sm_list_Handler (int iClient, int iArgs)
 					if ( bBans )
 					{
 						GetClientIP( iTarget, szBuf, sizeof szBuf );
-						FormatEx( szQuery, sizeof szQuery, "SELECT created, %s_admins.user, ends, length, reason, RemoveType FROM %s_bans LEFT JOIN %s_admins ON %s_bans.aid = %s_admins.aid WHERE ((type = 0 AND %s_bans.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8], szBuf );
+						FormatEx( szQuery, sizeof szQuery, "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType FROM `%s_bans` LEFT JOIN `%s_admins` ON `%s_bans`.aid = `%s_admins`.aid WHERE ((type = 0 AND `%s_bans`.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8], szBuf );
 					}
 					else
 					{
-						FormatEx( szQuery, sizeof szQuery, "SELECT created, %s_admins.user, ends, length, reason, RemoveType, type FROM %s_comms LEFT JOIN %s_admins ON %s_comms.aid = %s_admins.aid WHERE %s_comms.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8] );
+						FormatEx( szQuery, sizeof szQuery, "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType, type FROM `%s_comms` LEFT JOIN `%s_admins` ON `%s_comms`.aid = `%s_admins`.aid WHERE `%s_comms`.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, szAuth[8] );
 					}
 					DataPack hPack = new DataPack();
 					hPack.WriteCell( !iClient ? 0 : GetClientUserId( iClient ) );
