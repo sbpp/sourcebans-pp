@@ -202,7 +202,7 @@ function checkYourAcctPass()
 		}
 		if(checkYourAcctPass() && error == 0)
 		{
-			xajax_ChangePassword(-{$user_aid}-, $('pass2').value);
+            xajax_ChangePassword(-{$user_aid}-, $('pass2').value, $('current').value);
 		}
 	}
 	function checkYourSrvPass()

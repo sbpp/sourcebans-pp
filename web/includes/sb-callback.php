@@ -1901,7 +1901,16 @@ function CheckPassword($aid, $pass)
     }
     return $objResponse;
 }
-function ChangePassword($aid, $pass)
+
+function isCurrentPasswordValid($aid, $pass)
+{
+    $GLOBALS['PDO']->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $hash = $GLOBALS['PDO']->single();
+    return password_verify($pass, $hash['password']);
+}
+
+function ChangePassword($aid, $newPass, $oldPass)
 {
     global $userbank;
     $objResponse = new xajaxResponse();
@@ -1912,8 +1921,13 @@ function ChangePassword($aid, $pass)
         return $objResponse;
     }
 
+    if(!isCurrentPasswordValid($aid, $oldPass)){
+        $objResponse->addAlert("Current password doesn't match.");
+        return $objResponse;
+    }
+
     $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid");
-    $GLOBALS['PDO']->bind(':password', password_hash($pass, PASSWORD_BCRYPT));
+    $GLOBALS['PDO']->bind(':password', password_hash($newPass, PASSWORD_BCRYPT));
     $GLOBALS['PDO']->bind(':aid', $aid);
     $GLOBALS['PDO']->execute();
 
