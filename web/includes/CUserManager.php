@@ -248,6 +248,14 @@ class CUserManager
         return (bool)$data[1];
     }
 
+    public function isCurrentPasswordValid($aid, $pass)
+    {
+        $this->dbh->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
+        $this->dbh->bind(':aid', $aid);
+        $hash = $this->dbh->single();
+        return password_verify($pass, $hash['password']);
+    }
+
     public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
     {
         if (!empty($password) && strlen($password) < MIN_PASS_LENGTH) {
