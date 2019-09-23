@@ -1902,14 +1902,6 @@ function CheckPassword($aid, $pass)
     return $objResponse;
 }
 
-function isCurrentPasswordValid($aid, $pass)
-{
-    $GLOBALS['PDO']->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
-    $GLOBALS['PDO']->bind(':aid', $aid);
-    $hash = $GLOBALS['PDO']->single();
-    return password_verify($pass, $hash['password']);
-}
-
 function ChangePassword($aid, $newPass, $oldPass)
 {
     global $userbank;
@@ -1921,7 +1913,7 @@ function ChangePassword($aid, $newPass, $oldPass)
         return $objResponse;
     }
 
-    if(!isCurrentPasswordValid($aid, $oldPass)){
+    if(!$userbank->isCurrentPasswordValid($aid, $oldPass)){
         $objResponse->addAlert("Current password doesn't match.");
         return $objResponse;
     }
