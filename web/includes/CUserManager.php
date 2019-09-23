@@ -250,9 +250,9 @@ class CUserManager
 
     public function isCurrentPasswordValid($aid, $pass)
     {
-        $GLOBALS['PDO']->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
-        $GLOBALS['PDO']->bind(':aid', $aid);
-        $hash = $GLOBALS['PDO']->single();
+        $this->dbh->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
+        $this->dbh->bind(':aid', $aid);
+        $hash = $this->dbh->single();
         return password_verify($pass, $hash['password']);
     }
 
