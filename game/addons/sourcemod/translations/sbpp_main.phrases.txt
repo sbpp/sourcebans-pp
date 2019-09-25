@@ -198,9 +198,17 @@
 		"#format"		"{1:s},{2:d},{3:s}"
 		"en"			"Banned {1} for {2} minutes. Reason: {3}"
 	}
-	"Permanent"
+	"permanent"
 	{
-		"en"			"Permanent"
+		"en"			"permanent"
+	}
+	"minute"
+	{
+		"en"			"minute"
+	}
+	"minutes"
+	{
+		"en"			"minutes"
 	}
 	"Ban Log"
 	{
