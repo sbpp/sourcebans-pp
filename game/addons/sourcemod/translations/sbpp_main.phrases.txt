@@ -178,4 +178,62 @@
 		"de"			"Administrator: {1}\nGrund: {2}\nDauer: {3}"
 		"tr"			"Yönetici: {1}\nSebep: {2}\nSüre: {3}"
 	}
+	"Permabanned Player"
+	{
+		"#format"		"{1:s}"
+		"en"			"Permanently banned {1}"
+	}
+	"Permabanned Player Reason"
+	{
+		"#format"		"{1:s},{2:s}"
+		"en"			"Permanently banned {1}. Reason: {2}"
+	}
+	"Banned Player"
+	{
+		"#format"		"{1:s},{2:d}"
+		"en"			"Banned {1} for {2} minutes"
+	}
+	"Banned Player Reason"
+	{
+		"#format"		"{1:s},{2:d},{3:s}"
+		"en"			"Banned {1} for {2} minutes. Reason: {3}"
+	}
+	"Permanent"
+	{
+		"en"			"Permanent"
+	}
+	"Ban Log"
+	{
+		"#format"		"{1:L},{2:L},{3:d},{4:s}"
+		"en"			"\"{1}\" banned \"{2}\" (minutes: {3}) (reason: {4})
+	}
+	"Ban Added"
+	{
+		"#format"		"{1:L},{2:d},{3:s},{4:s}"
+		"en"			"\"{1}\" added ban (minutes: {2}) (id/ip: {3}) (reason: {4})"
+	}
+	"Ban Success Name"
+	{
+		"#format"		"{1:s}"
+		"en"			"Successfully banned {1}"
+	}
+	"Unban Success Name"
+	{
+		"#format"		"{1:s}"
+		"en"			"Successfully unbanned {1}"
+	}
+	"Already Banned"
+	{
+		"#format"		"{1:s}"
+		"en"			"{1} is already banned"
+	}
+	"Ban Removed"
+	{
+		"#format"		"{1:L},{2:s},{3:s}"
+		"en"			"\"{1}\" removed ban (filter: {2}) (reason: {3})"	
+	}
+	"No Active Ban"
+	{
+		"en"			"No active ban found"
+	}
 }
