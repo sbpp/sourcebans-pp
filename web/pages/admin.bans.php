@@ -795,7 +795,7 @@ function ProcessBan()
         $('nick.msg').setStyle('display', 'none');
     }
 
-    if (($('steam').value.match(/(?:STEAM_[01]:[01]:\d+)|(?:\[U:1:\d+\])|(?:\d{17})/) && !$('ip').value) {
+    if (($('steam').value.test(/(?:STEAM_[01]:[01]:\d+)|(?:\[U:1:\d+\])|(?:\d{17})/) && !$('ip').value) {
         $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
         $('steam.msg').setStyle('display', 'block');
         err++;
