@@ -100,7 +100,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
     foreach ($blocked as $tempban) {
-        SendRconSilent(("sc_fw_ungag " . $row['authid']), $tempban['sid']);
+        rcon(("sc_fw_ungag " . $row['authid']), $tempban['sid']);
     }
 
     if ($res) {
@@ -145,7 +145,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
     foreach ($blocked as $tempban) {
-        SendRconSilent(("sc_fw_unmute " . $row['authid']), $tempban['sid']);
+        rcon(("sc_fw_unmute " . $row['authid']), $tempban['sid']);
     }
 
     if ($res) {
@@ -194,7 +194,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     if (empty($steam['RemoveType']) && ($length == 0 || $end > $now)) {
         $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
         foreach ($blocked as $tempban) {
-            SendRconSilent(($cmd . " " . $steam['authid']), $tempban['sid']);
+            rcon(($cmd . " " . $steam['authid']), $tempban['sid']);
         }
     }
 
