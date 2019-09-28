@@ -1539,3 +1539,9 @@ function openTab(event, target) {
         }
     }
 }
+
+function swapTab(tab) {
+	let menu = document.getElementById("admin-page-menu").children;
+	if (Number.isInteger(tab) && tab <= menu.length)
+		menu[tab].click()
+}

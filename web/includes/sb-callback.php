@@ -1652,7 +1652,7 @@ function PasteBan($sid, $name, $type=0)
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     return $objResponse;
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
@@ -1821,7 +1821,7 @@ function SetupBan($subid)
     $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
     $objResponse->addScript("demo('" . $demo['filename'] . "', '" . $demo['origname'] . "');");
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -1852,7 +1852,7 @@ function PrepareReban($bid)
     $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
     $objResponse->addScript("demo('" . $demo['filename'] . "', '" . $demo['origname'] . "');");
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -3108,7 +3108,7 @@ function PrepareReblock($bid)
     $objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
     $objResponse->addScriptCall("selectLengthTypeReason", $ban['length'], $ban['type']-1, addslashes($ban['reason']));
 
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -3137,7 +3137,7 @@ function PrepareBlockFromBan($bid)
     $objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
     $objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
 
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -3192,7 +3192,7 @@ function PasteBlock($sid, $name)
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
         return $objResponse;
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
