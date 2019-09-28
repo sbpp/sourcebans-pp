@@ -2561,65 +2561,33 @@ function RefreshServer($sid)
     return $objResponse;
 }
 
-function RehashAdmins($server, $do=0)
+function RehashAdmins($server)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    $do = (int)$do;
-    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS|ADMIN_EDIT_GROUPS|ADMIN_ADD_ADMINS))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to rehash admins, but doesnt have access.");
-    return $objResponse;
-    }
-    $servers = explode(",",$server);
-    if(sizeof($servers)>0) {
-    if(sizeof($servers)-1 > $do)
-    $objResponse->addScriptCall("xajax_RehashAdmins", $server, $do+1);
 
-    $serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".(int)$servers[$do]."';");
-    if(empty($serv['rcon'])) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='red'>failed: No rcon password set</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
-    return $objResponse;
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS|ADMIN_EDIT_GROUPS|ADMIN_ADD_ADMINS)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to rehash admins, but doesnt have access.");
+        return $objResponse;
     }
 
-    $test = @fsockopen($serv['ip'], $serv['port'], $errno, $errstr, 2);
-    if(!$test) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='red'>failed: Can't connect</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
-    return $objResponse;
+    $servers = explode(",", $server);
+    if (count($servers) < 1) {
+        $objResponse->addAppend("rehashDiv", "innerHTML", "No servers to check.");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        return $objResponse;
     }
 
-    require INCLUDES_PATH.'/CServerRcon.php';
-    $r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$serv['sid']."';");
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='red'>failed: Wrong rcon password</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
-    return $objResponse;
-    }
-    $ret = $r->rconCommand("sm_rehash");
+    for ($i = 0; $i <= count($servers); $i++) {
+        $ret = rcon("sm_rehash", $servers[$i]);
 
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='green'>successful</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        if ($ret)
+            $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='green'>successful</font>.<br />");
+        else
+            $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='red'>Can\'t connect to server.</font>.<br />");
     }
-    } else {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "No servers to check.");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
+
     return $objResponse;
 }
 
