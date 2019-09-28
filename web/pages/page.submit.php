@@ -196,14 +196,11 @@ foreach ($servers as $key => $server) {
     try {
         $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
         $info = $query->GetInfo();
+        $servers[$key]['hostname'] = $info['HostName'];
     } catch (Exception $e) {
         $servers[$key]['hostname'] = "Error Connecting (".$server['ip'].":".$server['port'].")";
     } finally {
         $query->Disconnect();
-    }
-
-    if (!empty($info['HostName'])) {
-        $servers[$key]['hostname'] = $info['HostName'];
     }
 }
 
