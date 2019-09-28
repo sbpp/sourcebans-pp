@@ -242,44 +242,27 @@ function sizeFormat($bytes)
 //function to check for multiple steamids on one server.
 // param $steamids needs to be an array of steamids.
 //returns array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => array()....)
-function checkMultiplePlayers($sid, $steamids)
+function checkMultiplePlayers(int $sid, $steamids)
 {
-    require_once(INCLUDES_PATH.'/CServerRcon.php');
-    $serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if (empty($serv['rcon'])) {
-        return false;
-    }
-    $test = @fsockopen($serv['ip'], $serv['port'], $errno, $errstr, 2);
-    if (!$test) {
-        return false;
-    }
-    $r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
+    $ret = rcon('status', $sid);
 
-    if (!$r->Auth()) {
-        $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+    if (!$ret)
         return false;
-    }
 
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = array();
-    foreach ($matches[3] as $match) {
+    $players = [];
+    foreach (parseRconStatus($ret) as $player) {
         foreach ($steamids as $steam) {
-            if (\SteamID\SteamID::toSteam2($match) === \SteamID\SteamID::toSteam2($steam)) {
-                $steam = $matches[3][$i];
-                $name = $matches[2][$i];
-                $time = $matches[4][$i];
-                $ping = $matches[5][$i];
-                $ip = explode(":", $matches[8][$i]);
-                $ip = $ip[0];
-                $found[$steam] = array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping);
-                break;
+            if (\SteamID\SteamID::compare($player['steamid'], $steam)) {
+                $steamid = \SteamID\SteamID::toSteam2($player['steamid']);
+                $players[$steamid] = [
+                    'name' => $player['name'],
+                    'steam' => $steamid,
+                    'ip' => $player['ip']
+                ];
             }
         }
-        $i++;
     }
-    return $found;
+    return $players;
 }
 
 function GetCommunityName($steamid)
