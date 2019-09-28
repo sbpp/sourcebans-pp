@@ -289,27 +289,51 @@ function GetCommunityName($steamid)
     return (isset($data['response']['players'][0]['personaname'])) ? $data['response']['players'][0]['personaname'] : '';
 }
 
-function SendRconSilent($rcon, $sid)
+function rcon(string $cmd, int $sid)
 {
-    require_once(INCLUDES_PATH.'/CServerRcon.php');
-    $serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if (empty($serv['rcon'])) {
-        return false;
-    }
-    $test = @fsockopen($serv['ip'], $serv['port'], $errno, $errstr, 2);
-    if (!$test) {
-        return false;
-    }
-    $r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
+    $GLOBALS['PDO']->query("SELECT ip, port, rcon FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $server = $GLOBALS['PDO']->single();
 
-    if (!$r->Auth()) {
-        $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".(int)$sid."';");
+    if (empty($server['rcon']))
         return false;
+
+    $output = "";
+    $rcon = new SourceQuery();
+    try {
+        $rcon->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
+        $rcon->setRconPassword($server['rcon']);
+
+        $output = $rcon->Rcon($cmd);
+    } catch (AuthenticationException $e) {
+        $GLOBALS['PDO']->query("UPDATE `:prefix_servers` SET rcon = '' WHERE sid = :sid");
+        $GLOBALS['PDO']->bind(':sid', $sid);
+        $GLOBALS['PDO']->execute();
+
+        Log::add('e', "Rcon Password Error [ServerID: $sid]", $e->getMessage);
+        return false;
+    } catch (Exception $e) {
+        Log::add('e', "Rcon Error [ServerID: $sid]", $e->getMessage);
+        return false;
+    } finally {
+        $rcon->Disconnect();
+    }
+    return $output;
+}
+
+function parseRconStatus(string $status)
+{
+    $regex = '/#\s*(\d+)(?>\s|\d)*"(.*)"\s*(STEAM_[01]:[01]:\d+|\[U:1:\d+\])(?>\s|:|\d)*[a-zA-Z]*\s*\d*\s*([0-9.]+)/';
+    $players = [];
+
+    foreach (preg_match_all($regex, $ret) as $player) {
+        $players[] = [
+            'id' => $player[1],
+            'name' => $player[2],
+            'steamid' => $player[3],
+            'ip' => $player[4]
+        ];
     }
 
-    $ret = $r->rconCommand($rcon);
-    if ($ret) {
-        return true;
-    }
-    return false;
+    return $players;
 }
