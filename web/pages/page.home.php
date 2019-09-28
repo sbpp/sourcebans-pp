@@ -51,8 +51,12 @@ while (!$res->EOF) {
     $info['auth']       = $res->fields['authid'];
     $info['ip']         = $res->fields['ip'];
     $info['server']     = "block_" . $res->fields['sid'] . "_$blcount";
+
     if ($res->fields['type'] == 1) {
-        $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['ip'] . "&advType=ip&Submit";
+        if ($userbank->is_admin())
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[ip]&advType=ip&Submit";
+        else
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[name]&advType=name";
     } else {
         $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['auth'] . "&advType=steamid&Submit";
     }
@@ -94,7 +98,10 @@ while (!$res->EOF) {
     $info['authid']  = $res->fields[2];
     $info['ip']      = $res->fields[1];
     if ($res->fields[15] == 1) {
-        $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['ip'] . "&advType=ip&Submit";
+        if ($userbank->is_admin())
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[ip]&advType=ip&Submit";
+        else
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[name]&advType=name";
     } else {
         $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     }
