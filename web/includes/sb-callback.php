@@ -3142,59 +3142,38 @@ function PrepareBlockFromBan($bid)
     return $objResponse;
 }
 
-function PasteBlock($sid, $name)
+function PasteBlock(int $sid, $name)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
 
-    $sid = (int)$sid;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
         Log::add("w", "Hacking Attempt", "$username tried paste a block, but doesn't have access.");
         return $objResponse;
     }
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = ?;", array($sid));
-    if(empty($data['rcon'])) {
+
+    $ret = rcon('status', $sid);
+
+    if (!$ret) {
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        $objResponse->addScript("ShowBox('Error', 'No RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
+        $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
         return $objResponse;
     }
 
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
-    if (!$r->Auth()) {
-        $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = ?;", array($sid));
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        $objResponse->addScript("ShowBox('Error', 'Wrong RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
-        return $objResponse;
-    }
+    foreach (parseRconStatus($ret) as $player) {
+        if (strcmp($player['name'], $name) === 0) {
+            $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
+            $objResponse->addScript("$('steam').value = '" . $player['steamid'] . "'");
 
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-        if($match == $name) {
-            $found = true;
-            $index = $i;
-            break;
+            $objResponse->addScript("swapTab(0);");
+            $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+            $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
+            return $objResponse;
         }
-        $i++;
     }
-    if($found) {
-        $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
-        $name = $matches[2][$index];
-        $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
-        $objResponse->addScript("$('steam').value = '" . $steam . "'");
-    } else {
-        $objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        return $objResponse;
-    }
-    $objResponse->addScript("swapTab(0);");
+
+    $objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
 }
