@@ -73,21 +73,12 @@ function ProcessAdminTabs()
 	var url = window.location.toString();
 	var pos = url.indexOf('^')+1;
 	var tabNo = url.charAt(pos);
-	SwapPane(tabNo);
+	swapTab(tabNo);
 
 	var upos = url.indexOf('~')+1;
 	var utabNo = url.charAt(upos+1);
 	var utabType = url.charAt(upos)
 	Swap2ndPane(utabNo, utabType);
-
-	if(parseInt(pos) == 0)
-	{
-		return -1;
-	}
-	else
-	{
-		return tabNo;
-	}
 }
 
 function Swap2ndPane(id, ttype)
@@ -112,30 +103,6 @@ function Swap2ndPane(id, ttype)
 		}
 		$(document.getElementById("utab-" + ttype + id)).addClass('active');
 		$(document.getElementById(ttype + id)).setStyle('display', 'block');
-	}
-}
-
-function SwapPane(id)
-{
-	var i = 0;
-	var i2 = 0;
-	if(document.getElementById("tab-" + id))
-	{
-		while($(document.getElementById(i)))
-		{
-			$(document.getElementById(i)).setStyle('display', 'none');
-			i++;
-		}
-		while(i2 < 50)
-		{
-			if($("tab-" + i2))
-			{
-				$("tab-" + i2).removeClass('active');
-			}
-			i2++;
-		}
-		$(document.getElementById("tab-" + id)).addClass('active');
-		$(document.getElementById(id)).setStyle('display', 'block');
 	}
 }
 
@@ -1538,4 +1505,10 @@ function openTab(event, target) {
             content[i].style.display = "none";
         }
     }
+}
+
+function swapTab(tab) {
+	let menu = document.getElementById("admin-page-menu").children;
+	if (Number.isInteger(tab) && tab <= menu.length)
+		menu[tab].click()
 }
