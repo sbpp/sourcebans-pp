@@ -2954,33 +2954,25 @@ function ViewCommunityProfile($sid, $name)
     return $objResponse;
 }
 
-function SendMessage($sid, $name, $message)
+function SendMessage(int $sid, $name, $message)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->is_admin())
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to send ingame message to '$name', but doesnt have access. Message: $message");
-    return $objResponse;
+    if(!$userbank->is_admin()) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to send ingame message to '$name', but doesnt have access. Message: $message");
+        return $objResponse;
     }
-    $sid = (int)$sid;
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if(empty($data['rcon'])) {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
-    return $objResponse;
+
+    $ret = rcon("sm_psay $name $message", $sid);
+
+    if (!$ret) {
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
+        return $objResponse;
     }
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
-    return $objResponse;
-    }
-    $ret = $r->sendCommand('sm_psay "'.$name.'" "'.preg_replace('/[^A-Za-z0-9\ ]/', '', $message).'"');
-    Log::add("m", "Message sent to player", "The following message was sent to $name on server ($data[ip]:$data[port]): $message");
+
+    Log::add("m", "Message sent to player", "The following message was sent to $name on server (#$sid): $message");
     $objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
     return $objResponse;
 }
