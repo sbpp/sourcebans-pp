@@ -2155,81 +2155,49 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 }
 
 
-function SendRcon($sid, $command, $output)
+function SendRcon(int $sid, $command, $output)
 {
     global $userbank, $username;
     $objResponse = new xajaxResponse();
-    if(!$userbank->HasAccess(SM_RCON . SM_ROOT))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to send an rcon command, but doesnt have access.");
-    return $objResponse;
-    }
-    if(empty($command))
-    {
-    $objResponse->addScript("$('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
-    }
-    if($command == "clr")
-    {
-    $objResponse->addAssign("rcon_con", "innerHTML",  "");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
+    if(!$userbank->HasAccess(SM_RCON . SM_ROOT)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to send an rcon command, but doesnt have access.");
+        return $objResponse;
     }
 
-    if(stripos($command, "rcon_password") !== false)
-    {
+    if (empty($command)) {
+        $objResponse->addScript("$('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
+    } else if ($command == "clr") {
+        $objResponse->addAssign("rcon_con", "innerHTML",  "");
+        $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
+    } else if (stripos($command, "rcon_password") !== false) {
         $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: You have to use this console. Don't try to cheat the rcon password!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
+        $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
     }
 
-    $sid = (int)$sid;
+    $ret = rcon($command, $sid);
 
-    $rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM `".DB_PREFIX."_servers` WHERE sid = ".$sid." LIMIT 1");
-    if(empty($rcon['rcon']))
-    {
-    $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: No RCON password!<br />You have to add the RCON password for this server in the 'edit server' <br />page to use this console!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value='Add RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
-    return $objResponse;
+    if (!$ret) {
+        $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Can't connect to server!<br />");
+        $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
     }
-    if(!$test = @fsockopen($rcon['ip'], $rcon['port'], $errno, $errstr, 2))
-    {
-        @fclose($test);
-    $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Can't connect to server!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
-    }
-    @fclose($test);
-    include(INCLUDES_PATH . "/CServerRcon.php");
-    $r = new CServerRcon($rcon['ip'], $rcon['port'], $rcon['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Wrong RCON password!<br />You MUST change the RCON password for this server in the 'edit server' <br />page. If you continue to use this console with the wrong password, <br />the server will block the connection!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value='Change RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
-    return $objResponse;
-    }
-    $ret = $r->rconCommand($command);
-
 
     $ret = str_replace("\n", "<br />", $ret);
-    if(empty($ret))
-    {
-    if($output)
-    {
-    $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
-    $objResponse->addAppend("rcon_con", "innerHTML",  "Command Executed.<br />");
+
+    if ($output) {
+        if (empty($ret)) {
+            $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
+            $objResponse->addAppend("rcon_con", "innerHTML",  "Command Executed.<br />");
+        } else {
+            $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
+            $objResponse->addAppend("rcon_con", "innerHTML",  "$ret<br />");
+        }
     }
-    }
-    else
-    {
-    if($output)
-    {
-    $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
-    $objResponse->addAppend("rcon_con", "innerHTML",  "$ret<br />");
-    }
-    }
+
     $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled=''; $('rcon_btn').disabled=''");
     Log::add("m", "RCON Sent", "RCON Command was sent to server ($rcon[ip]:$rcon[port])");
     return $objResponse;
