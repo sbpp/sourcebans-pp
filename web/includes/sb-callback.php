@@ -2903,54 +2903,34 @@ function BanFriends($friendid, $name)
     return $objResponse;
 }
 
-function ViewCommunityProfile($sid, $name)
+function ViewCommunityProfile(int $sid, $name)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->is_admin())
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to view profile of '$name', but doesnt have access.");
-    return $objResponse;
-    }
-    $sid = (int)$sid;
 
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if(empty($data['rcon'])) {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
-    return $objResponse;
+    if(!$userbank->is_admin()) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to view profile of '$name', but doesnt have access.");
+        return $objResponse;
     }
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
-    return $objResponse;
+    $ret = rcon('status', $sid);
+
+    if (!$ret) {
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
+        return $objResponse;
     }
-    // search for the playername
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-    if($match == $name) {
-    $found = true;
-    $index = $i;
-    break;
+
+    foreach (parseRconStatus($ret) as $player) {
+        if (strcmp($player['name'], $name) === 0) {
+            $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"https://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($player['steamid'])."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
+            $objResponse->addScript("window.open('https://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($player['steamid'])."/');");
+            return $objResponse;
+        }
     }
-    $i++;
-    }
-    if($found) {
-    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
-    $objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/', 'Community_".$steam."');");
-    } else {
+
     $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
-    }
     return $objResponse;
 }
 
