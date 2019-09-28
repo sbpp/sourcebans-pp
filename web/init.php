@@ -173,10 +173,6 @@ function sbError($errno, $errstr, $errfile, $errline)
             return false;
     }
 }
-// ---------------------------------------------------
-//  Some defs
-// ---------------------------------------------------
-define('STATUS_PARSE', '/#.* +([0-9]+) +"(.+)" +(STEAM_[0-9]:[0-9]:[0-9]+|\[U:[0-9]:[0-9]+\]) +([0-9:]+) +([0-9]+) +([0-9]+) +([a-zA-Z]+).* +([0-9.:]+)/');
 
 $webflags = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);
 foreach ($webflags as $flag => $perm) {
