@@ -193,8 +193,14 @@
               </tr>
               {if $ban.type == 0}
               <tr align="left">
-                <td width="20%" height="16" class="listtable_1">Steam Community</td>
-                <td height="16" class="listtable_1"><a href="http://steamcommunity.com/profiles/{$ban.communityid}" target="_blank">{$ban.communityid}</a></td>
+                  <td width="20%" height="16" class="listtable_1">Steam Community</td>
+                  <td height="16" class="listtable_1">
+                  {if empty($ban.steamid)}
+                    <i><font color="#677882">No Steam Community ID present</font></i>
+                  {else}
+                    <a href="http://steamcommunity.com/profiles/{$ban.communityid}" target="_blank">{$ban.communityid}</a>
+                  {/if}
+                  </td>
               </tr>
               {/if}
               {if !$hideplayerips}
