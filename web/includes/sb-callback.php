@@ -1791,13 +1791,17 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
     return $objResponse;
 }
 
-function SetupBan($subid)
+function SetupBan(int $subid)
 {
     $objResponse = new xajaxResponse();
-    $subid = (int)$subid;
 
-    $ban = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_submissions WHERE subid = $subid");
-    $demo = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_demos WHERE demid = $subid AND demtype = \"S\"");
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_submissions` WHERE subid = :subid");
+    $GLOBALS['PDO']->bind(':subid', $subid);
+    $ban = $GLOBALS['PDO']->single();
+
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_demos` WHERE demid = :subid AND demtype = 'S'");
+    $GLOBALS['PDO']->bind(':subid', $subid);
+    $demo = $GLOBALS['PDO']->single();
     // clear any old stuff
     $objResponse->addScript("$('nickname').value = ''");
     $objResponse->addScript("$('fromsub').value = ''");
@@ -1806,20 +1810,17 @@ function SetupBan($subid)
     $objResponse->addScript("$('txtReason').value = ''");
     $objResponse->addAssign("demo.msg", "innerHTML",  "");
     // add new stuff
-    $objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
-    $objResponse->addScript("$('steam').value = '" . $ban['SteamId']. "'");
-    $objResponse->addScript("$('ip').value = '" . $ban['sip'] . "'");
-    if(trim($ban['SteamId']) == "")
-    $type = "1";
-    else
-    $type = "0";
+    $objResponse->addScript("$('nickname').value = '$ban[name]'");
+    $objResponse->addScript("$('steam').value = '$ban[SteamId]'");
+    $objResponse->addScript("$('ip').value = '$ban[sip]'");
+
+    $type = (trim($ban['SteamId']) == "") ? 1 : 0;
     $objResponse->addScriptCall("selectLengthTypeReason", "0", $type, addslashes($ban['reason']));
 
     $objResponse->addScript("$('fromsub').value = '$subid'");
-    if($demo)
-    {
-    $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
-    $objResponse->addScript("demo('" . $demo['filename'] . "', '" . $demo['origname'] . "');");
+    if($demo) {
+        $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
+        $objResponse->addScript("demo('$demo[filename]', '$demo[origname]');");
     }
     $objResponse->addScript("swapTab(0);");
     return $objResponse;
