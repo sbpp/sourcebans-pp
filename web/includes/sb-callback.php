@@ -1537,7 +1537,7 @@ function KickPlayer(int $sid, $name)
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (strcmp($player['name'], $name) === 0) {
+        if (compareSanitizedString($player['name'], $name)) {
             //Todo: Rewrite query to ignore STEAM_[01] prefix
             $GLOBALS['PDO']->query(
                 "SELECT a.immunity AS aimmune, g.immunity AS gimmune FROM `:prefix_admins` AS a
@@ -1587,7 +1587,7 @@ function PasteBan(int $sid, $name, int $type = 0)
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (strcmp($player['name'], $name) == 0) {
+        if (compareSanitizedString($player['name'], $name)) {
             $steam = \SteamID\SteamID::toSteam2($player['steamid']);
             $objResponse->addScript("$('nickname').value = '".addslashes($name)."'");
 
@@ -2808,7 +2808,7 @@ function ViewCommunityProfile(int $sid, $name)
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (strcmp($player['name'], $name) === 0) {
+        if (compareSanitizedString($player['name'], $name)) {
             $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"https://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($player['steamid'])."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
             $objResponse->addScript("window.open('https://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($player['steamid'])."/');");
             return $objResponse;
@@ -3019,7 +3019,7 @@ function PasteBlock(int $sid, $name)
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (strcmp($player['name'], $name) === 0) {
+        if (compareSanitizedString($player['name'], $name)) {
             $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
             $objResponse->addScript("$('steam').value = '" . $player['steamid'] . "'");
 
