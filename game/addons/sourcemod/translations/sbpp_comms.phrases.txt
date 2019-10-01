@@ -1336,4 +1336,35 @@
 		"chi"		"你不能指定惩罚时长."
 		"tr"		"Belirtilen yasaklama süresi için yetkiniz bulunmamaktadır."
 	}
+	//---------------------------------------------------------------------------------
+	"Chat Reason"
+	{
+		"en"			"Please type the reason for ban in chat and press enter. Type '!noreason' to abort."
+		"nl"			"Typ alstublieft de reden voor de ban in chat and druk op enter. Typ '!noreason' om the annuleren."
+		"fr"			"Merci d'écrire la raison du ban dans le chat. Tapez '!noreason' pour annuler."
+		"pl"			"Proszę wpisać powód bana w czacie oraz potwierdzić przyciskiem Enter. Wpisz !noreason by anulować."
+		"pt"			"Por favor, digite no chat o motivo para o banimento e pressione enter. Digite '!noreason' para cancelar."
+		"de"			"Bitte schreiben Sie den Grund für den Ban in den Chat. Schreiben Sie '!noreason' um abzubrechen."
+		"ru"			"Введите причину бана и нажмите Ввод. Введите '!noreason' для отмены бана."
+		"da"			"Skriv venligst din grund for udelukkelsen ind i chatten og tryk enter. Skriv '!noreason' for at annullere."
+		"no"			"Vennligst skriv din grunn for utestengelse i chaten og trykk enter. Skriv 'noreason' for og annulere."
+		"hu"			"Írd be a chatre az indokot, majd nyomj entert. Írd '!noreason' a megszakításhoz."
+		"chi"			"请在聊天框中填写封禁理由并提交或输入 '!noreason' 放弃操作."
+		"tr"			"Lütfen bir sebep belirtiniz. İptal etmek için '!noreason' yazınız."
+	}
+	"Chat Reason Aborted"
+	{
+		"en"			"The ban procedure has been stopped successfully."
+		"nl"			"De ban procedure is succesvol gestopt."
+		"fr"			"La procédure de ban a été arrêté avec succès."
+		"pl"			"Procedura banowania została pomyślnie zatrzymana."
+		"pt"			"O procedimento de banimento foi interrompido com sucesso."
+		"de"			"Der Banvorgang wurde erfolgreich angehalten."
+		"ru"			"Бан отменён."
+		"da"			"Udelukkelses proceduren blev stoppet med success"
+		"no"			"Utestengelses prossedyren ble stoppet vellykket."
+		"hu"			"A ban eljárás sikeresen leállítva."
+		"chi"			"封禁操作已成功取消."
+		"tr"			"Yasaklama işlemi iptal edildi."
+	}
 }

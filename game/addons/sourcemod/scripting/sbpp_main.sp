@@ -103,7 +103,8 @@ bool
 	, requireSiteLogin = false /* Require a lastvisited from SB site */
 	, backupConfig = true
 	, enableAdmins = true
-	, PlayerStatus[MAXPLAYERS + 1]; /* Player ban check status */
+	, PlayerStatus[MAXPLAYERS + 1] /* Player ban check status */
+	, g_ownReasons[MAXPLAYERS + 1] =  { false, ... }; /* Own Chat Reason */
 
 int
 	g_BanTarget[MAXPLAYERS + 1] =  { -1, ... }
@@ -111,7 +112,6 @@ int
 	, curLoading
 	, serverID = -1
 	, ProcessQueueTime = 5
-	, g_ownReasons[MAXPLAYERS + 1] =  { false, ... } /* Own Chat Reason */
 	, CommandDisable; /* Disable of addban and unban */
 
 
@@ -383,7 +383,7 @@ public Action ChatHook(int client, int args)
 
 		g_ownReasons[client] = false;
 
-		if (StrEqual(reason[0], "!noreason"))
+		if (StrEqual(reason, "!noreason"))
 		{
 			PrintToChat(client, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason Aborted");
 			return Plugin_Handled;
