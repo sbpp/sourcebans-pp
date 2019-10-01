@@ -323,5 +323,5 @@ function parseRconStatus(string $status)
 
 function compareSanitizedString(string $str1, string $str2)
 {
-    return (bool)strcmp(filter_var($str1, FILTER_SANITIZE_STRING), filter_var($str2, FILTER_SANITIZE_STRING) === 0);
+    return (bool)(strcmp(filter_var($str1, FILTER_SANITIZE_STRING), filter_var($str2, FILTER_SANITIZE_STRING)) === 0);
 }
