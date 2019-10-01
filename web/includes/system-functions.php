@@ -1,33 +1,39 @@
 <?php
 /*************************************************************************
-	This file is part of SourceBans++
+This file is part of SourceBans++
 
-	Copyright © 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
+Copyright © 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
 
-	SourceBans++ is licensed under a
-	GNU GENERAL PUBLIC LICENSE Version 3.
+SourceBans++ is licensed under a
+GNU GENERAL PUBLIC LICENSE Version 3.
 
-	You should have received a copy of the license along with this
-	work.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
+You should have received a copy of the license along with this
+work.  If not, see <https://www.gnu.org/licenses/gpl-3.0.txt>.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-	THE SOFTWARE.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
 
-	This program is based off work covered by the following copyright(s):
-		SourceBans 1.4.11
-		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-		Licensed under GPLv3
-		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+This program is based off work covered by the following copyright(s):
+SourceBans 1.4.11
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under GPLv3
+Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
+ *************************************************************************/
+use MaxMind\Db\Reader;
 use xPaw\SourceQuery\SourceQuery;
 
 if (!defined("IN_SB")) {
     die("You should not be here. Only follow links!");
+}
+
+require_once __DIR__ . DIR_SEP . 'maxmind' . DIR_SEP . 'autoload.php';
+if(!defined("MMDB_PATH")){
+    define("MMDB_PATH", __DIR__ . DIR_SEP . 'maxmind' . DIR_SEP . 'GeoLite2-Country.mmdb');
 }
 
 /**
@@ -143,32 +149,12 @@ function SecondsToString($sec, $textual=true)
 
 function FetchIp($ip)
 {
-    $ip = sprintf('%u', ip2long($ip));
-    if (!isset($_SESSION['CountryFetchHndl']) || !is_resource($_SESSION['CountryFetchHndl'])) {
-        $handle = fopen(INCLUDES_PATH.'/IpToCountry.csv', "r");
-        $_SESSION['CountryFetchHndl'] = $handle;
-    } else {
-        $handle = $_SESSION['CountryFetchHndl'];
-        rewind($handle);
-    }
-
-    if (!$handle) {
+    try {
+        $reader = new Reader(MMDB_PATH);
+        return $reader->get($ip)["country"]["iso_code"];
+    }catch (Exception $e){
         return "zz";
     }
-
-    while (($ipdata = fgetcsv($handle, 4096)) !== false) {
-        // If line is comment or IP is out of range
-        if ($ipdata[0][0] == '#' || $ip < $ipdata[0] || $ip > $ipdata[1]) {
-            continue;
-        }
-
-        if (empty($ipdata[4])) {
-            return "zz";
-        }
-        return $ipdata[4];
-    }
-
-	return "zz";
 }
 
 function PageDie()
