@@ -235,7 +235,7 @@
 	{
 		"#format"		"{1:L},{2:d},{3:s},{4:s}"
 		"en"			"\"{1}\" added ban (minutes: {2}) (id/ip: {3}) (reason: {4})"
-		"de"			"\"{1}\" hat einen ban hinzugefügt. (Minuten: {2}) (id/ip: {3}) (Grund: {4})"
+		"de"			"\"{1}\" hat einen Ban hinzugefügt. (Minuten: {2}) (id/ip: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (id/ip: {3}) (причина: {4})"
 	}
 	"Ban Success Name"
