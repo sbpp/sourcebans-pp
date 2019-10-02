@@ -182,80 +182,94 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"Permanently banned {1}"
+		"de"			"{1} wurde permanent gebannt."
 		"ru"			"{1} забанен навсегда"
 	}
 	"Permabanned Player Reason"
 	{
 		"#format"		"{1:s},{2:s}"
 		"en"			"Permanently banned {1}. Reason: {2}"
+		"de"			"{1} wurde permanent gebannt. Grund: {2}"
 		"ru"			"{1} забанен навсегда. Причина: {2}"
 	}
 	"Banned Player"
 	{
 		"#format"		"{1:s},{2:d}"
 		"en"			"Banned {1} for {2} minutes"
+		"de"			"{1} wurde für {2} minuten gebannt."
 		"ru"			"{1} забанен на {2} минут"
 	}
 	"Banned Player Reason"
 	{
 		"#format"		"{1:s},{2:d},{3:s}"
 		"en"			"Banned {1} for {2} minutes. Reason: {3}"
+		"de"			"{1} wurde für {2} minuten gebannt. Grund: {3}"
 		"ru"			"{1} забанен на {2} минут. Причина: {3}"
 	}
 	"permanent"
 	{
 		"en"			"permanent"
+		"de"			"permanent"
 		"ru"			"Навсегда"
 	}
 	"minute"
 	{
 		"en"			"minute"
+		"de"			"minute"
 		"ru"			"минуту"
 	}
 	"minutes"
 	{
 		"en"			"minutes"
+		"de"			"minuten"
 		"ru"			"минут"
 	}
 	"Ban Log"
 	{
 		"#format"		"{1:L},{2:L},{3:d},{4:s}"
-		"en"			"\"{1}\" banned \"{2}\" (minutes: {3}) (reason: {4})
-		"ru"			"\"{1}\" забанил \"{2}\" (длительность (в минутах): {3}) (причина: {4})
+		"en"			"\"{1}\" banned \"{2}\" (minutes: {3}) (reason: {4})"
+		"de"			"\"{1}\" hat \"{2}\" gebannt. (Minuten: {3}) (Grund: {4})"
+		"ru"			"\"{1}\" забанил \"{2}\" (длительность (в минутах): {3}) (причина: {4})"
 	}
 	"Ban Added"
 	{
 		"#format"		"{1:L},{2:d},{3:s},{4:s}"
 		"en"			"\"{1}\" added ban (minutes: {2}) (id/ip: {3}) (reason: {4})"
+		"de"			"\"{1}\" hat einen Ban hinzugefügt. (Minuten: {2}) (id/ip: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (id/ip: {3}) (причина: {4})"
 	}
 	"Ban Success Name"
 	{
 		"#format"		"{1:s}"
 		"en"			"Successfully banned {1}"
+		"de"			"{1} wurde erfolgreich gebannt."
 		"ru"			"{1} успешно забанен."
 	}
 	"Unban Success Name"
 	{
 		"#format"		"{1:s}"
 		"en"			"Successfully unbanned {1}"
+		"de"			"{1} wurde erfolgreich entbannt."
 		"ru"			"{1} успешно разбанен."
 	}
 	"Already Banned"
 	{
 		"#format"		"{1:s}"
 		"en"			"{1} is already banned"
+		"de"			"{1} ist bereits gebannt."
 		"ru"			"{1} уже забанен."
 	}
 	"Ban Removed"
 	{
 		"#format"		"{1:L},{2:s},{3:s}"
 		"en"			"\"{1}\" removed ban (filter: {2}) (reason: {3})"
+		"de"			"\"{1}\" hat einen Ban entfernt. (Filter: {2}) (Grund: {3})"
 		"ru"			"\"{1}\" убрал бан (фильтр: {2}) (причина: {3})"
 	}
 	"No Active Ban"
 	{
 		"en"			"No active ban found"
+		"de"			"Kein aktiver Ban gefunden."
 		"ru"			"Действующий бан не найден."
 	}
 }
