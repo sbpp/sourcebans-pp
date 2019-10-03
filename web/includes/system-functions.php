@@ -47,16 +47,12 @@ if(!defined("MMDB_PATH")){
  */
 function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $onclick="")
 {
-    if ($wide) {
-        $class = "perm";
-    } else {
-        $class = "tip";
-    }
+    $class = ($wide) ? "perm" : "tip";
+
     if (strlen($tooltip) == 0) {
-        return "<a href='{$url}' onclick='{$onclick}' target='{$target}'> {$title} </a>";
-    } else {
-        return "<a href='{$url}' class='{$class}' title='{$title} :: {$tooltip }' target='{$target}'> {$title} </a>";
+        return "<a href='{$url}' onclick=\"{$onclick}\" target='{$target}'> {$title} </a>";
     }
+    return "<a href='{$url}' class='{$class}' title='{$tooltip}' target='{$target}'> {$title} </a>";
 }
 
 function BitToString($mask)
