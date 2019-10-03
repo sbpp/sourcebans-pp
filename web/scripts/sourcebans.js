@@ -73,12 +73,16 @@ function ProcessAdminTabs()
 	var url = window.location.toString();
 	var pos = url.indexOf('^')+1;
 	var tabNo = url.charAt(pos);
-	swapTab(tabNo);
+
+	if (Number.isInteger(tabNo))
+		swapTab(tabNo);
 
 	var upos = url.indexOf('~')+1;
 	var utabNo = url.charAt(upos+1);
-	var utabType = url.charAt(upos)
-	Swap2ndPane(utabNo, utabType);
+	var utabType = url.charAt(upos);
+
+	if (Number.isInteger(utabNo))
+		Swap2ndPane(utabNo, utabType);
 }
 
 function Swap2ndPane(id, ttype)
