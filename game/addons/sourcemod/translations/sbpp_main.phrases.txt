@@ -236,7 +236,7 @@
 		"en"			"\"{1}\" banned \"{2}\" (minutes: {3}) (reason: {4})"
 		"de"			"\"{1}\" hat \"{2}\" gebannt. (Minuten: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" забанил \"{2}\" (длительность (в минутах): {3}) (причина: {4})"
-		"fr"			""\"{1}\" ban \"{2}\" (minutes: {3}) (raison: {4})"
+		"fr"			"\"{1}\" ban \"{2}\" (minutes: {3}) (raison: {4})"
 	}
 	"Ban Added"
 	{
