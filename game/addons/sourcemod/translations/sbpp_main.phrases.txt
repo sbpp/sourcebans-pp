@@ -197,7 +197,7 @@
 	"Banned Player"
 	{
 		"#format"		"{1:s},{2:d}"
-		"en"			"Banned {1}  for {2} minutes"
+		"en"			"Banned {1} for {2} minutes"
 		"de"			"{1} wurde für {2} minuten gebannt."
 		"ru"			"{1} забанен на {2} минут"
 		"fr"			"{1} a été banni pendant {2} minutes."
