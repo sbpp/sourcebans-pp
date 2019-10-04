@@ -56,4 +56,5 @@ See also the list of [contributors](https://github.com/sbpp/sourcebans-pp/graphs
 
 ## License
 
-This project is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3) [License](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE)
+This SourceMod plugins of this project are licensed under the `GNU GENERAL PUBLIC LICENSE Version 3` (GPLv3) [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3).
+The Web panel is licensed under the `Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported` (CC BY-NC-SA 3.0) [License](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE).
