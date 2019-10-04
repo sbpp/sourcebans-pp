@@ -42,11 +42,6 @@
 #endif
 
 //GLOBAL DEFINES
-#define YELLOW				0x01
-#define NAMECOLOR			0x02
-#define TEAMCOLOR			0x03
-#define GREEN				0x04
-
 #define DISABLE_ADDBAN		1
 #define DISABLE_UNBAN		2
 
@@ -385,7 +380,7 @@ public Action ChatHook(int client, int args)
 
 		if (StrEqual(reason[0], "!noreason"))
 		{
-			PrintToChat(client, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason Aborted");
+			PrintToChat(client, "%s%t", Prefix, "Chat Reason Aborted");
 			return Plugin_Handled;
 		}
 
@@ -468,7 +463,7 @@ public Action CommandBan(int client, int args)
 	if (!PlayerStatus[target])
 	{
 		// The target has not been banned verify. It must be completed before you can ban anyone.
-		ReplyToCommand(admin, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Ban Not Verified");
+		ReplyToCommand(admin, "%s%t", Prefix, "Ban Not Verified");
 		return Plugin_Handled;
 	}
 
@@ -805,7 +800,7 @@ public int ReasonSelected(Menu menu, MenuAction action, int param1, int param2)
 			else if (StrEqual("Own Reason", key)) // admin wants to use his own reason
 			{
 				g_ownReasons[param1] = true;
-				PrintToChat(param1, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason");
+				PrintToChat(param1, "%s%t", Prefix, "Chat Reason");
 				return;
 			}
 
@@ -2497,7 +2492,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 		// We need a reason so offer the administrator a menu of reasons
 		PlayerDataPack[admin] = dataPack;
 		DisplayMenu(ReasonMenuHandle, admin, MENU_TIME_FOREVER);
-		ReplyToCommand(admin, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Check Menu");
+		ReplyToCommand(admin, "%s%t", Prefix, "Check Menu");
 	}
 
 	Call_StartForward(g_hFwd_OnBanAdded);
