@@ -55,8 +55,6 @@ foreach ($srv_admins as $admin) {
         $admins[$i]['ingame'] = true;
         $admins[$i]['iname']  = $serverdata[$admin['authid']]['name'];
         $admins[$i]['iip']    = $serverdata[$admin['authid']]['ip'];
-        $admins[$i]['iping']  = $serverdata[$admin['authid']]['ping'];
-        $admins[$i]['itime']  = $serverdata[$admin['authid']]['time'];
     } else {
         $admins[$i]['ingame'] = false;
     }
