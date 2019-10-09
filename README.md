@@ -36,9 +36,9 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ## Built With
 
-* [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/SOURCEMOD-LICENSE.txt) - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
-* [SourceBans 1.4.11](https://github.com/GameConnect/sourcebansv1) - Base of this project - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
-* [SourceComms](https://github.com/d-ai/SourceComms) - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
+* [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/SOURCEMOD-LICENSE.txt) - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3)
+* [SourceBans 1.4.11](https://github.com/GameConnect/sourcebansv1) - Base of this project - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3) - [CC BY-NC-SA 3.0](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE)
+* [SourceComms](https://github.com/d-ai/SourceComms) - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3)
 * [SourceBans TF2 Theme](https://forums.alliedmods.net/showthread.php?t=252533)
 
 ## Contributing
@@ -56,4 +56,5 @@ See also the list of [contributors](https://github.com/sbpp/sourcebans-pp/graphs
 
 ## License
 
-This project is licensed under the GNU GENERAL PUBLIC LICENSE Version 3 (GPLv3) [License](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE)
+This SourceMod plugins of this project are licensed under the `GNU GENERAL PUBLIC LICENSE Version 3` (GPLv3) [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3).
+The Web panel is licensed under the `Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported` (CC BY-NC-SA 3.0) [License](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE).
