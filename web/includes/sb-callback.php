@@ -2496,13 +2496,13 @@ function RehashAdmins($server)
         return $objResponse;
     }
 
-    for ($i = 0; $i <= count($servers); $i++) {
+    for ($i = 0; $i < count($servers); $i++) {
         $ret = rcon("sm_rehash", $servers[$i]);
 
         if ($ret)
             $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='green'>successful</font>.<br />");
         else
-            $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='red'>Can\'t connect to server.</font>.<br />");
+            $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='red'>Can't connect to server.</font>.<br />");
     }
 
     return $objResponse;
