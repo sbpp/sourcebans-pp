@@ -3024,13 +3024,13 @@ function PasteBlock(int $sid, $name)
 
     if (!$ret) {
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
+        $objResponse->addScript("ShowBox('Error', 'Can\'t connect to server!', 'red', '', true);");
         return $objResponse;
     }
 
     foreach (parseRconStatus($ret) as $player) {
         if (compareSanitizedString($player['name'], $name)) {
-            $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
+            $objResponse->addScript("$('nickname').value = '" . addslashes(html_entity_decode($name, ENT_QUOTES)) . "'");
             $objResponse->addScript("$('steam').value = '" . $player['steamid'] . "'");
 
             $objResponse->addScript("swapTab(0);");
