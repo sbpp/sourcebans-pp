@@ -2829,12 +2829,20 @@ function SendMessage(int $sid, $name, $message)
         return $objResponse;
     }
 
-    $ret = rcon("sm_psay $name $message", $sid);
+    $ret = rcon('status', $sid);
 
     if (!$ret) {
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
         $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
         return $objResponse;
+    }
+
+    $message = html_entity_decode($message, ENT_QUOTES);
+    $message = str_replace('"', "'", $message);
+
+    foreach (parseRconStatus($ret) as $player) {
+        if (compareSanitizedString($name, $player['name']))
+            rcon("sm_psay #$player[id] \"$message\"", $sid);
     }
 
     Log::add("m", "Message sent to player", "The following message was sent to $name on server (#$sid): $message");
