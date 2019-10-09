@@ -2127,6 +2127,8 @@ function SendRcon(int $sid, $command, $output)
         return $objResponse;
     }
 
+    $command = html_entity_decode($command, ENT_QUOTES);
+
     $ret = rcon($command, $sid);
 
     if (!$ret) {
