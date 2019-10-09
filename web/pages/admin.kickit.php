@@ -102,9 +102,10 @@ function KickPlayer($check, int $sid, $num, $type)
                 $GLOBALS['PDO']->bind(':authid', $check);
                 $GLOBALS['PDO']->execute();
 
-                rcon("sm_kick #$player[id] \"You have been banned by this server, check ".Host::protocol().Host::domain()." for more info.\"", $sid);
+                $domain = Host::protocol().Host::domain();
+                rcon("kickid $player[id] \"You have been banned by this server, check $domain for more info\"", $sid);
 
-                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
+                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
                 $objResponse->addScript("set_counter('-1');");
                 return $objResponse;
             }
@@ -116,9 +117,10 @@ function KickPlayer($check, int $sid, $num, $type)
                 $GLOBALS['PDO']->bind(':ip', $check);
                 $GLOBALS['PDO']->execute();
 
-                rcon("sm_kick #$player[id] \"You have been banned by this server, check ".Host::protocol().Host::domain()." for more info.\"");
+                $domain = Host::protocol().Host::domain();
+                rcon("kickid $player[id] \"You have been banned by this server, check $domain for more info\"", $sid);
 
-                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
+                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
                 $objResponse->addScript("set_counter('-1');");
                 return $objResponse;
             }
