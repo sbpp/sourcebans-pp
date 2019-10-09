@@ -309,7 +309,9 @@ function parseRconStatus(string $status)
     $regex = '/#\s*(\d+)(?>\s|\d)*"(.*)"\s*(STEAM_[01]:[01]:\d+|\[U:1:\d+\])(?>\s|:|\d)*[a-zA-Z]*\s*\d*\s*([0-9.]+)/';
     $players = [];
 
-    foreach (preg_match_all($regex, $ret) as $player) {
+    preg_match_all($regex, $status, $status, PREG_SET_ORDER);
+
+    foreach ($status as $player) {
         $players[] = [
             'id' => $player[1],
             'name' => $player[2],
