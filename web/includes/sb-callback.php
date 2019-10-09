@@ -1554,15 +1554,17 @@ function KickPlayer(int $sid, $name)
             }
 
             if($immune <= $userbank->GetProperty('srv_immunity')) {
-                rcon("sm_kick #$player[id] \"You have been banned by this server, check ".Host::protocol().Host::domain()." for more info.\"", $sid);
+                rcon("sm_kick #$player[id] You have been kicked from this server", $sid);
                 Log::add("m", "Player kicked", "$username kicked player $player[name] ($player[steamid])");
+                $objResponse->addScript("ShowBox('Success', 'Player ".addslashes($name)." has been kicked from the server!', 'green', '', true);");
+                return $objResponse;
             } else {
-                $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player is immune!', 'red', '', true);");
+                $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes($name).". Player is immune!', 'red', '', true);");
             }
         }
     }
 
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
+    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes($name).". Player not on the server anymore!', 'red', '', true);");
     return $objResponse;
 }
 
