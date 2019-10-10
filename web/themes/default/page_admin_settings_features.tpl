@@ -69,6 +69,21 @@
 <!-- end steam login option mod -->
 
 
+<!-- public comments -->
+
+		<tr>
+			<td valign="top"><div class="rowdesc">{help_icon title="Enable Public Comments" message="Check this box, if you want to make admin comments on bans viewable by everyone."}Enable Public Comments</div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="checkbox" name="enable_publiccomments" id="enable_publiccomments" />
+		    	</div>
+		    	<div id="enable_publiccomments.msg" class="badentry"></div>
+		    </td>
+		</tr>
+
+<!-- end public comments -->
+
+
         <tr>
             <td colspan="2" align="center">
                 {sb_button text="Save Changes" class="ok" id="fsettings" submit=true}

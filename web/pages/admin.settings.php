@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -272,12 +264,15 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 
             $steamloginopt = (isset($_POST['enable_steamlogin']) && $_POST['enable_steamlogin'] == "on" ? 1 : 0);
 
+            $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] == "on" ? 1 : 0);
+
             $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
 											(" . (int) $exportpub . ", 'config.exportpublic'),
 											(" . (int) $kickit . ", 'config.enablekickit'),
 											(" . (int) $groupban . ", 'config.enablegroupbanning'),
 											(" . (int) $friendsban . ", 'config.enablefriendsbanning'),
 											(" . (int) $adminrehash . ", 'config.enableadminrehashing'),
+											(" . (int) $publiccomments . ", 'config.enablepubliccomments'),
 											(" . (int) $steamloginopt . ", 'config.enablesteamlogin')");
 
 
@@ -357,6 +352,7 @@ $('enable_groupbanning').checked = <?=(int)Config::getBool('config.enablegroupba
 $('enable_friendsbanning').checked = <?=(int)Config::getBool('config.enablefriendsbanning');?>;
 $('enable_adminrehashing').checked = <?=(int)Config::getBool('config.enableadminrehashing');?>;
 $('enable_steamlogin').checked = <?=(int)Config::getBool('config.enablesteamlogin');?>;
+$('enable_publiccomments').checked = <?=(int)Config::getBool('config.publiccomments');?>;
 <?php
 if (ini_get('safe_mode') == 1) {
     print "$('enable_groupbanning').disabled = true;\n";

@@ -8,9 +8,10 @@
 	</div>
 </div>
 <script>
-var settab = ProcessAdminTabs();
 window.addEvent('domready', function(){
     {{{query}}}
+	
+	ProcessAdminTabs();
 
     var Tips2 = new Tips($$('.tip'), {
         initialize:function(){

@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -782,6 +774,9 @@ function ProcessBan()
     var err = 0;
     var reason = $('listReason')[$('listReason').selectedIndex].value;
 
+    // 0 - SteamID / 1 - IP
+    let type = $('type').selectedOptions[0].value;
+
     if (reason == "other") {
         reason = $('txtReason').value;
     }
@@ -795,7 +790,7 @@ function ProcessBan()
         $('nick.msg').setStyle('display', 'none');
     }
 
-    if ($('steam').value.length < 18 && !$('ip').value) {
+    if (!$('steam').value.test(/(?:STEAM_[01]:[01]:\d+)|(?:\[U:1:\d+\])|(?:\d{17})/) && type == 0) {
         $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
         $('steam.msg').setStyle('display', 'block');
         err++;
@@ -804,7 +799,7 @@ function ProcessBan()
         $('steam.msg').setStyle('display', 'none');
     }
 
-    if ($('ip').value.length < 7 && !$('steam').value) {
+    if ($('ip').value.length < 7 && type == 1) {
         $('ip.msg').setHTML('You must enter a valid IP address');
         $('ip.msg').setStyle('display', 'block');
         err++;

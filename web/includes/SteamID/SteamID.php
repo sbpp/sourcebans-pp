@@ -35,6 +35,9 @@ class SteamID
 
     private static function to($format, $steamid)
     {
+        if (empty($steamid))
+            return false;
+
         if (!in_array($format, self::$validFormat)) {
             throw new \Exception("No valid fromat input!");
         }

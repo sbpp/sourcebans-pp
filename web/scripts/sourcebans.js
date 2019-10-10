@@ -1,27 +1,19 @@
 /*************************************************************************
-	This file is part of SourceBans++
+This file is part of SourceBans++
 
-	Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-	SourceBans++ is licensed under a
-	Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+The SourceBans++ Web panel is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
-	You should have received a copy of the license along with this
-	work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
+You should have received a copy of the license along with this
+work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-	THE SOFTWARE.
-
-	This program is based off work covered by the following copyright(s):
-		SourceBans 1.4.11
-		Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-		Licensed under CC BY-NC-SA 3.0
-		Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
+This program is based off work covered by the following copyright(s):
+SourceBans 1.4.11
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
+Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 
@@ -73,21 +65,16 @@ function ProcessAdminTabs()
 	var url = window.location.toString();
 	var pos = url.indexOf('^')+1;
 	var tabNo = url.charAt(pos);
-	SwapPane(tabNo);
+
+	if (Number.isInteger(tabNo))
+		swapTab(tabNo);
 
 	var upos = url.indexOf('~')+1;
 	var utabNo = url.charAt(upos+1);
-	var utabType = url.charAt(upos)
-	Swap2ndPane(utabNo, utabType);
+	var utabType = url.charAt(upos);
 
-	if(parseInt(pos) == 0)
-	{
-		return -1;
-	}
-	else
-	{
-		return tabNo;
-	}
+	if (Number.isInteger(utabNo))
+		Swap2ndPane(utabNo, utabType);
 }
 
 function Swap2ndPane(id, ttype)
@@ -112,30 +99,6 @@ function Swap2ndPane(id, ttype)
 		}
 		$(document.getElementById("utab-" + ttype + id)).addClass('active');
 		$(document.getElementById(ttype + id)).setStyle('display', 'block');
-	}
-}
-
-function SwapPane(id)
-{
-	var i = 0;
-	var i2 = 0;
-	if(document.getElementById("tab-" + id))
-	{
-		while($(document.getElementById(i)))
-		{
-			$(document.getElementById(i)).setStyle('display', 'none');
-			i++;
-		}
-		while(i2 < 50)
-		{
-			if($("tab-" + i2))
-			{
-				$("tab-" + i2).removeClass('active');
-			}
-			i2++;
-		}
-		$(document.getElementById("tab-" + id)).addClass('active');
-		$(document.getElementById(id)).setStyle('display', 'block');
 	}
 }
 
@@ -1538,4 +1501,10 @@ function openTab(event, target) {
             content[i].style.display = "none";
         }
     }
+}
+
+function swapTab(tab) {
+	let menu = document.getElementById("admin-page-menu").children;
+	if (Number.isInteger(tab) && tab <= menu.length)
+		menu[tab].click()
 }

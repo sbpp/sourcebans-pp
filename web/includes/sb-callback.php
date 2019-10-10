@@ -1,28 +1,20 @@
 <?php
 /*************************************************************************
-    This file is part of SourceBans++
+This file is part of SourceBans++
 
-    Copyright © 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-    SourceBans++ is licensed under a
-    Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+The SourceBans++ Web panel is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
-    You should have received a copy of the license along with this
-    work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
+You should have received a copy of the license along with this
+work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-    THE SOFTWARE.
-
-    This program is based off work covered by the following copyright(s):
-    SourceBans 1.4.11
-    Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-    Licensed under CC BY-NC-SA 3.0
-    Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
+This program is based off work covered by the following copyright(s):
+SourceBans 1.4.11
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
+Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 use xPaw\SourceQuery\SourceQuery;
 
@@ -1652,7 +1644,7 @@ function PasteBan($sid, $name, $type=0)
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     return $objResponse;
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
@@ -1791,13 +1783,17 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
     return $objResponse;
 }
 
-function SetupBan($subid)
+function SetupBan(int $subid)
 {
     $objResponse = new xajaxResponse();
-    $subid = (int)$subid;
 
-    $ban = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_submissions WHERE subid = $subid");
-    $demo = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_demos WHERE demid = $subid AND demtype = \"S\"");
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_submissions` WHERE subid = :subid");
+    $GLOBALS['PDO']->bind(':subid', $subid);
+    $ban = $GLOBALS['PDO']->single();
+
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_demos` WHERE demid = :subid AND demtype = 'S'");
+    $GLOBALS['PDO']->bind(':subid', $subid);
+    $demo = $GLOBALS['PDO']->single();
     // clear any old stuff
     $objResponse->addScript("$('nickname').value = ''");
     $objResponse->addScript("$('fromsub').value = ''");
@@ -1806,22 +1802,19 @@ function SetupBan($subid)
     $objResponse->addScript("$('txtReason').value = ''");
     $objResponse->addAssign("demo.msg", "innerHTML",  "");
     // add new stuff
-    $objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
-    $objResponse->addScript("$('steam').value = '" . $ban['SteamId']. "'");
-    $objResponse->addScript("$('ip').value = '" . $ban['sip'] . "'");
-    if(trim($ban['SteamId']) == "")
-    $type = "1";
-    else
-    $type = "0";
+    $objResponse->addScript("$('nickname').value = '$ban[name]'");
+    $objResponse->addScript("$('steam').value = '$ban[SteamId]'");
+    $objResponse->addScript("$('ip').value = '$ban[sip]'");
+
+    $type = (trim($ban['SteamId']) == "") ? 1 : 0;
     $objResponse->addScriptCall("selectLengthTypeReason", "0", $type, addslashes($ban['reason']));
 
     $objResponse->addScript("$('fromsub').value = '$subid'");
-    if($demo)
-    {
-    $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
-    $objResponse->addScript("demo('" . $demo['filename'] . "', '" . $demo['origname'] . "');");
+    if($demo) {
+        $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
+        $objResponse->addScript("demo('$demo[filename]', '$demo[origname]');");
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -1852,7 +1845,7 @@ function PrepareReban($bid)
     $objResponse->addAssign("demo.msg", "innerHTML",  $demo['origname']);
     $objResponse->addScript("demo('" . $demo['filename'] . "', '" . $demo['origname'] . "');");
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -1901,7 +1894,8 @@ function CheckPassword($aid, $pass)
     }
     return $objResponse;
 }
-function ChangePassword($aid, $pass)
+
+function ChangePassword($aid, $newPass, $oldPass)
 {
     global $userbank;
     $objResponse = new xajaxResponse();
@@ -1912,8 +1906,13 @@ function ChangePassword($aid, $pass)
         return $objResponse;
     }
 
+    if(!$userbank->isCurrentPasswordValid($aid, $oldPass)){
+        $objResponse->addAlert("Current password doesn't match.");
+        return $objResponse;
+    }
+
     $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid");
-    $GLOBALS['PDO']->bind(':password', password_hash($pass, PASSWORD_BCRYPT));
+    $GLOBALS['PDO']->bind(':password', password_hash($newPass, PASSWORD_BCRYPT));
     $GLOBALS['PDO']->bind(':aid', $aid);
     $GLOBALS['PDO']->execute();
 
@@ -3102,7 +3101,7 @@ function PrepareReblock($bid)
     $objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
     $objResponse->addScriptCall("selectLengthTypeReason", $ban['length'], $ban['type']-1, addslashes($ban['reason']));
 
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -3131,7 +3130,7 @@ function PrepareBlockFromBan($bid)
     $objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
     $objResponse->addScript("$('steam').value = '" . $ban['authid']. "'");
 
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     return $objResponse;
 }
 
@@ -3186,7 +3185,7 @@ function PasteBlock($sid, $name)
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
         return $objResponse;
     }
-    $objResponse->addScript("SwapPane(0);");
+    $objResponse->addScript("swapTab(0);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
