@@ -59,11 +59,11 @@ function LoadServers($check, $type)
     return $objResponse;
 }
 
-function KickPlayer($check, $sid, $num, $type)
+function KickPlayer($check, int $sid, $num, $type)
 {
+    require_once("../includes/system-functions.php");
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    $sid = (int) $sid;
 
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
@@ -71,80 +71,59 @@ function KickPlayer($check, $sid, $num, $type)
         return $objResponse;
     }
 
-    //get the server data
-    $sdata = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE sid = '" . $sid . "';");
+    $ret = rcon('status', $sid);
 
-    //test if server is online
-    if ($test = @fsockopen($sdata['ip'], $sdata['port'], $errno, $errstr, 2)) {
-        @fclose($test);
-        require_once(INCLUDES_PATH . "/CServerRcon.php");
-
-        $r = new CServerRcon($sdata['ip'], $sdata['port'], $sdata['rcon']);
-
-        if (!$r->Auth()) {
-            $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_servers SET rcon = '' WHERE sid = '" . $sid . "' LIMIT 1;");
-            $objResponse->addAssign("srv_$num", "innerHTML", "<font color='red' size='1'>Wrong RCON Password, please change!</font>");
-            $objResponse->addScript('set_counter(1);');
-            return $objResponse;
-        }
-        $ret = $r->rconCommand("status");
-
-        // show hostname instead of the ip, but leave the ip in the title
-        require_once("../includes/system-functions.php");
-        $hostsearch = preg_match_all('/hostname:[ ]*(.+)/', $ret, $hostname, PREG_PATTERN_ORDER);
-        $hostname   = trunc(htmlspecialchars($hostname[1][0]), 25);
-        if (!empty($hostname))
-            $objResponse->addAssign("srvip_$num", "innerHTML", "<font size='1'><span title='" . $sdata['ip'] . ":" . $sdata['port'] . "'>" . $hostname . "</span></font>");
-
-        $gothim = false;
-        $search = preg_match_all(STATUS_PARSE, $ret, $matches, PREG_PATTERN_ORDER);
-
-        //search for the steamid on the server
-        if ((int) $type == 0) {
-            foreach ($matches[3] AS $match) {
-                if (\SteamID\SteamID::toSteam2($match) === \SteamID\SteamID::toSteam2($check)) {
-                    // gotcha!!! kick him!
-                    $gothim = true;
-                    $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE authid = '" . $check . "' AND RemovedBy IS NULL;");
-                    $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
-
-                    $kick = $r->sendCommand("kickid " . $match . " \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
-
-                    $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
-                    $objResponse->addScript("set_counter('-1');");
-                    return $objResponse;
-                }
-            }
-        } else if ((int) $type == 1) { // search for the ip on the server
-            $id = 0;
-            foreach ($matches[8] AS $match) {
-                $ip = explode(":", $match);
-                $ip = $ip[0];
-                if ($ip == $check) {
-                    $userid = $matches[1][$id];
-                    // gotcha!!! kick him!
-                    $gothim = true;
-                    $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_bans` SET sid = '" . $sid . "' WHERE ip = '" . $check . "' AND RemovedBy IS NULL;");
-                    $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], "pages/admin.kickit.php"));
-                    $kick   = $r->sendCommand("kickid " . $userid . " \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'] . $requri . " for more info.\"");
-                    $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!!!</u></b></font>");
-                    $objResponse->addScript("set_counter('-1');");
-                    return $objResponse;
-                }
-                $id++;
-            }
-        }
-        if (!$gothim) {
-            $objResponse->addAssign("srv_$num", "innerHTML", "<font size='1'>Player not found.</font>");
-            $objResponse->addScript('set_counter(1);');
-            return $objResponse;
-        }
-    } else {
+    if (!$ret) {
         $objResponse->addAssign("srv_$num", "innerHTML", "<font color='red' size='1'><i>Can't connect to server.</i></font>");
         $objResponse->addScript('set_counter(1);');
         return $objResponse;
     }
+
+    // show hostname instead of the ip, but leave the ip in the title
+    $hostsearch = preg_match_all('/hostname:[ ]*(.+)/', $ret, $hostname, PREG_PATTERN_ORDER);
+    $hostname   = trunc(htmlspecialchars($hostname[1][0]), 25);
+    if (!empty($hostname))
+        $objResponse->addAssign("srvip_$num", "innerHTML", "<font size='1'><span title='" . $sdata['ip'] . ":" . $sdata['port'] . "'>" . $hostname . "</span></font>");
+
+    foreach (parseRconStatus($ret) as $player) {
+        if ($type == 0) {
+            //SteamID search
+            if (\SteamID\SteamID::compare($player['steamid'], $check)) {
+                $GLOBALS['PDO']->query("UPDATE `:prefix_bans` SET sid = :sid WHERE authid = :authid AND RemovedBy IS NULL");
+                $GLOBALS['PDO']->bind(':sid', $sid);
+                $GLOBALS['PDO']->bind(':authid', $check);
+                $GLOBALS['PDO']->execute();
+
+                $domain = Host::protocol().Host::domain();
+                rcon("kickid $player[id] \"You have been banned by this server, check $domain for more info\"", $sid);
+
+                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
+                $objResponse->addScript("set_counter('-1');");
+                return $objResponse;
+            }
+        } elseif ($type == 1) {
+            //IP search
+            if ($player['ip'] === $check) {
+                $GLOBALS['PDO']->query("UPDATE `:prefix_bans` SET sid = :sid WHERE ip = :ip AND RemovedBy IS NULL");
+                $GLOBALS['PDO']->bind(':sid', $sid);
+                $GLOBALS['PDO']->bind(':ip', $check);
+                $GLOBALS['PDO']->execute();
+
+                $domain = Host::protocol().Host::domain();
+                rcon("kickid $player[id] \"You have been banned by this server, check $domain for more info\"", $sid);
+
+                $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
+                $objResponse->addScript("set_counter('-1');");
+                return $objResponse;
+            }
+        }
+    }
+
+    $objResponse->addAssign("srv_$num", "innerHTML", "<font size='1'>Player not found.</font>");
+    $objResponse->addScript('set_counter(1);');
+    return $objResponse;
 }
+
 $servers = $GLOBALS['db']->Execute("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE enabled = 1 ORDER BY modid, sid;");
 $theme->assign('total', $servers->RecordCount());
 $serverlinks = array();

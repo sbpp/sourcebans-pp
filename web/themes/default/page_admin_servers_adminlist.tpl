@@ -13,20 +13,18 @@
 	</tr>
 	<tr align="left">
 		<td colspan="7" align="center">
-			<div class="opener"> 
+			<div class="opener">
 			{if $admin.ingame}
 				<table width="80%" cellspacing="0" cellpadding="0" class="listtable">
 					<tr>
 						<td height="16" align="left" class="listtable_top" colspan="5">
-							<b>Admin Details Ingame</b>            
+							<b>Admin Details Ingame</b>
 						</td>
 					</tr>
 					<tr align="left">
 						<td width="30%" height="16" class="listtable_1">Name</td>
 						<td width="20%" height="16" class="listtable_1">Steam ID</td>
 						<td width="20%" height="16" class="listtable_1">IP</td>
-						<td width="20%" height="16" class="listtable_1">Time</td>
-						<td width="20%" height="16" class="listtable_1">Ping</td>
 					</tr>
 					<tr align="left">
 						<td height="16" class="listtable_1">
@@ -38,14 +36,8 @@
 						<td height="16" class="listtable_1">
 							{$admin.iip}
 						</td>
-						<td height="16" class="listtable_1">
-							{$admin.itime}
-						</td>
-						<td height="16" class="listtable_1">
-							{$admin.iping}
-						</td>
 					</tr>
-				</table>	
+				</table>
 			{/if}
 			</div>
 		</td>

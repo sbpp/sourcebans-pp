@@ -105,10 +105,10 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             $bid
         ));
         foreach ($blocked as $tempban) {
-            SendRconSilent(($row['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $tempban['sid']);
+            rcon(($row['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $tempban['sid']);
         }
         if (((int) $row['now'] - (int) $row['created']) <= 300 && $row['sid'] != "0" && !in_array($row['sid'], $blocked)) {
-            SendRconSilent(($row['type'] == 0 ? "removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $row['sid']);
+            rcon(($row['type'] == 0 ? "removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $row['sid']);
         }
 
         if ($res) {
@@ -171,10 +171,10 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         ));
         if (empty($steam['RemoveType'])) {
             foreach ($blocked as $tempban) {
-                SendRconSilent(($steam['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $tempban['sid']);
+                rcon(($steam['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $tempban['sid']);
             }
             if (((int) $steam['now'] - (int) $steam['created']) <= 300 && $steam['sid'] != "0" && !in_array($steam['sid'], $blocked)) {
-                SendRconSilent(($steam['type'] == 0 ? "removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $steam['sid']);
+                rcon(($steam['type'] == 0 ? "removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $steam['sid']);
             }
         }
 

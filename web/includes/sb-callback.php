@@ -1508,145 +1508,96 @@ function ServerPlayers($sid)
     return $objResponse;
 }
 
-function KickPlayer($sid, $name)
+function KickPlayer(int $sid, $name)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    $sid = (int)$sid;
 
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
 
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to kick $name, but doesn't have access.");
-    return $objResponse;
+    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to kick $name, but doesn't have access.");
+        return $objResponse;
     }
 
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if(empty($data['rcon'])) {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
-    return $objResponse;
-    }
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
+    $ret = rcon('status', $sid);
 
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
-    return $objResponse;
-    }
-    // search for the playername
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-    if($match == $name) {
-    $found = true;
-    $index = $i;
-    break;
-    }
-    $i++;
-    }
-    if($found) {
-    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
-
-    // check for immunity
-    $admin = $GLOBALS['db']->GetRow("SELECT a.immunity AS pimmune, g.immunity AS gimmune FROM `".DB_PREFIX."_admins` AS a LEFT JOIN `".DB_PREFIX."_srvgroups` AS g ON g.name = a.srv_group WHERE authid = '".$steam2."' LIMIT 1;");
-    if($admin && $admin['gimmune']>$admin['pimmune'])
-    $immune = $admin['gimmune'];
-    elseif($admin)
-    $immune = $admin['pimmune'];
-    else
-    $immune = 0;
-
-    if($immune <= $userbank->GetProperty('srv_immunity')) {
-    $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
-
-    if(strpos($steam, "[U:") === 0) {
-    $kick = $r->sendCommand("kickid \"".$steam."\" \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
-    } else {
-    $kick = $r->sendCommand("kickid ".$steam." \"You have been banned by this server, check http://" . $_SERVER['HTTP_HOST'].$requri." for more info.\"");
+    if (!$ret) {
+        $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Can\'t connect to server!', 'red', '', true);");
+        return $objResponse;
     }
 
-    Log::add("m", "Player kicked", "$username kicked player $name ($steam) from $data[ip]:$data[port]");
-    $objResponse->addScript("ShowBox('Player kicked', 'Player \'".addslashes(htmlspecialchars($name))."\' has been kicked from the server.', 'green', 'index.php?p=servers');");
-    } else {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player is immune!', 'red', '', true);");
+    foreach (parseRconStatus($ret) as $player) {
+        if (compareSanitizedString($player['name'], $name)) {
+            //Todo: Rewrite query to ignore STEAM_[01] prefix
+            $GLOBALS['PDO']->query(
+                "SELECT a.immunity AS aimmune, g.immunity AS gimmune FROM `:prefix_admins` AS a
+                LEFT JOIN `:prefix_srvgroups` AS g ON g.name = a.srv_group WHERE authid = :authid");
+
+            $GLOBALS['PDO']->bind(':authid', \SteamID\SteamID::toSteam2($player['steamid']));
+            $admin = $GLOBALS['PDO']->single();
+
+            $immune = 0;
+            if ($admin && $admin['gimmune'] > $admin['aimmune']) {
+                $immune = $admin['gimmune'];
+            } else if ($admin) {
+                $immune = $admin['aimmune'];
+            }
+
+            if($immune <= $userbank->GetProperty('srv_immunity')) {
+                rcon("sm_kick #$player[id] You have been kicked from this server", $sid);
+                Log::add("m", "Player kicked", "$username kicked player $player[name] ($player[steamid])");
+                $objResponse->addScript("ShowBox('Success', 'Player ".addslashes($name)." has been kicked from the server!', 'green', '', true);");
+                return $objResponse;
+            } else {
+                $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes($name).". Player is immune!', 'red', '', true);");
+            }
+        }
     }
-    } else {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
-    }
+
+    $objResponse->addScript("ShowBox('Error', 'Can\'t kick ".addslashes($name).". Player not on the server anymore!', 'red', '', true);");
     return $objResponse;
 }
 
-function PasteBan($sid, $name, $type=0)
+function PasteBan(int $sid, $name, int $type = 0)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
 
-    $sid = (int)$sid;
-    $type = (int)$type;
     if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN))
     {
     $objResponse->redirect("index.php?p=login&m=no_access", 0);
     Log::add("w", "Hacking Attempt", "$username tried paste a ban, but doesn't have access.");
     return $objResponse;
     }
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = ?;", array($sid));
-    if(empty($data['rcon'])) {
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $objResponse->addScript("ShowBox('Error', 'No RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
-    return $objResponse;
+
+    $ret = rcon('status', $sid);
+
+    if (!$ret) {
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        $objResponse->addScript("ShowBox('Error', 'Can\'t connect to server!', 'red', '', true);");
+        return $objResponse;
     }
 
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = ?;", array($sid));
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $objResponse->addScript("ShowBox('Error', 'Wrong RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
-    return $objResponse;
+    foreach (parseRconStatus($ret) as $player) {
+        if (compareSanitizedString($player['name'], $name)) {
+            $steam = \SteamID\SteamID::toSteam2($player['steamid']);
+            $objResponse->addScript("$('nickname').value = '".addslashes(html_entity_decode($name, ENT_QUOTES))."'");
+
+            $objResponse->addScript("$('type').options[1].selected = true");
+            $objResponse->addScript("$('steam').value = '$steam'");
+            $objResponse->addScript("$('ip').value = '$player[ip]'");
+
+            $objResponse->addScript("swapTab(0);");
+            $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+            $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
+            return $objResponse;
+        }
     }
 
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-    if($match == $name) {
-    $found = true;
-    $index = $i;
-    break;
-    }
-    $i++;
-    }
-    if($found) {
-    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
-
-    $name = $matches[2][$index];
-    $ip = explode(":", $matches[8][$index]);
-    $ip = $ip[0];
-    $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
-    if($type==1)
-    $objResponse->addScript("$('type').options[1].selected = true");
-    $objResponse->addScript("$('steam').value = '" . $steam . "'");
-    $objResponse->addScript("$('ip').value = '" . $ip . "'");
-    } else {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
+    $objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server anymore!', 'red', '', true);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    return $objResponse;
-    }
-    $objResponse->addScript("swapTab(0);");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
 }
 
@@ -2147,81 +2098,51 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
 }
 
 
-function SendRcon($sid, $command, $output)
+function SendRcon(int $sid, $command, $output)
 {
     global $userbank, $username;
     $objResponse = new xajaxResponse();
-    if(!$userbank->HasAccess(SM_RCON . SM_ROOT))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to send an rcon command, but doesnt have access.");
-    return $objResponse;
-    }
-    if(empty($command))
-    {
-    $objResponse->addScript("$('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
-    }
-    if($command == "clr")
-    {
-    $objResponse->addAssign("rcon_con", "innerHTML",  "");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
+    if(!$userbank->HasAccess(SM_RCON . SM_ROOT)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to send an rcon command, but doesnt have access.");
+        return $objResponse;
     }
 
-    if(stripos($command, "rcon_password") !== false)
-    {
+    if (empty($command)) {
+        $objResponse->addScript("$('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
+    } else if ($command == "clr") {
+        $objResponse->addAssign("rcon_con", "innerHTML",  "");
+        $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
+    } else if (stripos($command, "rcon_password") !== false) {
         $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: You have to use this console. Don't try to cheat the rcon password!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
+        $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
     }
 
-    $sid = (int)$sid;
+    $command = html_entity_decode($command, ENT_QUOTES);
 
-    $rcon = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM `".DB_PREFIX."_servers` WHERE sid = ".$sid." LIMIT 1");
-    if(empty($rcon['rcon']))
-    {
-    $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: No RCON password!<br />You have to add the RCON password for this server in the 'edit server' <br />page to use this console!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value='Add RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
-    return $objResponse;
-    }
-    if(!$test = @fsockopen($rcon['ip'], $rcon['port'], $errno, $errstr, 2))
-    {
-        @fclose($test);
-    $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Can't connect to server!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
-    return $objResponse;
-    }
-    @fclose($test);
-    include(INCLUDES_PATH . "/CServerRcon.php");
-    $r = new CServerRcon($rcon['ip'], $rcon['port'], $rcon['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Wrong RCON password!<br />You MUST change the RCON password for this server in the 'edit server' <br />page. If you continue to use this console with the wrong password, <br />the server will block the connection!<br />");
-    $objResponse->addScript("scroll.toBottom(); $('cmd').value='Change RCON password.'; $('cmd').disabled=true; $('rcon_btn').disabled=true");
-    return $objResponse;
-    }
-    $ret = $r->rconCommand($command);
+    $ret = rcon($command, $sid);
 
+    if (!$ret) {
+        $objResponse->addAppend("rcon_con", "innerHTML",  "> Error: Can't connect to server!<br />");
+        $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled='';$('rcon_btn').disabled=''");
+        return $objResponse;
+    }
 
     $ret = str_replace("\n", "<br />", $ret);
-    if(empty($ret))
-    {
-    if($output)
-    {
-    $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
-    $objResponse->addAppend("rcon_con", "innerHTML",  "Command Executed.<br />");
+
+    if ($output) {
+        if (empty($ret)) {
+            $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
+            $objResponse->addAppend("rcon_con", "innerHTML",  "Command Executed.<br />");
+        } else {
+            $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
+            $objResponse->addAppend("rcon_con", "innerHTML",  "$ret<br />");
+        }
     }
-    }
-    else
-    {
-    if($output)
-    {
-    $objResponse->addAppend("rcon_con", "innerHTML",  "-> $command<br />");
-    $objResponse->addAppend("rcon_con", "innerHTML",  "$ret<br />");
-    }
-    }
+
     $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled=''; $('rcon_btn').disabled=''");
     Log::add("m", "RCON Sent", "RCON Command was sent to server ($rcon[ip]:$rcon[port])");
     return $objResponse;
@@ -2553,65 +2474,33 @@ function RefreshServer($sid)
     return $objResponse;
 }
 
-function RehashAdmins($server, $do=0)
+function RehashAdmins($server)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    $do = (int)$do;
-    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS|ADMIN_EDIT_GROUPS|ADMIN_ADD_ADMINS))
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to rehash admins, but doesnt have access.");
-    return $objResponse;
-    }
-    $servers = explode(",",$server);
-    if(sizeof($servers)>0) {
-    if(sizeof($servers)-1 > $do)
-    $objResponse->addScriptCall("xajax_RehashAdmins", $server, $do+1);
 
-    $serv = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".(int)$servers[$do]."';");
-    if(empty($serv['rcon'])) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='red'>failed: No rcon password set</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
-    return $objResponse;
+    if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_ADMINS|ADMIN_EDIT_GROUPS|ADMIN_ADD_ADMINS)) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to rehash admins, but doesnt have access.");
+        return $objResponse;
     }
 
-    $test = @fsockopen($serv['ip'], $serv['port'], $errno, $errstr, 2);
-    if(!$test) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='red'>failed: Can't connect</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
-    return $objResponse;
+    $servers = explode(",", $server);
+    if (count($servers) < 1) {
+        $objResponse->addAppend("rehashDiv", "innerHTML", "No servers to check.");
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        return $objResponse;
     }
 
-    require INCLUDES_PATH.'/CServerRcon.php';
-    $r = new CServerRcon($serv['ip'], $serv['port'], $serv['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$serv['sid']."';");
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='red'>failed: Wrong rcon password</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
-    return $objResponse;
-    }
-    $ret = $r->rconCommand("sm_rehash");
+    for ($i = 0; $i < count($servers); $i++) {
+        $ret = rcon("sm_rehash", $servers[$i]);
 
-    $objResponse->addAppend("rehashDiv", "innerHTML", "".$serv['ip'].":".$serv['port']." (".($do+1)."/".sizeof($servers).") <font color='green'>successful</font>.<br />");
-    if($do >= sizeof($servers)-1) {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "<b>Done</b>");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        if ($ret)
+            $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='green'>successful</font>.<br />");
+        else
+            $objResponse->addAppend("rehashDiv", "innerHTML", "Server #$servers[$i] (".($i+1)."/".count($servers)."): <font color='red'>Can't connect to server.</font>.<br />");
     }
-    } else {
-    $objResponse->addAppend("rehashDiv", "innerHTML", "No servers to check.");
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    }
+
     return $objResponse;
 }
 
@@ -2895,84 +2784,64 @@ function BanFriends($friendid, $name)
     return $objResponse;
 }
 
-function ViewCommunityProfile($sid, $name)
+function ViewCommunityProfile(int $sid, $name)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->is_admin())
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to view profile of '$name', but doesnt have access.");
-    return $objResponse;
-    }
-    $sid = (int)$sid;
 
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if(empty($data['rcon'])) {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
-    return $objResponse;
+    if(!$userbank->is_admin()) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to view profile of '$name', but doesnt have access.");
+        return $objResponse;
     }
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
 
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
-    return $objResponse;
+    $ret = rcon('status', $sid);
+
+    if (!$ret) {
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
+        return $objResponse;
     }
-    // search for the playername
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-    if($match == $name) {
-    $found = true;
-    $index = $i;
-    break;
+
+    foreach (parseRconStatus($ret) as $player) {
+        if (compareSanitizedString($player['name'], $name)) {
+            $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"https://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($player['steamid'])."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
+            $objResponse->addScript("window.open('https://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($player['steamid'])."/');");
+            return $objResponse;
+        }
     }
-    $i++;
-    }
-    if($found) {
-    $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
-    $objResponse->addScript("$('dialog-control').setStyle('display', 'block');$('dialog-content-text').innerHTML = 'Generating Community Profile link for ".addslashes(htmlspecialchars($name)).", please wait...<br /><font color=\"green\">Done.</font><br /><br /><b>Watch the profile <a href=\"http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/\" title=\"".addslashes(htmlspecialchars($name))."\'s Profile\" target=\"_blank\">here</a>.</b>';");
-    $objResponse->addScript("window.open('http://www.steamcommunity.com/profiles/".\SteamID\SteamID::toSteam64($steam)."/', 'Community_".$steam."');");
-    } else {
+
     $objResponse->addScript("ShowBox('Error', 'Can\'t get playerinfo for ".addslashes(htmlspecialchars($name)).". Player not on the server anymore!', 'red', '', true);");
-    }
     return $objResponse;
 }
 
-function SendMessage($sid, $name, $message)
+function SendMessage(int $sid, $name, $message)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
-    if(!$userbank->is_admin())
-    {
-    $objResponse->redirect("index.php?p=login&m=no_access", 0);
-    Log::add("w", "Hacking Attempt", "$username tried to send ingame message to '$name', but doesnt have access. Message: $message");
-    return $objResponse;
+    if(!$userbank->is_admin()) {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to send ingame message to '$name', but doesnt have access. Message: $message");
+        return $objResponse;
     }
-    $sid = (int)$sid;
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = '".$sid."';");
-    if(empty($data['rcon'])) {
-    $objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". No RCON password!', 'red', '', true);");
-    return $objResponse;
+
+    $ret = rcon('status', $sid);
+
+    if (!$ret) {
+        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+        $objResponse->addScript("ShowBox('Error', 'Can\' connect to server!', 'red', '', true);");
+        return $objResponse;
     }
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
-    if(!$r->Auth())
-    {
-    $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = '".$sid."';");
-    $objResponse->addScript("ShowBox('Error', 'Can\'t send message to ".addslashes(htmlspecialchars($name)).". Wrong RCON password!', 'red', '', true);");
-    return $objResponse;
+
+    $message = html_entity_decode($message, ENT_QUOTES);
+    $message = str_replace('"', "'", $message);
+
+    foreach (parseRconStatus($ret) as $player) {
+        if (compareSanitizedString($name, $player['name']))
+            rcon("sm_psay #$player[id] \"$message\"", $sid);
     }
-    $ret = $r->sendCommand('sm_psay "'.$name.'" "'.preg_replace('/[^A-Za-z0-9\ ]/', '', $message).'"');
-    Log::add("m", "Message sent to player", "The following message was sent to $name on server ($data[ip]:$data[port]): $message");
+
+    Log::add("m", "Message sent to player", "The following message was sent to $name on server (#$sid): $message");
     $objResponse->addScript("ShowBox('Message Sent', 'The message has been sent to player \'".addslashes(htmlspecialchars($name))."\' successfully!', 'green', '', true);$('dialog-control').setStyle('display', 'block');");
     return $objResponse;
 }
@@ -3134,59 +3003,38 @@ function PrepareBlockFromBan($bid)
     return $objResponse;
 }
 
-function PasteBlock($sid, $name)
+function PasteBlock(int $sid, $name)
 {
     $objResponse = new xajaxResponse();
     global $userbank, $username;
 
-    $sid = (int)$sid;
     if (!$userbank->HasAccess(ADMIN_OWNER|ADMIN_ADD_BAN)) {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
         Log::add("w", "Hacking Attempt", "$username tried paste a block, but doesn't have access.");
         return $objResponse;
     }
-    require INCLUDES_PATH.'/CServerRcon.php';
-    //get the server data
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port, rcon FROM ".DB_PREFIX."_servers WHERE sid = ?;", array($sid));
-    if(empty($data['rcon'])) {
+
+    $ret = rcon('status', $sid);
+
+    if (!$ret) {
         $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        $objResponse->addScript("ShowBox('Error', 'No RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
+        $objResponse->addScript("ShowBox('Error', 'Can\'t connect to server!', 'red', '', true);");
         return $objResponse;
     }
 
-    $r = new CServerRcon($data['ip'], $data['port'], $data['rcon']);
-    if (!$r->Auth()) {
-        $GLOBALS['db']->Execute("UPDATE ".DB_PREFIX."_servers SET rcon = '' WHERE sid = ?;", array($sid));
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        $objResponse->addScript("ShowBox('Error', 'Wrong RCON password for server ".$data['ip'].":".$data['port']."!', 'red', '', true);");
-        return $objResponse;
-    }
+    foreach (parseRconStatus($ret) as $player) {
+        if (compareSanitizedString($player['name'], $name)) {
+            $objResponse->addScript("$('nickname').value = '" . addslashes(html_entity_decode($name, ENT_QUOTES)) . "'");
+            $objResponse->addScript("$('steam').value = '" . $player['steamid'] . "'");
 
-    $ret = $r->rconCommand("status");
-    $search = preg_match_all(STATUS_PARSE,$ret,$matches,PREG_PATTERN_ORDER);
-    $i = 0;
-    $found = false;
-    $index = -1;
-    foreach($matches[2] AS $match) {
-        if($match == $name) {
-            $found = true;
-            $index = $i;
-            break;
+            $objResponse->addScript("swapTab(0);");
+            $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
+            $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
+            return $objResponse;
         }
-        $i++;
     }
-    if($found) {
-        $steam = \SteamID\SteamID::toSteam2($matches[3][$index]);
-        $name = $matches[2][$index];
-        $objResponse->addScript("$('nickname').value = '" . addslashes($name) . "'");
-        $objResponse->addScript("$('steam').value = '" . $steam . "'");
-    } else {
-        $objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
-        $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-        return $objResponse;
-    }
-    $objResponse->addScript("swapTab(0);");
+
+    $objResponse->addScript("ShowBox('Error', 'Can\'t get player info for ".addslashes(htmlspecialchars($name)).". Player is not on the server (".$data['ip'].":".$data['port'].") anymore!', 'red', '', true);");
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
-    $objResponse->addScript("$('dialog-placement').setStyle('display', 'none');");
     return $objResponse;
 }
