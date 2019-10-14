@@ -24,12 +24,13 @@
 //
 // *************************************************************************
 
-#pragma semicolon 1
 #pragma newdecls required
+#pragma semicolon 1
 
 #include <sourcemod>
+#include <sbpp/core.sp>
+#include <sbpp/sql.sp>
 
-#define VERSION "1.7.0"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
@@ -37,28 +38,26 @@
 
 char g_DatabasePrefix[10] = "sb";
 SMCParser g_ConfigParser;
-Database g_DB;
 
 public Plugin myinfo =
 {
 	name = "SourceBans++: Bans Checker",
 	author = "psychonic, Ca$h Munny, SourceBans++ Dev Team",
 	description = "Notifies admins of prior bans from Sourcebans upon player connect.",
-	version = VERSION,
+	version = SBPP_VERSION,
 	url = "https://sbpp.github.io"
 };
 
 public void OnPluginStart()
 {
+	SBPP_Core_Init();
+	SBPP_SQL_Init();
 	LoadTranslations("common.phrases");
 	LoadTranslations("sbpp_checker.phrases");
 
-	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_GENERIC, LISTBANS_USAGE);
 	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_GENERIC, LISTCOMMS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
-
-	Database.Connect(OnDatabaseConnected, "sourcebans");
 }
 
 public void OnMapStart()
@@ -72,17 +71,10 @@ public Action OnReloadCmd(int client, int args)
 	return Plugin_Handled;
 }
 
-public void OnDatabaseConnected(Database db, const char[] error, any data)
-{
-	if (db == null)
-		SetFailState("Failed to connect to SourceBans DB, %s", error);
-
-	g_DB = db;
-}
 
 public void OnClientAuthorized(int client, const char[] auth)
 {
-	if (g_DB == null)
+	if (g_dbSQL == null)
 		return;
 
 	/* Do not check bots nor check player with lan steamid. */
@@ -91,8 +83,8 @@ public void OnClientAuthorized(int client, const char[] auth)
 
 	char query[512], ip[30];
 	GetClientIP(client, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM %s_comms WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
-	g_DB.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
+	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM `%s_bans` WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM `%s_comms` WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
+	g_dbSQL.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
 }
 
 public void OnConnectBanCheck(Database db, DBResultSet results, const char[] error, any userid)
@@ -124,7 +116,7 @@ public Action OnListSourceBansCmd(int client, int args)
 		ReplyToCommand(client, LISTBANS_USAGE);
 	}
 
-	if (g_DB == INVALID_HANDLE)
+	if (g_dbSQL == INVALID_HANDLE)
 	{
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
@@ -150,7 +142,7 @@ public Action OnListSourceBansCmd(int client, int args)
 
 	char query[1024], ip[30];
 	GetClientIP(target, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT created, %s_admins.user, ends, length, reason, RemoveType FROM %s_bans LEFT JOIN %s_admins ON %s_bans.aid = %s_admins.aid WHERE ((type = 0 AND %s_bans.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8], ip);
+	FormatEx(query, sizeof(query), "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType FROM `%s_bans` LEFT JOIN `%s_admins` ON `%s_bans`.aid = `%s_admins`.aid WHERE ((type = 0 AND `%s_bans`.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8], ip);
 
 	char targetName[MAX_NAME_LENGTH];
 	GetClientName(target, targetName, sizeof(targetName));
@@ -159,7 +151,7 @@ public Action OnListSourceBansCmd(int client, int args)
 	dataPack.WriteCell((client == 0) ? 0 : GetClientUserId(client));
 	dataPack.WriteString(targetName);
 
-	g_DB.Query(OnListBans, query, dataPack, DBPrio_Low);
+	g_dbSQL.Query(OnListBans, query, dataPack, DBPrio_Low);
 
 	if (client == 0)
 	{
@@ -290,7 +282,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 		ReplyToCommand(client, LISTCOMMS_USAGE);
 	}
 
-	if (g_DB == INVALID_HANDLE)
+	if (g_dbSQL == INVALID_HANDLE)
 	{
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
@@ -315,7 +307,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 	}
 
 	char query[1024];
-	FormatEx(query, sizeof(query), "SELECT created, %s_admins.user, ends, length, reason, RemoveType, type FROM %s_comms LEFT JOIN %s_admins ON %s_comms.aid = %s_admins.aid WHERE %s_comms.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8]);
+	FormatEx(query, sizeof(query), "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType, type FROM `%s_comms` LEFT JOIN `%s_admins` ON `%s_comms`.aid = `%s_admins`.aid WHERE `%s_comms`.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8]);
 
 	char targetName[MAX_NAME_LENGTH];
 	GetClientName(target, targetName, sizeof(targetName));
@@ -324,7 +316,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 	dataPack.WriteCell((client == 0) ? 0 : GetClientUserId(client));
 	dataPack.WriteString(targetName);
 
-	g_DB.Query(OnListComms, query, dataPack, DBPrio_Low);
+	g_dbSQL.Query(OnListComms, query, dataPack, DBPrio_Low);
 
 	if (client == 0)
 	{
