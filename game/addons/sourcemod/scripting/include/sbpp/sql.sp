@@ -91,7 +91,10 @@ stock static void SBPP_SQL_Connect_Callback (const Database db, const char[] szE
 	if ( db )
 	{
 		g_dbSQL = db;
-		if ( !g_dbSQL.SetCharset( "utf8mb4" ) ) { g_dbSQL.SetCharset( "utf8" ); }
+		if ( !g_dbSQL.SetCharset( "utf8mb4" ) )
+		{
+			g_dbSQL.SetCharset( "utf8" );
+		}
 		s_bIgnoreForward = true;
 		Call_StartForward( s_hSBPP_SQL_Release );
 		Call_PushCell( g_dbSQL );
