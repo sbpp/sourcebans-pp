@@ -2,7 +2,6 @@
 	#endinput
 #endif
 #define _sbpp_core_included
-#include <sourcemod> /* DEBUG ONLY. Remove me later. */
 
 #define SBPP_VERSION "1.7.0:1049"
 
