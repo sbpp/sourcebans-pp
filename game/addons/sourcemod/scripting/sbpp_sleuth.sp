@@ -28,8 +28,8 @@
 #pragma newdecls required
 
 #include <sourcemod>
-#include "sbpp/core.sp"
-#include "sbpp/sql.sp"
+#include <sbpp/core.sp>
+#include <sbpp/sql.sp>
 
 #undef REQUIRE_PLUGIN
 	#include <sourcebanspp>

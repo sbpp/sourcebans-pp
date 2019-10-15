@@ -28,8 +28,8 @@
 #pragma semicolon 1
 
 #include <sourcemod>
-#include "sbpp/core.sp"
-#include "sbpp/sql.sp"
+#include <sbpp/core.sp>
+#include <sbpp/sql.sp>
 
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
