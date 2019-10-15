@@ -284,7 +284,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 		ReplyToCommand(client, LISTCOMMS_USAGE);
 	}
 
-	if (g_dbSQL == INVALID_HANDLE)
+	if ( !g_dbSQL )
 	{
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
