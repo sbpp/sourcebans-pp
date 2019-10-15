@@ -82,7 +82,7 @@ stock static void SBPP_SQL_Find ()
 stock static void SBPP_SQL_Connect ()
 {
 	s_iState = SBPP_SQL_State_Connecting;
-	Database.Connect( SBPP_SQL_Connect_Callback, "sbpp" );
+	Database.Connect( SBPP_SQL_Connect_Callback, "sourcebans" );
 }
 
 stock static void SBPP_SQL_Connect_Callback (const Database db, const char[] szError, const any aData)
