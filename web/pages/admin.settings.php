@@ -352,7 +352,7 @@ $('enable_groupbanning').checked = <?=(int)Config::getBool('config.enablegroupba
 $('enable_friendsbanning').checked = <?=(int)Config::getBool('config.enablefriendsbanning');?>;
 $('enable_adminrehashing').checked = <?=(int)Config::getBool('config.enableadminrehashing');?>;
 $('enable_steamlogin').checked = <?=(int)Config::getBool('config.enablesteamlogin');?>;
-$('enable_publiccomments').checked = <?=(int)Config::getBool('config.publiccomments');?>;
+$('enable_publiccomments').checked = <?=(int)Config::getBool('config.enablepubliccomments');?>;
 <?php
 if (ini_get('safe_mode') == 1) {
     print "$('enable_groupbanning').disabled = true;\n";
