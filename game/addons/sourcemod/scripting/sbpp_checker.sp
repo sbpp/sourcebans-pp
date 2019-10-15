@@ -75,9 +75,10 @@ public Action OnReloadCmd(int client, int args)
 public void OnClientAuthorized(int client, const char[] auth)
 {
 	if ( !g_dbSQL )
+	{
 		SBPP_SQL_Reconnect();
 		return;
-
+	}
 	/* Do not check bots nor check player with lan steamid. */
 	if (auth[0] == 'B' || auth[9] == 'L')
 		return;
