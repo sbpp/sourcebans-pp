@@ -6,6 +6,7 @@
 #include <sbpp/core.sp>
 
 #define SBPP_SQL_Init() SBPP_SQL_Init( DoNothing )	/* This something like function overloading. For now, we can't set default parameter-function. */
+#define SBPP_SQL_Reconnect() SBPP_SQL_Reconnect( DoNothing )	/* This something like function overloading. For now, we can't set default parameter-function. */
 
 enum {	/* States */
 	SBPP_SQL_State_None			= 0,

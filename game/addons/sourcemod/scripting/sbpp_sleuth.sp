@@ -121,7 +121,7 @@ public Action ReloadListCallBack(int client, int args)
 
 	LoadWhiteList();
 
-	SBPP_LogMsg("%L reloaded the whitelist", client);
+	LogMessage("%L reloaded the whitelist", client);
 
 	if (client != 0)
 	{
@@ -133,36 +133,43 @@ public Action ReloadListCallBack(int client, int args)
 
 public void OnClientPostAdminCheck(int client)
 {
-	if (CanUseSourcebans && !IsFakeClient(client))
+	if ( g_dbSQL )
 	{
-		char steamid[32];
-		GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid));
-
-		if (g_cVar_bypass.BoolValue && CheckCommandAccess(client, "sleuth_admin", ADMFLAG_BAN, false))
+		if (CanUseSourcebans && !IsFakeClient(client))
 		{
-			return;
+			char steamid[32];
+			GetClientAuthId(client, AuthId_Steam2, steamid, sizeof(steamid));
+
+			if (g_cVar_bypass.BoolValue && CheckCommandAccess(client, "sleuth_admin", ADMFLAG_BAN, false))
+			{
+				return;
+			}
+
+			if (g_hAllowedArray.FindString(steamid) == -1)
+			{
+				char IP[32], Prefix[64];
+				GetClientIP(client, IP, sizeof(IP));
+
+				g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
+
+				char query[1024];
+
+				FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0)))", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue);
+
+				DataPack datapack = new DataPack();
+
+				datapack.WriteCell(GetClientUserId(client));
+				datapack.WriteString(steamid);
+				datapack.WriteString(IP);
+				datapack.Reset();
+
+				g_dbSQL.Query(SQL_CheckHim, query, datapack);
+			}
 		}
-
-		if (g_hAllowedArray.FindString(steamid) == -1)
-		{
-			char IP[32], Prefix[64];
-			GetClientIP(client, IP, sizeof(IP));
-
-			g_cVar_sbprefix.GetString(Prefix, sizeof(Prefix));
-
-			char query[1024];
-
-			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0)))", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue);
-
-			DataPack datapack = new DataPack();
-
-			datapack.WriteCell(GetClientUserId(client));
-			datapack.WriteString(steamid);
-			datapack.WriteString(IP);
-			datapack.Reset();
-
-			g_dbSQL.Query(SQL_CheckHim, query, datapack);
-		}
+	}
+	else
+	{
+		SBPP_SQL_Reconnect();
 	}
 }
 
@@ -253,7 +260,7 @@ public void LoadWhiteList()
 {
 	char path[PLATFORM_MAX_PATH], line[256];
 
-	BuildPath(Path_SM, path, PLATFORM_MAX_PATH, "configs/sourcebans/sourcesleuth_whitelist.cfg");
+	BuildPath(Path_SM, path, sizeof path, "configs/sourcebans/sourcesleuth_whitelist.cfg");
 
 	File fileHandle = OpenFile(path, "r");
 

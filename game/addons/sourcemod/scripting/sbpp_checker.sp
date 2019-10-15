@@ -74,7 +74,8 @@ public Action OnReloadCmd(int client, int args)
 
 public void OnClientAuthorized(int client, const char[] auth)
 {
-	if (g_dbSQL == null)
+	if ( !g_dbSQL )
+		SBPP_SQL_Reconnect();
 		return;
 
 	/* Do not check bots nor check player with lan steamid. */
@@ -116,8 +117,9 @@ public Action OnListSourceBansCmd(int client, int args)
 		ReplyToCommand(client, LISTBANS_USAGE);
 	}
 
-	if (g_dbSQL == INVALID_HANDLE)
+	if ( !g_dbSQL )
 	{
+		SBPP_SQL_Reconnect();
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
 	}
