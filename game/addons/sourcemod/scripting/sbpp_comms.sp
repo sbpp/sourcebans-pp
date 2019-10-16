@@ -122,14 +122,15 @@ int ConfigWhiteListOnly = 0;
 int serverID = 0;
 
 /* List menu */
-enum PeskyPanels
+enum
 {
 	curTarget,
 	curIndex,
 	viewingMute,
 	viewingGag,
 	viewingList,
-}
+	PeskyPanels,
+};
 int g_iPeskyPanels[MAXPLAYERS + 1][PeskyPanels];
 
 bool g_bPlayerStatus[MAXPLAYERS + 1]; // Player block check status
