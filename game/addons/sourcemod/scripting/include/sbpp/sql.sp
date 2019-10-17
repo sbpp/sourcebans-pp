@@ -104,7 +104,7 @@ stock static void SBPP_SQL_Connect_Callback (const Database db, const char[] szE
 		if ( s_szPrevError[0] )
 		{
 			SBPP_LogMsg( "%t", "Successful reconnect" );
-			s_szPrevError = "";
+			s_szPrevError[0] = '\0';
 		}
 	}
 	else if ( szError[0] )
