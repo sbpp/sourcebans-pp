@@ -27,4 +27,9 @@ before_script:
   - chmod +x spcomp
 
 script:
-  - ./compile.sh sbpp_main.sp sbpp_admcfg.sp sbpp_comms.sp sbpp_checker.sp sbpp_sleuth.sp sbpp_report.sp
+  - ./spcomp sbpp_main.sp -E -i$PWD -v0
+  - ./spcomp sbpp_admcfg.sp -E -i$PWD -v0
+  - ./spcomp sbpp_comms.sp -E -i$PWD -v0
+  - ./spcomp sbpp_checker.sp -E -i$PWD -v0
+  - ./spcomp sbpp_sleuth.sp -E -i$PWD -v0
+  - ./spcomp sbpp_report.sp -E -i$PWD -v0
