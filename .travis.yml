@@ -9,13 +9,13 @@ addons:
     
 matrix:
   allow_failures:
-    - env: SOURCEMOD=1.10
+    - env: SOURCEMOD=1.11
     
 #Set the build environment
 env:
-  - SOURCEMOD=1.8
   - SOURCEMOD=1.9
   - SOURCEMOD=1.10
+  - SOURCEMOD=1.11
 
 #And compile!
 before_script:
