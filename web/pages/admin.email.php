@@ -49,14 +49,14 @@ if (!isset($_GET['type']) || ($_GET['type'] != 's' && $_GET['type'] != 'p')) {
 // Submission
 $email = "";
 if ($_GET['type'] == 's') {
-    $email = $GLOBALS['db']->GetOne('SELECT email FROM `' . DB_PREFIX . '_submissions` WHERE subid = ?', array(
-        $_GET['id']
-    ));
+    $GLOBALS['PDO']->query("SELECT email FROM `:prefix_submissions` WHERE subid = :id");
+    $GLOBALS['PDO']->bind(':id', $_GET['id']);
+    $email = $GLOBALS['PDO']->single();
 } elseif ($_GET['type'] == 'p') {
     // Protest
-    $email = $GLOBALS['db']->GetOne('SELECT email FROM `' . DB_PREFIX . '_protests` WHERE pid = ?', array(
-        $_GET['id']
-    ));
+    $GLOBALS['PDO']->query("SELECT email FROM `:prefix_protests` WHERE pid = :id");
+    $GLOBALS['PDO']->bind(':id', $_GET['id']);
+    $email = $GLOBALS['PDO']->single();
 }
 
 if (empty($email)) {
