@@ -39,7 +39,7 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
 }
 if (isset($_GET['advSearch'])) {
     // Escape the value, but strip the leading and trailing quote
-    $value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
+    $value = substr($_GET['advSearch'], 1, -1);
     $type = $_GET['advType'];
     switch ($type) {
         case "name":
@@ -70,15 +70,16 @@ if (isset($_GET['advSearch'])) {
                 $flags[] = constant($flag);
             }
             $flagstring = implode('|', $flags);
-            $alladmins = $GLOBALS['db']->Execute("SELECT aid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
-            while (!$alladmins->EOF) {
-                if ($userbank->HasAccess($flagstring, $alladmins->fields["aid"])) {
+            $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0");
+            $alladmins = $GLOBALS['PDO']->resultset();
+
+            foreach($alladmins as $admin) {
+                if ($userbank->HasAccess($flagstring, $admin["aid"])) {
                     if (!isset($accessaid)) {
-                        $accessaid = $alladmins->fields["aid"];
+                        $accessaid = $admin["aid"];
                     }
-                    $accessaid .= ",".$alladmins->fields["aid"];
+                    $accessaid .= ",".$admin["aid"];
                 }
-                $alladmins->MoveNext();
             }
             $where = " AND ADM.aid IN(".$accessaid.")";
             break;
@@ -87,23 +88,23 @@ if (isset($_GET['advSearch'])) {
             foreach ($findflags as $flag) {
                 $flags[] = constant($flag);
             }
-            $alladmins = $GLOBALS['db']->Execute("SELECT aid, authid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
-            while (!$alladmins->EOF) {
+            $GLOBALS['PDO']->query("SELECT aid, authid FROM `:prefix_admins` WHERE aid > 0");
+            $alladmins = $GLOBALS['PDO']->resultset();
+            foreach($alladmins as $admin) {
                 foreach ($flags as $fla) {
-                    if ($userbank->HasAccess($fla, $alladmins->fields["authid"])) {
+                    if ($userbank->HasAccess($fla, $admin["authid"])) {
                         if (!isset($accessaid)) {
-                            $accessaid = $alladmins->fields["aid"];
+                            $accessaid = $admin["aid"];
                         }
-                        $accessaid .= ",".$alladmins->fields["aid"];
+                        $accessaid .= ",".$admin["aid"];
                     }
                 }
-                if ($userbank->HasAccess(SM_ROOT, $alladmins->fields["authid"])) {
+                if ($userbank->HasAccess(SM_ROOT, $admin["authid"])) {
                     if (!isset($accessaid)) {
-                        $accessaid = $alladmins->fields["aid"];
+                        $accessaid = $admin["aid"];
                     }
-                    $accessaid .= ",".$alladmins->fields["aid"];
+                    $accessaid .= ",".$admin["aid"];
                 }
-                $alladmins->MoveNext();
             }
             $where = " AND ADM.aid IN(".$accessaid.")";
             break;
@@ -119,7 +120,8 @@ if (isset($_GET['advSearch'])) {
     }
         $advSearchString = "&advSearch=".$_GET['advSearch']."&advType=".$_GET['advType'];
 }
-$admins = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage));
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` AS adm $join WHERE adm.aid > 0 $where ORDER BY user LIMIT ${($page-1) * $AdminsPerPage}, $AdminsPerPage");
+$admins = $GLOBALS['PDO']->resultset();
 // quick fix for the server search showing admins mulitple times.
 if (isset($_GET['advSearch']) && isset($_GET['advType']) && $_GET['advType'] == 'server') {
     $aadm = array();
@@ -134,7 +136,8 @@ if (isset($_GET['advSearch']) && isset($_GET['advType']) && $_GET['advType'] == 
     }
 }
 
-$query = $GLOBALS['db']->GetRow("SELECT COUNT(ADM.aid) AS cnt FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where);
+$GLOBALS['PDO']->query("SELECT COUNT(adm.aid) AS cnt FROM `:prefix_admins` AS adm $join WHERE adm.aid > 0 $where");
+$query = $GLOBALS['PDO']->single();
 $admin_count = $query['cnt'];
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
@@ -159,10 +162,17 @@ foreach ($admins as $admin) {
     if (empty($admin['server_group']) || $admin['server_group'] == " ") {
         $admin['server_group'] = "No Group/Individual Permissions";
     }
-    $num               = $GLOBALS['db']->GetRow("SELECT count(authid) AS num FROM `" . DB_PREFIX . "_bans` WHERE aid = '" . $admin['aid'] . "'");
+
+    $GLOBALS['PDO']->query("SELECT COUNT(authid) AS num FROM `:prefix_bans` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $admin['aid']);
+    $num               = $GLOBALS['PDO']->single();
     $admin['bancount'] = $num['num'];
 
-    $nodem                = $GLOBALS['db']->GetRow("SELECT count(B.bid) AS num FROM `" . DB_PREFIX . "_bans` AS B WHERE aid = '" . $admin['aid'] . "' AND NOT EXISTS (SELECT D.demid FROM `" . DB_PREFIX . "_demos` AS D WHERE D.demid = B.bid)");
+    $GLOBALS['PDO']->query(
+        "SELECT COUNT(b.bid) AS num FROM `:prefix_bans` AS b WHERE aid = :aid AND NOT EXISTS (SELECT d.demid FROM `:prefix_demos` AS d WHERE d.demid = b.bid)"
+    );
+    $GLOBALS['PDO']->bind(':aid', $admin['aid']);
+    $nodem                = $GLOBALS['PDO']->single();
     $admin['aid']         = $admin['aid'];
     $admin['nodemocount'] = $nodem['num'];
 
@@ -222,10 +232,14 @@ $theme->assign('admins', $admin_list);
 $theme->display('page_admin_admins_list.tpl');
 
 // Add Page
-$group_list              = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type = '3'");
-$servers                 = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
-$server_admin_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
-$server_group_list       = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type != 3");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = 3");
+$group_list              = $GLOBALS['PDO']->resultset();
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers`");
+$servers                 = $GLOBALS['PDO']->resultset();
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`");
+$server_admin_group_list = $GLOBALS['PDO']->resultset();
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != 3");
+$server_group_list       = $GLOBALS['PDO']->resultset();
 $server_list             = array();
 $serverscript            = "<script type=\"text/javascript\">";
 foreach ($servers as $server) {
@@ -264,30 +278,34 @@ try {
                 $id = (int) $id;
                 // Wants to delete this override?
                 if (empty($_POST['override_name'][$index])) {
-                    $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_overrides` WHERE id = ?;", array(
-                        $id
-                    ));
+                    $GLOBALS['PDO']->query("DELETE FROM `:prefix_overrides` WHERE id = :id");
+                    $GLOBALS['PDO']->bind(':id', $id);
+                    $GLOBALS['PDO']->execute();
                     continue;
                 }
 
                 // Check for duplicates
-                $chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides` WHERE name = ? AND type = ? AND id != ?", array(
-                    $_POST['override_name'][$index],
-                    $_POST['override_type'][$index],
-                    $id
-                ));
+                $GLOBALS['PDO']->query("SELECT * FROM `:prefix_overrides` WHERE name = :name AND type = :type AND id != :id");
+                $GLOBALS['PDO']->bindMultiple([
+                    ':name' => $_POST['override_name'][$index],
+                    ':type' => $_POST['override_type'][$index],
+                    ':id' => $id
+                ]);
+                $chk = $GLOBALS['PDO']->resultset();
                 if (!empty($chk)) {
                     $edit_errors .= "&bull; There already is an override with name \\\"" . htmlspecialchars(addslashes($_POST['override_name'][$index])) . "\\\" from the selected type.<br />";
                     continue;
                 }
 
                 // Edit the override
-                $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_overrides` SET name = ?, type = ?, flags = ? WHERE id = ?;", array(
-                    $_POST['override_name'][$index],
-                    $_POST['override_type'][$index],
-                    trim($_POST['override_flags'][$index]),
-                    $id
-                ));
+                $GLOBALS['PDO']->query("UPDATE `:prefix_overrides` SET name = :name, type = :type, flags = :flags WHERE id = :id");
+                $GLOBALS['PDO']->bindMultiple([
+                    ':name' => $_POST['override_name'][$index],
+                    ':type' => $_POST['override_type'][$index],
+                    ':flags' => trim($_POST['override_flags'][$index]),
+                    ':id' => $id
+                ]);
+                $GLOBALS['PDO']->execute();
             }
 
             if (!empty($edit_errors)) {
@@ -302,20 +320,22 @@ try {
             }
 
             // Check for duplicates
-            $chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides` WHERE name = ? AND type = ?", array(
-                $_POST['new_override_name'],
-                $_POST['new_override_type']
-            ));
+            $GLOBALS['PDO']->query("SELECT * FROM `:prefix_overrides` WHERE name = :name AND type = :type");
+            $GLOBALS['PDO']->bind(':name', $_POST['new_override_name']);
+            $GLOBALS['PDO']->bind(':type', $_POST['new_override_type'])
+            $chk = $GLOBALS['PDO']->resultset();
             if (!empty($chk)) {
                 throw new Exception("There already is an override with that name from the selected type.");
             }
 
             // Insert the new override
-            $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_overrides` (type, name, flags) VALUES (?, ?, ?);", array(
-                $_POST['new_override_type'],
-                $_POST['new_override_name'],
-                trim($_POST['new_override_flags'])
-            ));
+            $GLOBALS['PDO']->query("INSERT INTO `:prefix_overrides` (type, name, flags) VALUES (:type, :name, :flags)");
+            $GLOBALS['PDO']->bindMultiple([
+                ':type' => $_POST['new_override_type'],
+                ':name' => $_POST['new_override_name'],
+                ':flags' => trim($_POST['new_override_flags'])
+            ]);
+            $GLOBALS['PDO']->execute();
         }
 
         $overrides_save_success = true;
@@ -324,7 +344,8 @@ try {
     $overrides_error = $e->getMessage();
 }
 
-$overrides_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides`;");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_overrides`");
+$overrides_list = $GLOBALS['PDO']->resultset();
 
 $theme->assign('overrides_list', $overrides_list);
 $theme->assign('overrides_error', $overrides_error);
