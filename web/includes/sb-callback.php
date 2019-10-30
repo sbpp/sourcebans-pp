@@ -160,8 +160,12 @@ function CheckSrvPassword($aid, $srv_pass)
     Log::add("w", "Hacking Attempt", "$username tried to check ".$userbank->GetProperty('user', $aid)."'s server password, but doesn't have access.");
     return $objResponse;
     }
-    $res = $GLOBALS['db']->Execute("SELECT `srv_password` FROM `".DB_PREFIX."_admins` WHERE `aid` = '".$aid."'");
-    if($res->fields['srv_password'] != NULL && $res->fields['srv_password'] != $srv_pass)
+
+    $GLOBALS['PDO']->query("SELECT srv_password FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+
+    $res = $GLOBALS['PDO']->single();
+    if($res['srv_password'] != NULL && $res['srv_password'] != $srv_pass)
     {
     $objResponse->addScript("$('scurrent.msg').setStyle('display', 'block');");
     $objResponse->addScript("$('scurrent.msg').setHTML('Incorrect password.');");
@@ -188,10 +192,11 @@ function ChangeSrvPassword($aid, $srv_pass)
     return $objResponse;
     }
 
-    if($srv_pass == "NULL")
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = NULL WHERE `aid` = '".$aid."'");
-    else
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_password` = ? WHERE `aid` = ?", array($srv_pass, $aid));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_password = :password WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':password', ($srv_pass == "NULL") ? null : $srv_pass);
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
+
     $objResponse->addScript("ShowBox('Server Password changed', 'Your server password has been changed successfully.', 'green', 'index.php?p=account', true);");
     Log::add("m", "Srv Password Changed", "Password changed for admin ($aid)");
     return $objResponse;
@@ -231,7 +236,11 @@ function ChangeEmail($aid, $email, $password)
     $objResponse->addScript("set_error(0);");
     }
 
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `email` = ? WHERE `aid` = ?", array($email, $aid));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET email = :email WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':email', $email);
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
+
     $objResponse->addScript("ShowBox('E-mail address changed', 'Your E-mail address has been changed successfully.', 'green', 'index.php?p=account', true);");
     Log::add("m", "E-mail Changed", "E-mail changed for admin ($aid).");
     return $objResponse;
@@ -249,8 +258,13 @@ function AddGroup($name, $type, $bitmask, $srvflags)
     }
 
     $error = 0;
-    $query = $GLOBALS['db']->GetRow("SELECT `gid` FROM `" . DB_PREFIX . "_groups` WHERE `name` = ?", array($name));
-    $query2 = $GLOBALS['db']->GetRow("SELECT `id` FROM `" . DB_PREFIX . "_srvgroups` WHERE `name` = ?", array($name));
+    $GLOBALS['PDO']->query("SELECT gid FROM `:prefix_groups` WHERE name = :name");
+    $GLOBALS['PDO']->bind(':name', $name);
+    $query = $GLOBALS['PDO']->single();
+
+    $GLOBALS['PDO']->query("SELECT id FROM `:prefix_srvgroups` WHERE name = :name");
+    $GLOBALS['PDO']->bind(':name', $name);
+    $query2 = $GLOBALS['PDO']->single();
     if(strlen($name) == 0 || count($query) > 0 || count($query2) > 0)
     {
     if(strlen($name) == 0)
@@ -287,11 +301,21 @@ function AddGroup($name, $type, $bitmask, $srvflags)
     if($error > 0)
     return $objResponse;
 
-    $query = $GLOBALS['db']->GetRow("SELECT MAX(gid) AS next_gid FROM `" . DB_PREFIX . "_groups`");
+    $GLOBALS['PDO']->query("SELECT MAX(gid) AS next_gid FROM `:prefix_groups`");
+    $query = $GLOBALS['PDO']->single();
     if($type == "1")
     {
     // add the web group
-    $query1 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_groups` (`gid`, `type`, `name`, `flags`) VALUES (". (int)($query['next_gid']+1) .", '" . (int)$type . "', ?, '" . (int)$bitmask . "')", array($name));
+    $GLOBALS['PDO']->query(
+        "INSERT INTO `:prefix_groups` (gid, type, name, flags) VALUES (:gid, :type, :name, :flags)"
+    );
+    $GLOBALS['PDO']->bindMultiple([
+        ':gid' => ($query['next_gid']+1),
+        ':type' => $type,
+        ':name' => $name,
+        ':flags' => $bitmask
+    ]);
+    $query1 = $GLOBALS['PDO']->execute();
     }
     elseif($type == "2")
     {
@@ -302,15 +326,20 @@ function AddGroup($name, $type, $bitmask, $srvflags)
     $srvflags = substr($srvflags, 0, strlen($srvflags) - strlen($immunity)-1);
     }
     $immunity = (isset($immunity) && $immunity>0) ? $immunity : 0;
-    $add_group = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_srvgroups(immunity,flags,name,groups_immune)
-    VALUES (?,?,?,?)");
-    $GLOBALS['db']->Execute($add_group,array($immunity, $srvflags, $name, " "));
-    }
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_srvgroups` (immunity, flags, name, groups_immune) VALUES (:immunity, :flags, :name, ' ')");
+    $GLOBALS['PDO']->bindMultiple([
+        ':immunity' => $immunity,
+        ':flags' => $srvflags,
+        ':name' => $name
+    ]);
+    $GLOBALS['PDO']->execute();
     elseif($type == "3")
     {
     // We need to add the server into the table
-    $query1 = $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_groups` (`gid`, `type`, `name`, `flags`) VALUES (". ($query['next_gid']+1) .", '3', ?, '0')", array($name));
-    }
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_groups` (gid, type, name, flags) VALUES (:gid, 3, :name, 0)");
+    $GLOBALS['PDO']->bind(':gid', $query['next_gid']+1);
+    $GLOBALS['PDO']->bind(':name', $name);
+    $GLOBALS['PDO']->execute();
 
     Log::add("m", "Group Created", "A new group was created ($name).");
     $objResponse->addScript("ShowBox('Group Created', 'Your group has been successfully created.', 'green', 'index.php?p=admin&c=groups', true);");
@@ -333,23 +362,42 @@ function RemoveGroup($gid, $type)
 
 
     if($type == "web") {
-    $query2 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET gid = -1 WHERE gid = $gid");
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_groups` WHERE gid = $gid");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET gid = -1 WHERE gid = :gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query2 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_groups` WHERE gid = :gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query1 = $GLOBALS['PDO']->execute();
     }
     else if($type == "server") {
-    $query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_servers_groups` WHERE group_id = $gid");
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_groups` WHERE gid = $gid");
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_servers_groups` WHERE group_id = :gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query2 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_groups` WHERE gid = :gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query1 = $GLOBALS['PDO']->execute();
     }
     else {
-    $query2 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins` SET srv_group = NULL WHERE srv_group = (SELECT name FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid)");
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups` WHERE id = $gid");
-    $query0 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = $gid");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_group = NULL WHERE srv_group = (SELECT name FROM `:prefix_srvgroups` WHERE id = :gid)");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query2 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_srvgroups` WHERE id = :gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_srvgroups_overrides` WHERE group_id = $gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $query0 = $GLOBALS['PDO']->execute();
     }
 
     if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the settings out of the database on all servers
-    $serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
+    $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE enabled = 1");
+    $serveraccessq = $GLOBALS['PDO']->resultset();
     $allservers = array();
     foreach($serveraccessq as $access) {
     if(!in_array($access['sid'], $allservers)) {
@@ -386,8 +434,13 @@ function RemoveSubmission($sid, $archiv)
     }
     $sid = (int)$sid;
     if($archiv == "1") { // move submission to archiv
-    $query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE subid = $sid");
-    $query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0'");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_submissions` SET archiv = 1, archivedby = :aid WHERE subid = :sid");
+        $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
+        $GLOBALS['PDO']->bind(':sid', $sid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("SELECT COUNT(subid) AS cnt FROM `:prefix_submissions` WHERE archiv = 0");
+        $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("$('subcount').setHTML('" . $query['cnt'] . "');");
 
     $objResponse->addScript("SlideUp('sid_$sid');");
@@ -401,9 +454,16 @@ function RemoveSubmission($sid, $archiv)
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem moving the submission to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
     } else if($archiv == "0") { // delete submission
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_submissions` WHERE subid = $sid");
-    $query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_demos` WHERE demid = '".$sid."' AND demtype = 'S'");
-    $query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '1'");
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_submissions` WHERE subid = :sid");
+        $GLOBALS['PDO']->bind(':sid', $sid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_demos` WHERE demid = :did AND demtype = 'S'");
+        $GLOBALS['PDO']->bind(':did', $sid);
+        $query2 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("SELECT COUNT(subid) AS cnt FROM `:prefix_submissions` WHERE archiv = 1");
+        $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("$('subcountarchiv').setHTML('" . $query['cnt'] . "');");
 
     $objResponse->addScript("SlideUp('asid_$sid');");
@@ -417,8 +477,13 @@ function RemoveSubmission($sid, $archiv)
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the submission from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
     } else if($archiv == "2") { // restore the submission
-    $query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '0', archivedby = NULL WHERE subid = $sid");
-    $query = $GLOBALS['db']->GetRow("SELECT count(subid) AS cnt FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0'");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_submissions` SET archiv = 0, archivedby = NULL WHERE subid = :sid");
+        $GLOBALS['PDO']->bind(':sid', $sid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("SELECT COUNT(subid) AS cnt FROM `:prefix_submissions` WHERE archiv = 0");
+        $query = $GLOBALS['PDO']->single();
+
     $objResponse->addScript("$('subcountarchiv').setHTML('" . $query['cnt'] . "');");
 
     $objResponse->addScript("SlideUp('asid_$sid');");
@@ -447,9 +512,16 @@ function RemoveProtest($pid, $archiv)
     }
     $pid = (int)$pid;
     if($archiv == '0') { // delete protest
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_protests` WHERE pid = $pid");
-    $query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_comments` WHERE type = 'P' AND bid = $pid;");
-    $query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '1'");
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_protests` WHERE pid = :pid");
+        $GLOBALS['PDO']->bind(':pid', $pid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_comments` WHERE type = 'P' AND bid = :pid");
+        $GLOBALS['PDO']->bind(':pid', $pid);
+        $query2 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("SELECT COUNT(pid) AS cnt FROM `:prefix_protests` WHERE archiv = 1");
+        $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("$('protcountarchiv').setHTML('" . $query['cnt'] . "');");
     $objResponse->addScript("SlideUp('apid_$pid');");
     $objResponse->addScript("SlideUp('apid_" . $pid . "a');");
@@ -462,8 +534,13 @@ function RemoveProtest($pid, $archiv)
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem deleting the protest from the database. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
     } else if($archiv == '1') { // move protest to archiv
-    $query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '1', archivedby = '".$userbank->GetAid()."' WHERE pid = $pid");
-    $query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0'");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = 1, archivedby = :aid WHERE pid = :pid");
+        $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
+        $GLOBALS['PDO']->bind(':pid', $pid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("SELECT COUNT(pid) AS cnt FROM `:prefix_protests` WHERE archiv = 0");
+        $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("$('protcount').setHTML('" . $query['cnt'] . "');");
     $objResponse->addScript("SlideUp('pid_$pid');");
     $objResponse->addScript("SlideUp('pid_" . $pid . "a');");
@@ -476,8 +553,12 @@ function RemoveProtest($pid, $archiv)
     else
     $objResponse->addScript("ShowBox('Error', 'There was a problem moving the protest to the archive. Check the logs for more info', 'red', 'index.php?p=admin&c=bans', true);");
     } else if($archiv == '2') { // restore protest
-    $query1 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '0', archivedby = NULL WHERE pid = $pid");
-    $query = $GLOBALS['db']->GetRow("SELECT count(pid) AS cnt FROM `" . DB_PREFIX . "_protests` WHERE archiv = '1'");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = 0, archivedby = NULL WHERE pid = :pid");
+        $GLOBALS['PDO']->bind(':pid', $pid);
+        $query1 = $GLOBALS['PDO']->execute();
+
+        $GLOBALS['PDO']->query("SELECT COUNT(pid) AS cnt FROM `:prefix_protests` WHERE archiv = 1");
+        $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("$('protcountarchiv').setHTML('" . $query['cnt'] . "');");
     $objResponse->addScript("SlideUp('apid_$pid');");
     $objResponse->addScript("SlideUp('apid_" . $pid . "a');");
@@ -505,12 +586,25 @@ function RemoveServer($sid)
     }
     $sid = (int)$sid;
     $objResponse->addScript("SlideUp('sid_$sid');");
-    $servinfo = $GLOBALS['db']->GetRow("SELECT ip, port FROM `" . DB_PREFIX . "_servers` WHERE sid = $sid");
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_servers` WHERE sid = $sid");
-    $query2 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_servers_groups` WHERE server_id = $sid");
-    $query3 = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_admins_servers_groups` SET server_id = -1 WHERE server_id = $sid");
 
-    $query = $GLOBALS['db']->GetRow("SELECT count(sid) AS cnt FROM `" . DB_PREFIX . "_servers`");
+    $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $servinfo = $GLOBALS['PDO']->single();
+
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $query1 = $GLOBALS['PDO']->execute();
+
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_servers_groups` WHERE server_id = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $query2 = $GLOBALS['PDO']->execute();
+
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins_servers_groups` SET server_id = -1 WHERE server_id = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $query3 = $GLOBALS['PDO']->execute();
+
+    $GLOBALS['PDO']->query("SELECT COUNT(sid) AS cnt FROM `:prefix_servers`");
+    $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("$('srvcount').setHTML('" . $query['cnt'] . "');");
 
 
@@ -537,10 +631,14 @@ function RemoveMod($mid)
     $mid = (int)$mid;
     $objResponse->addScript("SlideUp('mid_$mid');");
 
-    $modicon = $GLOBALS['db']->GetRow("SELECT icon, name FROM `" . DB_PREFIX . "_mods` WHERE mid = '" . $mid . "';");
+    $GLOBALS['PDO']->query("SELECT icon, name FROM `:prefix_mods` WHERE mid = :mid");
+    $GLOBALS['PDO']->bind(':mid', $mid);
+    $modicon = $GLOBALS['PDO']->single();
     @unlink(SB_ICONS."/".$modicon['icon']);
 
-    $query1 = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_mods` WHERE mid = '" . $mid . "'");
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_mods` WHERE mid = :mid");
+    $GLOBALS['PDO']->bind(':mid', $mid);
+    $query1 = $GLOBALS['PDO']->execute();
 
     if($query1)
     {
@@ -563,24 +661,30 @@ function RemoveAdmin($aid)
     return $objResponse;
     }
     $aid = (int)$aid;
-    $gid = $GLOBALS['db']->GetRow("SELECT gid, authid, extraflags, user FROM `" . DB_PREFIX . "_admins` WHERE aid = $aid");
-    if((intval($gid[2]) & ADMIN_OWNER) != 0)
+    $GLOBALS['PDO']->query("SELECT gid, authid, extraflags, user FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $gid = $GLOBALS['PDO']->single();
+    if((intval($gid['extraflags']) & ADMIN_OWNER) != 0)
     {
     $objResponse->addAlert("Error: You cannot delete the owner.");
     return $objResponse;
     }
 
-    $delquery = $GLOBALS['db']->Execute(sprintf("DELETE FROM `%s_admins` WHERE aid = %d LIMIT 1", DB_PREFIX, $aid));
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $delquery = $GLOBALS['PDO']->execute();
     if($delquery) {
     if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the admins for the servers where this admin was on
-    $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-    LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-    LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
-    WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-    OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-    AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+    $GLOBALS['PDO']->query(
+        "SELECT s.sid FROM `:prefix_servers` s LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
+        LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+        WHERE ((asg.server_id != -1 AND asg.srv_group_id = -1) OR (asg.srv_group_id != -1 AND asg.server_id = -1))
+        AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $serveraccessq = $GLOBALS['PDO']->resultset();
     $allservers = array();
     foreach($serveraccessq as $access) {
     if(!in_array($access['sid'], $allservers)) {
@@ -590,10 +694,13 @@ function RemoveAdmin($aid)
     $rehashing = true;
     }
 
-    $GLOBALS['db']->Execute(sprintf("DELETE FROM `%s_admins_servers_groups` WHERE admin_id = %d", DB_PREFIX, $aid));
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_admins_servers_groups` WHERE admin_id = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
  	}
 
-    $query = $GLOBALS['db']->GetRow("SELECT count(aid) AS cnt FROM `" . DB_PREFIX . "_admins`");
+    $GLOBALS['PDO']->query("SELECT COUNT(aid) AS cnt FROM `:prefix_admins`");
+    $query = $GLOBALS['PDO']->single();
     $objResponse->addScript("SlideUp('aid_$aid');");
     $objResponse->addScript("$('admincount').setHTML('" . $query['cnt'] . "');");
     if($delquery)
@@ -695,7 +802,10 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     return $objResponse;
 
     // Check for dublicates afterwards
-    $chk = $GLOBALS['db']->GetRow('SELECT sid FROM `'.DB_PREFIX.'_servers` WHERE ip = ? AND port = ?;', array($ip, (int)$port));
+    $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE ip = :ip AND port = :port");
+    $GLOBALS['PDO']->bind(':ip', $ip);
+    $GLOBALS['PDO']->bind(':port', $port);
+    $chk = $GLOBALS['PDO']->single();
     if($chk)
     {
     $objResponse->addScript("ShowBox('Error', 'There already is a server with that IP:Port combination.', 'red');");
@@ -712,17 +822,26 @@ function AddServer($ip, $port, $rcon, $rcon2, $mod, $enabled, $group, $group_nam
     $enable = ($enabled=="true"?1:0);
 
     // Add the server
-    $addserver = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_servers (`sid`, `ip`, `port`, `rcon`, `modid`, `enabled`)
-      VALUES (?,?,?,?,?,?)");
-    $GLOBALS['db']->Execute($addserver,array($sid, $ip, (int)$port, $rcon, $mod, $enable));
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_servers` (sid, ip, port, rcon, modid, enabled) VALUES (:sid, :ip, :port, :rcon, :modid, :enabled)");
+    $GLOBALS['PDO']->bindMultiple([
+        ':sid' => $sid,
+        ':ip' => $ip,
+        ':port' => $port,
+        ':rcon' => $rcon,
+        ':modid' => $mod,
+        ':enabled' => $enable
+    ]);
+    $GLOBALS['PDO']->execute();
 
     // Add server to each group specified
     $groups = explode(",", $group);
-    $addtogrp = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_servers_groups (`server_id`, `group_id`) VALUES (?,?)");
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_servers_groups` (server_id, group_id) VALUES (:sid, :gid)");
     foreach($groups AS $g)
     {
     if($g)
-    $GLOBALS['db']->Execute($addtogrp,array($sid, $g));
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $GLOBALS['PDO']->bind(':gid', $g);
+    $GLOBALS['PDO']->execute();
     }
 
 
@@ -1097,9 +1216,13 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     // Handle Webpermissions
     // Chose to create a new webgroup
     if ($a_wg == 'n') {
-        $add_webgroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_groups(type, name, flags)
-        VALUES (?,?,?)", array(1, $a_webname, $mask));
-        $web_group = (int)$GLOBALS['db']->Insert_ID();
+        $GLOBALS['PDO']->query("INSERT INTO `:prefix_groups` (type, name, flags) VALUES (1, :name, :flags)");
+        $GLOBALS['PDO']->bindMultiple([
+            ':name' => $a_webname,
+            ':flags' => $mask
+        ]);
+        $GLOBALS['PDO']->execute();
+        $web_group = $GLOBALS['PDO']->lastInsertId();
 
         // We added those permissons to the group, so don't add them as custom permissions again
         $mask = 0;
@@ -1115,11 +1238,19 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     // Chose to create a new server admin group
     if($a_sg == 'n')
     {
-    $add_servergroup = $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_srvgroups(immunity, flags, name, groups_immune)
-    VALUES (?,?,?,?)", array($immunity, $srv_mask, $a_servername, " "));
+
+        $GLOBALS['PDO']->query(
+            "INSERT INTO `:prefix_srvgroups` (immunity, flags, name, groups_immune) VALUES (:immunity, :flags, :name, ' ')"
+        );
+        $GLOBALS['PDO']->bindMultiple([
+            ':immunity' => $immunity,
+            ':flags' => $srv_mask,
+            ':name' => $a_servername
+        ]);
+        $GLOBALS['PDO']->execute();
 
     $server_admin_group = $a_servername;
-    $server_admin_group_int = (int)$GLOBALS['db']->Insert_ID();
+    $server_admin_group_int = $GLOBALS['PDO']->lastInsertId();
 
     // We added those permissons to the group, so don't add them as custom permissions again
     $srv_mask = "";
@@ -1127,8 +1258,10 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     // Chose an existing group
     else if($a_sg != 'c' && $a_sg > 0)
     {
-    $server_admin_group = $GLOBALS['db']->GetOne("SELECT `name` FROM ".DB_PREFIX."_srvgroups WHERE id = '" . (int)$a_sg . "'");
-    $server_admin_group_int = (int)$a_sg;
+        $GLOBALS['PDO']->query("SELECT name FROM `:prefix_srvgroups` WHERE id = :id");
+        $GLOBALS['PDO']->bind(':id', $a_sg);
+        $server_admin_group = $GLOBALS['PDO']->single();
+        $server_admin_group_int = (int)$a_sg;
     }
     // Custom permissions -> no group
     else
@@ -1144,30 +1277,43 @@ function AddAdmin($mask, $srv_mask, $a_name, $a_steam, $a_email, $a_password, $a
     {
     // Grant permissions to the selected server groups
     $srv_groups = explode(",", $server);
-    $addtosrvgrp = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id) VALUES (:aid, :gid, :srvid, :sid)");
     foreach($srv_groups AS $srv_group)
     {
     if(!empty($srv_group))
-    $GLOBALS['db']->Execute($addtosrvgrp,array($aid, $server_admin_group_int, substr($srv_group, 1), '-1'));
+    $GLOBALS['PDO']->bindMultiple([
+        ':aid' => $aid,
+        ':gid' => $server_admin_group_int,
+        ':srvid' => substr($srv_group, 1),
+        ':sid' => '-1'
+    ]);
+    $GLOBALS['PDO']->execute();
     }
 
     // Grant permissions to individual servers
     $srv_arr = explode(",", $singlesrv);
-    $addtosrv = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id) VALUES (:aid, :gid, -1, :sid)");
     foreach($srv_arr AS $server)
     {
     if(!empty($server))
-    $GLOBALS['db']->Execute($addtosrv,array($aid, $server_admin_group_int, '-1', substr($server, 1)));
+    $GLOBALS['PDO']->bindMultiple([
+        ':aid' => $aid,
+        ':gid' => $server_admin_group_int,
+        ':sid' => substr($server, 1)
+    ]);
+    $GLOBALS['PDO']->execute();
     }
     if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the admins on the servers
-    $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-    LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-    LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
-    WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-    OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-    AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+    $GLOBALS['PDO']->query(
+        "SELECT s.sid FROM `:prefix_servers` s LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
+        LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+        WHERE ((asg.server_id != -1 AND asg.srv_group_id = -1) OR (asg.srv_group_id != -1 AND asg.server_id = -1))
+        AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $serveraccessq = $GLOBALS['PDO']->resultset();
     $allservers = array();
     foreach($serveraccessq as $access) {
     if(!in_array($access['sid'], $allservers)) {
@@ -1660,9 +1806,13 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
     PruneBans();
     if ((int)$type==0) {
         // Check if the new steamid is already banned
-        $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0'", array($steam));
+        $GLOBALS['PDO']->query(
+            "SELECT COUNT(bid) AS count FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = 0"
+        );
+        $GLOBALS['PDO']->bind(':authid', $steam);
+        $chk = $GLOBALS['PDO']->single();
 
-        if (intval($chk[0]) > 0) {
+        if (intval($chk['count']) > 0) {
             $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already banned.', 'red', '');");
             return $objResponse;
         }
@@ -1677,36 +1827,50 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         }
     }
     if ((int)$type==1) {
-        $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'", array($ip));
+        $GLOBALS['PDO']->query("SELECT COUNT(bid) AS count FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = 1");
+        $GLOBALS['PDO']->bind(':ip', $ip);
+        $chk = $GLOBALS['PDO']->single();
 
-        if (intval($chk[0]) > 0) {
+        if (intval($chk['bid']) > 0) {
             $objResponse->addScript("ShowBox('Error', 'IP: $ip is already banned.', 'red', '');");
             return $objResponse;
         }
     }
 
-    $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_bans(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
-    (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
-    $GLOBALS['db']->Execute($pre, array($type,
-       $ip,
-       $steam,
-       $nickname,
-       $length*60,
-       $len,
-       $reason,
-       $userbank->GetAid(),
-       $_SERVER['REMOTE_ADDR']));
-    $subid = $GLOBALS['db']->Insert_ID();
+    $GLOBALS['PDO']->query(
+        "INSERT INTO `:prefix_bans` (created, type, ip, authid, name, ends, length, reason, aid, adminIp)
+        VALUES (UNIX_TIMESTAMP(), :type, :ip, :authid, :name, (UNIX_TIMESTAMP() + :ends), :length, :reason, :aid, :adminIp)"
+    );
+    $GLOBALS['PDO']->bindMultiple([
+        ':type' => $type,
+        ':ip' => $ip,
+        ':authid' => $steam,
+        ':name' => $nickname,
+        ':ends' => $length * 60,
+        ':length' => $len,
+        ':reason' => $reason,
+        ':aid' => $userbank->GetAid(),
+        ':adminIp' => $_SERVER['REMOTE_ADDR']
+    ]);
+    $GLOBALS['PDO']->execute();
+    $subid = $GLOBALS['PDO']->lastInsertId();
 
     if ($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile)) {
         //Thanks jsifuentes: http://jacobsifuentes.com/sourcebans-1-4-lfi-exploit/
         //Official Fix: https://code.google.com/p/sourcebans/source/detail?r=165
 
-        $GLOBALS['db']->Execute("INSERT INTO ".DB_PREFIX."_demos(demid,demtype,filename,origname)
-         VALUES(?,'B', ?, ?)", array((int)$subid, $dfile, $dname));
+        $GLOBALS['PDO']->query("INSERT INTO `:prefix_demos` (demid, demtype, filename, origname) VALUES (:did, 'B', :file, :orig)");
+        $GLOBALS['PDO']->bindMultiple([
+            ':did' => $subid,
+            ':file' => $dfile,
+            ':orig' => $dname
+        ]);
+        $GLOBALS['PDO']->execute();
     }
     if ($fromsub) {
-        $submail = $GLOBALS['db']->Execute("SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'");
+        $GLOBALS['PDO']->query("SELECT name, email FROM `:prefix_submissions` WHERE subid = :subid");
+        $GLOBALS['PDO']->bind(':subid', $fromsub);
+        $submail = $GLOBALS['PDO']->single();
         // Send an email when ban is accepted
         $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php")+4);
         $headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
@@ -1716,10 +1880,16 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
 
         mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
-        $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'");
+        $GLOBALS['PDO']->query("UPDATE `:prefix_submissions` SET archiv = 2, archivedby = :aid WHERE subid = :subid");
+        $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
+        $GLOBALS['PDO']->bind(':subid', $fromsub);
+        $GLOBALS['PDO']->execute();
     }
 
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_submissions` SET archiv = '3', archivedby = '".$userbank->GetAid()."' WHERE SteamId = ?;", array($steam));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_submissions` SET archiv = 3, archivedby = :aid WHERE SteamId = :steamid");
+    $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
+    $GLOBALS['PDO']->bind(':steamid', $steam);
+    $GLOBALS['PDO']->execute();
 
     $kickit = Config::getBool('config.enablekickit');
     if ($kickit) {
@@ -1774,8 +1944,13 @@ function PrepareReban($bid)
     $objResponse = new xajaxResponse();
     $bid = (int)$bid;
 
-    $ban = $GLOBALS['db']->GetRow("SELECT type, ip, authid, name, length, reason FROM ".DB_PREFIX."_bans WHERE bid = '".$bid."';");
-    $demo = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_demos WHERE demid = '".$bid."' AND demtype = \"B\";");
+    $GLOBALS['PDO']->query("SELECT type, ip, authid, name, length, reason FROM `:prefix_bans` WHERE bid = :bid");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $ban = $GLOBALS['PDO']->single();
+
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_demos` WHERE demid = :id AND demtype = 'B'");
+    $GLOBALS['PDO']->bind(':id', $bid);
+    $demo = $GLOBALS['PDO']->single();
     // clear any old stuff
     $objResponse->addScript("$('nickname').value = ''");
     $objResponse->addScript("$('ip').value = ''");
@@ -1804,7 +1979,10 @@ function SetupEditServer($sid)
 {
     $objResponse = new xajaxResponse();
     $sid = (int)$sid;
-    $server = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_servers WHERE sid = $sid");
+
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid);
+    $server = $GLOBALS['PDO']->single();
 
     // clear any old stuff
     $objResponse->addScript("$('address').value = ''");
@@ -1894,15 +2072,26 @@ function AddMod($name, $folder, $icon, $steam_universe, $enabled)
     $enabled = (int)(bool)$enabled;
 
     // Already there?
-    $check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE modfolder = ? OR name = ?;", array($folder, $name));
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE modfolder = :folder OR name = :name");
+    $GLOBALS['PDO']->bind(':folder', $folder);
+    $GLOBALS['PDO']->bind(':name', $name);
+    $check = $GLOBALS['PDO']->single();
     if(!empty($check))
     {
     $objResponse->addScript("ShowBox('Error adding mod', 'A mod using that folder or name already exists.', 'red');");
     return $objResponse;
     }
 
-    $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_mods(name,icon,modfolder,steam_universe,enabled) VALUES (?,?,?,?,?)");
-    $GLOBALS['db']->Execute($pre,array($name, $icon, $folder, $steam_universe, $enabled));
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_mods` (name, icon, modfolder, steam_universe, enabled) VALUES (:name, :icon, :folder, :universe, :enabled)");
+    $GLOBALS['PDO']->bindMultiple([
+        ':name' => $name,
+        ':icon' => $icon,
+        ':folder' => $folder,
+        ':universe' => $steam_universe,
+        ':enabled' => $enabled
+    ]);
+
+    $GLOBALS['PDO']->execute();
 
     $objResponse->addScript("ShowBox('Mod Added', 'The game mod has been successfully added', 'green', 'index.php?p=admin&c=mods');");
     $objResponse->addScript("TabToReload();");
@@ -1943,7 +2132,10 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     }
 
     // Update web stuff
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `extraflags` = $web_flags WHERE `aid` = $aid");
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET extraflags = :flags WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':flags', $web_flags);
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
 
 
     if(strstr($srv_flags, "#"))
@@ -1954,17 +2146,26 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     }
     $immunity = ($immunity>0) ? $immunity : 0;
     // Update server stuff
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_flags` = ?, `immunity` = ? WHERE `aid` = $aid", array($srv_flags, $immunity));
+
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_flags = :flags, immunity = :immunity WHERE aid = :aid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':flags' => $srv_flags,
+        ':immunity' => $immunity,
+        ':aid' => $aid
+    ]);
+    $GLOBALS['PDO']->execute();
 
     if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the admins on the servers
-    $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `".DB_PREFIX."_servers` s
-    LEFT JOIN `".DB_PREFIX."_admins_servers_groups` asg ON asg.admin_id = '".(int)$aid."'
-    LEFT JOIN `".DB_PREFIX."_servers_groups` sg ON sg.group_id = asg.srv_group_id
-    WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-    OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-    AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+    $GLOBALS['PDO']->query(
+        "SELECT s.sid FROM `:prefix_servers` s LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
+        LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+        WHERE ((asg.server_id != -1 AND asg.srv_group_id = -1) OR (asg.srv_group_id != -1 AND asg.server_id = -1))
+        AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
+    );
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $serveraccessq = $GLOBALS['PDO']->resultset();
     $allservers = array();
     foreach($serveraccessq as $access) {
     if(!in_array($access['sid'], $allservers)) {
@@ -1974,7 +2175,11 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     $objResponse->addScript("ShowRehashBox('".implode(",", $allservers)."', 'Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
     } else
     $objResponse->addScript("ShowBox('Permissions updated', 'The user`s permissions have been updated successfully', 'green', 'index.php?p=admin&c=admins');TabToReload();");
-    $admname = $GLOBALS['db']->GetRow("SELECT user FROM `".DB_PREFIX."_admins` WHERE aid = ?", array((int)$aid));
+
+    $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+
+    $admname = $GLOBALS['PDO']->single();
     Log::add("m", "Permissions Changed", "Permissions have been changed for ($admname[user])");
     return $objResponse;
 }
@@ -2001,11 +2206,19 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     $web_flags = (int)$web_flags;
     if($type == "web" || $type == "server" )
     // Update web stuff
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_groups` SET `flags` = ?, `name` = ? WHERE `gid` = $gid", array($web_flags, $name));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_groups` SET flags = :flags, name = :name WHERE gid = :gid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':flags' => $web_flags,
+        ':name' => $name,
+        ':gid' => $gid
+    ]);
+    $GLOBALS['PDO']->execute();
 
     if($type == "srv")
     {
-    $gname = $GLOBALS['db']->GetRow("SELECT name FROM ".DB_PREFIX."_srvgroups WHERE id = $gid");
+        $GLOBALS['PDO']->query("SELECT name FROM `:prefix_srvgroups` WHERE id = :gid");
+        $GLOBALS['PDO']->bind(':gid', $gid);
+        $gname = $GLOBALS['PDO']->single();
 
     if(strstr($srv_flags, "#"))
     {
@@ -2016,12 +2229,25 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     $immunity = ($immunity>0) ? $immunity : 0;
 
     // Update server stuff
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_srvgroups` SET `flags` = ?, `name` = ?, `immunity` = ? WHERE `id` = $gid", array($srv_flags, $name, $immunity));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_srvgroups` SET flags = :flags, name = :name, immunity = :immunity WHERE id = :gid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':flags' => $srv_flags,
+        ':name' => $name,
+        ':immunity' => $immunity,
+        ':gid' => $gid
+    ]);
+    $GLOBALS['PDO']->execute();
 
-    $oldname = $GLOBALS['db']->GetAll("SELECT aid FROM ".DB_PREFIX."_admins WHERE srv_group = ?", array($gname['name']));
+    $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE srv_group = :srvg");
+    $GLOBALS['PDO']->bind(':srvg', $gname['name']);
+    $oldname = $GLOBALS['PDO']->resultset();
+
+    $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_group = :srvg WHERE aid = :aid");
     foreach($oldname as $o)
     {
-    $GLOBALS['db']->Execute("UPDATE `".DB_PREFIX."_admins` SET `srv_group` = ? WHERE `aid` = '" . (int)$o['aid'] . "'", array($name));
+        $GLOBALS['PDO']->bind(':srvg', $name);
+        $GLOBALS['PDO']->bind(':aid', $o['aid']);
+        $GLOBALS['PDO']->execute();
     }
 
         $overrides = json_decode(html_entity_decode($overrides, ENT_QUOTES), true);
@@ -2040,12 +2266,21 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     // Wants to delete this override?
     if(empty($override['name']))
     {
-    $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE id = ?;", array($id));
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_srvgroups_overrides` WHERE id = :id");
+        $GLOBALS['PDO']->bind(':id', $id);
+        $GLOBALS['PDO']->execute();
     continue;
     }
 
     // Check for duplicates
-    $chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE name = ? AND type = ? AND group_id = ? AND id != ?", array($override['name'], $override['type'], $gid, $id));
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups_overrides` WHERE name = :name AND type = :type AND group_id = :gid AND id != :id");
+    $GLOBALS['PDO']->bindMultiple([
+        ':name' => $override['name'],
+        ':type' => $override['type'],
+        ':gid' => $gid,
+        ':id' => $id
+    ]);
+    $chk = $GLOBALS['PDO']->resultset();
     if(!empty($chk))
     {
     $objResponse->addScript("ShowBox('Error', 'There already is an override with name \\\"" . htmlspecialchars(addslashes($override['name'])) . "\\\" from the selected type..', 'red', '', true);");
@@ -2053,7 +2288,14 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     }
 
     // Edit the override
-    $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_srvgroups_overrides` SET name = ?, type = ?, access = ? WHERE id = ?;", array($override['name'], $override['type'], $override['access'], $id));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_srvgroups_overrides` SET name = :name, type = :type, access = :access WHERE id = :id");
+    $GLOBALS['PDO']->bindMultiple([
+        ':name' => $override['name'],
+        ':type' => $override['type'],
+        ':access' => $override['access'],
+        ':id' => $id
+    ]);
+    $GLOBALS['PDO']->execute();
     }
     }
 
@@ -2063,7 +2305,11 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     if(($newOverride['type'] == "command" || $newOverride['type'] == "group") && !empty($newOverride['name']))
     {
     // Check for duplicates
-    $chk = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE name = ? AND type = ? AND group_id = ?", array($newOverride['name'], $newOverride['type'], $gid));
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups_overrides` WHERE name = :name AND type = :type AND group_id = :gid");
+    $GLOBALS['PDO']->bind(':name', $newOverride['name']);
+    $GLOBALS['PDO']->bind(':type', $newOverride['type']);
+    $GLOBALS['PDO']->bind(':gid', $gid);
+    $chk = $GLOBALS['PDO']->resultset();
     if(!empty($chk))
     {
     $objResponse->addScript("ShowBox('Error', 'There already is an override with name \\\"" . htmlspecialchars(addslashes($newOverride['name'])) . "\\\" from the selected type..', 'red', '', true);");
@@ -2071,14 +2317,22 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
     }
 
     // Insert the new override
-    $GLOBALS['db']->Execute("INSERT INTO `" . DB_PREFIX . "_srvgroups_overrides` (group_id, type, name, access) VALUES (?, ?, ?, ?);", array($gid, $newOverride['type'], $newOverride['name'], $newOverride['access']));
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_srvgroups_overrides` (group_id, type, name, access) VALUES (:gid, :type, :name, :access)");
+    $GLOBALS['PDO']->bindMultiple([
+        ':gid' => $gid,
+        ':type' => $newOverride['type'],
+        ':name' => $newOverride['name'],
+        ':access' => $newOverride['access']
+    ]);
+    $GLOBALS['PDO']->execute();
     }
     }
 
     if(Config::getBool('config.enableadminrehashing'))
     {
     // rehash the settings out of the database on all servers
-    $serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM ".DB_PREFIX."_servers WHERE enabled = 1;");
+    $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE enabled = 1");
+    $serveraccessq = $GLOBALS['PDO']->resultset();
     $allservers = array();
     foreach($serveraccessq as $access) {
     if(!in_array($access['sid'], $allservers)) {
@@ -2173,12 +2427,16 @@ function SendMail($subject, $message, $type, $id)
     $email = "";
     if($type == 's')
     {
-    $email = $GLOBALS['db']->GetOne('SELECT email FROM `'.DB_PREFIX.'_submissions` WHERE subid = ?', array($id));
+        $GLOBALS['PDO']->query("SELECT email FROM `:prefix_submissions` WHERE subid = :subid");
+        $GLOBALS['PDO']->bind(':subid', $id);
+        $email = $GLOBALS['PDO']->single();
     }
     // Protest
     else if($type == 'p')
     {
-    $email = $GLOBALS['db']->GetOne('SELECT email FROM `'.DB_PREFIX.'_protests` WHERE pid = ?', array($id));
+        $GLOBALS['PDO']->query("SELECT email FROM `:prefix_protests` WHERE pid = :pid");
+        $GLOBALS['PDO']->bind(':pid', $id);
+        $email = $GLOBALS['PDO']->single();
     }
 
     if(empty($email))
@@ -2307,7 +2565,9 @@ function ApplyTheme($theme)
     return $objResponse;
     }
 
-    $query = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_settings` SET `value` = ? WHERE `setting` = 'config.theme'", array($theme));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_settings` SET value = :value WHERE setting = 'config.theme'");
+    $GLOBALS['PDO']->bind(':value', $theme);
+    $GLOBALS['PDO']->execute();
     $objResponse->addScript('window.location.reload( false );');
     return $objResponse;
 }
@@ -2346,11 +2606,15 @@ function AddComment($bid, $ctype, $ctext, $page)
 
     $ctext = trim($ctext);
 
-    $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comments(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())");
-    $GLOBALS['db']->Execute($pre,array($bid,
-       $ctype,
-       $userbank->GetAid(),
-       $ctext));
+    $GLOBALS['PDO']->query("INSERT INTO `:prefix_comments` (bid, type, aid, commenttxt, added) VALUES (:bid, :type, :aid, :txt, UNIX_TIMESTAMP())");
+    $GLOBALS['PDO']->bindMultiple([
+        ':bid' => $bid,
+        ':type' => $ctype,
+        ':aid' => $userbank->GetAid(),
+        ':txt' => $ctext
+    ]);
+
+    $GLOBALS['PDO']->execute();
 
     $objResponse->addScript("ShowBox('Comment Added', 'The comment has been successfully published', 'green', 'index.php$redir');");
     $objResponse->addScript("TabToReload();");
@@ -2392,10 +2656,14 @@ function EditComment($cid, $ctype, $ctext, $page)
 
     $ctext = trim($ctext);
 
-    $pre = $GLOBALS['db']->Prepare("UPDATE ".DB_PREFIX."_comments SET `commenttxt` = ?, `editaid` = ?, `edittime`= UNIX_TIMESTAMP() WHERE cid = ?");
-    $GLOBALS['db']->Execute($pre,array($ctext,
-       $userbank->GetAid(),
-       $cid));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_comments` SET commenttxt = :txt, editaid = :aid, edittime = UNIX_TIMESTAMP() WHERE cid = :cid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':txt' => $ctext,
+        ':aid' => $userbank->GetAid(),
+        ':cid' => $cid
+    ]);
+
+    $GLOBALS['PDO']->execute();
 
     $objResponse->addScript("ShowBox('Comment Edited', 'The comment #".$cid." has been successfully edited', 'green', 'index.php$redir');");
     $objResponse->addScript("TabToReload();");
@@ -2421,7 +2689,10 @@ function RemoveComment($cid, $ctype, $page)
     if($page != -1)
     $pagelink = "&page=".$page;
 
-    $res = $GLOBALS['db']->Execute("DELETE FROM `".DB_PREFIX."_comments` WHERE `cid` = ?",
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_comments` WHERE cid = :cid");
+    $GLOBALS['PDO']->bind(':cid', $cid);
+
+    $res = $GLOBALS['PDO']->execute();
     array( $cid ));
     if($ctype=="B")
     $redir = "?p=banlist".$pagelink;
@@ -2468,7 +2739,6 @@ function RefreshServer($sid)
     $objResponse = new xajaxResponse();
     $sid = (int)$sid;
     session_start();
-    $data = $GLOBALS['db']->GetRow("SELECT ip, port FROM `".DB_PREFIX."_servers` WHERE sid = ?;", array($sid));
 
     $objResponse->addScript("xajax_ServerHostPlayers('".$sid."');");
     return $objResponse;
@@ -2894,21 +3164,23 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
     $typeW = "";
     switch ((int)$type) {
         case 1:
-            $typeW = "type = 1";
+            $typeW = "1";
             break;
         case 2:
-            $typeW = "type = 2";
-            break;
-        case 3:
-            $typeW = "(type = 1 OR type = 2)";
+            $typeW = "2";
             break;
         default:
-            $typeW = "";
+            $typeW = "1, 2";
             break;
     }
 
     // Check if the new steamid is already banned
-    $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM ".DB_PREFIX."_comms WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND ".$typeW, array($steam));
+    // PDO isn't binding IN (1, 2) correctly, need to find a better way to handle this
+    $GLOBALS['PDO']->query(
+        "SELECT COUNT(bid) AS count FROM `:prefix_comms` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type IN ($type)"
+    );
+    $GLOBALS['PDO']->bind(':authid', $steam);
+    $chk = $GLOBALS['PDO']->single();
 
     if (intval($chk[0]) > 0) {
         $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already blocked.', 'red', '');");
@@ -2925,26 +3197,40 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
     }
 
     if ((int)$type == 1 || (int)$type == 3) {
-        $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
-      (UNIX_TIMESTAMP(),1,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
-        $GLOBALS['db']->Execute($pre, array($steam,
-        $nickname,
-        $length*60,
-        $len,
-        $reason,
-        $userbank->GetAid(),
-        $_SERVER['REMOTE_ADDR']));
+        $GLOBALS['PDO']->query(
+            "INSERT INTO `:prefix_comms` (created, type, authid, name, ends, length, reason, aid, adminIp)
+            VALUES (UNIX_TIMESTAMP(), 1, :authid, :name, (UNIX_TIMESTAMP() + :ends), :length, :reason, :aid, :adminIp)"
+        );
+
+        $GLOBALS['PDO']->bindMultiple([
+            ':authid' => $steam,
+            ':name' => $nickname,
+            ':ends' => $length*60,
+            ':length' => $len,
+            ':reason' => $reason,
+            ':aid' => $userbank->GetAid(),
+            ':adminIp' => $_SERVER['REMOTE_ADDR']
+        ]);
+
+        $GLOBALS['PDO']->execute();
     }
     if ((int)$type == 2 || (int)$type ==3) {
-        $pre = $GLOBALS['db']->Prepare("INSERT INTO ".DB_PREFIX."_comms(created,type,authid,name,ends,length,reason,aid,adminIp ) VALUES
-      (UNIX_TIMESTAMP(),2,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)");
-        $GLOBALS['db']->Execute($pre, array($steam,
-        $nickname,
-        $length*60,
-        $len,
-        $reason,
-        $userbank->GetAid(),
-        $_SERVER['REMOTE_ADDR']));
+        $GLOBALS['PDO']->query(
+            "INSERT INTO `:prefix_comms` (created, type, authid, name, ends, length, reason, aid, adminIp)
+            VALUES (UNIX_TIMESTAMP(), 2, :authid, :name, (UNIX_TIMESTAMP() + :ends), :length, :reason, :aid, :adminIp)"
+        );
+
+        $GLOBALS['PDO']->bindMultiple([
+            ':authid' => $steam,
+            ':name' => $nickname,
+            ':ends' => $length*60,
+            ':length' => $len,
+            ':reason' => $reason,
+            ':aid' => $userbank->GetAid(),
+            ':adminIp' => $_SERVER['REMOTE_ADDR']
+        ]);
+
+        $GLOBALS['PDO']->execute();
     }
 
     $objResponse->addScript("ShowBlockBox('".$steam."', '".(int)$type."', '".(int)$len."');");
@@ -2957,7 +3243,9 @@ function PrepareReblock($bid)
 {
     $objResponse = new xajaxResponse();
 
-    $ban = $GLOBALS['db']->GetRow("SELECT name, authid, type, length, reason FROM ".DB_PREFIX."_comms WHERE bid = '".$bid."';");
+    $GLOBALS['PDO']->query("SELECT name, authid, type, length, reason FROM `:prefix_comms` WHERE bid = :bid");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $ban = $GLOBALS['PDO']->single();
 
     // clear any old stuff
     $objResponse->addScript("$('nickname').value = ''");
@@ -2993,7 +3281,9 @@ function PrepareBlockFromBan($bid)
     $objResponse->addScript("$('txtReason').value = ''");
     $objResponse->addAssign("txtReason", "innerHTML",  "");
 
-    $ban = $GLOBALS['db']->GetRow("SELECT name, authid FROM ".DB_PREFIX."_bans WHERE bid = '".$bid."';");
+    $GLOBALS['PDO']->query("SELECT name, authid FROM `:prefix_bans` WHERE bid = :bid");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $ban = $GLOBALS['PDO']->single();
 
     // add new stuff
     $objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");
