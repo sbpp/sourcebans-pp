@@ -185,7 +185,7 @@ public void OnPluginStart()
 	LoadTranslations("sbpp_comms.phrases");
 
 	TopMenu hTemp = null;
-	if (LibraryExists("adminmenu") && ((hTemp = GetAdminTopMenu()) != INVALID_HANDLE))
+	if ( LibraryExists("adminmenu") && (hTemp = GetAdminTopMenu()) )
 		OnAdminMenuReady(hTemp);
 
 	CvarHostIp = FindConVar("hostip");
@@ -848,7 +848,7 @@ public int MenuHandler_MenuDuration(Menu menu, MenuAction action, int param1, in
 			delete menu;
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			if ( param2 == MenuCancel_ExitBack && hTopMenu )
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
@@ -898,7 +898,7 @@ public int MenuHandler_MenuReason(Menu menu, MenuAction action, int param1, int 
 			delete menu;
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			if ( param2 == MenuCancel_ExitBack && hTopMenu )
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
@@ -970,7 +970,7 @@ public int MenuHandler_MenuList(Menu menu, MenuAction action, int param1, int pa
 			delete menu;
 		case MenuAction_Cancel:
 		{
-			if (!g_iPeskyPanels[param1][viewingList] && param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			if ( !g_iPeskyPanels[param1][viewingList] && param2 == MenuCancel_ExitBack && hTopMenu )
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
@@ -1794,7 +1794,7 @@ public Action ClientRecheck(Handle timer, any userid)
 public Action Timer_MuteExpire(Handle timer, DataPack dataPack)
 {
 	dataPack.Reset();
-	g_hMuteExpireTimer[dataPack.ReadCell()] = INVALID_HANDLE;
+	g_hMuteExpireTimer[ view_as<int>( dataPack.ReadCell() ) ] = INVALID_HANDLE;
 
 	int client = GetClientOfUserId(dataPack.ReadCell());
 	if (!client)
@@ -1816,7 +1816,7 @@ public Action Timer_MuteExpire(Handle timer, DataPack dataPack)
 public Action Timer_GagExpire(Handle timer, DataPack dataPack)
 {
 	dataPack.Reset();
-	g_hGagExpireTimer[dataPack.ReadCell()] = null;
+	g_hGagExpireTimer[ view_as<int>( dataPack.ReadCell() ) ] = null;
 
 	int client = GetClientOfUserId(dataPack.ReadCell());
 	if (!client)
@@ -1845,7 +1845,7 @@ public Action Timer_StopWait(Handle timer, any data)
 
 static void InitializeConfigParser()
 {
-	if (ConfigParser == INVALID_HANDLE)
+	if ( !ConfigParser )
 	{
 		ConfigParser = new SMCParser();
 		ConfigParser.OnEnterSection = ReadConfig_NewSection;
@@ -2086,7 +2086,7 @@ stock void InitializeBackupDB()
 {
 	char error[255];
 	SQLiteDB = SQLite_UseDatabase("sourcecomms-queue", error, sizeof(error));
-	if (SQLiteDB == INVALID_HANDLE)
+	if ( !SQLiteDB )
 	{
 		SetFailState(error);
 	}

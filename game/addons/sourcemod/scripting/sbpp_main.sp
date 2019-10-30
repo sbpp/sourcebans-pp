@@ -176,19 +176,19 @@ public void OnPluginStart()
 	RegConsoleCmd("say", ChatHook);
 	RegConsoleCmd("say_team", ChatHook);
 
-	if ((TimeMenuHandle = CreateMenu(MenuHandler_BanTimeList, MenuAction_Select|MenuAction_Cancel|MenuAction_DrawItem)) != INVALID_HANDLE)
+	if ( (TimeMenuHandle = CreateMenu( MenuHandler_BanTimeList, MenuAction_Select | MenuAction_Cancel | MenuAction_DrawItem )), TimeMenuHandle )
 	{
 		TimeMenuHandle.Pagination = 8;
 		TimeMenuHandle.ExitBackButton = true;
 	}
 
-	if ((ReasonMenuHandle = new Menu(ReasonSelected)) != INVALID_HANDLE)
+	if ( (ReasonMenuHandle = new Menu( ReasonSelected )), ReasonMenuHandle )
 	{
 		ReasonMenuHandle.Pagination = 8;
 		ReasonMenuHandle.ExitBackButton = true;
 	}
 
-	if ((HackingMenuHandle = new Menu(HackingSelected)) != INVALID_HANDLE)
+	if ( (HackingMenuHandle = new Menu( HackingSelected )), HackingMenuHandle )
 	{
 		HackingMenuHandle.Pagination = 8;
 		HackingMenuHandle.ExitBackButton = true;
@@ -202,10 +202,8 @@ public void OnPluginStart()
 	// Catch config error and show link to FAQ
 	if (!SQL_CheckConfig("sourcebans"))
 	{
-		if (ReasonMenuHandle != INVALID_HANDLE)
-			CloseHandle(ReasonMenuHandle);
-		if (HackingMenuHandle != INVALID_HANDLE)
-			CloseHandle(HackingMenuHandle);
+		delete ReasonMenuHandle;
+		delete HackingMenuHandle;
 		LogToFile(logFile, "Database failure: Could not find Database conf \"sourcebans\". See Docs: https://sbpp.github.io/docs/");
 		SetFailState("Database failure: Could not find Database conf \"sourcebans\"");
 		return;
@@ -254,7 +252,7 @@ public void OnAllPluginsLoaded()
 	LogToFile(logFile, "OnAllPluginsLoaded()");
 	#endif
 
-	if (LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
+	if ( LibraryExists("adminmenu") && (topmenu = GetAdminTopMenu()) )
 	{
 		OnAdminMenuReady(topmenu);
 	}
@@ -322,7 +320,7 @@ public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
 public void OnClientAuthorized(int client, const char[] auth)
 {
 	/* Do not check bots nor check player with lan steamid. */
-	if (auth[0] == 'B' || auth[9] == 'L' || DB == INVALID_HANDLE)
+	if ( auth[0] == 'B' || auth[9] == 'L' || !DB )
 	{
 		PlayerStatus[client] = true;
 		return;
@@ -353,7 +351,7 @@ public void OnRebuildAdminCache(AdminCachePart part)
 		case AdminCache_Admins:
 		loadAdmins = true;
 	}
-	if (DB == INVALID_HANDLE) {
+	if ( !DB ) {
 		if (!g_bConnecting) {
 			g_bConnecting = true;
 			Database.Connect(GotDatabase, "sourcebans");
@@ -856,7 +854,7 @@ public int HackingSelected(Menu menu, MenuAction action, int param1, int param2)
 
 					DataPack ReasonPack = Pack.ReadCell();
 
-					if (ReasonPack != INVALID_HANDLE)
+					if ( ReasonPack )
 					{
 						CloseHandle(ReasonPack);
 					}
@@ -889,7 +887,7 @@ public int MenuHandler_BanPlayerList(Menu menu, MenuAction action, int param1, i
 
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			if ( param2 == MenuCancel_ExitBack && hTopMenu )
 			{
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 			}
@@ -930,7 +928,7 @@ public int MenuHandler_BanTimeList(Menu menu, MenuAction action, int param1, int
 	{
 		case MenuAction_Cancel:
 		{
-			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
+			if ( param2 == MenuCancel_ExitBack && hTopMenu )
 			{
 				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 			}
@@ -998,17 +996,17 @@ stock void DisplayBanTimeMenu(int client)
 
 stock void ResetMenu()
 {
-	if (TimeMenuHandle != INVALID_HANDLE)
+	if ( TimeMenuHandle )
 	{
 		RemoveAllMenuItems(TimeMenuHandle);
 	}
 
-	if (ReasonMenuHandle != INVALID_HANDLE)
+	if ( ReasonMenuHandle )
 	{
 		RemoveAllMenuItems(ReasonMenuHandle);
 	}
 
-	if (HackingMenuHandle != INVALID_HANDLE)
+	if ( HackingMenuHandle )
 	{
 		RemoveAllMenuItems(HackingMenuHandle);
 	}
@@ -1018,7 +1016,7 @@ stock void ResetMenu()
 
 public void GotDatabase(Database db, const char[] error, any data)
 {
-	if (db == INVALID_HANDLE)
+	if ( !db )
 	{
 		LogToFile(logFile, "Database failure: %s. See Docs: https://sbpp.github.io/docs/", error);
 		g_bConnecting = false;
@@ -1098,7 +1096,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 
 public void VerifyInsert(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	if (dataPack == INVALID_HANDLE)
+	if ( !dataPack )
 	{
 		LogToFile(logFile, "%t: %s", "Ban Fail", error);
 
@@ -1172,7 +1170,7 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 
 	LogAction(admin, client, "%t", "Ban Log", admin, client, time, Reason);
 
-	if (PlayerDataPack[admin] != INVALID_HANDLE)
+	if ( PlayerDataPack[admin] )
 	{
 		delete PlayerDataPack[admin];
 		delete ReasonPack;
@@ -1825,10 +1823,12 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 			if (flags[i] < 'a' || flags[i] > 'z')
 				continue;
 
-			if (g_FlagLetters[flags[i]-'a'] < Admin_Reservation)
+			if ( g_FlagLetters[ view_as<int>( flags[i] - 'a' ) ] < Admin_Reservation )
+			{
 				continue;
+			}
 
-			curAdm.SetFlag(g_FlagLetters[flags[i]-'a'], true);
+			curAdm.SetFlag( g_FlagLetters[ view_as<int>( flags[i] - 'a' ) ], true );
 		}
 		++admCount;
 	}
@@ -1902,10 +1902,10 @@ public void GroupsDone(Database db, DBResultSet results, const char[] error, any
 			if (grpFlags[i] < 'a' || grpFlags[i] > 'z')
 				continue;
 
-			if (g_FlagLetters[grpFlags[i]-'a'] < Admin_Reservation)
+			if ( g_FlagLetters[ view_as<int>( grpFlags[i] - 'a' ) ] < Admin_Reservation )
 				continue;
 
-			curGrp.SetFlag(g_FlagLetters[grpFlags[i]-'a'], true);
+			curGrp.SetFlag( g_FlagLetters[ view_as<int>( grpFlags[i] - 'a' ) ], true );
 		}
 
 		// Set the group immunity.
@@ -2113,7 +2113,7 @@ public void OverridesDone(Database db, DBResultSet results, const char[] error, 
 
 // TIMER CALL BACKS //
 
-public Action ClientRecheck(Handle timer, any client)
+public Action ClientRecheck (Handle timer, int client)
 {
 	char Authid[64];
 	if (!PlayerStatus[client] && IsClientConnected(client) && GetClientAuthId(client, AuthId_Steam2, Authid, sizeof(Authid)))
@@ -2262,21 +2262,21 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 
 		case ConfigStateReasons:
 		{
-			if (ReasonMenuHandle != INVALID_HANDLE)
+			if ( ReasonMenuHandle )
 			{
 				AddMenuItem(ReasonMenuHandle, key, value);
 			}
 		}
 		case ConfigStateHacking:
 		{
-			if (HackingMenuHandle != INVALID_HANDLE)
+			if ( HackingMenuHandle )
 			{
 				AddMenuItem(HackingMenuHandle, key, value);
 			}
 		}
 		case ConfigStateTime:
 		{
-			if (StringToInt(key) > -1 && TimeMenuHandle != INVALID_HANDLE)
+			if ( StringToInt(key) > -1 && TimeMenuHandle )
 			{
 				AddMenuItem(TimeMenuHandle, key, value);
 			}
@@ -2417,8 +2417,10 @@ public void InitializeBackupDB()
 	char error[255];
 
 	SQLiteDB = SQLite_UseDatabase("sourcebans-queue", error, sizeof(error));
-	if (SQLiteDB == INVALID_HANDLE)
+	if ( !SQLiteDB )
+	{
 		SetFailState(error);
+	}
 
 	SQL_LockDatabase(SQLiteDB);
 	SQL_FastQuery(SQLiteDB, "CREATE TABLE IF NOT EXISTS queue (steam_id TEXT PRIMARY KEY ON CONFLICT REPLACE, time INTEGER, start_time INTEGER, reason TEXT, name TEXT, ip TEXT, admin_id TEXT, admin_ip TEXT);");
@@ -2482,7 +2484,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	if (reason[0] != '\0')
 	{
 		// if we have a valid reason pass move forward with the ban
-		if (DB != INVALID_HANDLE)
+		if ( DB )
 		{
 			UTIL_InsertBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
 		} else {
@@ -2587,26 +2589,27 @@ stock void CheckLoadAdmins()
 
 stock void InsertServerInfo()
 {
-    if (DB == INVALID_HANDLE) {
-        return;
-    }
+	if ( !DB )
+	{
+		return;
+	}
 
-    char query[100];
-    int pieces[4];
-    int longip = CvarHostIp.IntValue;
+	char query[100];
+	int pieces[4];
+	int longip = CvarHostIp.IntValue;
 
-    pieces[0] = (longip >> 24) & 0x000000FF;
-    pieces[1] = (longip >> 16) & 0x000000FF;
-    pieces[2] = (longip >> 8) & 0x000000FF;
-    pieces[3] = longip & 0x000000FF;
+	pieces[0] = (longip >> 24) & 0x000000FF;
+	pieces[1] = (longip >> 16) & 0x000000FF;
+	pieces[2] = (longip >> 8) & 0x000000FF;
+	pieces[3] = longip & 0x000000FF;
 
-    FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-    CvarPort.GetString(ServerPort, sizeof(ServerPort));
+	FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
+	CvarPort.GetString(ServerPort, sizeof(ServerPort));
 
-    if (AutoAdd != false) {
-        FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
-        DB.Query(ServerInfoCallback, query);
-    }
+	if (AutoAdd != false) {
+		FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
+		DB.Query(ServerInfoCallback, query);
+	}
 }
 
 stock void PrepareBan(int client, int target, int time, char[] reason, int size)

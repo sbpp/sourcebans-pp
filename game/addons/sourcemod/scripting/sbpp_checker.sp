@@ -124,7 +124,7 @@ public Action OnListSourceBansCmd(int client, int args)
 		ReplyToCommand(client, LISTBANS_USAGE);
 	}
 
-	if (g_DB == INVALID_HANDLE)
+	if ( !g_DB )
 	{
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
@@ -290,7 +290,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 		ReplyToCommand(client, LISTCOMMS_USAGE);
 	}
 
-	if (g_DB == INVALID_HANDLE)
+	if ( !g_DB )
 	{
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
