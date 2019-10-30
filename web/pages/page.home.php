@@ -24,8 +24,13 @@ if (!defined("IN_SB")) {
 }
 define('IN_HOME', true);
 
-$res          = $GLOBALS['db']->Execute("SELECT count(name) FROM " . DB_PREFIX . "_banlog");
-$totalstopped = (int) $res->fields[0];
+$GLOBALS['PDO']->query(
+    "SELECT
+        (SELECT COUNT(name) FROM `:prefix_banlog`) AS stopped,
+        (SELECT COUNT(bid) FROM `:prefix_bans`) AS bans,
+        (SELECT COUNT(bid) FROM `:prefix_comms`) AS comms"
+);
+$count = $GLOBALS['PDO']->single();
 
 $res = $GLOBALS['db']->Execute("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.authid, b.ip
 								FROM " . DB_PREFIX . "_banlog AS bl
@@ -62,9 +67,6 @@ while (!$res->EOF) {
     $res->MoveNext();
     ++$blcount;
 }
-
-$res      = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_bans");
-$BanCount = (int) $res->fields[0];
 
 $res  = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
 			    				FROM " . DB_PREFIX . "_bans AS ba
@@ -118,9 +120,6 @@ while (!$res->EOF) {
     $res->MoveNext();
 }
 
-$res       = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_comms");
-$CommCount = (int) $res->fields[0];
-
 $res   = $GLOBALS['db']->Execute("SELECT bid, ba.authid, ba.type, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, CONCAT(se.ip,':',se.port), se.sid, mo.icon, ba.RemoveType, ba.type
 				    				FROM " . DB_PREFIX . "_comms AS ba
 				    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
@@ -173,12 +172,12 @@ $theme->assign('dashboard_lognopopup', Config::getBool('dash.lognopopup'));
 $theme->assign('dashboard_title', Config::get('dash.intro.title'));
 $theme->assign('dashboard_text', Config::get('dash.intro.text'));
 $theme->assign('players_blocked', $stopped);
-$theme->assign('total_blocked', $totalstopped);
+$theme->assign('total_blocked', $count['stopped']);
 
 $theme->assign('players_banned', $bans);
-$theme->assign('total_bans', $BanCount);
+$theme->assign('total_bans', $count['bans']);
 
-$theme->assign('total_comms', $CommCount);
+$theme->assign('total_comms', $count['comms']);
 $theme->assign('players_commed', $comms);
 
 $theme->display('page_dashboard.tpl');
