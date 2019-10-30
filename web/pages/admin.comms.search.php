@@ -23,18 +23,16 @@ Page: <https://forums.alliedmods.net/showthread.php?p=1883705> - <https://github
 *************************************************************************/
 
 global $userbank, $theme;
-$admin_list   = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` ORDER BY user ASC");
-$server_list  = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
-$servers      = array();
+
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` ORDER BY user ASC");
+$admin_list   = $GLOBALS['PDO']->resultset();
+
+$GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1");
+$servers      = $GLOBALS['PDO']->resultset();
+
 $serverscript = "<script type=\"text/javascript\">";
-while (!$server_list->EOF) {
-    $info = array();
-    $serverscript .= "xajax_ServerHostPlayers('" . $server_list->fields[0] . "', 'id', 'ss" . $server_list->fields[0] . "', '', '', false, 200);";
-    $info['sid']  = $server_list->fields[0];
-    $info['ip']   = $server_list->fields[1];
-    $info['port'] = $server_list->fields[2];
-    array_push($servers, $info);
-    $server_list->MoveNext();
+foreach($servers as $server) {
+    $serverscript .= "xajax_ServerHostPlayers('$server[sid]', 'id', 'ss$server[sid]', '', '', false, 200);";
 }
 $serverscript .= "</script>";
 $page = isset($_GET['page']) ? $_GET['page'] : 1;
