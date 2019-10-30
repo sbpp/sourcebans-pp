@@ -41,12 +41,12 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS)) {
 }
 
 $_GET['id'] = (int) $_GET['id'];
-$res        = $GLOBALS['db']->GetRow("
-    				SELECT name, modfolder, icon, enabled, steam_universe
-    				FROM " . DB_PREFIX . "_mods
-    				WHERE mid = ?", array(
-    $_GET['id']
-));
+$GLOBALS['PDO']->query(
+    "SELECT name, modfolder, icon, enabled, steam_universe
+    FROM `:prefix_mods` WHERE mid = :mid"
+);
+$GLOBALS['PDO']->bind(':mid', $_GET['id']);
+$res = $GLOBALS['PDO']->single();
 
 $errorScript = "";
 
@@ -60,10 +60,10 @@ if (isset($_POST['name'])) {
         $errorScript .= "$('name.msg').setStyle('display', 'block');";
     } else {
         // Already there?
-        $check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE name = ? AND mid != ?;", array(
-            $_POST['name'],
-            $_GET['id']
-        ));
+        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE name = :name AND mid != :mid");
+        $GLOBALS['PDO']->bind(':name', $_POST['name']);
+        $GLOBALS['PDO']->bind(':mid', $_GET['id']);
+        $check = $GLOBALS['PDO']->single();
         if (!empty($check)) {
             $error++;
             $errorScript .= "$('name.msg').innerHTML = 'A mod with that name already exists.';";
@@ -76,10 +76,10 @@ if (isset($_POST['name'])) {
         $errorScript .= "$('folder.msg').setStyle('display', 'block');";
     } else {
         // Already there?
-        $check = $GLOBALS['db']->GetRow("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE modfolder = ? AND mid != ?;", array(
-            $_POST['folder'],
-            $_GET['id']
-        ));
+        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE modfolder = :folder AND mid != :mid");
+        $GLOBALS['PDO']->bind(':folder', $_POST['folder']);
+        $GLOBALS['PDO']->bind(':mid', $_GET['id']);
+        $check = $GLOBALS['PDO']->single();
         if (!empty($check)) {
             $error++;
             $errorScript .= "$('folder.msg').innerHTML = 'A mod using that folder already exists.';";
@@ -98,19 +98,21 @@ if (isset($_POST['name'])) {
             @unlink(SB_ICONS . "/" . $res['icon']);
         }
 
-        $edit = $GLOBALS['db']->Execute(
-            "UPDATE " . DB_PREFIX . "_mods SET
-            `name` = ?, `modfolder` = ?, `icon` = ?, `enabled` = ?, `steam_universe` = ?
-            WHERE `mid` = ?",
-            array(
-                $name,
-                $folder,
-                $icon,
-                $enabled,
-                $steam_universe,
-                $_GET['id']
-            )
+        $GLOBALS['PDO']->query(
+            "UPDATE `:prefix_mods` SET name = :name, modfolder = :folder, icon = :icon, enabled = :enabled, steam_universe = :universe
+            WHERE mid = :mid"
         );
+
+        $GLOBALS['PDO']->bindMultiple([
+            ':name' => $name,
+            ':folder' => $folder,
+            ':icon' => $icon,
+            ':enabled' => $enabled,
+            ':universe' => $steam_universe,
+            ':mid' => $_GET['id']
+        ]);
+
+        $edit = $GLOBALS['PDO']->execute();
         echo '<script>ShowBox("Mod updated", "The mod has been updated successfully", "green", "index.php?p=admin&c=mods");</script>';
     }
     // put into array to display new values after submit
