@@ -22,15 +22,19 @@ if (!defined("IN_SB")) {
     die();
 }
 global $userbank, $theme;
-$counts = $GLOBALS['db']->GetRow("SELECT
-								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_banlog`) AS blocks,
-								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_bans`) AS bans,
-								 (SELECT COUNT(aid) FROM `" . DB_PREFIX . "_admins` WHERE aid > 0) AS admins,
-								 (SELECT COUNT(subid) FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0') AS subs,
-								 (SELECT COUNT(subid) FROM `" . DB_PREFIX . "_submissions` WHERE archiv > 0) AS archiv_subs,
-								 (SELECT COUNT(pid) FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0') AS protests,
-								 (SELECT COUNT(pid) FROM `" . DB_PREFIX . "_protests` WHERE archiv > 0) AS archiv_protests,
-								 (SELECT COUNT(sid) FROM `" . DB_PREFIX . "_servers`) AS servers");
+
+$GLOBALS['PDO']->query(
+    "SELECT
+    (SELECT COUNT(bid) FROM `:prefix_banlog`) AS blocks,
+    (SELECT COUNT(bid) FROM `:prefix_bans`) AS bans,
+    (SELECT COUNT(aid) FROM `:prefix_admins` WHERE aid > 0) AS admins,
+    (SELECT COUNT(subid) FROM `:prefix_submissions` WHERE archiv = 0) AS subs,
+    (SELECT COUNT(subid) FROM `:prefix_submissions` WHERE archiv > 0) AS archiv_subs,
+    (SELECT COUNT(pid) FROM `:prefix_protests` WHERE archiv = 0) AS protests,
+    (SELECT COUNT(pid) FROM `:prefix_protests` WHERE archiv > 0) AS archiv_protests,
+    (SELECT COUNT(sid) FROM `:prefix_servers`) AS servers");
+
+$counts = $GLOBALS['PDO']->single();
 
 $theme->assign('access_admins', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS | ADMIN_ADD_ADMINS | ADMIN_EDIT_ADMINS | ADMIN_DELETE_ADMINS));
 $theme->assign('access_servers', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS | ADMIN_ADD_SERVER | ADMIN_EDIT_SERVERS | ADMIN_DELETE_SERVERS));
