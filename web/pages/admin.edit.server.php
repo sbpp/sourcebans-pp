@@ -36,7 +36,10 @@ if (!isset($_GET['id'])) {
 }
 $_GET['id'] = (int) $_GET['id'];
 
-$server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = {$_GET['id']}");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers` WHERE sid = :sid");
+$GLOBALS['PDO']->bind(':sid', $_GET['id']);
+
+$server = $GLOBALS['PDO']->single();
 if (!$server) {
     Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
     echo '<div id="msg-red" >
@@ -91,11 +94,13 @@ if (isset($_POST['address'])) {
 
     // Check for dublicates afterwards
     if ($error == 0) {
-        $chk = $GLOBALS['db']->GetRow('SELECT sid FROM `' . DB_PREFIX . '_servers` WHERE ip = ? AND port = ? AND sid != ?;', array(
-            $ip,
-            (int) $_POST['port'],
-            $_GET['id']
-        ));
+        $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE ip = :ip AND port = :port AND sid != :sid");
+        $GLOBALS['PDO']->bindMultiple([
+            ':ip' => $ip,
+            ':port' => $_POST['port'],
+            ':sid' => $_GET['id']
+        ]);
+        $chk = $GLOBALS['PDO']->single();
         if ($chk) {
             $error++;
             $errorScript .= "ShowBox('Error', 'There already is a server with that IP:Port combination.', 'red');";
@@ -111,56 +116,56 @@ if (isset($_POST['address'])) {
 
     if ($error == 0) {
         $grps = "";
-        $sg   = $GLOBALS['db']->GetAll("SELECT * FROM " . DB_PREFIX . "_servers_groups WHERE server_id = {$_GET['id']}");
+        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers_groups` WHERE server_id = :sid");
+        $GLOBALS['PDO']->bind(':sid', $_GET['id']);
+        $sg   = $GLOBALS['PDO']->resultset();
+
+        $GLOBALS['PDO']->query("DELETE FROM `:prefix_servers_groups` WHERE server_id = :sid AND group_id = :gid");
         foreach ($sg as $s) {
-            $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_servers_groups WHERE server_id = " . (int) $s['server_id'] . " AND group_id = " . (int) $s['group_id']);
+            $GLOBALS['PDO']->bind(':sid', $s['server_id']);
+            $GLOBALS['PDO']->bind(':gid', $s['group_id']);
+            $GLOBALS['PDO']->execute();
         }
         if (!empty($_POST['groups'])) {
+            $GLOBALS['PDO']->query("INSERT INTO `:prefix_servers_groups` (server_id, group_id) VALUES (:sid, :gid)");
             foreach ($_POST['groups'] as $t) {
-                $addtogrp = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_servers_groups (`server_id`, `group_id`) VALUES (?,?)");
-                $GLOBALS['db']->Execute($addtogrp, array(
-                    $_GET['id'],
-                    (int) $t
-                ));
+                $GLOBALS['PDO']->bind(':sid', $_GET['id']);
+                $GLOBALS['PDO']->bind(':gid', $t);
+                $GLOBALS['PDO']->execute();
             }
         }
         $enabled = (isset($_POST['enabled']) && $_POST['enabled'] == "on" ? 1 : 0);
 
-        $edit = $GLOBALS['db']->Execute(
-            "UPDATE " . DB_PREFIX . "_servers SET
-            `ip` = ?,
-            `port` = ?,
-            `modid` = ?,
-            `enabled` = ?
-            WHERE `sid` = ?",
-            array(
-                $ip,
-                (int) $_POST['port'],
-                (int) $_POST['mod'],
-                $enabled,
-                (int) $_GET['id']
-            )
+        $GLOBALS['PDO']->query(
+            "UPDATE `:prefix_servers` SET ip = :ip, port = :port, modid = :modid, enabled = :enabled WHERE sid = :sid"
         );
 
+        $GLOBALS['PDO']->bindMultiple([
+            ':ip' => $ip,
+            ':port' => $_POST['port'],
+            ':modid' => $_POST['mod'],
+            ':enabled' => $enabled,
+            ':sid' => $_GET['id']
+        ]);
+
+        $GLOBALS['PDO']->execute();
         // don't change rcon password if not changed
         if ($_POST['rcon'] != '+-#*_') {
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_servers SET
-                `rcon` = ?
-                WHERE `sid` = ?",
-                array(
-                    $_POST['rcon'],
-                    (int) $_GET['id']
-                )
-            );
+            $GLOBALS['PDO']->query("UPDATE `:prefix_servers` SET rcon = :rcon WHERE sid = :sid");
+            $GLOBALS['PDO']->bind(':rcon', $_POST['rcon']);
+            $GLOBALS['PDO']->bind(':sid', $_GET['id']);
+            $GLOBALS['PDO']->execute();
         }
 
         echo "<script>ShowBox('Server updated', 'The server has been updated successfully', 'green', 'index.php?p=admin&c=servers');TabToReload();</script>";
     }
 }
 
-$modlist   = $GLOBALS['db']->GetAll("SELECT mid, name FROM `" . DB_PREFIX . "_mods` WHERE `mid` > 0 AND `enabled` = 1 ORDER BY name ASC");
-$grouplist = $GLOBALS['db']->GetAll("SELECT gid, name FROM `" . DB_PREFIX . "_groups` WHERE type = 3 ORDER BY name ASC");
+$GLOBALS['PDO']->query("SELECT mid, name FROM `:prefix_mods` WHERE mid > 0 AND enabled = 1 ORDER BY name ASC");
+$modlist   = $GLOBALS['PDO']->resultset();
+
+$GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = 3 ORDER BY name ASC");
+$grouplist = $GLOBALS['PDO']->resultset();
 
 $theme->assign('ip', $server['ip']);
 $theme->assign('port', $server['port']);
@@ -182,7 +187,9 @@ $theme->assign('submit_text', "Update Server");
 <script>
 <?php
 if (!isset($_POST['address'])) {
-    $groups = $GLOBALS['db']->GetAll("SELECT group_id FROM `" . DB_PREFIX . "_servers_groups` WHERE server_id = {$_GET['id']}");
+    $GLOBALS['PDO']->query("SELECT group_id FROM `:prefix_servers_groups` WHERE server_id = :sid");
+    $GLOBALS['PDO']->bind(':sid', $_GET['id']);
+    $groups = $GLOBALS['PDO']->resultset();
 } else {
     if (isset($_POST['groups']) && is_array($_POST['groups'])) {
         $groups = $_POST['groups'];
