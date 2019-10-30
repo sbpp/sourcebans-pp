@@ -52,17 +52,19 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     } elseif ($Type == 0) {
-        $pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE authid=? AND RemovedBy IS NULL AND type=0;");
-        $res = $GLOBALS['db']->Execute($pre, array(
-            $SteamID
-        ));
-        if ($res->RecordCount() == 0) {
+        $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_bans` WHERE authid = :authid AND RemovedBy IS NULL AND type = 0");
+        $GLOBALS['PDO']->bind(':authid', $SteamID);
+        $res = $GLOBALS['PDO']->single();
+
+        if (@count($res) == 0) {
             $errors .= '* That Steam ID is not banned!<br>';
             $validsubmit = false;
         } else {
-            $BanId = (int) $res->fields[0];
-            $res   = $GLOBALS['db']->Execute("SELECT pid FROM " . DB_PREFIX . "_protests WHERE bid=$BanId");
-            if ($res->RecordCount() > 0) {
+            $BanId = $res['bid'];
+            $GLOBALS['PDO']->query("SELECT pid FROM `:prefix_protests` WHERE bid = :bid");
+            $GLOBALS['PDO']->bind(':bid', $res['bid'], \PDO::PARAM_INT);
+            $res   = $GLOBALS['PDO']->resultset();
+            if (@count($res) > 0) {
                 $errors .= '* A protest is already pending for this Steam ID.<br>';
                 $validsubmit = false;
             }
@@ -72,17 +74,19 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $errors .= '* Please type a valid IP.<br>';
         $validsubmit = false;
     } elseif ($Type == 1) {
-        $pre = $GLOBALS['db']->Prepare("SELECT bid FROM " . DB_PREFIX . "_bans WHERE ip=? AND RemovedBy IS NULL AND type=1;");
-        $res = $GLOBALS['db']->Execute($pre, array(
-            $IP
-        ));
-        if ($res->RecordCount() == 0) {
+        $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_bans` WHERE ip = :ip AND RemovedBy IS NULL AND type = 1");
+        $GLOBALS['PDO']->bind(':ip', $IP);
+        $res = $GLOBALS['PDO']->single();
+
+        if (@count($res) == 0) {
             $errors .= '* That IP is not banned!<br>';
             $validsubmit = false;
         } else {
-            $BanId = (int) $res->fields[0];
-            $res   = $GLOBALS['db']->Execute("SELECT pid FROM " . DB_PREFIX . "_protests WHERE bid=$BanId");
-            if ($res->RecordCount() > 0) {
+            $BanId = $res['bid'];
+            $GLOBALS['PDO']->query("SELECT pid FROM `:prefix_protests` WHERE bid = :bid");
+            $GLOBALS['PDO']->bind(':bid', $res['bid'], \PDO::PARAM_INT);
+            $res   = $GLOBALS['PDO']->resultset();
+            if (@count($res) > 0) {
                 $errors .= '* A protest is already pending for this IP.<br>';
                 $validsubmit = false;
             }
@@ -107,15 +111,22 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
 
     if ($validsubmit && $BanId != -1) {
         $UnbanReason = trim($UnbanReason);
-        $pre         = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_protests(bid,datesubmitted,reason,email,archiv,pip) VALUES (?,UNIX_TIMESTAMP(),?,?,0,?)");
-        $res         = $GLOBALS['db']->Execute($pre, array(
-            $BanId,
-            $UnbanReason,
-            $Email,
-            $_SERVER['REMOTE_ADDR']
-        ));
-        $protid      = $GLOBALS['db']->Insert_ID();
-        $protadmin   = $GLOBALS['db']->GetRow("SELECT ad.user FROM " . DB_PREFIX . "_protests p, " . DB_PREFIX . "_admins ad, " . DB_PREFIX . "_bans b WHERE p.pid = '" . $protid . "' AND b.bid = p.bid AND ad.aid = b.aid");
+        $GLOBALS['PDO']->query(
+            "INSERT INTO `:prefix_protests` (bid, datesubmitted, reason, email, archiv, pip)
+             VALUES (:bid, UNIX_TIMESTAMP(), :reason, :email, 0, :pip)");
+        $GLOBALS['PDO']->bindMultiple([
+            ':bid' => $BanId,
+            ':reason' => $UnbanReason,
+            ':email' => $Email,
+            ':pip' => $_SERVER['REMOTE_ADDR']
+        ]);
+        $GLOBALS['PDO']->execute();
+        $protid      = $GLOBALS['PDO']->lastInsertId();
+
+        $GLOBALS['PDO']->query(
+            "SELECT ad.user FROM `:prefix_protests` p, `:prefix_admins` ad, `:prefix_bans` b WHERE p.pid = :pid AND b.bid = p.bid AND ad.aid = b.aid");
+        $GLOBALS['PDO']->bind(':pid', $protid);
+        $protadmin   = $GLOBALS['PDO']->single();
 
         $Type        = 0;
         $SteamID     = "";
@@ -127,14 +138,17 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         // Send an email when protest was posted
         $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
 
-        $emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `" . DB_PREFIX . "_admins` WHERE aid = (SELECT aid FROM `" . DB_PREFIX . "_bans` WHERE bid = '" . (int) $BanId . "');");
+        $GLOBALS['PDO']->query("SELECT aid, user, email FROM `:prefix_admins` WHERE aid = (SELECT aid FROM `:prefix_bans` WHERE bid = :bid)");
+        $GLOBALS['PDO']->bind(':bid', $BanId);
+
+        $emailinfo = $GLOBALS['PDO']->single();
         $requri    = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
         if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo->fields['email'])) {
             $admins = array(
                 array(
-                    'aid' => $emailinfo->fields['aid'],
-                    'user' => $emailinfo->fields['user'],
-                    'email' => $emailinfo->fields['email']
+                    'aid' => $emailinfo['aid'],
+                    'user' => $emailinfo['user'],
+                    'email' => $emailinfo['email']
                 )
             );
         } else {
