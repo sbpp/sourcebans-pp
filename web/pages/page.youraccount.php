@@ -35,11 +35,12 @@ new AdminTabs([
     ['name' => 'Change Email', 'permission' => ALL_WEB]
 ], $userbank);
 
-$res      = $GLOBALS['db']->Execute("SELECT `srv_password`, `email` FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '" . $userbank->GetAid() . "'");
-$srvpwset = (!empty($res->fields['srv_password']) ? true : false);
+$GLOBALS['PDO']->query("SELECT srv_password, email FROM `:prefix_admins` WHERE aid = :aid");
+$GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
+$res      = $GLOBALS['PDO']->single();
 
-$theme->assign('srvpwset', $srvpwset);
-$theme->assign('email', $res->fields['email']);
+$theme->assign('srvpwset', (bool)!empty($res['srv_password']);
+$theme->assign('email', $res['email']);
 $theme->assign('user_aid', $userbank->GetAid());
 $theme->assign('web_permissions', BitToString($userbank->GetProperty("extraflags")));
 $theme->assign('server_permissions', SmFlagsToSb($userbank->GetProperty("srv_flags")));
