@@ -32,32 +32,50 @@ new AdminTabs([
 <div id="admin-page-content">
 <?php
 // web groups
-$web_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type != '3'");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != 3");
+$web_group_list = $GLOBALS['PDO']->resultset();
 for ($i = 0; $i < count($web_group_list); $i++) {
     $web_group_list[$i]['permissions'] = BitToString($web_group_list[$i]['flags'], $web_group_list[$i]['type']);
-    $query                             = $GLOBALS['db']->GetRow("SELECT COUNT(gid) AS cnt FROM `" . DB_PREFIX . "_admins` WHERE gid = '" . $web_group_list[$i]['gid'] . "'");
-    $web_group_count[$i]               = $query['cnt'];
-    $web_group_admins[$i]              = $GLOBALS['db']->GetAll("SELECT aid, user, authid FROM `" . DB_PREFIX . "_admins` WHERE gid = '" . $web_group_list[$i]['gid'] . "'");
+    $GLOBALS['PDO']->query("SELECT COUNT(gid) AS cnt FROM `:prefix_admins` WHERE gid = :gid");
+    $GLOBALS['PDO']->bind(':gid', $web_group_list[$i]['gid']);
+    $query = $GLOBALS['PDO']->single();
+    $web_group_count[$i] = $query['cnt'];
+
+    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE gid = :gid");
+    $GLOBALS['PDO']->bind(':gid', $web_group_list[$i]['gid']);
+    $web_group_admins[$i] = $GLOBALS['PDO']->resultset();
 }
 
 // Server admin groups
-$server_admin_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`");
+$server_admin_group_list = $GLOBALS['PDO']->resultset();
 for ($i = 0; $i < count($server_admin_group_list); $i++) {
     $server_admin_group_list[$i]['permissions'] = SmFlagsToSb($server_admin_group_list[$i]['flags']);
-    $srvGroup                                   = $GLOBALS['db']->qstr($server_admin_group_list[$i]['name']);
-    $query                                      = $GLOBALS['db']->GetRow("SELECT COUNT(aid) AS cnt FROM `" . DB_PREFIX . "_admins` WHERE srv_group = $srvGroup;");
+    $GLOBALS['PDO']->query("SELECT COUNT(aid) AS cnt FROM `:prefix_admins` WHERE srv_group = :srvgroup");
+    $GLOBALS['PDO']->bind(':srvgroup', $server_admin_group_list[$i]['name']);
+    $query = $GLOBALS['PDO']->single();
     $server_admin_group_count[$i]               = $query['cnt'];
-    $server_admin_group_admins[$i]              = $GLOBALS['db']->GetAll("SELECT aid, user, authid FROM `" . DB_PREFIX . "_admins` WHERE srv_group = $srvGroup;");
-    $server_admin_group_overrides[$i]           = $GLOBALS['db']->GetAll("SELECT type, name, access FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = ?", array(
-        $server_admin_group_list[$i]['id']
-    ));
+
+    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE srv_group = :srvgroup");
+    $GLOBALS['PDO']->bind(':srvgroup', $server_admin_group_list[$i]['name']);
+    $server_admin_group_admins[$i] = $GLOBALS['PDO']->resultset();
+
+    $GLOBALS['PDO']->query("SELECT type, name, access FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid");
+    $GLOBALS['PDO']->bind(':gid', $server_admin_group_list[$i]['id']);
+    $server_admin_group_overrides[$i] = $GLOBALS['PDO']->resultset();
 }
 // server groups
-$server_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type = '3'");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = 3");
+$server_group_list = $GLOBALS['PDO']->resultset();
 for ($i = 0; $i < count($server_group_list); $i++) {
-    $query                  = $GLOBALS['db']->GetRow("SELECT COUNT(server_id) AS cnt FROM `" . DB_PREFIX . "_servers_groups` WHERE `group_id` = " . $server_group_list[$i]['gid']);
+    $GLOBALS['PDO']->query("SELECT COUNT(server_id) AS cnt FROM `:prefix_servers_groups` WHERE group_id = :gid");
+    $GLOBALS['PDO']->bind(':gid', $server_group_list[$i]['gid']);
+    $query = $GLOBALS['PDO']->single();
     $server_group_count[$i] = $query['cnt'];
-    $servers_in_group       = $GLOBALS['db']->GetAll("SELECT server_id FROM `" . DB_PREFIX . "_servers_groups` WHERE group_id = " . $server_group_list[$i]['gid']);
+
+    $GLOBALS['PDO']->query("SELECT server_id FROM `:prefix_servers_groups` WHERE group_id = :gid");
+    $GLOBALS['PDO']->bind(':gid', $server_group_list[$i]['gid']);
+    $servers_in_group       = $GLOBALS['PDO']->resultset();
     $server_arr             = "";
     foreach ($servers_in_group as $server) {
         $server_arr .= $server['server_id'] . ";";
