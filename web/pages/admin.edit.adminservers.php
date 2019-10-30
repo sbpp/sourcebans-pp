@@ -58,47 +58,55 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
     PageDie();
 }
 
-$servers    = $GLOBALS['db']->GetAll("SELECT `server_id`, `srv_group_id` FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = " . (int) $aid);
-$adminGroup = $GLOBALS['db']->GetAll('SELECT id FROM ' . DB_PREFIX . '_srvgroups sg, ' . DB_PREFIX . '_admins a WHERE sg.name = a.srv_group and a.aid = ? limit 1', array(
-    $aid
-));
+$GLOBALS['PDO']->query("SELECT server_id, srv_group_id FROM `:prefix_admins_servers_groups` WHERE admin_id = :aid");
+$GLOBALS['PDO']->bind(':aid', $aid);
+$servers    = $GLOBALS['PDO']->resultset();
+
+$GLOBALS['PDO']->query("SELECT id FROM `:prefix_srvgroups` sg, `:prefix_admins` a WHERE sg.name = a.srv_group AND a.aid :aid LIMIT 1");
+$GLOBALS['PDO']->bind(':aid', $aid);
+$adminGroup = $GLOBALS['PDO']->single();
 
 $server_grp = isset($adminGroup[0]['id']) ? $adminGroup[0]['id'] : 0;
 
 
 if (isset($_POST['editadminserver'])) {
     // clear old stuffs
-    $GLOBALS['db']->Execute("DELETE FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = {$aid}");
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_admins_servers_groups` WHERE admin_id = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $GLOBALS['PDO']->execute();
     if (isset($_POST['servers']) && is_array($_POST['servers']) && count($_POST['servers']) > 0) {
         foreach ($_POST['servers'] as $s) {
-            $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
-            $GLOBALS['db']->Execute($pre, array(
-                $aid,
-                $server_grp,
-                -1,
-                (int) substr($s, 1)
-            ));
+            $GLOBALS['PDO']->query("INSERT INTO `:prefix_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id) VALUES (:aid, :gid, -1, :sid)");
+            $GLOBALS['PDO']->bindMultiple([
+                ':aid' => $aid,
+                ':gid' => $server_grp,
+                ':sid' => substr($s, 1)
+            ]);
+            $GLOBALS['PDO']->execute();
         }
     }
     if (isset($_POST['group']) && is_array($_POST['group']) && count($_POST['group']) > 0) {
         foreach ($_POST['group'] as $g) {
-            $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_admins_servers_groups(admin_id,group_id,srv_group_id,server_id) VALUES (?,?,?,?)");
-            $GLOBALS['db']->Execute($pre, array(
-                $aid,
-                $server_grp,
-                (int) substr($g, 1),
-                -1
-            ));
+            $GLOBALS['PDO']->query("INSERT INTO `:prefix_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id) VALUES (:aid, :gid, :srvid, -1)");
+            $GLOBALS['PDO']->bindMultiple([
+                ':aid' => $aid,
+                ':gid' => $server_grp,
+                ':srvid' => substr($g, 1)
+            ]);
+            $GLOBALS['PDO']->execute();
         }
     }
     if (Config::getBool('config.enableadminrehashing')) {
         // rehash the admins on the servers
-        $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
-												LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` asg ON asg.admin_id = '" . (int) $aid . "'
-												LEFT JOIN `" . DB_PREFIX . "_servers_groups` sg ON sg.group_id = asg.srv_group_id
-												WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-												OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-												AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+        $GLOBALS['PDO']->query(
+            "SELECT s.sid FROM `:prefix_servers` s
+            LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
+            LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+            WHERE ((asg.server_id != -1 AND asg.srv_group_id = -1) OR (asg.srv_group_id != -1 AND asg.server_id = -1))
+            AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
+        );
+        $GLOBALS['PDO']->bind(':aid', $aid);
+        $serveraccessq = $GLOBALS['PDO']->resultset();
 
         $allservers = array();
         foreach ($serveraccessq as $access) {
@@ -114,9 +122,9 @@ if (isset($_POST['editadminserver'])) {
             }
 
             // old server groups
-            $serv_in_grp = $GLOBALS['db']->GetAll('SELECT server_id FROM `' . DB_PREFIX . '_servers_groups` WHERE group_id = ?;', array(
-                (int) $server['srv_group_id']
-            ));
+            $GLOBALS['PDO']->query("SELECT server_id FROM `:prefix_servers_groups` WHERE group_id = :gid");
+            $GLOBALS['PDO']->bind(':gid', $server['srv_group_id']);
+            $serv_in_grp = $GLOBALS['PDO']->resultset();
             foreach ($serv_in_grp as $srg) {
                 if ($srg['server_id'] != "-1" && !in_array((int) $srg['server_id'], $allservers)) {
                     $allservers[] = (int) $srg['server_id'];
@@ -129,15 +137,18 @@ if (isset($_POST['editadminserver'])) {
         echo '<script>ShowBox("Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
     }
 
-    $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
-        (int) $aid
-    ));
+    $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $admname = $GLOBALS['PDO']->single();
     Log::add("m", "Admin Servers Updated", "Admin ($admname[user]) server access has been changed.");
 }
 
 
-$server_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
-$group_list  = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type = '3'");
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers`");
+$server_list = $GLOBALS['PDO']->resultset();
+
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = 3");
+$group_list  = $GLOBALS['PDO']->resultset();
 $rowcount    = (count($server_list) + count($group_list));
 
 $theme->assign('row_count', $rowcount);
