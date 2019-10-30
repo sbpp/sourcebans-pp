@@ -28,9 +28,10 @@ new AdminTabs([
     ['name' => 'Add new MOD', 'permission' => ADMIN_OWNER|ADMIN_ADD_MODS]
 ], $userbank);
 
-$mod_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_mods` WHERE mid > 0 ORDER BY name ASC") ;
-$query = $GLOBALS['db']->GetRow("SELECT COUNT(mid) AS cnt FROM `" . DB_PREFIX . "_mods`") ;
-$mod_count = $query['cnt'];
+$GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE mid > 0 ORDER BY name ASC");
+$mod_list = $GLOBALS['PDO']->resultset();
+$mod_count = count($mod_list);
+
 ?>
 <div id="admin-page-content">
     <!-- List Mods -->
