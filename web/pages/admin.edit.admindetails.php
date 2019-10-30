@@ -195,52 +195,34 @@ if (isset($_POST['adminname'])) {
     // Only proceed, if there are no errors in the form
     if ($error == 0) {
         // set the basic fields
-        $edit = $GLOBALS['db']->Execute(
-            "UPDATE " . DB_PREFIX . "_admins SET
-            `user` = ?, `authid` = ?, `email` = ?
-            WHERE `aid` = ?",
-            array(
-                $a_name,
-                $a_steam,
-                $a_email,
-                $_GET['id']
-            )
-        );
+        $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET user = :user, authid = :authid, email = :email WHERE aid = :aid");
+        $GLOBALS['PDO']->bindMultiple([
+            ':user' => $a_name,
+            ':authid' => $a_steam,
+            ':email' => $a_email,
+            ':aid' => $_GET['id']
+        ]);
+        $edit = $GLOBALS['PDO']->execute();
 
         // Password changed?
         if ($pw_changed) {
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins SET
-                `password` = ?
-                WHERE `aid` = ?",
-                array(
-                    password_hash($_POST['password'], PASSWORD_BCRYPT),
-                    $_GET['id']
-                )
-            );
+            $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid");
+            $GLOBALS['PDO']->bind(':password', password_hash($_POST['password'], PASSWORD_BCRYPT));
+            $GLOBALS['PDO']->bind(':aid', $aid);
+            $edit = $GLOBALS['PDO']->execute();
         }
 
         // Server Admin Password changed?
         if ($serverpw_changed) {
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins SET
-                `srv_password` = ?
-                WHERE `aid` = ?",
-                array(
-                    $_POST['a_serverpass'],
-                    $_GET['id']
-                )
-            );
+            $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_password = :password WHERE aid = :aid");
+            $GLOBALS['PDO']->bind(':password', $_POST['a_serverpass']);
+            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+            $edit = $GLOBALS['PDO']->execute();
         } elseif ($_POST['a_useserverpass'] != "on") {
             // Remove the server password
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins SET
-                `srv_password` = NULL
-                WHERE `aid` = ?",
-                array(
-                    $_GET['id']
-                )
-            );
+            $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_password = NULL WHERE aid = :aid");
+            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+            $edit = $GLOBALS['PDO']->execute();
         }
 
         // to prevent rehash window to error with "no access", cause pw doesn't match
@@ -251,12 +233,15 @@ if (isset($_POST['adminname'])) {
 
         if (Config::getBool('config.enableadminrehashing')) {
             // rehash the admins on the servers
-            $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
-                LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` asg ON asg.admin_id = '" . (int) $_GET['id'] . "'
-                LEFT JOIN `" . DB_PREFIX . "_servers_groups` sg ON sg.group_id = asg.srv_group_id
-                WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-                OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+            $GLOBALS['PDO']->query(
+                "SELECT s.sid FROM `:prefix_servers` s
+                LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
+                LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+                WHERE ((asg.server_id != -1 AND asg.srv_group_id = -1) OR (asg.srv_group_id != -1 AND asg.server_id = -1))
+                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
+            );
+            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+            $serveraccessq = $GLOBALS['PDO']->resultset();
             $allservers    = array();
             foreach ($serveraccessq as $access) {
                 if (!in_array($access['sid'], $allservers)) {
@@ -266,9 +251,9 @@ if (isset($_POST['adminname'])) {
             $rehashing = true;
         }
 
-        $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
-            (int) $_GET['id']
-        ));
+        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+        $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+        $admname = $GLOBALS['PDO']->single();
         Log::add("m", "Admin Details Updated", "Admin ($admname[user]) details has been changed.");
         if ($ownpwchanged) {
             echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
