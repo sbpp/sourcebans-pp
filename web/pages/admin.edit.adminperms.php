@@ -34,8 +34,10 @@ if (!isset($_GET['id'])) {
 </div>';
     PageDie();
 }
-$admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE aid = \"" . $_GET['id'] . "\"");
 
+$GLOBALS['PDO']->query("SELECT immunity FROM `:prefix_admins` WHERE aid = :aid");
+$GLOBALS['PDO']->bind(':aid', $_GET['id']);
+$admin = $GLOBALS['PDO']->single();
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
     Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
