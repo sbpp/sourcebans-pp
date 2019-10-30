@@ -77,11 +77,13 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $validsubmit = false;
         }
     }
-    $checkres = $GLOBALS['db']->Execute("SELECT length FROM " . DB_PREFIX . "_bans WHERE authid = ? AND RemoveType IS NULL", array(
-        $SteamID
-    ));
-    $numcheck = $checkres->RecordCount();
-    if ($numcheck == 1 && $checkres->fields['length'] == 0) {
+
+    $GLOBALS['PDO']->query("SELECT length FROM `:prefix_bans` WHERE authid = :authid AND RemoveType IS NULL");
+    $GLOBALS['PDO']->bind(':authid', $SteamID);
+
+    $checkres = $GLOBALS['PDO']->single();
+    $numcheck = @count($checkres);
+    if ($numcheck == 1 && $checkres['length'] == 0) {
         $errors .= '* The player is already banned permanent.<br>';
         $validsubmit = false;
     }
@@ -127,26 +129,35 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             if ($SteamID == "STEAM_0:") {
                 $SteamID = "";
             }
-            $pre = $GLOBALS['db']->Prepare("INSERT INTO " . DB_PREFIX . "_submissions(submitted,SteamId,name,email,ModID,reason,ip,subname,sip,archiv,server) VALUES (UNIX_TIMESTAMP(),?,?,?,?,?,?,?,?,0,?)");
-            $GLOBALS['db']->Execute($pre, array(
-                $SteamID,
-                $PlayerName,
-                $Email,
-                $modid['mid'],
-                $BanReason,
-                $_SERVER['REMOTE_ADDR'],
-                $SubmitterName,
-                $BanIP,
-                $SID
-            ));
-            $subid = (int) $GLOBALS['db']->Insert_ID();
+
+            $GLOBALS['PDO']->query(
+                "INSERT INTO `:prefix_submissions` (submitted, SteamId, name, email, ModID, reason, ip, subname, sip, archiv, server)
+                VALUES (UNIX_TIMESTAMP(), :steamid, :name, :email, :modid, :reason, :ip, :subname, :sip, 0, :server)"
+            );
+
+            $GLOBALS['PDO']->bindMultiple([
+                ':steamid' => $SteamID,
+                ':name' => $PlayerName,
+                ':email' => $Email,
+                ':modid' => $modid['mid'],
+                ':reason' => $BanReason,
+                ':ip' => $_SERVER['REMOTE_ADDR'],
+                ':subname' => $SubmitterName,
+                ':sip' => $BanIP,
+                ':server' => $SID
+            ]);
+
+            $GLOBALS['PDO']->execute();
+            $subid = $GLOBALS['PDO']->lastInsertId();
 
             if (!empty($_FILES['demo_file']['name'])) {
-                $GLOBALS['db']->Execute("INSERT INTO " . DB_PREFIX . "_demos(demid,demtype,filename,origname) VALUES (?, 'S', ?, ?)", array(
-                    $subid,
-                    $filename,
-                    $_FILES['demo_file']['name']
-                ));
+                $GLOBALS['PDO']->query("INSERT INTO `:prefix_demos` (demid, demtype, filename, origname) VALUES (:id, 'S', :file, :orig)");
+                $GLOBALS['PDO']->bindMultiple([
+                    ':id' => $subid,
+                    ':file' => $filename,
+                    ':orig' => $_FILES['demo_file']['name']
+                ]);
+                $GLOBALS['PDO']->execute();
             }
             $SteamID       = "";
             $BanIP         = "";
