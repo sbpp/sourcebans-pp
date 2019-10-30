@@ -46,11 +46,16 @@ if (!isset($_GET['type']) || ($_GET['type'] != 'web' && $_GET['type'] != 'srv' &
 
 $_GET['id'] = (int) $_GET['id'];
 
-$web_group = $GLOBALS['db']->GetRow("SELECT flags, name FROM " . DB_PREFIX . "_groups WHERE gid = {$_GET['id']}");
-$srv_group = $GLOBALS['db']->GetRow("SELECT flags, name, immunity FROM " . DB_PREFIX . "_srvgroups WHERE id = {$_GET['id']}");
+$GLOBALS['PDO']->query("SELECT flags, name FROM `:prefix_groups` WHERE gid = :gid");
+$GLOBALS['PDO']->bind(':gid', $_GET['id']);
+$web_group = $GLOBALS['PDO']->single();
 
-$web_flags = intval($web_group[0]);
-$srv_flags = isset($srv_group[0]) ? $srv_group[0] : '';
+$GLOBALS['PDO']->query("SELECT flags, name, immunity FROM `:prefix_srvgroups` WHERE id = :gid");
+$GLOBALS['PDO']->bind(':gid', $_GET['id']);
+$srv_group = $GLOBALS['PDO']->single();
+
+$web_flags = intval($web_group['flags']);
+$srv_flags = isset($srv_group['flags']) ? $srv_group['flags'] : '';
 
 $name = $userbank->GetProperty("user", $_GET['id'])?>
 <div id="admin-page-content">
@@ -82,9 +87,9 @@ if ($_GET['type'] == "web") {
     // Group overrides
     // ALERT >>> GROSS CODE MIX <<<
     // I'm far to lazy to rewrite this to use smarty right now.
-    $overrides_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups_overrides` WHERE group_id = ?", array(
-        $_GET['id']
-    ));
+    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid");
+    $GLOBALS['PDO']->bind(':gid', $_GET['id']);
+    $overrides_list = $GLOBALS['PDO']->resultset();
 ?>
 <br />
 <form action="" method="post" name="group_overrides_form">
