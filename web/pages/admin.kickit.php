@@ -41,20 +41,19 @@ function LoadServers($check, $type)
         Log::add("w", "Hacking Attempt", "$username tried to use the kick function, but doesnt have access.");
         return $objResponse;
     }
-    $id      = 0;
-    $servers = $GLOBALS['db']->Execute("SELECT sid, rcon FROM " . DB_PREFIX . "_servers WHERE enabled = 1 ORDER BY modid, sid;");
-    while (!$servers->EOF) {
-        //search for player
-        if (!empty($servers->fields["rcon"])) {
+
+    $GLOBALS['PDO']->query("SELECT sid, rcon FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid");
+    $servers = $GLOBALS['PDO']->resultset();
+
+    foreach($servers as $id => $server) {
+        if (!empty($serverfields["rcon"])) {
             $text = '<font size="1">Searching...</font>';
-            $objResponse->addScript("xajax_KickPlayer('" . $check . "', '" . $servers->fields["sid"] . "', '" . $id . "', '" . $type . "');");
+            $objResponse->addScript("xajax_KickPlayer('" . $check . "', '" . $server["sid"] . "', '" . $id . "', '" . $type . "');");
         } else { //no rcon = servercount + 1 ;)
             $text = '<font size="1">No rcon password.</font>';
             $objResponse->addScript('set_counter(1);');
         }
         $objResponse->addAssign("srv_" . $id, "innerHTML", $text);
-        $id++;
-        $servers->MoveNext();
     }
     return $objResponse;
 }
@@ -124,20 +123,15 @@ function KickPlayer($check, int $sid, $num, $type)
     return $objResponse;
 }
 
-$servers = $GLOBALS['db']->Execute("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE enabled = 1 ORDER BY modid, sid;");
-$theme->assign('total', $servers->RecordCount());
-$serverlinks = array();
-$num         = 0;
-while (!$servers->EOF) {
-    $info         = array();
-    $info['num']  = $num;
-    $info['ip']   = $servers->fields["ip"];
-    $info['port'] = $servers->fields["port"];
-    array_push($serverlinks, $info);
-    $num++;
-    $servers->MoveNext();
+$GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid");
+$servers = $GLOBALS['PDO']->resultset();
+$theme->assign('total', count($servers));
+
+foreach (array_keys($servers) as $key) {
+    $servers[$key]['num'] = $key;
 }
-$theme->assign('servers', $serverlinks);
+
+$theme->assign('servers', $servers);
 $theme->assign('xajax_functions', $xajax->printJavascript("../scripts", "xajax.js"));
 $theme->assign('check', $_GET["check"]); // steamid or ip address
 $theme->assign('type', $_GET['type']);
