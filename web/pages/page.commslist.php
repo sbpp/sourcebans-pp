@@ -62,35 +62,36 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
     //we have a multiple unban asking
     $bid = intval($_GET['id']);
-    $res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `" . DB_PREFIX . "_comms` c INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = c.aid WHERE bid = '" . $bid . "' AND c.type = 2;");
+    $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 2");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $res = $GLOBALS['PDO']->single();
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
 
-    $row = $GLOBALS['db']->GetRow("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
-										FROM " . DB_PREFIX . "_comms b
-										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
-										WHERE b.bid = ? AND b.RemoveType IS NULL AND b.type = 2 AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP())", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query(
+        "SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() AS now
+        FROM `:prefix_comms` b LEFT JOIN `:prefix_servers` s ON s.sid = b.sid
+        WHERE b.bid = :bid AND b.RemoveType IS NULL AND b.type = 2 AND (b.length = 0 OR b.ends > UNIX_TIMESTAMP())"
+    );
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $row = $GLOBALS['PDO']->single();
     if (empty($row) || !$row) {
         echo "<script>ShowBox('Player Not UnGagged', 'The player was not ungagged, either already ungagged or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
 
     $unbanReason = htmlspecialchars(trim($_GET['ureason']));
-    $ins         = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET
-										`RemovedBy` = ?,
-										`RemoveType` = 'U',
-										`RemovedOn` = UNIX_TIMESTAMP(),
-										`ureason` = ?
-										WHERE `bid` = ?;", array(
-        $userbank->GetAid(),
-        $unbanReason,
-        $bid
-    ));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET RemovedBy = :by, RemoveType = 'U', RemovedOn = UNIX_TIMESTAMP(), ureason = :reason WHERE bid = :bid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':by' => $userbank->GetAid(),
+        ':reason' => $unbanReason,
+        ':bid' => $bid
+    ]);
+    $ins = $GLOBALS['PDO']->execute();
 
-    $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
+    $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE enabled = 1");
+    $blocked = $GLOBALS['PDO']->resultset();
     foreach ($blocked as $tempban) {
         rcon(("sc_fw_ungag " . $row['authid']), $tempban['sid']);
     }
@@ -107,35 +108,36 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
     //we have a multiple unban asking
     $bid = intval($_GET['id']);
-    $res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `" . DB_PREFIX . "_comms` c INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = c.aid WHERE bid = '" . $bid . "' AND c.type = 1;");
+    $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 1");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $res = $GLOBALS['PDO']->single();
     if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
 
-    $row = $GLOBALS['db']->GetRow("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
-										FROM " . DB_PREFIX . "_comms b
-										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
-										WHERE b.bid = ? AND b.RemoveType IS NULL AND b.type = 1 AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP())", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query(
+        "SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() AS now
+        FROM `:prefix_comms` b LEFT JOIN `:prefix_servers` s ON s.sid = b.sid
+        WHERE b.bid = :bid AND b.RemoveType IS NULL AND b.type = 1 AND (b.length = 0 OR b.ends > UNIX_TIMESTAMP())"
+    );
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $row = $GLOBALS['PDO']->single();
     if (empty($row) || !$row) {
         echo "<script>ShowBox('Player Not UnGagged', 'The player was not unmuted, either already unmuted or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
 
     $unbanReason = htmlspecialchars(trim($_GET['ureason']));
-    $ins         = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET
-										`RemovedBy` = ?,
-										`RemoveType` = 'U',
-										`RemovedOn` = UNIX_TIMESTAMP(),
-										`ureason` = ?
-										WHERE `bid` = ?;", array(
-        $userbank->GetAid(),
-        $unbanReason,
-        $bid
-    ));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET RemovedBy = :by, RemoveType = 'U', RemovedOn = UNIX_TIMESTAMP(); ureason = :reason WHERE bid = :bid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':by' => $userbank->GetAid(),
+        ':reason' => $unbanReason,
+        ':bid' => $bid
+    ]);
+    $ins = $GLOBALS['PDO']->execute();
 
-    $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
+    $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE enabled = 1");
+    $blocked = $GLOBALS['PDO']->resultset();
     foreach ($blocked as $tempban) {
         rcon(("sc_fw_unmute " . $row['authid']), $tempban['sid']);
     }
@@ -158,10 +160,12 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     $bid = intval($_GET['id']);
 
-    $steam  = $GLOBALS['db']->GetRow("SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now
-									FROM " . DB_PREFIX . "_comms WHERE bid=?", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query(
+        "SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now FROM `:prefix_comms` WHERE bid = :bid"
+    );
+    $GLOBALS['PDO']->bind(':bid', $bid);
+
+    $steam  = $GLOBALS['PDO']->single();
     $end    = (int) $steam['ends'];
     $length = (int) $steam['length'];
     $now    = (int) $steam['now'];
@@ -179,12 +183,14 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
             break;
     }
 
-    $res = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_comms` WHERE `bid` = ?", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_comms` WHERE bid = :bid");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+
+    $res = $GLOBALS['PDO']->execute();
 
     if (empty($steam['RemoveType']) && ($length == 0 || $end > $now)) {
-        $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
+        $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE enabled = 1");
+        $blocked = $GLOBALS['PDO']->resultset();
         foreach ($blocked as $tempban) {
             rcon(($cmd . " " . $steam['authid']), $tempban['sid']);
         }
@@ -494,7 +500,9 @@ while (!$res->EOF) {
 
         $data['ureason'] = stripslashes($res->fields['unban_reason']);
 
-        $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
+        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+        $GLOBALS['PDO']->bind(':aid', $res['RemovedBy']);
+        $removedby         = $GLOBALS['PDO']->single();
         $data['removedby'] = "";
         if (isset($removedby[0]) && $data['admin']) {
             $data['removedby'] = $removedby[0];
@@ -509,7 +517,12 @@ while (!$res->EOF) {
 
     $data['layer_id'] = 'layer_' . $res->fields['ban_id'];
     // Запрос текущего статуса игрока для рисования ссылки на мьют или гаг
-    $alrdybnd         = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `" . DB_PREFIX . "_comms` WHERE authid = '" . $data['steamid'] . "' AND RemovedBy IS NULL AND type = '" . $data['type'] . "' AND (length = 0 OR ends > UNIX_TIMESTAMP());");
+    $GLOBALS['PDO']->query(
+        "SELECT COUNT(bid) AS count FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND (length = 0 OR ends > UNIX_TIMESTAMP())"
+    );
+    $GLOBALS['PDO']->bind(':authid', $data['steamid']);
+    $GLOBALS['PDO']->bind(':type', $data['type']);
+    $alrdybnd         = $GLOBALS['PDO']->single();
     if ($alrdybnd->fields['count'] == 0) {
         switch ($data['type']) {
             case 1:
