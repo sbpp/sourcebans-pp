@@ -80,57 +80,46 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
                 $_POST['wg'] = 0;
             }
             // Edit the web group
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins SET
-                `gid` = ?
-                WHERE `aid` = ?;",
-                array(
-                    $_POST['wg'],
-                    $_GET['id']
-                )
+            $GLOBALS['PDO']->query(
+                "UPDATE `:prefix_admins` SET gid = :gid WHERE aid = :aid"
             );
+            $GLOBALS['PDO']->bind(':gid', $_POST['wg']);
+            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+            $GLOBALS['PDO']->execute();
         }
 
         if (isset($_POST['sg']) && $_POST['sg'] != "-2") {
             // Edit the server admin group
             $group = "";
             if ($_POST['sg'] != -1) {
-                $grps = $GLOBALS['db']->GetRow("SELECT name FROM " . DB_PREFIX . "_srvgroups WHERE id = ?;", array(
-                    $_POST['sg']
-                ));
+                $GLOBALS['PDO']->query("SELECT name FROM `:prefix_srvgroups` WHERE id = :id");
+                $GLOBALS['PDO']->bind(':id', $_POST['sg']);
+                $grps = $GLOBALS['PDO']->single();
                 if ($grps) {
                     $group = $grps['name'];
                 }
             }
 
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins SET
-                `srv_group` = ?
-                WHERE aid = ?",
-                array(
-                    $group,
-                    $_GET['id']
-                )
-            );
+            $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET srv_group = :srvg WHERE aid = :aid");
+            $GLOBALS['PDO']->bind(':srvg', $group);
+            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+            $edit = $GLOBALS['PDO']->execute();
 
-            $edit = $GLOBALS['db']->Execute(
-                "UPDATE " . DB_PREFIX . "_admins_servers_groups SET
-                `group_id` = ?
-                WHERE admin_id = ?;",
-                array(
-                    $_POST['sg'],
-                    $_GET['id']
-                )
-            );
+            $GLOBALS['PDO']->query("UPDATE `:prefix_admins_servers_groups` SET group_id = :gid WHERE admin_id = :aid");
+            $GLOBALS['PDO']->bind(':gid', $_POST['sg']);
+            $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+            $edit = $GLOBALS['PDO']->execute();
         }
         if (Config::getBool('config.enableadminrehashing')) {
             // rehash the admins on the servers
-            $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
-                LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` asg ON asg.admin_id = '" . (int) $_GET['id'] . "'
-                LEFT JOIN `" . DB_PREFIX . "_servers_groups` sg ON sg.group_id = asg.srv_group_id
-                WHERE ((asg.server_id != '-1' AND asg.srv_group_id = '-1')
-                OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
-                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1");
+            $GLOBALS['PDO']->query(
+                "SELECT s.sid FROM `:prefix_servers` s
+                LEFT JOIN `:prefix_admins_servers_groups` asg ON asg.admin_id = :aid
+                LEFT JOIN `:prefix_servers_groups` sg ON sg.group_id = asg.srv_group_id
+                WHERE ((asg.server_id != -1 AND asg.srv_group_id = -1) OR (asg.srv_group_id != -1 AND asg.server_id = -1))
+                AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
+            );
+            $serveraccessq = $GLOBALS['PDO']->resultset();
             $allservers    = array();
             foreach ($serveraccessq as $access) {
                 if (!in_array($access['sid'], $allservers)) {
@@ -142,15 +131,18 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
             echo '<script>ShowBox("Admin updated", "The admin has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
         }
 
-        $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
-            (int) $_GET['id']
-        ));
+        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+        $GLOBALS['PDO']->bind(':aid', $_GET['id']);
+        $admname = $GLOBALS['PDO']->single();
         Log::add("m", "Admin's Groups Updated", "Admin ($admname[user]) groups has been updated.");
     }
 }
 
-$wgroups = $GLOBALS['db']->GetAll("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type != 3");
-$sgroups = $GLOBALS['db']->GetAll("SELECT id, name FROM " . DB_PREFIX . "_srvgroups");
+$GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type != 3");
+$wgroups = $GLOBALS['PDO']->resultset();
+
+$GLOBALS['PDO']->query("SELECT id, name FROM `:prefix_srvgroups`");
+$sgroups = $GLOBALS['PDO']->resultset();
 
 $server_admin_group = $userbank->GetProperty('srv_groups', $_GET['id']);
 foreach ($sgroups as $sg) {
