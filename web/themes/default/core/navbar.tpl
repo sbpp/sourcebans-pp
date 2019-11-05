@@ -2,20 +2,20 @@
     <div id="mainwrapper">
         <div id="tabs">
             <ul>
-                {{#navbar}}
-                    <li class="{{state}}">
-                        <a href="index.php?p={{endpoint}}" class="tip" title="{{title}}::{{description}}" target="_self">{{title}}</a>
+                {foreach from=$navbar item=nav}
+                    <li class="{$nav.state}">
+                        <a href="index.php?p={$nav.endpoint}" class="tip" title="{$nav.title}::{$nav.description}" target="_self">{$nav.title}</a>
                     </li>
-                {{/navbar}}
+                {/foreach}
             </ul>
             <div id="nav">
-                {{#isAdmin}}
-                    {{#adminbar}}
-                        <a class="nav_link {{state}}" href="index.php?p=admin&c={{endpoint}}">{{title}}</a>
-                    {{/adminbar}}
-                {{/isAdmin}}
+                {if $isAdmin}
+                    {foreach from=$adminbar item=admin}
+                        <a class="nav_link {$admin.state}" href="index.php?p=admin&c={$admin.endpoint}">{$admin.title}</a>
+                    {/foreach}
+                {/if}
             </div>
-            {{#login}}
+            {if $login}
             <div style="float: right;">
                 <ul>
                     <li>
@@ -23,9 +23,8 @@
                     </li>
                 </ul>
             </div>
-            <div class="user">Welcome, <a href='index.php?p=account'>{{username}}</a></div>
-            {{/login}}
-            {{^login}}
+            <div class="user">Welcome, <a href='index.php?p=account'>{$username}</a></div>
+            {else}
             <div style="float: right;">
                 <ul>
                     <li>
@@ -33,7 +32,7 @@
                     </li>
                 </ul>
             </div>
-            {{/login}}
+            {/if}
         </div>
     </div>
 </div>
