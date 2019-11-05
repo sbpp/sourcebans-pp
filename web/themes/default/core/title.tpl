@@ -21,11 +21,11 @@
 </div>
 <br/>
 <div id="content_title">
-	<b>{{title}}</b>
+	<b>{$title}</b>
 </div>
 <div id="breadcrumb">
-    {{#breadcrumb}}
-        &raquo; <a href="{{url}}">{{title}}</a>
-    {{/breadcrumb}}
+    {foreach from=$breadcrumb item=crumb}
+        &raquo; <a href="{$crumb.url}">{$crumb.title}</a>
+    {/foreach}
 </div>
 <div id="content">
