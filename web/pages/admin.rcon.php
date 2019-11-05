@@ -24,7 +24,7 @@ if (!defined("IN_SB")) {
 
 global $theme, $userbank;
 
-new AdminTabs([], $userbank);
+new AdminTabs([], $userbank, $theme);
 
 $sid = (int) $_GET['id'];
 

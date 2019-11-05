@@ -23,7 +23,7 @@ if (!defined("IN_SB")) {
 }
 global $theme, $userbank;
 
-new AdminTabs([], $userbank);
+new AdminTabs([], $userbank, $theme);
 
 if (!isset($_GET['id'])) {
     echo '<script>ShowBox("Error", "No mod ID set. Only follow links", "red", "", true);</script>';

@@ -22,7 +22,7 @@ if (!defined("IN_SB")) {
     die();
 }
 
-new AdminTabs([], $userbank);
+new AdminTabs([], $userbank, $theme);
 
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >

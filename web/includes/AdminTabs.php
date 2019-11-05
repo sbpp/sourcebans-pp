@@ -2,7 +2,7 @@
 class AdminTabs
 {
     private $tabs = [];
-    public function __construct(array $tabs, $userbank)
+    public function __construct(array $tabs, $userbank, $theme)
     {
         foreach ($tabs as $tab) {
             if ($userbank->HasAccess($tab['permission'])) {
@@ -11,8 +11,8 @@ class AdminTabs
                 }
             }
         }
-        Template::render('core/admin_tabs', [
-            'tabs' => $this->tabs
-        ]);
+
+        $theme->assign('tabs', $this->tabs);
+        $theme->display('core/admin_tabs.tpl');
     }
 }

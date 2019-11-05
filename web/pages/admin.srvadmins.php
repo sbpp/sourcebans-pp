@@ -19,7 +19,7 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 global $theme;
 
-new AdminTabs([], $userbank);
+new AdminTabs([], $userbank, $theme);
 
 $srv_admins = $GLOBALS['db']->GetAll("SELECT authid, user
     FROM " . DB_PREFIX . "_admins_servers_groups AS asg
