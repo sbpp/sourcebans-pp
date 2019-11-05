@@ -210,13 +210,3 @@ $theme->compile_dir = SB_CACHE;
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE")) {
     $theme->force_compile = true;
 }
-
-
-require_once(INCLUDES_PATH.'/Mustache/Autoloader.php');
-Mustache_Autoloader::register();
-
-require_once(INCLUDES_PATH.'/Template.php');
-Template::init(new Mustache_Engine([
-    'cache' => SB_CACHE,
-    'loader' => new Mustache_Loader_FilesystemLoader(SB_THEMES.$theme_name)
-]));
