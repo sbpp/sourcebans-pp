@@ -30,7 +30,7 @@ if (!defined("IN_SB")) {
 
 new AdminTabs([
     ['name' => 'Add a block', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN]
-], $userbank);
+], $userbank, $theme);
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";

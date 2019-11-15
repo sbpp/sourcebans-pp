@@ -29,7 +29,7 @@ new AdminTabs([
     ['name' => 'Ban submissions', 'permission' => ADMIN_OWNER|ADMIN_BAN_SUBMISSIONS],
     ['name' => 'Import bans', 'permission' => ADMIN_OWNER|ADMIN_BAN_IMPORT],
     ['name' => 'Group ban', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN, 'config' => Config::getBool('config.enablegroupbanning')]
-], $userbank);
+], $userbank, $theme);
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";

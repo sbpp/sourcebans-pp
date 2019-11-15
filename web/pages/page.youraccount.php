@@ -33,7 +33,7 @@ new AdminTabs([
     ['name' => 'Change Password', 'permission' => ALL_WEB],
     ['name' => 'Server Password', 'permission' => ALL_WEB],
     ['name' => 'Change Email', 'permission' => ALL_WEB]
-], $userbank);
+], $userbank, $theme);
 
 $res      = $GLOBALS['db']->Execute("SELECT `srv_password`, `email` FROM `" . DB_PREFIX . "_admins` WHERE `aid` = '" . $userbank->GetAid() . "'");
 $srvpwset = (!empty($res->fields['srv_password']) ? true : false);

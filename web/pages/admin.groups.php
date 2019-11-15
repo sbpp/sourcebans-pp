@@ -26,7 +26,7 @@ global $userbank, $theme;
 new AdminTabs([
     ['name' => 'List groups', 'permission' => ADMIN_OWNER|ADMIN_LIST_GROUPS],
     ['name' => 'Add a group', 'permission' => ADMIN_OWNER|ADMIN_ADD_GROUP]
-], $userbank);
+], $userbank, $theme);
 
 ?>
 <div id="admin-page-content">

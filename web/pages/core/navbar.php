@@ -1,5 +1,5 @@
 <?php
-global $userbank;
+global $userbank, $theme;
 
 $navbar = [
      [
@@ -104,10 +104,9 @@ if ($userbank->is_admin()) {
     }
 }
 
-Template::render('core/navbar', [
-    'navbar' => array_values($navbar),
-    'adminbar' => array_values($admin),
-    'isAdmin' => $userbank->is_admin(),
-    'login' => $userbank->is_logged_in(),
-    'username' => $userbank->GetProperty("user")
-]);
+$theme->assign('navbar', array_values($navbar));
+$theme->assign('adminbar', array_values($admin));
+$theme->assign('isAdmin', $userbank->is_admin());
+$theme->assign('login', $userbank->is_logged_in());
+$theme->assign('username', $userbank->GetProperty("user"));
+$theme->display('core/navbar.tpl');

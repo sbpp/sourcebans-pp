@@ -21,13 +21,13 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-global $userbank;
+global $userbank, $theme;
 
 new AdminTabs([
     ['name' => 'List admins', 'permission' => ADMIN_OWNER|ADMIN_LIST_ADMINS],
     ['name' => 'Add new admin', 'permission' => ADMIN_OWNER|ADMIN_ADD_ADMINS],
     ['name' => 'Overrides', 'permission' => ADMIN_OWNER|ADMIN_ADD_ADMINS]
-], $userbank);
+], $userbank, $theme);
 
 $AdminsPerPage = SB_BANS_PER_PAGE;
 $page = 1;

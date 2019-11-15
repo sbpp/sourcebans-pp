@@ -1,4 +1,6 @@
 <?php
+global $theme;
+
 $breadcrumb = [
     [
         'title' => 'Home',
@@ -10,7 +12,6 @@ $breadcrumb = [
     ]
 ];
 
-Template::render('core/title', [
-    'title' => $title,
-    'breadcrumb' => $breadcrumb
-]);
+$theme->assign('title', $title);
+$theme->assign('breadcrumb', $breadcrumb);
+$theme->display('core/title.tpl');

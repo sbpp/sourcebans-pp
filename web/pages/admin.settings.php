@@ -28,7 +28,7 @@ new AdminTabs([
     ['name' => 'Themes', 'permission' => ALL_WEB],
     ['name' => 'System Log', 'permission' => ALL_WEB],
     ['name' => 'Features', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS]
-], $userbank);
+], $userbank, $theme);
 
 $page = 1;
 if (isset($_GET['page']) && $_GET['page'] > 0) {
