@@ -7,7 +7,7 @@
 		"nl"			"U bent gebanned van deze server, kijk op {1} voor meer informatie"
 		"fr"			"Vous avez été banni de ce serveur, allez sur {1} pour plus d'informations"
 		"pl"			"Zostałeś zbanowany na tym serwerze, odwiedź {1} aby poznać szczegóły"
-		"pt"			"Você foi banido(a) deste servidor, verifique {1} para mais informações"
+		"pt"			"Você foi banido(a) desse servidor, verifique {1} para mais informações"
 		"de"			"Sie wurden von diesem Server gebannt, weitere Informationen auf {1}"
 		"ru"			"Вы были забанены на этом сервере, для получения информации посетите: {1}"
 		"da"			"Du er blevet udlukket fra denne server, check {1} for mere info"
@@ -37,7 +37,7 @@
 		"nl"			"De speler is niet in het spel, gaat u alstublieft naar het web panel om de speler op de banlijst te plaatsen."
 		"fr"			"Le joueur n'est pas en jeu, merci d'aller sur le panel internet pour le bannir."
 		"pl"			"Gracz nie znajduje się w grze, odwiedź panel www aby go zbanować."
-		"pt"			"O(A) jogador(a) não está no jogo, por favor, verifique o painel da web para bani-lo(a)."
+		"pt"			"O(A) jogador(a) não está no servidor, por favor, verifique o painel da web para bani-lo(a)."
 		"de"			"Der Spieler ist nicht im Spiel. Bitte benutzen Sie das Webpanel um ihn zu bannen."
 		"ru"			"Игрок не в игре. Пожалуйста, посетите веб-панель чтобы забанить его."
 		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
@@ -52,7 +52,7 @@
 		"nl"			"Deze speler zijn ban is niet geverifieerd. Wacht u alstublieft 30 seconden voordat u het opnieuw probeerd."
 		"fr"			"Le systeme n'a pas réussi à déterminer si ce joueur est banni. Merci d'attendre 30 secondes avant de re-essayer."
 		"pl"			"Gracz nie został jeszcze zweryfikowany. Spróbuj ponownie za 30 sekund."
-		"pt"			"Este(a) jogador(a) não foi verificado(a). Por favor, aguarde trinta segundos antes de tentar novamente."
+		"pt"			"Esse(a) jogador(a) não foi verificado(a). Por favor, aguarde trinta segundos antes de tentar novamente."
 		"de"			"Dieser Spieler wurde noch nicht verifiziert. Bitte warten Sie 30 Sekunden und versuchen Sie es nochmal."
 		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
 		"da"			"Denne spiller er ikke blevet identificeret. Vent venligst 30 sekunder før du prøver igen."
@@ -114,7 +114,7 @@
 		"nl"			"Voegt u alstublieft een reden toe voor het bannen van deze persoon."
 		"fr"			"Merci d'ajouter la raison du ban."
 		"pl"			"Proszę dodać powód bana."
-		"pt"			"Por favor, inclua um motivo para banir o(a) cliente."
+		"pt"			"Por favor, inclua um motivo para banir o(a) jogador(a)."
 		"de"			"Bitte geben Sie einen Grund für den Ban an."
 		"ru"			"Добавьте причину бана игрока."
 		"da"			"Indkludere venligst en grund for at udelukke klienten."
@@ -185,6 +185,7 @@
 		"de"			"{1} wurde permanent gebannt."
 		"ru"			"{1} забанен навсегда"
 		"fr"			"{1} a été banni permanent."
+		"pt"			"{1} foi permanentemente banido(a)."
 	}
 	"Permabanned Player Reason"
 	{
@@ -193,14 +194,16 @@
 		"de"			"{1} wurde permanent gebannt. Grund: {2}"
 		"ru"			"{1} забанен навсегда. Причина: {2}"
 		"fr"			"{1} a été banni permanent. Raison: {2}"
+		"pt"			"{1} foi permanentemente banido(a). Motivo: {2}"
 	}
 	"Banned Player"
 	{
 		"#format"		"{1:s},{2:d}"
-		"en"			"Banned {1} for {2} minutes"
+		"en"			"Banned {1} for {2} minutes."
 		"de"			"{1} wurde für {2} minuten gebannt."
 		"ru"			"{1} забанен на {2} минут"
 		"fr"			"{1} a été banni pendant {2} minutes."
+		"pt"			"{1} foi banido(a) por {2} minutos."
 	}
 	"Banned Player Reason"
 	{
@@ -208,6 +211,7 @@
 		"en"			"Banned {1} for {2} minutes. Reason: {3}"
 		"de"			"{1} wurde für {2} minuten gebannt. Grund: {3}"
 		"ru"			"{1} забанен на {2} минут. Причина: {3}"
+		"pt"			"{1} foi banido(a) por {2} minutos. Motivo: {3}"
 	}
 	"permanent"
 	{
@@ -215,6 +219,7 @@
 		"de"			"permanent"
 		"ru"			"Навсегда"
 		"fr"			"permanent"
+		"pt"			"permanente"
 	}
 	"minute"
 	{
@@ -222,6 +227,7 @@
 		"de"			"minute"
 		"ru"			"минуту"
 		"fr"			"minute"
+		"pt"			"minuto"
 	}
 	"minutes"
 	{
@@ -229,6 +235,7 @@
 		"de"			"minuten"
 		"ru"			"минут"
 		"fr"			"minutes"
+		"pt"			"minutos"
 	}
 	"Ban Log"
 	{
@@ -237,6 +244,7 @@
 		"de"			"\"{1}\" hat \"{2}\" gebannt. (Minuten: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" забанил \"{2}\" (длительность (в минутах): {3}) (причина: {4})"
 		"fr"			"\"{1}\" ban \"{2}\" (minutes: {3}) (raison: {4})"
+		"pt"			"\"{1}\" baniu \"{2}\" (minutos: {3}) (motivo: {4})"
 	}
 	"Ban Added"
 	{
@@ -245,6 +253,7 @@
 		"de"			"\"{1}\" hat einen Ban hinzugefügt. (Minuten: {2}) (id/ip: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (id/ip: {3}) (причина: {4})"
 		"fr"			"\"{1}\" ajoute un ban (minutes (в минутах): {2}) (id/ip: {3}) (raison: {4})"
+		"pt"			"\"{1}\" adicionou um banimento (minutos: {2}) (id/ip: {3}) (motivo: {4})"
 	}
 	"Ban Success Name"
 	{
@@ -253,6 +262,7 @@
 		"de"			"{1} wurde erfolgreich gebannt."
 		"ru"			"{1} успешно забанен."
 		"fr"			"{1} a été banni avec succès."
+		"pt"			"{1} foi banido(a) com sucesso."
 	}
 	"Unban Success Name"
 	{
@@ -261,14 +271,16 @@
 		"de"			"{1} wurde erfolgreich entbannt."
 		"ru"			"{1} успешно разбанен."
 		"fr"			"{1} a été debanni avec succès."
+		"pt"			"{1} foi desbanido(a) com sucesso."
 	}
 	"Already Banned"
 	{
 		"#format"		"{1:s}"
-		"en"			"{1} is already banned"
+		"en"			"{1} is already banned."
 		"de"			"{1} ist bereits gebannt."
 		"ru"			"{1} уже забанен."
 		"fr"			"{1} est déja banni."
+		"pt"			"{1} já está banido(a)."
 	}
 	"Ban Removed"
 	{
@@ -277,12 +289,14 @@
 		"de"			"\"{1}\" hat einen Ban entfernt. (Filter: {2}) (Grund: {3})"
 		"ru"			"\"{1}\" убрал бан (фильтр: {2}) (причина: {3})"
 		"fr"			"\"{1}\" a supprimé le ban (filter: {2}) (raison: {3})"
+		"pt"			"\"{1}\" removeu um banimento (filtro: {2}) (motivo: {3})"
 	}
 	"No Active Ban"
 	{
-		"en"			"No active ban found"
+		"en"			"No active ban found."
 		"de"			"Kein aktiver Ban gefunden."
 		"ru"			"Действующий бан не найден."
 		"fr"			"Aucun ban activement trouvé.'
+		"pt"			"Nenhum banimento ativo encontrado."
 	}
 }
