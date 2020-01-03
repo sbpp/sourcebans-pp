@@ -7,7 +7,7 @@
 		"nl"			"U bent gebanned van deze server, kijk op {1} voor meer informatie"
 		"fr"			"Vous avez été banni de ce serveur, allez sur {1} pour plus d'informations"
 		"pl"			"Zostałeś zbanowany na tym serwerze, odwiedź {1} aby poznać szczegóły"
-		"pt"			"Você foi banido(a) desse servidor, verifique {1} para mais informações"
+		"pt"			"Você foi banido(a) deste servidor, verifique {1} para mais informações"
 		"de"			"Sie wurden von diesem Server gebannt, weitere Informationen auf {1}"
 		"ru"			"Вы были забанены на этом сервере, для получения информации посетите: {1}"
 		"da"			"Du er blevet udlukket fra denne server, check {1} for mere info"
@@ -52,7 +52,7 @@
 		"nl"			"Deze speler zijn ban is niet geverifieerd. Wacht u alstublieft 30 seconden voordat u het opnieuw probeerd."
 		"fr"			"Le systeme n'a pas réussi à déterminer si ce joueur est banni. Merci d'attendre 30 secondes avant de re-essayer."
 		"pl"			"Gracz nie został jeszcze zweryfikowany. Spróbuj ponownie za 30 sekund."
-		"pt"			"Esse(a) jogador(a) não foi verificado(a). Por favor, aguarde trinta segundos antes de tentar novamente."
+		"pt"			"Este(a) jogador(a) não foi verificado(a). Por favor, aguarde trinta segundos antes de tentar novamente."
 		"de"			"Dieser Spieler wurde noch nicht verifiziert. Bitte warten Sie 30 Sekunden und versuchen Sie es nochmal."
 		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
 		"da"			"Denne spiller er ikke blevet identificeret. Vent venligst 30 sekunder før du prøver igen."
@@ -185,7 +185,7 @@
 		"de"			"{1} wurde permanent gebannt."
 		"ru"			"{1} забанен навсегда"
 		"fr"			"{1} a été banni permanent."
-		"pt"			"{1} foi permanentemente banido(a)."
+		"pt"			"{1} foi banido(a) permanentemente."
 	}
 	"Permabanned Player Reason"
 	{
@@ -194,7 +194,7 @@
 		"de"			"{1} wurde permanent gebannt. Grund: {2}"
 		"ru"			"{1} забанен навсегда. Причина: {2}"
 		"fr"			"{1} a été banni permanent. Raison: {2}"
-		"pt"			"{1} foi permanentemente banido(a). Motivo: {2}"
+		"pt"			"{1} foi banido(a) permanentemente. Motivo: {2}"
 	}
 	"Banned Player"
 	{
