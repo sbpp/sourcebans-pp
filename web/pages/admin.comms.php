@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 SourceComms 0.9.266
@@ -35,6 +27,17 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+
+new AdminTabs([
+    ['name' => 'Add a block', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN]
+], $userbank, $theme);
+
+if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
+    echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+} elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
+    echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+}
+
 if (isset($GLOBALS['IN_ADMIN'])) {
     define('CUR_AID', $userbank->GetAid());
 }
@@ -49,8 +52,7 @@ if (isset($_GET["rebanid"])) {
 }
 
 echo '<div id="admin-page-content">';
-// Add Block
-echo '<div id="0" style="display:none;">';
+echo '<div class="tabcontent" id="Add a block">';
 $theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
 $theme->display('page_admin_comms_add.tpl');
 ?>
@@ -62,48 +64,11 @@ function changeReason(szListValue)
 }
 function ProcessBan()
 {
-    var err = 0;
     var reason = $('listReason')[$('listReason').selectedIndex].value;
 
     if (reason == "other") {
         reason = $('txtReason').value;
     }
-    if(!$('nickname').value)
-    {
-        $('nick.msg').setHTML('You must enter the nickname of the person you are banning');
-        $('nick.msg').setStyle('display', 'block');
-        err++;
-    }else
-    {
-        $('nick.msg').setHTML('');
-        $('nick.msg').setStyle('display', 'none');
-    }
-
-    if($('steam').value.length < 10)
-    {
-        $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
-        $('steam.msg').setStyle('display', 'block');
-        err++;
-    }else
-    {
-        $('steam.msg').setHTML('');
-        $('steam.msg').setStyle('display', 'none');
-    }
-
-    if(!reason)
-    {
-        $('reason.msg').setHTML('You must select or enter a reason for this block.');
-        $('reason.msg').setStyle('display', 'block');
-        err++;
-    }else
-    {
-        $('reason.msg').setHTML('');
-        $('reason.msg').setStyle('display', 'none');
-    }
-
-    if(err)
-        return 0;
-
     xajax_AddBlock($('nickname').value,
         $('type').value,
         $('steam').value,

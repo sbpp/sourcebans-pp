@@ -1,9 +1,4 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-
 if (isset($_POST['postd']) && $_POST['postd']) {
     if (empty($_POST['amx_server']) ||empty($_POST['amx_port']) ||empty($_POST['amx_username']) ||empty($_POST['amx_password']) ||empty($_POST['amx_database']) ||empty($_POST['amx_prefix'])) {
         echo "<script>ShowBox('Error', 'There is some missing data. All feilds are required.', 'red', '', true);</script>";
@@ -77,7 +72,6 @@ Type the database information for the AMXBans mysql server you wish to import fr
 <input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 <input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 </div>
 </form>

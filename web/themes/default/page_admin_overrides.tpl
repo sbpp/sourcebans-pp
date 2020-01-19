@@ -1,3 +1,4 @@
+<div class="tabcontent" id="Overrides">
 {if NOT $permission_addadmin}
 	Access Denied!
 {else}
@@ -51,3 +52,5 @@
 		</form>
 	</div>
 {/if}
+</div>
+</div>

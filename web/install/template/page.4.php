@@ -1,8 +1,4 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
 $errors = 0;
 $warnings = 0;
 
@@ -17,7 +13,7 @@ if (version_compare($version['version'], "5.5.3") >= 0) {
     $charset .= 'mb4';
 }
 
-$file = file_get_contents(INCLUDES_PATH . "/struc.sql");
+$file = file_get_contents(INCLUDES_PATH . "/sql/struc.sql");
 $file = str_replace("{prefix}", $_POST['prefix'], $file);
 $file = str_replace("{charset}", $charset, $file);
 $querys = explode(";", $file);
@@ -29,6 +25,11 @@ foreach ($querys as $query) {
         }
     }
 }
+if ($errors > 0) {
+    print "<script>ShowBox('Error', 'There was an error creating the table structure. Please read the message above to help debug the problem.', 'red', '', true);</script>";
+} else {
+    print "<script>ShowBox('Success', 'The tables were created successfully', 'green', '', true);</script>";
+}
 ?>
 <br />
 <table style="width: 101%; margin: 0 0 -2px -2px;">
@@ -37,13 +38,6 @@ foreach ($querys as $query) {
     </tr>
 </table>
 <div id="submit-main">
-<?php
-if ($errors > 0) {
-    print "<script>ShowBox('Error', 'There was an error creating the table structure. Please read the message above to help debug the problem.', 'red', '', true);</script>";
-} else {
-    print "<script>ShowBox('Success', 'The tables were created successfully', 'green', '', true);</script>";
-}
-?>
 <form action="index.php?step=5" method="post" name="send" id="send">
     <input type="hidden" name="username" value="<?php echo $_POST['username']?>">
     <input type="hidden" name="password" value="<?php echo $_POST['password']?>">
@@ -52,7 +46,6 @@ if ($errors > 0) {
     <input type="hidden" name="port" value="<?php echo $_POST['port']?>">
     <input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
     <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-    <input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
     <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
     <input type="hidden" name="charset" value="<?php echo $charset?>">
 </form>

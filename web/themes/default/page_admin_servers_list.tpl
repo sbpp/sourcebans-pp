@@ -1,3 +1,5 @@
+<div id="admin-page-content">
+    <div class="tabcontent" id="List servers">
 {if NOT $permission_list}
 	Access Denied
 {else}
@@ -47,3 +49,4 @@
 <div id="mapimg.msg" style="color:#CC0000;"></div>
 {/if}
 {/if}
+</div>

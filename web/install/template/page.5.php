@@ -1,22 +1,5 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
-
 $web_cfg = "<?php
-/**
- * config.php
- *
- * This file contains all of the configuration for the db
- * that will
- * @author SteamFriends Development Team
- * @version 1.0.0
- * @copyright SteamFriends (www.SteamFriends.com)
- * @package SourceBans
- */
-if(!defined('IN_SB')){echo 'You should not be here. Only follow links!';die();}
-
 define('DB_HOST', '{server}');   					// The host/ip to your SQL server
 define('DB_USER', '{user}');						// The username to connect with
 define('DB_PASS', '{pass}');						// The password
@@ -25,12 +8,8 @@ define('DB_PREFIX', '{prefix}');					// The table prefix for SourceBans
 define('DB_PORT', '{port}');							// The SQL port (Default: 3306)
 define('DB_CHARSET', '{charset}');                    // The Database charset (Default: utf8)
 define('STEAMAPIKEY', '{steamapikey}');				// Steam API Key for Shizz
-define('SB_WP_URL', '{sbwpurl}');       				//URL of SourceBans Site
 define('SB_EMAIL', '{sbwpemail}');
-
-//define('DEVELOPER_MODE', true);			// Use if you want to show debugmessages
-//define('SB_MEM', '128M'); 				// Override php memory limit, if isn't enough (Banlist is just a blank page)
-?>";
+";
 
 $srv_cfg = '"driver_default"		"mysql"
 
@@ -54,7 +33,6 @@ $web_cfg = str_replace("{prefix}", $_POST['prefix'], $web_cfg);
 $web_cfg = str_replace("{port}", $_POST['port'], $web_cfg);
 $web_cfg = str_replace("{charset}", $_POST['charset'], $web_cfg);
 $web_cfg = str_replace("{steamapikey}", $_POST['apikey'], $web_cfg);
-$web_cfg = str_replace("{sbwpurl}", $_POST['sb-wp-url'], $web_cfg);
 $web_cfg = str_replace("{sbwpemail}", $_POST['sb-email'], $web_cfg);
 
 $srv_cfg = str_replace("{server}", $_POST['server'], $srv_cfg);
@@ -81,7 +59,7 @@ if (isset($_POST['postd']) && $_POST['postd']) {
             // Setup Admin
             $db->query('INSERT INTO `:prefix_admins` (user, authid, password, gid, email, extraflags, immunity) VALUES (:user, :authid, :password, :gid, :email, :extraflags, :immunity)');
             $db->bind(':user', $_POST['uname']);
-            $db->bind(':authid', $_POST['steam']);
+            $db->bind(':authid', str_replace('STEAM_1', 'STEAM_0', $_POST['steam']));
             $db->bind(':password', password_hash($_POST['pass1'], PASSWORD_BCRYPT));
             $db->bind(':gid', -1);
             $db->bind(':email', $_POST['email']);
@@ -90,7 +68,7 @@ if (isset($_POST['postd']) && $_POST['postd']) {
             $db->execute();
 
             // Setup Settings
-            $file = file_get_contents(INCLUDES_PATH . "/data.sql");
+            $file = file_get_contents(INCLUDES_PATH . "/sql/data.sql");
             $file = str_replace("{prefix}", $_POST['prefix'], $file);
             $querys = explode(";", $file);
             foreach ($querys as $query) {
@@ -209,7 +187,6 @@ if (isset($_POST['postd']) && $_POST['postd']) {
 <input type="hidden" name="port" value="<?php echo $_POST['port']?>">
 <input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
 <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-<input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
 <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 <input type="hidden" name="charset" value="<?php echo $_POST['charset']?>">
 </div>

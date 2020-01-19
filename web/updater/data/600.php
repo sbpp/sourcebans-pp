@@ -1,9 +1,9 @@
 <?php
 $this->dbs->query('SELECT VERSION() AS version');
-$version = $this->dbs->single();
+$ver = $this->dbs->single();
 
 $charset = 'utf8';
-if (version_compare($version['version'], "5.5.3") >= 0) {
+if (version_compare($ver['version'], "5.5.3") >= 0) {
     $charset .= 'mb4';
 
     $this->dbs->query("SHOW tables");
@@ -46,10 +46,30 @@ define('DB_CHARSET', '{charset}');                    // The Database charset (D
 define('STEAMAPIKEY', '{steamapikey}');                // Steam API Key for Shizz
 define('SB_WP_URL', '{sbwpurl}');                       //URL of SourceBans Site
 define('SB_EMAIL', '{sbwpemail}');
-
-//define('DEVELOPER_MODE', true);            // Use if you want to show debugmessages
-//define('SB_MEM', '128M');                 // Override php memory limit, if isn't enough (Banlist is just a blank page)
 ?>";
+
+if (!defined('SB_EMAIL')) {
+    define('SB_EMAIL', '');
+}
+if (!defined('STEAMAPIKEY')) {
+    define('STEAMAPIKEY', '');
+}
+if (!defined('SB_WP_URL')) {
+    $request = explode('/', $_SERVER['REQUEST_URI']);
+    foreach ($request as $id => $fragment) {
+        switch (true) {
+            case empty($fragment):
+            case strpos($fragment, '.php') !== false:
+            case strpos($fragment, 'updater') !== false:
+                unset($request[$id]);
+                break;
+            default:
+        }
+    }
+    $request = implode('/', $request);
+    $WP_URL = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/$request";
+    define('SB_WP_URL', $WP_URL);
+}
 
 $web_cfg = str_replace("{server}", DB_HOST, $web_cfg);
 $web_cfg = str_replace("{user}", DB_USER, $web_cfg);

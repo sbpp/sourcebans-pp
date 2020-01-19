@@ -1,7 +1,7 @@
+<div class="tabcontent" id="Add new server">
 {if not $permission_addserver}
 	Access Denied
 {else}
-
 <div id="add-group">
 	<h3>Server Details</h3>
 	For more information or help regarding a certain subject move your mouse over the question mark.<br /><br />
@@ -18,7 +18,7 @@
 		        <div id="address.msg" class="badentry"></div>
 			</td>
 		</tr>
-		
+
 		<tr>
 			<td valign="middle">
 				<div class="rowdesc">{help_icon title="Server Port" message="This is the port that the server is running off. <br /><br /><i>Default: 27015</i>"}Server Port</div>
@@ -42,7 +42,7 @@
 		        <div id="rcon.msg" class="badentry"></div>
 			</td>
 		</tr>
-		  
+
 		<tr>
 		    <td valign="middle">
 		    	<div class="rowdesc">{help_icon title="Rcon Password" message="Please re-type your rcon password to avoid 'typos'"}RCON Password (Confirm)</div>
@@ -54,7 +54,7 @@
 		        <div id="rcon2.msg" class="badentry"></div>
 			</td>
 		</tr>
-		 
+
 		<tr>
 			<td valign="middle">
 				<div class="rowdesc">{help_icon title="Server Mod" message="Select the mod that your server is currently running."}Server MOD </div>
@@ -73,19 +73,19 @@
 		        <div id="mod.msg" class="badentry"></div>
 			</td>
 		</tr>
-		  
+
 		<tr>
 		    <td valign="middle">
 		    	<div class="rowdesc">{help_icon title="Enabled" message="Enables the server to be shown on the public servers list."}Enabled</div>
 		    </td>
 		    <td>
 		    <div align="left">
-		    	<input type="checkbox" id="enabled" name="enabled" checked="checked" /> 
+		    	<input type="checkbox" id="enabled" name="enabled" checked="checked" />
 		    </div>
 		        <div id="enabled.msg" class="badentry"></div>
 			</td>
 		</tr>
-		
+
 		<tr>
 			<td valign="middle">
 				<div class="rowdesc">{help_icon title="Server Groups" message="Choose the groups to add this server to. Server groups are used for adding admins to specific sets of servers."}Server Groups </div>
@@ -99,12 +99,12 @@
 			   		</td>
 			    	<td>
 			    		<div align="left">
-			    			<input type="checkbox" value="{$group.gid}" id="g_{$group.gid}" name="groups[]" /> 
+			    			<input type="checkbox" value="{$group.gid}" id="g_{$group.gid}" name="groups[]" />
 			    		</div>
 			    	</td>
-				</tr> 
+				</tr>
 			{/foreach}
-		<tr id="nsgroup" valign="top" class="badentry"> 		
+		<tr id="nsgroup" valign="top" class="badentry">
 		</tr>
 		<tr>
 			<td>&nbsp;</td>
@@ -120,5 +120,6 @@
 		</tr>
 	</table>
 </div>
-
 {/if}
+</div>
+</div>

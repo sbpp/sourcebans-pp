@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -31,9 +23,11 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
+new AdminTabs([], $userbank, $theme);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No admin id specified. Please only follow links
@@ -43,9 +37,9 @@ if (!isset($_GET['id'])) {
 $_GET['id'] = (int) $_GET['id'];
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    $log = new CSystemLog("e", "Getting admin data failed", "Can't find data for admin with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	Error getting current data.
@@ -56,9 +50,9 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 // Skip all checks if root
 if (!$userbank->HasAccess(ADMIN_OWNER)) {
     if (!$userbank->HasAccess(ADMIN_EDIT_ADMINS) || ($userbank->HasAccess(ADMIN_OWNER, $_GET['id']) && $_GET['id'] != $userbank->GetAid())) {
-        $log = new CSystemLog("w", "Hacking Attempt", $userbank->GetProperty("user") . " tried to edit " . $userbank->GetProperty('user', $_GET['id']) . "'s details, but doesnt have access.");
+        Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s details, but doesnt have access.");
         echo '<div id="msg-red" >
-		<i><img src="./images/warning.png" alt="Warning" /></i>
+		<i class="fas fa-times fa-2x"></i>
 		<b>Error</b>
 		<br />
 		You are not allowed to edit other profiles.
@@ -70,9 +64,9 @@ $errorScript = "";
 
 // Form submitted?
 if (isset($_POST['adminname'])) {
-    $a_name           = RemoveCode($_POST['adminname']);
-    $a_steam          = trim(RemoveCode($_POST['steam']));
-    $a_email          = trim(RemoveCode($_POST['email']));
+    $a_name           = trim($_POST['adminname']);
+    $a_steam          = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
+    $a_email          = trim($_POST['email']);
     $a_serverpass     = $_POST['a_useserverpass'] == "on";
     $pw_changed       = false;
     $serverpw_changed = false;
@@ -91,7 +85,7 @@ if (isset($_POST['adminname'])) {
             $errorScript .= "$('adminname.msg').innerHTML = 'An admin name can not contain a \" \' \".';";
             $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
         } else {
-            if ($a_name != $userbank->GetProperty('user', $_GET['id']) && is_taken("admins", "user", $a_name)) {
+            if ($a_name != $userbank->GetProperty('user', $_GET['id']) && $userbank->isNameTaken($a_name)) {
                 $error++;
                 $errorScript .= "$('adminname.msg').innerHTML = 'An admin with this name already exists.';";
                 $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
@@ -106,13 +100,13 @@ if (isset($_POST['adminname'])) {
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
     } else {
         // Validate the steamid or fetch it from the community id
-        if ((!is_numeric($a_steam) && !validate_steam($a_steam)) || (is_numeric($a_steam) && (strlen($a_steam) < 15 || !validate_steam($a_steam = FriendIDToSteamID($a_steam))))) {
+        if (!\SteamID\SteamID::isValidID($a_steam)) {
             $error++;
             $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID.';";
             $errorScript .= "$('steam.msg').setStyle('display', 'block');";
         } else {
             // Is an other admin already registred with that steam id?
-            if ($a_steam != $userbank->GetProperty('authid', $_GET['id']) && is_taken("admins", "authid", $a_steam)) {
+            if ($a_steam != $userbank->GetProperty('authid', $_GET['id']) && $userbank->isSteamIDTaken($a_steam)) {
                 $admins = $userbank->GetAllAdmins();
                 foreach ($admins as $admin) {
                     if ($admin['authid'] == $a_steam) {
@@ -137,7 +131,7 @@ if (isset($_POST['adminname'])) {
         }
     } else {
         // Is an other admin already registred with that email address?
-        if ($a_email != $userbank->GetProperty('email', $_GET['id']) && is_taken("admins", "email", $a_email)) {
+        if ($a_email != $userbank->GetProperty('email', $_GET['id']) && $userbank->isEmailTaken($a_email)) {
             $admins = $userbank->GetAllAdmins();
             foreach ($admins as $admin) {
                 if ($admin['email'] == $a_email) {
@@ -149,11 +143,6 @@ if (isset($_POST['adminname'])) {
             $errorScript .= "$('email.msg').innerHTML = 'This email address is already being used by " . htmlspecialchars(addslashes($name)) . ".';";
             $errorScript .= "$('email.msg').setStyle('display', 'block');";
         }
-        /*else if(!validate_email($a_email))
-        $error++;
-        $errorScript .= "$('email.msg').innerHTML = 'Please enter a valid email address.';";
-        $errorScript .= "$('email.msg').setStyle('display', 'block');";
-        }*/
     }
 
     // Only validate passwords, if admin has access to edit it at all
@@ -225,7 +214,7 @@ if (isset($_POST['adminname'])) {
                 `password` = ?
                 WHERE `aid` = ?",
                 array(
-                    $userbank->encrypt_password($_POST['password']),
+                    password_hash($_POST['password'], PASSWORD_BCRYPT),
                     $_GET['id']
                 )
             );
@@ -256,11 +245,11 @@ if (isset($_POST['adminname'])) {
 
         // to prevent rehash window to error with "no access", cause pw doesn't match
         $ownpwchanged = false;
-        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && $userbank->encrypt_password($_POST['password']) != $userbank->GetProperty("password")) {
+        if ($_GET['id'] == $userbank->GetAid() && !empty($_POST['password']) && password_verify($_POST['password'], $userbank->GetProperty("password"))) {
             $ownpwchanged = true;
         }
 
-        if (isset($GLOBALS['config']['config.enableadminrehashing']) && $GLOBALS['config']['config.enableadminrehashing'] == 1) {
+        if (Config::getBool('config.enableadminrehashing')) {
             // rehash the admins on the servers
             $serveraccessq = $GLOBALS['db']->GetAll("SELECT s.sid FROM `" . DB_PREFIX . "_servers` s
                 LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` asg ON asg.admin_id = '" . (int) $_GET['id'] . "'
@@ -280,7 +269,7 @@ if (isset($_POST['adminname'])) {
         $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
             (int) $_GET['id']
         ));
-        $log     = new CSystemLog("m", "Admin Details Updated", "Admin (" . $admname['user'] . ") details has been changed");
+        Log::add("m", "Admin Details Updated", "Admin ($admname[user]) details has been changed.");
         if ($ownpwchanged) {
             echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
         } elseif (isset($rehashing)) {

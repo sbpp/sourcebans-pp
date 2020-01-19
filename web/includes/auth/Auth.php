@@ -1,0 +1,137 @@
+<?php
+
+class Auth
+{
+    private static $dbs = null;
+    public static function init(\Database $dbs)
+    {
+        self::$dbs = $dbs;
+    }
+
+    public static function login(int $aid, int $maxlife)
+    {
+        $jti = self::generateJTI();
+        $secret = Crypto::genSecret();
+
+        $token = JWT::create($jti, $secret, $maxlife, $aid);
+        self::insertNewToken($jti, $secret);
+        self::updateLastVisit($aid);
+
+        self::setCookie($token, time() + $maxlife, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
+
+        //Login / Logout requests will trigger GC routine
+        self::gc();
+    }
+
+    public static function logout()
+    {
+        $cookie = self::getJWTFromCookie();
+        if (empty($cookie) || (bool)preg_match('/.*\..*\..*\./', $cookie)) {
+            return false;
+        }
+        $token = JWT::parse($cookie);
+        $secret = self::getTokenSecret($token->getHeader('jti'));
+
+        if (JWT::verify($token, (string)$secret)) {
+            self::$dbs->query("DELETE FROM `:prefix_login_tokens` WHERE jti = :jti");
+            self::$dbs->bind(':jti', $token->getHeader('jti'));
+            self::$dbs->execute();
+        }
+
+        self::setCookie('', 1, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
+
+        //Login / Logout requests will trigger GC routine
+        self::gc();
+    }
+
+    public static function verify()
+    {
+        $cookie = self::getJWTFromCookie();
+        if (empty($cookie) || (bool)preg_match('/.*\..*\..*\./', $cookie)) {
+            return false;
+        }
+        $token = JWT::parse($cookie);
+        $secret = self::getTokenSecret($token->getHeader('jti'));
+
+        if (JWT::verify($token, (string)$secret) && JWT::validate($token)) {
+            self::updateLastAccessed($token->getHeader('jti'));
+            return $token;
+        }
+
+        return false;
+    }
+
+    private static function setCookie(string $data, int $lifetime, string $domain, bool $secure)
+    {
+        if (version_compare(PHP_VERSION, '7.3.0') >= 0) {
+            setcookie('sbpp_auth', $data, [
+                'expires' => $lifetime,
+                'path' => '/',
+                'domain' => $domain,
+                'secure' => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax'
+            ]);
+        } else {
+            setcookie('sbpp_auth', $data, $lifetime, '/', $domain, $secure, true);
+        }
+    }
+
+    private static function gc()
+    {
+        self::$dbs->query("DELETE FROM `:prefix_login_tokens` WHERE lastAccessed < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 30 DAY))");
+        self::$dbs->execute();
+    }
+
+    private static function insertNewToken(string $jti, string $secret)
+    {
+        self::$dbs->query("INSERT INTO `:prefix_login_tokens` (jti, secret, lastAccessed) VALUES (:jti, :secret, UNIX_TIMESTAMP())");
+        self::$dbs->bind(':jti', $jti, \PDO::PARAM_STR);
+        self::$dbs->bind(':secret', $secret, \PDO::PARAM_STR);
+        self::$dbs->execute();
+    }
+
+    private static function updateLastVisit(int $aid)
+    {
+        self::$dbs->query("UPDATE `:prefix_admins` SET lastvisit = UNIX_TIMESTAMP() WHERE aid = :aid");
+        self::$dbs->bind(':aid', $aid, \PDO::PARAM_INT);
+        self::$dbs->execute();
+    }
+
+    private static function updateLastAccessed(string $jti)
+    {
+        self::$dbs->query("UPDATE `:prefix_login_tokens` SET lastAccessed = UNIX_TIMESTAMP() WHERE jti = :jti");
+        self::$dbs->bind(':jti', $jti, \PDO::PARAM_STR);
+        self::$dbs->execute();
+    }
+
+    private static function getTokenSecret(string $jti)
+    {
+        self::$dbs->query("SELECT secret FROM `:prefix_login_tokens` WHERE jti = :jti");
+        self::$dbs->bind(':jti', $jti, \PDO::PARAM_STR);
+        $result = self::$dbs->single();
+        return $result['secret'];
+    }
+
+    private static function generateJTI()
+    {
+        do {
+            $jti = Crypto::genJTI();
+        } while (self::checkJTI($jti));
+
+        return $jti;
+    }
+
+    private static function checkJTI(string $jti)
+    {
+        self::$dbs->query("SELECT 1 FROM `:prefix_login_tokens` WHERE jti = :jti");
+        self::$dbs->bind(':jti', $jti, \PDO::PARAM_STR);
+        $result = self::$dbs->single();
+        return (bool)($result[1]);
+    }
+
+    private static function getJWTFromCookie()
+    {
+        return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+    }
+}

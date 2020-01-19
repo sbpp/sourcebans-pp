@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -31,6 +23,8 @@ if (!defined("IN_SB")) {
 }
 
 global $theme;
+
+new AdminTabs([], $userbank, $theme);
 
 if ($_GET['key'] != $_SESSION['banlist_postkey']) {
     echo '<script>ShowBox("Error", "Possible hacking attempt (URL Key mismatch)!", "red", "index.php?p=admin&c=bans");</script>';
@@ -59,7 +53,7 @@ isset($_GET["page"]) ? $pagelink = "&page=" . $_GET["page"] : $pagelink = "";
 $errorScript = "";
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = trim($_POST['steam']);
+    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
     $_POST['type']  = (int) $_POST['type'];
 
     // Form Validation
@@ -69,7 +63,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
-    } elseif (($_POST['type'] == 0 && !is_numeric($_POST['steam']) && !validate_steam($_POST['steam'])) || (is_numeric($_POST['steam']) && (strlen($_POST['steam']) < 15 || !validate_steam($_POST['steam'] = FriendIDToSteamID($_POST['steam']))))) {
+    } elseif ($_POST['type'] == 0 && !\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -78,7 +72,7 @@ if (isset($_POST['name'])) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type an IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
-    } elseif ($_POST['type'] == 1 && !validate_ip($_POST['ip'])) {
+    } elseif ($_POST['type'] == 1 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
         $errorScript .= "$('ip.msg').innerHTML = 'You must type a valid IP';";
         $errorScript .= "$('ip.msg').setStyle('display', 'block');";
@@ -133,10 +127,8 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['name'] = RemoveCode($_POST['name']);
     $_POST['ip'] = preg_replace('#[^\d\.]#', '', $_POST['ip']); //strip ip of all but numbers and dots
-    $_POST['dname'] = RemoveCode($_POST['dname']);
-    $reason = RemoveCode(trim($_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason']));
+    $reason = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {
         $_POST['banlength'] = 0;
@@ -199,11 +191,11 @@ if (isset($_POST['name'])) {
                     $_POST['dname']
                 )
             );
-            $res['dname'] = RemoveCode($_POST['dname']);
+            $res['dname'] = $_POST['dname'];
         }
 
         if ($_POST['banlength'] != $lengthrev->fields['length']) {
-            $log = new CSystemLog("m", "Ban length edited", "Ban length for (" . $lengthrev->fields['authid'] . ") has been updated, before: " . $lengthrev->fields['length'] . ", now: " . $_POST['banlength']);
+            Log::add("m", "Ban length edited", "Ban length for ($lengthrev[authid]) has been updated. Before: $lengthrev[length]; Now: $_POST[banlength]");
         }
         echo '<script>ShowBox("Ban updated", "The ban has been updated successfully", "green", "index.php?p=banlist' . $pagelink . '");</script>';
     }
@@ -218,7 +210,7 @@ $theme->assign('ban_reason', $res['reason']);
 $theme->assign('ban_authid', trim($res['authid']));
 $theme->assign('ban_ip', $res['ip']);
 $theme->assign('ban_demo', (!empty($res['dname']) ? "Uploaded: <b>" . $res['dname'] . "</b>" : ""));
-$theme->assign('customreason', ((isset($GLOBALS['config']['bans.customreasons']) && $GLOBALS['config']['bans.customreasons'] != "") ? unserialize($GLOBALS['config']['bans.customreasons']) : false));
+$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
 
 $theme->left_delimiter  = "-{";
 $theme->right_delimiter = "}-";

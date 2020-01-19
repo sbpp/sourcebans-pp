@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -45,14 +37,18 @@ $stopped               = array();
 $blcount               = 0;
 while (!$res->EOF) {
     $info               = array();
-    $info['date']       = date($dateformat, $res->fields[1]);
+    $info['date']       = Config::time($res->fields[1]);
     $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
-    $info['short_name'] = trunc($info['name'], 40, false);
+    $info['short_name'] = trunc($info['name'], 40);
     $info['auth']       = $res->fields['authid'];
     $info['ip']         = $res->fields['ip'];
     $info['server']     = "block_" . $res->fields['sid'] . "_$blcount";
+
     if ($res->fields['type'] == 1) {
-        $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['ip'] . "&advType=ip&Submit";
+        if ($userbank->is_admin())
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[ip]&advType=ip&Submit";
+        else
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[name]&advType=name";
     } else {
         $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['auth'] . "&advType=steamid&Submit";
     }
@@ -87,19 +83,22 @@ while (!$res->EOF) {
         $info['unbanned'] = false;
     }
     $info['name']    = stripslashes($res->fields[3]);
-    $info['created'] = date($dateformat, $res->fields['created']);
+    $info['created'] = Config::time($res->fields['created']);
     $ltemp           = explode(",", $res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
     $info['length']  = $ltemp[0];
     $info['icon']    = empty($res->fields[13]) ? 'web.png' : $res->fields[13];
     $info['authid']  = $res->fields[2];
     $info['ip']      = $res->fields[1];
     if ($res->fields[15] == 1) {
-        $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['ip'] . "&advType=ip&Submit";
+        if ($userbank->is_admin())
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[ip]&advType=ip&Submit";
+        else
+            $info['search_link'] = "index.php?p=banlist&advSearch=$info[name]&advType=name";
     } else {
         $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     }
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
-    $info['short_name'] = trunc($info['name'], 25, false);
+    $info['short_name'] = trunc($info['name'], 25);
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;
@@ -139,15 +138,15 @@ while (!$res->EOF) {
         $info['unbanned'] = false;
     }
     $info['name']        = stripslashes($res->fields[3]);
-    $info['created']     = date($dateformat, $res->fields['created']);
+    $info['created']     = Config::time($res->fields['created']);
     $ltemp               = explode(",", $res->fields[6] == 0 ? 'Permanent' : SecondsToString(intval($res->fields[6])));
     $info['length']      = $ltemp[0];
     $info['icon']        = empty($res->fields[13]) ? 'web.png' : $res->fields[13];
     $info['authid']      = $res->fields['authid'];
     $info['search_link'] = "index.php?p=commslist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     $info['link_url']    = "window.location = '" . $info['search_link'] . "';";
-    $info['short_name']  = trunc($info['name'], 25, false);
-    $info['type']        = $res->fields['type'] == 2 ? "images/type_c.png" : "images/type_v.png";
+    $info['short_name']  = trunc($info['name'], 25);
+    $info['type']        = $res->fields['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;
@@ -170,9 +169,9 @@ while (!$res->EOF) {
 
 require(TEMPLATES_PATH . "/page.servers.php"); //Set theme vars from servers page
 
-$theme->assign('dashboard_lognopopup', (isset($GLOBALS['config']['dash.lognopopup']) && $GLOBALS['config']['dash.lognopopup'] == "1"));
-$theme->assign('dashboard_title', stripslashes($GLOBALS['config']['dash.intro.title']));
-$theme->assign('dashboard_text', stripslashes($GLOBALS['config']['dash.intro.text']));
+$theme->assign('dashboard_lognopopup', Config::getBool('dash.lognopopup'));
+$theme->assign('dashboard_title', Config::get('dash.intro.title'));
+$theme->assign('dashboard_text', Config::get('dash.intro.text'));
 $theme->assign('players_blocked', $stopped);
 $theme->assign('total_blocked', $totalstopped);
 

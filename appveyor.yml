@@ -1,8 +1,15 @@
 version: '{branch}-{build}'
 
 environment:
-  SOURCEMOD: 1.8
-  
+  matrix:
+    - SOURCEMOD: 1.9
+    - SOURCEMOD: 1.10
+    - SOURCEMOD: 1.11
+
+matrix:
+  allow_failures:
+    - SOURCEMOD: 1.11
+
 install:
   - ps: Invoke-WebRequest "https://www.sourcemod.net/latest.php?version=$env:SOURCEMOD&os=windows" -OutFile "sourcemod-$env:SOURCEMOD-windows.zip"
   - ps: Expand-Archive -Path "sourcemod-$env:SOURCEMOD-windows.zip" -DestinationPath "game"
@@ -13,13 +20,13 @@ install:
 build: off
 
 test_script:
-  - cmd: spcomp sbpp_main.sp
-  - cmd: spcomp sbpp_admcfg.sp
-  - cmd: spcomp sbpp_comms.sp
-  - cmd: spcomp sbpp_checker.sp
-  - cmd: spcomp sbpp_sleuth.sp
-  - cmd: spcomp sbpp_report.sp
-  
+  - cmd: spcomp sbpp_main.sp -E -i%CD% -v0
+  - cmd: spcomp sbpp_admcfg.sp -E -i%CD% -v0
+  - cmd: spcomp sbpp_comms.sp -E -i%CD% -v0
+  - cmd: spcomp sbpp_checker.sp -E -i%CD% -v0
+  - cmd: spcomp sbpp_sleuth.sp -E -i%CD% -v0 
+  - cmd: spcomp sbpp_report.sp -E -i%CD% -v0
+
 after_test:
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - cmd: 7z a sourcebans-pp.plugin-only.zip %APPVEYOR_BUILD_FOLDER%\game\addons\sourcemod\scripting\*.smx

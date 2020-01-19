@@ -3,7 +3,7 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablesteamlogin', '0')");
+    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablesteamlogin', '1')");
     $this->dbs->execute();
 }
 

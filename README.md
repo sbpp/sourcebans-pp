@@ -4,7 +4,9 @@
     SourceBans++
 </h1>
 
-### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/releases) [![GitHub license](https://img.shields.io/badge/license-GPLv3-blue.svg?style=flat-square)](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/SOURCEMOD-LICENSE.txt) [![GitHub license](https://img.shields.io/badge/license-CC_BY--NC--SA_4.0-blue.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE) [![GitHub forks](https://img.shields.io/github/forks/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/network) [![GitHub stars](https://img.shields.io/github/stars/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/stargazers) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square)](https://github.com/sbpp/sourcebans-pp/issues) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square)](https://travis-ci.org/sbpp/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp)
+### [![GitHub release](https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![GitHub license](https://img.shields.io/github/license/sbpp/sourcebans-pp?color=blue&style=flat-square)](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE) [![GitHub issues](https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/issues) [![GitHub pull requests](https://img.shields.io/github/issues-pr/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/pulls) [![GitHub All Releases](https://img.shields.io/github/downloads/sbpp/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white)](https://github.com/sbpp/sourcebans-pp/releases) [![Travis](https://img.shields.io/travis/sbpp/sourcebans-pp.svg?style=flat-square&logo=travis)](https://travis-ci.org/sbpp/sourcebans-pp) [![AppVeyor](https://img.shields.io/appveyor/ci/Sarabveer/sourcebans-pp.svg?style=flat-square&logo=appveyor)](https://ci.appveyor.com/project/Sarabveer/sourcebans-pp) [![Codacy](https://img.shields.io/codacy/grade/1fc9e40bde8e40dca8680e4b2d51256b.svg?style=flat-square)](https://www.codacy.com/app/sbpp/sourcebans-pp) [![Discord](https://img.shields.io/discord/298914017135689728.svg?style=flat-square&logo=discord&label=discord)](https://discord.gg/4Bhj6NU)
+
+
 Global admin, ban, and communication management system for the Source engine
 
 ### Issues
@@ -24,9 +26,9 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ```
 * Webserver
-  o PHP 5.6 or higher
+  o PHP 7.1 or higher
     * ini setting: memory_limit greater than or equal to 64M
-  o MySQL 5.0 or MariaDB 10 and higher
+  o MySQL 5.6 or MariaDB 10 and higher
 * Source Dedicated Server
   o MetaMod: Source
   o SourceMod: Greater Than or Equal To 1.7
@@ -34,7 +36,10 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ## Built With
 
-* [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/SOURCEMOD-LICENSE.txt) - [GPL v3](https://www.gnu.org/licenses/gpl-3.0.txt)
+* [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/SOURCEMOD-LICENSE.txt) - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3)
+* [SourceBans 1.4.11](https://github.com/GameConnect/sourcebansv1) - Base of this project - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3) - [CC BY-NC-SA 3.0](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE)
+* [SourceComms](https://github.com/d-ai/SourceComms) - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3)
+* [SourceBans TF2 Theme](https://forums.alliedmods.net/showthread.php?t=252533)
 
 ## Contributing
 
@@ -51,4 +56,5 @@ See also the list of [contributors](https://github.com/sbpp/sourcebans-pp/graphs
 
 ## License
 
-The web-panel portion of this project is licensed under the CC-BY-NC-SA License - see the [LICENSE.md](LICENSE.md) file for details
+This SourceMod plugins of this project are licensed under the `GNU GENERAL PUBLIC LICENSE Version 3` (GPLv3) [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3).
+The Web panel is licensed under the `Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported` (CC BY-NC-SA 3.0) [License](https://github.com/sbpp/sourcebans-pp/blob/v1.x/LICENSE).

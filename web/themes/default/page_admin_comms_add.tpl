@@ -2,12 +2,12 @@
 	Access Denied!
 {else}
   <div id="msg-green" style="display:none;">
-    <i><img src="./images/yay.png" alt="Success" /></i>
+    <i class="fas fa-check fa-2x"></i>
     <b>Block Added</b><br />
     The new block has been added to the system.<br /><br />
     <i>Redirecting back to comms page</i>
   </div>
-  
+
   <div id="add-group1">
     <h3>Add Block</h3>
 	For more information or help regarding a certain subject move your mouse over the question mark.<br /><br />
@@ -15,7 +15,7 @@
     <tr>
         <td valign="top" width="35%">
           <div class="rowdesc">
-            {help_icon title="Nickname" message="Type the nickname of the person that you are banning."}Nickname 
+            {help_icon title="Nickname" message="Type the nickname of the person that you are banning."}Nickname
           </div>
         </td>
         <td>
@@ -42,7 +42,7 @@
         <tr>
             <td valign="top" width="35%">
                 <div class="rowdesc">
-                    {help_icon title="Block Type" message="Choose what to block - chat or voice"}Block Type 
+                    {help_icon title="Block Type" message="Choose what to block - chat or voice"}Block Type
                 </div>
             </td>
             <td>
@@ -131,7 +131,7 @@
             </optgroup>
           </select>
           </div>
-          <div id="length.msg" ></div>
+          <div id="length.msg" class="badentry"></div>
         </td>
       </tr>
   		<tr>

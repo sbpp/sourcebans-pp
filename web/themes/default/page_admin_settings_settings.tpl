@@ -42,6 +42,37 @@
 		    	</div>
 		    </td>
 		</tr>
+
+		<tr>
+		    <td valign="top"><div class="rowdesc">{help_icon title="Auth Maxlife" message="Max lifetime for auth tokens."}Auth Maxlife </div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="text" TABINDEX=4 class="textbox" id="auth_maxlife" name="auth_maxlife" value="{$auth_maxlife}" />
+		            (in minutes)
+		    	</div>
+		    </td>
+		</tr>
+
+		<tr>
+		    <td valign="top"><div class="rowdesc">{help_icon title="Auth Maxlife (remember me)" message="Max lifetime for auth tokens with remember me enabled."}Auth Maxlife (remember me) </div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="text" TABINDEX=4 class="textbox" id="auth_maxlife_remember" name="auth_maxlife_remember" value="{$auth_maxlife_remember}" />
+             		(in minutes)
+		    	</div>
+		    </td>
+		</tr>
+
+		<tr>
+		    <td valign="top"><div class="rowdesc">{help_icon title="Auth Maxlife (steam login)" message="Max lifetime for auth tokens via steam login."}Auth Maxlife (steam login) </div></td>
+		    <td>
+		    	<div align="left">
+		      		<input type="text" TABINDEX=4 class="textbox" id="auth_maxlife_steam" name="auth_maxlife_steam" value="{$auth_maxlife_steam}" />
+              		(in minutes)
+		    	</div>
+		    </td>
+		</tr>
+
 		<tr>
 			<td valign="top"><div class="rowdesc">{help_icon title="Enable Debugmode" message="Check this box to enable the debugmode permanently."}Debugmode</div></td>
 		    <td>
@@ -128,7 +159,7 @@
 		    </td>
 		</tr>
 		<tr>
-			<td valign="top"><div class="rowdesc">{help_icon title="Clear Cache" message="Click this button, to clean the themes_c folder."}Clear Cache</div></td>
+			<td valign="top"><div class="rowdesc">{help_icon title="Clear Cache" message="Click this button, to clean the cache folder."}Clear Cache</div></td>
 			<td>
 				<div align="left">
 					{sb_button text="Clear Cache" onclick="xajax_ClearCache();" class="cancel" id="clearcache" submit=false}
@@ -209,4 +240,15 @@
 		</tr>
 	</table>
 </form>
-<script>$('sel_timezoneoffset').value = "{$config_time}";</script>
+<script type="text/javascript" src="./includes/tinymce/tinymce.min.js"></script>
+{literal}
+<script language="javascript" type="text/javascript">
+	tinyMCE.init({
+        selector: "textarea",
+        height: 500,
+        theme : "modern",
+        plugins : "advlist, autolink, lists, link, image, charmap, print, preview, hr, anchor, pagebreak, searchreplace, wordcount, visualblocks, visualchars, code, fullscreen, insertdatetime, media, nonbreaking, save, table, contextmenu, directionality, emoticons, template, paste, textcolor, colorpicker, textpattern, imagetools, codesample, toc",
+        extended_valid_elements : "a[name|href|target|title|onclick],img[class|src|border=0|alt|title|hspace|vspace|width|height|align|onmouseover|onmouseout|name],hr[class|width|size|noshade],font[face|size|color|style],span[class|align|style]"
+    });
+</script>
+{/literal}

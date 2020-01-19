@@ -90,12 +90,12 @@
 		  </div>
 		  {if $ban.demo_available}
 		  <div style="float:right;">
-		  <img src="images/demo.png" alt="Demo" title="Demo available" style="height:14px;width:14px;" />
+		  <i class="fas fa-video fa-lg"></i>
 		  </div>
 		  {/if}
 		  {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
 		  <div style="float:right;">
-		  {$ban.commentdata|@count} <img src="images/details.png" alt="Comments" title="Comments" style="height:12px;width:12px;" />
+		  {$ban.commentdata|@count} <i class="fas fa-clipboard-list fa-lg"></i>
 		  </div>
 		  {/if}
         </td>
@@ -193,8 +193,14 @@
               </tr>
               {if $ban.type == 0}
               <tr align="left">
-                <td width="20%" height="16" class="listtable_1">Steam Community</td>
-                <td height="16" class="listtable_1"><a href="http://steamcommunity.com/profiles/{$ban.communityid}" target="_blank">{$ban.communityid}</a></td>
+                  <td width="20%" height="16" class="listtable_1">Steam Community</td>
+                  <td height="16" class="listtable_1">
+                  {if empty($ban.steamid)}
+                    <i><font color="#677882">No Steam Community ID present</font></i>
+                  {else}
+                    <a href="http://steamcommunity.com/profiles/{$ban.communityid}" target="_blank">{$ban.communityid}</a>
+                  {/if}
+                  </td>
               </tr>
               {/if}
               {if !$hideplayerips}

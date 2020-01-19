@@ -67,15 +67,15 @@
 					</tr>
 				</table>
 			</td>
-		</tr>				
+		</tr>
 		<tr>
 			<td width="16px" height="16" class="listtable_top">&nbsp;</td>
 			<td height="25%" class="listtable_top" align="center"><b>Date/Time</b></td>
-			<td height="16" class="listtable_top"><b>Name</b></td>	  
+			<td height="16" class="listtable_top"><b>Name</b></td>
 		</tr>
 		{foreach from=$players_blocked item=player}
 		<tr{if $dashboard_lognopopup} onclick="{$player.link_url}"{else} onclick="{$player.popup}"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor: pointer;" id="{$player.server}" title="Querying Server Data...">
-      <td width="16" height="16" align="center" class="listtable_1"><img src="images/forbidden.png" width="16" height="16" alt="Blocked Player" /></td>
+      <td width="16" height="16" align="center" class="listtable_1"><i class="fas fa-ban fa-lg"></i></td>
       <td width="25%" height="16" class="listtable_1">{$player.date}</td>
       <td height="16" class="listtable_1">{$player.short_name|escape:'html'}</td>
 		</tr>
@@ -107,7 +107,7 @@
 		</tr>
 		{foreach from=$players_commed item=player}
 		<tr onclick="{$player.link_url}" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" style="cursor:pointer;" height="16">
-      <td class="listtable_1" align="center"><img src="{$player.type}" width="16" alt="MOD" title="MOD" /></td>
+      <td class="listtable_1" align="center"><i class="{$player.type}"></i></td>
       <td class="listtable_1">{$player.created}</td>
       <td class="listtable_1">
         {if empty($player.short_name)}

@@ -26,7 +26,8 @@ $RECYCLE.BIN/
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -47,6 +48,10 @@ Temporary Items
 
 # SourceBans++
 /web/config.php
-/web/themes_c/*.php
-/web/themes_c/*.tmp
+/web/cache/*.php
+/web/cache/*.tmp
+/web/cache/sessions/sess_*
 *.smx
+
+# VSCode
+.vscode

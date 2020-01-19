@@ -1,28 +1,19 @@
-<div id="admin-page-content">
 <?php
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -30,7 +21,121 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-global $userbank;
+global $userbank, $theme;
+
+new AdminTabs([
+    ['name' => 'List admins', 'permission' => ADMIN_OWNER|ADMIN_LIST_ADMINS],
+    ['name' => 'Add new admin', 'permission' => ADMIN_OWNER|ADMIN_ADD_ADMINS],
+    ['name' => 'Overrides', 'permission' => ADMIN_OWNER|ADMIN_ADD_ADMINS]
+], $userbank, $theme);
+
+$AdminsPerPage = SB_BANS_PER_PAGE;
+$page = 1;
+$join = "";
+$where = "";
+$advSearchString = "";
+if (isset($_GET['page']) && $_GET['page'] > 0) {
+    $page = intval($_GET['page']);
+}
+if (isset($_GET['advSearch'])) {
+    // Escape the value, but strip the leading and trailing quote
+    $value = substr($GLOBALS['db']->qstr($_GET['advSearch'], get_magic_quotes_gpc()), 1, -1);
+    $type = $_GET['advType'];
+    switch ($type) {
+        case "name":
+            $where = " AND ADM.user LIKE '%" . $value . "%'";
+            break;
+        case "steamid":
+            $where = " AND ADM.authid = '" . $value . "'";
+            break;
+        case "steam":
+            $where = " AND ADM.authid LIKE '%" . $value . "%'";
+            break;
+        case "admemail":
+            $where = " AND ADM.email LIKE '%" . $value . "%'";
+            break;
+        case "webgroup":
+            $where = " AND ADM.gid = '" . $value . "'";
+            break;
+        case "srvadmgroup":
+            $where = " AND ADM.srv_group = '" . $value . "'";
+            break;
+        case "srvgroup":
+            $where = " AND SG.srv_group_id = '" . $value . "'";
+            $join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS SG ON SG.admin_id = ADM.aid";
+            break;
+        case "admwebflag":
+            $findflags = explode(",", $value);
+            foreach ($findflags as $flag) {
+                $flags[] = constant($flag);
+            }
+            $flagstring = implode('|', $flags);
+            $alladmins = $GLOBALS['db']->Execute("SELECT aid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
+            while (!$alladmins->EOF) {
+                if ($userbank->HasAccess($flagstring, $alladmins->fields["aid"])) {
+                    if (!isset($accessaid)) {
+                        $accessaid = $alladmins->fields["aid"];
+                    }
+                    $accessaid .= ",".$alladmins->fields["aid"];
+                }
+                $alladmins->MoveNext();
+            }
+            $where = " AND ADM.aid IN(".$accessaid.")";
+            break;
+        case "admsrvflag":
+            $findflags = explode(",", $value);
+            foreach ($findflags as $flag) {
+                $flags[] = constant($flag);
+            }
+            $alladmins = $GLOBALS['db']->Execute("SELECT aid, authid FROM `" . DB_PREFIX . "_admins` WHERE aid > 0");
+            while (!$alladmins->EOF) {
+                foreach ($flags as $fla) {
+                    if ($userbank->HasAccess($fla, $alladmins->fields["authid"])) {
+                        if (!isset($accessaid)) {
+                            $accessaid = $alladmins->fields["aid"];
+                        }
+                        $accessaid .= ",".$alladmins->fields["aid"];
+                    }
+                }
+                if ($userbank->HasAccess(SM_ROOT, $alladmins->fields["authid"])) {
+                    if (!isset($accessaid)) {
+                        $accessaid = $alladmins->fields["aid"];
+                    }
+                    $accessaid .= ",".$alladmins->fields["aid"];
+                }
+                $alladmins->MoveNext();
+            }
+            $where = " AND ADM.aid IN(".$accessaid.")";
+            break;
+        case "server":
+            $where = " AND (ASG.server_id = '" . $value . "' OR SG.server_id = '" . $value . "')";
+            $join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS ASG ON ASG.admin_id = ADM.aid LEFT JOIN `" . DB_PREFIX . "_servers_groups` AS SG ON SG.group_id = ASG.srv_group_id";
+            break;
+        default:
+            $_GET['advSearch'] = "";
+            $_GET['advType'] = "";
+            $where = "";
+            break;
+    }
+        $advSearchString = "&advSearch=".$_GET['advSearch']."&advType=".$_GET['advType'];
+}
+$admins = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage));
+// quick fix for the server search showing admins mulitple times.
+if (isset($_GET['advSearch']) && isset($_GET['advType']) && $_GET['advType'] == 'server') {
+    $aadm = array();
+    $num = 0;
+    foreach ($admins as $aadmin) {
+        if (!in_array($aadmin['aid'], $aadm)) {
+            $aadm[] = $aadmin['aid'];
+        } else {
+            unset($admins[$num]);
+        }
+        $num++;
+    }
+}
+
+$query = $GLOBALS['db']->GetRow("SELECT COUNT(ADM.aid) AS cnt FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where);
+$admin_count = $query['cnt'];
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page = intval($_GET['page']);
@@ -69,18 +174,18 @@ foreach ($admins as $admin) {
     if (!$lastvisit) {
         $admin['lastvisit'] = "Never";
     } else {
-        $admin['lastvisit'] = date($dateformat, $userbank->GetProperty("lastvisit", $admin['aid']));
+        $admin['lastvisit'] = Config::time($userbank->GetProperty("lastvisit", $admin['aid']));
     }
     array_push($admin_list, $admin);
 }
 
 if ($page > 1) {
-    $prev = CreateLinkR('<img border="0" alt="prev" src="images/left.png" style="vertical-align:middle;" /> prev', "index.php?p=admin&c=admins&page=" . ($page - 1) . $advSearchString);
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=admins&page=" . ($page - 1) . $advSearchString);
 } else {
     $prev = "";
 }
 if ($AdminsEnd < $admin_count) {
-    $next = CreateLinkR('next <img border="0" alt="prev" src="images/right.png" style="vertical-align:middle;" />', "index.php?p=admin&c=admins&page=" . ($page + 1) . $advSearchString);
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=admins&page=" . ($page + 1) . $advSearchString);
 } else {
     $next = "";
 }
@@ -108,7 +213,6 @@ if ($pages > 1) {
     $admin_nav .= '</select>';
 }
 
-echo '<div id="0" style="display:none;">';
 $theme->assign('permission_listadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS));
 $theme->assign('permission_editadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS));
 $theme->assign('permission_deleteadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS));
@@ -116,7 +220,6 @@ $theme->assign('admin_count', $admin_count);
 $theme->assign('admin_nav', $admin_nav);
 $theme->assign('admins', $admin_list);
 $theme->display('page_admin_admins_list.tpl');
-echo '</div>';
 
 // Add Page
 $group_list              = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type = '3'");
@@ -134,7 +237,6 @@ foreach ($servers as $server) {
 }
 $serverscript .= "</script>";
 
-echo '<div id="1" style="display:none;">';
 $theme->assign('group_list', $group_list);
 $theme->assign('server_list', $server_list);
 $theme->assign('server_script', $serverscript);
@@ -142,7 +244,6 @@ $theme->assign('server_admin_group_list', $server_admin_group_list);
 $theme->assign('server_group_list', $server_group_list);
 $theme->assign('permission_addadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS));
 $theme->display('page_admin_admins_add.tpl');
-echo '</div>';
 // Overrides
 
 // Saving changed overrides
@@ -225,12 +326,8 @@ try {
 
 $overrides_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_overrides`;");
 
-echo '<div id="2" style="display:none;">';
 $theme->assign('overrides_list', $overrides_list);
 $theme->assign('overrides_error', $overrides_error);
 $theme->assign('overrides_save_success', $overrides_save_success);
 $theme->assign('permission_addadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS));
 $theme->display('page_admin_overrides.tpl');
-echo '</div>';
-?>
-</div>

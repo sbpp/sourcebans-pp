@@ -1,8 +1,4 @@
 <?php
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
-    die();
-}
 if (isset($_POST['postd'])) {
     if (empty($_POST['server']) ||empty($_POST['port']) ||empty($_POST['username']) ||empty($_POST['database']) ||empty($_POST['prefix'])) {
         echo "<script>ShowBox('Error', 'There is some missing data. All fields are required.', 'red', '', true);</script>";
@@ -23,7 +19,6 @@ if (isset($_POST['postd'])) {
     <input type="hidden" name="port" value="<?php echo $_POST['port']?>">
     <input type="hidden" name="prefix" value="<?php echo $_POST['prefix']?>">
     <input type="hidden" name="apikey" value="<?php echo $_POST['apikey']?>">
-    <input type="hidden" name="sb-wp-url" value="<?php echo $_POST['sb-wp-url']?>">
     <input type="hidden" name="sb-email" value="<?php echo $_POST['sb-email']?>">
 </form>
 <script>
@@ -90,13 +85,6 @@ if (isset($_POST['postd'])) {
     <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Steam API Key", "Copy & Paste Your Steam API Key Here");?>Steam API Key</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="apikey" name="apikey" value="<?php echo isset($_POST['apikey'])?$_POST['apikey']:'';?>" />
-    </div><div id="database.msg" style="color:#CC0000;"></div></td>
-  </tr>
-
-  <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("SourceBans URL", "Whats the URL of your SourceBans install (eg. http://bans.mysite.com or http://mysite.com/bans)");?>SourceBans URL</div></td>
-    <td><div align="center">
-  	 <input type="text" TABINDEX=1 class="textbox" id="sb-wp-url" name="sb-wp-url" value="<?php echo isset($_POST['sb-wp-url'])?$_POST['sb-wp-url']:'';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>
   </tr>
 

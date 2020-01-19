@@ -1,10 +1,14 @@
-<div id="admin-page-content">
 <?php
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
 global $userbank, $theme;
+
+new AdminTabs([
+    ['name' => 'List servers', 'permission' => ADMIN_OWNER|ADMIN_LIST_SERVERS],
+    ['name' => 'Add new server', 'permission' => ADMIN_OWNER|ADMIN_ADD_SERVER]
+], $userbank, $theme);
 
 $servers = $GLOBALS['db']->GetAll("SELECT srv.ip ip, srv.port port, srv.sid sid, mo.icon icon, srv.enabled enabled FROM `" . DB_PREFIX . "_servers` AS srv
    LEFT JOIN `" . DB_PREFIX . "_mods` AS mo ON mo.mid = srv.modid
@@ -59,15 +63,7 @@ $theme->assign('rcon', '');
 $theme->assign('modid', '');
 
 $theme->assign('submit_text', "Add Server");
-?>
-    <div id="0" style="display:none;">
-<?php
+
 $theme->display('page_admin_servers_list.tpl');
-?>
-    </div>
-    <div id="1" style="display:none;">
-<?php
+
 $theme->display('page_admin_servers_add.tpl');
-?>
-    </div>
-</div>

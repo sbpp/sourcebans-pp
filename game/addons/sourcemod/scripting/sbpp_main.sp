@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+//  Copyright (C) 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
 //
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 // *************************************************************************
 
 #pragma semicolon 1
+
 #include <sourcemod>
 #include <sourcebanspp>
 
@@ -32,19 +33,15 @@
 #include <adminmenu>
 #tryinclude <updater>
 
-#define SB_VERSION "1.6.3"
-#define SBR_VERSION "1.6.3"
+#pragma newdecls required
+
+#define SB_VERSION "1.7.0"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
 #endif
 
 //GLOBAL DEFINES
-#define YELLOW				0x01
-#define NAMECOLOR			0x02
-#define TEAMCOLOR			0x03
-#define GREEN				0x04
-
 #define DISABLE_ADDBAN		1
 #define DISABLE_UNBAN		2
 
@@ -112,31 +109,33 @@ int
 	, g_ownReasons[MAXPLAYERS + 1] =  { false, ... } /* Own Chat Reason */
 	, CommandDisable; /* Disable of addban and unban */
 
+
+SMCParser ConfigParser;
+
 Handle
-	ConfigParser
-	, hTopMenu = INVALID_HANDLE
-	, TimeMenuHandle /* Menu file globals */
-	, ReasonMenuHandle
-	, HackingMenuHandle
-	, g_hFwd_OnBanAdded
+	g_hFwd_OnBanAdded
 	, g_hFwd_OnReportAdded
-	, PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... } /* Datapack and Timer handles */
-	, PlayerDataPack[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... };
+	, PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
+
+DataPack PlayerDataPack[MAXPLAYERS + 1] =  { null, ... };
+
+TopMenu	hTopMenu = null;
+
+Menu
+	TimeMenuHandle
+	, ReasonMenuHandle
+	, HackingMenuHandle;
 
 public Plugin myinfo =
 {
 	name = "SourceBans++: Main Plugin",
 	author = "SourceBans Development Team, SourceBans++ Dev Team",
 	description = "Advanced ban management for the Source engine",
-	version = SBR_VERSION,
+	version = SB_VERSION,
 	url = "https://sbpp.github.io"
 };
 
-#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
-#else
-public bool AskPluginLoad(Handle myself, bool late, char[] error, int err_max)
-#endif
 {
 	RegPluginLibrary("sourcebans++");
 
@@ -149,25 +148,20 @@ public bool AskPluginLoad(Handle myself, bool late, char[] error, int err_max)
 
 	LateLoaded = late;
 
-	#if SOURCEMOD_V_MAJOR >= 1 && SOURCEMOD_V_MINOR >= 3
 	return APLRes_Success;
-	#else
-	return true;
-	#endif
 }
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	LoadTranslations("common.phrases");
 	LoadTranslations("plugin.basecommands");
-	LoadTranslations("sourcebans.phrases");
+	LoadTranslations("sbpp_main.phrases");
 	LoadTranslations("basebans.phrases");
 	loadAdmins = loadGroups = loadOverrides = false;
 
 	CvarHostIp = FindConVar("hostip");
 	CvarPort = FindConVar("hostport");
 	CreateConVar("sb_version", SB_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
-	CreateConVar("sbr_version", SBR_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
 	RegServerCmd("sm_rehash", sm_rehash, "Reload SQL admins");
 	RegAdminCmd("sm_ban", CommandBan, ADMFLAG_BAN, "sm_ban <#userid|name> <minutes|0> [reason]", "sourcebans");
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
@@ -184,20 +178,20 @@ public OnPluginStart()
 
 	if ((TimeMenuHandle = CreateMenu(MenuHandler_BanTimeList, MenuAction_Select|MenuAction_Cancel|MenuAction_DrawItem)) != INVALID_HANDLE)
 	{
-		SetMenuPagination(TimeMenuHandle, 8);
-		SetMenuExitBackButton(TimeMenuHandle, true);
+		TimeMenuHandle.Pagination = 8;
+		TimeMenuHandle.ExitBackButton = true;
 	}
 
-	if ((ReasonMenuHandle = CreateMenu(ReasonSelected)) != INVALID_HANDLE)
+	if ((ReasonMenuHandle = new Menu(ReasonSelected)) != INVALID_HANDLE)
 	{
-		SetMenuPagination(ReasonMenuHandle, 8);
-		SetMenuExitBackButton(ReasonMenuHandle, true);
+		ReasonMenuHandle.Pagination = 8;
+		ReasonMenuHandle.ExitBackButton = true;
 	}
 
-	if ((HackingMenuHandle = CreateMenu(HackingSelected)) != INVALID_HANDLE)
+	if ((HackingMenuHandle = new Menu(HackingSelected)) != INVALID_HANDLE)
 	{
-		SetMenuPagination(HackingMenuHandle, 8);
-		SetMenuExitBackButton(HackingMenuHandle, true);
+		HackingMenuHandle.Pagination = 8;
+		HackingMenuHandle.ExitBackButton = true;
 	}
 
 	g_FlagLetters = CreateFlagLetters();
@@ -255,7 +249,7 @@ public void OnLibraryAdded(const char[] name)
 
 public void OnAllPluginsLoaded()
 {
-	Handle topmenu;
+	TopMenu topmenu;
 	#if defined DEBUG
 	LogToFile(logFile, "OnAllPluginsLoaded()");
 	#endif
@@ -287,15 +281,14 @@ public void OnMapStart()
 	ResetSettings();
 }
 
-public OnMapEnd()
+public void OnMapEnd()
 {
 	for (int i = 0; i <= MaxClients; i++)
 	{
-		if (PlayerDataPack[i] != INVALID_HANDLE)
+		if (PlayerDataPack[i] != null)
 		{
 			/* Need to close reason pack */
-			CloseHandle(PlayerDataPack[i]);
-			PlayerDataPack[i] = INVALID_HANDLE;
+			delete PlayerDataPack[i];
 		}
 	}
 }
@@ -310,7 +303,7 @@ public Action OnClientPreAdminCheck(int client)
 	return curLoading > 0 ? Plugin_Handled : Plugin_Continue;
 }
 
-public OnClientDisconnect(int client)
+public void OnClientDisconnect(int client)
 {
 	if (PlayerRecheck[client] != INVALID_HANDLE)
 	{
@@ -387,7 +380,7 @@ public Action ChatHook(int client, int args)
 
 		if (StrEqual(reason[0], "!noreason"))
 		{
-			PrintToChat(client, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason Aborted");
+			PrintToChat(client, "%s%t", Prefix, "Chat Reason Aborted");
 			return Plugin_Handled;
 		}
 
@@ -410,7 +403,14 @@ public Action CommandBan(int client, int args)
 {
 	if (args < 2)
 	{
-		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
+		if ((GetCmdReplySource() == SM_REPLY_TO_CHAT) && (client != 0) && (args == 0))
+		{
+			DisplayBanTargetMenu(client);
+		}
+		else
+		{
+			ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
+		}
 		return Plugin_Handled;
 	}
 
@@ -446,7 +446,7 @@ public Action CommandBan(int client, int args)
 	if (args >= 3)
 	{
 		GetCmdArg(3, reason, sizeof(reason));
-		for (new i = 4; i <= args; i++)
+		for (int i = 4; i <= args; i++)
 		{
 			GetCmdArg(i, buffer, sizeof(buffer));
 			Format(reason, sizeof(reason), "%s %s", reason, buffer);
@@ -463,7 +463,7 @@ public Action CommandBan(int client, int args)
 	if (!PlayerStatus[target])
 	{
 		// The target has not been banned verify. It must be completed before you can ban anyone.
-		ReplyToCommand(admin, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Ban Not Verified");
+		ReplyToCommand(admin, "%s%t", Prefix, "Ban Not Verified");
 		return Plugin_Handled;
 	}
 
@@ -551,7 +551,7 @@ public Action CommandBanIp(int client, int args)
 	FormatEx(sQuery, sizeof(sQuery), "SELECT bid FROM %s_bans WHERE type = 1 AND ip     = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
 		DatabasePrefix, arg);
 
-	SQL_TQuery(DB, SelectBanIpCallback, sQuery, dataPack, DBPrio_High);
+	DB.Query(SelectBanIpCallback, sQuery, dataPack, DBPrio_High);
 
 	return Plugin_Handled;
 }
@@ -605,7 +605,7 @@ public Action CommandUnban(int client, int args)
 		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 1 AND ip     = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, arg);
 	}
 
-	SQL_TQuery(DB, SelectUnbanCallback, query, dataPack);
+	DB.Query(SelectUnbanCallback, query, dataPack);
 
 	return Plugin_Handled;
 }
@@ -683,7 +683,7 @@ public Action CommandAddBan(int client, int args)
 	FormatEx(sQuery, sizeof sQuery, "SELECT bid FROM %s_bans WHERE type = 0 AND authid = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
 		DatabasePrefix, authid);
 
-	SQL_TQuery(DB, SelectAddbanCallback, sQuery, dataPack, DBPrio_High);
+	DB.Query(SelectAddbanCallback, sQuery, dataPack, DBPrio_High);
 
 	return Plugin_Handled;
 }
@@ -700,8 +700,9 @@ public Action sm_rehash(int args)
 
 // MENU CODE //
 
-public void OnAdminMenuReady(Handle topmenu)
+public void OnAdminMenuReady(Handle hTemp)
 {
+	TopMenu topmenu = view_as<TopMenu>(hTemp);
 	#if defined DEBUG
 	LogToFile(logFile, "OnAdminMenuReady()");
 	#endif
@@ -716,15 +717,14 @@ public void OnAdminMenuReady(Handle topmenu)
 	hTopMenu = topmenu;
 
 	/* Find the "Player Commands" category */
-	TopMenuObject player_commands = FindTopMenuCategory(hTopMenu, ADMINMENU_PLAYERCOMMANDS);
+	TopMenuObject player_commands = hTopMenu.FindCategory(ADMINMENU_PLAYERCOMMANDS);
 
 	if (player_commands != INVALID_TOPMENUOBJECT)
 	{
 		// just to avoid "unused variable 'res'" warning
 		#if defined DEBUG
-		TopMenuObject res = AddToTopMenu(hTopMenu,
+		TopMenuObject res = hTopMenu.AddItem(
 			"sm_ban",  // Name
-			TopMenuObject_Item,  // We are a submenu
 			AdminMenu_Ban,  // Handler function
 			player_commands,  // We are a submenu of Player Commands
 			"sm_ban",  // The command to be finally called (Override checks)
@@ -734,9 +734,8 @@ public void OnAdminMenuReady(Handle topmenu)
 		LogToFile(logFile, temp);
 		LogToFile(logFile, "Added Ban option to admin menu");
 		#else
-		AddToTopMenu(hTopMenu,
+		hTopMenu.AddItem(
 			"sm_ban",  // Name
-			TopMenuObject_Item,  // We are a submenu
 			AdminMenu_Ban,  // Handler function
 			player_commands,  // We are a submenu of Player Commands
 			"sm_ban",  // The command to be finally called (Override checks)
@@ -745,7 +744,7 @@ public void OnAdminMenuReady(Handle topmenu)
 	}
 }
 
-public void AdminMenu_Ban(Handle topmenu,
+public void AdminMenu_Ban(TopMenu topmenu,
 	TopMenuAction action,  // Action being performed
 	TopMenuObject object_id,  // The object ID (if used)
 	int param,  // client idx of admin who chose the option (if used)
@@ -782,7 +781,7 @@ public void AdminMenu_Ban(Handle topmenu,
 	}
 }
 
-public int ReasonSelected(Handle menu, MenuAction action, int param1, int param2)
+public int ReasonSelected(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -790,18 +789,18 @@ public int ReasonSelected(Handle menu, MenuAction action, int param1, int param2
 		{
 			char info[128], key[128];
 
-			GetMenuItem(menu, param2, key, sizeof(key), _, info, sizeof(info));
+			menu.GetItem(param2, key, sizeof(key), _, info, sizeof(info));
 
 			if (StrEqual("Hacking", key))
 			{
-				DisplayMenu(HackingMenuHandle, param1, MENU_TIME_FOREVER);
+				HackingMenuHandle.Display(param1, MENU_TIME_FOREVER);
 				return;
 			}
 
 			else if (StrEqual("Own Reason", key)) // admin wants to use his own reason
 			{
 				g_ownReasons[param1] = true;
-				PrintToChat(param1, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Chat Reason");
+				PrintToChat(param1, "%s%t", Prefix, "Chat Reason");
 				return;
 			}
 
@@ -813,10 +812,9 @@ public int ReasonSelected(Handle menu, MenuAction action, int param1, int param2
 		{
 			if (param2 == MenuCancel_Disconnected)
 			{
-				if (PlayerDataPack[param1] != INVALID_HANDLE)
+				if (PlayerDataPack[param1] != null)
 				{
-					CloseHandle(PlayerDataPack[param1]);
-					PlayerDataPack[param1] = INVALID_HANDLE;
+					delete PlayerDataPack[param1];
 				}
 			}
 
@@ -828,7 +826,7 @@ public int ReasonSelected(Handle menu, MenuAction action, int param1, int param2
 	}
 }
 
-public int HackingSelected(Handle menu, MenuAction action, int param1, int param2)
+public int HackingSelected(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch (action)
 	{
@@ -836,7 +834,7 @@ public int HackingSelected(Handle menu, MenuAction action, int param1, int param
 		{
 			char info[128], key[128];
 
-			GetMenuItem(menu, param2, key, sizeof(key), _, info, sizeof(info));
+			menu.GetItem(param2, key, sizeof(key), _, info, sizeof(info));
 
 			if (g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
 				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
@@ -846,9 +844,9 @@ public int HackingSelected(Handle menu, MenuAction action, int param1, int param
 		{
 			if (param2 == MenuCancel_Disconnected)
 			{
-				DataPack Pack = view_as<DataPack>(PlayerDataPack[param1]);
+				DataPack Pack = PlayerDataPack[param1];
 
-				if (Pack != INVALID_HANDLE)
+				if (Pack != null)
 				{
 					Pack.ReadCell(); // admin index
 					Pack.ReadCell(); // target index
@@ -863,8 +861,8 @@ public int HackingSelected(Handle menu, MenuAction action, int param1, int param
 						CloseHandle(ReasonPack);
 					}
 
-					CloseHandle(Pack);
-					PlayerDataPack[param1] = INVALID_HANDLE;
+					delete Pack;
+					PlayerDataPack[param1] = null;
 				}
 			}
 
@@ -876,7 +874,7 @@ public int HackingSelected(Handle menu, MenuAction action, int param1, int param
 	}
 }
 
-public int MenuHandler_BanPlayerList(Handle menu, MenuAction action, int param1, int param2)
+public int MenuHandler_BanPlayerList(Menu menu, MenuAction action, int param1, int param2)
 {
 	#if defined DEBUG
 	LogToFile(logFile, "MenuHandler_BanPlayerList()");
@@ -886,14 +884,14 @@ public int MenuHandler_BanPlayerList(Handle menu, MenuAction action, int param1,
 	{
 		case MenuAction_End:
 		{
-			CloseHandle(menu);
+			delete menu;
 		}
 
 		case MenuAction_Cancel:
 		{
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
 			{
-				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 			}
 		}
 
@@ -902,7 +900,7 @@ public int MenuHandler_BanPlayerList(Handle menu, MenuAction action, int param1,
 			char info[32], name[32];
 			int userid, target;
 
-			GetMenuItem(menu, param2, info, sizeof(info), _, name, sizeof(name));
+			menu.GetItem(param2, info, sizeof(info), _, name, sizeof(name));
 			userid = StringToInt(info);
 
 			if ((target = GetClientOfUserId(userid)) == 0)
@@ -922,7 +920,7 @@ public int MenuHandler_BanPlayerList(Handle menu, MenuAction action, int param1,
 	}
 }
 
-public int MenuHandler_BanTimeList(Handle menu, MenuAction action, int param1, int param2)
+public int MenuHandler_BanTimeList(Menu menu, MenuAction action, int param1, int param2)
 {
 	#if defined DEBUG
 	LogToFile(logFile, "MenuHandler_BanTimeList()");
@@ -934,7 +932,7 @@ public int MenuHandler_BanTimeList(Handle menu, MenuAction action, int param1, i
 		{
 			if (param2 == MenuCancel_ExitBack && hTopMenu != INVALID_HANDLE)
 			{
-				DisplayTopMenu(hTopMenu, param1, TopMenuPosition_LastCategory);
+				hTopMenu.Display(param1, TopMenuPosition_LastCategory);
 			}
 		}
 
@@ -942,18 +940,18 @@ public int MenuHandler_BanTimeList(Handle menu, MenuAction action, int param1, i
 		{
 			char info[32];
 
-			GetMenuItem(menu, param2, info, sizeof(info));
+			menu.GetItem(param2, info, sizeof(info));
 			g_BanTime[param1] = StringToInt(info);
 
 			//DisplayBanReasonMenu(param1);
-			DisplayMenu(ReasonMenuHandle, param1, MENU_TIME_FOREVER);
+			ReasonMenuHandle.Display(param1, MENU_TIME_FOREVER);
 		}
 
 		case MenuAction_DrawItem:
 		{
 			char time[16];
 
-			GetMenuItem(menu, param2, time, sizeof(time));
+			menu.GetItem(param2, time, sizeof(time));
 
 			return (StringToInt(time) > 0 || CheckCommandAccess(param1, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED;
 		}
@@ -968,21 +966,21 @@ stock void DisplayBanTargetMenu(int client)
 	LogToFile(logFile, "DisplayBanTargetMenu()");
 	#endif
 
-	Handle menu = CreateMenu(MenuHandler_BanPlayerList); // Create a new menu, pass it the handler.
+	Menu menu = new Menu(MenuHandler_BanPlayerList); // Create a new menu, pass it the handler.
 
 	char title[100];
 
 	FormatEx(title, sizeof(title), "%T:", "Ban player", client);
 
-	SetMenuTitle(menu, title); // Set the title
-	SetMenuExitBackButton(menu, true); // Yes we want back/exit
+	menu.SetTitle(title); // Set the title
+	menu.ExitBackButton = true; // Yes we want back/exit
 
 	AddTargetsToMenu(menu,  // Add clients to our menu
 		client,  // The client that called the display
 		false,  // We want to see people connecting
 		false); // And dead people
 
-	DisplayMenu(menu, client, MENU_TIME_FOREVER); // Show the menu to the client FOREVER!
+	menu.Display(client, MENU_TIME_FOREVER); // Show the menu to the client FOREVER!
 }
 
 stock void DisplayBanTimeMenu(int client)
@@ -1034,7 +1032,8 @@ public void GotDatabase(Database db, const char[] error, any data)
 
 	char query[1024];
 
-	SQL_SetCharset(DB, "utf8");
+	Format(query, sizeof(query), "SET NAMES utf8mb4");
+	DB.Query(ErrorCheckCallback, query);
 
 	InsertServerInfo();
 
@@ -1043,7 +1042,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 	if (loadOverrides)
 	{
 		Format(query, 1024, "SELECT type, name, flags FROM %s_overrides", DatabasePrefix);
-		SQL_TQuery(DB, OverridesDone, query);
+		DB.Query(OverridesDone, query);
 		loadOverrides = false;
 	}
 
@@ -1052,7 +1051,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 		FormatEx(query, 1024, "SELECT name, flags, immunity, groups_immune   \
 					FROM %s_srvgroups ORDER BY id", DatabasePrefix);
 		curLoading++;
-		SQL_TQuery(DB, GroupsDone, query);
+		DB.Query(GroupsDone, query);
 
 		#if defined DEBUG
 		LogToFile(logFile, "Fetching Group List");
@@ -1086,7 +1085,7 @@ public void GotDatabase(Database db, const char[] error, any data)
 				DatabasePrefix, DatabasePrefix, DatabasePrefix, queryLastLogin, serverID, DatabasePrefix, serverID);
 		}
 		curLoading++;
-		SQL_TQuery(DB, AdminsDone, query);
+		DB.Query(AdminsDone, query);
 
 		#if defined DEBUG
 		LogToFile(logFile, "Fetching Admin List");
@@ -1097,15 +1096,16 @@ public void GotDatabase(Database db, const char[] error, any data)
 	g_bConnecting = false;
 }
 
-public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], DataPack dataPack)
+public void VerifyInsert(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	if (dataPack == INVALID_HANDLE)
 	{
-		LogToFile(logFile, "Ban Failed: %s", error);
+		LogToFile(logFile, "%t: %s", "Ban Fail", error);
+
 		return;
 	}
 
-	if (hndl == INVALID_HANDLE || error[0])
+	if (results == null)
 	{
 		LogToFile(logFile, "Verify Insert Query Failed: %s", error);
 
@@ -1130,7 +1130,7 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], DataPack da
 		dataPack.Reset();
 		reasonPack.Reset();
 
-		PlayerDataPack[admin] = INVALID_HANDLE;
+		PlayerDataPack[admin] = null;
 		UTIL_InsertTempBan(time, name, auth, ip, reason, adminAuth, adminIp, dataPack);
 		return;
 	}
@@ -1157,61 +1157,72 @@ public VerifyInsert(Handle:owner, Handle:hndl, const String:error[], DataPack da
 	{
 		if (Reason[0] == '\0')
 		{
-			ShowActivityEx(admin, Prefix, "%t", "Permabanned player", Name);
+			ShowActivityEx(admin, Prefix, "%t", "Permabanned Player", Name);
 		} else {
-			ShowActivityEx(admin, Prefix, "%t", "Permabanned player reason", Name, Reason);
+			ShowActivityEx(admin, Prefix, "%t", "Permabanned Player Reason", Name, Reason);
 		}
 	} else {
 		if (Reason[0] == '\0')
 		{
-			ShowActivityEx(admin, Prefix, "%t", "Banned player", Name, time);
+			ShowActivityEx(admin, Prefix, "%t", "Banned Player", Name, time);
 		} else {
-			ShowActivityEx(admin, Prefix, "%t", "Banned player reason", Name, time, Reason);
+			ShowActivityEx(admin, Prefix, "%t", "Banned Player Reason", Name, time, Reason);
 		}
 	}
 
-	LogAction(admin, client, "\"%L\" banned \"%L\" (minutes \"%d\") (reason \"%s\")", admin, client, time, Reason);
+	LogAction(admin, client, "%t", "Ban Log", admin, client, time, Reason);
 
 	if (PlayerDataPack[admin] != INVALID_HANDLE)
 	{
-		CloseHandle(PlayerDataPack[admin]);
-		CloseHandle(ReasonPack);
-		PlayerDataPack[admin] = INVALID_HANDLE;
+		delete PlayerDataPack[admin];
+		delete ReasonPack;
 	}
 
 	// Kick player
 	if (GetClientUserId(client) == UserId)
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+	{
+		char length[32];
+		if(time == 0)
+			FormatEx(length, sizeof(length), "%T", "permanent", client);
+		else
+			FormatEx(length, sizeof(length), "%d %T", time, time == 1 ? "minute" : "minutes", client);
+
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, Reason, length);
+	}
 }
 
-public SelectBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	decl admin, minutes, String:adminAuth[30], String:adminIp[30], String:banReason[256], String:ip[16], String:Query[512];
-	new String:reason[128];
-	ResetPack(data);
-	admin = ReadPackCell(data);
-	minutes = ReadPackCell(data);
-	ReadPackString(data, reason, sizeof(reason));
-	ReadPackString(data, ip, sizeof(ip));
-	ReadPackString(data, adminAuth, sizeof(adminAuth));
-	ReadPackString(data, adminIp, sizeof(adminIp));
-	SQL_EscapeString(DB, reason, banReason, sizeof(banReason));
+	int admin, minutes;
+	char adminAuth[30], adminIp[30], banReason[256], ip[16], Query[512];
+	char reason[128];
 
-	if (error[0])
+	dataPack.Reset();
+	admin = dataPack.ReadCell();
+	minutes = dataPack.ReadCell();
+	dataPack.ReadString(reason, sizeof(reason));
+	dataPack.ReadString(ip, sizeof(ip));
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+	dataPack.ReadString(adminIp, sizeof(adminIp));
+	DB.Escape(reason, banReason, sizeof(banReason));
+
+	if (results == null)
 	{
 		LogToFile(logFile, "Ban IP Select Query Failed: %s", error);
 		if (admin && IsClientInGame(admin))
-			PrintToChat(admin, "%sFailed to ban %s.", Prefix, ip);
+			PrintToChat(admin, "%s%t", Prefix, "Ban Fail");
 		else
-			PrintToServer("%sFailed to ban %s.", Prefix, ip);
+			PrintToServer("%s%t", Prefix, "Ban Fail");
+
 		return;
 	}
-	if (SQL_GetRowCount(hndl))
+	if (results.RowCount)
 	{
 		if (admin && IsClientInGame(admin))
-			PrintToChat(admin, "%s%s is already banned.", Prefix, ip);
+			PrintToChat(admin, "%s%t", Prefix, "Already Banned", ip);
 		else
-			PrintToServer("%s%s is already banned.", Prefix, ip);
+			PrintToServer("%s%t", Prefix, "Already Banned", ip);
+
 		return;
 	}
 	if (serverID == -1)
@@ -1227,30 +1238,31 @@ public SelectBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:
 			DatabasePrefix, ip, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 
-	SQL_TQuery(DB, InsertBanIpCallback, Query, data, DBPrio_High);
+	db.Query(InsertBanIpCallback, Query, dataPack, DBPrio_High);
 }
 
-public InsertBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void InsertBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	// if the pack is good unpack it and close the handle
-	new admin, minutes;
-	new String:reason[128];
-	decl String:arg[30];
-	if (data != INVALID_HANDLE)
+	int admin, minutes;
+	char reason[128];
+	char arg[30];
+
+	if (dataPack != null)
 	{
-		ResetPack(data);
-		admin = ReadPackCell(data);
-		minutes = ReadPackCell(data);
-		ReadPackString(data, reason, sizeof(reason));
-		ReadPackString(data, arg, sizeof(arg));
-		CloseHandle(data);
+		dataPack.Reset();
+		admin = dataPack.ReadCell();
+		minutes = dataPack.ReadCell();
+		dataPack.ReadString(reason, sizeof(reason));
+		dataPack.ReadString(arg, sizeof(arg));
+		delete dataPack;
 	} else {
 		// Technically this should not be possible
 		ThrowError("Invalid Handle in InsertBanIpCallback");
 	}
 
 	// If error is not an empty string the query failed
-	if (error[0] != '\0')
+	if (results == null)
 	{
 		LogToFile(logFile, "Ban IP Insert Query Failed: %s", error);
 		if (admin && IsClientInGame(admin))
@@ -1258,87 +1270,89 @@ public InsertBanIpCallback(Handle:owner, Handle:hndl, const String:error[], any:
 		return;
 	}
 
-	LogAction(admin,
-		-1,
-		"\"%L\" added ban (minutes \"%d\") (ip \"%s\") (reason \"%s\")",
-		admin,
-		minutes,
-		arg,
-		reason);
+	LogAction(admin, -1, "%t", "Ban Added", admin, minutes, arg, reason);
+
 	if (admin && IsClientInGame(admin))
-		PrintToChat(admin, "%s%s successfully banned", Prefix, arg);
+		PrintToChat(admin, "%s%t", Prefix, "Ban Success Name", arg);
 	else
-		PrintToServer("%s%s successfully banned", Prefix, arg);
+		PrintToServer("%s%t", Prefix, "Ban Success Name", arg);
 }
 
-public SelectUnbanCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void SelectUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	decl admin, String:arg[30], String:adminAuth[30], String:unbanReason[256];
-	new String:reason[128];
-	ResetPack(data);
-	admin = ReadPackCell(data);
-	ReadPackString(data, reason, sizeof(reason));
-	ReadPackString(data, arg, sizeof(arg));
-	ReadPackString(data, adminAuth, sizeof(adminAuth));
-	SQL_EscapeString(DB, reason, unbanReason, sizeof(unbanReason));
+	int admin;
+	char arg[30], adminAuth[30], unbanReason[256];
+	char reason[128];
+
+	dataPack.Reset();
+	admin = dataPack.ReadCell();
+	dataPack.ReadString(reason, sizeof(reason));
+	dataPack.ReadString(arg, sizeof(arg));
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+
+	db.Escape(reason, unbanReason, sizeof(unbanReason));
 
 	// If error is not an empty string the query failed
-	if (error[0] != '\0')
+	if (results == null)
 	{
 		LogToFile(logFile, "Unban Select Query Failed: %s", error);
 		if (admin && IsClientInGame(admin))
 		{
 			PrintToChat(admin, "%ssm_unban failed", Prefix);
 		}
+		delete dataPack;
 		return;
 	}
 
 	// If there was no results then a ban does not exist for that id
-	if (hndl == INVALID_HANDLE || !SQL_GetRowCount(hndl))
+	if (!results.RowCount)
 	{
 		if (admin && IsClientInGame(admin))
-		{
-			PrintToChat(admin, "%sNo active bans found for that filter", Prefix);
-		} else {
-			PrintToServer("%sNo active bans found for that filter", Prefix);
-		}
+			PrintToChat(admin, "%s%t", Prefix, "No Active Ban");
+		else
+			PrintToServer("%s%t", Prefix, "No Active Ban");
+
+		delete dataPack;
+
 		return;
 	}
 
 	// There is ban
-	if (hndl != INVALID_HANDLE && SQL_FetchRow(hndl))
+	if (results != null && results.FetchRow())
 	{
 		// Get the values from the existing ban record
-		new bid = SQL_FetchInt(hndl, 0);
+		int bid = results.FetchInt(0);
 
-		decl String:query[1000];
+		char query[1000];
 		Format(query, sizeof(query), "UPDATE %s_bans SET RemovedBy = (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), RemoveType = 'U', RemovedOn = UNIX_TIMESTAMP(), ureason = '%s' WHERE bid = %d",
 			DatabasePrefix, DatabasePrefix, adminAuth, adminAuth[8], unbanReason, bid);
 
-		SQL_TQuery(DB, InsertUnbanCallback, query, data);
+		db.Query(InsertUnbanCallback, query, dataPack);
 	}
 	return;
 }
 
-public InsertUnbanCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void InsertUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	// if the pack is good unpack it and close the handle
-	decl admin, String:arg[30];
-	new String:reason[128];
-	if (data != INVALID_HANDLE)
+	int admin;
+	char arg[30];
+	char reason[128];
+
+	if (dataPack != null)
 	{
-		ResetPack(data);
-		admin = ReadPackCell(data);
-		ReadPackString(data, reason, sizeof(reason));
-		ReadPackString(data, arg, sizeof(arg));
-		CloseHandle(data);
+		dataPack.Reset();
+		admin = dataPack.ReadCell();
+		dataPack.ReadString(reason, sizeof(reason));
+		dataPack.ReadString(arg, sizeof(arg));
+		delete dataPack;
 	} else {
 		// Technically this should not be possible
 		ThrowError("Invalid Handle in InsertUnbanCallback");
 	}
 
 	// If error is not an empty string the query failed
-	if (error[0] != '\0')
+	if (results == null)
 	{
 		LogToFile(logFile, "Unban Insert Query Failed: %s", error);
 		if (admin && IsClientInGame(admin))
@@ -1348,43 +1362,47 @@ public InsertUnbanCallback(Handle:owner, Handle:hndl, const String:error[], any:
 		return;
 	}
 
-	LogAction(admin, -1, "\"%L\" removed ban (filter \"%s\") (reason \"%s\")", admin, arg, reason);
+	LogAction(admin, -1, "%t", "Ban Removed", admin, arg, reason);
+	
 	if (admin && IsClientInGame(admin))
-	{
-		PrintToChat(admin, "%s%s successfully unbanned", Prefix, arg);
-	} else {
-		PrintToServer("%s%s successfully unbanned", Prefix, arg);
-	}
+		PrintToChat(admin, "%s%t", Prefix, "Unban Success Name", arg);
+	else
+		PrintToServer("%s%t", Prefix, "Unban Success Name", arg);
 }
 
-public SelectAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	decl admin, minutes, String:adminAuth[30], String:adminIp[30], String:authid[20], String:banReason[256], String:Query[512];
-	new String:reason[128];
-	ResetPack(data);
-	admin = ReadPackCell(data);
-	minutes = ReadPackCell(data);
-	ReadPackString(data, reason, sizeof(reason));
-	ReadPackString(data, authid, sizeof(authid));
-	ReadPackString(data, adminAuth, sizeof(adminAuth));
-	ReadPackString(data, adminIp, sizeof(adminIp));
-	SQL_EscapeString(DB, reason, banReason, sizeof(banReason));
+	int admin, minutes;
+	char adminAuth[30], adminIp[30], authid[20], banReason[256], Query[512];
+	char reason[128];
 
-	if (error[0])
+	dataPack.Reset();
+	admin = dataPack.ReadCell();
+	minutes = dataPack.ReadCell();
+	dataPack.ReadString(reason, sizeof(reason));
+	dataPack.ReadString(authid, sizeof(authid));
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+	dataPack.ReadString(adminIp, sizeof(adminIp));
+	db.Escape(reason, banReason, sizeof(banReason));
+
+	if (results == null)
 	{
 		LogToFile(logFile, "Add Ban Select Query Failed: %s", error);
+
 		if (admin && IsClientInGame(admin))
-			PrintToChat(admin, "%sFailed to ban %s.", Prefix, authid);
+			PrintToChat(admin, "%s%t", Prefix, "Ban Fail");
 		else
-			PrintToServer("%sFailed to ban %s.", Prefix, authid);
+			PrintToServer("%s%t", Prefix, "Ban Fail");
+
 		return;
 	}
-	if (SQL_GetRowCount(hndl))
+	if (results.RowCount)
 	{
 		if (admin && IsClientInGame(admin))
-			PrintToChat(admin, "%s%s is already banned.", Prefix, authid);
+			PrintToChat(admin, "%s%t", Prefix, "Already Banned", authid);
 		else
-			PrintToServer("%s%s is already banned.", Prefix, authid);
+			PrintToServer("%s%t", Prefix, "Already Banned", authid);
+
 		return;
 	}
 	if (serverID == -1)
@@ -1400,21 +1418,24 @@ public SelectAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any
 			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 
-	SQL_TQuery(DB, InsertAddbanCallback, Query, data, DBPrio_High);
+	db.Query(InsertAddbanCallback, Query, dataPack, DBPrio_High);
 }
 
-public InsertAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void InsertAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	decl admin, minutes, String:authid[20];
-	new String:reason[128];
-	ResetPack(data);
-	admin = ReadPackCell(data);
-	minutes = ReadPackCell(data);
-	ReadPackString(data, reason, sizeof(reason));
-	ReadPackString(data, authid, sizeof(authid));
+	int admin, minutes;
+	char authid[20];
+	char reason[128];
+
+	dataPack.Reset();
+	admin = dataPack.ReadCell();
+	minutes = dataPack.ReadCell();
+	dataPack.ReadString(reason, sizeof(reason));
+	dataPack.ReadString(authid, sizeof(authid));
+	delete dataPack;
 
 	// If error is not an empty string the query failed
-	if (error[0] != '\0')
+	if (results == null)
 	{
 		LogToFile(logFile, "Add Ban Insert Query Failed: %s", error);
 		if (admin && IsClientInGame(admin))
@@ -1424,58 +1445,51 @@ public InsertAddbanCallback(Handle:owner, Handle:hndl, const String:error[], any
 		return;
 	}
 
-	LogAction(admin,
-		-1,
-		"\"%L\" added ban (minutes \"%i\") (id \"%s\") (reason \"%s\")",
-		admin,
-		minutes,
-		authid,
-		reason);
+	LogAction(admin, -1, "%t", "Ban Added", admin, minutes, authid, reason);
+
 	if (admin && IsClientInGame(admin))
-	{
-		PrintToChat(admin, "%s%s successfully banned", Prefix, authid);
-	} else {
-		PrintToServer("%s%s successfully banned", Prefix, authid);
-	}
+		PrintToChat(admin, "%s%t", Prefix, "Ban Success Name", authid);
+	else
+		PrintToServer("%s%t", Prefix, "Ban Success Name", authid);
 }
 
 // ProcessQueueCallback is called as the result of selecting all the rows from the queue table
-public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void ProcessQueueCallback(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE || strlen(error) > 0)
+	if (results == null)
 	{
 		LogToFile(logFile, "Failed to retrieve queued bans from sqlite database, %s", error);
 		return;
 	}
 
-	decl String:auth[30];
-	decl time;
-	decl startTime;
-	new String:reason[128];
-	decl String:name[64];
-	decl String:ip[20];
-	decl String:adminAuth[30];
-	decl String:adminIp[20];
-	decl String:query[1024];
-	decl String:banName[128];
-	decl String:banReason[256];
-	while (SQL_MoreRows(hndl))
+	char auth[30];
+	int time;
+	int startTime;
+	char reason[128];
+	char name[64];
+	char ip[20];
+	char adminAuth[30];
+	char adminIp[20];
+	char query[1024];
+	char banName[128];
+	char banReason[256];
+	while (results.MoreRows)
 	{
 		// Oh noes! What happened?!
-		if (!SQL_FetchRow(hndl))
+		if (!results.FetchRow())
 			continue;
 
 		// if we get to here then there are rows in the queue pending processing
-		SQL_FetchString(hndl, 0, auth, sizeof(auth));
-		time = SQL_FetchInt(hndl, 1);
-		startTime = SQL_FetchInt(hndl, 2);
-		SQL_FetchString(hndl, 3, reason, sizeof(reason));
-		SQL_FetchString(hndl, 4, name, sizeof(name));
-		SQL_FetchString(hndl, 5, ip, sizeof(ip));
-		SQL_FetchString(hndl, 6, adminAuth, sizeof(adminAuth));
-		SQL_FetchString(hndl, 7, adminIp, sizeof(adminIp));
-		SQL_EscapeString(SQLiteDB, name, banName, sizeof(banName));
-		SQL_EscapeString(SQLiteDB, reason, banReason, sizeof(banReason));
+		results.FetchString(0, auth, sizeof(auth));
+		time = results.FetchInt(1);
+		startTime = results.FetchInt(2);
+		results.FetchString(3, reason, sizeof(reason));
+		results.FetchString(4, name, sizeof(name));
+		results.FetchString(5, ip, sizeof(ip));
+		results.FetchString(6, adminAuth, sizeof(adminAuth));
+		results.FetchString(7, adminIp, sizeof(adminIp));
+		db.Escape(name, banName, sizeof(banName));
+		db.Escape(reason, banReason, sizeof(banReason));
 		if (startTime + time * 60 > GetTime() || time == 0)
 		{
 			// This ban is still valid and should be entered into the db
@@ -1495,30 +1509,31 @@ public ProcessQueueCallback(Handle:owner, Handle:hndl, const String:error[], any
 						%d)",
 					DatabasePrefix, ip, auth, banName, startTime, startTime + time * 60, time * 60, banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 			}
-			new Handle:authPack = CreateDataPack();
-			WritePackString(authPack, auth);
-			ResetPack(authPack);
-			SQL_TQuery(DB, AddedFromSQLiteCallback, query, authPack);
+			DataPack authPack = new DataPack();
+			authPack.WriteString(auth);
+			authPack.Reset();
+			db.Query(AddedFromSQLiteCallback, query, authPack);
 		} else {
 			// The ban is no longer valid and should be deleted from the queue
 			FormatEx(query, sizeof(query), "DELETE FROM queue WHERE steam_id = '%s'", auth);
-			SQL_TQuery(SQLiteDB, ErrorCheckCallback, query);
+			SQLiteDB.Query(ErrorCheckCallback, query);
 		}
 	}
 	// We have finished processing the queue but should process again in ProcessQueueTime minutes
 	CreateTimer(float(ProcessQueueTime * 60), ProcessQueue);
 }
 
-public AddedFromSQLiteCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
-	decl String:buffer[512];
-	decl String:auth[40];
-	ReadPackString(data, auth, sizeof(auth));
-	if (error[0] == '\0')
+	char buffer[512];
+	char auth[40];
+
+	dataPack.ReadString(auth, sizeof(auth));
+	if (results == null)
 	{
 		// The insert was successful so delete the record from the queue
 		FormatEx(buffer, sizeof(buffer), "DELETE FROM queue WHERE steam_id = '%s'", auth);
-		SQL_TQuery(SQLiteDB, ErrorCheckCallback, buffer);
+		SQLiteDB.Query(ErrorCheckCallback, buffer);
 
 		// They are added to main banlist, so remove the temp ban
 		RemoveBan(auth, BANFLAG_AUTHID);
@@ -1528,30 +1543,30 @@ public AddedFromSQLiteCallback(Handle:owner, Handle:hndl, const String:error[], 
 		FormatEx(buffer, sizeof(buffer), "banid %d %s", ProcessQueueTime, auth);
 		ServerCommand(buffer);
 	}
-	CloseHandle(data);
+	delete dataPack;
 }
 
-public ServerInfoCallback(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void ServerInfoCallback(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (error[0])
+	if (results == null)
 	{
 		LogToFile(logFile, "Server Select Query Failed: %s", error);
 		return;
 	}
 
-	if (hndl == INVALID_HANDLE || SQL_GetRowCount(hndl) == 0)
+	if (!results.RowCount)
 	{
 		// get the game folder name used to determine the mod
-		decl String:desc[64], String:query[200];
+		char desc[64], query[200];
 		GetGameFolderName(desc, sizeof(desc));
 		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, DatabasePrefix, desc);
-		SQL_TQuery(DB, ErrorCheckCallback, query);
+		db.Query(ErrorCheckCallback, query);
 	}
 }
 
-public ErrorCheckCallback(Handle:owner, Handle:hndle, const String:error[], any:data)
+public void ErrorCheckCallback(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (error[0])
+	if (results == null)
 	{
 		LogToFile(logFile, "Query Failed: %s", error);
 	}
@@ -1617,7 +1632,7 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 				DatabasePrefix, serverID, Name, DatabasePrefix, clientAuth[8], clientIp);
 		}
 
-		SQL_TQuery(DB, ErrorCheckCallback, Query, client, DBPrio_High);
+		db.Query(ErrorCheckCallback, Query, client, DBPrio_High);
 
 		FormatEx(buffer, sizeof(buffer), "banid 5 %s", clientAuth);
 		ServerCommand(buffer);
@@ -1646,40 +1661,39 @@ public void SQL_OnIPMend(Database db, DBResultSet results, const char[] error, i
 	}
 }
 
-public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void AdminsDone(Database db, DBResultSet results, const char[] error, any data)
 {
 	//SELECT authid, srv_password , srv_group, srv_flags, user
-	if (hndl == INVALID_HANDLE || strlen(error) > 0)
+	if (results == null)
 	{
 		--curLoading;
 		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve admins from the database, %s", error);
 		return;
 	}
-	decl String:authType[] = "steam";
-	decl String:identity[66];
-	decl String:password[66];
-	decl String:groups[256];
-	decl String:flags[32];
-	decl String:name[66];
-	new admCount = 0;
-	new Immunity = 0;
-	new AdminId:curAdm = INVALID_ADMIN_ID;
-	new Handle:adminsKV = CreateKeyValues("Admins");
+	char authType[] = "steam";
+	char identity[66];
+	char password[66];
+	char groups[256];
+	char flags[32];
+	char name[66];
+	int admCount = 0;
+	int Immunity = 0;
+	AdminId curAdm = INVALID_ADMIN_ID;
+	KeyValues adminsKV = new KeyValues("Admins");
 
-	while (SQL_MoreRows(hndl))
+	while (results.FetchRow())
 	{
-		SQL_FetchRow(hndl);
-		if (SQL_IsFieldNull(hndl, 0))
+		if (results.IsFieldNull(0))
 			continue; // Sometimes some rows return NULL due to some setups
 
-		SQL_FetchString(hndl, 0, identity, 66);
-		SQL_FetchString(hndl, 1, password, 66);
-		SQL_FetchString(hndl, 2, groups, 256);
-		SQL_FetchString(hndl, 3, flags, 32);
-		SQL_FetchString(hndl, 4, name, 66);
+		results.FetchString(0, identity, 66);
+		results.FetchString(1, password, 66);
+		results.FetchString(2, groups, 256);
+		results.FetchString(3, flags, 32);
+		results.FetchString(4, name, 66);
 
-		Immunity = SQL_FetchInt(hndl, 5);
+		Immunity = results.FetchInt(5);
 
 		TrimString(name);
 		TrimString(identity);
@@ -1689,24 +1703,24 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		// Disable writing to file if they chose to
 		if (backupConfig)
 		{
-			KvJumpToKey(adminsKV, name, true);
+			adminsKV.JumpToKey(name, true);
 
-			KvSetString(adminsKV, "auth", authType);
-			KvSetString(adminsKV, "identity", identity);
+			adminsKV.SetString("auth", authType);
+			adminsKV.SetString("identity", identity);
 
 			if (strlen(flags) > 0)
-				KvSetString(adminsKV, "flags", flags);
+				adminsKV.SetString("flags", flags);
 
 			if (strlen(groups) > 0)
-				KvSetString(adminsKV, "group", groups);
+				adminsKV.SetString("group", groups);
 
 			if (strlen(password) > 0)
-				KvSetString(adminsKV, "password", password);
+				adminsKV.SetString("password", password);
 
 			if (Immunity > 0)
-				KvSetNum(adminsKV, "immunity", Immunity);
+				adminsKV.SetNum("immunity", Immunity);
 
-			KvRewind(adminsKV);
+			adminsKV.Rewind();
 		}
 
 		// find or create the admin using that identity
@@ -1714,7 +1728,7 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		{
 			curAdm = CreateAdmin(name);
 			// That should never happen!
-			if (!BindAdminIdentity(curAdm, authType, identity))
+			if (!curAdm.BindIdentity(authType, identity))
 			{
 				LogToFile(logFile, "Unable to bind admin %s to identity %s", name, identity);
 				RemoveAdmin(curAdm);
@@ -1726,10 +1740,10 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		LogToFile(logFile, "Given %s (%s) admin", name, identity);
 		#endif
 
-		new curPos = 0;
-		new GroupId:curGrp = INVALID_GROUP_ID;
-		new numGroups;
-		decl String:iterGroupName[64];
+		int curPos = 0;
+		GroupId curGrp = INVALID_GROUP_ID;
+		int numGroups;
+		char iterGroupName[64];
 
 		// Who thought this comma seperated group parsing would be a good idea?!
 		/*
@@ -1775,10 +1789,10 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			else
 			{
 				// Check, if he's not in the group already.
-				numGroups = GetAdminGroupCount(curAdm);
-				for (new i = 0; i < numGroups; i++)
+				numGroups = curAdm.GroupCount;
+				for (int i = 0; i < numGroups; i++)
 				{
-					GetAdminGroup(curAdm, i, iterGroupName, sizeof(iterGroupName));
+					curAdm.GetGroup(i, iterGroupName, sizeof(iterGroupName));
 					// Admin is already part of the group, so don't try to inherit its permissions.
 					if (StrEqual(iterGroupName, groups[curPos]))
 					{
@@ -1788,14 +1802,14 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 				}
 
 				// Only try to inherit the group, if it's a new one.
-				if (numGroups != -2 && !AdminInheritGroup(curAdm, curGrp))
+				if (numGroups != -2 && !curAdm.InheritGroup(curGrp))
 				{
 					LogToFile(logFile, "Unable to inherit group \"%s\"", groups[curPos]);
 				}
 
-				if (GetAdminImmunityLevel(curAdm) < Immunity)
+				if (curAdm.ImmunityLevel < Immunity)
 				{
-					SetAdminImmunityLevel(curAdm, Immunity);
+					curAdm.ImmunityLevel = Immunity;
 				}
 				#if defined DEBUG
 				LogToFile(logFile, "Admin %s (%s) has %d immunity", name, identity, Immunity);
@@ -1804,9 +1818,9 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		}
 
 		if (strlen(password) > 0)
-			SetAdminPassword(curAdm, password);
+			curAdm.SetPassword(password);
 
-		for (new i = 0; i < strlen(flags); ++i)
+		for (int i = 0; i < strlen(flags); ++i)
 		{
 			if (flags[i] < 'a' || flags[i] > 'z')
 				continue;
@@ -1814,14 +1828,14 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			if (g_FlagLetters[flags[i]-'a'] < Admin_Reservation)
 				continue;
 
-			SetAdminFlag(curAdm, g_FlagLetters[flags[i]-'a'], true);
+			curAdm.SetFlag(g_FlagLetters[flags[i]-'a'], true);
 		}
 		++admCount;
 	}
 
 	if (backupConfig)
-		KeyValuesToFile(adminsKV, adminsLoc);
-	CloseHandle(adminsKV);
+		adminsKV.ExportToFile(adminsLoc);
+	delete adminsKV;
 
 	#if defined DEBUG
 	LogToFile(logFile, "Finished loading %i admins.", admCount);
@@ -1831,31 +1845,31 @@ public AdminsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	CheckLoadAdmins();
 }
 
-public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void GroupsDone(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (results == null)
 	{
 		curLoading--;
 		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s", error);
 		return;
 	}
-	decl String:grpName[128], String:immuneGrpName[128];
-	decl String:grpFlags[32];
-	new Immunity;
-	new grpCount = 0;
-	new Handle:groupsKV = CreateKeyValues("Groups");
 
-	new GroupId:curGrp = INVALID_GROUP_ID;
-	while (SQL_MoreRows(hndl))
+	char grpName[128], immuneGrpName[128];
+	char grpFlags[32];
+	int Immunity;
+	int grpCount = 0;
+	KeyValues groupsKV = new KeyValues("Groups");
+
+	GroupId curGrp = INVALID_GROUP_ID;
+	while (results.FetchRow())
 	{
-		SQL_FetchRow(hndl);
-		if (SQL_IsFieldNull(hndl, 0))
+		if (results.IsFieldNull(0))
 			continue; // Sometimes some rows return NULL due to some setups
-		SQL_FetchString(hndl, 0, grpName, 128);
-		SQL_FetchString(hndl, 1, grpFlags, 32);
-		Immunity = SQL_FetchInt(hndl, 2);
-		SQL_FetchString(hndl, 3, immuneGrpName, 128);
+		results.FetchString(0, grpName, 128);
+		results.FetchString(1, grpFlags, 32);
+		Immunity = results.FetchInt(2);
+		results.FetchString(3, immuneGrpName, 128);
 
 		TrimString(grpName);
 		TrimString(grpFlags);
@@ -1869,13 +1883,13 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 
 		if (backupConfig)
 		{
-			KvJumpToKey(groupsKV, grpName, true);
+			groupsKV.JumpToKey(grpName, true);
 			if (strlen(grpFlags) > 0)
-				KvSetString(groupsKV, "flags", grpFlags);
+				groupsKV.SetString("flags", grpFlags);
 			if (Immunity > 0)
-				KvSetNum(groupsKV, "immunity", Immunity);
+				groupsKV.SetNum("immunity", Immunity);
 
-			KvRewind(groupsKV);
+			groupsKV.Rewind();
 		}
 
 		if (curGrp == INVALID_GROUP_ID)
@@ -1883,7 +1897,7 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			curGrp = FindAdmGroup(grpName);
 		}
 
-		for (new i = 0; i < strlen(grpFlags); ++i)
+		for (int i = 0; i < strlen(grpFlags); ++i)
 		{
 			if (grpFlags[i] < 'a' || grpFlags[i] > 'z')
 				continue;
@@ -1891,13 +1905,13 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 			if (g_FlagLetters[grpFlags[i]-'a'] < Admin_Reservation)
 				continue;
 
-			SetAdmGroupAddFlag(curGrp, g_FlagLetters[grpFlags[i]-'a'], true);
+			curGrp.SetFlag(g_FlagLetters[grpFlags[i]-'a'], true);
 		}
 
 		// Set the group immunity.
 		if (Immunity > 0)
 		{
-			SetAdmGroupImmunityLevel(curGrp, Immunity);
+			curGrp.ImmunityLevel = Immunity;
 			#if defined DEBUG
 			LogToFile(logFile, "Group %s has %d immunity", grpName, Immunity);
 			#endif
@@ -1907,23 +1921,23 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 	}
 
 	if (backupConfig)
-		KeyValuesToFile(groupsKV, groupsLoc);
-	CloseHandle(groupsKV);
+		groupsKV.ExportToFile(groupsLoc);
+	delete groupsKV;
 
 	#if defined DEBUG
 	LogToFile(logFile, "Finished loading %i groups.", grpCount);
 	#endif
 
 	// Load the group overrides
-	decl String:query[512];
+	char query[512];
 	FormatEx(query, 512, "SELECT sg.name, so.type, so.name, so.access FROM %s_srvgroups_overrides so LEFT JOIN %s_srvgroups sg ON sg.id = so.group_id ORDER BY sg.id", DatabasePrefix, DatabasePrefix);
-	SQL_TQuery(DB, LoadGroupsOverrides, query);
+	db.Query(LoadGroupsOverrides, query);
 
 	/*if (reparse)
 	{
 		decl String:query[512];
 		FormatEx(query,512,"SELECT name, immunity, groups_immune FROM %s_srvgroups ORDER BY id",DatabasePrefix);
-		SQL_TQuery(DB,GroupsSecondPass,query);
+		db.Query(GroupsSecondPass,query);
 	}
 	else
 	{
@@ -1933,31 +1947,31 @@ public GroupsDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 }
 
 // Reparse to apply inherited immunity
-public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void GroupsSecondPass(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (results == null)
 	{
 		curLoading--;
 		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s", error);
 		return;
 	}
-	decl String:grpName[128], String:immunityGrpName[128];
 
-	new GroupId:curGrp = INVALID_GROUP_ID;
-	new GroupId:immuneGrp = INVALID_GROUP_ID;
-	while (SQL_MoreRows(hndl))
+	char grpName[128], immunityGrpName[128];
+
+	GroupId curGrp = INVALID_GROUP_ID;
+	GroupId immuneGrp = INVALID_GROUP_ID;
+	while (results.FetchRow())
 	{
-		SQL_FetchRow(hndl);
-		if (SQL_IsFieldNull(hndl, 0))
+		if (results.IsFieldNull(0))
 			continue; // Sometimes some rows return NULL due to some setups
 
-		SQL_FetchString(hndl, 0, grpName, 128);
+		results.FetchString(0, grpName, 128);
 		TrimString(grpName);
 		if (strlen(grpName) == 0)
 			continue;
 
-		SQL_FetchString(hndl, 2, immunityGrpName, sizeof(immunityGrpName));
+		results.FetchString(2, immunityGrpName, sizeof(immunityGrpName));
 		TrimString(immunityGrpName);
 
 		curGrp = FindAdmGroup(grpName);
@@ -1968,7 +1982,7 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 		if (immuneGrp == INVALID_GROUP_ID)
 			continue;
 
-		SetAdmGroupImmuneFrom(curGrp, immuneGrp);
+		curGrp.AddGroupImmunity(immuneGrp);
 
 		#if defined DEBUG
 		LogToFile(logFile, "Group %s inhertied immunity from group %s", grpName, immunityGrpName);
@@ -1978,36 +1992,37 @@ public GroupsSecondPass(Handle:owner, Handle:hndl, const String:error[], any:dat
 	CheckLoadAdmins();
 }
 
-public LoadGroupsOverrides(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void LoadGroupsOverrides(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (results == null)
 	{
 		curLoading--;
 		CheckLoadAdmins();
 		LogToFile(logFile, "Failed to retrieve group overrides from the database, %s", error);
 		return;
 	}
-	decl String:sGroupName[128], String:sType[16], String:sCommand[64], String:sAllowed[16];
-	decl OverrideRule:iRule, OverrideType:iType;
 
-	new Handle:groupsKV = CreateKeyValues("Groups");
-	FileToKeyValues(groupsKV, groupsLoc);
+	char sGroupName[128], sType[16], sCommand[64], sAllowed[16];
+	OverrideRule iRule;
+	OverrideType iType;
 
-	new GroupId:curGrp = INVALID_GROUP_ID;
-	while (SQL_MoreRows(hndl))
+	KeyValues groupsKV = new KeyValues("Groups");
+	groupsKV.ImportFromFile(groupsLoc);
+
+	GroupId curGrp = INVALID_GROUP_ID;
+	while (results.FetchRow())
 	{
-		SQL_FetchRow(hndl);
-		if (SQL_IsFieldNull(hndl, 0))
+		if (results.IsFieldNull(0))
 			continue; // Sometimes some rows return NULL due to some setups
 
-		SQL_FetchString(hndl, 0, sGroupName, sizeof(sGroupName));
+		results.FetchString(0, sGroupName, sizeof(sGroupName));
 		TrimString(sGroupName);
 		if (strlen(sGroupName) == 0)
 			continue;
 
-		SQL_FetchString(hndl, 1, sType, sizeof(sType));
-		SQL_FetchString(hndl, 2, sCommand, sizeof(sCommand));
-		SQL_FetchString(hndl, 3, sAllowed, sizeof(sAllowed));
+		results.FetchString(1, sType, sizeof(sType));
+		results.FetchString(2, sCommand, sizeof(sCommand));
+		results.FetchString(3, sAllowed, sizeof(sAllowed));
 
 		curGrp = FindAdmGroup(sGroupName);
 		if (curGrp == INVALID_GROUP_ID)
@@ -2021,46 +2036,46 @@ public LoadGroupsOverrides(Handle:owner, Handle:hndl, const String:error[], any:
 		#endif
 
 		// Save overrides into admin_groups.cfg backup
-		if (KvJumpToKey(groupsKV, sGroupName))
+		if (groupsKV.JumpToKey(sGroupName))
 		{
-			KvJumpToKey(groupsKV, "Overrides", true);
+			groupsKV.JumpToKey("Overrides", true);
 			if (iType == Override_Command)
-				KvSetString(groupsKV, sCommand, sAllowed);
+				groupsKV.SetString(sCommand, sAllowed);
 			else
 			{
 				Format(sCommand, sizeof(sCommand), "@%s", sCommand);
-				KvSetString(groupsKV, sCommand, sAllowed);
+				groupsKV.SetString(sCommand, sAllowed);
 			}
-			KvRewind(groupsKV);
+			groupsKV.Rewind();
 		}
 
-		AddAdmGroupCmdOverride(curGrp, sCommand, iType, iRule);
+		curGrp.AddCommandOverride(sCommand, iType, iRule);
 	}
 	curLoading--;
 	CheckLoadAdmins();
 
 	if (backupConfig)
-		KeyValuesToFile(groupsKV, groupsLoc);
-	CloseHandle(groupsKV);
+		groupsKV.ExportToFile(groupsLoc);
+	delete groupsKV;
 }
 
-public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
+public void OverridesDone(Database db, DBResultSet results, const char[] error, any data)
 {
-	if (hndl == INVALID_HANDLE)
+	if (results == null)
 	{
 		LogToFile(logFile, "Failed to retrieve overrides from the database, %s", error);
 		ParseBackupConfig_Overrides();
 		return;
 	}
 
-	new Handle:hKV = CreateKeyValues("SB_Overrides");
+	KeyValues hKV = new KeyValues("SB_Overrides");
 
-	decl String:sFlags[32], String:sName[64], String:sType[64];
-	while (SQL_FetchRow(hndl))
+	char sFlags[32], sName[64], sType[64];
+	while (results.FetchRow())
 	{
-		SQL_FetchString(hndl, 0, sType, sizeof(sType));
-		SQL_FetchString(hndl, 1, sName, sizeof(sName));
-		SQL_FetchString(hndl, 2, sFlags, sizeof(sFlags));
+		results.FetchString(0, sType, sizeof(sType));
+		results.FetchString(1, sName, sizeof(sName));
+		results.FetchString(2, sFlags, sizeof(sFlags));
 
 		// KeyValuesToFile won't add that key, if the value is ""..
 		if (sFlags[0] == '\0')
@@ -2076,31 +2091,31 @@ public OverridesDone(Handle:owner, Handle:hndl, const String:error[], any:data)
 		if (StrEqual(sType, "command"))
 		{
 			AddCommandOverride(sName, Override_Command, ReadFlagString(sFlags));
-			KvJumpToKey(hKV, "override_commands", true);
-			KvSetString(hKV, sName, sFlags);
-			KvGoBack(hKV);
+			hKV.JumpToKey("override_commands", true);
+			hKV.SetString(sName, sFlags);
+			hKV.GoBack();
 		}
 		else if (StrEqual(sType, "group"))
 		{
 			AddCommandOverride(sName, Override_CommandGroup, ReadFlagString(sFlags));
-			KvJumpToKey(hKV, "override_groups", true);
-			KvSetString(hKV, sName, sFlags);
-			KvGoBack(hKV);
+			hKV.JumpToKey("override_groups", true);
+			hKV.SetString(sName, sFlags);
+			hKV.GoBack();
 		}
 	}
 
-	KvRewind(hKV);
+	hKV.Rewind();
 
 	if (backupConfig)
-		KeyValuesToFile(hKV, overridesLoc);
-	CloseHandle(hKV);
+		hKV.ExportToFile(overridesLoc);
+	delete hKV;
 }
 
 // TIMER CALL BACKS //
 
-public Action:ClientRecheck(Handle:timer, any:client)
+public Action ClientRecheck(Handle timer, any client)
 {
-	decl String:Authid[64];
+	char Authid[64];
 	if (!PlayerStatus[client] && IsClientConnected(client) && GetClientAuthId(client, AuthId_Steam2, Authid, sizeof(Authid)))
 	{
 		OnClientAuthorized(client, Authid);
@@ -2111,50 +2126,52 @@ public Action:ClientRecheck(Handle:timer, any:client)
 }
 
 /*
-public Action:PruneBans(Handle:timer)
+public Action PruneBans(Handle timer)
 {
-	decl String:Query[512];
+	char Query[512];
 	FormatEx(Query, sizeof(Query),
 			"UPDATE %s_bans SET RemovedBy = 0, RemoveType = 'E', RemovedOn = UNIX_TIMESTAMP() WHERE length != '0' AND ends < UNIX_TIMESTAMP()",
 			DatabasePrefix);
 
-	SQL_TQuery(DB, ErrorCheckCallback, Query);
+	DB.Query(ErrorCheckCallback, Query);
 	return Plugin_Continue;
 }
 */
 
-public Action:ProcessQueue(Handle:timer, any:data)
+public Action ProcessQueue(Handle timer, any data)
 {
-	decl String:buffer[512];
+	char buffer[512];
 	Format(buffer, sizeof(buffer), "SELECT steam_id, time, start_time, reason, name, ip, admin_id, admin_ip FROM queue");
-	SQL_TQuery(SQLiteDB, ProcessQueueCallback, buffer);
+	SQLiteDB.Query(ProcessQueueCallback, buffer);
 }
 
 // PARSER //
 
-static InitializeConfigParser()
+static void InitializeConfigParser()
 {
-	if (ConfigParser == INVALID_HANDLE)
+	if (ConfigParser == null)
 	{
-		ConfigParser = SMC_CreateParser();
-		SMC_SetReaders(ConfigParser, ReadConfig_NewSection, ReadConfig_KeyValue, ReadConfig_EndSection);
+		ConfigParser = new SMCParser();
+		ConfigParser.OnEnterSection = ReadConfig_NewSection;
+		ConfigParser.OnKeyValue = ReadConfig_KeyValue;
+		ConfigParser.OnLeaveSection = ReadConfig_EndSection;
 	}
 }
 
-static InternalReadConfig(const String:path[])
+static void InternalReadConfig(const char[] path)
 {
 	ConfigState = ConfigStateNone;
 
-	new SMCError:err = SMC_ParseFile(ConfigParser, path);
+	SMCError err = ConfigParser.ParseFile(path);
 
 	if (err != SMCError_Okay)
 	{
-		decl String:buffer[64];
-		PrintToServer("%s", SMC_GetErrorString(err, buffer, sizeof(buffer)) ? buffer : "Fatal parse error");
+		char buffer[64];
+		PrintToServer("%s", ConfigParser.GetErrorString(err, buffer, sizeof(buffer)) ? buffer : "Fatal parse error");
 	}
 }
 
-public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt_quotes)
+public SMCResult ReadConfig_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
 {
 	if (name[0])
 	{
@@ -2171,7 +2188,7 @@ public SMCResult:ReadConfig_NewSection(Handle:smc, const String:name[], bool:opt
 	return SMCParse_Continue;
 }
 
-public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const String:value[], bool:key_quotes, bool:value_quotes)
+public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
 {
 	if (!key[0])
 		return SMCParse_Continue;
@@ -2268,7 +2285,7 @@ public SMCResult:ReadConfig_KeyValue(Handle:smc, const String:key[], const Strin
 	return SMCParse_Continue;
 }
 
-public SMCResult:ReadConfig_EndSection(Handle:smc)
+public SMCResult ReadConfig_EndSection(SMCParser smc)
 {
 	return SMCParse_Continue;
 }
@@ -2282,7 +2299,7 @@ public SMCResult:ReadConfig_EndSection(Handle:smc)
  * @param reason	The reason to ban the player from the server
  * @noreturn
  *********************************************************/
-public Native_SBBanPlayer(Handle plugin, int numParams)
+public int Native_SBBanPlayer(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	int target = GetNativeCell(2);
@@ -2302,7 +2319,7 @@ public Native_SBBanPlayer(Handle plugin, int numParams)
 			return 0;
 		}
 
-		if (!GetAdminFlag(aid, Admin_Ban))
+		if (!aid.HasFlag(Admin_Ban))
 		{
 			ThrowNativeError(SP_ERROR_NATIVE, "Ban Error: Player does not have BAN flag.");
 			return 0;
@@ -2356,33 +2373,34 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	char[] sQuery = new char[512 + (iReasonLen * 2 + 1)];
 
 	Format(sQuery, 512 + (iReasonLen * 2 + 1), "INSERT INTO %s_submissions (`submitted`, `modid`, `SteamId`, `name`, `email`, `reason`, `ip`, `subname`, `sip`, `archiv`, `server`)"
-	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, 0)", DatabasePrefix, iTime, sTAuth, sTEscapedName, sRAuth, sEscapedReason, sRIP, sREscapedName, sTIP);
+	... "VALUES ('%d', 0, '%s', '%s', '%s', '%s', '%s', '%s', '%s', 0, '%d')", DatabasePrefix, iTime, sTAuth, sTEscapedName, sRAuth, sEscapedReason, sRIP, sREscapedName, sTIP, (serverID != -1) ? serverID : 0);
 
-	DataPack ForwardPack = new DataPack();
+	DataPack dataPack = new DataPack();
 
-	ForwardPack.WriteCell(iReporter);
-	ForwardPack.WriteCell(iTarget);
-	ForwardPack.WriteCell(iReasonLen);
-	ForwardPack.WriteString(sReason);
+	dataPack.WriteCell(iReporter);
+	dataPack.WriteCell(iTarget);
+	dataPack.WriteCell(iReasonLen);
+	dataPack.WriteString(sReason);
 
-	DB.Query(SQL_OnReportPlayer, sQuery, ForwardPack);
+	DB.Query(SQL_OnReportPlayer, sQuery, dataPack);
 }
 
-public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack ForwardPack)
+public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	if (results == null)
 		LogToFile(logFile, "Failed to submit report: %s", error);
 	else
 	{
-		ForwardPack.Reset();
+		dataPack.Reset();
 
-		int iReporter = ForwardPack.ReadCell();
-		int iTarget = ForwardPack.ReadCell();
-		int iReasonLen = ForwardPack.ReadCell();
+		int iReporter = dataPack.ReadCell();
+		int iTarget = dataPack.ReadCell();
+		int iReasonLen = dataPack.ReadCell();
 
 		char[] sReason = new char[iReasonLen];
 
-		ForwardPack.ReadString(sReason, iReasonLen);
+		dataPack.ReadString(sReason, iReasonLen);
+		delete dataPack;
 
 		Call_StartForward(g_hFwd_OnReportAdded);
 		Call_PushCell(iReporter);
@@ -2394,7 +2412,7 @@ public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] er
 
 // STOCK FUNCTIONS //
 
-public InitializeBackupDB()
+public void InitializeBackupDB()
 {
 	char error[255];
 
@@ -2451,7 +2469,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	dataPack.WriteCell(userid);
 	dataPack.WriteCell(GetClientUserId(target));
 	dataPack.WriteCell(time);
-	dataPack.WriteCell( _:reasonPack);
+	dataPack.WriteCell(reasonPack);
 	dataPack.WriteString(name);
 	dataPack.WriteString(auth);
 	dataPack.WriteString(ip);
@@ -2474,7 +2492,7 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 		// We need a reason so offer the administrator a menu of reasons
 		PlayerDataPack[admin] = dataPack;
 		DisplayMenu(ReasonMenuHandle, admin, MENU_TIME_FOREVER);
-		ReplyToCommand(admin, "%c[%cSourceBans%c]%c %t", GREEN, NAMECOLOR, GREEN, NAMECOLOR, "Check Menu");
+		ReplyToCommand(admin, "%s%t", Prefix, "Check Menu");
 	}
 
 	Call_StartForward(g_hFwd_OnBanAdded);
@@ -2487,15 +2505,15 @@ public bool CreateBan(int client, int target, int time, const char[] reason)
 	return true;
 }
 
-stock UTIL_InsertBan(time, const String:Name[], const String:Authid[], const String:Ip[], const String:Reason[], const String:AdminAuthid[], const String:AdminIp[], Handle:Pack)
+stock void UTIL_InsertBan(int time, const char[] Name, const char[] Authid, const char[] Ip, const char[] Reason, const char[] AdminAuthid, const char[] AdminIp, DataPack dataPack)
 {
 	//new Handle:dummy;
 	//PruneBans(dummy);
-	decl String:banName[128];
-	decl String:banReason[256];
-	decl String:Query[1024];
-	SQL_EscapeString(DB, Name, banName, sizeof(banName));
-	SQL_EscapeString(DB, Reason, banReason, sizeof(banReason));
+	char banName[128];
+	char banReason[256];
+	char Query[1024];
+	DB.Escape(Name, banName, sizeof(banName));
+	DB.Escape(Reason, banReason, sizeof(banReason));
 	if (serverID == -1)
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
@@ -2508,15 +2526,14 @@ stock UTIL_InsertBan(time, const String:Name[], const String:Authid[], const Str
 						%d, ' ')",
 			DatabasePrefix, Ip, Authid, banName, (time * 60), (time * 60), banReason, DatabasePrefix, AdminAuthid, AdminAuthid[8], AdminIp, serverID);
 	}
-
-	SQL_TQuery(DB, VerifyInsert, Query, Pack, DBPrio_High);
+	DB.Query(VerifyInsert, Query, dataPack, DBPrio_High);
 }
 
-stock UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp, DataPack dataPack)
+stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const char[] ip, const char[] reason, const char[] adminAuth, const char[] adminIp, DataPack dataPack)
 {
-	dataPack.ReadCell(); // admin index
+	int admin = dataPack.ReadCell(); // admin index
 
-	int client = ReadPackCell(dataPack);
+	int client = dataPack.ReadCell();
 
 	dataPack.ReadCell(); // admin userid
 	dataPack.ReadCell(); // target userid
@@ -2524,9 +2541,9 @@ stock UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const c
 
 	DataPack reasonPack = view_as<DataPack>(dataPack.ReadCell());
 
-	if (reasonPack != INVALID_HANDLE)
-		CloseHandle(reasonPack);
-	CloseHandle(dataPack);
+	if (reasonPack != null)
+		delete reasonPack;
+	delete dataPack;
 
 	// we add a temporary ban and then add the record into the queue to be processed when the database is available
 	char buffer[50];
@@ -2536,22 +2553,29 @@ stock UTIL_InsertTempBan(int time, const char[] name, const char[] auth, const c
 	ServerCommand(buffer);
 
 	if (IsClientInGame(client))
-		KickClient(client, "%t", "Banned Check Site", WebsiteAddress);
+	{
+		char length[32];
+		if(time == 0)
+			FormatEx(length, sizeof(length), "permament");
+		else
+			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
+	}
 
 	char banName[128], banReason[256], query[512];
 
-	SQL_EscapeString(SQLiteDB, name, banName, sizeof(banName));
-	SQL_EscapeString(SQLiteDB, reason, banReason, sizeof(banReason));
+	SQLiteDB.Escape(name, banName, sizeof(banName));
+	SQLiteDB.Escape(reason, banReason, sizeof(banReason));
 
 	FormatEx(query, sizeof(query), "INSERT INTO queue VALUES ('%s', %i, %i, '%s', '%s', '%s', '%s', '%s')",
 		auth, time, GetTime(), banReason, banName, ip, adminAuth, adminIp);
 
-	SQL_TQuery(SQLiteDB, ErrorCheckCallback, query);
+	SQLiteDB.Query(ErrorCheckCallback, query);
 }
 
-stock CheckLoadAdmins()
+stock void CheckLoadAdmins()
 {
-	for (new i = 1; i <= MaxClients; i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && IsClientAuthorized(i))
 		{
@@ -2561,15 +2585,15 @@ stock CheckLoadAdmins()
 	}
 }
 
-stock InsertServerInfo()
+stock void InsertServerInfo()
 {
     if (DB == INVALID_HANDLE) {
         return;
     }
-    
+
     char query[100];
     int pieces[4];
-    int longip = GetConVarInt(CvarHostIp);
+    int longip = CvarHostIp.IntValue;
 
     pieces[0] = (longip >> 24) & 0x000000FF;
     pieces[1] = (longip >> 16) & 0x000000FF;
@@ -2577,11 +2601,11 @@ stock InsertServerInfo()
     pieces[3] = longip & 0x000000FF;
 
     FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
-    GetConVarString(CvarPort, ServerPort, sizeof(ServerPort));
+    CvarPort.GetString(ServerPort, sizeof(ServerPort));
 
     if (AutoAdd != false) {
         FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
-        SQL_TQuery(DB, ServerInfoCallback, query);
+        DB.Query(ServerInfoCallback, query);
     }
 }
 
@@ -2590,13 +2614,16 @@ stock void PrepareBan(int client, int target, int time, char[] reason, int size)
 	#if defined DEBUG
 	LogToFile(logFile, "PrepareBan()");
 	#endif
+
 	if (!target || !IsClientInGame(target))
 		return;
+
 	char authid[64], name[32], bannedSite[512];
+
 	if (!GetClientAuthId(target, AuthId_Steam2, authid, sizeof(authid)))
 		return;
-	GetClientName(target, name, sizeof(name));
 
+	GetClientName(target, name, sizeof(name));
 
 	if (CreateBan(client, target, time, reason))
 	{
@@ -2604,23 +2631,32 @@ stock void PrepareBan(int client, int target, int time, char[] reason, int size)
 		{
 			if (reason[0] == '\0')
 			{
-				ShowActivity(client, "%t", "Permabanned player", name);
+				ShowActivity(client, "%t", "Permabanned Player", name);
 			} else {
-				ShowActivity(client, "%t", "Permabanned player reason", name, reason);
+				ShowActivity(client, "%t", "Permabanned Player Reason", name, reason);
 			}
 		} else {
 			if (reason[0] == '\0')
 			{
-				ShowActivity(client, "%t", "Banned player", name, time);
+				ShowActivity(client, "%t", "Banned Player", name, time);
 			} else {
-				ShowActivity(client, "%t", "Banned player reason", name, time, reason);
+				ShowActivity(client, "%t", "Banned Player Reason", name, time, reason);
 			}
 		}
-		LogAction(client, target, "\"%L\" banned \"%L\" (minutes \"%d\") (reason \"%s\")", client, target, time, reason);
+
+		LogAction(client, target, "%t", "Ban Log", client, target, time, reason);
+
+		char length[32];
+
+		if(time == 0)
+			FormatEx(length, sizeof(length), "%T", "permanent", client);
+		else
+			FormatEx(length, sizeof(length), "%d %t", time, time == 1 ? "minute" : "minutes", client);
 
 		if (time > 5 || time == 0)
 			time = 5;
-		Format(bannedSite, sizeof(bannedSite), "%T", "Banned Check Site", target, WebsiteAddress);
+
+		Format(bannedSite, sizeof(bannedSite), "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", client, reason, length);//temp
 		BanClient(target, time, BANFLAG_AUTO, bannedSite, bannedSite, "sm_ban", client);
 	}
 
@@ -2632,7 +2668,7 @@ stock void ReadConfig()
 {
 	InitializeConfigParser();
 
-	if (ConfigParser == INVALID_HANDLE)
+	if (ConfigParser == null)
 	{
 		return;
 	}
@@ -2662,12 +2698,12 @@ stock void ResetSettings()
 
 stock void ParseBackupConfig_Overrides()
 {
-	Handle hKV = CreateKeyValues("SB_Overrides");
+	KeyValues hKV = new KeyValues("SB_Overrides");
 
-	if (!FileToKeyValues(hKV, overridesLoc))
+	if (!hKV.ImportFromFile(overridesLoc))
 		return;
 
-	if (!KvGotoFirstSubKey(hKV))
+	if (!hKV.GotoFirstSubKey())
 		return;
 
 	char sSection[16], sFlags[32], sName[64];
@@ -2675,7 +2711,7 @@ stock void ParseBackupConfig_Overrides()
 
 	do
 	{
-		KvGetSectionName(hKV, sSection, sizeof(sSection));
+		hKV.GetSectionName(sSection, sizeof(sSection));
 		if (StrEqual(sSection, "override_commands"))
 			type = Override_Command;
 		else if (StrEqual(sSection, "override_groups"))
@@ -2683,22 +2719,22 @@ stock void ParseBackupConfig_Overrides()
 		else
 			continue;
 
-		if (KvGotoFirstSubKey(hKV, false))
+		if (hKV.GotoFirstSubKey(false))
 		{
 			do
 			{
-				KvGetSectionName(hKV, sName, sizeof(sName));
-				KvGetString(hKV, NULL_STRING, sFlags, sizeof(sFlags));
+				hKV.GetSectionName(sName, sizeof(sName));
+				hKV.GetString(NULL_STRING, sFlags, sizeof(sFlags));
 				AddCommandOverride(sName, type, ReadFlagString(sFlags));
 				#if defined _DEBUG
 				PrintToServer("Adding override (%s, %s, %s)", sSection, sName, sFlags);
 				#endif
-			} while (KvGotoNextKey(hKV, false));
-			KvGoBack(hKV);
+			} while (hKV.GotoNextKey(false));
+			hKV.GoBack();
 		}
 	}
-	while (KvGotoNextKey(hKV));
-	CloseHandle(hKV);
+	while (hKV.GotoNextKey());
+	delete hKV;
 }
 
 stock AdminFlag CreateFlagLetters()
@@ -2730,11 +2766,11 @@ stock AdminFlag CreateFlagLetters()
 	return FlagLetters;
 }
 
-stock AccountForLateLoading()
+stock void AccountForLateLoading()
 {
 	char auth[30];
 
-	for (new i = 1; i <= GetMaxClients(); i++)
+	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientConnected(i) && !IsFakeClient(i))
 		{

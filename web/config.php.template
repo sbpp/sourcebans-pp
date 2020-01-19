@@ -2,7 +2,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//  Copyright (C) 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
 //
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -38,9 +38,5 @@ define('DB_PREFIX', 'sb'); // The table prefix for SourceBans
 define('DB_PORT', '3306'); // The SQL port (Default: 3306)
 define('DB_CHARSET', 'utf8'); // The Database charset (Default: utf8)
 define('STEAMAPIKEY', ''); // Steam API Key for Shizz
-define('SB_WP_URL', ''); //URL of SourceBans Site
 define('SB_EMAIL', '');
 define('SB_NEW_SALT', '$5$'); //Salt for passwords
-
-//define('DEVELOPER_MODE', true);			// Use if you want to show debugmessages
-//define('SB_MEM', '128M'); 				// Override php memory limit, if isn't enough

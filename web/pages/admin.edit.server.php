@@ -1,28 +1,19 @@
-<div id="admin-page-content">
 <?php
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -31,9 +22,12 @@ if (!defined("IN_SB")) {
     die();
 }
 global $theme;
+
+new AdminTabs([], $userbank, $theme);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No server id specified. Please only follow links
@@ -44,9 +38,9 @@ $_GET['id'] = (int) $_GET['id'];
 
 $server = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_servers WHERE sid = {$_GET['id']}");
 if (!$server) {
-    $log = new CSystemLog("e", "Getting server data failed", "Can't find data for server with id '" . $_GET['id'] . "'");
+    Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	Error getting current data.
@@ -66,7 +60,7 @@ if (isset($_POST['address'])) {
         $errorScript .= "$('address.msg').innerHTML = 'You must type the server address.';";
         $errorScript .= "$('address.msg').setStyle('display', 'block');";
     } else {
-        if (!validate_ip($_POST['address']) && !is_string($_POST['address'])) {
+        if (!filter_var($_POST['address'], FILTER_VALIDATE_IP) && !is_string($_POST['address'])) {
             $error++;
             $errorScript .= "$('address.msg').innerHTML = 'You must type a valid IP.';";
             $errorScript .= "$('address.msg').setStyle('display', 'block');";
@@ -93,7 +87,7 @@ if (isset($_POST['address'])) {
         $errorScript .= "$('rcon2.msg').setStyle('display', 'block');";
     }
 
-    $ip = RemoveCode($_POST['address']);
+    $ip = $_POST['address'];
 
     // Check for dublicates afterwards
     if ($error == 0) {
@@ -181,6 +175,7 @@ $theme->assign('grouplist', $grouplist);
 $theme->assign('edit_server', true);
 $theme->assign('submit_text', "Update Server");
 ?>
+<div id="admin-page-content">
     <form action="" method="post" name="editserver">
 <?php $theme->display('page_admin_servers_add.tpl'); ?>
 </form>

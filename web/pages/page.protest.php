@@ -2,32 +2,24 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $theme;
-if ($GLOBALS['config']['config.enableprotest'] != "1") {
-    CreateRedBox("Error", "This page is disabled. You should not be here.");
+if (!Config::getBool('config.enableprotest')) {
+    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
 }
 if (!defined("IN_SB")) {
@@ -56,7 +48,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $UnbanReason = stripslashes($UnbanReason);
     }
 
-    if ($Type == 0 && !validate_steam($SteamID)) {
+    if ($Type == 0 && !\SteamID\SteamID::isValidID($SteamID)) {
         $errors .= '* Please type a valid STEAM ID.<br>';
         $validsubmit = false;
     } elseif ($Type == 0) {
@@ -76,7 +68,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
     }
-    if ($Type == 1 && !validate_ip($IP)) {
+    if ($Type == 1 && !filter_var($IP, FILTER_VALIDATE_IP)) {
         $errors .= '* Please type a valid IP.<br>';
         $validsubmit = false;
     } elseif ($Type == 1) {
@@ -104,13 +96,13 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $errors .= '* You must include comments<br>';
         $validsubmit = false;
     }
-    if (!check_email($Email)) {
+    if (!filter_var($Email, FILTER_VALIDATE_EMAIL)) {
         $errors .= '* You must include a valid email address<br>';
         $validsubmit = false;
     }
 
     if (!$validsubmit) {
-        CreateRedBox("Error", $errors);
+        print "<script>ShowBox('Error', '$errors', 'red');</script>";
     }
 
     if ($validsubmit && $BanId != -1) {
@@ -133,11 +125,11 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $Email       = "";
 
         // Send an email when protest was posted
-        $headers = 'From: ' . $GLOBALS['sb-email'] . "\n" . 'X-Mailer: PHP/' . phpversion();
+        $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
 
         $emailinfo = $GLOBALS['db']->Execute("SELECT aid, user, email FROM `" . DB_PREFIX . "_admins` WHERE aid = (SELECT aid FROM `" . DB_PREFIX . "_bans` WHERE bid = '" . (int) $BanId . "');");
         $requri    = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
-        if (isset($GLOBALS['config']['protest.emailonlyinvolved']) && $GLOBALS['config']['protest.emailonlyinvolved'] == 1 && !empty($emailinfo->fields['email'])) {
+        if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo->fields['email'])) {
             $admins = array(
                 array(
                     'aid' => $emailinfo->fields['aid'],
@@ -159,7 +151,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             }
         }
 
-        CreateGreenBox("Successful", "Your protest has been sent.");
+        print "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
     }
 }
 

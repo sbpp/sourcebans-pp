@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "RumbleFrog, SourceBans++ Dev Team"
-#define PLUGIN_VERSION "1.6.3"
+#define PLUGIN_VERSION "1.7.0"
 
 #include <sourcemod>
 #include <sourcebanspp>
@@ -43,7 +43,7 @@ public void OnPluginStart()
 	Convars[Cooldown] = CreateConVar("sbpp_report_cooldown", "60.0", "Cooldown in seconds between per report per user", FCVAR_NONE, true, 0.0, false);
 	Convars[MinLen] = CreateConVar("sbpp_report_minlen", "10", "Minimum reason length", FCVAR_NONE, true, 0.0, false);
 
-	LoadTranslations("sourcereport.phrases");
+	LoadTranslations("sbpp_report.phrases");
 
 	RegConsoleCmd("sm_report", CmdReport, "Initialize Report");
 
@@ -186,11 +186,11 @@ public void OnConvarChanged(ConVar convar, const char[] oldValue, const char[] n
 stock bool IsValidClient(int iClient, bool bAlive = false)
 {
 	if (iClient >= 1 &&
-	iClient <= MaxClients &&
-	IsClientConnected(iClient) &&
-	IsClientInGame(iClient) &&
-	!IsFakeClient(iClient) &&
-	(bAlive == false || IsPlayerAlive(iClient)))
+		iClient <= MaxClients &&
+		IsClientConnected(iClient) &&
+		IsClientInGame(iClient) &&
+		!IsFakeClient(iClient) &&
+		(bAlive == false || IsPlayerAlive(iClient)))
 	{
 		return true;
 	}

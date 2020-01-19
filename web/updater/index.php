@@ -2,7 +2,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2016 Sarabveer Singh <me@sarabveer.me>
+//  Copyright (C) 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
 //
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ $theme->assign('updates', $updater->getMessageStack());
 $theme->display('updater.tpl');
 
 //clear compiled themes
-$cachedir = dir(SB_THEMES_COMPILE);
+$cachedir = dir(SB_CACHE);
 while (($entry = $cachedir->read()) !== false) {
     if (is_file($cachedir->path . $entry)) {
         unlink($cachedir->path . $entry);

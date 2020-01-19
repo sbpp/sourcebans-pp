@@ -35,7 +35,7 @@
 </pre>
 </div>
 <br />
-Command: <input type="text" style="font-family:verdana, tahoma, arial;font-size:10px;width:500px" id="cmd"> 
+Command: <input type="text" style="font-family:verdana, tahoma, arial;font-size:10px;width:500px" id="cmd">
 <input type="button" onclick="SendRcon();" id="rcon_btn" value="Send">
 </div>
 </div></div>
@@ -50,7 +50,10 @@ function SendRcon()
 {
 	xajax_SendRcon('-{$id}-', $('cmd').value, true);
 	 $('cmd').value='Executing, Please Wait...'; $('cmd').disabled='true'; $('rcon_btn').disabled='true';
-	 
+
 }
+
+var scroll = new Fx.Scroll($('rcon'),{duration: 500, transition: Fx.Transitions.Cubic.easeInOut});
+if(scroll)scroll.toBottom();
 </script>
 -{/if}-

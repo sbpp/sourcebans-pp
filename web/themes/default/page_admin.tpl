@@ -8,48 +8,63 @@
 		{if $access_admins}
 			<li>
 				<a href="index.php?p=admin&amp;c=admins">
-				<img src="themes/default/images/admin/admins.png" alt="Admin Settings" border="0" /><br />
-				Admin Settings
+                    <i class="fas fa-user fa-5x"></i>
+                    <br/><br/>
+				    <b>Admin Settings</b>
 		  		</a>
 			</li>
 		{/if}
 		{if $access_servers}
 			<li>
 				<a href="index.php?p=admin&amp;c=servers">
-				<img src="themes/default/images/admin/servers.png" alt="Server Admin" border="0" /><br />
-				Server Settings
+                    <i class="fas fa-server fa-5x"></i>
+                    <br/><br/>
+                    <b>Server Settings</b>
 		  		</a>
 			</li>
 		{/if}
 		{if $access_bans}
 			<li>
 				<a href="index.php?p=admin&amp;c=bans">
-				<img src="themes/default/images/admin/bans.png" alt="Edit Bans" border="0" /><br />
-				Bans
+                    <i class="fas fa-times fa-5x"></i>
+                    <br/><br/>
+                    <b>Bans</b>
+		  		</a>
+			</li>
+		{/if}
+        {if $access_bans}
+			<li>
+				<a href="index.php?p=admin&amp;c=comms">
+                    <i class="fas fa-volume-off fa-5x"></i>
+                    <br/><br/>
+                    <b>Comms</b>
 		  		</a>
 			</li>
 		{/if}
 		{if $access_groups}
 			<li>
 				<a href="index.php?p=admin&amp;c=groups">
-				<img src="themes/default/images/admin/groups.png" alt="Edit Groups" border="0" /><br />
-				Group Settings
+                    <i class="fas fa-users fa-5x"></i>
+                    <br/><br/>
+                    <b>Group Settings</b>
 		  		</a>
 			</li>
 		{/if}
 		{if $access_settings}
 			<li>
 				<a href="index.php?p=admin&amp;c=settings">
-				<img src="themes/default/images/admin/settings.png" alt="SourceBans Settings" border="0" /><br />
-				Webpanel Settings
+                    <i class="fas fa-cogs fa-5x"></i>
+                    <br/><br/>
+                    <b>Webpanel Settings</b>
 		  		</a>
 			</li>
 		{/if}
 		{if $access_mods}
 			<li>
 				<a href="index.php?p=admin&amp;c=mods">
-				<img src="themes/default/images/admin/mods.png" alt="Mods" border="0" /><br />
-				Manage Mods
+                    <i class="fas fa-cubes fa-5x"></i>
+                    <br/><br/>
+                    <b>Manage Mods</b>
 		  		</a>
 			</li>
 		{/if}

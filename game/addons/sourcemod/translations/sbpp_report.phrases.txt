@@ -1,0 +1,69 @@
+"Phrases"
+{
+	"In Cooldown"
+	{
+		"#format"	"{1:.0f}"
+
+		"en"	"Please wait {1} seconds before reporting again"
+		"ru"	"Пожалуйста, подождите {1} секунд до отправки жалобы вновь."
+		"de"	"Bitte warten Sie {1} Sekunden bevor Sie eine erneute Meldung durchführen können"
+		"fr"	"Veuillez patienter {1} secondes avant de rapporter à nouveau"
+		"pl"	"Zaczekaj {1} sekund przed ponownym wysłaniem zgłoszenia"
+		"pt"	"Por favor, espere {1} segundos antes de denunciar novamente"
+		"chi"	"请等待 {1} 秒后再试"
+		"hu"	"Kérlek várj {1} másodpercet mielőtt report-olnád újra"
+		"tr"	"Tekrar şikayet etmeden önce {1} saniye bekleyiniz"
+	}
+
+	"Report Canceled"
+	{
+		"en"	"Report canceled"
+		"ru"	"Отправка жалобы отменена."
+		"de"	"Meldung abbrechen"
+		"fr"	"Report annulé"
+		"pl"	"Raport został anulowany"
+		"pt"	"Denúncia cancelada"
+		"chi"	"报告已取消"
+		"hu"	"Report megszakítva"
+		"tr"	"Şikayet iptal edildi"
+	}
+
+	"Report Sent"
+	{
+		"en"	"Your report has been sent"
+		"ru"	"Ваша жалоба отправлена."
+		"de"	"Ihre Meldung wurde gesendet"
+		"fr"	"Votre report a été envoyé"
+		"pl"	"Twój raport został wysłany"
+		"pt"	"Sua denúncia foi enviada"
+		"chi"	"你的报告已发送"
+		"hu"	"A Report-ot elküldtük"
+		"tr"	"Şikayetiniz gönderildi"
+	}
+
+	"Reason Prompt"
+	{
+		"en"	"Please enter the reason for the report or \"cancel\" to cancel"
+		"ru"	"Пожалуйста, напишите причину жалобы или \"cancel\" для отмены."
+		"de"	"Bitte geben sie einen Grund für die Meldung ein oder \"cancel\" um die Meldung abzubrechen"
+		"fr"	"Veuillez entrer la raison du rapport ou \"cancel\" pour annuler
+		"pl"	"Podaj przyczynę zgłoszenia lub \"cancel\", aby anulować"
+		"pt"	"Por favor, digite o motivo para a denúncia ou digite \"cancel\" para cancelar"
+		"chi"	"请填写报告填写理由或者 \"cancel\" 来取消"
+		"hu"	"Írd be az indokot vagy írd \"cancel\" a megszakításhoz"
+		"tr"	"Şikayetiniz için bir sebep belirtiniz. İptal etmek için \"cancel\" yazınız"
+	}
+
+	"Reason Short Need More"
+	{
+		"en"	"Reason is too short, more details is required"
+		"ru"	"Текст причины слишком мал, требуется больше информации."
+		"de"	"Der Grund ist leider zu kurz, es werden mehr Details benötigt."
+		"fr"	"La raison est trop courte, plus de détails sont requis"
+		"pl"	"Powód jest za krótki, więcej szczegółów jest wymaganych"
+		"pt"	"O motivo está muito curto, informe mais detalhes"
+		"chi"	"理由过于简短,请做更多说明"
+		"hu"	"Az indoklás túl rövid, több információra van szükség"
+		"tr"	"Sebep çok kısa, lütfen daha detaylı yazınız"
+	}
+}

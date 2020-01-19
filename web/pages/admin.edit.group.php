@@ -2,26 +2,18 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-Copyright � 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
+SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
 
-SourceBans++ is licensed under a
+The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
 You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
 This program is based off work covered by the following copyright(s):
 SourceBans 1.4.11
-Copyright � 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC BY-NC-SA 3.0
+Copyright © 2007-2014 SourceBans Team - Part of GameConnect
+Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
@@ -30,9 +22,11 @@ if (!defined("IN_SB")) {
     die();
 }
 
+new AdminTabs([], $userbank, $theme);
+
 if (!isset($_GET['id'])) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No server id specified. Please only follow links
@@ -42,7 +36,7 @@ if (!isset($_GET['id'])) {
 
 if (!isset($_GET['type']) || ($_GET['type'] != 'web' && $_GET['type'] != 'srv' && $_GET['type'] != 'server')) {
     echo '<div id="msg-red" >
-	<i><img src="./images/warning.png" alt="Warning" /></i>
+	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
 	<br />
 	No valid group type specified. Please only follow links
@@ -65,7 +59,9 @@ $name = $userbank->GetProperty("user", $_GET['id'])?>
 <input type="hidden" id="group_id" value=<?=$_GET['id']?>>
 <table width="90%" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?=HelpIcon("Group Name", "Type the name of the new group you want to create.")?>Group Name </div></td>
+    <td valign="top" width="35%"><div class="rowdesc">
+        <img align='absbottom' src='images/help.png' class='tip' title='Group Name::Type the name of the new group you want to create.'/>
+        Group Name </div></td>
     <td><div align="left">
       <input type="text" TABINDEX=1 class="inputbox" id="groupname" name="groupname" />
     </div><div id="groupname.msg" style="color:#CC0000;"></div></td>
@@ -176,44 +172,44 @@ if (!$userbank->HasAccess(ADMIN_OWNER)) {
 }
 if ($_GET['type'] == "web") {
 ?>
-$('p2').checked = <?=check_flag($web_flags, ADMIN_OWNER) ? "true" : "false"?>;
+$('p2').checked = <?=(($web_flags & ADMIN_OWNER) != 0) ? "true" : "false"?>;
 
-$('p4').checked = <?=check_flag($web_flags, ADMIN_LIST_ADMINS) ? "true" : "false"?>;
-$('p5').checked = <?=check_flag($web_flags, ADMIN_ADD_ADMINS) ? "true" : "false"?>;
-$('p6').checked = <?=check_flag($web_flags, ADMIN_EDIT_ADMINS) ? "true" : "false"?>;
-$('p7').checked = <?=check_flag($web_flags, ADMIN_DELETE_ADMINS) ? "true" : "false"?>;
+$('p4').checked = <?=(($web_flags & ADMIN_LIST_ADMINS) != 0) ? "true" : "false"?>;
+$('p5').checked = <?=(($web_flags & ADMIN_ADD_ADMINS) != 0) ? "true" : "false"?>;
+$('p6').checked = <?=(($web_flags & ADMIN_EDIT_ADMINS) != 0) ? "true" : "false"?>;
+$('p7').checked = <?=(($web_flags & ADMIN_DELETE_ADMINS) != 0) ? "true" : "false"?>;
 
-$('p9').checked = <?=check_flag($web_flags, ADMIN_LIST_SERVERS) ? "true" : "false"?>;
-$('p10').checked = <?=check_flag($web_flags, ADMIN_ADD_SERVER) ? "true" : "false"?>;
-$('p11').checked = <?=check_flag($web_flags, ADMIN_EDIT_SERVERS) ? "true" : "false"?>;
-$('p12').checked = <?=check_flag($web_flags, ADMIN_DELETE_SERVERS) ? "true" : "false"?>;
+$('p9').checked = <?=(($web_flags & ADMIN_LIST_SERVERS) != 0) ? "true" : "false"?>;
+$('p10').checked = <?=(($web_flags & ADMIN_ADD_SERVER) != 0) ? "true" : "false"?>;
+$('p11').checked = <?=(($web_flags & ADMIN_EDIT_SERVERS) != 0) ? "true" : "false"?>;
+$('p12').checked = <?=(($web_flags & ADMIN_DELETE_SERVERS) != 0) ? "true" : "false"?>;
 
-$('p14').checked = <?=check_flag($web_flags, ADMIN_ADD_BAN) ? "true" : "false"?>;
-$('p16').checked = <?=check_flag($web_flags, ADMIN_EDIT_OWN_BANS) ? "true" : "false"?>;
-$('p17').checked = <?=check_flag($web_flags, ADMIN_EDIT_GROUP_BANS) ? "true" : "false"?>;
-$('p18').checked = <?=check_flag($web_flags, ADMIN_EDIT_ALL_BANS) ? "true" : "false"?>;
-$('p19').checked = <?=check_flag($web_flags, ADMIN_BAN_PROTESTS) ? "true" : "false"?>;
-$('p20').checked = <?=check_flag($web_flags, ADMIN_BAN_SUBMISSIONS) ? "true" : "false"?>;
-$('p33').checked = <?=check_flag($web_flags, ADMIN_DELETE_BAN) ? "true" : "false"?>;
-$('p32').checked = <?=check_flag($web_flags, ADMIN_UNBAN) ? "true" : "false"?>;
-$('p34').checked = <?=check_flag($web_flags, ADMIN_BAN_IMPORT) ? "true" : "false"?>;
-$('p38').checked = <?=check_flag($web_flags, ADMIN_UNBAN_OWN_BANS) ? "true" : "false"?>;
-$('p39').checked = <?=check_flag($web_flags, ADMIN_UNBAN_GROUP_BANS) ? "true" : "false"?>;
+$('p14').checked = <?=(($web_flags & ADMIN_ADD_BAN) != 0) ? "true" : "false"?>;
+$('p16').checked = <?=(($web_flags & ADMIN_EDIT_OWN_BANS) != 0) ? "true" : "false"?>;
+$('p17').checked = <?=(($web_flags & ADMIN_EDIT_GROUP_BANS) != 0) ? "true" : "false"?>;
+$('p18').checked = <?=(($web_flags & ADMIN_EDIT_ALL_BANS) != 0) ? "true" : "false"?>;
+$('p19').checked = <?=(($web_flags & ADMIN_BAN_PROTESTS) != 0) ? "true" : "false"?>;
+$('p20').checked = <?=(($web_flags & ADMIN_BAN_SUBMISSIONS) != 0) ? "true" : "false"?>;
+$('p33').checked = <?=(($web_flags & ADMIN_DELETE_BAN) != 0) ? "true" : "false"?>;
+$('p32').checked = <?=(($web_flags & ADMIN_UNBAN) != 0) ? "true" : "false"?>;
+$('p34').checked = <?=(($web_flags & ADMIN_BAN_IMPORT) != 0) ? "true" : "false"?>;
+$('p38').checked = <?=(($web_flags & ADMIN_UNBAN_OWN_BANS) != 0) ? "true" : "false"?>;
+$('p39').checked = <?=(($web_flags & ADMIN_UNBAN_GROUP_BANS) != 0) ? "true" : "false"?>;
 
-$('p36').checked = <?=check_flag($web_flags, ADMIN_NOTIFY_SUB) ? "true" : "false"?>;
-$('p37').checked = <?=check_flag($web_flags, ADMIN_NOTIFY_PROTEST) ? "true" : "false"?>;
+$('p36').checked = <?=(($web_flags & ADMIN_NOTIFY_SUB) != 0) ? "true" : "false"?>;
+$('p37').checked = <?=(($web_flags & ADMIN_NOTIFY_PROTEST) != 0) ? "true" : "false"?>;
 
-$('p22').checked = <?=check_flag($web_flags, ADMIN_LIST_GROUPS) ? "true" : "false"?>;
-$('p23').checked = <?=check_flag($web_flags, ADMIN_ADD_GROUP) ? "true" : "false"?>;
-$('p24').checked = <?=check_flag($web_flags, ADMIN_EDIT_GROUPS) ? "true" : "false"?>;
-$('p25').checked = <?=check_flag($web_flags, ADMIN_DELETE_GROUPS) ? "true" : "false"?>;
+$('p22').checked = <?=(($web_flags & ADMIN_LIST_GROUPS) != 0) ? "true" : "false"?>;
+$('p23').checked = <?=(($web_flags & ADMIN_ADD_GROUP) != 0) ? "true" : "false"?>;
+$('p24').checked = <?=(($web_flags & ADMIN_EDIT_GROUPS) != 0) ? "true" : "false"?>;
+$('p25').checked = <?=(($web_flags & ADMIN_DELETE_GROUPS) != 0) ? "true" : "false"?>;
 
-$('p26').checked = <?=check_flag($web_flags, ADMIN_WEB_SETTINGS) ? "true" : "false"?>;
+$('p26').checked = <?=(($web_flags & ADMIN_WEB_SETTINGS) != 0) ? "true" : "false"?>;
 
-$('p28').checked = <?=check_flag($web_flags, ADMIN_LIST_MODS) ? "true" : "false"?>;
-$('p29').checked = <?=check_flag($web_flags, ADMIN_ADD_MODS) ? "true" : "false"?>;
-$('p30').checked = <?=check_flag($web_flags, ADMIN_EDIT_MODS) ? "true" : "false"?>;
-$('p31').checked = <?=check_flag($web_flags, ADMIN_DELETE_MODS) ? "true" : "false"?>;
+$('p28').checked = <?=(($web_flags & ADMIN_LIST_MODS) != 0) ? "true" : "false"?>;
+$('p29').checked = <?=(($web_flags & ADMIN_ADD_MODS) != 0) ? "true" : "false"?>;
+$('p30').checked = <?=(($web_flags & ADMIN_EDIT_MODS) != 0) ? "true" : "false"?>;
+$('p31').checked = <?=(($web_flags & ADMIN_DELETE_MODS) != 0) ? "true" : "false"?>;
 
 <?php
 } elseif ($_GET['type'] == "srv") {
