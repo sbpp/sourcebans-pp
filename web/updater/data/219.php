@@ -3,7 +3,7 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enableadminrehashing', '1')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enableadminrehashing', '1')");
     $this->dbs->execute();
 }
 
@@ -11,7 +11,7 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'protest
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('protest.emailonlyinvolved', '0')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('protest.emailonlyinvolved', '0')");
     $this->dbs->execute();
 }
 

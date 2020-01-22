@@ -1,8 +1,8 @@
 <?php
-$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `archivedby` INT(11) NULL AFTER `archiv`");
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD IF NOT EXISTS `archivedby` INT(11) NULL AFTER `archiv`");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_protests` ADD `archivedby` INT(11) NULL AFTER `archiv`");
+$this->dbs->query("ALTER TABLE `:prefix_protests` ADD IF NOT EXISTS `archivedby` INT(11) NULL AFTER `archiv`");
 $this->dbs->execute();
 
 $this->dbs->query("UPDATE `:prefix_submissions` SET `archivedby` = 0 WHERE `archiv` > 0");
