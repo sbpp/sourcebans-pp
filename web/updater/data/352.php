@@ -3,7 +3,7 @@ $this->dbs->query("SELECT `mid` FROM `:prefix_mods` WHERE `modfolder` = 'eye'");
 $data = $this->dbs->single();
 
 if (!$data['mid']) {
-    $this->dbs->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('E.Y.E: Divine Cybermancy', 'eye.png', 'eye')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('E.Y.E: Divine Cybermancy', 'eye.png', 'eye')");
     $this->dbs->execute();
 }
 
@@ -11,7 +11,7 @@ $this->dbs->query("SELECT `mid` FROM `:prefix_mods` WHERE `modfolder` = 'nuclear
 $data = $this->dbs->single();
 
 if (!$data['mid']) {
-    $this->dbs->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Nuclear Dawn', 'nucleardawn.png', 'nucleardawn')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Nuclear Dawn', 'nucleardawn.png', 'nucleardawn')");
     $this->dbs->execute();
 }
 
@@ -19,7 +19,7 @@ $this->dbs->query("SELECT `mid` FROM `:prefix_mods` WHERE `modfolder` = 'aliensw
 $data = $this->dbs->single();
 
 if (!$data['mid']) {
-    $this->dbs->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Alien Swarm', 'alienswarm.png', 'alienswarm')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('Alien Swarm', 'alienswarm.png', 'alienswarm')");
     $this->dbs->execute();
 }
 
@@ -27,7 +27,7 @@ $this->dbs->query("SELECT `mid` FROM `:prefix_mods` WHERE `modfolder` = 'cspromo
 $data = $this->dbs->single();
 
 if (!$data['mid']) {
-    $this->dbs->query("INSERT INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('CSPromod', 'cspromod.png', 'cspromod')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_mods` (`name`, `icon`, `modfolder`) VALUES ('CSPromod', 'cspromod.png', 'cspromod')");
     $this->dbs->execute();
 }
 

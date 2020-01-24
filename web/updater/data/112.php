@@ -9,7 +9,7 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'dash.lo
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('dash.lognopopup', '0')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('dash.lognopopup', '0')");
     $this->dbs->execute();
 }
 
@@ -17,7 +17,7 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.exportpublic', '0')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.exportpublic', '0')");
     $this->dbs->execute();
 }
 
@@ -33,7 +33,7 @@ foreach ($admins as $admin) {
 $this->dbs->query("ALTER TABLE `:prefix_admins` CHANGE `lastvisit` `lastvisit` INT(11) NULL DEFAULT NULL");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_bans` ADD `type` TINYINT NOT NULL DEFAULT '0'");
+$this->dbs->query("ALTER TABLE `:prefix_bans` ADD IF NOT EXISTS `type` TINYINT NOT NULL DEFAULT '0'");
 $this->dbs->execute();
 
 $this->dbs->query(
@@ -51,7 +51,7 @@ $this->dbs->query(
 );
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_mods` ADD enabled TINYINT NOT NULL DEFAULT '1'");
+$this->dbs->query("ALTER TABLE `:prefix_mods` ADD IF NOT EXISTS enabled TINYINT NOT NULL DEFAULT '1'");
 $this->dbs->execute();
 
 $this->dbs->query(

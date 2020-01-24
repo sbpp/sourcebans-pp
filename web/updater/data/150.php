@@ -3,23 +3,23 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.summertime', '0')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.summertime', '0')");
     $this->dbs->execute();
 }
 
-$this->dbs->query("ALTER TABLE `:prefix_bans` ADD `ureason` text");
+$this->dbs->query("ALTER TABLE `:prefix_bans` ADD IF NOT EXISTS `ureason` text");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_protests` ADD `archiv` tinyint(1) DEFAULT '0'");
+$this->dbs->query("ALTER TABLE `:prefix_protests` ADD IF NOT EXISTS `archiv` tinyint(1) DEFAULT '0'");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `subname` varchar(128) DEFAULT NULL");
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD IF NOT EXISTS `subname` varchar(128) DEFAULT NULL");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `sip` varchar(64) DEFAULT NULL");
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD IF NOT EXISTS `sip` varchar(64) DEFAULT NULL");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD `archiv` tinyint(1) DEFAULT '0'");
+$this->dbs->query("ALTER TABLE `:prefix_submissions` ADD IF NOT EXISTS `archiv` tinyint(1) DEFAULT '0'");
 $this->dbs->execute();
 
 $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.timezone'");
