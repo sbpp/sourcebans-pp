@@ -1585,7 +1585,7 @@ function PasteBan(int $sid, $name, int $type = 0)
             $steam = \SteamID\SteamID::toSteam2($player['steamid']);
             $objResponse->addScript("$('nickname').value = '".addslashes(html_entity_decode($name, ENT_QUOTES))."'");
 
-            $objResponse->addScript("$('type').options[1].selected = true");
+            $objResponse->addScript("$('type').options[0].selected = true");
             $objResponse->addScript("$('steam').value = '$steam'");
             $objResponse->addScript("$('ip').value = '$player[ip]'");
 
