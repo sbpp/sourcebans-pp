@@ -834,7 +834,7 @@ if (!defined('_ADODB_LAYER')) {
 	 * Requested by "Karsten Dambekalns" <k.dambekalns@fishfarm.de>
 	 */
 	function QMagic($s) {
-		return $this->qstr($s,get_magic_quotes_gpc());
+		return $this->qstr($s);
 	}
 
 	function q(&$s) {
@@ -2947,26 +2947,12 @@ http://www.stanford.edu/dept/itss/docs/oracle/10g/server.101/b10759/statements_1
 	 * @return  quoted string to be sent back to database
 	 */
 	function qstr($s,$magic_quotes=false) {
-		if (!$magic_quotes) {
-			if ($this->replaceQuote[0] == '\\'){
-				// only since php 4.0.5
-				$s = adodb_str_replace(array('\\',"\0"),array('\\\\',"\\\0"),$s);
-				//$s = str_replace("\0","\\\0", str_replace('\\','\\\\',$s));
-			}
-			return  "'".str_replace("'",$this->replaceQuote,$s)."'";
+		if ($this->replaceQuote[0] == '\\'){
+			// only since php 4.0.5
+			$s = adodb_str_replace(array('\\',"\0"),array('\\\\',"\\\0"),$s);
+			//$s = str_replace("\0","\\\0", str_replace('\\','\\\\',$s));
 		}
-
-		// undo magic quotes for "
-		$s = str_replace('\\"','"',$s);
-
-		if ($this->replaceQuote == "\\'" || ini_get('magic_quotes_sybase')) {
-			// ' already quoted, no need to change anything
-			return "'$s'";
-		} else {
-			// change \' to '' for sybase/mssql
-			$s = str_replace('\\\\','\\',$s);
-			return "'".str_replace("\\'",$this->replaceQuote,$s)."'";
-		}
+		return  "'".str_replace("'",$this->replaceQuote,$s)."'";
 	}
 
 
