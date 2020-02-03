@@ -15,7 +15,7 @@ SourceBans 1.4.11
 Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+ *************************************************************************/
 
 use MaxMind\Db\Reader;
 use xPaw\SourceQuery\SourceQuery;
@@ -25,19 +25,19 @@ if (!defined("IN_SB")) {
 }
 
 require_once __DIR__ . DIR_SEP . 'maxmind' . DIR_SEP . 'autoload.php';
-if(!defined("MMDB_PATH")){
+if(!defined("MMDB_PATH")) {
     define("MMDB_PATH", __DIR__ . DIR_SEP . 'maxmind' . DIR_SEP . 'GeoLite2-Country.mmdb');
 }
 
 /**
  * Creates an anchor tag, and adds tooltip code if needed
  *
- * @param string $title The title of the tooltip/text to link
- * @param string $url The link
- * @param string $tooltip The tooltip message
- * @param string $target The new links target
- * @param bool $wide
- * @param string $onclick
+ * @param  string $title   The title of the tooltip/text to link
+ * @param  string $url     The link
+ * @param  string $tooltip The tooltip message
+ * @param  string $target  The new links target
+ * @param  bool   $wide
+ * @param  string $onclick
  * @return string URL
  */
 function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $onclick="")
@@ -51,7 +51,7 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
 }
 
 /**
- * @param $mask
+ * @param  $mask
  * @return array|false
  */
 function BitToString($mask)
@@ -74,7 +74,7 @@ function BitToString($mask)
 }
 
 /**
- * @param $flagstring
+ * @param  $flagstring
  * @return array|false
  */
 function SmFlagsToSb($flagstring)
@@ -113,8 +113,8 @@ function NextAid()
 }
 
 /**
- * @param string $text
- * @param int $len
+ * @param  string $text
+ * @param  int    $len
  * @return string
  */
 function trunc(string $text, int $len)
@@ -123,7 +123,7 @@ function trunc(string $text, int $len)
 }
 
 /**
- * @param $mask
+ * @param int $mask
  */
 function CheckAdminAccess($mask)
 {
@@ -135,8 +135,8 @@ function CheckAdminAccess($mask)
 }
 
 /**
- * @param int $sec
- * @param bool $textual
+ * @param  int  $sec
+ * @param  bool $textual
  * @return false|string
  */
 function SecondsToString($sec, $textual=true)
@@ -166,7 +166,7 @@ function SecondsToString($sec, $textual=true)
 }
 
 /**
- * @param string $ip
+ * @param  string $ip
  * @return mixed|string
  */
 function FetchIp($ip)
@@ -181,12 +181,12 @@ function FetchIp($ip)
 
 function PageDie()
 {
-    require_once(TEMPLATES_PATH.'/core/footer.php');
+    include_once TEMPLATES_PATH.'/core/footer.php';
     die();
 }
 
 /**
- * @param string $map
+ * @param  string $map
  * @return string
  */
 function GetMapImage($map)
@@ -196,8 +196,8 @@ function GetMapImage($map)
 }
 
 /**
- * @param string $file
- * @param array $validExts
+ * @param  string $file
+ * @param  array  $validExts
  * @return bool
  */
 function checkExtension($file, array $validExts)
@@ -271,7 +271,7 @@ function PruneComms()
 }
 
 /**
- * @param string $dir
+ * @param  string $dir
  * @return string
  */
 function getDirSize($dir)
@@ -284,7 +284,7 @@ function getDirSize($dir)
 }
 
 /**
- * @param int $bytes
+ * @param  int $bytes
  * @return string
  */
 function sizeFormat($bytes)
@@ -299,8 +299,8 @@ function sizeFormat($bytes)
 /**
  * Check for multiple steamids on one server
  *
- * @param int $sid
- * @param array $steamids
+ * @param  int   $sid
+ * @param  array $steamids
  * @return array array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => array()....)
  */
 function checkMultiplePlayers(int $sid, $steamids)
@@ -328,7 +328,7 @@ function checkMultiplePlayers(int $sid, $steamids)
 }
 
 /**
- * @param string $steamid
+ * @param  string $steamid
  * @return mixed|string
  */
 function GetCommunityName($steamid)
@@ -339,8 +339,8 @@ function GetCommunityName($steamid)
 }
 
 /**
- * @param string $cmd
- * @param int $sid
+ * @param  string $cmd
+ * @param  int    $sid
  * @return false|string
  */
 function rcon(string $cmd, int $sid)
@@ -349,8 +349,9 @@ function rcon(string $cmd, int $sid)
     $GLOBALS['PDO']->bind(':sid', $sid);
     $server = $GLOBALS['PDO']->single();
 
-    if (empty($server['rcon']))
+    if (empty($server['rcon'])) {
         return false;
+    }
 
     $output = "";
     $rcon = new SourceQuery();
@@ -376,7 +377,7 @@ function rcon(string $cmd, int $sid)
 }
 
 /**
- * @param string $status
+ * @param  string $status
  * @return array
  */
 function parseRconStatus(string $status)
@@ -400,8 +401,8 @@ function parseRconStatus(string $status)
 }
 
 /**
- * @param string $str1
- * @param string $str2
+ * @param  string $str1
+ * @param  string $str2
  * @return bool
  */
 function compareSanitizedString(string $str1, string $str2)
