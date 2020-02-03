@@ -1,5 +1,8 @@
 <?php
 
+/**
+ * Class Database
+ */
 class Database
 {
     /**
@@ -15,6 +18,16 @@ class Database
      */
     private $stmt;
 
+    /**
+     * Database constructor.
+     * @param string $host
+     * @param int $port
+     * @param string $dbname
+     * @param string $user
+     * @param string $password
+     * @param string $prefix
+     * @param string $charset
+     */
     public function __construct($host, $port, $dbname, $user, $password, $prefix, $charset = 'utf8')
     {
         $this->prefix = $prefix;
@@ -56,7 +69,7 @@ class Database
     /**
      * Contrary to the name, this prepares the query and doesn't actually run the query.
      *
-     * @param $query
+     * @param string $query
      * @return $this
      */
     public function query($query)
@@ -66,6 +79,11 @@ class Database
         return $this;
     }
 
+    /**
+     * @param int|string $param
+     * @param int|bool|null|string $value
+     * @param int|null $type PDO param type.  Send null or leave blank for auto-detection
+     */
     public function bind($param, $value, $type = null)
     {
         if (is_null($type)) {
