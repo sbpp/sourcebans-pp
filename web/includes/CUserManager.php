@@ -1,4 +1,7 @@
 <?php
+
+use Lcobucci\JWT\Token;
+
 /*************************************************************************
 This file is part of SourceBans++
 
@@ -16,19 +19,26 @@ Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-
 class CUserManager
 {
+    /**
+     * @var int|mixed
+     */
     private $aid = -1;
+
+    /**
+     * @var array
+     */
     private $admins = array();
+
+    /**
+     * @var Database
+     */
     private $dbh = null;
 
     /**
-     * Class constructor
-     *
-     * @param $aid the current user's aid
-     * @param $password the current user's password
-     * @return noreturn.
+     * CUserManager constructor.
+     * @param Token|false $token
      */
     public function __construct($token)
     {
@@ -39,13 +49,12 @@ class CUserManager
         $this->GetUserArray($this->aid);
     }
 
-
     /**
      * Gets all user details from the database, saves them into
      * the admin array 'cache', and then returns the array
      *
-     * @param $aid the ID of admin to get info for.
-     * @return array.
+     * @param int $aid the ID of admin to get info for.
+     * @return array|false
      */
     public function GetUserArray($aid = null)
     {
@@ -106,9 +115,9 @@ class CUserManager
     /**
      * Will check to see if an admin has any of the flags given
      *
-     * @param $flags The flags to check for.
-     * @param $aid The user to check flags for.
-     * @return boolean.
+     * @param int $flags The flags to check for.
+     * @param int $aid The user to check flags for.
+     * @return bool
      */
     public function HasAccess($flags, $aid = null)
     {
@@ -135,13 +144,15 @@ class CUserManager
                 }
             }
         }
+        return false;
     }
 
 
     /**
      * Gets a 'property' from the user array eg. 'authid'
      *
-     * @param $aid the ID of admin to get info for.
+     * @param string $name
+     * @param int $aid the ID of admin to get info for.
      * @return mixed.
      */
     public function GetProperty($name, $aid = null)
@@ -160,6 +171,9 @@ class CUserManager
         return $this->admins[$aid][$name];
     }
 
+    /**
+     * @return bool
+     */
     public function is_logged_in()
     {
         if ($this->aid != -1) {
@@ -168,6 +182,10 @@ class CUserManager
         return false;
     }
 
+    /**
+     * @param null $aid
+     * @return bool
+     */
     public function is_admin($aid = null)
     {
         if (is_null($aid)) {
@@ -181,12 +199,18 @@ class CUserManager
     }
 
 
+    /**
+     * @return int|mixed
+     */
     public function GetAid()
     {
         return $this->aid;
     }
 
 
+    /**
+     * @return array
+     */
     public function GetAllAdmins()
     {
         $this->dbh->query('SELECT aid FROM `:prefix_admins`');
@@ -198,6 +222,10 @@ class CUserManager
     }
 
 
+    /**
+     * @param int|null $aid
+     * @return bool|mixed
+     */
     public function GetAdmin($aid = null)
     {
         if (is_null($aid)) {
@@ -213,6 +241,10 @@ class CUserManager
         return $this->admins[$aid];
     }
 
+    /**
+     * @param string $name
+     * @return bool
+     */
     public function isNameTaken($name)
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE user = :user");
@@ -222,6 +254,10 @@ class CUserManager
         return (bool)$data[1];
     }
 
+    /**
+     * @param string $steamid
+     * @return bool
+     */
     public function isSteamIDTaken($steamid)
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE authid = :steamid");
@@ -231,6 +267,10 @@ class CUserManager
         return (bool)$data[1];
     }
 
+    /**
+     * @param string $email
+     * @return bool
+     */
     public function isEmailTaken($email)
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE email = :email");
@@ -240,6 +280,11 @@ class CUserManager
         return (bool)$data[1];
     }
 
+    /**
+     * @param int $aid
+     * @param string $pass
+     * @return bool
+     */
     public function isCurrentPasswordValid($aid, $pass)
     {
         $this->dbh->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
@@ -248,6 +293,19 @@ class CUserManager
         return password_verify($pass, $hash['password']);
     }
 
+    /**
+     * @param string $name
+     * @param string $steam
+     * @param string $password
+     * @param string $email
+     * @param int $web_group
+     * @param int $web_flags
+     * @param string $srv_group
+     * @param string $srv_flags
+     * @param int $immunity
+     * @param string $srv_password
+     * @return int
+     */
     public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
     {
         if (!empty($password) && strlen($password) < MIN_PASS_LENGTH) {

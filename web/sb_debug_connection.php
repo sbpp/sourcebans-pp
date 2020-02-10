@@ -15,7 +15,7 @@ SourceBans 1.4.11
 Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
+ *************************************************************************/
 /**
  * SourceBans "Error Connecting()" Debug
  * Checks for the ports being forwarded correctly
@@ -27,13 +27,18 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
  */
 $serverip   = "";
 $serverport = 27015;
-$serverrcon = ""; // You only need to specify this, if you want to test the rcon tcp connection either! Leave blank if it's only the serverinfo erroring.
+// You only need to specify this if you want to test the rcon tcp connection
+// Leave blank if it's only the serverinfo erroring.
+$serverrcon = "";
 
 
-/******* Don't change below here *******/
+/*******
+ * Don't change below here 
+*******/
 
-if (empty($serverip) || empty($serverport))
+if (empty($serverip) || empty($serverport)) {
     die('[-] No server information set. Open up this file and specify your gameserver\'s IP and port.');
+}
 
 echo '[+] SourceBans "Error Connecting()" Debug starting for server ' . $serverip . ':' . $serverport . '<br /><br />';
 
