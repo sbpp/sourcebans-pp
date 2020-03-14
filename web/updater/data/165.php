@@ -3,7 +3,7 @@ $this->dbs->query("SELECT * FROM `:prefix_settings` WHERE setting = 'bans.custom
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('bans.customreasons', '')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('bans.customreasons', '')");
     $this->dbs->execute();
 }
 

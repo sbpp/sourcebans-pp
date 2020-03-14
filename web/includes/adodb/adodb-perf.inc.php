@@ -691,12 +691,6 @@ Committed_AS:   348732 kB
 	}
 	$this->conn->LogSQL($savelog);
 
-	// magic quotes
-
-	if (isset($_GET['sql']) && get_magic_quotes_gpc()) {
-		$_GET['sql'] = $_GET['sql'] = str_replace(array("\\'",'\"'),array("'",'"'),$_GET['sql']);
-	}
-
 	if (!isset($_SESSION['ADODB_PERF_SQL'])) $nsql = $_SESSION['ADODB_PERF_SQL'] = 10;
 	else  $nsql = $_SESSION['ADODB_PERF_SQL'];
 
@@ -953,7 +947,7 @@ Committed_AS:   348732 kB
 <?php
 		if (!isset($_REQUEST['sql'])) return;
 
-		$sql = $this->undomq(trim($sql));
+		$sql = $this->trim($sql);
 		if (substr($sql,strlen($sql)-1) === ';') {
 			$print = true;
 			$sqla = $this->SplitSQL($sql);
@@ -996,17 +990,6 @@ Committed_AS:   348732 kB
 		$arr = explode(';',$sql);
 		return $arr;
 	}
-
-	function undomq($m)
-	{
-	if (get_magic_quotes_gpc()) {
-		// undo the damage
-		$m = str_replace('\\\\','\\',$m);
-		$m = str_replace('\"','"',$m);
-		$m = str_replace('\\\'','\'',$m);
-	}
-	return $m;
-}
 
 
    /************************************************************************/

@@ -3,7 +3,7 @@ $this->dbs->query("SELECT value FROM `:prefix_settings` WHERE setting = 'config.
 $data = $this->dbs->single();
 
 if (!$data['value']) {
-    $this->dbs->query("INSERT INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablepubliccomments', '0')");
+    $this->dbs->query("INSERT IGNORE INTO `:prefix_settings` (`setting`, `value`) VALUES ('config.enablepubliccomments', '0')");
     $this->dbs->execute();
 }
 

@@ -1,4 +1,10 @@
 <?php
+
+/**
+ * @param $fallback
+ * @return array
+ * @throws ErrorException
+ */
 function route($fallback)
 {
     $page = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_STRING);
@@ -125,6 +131,10 @@ function route($fallback)
     }
 }
 
+/**
+ * @param null $title Unused
+ * @param string $page
+ */
 function build($title, $page)
 {
     require_once(TEMPLATES_PATH.'/core/header.php');

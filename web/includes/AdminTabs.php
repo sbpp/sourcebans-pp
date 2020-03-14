@@ -1,7 +1,19 @@
 <?php
+
+/**
+ * Class AdminTabs
+ */
 class AdminTabs
 {
     private $tabs = [];
+
+    /**
+     * AdminTabs constructor.
+     *
+     * @param array        $tabs
+     * @param CUserManager $userbank
+     * @param Smarty       $theme
+     */
     public function __construct(array $tabs, $userbank, $theme)
     {
         foreach ($tabs as $tab) {

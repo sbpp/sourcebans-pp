@@ -26,10 +26,10 @@ if (strcasecmp($_GET['type'], "B") != 0 && strcasecmp($_GET['type'], "S") != 0) 
     die('Bad type');
 }
 $id   = (int) $_GET['id'];
-$demo = $GLOBALS['db']->GetRow("SELECT filename, origname FROM `" . DB_PREFIX . "_demos` WHERE demtype=? AND demid=?;", array(
-    $_GET['type'],
-    $id
-));
+$demo = $GLOBALS['db']->GetRow(
+    "SELECT filename, origname FROM `" . DB_PREFIX . "_demos` WHERE demtype=? AND demid=?;",
+    array($_GET['type'], $id)
+);
 //Official Fix: https://code.google.com/p/sourcebans/source/detail?r=165
 if (!$demo) {
     die('Demo not found.');

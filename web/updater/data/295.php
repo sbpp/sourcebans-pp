@@ -5,7 +5,7 @@ $old = $this->dbs->resultset();
 $this->dbs->query("ALTER TABLE `:prefix_comments` DROP `added`, DROP `edittime`");
 $this->dbs->execute();
 
-$this->dbs->query("ALTER TABLE `:prefix_comments` ADD `added` INT(11) NOT NULL DEFAULT 0 AFTER `commenttxt`, ADD `edittime` INT(11) NOT NULL DEFAULT 0 AFTER `editaid`");
+$this->dbs->query("ALTER TABLE `:prefix_comments` ADD IF NOT EXISTS `added` INT(11) NOT NULL DEFAULT 0 AFTER `commenttxt`, ADD `edittime` INT(11) NOT NULL DEFAULT 0 AFTER `editaid`");
 $this->dbs->execute();
 
 $this->dbs->query("ALTER TABLE `:prefix_comments` CHANGE `added` `added` INT(11) NOT NULL");
