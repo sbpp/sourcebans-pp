@@ -1388,6 +1388,7 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
     try {
         $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
         $info = $query->GetInfo();
+		$info['HostName'] = preg_replace('/[\x00-\x1f]/','', htmlspecialchars($info['HostName']));
         $players = $query->GetPlayers();
     } catch (Exception $e) {
         if ($userbank->HasAccess(ADMIN_OWNER)) {
