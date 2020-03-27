@@ -34,10 +34,6 @@
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
-#define Prefix "\x04[SourceBans++]\x01 "
-
-char g_DatabasePrefix[10] = "sb";
-SMCParser g_ConfigParser;
 
 public Plugin myinfo =
 {
@@ -57,24 +53,16 @@ public void OnPluginStart()
 
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_GENERIC, LISTBANS_USAGE);
 	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_GENERIC, LISTCOMMS_USAGE);
-	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
 }
 
 public void OnMapStart()
 {
-	ReadConfig();
+	SBPP_SQL_Prefix_Read();
 }
-
-public Action OnReloadCmd(int client, int args)
-{
-	ReadConfig();
-	return Plugin_Handled;
-}
-
 
 public void OnClientAuthorized(int client, const char[] auth)
 {
-	if ( !g_dbSQL )
+	if ( !g_SBPP_SQL_dbHandle )
 	{
 		SBPP_SQL_Reconnect();
 		return;
@@ -85,8 +73,8 @@ public void OnClientAuthorized(int client, const char[] auth)
 
 	char query[512], ip[30];
 	GetClientIP(client, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM `%s_bans` WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM `%s_comms` WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_DatabasePrefix, auth[8], ip, g_DatabasePrefix,auth[8]);
-	g_dbSQL.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
+	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM `%s_bans` WHERE ((type = 0 AND authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) UNION SELECT COUNT(bid) FROM `%s_comms` WHERE authid REGEXP '^STEAM_[0-9]:%s$'", g_SBPP_SQL_szPrefix, auth[8], ip, g_SBPP_SQL_szPrefix,auth[8]);
+	g_SBPP_SQL_dbHandle.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
 }
 
 public void OnConnectBanCheck(Database db, DBResultSet results, const char[] error, any userid)
@@ -101,13 +89,13 @@ public void OnConnectBanCheck(Database db, DBResultSet results, const char[] err
 		commcount = results.FetchInt(0);
 	}
 	if ( bancount && commcount ) {
-		PrintToBanAdmins("%s%t", Prefix, "Ban and Comm Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""), commcount, ((commcount > 1 || commcount == 0) ? "s":""));
+		PrintToBanAdmins("%s%t", SBPP_PREFIX, "Ban and Comm Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""), commcount, ((commcount > 1 || commcount == 0) ? "s":""));
 	}
 	else if ( commcount ) {
-		PrintToBanAdmins("%s%t", Prefix, "Comm Warning", client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
+		PrintToBanAdmins("%s%t", SBPP_PREFIX, "Comm Warning", client, commcount, ((commcount > 1 || commcount == 0) ? "s":""));
 	}
 	else if ( bancount ) {
-		PrintToBanAdmins("%s%t", Prefix, "Ban Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
+		PrintToBanAdmins("%s%t", SBPP_PREFIX, "Ban Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
 	}
 }
 
@@ -118,7 +106,7 @@ public Action OnListSourceBansCmd(int client, int args)
 		ReplyToCommand(client, LISTBANS_USAGE);
 	}
 
-	if ( !g_dbSQL )
+	if ( !g_SBPP_SQL_dbHandle )
 	{
 		SBPP_SQL_Reconnect();
 		ReplyToCommand(client, "Error: Database not ready.");
@@ -145,7 +133,7 @@ public Action OnListSourceBansCmd(int client, int args)
 
 	char query[1024], ip[30];
 	GetClientIP(target, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType FROM `%s_bans` LEFT JOIN `%s_admins` ON `%s_bans`.aid = `%s_admins`.aid WHERE ((type = 0 AND `%s_bans`.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8], ip);
+	FormatEx(query, sizeof(query), "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType FROM `%s_bans` LEFT JOIN `%s_admins` ON `%s_bans`.aid = `%s_admins`.aid WHERE ((type = 0 AND `%s_bans`.authid REGEXP '^STEAM_[0-9]:%s$') OR (type = 1 AND ip = '%s')) AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, auth[8], ip);
 
 	char targetName[MAX_NAME_LENGTH];
 	GetClientName(target, targetName, sizeof(targetName));
@@ -154,15 +142,15 @@ public Action OnListSourceBansCmd(int client, int args)
 	dataPack.WriteCell((client == 0) ? 0 : GetClientUserId(client));
 	dataPack.WriteString(targetName);
 
-	g_dbSQL.Query(OnListBans, query, dataPack, DBPrio_Low);
+	g_SBPP_SQL_dbHandle.Query(OnListBans, query, dataPack, DBPrio_Low);
 
 	if (client == 0)
 	{
-		ReplyToCommand(client, "%sNote: if you are using this command through an rcon tool, you will not see results.", Prefix);
+		ReplyToCommand(client, "%sNote: if you are using this command through an rcon tool, you will not see results.", SBPP_PREFIX);
 	}
 	else
 	{
-		ReplyToCommand(client, "\x04%s\x01 Look for %N's ban results in console.", Prefix, target);
+		ReplyToCommand(client, "\x04%s\x01 Look for %N's ban results in console.", SBPP_PREFIX, target);
 	}
 
 	return Plugin_Handled;
@@ -182,17 +170,17 @@ public void OnListBans(Database db, DBResultSet results, const char[] error, Dat
 
 	if (results == null)
 	{
-		PrintListResponse(clientuid, client, "%sDB error while retrieving bans for %s:\n%s", Prefix, targetName, error);
+		PrintListResponse(clientuid, client, "%sDB error while retrieving bans for %s:\n%s", SBPP_PREFIX, targetName, error);
 		return;
 	}
 
 	if (results.RowCount == 0)
 	{
-		PrintListResponse(clientuid, client, "%sNo bans found for %s.", Prefix, targetName);
+		PrintListResponse(clientuid, client, "%sNo bans found for %s.", SBPP_PREFIX, targetName);
 		return;
 	}
 
-	PrintListResponse(clientuid, client, "%sListing bans for %s", Prefix, targetName);
+	PrintListResponse(clientuid, client, "%sListing bans for %s", SBPP_PREFIX, targetName);
 	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    R  Reason");
 	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
 	while (results.FetchRow())
@@ -285,7 +273,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 		ReplyToCommand(client, LISTCOMMS_USAGE);
 	}
 
-	if ( !g_dbSQL )
+	if ( !g_SBPP_SQL_dbHandle )
 	{
 		ReplyToCommand(client, "Error: Database not ready.");
 		return Plugin_Handled;
@@ -310,7 +298,7 @@ public Action OnListSourceCommsCmd(int client, int args)
 	}
 
 	char query[1024];
-	FormatEx(query, sizeof(query), "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType, type FROM `%s_comms` LEFT JOIN `%s_admins` ON `%s_comms`.aid = `%s_admins`.aid WHERE `%s_comms`.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, g_DatabasePrefix, auth[8]);
+	FormatEx(query, sizeof(query), "SELECT created, `%s_admins`.user, ends, length, reason, RemoveType, type FROM `%s_comms` LEFT JOIN `%s_admins` ON `%s_comms`.aid = `%s_admins`.aid WHERE `%s_comms`.authid REGEXP '^STEAM_[0-9]:%s$' AND ((length > '0' AND ends > UNIX_TIMESTAMP()) OR RemoveType IS NOT NULL)", g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, g_SBPP_SQL_szPrefix, auth[8]);
 
 	char targetName[MAX_NAME_LENGTH];
 	GetClientName(target, targetName, sizeof(targetName));
@@ -319,15 +307,15 @@ public Action OnListSourceCommsCmd(int client, int args)
 	dataPack.WriteCell((client == 0) ? 0 : GetClientUserId(client));
 	dataPack.WriteString(targetName);
 
-	g_dbSQL.Query(OnListComms, query, dataPack, DBPrio_Low);
+	g_SBPP_SQL_dbHandle.Query(OnListComms, query, dataPack, DBPrio_Low);
 
 	if (client == 0)
 	{
-		ReplyToCommand(client, "%sNote: if you are using this command through an rcon tool, you will not see results.", Prefix);
+		ReplyToCommand(client, "%sNote: if you are using this command through an rcon tool, you will not see results.", SBPP_PREFIX);
 	}
 	else
 	{
-		ReplyToCommand(client, "\x04%s\x01 Look for %N's comm results in console.", Prefix, target);
+		ReplyToCommand(client, "\x04%s\x01 Look for %N's comm results in console.", SBPP_PREFIX, target);
 	}
 
 	return Plugin_Handled;
@@ -347,17 +335,17 @@ public void OnListComms(Database db, DBResultSet results, const char[] error, Da
 
 	if (results == null)
 	{
-		PrintListResponse(clientuid, client, "%sDB error while retrieving comms for %s:\n%s", Prefix, targetName, error);
+		PrintListResponse(clientuid, client, "%sDB error while retrieving comms for %s:\n%s", SBPP_PREFIX, targetName, error);
 		return;
 	}
 
 	if (results.RowCount == 0)
 	{
-		PrintListResponse(clientuid, client, "%sNo comms found for %s.", Prefix, targetName);
+		PrintListResponse(clientuid, client, "%sNo comms found for %s.", SBPP_PREFIX, targetName);
 		return;
 	}
 
-	PrintListResponse(clientuid, client, "%sListing comms for %s", Prefix, targetName);
+	PrintListResponse(clientuid, client, "%sListing comms for %s", SBPP_PREFIX, targetName);
 	PrintListResponse(clientuid, client, "Ban Date    Banned By   Length      End Date    T  R  Reason");
 	PrintListResponse(clientuid, client, "-------------------------------------------------------------------------------");
 	while (results.FetchRow())
@@ -478,75 +466,4 @@ void PrintToBanAdmins(const char[] format, any ...)
 			PrintToChat(i, "%s", msg);
 		}
 	}
-}
-
-stock void ReadConfig()
-{
-	InitializeConfigParser();
-
-	if (g_ConfigParser == null)
-	{
-		return;
-	}
-
-	char ConfigFile[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, ConfigFile, sizeof(ConfigFile), "configs/sourcebans/sourcebans.cfg");
-
-	if (FileExists(ConfigFile))
-	{
-		InternalReadConfig(ConfigFile);
-	}
-	else
-	{
-		char Error[PLATFORM_MAX_PATH + 64];
-		FormatEx(Error, sizeof(Error), "FATAL *** ERROR *** can not find %s", ConfigFile);
-		SetFailState(Error);
-	}
-}
-
-static void InitializeConfigParser()
-{
-	if (g_ConfigParser == null)
-	{
-		g_ConfigParser = new SMCParser();
-		g_ConfigParser.OnEnterSection = ReadConfig_NewSection;
-		g_ConfigParser.OnKeyValue = ReadConfig_KeyValue;
-		g_ConfigParser.OnLeaveSection = ReadConfig_EndSection;
-	}
-}
-
-static void InternalReadConfig(const char[] path)
-{
-	SMCError err = g_ConfigParser.ParseFile(path);
-
-	if (err != SMCError_Okay)
-	{
-		char buffer[64];
-		PrintToServer("%s", g_ConfigParser.GetErrorString(err, buffer, sizeof(buffer)) ? buffer : "Fatal parse error");
-	}
-}
-
-public SMCResult ReadConfig_NewSection(SMCParser smc, const char[] name, bool opt_quotes)
-{
-	return SMCParse_Continue;
-}
-
-public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char[] value, bool key_quotes, bool value_quotes)
-{
-	if (strcmp("DatabasePrefix", key, false) == 0)
-	{
-		strcopy(g_DatabasePrefix, sizeof(g_DatabasePrefix), value);
-
-		if (g_DatabasePrefix[0] == '\0')
-		{
-			g_DatabasePrefix = "sb";
-		}
-	}
-
-	return SMCParse_Continue;
-}
-
-public SMCResult ReadConfig_EndSection(SMCParser smc)
-{
-	return SMCParse_Continue;
 }

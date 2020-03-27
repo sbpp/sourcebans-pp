@@ -1,8 +1,0 @@
-"Phrases"
-{
-	"Successful reconnect"
-	{
-		"en"	"Successful reconnect to database."
-		"ru"	"Успешное переподключение к базе данных."
-	}
-}

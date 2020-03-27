@@ -133,7 +133,7 @@ public Action ReloadListCallBack(int client, int args)
 
 public void OnClientPostAdminCheck(int client)
 {
-	if ( g_dbSQL )
+	if ( g_SBPP_SQL_dbHandle )
 	{
 		if (CanUseSourcebans && !IsFakeClient(client))
 		{
@@ -163,7 +163,7 @@ public void OnClientPostAdminCheck(int client)
 				datapack.WriteString(IP);
 				datapack.Reset();
 
-				g_dbSQL.Query(SQL_CheckHim, query, datapack);
+				g_SBPP_SQL_dbHandle.Query(SQL_CheckHim, query, datapack);
 			}
 		}
 	}

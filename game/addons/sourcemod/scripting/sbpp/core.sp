@@ -5,13 +5,16 @@
 
 #define SBPP_VERSION "1.7.0:1049"
 
-#define SBPP_LogMsg( LogToFile( szLog,
-#define SBPP_LogIssue( LogToFile( szIssues,
+#define SBPP_LogMsg( LogToFile( SBPP_Core_szLog,
+#define SBPP_LogIssue( LogToFile( SBPP_Core_szIssues,
 
-stock char szLog[PLATFORM_MAX_PATH], szIssues[PLATFORM_MAX_PATH], PREFIX[] = "\x04[SourceBans++]\x01 ";
+stock char SBPP_Core_szLog[PLATFORM_MAX_PATH], SBPP_Core_szIssues[PLATFORM_MAX_PATH];
+stock const char SBPP_PREFIX[] = "\x04[SourceBans++]\x01 ";
 
-stock void SBPP_Core_Init ()
+void SBPP_Core_Init ()
 {
-	BuildPath( Path_SM, szLog, sizeof szLog, "logs/sbpp.log" );
-	BuildPath( Path_SM, szIssues, sizeof szIssues, "logs/sbpp.issues.log" );
+	BuildPath( Path_SM, SBPP_Core_szLog, sizeof SBPP_Core_szLog, "logs/sbpp" );
+	CreateDirectory( SBPP_Core_szLog, 1 << 6 & 1 << 7 & 1 << 8 );
+	BuildPath( Path_SM, SBPP_Core_szLog, sizeof SBPP_Core_szLog, "logs/sbpp/sbpp.log" );
+	BuildPath( Path_SM, SBPP_Core_szIssues, sizeof SBPP_Core_szIssues, "logs/sbpp/issues.log" );
 }
