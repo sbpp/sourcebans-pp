@@ -122,7 +122,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
                     [
                         'title' => 'New Ban Protest Submitted',
                         'type' => 'rich',
-                        'url' => 'https://gist.github.com/Mo45/cb0813cb8a6ebcd6524f6a36d4f8862c',
+                        'url' => 'https://github.com/sbpp',
                         'timestamp' => $timestamp,
                         'color' => hexdec('3366ff'),
                         'footer' => [
