@@ -110,6 +110,62 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             $Email,
             $_SERVER['REMOTE_ADDR']
         ));
+
+        if (!empty(SB_DISCORD_WEBHOOK_URL)) {
+            $timestamp = date('c', strtotime('now'));
+
+            $json_data = json_encode([
+                'username' => 'SourceBans++',
+                'avatar_url' => 'https://avatars0.githubusercontent.com/u/20099282',
+                'tts' => false,
+                'embeds' => [
+                    [
+                        'title' => 'New Ban Protest Submitted',
+                        'type' => 'rich',
+                        'url' => 'https://gist.github.com/Mo45/cb0813cb8a6ebcd6524f6a36d4f8862c',
+                        'timestamp' => $timestamp,
+                        'color' => hexdec('3366ff'),
+                        'footer' => [
+                            'text' => 'github.com/sbpp',
+                            'icon_url' => 'https://avatars0.githubusercontent.com/u/20099282'
+                        ],
+                        'author' => [
+                            'name' => 'SourceBans++',
+                            'url' => 'https://github.com/sbpp'
+                        ],
+                        'fields' => [
+                            [
+                                'name' => 'Ban ID',
+                                'value' => $BanId,
+                                'inline' => false,
+                            ],
+                            [
+                                'name' => 'Reason',
+                                'value' => $UnbanReason,
+                                'inline' => false,
+                            ],
+                            [
+                                'name' => 'Email',
+                                'value' => $Email,
+                                'inline' => false,
+                            ],
+                        ],
+                    ],
+                ]
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+            $ch = curl_init(SB_DISCORD_WEBHOOK_URL);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-type: application/json']);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+            curl_setopt($ch, CURLOPT_HEADER, 0);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+            $response = curl_exec($ch);
+            curl_close($ch);
+        }
+
         $protid      = $GLOBALS['db']->Insert_ID();
         $protadmin   = $GLOBALS['db']->GetRow("SELECT ad.user FROM " . DB_PREFIX . "_protests p, " . DB_PREFIX . "_admins ad, " . DB_PREFIX . "_bans b WHERE p.pid = '" . $protid . "' AND b.bid = p.bid AND ad.aid = b.aid");
 
