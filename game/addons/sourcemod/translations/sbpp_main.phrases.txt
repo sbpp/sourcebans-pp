@@ -13,7 +13,7 @@
 		"da"			"Du er blevet udlukket fra denne server, check {1} for mere info"
 		"no"			"Du har blitt stengt ute fra denne serveren, sjekk {1} for mer info."
 		"hu"			"Bannolva vagy erről a szerverről, látogass el {1} honlapra a további információkért."
-		"chi"			"你已被此服务器封禁,详情请参阅: {1}."
+		"chi"			"你已被此服务器封禁, 详情请参阅: {1}."
 		"tr"			"Sunucuya girişiniz yasaklandı. Detaylı bilgi için {1} adresini ziyaret ediniz."
 	}
 	"DB Connect Fail"
@@ -28,7 +28,7 @@
 		"da"			"Database tilslutningen fejlede. Kontakt venligst server bestyrren."
 		"no"			"Kommunikasjon med databasen feilet. Vennligst kontakt serveradmin."
 		"hu"			"Sikertelen adatbázis csatlakozás. Kérlek vedd fel a kapcsolatott egy szerver operátorral."
-		"chi"			"数据库连接失败，请联系服务器管理员."
+		"chi"			"数据库连接失败, 请联系服务器管理员."
 		"tr"			"Veritabanı bağlantı hatası. Lütfen sunucu yönetimiyle iletişime geçiniz."
 	}
 	"Not In Game"
@@ -43,7 +43,7 @@
 		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
 		"no"			"Spilleren er ikke på serveren, vennligst besøk web panelet for og stenge han ute."
 		"hu"			"A játékos nincs játékban, kérlek nézd meg a honlapon a bannolásért."
-		"chi"			"此玩家目前不在游戏内,请通过web管理面板来进行封禁."
+		"chi"			"此玩家目前不在游戏内, 请通过web管理面板来进行封禁."
 		"tr"			"Oyuncu oyunda değil, lütfen işleminizi web panel üzerinden yapınız."
 	}
 	"Ban Not Verified"
@@ -58,7 +58,7 @@
 		"da"			"Denne spiller er ikke blevet identificeret. Vent venligst 30 sekunder før du prøver igen."
 		"no"			"Denne spilleren har ikke blitt indentifisert. Vennligst vent 30 sekunder før du prøver igjen."
 		"hu"			"Ez a játékos nincs hitelesítve. Kérlek várj 30 másodpercet mielőtt újra próbálnád."
-		"chi"			"此玩家尚未被认证,请等待30秒后再试."
+		"chi"			"此玩家尚未被认证, 请等待30秒后再试."
 		"tr"			"Bu oyuncu doğrulanamadı. Lütfen tekrar denemeden önce 30 saniye bekleyiniz."
 	}
 	"Can Not Unban"
@@ -74,7 +74,7 @@
 		"da"			"Du kan ikke fjerne udelukkelserne inde fra serveren, besøg {1} for at fjerne udelukkelsen."
 		"no"			"Du kan ikke fjerne utestengelsen inne fra serveren, besøk {1} for og fjerne utestengelsen."
 		"hu"			"Nem tudsz unbannolni a szerverről, látogasd meg {1} a ban feloldásért."
-		"chi"			"你无法从游戏中解除封禁,请访问此链接来解除: {1} ."
+		"chi"			"你无法从游戏中解除封禁, 请访问此链接来解除: {1} ."
 		"tr"			"Giriş yasağını sunucudan kaldıramazsınız, {1} adresini ziyaret ediniz."
 	}
 	"Can Not Add Ban"
@@ -90,7 +90,7 @@
 		"da"			"Du kan ikke tilføje en udelukkelse fra serveren, besøg {1} for at tilføje en udelukkelse."
 		"no"			"Du kan ikke legge til en utestengelse fra serveren, besøk {1} for og legge til en utestengelse."
 		"hu"			"Nem tudsz a szerverről bannolni, látogasd meg {1} a bannolásért."
-		"chi"			"你不能在游戏中添加封禁,请访问此链接来封禁: {1} ."
+		"chi"			"你不能在游戏中添加封禁, 请访问此链接来封禁: {1} ."
 		"tr"			"Giriş yasağını sunucudan ekleyemezsiniz, {1} adresini ziyaret ediniz."
 	}
 	"Check Menu"
@@ -135,7 +135,7 @@
 		"da"			"Fejlede udelukkelsen, prøv venligst igen."
 		"no"			"Utestengelse feilet, vennligst prøv igjen."
 		"hu"			"Sikertelen bannolás, próbáld újra."
-		"chi"			"无法封禁此玩家,请重试."
+		"chi"			"无法封禁此玩家, 请重试."
 		"tr"			"Oyuncu yasaklama işlemi başarısız oldu, lütfen tekrar deneyiniz."
 	}
 	"Chat Reason"
@@ -177,6 +177,7 @@
 		"pt"			"Administrador(a): {1}\nMotivo: {2}\nDuração: {3}"
 		"de"			"Administrator: {1}\nGrund: {2}\nDauer: {3}"
 		"tr"			"Yönetici: {1}\nSebep: {2}\nSüre: {3}"
+		"chi"			"管理员: {1}\n原因: {2}\n时长: {3}"
 	}
 	"Permabanned Player"
 	{
@@ -186,6 +187,7 @@
 		"ru"			"{1} забанен навсегда"
 		"fr"			"{1} a été banni permanent."
 		"pt"			"{1} foi banido(a) permanentemente."
+		"chi"			"{1} 已被永久封禁."
 	}
 	"Permabanned Player Reason"
 	{
@@ -195,6 +197,7 @@
 		"ru"			"{1} забанен навсегда. Причина: {2}"
 		"fr"			"{1} a été banni permanent. Raison: {2}"
 		"pt"			"{1} foi banido(a) permanentemente. Motivo: {2}"
+		"chi"			"{1} 已被永久封禁. 原因: {2}"
 	}
 	"Banned Player"
 	{
@@ -204,6 +207,7 @@
 		"ru"			"{1} забанен на {2} минут"
 		"fr"			"{1} a été banni pendant {2} minutes."
 		"pt"			"{1} foi banido(a) por {2} minutos."
+		"en"			"{1} 已被封禁 {2} 分钟."
 	}
 	"Banned Player Reason"
 	{
@@ -212,6 +216,7 @@
 		"de"			"{1} wurde für {2} minuten gebannt. Grund: {3}"
 		"ru"			"{1} забанен на {2} минут. Причина: {3}"
 		"pt"			"{1} foi banido(a) por {2} minutos. Motivo: {3}"
+		"en"			"{1} 已被封禁 {2} 分钟. 原因: {3}"
 	}
 	"permanent"
 	{
@@ -220,6 +225,7 @@
 		"ru"			"Навсегда"
 		"fr"			"permanent"
 		"pt"			"permanente"
+		"chi"			"永久"
 	}
 	"minute"
 	{
@@ -228,6 +234,7 @@
 		"ru"			"минуту"
 		"fr"			"minute"
 		"pt"			"minuto"
+		"chi"			"分钟"
 	}
 	"minutes"
 	{
@@ -236,6 +243,7 @@
 		"ru"			"минут"
 		"fr"			"minutes"
 		"pt"			"minutos"
+		"chi"			"分钟"
 	}
 	"Ban Log"
 	{
@@ -245,6 +253,7 @@
 		"ru"			"\"{1}\" забанил \"{2}\" (длительность (в минутах): {3}) (причина: {4})"
 		"fr"			"\"{1}\" ban \"{2}\" (minutes: {3}) (raison: {4})"
 		"pt"			"\"{1}\" baniu \"{2}\" (minutos: {3}) (motivo: {4})"
+		"chi"			"\"{1}\" 已封禁 \"{2}\" ({3} 分钟) (理由: {4})"
 	}
 	"Ban Added"
 	{
@@ -254,6 +263,7 @@
 		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (id/ip: {3}) (причина: {4})"
 		"fr"			"\"{1}\" ajoute un ban (minutes (в минутах): {2}) (id/ip: {3}) (raison: {4})"
 		"pt"			"\"{1}\" adicionou um banimento (minutos: {2}) (id/ip: {3}) (motivo: {4})"
+		"chi"			"\"{1}\" 已被封禁 ({2} 分钟) (id/ip: {3}) (理由: {4})"
 	}
 	"Ban Success Name"
 	{
@@ -263,6 +273,7 @@
 		"ru"			"{1} успешно забанен."
 		"fr"			"{1} a été banni avec succès."
 		"pt"			"{1} foi banido(a) com sucesso."
+		"chi"			"{1} 已被成功封禁."
 	}
 	"Unban Success Name"
 	{
@@ -272,6 +283,7 @@
 		"ru"			"{1} успешно разбанен."
 		"fr"			"{1} a été debanni avec succès."
 		"pt"			"{1} foi desbanido(a) com sucesso."
+		"chi"			"{1} 的封禁已解除."
 	}
 	"Already Banned"
 	{
@@ -281,6 +293,7 @@
 		"ru"			"{1} уже забанен."
 		"fr"			"{1} est déja banni."
 		"pt"			"{1} já está banido(a)."
+		"chi"			"{1} 已被封禁."
 	}
 	"Ban Removed"
 	{
@@ -290,6 +303,7 @@
 		"ru"			"\"{1}\" убрал бан (фильтр: {2}) (причина: {3})"
 		"fr"			"\"{1}\" a supprimé le ban (filter: {2}) (raison: {3})"
 		"pt"			"\"{1}\" removeu um banimento (filtro: {2}) (motivo: {3})"
+		"chi"			"\"{1}\" 移除了封禁 (过滤: {2}) (理由: {3})"
 	}
 	"No Active Ban"
 	{
@@ -298,5 +312,6 @@
 		"ru"			"Действующий бан не найден."
 		"fr"			"Aucun ban activement trouvé.'
 		"pt"			"Nenhum banimento ativo encontrado."
+		"chi"			"未找到对此玩家的封禁."
 	}
 }
