@@ -62,7 +62,7 @@
 		"fr"	"La raison est trop courte, plus de détails sont requis"
 		"pl"	"Powód jest za krótki, więcej szczegółów jest wymaganych"
 		"pt"	"O motivo está muito curto, informe mais detalhes"
-		"chi"	"理由过于简短,请做更多说明"
+		"chi"	"理由过于简短, 请做更多说明"
 		"hu"	"Az indoklás túl rövid, több információra van szükség"
 		"tr"	"Sebep çok kısa, lütfen daha detaylı yazınız"
 	}
