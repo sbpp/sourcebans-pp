@@ -66,23 +66,12 @@ require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 if (!file_exists(ROOT.'/config.php') || !include_once(ROOT . '/config.php')) {
     // No were not
     if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "SourceBans is not installed.";
+        header("Location: install");
         die();
     }
 }
-if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/install")) {
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "Please delete the install directory before you use SourceBans";
-        die();
-    }
-}
-
-if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/updater")) {
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "Please delete the updater directory before using SourceBans";
-        die();
-    }
-}
+delete("install");
+delete("updater");
 
 // ---------------------------------------------------
 //  Initial setup
