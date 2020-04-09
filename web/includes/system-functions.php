@@ -409,3 +409,19 @@ function compareSanitizedString(string $str1, string $str2)
 {
     return (bool)(strcmp(filter_var($str1, FILTER_SANITIZE_STRING), filter_var($str2, FILTER_SANITIZE_STRING)) === 0);
 }
+
+/* Deletes directories - used to clean up exploitable install and updater directories */
+function delete($dir) {
+    if (substr($dir, strlen($dir) - 1, 1) != '/') {
+        $dir .= '/';
+    }
+    $files = glob($dir . '*', GLOB_MARK);
+    foreach ($files as $file) {
+        if (is_dir($file)) {
+            delete($file);
+        } else {
+            unlink($file);
+        }
+    }
+    rmdir($dir);
+}
