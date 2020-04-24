@@ -546,6 +546,7 @@ public Action CommandCallback(int client, const char[] command, int args)
 		ReplyToCommand(client, "%sUsage: %s <#userid|name> %s", PREFIX, command, type <= TYPE_SILENCE ? "[time|0] [reason]" : "[reason]");
 		if (type <= TYPE_SILENCE)
 			ReplyToCommand(client, "%sUsage: %s <#userid|name> [reason]", PREFIX, command);
+		AdminMenu_Target( client, type );
 		return Plugin_Stop;
 	}
 
