@@ -541,12 +541,14 @@ public Action CommandCallback(int client, const char[] command, int args)
 	else
 		return Plugin_Stop;
 
-	if (args < 1)
+	if ( !args && client )
 	{
-		ReplyToCommand(client, "%sUsage: %s <#userid|name> %s", PREFIX, command, type <= TYPE_SILENCE ? "[time|0] [reason]" : "[reason]");
-		if (type <= TYPE_SILENCE)
-			ReplyToCommand(client, "%sUsage: %s <#userid|name> [reason]", PREFIX, command);
 		AdminMenu_Target( client, type );
+		return Plugin_Stop;
+	}
+	else if ( args < 1 )
+	{
+		ReplyToCommand( client, "%sUsage: %s <#userid|name> %s", PREFIX, command, type > TYPE_SILENCE ? "[reason]" : "[time|0] [reason]" );
 		return Plugin_Stop;
 	}
 
