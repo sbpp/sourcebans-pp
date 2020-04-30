@@ -36,10 +36,17 @@ void SBPP_SQL_Init (const ConnectCallback fnCallback = INVALID_FUNCTION)
 	s_dpCallbacks = new DataPack();
 	SaveCallback( fnCallback );
 	LoadTranslations( "sbpp/sql.phrases.txt" );
+#if SOURCEMOD_V_MINOR < 10
+	s_gfSBPP_SQL_Handle_Find     = CreateGlobalForward( "_SBPP_SQL_Handle_Find", ET_Hook, Param_CellByRef, Param_CellByRef, Param_String );
+	s_gfSBPP_SQL_Handle_OnClose  = CreateGlobalForward( "_SBPP_SQL_Handle_OnClose", ET_Ignore );
+	s_gfSBPP_SQL_Handle_OnUpdate = CreateGlobalForward( "_SBPP_SQL_Handle_OnUpdate", ET_Ignore, Param_Cell );
+	s_gfSBPP_SQL_Prefix_OnUpdate = CreateGlobalForward( "_SBPP_SQL_Prefix_OnUpdate", ET_Ignore, Param_String );
+#else
 	s_gfSBPP_SQL_Handle_Find     = new GlobalForward( "_SBPP_SQL_Handle_Find", ET_Hook, Param_CellByRef, Param_CellByRef, Param_String );
 	s_gfSBPP_SQL_Handle_OnClose  = new GlobalForward( "_SBPP_SQL_Handle_OnClose", ET_Ignore );
 	s_gfSBPP_SQL_Handle_OnUpdate = new GlobalForward( "_SBPP_SQL_Handle_OnUpdate", ET_Ignore, Param_Cell );
 	s_gfSBPP_SQL_Prefix_OnUpdate = new GlobalForward( "_SBPP_SQL_Prefix_OnUpdate", ET_Ignore, Param_String );
+#endif
 	SBPP_SQL_Prefix_Read();
 	SBPP_SQL_Find();
 	RegAdminCmd( "sbpp_prefix_reload", sbpp_prefix_reload_Handler, ADMFLAG_CONFIG, "Reload prefix of database tables." );
@@ -230,7 +237,11 @@ stock static Action CheckWait (const Handle tTimer)
 stock static void CallCallbacks ()
 {
 	s_dpCallbacks.Reset();
+#if SOURCEMOD_V_MINOR < 10
+	while ( s_dpCallbacks.IsReadable(0) )
+#else
 	while ( s_dpCallbacks.IsReadable() )
+#endif
 	{
 		Call_StartFunction( null, s_dpCallbacks.ReadFunction() );
 		Call_Finish();
