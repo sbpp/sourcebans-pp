@@ -34,11 +34,12 @@ define('ROOT', dirname(__FILE__) . "/");
 define('SCRIPT_PATH', ROOT . 'scripts');
 define('TEMPLATES_PATH', ROOT . 'pages');
 define('INCLUDES_PATH', ROOT . 'includes');
+define('SB_MAP_LOCATION',  'images/maps');
 define('SB_DEMO_LOCATION', 'demos');
 define('SB_ICON_LOCATION', 'images/games');
-define('SB_MAP_LOCATION', ROOT . 'images/maps');
-define('SB_ICONS', ROOT . SB_ICON_LOCATION);
+define('SB_MAPS',  ROOT . SB_MAP_LOCATION);
 define('SB_DEMOS', ROOT . SB_DEMO_LOCATION);
+define('SB_ICONS', ROOT . SB_ICON_LOCATION);
 
 define('SB_THEMES', ROOT . 'themes/');
 define('SB_CACHE', ROOT . 'cache/');
