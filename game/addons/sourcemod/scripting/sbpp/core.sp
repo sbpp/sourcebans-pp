@@ -16,5 +16,5 @@ void SBPP_Core_Init ()
 	BuildPath( Path_SM, SBPP_Core_szLog, sizeof SBPP_Core_szLog, "logs/sbpp" );
 	CreateDirectory( SBPP_Core_szLog, 1 << 6 | 1 << 7 | 1 << 8 );
 	BuildPath( Path_SM, SBPP_Core_szLog, sizeof SBPP_Core_szLog, "logs/sbpp/sbpp.log" );
-	BuildPath( Path_SM, SBPP_Core_szError, sizeof SBPP_Core_szError, "logs/sbpp/issues.log" );
+	BuildPath( Path_SM, SBPP_Core_szError, sizeof SBPP_Core_szError, "logs/sbpp/errors.log" );
 }
