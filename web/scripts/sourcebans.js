@@ -1036,8 +1036,11 @@ function closeMsg(redir)
 function TabToReload()
 {
 	var url = window.location.toString();
-	var nurl = "window.location = '" + url.replace("#^" + url[url.length-1],"") + "'";
-	$('admin_tab_0').setProperty('onclick', nurl);
+	var nurl = url.replace("#^" + url[url.length-1],"");
+	
+	window.setTimeout(function(){
+        window.location.href = nurl;
+    }, 2000);
 }
 
 function CheckEmail(type, id)

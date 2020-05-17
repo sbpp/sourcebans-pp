@@ -2917,7 +2917,7 @@ function RehashAdmins($server)
     for ($i = 0; $i < count($servers); $i++) {
         $ret = rcon("sm_rehash", $servers[$i]);
 
-        if ($ret) {
+        if (isset($ret) && $ret === '') {
             $objResponse->addAppend(
                 "rehashDiv",
                 "innerHTML",
