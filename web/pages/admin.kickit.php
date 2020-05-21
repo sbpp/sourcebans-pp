@@ -94,7 +94,7 @@ function KickPlayer($check, int $sid, $num, $type)
                 $GLOBALS['PDO']->bind(':authid', $check);
                 $GLOBALS['PDO']->execute();
 
-                $domain = Host::protocol().Host::domain();
+                $domain = Host::complete();
                 rcon("kickid $player[id] \"You have been banned by this server, check $domain for more info\"", $sid);
 
                 $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
@@ -109,7 +109,7 @@ function KickPlayer($check, int $sid, $num, $type)
                 $GLOBALS['PDO']->bind(':ip', $check);
                 $GLOBALS['PDO']->execute();
 
-                $domain = Host::protocol().Host::domain();
+                $domain = Host::complete();
                 rcon("kickid $player[id] \"You have been banned by this server, check $domain for more info\"", $sid);
 
                 $objResponse->addAssign("srv_$num", "innerHTML", "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
