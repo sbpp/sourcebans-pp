@@ -24,7 +24,7 @@
 		"sv"		"Spelare {1} (ID: {2} | IP: {3}) har aktiva bannlysningar på IP"
 		"fr"		"Le joueur {1} (ID: {2} | IP: {3}) a des bannissements actives sur IP"
 		"pl"		"Gracz {1} (ID: {2} | IP: {3}) ma aktywne blokady na IP"
-		"pt"		"O(A) jogador(a) {1} (ID: {2} | IP: {3}) tem banimentos ativos no IP"
+		"pt"		"Player {1} (ID: {2} | IP: {3}) tem banimentos ativos no IP"
 		"chi"		"玩家 {1} (ID: {2} | IP: {3}) 目前有多次IP封禁"
 		"tr"		"Oyuncu {1} (ID: {2} | IP: {3}) IP adresinde aktif yasaklaması var."
 	}
