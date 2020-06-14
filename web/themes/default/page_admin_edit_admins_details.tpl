@@ -14,7 +14,7 @@
                 <tr>
                     <td valign="top"><div class="rowdesc">{help_icon title="Steam ID" message="This is the admins 'STEAM' id. This must be set so that admins can use their admin rights ingame."}Admin STEAM ID </div></td>
                     <td><div align="left">
-                            <input type="text" class="textbox" id="steam" name="steam" value="{$authid}" />
+                            <input type="text" onblur="ConvertSteamID( this );" class="textbox" id="steam" name="steam" value="{$authid}" />
                         </div><div id="steam.msg" class="badentry"></div></td>
                 </tr>
                 <tr>

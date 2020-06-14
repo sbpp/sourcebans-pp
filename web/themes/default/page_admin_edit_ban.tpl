@@ -48,7 +48,7 @@
                         </td>
                         <td>
                             <div align="left">
-                                <input value="-{$ban_authid}-" type="text" TABINDEX=3 class="submit-fields" id="steam" name="steam" />
+                                <input value="-{$ban_authid}-" type="text" TABINDEX=3 onblur="ConvertSteamID( this );" class="submit-fields" id="steam" name="steam" />
                             </div>
                             <div id="steam.msg" class="badentry"></div>
                         </td>

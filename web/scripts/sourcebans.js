@@ -1511,3 +1511,161 @@ function swapTab(tab) {
 	if (Number.isInteger(tab) && tab <= menu.length)
 		menu[tab].click()
 }
+
+const GetAccountIDBySteamID64 = typeof BigInt !== typeof undefined ?
+	(SteamID) =>
+	{
+		return Number( BigInt( SteamID ) & BigInt( 0xFFFFFFFF ) );
+	}
+	:
+	(SteamID) =>
+	{
+		const BigBit = /* Bits (1 << 63...32) as decimal integers as numeric array. */
+		[
+			[ 9, 2, 2, 3, 3, 7, 2, 0, 3, 6, 8, 5, 4, 7, 7, 5, 8, 0, 8 ],
+			[ 4, 6, 1, 1, 6, 8, 6, 0, 1, 8, 4, 2, 7, 3, 8, 7, 9, 0, 4 ],
+			[ 2, 3, 0, 5, 8, 4, 3, 0, 0, 9, 2, 1, 3, 6, 9, 3, 9, 5, 2 ],
+			[ 1, 1, 5, 2, 9, 2, 1, 5, 0, 4, 6, 0, 6, 8, 4, 6, 9, 7, 6 ],
+			[ 5, 7, 6, 4, 6, 0, 7, 5, 2, 3, 0, 3, 4, 2, 3, 4, 8, 8 ],
+			[ 2, 8, 8, 2, 3, 0, 3, 7, 6, 1, 5, 1, 7, 1, 1, 7, 4, 4 ],
+			[ 1, 4, 4, 1, 1, 5, 1, 8, 8, 0, 7, 5, 8, 5, 5, 8, 7, 2 ],
+			[ 7, 2, 0, 5, 7, 5, 9, 4, 0, 3, 7, 9, 2, 7, 9, 3, 6 ],
+			[ 3, 6, 0, 2, 8, 7, 9, 7, 0, 1, 8, 9, 6, 3, 9, 6, 8 ],
+			[ 1, 8, 0, 1, 4, 3, 9, 8, 5, 0, 9, 4, 8, 1, 9, 8, 4 ],
+			[ 9, 0, 0, 7, 1, 9, 9, 2, 5, 4, 7, 4, 0, 9, 9, 2 ],
+			[ 4, 5, 0, 3, 5, 9, 9, 6, 2, 7, 3, 7, 0, 4, 9, 6 ],
+			[ 2, 2, 5, 1, 7, 9, 9, 8, 1, 3, 6, 8, 5, 2, 4, 8 ],
+			[ 1, 1, 2, 5, 8, 9, 9, 9, 0, 6, 8, 4, 2, 6, 2, 4 ],
+			[ 5, 6, 2, 9, 4, 9, 9, 5, 3, 4, 2, 1, 3, 1, 2 ],
+			[ 2, 8, 1, 4, 7, 4, 9, 7, 6, 7, 1, 0, 6, 5, 6 ],
+			[ 1, 4, 0, 7, 3, 7, 4, 8, 8, 3, 5, 5, 3, 2, 8 ],
+			[ 7, 0, 3, 6, 8, 7, 4, 4, 1, 7, 7, 6, 6, 4 ],
+			[ 3, 5, 1, 8, 4, 3, 7, 2, 0, 8, 8, 8, 3, 2 ],
+			[ 1, 7, 5, 9, 2, 1, 8, 6, 0, 4, 4, 4, 1, 6 ],
+			[ 8, 7, 9, 6, 0, 9, 3, 0, 2, 2, 2, 0, 8 ],
+			[ 4, 3, 9, 8, 0, 4, 6, 5, 1, 1, 1, 0, 4 ],
+			[ 2, 1, 9, 9, 0, 2, 3, 2, 5, 5, 5, 5, 2 ],
+			[ 1, 0, 9, 9, 5, 1, 1, 6, 2, 7, 7, 7, 6 ],
+			[ 5, 4, 9, 7, 5, 5, 8, 1, 3, 8, 8, 8 ],
+			[ 2, 7, 4, 8, 7, 7, 9, 0, 6, 9, 4, 4 ],
+			[ 1, 3, 7, 4, 3, 8, 9, 5, 3, 4, 7, 2 ],
+			[ 6, 8, 7, 1, 9, 4, 7, 6, 7, 3, 6 ],
+			[ 3, 4, 3, 5, 9, 7, 3, 8, 3, 6, 8 ],
+			[ 1, 7, 1, 7, 9, 8, 6, 9, 1, 8, 4 ],
+			[ 8, 5, 8, 9, 9, 3, 4, 5, 9, 2 ],
+			[ 4, 2, 9, 4, 9, 6, 7, 2, 9, 6 ]
+		];
+		SteamID = Array.from( SteamID );
+		for ( let i = 0, iLength = SteamID.length; i < iLength; ++i )
+		{
+			SteamID[i] = Number( SteamID[i] );
+		}
+		BigBit: for ( let j, k, x, i = 0; i < BigBit.length; ++i )
+		{
+			if ( SteamID.length < BigBit[i].length ) /* If number shorter than constant, number don't have that bit. */
+			{
+				continue;
+			}
+			else if ( SteamID.length == BigBit[i].length )
+			{
+				for ( j = 0; j < BigBit[i].length; ++j ) /* Must verify that all digits are greater than or equal. */
+				{
+					if ( SteamID[j] > BigBit[i][j] )
+					{
+						break;
+					}
+					else if ( SteamID[j] < BigBit[i][j] )
+					{
+						continue BigBit;
+					}
+				}
+			}
+			for ( j = BigBit[i].length-1, k = SteamID.length-1; j > -1; --j, --k )
+			{
+				if ( BigBit[i][j] )
+				{
+					SteamID[k] -= BigBit[i][j];
+					x = k;
+					while ( SteamID[x] < 0 )
+					{
+						SteamID[x] += 10;
+						if ( --x > -1 )
+						{
+							--SteamID[x];
+						}
+						else
+						{
+							break;
+						}
+
+					}
+				}
+			}
+			while ( SteamID[0] == 0 )
+			{
+				SteamID.shift(); 
+			}
+		}
+		return Number( SteamID.join( '' ) );
+	};
+
+/* Uncomment me when CORS will be removed from JS. */
+// const ResolveVanityURL = async (HTMLInput, sID) =>
+// {
+// 	let AccountID;
+// 	if ( (AccountID = ResolveVanityURL.Cache.get( sID )) === undefined )
+// 	{
+// 		AccountID = await fetch( /* 'https://api.allorigins.win/raw?url=' + */ 'https://steamcommunity.com/id/' + sID + '?xml=1' );
+// 		if ( AccountID.ok )
+// 		{
+// 			AccountID = (new DOMParser).parseFromString( await AccountID.text(), "text/xml" ).getElementsByTagName( "steamID64" )[0];
+// 			if ( AccountID !== undefined )
+// 			{
+// 				ResolveVanityURL.Cache.set( sID, (AccountID = GetAccountIDBySteamID64( AccountID.innerHTML )) );
+// 			}
+// 			else
+// 			{
+// 				return;
+// 			}
+// 		}
+// 		else
+// 		{
+// 			return;
+// 		}
+// 	}
+// 	HTMLInput.value = 'STEAM_0:' + (AccountID & 1) + ':' + (AccountID >> 1);
+// }
+// ResolveVanityURL.Cache = new Map();
+
+const ConvertSteamID = (HTMLInput) =>
+{
+	if ( /_([1-9][0-9]?|1[0-9][0-9]|2[0-5][0-5]):[01]:[0-9]{1,10}/.test( HTMLInput.value ) ) /* SteamID v.2 with other universe. // STEAM{_1:1:58422681} */
+	{
+		HTMLInput.value = 'STEAM_0' + HTMLInput.value.substr( HTMLInput.value.indexOf( ':' ) );
+	}
+	else
+	{
+		/* Uncomment me when CORS will be removed from JS. */
+		// if ( /d\/(.+)$/.test( HTMLInput.value ) ) /* Custom URL. // https://steamcommunity.com/i{d/TheByKotik} */
+		// {
+		// 	ResolveVanityURL( HTMLInput, HTMLInput.value.substr( HTMLInput.value.lastIndexOf( '/' ) + 1 ) );
+		// }
+		// else
+		{
+			let AccountID;
+			if ( /[uU]:1:[0-9]{1,10}/.test( HTMLInput.value ) ) /* SteamID v.3. // [{U:1:116845363}] */
+			{
+				AccountID = Number( HTMLInput.value.substr( HTMLInput.value.lastIndexOf( ':' ) + 1 ).replace( ']', '' ) );
+			}
+			else if ( /s\/[0-9]{1,20}/.test( HTMLInput.value ) ) /* SteamID as URL. // https://steamcommunity.com/profile{s/76561198077111091} */
+			{
+				AccountID = GetAccountIDBySteamID64( HTMLInput.value.substr( HTMLInput.value.lastIndexOf( '/' ) + 1 ) );
+			}
+			else
+			{
+				return;
+			}
+			HTMLInput.value = 'STEAM_0:' + (AccountID & 1) + ':' + (AccountID >> 1);
+		}
+	}
+}

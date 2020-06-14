@@ -26,7 +26,7 @@
                 <td width="20%">
                     Your SteamID<span class="mandatory">*</span>:</td>
                 <td>
-                    <input type="text" name="SteamID" size="40" maxlength="64" value="{$steam_id}" class="textbox" style="width: 223px;" />
+                    <input type="text" name="SteamID" onblur="ConvertSteamID( this );" size="40" maxlength="64" value="{$steam_id}" class="textbox" style="width: 223px;" />
                 </td>
             </tr>
             <tr id="ip.row" style="display: none;">
