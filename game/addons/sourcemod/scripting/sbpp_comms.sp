@@ -1241,7 +1241,7 @@ public int PanelHandler_ListTargetReason(Menu menu, MenuAction action, int param
 public void GotDatabase(Database db, const char[] error, any data)
 {
 	#if defined DEBUG
-	PrintToServer("GotDatabase(data: %d, lock: %d, g_h: %d, hndl: %d)", data, g_iConnectLock, g_hDatabase, hndl);
+	PrintToServer("GotDatabase(data: %d, lock: %d, g_h: %d, db: %d)", data, g_iConnectLock, g_hDatabase, db);
 	#endif
 
 	// If this happens to be an old connection request, ignore it.
