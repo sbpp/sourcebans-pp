@@ -10,7 +10,7 @@
 		"pl"			"Zostałeś wyciszony!"
 		"pt"			"Você foi emudecido(a)!"
 		"de"			"Sie wurden im Sprachchat gesperrt!"
-		"fr"			"Vous avez été muté!"
+		"fr"			"Vous avez été mute!"
 		"chi"			"你已被静音!"
 		"tr"			"Mikrofonunuz susturuldu!"
 	}
@@ -23,7 +23,7 @@
 		"pl"			"Zostałeś zakneblowany!"
 		"pt"			"Você foi amordaçado(a)!"
 		"de"			"Sie wurden im Textchat gesperrt!"
-		"fr"			"Vous avez été mis en muté du chat!"
+		"fr"			"Vous avez été mute du chat écrit!"
 		"chi"			"你已被禁言!"
 		"tr"			"Sohbet etmeniz yasaklandı."
 	}
@@ -50,7 +50,7 @@
 		"pl"			"Twój knebel wygasł."
 		"pt"			"Seu amordaçamento expirou."
 		"de"			"Sie wurden im Textchat entsperrt. (Die Sperrzeit ist abgelaufen)."
-		"fr"			"Votre mute du chat a expiré."
+		"fr"			"Votre mute du chat écrit a expiré."
 		"chi"			"禁言已过期."
 		"tr"			"Sohbet yasaklama süresi sona erdi."
 	}
@@ -64,7 +64,7 @@
 		"pl"			"Twoje wyciszenie zostało usunięte."
 		"pt"			"Seu emudecimento foi removido."
 		"de"			"Sie wurden im Sprachchat entsperrt."
-		"fr"			"Votre mute a été supprimée."
+		"fr"			"Votre mute a été supprimé."
 		"chi"			"对你的静音已取消."
 		"tr"			"Mikrofon yasaklamanız kaldırıldı."
 	}
@@ -77,7 +77,7 @@
 		"pl"			"Twój knebel został usunięty."
 		"pt"			"Seu amordaçamento foi removido."
 		"de"			"Sie wurden im Textchat entsperrt."
-		"fr"			"Votre mute du chat a été supprimé."
+		"fr"			"Votre mute du chat écrit a été supprimé."
 		"chi"			"对你的禁言已取消."
 		"tr"			"Sohbet yasaklamanız kaldırıldı."
 	}
@@ -92,7 +92,7 @@
 		"pl"			"Czas: {1} minut, jeśli nieokreślony; permanentny, jeśli 0.\nJeśli < 0, blokada na sesje."
 		"pt"			"Tempo: {1} minutos, se não for especificado; permanente, se for 0.\nSe for < 0, a punição será aplicada na sessão atual."
 		"de"			"Dauer: {1} Minuten, wenn nicht festgelegt; Permanent, wenn 0. \.nWenn < 0, Blockierung für nächste Periode."
-		"fr"			"Temps: {1} minutes, si non spécifié; permanent, si 0.\nIf <0, bloque pour la session."
+		"fr"			"Temps: {1} minutes, si non spécifié; permanent, si 0.\nSi < 0, bloque pour la session."
 		"chi"			"时间: {1} 分钟, 如果未做选择的话; 如果 0.\n 永久; 如果 < 0, 则在此局中封禁."
 		"tr"			"Süre: Belirtilmemişse, {1} dakika; 0 ise süresiz.\nEğer < 0, harita boyunca yasaklı."
 	}
@@ -120,7 +120,7 @@
 		"pl"			"Gracz {1} jest już wyciszony!"
 		"pt"			"O(A) jogador(a) {1} já está emudecido(a)!"
 		"de"			"Der Spieler {1} ist bereits im Sprachchat gesperrt!"
-		"fr"			"Le joueur {1} est déjà muté!"
+		"fr"			"Le joueur {1} est déjà mute!"
 		"chi"			"玩家 {1} 已被静音!"
 		"tr"			"Oyuncu {1} zaten mikrofon yasaklı!"
 	}
@@ -134,7 +134,7 @@
 		"pl"			"Gracz {1} jest już zakneblowany!"
 		"pt"			"O(A) jogador(a) {1} já está amordaçado(a)!"
 		"de"			"Der Spieler {1} ist bereits im Textchat gesperrt!"
-		"fr"			"Le joueur {1} est déjà muté du chat!"
+		"fr"			"Le joueur {1} est déjà mute du chat écrit!"
 		"chi"			"玩家 {1} 已被禁言!"
 		"tr"			"Oyuncu {1] zaten sohbet yasaklı!"
 	}
@@ -148,7 +148,7 @@
 		"pl"			"Gracz {1} jest już całkowicie wyciszony!"
 		"pt"			"O(A) jogador(a) {1} já está amordaçado(a) ou emudecido(a)!"
 		"de"			"Der Spieler {1} ist bereits im Text- oder Sprachchat gesperrt!"
-		"fr"			"Le joueur {1} est déjà muté ou muté du chat!"
+		"fr"			"Le joueur {1} est déjà mute ou mute du chat écrit!"
 		"chi"			"玩家 {1} 已被禁言或静音!"
 		"tr"			"Oyuncu {1} zaten sohbet ve mikrofon yasaklı!"
 	}
@@ -162,7 +162,7 @@
 		"pl"			"Gracz nie jest wyciszony."
 		"pt"			"Jogador(a) não emudecido(a)."
 		"de"			"Der Spieler ist im Sprachchat nicht gesperrt."
-		"fr"			"Le joueur n'est pas muté."
+		"fr"			"Le joueur n'est pas mute."
 		"chi"			"玩家尚未被静音."
 		"tr"			"Oyuncunun mikrofon yasağı yok."
 	}
@@ -175,7 +175,7 @@
 		"pl"			"Gracz nie jest zakneblowany."
 		"pt"			"Jogador(a) não amordaçado(a)."
 		"de"			"Der Spieler ist im Textchat nicht gesperrt."
-		"fr"			"Le joueur n'est pas muté du chat."
+		"fr"			"Le joueur n'est pas mute du chat écrit."
 		"chi"			"玩家尚未被禁言."
 		"tr"			"Oyuncunun sohbet yasağı yok."
 	}
@@ -188,7 +188,7 @@
 		"pl"			"Gracz nie jest całkowicie wyciszony."
 		"pt"			"Jogador(a) não silenciado(a)."
 		"de"			"Der Spieler ist im Text- oder Sprachchat nicht gesperrt."
-		"fr"			"Le joueur n'est pas silence."
+		"fr"			"Le joueur n'est pas mit sous silence."
 		"chi"			"玩家尚未被禁言或静音."
 		"tr"			"Oyuncunun sessizlik yasağı yok."
 	}
@@ -203,7 +203,7 @@
 		"pl"			"Permanentnie zakneblowano {1}."
 		"pt"			"{1} foi amordaçado(a) permanentemente."
 		"de"			"Der Spieler {1} ist für immer im Textchat gesperrt."
-		"fr"			"Un mute du chat permanent a été appliqué a {1}."
+		"fr"			"Un mute du chat écrit permanent a été appliqué a {1}."
 		"chi"			"已对玩家 {1} 做永久禁言."
 		"tr"			"{1} üzerinde kalıcı sohbet yasağı uygulandı."
 	}
@@ -217,7 +217,7 @@
 		"pl"			"Permanentnie zakneblowano {1} (powód: {2})."
 		"pt"			"{1} foi amordaçado(a) permanentemente (motivo: {2})."
 		"de"			"Der Spieler {1} ist für immer im Textchat gesperrt (Grund: {2})."
-		"fr"			"Un mute du chat permanent a été appliqué a {1} (raison: {2})."
+		"fr"			"Un mute du chat écrit permanent a été appliqué a {1} (raison: {2})."
 		"chi"			"已对玩家 {1} 做永久禁言 (原因: {2})."
 		"tr"			"{1} üzerinde kalıcı sohbet yasağı uygulandı (Sebep: {2})."
 	}
@@ -231,7 +231,7 @@
 		"pl"			"Zakneblowano {1} na {2} minut."
 		"pt"			"Um amordaçamento foi aplicado em {1} por {2} minutos."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Textchat gesperrt."
-		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes."
+		"fr"			"Un mute du chat écrit a été appliqué a {1} pour {2} minutes."
 		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟."
 		"tr"			"{1} üzerinde {2} dakikalığına sohbet yasağı uygulandı."
 	}
@@ -245,7 +245,7 @@
 		"pl"			"Zakneblowano {1} na {2} minut (powód: {3})."
 		"pt"			"Um amordaçamento foi aplicado em {1} por {2} minutos (motivo: {3})."
 		"de"			"Der Spieler {1} ist für {2} Minuten im Textchat gesperrt (Grund: {3})."
-		"fr"			"Un mute du chat a été appliqué a {1} pour {2} minutes (raison: {3})."
+		"fr"			"Un mute du chat écrit a été appliqué a {1} pour {2} minutes (raison: {3})."
 		"chi"			"已对玩家 {1} 的禁言延长了 {2} 分钟 (原因: {3})."
 		"tr"			"{1} üzerinde {2} dakikalığına sohbet yasağı uygulandı (Sebep: {3})."
 	}
@@ -374,7 +374,7 @@
 		"pl"			"Tymczasowo usunięto wyciszenie {1}."
 		"pt"			"O emudecimento de {1} foi temporariamente removido."
 		"de"			"Der Spieler {1} ist zeitweilig im Sprachchat entsperrt."
-		"fr"			"Suppression temporaire du mute depuis {1}."
+		"fr"			"Suppression du mute temporaire de {1}."
 		"chi"			"已对玩家 {1} 暂时解除静音."
 		"tr"			"{1} üzerinden mikrofon yasağı geçici olarak kaldırıldı."
 	}
@@ -389,7 +389,7 @@
 		"pl"			"Tymczasowo usunięto knebel {1}."
 		"pt"			"O amordaçamento de {1} foi temporariamente removido."
 		"de"			"Der Spieler {1} ist zeitweilig im Textchat entsperrt."
-		"fr"			"Suppression temporaire du mute du chat depuis {1}."
+		"fr"			"Suppression du mute du chat écrit temporaire de {1}."
 		"chi"			"已对玩家 {1} 暂时解除禁言."
 		"tr"			"{1} üzerinden sohbet yasağı geçici olarak kaldırıldı."
 	}
@@ -403,7 +403,7 @@
 		"pl"			"Tymczasowo usunięto całkowite wyciszenie {1}."
 		"pt"			"O silenciamento de {1} foi temporariamente removido."
 		"de"			"Der Spieler {1} ist zeitweilig im Text- und Sprachchat entsperrt."
-		"fr"			"Suppression temporaire du silence depuis {1}."
+		"fr"			"Suppression du silence temporaire de {1}."
 		"chi"			"已对玩家 {1} 暂时解除禁言和静音."
 		"tr"			"{1} üzerinden sessizlik yasağı geçici olarak kaldırıldı."
 	}
@@ -417,7 +417,7 @@
 		"pl"			"Wystąpił błąd podczas pobierania blokad {1} z bazy danych."
 		"pt"			"Ocorreu um erro no banco de dados durante o pedido de bloqueio para {1}."
 		"de"			"Es ist ein Fehler bei der Anfrage der Sperren für {1} aus der Datenbank passiert"
-		"fr"			"Une erreur s'est produite lors de la demande de blocs pour {1} à partir de DB."
+		"fr"			"Une erreur s'est produite lors de la demande de blocs pour {1} depuis la Base de Données."
 		"chi"			"在数据库中对 {1} 进行禁止时出现错误."
 		"tr"			"Veritabanından {1} için yasaklamalar alınırken hata oluştu."
 	}
@@ -431,7 +431,7 @@
 		"pl"			"Brak aktywnych blokad {1} w bazie danych."
 		"pt"			"Nenhum bloqueio ativo foi encontrado no banco de dados para {1}."
 		"de"			"Es wurde keine gültige Sperre für {1} in der Datenbank gefunden."
-		"fr"			"Aucun bloc actif trouvé dans DB pour {1}."
+		"fr"			"Aucun blocage de communication actif trouvé dans la Base de Données pour {1}."
 		"chi"			"在数据库中未找到对 {1} 的禁止."
 		"tr"			"Veritabanında {1} için yasaklama bulunamadı."
 	}
@@ -444,7 +444,7 @@
 		"pl"			"Nie masz uprawnień do usuwania blokad z bazy danych."
 		"pt"			"Você não tem permissão para desbloquear com erros do banco de dados."
 		"de"			"Sie haben keine Erlaubnis zur Entsperrung bei den Fehlern in der Datenbank."
-		"fr"			"Vous n'avez pas la permission de débloquer avec des erreurs de DB."
+		"fr"			"Vous n'avez pas la permission de retirer des blocages de communication avec des erreurs de Base de Données."
 		"chi"			"你没有权限解除对  的封禁."
 		"tr"			"Veritabanı hatalarıyla yasaklama kaldırmak için yetkiniz bulunmuyor."
 	}
@@ -458,7 +458,7 @@
 		"pl"			"Wyciszenie {1} nie może zostać usunięte, ponieważ zostało nadane przez admina z wyższymi uprawnieniami!"
 		"pt"			"O emudecimento de {1} não pôde ser removido pois foi aplicado por um administrador superior!"
 		"de"			"Es ist unmöglich {1} im Sprachchat zu entsperren, weil er von einem höheren Administrator gesperrt wurde!"
-		"fr"			"Le mute sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
+		"fr"			"Le mute sur {1} n'a pas pu être supprimé car il a été appliqué par un administrateur supérieur!"
 		"chi"			"对玩家 {1} 的静音是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
 		"tr"			"{1} üzerindeki mikrofon yasağı sizden daha yetkili biri tarafından oluşturulduğu için kaldırılamadı!"
 	}
@@ -472,7 +472,7 @@
 		"pl"			"Knebel {1} nie może zostać usunięty, ponieważ został nadany przez admina z wyższymi uprawnieniami!"
 		"pt"			"O amordaçamento de {1} não pôde ser removido pois foi aplicado por um administrador superior!"
 		"de"			"Es ist unmöglich {1} im Textchat zu entsperren, weil er von einem höheren Administrator gesperrt wurde!"
-		"fr"			"Le mute du chat sur {1} n'a pas pu être supprimé en raison qu'il a été appliqué par un administrateur supérieur!"
+		"fr"			"Le mute du chat sur {1} n'a pas pu être supprimé car il a été appliqué par un administrateur supérieur!"
 		"chi"			"对玩家 {1} 的禁言是由更高级别的管理员完成的,因此你无法解除对此玩家的静音."
 		"tr"			"{1} üzerindeki sohbet yasağı sizden daha yetkili biri tarafından oluşturulduğu için kaldırılamadı!"
 	}
@@ -486,7 +486,7 @@
 		"pl"			"Usunięto wyciszenie {1}."
 		"pt"			"Um emudecimento estendido de {1} foi removido."
 		"de"			"Der Spieler {1} wurde im Sprachchat entsperrt."
-		"fr"			"Suppression du mute étendu de {1}."
+		"fr"			"Suppression du mute temporaire de {1}."
 		"chi"			"已取消对玩家 {1} 的静音延长."
 		"tr"			"{1} üzerindeki mikrofon yasağı kaldırıldı."
 	}
@@ -500,7 +500,7 @@
 		"pl"			"Usunięto knebel {1}."
 		"pt"			"Um amordaçamento estendido de {1} foi removido."
 		"de"			"Der Spieler {1} wurde im Textchat entsperrt."
-		"fr"			"Suppression du silence étendu de {1}. "
+		"fr"			"Suppression du silence temporaire de {1}. "
 		"chi"			"已取消对玩家 {1} 的禁言延长."
 		"tr"			"{1} üzerindeki sohbet yasağı kaldırıldı."
 	}
@@ -513,7 +513,7 @@
 		"pl"			"Nie udało się usunąć blokady z bazy danych."
 		"pt"			"Falha ao remover o bloqueio do banco de dados."
 		"de"			"Es ist ein Fehler beim Entfernen der Sperre aus der Datenbank passiert."
-		"fr"			"Impossible de supprimer le bloc de la base de données."
+		"fr"			"Impossible de supprimer le blocage de communication de la base de données."
 		"chi"			"从数据库中取消禁止失败."
 		"tr"			"Yasaklama veritabanından kaldırılamadı."
 	}
@@ -541,7 +541,7 @@
 		"pl"			"Usunięto knebel {1} z bazy danych."
 		"pt"			"O amordaçamento de {1} foi removido com sucesso do banco de dados."
 		"de"			"Die Sperre {1} im Textchat wurde erfolgreich aus der Datenbank entfernt."
-		"fr"			"Suppression réussie du mute du chat pour {1} de la base de données."
+		"fr"			"Suppression réussie du mute du chat écrit pour {1} de la base de données."
 		"chi"			"已成功从数据库中取消对 {1} 的禁言."
 		"tr"			"{1} için sohbet yasaklaması veritabanından başarıyla silindi."
 	}
