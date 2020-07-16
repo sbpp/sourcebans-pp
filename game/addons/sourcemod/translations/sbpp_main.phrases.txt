@@ -127,7 +127,7 @@
 	{
 		"en"			"Failed to ban player, please try again."
 		"nl"			"Er is een fout opgetreden tijdens de ban procedure, probeert u het alstublieft nogmaals."
-		"fr"			"Le joueur n'a pas pu être banni merci d'essayer ultérieurement."
+		"fr"			"Le joueur n'a pas pu être banni, merci de réessayer ultérieurement."
 		"pl"			"Błąd przy dodawaniu bana, spróbuj ponownie."
 		"pt"			"Não foi possível banir o(a) jogador(a), por favor, tente novamente."
 		"de"			"Es ist ein Fehler beim bannen des Spielers aufgetreten, bitte versuchen Sie es erneut."
@@ -185,7 +185,7 @@
 		"en"			"Permanently banned {1}"
 		"de"			"{1} wurde permanent gebannt."
 		"ru"			"{1} забанен навсегда"
-		"fr"			"{1} a été banni permanent."
+		"fr"			"{1} a été banni à vie."
 		"pt"			"{1} foi banido(a) permanentemente."
 		"chi"			"{1} 已被永久封禁."
 	}
@@ -195,7 +195,7 @@
 		"en"			"Permanently banned {1}. Reason: {2}"
 		"de"			"{1} wurde permanent gebannt. Grund: {2}"
 		"ru"			"{1} забанен навсегда. Причина: {2}"
-		"fr"			"{1} a été banni permanent. Raison: {2}"
+		"fr"			"{1} a été banni à vie. Raison: {2}"
 		"pt"			"{1} foi banido(a) permanentemente. Motivo: {2}"
 		"chi"			"{1} 已被永久封禁. 原因: {2}"
 	}
@@ -207,7 +207,7 @@
 		"ru"			"{1} забанен на {2} минут"
 		"fr"			"{1} a été banni pendant {2} minutes."
 		"pt"			"{1} foi banido(a) por {2} minutos."
-		"en"			"{1} 已被封禁 {2} 分钟."
+		"chi"			"{1} 已被封禁 {2} 分钟."
 	}
 	"Banned Player Reason"
 	{
@@ -215,8 +215,9 @@
 		"en"			"Banned {1} for {2} minutes. Reason: {3}"
 		"de"			"{1} wurde für {2} minuten gebannt. Grund: {3}"
 		"ru"			"{1} забанен на {2} минут. Причина: {3}"
+		"fr"			"{1} a été banni pendant {2} minutes. Raison: {3}"
 		"pt"			"{1} foi banido(a) por {2} minutos. Motivo: {3}"
-		"en"			"{1} 已被封禁 {2} 分钟. 原因: {3}"
+		"chi"			"{1} 已被封禁 {2} 分钟. 原因: {3}"
 	}
 	"permanent"
 	{
@@ -251,7 +252,7 @@
 		"en"			"\"{1}\" banned \"{2}\" (minutes: {3}) (reason: {4})"
 		"de"			"\"{1}\" hat \"{2}\" gebannt. (Minuten: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" забанил \"{2}\" (длительность (в минутах): {3}) (причина: {4})"
-		"fr"			"\"{1}\" ban \"{2}\" (minutes: {3}) (raison: {4})"
+		"fr"			"\"{1}\" a banni \"{2}\" (minutes: {3}) (raison: {4})"
 		"pt"			"\"{1}\" baniu \"{2}\" (minutos: {3}) (motivo: {4})"
 		"chi"			"\"{1}\" 已封禁 \"{2}\" ({3} 分钟) (理由: {4})"
 	}
@@ -261,7 +262,7 @@
 		"en"			"\"{1}\" added ban (minutes: {2}) (id/ip: {3}) (reason: {4})"
 		"de"			"\"{1}\" hat einen Ban hinzugefügt. (Minuten: {2}) (id/ip: {3}) (Grund: {4})"
 		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (id/ip: {3}) (причина: {4})"
-		"fr"			"\"{1}\" ajoute un ban (minutes (в минутах): {2}) (id/ip: {3}) (raison: {4})"
+		"fr"			"\"{1}\" a ajouté un ban (minutes: {2}) (id/ip: {3}) (raison: {4})"
 		"pt"			"\"{1}\" adicionou um banimento (minutos: {2}) (id/ip: {3}) (motivo: {4})"
 		"chi"			"\"{1}\" 已被封禁 ({2} 分钟) (id/ip: {3}) (理由: {4})"
 	}
@@ -310,7 +311,7 @@
 		"en"			"No active ban found."
 		"de"			"Kein aktiver Ban gefunden."
 		"ru"			"Действующий бан не найден."
-		"fr"			"Aucun ban activement trouvé.'
+		"fr"			"Aucun ban actif trouvé.'
 		"pt"			"Nenhum banimento ativo encontrado."
 		"chi"			"未找到对此玩家的封禁."
 	}
