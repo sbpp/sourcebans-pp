@@ -37,6 +37,7 @@
 #define LENGTH_CUSTOM 2
 #define LENGTH_DOUBLE 3
 #define LENGTH_NOTIFY 4
+#define LENGTH_KICK 5
 
 #define PREFIX "[SourceSleuth] "
 
@@ -72,7 +73,7 @@ public void OnPluginStart()
 
 	CreateConVar("sm_sourcesleuth_version", PLUGIN_VERSION, "SourceSleuth plugin version", FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY | FCVAR_DONTRECORD);
 
-	g_cVar_actions = CreateConVar("sm_sleuth_actions", "3", "Sleuth Ban Type: 1 - Original Length, 2 - Custom Length, 3 - Double Length, 4 - Notify Admins Only", 0, true, 1.0, true, 4.0);
+	g_cVar_actions = CreateConVar("sm_sleuth_actions", "3", "Sleuth Ban Type: 1 - Original Length, 2 - Custom Length, 3 - Double Length, 4 - Notify Admins Only, 5 - Kick Client", 0, true, 1.0, true, 5.0);
 	g_cVar_banduration = CreateConVar("sm_sleuth_duration", "0", "Required: sm_sleuth_actions 1: Bantime to ban player if we got a match (0 = permanent (defined in minutes) )", 0);
 	g_cVar_sbprefix = CreateConVar("sm_sleuth_prefix", "sb", "Prexfix for sourcebans tables: Default sb", 0);
 	g_cVar_bansAllowed = CreateConVar("sm_sleuth_bansallowed", "0", "How many active bans are allowed before we act", 0);
@@ -229,6 +230,10 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 				{
 					/* Notify Admins when a client with an ip on the bans list connects */
 					PrintToAdmins("%s%t", PREFIX, "sourcesleuth_admintext", client, steamid, IP);
+				}
+				case LENGTH_KICK:
+				{
+					KickClient(client, "%s%t", PREFIX, "sourcesleuth_kicktext");
 				}
 			}
 		}
