@@ -28,4 +28,9 @@
 		"chi"		"玩家 {1} (ID: {2} | IP: {3}) 目前有多次IP封禁"
 		"tr"		"Oyuncu {1} (ID: {2} | IP: {3}) IP adresinde aktif yasaklaması var."
 	}
+	"sourcesleuth_kicktext"
+	{
+		"#format"	""
+		"en"		"You have been kicked for having an active ban on your IP"
+	}
 }
