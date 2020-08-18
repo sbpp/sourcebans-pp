@@ -140,7 +140,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("sourcebans++");
 
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
-	CreateNative("SBBanIdentity", Native_SBBanIdentity);
+	CreateNative("SBBanAuthId", Native_SBBanAuthId);
 	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
 	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
 
@@ -672,11 +672,13 @@ public Action CommandAddBan(int client, int args)
 	DataPack dataPack = new DataPack();
 	dataPack.WriteCell(client);
 	dataPack.WriteCell(minutes);
+	dataPack.WriteCell(true);
 	dataPack.WriteString(arg_string[total_len]);
 	dataPack.WriteString(authid);
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 	dataPack.WriteString("");
+	
 
 	char sQuery[256];
 
@@ -1379,6 +1381,7 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
+	dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(authid, sizeof(authid));
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
@@ -1426,12 +1429,14 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 public void InsertAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
+	bool kick;
 	char authid[20];
 	char reason[128];
 
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
+	kick = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(authid, sizeof(authid));
 	delete dataPack;
@@ -1453,6 +1458,23 @@ public void InsertAddbanCallback(Database db, DBResultSet results, const char[] 
 		PrintToChat(admin, "%s%t", Prefix, "Ban Success Name", authid);
 	else
 		PrintToServer("%s%t", Prefix, "Ban Success Name", authid);
+		
+	if (kick)
+	{
+		int target = FindClientByAuthId(authid);
+		
+		if(target != 0)
+		{
+			char length[32];
+			
+			if(minutes == 0)
+				FormatEx(length, sizeof(length), "%T", "permanent", target);
+			else
+				FormatEx(length, sizeof(length), "%d %T", minutes, minutes == 1 ? "minute" : "minutes", target);
+	
+			KickClient(target, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
+		}
+	}
 }
 
 // ProcessQueueCallback is called as the result of selecting all the rows from the queue table
@@ -2336,25 +2358,25 @@ public int Native_SBBanPlayer(Handle plugin, int numParams)
 /*********************************************************
  * Ban Identity from server
  *
- * @param identity	The identity to ban.
- * @param flags		BANFLAG_AUTHID if the identity is a steam ID, BANFLAG_IP if the identity is an IP Address.
- * @param adminClient	The admin's client index
- * @param time		The time to ban the player for (in minutes, 0 = permanent)
- * @param reason	The reason to ban the player from the server
- * @param name		The name of the banned client that owns the identity.
+ * @param authid		The authid to ban
+ * @param admin			The admin's client index
+ * @param time			The time to ban the player for (in minutes, 0 = permanent)
+ * @param reason		The reason to ban the player from the server
+ * @param kick			True if to kick the banned player if he is inside the server.
+ * @param name			The name of the banned client that owns the identity.
  * @noreturn
  *********************************************************/
-public int Native_SBBanIdentity(Handle plugin, int numParams)
+public int Native_SBBanAuthId(Handle plugin, int numParams)
 {
-	char identity[64];
-	GetNativeString(1, identity, sizeof(identity));
+	char authid[64];
+	GetNativeString(1, authid, sizeof(authid));
 	
-	int flags = GetNativeCell(2);
-	int adminClient = GetNativeCell(3);
-	int time = GetNativeCell(4);
+	int admin = GetNativeCell(2);
+	int time = GetNativeCell(3);
 	char reason[128];
-	GetNativeString(5, reason, 128);
+	GetNativeString(4, reason, 128);
 	
+	bool kick = GetNativeCell(5);
 	char name[64];
 	GetNativeString(6, name, 64);
 
@@ -2363,32 +2385,32 @@ public int Native_SBBanIdentity(Handle plugin, int numParams)
 
 	char adminIp[24], adminAuth[64];
 
-	int  minutes = StringToInt(time);
-
-	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
+	if (!time && admin && !(CheckCommandAccess(admin, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
-		ReplyToCommand(client, "You do not have Perm Ban Permission");
+		ReplyToCommand(admin, "You do not have Perm Ban Permission");
 		return false;
 	}
-	if (!client)
+	if (!admin)
 	{
 		// setup dummy adminAuth and adminIp for server
 		strcopy(adminAuth, sizeof(adminAuth), "STEAM_ID_SERVER");
 		strcopy(adminIp, sizeof(adminIp), ServerIp);
 	} else {
-		GetClientIP(client, adminIp, sizeof(adminIp));
-		GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
+		GetClientIP(admin, adminIp, sizeof(adminIp));
+		GetClientAuthId(admin, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
-	dataPack.WriteCell(client);
-	dataPack.WriteCell(minutes);
-	dataPack.WriteString(arg_string[total_len]);
+	dataPack.WriteCell(admin);
+	dataPack.WriteCell(time);
+	dataPack.WriteCell(kick);
+	dataPack.WriteString(reason);
 	dataPack.WriteString(authid);
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 	dataPack.WriteString(name);
+	
 
 	char sQuery[256];
 
@@ -2396,6 +2418,7 @@ public int Native_SBBanIdentity(Handle plugin, int numParams)
 		DatabasePrefix, authid);
 
 	DB.Query(SelectAddbanCallback, sQuery, dataPack, DBPrio_High);
+	
 	return true;
 }
 public int Native_SBReportPlayer(Handle plugin, int numParams)
@@ -2627,6 +2650,7 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 			FormatEx(length, sizeof(length), "permament");
 		else
 			FormatEx(length, sizeof(length), "%d %s", time, time == 1 ? "minute" : "minutes");
+			
 		KickClient(client, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
 	}
 
@@ -2851,4 +2875,25 @@ stock void AccountForLateLoading()
 	}
 }
 
+
+stock int FindClientByAuthId(const char[] AuthId)
+{
+	char iAuthId[35];
+	
+	for(int i=1;i <= MaxClients;i++)
+	{
+		if(!IsClientInGame(i))
+			continue;
+			
+		else if(!IsClientAuthorized(i))
+			continue;
+			
+		GetClientAuthId(i, AuthId_Engine, iAuthId, sizeof(iAuthId));
+		
+		if(StrEqual(AuthId, iAuthId, true))
+			return i;
+	}
+	
+	return 0;
+}
 //Yarr!
