@@ -1,7 +1,7 @@
 // *************************************************************************
 //  This file is part of SourceBans++.
 //
-//  Copyright (C) 2014-2019 SourceBans++ Dev Team <https://github.com/sbpp>
+//  Copyright (C) 2014-2016 SourceBans++ Dev Team <https://github.com/sbpp>
 //
 //  SourceBans++ is free software: you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License as published by
@@ -41,9 +41,10 @@ public SharedPlugin __pl_sourcebanspp =
 };
 
 #if !defined REQUIRE_PLUGIN
-public void __pl_sourcebanspp_SetNTVOptional()
+public __pl_sourcebanspp_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
+	MarkNativeAsOptional("SBBanAuthId");
 	MarkNativeAsOptional("SBPP_BanPlayer");
 	MarkNativeAsOptional("SBPP_ReportPlayer");
 }
@@ -72,6 +73,19 @@ native void SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason
  * @noreturn
  *********************************************************/
 native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+
+/*********************************************************
+ * Ban Identity from server
+ *
+ * @param authid		The authid to ban
+ * @param admin			The admin's client index
+ * @param time			The time to ban the player for (in minutes, 0 = permanent)
+ * @param reason		The reason to ban the player from the server
+ * @param kick			True if to kick the banned player if he is inside the server.
+ * @param name			The name of the banned client that owns the identity.
+ * @noreturn
+ *********************************************************/
+native void SBBanAuthId(const char[] AuthId, int iAdmin, int iTime, const char[] sReason, bool kick=true, const char[] Name="");
 
 /*********************************************************
  * Reports a player
