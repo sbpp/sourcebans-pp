@@ -140,6 +140,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("sourcebans++");
 
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
+	CreateNative("SBBanIdentity", Native_SBBanIdentity);
 	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
 	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
 
@@ -675,6 +676,7 @@ public Action CommandAddBan(int client, int args)
 	dataPack.WriteString(authid);
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
+	dataPack.WriteString("");
 
 	char sQuery[256];
 
@@ -1371,7 +1373,7 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
-	char adminAuth[30], adminIp[30], authid[20], banReason[256], Query[512];
+	char adminAuth[30], adminIp[30], authid[20], banReason[256], Query[512], Name[64];
 	char reason[128];
 
 	dataPack.Reset();
@@ -1381,6 +1383,8 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	dataPack.ReadString(authid, sizeof(authid));
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	dataPack.ReadString(adminIp, sizeof(adminIp));
+	dataPack.ReadString(Name, sizeof(Name));
+	
 	db.Escape(reason, banReason, sizeof(banReason));
 
 	if (results == null)
@@ -1406,14 +1410,14 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	if (serverID == -1)
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
-						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						('%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, authid, Name, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (authid, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
-						('%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						('%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						%d, ' ')",
-			DatabasePrefix, authid, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
+			DatabasePrefix, authid, Name, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 
 	db.Query(InsertAddbanCallback, Query, dataPack, DBPrio_High);
@@ -2328,6 +2332,72 @@ public int Native_SBBanPlayer(Handle plugin, int numParams)
 	return true;
 }
 
+
+/*********************************************************
+ * Ban Identity from server
+ *
+ * @param identity	The identity to ban.
+ * @param flags		BANFLAG_AUTHID if the identity is a steam ID, BANFLAG_IP if the identity is an IP Address.
+ * @param adminClient	The admin's client index
+ * @param time		The time to ban the player for (in minutes, 0 = permanent)
+ * @param reason	The reason to ban the player from the server
+ * @param name		The name of the banned client that owns the identity.
+ * @noreturn
+ *********************************************************/
+public int Native_SBBanIdentity(Handle plugin, int numParams)
+{
+	char identity[64];
+	GetNativeString(1, identity, sizeof(identity));
+	
+	int flags = GetNativeCell(2);
+	int adminClient = GetNativeCell(3);
+	int time = GetNativeCell(4);
+	char reason[128];
+	GetNativeString(5, reason, 128);
+	
+	char name[64];
+	GetNativeString(6, name, 64);
+
+	if (reason[0] == '\0')
+		strcopy(reason, sizeof(reason), "Banned by SourceBans");
+
+	char adminIp[24], adminAuth[64];
+
+	int  minutes = StringToInt(time);
+
+	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
+	{
+		ReplyToCommand(client, "You do not have Perm Ban Permission");
+		return false;
+	}
+	if (!client)
+	{
+		// setup dummy adminAuth and adminIp for server
+		strcopy(adminAuth, sizeof(adminAuth), "STEAM_ID_SERVER");
+		strcopy(adminIp, sizeof(adminIp), ServerIp);
+	} else {
+		GetClientIP(client, adminIp, sizeof(adminIp));
+		GetClientAuthId(client, AuthId_Steam2, adminAuth, sizeof(adminAuth));
+	}
+
+	// Pack everything into a data pack so we can retain it
+	DataPack dataPack = new DataPack();
+	dataPack.WriteCell(client);
+	dataPack.WriteCell(minutes);
+	dataPack.WriteString(arg_string[total_len]);
+	dataPack.WriteString(authid);
+	dataPack.WriteString(adminAuth);
+	dataPack.WriteString(adminIp);
+	dataPack.WriteString(name);
+
+	char sQuery[256];
+
+	FormatEx(sQuery, sizeof sQuery, "SELECT bid FROM %s_bans WHERE type = 0 AND authid = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
+		DatabasePrefix, authid);
+
+	DB.Query(SelectAddbanCallback, sQuery, dataPack, DBPrio_High);
+	return true;
+}
 public int Native_SBReportPlayer(Handle plugin, int numParams)
 {
 	if (numParams < 3)
