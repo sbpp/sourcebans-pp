@@ -2358,7 +2358,7 @@ public int Native_SBBanPlayer(Handle plugin, int numParams)
 /*********************************************************
  * Ban Identity from server
  *
- * @param authid		The authid to ban
+ * @param AccountId		The AccountId to ban as found in GetSteamAccountId
  * @param admin			The admin's client index
  * @param time			The time to ban the player for (in minutes, 0 = permanent)
  * @param reason		The reason to ban the player from the server
@@ -2366,10 +2366,9 @@ public int Native_SBBanPlayer(Handle plugin, int numParams)
  * @param name			The name of the banned client that owns the identity.
  * @noreturn
  *********************************************************/
-public int Native_SBBanAuthId(Handle plugin, int numParams)
+public int Native_SBBanAccountId(Handle plugin, int numParams)
 {
-	char authid[64];
-	GetNativeString(1, authid, sizeof(authid));
+	int AccountId = GetNativeCell(1);
 	
 	int admin = GetNativeCell(2);
 	int time = GetNativeCell(3);
@@ -2400,6 +2399,9 @@ public int Native_SBBanAuthId(Handle plugin, int numParams)
 		GetClientAuthId(admin, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 
+	char AuthId[64];
+	SteamAccountIdToSteam2(AccountId, AuthId, sizeof(AuthId));
+	
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
 	dataPack.WriteCell(admin);
@@ -2410,7 +2412,6 @@ public int Native_SBBanAuthId(Handle plugin, int numParams)
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 	dataPack.WriteString(name);
-	
 
 	char sQuery[256];
 
@@ -2876,7 +2877,7 @@ stock void AccountForLateLoading()
 }
 
 
-stock int FindClientByAuthId(const char[] AuthId)
+stock int FindClientByAccountId(const char[] AuthId)
 {
 	char iAuthId[35];
 	
@@ -2884,13 +2885,20 @@ stock int FindClientByAuthId(const char[] AuthId)
 	{
 		if(!IsClientInGame(i) || !IsClientAuthorized(i))
 			continue;
-			
+		
 		GetClientAuthId(i, AuthId_Steam2, iAuthId, sizeof(iAuthId));
 		
-		if(StrEqual(AuthId, iAuthId, true))
+		if(StrEqual(AuthId, iAuthId))
 			return i;
 	}
 	
 	return 0;
 }
+
+
+stock SteamAccountIdToSteam2(int AccountId, char[] buffer, bufferLen)
+{
+	FormatEx(buffer, bufferLen, "STEAM_1:%d:%d", AccountId % 2, RoundFloor(float(AccountId) / 2.0))
+}
+
 //Yarr!
