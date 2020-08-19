@@ -140,8 +140,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	RegPluginLibrary("sourcebans++");
 
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
-	CreateNative("SBBanAuthId", Native_SBBanAuthId);
 	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
+	CreateNative("SBPP_BanAuthId", Native_SBBanAuthId);
 	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
 
 	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
