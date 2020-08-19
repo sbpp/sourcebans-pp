@@ -2882,10 +2882,7 @@ stock int FindClientByAuthId(const char[] AuthId)
 	
 	for(int i=1;i <= MaxClients;i++)
 	{
-		if(!IsClientInGame(i))
-			continue;
-			
-		else if(!IsClientAuthorized(i))
+		if(!IsClientInGame(i) && !IsClientAuthorized(i))
 			continue;
 			
 		GetClientAuthId(i, AuthId_Engine, iAuthId, sizeof(iAuthId));
