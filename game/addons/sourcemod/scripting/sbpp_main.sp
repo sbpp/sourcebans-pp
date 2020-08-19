@@ -2377,11 +2377,11 @@ public int Native_SBBanAuthId(Handle plugin, int numParams)
 	GetNativeString(4, reason, 128);
 	
 	bool kick = GetNativeCell(5);
-	char name[64];
+	char name[MAX_NAME_LENGTH + 1];
 	GetNativeString(6, name, 64);
 
 	if (reason[0] == '\0')
-		strcopy(reason, sizeof(reason), "Banned by SourceBans");
+		strcopy(reason, sizeof(reason), "Banned by Sourcemod plugin");
 
 	char adminIp[24], adminAuth[64];
 
