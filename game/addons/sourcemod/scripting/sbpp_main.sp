@@ -2885,7 +2885,7 @@ stock int FindClientByAuthId(const char[] AuthId)
 		if(!IsClientInGame(i) && !IsClientAuthorized(i))
 			continue;
 			
-		GetClientAuthId(i, AuthId_Engine, iAuthId, sizeof(iAuthId));
+		GetClientAuthId(i, AuthId_Steam2, iAuthId, sizeof(iAuthId));
 		
 		if(StrEqual(AuthId, iAuthId, true))
 			return i;
