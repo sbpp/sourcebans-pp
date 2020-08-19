@@ -141,7 +141,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
 	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
-	CreateNative("SBPP_BanAuthId", Native_SBBanAuthId);
+	CreateNative("SBPP_BanAuthId", Native_SBBanAccountId);
 	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
 
 	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
@@ -2399,8 +2399,8 @@ public int Native_SBBanAccountId(Handle plugin, int numParams)
 		GetClientAuthId(admin, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 
-	char AuthId[64];
-	SteamAccountIdToSteam2(AccountId, AuthId, sizeof(AuthId));
+	char authid[64];
+	SteamAccountIdToSteam2(AccountId, authid, sizeof(authid));
 	
 	// Pack everything into a data pack so we can retain it
 	DataPack dataPack = new DataPack();
@@ -2877,7 +2877,7 @@ stock void AccountForLateLoading()
 }
 
 
-stock int FindClientByAccountId(const char[] AuthId)
+stock int FindClientByAuthId(const char[] AuthId)
 {
 	char iAuthId[35];
 	
@@ -2896,9 +2896,9 @@ stock int FindClientByAccountId(const char[] AuthId)
 }
 
 
-stock SteamAccountIdToSteam2(int AccountId, char[] buffer, bufferLen)
+stock void SteamAccountIdToSteam2(int AccountId, char[] buffer, int bufferLen)
 {
-	FormatEx(buffer, bufferLen, "STEAM_1:%d:%d", AccountId % 2, RoundFloor(float(AccountId) / 2.0))
+	FormatEx(buffer, bufferLen, "STEAM_1:%d:%d", AccountId % 2, RoundToFloor(float(AccountId) / 2.0));
 }
 
 //Yarr!
