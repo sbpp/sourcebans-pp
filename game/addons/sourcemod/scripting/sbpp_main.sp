@@ -433,9 +433,9 @@ public Action CommandBan(int client, int args)
 
 	int time = StringToInt(buffer);
 
-	if (!time && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
+	if (!time && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(client, "You do not have Perm Ban Permission");
+		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
 		return Plugin_Handled;
 	}
 
@@ -521,9 +521,9 @@ public Action CommandBanIp(int client, int args)
 
 	int minutes = StringToInt(time);
 
-	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
+	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(client, "You do not have Perm Ban Permission");
+		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
 		return Plugin_Handled;
 	}
 	if (!client)
@@ -653,9 +653,9 @@ public Action CommandAddBan(int client, int args)
 
 	int  minutes = StringToInt(time);
 
-	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
+	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(client, "You do not have Perm Ban Permission");
+		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
 		return Plugin_Handled;
 	}
 	if (!client)
@@ -955,7 +955,7 @@ public int MenuHandler_BanTimeList(Menu menu, MenuAction action, int param1, int
 
 			menu.GetItem(param2, time, sizeof(time));
 
-			return (StringToInt(time) > 0 || CheckCommandAccess(param1, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED;
+			return (StringToInt(time) > 0 || CheckCommandAccess(param1, "sm_unban", ADMFLAG_UNBAN)) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED;
 		}
 	}
 
@@ -2385,9 +2385,9 @@ public int Native_SBBanAuthId(Handle plugin, int numParams)
 
 	char adminIp[24], adminAuth[64];
 
-	if (!time && admin && !(CheckCommandAccess(admin, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
+	if (!time && admin && !(CheckCommandAccess(admin, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(admin, "You do not have Perm Ban Permission");
+		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
 		return false;
 	}
 	if (!admin)
