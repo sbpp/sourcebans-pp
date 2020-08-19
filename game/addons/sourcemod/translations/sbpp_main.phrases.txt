@@ -179,6 +179,10 @@
 		"tr"			"Yönetici: {1}\nSebep: {2}\nSüre: {3}"
 		"chi"			"管理员: {1}\n原因: {2}\n时长: {3}"
 	}
+	"No Permaban Access"
+	{
+		"en"			"You do not have Perm Ban Permission"
+	}
 	"Permabanned Player"
 	{
 		"#format"		"{1:s}"
