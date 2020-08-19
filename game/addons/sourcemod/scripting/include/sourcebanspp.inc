@@ -44,8 +44,8 @@ public SharedPlugin __pl_sourcebanspp =
 public void __pl_sourcebanspp_SetNTVOptional()
 {
 	MarkNativeAsOptional("SBBanPlayer");
-	MarkNativeAsOptional("SBBanAuthId");
 	MarkNativeAsOptional("SBPP_BanPlayer");
+	MarkNativeAsOptional("SBPP_BanAuthId");
 	MarkNativeAsOptional("SBPP_ReportPlayer");
 }
 #endif
