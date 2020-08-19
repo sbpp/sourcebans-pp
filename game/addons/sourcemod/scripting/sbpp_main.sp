@@ -435,7 +435,7 @@ public Action CommandBan(int client, int args)
 
 	if (!time && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
+		ReplyToCommand(client, "%s%t", Prefix, "No Permaban Access");
 		return Plugin_Handled;
 	}
 
@@ -523,7 +523,7 @@ public Action CommandBanIp(int client, int args)
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
+		ReplyToCommand(client, "%s%t", Prefix, "No Permaban Access");
 		return Plugin_Handled;
 	}
 	if (!client)
@@ -655,7 +655,7 @@ public Action CommandAddBan(int client, int args)
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN)))
 	{
-		ReplyToCommand(admin, "%s%t", Prefix, "No Permaban Access");
+		ReplyToCommand(client, "%s%t", Prefix, "No Permaban Access");
 		return Plugin_Handled;
 	}
 	if (!client)
@@ -2882,7 +2882,7 @@ stock int FindClientByAuthId(const char[] AuthId)
 	
 	for(int i=1;i <= MaxClients;i++)
 	{
-		if(!IsClientInGame(i) && !IsClientAuthorized(i))
+		if(!IsClientInGame(i) || !IsClientAuthorized(i))
 			continue;
 			
 		GetClientAuthId(i, AuthId_Steam2, iAuthId, sizeof(iAuthId));
