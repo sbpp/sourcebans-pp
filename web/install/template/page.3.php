@@ -114,7 +114,7 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 <br /><br />
 <table style="width: 101%; margin: 0 0 -2px -2px;">
     <tr>
-        <td colspan="3" class="listtable_top"><b>MySQL Requirements</b></td>
+        <td colspan="3" class="listtable_top"><b>Database Requirements</b></td>
     </tr>
 </table>
 <div id="submit-main">
@@ -126,12 +126,33 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 	 <td width="22%" height="16" class="listtable_top">Your Value</td>
   </tr>
    <tr>
-  <td width="33%" height="16" class="listtable_1"><b>MySQL Version</b></td>
+  <td width="33%" height="16" class="listtable_1"><b>Database Version</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
-	<td width="22%" height="16" class="listtable_1"><b>5.0</b></td>
-	<?php if(version_compare($sql_version, "5") != -1)
-		$class = "green";
-	  else {  $class = "red"; $errors++;}?>
+	<td width="22%" height="16" class="listtable_1"><b>Mysql 5.5 or MariaDB 10.0.5</b></td>
+	<?php
+        //our SQL is using FULLTEXT in inno DB.
+        //this is only supported from Mysql 5.5 onwards
+        //and  >= MariaDB 10.0.5 ( https://mariadb.com/kb/en/full-text-index-overview/ )
+	if (strpos($sql_version, 'MARIADB') !== false){
+           	 //we have a mariadb.
+		//check for versions below 10.0.5
+		if(version_compare($sql_version, "10.0.5", "<")){
+			$class = "red";
+			$errors++;
+		}else{
+			$class = "green";
+		}
+        }else{
+            //other DB (presumably mysql)
+            //check for stuff lower then 5.5
+            if(version_compare($sql_version, "5.5", "<")) {
+				$class = "red";
+				$errors++;
+            }else{
+				$class = "green";
+            }
+	}
+	?>
 	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $sql_version;?></td>
   </tr>
 </table>
