@@ -84,7 +84,7 @@ native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sRea
  * @param name			The name of the banned client that owns the identity.
  * @noreturn
  *********************************************************/
-native void SBPP_BanAccountId(const char[] AuthId, int iAdmin, int iTime, const char[] sReason, bool kick=true, const char[] Name="");
+native void SBPP_BanAccountId(const int AccountId, int iAdmin, int iTime, const char[] sReason, bool kick=true, const char[] Name="");
 
 /*********************************************************
  * Reports a player
