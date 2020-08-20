@@ -624,7 +624,7 @@ public Action CommandAddBan(int client, int args)
 		return Plugin_Handled;
 	}
 
-	char arg_string[256], time[50], authid[50];
+	char arg_string[256], time[11], authid[23];
 
 	GetCmdArgString(arg_string, sizeof(arg_string));
 
@@ -649,7 +649,7 @@ public Action CommandAddBan(int client, int args)
 		arg_string[0] = '\0';
 	}
 
-	char adminIp[24], adminAuth[64];
+	char adminIp[24], adminAuth[23];
 
 	int  minutes = StringToInt(time);
 
@@ -1375,7 +1375,7 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
-	char adminAuth[30], adminIp[30], authid[20], banReason[256], Query[512], Name[64];
+	char adminAuth[30], adminIp[30], authid[23], banReason[256], Query[512], Name[64];
 	char reason[128];
 
 	dataPack.Reset();
@@ -1430,7 +1430,7 @@ public void InsertAddbanCallback(Database db, DBResultSet results, const char[] 
 {
 	int admin, minutes;
 	bool kick;
-	char authid[20];
+	char authid[23];
 	char reason[128];
 
 	dataPack.Reset();
@@ -1550,7 +1550,7 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	char buffer[512];
-	char auth[40];
+	char auth[23];
 
 	dataPack.ReadString(auth, sizeof(auth));
 	if (results == null)
@@ -1676,7 +1676,7 @@ public void SQL_OnIPMend(Database db, DBResultSet results, const char[] error, i
 {
 	if (results == null)
 	{
-		char sIP[32], sSteamID[32];
+		char sIP[32], sSteamID[23];
 
 		GetClientAuthId(iClient, AuthId_Steam3, sSteamID, sizeof sSteamID);
 		GetClientIP(iClient, sIP, sizeof sIP);
@@ -2139,7 +2139,7 @@ public void OverridesDone(Database db, DBResultSet results, const char[] error, 
 
 public Action ClientRecheck(Handle timer, any client)
 {
-	char Authid[64];
+	char Authid[23];
 	if (!PlayerStatus[client] && IsClientConnected(client) && GetClientAuthId(client, AuthId_Steam2, Authid, sizeof(Authid)))
 	{
 		OnClientAuthorized(client, Authid);
@@ -2382,7 +2382,7 @@ public int Native_SBBanAccountId(Handle plugin, int numParams)
 	if (reason[0] == '\0')
 		strcopy(reason, sizeof(reason), "Banned by Sourcemod plugin");
 
-	char adminIp[24], adminAuth[64];
+	char adminIp[24], adminAuth[23];
 
 	if (!time && admin && !(CheckCommandAccess(admin, "sm_unban", ADMFLAG_UNBAN)))
 	{
@@ -2399,7 +2399,7 @@ public int Native_SBBanAccountId(Handle plugin, int numParams)
 		GetClientAuthId(admin, AuthId_Steam2, adminAuth, sizeof(adminAuth));
 	}
 
-	char authid[64];
+	char authid[23];
 	SteamAccountIdToSteam2(AccountId, authid, sizeof(authid));
 	
 	// Pack everything into a data pack so we can retain it
@@ -2711,7 +2711,7 @@ stock void PrepareBan(int client, int target, int time, char[] reason, int size)
 	if (!target || !IsClientInGame(target))
 		return;
 
-	char authid[64], name[32], bannedSite[512];
+	char authid[23], name[32], bannedSite[512];
 
 	if (!GetClientAuthId(target, AuthId_Steam2, authid, sizeof(authid)))
 		return;
@@ -2898,7 +2898,7 @@ stock int FindClientByAuthId(const char[] AuthId)
 
 stock void SteamAccountIdToSteam2(int AccountId, char[] buffer, int bufferLen)
 {
-	FormatEx(buffer, bufferLen, "STEAM_1:%d:%d", AccountId % 2, RoundToFloor(float(AccountId) / 2.0));
+	FormatEx( buffer, bufferLen, "STEAM_0:%u:%u", AccountId & 1, AccountId >> 1 );
 }
 
 //Yarr!
