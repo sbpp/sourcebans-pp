@@ -2888,6 +2888,8 @@ stock int FindClientByAuthId(const char[] AuthId)
 		
 		GetClientAuthId(i, AuthId_Steam2, iAuthId, sizeof(iAuthId));
 		
+		iAuthId[6] = '0';
+		
 		if(StrEqual(AuthId, iAuthId))
 			return i;
 	}
