@@ -16,7 +16,7 @@
                             <td align="center" class="listtable_1" ><input id="steam_" type="radio" name="search_type" value="radiobutton"></td>
                             <td class="listtable_1" >Steam ID</td>
                             <td class="listtable_1" >
-                                <input class="textbox" type="text" id="steamid" value="" onmouseup="$('steam_').checked = true"style="width: 50%; margin-right: 12px;"><select class="select" id="steam_match" onmouseup="$('steam_').checked = true" style="width: 33%;">
+                                <input class="textbox" type="text" id="steamid" onblur="ConvertSteamID( this );" value="" onmouseup="$('steam_').checked = true"style="width: 50%; margin-right: 12px;"><select class="select" id="steam_match" onmouseup="$('steam_').checked = true" style="width: 33%;">
                                     <option value="0" selected>Exact Match</option>
                                     <option value="1">Partial Match</option>
                                 </select>

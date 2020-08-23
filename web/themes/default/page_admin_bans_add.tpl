@@ -49,7 +49,7 @@
                 </td>
                 <td>
                     <div align="left">
-                        <input type="text" TABINDEX=3 class="textbox" id="steam" name="steam" style="width: 169px" />
+                        <input type="text" TABINDEX=3 onblur="ConvertSteamID( this );" class="textbox" id="steam" name="steam" style="width: 169px" />
                     </div>
                     <div id="steam.msg" class="badentry"></div>
                 </td>

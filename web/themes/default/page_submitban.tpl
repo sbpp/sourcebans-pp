@@ -19,7 +19,7 @@
                 <td width="20%">
                     Players SteamID:</td>
                 <td>
-                    <input type="text" name="SteamID" size="40" maxlength="64" value="{$STEAMID}" class="textbox" style="width: 250px;" />
+                    <input type="text" name="SteamID" onblur="ConvertSteamID( this );" size="40" maxlength="64" value="{$STEAMID}" class="textbox" style="width: 250px;" />
                 </td>
             </tr>
             <tr>
