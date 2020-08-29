@@ -73,6 +73,7 @@ native void SBBanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason
  * @noreturn
  *********************************************************/
 native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sReason);
+
 /*********************************************************
  * Ban Identity from server
  *
