@@ -55,3 +55,6 @@ Temporary Items
 
 # VSCode
 .vscode
+
+# Composer vendor dir
+/web/includes/vendor

@@ -17,5 +17,7 @@
     },
     "config": {
         "vendor-dir": "includes/vendor"
+    },
+    "require": {
     }
 }
