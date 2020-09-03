@@ -34,6 +34,29 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
   o SourceMod: Greater Than or Equal To 1.7
 ```
 
+## How to install a SourceBans++ release version
+
+The easiest way of installing SourceBans++ is to use a [release version](https://github.com/sbpp/sourcebans-pp/releases), since 
+those come bundled with all requiered code dependencies and pre-compiled sourcemod plugins.
+
+The [quickstart](https://sbpp.dev/docs/quickstart/) guide gives you a detailed walktrough of the installation process.
+
+## How to install the current master branch version
+
+The master branch doesn't include the required dependencies or compiled plugins you need to run SourceBans++.
+Here is a quick summary of getting the master branch code up and running.
+
+### Installing webpanel dependencies
+- Follow the [quickstart](https://sbpp.dev/docs/quickstart/) guide and upload the webpanel files to your web server
+- Install [composer](https://getcomposer.org/) - [Installation Guide](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-macos)
+- Go to the root of your SourceBans++ installation (where index.php is located)
+- run ```composer install```
+
+After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.dev/docs/quickstart/) guide.
+
+### Compiling SourceMod plugins
+Follow the Guide '[Compiling SourceMod Plugins](https://wiki.alliedmods.net/Compiling_SourceMod_Plugins)' from the official SourceMod Wiki
+
 ## Built With
 
 * [SourceMod](http://www.sourcemod.net/) - Scripting platform for the Source Engine - [License](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/SOURCEMOD-LICENSE.txt) - [GPL v3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3)
