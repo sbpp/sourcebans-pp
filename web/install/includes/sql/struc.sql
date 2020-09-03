@@ -57,7 +57,9 @@ CREATE TABLE IF NOT EXISTS `{prefix}_bans` (
   PRIMARY KEY  (`bid`),
   KEY `sid` (`sid`),
   FULLTEXT KEY `reason` (`reason`),
-  FULLTEXT KEY `authid_2` (`authid`)
+  FULLTEXT KEY `authid_2` (`authid`),
+  KEY `type_authid` (`type`,`authid`),
+  KEY `type_ip` (`type`,`ip`)
 ) ENGINE=InnoDB  DEFAULT CHARSET={charset};
 
 
