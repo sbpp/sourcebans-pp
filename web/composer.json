@@ -19,5 +19,6 @@
         "vendor-dir": "includes/vendor"
     },
     "require": {
+        "lcobucci/jwt": "3.*"
     }
 }

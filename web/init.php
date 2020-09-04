@@ -46,6 +46,9 @@ define('SB_CACHE', ROOT . 'cache/');
 
 define('IN_SB', true);
 
+#Composer autoload
+require_once(INCLUDES_PATH.'/vendor/autoload.php');
+
 require_once(INCLUDES_PATH.'/security/Crypto.php');
 
 require_once(INCLUDES_PATH.'/auth/JWT.php');
