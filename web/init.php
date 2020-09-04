@@ -188,7 +188,6 @@ define('MIN_PASS_LENGTH', Config::get('config.password.minlength'));
 // ---------------------------------------------------
 // Setup our templater
 // ---------------------------------------------------
-require(INCLUDES_PATH . '/smarty/Smarty.class.php');
 
 global $theme, $userbank;
 
