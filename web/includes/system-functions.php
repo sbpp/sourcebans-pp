@@ -24,11 +24,6 @@ if (!defined("IN_SB")) {
     die("You should not be here. Only follow links!");
 }
 
-require_once __DIR__ . DIR_SEP . 'maxmind' . DIR_SEP . 'autoload.php';
-if(!defined("MMDB_PATH")) {
-    define("MMDB_PATH", __DIR__ . DIR_SEP . 'maxmind' . DIR_SEP . 'GeoLite2-Country.mmdb');
-}
-
 /**
  * Creates an anchor tag, and adds tooltip code if needed
  *

@@ -44,6 +44,8 @@ define('SB_ICONS', ROOT . SB_ICON_LOCATION);
 define('SB_THEMES', ROOT . 'themes/');
 define('SB_CACHE', ROOT . 'cache/');
 
+define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
+
 define('IN_SB', true);
 
 #Composer autoload
