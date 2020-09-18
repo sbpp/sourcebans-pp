@@ -51,6 +51,15 @@ public void OnPluginStart()
 	Convars[MinLen].AddChangeHook(OnConvarChanged);
 }
 
+public void OnClientPutInServer(int iClient)
+{
+	if(IsValidClient(iClient))
+	{
+		ResetInReason(iClient);
+		fNextUse[iClient] = 0.0;
+	}
+}
+
 public Action CmdReport(int iClient, int iArgs)
 {
 	if (!IsValidClient(iClient))
