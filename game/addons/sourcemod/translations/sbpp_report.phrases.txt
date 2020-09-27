@@ -48,7 +48,7 @@
 		"de"	"Bitte geben sie einen Grund für die Meldung ein oder \"cancel\" um die Meldung abzubrechen"
 		"fr"	"Veuillez entrer la raison du signalement ou \"cancel\" pour annuler
 		"pl"	"Podaj przyczynę zgłoszenia lub \"cancel\", aby anulować"
-		"pt"	"Por favor, digite o motivo para a denúncia ou digite \"cancel\" para cancelar"
+		"pt"	"Por favor, digite o motivo para efetuar a denúncia ou digite \"cancel\" para cancelar"
 		"chi"	"请填写报告填写理由或者 \"cancel\" 来取消"
 		"hu"	"Írd be az indokot vagy írd \"cancel\" a megszakításhoz"
 		"tr"	"Şikayetiniz için bir sebep belirtiniz. İptal etmek için \"cancel\" yazınız"
