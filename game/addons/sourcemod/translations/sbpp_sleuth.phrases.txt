@@ -9,7 +9,7 @@
 		"ru"		"Аккаунт дубликат."
 		"fr"		"Double compte"
 		"pl"		"Zduplikowane konto"
-		"pt"		"Conta duplicada"
+		"pt"		"Conta dúplice"
 		"chi"		"马甲/多重账户"
 		"tr"		"Çift hesap"
 	}
