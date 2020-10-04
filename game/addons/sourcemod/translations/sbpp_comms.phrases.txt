@@ -1016,7 +1016,7 @@
 		"es"		"- Expira en: "
 		"ru"		"- Истекает: "
 		"pl"		"- Wygasa: "
-		"pt"		"- Expira: "
+		"pt"		"- Expira em: "
 		"de"		"- Läuft ab: "
 		"fr"		"- Expire: "
 		"chi"		"- 解除: "

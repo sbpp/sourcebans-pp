@@ -259,12 +259,12 @@
 	"Ban Added"
 	{
 		"#format"		"{1:L},{2:d},{3:s},{4:s}"
-		"en"			"\"{1}\" added ban (minutes: {2}) (id/ip: {3}) (reason: {4})"
-		"de"			"\"{1}\" hat einen Ban hinzugefügt. (Minuten: {2}) (id/ip: {3}) (Grund: {4})"
-		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (id/ip: {3}) (причина: {4})"
-		"fr"			"\"{1}\" a ajouté un ban (minutes: {2}) (id/ip: {3}) (raison: {4})"
-		"pt"			"\"{1}\" adicionou um banimento (minutos: {2}) (id/ip: {3}) (motivo: {4})"
-		"chi"			"\"{1}\" 已被封禁 ({2} 分钟) (id/ip: {3}) (理由: {4})"
+		"en"			"\"{1}\" added ban (minutes: {2}) (ID/IP: {3}) (reason: {4})"
+		"de"			"\"{1}\" hat einen Ban hinzugefügt. (Minuten: {2}) (ID/IP: {3}) (Grund: {4})"
+		"ru"			"\"{1}\" добавил бан (длительностью (в минутах): {2}) (ID/IP: {3}) (причина: {4})"
+		"fr"			"\"{1}\" a ajouté un ban (minutes: {2}) (ID/IP: {3}) (raison: {4})"
+		"pt"			"\"{1}\" adicionou um banimento (minutos: {2}) (ID/IP: {3}) (motivo: {4})"
+		"chi"			"\"{1}\" 已被封禁 ({2} 分钟) (ID/IP: {3}) (理由: {4})"
 	}
 	"Ban Success Name"
 	{
