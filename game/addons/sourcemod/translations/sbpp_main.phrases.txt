@@ -37,7 +37,7 @@
 		"nl"			"De speler is niet in het spel, gaat u alstublieft naar het web panel om de speler op de banlijst te plaatsen."
 		"fr"			"Le joueur n'est pas en jeu, merci d'aller sur le panel internet pour le bannir."
 		"pl"			"Gracz nie znajduje się w grze, odwiedź panel www aby go zbanować."
-		"pt"			"O(A) jogador(a) não está no servidor, por favor, verifique o painel da web para bani-lo(a)."
+		"pt"			"O(A) jogador(a) não está no servidor, por favor, acesse o painel da web para bani-lo(a)."
 		"de"			"Der Spieler ist nicht im Spiel. Bitte benutzen Sie das Webpanel um ihn zu bannen."
 		"ru"			"Игрок не в игре. Пожалуйста, посетите веб-панель чтобы забанить его."
 		"da"			"Spilleren er ikke i spillet, besøg venligst web panelet for at udelukke ham."
