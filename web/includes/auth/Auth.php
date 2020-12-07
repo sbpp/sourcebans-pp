@@ -187,10 +187,14 @@ class Auth
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     private static function getJWTFromCookie()
     {
-        return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        if (isset($_COOKIE['sbpp_auth'])) {
+            return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        } else {
+            return '';
+        }
     }
 }
