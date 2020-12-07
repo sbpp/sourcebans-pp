@@ -183,7 +183,11 @@ class Auth
         self::$dbs->query("SELECT 1 FROM `:prefix_login_tokens` WHERE jti = :jti");
         self::$dbs->bind(':jti', $jti, PDO::PARAM_STR);
         $result = self::$dbs->single();
-        return (bool)($result[1]);
+        if (empty($result)) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
     /**
