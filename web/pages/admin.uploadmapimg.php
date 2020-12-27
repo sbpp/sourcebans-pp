@@ -31,7 +31,7 @@ if (isset($_POST['upload'])) {
     if (checkExtension($_FILES['mapimg_file']['name'], ['jpg'])) {
         move_uploaded_file($_FILES['mapimg_file']['tmp_name'], SB_MAPS . "/" . $_FILES['mapimg_file']['name']);
         $message = "<script>window.opener.mapimg('" . $_FILES['mapimg_file']['name'] . "');self.close()</script>";
-        Log::add("m", "Map Image Uploaded", "A new map image has been uploaded: $_FILES[mapimg_file][name]");
+        Log::add("m", "Map Image Uploaded", "A new map image has been uploaded: " . $_FILES[mapimg_file][name]);
     } else {
         $message = "<b> File must be jpg filetype.</b><br><br>";
     }

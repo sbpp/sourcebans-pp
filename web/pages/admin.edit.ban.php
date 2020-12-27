@@ -195,7 +195,7 @@ if (isset($_POST['name'])) {
         }
 
         if ($_POST['banlength'] != $lengthrev->fields['length']) {
-            Log::add("m", "Ban length edited", "Ban length for ($lengthrev[authid]) has been updated. Before: $lengthrev[length]; Now: $_POST[banlength]");
+            Log::add("m", "Ban length edited", "Ban length for (" . $lengthrev[authid] . ") has been updated. Before: " . $lengthrev[length] . "; Now: " . $_POST[banlength]);
         }
         echo '<script>ShowBox("Ban updated", "The ban has been updated successfully", "green", "index.php?p=banlist' . $pagelink . '");</script>';
     }

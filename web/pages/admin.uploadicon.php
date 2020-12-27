@@ -31,7 +31,7 @@ if (isset($_POST['upload'])) {
     if (checkExtension($_FILES['icon_file']['name'], ['gif', 'jpg', 'png'])) {
         move_uploaded_file($_FILES['icon_file']['tmp_name'], SB_ICONS . "/" . $_FILES['icon_file']['name']);
         $message = "<script>window.opener.icon('" . $_FILES['icon_file']['name'] . "');self.close()</script>";
-        Log::add("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");
+        Log::add("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: " . $_FILES[icon_file][name]);
     } else {
         $message = "<b> File must be gif, jpg or png filetype.</b><br><br>";
     }

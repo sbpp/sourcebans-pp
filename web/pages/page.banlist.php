@@ -116,7 +116,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             if (!isset($_GET['bulk'])) {
                 echo "<script>ShowBox('Player Unbanned', '" . $row['name'] . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            Log::add("m", "Player Unbanned", "$row[name] ($type) has been unbanned.");
+            Log::add("m", "Player Unbanned", $row[name] . "(" . $type . ") has been unbanned.");
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {
@@ -183,7 +183,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             if (!isset($_GET['bulk'])) {
                 echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . $steam['name'] . "\' ($type) has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            Log::add("m", "Ban Deleted", "Ban $steam[name] ($type) has been deleted.");
+            Log::add("m", "Ban Deleted", "Ban" . $steam[name] . " (". $type . ") has been deleted.");
             $dcount++;
         } else {
             if (!isset($_GET['bulk'])) {

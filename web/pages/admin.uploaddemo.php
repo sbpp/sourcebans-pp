@@ -34,7 +34,7 @@ if (isset($_POST['upload'])) {
         $filename = md5(time() . rand(0, 1000));
         move_uploaded_file($_FILES['demo_file']['tmp_name'], SB_DEMOS . "/" . $filename);
         $message = "<script>window.opener.demo('" . $filename . "','" . $_FILES['demo_file']['name'] . "');self.close()</script>";
-        Log::add("m", "Demo Uploaded", "A new demo has been uploaded: $_FILES[demo_file][name]");
+        Log::add("m", "Demo Uploaded", "A new demo has been uploaded: " . $_FILES[demo_file][name]);
     } else {
         $message = "<b> File must be dem, zip, rar, 7z, bz2 or gz filetype.</b><br><br>";
     }

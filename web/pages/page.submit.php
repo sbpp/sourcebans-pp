@@ -174,7 +174,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             print "<script>ShowBox('Successful', 'Your submission has been added into the database, and will be reviewed by one of our admins.', 'green');</script>";
         } else {
             print "<script>ShowBox('Error', 'There was an error uploading your demo to the server. Please try again later.', 'red');</script>";
-            Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
+            Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from (" . $Email . ")");
         }
     }
 }

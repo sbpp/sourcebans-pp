@@ -36,7 +36,7 @@ if (!isset($_GET['id'])) {
 }
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
+    Log::add("e", "Getting admin data failed", "Can't find data for admin with id " . $_GET[id] . ".");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -132,7 +132,7 @@ if (isset($_POST['editadminserver'])) {
     $admname = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = ?", array(
         (int) $aid
     ));
-    Log::add("m", "Admin Servers Updated", "Admin ($admname[user]) server access has been changed.");
+    Log::add("m", "Admin Servers Updated", "Admin (" . $admname[user] . ") server access has been changed.");
 }
 
 
