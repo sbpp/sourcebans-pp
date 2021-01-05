@@ -103,10 +103,6 @@ define('SB_DEV', isset($version['dev']) ? $version['dev'] : false);
 // ---------------------------------------------------
 ini_set('include_path', '.:/php/includes:' . INCLUDES_PATH .'/adodb');
 
-if (defined("SB_MEM")) {
-    ini_set('memory_limit', SB_MEM);
-}
-
 ini_set('display_errors', 1);
 error_reporting(E_ALL ^ E_NOTICE);
 
