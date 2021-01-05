@@ -48,9 +48,32 @@ define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
 
 define('IN_SB', true);
 
+// ---------------------------------------------------
+//  Are we installed?
+// ---------------------------------------------------
+#DB Config
+if (!file_exists(ROOT.'/config.php')) {
+    die('SourceBans++ is not installed.');
+}
+require_once(ROOT.'/config.php');
+
+if ($_SERVER['HTTP_HOST'] != "localhost" && !defined("IS_UPDATE")) {
+    if (file_exists(ROOT."/install")) {
+        die('Please delete the install directory before you use SourceBans++.');
+    } else if (file_exists(ROOT."/updater")) {
+        die('Please delete the updater directory before using SourceBans++.');
+    }
+}
+
 #Composer autoload
+if (!file_exists(INCLUDES_PATH.'/vendor/autoload.php')) {
+    die('Compose autoload not found! Run `composer install` in the root directory of your SourceBans++ installation.');
+}
 require_once(INCLUDES_PATH.'/vendor/autoload.php');
 
+// ---------------------------------------------------
+//  Initial setup
+// ---------------------------------------------------
 require_once(INCLUDES_PATH.'/security/Crypto.php');
 
 require_once(INCLUDES_PATH.'/auth/JWT.php');
@@ -66,33 +89,6 @@ require_once(INCLUDES_PATH.'/AdminTabs.php');
 
 require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
-// ---------------------------------------------------
-//  Are we installed?
-// ---------------------------------------------------
-if (!file_exists(ROOT.'/config.php') || !include_once(ROOT . '/config.php')) {
-    // No were not
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "SourceBans is not installed.";
-        die();
-    }
-}
-if (!defined("IS_UPDATE") && file_exists(ROOT."/install")) {
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "Please delete the install directory before you use SourceBans";
-        die();
-    }
-}
-
-if (!defined("IS_UPDATE") && file_exists(ROOT."/updater")) {
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "Please delete the updater directory before using SourceBans";
-        die();
-    }
-}
-
-// ---------------------------------------------------
-//  Initial setup
-// ---------------------------------------------------
 $version = @json_decode(file_get_contents('configs/version.json'), true);
 define('SB_VERSION', isset($version['version']) ? $version['version'] : 'N/A');
 define('SB_GITREV', isset($version['git']) ? $version['git'] : 0);
