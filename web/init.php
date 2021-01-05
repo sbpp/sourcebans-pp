@@ -76,14 +76,14 @@ if (!file_exists(ROOT.'/config.php') || !include_once(ROOT . '/config.php')) {
         die();
     }
 }
-if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/install")) {
+if (!defined("IS_UPDATE") && file_exists(ROOT."/install")) {
     if ($_SERVER['HTTP_HOST'] != "localhost") {
         echo "Please delete the install directory before you use SourceBans";
         die();
     }
 }
 
-if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/updater")) {
+if (!defined("IS_UPDATE") && file_exists(ROOT."/updater")) {
     if ($_SERVER['HTTP_HOST'] != "localhost") {
         echo "Please delete the updater directory before using SourceBans";
         die();
@@ -136,6 +136,8 @@ require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);
 
+define("DEBUG_MODE", Config::getBool('config.debug'));
+
 Auth::init($GLOBALS['PDO']);
 
 // ---------------------------------------------------
@@ -177,7 +179,6 @@ foreach ($smflags as $flag => $perm) {
     define($flag, $perm['value']);
 }
 
-define("DEVELOPER_MODE", Config::getBool('config.debug'));
 define('SB_BANS_PER_PAGE', Config::get('banlist.bansperpage'));
 define('MIN_PASS_LENGTH', Config::get('config.password.minlength'));
 
@@ -212,6 +213,6 @@ $theme->compile_dir = SB_CACHE;
 $theme->register_function('help_icon', 'smarty_function_help_icon');
 $theme->register_function('sb_button', 'smarty_function_sb_button');
 
-if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE")) {
+if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->force_compile = true;
 }
