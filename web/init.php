@@ -103,10 +103,6 @@ define('SB_DEV', isset($version['dev']) ? $version['dev'] : false);
 // ---------------------------------------------------
 ini_set('include_path', '.:/php/includes:' . INCLUDES_PATH .'/adodb');
 
-ini_set('display_errors', 1);
-error_reporting(E_ALL ^ E_NOTICE);
-
-
 // ---------------------------------------------------
 //  Setup our DB
 // ---------------------------------------------------
@@ -137,6 +133,11 @@ require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);
 
 define("DEBUG_MODE", Config::getBool('config.debug'));
+
+if (DEBUG_MODE) {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL ^ E_NOTICE);
+}
 
 Auth::init($GLOBALS['PDO']);
 
