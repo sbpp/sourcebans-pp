@@ -44,7 +44,12 @@ define('SB_ICONS', ROOT . SB_ICON_LOCATION);
 define('SB_THEMES', ROOT . 'themes/');
 define('SB_CACHE', ROOT . 'cache/');
 
+define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
+
 define('IN_SB', true);
+
+#Composer autoload
+require_once(INCLUDES_PATH.'/vendor/autoload.php');
 
 require_once(INCLUDES_PATH.'/security/Crypto.php');
 
@@ -183,7 +188,6 @@ define('MIN_PASS_LENGTH', Config::get('config.password.minlength'));
 // ---------------------------------------------------
 // Setup our templater
 // ---------------------------------------------------
-require(INCLUDES_PATH . '/smarty/Smarty.class.php');
 
 global $theme, $userbank;
 
@@ -200,6 +204,8 @@ if (!@is_writable(SB_CACHE)) {
     die("Theme Error: <b>".SB_CACHE."</b> MUST be writable.");
 }
 
+require_once(INCLUDES_PATH.'/SmartyCustomFunctions.php');
+
 $theme = new Smarty();
 $theme->error_reporting = E_ALL ^ E_NOTICE;
 $theme->use_sub_dirs = false;
@@ -207,6 +213,8 @@ $theme->compile_id = $theme_name;
 $theme->caching = false;
 $theme->template_dir = SB_THEMES . $theme_name;
 $theme->compile_dir = SB_CACHE;
+$theme->register_function('help_icon', 'smarty_function_help_icon');
+$theme->register_function('sb_button', 'smarty_function_sb_button');
 
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE")) {
     $theme->force_compile = true;

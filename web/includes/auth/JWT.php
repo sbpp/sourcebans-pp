@@ -1,7 +1,5 @@
 <?php
 
-require_once(__DIR__.'/jwt/autoload.php');
-
 use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Parser;

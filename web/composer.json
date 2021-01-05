@@ -19,5 +19,8 @@
         "vendor-dir": "includes/vendor"
     },
     "require": {
+        "lcobucci/jwt": "3.*",
+        "maxmind-db/reader": "~1.0",
+        "smarty/smarty": "~2.6"
     }
 }
