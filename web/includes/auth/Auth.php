@@ -183,14 +183,18 @@ class Auth
         self::$dbs->query("SELECT 1 FROM `:prefix_login_tokens` WHERE jti = :jti");
         self::$dbs->bind(':jti', $jti, PDO::PARAM_STR);
         $result = self::$dbs->single();
-        return (bool)($result[1]);
+        return !empty($result);
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     private static function getJWTFromCookie()
     {
-        return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        if (isset($_COOKIE['sbpp_auth'])) {
+            return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+        }
+
+        return '';
     }
 }
