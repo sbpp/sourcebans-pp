@@ -193,8 +193,8 @@ class Auth
     {
         if (isset($_COOKIE['sbpp_auth'])) {
             return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
-        } else {
-            return '';
         }
+
+        return '';
     }
 }
