@@ -95,11 +95,6 @@ define('SB_GITREV', isset($version['git']) ? $version['git'] : 0);
 define('SB_DEV', isset($version['dev']) ? $version['dev'] : false);
 
 // ---------------------------------------------------
-//  Setup PHP
-// ---------------------------------------------------
-ini_set('include_path', '.:/php/includes:' . INCLUDES_PATH .'/adodb');
-
-// ---------------------------------------------------
 //  Setup our DB
 // ---------------------------------------------------
 if (!defined('DB_CHARSET')) {
