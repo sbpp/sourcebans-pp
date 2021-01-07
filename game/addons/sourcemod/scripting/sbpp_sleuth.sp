@@ -203,7 +203,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 				case LENGTH_ORIGINAL:
 				{
 					int length = results.FetchInt(6);
-					int time = length * 60;
+					int time = length / 60;
 
 					BanPlayer(client, time);
 				}
