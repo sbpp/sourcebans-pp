@@ -48,9 +48,32 @@ define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
 
 define('IN_SB', true);
 
+// ---------------------------------------------------
+//  Are we installed?
+// ---------------------------------------------------
+#DB Config
+if (!file_exists(ROOT.'/config.php')) {
+    die('SourceBans++ is not installed.');
+}
+require_once(ROOT.'/config.php');
+
+if ($_SERVER['HTTP_HOST'] != "localhost" && !defined("IS_UPDATE")) {
+    if (file_exists(ROOT."/install")) {
+        die('Please delete the install directory before you use SourceBans++.');
+    } else if (file_exists(ROOT."/updater")) {
+        die('Please delete the updater directory before using SourceBans++.');
+    }
+}
+
 #Composer autoload
+if (!file_exists(INCLUDES_PATH.'/vendor/autoload.php')) {
+    die('Compose autoload not found! Run `composer install` in the root directory of your SourceBans++ installation.');
+}
 require_once(INCLUDES_PATH.'/vendor/autoload.php');
 
+// ---------------------------------------------------
+//  Initial setup
+// ---------------------------------------------------
 require_once(INCLUDES_PATH.'/security/Crypto.php');
 
 require_once(INCLUDES_PATH.'/auth/JWT.php');
@@ -66,50 +89,10 @@ require_once(INCLUDES_PATH.'/AdminTabs.php');
 
 require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
-// ---------------------------------------------------
-//  Are we installed?
-// ---------------------------------------------------
-if (!file_exists(ROOT.'/config.php') || !include_once(ROOT . '/config.php')) {
-    // No were not
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "SourceBans is not installed.";
-        die();
-    }
-}
-if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/install")) {
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "Please delete the install directory before you use SourceBans";
-        die();
-    }
-}
-
-if (!defined("DEVELOPER_MODE") && !defined("IS_UPDATE") && file_exists(ROOT."/updater")) {
-    if ($_SERVER['HTTP_HOST'] != "localhost") {
-        echo "Please delete the updater directory before using SourceBans";
-        die();
-    }
-}
-
-// ---------------------------------------------------
-//  Initial setup
-// ---------------------------------------------------
 $version = @json_decode(file_get_contents('configs/version.json'), true);
 define('SB_VERSION', isset($version['version']) ? $version['version'] : 'N/A');
 define('SB_GITREV', isset($version['git']) ? $version['git'] : 0);
 define('SB_DEV', isset($version['dev']) ? $version['dev'] : false);
-
-// ---------------------------------------------------
-//  Setup PHP
-// ---------------------------------------------------
-ini_set('include_path', '.:/php/includes:' . INCLUDES_PATH .'/adodb');
-
-if (defined("SB_MEM")) {
-    ini_set('memory_limit', SB_MEM);
-}
-
-ini_set('display_errors', 1);
-error_reporting(E_ALL ^ E_NOTICE);
-
 
 // ---------------------------------------------------
 //  Setup our DB
@@ -139,6 +122,13 @@ require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 
 require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);
+
+define("DEBUG_MODE", Config::getBool('config.debug'));
+
+if (DEBUG_MODE) {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL ^ E_NOTICE);
+}
 
 Auth::init($GLOBALS['PDO']);
 
@@ -181,7 +171,6 @@ foreach ($smflags as $flag => $perm) {
     define($flag, $perm['value']);
 }
 
-define("DEVELOPER_MODE", Config::getBool('config.debug'));
 define('SB_BANS_PER_PAGE', Config::get('banlist.bansperpage'));
 define('MIN_PASS_LENGTH', Config::get('config.password.minlength'));
 
@@ -216,6 +205,6 @@ $theme->compile_dir = SB_CACHE;
 $theme->register_function('help_icon', 'smarty_function_help_icon');
 $theme->register_function('sb_button', 'smarty_function_sb_button');
 
-if ((isset($_GET['debug']) && $_GET['debug'] == 1) || defined("DEVELOPER_MODE")) {
+if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->force_compile = true;
 }

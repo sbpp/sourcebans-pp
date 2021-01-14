@@ -14,14 +14,6 @@ define('SB_VERSION', '1.7.0 | Installer');
 // ---------------------------------------------------
 //  Setup PHP
 // ---------------------------------------------------
-ini_set('date.timezone', 'GMT');
-
-if (function_exists('date_default_timezone_set')) {
-    date_default_timezone_set('GMT');
-} elseif (!ini_get('safe_mode')) {
-    putenv('TZ=GMT');
-}
-
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
