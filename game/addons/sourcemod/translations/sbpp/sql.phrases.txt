@@ -1,0 +1,19 @@
+"Phrases"
+{
+	"Successful reconnect to database."
+	{
+		"en"	"Successful reconnect to database."
+		"ru"	"Успешное переподключение к базе данных."
+	}
+	"Unknown parse error."
+	{
+		"en"	"Unknown parse error."
+		"ru"	"Неизвестная ошибка чтения настроек."
+	}
+	"Database config not found '{1}'."
+	{
+		"#format"	"{1:s}"
+		"en"	"Database config not found '{1}'."
+		"ru"	"Конфиг базы данных не найден '{1}'."
+	}
+}
