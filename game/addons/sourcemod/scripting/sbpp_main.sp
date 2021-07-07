@@ -68,9 +68,10 @@ AdminCachePart loadPart;
 AdminFlag g_FlagLetters[FLAG_LETTERS_SIZE];
 
 /* Cvar handle*/
-ConVar
-	CvarHostIp
-	, CvarPort;
+ConVar CvarHostIp;
+ConVar CvarPort;
+
+ConVar sb_id;
 
 /* Database handle */
 Database DB;
@@ -175,6 +176,17 @@ public void OnPluginStart()
 
 	RegConsoleCmd("say", ChatHook);
 	RegConsoleCmd("say_team", ChatHook);
+
+	sb_id = CreateConVar
+	(
+		"sb_id",
+		"-1",
+		"Set to a value other than -1 to override the serverid in sourcebans.cfg",
+		FCVAR_NONE,
+		true,
+		-1.0,
+		false
+	);
 
 	if ((TimeMenuHandle = CreateMenu(MenuHandler_BanTimeList, MenuAction_Select|MenuAction_Cancel|MenuAction_DrawItem)) != INVALID_HANDLE)
 	{
@@ -2255,6 +2267,12 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 			else if (strcmp("ServerID", key, false) == 0)
 			{
 				serverID = StringToInt(value);
+
+				int sbid = GetConVarInt(sb_id);
+				if (sbid != -1)
+				{
+					serverID = sbid;
+				}
 			}
 		}
 
