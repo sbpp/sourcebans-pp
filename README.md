@@ -26,8 +26,9 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ```
 * Webserver
-  o PHP 7.1 or higher
+  o PHP 7.4 or higher
     * ini setting: memory_limit greater than or equal to 64M
+    * GMP extension
   o MySQL 5.6 or MariaDB 10 and higher
 * Source Dedicated Server
   o MetaMod: Source
