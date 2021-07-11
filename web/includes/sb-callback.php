@@ -1372,7 +1372,6 @@ function AddAdmin(
 function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open="", $inHome=false, $trunchostname=48)
 {
     global $userbank;
-    include_once INCLUDES_PATH.'/SourceQuery/bootstrap.php';
 
     $objResponse = new xajaxResponse();
 
@@ -1610,7 +1609,6 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
 function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
 {
     global $userbank;
-    include_once INCLUDES_PATH.'/SourceQuery/bootstrap.php';
 
     $objResponse = new xajaxResponse();
 
@@ -1650,7 +1648,6 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
 function ServerHostPlayers_list($sid, $type="servers", $obId="")
 {
     global $userbank;
-    include_once INCLUDES_PATH.'/SourceQuery/bootstrap.php';
 
     $objResponse = new xajaxResponse();
 
@@ -1703,7 +1700,6 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
 function ServerPlayers($sid)
 {
     global $userbank;
-    include_once INCLUDES_PATH.'/SourceQuery/bootstrap.php';
 
     $objResponse = new xajaxResponse();
 

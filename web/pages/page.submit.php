@@ -19,7 +19,6 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 global $userbank, $theme;
 use xPaw\SourceQuery\SourceQuery;
-require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";

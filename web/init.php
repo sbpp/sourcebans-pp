@@ -87,8 +87,6 @@ require_once(INCLUDES_PATH.'/auth/Host.php');
 require_once(INCLUDES_PATH.'/CUserManager.php');
 require_once(INCLUDES_PATH.'/AdminTabs.php');
 
-require_once(INCLUDES_PATH.'/SourceQuery/bootstrap.php');
-
 $version = @json_decode(file_get_contents('configs/version.json'), true);
 define('SB_VERSION', isset($version['version']) ? $version['version'] : 'N/A');
 define('SB_GITREV', isset($version['git']) ? $version['git'] : 0);
