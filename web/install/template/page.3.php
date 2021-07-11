@@ -77,6 +77,15 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
 	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $xml?'Enabled':'Disabled';?></td>
   </tr>
 
+  <td width="33%" height="16" class="listtable_1"><b>GMP Extension</b></td>
+	<td width="22%" height="16" class="listtable_top">N/A</td>
+	<td width="22%" height="16" class="listtable_1"><b>Enabled</b></td>
+	<?php $gmp = extension_loaded('gmp');if($gmp)
+		$class = "green";
+	  else {  $class = "red"; $errors++;}?>
+	<td width="22%" height="16" class="<?php echo $class?>"><?php echo $gmp?'Enabled':'Disabled';?></td>
+  </tr>
+
   <td width="33%" height="16" class="listtable_1"><b>Register Globals</b></td>
 	<td width="22%" height="16" class="listtable_1"><b>Off</b></td>
 	<td width="22%" height="16" class="listtable_top">N/A</td>
