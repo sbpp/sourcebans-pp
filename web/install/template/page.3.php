@@ -32,9 +32,9 @@ if (isset($_POST['username'], $_POST['password'], $_POST['server'], $_POST['port
    <tr>
   <td width="33%" height="16" class="listtable_1"><b>PHP Version</b></td>
   <td width="22%" height="16" class="listtable_top">N/A</td>
-    <td width="22%" height="16" class="listtable_1"><b>7.1</b></td>
+    <td width="22%" height="16" class="listtable_1"><b>7.4</b></td>
     <?php
-    if (version_compare(PHP_VERSION, "7.1") != -1) {
+    if (version_compare(PHP_VERSION, "7.4") != -1) {
         $class = "green";
     } else {
         $class = "red";
