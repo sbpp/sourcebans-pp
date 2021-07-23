@@ -17,7 +17,7 @@
 		"#format"	"{1:N},{2:s},{3:s}"
 		"en"		"Player {1} (ID: {2} | IP: {3}) has active bans on IP"
 		"de"		"Spieler {1} (ID: {2} | IP: {3}) hat einen aktiven IP Ban"
-		"hu"		"{1} (ID: {2} | IP: {3}) játékosnak van aktív kitiltása az alábbi IP-n"
+		"hu"		"{1} (ID: {2} | IP: {3}) játékosnak van aktív kitiltása az alábbi IP"
 		"ru"		"Игрок {1} (ID: {2} | IP: {3}) имеет действующий бан по IP"
 		"sv"		"Spelare {1} (ID: {2} | IP: {3}) har aktiva bannlysningar på IP"
 		"fr"		"Le joueur {1} (ID: {2} | IP: {3}) a des bannissements actifs sur IP"
