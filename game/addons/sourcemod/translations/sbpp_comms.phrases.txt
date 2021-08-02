@@ -6,7 +6,7 @@
 		"en"			"You have been muted!"
 		"hu"			"Le lettél némítva!"
 		"es"			"Has sido muteado!"
-		"ru"			"Вам был отключен микрофон."
+		"ru"			"Вам был отключен микрофон!"
 		"pl"			"Zostałeś wyciszony!"
 		"pt"			"Você recebeu um mute!"
 		"de"			"Sie wurden im Sprachchat gesperrt!"
@@ -19,13 +19,13 @@
 		"en"			"You have been gagged!"
 		"hu"			"Az írás jogod elvéve!"
 		"es"			"Has sido gageado!"
-		"ru"			"Вам был отключен чат."
+		"ru"			"Вам был отключен чат!"
 		"pl"			"Zostałeś zakneblowany!"
 		"pt"			"Você recebeu um gag!"
 		"de"			"Sie wurden im Textchat gesperrt!"
 		"fr"			"Vous avez été mute du chat écrit!"
 		"chi"			"你已被禁言!"
-		"tr"			"Sohbet etmeniz yasaklandı."
+		"tr"			"Sohbet etmeniz yasaklandı!"
 	}
 	//--------------------------------------------------------------------------------
 	"Mute expired"
@@ -378,7 +378,6 @@
 		"chi"			"已对玩家 {1} 暂时解除静音."
 		"tr"			"{1} üzerinden mikrofon yasağı geçici olarak kaldırıldı."
 	}
-
 	"Temp ungagged player"
 	{
 		"#format"		"{1:t}"
