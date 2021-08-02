@@ -269,7 +269,7 @@
 	"Ban Success Name"
 	{
 		"#format"		"{1:s}"
-		"en"			"Successfully banned {1}"
+		"en"			"Successfully banned {1.}"
 		"de"			"{1} wurde erfolgreich gebannt."
 		"ru"			"{1} успешно забанен."
 		"fr"			"{1} a été banni avec succès."
@@ -279,7 +279,7 @@
 	"Unban Success Name"
 	{
 		"#format"		"{1:s}"
-		"en"			"Successfully unbanned {1}"
+		"en"			"Successfully unbanned {1}."
 		"de"			"{1} wurde erfolgreich entbannt."
 		"ru"			"{1} успешно разбанен."
 		"fr"			"{1} a été debanni avec succès."
