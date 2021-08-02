@@ -3,7 +3,6 @@
 	"In Cooldown"
 	{
 		"#format"	"{1:.0f}"
-
 		"en"	"Please wait {1} seconds before reporting again"
 		"ru"	"Пожалуйста, подождите {1} секунд до отправки жалобы вновь"
 		"de"	"Bitte warten Sie {1} Sekunden bevor Sie eine erneute Meldung durchführen können"
@@ -14,7 +13,6 @@
 		"hu"	"Kérlek várj {1} másodpercet mielőtt report-olnád újra"
 		"tr"	"Tekrar şikayet etmeden önce {1} saniye bekleyiniz"
 	}
-
 	"Report Canceled"
 	{
 		"en"	"Report canceled"
@@ -27,7 +25,6 @@
 		"hu"	"Report megszakítva"
 		"tr"	"Şikayet iptal edildi"
 	}
-
 	"Report Sent"
 	{
 		"en"	"Your report has been sent"
@@ -40,7 +37,6 @@
 		"hu"	"A Report-ot elküldtük"
 		"tr"	"Şikayetiniz gönderildi"
 	}
-
 	"Reason Prompt"
 	{
 		"en"	"Please enter the reason for the report or \"cancel\" to cancel"
@@ -53,7 +49,6 @@
 		"hu"	"Írd be az indokot vagy írd \"cancel\" a megszakításhoz"
 		"tr"	"Şikayetiniz için bir sebep belirtiniz. İptal etmek için \"cancel\" yazınız"
 	}
-
 	"Reason Short Need More"
 	{
 		"en"	"Reason is too short, more details is required"
