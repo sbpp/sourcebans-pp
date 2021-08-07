@@ -1094,8 +1094,10 @@ public void GotDatabase(Database db, const char[] error, any data)
 	g_bConnecting = false;
 }
 
-public void VerifyInsert(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void VerifyInsert(Database db, DBResultSet results, const char[] error, any data)
 {
+	DataPack dataPack = data;
+	
 	if (dataPack == INVALID_HANDLE)
 	{
 		LogToFile(logFile, "%t: %s", "Ban Fail", error);
@@ -1189,12 +1191,12 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 	}
 }
 
-public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	int admin, minutes;
 	char adminAuth[30], adminIp[30], banReason[256], ip[16], Query[512];
 	char reason[128];
-
+	DataPack dataPack = data;
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
@@ -1239,13 +1241,15 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 	db.Query(InsertBanIpCallback, Query, dataPack, DBPrio_High);
 }
 
-public void InsertBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void InsertBanIpCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	// if the pack is good unpack it and close the handle
 	int admin, minutes;
 	char reason[128];
 	char arg[30];
-
+	
+	DataPack dataPack = data;
+	
 	if (dataPack != null)
 	{
 		dataPack.Reset();
@@ -1276,12 +1280,13 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 		PrintToServer("%s%t", Prefix, "Ban Success Name", arg);
 }
 
-public void SelectUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void SelectUnbanCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	int admin;
 	char arg[30], adminAuth[30], unbanReason[256];
 	char reason[128];
-
+	
+	DataPack dataPack = data;
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
@@ -1330,13 +1335,15 @@ public void SelectUnbanCallback(Database db, DBResultSet results, const char[] e
 	return;
 }
 
-public void InsertUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void InsertUnbanCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	// if the pack is good unpack it and close the handle
 	int admin;
 	char arg[30];
 	char reason[128];
-
+	
+	DataPack dataPack = data;
+	
 	if (dataPack != null)
 	{
 		dataPack.Reset();
@@ -1368,12 +1375,13 @@ public void InsertUnbanCallback(Database db, DBResultSet results, const char[] e
 		PrintToServer("%s%t", Prefix, "Unban Success Name", arg);
 }
 
-public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void SelectAddbanCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	int admin, minutes;
 	char adminAuth[30], adminIp[30], authid[20], banReason[256], Query[512];
 	char reason[128];
 
+	DataPack dataPack = data;
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
@@ -1419,12 +1427,13 @@ public void SelectAddbanCallback(Database db, DBResultSet results, const char[] 
 	db.Query(InsertAddbanCallback, Query, dataPack, DBPrio_High);
 }
 
-public void InsertAddbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void InsertAddbanCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	int admin, minutes;
 	char authid[20];
 	char reason[128];
-
+	
+	DataPack dataPack = data;
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
@@ -1521,11 +1530,12 @@ public void ProcessQueueCallback(Database db, DBResultSet results, const char[] 
 	CreateTimer(float(ProcessQueueTime * 60), ProcessQueue);
 }
 
-public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void AddedFromSQLiteCallback(Database db, DBResultSet results, const char[] error, any data)
 {
 	char buffer[512];
 	char auth[40];
-
+	
+	DataPack dataPack = data;
 	dataPack.ReadString(auth, sizeof(auth));
 	if (results == null)
 	{
@@ -1570,7 +1580,7 @@ public void ErrorCheckCallback(Database db, DBResultSet results, const char[] er
 	}
 }
 
-public void VerifyBan(Database db, DBResultSet results, const char[] error, int userid)
+public void VerifyBan(Database db, DBResultSet results, const char[] error, any userid)
 {
 	char clientName[64], clientAuth[64], clientIp[64];
 
@@ -1646,7 +1656,7 @@ public void VerifyBan(Database db, DBResultSet results, const char[] error, int 
 	PlayerStatus[client] = true;
 }
 
-public void SQL_OnIPMend(Database db, DBResultSet results, const char[] error, int iClient)
+public void SQL_OnIPMend(Database db, DBResultSet results, const char[] error, any iClient)
 {
 	if (results == null)
 	{
@@ -1823,10 +1833,10 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 			if (flags[i] < 'a' || flags[i] > 'z')
 				continue;
 
-			if (g_FlagLetters[flags[i]-'a'] < Admin_Reservation)
+			if (g_FlagLetters[ReadFlagString(flags[i])-'a'] < Admin_Reservation)
 				continue;
 
-			curAdm.SetFlag(g_FlagLetters[flags[i]-'a'], true);
+			curAdm.SetFlag(g_FlagLetters[ReadFlagString(flags[i])-'a'], true);
 		}
 		++admCount;
 	}
@@ -1900,10 +1910,10 @@ public void GroupsDone(Database db, DBResultSet results, const char[] error, any
 			if (grpFlags[i] < 'a' || grpFlags[i] > 'z')
 				continue;
 
-			if (g_FlagLetters[grpFlags[i]-'a'] < Admin_Reservation)
+			if (g_FlagLetters[ReadFlagString(grpFlags[i])-'a'] < Admin_Reservation)
 				continue;
 
-			curGrp.SetFlag(g_FlagLetters[grpFlags[i]-'a'], true);
+			curGrp.SetFlag(g_FlagLetters[ReadFlagString(grpFlags[i])-'a'], true);
 		}
 
 		// Set the group immunity.
@@ -2383,12 +2393,13 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	DB.Query(SQL_OnReportPlayer, sQuery, dataPack);
 }
 
-public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, any data)
 {
 	if (results == null)
 		LogToFile(logFile, "Failed to submit report: %s", error);
 	else
 	{
+		DataPack dataPack = data;
 		dataPack.Reset();
 
 		int iReporter = dataPack.ReadCell();

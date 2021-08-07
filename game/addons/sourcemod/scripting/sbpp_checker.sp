@@ -173,8 +173,9 @@ public Action OnListSourceBansCmd(int client, int args)
 	return Plugin_Handled;
 }
 
-public void OnListBans(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void OnListBans(Database db, DBResultSet results, const char[] error, any data)
 {
+	DataPack dataPack = data;
 	dataPack.Reset();
 	int clientuid = dataPack.ReadCell();
 	int client = GetClientOfUserId(clientuid);
@@ -338,8 +339,9 @@ public Action OnListSourceCommsCmd(int client, int args)
 	return Plugin_Handled;
 }
 
-public void OnListComms(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void OnListComms(Database db, DBResultSet results, const char[] error, any data)
 {
+	DataPack dataPack = data;
 	dataPack.Reset();
 	int clientuid = dataPack.ReadCell();
 	int client = GetClientOfUserId(clientuid);

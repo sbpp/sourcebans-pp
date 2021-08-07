@@ -164,24 +164,25 @@ public void OnClientPostAdminCheck(int client)
 			char query[1024];
 
 			FormatEx(query, sizeof(query), "SELECT * FROM %s_bans WHERE ip='%s' AND RemoveType IS NULL AND (ends > %d OR ((1 = %d AND length = 0 AND ends > %d) OR (0 = %d AND length = 0)))", Prefix, IP, g_cVar_bantype.IntValue == 0 ? GetTime() : 0, g_cVar_excludeOld.IntValue, GetTime() - g_cVar_excludeTime.IntValue, g_cVar_excludeOld.IntValue);
-
+			
 			DataPack datapack = new DataPack();
 
 			datapack.WriteCell(GetClientUserId(client));
 			datapack.WriteString(steamid);
 			datapack.WriteString(IP);
 			datapack.Reset();
-
+			
 			hDatabase.Query(SQL_CheckHim, query, datapack);
 		}
 	}
 }
 
-public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, any data)
 {
 	int client;
 	char steamid[32], IP[32];
-
+	
+	DataPack dataPack = data;
 	client = GetClientOfUserId(ReadPackCell(dataPack));
 	dataPack.ReadString(steamid, sizeof(steamid));
 	dataPack.ReadString(IP, sizeof(IP));

@@ -1278,8 +1278,9 @@ public void GotDatabase(Database db, const char[] error, any data)
 	ForcePlayersRecheck();
 }
 
-public void Query_AddBlockInsert(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void Query_AddBlockInsert(Database db, DBResultSet results, const char[] error, any data)
 {
+	DataPack dataPack = data;
 	dataPack.Reset();
 
 	char reason[256];
@@ -1326,11 +1327,12 @@ public void Query_AddBlockInsert(Database db, DBResultSet results, const char[] 
 	delete dataPack;
 }
 
-public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] error, any data)
 {
 	char adminAuth[30], targetAuth[30];
 	char reason[256];
-
+	
+	DataPack dataPack = data;
 	dataPack.Reset();
 	int adminUserID = dataPack.ReadCell();
 	int targetUserID = dataPack.ReadCell();
@@ -1530,11 +1532,12 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		delete dataPack;
 }
 
-public void Query_UnBlockUpdate(Database db, DBResultSet results, const char[] error, DataPack dataPack)
+public void Query_UnBlockUpdate(Database db, DBResultSet results, const char[] error, any data)
 {
 	int admin, type;
 	char targetName[MAX_NAME_LENGTH], targetAuth[30];
-
+	
+	DataPack dataPack = data;
 	dataPack.Reset();
 	admin = GetClientOfUserId(dataPack.ReadCell());
 	type = dataPack.ReadCell();
