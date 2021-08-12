@@ -378,7 +378,6 @@
 		"chi"			"已对玩家 {1} 暂时解除静音."
 		"tr"			"{1} üzerinden mikrofon yasağı geçici olarak kaldırıldı."
 	}
-
 	"Temp ungagged player"
 	{
 		"#format"		"{1:t}"
@@ -1234,7 +1233,7 @@
 		"ru"			"Игроку {1} отключен микрофон (причина: {2})."
 		"pl"			"Wyciszono {1} (powód: {2})."
 		"pt"			"{1} foi emudecido(a) (motivo: {2})."
-		"de"			"Der Spieler {1} wurde im Sprachchat gesperrt (Grund: {2}}."
+		"de"			"Der Spieler {1} wurde im Sprachchat gesperrt (Grund: {2})."
 		"fr"			"Muté {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被静音 (原因: {2})."
 		"tr"			"Mikrofon yasağı {1} (sebep: {2})."
@@ -1262,7 +1261,7 @@
 		"ru"			"Игроку {1} отключен чат (причина: {2})."
 		"pl"			"Zakneblowano {1} (powód: {2})."
 		"pt"			"{1} foi amordaçado(a) (motivo: {2})."
-		"de"			"Der Spieler {1} wurde im Textchat gesperrt (Grund: {2}}."
+		"de"			"Der Spieler {1} wurde im Textchat gesperrt (Grund: {2})."
 		"fr"			"Mute du chat {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被禁言 (原因: {2})."
 		"tr"			"Sohbet yasağı {1} (sebep: {2})."
@@ -1290,7 +1289,7 @@
 		"ru"			"Игроку {1} отключен чат и микрофон (причина: {2})."
 		"pl"			"Całkowicie wyciszono {1} (powód: {2})."
 		"pt"			"{1} foi silenciado(a) (motivo: {2})."
-		"de"			"Der Spieler {1} wurde im Text- und Sprachchat gesperrt (Grund: {2}}."
+		"de"			"Der Spieler {1} wurde im Text- und Sprachchat gesperrt (Grund: {2})."
 		"fr"			"Silence {1} (raison: {2})."
 		"chi"			"玩家 {1} 已被禁言和静音 (原因: {2})."
 		"tr"			"Sessizlik yasağı {1} (sebep: {2})."
