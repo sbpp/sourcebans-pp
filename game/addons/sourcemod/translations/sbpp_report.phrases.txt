@@ -3,7 +3,6 @@
 	"In Cooldown"
 	{
 		"#format"	"{1:.0f}"
-
 		"en"	"Please wait {1} seconds before reporting again."
 		"ru"	"Пожалуйста, подождите {1} секунд до отправки жалобы вновь."
 		"de"	"Bitte warten Sie {1} Sekunden bevor Sie eine erneute Meldung durchführen können."
