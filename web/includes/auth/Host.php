@@ -18,7 +18,7 @@ class Host
      */
     public static function protocol()
     {
-        return sprintf('http%s://', ($_SERVER['HTTPS']) ? 's' : '');
+        return sprintf('http%s://', (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 's' : '');
     }
 
     /**
