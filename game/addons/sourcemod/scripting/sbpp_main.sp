@@ -35,7 +35,7 @@
 
 #pragma newdecls required
 
-#define SB_VERSION "1.7.0"
+#define SB_VERSION "1.7.0_CTF"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
@@ -187,6 +187,7 @@ public void OnPluginStart()
 		-1.0,
 		false
 	);
+	HookConVarChange(sb_id, sbid_reload);
 
 	if ((TimeMenuHandle = CreateMenu(MenuHandler_BanTimeList, MenuAction_Select|MenuAction_Cancel|MenuAction_DrawItem)) != INVALID_HANDLE)
 	{
@@ -289,6 +290,11 @@ public void OnConfigsExecuted()
 }
 
 public void OnMapStart()
+{
+	ResetSettings();
+}
+
+void sbid_reload(ConVar convar, const char[] oldValue, const char[] newValue)
 {
 	ResetSettings();
 }
