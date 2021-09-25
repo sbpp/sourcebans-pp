@@ -33,7 +33,7 @@ class Auth
         self::insertNewToken($jti, $secret);
         self::updateLastVisit($aid);
 
-        self::setCookie($token, time() + $maxlife, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
+        self::setCookie($token, time() + $maxlife, Host::domain(), array_key_exists('HTTPS', $_SERVER) ? (bool)$_SERVER['HTTPS'] : false);
 
         //Login / Logout requests will trigger GC routine
         self::gc();
@@ -57,7 +57,7 @@ class Auth
             self::$dbs->execute();
         }
 
-        self::setCookie('', 1, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
+        self::setCookie('', 1, Host::domain(), array_key_exists('HTTPS', $_SERVER) ? (bool)$_SERVER['HTTPS'] : false);
 
         //Login / Logout requests will trigger GC routine
         self::gc();
