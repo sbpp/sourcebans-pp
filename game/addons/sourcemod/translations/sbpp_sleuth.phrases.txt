@@ -31,5 +31,6 @@
 	{
 		"#format"	""
 		"en"		"You have been kicked for having an active ban on your IP"
+		"pt"		"Você foi expulso(a) por ter um banimento ativo em seu IP"
 	}
 }
