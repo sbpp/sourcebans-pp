@@ -1,7 +1,7 @@
 #pragma semicolon 1
 
 #define PLUGIN_AUTHOR "RumbleFrog, SourceBans++ Dev Team"
-#define PLUGIN_VERSION "1.6.3"
+#define PLUGIN_VERSION "1.6.4"
 
 #include <sourcemod>
 #include <sourcebanspp>

@@ -58,7 +58,7 @@ if (trim($_SERVER['PHP_SELF']) == '') {
 //  Initial setup
 // ---------------------------------------------------
 if (!defined('SB_VERSION')) {
-    define('SB_VERSION', '1.6.3-Installer');
+    define('SB_VERSION', '1.6.4-Installer');
 }
 define('LOGIN_COOKIE_LIFETIME', (60*60*24*7)*2);
 define('COOKIE_PATH', '/');
