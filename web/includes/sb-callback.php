@@ -34,7 +34,7 @@ $xajax = new xajax();
 $xajax->setRequestURI(XAJAX_REQUEST_URI);
 global $userbank;
 
-if (\SessionManager::checkSession()) {
+if ($userbank->is_admin()) {
     $xajax->registerFunction("AddMod");
     $xajax->registerFunction("RemoveMod");
     $xajax->registerFunction("AddGroup");
@@ -1885,10 +1885,11 @@ function PrepareReban($bid)
 
 function SetupEditServer($sid)
 {
+    global $userbank;
     $objResponse = new xajaxResponse();
     $sid = (int)$sid;
 
-    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_SERVER_SETTINGS|ADMIN_SERVER_ADD))
+    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_SERVERS))
     {
         $objResponse->redirect("index.php?p=login&m=no_access", 0);
         $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit a server, but doesn't have access.");
