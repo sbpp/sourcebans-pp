@@ -1887,6 +1887,14 @@ function SetupEditServer($sid)
 {
     $objResponse = new xajaxResponse();
     $sid = (int)$sid;
+
+    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_SERVER_SETTINGS|ADMIN_SERVER_ADD))
+    {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        $log = new CSystemLog("w", "Hacking Attempt", $username . " tried to edit a server, but doesn't have access.");
+        return $objResponse;
+    }
+
     $server = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_servers WHERE sid = $sid");
 
     // clear any old stuff
