@@ -206,10 +206,27 @@
 				throw new SocketException( 'Not connected.', SocketException::NOT_CONNECTED );
 			}
 
-			$this->Socket->Write( self::A2S_INFO, "Source Engine Query\0" );
+			if( $this->Challenge )
+			{
+				$this->Socket->Write( self::A2S_INFO, "Source Engine Query\0" . $this->Challenge );
+			}
+			else
+			{
+				$this->Socket->Write( self::A2S_INFO, "Source Engine Query\0" );
+			}
+			
 			$Buffer = $this->Socket->Read( );
 
 			$Type = $Buffer->GetByte( );
+
+			if( $Type === self::S2A_CHALLENGE )
+			{
+				$this->Challenge = $Buffer->Get( 4 );
+
+				$this->Socket->Write( self::A2S_INFO, "Source Engine Query\0" . $this->Challenge );
+				$Buffer = $this->Socket->Read( );
+				$Type = $Buffer->GetByte( );
+			}
 
 			// Old GoldSource protocol, HLTV still uses it
 			if( $Type === self::S2A_INFO_OLD && $this->Socket->Engine === self::GOLDSOURCE )
