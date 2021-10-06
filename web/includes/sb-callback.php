@@ -2105,8 +2105,17 @@ function PrepareReban($bid)
  */
 function SetupEditServer($sid)
 {
+    global $userbank;
     $objResponse = new xajaxResponse();
     $sid = (int)$sid;
+
+    if(!$userbank->HasAccess(ADMIN_OWNER|ADMIN_EDIT_SERVERS))
+    {
+        $objResponse->redirect("index.php?p=login&m=no_access", 0);
+        Log::add("w", "Hacking Attempt", "$username tried to edit a server, but doesnt have access.");
+        return $objResponse;
+    }
+
     $server = $GLOBALS['db']->GetRow("SELECT * FROM ".DB_PREFIX."_servers WHERE sid = $sid");
 
     // clear any old stuff
