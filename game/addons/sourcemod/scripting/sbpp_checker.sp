@@ -84,6 +84,28 @@ public void OnDatabaseConnected(Database db, const char[] error, any data)
 	g_DB = db;
 }
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("sourcebans++");
+
+	CreateNative("SBCheckerGetClientsBans", Native_SBCheckerGetClientsBans);
+	CreateNative("SBCheckerGetClientsComms", Native_SBCheckerGetClientsComms);
+
+	return APLRes_Success;
+}
+
+public int Native_SBCheckerGetClientsBans(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	return g_iBanCounts[client];
+}
+
+public int Native_SBCheckerGetClientsComms(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	return g_iCommsCounts[client];
+}
+
 public void OnClientAuthorized(int client, const char[] auth)
 {
 	if (g_DB == null)
