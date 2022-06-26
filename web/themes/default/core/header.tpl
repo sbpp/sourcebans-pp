@@ -5,6 +5,8 @@
         <title>{$title}</title>
         <link rel="Shortcut Icon" href="themes/{$theme}/images/favicon.ico" />
         <script type="text/javascript" src="./scripts/fontawesome-all.min.js"></script>
+        <link rel="stylesheet" type="text/css" href="https://use.fontawesome.com/releases/v6.1.1/css/all.css" />
+        <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.1.1/css/v4-shims.css">
         <script type="text/javascript" src="./scripts/sourcebans.js"></script>
         <link href="themes/{$theme}/css/main.css" rel="stylesheet" type="text/css" />
         <script type="text/javascript" src="./scripts/mootools.js"></script>
