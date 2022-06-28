@@ -82,6 +82,7 @@
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6;">Latest release: <strong id='relver'>Please Wait...</strong></td>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Total admins: <strong>{$total_admins}</strong></td>
         <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total bans: <strong>{$total_bans}</strong></td>
+        <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total bans: <strong>{$total_comms}</strong></td>
     </tr>
     <tr>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6;">
