@@ -82,7 +82,6 @@
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6;">Latest release: <strong id='relver'>Please Wait...</strong></td>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Total admins: <strong>{$total_admins}</strong></td>
         <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total bans: <strong>{$total_bans}</strong></td>
-        <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total bans: <strong>{$total_comms}</strong></td>
     </tr>
     <tr>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6;">
@@ -91,12 +90,12 @@
             {/if}
         </td>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">&nbsp;</td>
-        <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Connections Blocked: <strong>{$total_blocks}</strong></td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total comms: <strong>{$total_comms}</strong></td>
     </tr>
     <tr>
         <td class="listtable_1" id='versionmsg' style="border-right: 3px solid #CFCAC6;">Please Wait...</td>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;"><strong> </strong></td>
-        <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Total demo size: <strong>{$demosize}</td>
+		<td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Connections Blocked: <strong>{$total_blocks}</strong></td>
     </tr>
     <tr>
         <td>&nbsp;</td>
@@ -114,7 +113,7 @@
         <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Pending Submissions: <strong>{$total_submissions}</strong></td>
     </tr>
     <tr>
-        <td class="listtable_1" style="border-right: 3px solid #CFCAC6;">&nbsp;</td>
+        <td class="listtable_1" style="border-right: 3px solid #CFCAC6;">Total demo size: <strong>{$demosize}</td>
         <td class="listtable_1" style="border-right: 3px solid #CFCAC6; border-left: 3px solid #CFCAC6;">Archived Protests: <strong>{$archived_protests}</strong></td>
         <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">Archived Submissions: <strong>{$archived_submissions}</strong></td>
     </tr>
