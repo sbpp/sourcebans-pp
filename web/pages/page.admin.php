@@ -25,6 +25,7 @@ global $userbank, $theme;
 $counts = $GLOBALS['db']->GetRow("SELECT
 								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_banlog`) AS blocks,
 								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_bans`) AS bans,
+								 (SELECT COUNT(bid) FROM `" . DB_PREFIX . "_comms`) AS comms,
 								 (SELECT COUNT(aid) FROM `" . DB_PREFIX . "_admins` WHERE aid > 0) AS admins,
 								 (SELECT COUNT(subid) FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0') AS subs,
 								 (SELECT COUNT(subid) FROM `" . DB_PREFIX . "_submissions` WHERE archiv > 0) AS archiv_subs,
@@ -44,6 +45,7 @@ $theme->assign('dev', SB_DEV);
 $theme->assign('demosize', getDirSize(SB_DEMOS));
 $theme->assign('total_admins', $counts['admins']);
 $theme->assign('total_bans', $counts['bans']);
+$theme->assign('total_comms', $counts['comms']);
 $theme->assign('total_blocks', $counts['blocks']);
 $theme->assign('total_servers', $counts['servers']);
 $theme->assign('total_protests', $counts['protests']);
