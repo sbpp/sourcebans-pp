@@ -55,6 +55,16 @@ Here is a quick summary of getting the master branch code up and running.
 
 After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.dev/docs/quickstart/) guide.
 
+## PHP8.1 major changes
+### Smarty
+####Updated Smarty version dropped support for the `{php}` tag. 
+Custom themes have to use the new [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/php81/web/includes/SmartyCustomFunctions.php#L54) tag.
+
+#### JWT Update
+JWT secrets are no longer stored in the databse as they are generated using a secret key.
+    - Add constant `SB_SECRET_KEY` to config.php.
+
+
 ### Compiling SourceMod plugins
 Follow the Guide '[Compiling SourceMod Plugins](https://wiki.alliedmods.net/Compiling_SourceMod_Plugins)' from the official SourceMod Wiki
 
