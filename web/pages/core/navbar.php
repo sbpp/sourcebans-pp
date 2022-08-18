@@ -84,7 +84,7 @@ $admin = [
     ]
 ];
 
-$active = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_STRING);
+$active = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_SPECIAL_CHARS);
 foreach ($navbar as $key => $tab) {
     $navbar[$key]['state'] = ($active === $tab['endpoint']) ? 'active' : 'nonactive';
 
@@ -94,7 +94,7 @@ foreach ($navbar as $key => $tab) {
 }
 
 if ($userbank->is_admin()) {
-    $cat = filter_input(INPUT_GET, 'c', FILTER_SANITIZE_STRING);
+    $cat = filter_input(INPUT_GET, 'c', FILTER_SANITIZE_SPECIAL_CHARS);
     foreach ($admin as $key => $tab) {
         $admin[$key]['state'] = ($cat === $tab['endpoint']) ? 'active' : '';
 

@@ -34,7 +34,7 @@
                             <td class="listtable_1" >Web Group</td>
                             <td class="listtable_1" >
                                 <select class="select" id="webgroup" onmouseup="$('webgroup_').checked = true" style="width: 379px;">
-                                    {foreach from="$webgroup_list" item="webgrp"}
+                                    {foreach from=$webgroup_list item="webgrp"}
                                         <option label="{$webgrp.name}" value="{$webgrp.gid}">{$webgrp.name}</option>
                                     {/foreach}
                                 </select>
@@ -45,7 +45,7 @@
                             <td class="listtable_1" >Serveradmin Group</td>
                             <td class="listtable_1" >
                                 <select class="select" id="srvadmgroup" onmouseup="$('srvadmgroup_').checked = true" style="width: 379px;">
-                                    {foreach from="$srvadmgroup_list" item="srvadmgrp"}
+                                    {foreach from=$srvadmgroup_list item="srvadmgrp"}
                                         <option label="{$srvadmgrp.name}" value="{$srvadmgrp.name}">{$srvadmgrp.name}</option>
                                     {/foreach}
                                 </select>
@@ -56,7 +56,7 @@
                             <td class="listtable_1" >Server Group</td>
                             <td class="listtable_1" >
                                 <select class="select" id="srvgroup" onmouseup="$('srvgroup_').checked = true" style="width: 379px;">
-                                    {foreach from="$srvgroup_list" item="srvgrp"}
+                                    {foreach from=$srvgroup_list item="srvgrp"}
                                         <option label="{$srvgrp.name}" value="{$srvgrp.gid}">{$srvgrp.name}</option>
                                     {/foreach}
                                 </select>
@@ -67,7 +67,7 @@
                             <td class="listtable_1" >Web Permissions</td>
                             <td class="listtable_1" >
                                 <select class="select" id="admwebflag" name="admwebflag" onblur="getMultiple(this, 1);" size="5" multiple onmouseup="$('admwebflags_').checked = true" style="width: 379px;">
-                                    {foreach from="$admwebflag_list" item="admwebflag"}
+                                    {foreach from=$admwebflag_list item="admwebflag"}
                                         <option label="{$admwebflag.name}" value="{$admwebflag.flag}">{$admwebflag.name}</option>
                                     {/foreach}
                                 </select>
@@ -78,7 +78,7 @@
                             <td class="listtable_1" >Server Permissions</td>
                             <td class="listtable_1" >
                                 <select class="select" id="admwebflag" name="admsrvflag" onblur="getMultiple(this, 2);" size="5" multiple onmouseup="$('admsrvflags_').checked = true" style="width: 379px;">
-                                    {foreach from="$admsrvflag_list" item="admsrvflag"}
+                                    {foreach from=$admsrvflag_list item="admsrvflag"}
                                         <option label="{$admsrvflag.name}" value="{$admsrvflag.flag}">{$admsrvflag.name}</option>
                                     {/foreach}
                                 </select>
@@ -89,7 +89,7 @@
                             <td class="listtable_1" >Server</td>
                             <td class="listtable_1" >
                                 <select class="select" id="server" onmouseup="$('admin_on_').checked = true" style="width: 379px;">
-{foreach from="$server_list" item="server}
+{foreach from=$server_list item="server"}
 								<option value="{$server.sid}" id="ss{$server.sid}">Retrieving Hostname... ({$server.ip}:{$server.port})</option>
 							{/foreach}
 						</select>            

@@ -1,7 +1,7 @@
 <h3 align="left">System Log {$clear_logs}</h3>
 Click on a row to see more details about the event.
 <br /><br />
-{php} require (TEMPLATES_PATH . "/admin.log.search.php");{/php}
+{load_template file="admin.log.search" }
 
 <div id="banlist-nav">{$page_numbers}</div>
 <br /><br />
@@ -14,7 +14,7 @@ Click on a row to see more details about the event.
         <td width="" height="16" class="listtable_top"><b>Date/Time</b></td>
     </tr>
 
-    {foreach from="$log_items" item="log"}
+    {foreach from=$log_items item="log"}
         <tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
             <td height="16" align="center" class="listtable_1">{$log.type_img}</td>
             <td height="16" class="listtable_1">{$log.title}</td>

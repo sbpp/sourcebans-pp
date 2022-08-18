@@ -23,7 +23,7 @@ if (!defined("IN_SB")) {
     die();
 }
 $BansPerPage = SB_BANS_PER_PAGE;
-$servers     = array();
+$servers     = [];
 global $userbank;
 function setPostKey()
 {
@@ -224,7 +224,7 @@ if (isset($_GET['searchText'])) {
 
     // disable ip search if hiding player ips
     $search_ips   = "";
-    $search_array = array();
+    $search_array = [];
     if (!Config::getBool('banlist.hideplayerips') || $userbank->is_admin()) {
         $search_ips     = "BA.ip LIKE ? OR ";
         $search_array[] = $search;
@@ -277,7 +277,7 @@ if (isset($_GET['searchText'])) {
     $searchlink = "";
 }
 
-$advcrit = array();
+$advcrit = [];
 if (isset($_GET['advSearch'])) {
     $value = trim($_GET['advSearch']);
     $type  = $_GET['advType'];
@@ -310,7 +310,7 @@ if (isset($_GET['advSearch'])) {
             // disable ip search if hiding player ips
             if (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()) {
                 $where   = "";
-                $advcrit = array();
+                $advcrit = [];
             } else {
                 $where   = "WHERE BA.ip LIKE ?";
                 $advcrit = array(
@@ -370,7 +370,7 @@ if (isset($_GET['advSearch'])) {
         case "admin":
             if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
-                $advcrit = array();
+                $advcrit = [];
             } else {
                 $where   = "WHERE BA.aid=?";
                 $advcrit = array(
@@ -404,14 +404,14 @@ if (isset($_GET['advSearch'])) {
                 );
             } else {
                 $where   = "";
-                $advcrit = array();
+                $advcrit = [];
             }
             break;
         default:
             $where             = "";
             $_GET['advType']   = "";
             $_GET['advSearch'] = "";
-            $advcrit           = array();
+            $advcrit           = [];
             break;
     }
 
@@ -452,9 +452,9 @@ if (!$res) {
 }
 
 $view_comments = false;
-$bans          = array();
+$bans          = [];
 while (!$res->EOF) {
-    $data = array();
+    $data = [];
 
     $data['ban_id'] = $res->fields['ban_id'];
 
@@ -624,10 +624,10 @@ while (!$res->EOF) {
 											WHERE type = 'B' AND bid = '" . $data['ban_id'] . "' ORDER BY added desc");
 
         if ($commentres->RecordCount() > 0) {
-            $comment = array();
+            $comment = [];
             $morecom = 0;
             while (!$commentres->EOF) {
-                $cdata            = array();
+                $cdata            = [];
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
                 if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
                     $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
@@ -754,9 +754,9 @@ if (isset($_GET["comment"])) {
         $_GET["comment"]
     ));
 
-    $ocomments = array();
+    $ocomments = [];
     while (!$cotherdata->EOF) {
-        $coment               = array();
+        $coment               = [];
         $coment['comname']    = $cotherdata->fields['comname'];
         $coment['added']      = Config::time($cotherdata->fields['added']);
         $coment['commenttxt'] = htmlspecialchars($cotherdata->fields['commenttxt']);

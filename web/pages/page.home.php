@@ -33,12 +33,12 @@ $res = $GLOBALS['db']->Execute("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.
 								ORDER BY time DESC LIMIT 10");
 
 $GLOBALS['server_qry'] = "";
-$stopped               = array();
+$stopped               = [];
 $blcount               = 0;
 while (!$res->EOF) {
-    $info               = array();
+    $info               = [];
     $info['date']       = Config::time($res->fields[1]);
-    $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES));
+    $info['name']       = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES));
     $info['short_name'] = trunc($info['name'], 40);
     $info['auth']       = $res->fields['authid'];
     $info['ip']         = $res->fields['ip'];
@@ -58,7 +58,7 @@ while (!$res->EOF) {
 
     $GLOBALS['server_qry'] .= "xajax_ServerHostProperty(" . $res->fields['sid'] . ", 'block_" . $res->fields['sid'] . "_$blcount', 'title', 100);";
 
-    array_push($stopped, $info);
+    $stopped []= $info;
     $res->MoveNext();
     ++$blcount;
 }
@@ -72,9 +72,9 @@ $res  = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created,
 			    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
 			    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
 			    				ORDER BY created DESC LIMIT 10");
-$bans = array();
+$bans = [];
 while (!$res->EOF) {
-    $info = array();
+    $info = [];
     if ($res->fields['length'] == 0) {
         $info['perm']     = true;
         $info['unbanned'] = false;
@@ -127,9 +127,9 @@ $res   = $GLOBALS['db']->Execute("SELECT bid, ba.authid, ba.type, ba.name, creat
 				    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
 				    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
 				    				ORDER BY created DESC LIMIT 10");
-$comms = array();
+$comms = [];
 while (!$res->EOF) {
-    $info = array();
+    $info = [];
     if ($res->fields['length'] == 0) {
         $info['perm']     = true;
         $info['unbanned'] = false;

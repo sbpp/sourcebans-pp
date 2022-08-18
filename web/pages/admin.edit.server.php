@@ -190,7 +190,7 @@ if (!isset($_POST['address'])) {
             $groups[$k] = array($g);
         }
     } else {
-        $groups = array();
+        $groups = [];
     }
 }
 foreach ($groups as $g) {

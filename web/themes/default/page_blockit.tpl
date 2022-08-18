@@ -31,7 +31,7 @@
 <div id="container" name="container">
     <h3 style="font-size: 12px;">Searching for the player on all servers...</h3>
     <table border="0">
-        -{foreach from=$servers item=serv}-
+        -{foreach from=$servers item="serv"}-
         <tr>
             <td><div id="srvip_-{$serv.num}-"><font size="1">-{$serv.ip}-:-{$serv.port}-</font></div></td>
             <td>

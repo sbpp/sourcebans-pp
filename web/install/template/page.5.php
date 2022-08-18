@@ -9,6 +9,8 @@ define('DB_PORT', '{port}');							// The SQL port (Default: 3306)
 define('DB_CHARSET', '{charset}');                    // The Database charset (Default: utf8)
 define('STEAMAPIKEY', '{steamapikey}');				// Steam API Key for Shizz
 define('SB_EMAIL', '{sbwpemail}');
+define('SB_NEW_SALT', '{sbsalt}'); //Salt for passwords
+define('SB_SECRET_KEY', '{sbsecretkey}'); //Secret for JWT
 ";
 
 $srv_cfg = '"driver_default"		"mysql"
@@ -34,6 +36,8 @@ $web_cfg = str_replace("{port}", $_POST['port'], $web_cfg);
 $web_cfg = str_replace("{charset}", $_POST['charset'], $web_cfg);
 $web_cfg = str_replace("{steamapikey}", $_POST['apikey'], $web_cfg);
 $web_cfg = str_replace("{sbwpemail}", $_POST['sb-email'], $web_cfg);
+$web_cfg = str_replace("{sbsalt}", '$5$', $web_cfg); // @todo generate a salt.
+$web_cfg = str_replace("{sbsecretkey}", base64_encode(openssl_random_pseudo_bytes(47)), $web_cfg);
 
 $srv_cfg = str_replace("{server}", $_POST['server'], $srv_cfg);
 $srv_cfg = str_replace("{user}", $_POST['username'], $srv_cfg);

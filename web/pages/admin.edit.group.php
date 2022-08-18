@@ -147,7 +147,7 @@ foreach ($overrides_list as $override) {
         <td>&nbsp;</td>
         <td>
             <div align="center">
-                <input type='submit' onclick="ProcessEditGroup('<?php print $_GET['type'];?>', $('groupname').value);" name='editgroup' class='btn ok' onmouseover='ButtonOver("editgroup")' onmouseout='ButtonOver("editgroup")' id='editgroup' value='Save Changes' />
+                <input type='submit' onclick="ProcessEditGroup('<?=  $_GET['type'];?>', $('groupname').value);" name='editgroup' class='btn ok' onmouseover='ButtonOver("editgroup")' onmouseout='ButtonOver("editgroup")' id='editgroup' value='Save Changes' />
                 <input type='button' onclick="history.go(-1);" name='back' class='btn cancel' onmouseover='ButtonOver("back")' onmouseout='ButtonOver("back")' id='back' value='Back' />
             </div>
         </td>

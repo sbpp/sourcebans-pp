@@ -15,7 +15,7 @@ $servers = $GLOBALS['db']->GetAll("SELECT srv.ip ip, srv.port port, srv.sid sid,
    ORDER BY modid, sid");
 $server_count = $GLOBALS['db']->GetRow("SELECT COUNT(sid) AS cnt FROM `" . DB_PREFIX . "_servers`");
 
-$server_access = array();
+$server_access = [];
 if ($userbank->HasAccess(SM_RCON . SM_ROOT)) {
     // Get all servers the admin has access to
     $servers2 = $GLOBALS['db']->GetAll("SELECT `server_id`, `srv_group_id` FROM " . DB_PREFIX . "_admins_servers_groups WHERE admin_id = " . $userbank->GetAid());

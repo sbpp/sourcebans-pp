@@ -5,20 +5,11 @@
  */
 class Config
 {
-    /**
-     * @var array
-     */
-    private static $config = [];
+    private static array $config = [];
 
-    /**
-     * @var Database
-     */
-    private static $dbh = null;
+    private static ?\Database $dbh = null;
 
-    /**
-     * @param Database $dbh
-     */
-    public static function init(Database $dbh)
+    public static function init(Database $dbh): void
     {
         self::$dbh = $dbh;
         self::$config = self::getAll();
@@ -28,36 +19,37 @@ class Config
      * @param string $setting
      * @return mixed|null
      */
-    public static function get($setting)
+    public static function get(string $setting): mixed
     {
-        return array_key_exists($setting, self::$config) ? self::$config[$setting] : null;
+        return self::$config[$setting] ?? null;
     }
 
     /**
      * @param string $setting
      * @return bool
      */
-    public static function getBool($setting)
+    public static function getBool(string $setting): bool
     {
         return (bool)self::get($setting);
     }
 
     /**
      * @param int $timestamp
-     * @return false|string
+     * @return string
      */
-    public static function time($timestamp)
+    public static function time(int $timestamp): string
     {
         $format = self::get('config.dateformat');
-        $format = (!empty($format) && !is_null($format)) ? $format : 'Y-m-d H:i:s';
+        $format = !empty($format) ? $format : 'Y-m-d H:i:s';
         return date($format, $timestamp);
     }
 
     /**
      * @return array
      */
-    private static function getAll()
+    private static function getAll(): array
     {
+        $config = [];
         self::$dbh->query("SELECT * FROM `:prefix_settings`");
         foreach(self::$dbh->resultset() as $data) {
             $config[$data['setting']] = $data['value'];

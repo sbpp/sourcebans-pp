@@ -27,13 +27,11 @@ class Auth
     public static function login(int $aid, int $maxlife)
     {
         $jti = self::generateJTI();
-        $secret = Crypto::genSecret();
 
-        $token = JWT::create($jti, $secret, $maxlife, $aid);
-        self::insertNewToken($jti, $secret);
+        $token = JWT::create($jti, $maxlife, $aid);
         self::updateLastVisit($aid);
 
-        self::setCookie($token, time() + $maxlife, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
+        self::setCookie($token->toString(), time() + $maxlife, Host::domain(), Host::isSecure());
 
         //Login / Logout requests will trigger GC routine
         self::gc();
@@ -42,45 +40,47 @@ class Auth
     /**
      * @return bool
      */
-    public static function logout()
+    public static function logout(): bool
     {
         $cookie = self::getJWTFromCookie();
-        if (empty($cookie) || (bool)preg_match('/.*\..*\..*\./', $cookie)) {
+        if (empty($cookie) || preg_match('/.*\..*\..*\./', $cookie)) {
             return false;
         }
-        $token = JWT::parse($cookie);
-        $secret = self::getTokenSecret($token->getHeader('jti'));
+//        $token = JWT::parse($cookie);
 
-        if (JWT::verify($token, (string)$secret)) {
-            self::$dbs->query("DELETE FROM `:prefix_login_tokens` WHERE jti = :jti");
-            self::$dbs->bind(':jti', $token->getHeader('jti'));
-            self::$dbs->execute();
-        }
+//        if (JWT::validate($token)) {
+//            self::$dbs->query("DELETE FROM `:prefix_login_tokens` WHERE jti = :jti");
+//            self::$dbs->bind(':jti', $token->claims()->get('jti'));
+//            self::$dbs->execute();
+//        }
 
-        self::setCookie('', 1, Host::domain(), ((bool)$_SERVER['HTTPS']) ? true : false);
+        self::setCookie('', 1, Host::domain(), Host::isSecure());
 
         //Login / Logout requests will trigger GC routine
         self::gc();
+
+        return true;
     }
 
     /**
-     * @return false|Token
+     * @return ?Token
      */
-    public static function verify()
+    public static function verify(): ?Token
     {
         $cookie = self::getJWTFromCookie();
-        if (empty($cookie) || (bool)preg_match('/.*\..*\..*\./', $cookie)) {
-            return false;
+        if (empty($cookie) || preg_match('/.*\..*\..*\./', $cookie)) {
+            return null;
         }
-        $token = JWT::parse($cookie);
-        $secret = self::getTokenSecret($token->getHeader('jti'));
 
-        if (JWT::verify($token, (string)$secret) && JWT::validate($token)) {
-            self::updateLastAccessed($token->getHeader('jti'));
+        $token = JWT::parse($cookie);
+//        $secret = self::getTokenSecret($token->claims()->get('jti'));
+
+        if (JWT::validate($token)) {
+            self::updateLastAccessed($token->claims()->get('jti'));
             return $token;
         }
 
-        return false;
+        return null;
     }
 
     /**
@@ -192,7 +192,7 @@ class Auth
     private static function getJWTFromCookie()
     {
         if (isset($_COOKIE['sbpp_auth'])) {
-            return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+            return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
         }
 
         return '';

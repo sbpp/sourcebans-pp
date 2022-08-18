@@ -97,7 +97,7 @@
                                     </optgroup>
                                     -{if $customreason}-
                                     <optgroup label="Custom">
-                                        -{foreach from="$customreason" item="creason"}-
+                                        -{foreach from=$customreason item="creason"}-
                                         <option value="-{$creason}-">-{$creason}-</option>
                                         -{/foreach}-
                                     </optgroup>

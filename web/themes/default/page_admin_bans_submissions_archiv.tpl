@@ -12,7 +12,7 @@
             <td width="20%" height='16' class="listtable_top"><strong>SteamID</strong></td>
             <td width="25%" height='16' class="listtable_top"><strong>Action</strong></td>
         </tr>
-        {foreach from="$submission_list_archiv" item="sub"}
+        {foreach from=$submission_list_archiv item="sub"}
             <tr id="asid_{$sub.subid}" class="opener4 tbl_out" {if $sub.hostname == ""}onclick="xajax_ServerHostPlayers('{$sub.server}', 'id', 'suba{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
                 <td style="border-bottom: solid 1px #ccc" height='16'>{$sub.name}</td>
                 <td style="border-bottom: solid 1px #ccc" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>

@@ -24,7 +24,7 @@
                 {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="aback"}
             </td>
         </tr>
-        {foreach from="$othercomments" item="com"}
+        {foreach from=$othercomments item="com"}
             <tr>
                 <td colspan='3'>
                     <hr>
@@ -52,7 +52,7 @@
 {else}
     <h3 align="left">Communications Blocklist Overview - <i>Total Blocks: {$total_bans}</i></h3>
     <br />
-    {php} require (TEMPLATES_PATH . "/admin.comms.search.php");{/php}
+    {load_template file='admin.comms.search'}
     <br />
     <div id="banlist-nav">
         {$ban_nav}

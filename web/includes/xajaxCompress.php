@@ -46,7 +46,7 @@ function xajaxCompressJavascript($sJS)
 	$sJS = str_replace("\r","",$sJS);
 	
 	//array to store replaced literal strings
-	$literal_strings = array();
+	$literal_strings = [];
 	
 	//explode the string into lines
 	$lines = explode("\n",$sJS);

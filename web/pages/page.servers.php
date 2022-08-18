@@ -32,10 +32,10 @@ if (!defined('IN_HOME')) {
 }
 
 $res     = $GLOBALS['db']->Execute("SELECT se.sid, se.ip, se.port, se.modid, se.rcon, md.icon FROM " . DB_PREFIX . "_servers se LEFT JOIN " . DB_PREFIX . "_mods md ON md.mid=se.modid WHERE se.sid > 0 AND se.enabled = 1 ORDER BY se.modid, se.sid");
-$servers = array();
+$servers = [];
 $i       = 0;
 while (!$res->EOF) {
-    $info          = array();
+    $info          = [];
     $info['sid']   = $res->fields[0];
     $info['ip']    = $res->fields[1];
     $info['port']  = $res->fields[2];

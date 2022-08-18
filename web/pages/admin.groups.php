@@ -32,6 +32,7 @@ new AdminTabs([
 <div id="admin-page-content">
 <?php
 // web groups
+$web_group_admins = [];
 $web_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type != '3'");
 for ($i = 0; $i < count($web_group_list); $i++) {
     $web_group_list[$i]['permissions'] = BitToString($web_group_list[$i]['flags'], $web_group_list[$i]['type']);
@@ -41,6 +42,8 @@ for ($i = 0; $i < count($web_group_list); $i++) {
 }
 
 // Server admin groups
+$server_admin_group_overrides = [];
+$server_admin_group_admins = [];
 $server_admin_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
 for ($i = 0; $i < count($server_admin_group_list); $i++) {
     $server_admin_group_list[$i]['permissions'] = SmFlagsToSb($server_admin_group_list[$i]['flags']);

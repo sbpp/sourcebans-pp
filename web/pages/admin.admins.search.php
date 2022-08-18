@@ -21,10 +21,10 @@ global $userbank, $theme;
 
 //serverlist
 $server_list  = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
-$servers      = array();
+$servers      = [];
 $serverscript = "<script type=\"text/javascript\">";
 while (!$server_list->EOF) {
-    $info = array();
+    $info = [];
     $serverscript .= "xajax_ServerHostPlayers('" . $server_list->fields[0] . "', 'id', 'ss" . $server_list->fields[0] . "', '', '', false, 200);";
     $info['sid']  = $server_list->fields[0];
     $info['ip']   = $server_list->fields[1];
@@ -36,9 +36,9 @@ $serverscript .= "</script>";
 
 //webgrouplist
 $webgroup_list = $GLOBALS['db']->Execute("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = '1'");
-$webgroups     = array();
+$webgroups     = [];
 while (!$webgroup_list->EOF) {
-    $data         = array();
+    $data         = [];
     $data['gid']  = $webgroup_list->fields['gid'];
     $data['name'] = $webgroup_list->fields['name'];
 
@@ -48,9 +48,9 @@ while (!$webgroup_list->EOF) {
 
 //serveradmingrouplist
 $srvadmgroup_list = $GLOBALS['db']->Execute("SELECT name FROM " . DB_PREFIX . "_srvgroups ORDER BY name ASC");
-$srvadmgroups     = array();
+$srvadmgroups     = [];
 while (!$srvadmgroup_list->EOF) {
-    $data         = array();
+    $data         = [];
     $data['name'] = $srvadmgroup_list->fields['name'];
 
     array_push($srvadmgroups, $data);
@@ -59,9 +59,9 @@ while (!$srvadmgroup_list->EOF) {
 
 //servergroup
 $srvgroup_list = $GLOBALS['db']->Execute("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = '3'");
-$srvgroups     = array();
+$srvgroups     = [];
 while (!$srvgroup_list->EOF) {
-    $data         = array();
+    $data         = [];
     $data['gid']  = $srvgroup_list->fields['gid'];
     $data['name'] = $srvgroup_list->fields['name'];
 
@@ -194,7 +194,7 @@ $webflag[] = array(
     "name" => "Delete mods",
     "flag" => "ADMIN_DELETE_MODS"
 );
-$webflags  = array();
+$webflags  = [];
 foreach ($webflag as $flag) {
     $data['name'] = $flag["name"];
     $data['flag'] = $flag["flag"];
@@ -287,7 +287,7 @@ $serverflag[] = array(
     "name" => "Custom flag 6",
     "flag" => "SM_CUSTOM6"
 );
-$serverflags  = array();
+$serverflags  = [];
 foreach ($serverflag as $flag) {
     $data['name'] = $flag["name"];
     $data['flag'] = $flag["flag"];

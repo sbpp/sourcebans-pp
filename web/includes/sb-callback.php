@@ -404,7 +404,7 @@ function RemoveGroup($gid, $type)
     if (Config::getBool('config.enableadminrehashing')) {
         // rehash the settings out of the database on all servers
         $serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM " . DB_PREFIX . "_servers WHERE enabled = 1;");
-        $allservers = array();
+        $allservers = [];
         foreach ($serveraccessq as $access) {
             if (!in_array($access['sid'], $allservers)) {
                 $allservers[] = $access['sid'];
@@ -688,7 +688,7 @@ function RemoveAdmin($aid)
     OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
     AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
             );
-            $allservers = array();
+            $allservers = [];
             foreach ($serveraccessq as $access) {
                 if (!in_array($access['sid'], $allservers)) {
                     $allservers[] = $access['sid'];
@@ -1343,7 +1343,7 @@ function AddAdmin(
     OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
     AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
             );
-            $allservers = array();
+            $allservers = [];
             foreach ($serveraccessq as $access) {
                 if (!in_array($access['sid'], $allservers)) {
                     $allservers[] = $access['sid'];
@@ -2315,7 +2315,7 @@ function EditAdminPerms($aid, $web_flags, $srv_flags)
     OR (asg.srv_group_id != '-1' AND asg.server_id = '-1'))
     AND (s.sid IN(asg.server_id) OR s.sid IN(sg.server_id)) AND s.enabled = 1"
         );
-        $allservers = array();
+        $allservers = [];
         foreach ($serveraccessq as $access) {
             if (!in_array($access['sid'], $allservers)) {
                 $allservers[] = $access['sid'];
@@ -2456,7 +2456,7 @@ function EditGroup($gid, $web_flags, $srv_flags, $type, $name, $overrides, $newO
         if (Config::getBool('config.enableadminrehashing')) {
             // rehash the settings out of the database on all servers
             $serveraccessq = $GLOBALS['db']->GetAll("SELECT sid FROM " . DB_PREFIX . "_servers WHERE enabled = 1;");
-            $allservers = array();
+            $allservers = [];
             foreach ($serveraccessq as $access) {
                 if (!in_array($access['sid'], $allservers)) {
                     $allservers[] = $access['sid'];
@@ -3020,7 +3020,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
         "SELECT CAST(MID(authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(authid, 11, 10) * 2 AS UNSIGNED) AS community_id FROM `:prefix_bans` WHERE RemoveType IS NULL;"
     );
     $bans = $GLOBALS['PDO']->resultset();
-    $already = array();
+    $already = [];
     foreach($bans as $ban) {
         $already[] = $ban["community_id"];
     }
@@ -3041,7 +3041,7 @@ function BanMemberOfGroup($grpurl, $queue, $reason, $last)
     getGroupMembers('https://steamcommunity.com/groups/' . $grpurl . '/memberslistxml?xml=1', $steamids);
 
     $steamids = array_chunk($steamids, 100);
-    $data = array();
+    $data = [];
 
     foreach ($steamids as $package) {
         $package = rawurlencode(json_encode($package));
@@ -3203,7 +3203,7 @@ function BanFriends($friendid, $name)
     set_time_limit(0);
     global $userbank, $username;
     $objResponse = new xajaxResponse();
-    $name = filter_var($name, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES);
+    $name = filter_var($name, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
     if (!Config::getBool('config.enablefriendsbanning') || !is_numeric($friendid)) {
         return $objResponse;
     }
@@ -3253,7 +3253,7 @@ function BanFriends($friendid, $name)
         $GLOBALS['PDO']->bindMultiple(
             [
             ':authid' => $steam,
-            ':name' => filter_var($fname, FILTER_SANITIZE_STRING, FILTER_FLAG_NO_ENCODE_QUOTES),
+            ':name' => filter_var($fname, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES),
             ':reason' => "Steam Community Friend Ban (".$name.")",
             ':aid' => $userbank->GetAid(),
             ':admip' => $_SERVER['REMOTE_ADDR']

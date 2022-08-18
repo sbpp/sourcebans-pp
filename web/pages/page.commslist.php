@@ -32,7 +32,7 @@ if (!Config::getBool('config.enablecomms')) {
     PageDie();
 }
 $BansPerPage = SB_BANS_PER_PAGE;
-$servers     = array();
+$servers     = [];
 global $userbank;
 function setPostKey()
 {
@@ -272,7 +272,7 @@ if (isset($_GET['searchText'])) {
     $searchlink = "";
 }
 
-$advcrit = array();
+$advcrit = [];
 if (isset($_GET['advSearch'])) {
     $value = trim($_GET['advSearch']);
     $type  = $_GET['advType'];
@@ -353,7 +353,7 @@ if (isset($_GET['advSearch'])) {
         case "admin":
             if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
                 $where   = "";
-                $advcrit = array();
+                $advcrit = [];
             } else {
                 $where   = "WHERE CO.aid=?";
                 $advcrit = array(
@@ -381,14 +381,14 @@ if (isset($_GET['advSearch'])) {
                 );
             } else {
                 $where   = "";
-                $advcrit = array();
+                $advcrit = [];
             }
             break;
         default:
             $where             = "";
             $_GET['advType']   = "";
             $_GET['advSearch'] = "";
-            $advcrit           = array();
+            $advcrit           = [];
             break;
     }
 
@@ -425,9 +425,9 @@ if (!$res) {
 }
 
 $view_comments = false;
-$bans          = array();
+$bans          = [];
 while (!$res->EOF) {
-    $data = array();
+    $data = [];
 
     $data['ban_id'] = $res->fields['ban_id'];
     $data['type']   = $res->fields['type'];
@@ -585,10 +585,10 @@ while (!$res->EOF) {
             if ($mute_count > 0 || $gag_count > 0) {
                 $delimiter = "&ensp;";
             }
-            $comment = array();
+            $comment = [];
             $morecom = 0;
             while (!$commentres->EOF) {
-                $cdata            = array();
+                $cdata            = [];
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
                 if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
                     $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
@@ -710,9 +710,9 @@ if (isset($_GET["comment"])) {
         $_GET["comment"]
     ));
 
-    $ocomments = array();
+    $ocomments = [];
     while (!$cotherdata->EOF) {
-        $coment               = array();
+        $coment               = [];
         $coment['comname']    = $cotherdata->fields['comname'];
         $coment['added']      = Config::time($cotherdata->fields['added']);
         $coment['commenttxt'] = str_replace("\n", "<br />", $cotherdata->fields['commenttxt']);

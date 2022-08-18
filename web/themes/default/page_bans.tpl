@@ -24,7 +24,7 @@
                 {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="aback"}
             </td>
         </tr>
-        {foreach from="$othercomments" item="com"}
+        {foreach from=$othercomments item="com"}
             <tr>
                 <td colspan='3'>
                     <hr>
@@ -52,7 +52,7 @@
 {else}
     <h3 align="left">Banlist Overview - <i>Total Bans: {$total_bans}</i></h3>
     <br />
-    {php} require (TEMPLATES_PATH . "/admin.bans.search.php");{/php}
+    {load_template file='admin.bans.search'}
     <br />
     <div id="banlist-nav"><a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a> | <i>Total Bans: {$total_bans}</i></div>
     <div id="banlist">

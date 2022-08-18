@@ -2,14 +2,10 @@
 
 class SteamAuthHandler
 {
-    private $openid = null;
-    private $dbs = null;
-
-    public function __construct(\LightOpenID $openid, \Database $dbs)
-    {
-        $this->openid = $openid;
-        $this->dbs = $dbs;
-
+    public function __construct(
+        private \LightOpenID $openid,
+        private \Database $dbs
+    ) {
         if ($this->openid->validate()) {
             $steamid = $this->validate();
             if ($steamid) {

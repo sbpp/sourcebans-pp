@@ -7,9 +7,9 @@
  */
 function route($fallback)
 {
-    $page = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_STRING);
-    $categorie = filter_input(INPUT_GET, 'c', FILTER_SANITIZE_STRING);
-    $option = filter_input(INPUT_GET, 'o', FILTER_SANITIZE_STRING);
+    $page = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_SPECIAL_CHARS);
+    $categorie = filter_input(INPUT_GET, 'c', FILTER_SANITIZE_SPECIAL_CHARS);
+    $option = filter_input(INPUT_GET, 'o', FILTER_SANITIZE_SPECIAL_CHARS);
 
     switch ($page) {
         case 'login':
@@ -135,7 +135,7 @@ function route($fallback)
  * @param null $title Unused
  * @param string $page
  */
-function build($title, $page)
+function build(string $title, string $page)
 {
     require_once(TEMPLATES_PATH.'/core/header.php');
     require_once(TEMPLATES_PATH.'/core/navbar.php');

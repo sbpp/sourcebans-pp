@@ -123,11 +123,11 @@
                             <td class="listtable_1" >Admin</td>
                             <td class="listtable_1" >
                                 <select class="select" id="ban_admin" onmouseup="$('admin').checked = true" style="width: 95%;">
-{foreach from="$admin_list" item="admin}
-								<option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
-							{/foreach}
-						</select>           
-					</td> 
+                {foreach from=$admin_list item="admin"}
+								    <option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
+							  {/foreach}
+						</select>
+					</td>
 				</tr>
                 {/if}
 			    <tr>
@@ -136,10 +136,10 @@
 			        <td class="listtable_1" >
 						<select class="select" id="server" onmouseup="$('where_banned').checked = true" style="width: 95%;">
 						<option label="Web Ban" value="0">Web Ban</option>
-							{foreach from="$server_list" item="server}
+							{foreach from=$server_list item="server"}
 								<option value="{$server.sid}" id="ss{$server.sid}">Retrieving Hostname... ({$server.ip}:{$server.port})</option>
 							{/foreach}
-						</select>            
+						</select>
 					</td>
 			    </tr>
 				{if $is_admin}

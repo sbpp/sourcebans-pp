@@ -1,42 +1,58 @@
 <?php
 
 use Lcobucci\JWT\Builder;
+use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
 use Lcobucci\JWT\Parser;
+use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Token;
+use Lcobucci\JWT\Validation\Constraint\IdentifiedBy;
+use Lcobucci\JWT\Validation\Constraint\IssuedBy;
+use Lcobucci\JWT\Validation\Constraint\PermittedFor;
+use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\ValidationData;
 
 class JWT
 {
-    public static function create(string $jti, string $secret, int $maxlife, int $aid)
+    public static function create(string $jti, int $maxLife, int $aid): Token\Plain
     {
-        return (new Builder())->setIssuer(Host::domain())
-                              ->setAudience(Host::domain())
-                              ->setId($jti, true)
-                              ->setIssuedAt(time())
-                              ->setNotBefore(time())
-                              ->setExpiration(time() + $maxlife)
-                              ->set('aid', $aid)
-                              ->sign(new Sha256(), $secret)
-                              ->getToken();
+        $config = static::getConfig();
+        $date = new DateTimeImmutable();
+
+        return $config->builder()
+            ->identifiedBy($jti)
+            ->issuedBy(Host::domain())
+            ->permittedFor(Host::domain())
+            ->canOnlyBeUsedAfter($date)
+            ->issuedAt($date)
+            ->expiresAt($date->setTimestamp($date->getTimestamp() + $maxLife))
+            ->withClaim('aid', $aid)
+            ->getToken($config->signer(), $config->signingKey());
     }
 
-    public static function parse(string $jwt)
+    public static function parse(string $jwt): Token
     {
-        return (new Parser())->parse($jwt);
+        $config = self::getConfig();
+
+        return $config->parser()->parse($jwt);
     }
 
-    public static function validate(Token $token)
+    public static function validate(Token $token): bool
     {
-        $data = new ValidationData();
-        $data->setIssuer(Host::domain());
-        $data->setAudience(Host::domain());
+        $config = self::getConfig();
 
-        return (bool)($token->validate($data));
+        $constrains = [
+            new SignedWith($config->signer(), $config->signingKey()),
+            new IssuedBy(Host::domain()),
+            new PermittedFor(Host::domain()),
+            new IdentifiedBy($token->claims()->get('jti'))
+        ];
+
+        return $config->validator()->validate($token, ...$constrains);
     }
 
-    public static function verify(Token $token, string $secret)
+    private static function getConfig(): Configuration
     {
-        return (bool)($token->verify(new Sha256(), $secret));
+        return Configuration::forSymmetricSigner(new Sha256(), InMemory::base64Encoded(SB_SECRET_KEY));
     }
 }

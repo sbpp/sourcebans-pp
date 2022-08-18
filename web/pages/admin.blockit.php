@@ -107,10 +107,10 @@ function BlockPlayer($check, int $sid, $num, $type, int $length)
 }
 $servers = $GLOBALS['db']->Execute("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE enabled = 1 ORDER BY modid, sid;");
 $theme->assign('total', $servers->RecordCount());
-$serverlinks = array();
+$serverlinks = [];
 $num         = 0;
 while (!$servers->EOF) {
-    $info         = array();
+    $info         = [];
     $info['num']  = $num;
     $info['ip']   = $servers->fields["ip"];
     $info['port'] = $servers->fields["port"];

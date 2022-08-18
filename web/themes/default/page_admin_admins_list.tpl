@@ -6,7 +6,7 @@
             <h3>Admins (<span id="admincount">{$admin_count}</span>)</h3>
             Click on an admin to see more detailed information and actions to perform on them.<br /><br />
 
-            {php} require (TEMPLATES_PATH . "/admin.admins.search.php");{/php}
+            {load_template file="admin.admins.search"}
 
             <div id="banlist-nav">
                 {$admin_nav}
@@ -18,7 +18,7 @@
                         <td width="33%" class="listtable_top"><b>Server Admin Group </b></td>
                         <td width="33%" class="listtable_top"><b>Web Admin Group</b></td>
                     </tr>
-                    {foreach from="$admins" item="admin"}
+                    {foreach from=$admins item="admin"}
                         <tr onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" class="tbl_out opener">
                             <td class="listtable_1" style="padding:3px;">{$admin.user} (<a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=admin" title="Show bans">{$admin.bancount} bans</a> | <a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=nodemo" title="Show bans without demo">{$admin.nodemocount} w.d.</a>)</td>
                             <td class="listtable_1" style="padding:3px;">{$admin.server_group}</td>

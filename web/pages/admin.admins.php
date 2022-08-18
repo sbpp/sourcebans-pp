@@ -122,7 +122,7 @@ if (isset($_GET['advSearch'])) {
 $admins = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage));
 // quick fix for the server search showing admins mulitple times.
 if (isset($_GET['advSearch']) && isset($_GET['advType']) && $_GET['advType'] == 'server') {
-    $aadm = array();
+    $aadm = [];
     $num = 0;
     foreach ($admins as $aadmin) {
         if (!in_array($aadmin['aid'], $aadm)) {
@@ -148,7 +148,7 @@ if ($AdminsEnd > $admin_count) {
 }
 
 // List Page
-$admin_list = array();
+$admin_list = [];
 foreach ($admins as $admin) {
     $admin['immunity']     = $userbank->GetProperty("srv_immunity", $admin['aid']);
     $admin['web_group']    = $userbank->GetProperty("group_name", $admin['aid']);
@@ -226,7 +226,7 @@ $group_list              = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX 
 $servers                 = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_servers`");
 $server_admin_group_list = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_srvgroups`");
 $server_group_list       = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_groups` WHERE type != 3");
-$server_list             = array();
+$server_list             = [];
 $serverscript            = "<script type=\"text/javascript\">";
 foreach ($servers as $server) {
     $serverscript .= "xajax_ServerHostPlayers('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";

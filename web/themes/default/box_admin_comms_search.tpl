@@ -16,7 +16,7 @@
                             <td align="center" class="listtable_1" ><input id="steam_" type="radio" name="search_type" value="radiobutton"></td>
                             <td class="listtable_1" >Steam ID</td>
                             <td class="listtable_1" >
-                                <input class="textbox" type="text" id="steamid" value="" onmouseup="$('steam_').checked = true"style="width: 50%; margin-right: 12px;"><select class="select" id="steam_match" onmouseup="$('steam_').checked = true" style="width: 33%;">
+                                <input class="textbox" type="text" id="steamid" value="" onmouseup="$('steam_').checked = true" style="width: 50%; margin-right: 12px;"><select class="select" id="steam_match" onmouseup="$('steam_').checked = true" style="width: 33%;">
                                     <option value="0" selected>Exact Match</option>
                                     <option value="1">Partial Match</option>
                                 </select>
@@ -116,9 +116,9 @@
                             <td class="listtable_1" >Admin</td>
                             <td class="listtable_1" >
                                 <select class="select" id="ban_admin" onmouseup="$('admin').checked = true" style="width: 95%;">
-{foreach from="$admin_list" item="admin}
-								<option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
-							{/foreach}
+                {foreach from=$admin_list item="admin"}
+								    <option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
+							  {/foreach}
 						</select>           
 					</td> 
 				</tr>
@@ -129,7 +129,7 @@
 			        <td class="listtable_1" >
 						<select class="select" id="server" onmouseup="$('where_banned').checked = true" style="width: 95%;">
 						<option label="Web Ban" value="0">Web Ban</option>
-							{foreach from="$server_list" item="server}
+							{foreach from=$server_list item="server"}
 								<option value="{$server.sid}" id="ss{$server.sid}">Retrieving Hostname... ({$server.ip}:{$server.port})</option>
 							{/foreach}
 						</select>            

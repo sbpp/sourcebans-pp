@@ -120,14 +120,14 @@
                 <tr>
                     <td colspan="2">
                         <table width="90%" border="0" cellspacing="0" cellpadding="4" align="center">
-                            {foreach from="$group_list" item="group"}
+                            {foreach from=$group_list item="group"}
                                 <tr>
                                     <td colspan="2" class="tablerow4">{$group.name}<b><i>(Group)</i></b></td>
                                     <td align="center" class="tablerow4"><input type="checkbox" id="group[]" name="group[]" value="g{$group.gid}" /></td>
                                 </tr>
                             {/foreach}
 
-                            {foreach from="$server_list" item="server"}
+                            {foreach from=$server_list item="server"}
                                 <tr class="tablerow1">
                                     <td colspan="2" class="tablerow1" id="sa{$server.sid}"><i>Retrieving Hostname... {$server.ip}:{$server.port}</i></td>
                                     <td align="center" class="tablerow1">
@@ -162,7 +162,7 @@
                                 <option value="c">Custom Permissions</option>
                                 <option value="n">New Admin Group</option>
                                 <optgroup label="Groups" style="font-weight:bold;">
-                                    {foreach from="$server_admin_group_list" item="server_wg"}
+                                    {foreach from=$server_admin_group_list item="server_wg"}
                                         <option value='{$server_wg.id}'>{$server_wg.name}</option>
                                     {/foreach}
                                 </optgroup>
@@ -188,7 +188,7 @@
                                 <option value="c">Custom Permissions</option>
                                 <option value="n">New Admin Group</option>
                                 <optgroup label="Groups" style="font-weight:bold;">
-                                    {foreach from="$server_group_list" item="server_g"}
+                                    {foreach from=$server_group_list item="server_g"}
                                         <option value='{$server_g.gid}'>{$server_g.name}</option>
                                     {/foreach}
                                 </optgroup>

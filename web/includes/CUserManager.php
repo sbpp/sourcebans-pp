@@ -29,22 +29,22 @@ class CUserManager
     /**
      * @var array
      */
-    private $admins = array();
+    private $admins = [];
 
     /**
      * @var Database
      */
-    private $dbh = null;
+    private $dbh;
 
     /**
      * CUserManager constructor.
-     * @param Token|false $token
+     * @param ?Token $token
      */
-    public function __construct($token)
+    public function __construct(?Token $token)
     {
         $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
-        $this->aid = ((bool)$token) ? $token->getClaim('aid') : -1;
+        $this->aid = $token?->claims()->get('aid') ?? -1;
 
         $this->GetUserArray($this->aid);
     }
@@ -85,7 +85,7 @@ class CUserManager
             return false;  // ohnoes some type of db error
         }
 
-        $user = array();
+        $user = [];
         //$user['user'] = stripslashes($res[0]);
         $user['aid'] = $aid; //immediately obvious
         $user['user'] = $res['user'];
@@ -249,9 +249,9 @@ class CUserManager
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE user = :user");
         $this->dbh->bind(':user', $name);
-        $data = $this->dbh->single();
+        $data = $this->dbh->single(fetchType: PDO::FETCH_COLUMN);
 
-        return (bool)$data[1];
+        return $data === 1;
     }
 
     /**
@@ -262,9 +262,9 @@ class CUserManager
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE authid = :steamid");
         $this->dbh->bind(':steamid', $steamid);
-        $data = $this->dbh->single();
+        $data = $this->dbh->single(fetchType: PDO::FETCH_COLUMN);
 
-        return (bool)$data[1];
+        return $data === 1;
     }
 
     /**
@@ -275,9 +275,9 @@ class CUserManager
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE email = :email");
         $this->dbh->bind(':email', $email);
-        $data = $this->dbh->single();
+        $data = $this->dbh->single(fetchType: PDO::FETCH_COLUMN);
 
-        return (bool)$data[1];
+        return $data === 1;
     }
 
     /**

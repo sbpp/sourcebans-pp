@@ -60,9 +60,9 @@
                 <td colspan="2">
                     <select id="server" name="server" class="select" style="width: 277px;">
                         <option value="-1">-- Select Server --</option>
-{foreach from="$server_list" item="server}
-				<option value="{$server.sid}" {if $server_selected == $server.sid}selected{/if}>{$server.hostname}</option>
-			{/foreach}
+                        {foreach from=$server_list item="server"}
+                            <option value="{$server.sid}" {if $server_selected == $server.sid}selected{/if}>{$server.hostname}</option>
+                        {/foreach}
 			<option value="0">Other server / Not listed here</option>
 		</select> 
     </td>

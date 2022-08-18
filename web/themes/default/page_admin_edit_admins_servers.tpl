@@ -12,7 +12,7 @@
                     <tr>
                         <td colspan="3" class="tablerow4"><b><i>Server Groups</i></b></td>
                     </tr>
-                    {foreach from="$group_list" item="group"}
+                    {foreach from=$group_list item="group"}
                         <tr>
                             <td colspan="2" class="tablerow1">{$group.name}</td>
                             <td align="center" class="tablerow1"><input type="checkbox" id="group_{$group.gid}" name="group[]" value="g{$group.gid}" onclick="" /></td>
@@ -21,7 +21,7 @@
                     <tr>
                         <td colspan="3" class="tablerow4"><b><i>Servers</i></b></td>
                     </tr>
-                    {foreach from="$server_list" item="server"}
+                    {foreach from=$server_list item="server"}
                         <tr class="tablerow1">
                             <td colspan="2" class="tablerow1" id="host_{$server.sid}">Please Wait...</td>
                             <td align="center" class="tablerow1">
@@ -42,11 +42,11 @@
                 </tr>
             </table>
             <script>
-                {foreach from="$assigned_servers" item="asrv"}
+                {foreach from=$assigned_servers item="asrv"}
                 if($('server_{$asrv.0}'))$('server_{$asrv.0}').checked = true;
                 if($('group_{$asrv[1]}'))$('group_{$asrv[1]}').checked = true;
                 {/foreach}
-                {foreach from="$server_list" item="server"}
+                {foreach from=$server_list item="server"}
                 xajax_ServerHostPlayers({$server.sid}, "id", "host_{$server.sid}");
                 {/foreach}
             </script>

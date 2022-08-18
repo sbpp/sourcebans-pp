@@ -12,7 +12,7 @@
                 <td height='16' class="listtable_top"><strong>Action</strong></td>
             {/if}
         </tr>
-        {foreach from="$mod_list" item="mod" name="gaben"}
+        {foreach from=$mod_list item="mod" name="gaben"}
             <tr id="mid_{$mod.mid}">
                 <td class="listtable_1" height='16'>{$mod.name|htmlspecialchars}</td>
                 <td class="listtable_1" height='16'>{$mod.modfolder|htmlspecialchars}</td>

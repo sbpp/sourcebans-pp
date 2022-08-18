@@ -65,7 +65,7 @@
                                 {if !$edit_server}
                                     <option value="-2">Please Select...</option>
                                 {/if}
-                                {foreach from="$modlist" item="mod"}
+                                {foreach from=$modlist item="mod"}
                                     <option value='{$mod.mid}'>{$mod.name}</option>
                                 {/foreach}
                             </select>
@@ -92,7 +92,7 @@
                     </td>
                     <td>&nbsp;</td>
                 </tr>
-                {foreach from="$grouplist" item="group"}
+                {foreach from=$grouplist item="group"}
                     <tr>
                         <td valign="middle">
                             <div align="right">{$group.name} </div>

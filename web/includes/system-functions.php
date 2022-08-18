@@ -296,7 +296,7 @@ function sizeFormat($bytes)
  *
  * @param  int   $sid
  * @param  array $steamids
- * @return array array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => array()....)
+ * @return array array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => []....)
  */
 function checkMultiplePlayers(int $sid, $steamids)
 {
@@ -402,5 +402,5 @@ function parseRconStatus(string $status)
  */
 function compareSanitizedString(string $str1, string $str2)
 {
-    return (bool)(strcmp(filter_var($str1, FILTER_SANITIZE_STRING), filter_var($str2, FILTER_SANITIZE_STRING)) === 0);
+    return (bool)(strcmp(filter_var($str1, FILTER_SANITIZE_SPECIAL_CHARS), filter_var($str2, FILTER_SANITIZE_SPECIAL_CHARS)) === 0);
 }

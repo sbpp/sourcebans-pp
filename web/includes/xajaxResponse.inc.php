@@ -107,7 +107,7 @@ class xajaxResponse
 	{
 		$this->setCharEncoding($sEncoding);
 		$this->bOutputEntities = $bOutputEntities;
-		$this->aCommands = array();
+		$this->aCommands = [];
 	}
 	
 	/**
@@ -861,7 +861,7 @@ class xajaxResponse
 			$mData = get_object_vars($mData);
 		
 	    if (is_array($mData)) {
-	    	$aData = array();
+	    	$aData = [];
 	        foreach ($mData as $key => $value)
 				$aData[] = array(
 					'k'=>$this->_buildObj($key), 

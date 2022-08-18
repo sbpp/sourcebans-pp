@@ -210,7 +210,7 @@
             <td>
                 <div align="left">
                     <table width="100%" border="0" style="border-collapse:collapse;" id="custom.reasons" name="custom.reasons">
-                        {foreach from="$bans_customreason" item="creason"}
+                        {foreach from=$bans_customreason item="creason"}
                             <tr>
                                 <td><input type="text" class="textbox" name="bans_customreason[]" id="bans_customreason[]" value="{$creason}"/></td>
                             </tr>

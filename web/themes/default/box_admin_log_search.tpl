@@ -12,7 +12,7 @@
                             <td class="listtable_1" width="26%">Admin</td>
                             <td class="listtable_1" width="66%">
                                 <select class="select" id="admin" onmouseup="$('admin_').checked = true" style="width: 100%;">
-                                    {foreach from="$admin_list" item="admin"}
+                                    {foreach from=$admin_list item="admin"}
                                     <option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
                                     {/foreach}
                                 </select>

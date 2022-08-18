@@ -20,19 +20,19 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 global $userbank, $theme;
 $admin_list   = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` ORDER BY user ASC");
 $server_list  = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
-$servers      = array();
+$servers      = [];
 $serverscript = "<script type=\"text/javascript\">";
 while (!$server_list->EOF) {
-    $info = array();
+    $info = [];
     $serverscript .= "xajax_ServerHostPlayers('" . $server_list->fields[0] . "', 'id', 'ss" . $server_list->fields[0] . "', '', '', false, 200);";
     $info['sid']  = $server_list->fields[0];
     $info['ip']   = $server_list->fields[1];
     $info['port'] = $server_list->fields[2];
-    array_push($servers, $info);
+    $servers[] = $info;
     $server_list->MoveNext();
 }
 $serverscript .= "</script>";
-$page = isset($_GET['page']) ? $_GET['page'] : 1;
+$page = $_GET['page'] ?? 1;
 
 $theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
 $theme->assign('is_admin', $userbank->is_admin());

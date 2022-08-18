@@ -2,15 +2,19 @@
 
 class NormalAuthHandler
 {
-    private $dbs = null;
     private $result = false;
 
-    public function __construct(\Database $dbs, string $username, string $password, bool $remember)
+    public function __construct(
+        private ?Database $dbs,
+        string $username, string $password, bool $remember)
     {
         $this->dbs = $dbs;
         $user = $this->getInfosFromDatabase($username);
 
         $maxlife = (($remember) ? Config::get('auth.maxlife.remember') : Config::get('auth.maxlife'))*60;
+
+        if (!$user || empty($password))
+            return;
 
         if (!empty($password) && (!empty($user['password']) || !is_null($user['password']))) {
             if ($this->checkPassword($password, $user['password'])) {

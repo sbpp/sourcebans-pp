@@ -115,9 +115,9 @@ if ($pages > 1) {
     }
     $page_numbers .= '</select>';
 }
-$log_list = array();
+$log_list = [];
 foreach ($log as $l) {
-    $log_item = array();
+    $log_item = [];
     if ($l['type'] == "m") {
         $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/help.png' alt='Info'>";
     } elseif ($l['type'] == "w") {
@@ -137,7 +137,7 @@ while (false !== ($filename = readdir($dh))) {
     $themes[] = $filename;
 }
 //$themes = scandir(SB_THEMES);
-$valid_themes = array();
+$valid_themes = [];
 foreach ($themes as $thm) {
     if (@file_exists(SB_THEMES . $thm . "/theme.conf.php")) {
         $file = file_get_contents(SB_THEMES . $thm . "/theme.conf.php");

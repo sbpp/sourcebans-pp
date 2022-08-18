@@ -17,7 +17,7 @@
             <div id="content_title" style="padding: 1rem 0rem"><b>Updater</b></div>
             <div id="content">
                 <h3>Updating...</h3>
-                {foreach from=$updates item=update}
+                {foreach from=$updates item="update"}
                     <ul style="font-size: 13px">{$update}</ul>
                 {/foreach}
             </div>

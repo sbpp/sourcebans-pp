@@ -179,8 +179,8 @@ if ($pages > 1) {
     $page_nav .= '</select>';
 }
 
-$delete       = array();
-$protest_list = array();
+$delete       = [];
+$protest_list = [];
 foreach ($protests as $prot) {
     $prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
     $protestb       = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
@@ -222,10 +222,10 @@ foreach ($protests as $prot) {
 												WHERE type = 'P' AND bid = '" . (int) $prot['pid'] . "' ORDER BY added desc");
 
     if ($commentres->RecordCount() > 0) {
-        $comment = array();
+        $comment = [];
         $morecom = 0;
         while (!$commentres->EOF) {
-            $cdata            = array();
+            $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
                 $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
@@ -328,8 +328,8 @@ if ($pages > 1) {
     $page_nav .= '</select>';
 }
 
-$delete              = array();
-$protest_list_archiv = array();
+$delete              = [];
+$protest_list_archiv = [];
 foreach ($protestsarchiv as $prot) {
     $prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 
@@ -383,10 +383,10 @@ foreach ($protestsarchiv as $prot) {
 												WHERE type = 'P' AND bid = '" . (int) $prot['pid'] . "' ORDER BY added desc");
 
     if ($commentres->RecordCount() > 0) {
-        $comment = array();
+        $comment = [];
         $morecom = 0;
         while (!$commentres->EOF) {
-            $cdata            = array();
+            $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
                 $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
@@ -501,7 +501,7 @@ if ($pages > 1) {
 $theme->assign('permissions_submissions', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS));
 $theme->assign('permissions_editsub', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS));
 $theme->assign('submission_count', $page_count);
-$submission_list = array();
+$submission_list = [];
 foreach ($submissions as $sub) {
     $sub['name']   = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
     $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
@@ -537,10 +537,10 @@ foreach ($submissions as $sub) {
 														WHERE type = 'S' AND bid = '" . (int) $sub['subid'] . "' ORDER BY added desc");
 
     if ($commentres->RecordCount() > 0) {
-        $comment = array();
+        $comment = [];
         $morecom = 0;
         while (!$commentres->EOF) {
-            $cdata            = array();
+            $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
                 $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
@@ -635,7 +635,7 @@ if ($pages > 1) {
 $theme->assign('permissions_submissions', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS));
 $theme->assign('permissions_editsub', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS));
 $theme->assign('submission_count_archiv', $page_count);
-$submission_list_archiv = array();
+$submission_list_archiv = [];
 foreach ($submissionsarchiv as $sub) {
     $sub['name']   = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
     $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
@@ -677,10 +677,10 @@ foreach ($submissionsarchiv as $sub) {
 														WHERE type = 'S' AND bid = '" . (int) $sub['subid'] . "' ORDER BY added desc");
 
     if ($commentres->RecordCount() > 0) {
-        $comment = array();
+        $comment = [];
         $morecom = 0;
         while (!$commentres->EOF) {
-            $cdata            = array();
+            $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
             if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
                 $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
