@@ -19,10 +19,11 @@
         "vendor-dir": "includes/vendor"
     },
     "require": {
-        "lcobucci/jwt": "4.2.x-dev",
+        "lcobucci/jwt": "~4.2.1",
         "maxmind-db/reader": "~1.0",
         "smarty/smarty": "~v4.2.0",
-        "xpaw/php-source-query-class": "^2.1",
+        "xpaw/php-source-query-class": "~2.1.0",
+        "adodb/adodb-php": "~5.22",
         "ext-pdo": "*",
         "ext-openssl": "*",
         "php": ">=8.1"
