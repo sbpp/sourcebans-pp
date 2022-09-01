@@ -1334,10 +1334,11 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 	dataPack.Reset();
 	int adminUserID = dataPack.ReadCell();
 	int targetUserID = dataPack.ReadCell();
-	int type = dataPack.ReadCell(); // not in use unless DEBUG
+	int type = dataPack.ReadCell();
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	dataPack.ReadString(targetAuth, sizeof(targetAuth));
 	dataPack.ReadString(reason, sizeof(reason));
+	delete dataPack;
 
 	int admin = GetClientOfUserId(adminUserID);
 	int target = GetClientOfUserId(targetUserID);
@@ -1355,7 +1356,8 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 	if (DB_Conn_Lost(results) || error[0] != '\0')
 	{
 		LogError("Query_UnBlockSelect failed: %s", error);
-		if (admin && IsClientInGame(admin))
+
+		if (admin)
 		{
 			PrintToChat(admin, "%s%T", PREFIX, "Unblock Select Failed", admin, targetAuth);
 			PrintToConsole(admin, "%s%T", PREFIX, "Unblock Select Failed", admin, targetAuth);
@@ -1364,13 +1366,13 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		{
 			PrintToServer("%s%T", PREFIX, "Unblock Select Failed", LANG_SERVER, targetAuth);
 		}
+
 		hasErrors = true;
 	}
-
-	// If there was no results then a ban does not exist for that id
-	if (!DB_Conn_Lost(results) && !results.RowCount)
+	// If there were no results then a ban does not exist for that id
+	else if (!results.RowCount)
 	{
-		if (admin && IsClientInGame(admin))
+		if (admin)
 		{
 			PrintToChat(admin, "%s%t", PREFIX, "No blocks found", targetAuth);
 			PrintToConsole(admin, "%s%t", PREFIX, "No blocks found", targetAuth);
@@ -1379,6 +1381,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		{
 			PrintToServer("%s%T", PREFIX, "No blocks found", LANG_SERVER, targetAuth);
 		}
+
 		hasErrors = true;
 	}
 
@@ -1388,8 +1391,10 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		PrintToServer("Calling TempUnBlock from Query_UnBlockSelect");
 		#endif
 
-		TempUnBlock(dataPack); // Datapack closed inside.
-		return;
+		if (target)
+		{
+			TempUnBlock(admin, target, type, adminAuth, targetAuth, reason);
+		}
 	}
 	else
 	{
@@ -1422,12 +1427,13 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			#endif
 
 			// Checking - has we access to unblock?
-			if (iAID == cAID || (!admin && StrEqual(adminAuth, "STEAM_ID_SERVER")) || AdmHasFlag(admin) || (DisUBImCheck == 0 && (GetAdmImmunity(admin) > cImmunity)))
+			if (iAID == cAID || !adminUserID || AdmHasFlag(admin) || (DisUBImCheck == 0 && (GetAdmImmunity(admin) > cImmunity)))
 			{
 				// Ok! we have rights to unblock
 				b_success = true;
+
 				// UnMute/UnGag, Show & log activity
-				if (target && IsClientInGame(target))
+				if (target)
 				{
 					switch (cType)
 					{
@@ -1499,7 +1505,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			}
 		}
 
-		if (b_success && target && IsClientInGame(target))
+		if (b_success && target)
 		{
 			#if defined DEBUG
 			PrintToServer("Showing activity to server in Query_UnBlockSelect");
@@ -1509,25 +1515,17 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			if (type == TYPE_UNSILENCE)
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
-
-				dataPack.Position = view_as<DataPackPos>(16);
-
 				if (g_MuteType[target] > bNot)
 				{
-					dataPack.WriteCell(TYPE_UNMUTE);
-					TempUnBlock(dataPack);
+					TempUnBlock(admin, target, TYPE_UNMUTE, adminAuth, targetAuth, reason);
 				}
 				else if (g_GagType[target] > bNot)
 				{
-					dataPack.WriteCell(TYPE_UNGAG);
-					TempUnBlock(dataPack);
+					TempUnBlock(admin, target, TYPE_UNGAG, adminAuth, targetAuth, reason);
 				}
 			}
 		}
 	}
-
-	if (dataPack != null)
-		delete dataPack;
 }
 
 public void Query_UnBlockUpdate(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -2467,18 +2465,18 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 			}
 		}
 
-		// Pack everything into a data pack so we can retain it
-		DataPack dataPack = new DataPack();
-		dataPack.WriteCell(GetClientUserId2(client));
-		dataPack.WriteCell(GetClientUserId(target));
-		dataPack.WriteCell(type);
-		dataPack.WriteString(adminAuth);
-		dataPack.WriteString(targetAuth);
-		dataPack.WriteString(reason);
-
-		// Check current player status. If player has temporary punishment - don't get info from DB
+		// Check current player status. If player has temporary punishment - don't get info from DB.
 		if (DB_Connect())
 		{
+			// Pack everything into a data pack so we can retain it
+			DataPack dataPack = new DataPack();
+			dataPack.WriteCell(GetClientUserId2(client));
+			dataPack.WriteCell(GetClientUserId(target));
+			dataPack.WriteCell(type);
+			dataPack.WriteString(adminAuth);
+			dataPack.WriteString(targetAuth);
+			dataPack.WriteString(reason);
+
 			char sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
 			char sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
 			char sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
@@ -2517,34 +2515,17 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 			PrintToServer("Calling TempUnBlock from ProcessUnBlock");
 			#endif
 
-			if (TempUnBlock(dataPack))
+			if (TempUnBlock(client, target, type, adminAuth, targetAuth, reason))
 				ShowActivityToServer(client, type + TYPE_TEMP_SHIFT, _, _, g_sName[target], _);
 		}
 	}
 }
 
-stock bool TempUnBlock(DataPack dataPack)
+stock bool TempUnBlock(const int admin, const int target, const int type, const char[] adminAuth, const char[] targetAuth, const char[] reason)
 {
-	char adminAuth[30], targetAuth[30];
-	char reason[256];
-
-	dataPack.Reset();
-	int adminUserID = dataPack.ReadCell();
-	int targetUserID = dataPack.ReadCell();
-	int type = dataPack.ReadCell();
-	dataPack.ReadString(adminAuth, sizeof(adminAuth));
-	dataPack.ReadString(targetAuth, sizeof(targetAuth));
-	dataPack.ReadString(reason, sizeof(reason));
-	delete dataPack; // Need to close datapack
-
 	#if defined DEBUG
-	PrintToServer("TempUnBlock(adminUID: %d, targetUID: %d, type: %d, adminAuth: %s, targetAuth: %s, reason: %s)", adminUserID, targetUserID, type, adminAuth, targetAuth, reason);
+	PrintToServer("TempUnBlock(admin: %u, target: %u, type: %d, adminAuth: %s, targetAuth: %s, reason: %s)", admin, target, type, adminAuth, targetAuth, reason);
 	#endif
-
-	int admin = GetClientOfUserId(adminUserID);
-	int target = GetClientOfUserId(targetUserID);
-	if (!target)
-		return false; // target has gone away
 
 	int AdmImmunity = GetAdmImmunity(admin);
 	bool AdmImCheck = (DisUBImCheck == 0
@@ -2564,7 +2545,7 @@ stock bool TempUnBlock(DataPack dataPack)
 	#endif
 
 	// Check access for unblock without db changes (temporary unblock)
-	bool bHasPermission = (!admin && StrEqual(adminAuth, "STEAM_ID_SERVER")) || AdmHasFlag(admin) || AdmImCheck;
+	bool bHasPermission = !admin || AdmHasFlag(admin) || AdmImCheck;
 	// can, if we are console or have special flag. else - deep checking by issuer authid
 	if (!bHasPermission) {
 		switch (type)
