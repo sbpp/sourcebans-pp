@@ -32,7 +32,7 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
   o MySQL 5.6 or MariaDB 10 and higher
 * Source Dedicated Server
   o MetaMod: Source
-  o SourceMod: Greater Than or Equal To 1.7
+  o SourceMod: Greater Than or Equal To 1.10
 ```
 
 ## How to install a SourceBans++ release version
