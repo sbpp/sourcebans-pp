@@ -10,12 +10,12 @@ class Auth
     /**
      * @var Database
      */
-    private static $dbs = null;
+    private static ?Database $dbs = null;
 
     /**
      * @param Database $dbs
      */
-    public static function init(\Database $dbs)
+    public static function init(\Database $dbs): void
     {
         self::$dbs = $dbs;
     }
@@ -24,7 +24,7 @@ class Auth
      * @param int $aid
      * @param int $maxlife
      */
-    public static function login(int $aid, int $maxlife)
+    public static function login(int $aid, int $maxlife): void
     {
         $jti = self::generateJTI();
 
@@ -73,7 +73,6 @@ class Auth
         }
 
         $token = JWT::parse($cookie);
-//        $secret = self::getTokenSecret($token->claims()->get('jti'));
 
         if (JWT::validate($token)) {
             self::updateLastAccessed($token->claims()->get('jti'));
@@ -89,7 +88,7 @@ class Auth
      * @param string $domain
      * @param bool $secure
      */
-    private static function setCookie(string $data, int $lifetime, string $domain, bool $secure)
+    private static function setCookie(string $data, int $lifetime, string $domain, bool $secure): void
     {
         if (version_compare(PHP_VERSION, '7.3.0') >= 0) {
             setcookie('sbpp_auth', $data, [
@@ -108,7 +107,7 @@ class Auth
     /**
      *
      */
-    private static function gc()
+    private static function gc(): void
     {
         self::$dbs->query(
             "DELETE FROM `:prefix_login_tokens` WHERE lastAccessed < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 30 DAY))"
@@ -133,7 +132,7 @@ class Auth
     /**
      * @param int $aid
      */
-    private static function updateLastVisit(int $aid)
+    private static function updateLastVisit(int $aid): void
     {
         self::$dbs->query("UPDATE `:prefix_admins` SET lastvisit = UNIX_TIMESTAMP() WHERE aid = :aid");
         self::$dbs->bind(':aid', $aid, PDO::PARAM_INT);
@@ -143,7 +142,7 @@ class Auth
     /**
      * @param string $jti
      */
-    private static function updateLastAccessed(string $jti)
+    private static function updateLastAccessed(string $jti): void
     {
         self::$dbs->query("UPDATE `:prefix_login_tokens` SET lastAccessed = UNIX_TIMESTAMP() WHERE jti = :jti");
         self::$dbs->bind(':jti', $jti, PDO::PARAM_STR);
@@ -165,7 +164,7 @@ class Auth
     /**
      * @return string
      */
-    private static function generateJTI()
+    private static function generateJTI(): string
     {
         do {
             $jti = Crypto::genJTI();
@@ -178,7 +177,7 @@ class Auth
      * @param string $jti
      * @return bool
      */
-    private static function checkJTI(string $jti)
+    private static function checkJTI(string $jti): bool
     {
         self::$dbs->query("SELECT 1 FROM `:prefix_login_tokens` WHERE jti = :jti");
         self::$dbs->bind(':jti', $jti, PDO::PARAM_STR);
@@ -189,7 +188,7 @@ class Auth
     /**
      * @return string
      */
-    private static function getJWTFromCookie()
+    private static function getJWTFromCookie(): string
     {
         if (isset($_COOKIE['sbpp_auth'])) {
             return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);

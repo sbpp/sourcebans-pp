@@ -26,13 +26,13 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ```
 * Webserver
-  o PHP 7.4 or higher
+  o PHP 8.1 or higher
     * ini setting: memory_limit greater than or equal to 64M
     * GMP extension
   o MySQL 5.6 or MariaDB 10 and higher
 * Source Dedicated Server
   o MetaMod: Source
-  o SourceMod: Greater Than or Equal To 1.7
+  o SourceMod: Greater Than or Equal To 1.10
 ```
 
 ## How to install a SourceBans++ release version
@@ -55,14 +55,20 @@ Here is a quick summary of getting the master branch code up and running.
 
 After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.dev/docs/quickstart/) guide.
 
-## PHP 8.1 major changes
-### Smarty
+### PHP 8.1 major changes
+## Upgrade
+*If you ran the installer, this step is unnecessary.*
+
+Upgrading from 1.6/1.7, requires a new [configuration value](/blob/php81/web/config.php.template#L43) to be set. To do this, please run the `upgrade.php` script.
+Once done, delete it, as it may output sensitive information.
+
+#### Smarty
 #### Updated Smarty version dropped support for the `{php}` tag. 
-Custom themes have to use the new [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/php81/web/includes/SmartyCustomFunctions.php#L54) tag.
+Custom themes must to use the new [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/php81/web/includes/SmartyCustomFunctions.php#L54) tag.
 
 #### JWT Update
-JWT secrets are no longer stored in the databse as they are generated using a secret key.
-    - Add constant `SB_SECRET_KEY` to config.php.
+*If you ran the installer or upgrade file, this step is unecessary.* \
+JWT secrets are no longer stored in the database as they are generated using a secret key. 
 
 
 ### Compiling SourceMod plugins
