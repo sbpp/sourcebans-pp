@@ -130,6 +130,10 @@ $res   = $GLOBALS['db']->Execute("SELECT bid, ba.authid, ba.type, ba.name, creat
 $comms = [];
 while (!$res->EOF) {
     $info = [];
+    $info['temp']     = false;
+    $info['perm']     = false;
+    $info['unbanned'] = false;
+
     if ($res->fields['length'] == 0) {
         $info['perm']     = true;
         $info['unbanned'] = false;
