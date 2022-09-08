@@ -75,6 +75,9 @@ $res  = $GLOBALS['db']->Execute("SELECT bid, ba.ip, ba.authid, ba.name, created,
 $bans = [];
 while (!$res->EOF) {
     $info = [];
+    $info['temp']     = false;
+    $info['perm']     = false;
+    $info['unbanned'] = false;
     if ($res->fields['length'] == 0) {
         $info['perm']     = true;
         $info['unbanned'] = false;
