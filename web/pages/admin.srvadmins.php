@@ -21,6 +21,9 @@ global $theme;
 
 new AdminTabs([], $userbank, $theme);
 
+$admsteam = [];
+$admins = [];
+
 $srv_admins = $GLOBALS['db']->GetAll("SELECT authid, user
     FROM " . DB_PREFIX . "_admins_servers_groups AS asg
     LEFT JOIN " . DB_PREFIX . "_admins AS a ON a.aid = asg.admin_id
@@ -37,7 +40,7 @@ foreach ($srv_admins as $admin) {
         $admsteam[] = $admin['authid'];
     }
 }
-if (@count($admsteam) > 0 && $serverdata = checkMultiplePlayers((int) $_GET['id'], $admsteam)) {
+if (count($admsteam) > 0 && $serverdata = checkMultiplePlayers((int) $_GET['id'], $admsteam)) {
     $noproblem = true;
 }
 foreach ($srv_admins as $admin) {

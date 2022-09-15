@@ -298,7 +298,7 @@ function sizeFormat($bytes)
  * @param  array $steamids
  * @return array array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => []....)
  */
-function checkMultiplePlayers(int $sid, $steamids)
+function checkMultiplePlayers(int $sid, array $steamids)
 {
     $ret = rcon('status', $sid);
 
