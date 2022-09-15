@@ -355,6 +355,7 @@ function rcon(string $cmd, int $sid)
         $rcon->setRconPassword($server['rcon']);
 
         $output = $rcon->Rcon($cmd);
+        Log::add("m", "RCON Sent", sprintf("RCON Command (%s) was sent to server (%s:%d)", $cmd, $server['ip'], $server['port']));
     } catch (\xPaw\SourceQuery\Exception\AuthenticationException $e) {
         $GLOBALS['PDO']->query("UPDATE `:prefix_servers` SET rcon = '' WHERE sid = :sid");
         $GLOBALS['PDO']->bind(':sid', $sid);

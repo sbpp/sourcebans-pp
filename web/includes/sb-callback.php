@@ -2535,7 +2535,6 @@ function SendRcon(int $sid, $command, $output)
     }
 
     $objResponse->addScript("scroll.toBottom(); $('cmd').value=''; $('cmd').disabled=''; $('rcon_btn').disabled=''");
-    Log::add("m", "RCON Sent", "RCON Command was sent to server ($rcon[ip]:$rcon[port])");
     return $objResponse;
 }
 
