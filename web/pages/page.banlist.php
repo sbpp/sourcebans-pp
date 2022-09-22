@@ -326,8 +326,8 @@ if (isset($_GET['advSearch'])) {
             break;
         case "date":
             $date    = explode(",", $value);
-            $time    = mktime(0, 0, 0, $date[1], $date[0], $date[2]);
-            $time2   = mktime(23, 59, 59, $date[1], $date[0], $date[2]);
+            $time    = mktime(0, 0, 0, (int)$date[1], (int)$date[0], (int)$date[2]);
+            $time2   = mktime(23, 59, 59, (int)$date[1], (int)$date[0], (int)$date[2]);
             $where   = "WHERE BA.created > ? AND BA.created < ?";
             $advcrit = array(
                 $time,
