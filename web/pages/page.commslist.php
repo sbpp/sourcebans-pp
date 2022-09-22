@@ -574,7 +574,7 @@ while (!$res->EOF) {
 
     //COMMENT STUFF
     //-----------------------------------
-    if ($userbank->is_admin()) {
+    if (Config::getBool('config.enablepubliccomments') || $userbank->is_admin()) {
         $view_comments = true;
         $commentres    = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
 											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
@@ -735,9 +735,10 @@ if (isset($_GET["comment"])) {
     $theme->assign('commenttext', (isset($ctext) ? $ctext : ""));
     $theme->assign('ctype', $_GET["ctype"]);
     $theme->assign('cid', (isset($_GET["cid"]) ? $_GET["cid"] : ""));
+    $theme->assign('canedit', $userbank->is_admin());
 }
 $theme->assign('view_comments', $view_comments);
-$theme->assign('comment', (isset($_GET["comment"]) ? $_GET["comment"] : false));
+$theme->assign('comment', (isset($_GET["comment"]) && $view_comments ? $_GET["comment"] : false));
 //----------------------------------------
 
 unset($_SESSION['CountryFetchHndl']);
