@@ -88,8 +88,8 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 {
 	RegPluginLibrary("sourcebans++");
 
-	CreateNative("SBCheckerGetClientsBans", Native_SBCheckerGetClientsBans);
-	CreateNative("SBCheckerGetClientsComms", Native_SBCheckerGetClientsComms);
+	CreateNative("SBPP_CheckerGetClientsBans", Native_SBCheckerGetClientsBans);
+	CreateNative("SBPP_CheckerGetClientsComms", Native_SBCheckerGetClientsComms);
 
 	return APLRes_Success;
 }
