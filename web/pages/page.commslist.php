@@ -500,7 +500,9 @@ while (!$res->EOF) {
             $data['removedby'] = $removedby[0];
         }
     } else if ($data['ban_length'] == 'Permanent') {
+        $data['unbanned']  = false;
         $data['class'] = "listtable_1_permanent";
+	$data['ub_reason'] = "";
     } else {
         $data['unbanned']  = false;
         $data['class']     = "listtable_1_banned";
