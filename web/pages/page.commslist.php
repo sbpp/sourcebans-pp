@@ -492,7 +492,7 @@ while (!$res->EOF) {
             $data['ub_reason'] = "(Expired)";
         }
 
-        $data['ureason'] = stripslashes($res->fields['unban_reason']);
+        $data['ureason'] = stripslashes($res->fields['unban_reason'] ?? '');
 
         $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
         $data['removedby'] = "";
