@@ -67,7 +67,7 @@ if (isset($_POST['adminname'])) {
     $a_name           = trim($_POST['adminname']);
     $a_steam          = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
     $a_email          = trim($_POST['email']);
-    $a_serverpass     = $_POST['a_useserverpass'] == "on";
+    $a_serverpass     = isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] == "on";
     $pw_changed       = false;
     $serverpw_changed = false;
 
@@ -172,7 +172,7 @@ if (isset($_POST['adminname'])) {
         }
 
         // Check for the serverpassword
-        if ($_POST['a_useserverpass'] == "on") {
+        if (isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] == "on") {
             if (!empty($_POST['a_serverpass'])) {
                 $serverpw_changed = true;
             }
@@ -231,7 +231,7 @@ if (isset($_POST['adminname'])) {
                     $_GET['id']
                 )
             );
-        } elseif ($_POST['a_useserverpass'] != "on") {
+        } elseif (isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] != "on") {
             // Remove the server password
             $edit = $GLOBALS['db']->Execute(
                 "UPDATE " . DB_PREFIX . "_admins SET
