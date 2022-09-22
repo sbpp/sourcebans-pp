@@ -130,17 +130,17 @@
                                     </td>
                                     <!-- ###############[ Start Admin Controls ]################## -->
                                     {if $view_bans}
-                                        <td width="30%" rowspan="{if $ban.unbanned}13{else}11{/if}" class="listtable_2 opener">
+                                        <td width="30%" rowspan="{if isset($ban.unbanned)}13{else}11{/if}" class="listtable_2 opener">
                                             <div class="ban-edit">
                                                 <ul>
-                                                    {if $ban.unbanned && $ban.reban_link != false}
+                                                    {if isset($ban.unbanned) && $ban.reban_link != false}
                                                         <li>{$ban.reban_link}</li>
                                                     {/if}
                                                     <li>{$ban.addcomment}</li>
-                                                    {if ($ban.view_edit && !$ban.unbanned)}
+                                                    {if ($ban.view_edit && (!isset($ban.unbanned) || !$ban.unbanned))}
                                                         <li>{$ban.edit_link}</li>
                                                     {/if}
-                                                    {if ($ban.unbanned == false && $ban.view_unban)}
+                                                    {if (isset($ban.unbanned) && $ban.unbanned == false && $ban.view_unban)}
                                                         <li>{$ban.unban_link}</li>
                                                     {/if}
                                                     {if $ban.view_delete}
@@ -190,11 +190,11 @@
                                     <td width="20%" height="16" class="listtable_1">Block length</td>
                                     <td height="16" class="listtable_1">{$ban.banlength}</td>
                                 </tr>
-                                {if $ban.unbanned}
+                                {if isset($ban.unbanned)}
                                     <tr align="left">
                                         <td width="20%" height="16" class="listtable_1">Unblock reason</td>
                                         <td height="16" class="listtable_1">
-                                            {if $ban.ureason == ""}
+                                            {if !isset($ban.ureason) || $ban.ureason == ""}
                                                 <i><font color="#677882">no reason present</font></i>
                                             {else}
                                                 {$ban.ureason}
