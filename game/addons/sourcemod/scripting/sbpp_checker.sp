@@ -39,6 +39,10 @@ char g_DatabasePrefix[10] = "sb";
 SMCParser g_ConfigParser;
 Database g_DB;
 
+int g_iBanCounts[MAXPLAYERS + 1];
+int g_iCommsCounts[MAXPLAYERS + 1];
+
+
 public Plugin myinfo =
 {
 	name = "SourceBans++: Bans Checker",
@@ -80,6 +84,28 @@ public void OnDatabaseConnected(Database db, const char[] error, any data)
 	g_DB = db;
 }
 
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
+{
+	RegPluginLibrary("sourcebans++");
+
+	CreateNative("SBCheckerGetClientsBans", Native_SBCheckerGetClientsBans);
+	CreateNative("SBCheckerGetClientsComms", Native_SBCheckerGetClientsComms);
+
+	return APLRes_Success;
+}
+
+public int Native_SBCheckerGetClientsBans(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	return g_iBanCounts[client];
+}
+
+public int Native_SBCheckerGetClientsComms(Handle plugin, int numParams)
+{
+	int client = GetNativeCell(1);
+	return g_iCommsCounts[client];
+}
+
 public void OnClientAuthorized(int client, const char[] auth)
 {
 	if (g_DB == null)
@@ -106,6 +132,10 @@ public void OnConnectBanCheck(Database db, DBResultSet results, const char[] err
 	if(results.FetchRow()){
 		commcount = results.FetchInt(0);
 	}
+
+	g_iBanCounts[client] = bancount;
+	g_iCommsCounts[client] = commcount;
+
 	if ( bancount && commcount ) {
 		PrintToBanAdmins("%s%t", Prefix, "Ban and Comm Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""), commcount, ((commcount > 1 || commcount == 0) ? "s":""));
 	}
