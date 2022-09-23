@@ -431,6 +431,12 @@ public Action CommandBan(int client, int args)
 	GetCmdArg(2, buffer, sizeof(buffer));
 
 	int time = StringToInt(buffer);
+	
+	if (!StringToIntEx(buffer, time))
+	{
+		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
+		return Plugin_Handled;
+	}
 
 	if (!time && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
