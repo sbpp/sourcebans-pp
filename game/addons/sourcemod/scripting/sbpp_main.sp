@@ -1155,16 +1155,16 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 	{
 		if (Reason[0] == '\0')
 		{
-			ShowActivityEx(admin, Prefix, "%t", "Permabanned Player", Name);
+			ShowActivity2(admin, Prefix, "%t", "Permabanned Player", Name);
 		} else {
-			ShowActivityEx(admin, Prefix, "%t", "Permabanned Player Reason", Name, Reason);
+			ShowActivity2(admin, Prefix, "%t", "Permabanned Player Reason", Name, Reason);
 		}
 	} else {
 		if (Reason[0] == '\0')
 		{
-			ShowActivityEx(admin, Prefix, "%t", "Banned Player", Name, time);
+			ShowActivity2(admin, Prefix, "%t", "Banned Player", Name, time);
 		} else {
-			ShowActivityEx(admin, Prefix, "%t", "Banned Player Reason", Name, time, Reason);
+			ShowActivity2(admin, Prefix, "%t", "Banned Player Reason", Name, time, Reason);
 		}
 	}
 
