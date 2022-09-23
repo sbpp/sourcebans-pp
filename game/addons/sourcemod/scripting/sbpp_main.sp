@@ -60,7 +60,7 @@ enum State/* ConfigState */
 
 State ConfigState;
 
-#define Prefix "[SourceBans++] "
+#define Prefix "\x04[SourceBans++]\x01 "
 
 /* Admin Stuff*/
 AdminCachePart loadPart;
