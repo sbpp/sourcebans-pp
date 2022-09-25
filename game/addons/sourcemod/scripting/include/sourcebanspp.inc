@@ -103,4 +103,12 @@ forward void SBPP_OnBanPlayer(int iAdmin, int iTarget, int iTime, const char[] s
  *********************************************************/
 forward void SBPP_OnReportPlayer(int iReporter, int iTarget, const char[] sReason);
 
+/*********************************************************
+ * Called when OnClientPreAdminCheck is about to be triggered
+ *
+ * @param	part	The AdminCachePart being processed
+ * @return	bBlock	If enabled, blocks the trigger for OnClientPreAdminCheck
+ *********************************************************/
+forward bool SBPP_OnClientPreAdminCheck(AdminCachePart part);
+
 //Yarr!

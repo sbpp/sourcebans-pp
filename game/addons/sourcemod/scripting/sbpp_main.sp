@@ -116,6 +116,7 @@ SMCParser ConfigParser;
 Handle
 	g_hFwd_OnBanAdded
 	, g_hFwd_OnReportAdded
+	, g_hFwd_OnClientPreAdminCheck
 	, PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
 
 DataPack PlayerDataPack[MAXPLAYERS + 1] =  { null, ... };
@@ -146,6 +147,7 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 
 	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hFwd_OnReportAdded = CreateGlobalForward("SBPP_OnReportPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_String);
+	g_hFwd_OnClientPreAdminCheck = CreateGlobalForward("SBPP_OnClientPreAdminCheck", ET_Ignore, Param_Cell);
 
 	LateLoaded = late;
 
@@ -1689,7 +1691,7 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 	if (results == null)
 	{
 		--curLoading;
-		CheckLoadAdmins();
+		CheckLoadAdmins(AdminCache_Admins);
 		LogToFile(logFile, "Failed to retrieve admins from the database, %s", error);
 		return;
 	}
@@ -1847,10 +1849,11 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 			if (flags[i] < 'a' || flags[i] > 'z')
 				continue;
 
-			if (g_FlagLetters[flags[i]-'a'] < Admin_Reservation)
+			int idx = flags[i]-'a';
+			if (g_FlagLetters[idx] < Admin_Reservation)
 				continue;
 
-			curAdm.SetFlag(g_FlagLetters[flags[i]-'a'], true);
+			curAdm.SetFlag(g_FlagLetters[idx], true);
 		}
 		++admCount;
 	}
@@ -1864,7 +1867,7 @@ public void AdminsDone(Database db, DBResultSet results, const char[] error, any
 	#endif
 
 	--curLoading;
-	CheckLoadAdmins();
+	CheckLoadAdmins(AdminCache_Admins);
 }
 
 public void GroupsDone(Database db, DBResultSet results, const char[] error, any data)
@@ -1872,7 +1875,7 @@ public void GroupsDone(Database db, DBResultSet results, const char[] error, any
 	if (results == null)
 	{
 		curLoading--;
-		CheckLoadAdmins();
+		CheckLoadAdmins(AdminCache_Groups);
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s", error);
 		return;
 	}
@@ -1924,10 +1927,11 @@ public void GroupsDone(Database db, DBResultSet results, const char[] error, any
 			if (grpFlags[i] < 'a' || grpFlags[i] > 'z')
 				continue;
 
-			if (g_FlagLetters[grpFlags[i]-'a'] < Admin_Reservation)
+			int idx = grpFlags[i]-'a';
+			if (g_FlagLetters[idx] < Admin_Reservation)
 				continue;
 
-			curGrp.SetFlag(g_FlagLetters[grpFlags[i]-'a'], true);
+			curGrp.SetFlag(g_FlagLetters[idx], true);
 		}
 
 		// Set the group immunity.
@@ -1974,7 +1978,7 @@ public void GroupsSecondPass(Database db, DBResultSet results, const char[] erro
 	if (results == null)
 	{
 		curLoading--;
-		CheckLoadAdmins();
+		CheckLoadAdmins(AdminCache_Groups);
 		LogToFile(logFile, "Failed to retrieve groups from the database, %s", error);
 		return;
 	}
@@ -2011,7 +2015,7 @@ public void GroupsSecondPass(Database db, DBResultSet results, const char[] erro
 		#endif
 	}
 	--curLoading;
-	CheckLoadAdmins();
+	CheckLoadAdmins(AdminCache_Groups);
 }
 
 public void LoadGroupsOverrides(Database db, DBResultSet results, const char[] error, any data)
@@ -2019,7 +2023,7 @@ public void LoadGroupsOverrides(Database db, DBResultSet results, const char[] e
 	if (results == null)
 	{
 		curLoading--;
-		CheckLoadAdmins();
+		CheckLoadAdmins(AdminCache_Overrides);
 		LogToFile(logFile, "Failed to retrieve group overrides from the database, %s", error);
 		return;
 	}
@@ -2074,7 +2078,7 @@ public void LoadGroupsOverrides(Database db, DBResultSet results, const char[] e
 		curGrp.AddCommandOverride(sCommand, iType, iRule);
 	}
 	curLoading--;
-	CheckLoadAdmins();
+	CheckLoadAdmins(AdminCache_Overrides);
 
 	if (backupConfig)
 		groupsKV.ExportToFile(groupsLoc);
@@ -2601,8 +2605,17 @@ stock void UTIL_InsertTempBan(int time, const char[] name, const char[] auth, co
 	SQLiteDB.Query(ErrorCheckCallback, query);
 }
 
-stock void CheckLoadAdmins()
+stock void CheckLoadAdmins(AdminCachePart part)
 {
+	bool bNotify = true;
+
+	Call_StartForward(g_hFwd_OnClientPreAdminCheck);
+	Call_PushCell(part);
+	Call_Finish(bNotify);
+
+	if (!bNotify)
+		return;
+
 	for (int i = 1; i <= MaxClients; i++)
 	{
 		if (IsClientInGame(i) && IsClientAuthorized(i))
