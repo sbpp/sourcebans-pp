@@ -238,6 +238,11 @@ public void OnLibraryRemoved(const char[] name)
 		hTopMenu = null;
 }
 
+public void OnConfigsExecuted()
+{
+	ReadConfig();
+}
+
 public void OnMapStart()
 {
 	ReadConfig();
@@ -1927,7 +1932,18 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 			}
 			else if (strcmp("ServerID", key, false) == 0)
 			{
-				if (!StringToIntEx(value, serverID) || serverID < 1)
+				serverID = StringToInt(value);
+
+				// get our sb_id value if we have one
+				int sbid = GetConVarInt(FindConVar("sb_id"));
+				if (sbid != -1)
+				{
+					serverID = sbid;
+				}
+
+				// if it's not valid, make it 0
+				// we consider -1 valid here
+				if (serverID < -1)
 				{
 					serverID = 0;
 				}
