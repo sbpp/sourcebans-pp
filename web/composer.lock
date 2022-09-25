@@ -4,20 +4,20 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "dcd278b55726e1c016976f60e613d944",
+    "content-hash": "d8db469f240445f4837ad45303088aa3",
     "packages": [
         {
             "name": "adodb/adodb-php",
-            "version": "v5.22.2",
+            "version": "v5.22.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ADOdb/ADOdb.git",
-                "reference": "876bc2287171ea96a571f84c23845e44a759d9a0"
+                "reference": "b937df7f7efde5c98c501f6fc472ec3ab276c3c9"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ADOdb/ADOdb/zipball/876bc2287171ea96a571f84c23845e44a759d9a0",
-                "reference": "876bc2287171ea96a571f84c23845e44a759d9a0",
+                "url": "https://api.github.com/repos/ADOdb/ADOdb/zipball/b937df7f7efde5c98c501f6fc472ec3ab276c3c9",
+                "reference": "b937df7f7efde5c98c501f6fc472ec3ab276c3c9",
                 "shasum": ""
             },
             "require": {
@@ -65,7 +65,7 @@
                 "issues": "https://github.com/ADOdb/ADOdb/issues",
                 "source": "https://github.com/ADOdb/ADOdb"
             },
-            "time": "2022-05-08T10:01:41+00:00"
+            "time": "2022-09-06T10:02:30+00:00"
         },
         {
             "name": "lcobucci/clock",
@@ -130,16 +130,16 @@
         },
         {
             "name": "lcobucci/jwt",
-            "version": "4.2.x-dev",
+            "version": "4.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/lcobucci/jwt.git",
-                "reference": "1d61d63aeeb4112e951284333c69c1a04473cc31"
+                "reference": "72ac6d807ee51a70ad376ee03a2387e8646e10f3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lcobucci/jwt/zipball/1d61d63aeeb4112e951284333c69c1a04473cc31",
-                "reference": "1d61d63aeeb4112e951284333c69c1a04473cc31",
+                "url": "https://api.github.com/repos/lcobucci/jwt/zipball/72ac6d807ee51a70ad376ee03a2387e8646e10f3",
+                "reference": "72ac6d807ee51a70ad376ee03a2387e8646e10f3",
                 "shasum": ""
             },
             "require": {
@@ -164,7 +164,6 @@
                 "phpunit/php-invoker": "^3.1",
                 "phpunit/phpunit": "^9.5"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -189,7 +188,7 @@
             ],
             "support": {
                 "issues": "https://github.com/lcobucci/jwt/issues",
-                "source": "https://github.com/lcobucci/jwt/tree/4.2.x"
+                "source": "https://github.com/lcobucci/jwt/tree/4.2.1"
             },
             "funding": [
                 {
@@ -201,7 +200,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2022-08-05T13:16:27+00:00"
+            "time": "2022-08-19T23:14:07+00:00"
         },
         {
             "name": "maxmind-db/reader",
@@ -270,16 +269,16 @@
         },
         {
             "name": "smarty/smarty",
-            "version": "v4.2.0",
+            "version": "v4.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/smarty-php/smarty.git",
-                "reference": "97aeb14c6fc2fb733938809926e2f9d6c581a70d"
+                "reference": "ffa2b81a8e354a49fd8a2f24742dc9dc399e8007"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/smarty-php/smarty/zipball/97aeb14c6fc2fb733938809926e2f9d6c581a70d",
-                "reference": "97aeb14c6fc2fb733938809926e2f9d6c581a70d",
+                "url": "https://api.github.com/repos/smarty-php/smarty/zipball/ffa2b81a8e354a49fd8a2f24742dc9dc399e8007",
+                "reference": "ffa2b81a8e354a49fd8a2f24742dc9dc399e8007",
                 "shasum": ""
             },
             "require": {
@@ -330,9 +329,9 @@
             "support": {
                 "forum": "https://github.com/smarty-php/smarty/discussions",
                 "issues": "https://github.com/smarty-php/smarty/issues",
-                "source": "https://github.com/smarty-php/smarty/tree/v4.2.0"
+                "source": "https://github.com/smarty-php/smarty/tree/v4.2.1"
             },
-            "time": "2022-08-01T21:57:38+00:00"
+            "time": "2022-09-14T10:59:01+00:00"
         },
         {
             "name": "stella-maris/clock",
@@ -436,9 +435,7 @@
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "lcobucci/jwt": 20
-    },
+    "stability-flags": [],
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
