@@ -816,14 +816,14 @@ public int ReasonSelected(Menu menu, MenuAction action, int param1, int param2)
 			if (StrEqual("Hacking", key))
 			{
 				HackingMenuHandle.Display(param1, MENU_TIME_FOREVER);
-				return;
+				return 0;
 			}
 
 			else if (StrEqual("Own Reason", key)) // admin wants to use his own reason
 			{
 				g_ownReasons[param1] = true;
 				PrintToChat(param1, "%s%t", Prefix, "Chat Reason");
-				return;
+				return 0;
 			}
 
 			else if (g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
@@ -846,6 +846,7 @@ public int ReasonSelected(Menu menu, MenuAction action, int param1, int param2)
 			}
 		}
 	}
+	return 0;
 }
 
 public int HackingSelected(Menu menu, MenuAction action, int param1, int param2)
@@ -894,6 +895,7 @@ public int HackingSelected(Menu menu, MenuAction action, int param1, int param2)
 			}
 		}
 	}
+	return 0;
 }
 
 public int MenuHandler_BanPlayerList(Menu menu, MenuAction action, int param1, int param2)
@@ -940,6 +942,7 @@ public int MenuHandler_BanPlayerList(Menu menu, MenuAction action, int param1, i
 			}
 		}
 	}
+	return 0;
 }
 
 public int MenuHandler_BanTimeList(Menu menu, MenuAction action, int param1, int param2)
@@ -2165,6 +2168,7 @@ public Action ProcessQueue(Handle timer, any data)
 	char buffer[512];
 	Format(buffer, sizeof(buffer), "SELECT steam_id, time, start_time, reason, name, ip, admin_id, admin_ip FROM queue");
 	SQLiteDB.Query(ProcessQueueCallback, buffer);
+	return Plugin_Continue;
 }
 
 // PARSER //
@@ -2363,7 +2367,7 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	if (numParams < 3)
 	{
 		ThrowNativeError(SP_ERROR_NATIVE, "Invalid amount of arguments. Received %d arguments", numParams);
-		return;
+		return 0;
 	}
 
 	int iReporter = GetNativeCell(1)
@@ -2411,6 +2415,7 @@ public int Native_SBReportPlayer(Handle plugin, int numParams)
 	dataPack.WriteString(sReason);
 
 	DB.Query(SQL_OnReportPlayer, sQuery, dataPack);
+	return 0;
 }
 
 public void SQL_OnReportPlayer(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -2765,7 +2770,7 @@ stock void ParseBackupConfig_Overrides()
 	delete hKV;
 }
 
-stock AdminFlag CreateFlagLetters()
+stock AdminFlag[] CreateFlagLetters()
 {
 	AdminFlag FlagLetters[FLAG_LETTERS_SIZE];
 

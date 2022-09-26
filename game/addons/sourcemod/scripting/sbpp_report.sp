@@ -102,6 +102,7 @@ public int ReportMenu(Menu menu, MenuAction action, int iClient, int iItem)
 		case MenuAction_End:
 			delete menu;
 	}
+	return 0;
 }
 
 public Action OnClientSayCommand(int iClient, const char[] sCommand, const char[] sArgs)
