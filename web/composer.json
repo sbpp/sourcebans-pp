@@ -23,9 +23,16 @@
         "maxmind-db/reader": "~1.0",
         "smarty/smarty": "~v4.2.0",
         "xpaw/php-source-query-class": "~2.1.0",
-        "adodb/adodb-php": "~5.22",
+        "adodb/adodb-php": "5.22.2",
+        "symfony/mailer": "^6.0",
         "ext-pdo": "*",
         "ext-openssl": "*",
         "php": ">=8.1"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "Sbpp\\": "includes/"
+        }
     }
 }
