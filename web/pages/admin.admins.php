@@ -202,9 +202,9 @@ if (strlen($next) > 0) {
 
 $pages = ceil($admin_count / $AdminsPerPage);
 if ($pages > 1) {
-    $admin_nav .= '&nbsp;<select onchange="changePage(this,\'A\',\'' . ($_GET['advSearch'] ?? '') . '\',\'' . $_GET['advType'] . '\');">';
+    $admin_nav .= '&nbsp;<select onchange="changePage(this,\'A\',\'' . ($_GET['advSearch'] ?? '') . '\',\'' . ($_GET['advType'] ?? '') . '\');">';
     for ($i = 1; $i <= $pages; $i++) {
-        if ($i == $_GET["page"]) {
+        if (isset($_GET['page']) && $i === $_GET['page']) {
             $admin_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
             continue;
         }
