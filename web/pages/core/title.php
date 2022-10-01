@@ -12,6 +12,7 @@ $breadcrumb = [
     ]
 ];
 
+$theme->assign('board_name', Config::get('template.title'));
 $theme->assign('title', $title);
 $theme->assign('breadcrumb', $breadcrumb);
 $theme->display('core/title.tpl');
