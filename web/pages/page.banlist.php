@@ -337,7 +337,7 @@ if (isset($_GET['advSearch'])) {
         case "length":
             $len         = explode(",", $value);
             $length_type = $len[0];
-            $length      = $len[1] * 60;
+            $length      = (int)$len[1] * 60;
             $where       = "WHERE BA.length ";
             switch ($length_type) {
                 case "e":
