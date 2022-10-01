@@ -459,7 +459,7 @@ while (!$res->EOF) {
     $data['communityid'] = $res->fields['community_id'];
     $steam2id            = $data['steamid'];
     $steam3parts         = explode(':', $steam2id);
-    $data['steamid3']    = '[U:1:' . ($steam3parts[2] * 2 + $steam3parts[1]) . ']';
+    $data['steamid3']    = \SteamID\SteamID::toSteam3($data['steamid']);
 
     if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
