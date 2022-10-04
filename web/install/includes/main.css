@@ -4,7 +4,7 @@ body {
     min-height: 100vh;
     flex-direction: column;
 	color: #444;
-	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+	font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
 	font-size: 11px;
 	margin: 0px;
 	padding: 0px; /* required for Opera to have 0 margin */
@@ -41,7 +41,7 @@ a:hover {
 .dialog-holder{
 	border-collapse:collapse;
 	margin:auto;
-	table-layout:fixed;
+	table-layout:inherit;
 	width:465px;
 }
 
@@ -294,7 +294,7 @@ div.dialog-control{
 }
 
 table.listtable {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  border: 1px solid;
  border-color: transparent;
@@ -302,7 +302,7 @@ table.listtable {
 }
 
 table.listtable2 {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  color: #000000;
  border: #c5c5c5 solid;
@@ -310,7 +310,7 @@ table.listtable2 {
 }
 
 table.listtable3 {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 11px;
  color: #000000;
  border: #c5c5c5 solid;
@@ -333,7 +333,7 @@ a.listtable_top {
 
 
 td.listtable_1 {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  padding-top: 4px;
  padding-right: 4px;
@@ -343,7 +343,7 @@ td.listtable_1 {
 }
 
 td.listtable_1_unbanned {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  padding-top: 4px;
  padding-right: 4px;
@@ -353,7 +353,7 @@ td.listtable_1_unbanned {
 }
 
 td.listtable_1_permanent {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  padding-top: 4px;
  padding-right: 4px;
@@ -363,7 +363,7 @@ td.listtable_1_permanent {
 }
 
 td.listtable_1_banned {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  padding-top: 4px;
  padding-right: 4px;
@@ -373,7 +373,7 @@ td.listtable_1_banned {
 }
 
 td.listtable_2 {
- font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
+ font-family: Verdana, Arial, Tahoma, 'Trebuchet MS', Sans-Serif, Georgia, Courier, 'Times New Roman', Serif;
  font-size: 10px;
  border: #CCC solid;
  border-width: 0px 0px 1px 1px;
