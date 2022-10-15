@@ -170,11 +170,7 @@ public void OnPluginStart()
 	RegAdminCmd("sm_banip", CommandBanIp, ADMFLAG_BAN, "sm_banip <ip|#userid|name> <time> [reason]", "sourcebans");
 	RegAdminCmd("sm_addban", CommandAddBan, ADMFLAG_RCON, "sm_addban <time> <steamid> [reason]", "sourcebans");
 	RegAdminCmd("sm_unban", CommandUnban, ADMFLAG_UNBAN, "sm_unban <steamid|ip> [reason]", "sourcebans");
-	RegAdminCmd("sb_reload",
-		_CmdReload,
-		ADMFLAG_RCON,
-		"Reload sourcebans config and ban reason menu options",
-		"sourcebans");
+	RegAdminCmd("sb_reload", CommandReload, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options", "sourcebans");
 
 	RegConsoleCmd("say", ChatHook);
 	RegConsoleCmd("say_team", ChatHook);
@@ -413,7 +409,7 @@ public Action ChatHook(int client, int args)
 	return Plugin_Continue;
 }
 
-public Action _CmdReload(int client, int args)
+public Action CommandReload(int client, int args)
 {
 	ResetSettings();
 	return Plugin_Handled;
