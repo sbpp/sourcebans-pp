@@ -18,6 +18,10 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $theme;
+
+use Sbpp\Mail\EmailType;
+use Sbpp\Mail\Mail;
+use Sbpp\Mail\Mailer;
 use xPaw\SourceQuery\SourceQuery;
 
 if (!defined("IN_SB")) {
@@ -160,16 +164,30 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
 
             $admins = $userbank->GetAllAdmins();
             $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") - 5);
+            $mailDests = [];
+
             foreach ($admins as $admin) {
-                $message = "";
-                $message .= "Hello " . $admin['user'] . ",\n\n";
-                $message .= "A new ban submission has been posted on your SourceBans page:\n\n";
-                $message .= "Player: " . $_POST['PlayerName'] . " (" . $_POST['SteamID'] . ")\nDemo: " . (empty($_FILES['demo_file']['name']) ? 'no' : 'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id=' . $subid . ')') . "\n" . $mailserver . "Reason: " . $_POST['BanReason'] . "\n\n";
-                $message .= "Click the link below to view the current ban submissions.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "index.php?p=admin&c=bans#%5E2";
-                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid'])) {
-                    mail($admin['email'], "[SourceBans] Ban Submission Added", $message, $headers);
+                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) || $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid'])) {
+                    $mailDests []= $admin['email'];
                 }
             }
+
+            if (count($mailDests) > 0)
+            {
+                $demoLink = empty($_FILES['demo_file']['name']) ? 'no' : 'yes (http://' . $_SERVER['HTTP_HOST'] . $requri . 'getdemo.php?type=S&id=' . $subid . ')';
+
+                $isEmailSent = Mail::send($mailDests, EmailType::BanSubmission, [
+                    '{admin}' => 'admin',
+                    '{name}' => $_POST['PlayerName'],
+                    '{steamid}' => $_POST['SteamdID'] ?? 'NA',
+                    '{demo}' => $demoLink,
+                    '{server}' => $mailserver,
+                    '{reason}' => $_POST['BanReason'],
+                    '{home}' => Host::complete(true),
+                    '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans#%5E2'
+                ]);
+            }
+
             print "<script>ShowBox('Successful', 'Your submission has been added into the database, and will be reviewed by one of our admins.', 'green');</script>";
         } else {
             print "<script>ShowBox('Error', 'There was an error uploading your demo to the server. Please try again later.', 'red');</script>";

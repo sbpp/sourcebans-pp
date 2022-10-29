@@ -35,7 +35,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('banlist.hideplayerips', '1'),
 ('bans.customreasons', ''),
 ('config.password.minlength', '7'),
-('config.debug', '0 '),
+('config.debug', '0'),
 ('template.logo', 'logos/sb-large.png'),
 ('template.title', 'SourceBans++'),
 ('config.enableprotest', '1'),
@@ -55,7 +55,12 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablesteamlogin', '1'),
 ('auth.maxlife', '1440'),
 ('auth.maxlife.remember', '10080'),
-('auth.maxlife.steam', '10080');
+('auth.maxlife.steam', '10080'),
+('smtp.host', ''),
+('smtp.pass', ''),
+('smtp.port', ''),
+('smtp.user', ''),
+('smtp.verify_peer', '');
 
 INSERT INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
 (0 , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);

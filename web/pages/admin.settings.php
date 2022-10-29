@@ -210,6 +210,15 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $cureason = "";
                 }
 
+                $smtpConfigSql = ", (?, 'smtp.host'), (?, 'smtp.user'), (?, 'smtp.port'), (?, 'smtp.verify_peer')";
+                $smtpConfig = [trim($_POST['mail_host']), trim($_POST['mail_user']), trim($_POST['mail_port'])];
+                $smtpConfig []= isset($_POST['mail_verify_peer']) && $_POST['mail_verify_peer'] === 'on' ? 1 : 0;
+
+                if (isset($_POST['mail_pass']) && !empty($_POST['mail_pass'])) {
+                    $smtpConfigSql .= ", (?, 'smtp.pass')";
+                    $smtpConfig []= $_POST['mail_pass'];
+                }
+
                 $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
                     (?, 'template.title'),
                     (?,'template.logo'),
@@ -231,17 +240,22 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     (?, 'auth.maxlife'),
                     (?, 'auth.maxlife.remember'),
                     (?, 'auth.maxlife.steam'),
-                    (" . (int) $_POST['default_page'] . ", 'config.defaultpage')", array(
-                    $_POST['template_title'],
-                    $_POST['template_logo'],
-                    $_POST['config_dateformat'],
-                    $_POST['dash_intro_title'],
-                    $dash_intro_text,
-                    $cureason,
-                    $_POST['auth_maxlife'],
-                    $_POST['auth_maxlife_remember'],
-                    $_POST['auth_maxlife_steam']
-                ));
+                    (" . (int) $_POST['default_page'] . ", 'config.defaultpage')"
+                    . $smtpConfigSql,
+
+                    // Values
+                    [
+                        $_POST['template_title'],
+                        $_POST['template_logo'],
+                        $_POST['config_dateformat'],
+                        $_POST['dash_intro_title'],
+                        $dash_intro_text,
+                        $cureason,
+                        $_POST['auth_maxlife'],
+                        $_POST['auth_maxlife_remember'],
+                        $_POST['auth_maxlife_steam'],
+                        ...$smtpConfig,
+                ]);
 
 ?>
 <script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
@@ -294,6 +308,9 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     $theme->assign('auth_maxlife_remember', Config::get('auth.maxlife.remember'));
     $theme->assign('auth_maxlife_steam', Config::get('auth.maxlife.steam'));
     $theme->assign('config_bans_per_page', SB_BANS_PER_PAGE);
+    $theme->assign('config_smtp', Config::getMulti([
+        'smtp.host', 'smtp.user', 'smtp.port'
+    ]));
 
     $theme->assign('bans_customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : []);
 
@@ -353,6 +370,8 @@ $('enable_friendsbanning').checked = <?=(int)Config::getBool('config.enablefrien
 $('enable_adminrehashing').checked = <?=(int)Config::getBool('config.enableadminrehashing');?>;
 $('enable_steamlogin').checked = <?=(int)Config::getBool('config.enablesteamlogin');?>;
 $('enable_publiccomments').checked = <?=(int)Config::getBool('config.enablepubliccomments');?>;
+$('mail_verify_peer').checked = <?=(int)Config::getBool('smtp.verify_peer');?>;
+
 <?php
 if (ini_get('safe_mode') == 1) {
     print "$('enable_groupbanning').disabled = true;\n";

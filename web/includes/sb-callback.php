@@ -17,11 +17,16 @@ Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
  *************************************************************************/
 
+use Sbpp\Mail\EmailType;
+use Sbpp\Mail\Mail;
+use Sbpp\Mail\Mailer;
 use SteamID\SteamID;
 use xPaw\SourceQuery\SourceQuery;
 
-require_once 'xajax.inc.php';
-require_once 'system-functions.php';
+require_once __DIR__ . '/xajax.inc.php';
+require_once __DIR__ . '/system-functions.php';
+require_once __DIR__ . '/vendor/autoload.php';
+
 $xajax = new xajax();
 //$xajax->debugOn();
 $xajax->setRequestURI('./index.php');
@@ -120,17 +125,17 @@ function Plogin(string $username, string $password, string $remember = '', strin
 }
 
 /**
- * @param  string $email
+ * @param string $email
  * @return xajaxResponse
  */
-function LostPassword($email)
+function LostPassword(string $email)
 {
     $objResponse = new xajaxResponse();
     $GLOBALS['PDO']->query('SELECT aid, user FROM `:prefix_admins` WHERE `email` = :email');
     $GLOBALS['PDO']->bind(':email', $email);
     $result = $GLOBALS['PDO']->single();
 
-    if (empty($result['aid']) || is_null($result['aid'])) {
+    if (empty($result['aid'])) {
         $objResponse->addScript(
             "ShowBox('Error', 'The email address you supplied is not registered on the system', 'red', '');"
         );
@@ -143,26 +148,22 @@ function LostPassword($email)
     $GLOBALS['PDO']->bind(':email', $email);
     $GLOBALS['PDO']->execute();
 
-    $host = Host::complete();
+    $passResetUrl = Host::complete(true) . "/index.php?p=lostpassword&email=$email&validation=$validation";
 
-    $message = "
-        Hello $result[user],\n
-        You have requested to have your password reset for your SourceBans++ account.\n
-        To complete this process, please click the following link.\n
-        NOTE: If you didnt request this reset, then simply ignore this email.\n\n
-        $host/index.php?p=lostpassword&email=$email&validation=$validation
-    ";
+    $isEmailSent = Mail::send($email, EmailType::PasswordReset, [
+        '{link}' => $passResetUrl,
+        '{name}' => $result['user'],
+        '{home}' => Host::complete(true)
+    ]);
 
-    $headers = [
-        'From' => SB_EMAIL,
-        'X-Mailer' => 'PHP/'.phpversion()
-    ];
+    if ($isEmailSent) {
+        $objResponse->addScript(
+            "ShowBox('Check E-Mail', 'Please check your email inbox (and spam) for a link which will help you reset your password.', 'blue', '');"
+        );
+    } else {
+      $objResponse->addScript("ShowBox('Error', 'Error sending email.', 'red', '')");
+    }
 
-    mail($email, "[SourceBans++] Password Reset", $message, $headers);
-
-    $objResponse->addScript(
-        "ShowBox('Check E-Mail', 'Please check your email inbox (and spam) for a link which will help you reset your password.', 'blue', '');"
-    );
     return $objResponse;
 }
 
@@ -1990,15 +1991,11 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
         $submail = $GLOBALS['db']->Execute(
             "SELECT name, email FROM ".DB_PREFIX."_submissions WHERE subid = '" . (int)$fromsub . "'"
         );
-        // Send an email when ban is accepted
-        $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
-        $headers = 'From: submission@' . $_SERVER['HTTP_HOST'] . "\n" .
-            'X-Mailer: PHP/' . phpversion();
 
-        $message = "Hello,\n";
-        $message .= "Your ban submission was accepted by our admins.\nThank you for your support!\nClick the link below to view the current ban list.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=banlist";
+        Mail::send($submail->fields['email'], EmailType::BanAdded, [
+            '{home}' => Host::complete(true)
+        ]);
 
-        mail($submail->fields['email'], "[SourceBans] Ban Added", $message, $headers);
         $GLOBALS['db']->Execute(
             "UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '2', archivedby = '".$userbank->GetAid()."' WHERE subid = '" . (int)$fromsub . "'"
         );
@@ -2576,11 +2573,16 @@ function SendMail($subject, $message, $type, $id)
         return $objResponse;
     }
 
-    $headers = "From: noreply@" . $_SERVER['HTTP_HOST'] . "\n" . 'X-Mailer: PHP/' . phpversion();
-    $m = @mail($email, '[SourceBans] ' . $subject, $message, $headers);
+    $isEmailSent = Mail::send($email, EmailType::Custom, [
+        '{message}' => $message,
+        '{subject}' => $subject,
+        '{admin}' => $username,
+        '{link}' => Host::complete(true),
+        '{home}' => Host::complete(true)
+    ], $subject);
 
 
-    if($m) {
+    if($isEmailSent) {
         $objResponse->addScript(
             "ShowBox('Email Sent', 'The email has been sent to the user.', 'green', 'index.php?p=admin&c=bans');"
         );

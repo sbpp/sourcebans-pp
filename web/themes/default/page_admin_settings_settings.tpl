@@ -227,6 +227,57 @@
                 <div id="bans_customreason.msg" class="badentry"></div>
             </td>
         </tr>
+
+        <tr>
+            <td valign="top" colspan="2"><h3>Mail Settings</h3></td>
+        </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">Host</div></td>
+            <td>
+                <div align="left">
+                    <input type="text" TABINDEX=12 class="textbox" id="mail_host" name="mail_host" value="{$config_smtp[0]}" />
+                </div>
+                <div id="mailhost.msg" class="badentry"></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">User</div></td>
+            <td>
+                <div align="left">
+                    <input type="text" TABINDEX=12 class="textbox" id="mail_user" name="mail_user" value="{$config_smtp[1]}" />
+                </div>
+                <div id="mail_user.msg" class="badentry"></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">Password</div></td>
+            <td>
+                <div align="left">
+                    <input type="password" TABINDEX=12 class="textbox" id="mail_pass" name="mail_pass" placeholder="***" />
+                </div>
+                <div id="mail_pass.msg" class="badentry"></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">Port</div></td>
+            <td>
+                <div align="left">
+                    <input type="number" TABINDEX=12 class="textbox" id="mail_port" name="mail_port" value="{$config_smtp[2]}" />
+                </div>
+                <div id="mail_port.msg" class="badentry"></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">{help_icon title="Verify peer" message="Require verification of SSL certificate used."}Cert verify</div></td>
+            <td>
+                <div align="left">
+                    <input type="checkbox" TABINDEX=12 class="textbox" id="mail_verify_peer" name="mail_verify_peer" />
+                </div>
+                <div id="mail_verify_peer.msg" class="badentry"></div>
+            </td>
+        </tr>
+
+
         <tr>
             <td valign="top" colspan="2">&nbsp;</td>
         </tr>

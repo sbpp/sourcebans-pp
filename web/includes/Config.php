@@ -24,6 +24,23 @@ class Config
         return self::$config[$setting] ?? null;
     }
 
+
+    /**
+     * @param array $keys Settings to retrieve
+     * @return array
+     */
+    public static function getMulti(array $keys): array
+    {
+        $values = [];
+
+        foreach ($keys as $key)
+        {
+            $values []= self::$config[$key];
+        }
+
+        return $values;
+    }
+
     /**
      * @param string $setting
      * @return bool

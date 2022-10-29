@@ -17,7 +17,12 @@ Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
+use Sbpp\Mail\EmailType;
+use Sbpp\Mail\Mail;
+use Sbpp\Mail\Mailer;
+
 global $userbank, $theme;
+
 if (!Config::getBool('config.enableprotest')) {
     print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
     PageDie();
@@ -136,18 +141,29 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         } else {
             $admins = $userbank->GetAllAdmins();
         }
+
+        $destAdmins = [];
+
         foreach ($admins as $admin) {
-            $message = "";
-            $message .= "Hello " . $admin['user'] . ",\n\n";
-            $message .= "A new ban protest has been posted on your SourceBans page.\n\n";
-            $message .= "Player: " . $_POST['PlayerName'] . " (" . $_POST['SteamID'] . ")\nBanned by: " . $protadmin['user'] . "\nMessage: " . $_POST['BanReason'] . "\n\n";
-            $message .= "Click the link below to view the current ban protests.\n\nhttp://" . $_SERVER['HTTP_HOST'] . $requri . "?p=admin&c=bans#%5E1";
             if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid'])) {
-                mail($admin['email'], "[SourceBans] Ban Protest Added", $message, $headers);
+                $destAdmins [] = $admin['email'];
             }
         }
 
-        print "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
+        if (count($destAdmins) > 0)
+        {
+            Mail::send($destAdmins, EmailType::BanProtest, [
+                '{admin}' => 'admin',
+                '{name}' => $_POST['PlayerName'],
+                '{steamid}' => $_POST['SteamID'],
+                '{banadmin}' => $protadmin['user'],
+                '{message}' => $_POST['BanReason'],
+                '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans#%5E1',
+                '{home}' => Host::complete(true)
+            ]);
+        }
+
+        echo "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
     }
 }
 

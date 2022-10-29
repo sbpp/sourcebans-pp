@@ -31,9 +31,10 @@ class Host
     }
 
     /**
+     * @param bool $withoutRequest Don't return the rest of the link (part after the first slash)
      * @return string
      */
-    public static function complete(): string
+    public static function complete(bool $withoutRequest = false): string
     {
         $request = explode('/',
             filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES));
@@ -48,6 +49,6 @@ class Host
         }
         $request = implode('/', $request);
 
-        return self::protocol().self::domain()."/$request";
+        return self::protocol().self::domain() . ($withoutRequest ? '' : "/$request");
     }
 }

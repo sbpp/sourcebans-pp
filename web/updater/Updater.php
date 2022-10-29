@@ -94,6 +94,6 @@ class Updater
 
     public function needUpdate()
     {
-        return ($this->currentVersion < $this->latestVersion) ? true : false;
+        return $this->currentVersion < $this->latestVersion;
     }
 }

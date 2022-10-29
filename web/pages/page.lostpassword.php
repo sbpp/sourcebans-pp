@@ -2,6 +2,10 @@
 
 global $theme;
 
+use Sbpp\Mail\EmailType;
+use Sbpp\Mail\Mail;
+use Sbpp\Mail\Mailer;
+
 if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !empty($_GET['validation']))) {
     $email = $_GET['email'];
     $validation = $_GET['validation'];
@@ -33,19 +37,11 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $GLOBALS['PDO']->bind(':aid', $result['aid']);
     $GLOBALS['PDO']->execute();
 
-    $message = "
-        Hello $result[user],\n
-        Your password reset was successful.\n
-        Your password was changed to: $password\n\n
-        Login to your SourceBans++ account and change your password in Your Account.
-    ";
-
-    $headers = [
-        'From' => SB_EMAIL,
-        'X-Mailer' => 'PHP/'.phpversion()
-    ];
-
-    mail($email, "[SourceBans++] Password Reset", $message, $headers);
+    $isEmailSent = Mail::send($email, EmailType::PasswordResetSuccess, [
+        '{password}' => $password,
+        '{name}' => $result['user'],
+        '{home}' => Host::complete(true)
+    ]);
 
     print "<script>ShowBox('Password Reset', 'Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.', 'blue');</script>";
     PageDie();
