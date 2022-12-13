@@ -1243,3 +1243,52 @@ hr {
 .tabcontent:first-of-type {
     display: block;
 }
+
+/** ======= Mobile Design Styles ======= **/
+
+@media only screen and (min-width: 1280px) {
+    .dashboard-comm-blocks {
+        float: left;
+        width: 49%;
+    }
+    .dashboard-ban-blocks {
+        float: right;
+        width: 49%;
+    }
+    .dashboard-blocks-separate {
+        display: none;
+    }
+    .dashboard-ban-block-date {
+        text-align: center;
+    }
+}
+
+@media only screen and (max-width: 1279px) {
+    .dashboard-comm-blocks {
+        width: 100%;
+    }
+    .dashboard-ban-blocks {
+        width: 100%;
+    }    
+    .dashboard-blocks-separate {
+        display: block;
+    }
+    .dashboard-ban-block-date {
+        text-align: left;
+    }
+    
+    #header {
+        width: 984px;
+        margin: 0 auto 0 auto;  /*centers the box, no matter the overall width */
+        height: 150px;
+        border: 0;
+    }    
+    #head-logo {
+        float: left;
+        margin-top: 60px;
+    }
+    #search {
+        text-align: right;
+        margin-top: 40px;
+    }
+}

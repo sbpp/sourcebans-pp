@@ -52,7 +52,7 @@
     </table>
 </div>
 <br /><br /><br />
-<div class="front-module" style="float:right;width:49%">
+<div class="front-module dashboard-ban-blocks">
     <table width="100%" cellpadding="1" class="listtable">
         <tr>
             <td colspan="3">
@@ -70,7 +70,7 @@
         </tr>
         <tr>
             <td width="16px" height="16" class="listtable_top">&nbsp;</td>
-            <td height="25%" class="listtable_top" align="center"><b>Date/Time</b></td>
+            <td height="25%" class="listtable_top dashboard-ban-block-date"><b>Date/Time</b></td>
             <td height="16" class="listtable_top"><b>Name</b></td>
         </tr>
         {foreach from=$players_blocked item=player}
@@ -83,7 +83,11 @@
     </table>
 </div>
 
-<div class="front-module" style="float:left;width:49%">
+<div class="dashboard-blocks-separate">
+    <br /><br /><br />
+</div>
+
+<div class="front-module dashboard-comm-blocks">
     <table width="100%" cellpadding="1" class="listtable">
         <tr>
             <td colspan="4">
