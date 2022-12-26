@@ -71,7 +71,6 @@ if (isset($_GET['advSearch'])) {
         default:
             $_GET['advType']   = "";
             $_GET['advSearch'] = "";
-            $where             = "";
             break;
     }
     $searchlink = "&advSearch=" . $_GET['advSearch'] . "&advType=" . $_GET['advType'];

@@ -167,6 +167,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_servers_groups` (
 
 
 CREATE TABLE IF NOT EXISTS `{prefix}_settings` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   `setting` varchar(128) NOT NULL,
   `value` text NOT NULL,
   UNIQUE KEY `setting` (`setting`)
