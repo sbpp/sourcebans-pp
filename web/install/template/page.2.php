@@ -42,54 +42,54 @@ if (isset($_POST['postd'])) {
     <div align="center">
 <table width="60%" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Server", "Type the ip, or hostname to your MySQL server");?>Server Hostname</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Server", "Type the ip, or hostname to your MySQL server");?>&nbsp;&nbsp;Server Hostname</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="server" name="server" value="<?php echo isset($_POST['server'])?$_POST['server']:'localhost';?>" />
     </div><div id="server.msg" style="color:#CC0000;"></div></td>
   </tr>
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Port", "Type the port that your MySQL server is running on");?>Server Port</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Port", "Type the port that your MySQL server is running on");?>&nbsp;&nbsp;Server Port</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="port" name="port" value="<?php echo isset($_POST['port'])?$_POST['port']:3306;?>" />
     </div><div id="port.msg" style="color:#CC0000;"></div></td>
   </tr>
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Username", "Type your MySQL username");?>Username</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Username", "Type your MySQL username");?>&nbsp;&nbsp;Username</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="username" name="username" value="<?php echo isset($_POST['username'])?$_POST['username']:'';?>" />
     </div><div id="user.msg" style="color:#CC0000;"></div></td>
   </tr>
 
    <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Password", "Type your MySQL password");?>Password</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Password", "Type your MySQL password");?>&nbsp;&nbsp;Password</div></td>
     <td><div align="center">
   	 <input type="password" TABINDEX=1 class="textbox" id="password" name="password" value="<?php echo isset($_POST['password'])?$_POST['password']:'';?>" />
     </div><div id="password.msg" style="color:#CC0000;"></div></td>
   </tr>
 
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Database", "Type name of the database you want to use for SourceBans");?>Database</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Database", "Type name of the database you want to use for SourceBans");?>&nbsp;&nbsp;Database</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="database" name="database" value="<?php echo isset($_POST['database'])?$_POST['database']:'';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>
   </tr>
 
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Prefix", "Type a prefix you want to use for the tables");?>Table Prefix</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Prefix", "Type a prefix you want to use for the tables");?>&nbsp;&nbsp;Table Prefix</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="prefix" name="prefix" value="<?php echo isset($_POST['prefix'])?$_POST['prefix']:'sb';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>
   </tr>
 
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Steam API Key", "Copy & Paste Your Steam API Key Here");?>Steam API Key</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Steam API Key", "Copy & Paste Your Steam API Key Here");?>&nbsp;&nbsp;Steam API Key</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="apikey" name="apikey" value="<?php echo isset($_POST['apikey'])?$_POST['apikey']:'';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>
   </tr>
 
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("SourceBans EMail", "Email Adress used by SourceBans for Password Reset and Bans");?>SourceBans EMail</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("SourceBans EMail", "Email Adress used by SourceBans for Password Reset and Bans");?>&nbsp;&nbsp;SourceBans EMail</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="sb-email" name="sb-email" value="<?php echo isset($_POST['sb-email'])?$_POST['sb-email']:'';?>" />
     </div><div id="database.msg" style="color:#CC0000;"></div></td>

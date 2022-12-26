@@ -8,6 +8,7 @@
 
 
 <?php
+const IN_SB = true;
 require_once __DIR__. '/config.php';
 
 if (defined('SB_SECRET_KEY'))
