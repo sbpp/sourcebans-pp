@@ -149,31 +149,31 @@ if (isset($_POST['postd']) && $_POST['postd']) {
 <div align="center">
 <table width="60%" style="border-collapse:collapse;" id="group.details" cellpadding="3">
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Main Admin", "Type the username for the main SourceBans admin");?>Admin Username</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Main Admin", "Type the username for the main SourceBans admin");?>&nbsp;&nbsp;Admin Username</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="uname" name="uname" value="" />
     </div><div id="server.msg" style="color:#CC0000;"></div></td>
   </tr>
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Password", "Type a password for the main admin");?>Admin Password</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Password", "Type a password for the main admin");?>&nbsp;&nbsp;Admin Password</div></td>
     <td><div align="center">
   	 <input type="password" TABINDEX=1 class="textbox" id="pass1" name="pass1" value="" />
     </div><div id="port.msg" style="color:#CC0000;"></div></td>
   </tr>
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Confirm", "Type the password again");?>Confirm Password</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Confirm", "Type the password again");?>&nbsp;&nbsp;Confirm Password</div></td>
     <td><div align="center">
   	 <input type="password" TABINDEX=1 class="textbox" id="pass2" name="pass2" value="" />
     </div><div id="user.msg" style="color:#CC0000;"></div></td>
   </tr>
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("STEAM", "Type your STEAM id");?>Steam ID</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("STEAM", "Type your STEAM id");?>&nbsp;&nbsp;Steam ID</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="steam" name="steam" value="" />
     </div><div id="user.msg" style="color:#CC0000;"></div></td>
   </tr>
   <tr>
-    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Email", "Type your email");?>Email</div></td>
+    <td valign="top" width="35%"><div class="rowdesc"><?php echo HelpIcon("Email", "Type your email");?>&nbsp;&nbsp;Email</div></td>
     <td><div align="center">
   	 <input type="text" TABINDEX=1 class="textbox" id="email" name="email" value="" />
     </div><div id="user.msg" style="color:#CC0000;"></div></td>
