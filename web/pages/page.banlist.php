@@ -470,7 +470,8 @@ while (!$res->EOF) {
                 $res->fields['ban_id']
             ));
 
-            $data['country'] = '<img src="images/country/' . strtolower($country) . '.jpg" alt="' . $country . '" border="0" align="absmiddle" />';
+            $countryFlag = empty($country) ? 'zz' : strtolower($country);
+            $data['country'] = '<img src="images/country/' . $countryFlag . '.jpg" alt="' . $country . '" border="0" align="absmiddle" />';
         } else {
             $data['country'] = '<img src="images/country/zz.jpg" alt="Unknown Country" border="0" align="absmiddle" />';
         }
