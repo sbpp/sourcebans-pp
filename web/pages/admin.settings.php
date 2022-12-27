@@ -49,30 +49,30 @@ if (isset($_GET['advSearch'])) {
     // Escape the value, but strip the leading and trailing quote
     $value = substr($GLOBALS['db']->qstr($_GET['advSearch']), 1, -1);
     $type  = $_GET['advType'];
-    switch ($type) {
-        case "admin":
-            $where = " WHERE l.aid = '" . $value . "'";
-            break;
-        case "message":
-            $where = " WHERE l.message LIKE '%" . $value . "%' OR l.title LIKE '%" . $value . "%'";
-            break;
-        case "date":
-            $date  = explode(",", $value);
-            $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
-            $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
-            $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
-            $time  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
-            $time2 = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-            $where = " WHERE l.created > '$time' AND l.created < '$time2'";
-            break;
-        case "type":
-            $where = " WHERE l.type = '" . $value . "'";
-            break;
-        default:
-            $_GET['advType']   = "";
-            $_GET['advSearch'] = "";
-            break;
-    }
+//    switch ($type) {
+//        case "admin":
+//            $where = " WHERE l.aid = '" . $value . "'";
+//            break;
+//        case "message":
+//            $where = " WHERE l.message LIKE '%" . $value . "%' OR l.title LIKE '%" . $value . "%'";
+//            break;
+//        case "date":
+//            $date  = explode(",", $value);
+//            $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
+//            $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
+//            $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
+//            $time  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
+//            $time2 = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
+//            $where = " WHERE l.created > '$time' AND l.created < '$time2'";
+//            break;
+//        case "type":
+//            $where = " WHERE l.type = '" . $value . "'";
+//            break;
+//        default:
+//            $_GET['advType']   = "";
+//            $_GET['advSearch'] = "";
+//            break;
+//    }
     $searchlink = "&advSearch=" . $_GET['advSearch'] . "&advType=" . $_GET['advType'];
 } else {
     $searchlink = "";
@@ -81,7 +81,7 @@ $list_start = ($page - 1) * SB_BANS_PER_PAGE;
 $list_end   = $list_start + SB_BANS_PER_PAGE;
 
 $log_count = Log::getCount($where);
-$log       = Log::getAll($list_start, SB_BANS_PER_PAGE, $where);
+$log       = Log::getAll($list_start, SB_BANS_PER_PAGE,);
 if (($page > 1)) {
     $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
 } else {

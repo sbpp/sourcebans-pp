@@ -53,14 +53,47 @@ class Log
      * @param string $search Entire "WHERE" statement including the word WHERE
      * @return mixed
      */
-    public static function getAll($start, $limit, $search): mixed
+    public static function getAll($start, $limit): mixed
     {
+        $where = '';
+        $valueOther = null;
+        $value = $_GET['advSearch'];
+        $type  = $_GET['advType'];
+
+        switch ($type) {
+            case "admin":
+                $where = " l.aid = :value";
+                break;
+            case "message":
+                $value = "%$value%";
+                $where = " l.message LIKE :value OR l.title LIKE :value";
+                break;
+            case "date":
+                $date  = explode(",", $value);
+                $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
+                $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
+                $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
+                $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
+                $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
+                $where = " l.created > :value AND l.created :valueOther";
+                break;
+            case "type":
+                $where = " l.type = :value";
+                break;
+        }
+
         $query = "SELECT ad.user, l.* FROM `:prefix_log` AS l
                   LEFT JOIN `:prefix_admins` AS ad ON l.aid = ad.aid
-                  :search ORDER BY l.created DESC
+                  WHERE $where 
+                  ORDER BY l.created DESC
                   LIMIT :start, :lim";
-        $query = str_replace(':search', filter_var($search, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES), $query);
-        self::$dbs->query($query);
+
+        self::$dbs->query($query)
+            ->bind('value', $value);
+
+        if ($valueOther !== null)
+            self::$dbs->bind('valueOther', $valueOther);
+
         self::$dbs->bind(':start', (int)$start, PDO::PARAM_INT);
         self::$dbs->bind(':lim', (int)$limit, PDO::PARAM_INT);
         return self::$dbs->resultset();
@@ -72,9 +105,38 @@ class Log
      */
     public static function getCount($search): mixed
     {
-        $query = "SELECT COUNT(l.lid) AS count FROM `:prefix_log` AS l :search";
-        $query = str_replace(':search', filter_var($search, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES), $query);
-        self::$dbs->query($query);
+        $value = $_GET['advSearch'];
+        $valueOther = null;
+        $type  = $_GET['advType'];
+        $query = "SELECT COUNT(l.lid) AS count FROM `:prefix_log` AS l WHERE ";
+        switch ($type) {
+            case "admin":
+                $query .= " l.aid = :value";
+                break;
+            case "message":
+                $value = "%$value%";
+                $query .= " l.message LIKE :value OR l.title LIKE :value";
+                break;
+            case "date":
+                $date  = explode(",", $value);
+                $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
+                $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
+                $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
+                $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
+                $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
+                $query .= " l.created > :value AND l.created :valueOther";
+                break;
+            case "type":
+                $query .= " l.type = :value";
+                break;
+        }
+
+        self::$dbs->query($query)
+            ->bind('value', $value);
+
+        if ($valueOther !== null)
+            self::$dbs->bind('valueOther', $valueOther);
+
         $log = self::$dbs->single();
         return $log['count'];
     }
