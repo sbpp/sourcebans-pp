@@ -47,6 +47,9 @@
 
 #define FLAG_LETTERS_SIZE 26
 
+#define AUTO_ADD_SERVER_DISABLED     0
+#define AUTO_ADD_SERVER_WITH_RCON    2
+
 //#define DEBUG
 
 enum State/* ConfigState */
@@ -94,7 +97,6 @@ bool
 	, loadGroups
 	, loadOverrides
 	, LateLoaded
-	, AutoAdd
 	, g_bConnecting = false
 	, requireSiteLogin = false /* Require a lastvisited from SB site */
 	, backupConfig = true
@@ -104,6 +106,7 @@ bool
 int
 	g_BanTarget[MAXPLAYERS + 1] =  { -1, ... }
 	, g_BanTime[MAXPLAYERS + 1] =  { -1, ... }
+	, AutoAdd = 0
 	, curLoading
 	, serverID = -1
 	, ProcessQueueTime = 5
@@ -1580,9 +1583,20 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 	if (!results.RowCount)
 	{
 		// get the game folder name used to determine the mod
-		char desc[64], query[200];
+		char desc[64], query[200], rcon[128];
 		GetGameFolderName(desc, sizeof(desc));
-		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, DatabasePrefix, desc);
+		Format(rcon, sizeof(rcon), "");
+
+		if (AutoAdd == AUTO_ADD_SERVER_WITH_RCON)
+		{
+		        ConVar cvarRconPassword = FindConVar("rcon_password");
+		        if (cvarRconPassword != null)
+		        {
+		                cvarRconPassword.GetString(rcon, sizeof(rcon));
+		        }		
+		}		
+		
+		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, rcon, DatabasePrefix, desc);
 		db.Query(ErrorCheckCallback, query);
 	}
 }
@@ -2236,7 +2250,8 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 			}
 			else if (strcmp("AutoAddServer", key, false) == 0)
 			{
-				AutoAdd = StringToInt(value) == 1;
+				int sAutoAdd = StringToInt(value);
+				AutoAdd = (sAutoAdd < 0 || sAutoAdd > 2) ? 0 : sAutoAdd;
 			}
 			else if (strcmp("Unban", key, false) == 0)
 			{
@@ -2645,7 +2660,7 @@ stock void InsertServerInfo()
     FormatEx(ServerIp, sizeof(ServerIp), "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3]);
     CvarPort.GetString(ServerPort, sizeof(ServerPort));
 
-    if (AutoAdd != false) {
+    if (AutoAdd != AUTO_ADD_SERVER_DISABLED) {
         FormatEx(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s'", DatabasePrefix, ServerIp, ServerPort);
         DB.Query(ServerInfoCallback, query);
     }
