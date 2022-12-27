@@ -40,7 +40,7 @@
                                         </tr>
                                         <tr align="left">
                                             <td valign="top">
-                                                <span style='font-size:10px;color:#1b75d1;'>Web Permissions</span>
+                                                <span style='font-size:10px;color:#1b75d1;'>Server Permissions</span>
                                                 <br/>
                                                 {if $admin.server_flag_string}
                                                     {foreach from=$admin.server_flag_string item=permission}
@@ -51,7 +51,7 @@
                                                 {/if}
                                             </td>
                                             <td valign="top">
-                                                <span style='font-size:10px;color:#1b75d1;'>Server Permissions</span>
+                                                <span style='font-size:10px;color:#1b75d1;'>Web Permissions</span>
                                                 <br/>
                                                 {if $admin.web_flag_string}
                                                     {foreach from=$admin.web_flag_string item=permission}
