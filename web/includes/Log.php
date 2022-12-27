@@ -55,10 +55,10 @@ class Log
      */
     public static function getAll($start, $limit): mixed
     {
-        $where = '';
+        $where = null;
         $valueOther = null;
-        $value = $_GET['advSearch'];
-        $type  = $_GET['advType'];
+        $value = $_GET['advSearch'] ?? null;
+        $type  = $_GET['advType'] ?? null;
 
         switch ($type) {
             case "admin":
@@ -82,15 +82,16 @@ class Log
                 break;
         }
 
-        $query = "SELECT ad.user, l.* FROM `:prefix_log` AS l
+        $query = 'SELECT ad.user, l.* FROM `:prefix_log` AS l
                   LEFT JOIN `:prefix_admins` AS ad ON l.aid = ad.aid
-                  WHERE $where 
+                 '. ($where ? "WHERE $where" : '') .'
                   ORDER BY l.created DESC
-                  LIMIT :start, :lim";
+                  LIMIT :start, :lim';
 
-        self::$dbs->query($query)
-            ->bind('value', $value);
+        self::$dbs->query($query);
 
+        if ($value !== null)
+            self::$dbs->bind('value', $value);
         if ($valueOther !== null)
             self::$dbs->bind('valueOther', $valueOther);
 
@@ -105,17 +106,17 @@ class Log
      */
     public static function getCount($search): mixed
     {
-        $value = $_GET['advSearch'];
+        $value = $_GET['advSearch'] ?? null;
         $valueOther = null;
-        $type  = $_GET['advType'];
-        $query = "SELECT COUNT(l.lid) AS count FROM `:prefix_log` AS l WHERE ";
+        $type  = $_GET['advType'] ?? null;
+        $query = "SELECT COUNT(l.lid) AS count FROM `:prefix_log` AS l ";
         switch ($type) {
             case "admin":
-                $query .= " l.aid = :value";
+                $query .= "WHERE l.aid = :value";
                 break;
             case "message":
                 $value = "%$value%";
-                $query .= " l.message LIKE :value OR l.title LIKE :value";
+                $query .= "WHERE l.message LIKE :value OR l.title LIKE :value";
                 break;
             case "date":
                 $date  = explode(",", $value);
@@ -124,16 +125,17 @@ class Log
                 $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
                 $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
                 $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $query .= " l.created > :value AND l.created :valueOther";
+                $query .= "WHERE l.created > :value AND l.created :valueOther";
                 break;
             case "type":
-                $query .= " l.type = :value";
+                $query .= "WHERE l.type = :value";
                 break;
         }
 
-        self::$dbs->query($query)
-            ->bind('value', $value);
+        self::$dbs->query($query);
 
+        if ($value !== null)
+            self::$dbs->bind('value', $value);
         if ($valueOther !== null)
             self::$dbs->bind('valueOther', $valueOther);
 
