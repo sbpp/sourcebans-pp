@@ -29,6 +29,31 @@ a:hover {
   color: #b05015;
 }
 
+/** ================ ToolTips ================ **/
+.tool-tip {
+    color: #fff;
+    width: 250px;
+    z-index: 13000;
+    text-align: left;
+}
+
+.tool-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin: 0;
+    color: #dadfe1;
+    border-bottom: #dadfe1 1px;
+    padding: 8px 8px 4px;
+    background-color: #38322c;
+}
+
+.tool-text {
+	color: #444;
+    font-size: 11px;
+    padding: 4px 8px 8px;
+    background-color: #bab5b2;
+}
+
 /* =============== FORMS ==================== */
 
 .badentry{
