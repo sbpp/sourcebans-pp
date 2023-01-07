@@ -287,7 +287,7 @@ if (isset($_POST['adminname'])) {
     $a_serverpass = !empty($a_serverpass);
 }
 
-$theme->assign('change_pass', ($userbank->HasAccess(ADMIN_OWNER) || $_GET['id'] == $userbank->GetAid()));
+$theme->assign('change_pass', ($userbank->HasAccess(ADMIN_OWNER) || $userbank->HasAccess(ADMIN_EDIT_ADMINS)|| $_GET['id'] == $userbank->GetAid()));
 $theme->assign('user', $a_name);
 $theme->assign('authid', $a_steam);
 $theme->assign('email', $a_email);
