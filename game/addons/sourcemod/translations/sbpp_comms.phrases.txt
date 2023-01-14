@@ -98,16 +98,17 @@
 	}
 	"Player Comms Not Verified"
 	{
-		"en"			"This player has not been verified. Please wait thirty seconds before retrying."
-		"hu"			"Ezt a játékost még nem igazolták. Kérlek, várj harminc másodpercet , mielőtt újra próbálkoznál."
-		"es"			"este jugador no ha podido ser verificado. Por favor, espera 30 segundos antes de volver a intentarlo"
-		"ru"			"Игрок еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
-		"pl"			"Gracz niezweryfikowany. Proszę poczekać 30 sekund przed ponowną probą."
-		"pt"			"Este(a) jogador(a) não foi verificado(a). Por favor, aguarde trinta segundos antes de tentar novamente."
-		"de"			"Der Spieler ist noch nicht identifiziert. Warten Sie 30 Sekunden vor dem nächsten Versuch."
-		"fr"			"Ce joueur n'a pas été vérifié. Veuillez attendre 30 secondes avant de réessayer."
-		"chi"			"此用户尚未认证,请等待30秒后再试."
-		"tr"			"Bu oyuncu doğrulanamadı. Lütfen tekrar denemeden önce 30 saniye bekleyiniz."
+		"#format" 		"{1:s}"
+		"en"			"{1} has not been verified. Please wait thirty seconds before retrying."
+		"hu"			"{1} még nem igazolták. Kérlek, várj harminc másodpercet , mielőtt újra próbálkoznál."
+		"es"			"{1} no ha podido ser verificado. Por favor, espera 30 segundos antes de volver a intentarlo."
+		"ru"			"{1} еще не идентифицирован. Подождите 30 секунд перед следующей попыткой."
+		"pl"			"{1} niezweryfikowany. Proszę poczekać 30 sekund przed ponowną probą."
+		"pt"			"{1} não foi verificado. Por favor, aguarde trinta segundos antes de tentar novamente."
+		"de"			"{1} ist noch nicht identifiziert. Warten Sie 30 Sekunden vor dem nächsten Versuch."
+		"fr"			"{1} n'a pas été vérifié. Veuillez attendre 30 secondes avant de réessayer."
+		"chi"			"此({1})用户尚未认证,请等待30秒后再试."
+		"tr"			"{1} doğrulanamadı. Lütfen tekrar denemeden önce 30 saniye bekleyiniz."
 	}
 	//--------------------------------------------------------------------------------
 	"Player already muted"
