@@ -2237,18 +2237,31 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 
 	for (int i = 0; i < target_count; i++)
 	{
+		char auth[64];
 		int target = target_list[i];
 
+		if (target && IsClientInGame(target))
+		{
+			if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth)))
+			{
+				g_bPlayerStatus[target] = false;
+			}
+			else
+			{
+				g_bPlayerStatus[target] = true;
+			}
+		}
+
 		#if defined DEBUG
-		char auth[64];
-		GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth));
 		PrintToServer("Processing block for %s", auth);
 		#endif
 
 		if (!g_bPlayerStatus[target])
 		{
 			// The target has not been blocks verify. It must be completed before you can block anyone.
-			ReplyToCommand(client, "%s%t", PREFIX, "Player Comms Not Verified");
+			char name[32];
+			GetClientName(target, name, sizeof(name));
+			ReplyToCommand(client, "%s%t", PREFIX, "Player Comms Not Verified", name);
 			skipped = true;
 			continue; // skip
 		}
