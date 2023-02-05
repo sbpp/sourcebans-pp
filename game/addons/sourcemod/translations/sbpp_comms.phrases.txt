@@ -1317,7 +1317,7 @@
 		"es"		"Tu chat y tu voz no están bloqueados."
 		"ru"		"У Вас не отключены чат или микрофон."
 		"pl"		"Nie zostałeś wyciszony ani zakneblowany."
-		"pt"		"As suas comunicações por texto e por voz não estão bloqueadas."
+		"pt"		"As suas comunicações por texto e voz não estão bloqueadas."
 		"de"		"Sie sind im Text- und Sprachchat nicht gesperrt."
 		"fr"		"Votre chat et votre voix ne sont pas bloquées."
 		"chi"		"你没有被禁言或静音."
