@@ -238,6 +238,11 @@ public void OnLibraryRemoved(const char[] name)
 		hTopMenu = null;
 }
 
+public void OnConfigsExecuted()
+{
+	ReadConfig();
+}
+
 public void OnMapStart()
 {
 	ReadConfig();
@@ -335,6 +340,7 @@ public Action Event_OnPlayerName(Handle event, const char[] name, bool dontBroad
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (client > 0 && IsClientInGame(client))
 		GetEventString(event, "newname", g_sName[client], sizeof(g_sName[]));
+	return Plugin_Continue;
 }
 
 public void BaseComm_OnClientMute(int client, bool muteState)
@@ -600,6 +606,7 @@ public int Handle_Commands(TopMenu menu, TopMenuAction action, TopMenuObject obj
 		case TopMenuAction_DisplayTitle:
 			Format(buffer, maxlength, "%T", "AdminMenu_Select_Main", param1);
 	}
+	return 0;
 }
 
 public int Handle_MenuGag(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -611,6 +618,7 @@ public int Handle_MenuGag(TopMenu menu, TopMenuAction action, TopMenuObject obje
 		case TopMenuAction_SelectOption:
 			AdminMenu_Target(param1, TYPE_GAG);
 	}
+	return 0;
 }
 
 public int Handle_MenuUnGag(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -622,6 +630,7 @@ public int Handle_MenuUnGag(TopMenu menu, TopMenuAction action, TopMenuObject ob
 		case TopMenuAction_SelectOption:
 			AdminMenu_Target(param1, TYPE_UNGAG);
 	}
+	return 0;
 }
 
 public int Handle_MenuMute(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -633,6 +642,7 @@ public int Handle_MenuMute(TopMenu menu, TopMenuAction action, TopMenuObject obj
 		case TopMenuAction_SelectOption:
 			AdminMenu_Target(param1, TYPE_MUTE);
 	}
+	return 0;
 }
 
 public int Handle_MenuUnMute(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -644,6 +654,7 @@ public int Handle_MenuUnMute(TopMenu menu, TopMenuAction action, TopMenuObject o
 		case TopMenuAction_SelectOption:
 			AdminMenu_Target(param1, TYPE_UNMUTE);
 	}
+	return 0;
 }
 
 public int Handle_MenuSilence(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -655,6 +666,7 @@ public int Handle_MenuSilence(TopMenu menu, TopMenuAction action, TopMenuObject 
 		case TopMenuAction_SelectOption:
 			AdminMenu_Target(param1, TYPE_SILENCE);
 	}
+	return 0;
 }
 
 public int Handle_MenuUnSilence(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -666,6 +678,7 @@ public int Handle_MenuUnSilence(TopMenu menu, TopMenuAction action, TopMenuObjec
 		case TopMenuAction_SelectOption:
 			AdminMenu_Target(param1, TYPE_UNSILENCE);
 	}
+	return 0;
 }
 
 public int Handle_MenuList(TopMenu menu, TopMenuAction action, TopMenuObject object_id, int param1, char[] buffer, int maxlength)
@@ -680,6 +693,7 @@ public int Handle_MenuList(TopMenu menu, TopMenuAction action, TopMenuObject obj
 			AdminMenu_List(param1, 0);
 		}
 	}
+	return 0;
 }
 
 void AdminMenu_Target(int client, int type)
@@ -821,6 +835,7 @@ public int MenuHandler_MenuTarget(Menu menu, MenuAction action, int param1, int 
 			}
 		}
 	}
+	return 0;
 }
 
 void AdminMenu_Duration(int client, int target, int type)
@@ -874,6 +889,7 @@ public int MenuHandler_MenuDuration(Menu menu, MenuAction action, int param1, in
 			}
 		}
 	}
+	return 0;
 }
 
 void AdminMenu_Reason(int client, int target, int type, int lengthIndex)
@@ -930,6 +946,7 @@ public int MenuHandler_MenuReason(Menu menu, MenuAction action, int param1, int 
 			}
 		}
 	}
+	return 0;
 }
 
 void AdminMenu_List(int client, int index)
@@ -988,6 +1005,7 @@ public int MenuHandler_MenuList(Menu menu, MenuAction action, int param1, int pa
 				AdminMenu_List(param1, GetMenuSelectionPosition());
 		}
 	}
+	return 0;
 }
 
 void AdminMenu_ListTarget(int client, int target, int index, int viewMute = 0, int viewGag = 0)
@@ -1168,6 +1186,7 @@ public int MenuHandler_MenuListTarget(Menu menu, MenuAction action, int param1, 
 
 		}
 	}
+	return 0;
 }
 
 void AdminMenu_ListTargetReason(int client, int target, int showMute, int showGag)
@@ -1233,6 +1252,7 @@ public int PanelHandler_ListTargetReason(Menu menu, MenuAction action, int param
 			g_iPeskyPanels[param1][viewingMute],
 			g_iPeskyPanels[param1][viewingGag]);
 	}
+	return 0;
 }
 
 
@@ -1334,11 +1354,10 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 	dataPack.Reset();
 	int adminUserID = dataPack.ReadCell();
 	int targetUserID = dataPack.ReadCell();
-	int type = dataPack.ReadCell();
+	int type = dataPack.ReadCell(); // not in use unless DEBUG
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	dataPack.ReadString(targetAuth, sizeof(targetAuth));
 	dataPack.ReadString(reason, sizeof(reason));
-	delete dataPack;
 
 	int admin = GetClientOfUserId(adminUserID);
 	int target = GetClientOfUserId(targetUserID);
@@ -1356,8 +1375,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 	if (DB_Conn_Lost(results) || error[0] != '\0')
 	{
 		LogError("Query_UnBlockSelect failed: %s", error);
-
-		if (admin)
+		if (admin && IsClientInGame(admin))
 		{
 			PrintToChat(admin, "%s%T", PREFIX, "Unblock Select Failed", admin, targetAuth);
 			PrintToConsole(admin, "%s%T", PREFIX, "Unblock Select Failed", admin, targetAuth);
@@ -1366,13 +1384,13 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		{
 			PrintToServer("%s%T", PREFIX, "Unblock Select Failed", LANG_SERVER, targetAuth);
 		}
-
 		hasErrors = true;
 	}
-	// If there were no results then a ban does not exist for that id
-	else if (!results.RowCount)
+
+	// If there was no results then a ban does not exist for that id
+	if (!DB_Conn_Lost(results) && !results.RowCount)
 	{
-		if (admin)
+		if (admin && IsClientInGame(admin))
 		{
 			PrintToChat(admin, "%s%t", PREFIX, "No blocks found", targetAuth);
 			PrintToConsole(admin, "%s%t", PREFIX, "No blocks found", targetAuth);
@@ -1381,7 +1399,6 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		{
 			PrintToServer("%s%T", PREFIX, "No blocks found", LANG_SERVER, targetAuth);
 		}
-
 		hasErrors = true;
 	}
 
@@ -1391,10 +1408,8 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 		PrintToServer("Calling TempUnBlock from Query_UnBlockSelect");
 		#endif
 
-		if (target)
-		{
-			TempUnBlock(admin, target, type, adminAuth, targetAuth, reason);
-		}
+		TempUnBlock(dataPack); // Datapack closed inside.
+		return;
 	}
 	else
 	{
@@ -1427,13 +1442,12 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			#endif
 
 			// Checking - has we access to unblock?
-			if (iAID == cAID || !adminUserID || AdmHasFlag(admin) || (DisUBImCheck == 0 && (GetAdmImmunity(admin) > cImmunity)))
+			if (iAID == cAID || (!admin && StrEqual(adminAuth, "STEAM_ID_SERVER")) || AdmHasFlag(admin) || (DisUBImCheck == 0 && (GetAdmImmunity(admin) > cImmunity)))
 			{
 				// Ok! we have rights to unblock
 				b_success = true;
-
 				// UnMute/UnGag, Show & log activity
-				if (target)
+				if (target && IsClientInGame(target))
 				{
 					switch (cType)
 					{
@@ -1505,7 +1519,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			}
 		}
 
-		if (b_success && target)
+		if (b_success && target && IsClientInGame(target))
 		{
 			#if defined DEBUG
 			PrintToServer("Showing activity to server in Query_UnBlockSelect");
@@ -1515,17 +1529,25 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			if (type == TYPE_UNSILENCE)
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
+
+				dataPack.Position = view_as<DataPackPos>(16);
+
 				if (g_MuteType[target] > bNot)
 				{
-					TempUnBlock(admin, target, TYPE_UNMUTE, adminAuth, targetAuth, reason);
+					dataPack.WriteCell(TYPE_UNMUTE);
+					TempUnBlock(dataPack);
 				}
 				else if (g_GagType[target] > bNot)
 				{
-					TempUnBlock(admin, target, TYPE_UNGAG, adminAuth, targetAuth, reason);
+					dataPack.WriteCell(TYPE_UNGAG);
+					TempUnBlock(dataPack);
 				}
 			}
 		}
 	}
+
+	if (dataPack != null)
+		delete dataPack;
 }
 
 public void Query_UnBlockUpdate(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -1784,12 +1806,13 @@ public Action ClientRecheck(Handle timer, any userid)
 
 	int client = GetClientOfUserId(userid);
 	if (!client)
-		return;
+		return Plugin_Continue;
 
 	if (IsClientConnected(client))
 		OnClientPostAdminCheck(client);
 
 	g_hPlayerRecheck[client] = null;
+	return Plugin_Continue;
 }
 
 public Action Timer_MuteExpire(Handle timer, DataPack dataPack)
@@ -1799,7 +1822,7 @@ public Action Timer_MuteExpire(Handle timer, DataPack dataPack)
 
 	int client = GetClientOfUserId(dataPack.ReadCell());
 	if (!client)
-		return;
+		return Plugin_Continue;
 
 	#if defined DEBUG
 	char clientAuth[64];
@@ -1812,6 +1835,7 @@ public Action Timer_MuteExpire(Handle timer, DataPack dataPack)
 	MarkClientAsUnMuted(client);
 	if (IsClientInGame(client))
 		BaseComm_SetClientMute(client, false);
+	return Plugin_Continue;
 }
 
 public Action Timer_GagExpire(Handle timer, DataPack dataPack)
@@ -1821,7 +1845,7 @@ public Action Timer_GagExpire(Handle timer, DataPack dataPack)
 
 	int client = GetClientOfUserId(dataPack.ReadCell());
 	if (!client)
-		return;
+		return Plugin_Continue;
 
 	#if defined DEBUG
 	char clientAuth[64];
@@ -1834,12 +1858,14 @@ public Action Timer_GagExpire(Handle timer, DataPack dataPack)
 	MarkClientAsUnGagged(client);
 	if (IsClientInGame(client))
 		BaseComm_SetClientGag(client, false);
+	return Plugin_Continue;
 }
 
 public Action Timer_StopWait(Handle timer, any data)
 {
 	g_DatabaseState = DatabaseState_None;
 	DB_Connect();
+	return Plugin_Continue;
 }
 
 // PARSER //
@@ -1925,7 +1951,18 @@ public SMCResult ReadConfig_KeyValue(SMCParser smc, const char[] key, const char
 			}
 			else if (strcmp("ServerID", key, false) == 0)
 			{
-				if (!StringToIntEx(value, serverID) || serverID < 1)
+				serverID = StringToInt(value);
+
+				// get our sb_id value if we have one
+				int sbid = GetConVarInt(FindConVar("sb_id"));
+				if (sbid != -1)
+				{
+					serverID = sbid;
+				}
+
+				// if it's not valid, make it 0
+				// we consider -1 valid here
+				if (serverID < -1)
 				{
 					serverID = 0;
 				}
@@ -2200,18 +2237,31 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 
 	for (int i = 0; i < target_count; i++)
 	{
+		char auth[64];
 		int target = target_list[i];
 
+		if (target && IsClientInGame(target))
+		{
+			if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth)))
+			{
+				g_bPlayerStatus[target] = false;
+			}
+			else
+			{
+				g_bPlayerStatus[target] = true;
+			}
+		}
+
 		#if defined DEBUG
-		char auth[64];
-		GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth));
 		PrintToServer("Processing block for %s", auth);
 		#endif
 
 		if (!g_bPlayerStatus[target])
 		{
 			// The target has not been blocks verify. It must be completed before you can block anyone.
-			ReplyToCommand(client, "%s%t", PREFIX, "Player Comms Not Verified");
+			char name[32];
+			GetClientName(target, name, sizeof(name));
+			ReplyToCommand(client, "%s%t", PREFIX, "Player Comms Not Verified", name);
 			skipped = true;
 			continue; // skip
 		}
@@ -2465,18 +2515,18 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 			}
 		}
 
-		// Check current player status. If player has temporary punishment - don't get info from DB.
+		// Pack everything into a data pack so we can retain it
+		DataPack dataPack = new DataPack();
+		dataPack.WriteCell(GetClientUserId2(client));
+		dataPack.WriteCell(GetClientUserId(target));
+		dataPack.WriteCell(type);
+		dataPack.WriteString(adminAuth);
+		dataPack.WriteString(targetAuth);
+		dataPack.WriteString(reason);
+
+		// Check current player status. If player has temporary punishment - don't get info from DB
 		if (DB_Connect())
 		{
-			// Pack everything into a data pack so we can retain it
-			DataPack dataPack = new DataPack();
-			dataPack.WriteCell(GetClientUserId2(client));
-			dataPack.WriteCell(GetClientUserId(target));
-			dataPack.WriteCell(type);
-			dataPack.WriteString(adminAuth);
-			dataPack.WriteString(targetAuth);
-			dataPack.WriteString(reason);
-
 			char sAdminAuthEscaped[sizeof(adminAuth) * 2 + 1];
 			char sAdminAuthYZEscaped[sizeof(adminAuth) * 2 + 1];
 			char sTargetAuthEscaped[sizeof(targetAuth) * 2 + 1];
@@ -2515,17 +2565,34 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 			PrintToServer("Calling TempUnBlock from ProcessUnBlock");
 			#endif
 
-			if (TempUnBlock(client, target, type, adminAuth, targetAuth, reason))
+			if (TempUnBlock(dataPack))
 				ShowActivityToServer(client, type + TYPE_TEMP_SHIFT, _, _, g_sName[target], _);
 		}
 	}
 }
 
-stock bool TempUnBlock(const int admin, const int target, const int type, const char[] adminAuth, const char[] targetAuth, const char[] reason)
+stock bool TempUnBlock(DataPack dataPack)
 {
+	char adminAuth[30], targetAuth[30];
+	char reason[256];
+
+	dataPack.Reset();
+	int adminUserID = dataPack.ReadCell();
+	int targetUserID = dataPack.ReadCell();
+	int type = dataPack.ReadCell();
+	dataPack.ReadString(adminAuth, sizeof(adminAuth));
+	dataPack.ReadString(targetAuth, sizeof(targetAuth));
+	dataPack.ReadString(reason, sizeof(reason));
+	delete dataPack; // Need to close datapack
+
 	#if defined DEBUG
-	PrintToServer("TempUnBlock(admin: %u, target: %u, type: %d, adminAuth: %s, targetAuth: %s, reason: %s)", admin, target, type, adminAuth, targetAuth, reason);
+	PrintToServer("TempUnBlock(adminUID: %d, targetUID: %d, type: %d, adminAuth: %s, targetAuth: %s, reason: %s)", adminUserID, targetUserID, type, adminAuth, targetAuth, reason);
 	#endif
+
+	int admin = GetClientOfUserId(adminUserID);
+	int target = GetClientOfUserId(targetUserID);
+	if (!target)
+		return false; // target has gone away
 
 	int AdmImmunity = GetAdmImmunity(admin);
 	bool AdmImCheck = (DisUBImCheck == 0
@@ -2545,7 +2612,7 @@ stock bool TempUnBlock(const int admin, const int target, const int type, const 
 	#endif
 
 	// Check access for unblock without db changes (temporary unblock)
-	bool bHasPermission = !admin || AdmHasFlag(admin) || AdmImCheck;
+	bool bHasPermission = (!admin && StrEqual(adminAuth, "STEAM_ID_SERVER")) || AdmHasFlag(admin) || AdmImCheck;
 	// can, if we are console or have special flag. else - deep checking by issuer authid
 	if (!bHasPermission) {
 		switch (type)
