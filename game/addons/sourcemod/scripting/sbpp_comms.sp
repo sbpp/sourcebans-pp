@@ -2242,7 +2242,11 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 
 		if (target && IsClientInGame(target))
 		{
-			if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth)))
+			if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth), false))
+			{
+				g_bPlayerStatus[target] = false;
+			}
+			if (strncmp(auth[6], "ID_", 3) != 0 )
 			{
 				g_bPlayerStatus[target] = false;
 			}
@@ -2432,10 +2436,28 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			int target = target_list[i];
 
-			if (IsClientConnected(target))
-				GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
-			else
-				continue;
+			if (target && IsClientConnected(target))
+			{
+				if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
+				{
+					g_bPlayerStatus[target] = false;
+					continue;
+				}
+				if (strncmp(targetAuth[6], "ID_", 3) != 0 )
+				{
+					g_bPlayerStatus[target] = false;
+					continue;
+				}
+			}
+
+			if (!g_bPlayerStatus[target])
+			{
+				// The target has not been blocks verify. It must be completed before you can unblock anyone.
+				char name[32];
+				GetClientName(target, name, sizeof(name));
+				ReplyToCommand(client, "%s%t", PREFIX, "Player Comms Not Verified", name);
+				continue; // skip
+			}
 
 			switch (type)
 			{
@@ -2472,7 +2494,10 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 
 		if (IsClientInGame(target))
 		{
-			GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth));
+			if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
+				g_bPlayerStatus[target] = false;
+			if (strncmp(targetAuth[6], "ID_", 3) != 0 )
+				g_bPlayerStatus[target] = false;
 		}
 		else
 		{
