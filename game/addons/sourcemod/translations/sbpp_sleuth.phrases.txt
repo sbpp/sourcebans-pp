@@ -30,6 +30,14 @@
 	"sourcesleuth_kicktext"
 	{
 		"en"		"You have been kicked for having an active ban on your IP"
+		"de"		"Du wurdest gekickt, weil du deine IP aktiv gesperrt hast"
+		"hu"		"Megrúgtak, amiért aktívan kitiltotta az IP-jét"
+		"ru"		"Вас выгнали за активный бан вашего IP"
+		"sv"		"Fuiste expulsado por prohibir activamente tu IP"
+		"fr"		"Vous avez été expulsé car il un bannisement actif depuis votre IP"
+		"pl"		"Zostałeś wyrzucony za aktywne blokowanie twojego adresu IP"
 		"pt"		"Você foi expulso(a) por ter um banimento ativo em seu IP"
+		"chi"		"您因主动禁止您的 IP 而被踢"
+		"tr"		"IP'nizi aktif olarak yasakladığınız için atıldınız"
 	}
 }
