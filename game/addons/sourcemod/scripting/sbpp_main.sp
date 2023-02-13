@@ -504,7 +504,7 @@ public Action CommandBanIp(int client, int args)
 	}
 
 	int len, next_len;
-	char Arguments[256], arg[50], time[20];
+	char Arguments[256], arg[50], time[20], targetName[MAX_NAME_LENGTH];
 
 	GetCmdArgString(Arguments, sizeof(Arguments));
 	len = BreakString(Arguments, arg, sizeof(arg));
@@ -538,7 +538,10 @@ public Action CommandBanIp(int client, int args)
 		target = target_list[0];
 
 		if (!IsFakeClient(target) && CanUserTarget(client, target))
+		{
+			GetClientName(target, targetName, sizeof(targetName));
 			GetClientIP(target, arg, sizeof(arg));
+		}
 	}
 
 	char adminIp[24], adminAuth[64];
@@ -566,6 +569,7 @@ public Action CommandBanIp(int client, int args)
 	dataPack.WriteCell(minutes);
 	dataPack.WriteString(Arguments[len]);
 	dataPack.WriteString(arg);
+	dataPack.WriteString(targetName);
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 
@@ -1220,17 +1224,19 @@ public void VerifyInsert(Database db, DBResultSet results, const char[] error, D
 public void SelectBanIpCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
 {
 	int admin, minutes;
-	char adminAuth[30], adminIp[30], banReason[256], ip[16], Query[512];
-	char reason[128];
+	char adminAuth[30], adminIp[30], banReason[256], ip[16], reason[128], Query[512];
+	char targetName[MAX_NAME_LENGTH], sTEscapedName[MAX_NAME_LENGTH * 2 + 1];
 
 	dataPack.Reset();
 	admin = dataPack.ReadCell();
 	minutes = dataPack.ReadCell();
 	dataPack.ReadString(reason, sizeof(reason));
 	dataPack.ReadString(ip, sizeof(ip));
+	dataPack.ReadString(targetName, sizeof(targetName));
 	dataPack.ReadString(adminAuth, sizeof(adminAuth));
 	dataPack.ReadString(adminIp, sizeof(adminIp));
 	DB.Escape(reason, banReason, sizeof(banReason));
+	DB.Escape(targetName, sTEscapedName, sizeof(sTEscapedName));
 
 	if (results == null)
 	{
@@ -1254,14 +1260,14 @@ public void SelectBanIpCallback(Database db, DBResultSet results, const char[] e
 	if (serverID == -1)
 	{
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
-						(1, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						(1, '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						(SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%s' LIMIT 0,1), ' ')",
-			DatabasePrefix, ip, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
+			DatabasePrefix, ip, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, DatabasePrefix, ServerIp, ServerPort);
 	} else {
 		FormatEx(Query, sizeof(Query), "INSERT INTO %s_bans (type, ip, name, created, ends, length, reason, aid, adminIp, sid, country) VALUES \
-						(1, '%s', '', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
+						(1, '%s', '%s', UNIX_TIMESTAMP(), UNIX_TIMESTAMP() + %d, %d, '%s', (SELECT aid FROM %s_admins WHERE authid = '%s' OR authid REGEXP '^STEAM_[0-9]:%s$'), '%s', \
 						%d, ' ')",
-			DatabasePrefix, ip, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
+			DatabasePrefix, ip, sTEscapedName, (minutes * 60), (minutes * 60), banReason, DatabasePrefix, adminAuth, adminAuth[8], adminIp, serverID);
 	}
 
 	db.Query(InsertBanIpCallback, Query, dataPack, DBPrio_High);
@@ -1271,8 +1277,9 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 {
 	// if the pack is good unpack it and close the handle
 	int admin, minutes;
+	int target = -1;
 	char reason[128];
-	char arg[30];
+	char targetIP[30];
 
 	if (dataPack != null)
 	{
@@ -1280,7 +1287,35 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 		admin = dataPack.ReadCell();
 		minutes = dataPack.ReadCell();
 		dataPack.ReadString(reason, sizeof(reason));
-		dataPack.ReadString(arg, sizeof(arg));
+		dataPack.ReadString(targetIP, sizeof(targetIP));
+		
+		for(int i = 1; i <= MaxClients; i++)
+		{
+			if(!IsClientInGame(i) || IsFakeClient(i))
+				continue;
+			
+			char ip[30];
+			GetClientIP(i, ip, sizeof(ip));
+			if(StrEqual(targetIP, ip, false))
+			{
+				target = i;
+				break;
+			}
+		}
+
+		// Kick player
+		if(target != -1)
+		{
+			char length[32];
+			if(minutes == 0)
+				FormatEx(length, sizeof(length), "permament");
+			else
+				FormatEx(length, sizeof(length), "%d %s", minutes, minutes == 1 ? "minute" : "minutes");
+
+			if (IsClientConnected(target))
+				KickClient(target, "%t\n\n%t", "Banned Check Site", WebsiteAddress, "Kick Reason", admin, reason, length);
+		}
+
 		delete dataPack;
 	} else {
 		// Technically this should not be possible
@@ -1296,12 +1331,12 @@ public void InsertBanIpCallback(Database db, DBResultSet results, const char[] e
 		return;
 	}
 
-	LogAction(admin, -1, "%t", "Ban Added", admin, minutes, arg, reason);
+	LogAction(admin, -1, "%t", "Ban Added", admin, minutes, targetIP, reason);
 
 	if (admin && IsClientInGame(admin))
-		PrintToChat(admin, "%s%t", Prefix, "Ban Success Name", arg);
+		PrintToChat(admin, "%s%t", Prefix, "Ban Success Name", targetIP);
 	else
-		PrintToServer("%s%t", Prefix, "Ban Success Name", arg);
+		PrintToServer("%s%t", Prefix, "Ban Success Name", targetIP);
 }
 
 public void SelectUnbanCallback(Database db, DBResultSet results, const char[] error, DataPack dataPack)
@@ -1589,13 +1624,13 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 
 		if (AutoAdd == AUTO_ADD_SERVER_WITH_RCON)
 		{
-		        ConVar cvarRconPassword = FindConVar("rcon_password");
-		        if (cvarRconPassword != null)
-		        {
-		                cvarRconPassword.GetString(rcon, sizeof(rcon));
-		        }		
-		}		
-		
+			ConVar cvarRconPassword = FindConVar("rcon_password");
+			if (cvarRconPassword != null)
+			{
+				cvarRconPassword.GetString(rcon, sizeof(rcon));
+			}
+		}
+
 		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, rcon, DatabasePrefix, desc);
 		db.Query(ErrorCheckCallback, query);
 	}
