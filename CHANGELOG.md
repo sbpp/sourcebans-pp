@@ -9,7 +9,45 @@ Legend:
 ! = Fixed bug
 ? = Other stuff
 ```
+
+(18/02/23): Version 2.0.0
+-----------------------
+```
+01. ? Add PHP 8.1 Compatibility
+02. ? Update dependencies
+03. ? Update requirements to PHP 8.1
+04. ? Update requirements to SM 1.11
+05. ? Rename Checker natives
+06. ! Fixed display in Admin Panel
+07. * Add Board Name support
+08. ! Fixed Display in Installer
+09. ? Emails changes (SMTP/Email templates)
+10. * Auto Add server with rcon password
+10. ! Fixed permissions for ADMIN_EDIT_ADMINS to changes admins pw
+11. ! Fixed a way to insert invalid SteamID Format in DB
+12. ? Improve game translations
+13. + Improved sm_banip
+```
+
+(26/09/22): Version 1.7.0
+-----------------------
+```
+01. * Comms in count list
+02. ? Update requirements to SM 1.10
+03. ! Fixed issue with Data Pack
+04. ! Fixed display in Admin Panel
+```
+
+(06/10/21): Version 1.6.4
+-----------------------
+```
+01. * Support challenges in A2S_INFO
+02. ! Fixed security vulnerability in the SetupEditServer
+03. ! Fixed auth check
+```
+
 (06/04/18): Version 1.6.3
+-----------------------
 ```
 Full Changelog: https://sbpp.github.io/blog/1.6.3_release/
 ```
