@@ -10,7 +10,7 @@ Legend:
 ? = Other stuff
 ```
 
-(18/02/23): Version 2.0.0
+(18/02/23): Version 1.8.0
 -----------------------
 ```
 01. ? Add PHP 8.1 Compatibility

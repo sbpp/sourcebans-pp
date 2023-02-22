@@ -35,7 +35,7 @@
 
 #pragma newdecls required
 
-#define SB_VERSION "1.7.0"
+#define SB_VERSION "1.8.0"
 
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
