@@ -6,7 +6,7 @@ updates:
   - package-ecosystem: "composer"
     directory: "/web"
     schedule:
-      interval: "daily"
+      interval: "monthly"
     labels:
       - "dependencies"
     assignees:
