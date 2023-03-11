@@ -21,7 +21,7 @@
     "require": {
         "lcobucci/jwt": "3.*",
         "maxmind-db/reader": "~1.0",
-        "smarty/smarty": "~2.6",
+        "smarty/smarty": "~4.3",
         "xpaw/php-source-query-class": "^2.1"
     }
 }
