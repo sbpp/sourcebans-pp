@@ -1530,7 +1530,7 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
 
-				dataPack.Position = view_as<DataPackPos>(16);
+				dataPack.Position = view_as<DataPackPos>(6);
 
 				if (g_MuteType[target] > bNot)
 				{
@@ -2237,28 +2237,18 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 
 	for (int i = 0; i < target_count; i++)
 	{
-		char auth[64];
 		int target = target_list[i];
 
-		if (target && IsClientInGame(target))
-		{
-			if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth), false))
-			{
-				g_bPlayerStatus[target] = false;
-			}
-			if (strncmp(auth[6], "ID_", 3) != 0 )
-			{
-				g_bPlayerStatus[target] = false;
-			}
-			else
-			{
-				g_bPlayerStatus[target] = true;
-			}
-		}
-
 		#if defined DEBUG
+		char auth[64];
+		GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth), false)
 		PrintToServer("Processing block for %s", auth);
 		#endif
+
+		if (IsClientInGame(target))
+		{
+			g_bPlayerStatus[target] = IsClientAuthorized(target);
+		}
 
 		if (!g_bPlayerStatus[target])
 		{
@@ -2436,18 +2426,9 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			int target = target_list[i];
 
-			if (target && IsClientConnected(target))
+			if (IsClientInGame(target))
 			{
-				if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
-				{
-					g_bPlayerStatus[target] = false;
-					continue;
-				}
-				if (strncmp(targetAuth[6], "ID_", 3) != 0 )
-				{
-					g_bPlayerStatus[target] = false;
-					continue;
-				}
+				g_bPlayerStatus[target] = IsClientAuthorized(target);
 			}
 
 			if (!g_bPlayerStatus[target])
@@ -2494,10 +2475,10 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 
 		if (IsClientInGame(target))
 		{
+			g_bPlayerStatus[target] = IsClientAuthorized(target);
+
 			if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
-				g_bPlayerStatus[target] = false;
-			if (strncmp(targetAuth[6], "ID_", 3) != 0 )
-				g_bPlayerStatus[target] = false;
+				return;
 		}
 		else
 		{
