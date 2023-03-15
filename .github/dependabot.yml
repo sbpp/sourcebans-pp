@@ -1,0 +1,19 @@
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  - package-ecosystem: "composer"
+    directory: "/web"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+    assignees:
+      - "Hackmastr"
+      - "rumblefrog"
+      - "Rushaway"
+    commit-message:
+      prefix: "Composer"
+      include: "scope"
+    rebase-strategy: "auto"
