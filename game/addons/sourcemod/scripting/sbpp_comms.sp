@@ -134,6 +134,13 @@ enum
 int g_iPeskyPanels[MAXPLAYERS + 1][PeskyPanels];
 
 bool g_bPlayerStatus[MAXPLAYERS + 1]; // Player block check status
+
+// Own Reason Section
+bool g_bOwnReason[MAXPLAYERS + 1] = { false, ... };
+int g_iTarget[MAXPLAYERS + 1] = { -1, ... };
+int g_iLength[MAXPLAYERS + 1];
+int g_iType[MAXPLAYERS + 1];
+
 char g_sName[MAXPLAYERS + 1][MAX_NAME_LENGTH];
 
 bType g_MuteType[MAXPLAYERS + 1];
@@ -193,12 +200,17 @@ public void OnPluginStart()
 	g_hServersWhiteList = new ArrayList();
 
 	CreateConVar("sourcecomms_version", PLUGIN_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
+
 	AddCommandListener(CommandCallback, "sm_gag");
 	AddCommandListener(CommandCallback, "sm_mute");
 	AddCommandListener(CommandCallback, "sm_silence");
 	AddCommandListener(CommandCallback, "sm_ungag");
 	AddCommandListener(CommandCallback, "sm_unmute");
 	AddCommandListener(CommandCallback, "sm_unsilence");
+
+	AddCommandListener(ReasonHook, "say");
+	AddCommandListener(ReasonHook, "say_team");
+
 	RegServerCmd("sc_fw_block", FWBlock, "Blocking player comms by command from sourceban web site");
 	RegServerCmd("sc_fw_ungag", FWUngag, "Ungagging player by command from sourceban web site");
 	RegServerCmd("sc_fw_unmute", FWUnmute, "Unmuting player by command from sourceban web site");
@@ -263,6 +275,8 @@ public void OnClientDisconnect(int client)
 
 	CloseMuteExpireTimer(client);
 	CloseGagExpireTimer(client);
+
+	g_bOwnReason[client] = false;
 }
 
 public bool OnClientConnect(int client, char[] rejectmsg, int maxlen)
@@ -684,7 +698,10 @@ public int Handle_MenuList(TopMenu menu, TopMenuAction action, TopMenuObject obj
 
 void AdminMenu_Target(int client, int type)
 {
+	g_bOwnReason[client] = false;
+
 	char Title[192], Option[32];
+
 	switch (type)
 	{
 		case TYPE_GAG:
@@ -918,6 +935,7 @@ public int MenuHandler_MenuReason(Menu menu, MenuAction action, int param1, int 
 				int reasonIndex = StringToInt(sTemp[2]);
 				int lengthIndex = StringToInt(sTemp[3]);
 				int length;
+
 				if (lengthIndex >= 0 && lengthIndex <= iNumTimes)
 					length = g_iTimeMinutes[lengthIndex];
 				else
@@ -926,10 +944,47 @@ public int MenuHandler_MenuReason(Menu menu, MenuAction action, int param1, int 
 					LogError("Wrong length index in menu - using default time");
 				}
 
+				if (StrEqual(g_sReasonKey[reasonIndex], "Other"))
+				{
+					g_bOwnReason[param1] = true;
+					g_iTarget[param1] = target;
+					g_iLength[param1] = length;
+					g_iType[param1] = type;
+
+					PrintToChat(param1, "%s%t", PREFIX, "Chat Reason");
+
+					return;
+				}
+
 				CreateBlock(param1, target, length, type, g_sReasonKey[reasonIndex]);
 			}
 		}
 	}
+}
+
+public Action ReasonHook(int iClient, const char[] sCommand, int iArgC)
+{
+	if (g_bOwnReason[iClient])
+	{
+		g_bOwnReason[iClient] = false;
+
+		char sReason[512];
+
+		GetCmdArgString(sReason, sizeof sReason);
+
+		if (StrEqual(sReason, "!noreason"))
+		{
+			PrintToChat(iClient, "%s%t", PREFIX, "Chat Reason Aborted");
+
+			return Plugin_Handled;
+		}
+
+		CreateBlock(iClient, g_iTarget[iClient], g_iLength[iClient], g_iType[iClient], sReason);
+
+		return Plugin_Handled;
+	}
+
+	return Plugin_Continue;
 }
 
 void AdminMenu_List(int client, int index)
