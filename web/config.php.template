@@ -40,3 +40,4 @@ define('DB_CHARSET', 'utf8'); // The Database charset (Default: utf8)
 define('STEAMAPIKEY', ''); // Steam API Key for Shizz
 define('SB_EMAIL', '');
 define('SB_NEW_SALT', '$5$'); //Salt for passwords
+define('SB_DISCORD_WEBHOOK_URL', '');
