@@ -1,0 +1,87 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: "Build"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04]
+        include:
+          - os: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build sourcemod plugin
+        uses: maxime1907/action-sourceknight@v1
+        with:
+          cmd: build
+
+      - name: Create package
+        run: |
+          mkdir -p /tmp/package
+          cp -R .sourceknight/package/* /tmp/package
+          cp -R game/addons/sourcemod/configs /tmp/package/common/addons/sourcemod/
+          cp -R game/addons/sourcemod/translations /tmp/package/common/addons/sourcemod/
+      - name: Upload build archive for test runners
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ runner.os }}
+          path: /tmp/package
+
+  tag:
+    name: Tag
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/php81'
+
+      - uses: dev-drprasad/delete-tag-and-release@v0.2.1
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/php81'
+        with:
+          delete_release: true
+          tag_name: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: rickstaa/action-create-tag@v1
+        if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/php81'
+        with:
+          tag: "latest"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/php81'
+    needs: [build, tag]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Versioning
+        run: |
+          version="latest"
+          if [[ "${{ github.ref_type }}" == 'tag' ]]; then
+            version=`echo $GITHUB_REF | sed "s/refs\/tags\///"`;
+          fi
+          echo "RELEASE_VERSION=$version" >> $GITHUB_ENV
+      - name: Package
+        run: |
+          ls -Rall
+          if [ -d "./Linux/" ]; then
+            cd ./Linux/
+            tar -czf ../${{ github.event.repository.name }}-${{ env.RELEASE_VERSION }}.tar.gz -T <(\ls -1)
+            cd -
+          fi
+      - name: Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: '*.tar.gz'
+          tag: ${{ env.RELEASE_VERSION }}
+          file_glob: true
+          overwrite: true
