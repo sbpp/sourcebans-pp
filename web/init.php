@@ -204,6 +204,7 @@ $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'help_icon', 'smarty_function_he
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'sb_button', 'smarty_function_sb_button');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'load_template', 'smarty_function_load_template');
 $theme->registerPlugin('modifier', 'smarty_stripslashes', 'smarty_stripslashes');
+$theme->registerPlugin('modifier', 'smarty_htmlspecialchars', 'smarty_htmlspecialchars');
 
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->force_compile = true;

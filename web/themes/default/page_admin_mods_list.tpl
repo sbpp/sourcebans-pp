@@ -14,17 +14,17 @@
         </tr>
         {foreach from=$mod_list item="mod" name="gaben"}
             <tr id="mid_{$mod.mid}">
-                <td class="listtable_1" height='16'>{$mod.name|htmlspecialchars}</td>
-                <td class="listtable_1" height='16'>{$mod.modfolder|htmlspecialchars}</td>
+                <td class="listtable_1" height='16'>{$mod.name|smarty_htmlspecialchars}</td>
+                <td class="listtable_1" height='16'>{$mod.modfolder|smarty_htmlspecialchars}</td>
                 <td class="listtable_1" height='16'><img src="images/games/{$mod.icon}" width="16"></td>
-                <td class="listtable_1" height='16'>{$mod.steam_universe|htmlspecialchars}</td>
+                <td class="listtable_1" height='16'>{$mod.steam_universe|smarty_htmlspecialchars}</td>
                 {if $permission_editmods || $permission_deletemods}
                     <td class="listtable_1" height='16'>
                         {if $permission_editmods}
                             <a href="index.php?p=admin&c=mods&o=edit&id={$mod.mid}">Edit</a> -
                         {/if}
                         {if $permission_deletemods}
-                            <a href="#" onclick="RemoveMod('{$mod.name|escape:'quotes'|htmlspecialchars}', '{$mod.mid}');">Delete</a>
+                            <a href="#" onclick="RemoveMod('{$mod.name|escape:'quotes'|smarty_htmlspecialchars}', '{$mod.mid}');">Delete</a>
                         {/if}
                     </td>
                 {/if}
