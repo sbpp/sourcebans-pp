@@ -84,7 +84,7 @@
                             {if empty($ban.player)}
                                 <i><font color="#677882">no nickname present</font></i>
                             {else}
-                                {$ban.player|escape:'html'|stripslashes}
+                                {$ban.player|escape:'html'|smarty_stripslashes}
                             {/if}
                         </div>
                         <div style="float:right;">
@@ -127,7 +127,7 @@
                                         {if empty($ban.player)}
                                             <i><font color="#677882">no nickname present</font></i>
                                         {else}
-                                            {$ban.player|escape:'html'|stripslashes}
+                                            {$ban.player|escape:'html'|smarty_stripslashes}
                                         {/if}
                                     </td>
                                     <!-- ###############[ Start Admin Controls ]################## -->

@@ -20,11 +20,11 @@
                     {if $sub.archiv != "2" and $sub.archiv != "3"}
                         <a href="#" onclick="xajax_SetupBan({$sub.subid});">Ban</a> -
                         {if $permissions_editsub}
-                            <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes}', '2');">Restore</a> -
+                            <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|smarty_stripslashes}', '2');">Restore</a> -
                         {/if}
                     {/if}
                     {if $permissions_editsub}
-                        <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes}', '0');">Delete</a> -
+                        <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|smarty_stripslashes}', '0');">Delete</a> -
                     {/if}
                     <a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid}">Contact</a>
                 </td>
