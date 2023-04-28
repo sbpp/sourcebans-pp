@@ -290,11 +290,17 @@ public void OnClientPostAdminCheck(int client)
 	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	GetClientName(client, g_sName[client], sizeof(g_sName[]));
 
-	/* Do not check bots or check player with lan steamid. */
-	if (clientAuth[0] == 'B' || clientAuth[9] == 'L' || !DB_Connect())
+	/* Can't connect to DB */
+	if (!DB_Connect())
 	{
 		g_bPlayerStatus[client] = true;
 		return;
+	}
+
+	/*  Do not check bots or player returning as Steamid as Pending | Stop_ignoring_retvals */
+	if (strncmp(clientAuth[6], "ID_", 3) != -1 || clientAuth[0] == 'B')
+	{
+		g_bPlayerStatus[client] = false;
 	}
 
 	if (client > 0 && IsClientInGame(client) && !IsFakeClient(client))
@@ -1530,7 +1536,8 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
 
-				dataPack.Position = view_as<DataPackPos>(6);
+				dataPack.Reset();
+				dataPack.ReadCell();
 
 				if (g_MuteType[target] > bNot)
 				{
@@ -2237,18 +2244,28 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 
 	for (int i = 0; i < target_count; i++)
 	{
+		char auth[64];
 		int target = target_list[i];
 
+		if (target && IsClientInGame(target))
+		{
+			if (!GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth), false))
+			{
+				g_bPlayerStatus[target] = false;
+			}
+			if (strncmp(auth[6], "ID_", 3) != -1 )
+			{
+				g_bPlayerStatus[target] = false;
+			}
+			else
+			{
+				g_bPlayerStatus[target] = true;
+			}
+		}
+
 		#if defined DEBUG
-		char auth[64];
-		GetClientAuthId(target, AuthId_Steam2, auth, sizeof(auth), false)
 		PrintToServer("Processing block for %s", auth);
 		#endif
-
-		if (IsClientInGame(target))
-		{
-			g_bPlayerStatus[target] = IsClientAuthorized(target);
-		}
 
 		if (!g_bPlayerStatus[target])
 		{
@@ -2426,9 +2443,18 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			int target = target_list[i];
 
-			if (IsClientInGame(target))
+			if (target && IsClientConnected(target))
 			{
-				g_bPlayerStatus[target] = IsClientAuthorized(target);
+				if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
+				{
+					g_bPlayerStatus[target] = false;
+					continue;
+				}
+				if (strncmp(targetAuth[6], "ID_", 3) != -1 )
+				{
+					g_bPlayerStatus[target] = false;
+					continue;
+				}
 			}
 
 			if (!g_bPlayerStatus[target])
@@ -2475,10 +2501,10 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 
 		if (IsClientInGame(target))
 		{
-			g_bPlayerStatus[target] = IsClientAuthorized(target);
-
 			if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
-				return;
+				g_bPlayerStatus[target] = false;
+			if (strncmp(targetAuth[6], "ID_", 3) != -1 )
+				g_bPlayerStatus[target] = false;
 		}
 		else
 		{
