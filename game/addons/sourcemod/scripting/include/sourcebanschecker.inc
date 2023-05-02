@@ -32,7 +32,7 @@
 public SharedPlugin __pl_sourcebanschecker =
 {
 	name = "sourcebans++",
-	file = "sbpp_main.smx",
+	file = "sbpp_checker.smx",
 	#if defined REQUIRE_PLUGIN
 	required = 1
 	#else
