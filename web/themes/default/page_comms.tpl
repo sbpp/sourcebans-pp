@@ -142,7 +142,7 @@
                                                     {if ($ban.view_edit && (!isset($ban.unbanned) || !$ban.unbanned))}
                                                         <li>{$ban.edit_link}</li>
                                                     {/if}
-                                                    {if ($ban.unbanned == false && $ban.view_unban)}
+                                                    {if isset($ban.unbanned) && ($ban.unbanned == false && $ban.view_unban)}
                                                         <li>{$ban.unban_link}</li>
                                                     {/if}
                                                     {if $ban.view_delete}
