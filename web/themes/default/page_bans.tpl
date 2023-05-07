@@ -56,7 +56,7 @@
     <br />
     {load_template file='admin.bans.search'}
     <br />
-    <div id="banlist-nav"><a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a> | <i>Total Bans: {$total_bans}</i></div>
+    <div id="banlist-nav"><a href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|smarty_htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a> | <i>Total Bans: {$total_bans}</i></div>
     <div id="banlist">
         <table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
             <tr>
@@ -87,7 +87,7 @@
                             {if empty($ban.player)}
                                 <i><font color="#677882">no nickname present</font></i>
                             {else}
-                                {$ban.player|escape:'html'|stripslashes}
+                                {$ban.player|escape:'html'|smarty_stripslashes}
                             {/if}
                         </div>
                         {if $ban.demo_available}
@@ -128,7 +128,7 @@
                                         {if empty($ban.player)}
                                             <i><font color="#677882">no nickname present</font></i>
                                         {else}
-                                            {$ban.player|escape:'html'|stripslashes}
+                                            {$ban.player|escape:'html'|smarty_stripslashes}
                                         {/if}
                                     </td>
                                     <!-- ###############[ Start Admin Controls ]################## -->

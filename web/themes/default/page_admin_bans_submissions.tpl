@@ -19,7 +19,7 @@
                 <td class="listtable_1" height='16'>
                     <a href="#" onclick="xajax_SetupBan({$sub.subid});return false;">Ban</a> -
                     {if $permissions_editsub}
-                        <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|stripslashes}', '1');return false;">Remove</a> -
+                        <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|smarty_stripslashes}', '1');return false;">Remove</a> -
                     {/if}
                     <a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid}">Contact</a>
                 </td>

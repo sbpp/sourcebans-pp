@@ -59,7 +59,7 @@
     <div id="banlist-nav">
         {$ban_nav}
     </div>
-    <a href="index.php?p=commslist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a>
+    <a href="index.php?p=commslist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|smarty_htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a>
     <div id="banlist">
         <table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
             <tr>
@@ -84,7 +84,7 @@
                             {if empty($ban.player)}
                                 <i><font color="#677882">no nickname present</font></i>
                             {else}
-                                {$ban.player|escape:'html'|stripslashes}
+                                {$ban.player|escape:'html'|smarty_stripslashes}
                             {/if}
                         </div>
                         <div style="float:right;">
@@ -127,7 +127,7 @@
                                         {if empty($ban.player)}
                                             <i><font color="#677882">no nickname present</font></i>
                                         {else}
-                                            {$ban.player|escape:'html'|stripslashes}
+                                            {$ban.player|escape:'html'|smarty_stripslashes}
                                         {/if}
                                     </td>
                                     <!-- ###############[ Start Admin Controls ]################## -->

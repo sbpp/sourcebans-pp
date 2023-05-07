@@ -55,3 +55,34 @@ function smarty_function_load_template(array $params): void
 {
     require TEMPLATES_PATH . "/{$params['file']}.php";
 }
+
+/**
+ *  Smarty {smarty_stripslashes} function plugin
+ * 
+ * Type:     function<br>
+ * Name:     smarty_stripslashes<br>
+ * Purpose:  custom stripslashes function
+ * @link https://github.com/lechuga16/sourcebans-pp/tree/smarty_stripslashes
+ * @author  Lechuga
+ * @param array $params
+ * @return string
+ * @version 1.0
+ */
+function smarty_stripslashes($string)
+{
+	return stripslashes($string);
+}
+
+/**
+ *  Smarty {smarty_htmlspecialchars} function plugin
+ * 
+ * Type:     function<br>
+ * Name:     smarty_htmlspecialchars<br>
+ * Purpose:  custom htmlspecialchars function
+ * @link https://github.com/lechuga16/sourcebans-pp/tree/smarty_stripslashes
+ * @author  Lechuga
+ * @param array $params
+ */
+function smarty_htmlspecialchars($string, $flags = ENT_COMPAT | ENT_HTML401, $encoding = 'UTF-8', $double_encode = true) {
+    return htmlspecialchars($string, $flags, $encoding, $double_encode);
+}

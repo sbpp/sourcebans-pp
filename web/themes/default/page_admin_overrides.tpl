@@ -29,8 +29,8 @@
                                 </select>
                                 <input type="hidden" name="override_id[]" value="{$override.id}" />
                             </td>
-                            <td class="tablerow1"><input name="override_name[]" value="{$override.name|htmlspecialchars}" /></td>
-                            <td class="tablerow1"><input name="override_flags[]" value="{$override.flags|htmlspecialchars}" /></td>
+                            <td class="tablerow1"><input name="override_name[]" value="{$override.name|smarty_htmlspecialchars}" /></td>
+                            <td class="tablerow1"><input name="override_flags[]" value="{$override.flags|smarty_htmlspecialchars}" /></td>
                         </tr>
                     {/foreach}
                     <tr>
