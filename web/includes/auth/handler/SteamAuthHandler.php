@@ -25,6 +25,10 @@ class SteamAuthHandler
     private function validate()
     {
         $pattern = "/^https:\/\/steamcommunity\.com\/openid\/id\/(7[0-9]{15,25}+)$/";
+
+        if (!preg_match($pattern, $this->openid->claimed_id))
+            return false;
+
         preg_match($pattern, $this->openid->identity, $match);
 
         return (!empty($match[1])) ? $match[1] : false;
