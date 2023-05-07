@@ -1625,6 +1625,7 @@ function ServerHostProperty($sid, $obId, $obProp, $trunchostname)
     try {
         $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
         $info = $query->GetInfo();
+        $info['HostName'] = preg_replace('/[\x00-\x1f]/','', htmlspecialchars($info['HostName']));
     } catch (Exception $e) {
         $objResponse->addAssign("$obId", "$obProp", "Error connecting (".$server['ip'].":".$server['port'].")");
         return $objResponse;
@@ -1671,6 +1672,7 @@ function ServerHostPlayers_list($sid, $type="servers", $obId="")
         try {
             $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
             $info = $query->GetInfo();
+            $info['HostName'] = preg_replace('/[\x00-\x1f]/','', htmlspecialchars($info['HostName']));
         } catch (Exception $e) {
             $ret .= "<b>Error connecting</b> (<i>".$server['ip'].":".$server['port']."</i>)<br />";
             continue;
