@@ -908,7 +908,11 @@ class LightOpenID
             return false;
         }
 
-        $server = $this->discover($this->claimed_id);
+        // Fishy: The intention for this is wrong, discovery should the done on the claimed ID to match the OP we assigned for auth.
+        // This blindly trusts that the two origins are the same.
+        // For our use case, we are only authenticating against Steam, so we can safely harccode it here.
+        // $server = $this->discover($this->claimed_id);
+        $server = 'https://steamcommunity.com/openid/login';
 
         foreach (explode(',', $this->data['openid_signed']) as $item) {
             # Checking whether magic_quotes_gpc is turned on, because
