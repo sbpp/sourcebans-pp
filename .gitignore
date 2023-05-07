@@ -58,3 +58,10 @@ Temporary Items
 
 # Composer vendor dir
 /web/includes/vendor
+
+# Plugin compilation
+build/
+release/
+plugins/
+.sourceknight
+.venv
