@@ -1530,7 +1530,10 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
 
-				dataPack.Position = view_as<DataPackPos>(16);
+				// type is in 3rd position in datapack
+				dataPack.Reset();
+				dataPack.ReadCell();
+				dataPack.ReadCell();
 
 				if (g_MuteType[target] > bNot)
 				{
