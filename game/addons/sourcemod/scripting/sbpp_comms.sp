@@ -290,11 +290,17 @@ public void OnClientPostAdminCheck(int client)
 	GetClientAuthId(client, AuthId_Steam2, clientAuth, sizeof(clientAuth));
 	GetClientName(client, g_sName[client], sizeof(g_sName[]));
 
-	/* Do not check bots or check player with lan steamid. */
-	if (clientAuth[0] == 'B' || clientAuth[9] == 'L' || !DB_Connect())
+	/* Can't connect to DB */
+	if (!DB_Connect())
 	{
 		g_bPlayerStatus[client] = true;
 		return;
+	}
+
+	/*  Do not check bots or player returning as Steamid as Pending | Stop_ignoring_retvals */
+	if (strncmp(clientAuth[6], "ID_", 3) == 0 || clientAuth[0] == 'B')
+	{
+		g_bPlayerStatus[client] = false;
 	}
 
 	if (client > 0 && IsClientInGame(client) && !IsFakeClient(client))
@@ -2249,7 +2255,7 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 			{
 				g_bPlayerStatus[target] = false;
 			}
-			if (strncmp(auth[6], "ID_", 3) != 0 )
+			if (strncmp(auth[6], "ID_", 3) == 0 )
 			{
 				g_bPlayerStatus[target] = false;
 			}
@@ -2439,14 +2445,14 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			int target = target_list[i];
 
-			if (target && IsClientConnected(target))
+			if (IsClientInGame(target))
 			{
 				if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
 				{
 					g_bPlayerStatus[target] = false;
 					continue;
 				}
-				if (strncmp(targetAuth[6], "ID_", 3) != 0 )
+				if (strncmp(targetAuth[6], "ID_", 3) == 0 )
 				{
 					g_bPlayerStatus[target] = false;
 					continue;
@@ -2499,7 +2505,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
 				g_bPlayerStatus[target] = false;
-			if (strncmp(targetAuth[6], "ID_", 3) != 0 )
+			if (strncmp(targetAuth[6], "ID_", 3) == 0 )
 				g_bPlayerStatus[target] = false;
 		}
 		else
