@@ -39,8 +39,8 @@ char g_DatabasePrefix[10] = "sb";
 SMCParser g_ConfigParser;
 Database g_DB;
 
-int g_iBanCounts[MAXPLAYERS + 1];
-int g_iCommsCounts[MAXPLAYERS + 1];
+int g_iBanCounts[MAXPLAYERS + 1] = {-1, ...};
+int g_iCommsCounts[MAXPLAYERS + 1] = {-1, ...};
 GlobalForward g_fwdClientBanCheckPost;
 
 
@@ -109,14 +109,10 @@ public int Native_SBCheckerGetClientsComms(Handle plugin, int numParams)
 	return g_iCommsCounts[client];
 }
 
-public void OnClientConnected(int client)
-{
-	g_iBanCounts[client] = g_iCommsCounts[client] = -1; // mark as not yet loaded
-}
-
 public void OnClientDisconnect_Post(int client)
 {
-	g_iBanCounts[client] = g_iCommsCounts[client] = -1;
+	g_iBanCounts[client] = -1;
+	g_iCommsCounts[client] = -1;
 }
 
 public void OnClientAuthorized(int client, const char[] auth)
