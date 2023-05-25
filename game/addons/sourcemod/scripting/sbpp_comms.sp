@@ -298,7 +298,7 @@ public void OnClientPostAdminCheck(int client)
 	}
 
 	/*  Do not check bots or player returning as Steamid as Pending | Stop_ignoring_retvals */
-	if (strncmp(clientAuth[6], "ID_", 3) != -1 || clientAuth[0] == 'B')
+	if (strncmp(clientAuth[6], "ID_", 3) == 0 || clientAuth[0] == 'B')
 	{
 		g_bPlayerStatus[client] = false;
 	}
@@ -1535,9 +1535,15 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 			if (type == TYPE_UNSILENCE)
 			{
 				// check result for possible combination with temp and time punishments (temp was skipped in code above)
-
+				// type is in 3rd position in datapack
 				dataPack.Reset();
 				dataPack.ReadCell();
+				dataPack.ReadCell();
+				dataPack.ReadCell();
+
+				#if defined DEBUG
+				PrintToServer("Position: %i", dataPack.Position);
+				#endif
 
 				if (g_MuteType[target] > bNot)
 				{
@@ -2253,7 +2259,7 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 			{
 				g_bPlayerStatus[target] = false;
 			}
-			if (strncmp(auth[6], "ID_", 3) != -1 )
+			if (strncmp(auth[6], "ID_", 3) == 0)
 			{
 				g_bPlayerStatus[target] = false;
 			}
@@ -2450,7 +2456,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 					g_bPlayerStatus[target] = false;
 					continue;
 				}
-				if (strncmp(targetAuth[6], "ID_", 3) != -1 )
+				if (strncmp(targetAuth[6], "ID_", 3) == 0)
 				{
 					g_bPlayerStatus[target] = false;
 					continue;
@@ -2503,7 +2509,7 @@ stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason
 		{
 			if (!GetClientAuthId(target, AuthId_Steam2, targetAuth, sizeof(targetAuth), false))
 				g_bPlayerStatus[target] = false;
-			if (strncmp(targetAuth[6], "ID_", 3) != -1 )
+			if (strncmp(targetAuth[6], "ID_", 3) == 0)
 				g_bPlayerStatus[target] = false;
 		}
 		else
@@ -3074,6 +3080,9 @@ stock void PerformGag(int target, int time = NOW, int length = -1, const char[] 
 stock void SavePunishment(int admin = 0, int target, int type, int length = -1, const char[] reason = "")
 {
 	if (type < TYPE_MUTE || type > TYPE_SILENCE)
+		return;
+
+	if (!g_bPlayerStatus[target])
 		return;
 
 	// target information
