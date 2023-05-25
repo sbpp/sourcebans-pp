@@ -1,4 +1,4 @@
-﻿// *************************************************************************
+// *************************************************************************
 //  This file is part of SourceBans++.
 //
 //  Copyright (C) 2014-2023 SourceBans++ Dev Team <https://github.com/sbpp>
@@ -53,7 +53,7 @@ public void __pl_sourcebanschecker_SetNTVOptional()
  * Get the number of bans of a client.
  *
  * @param iClient	The client index of who you want to get the number of bans.
- * @return        The number of bans of the client.
+ * @return        The number of bans of the client, or -1 if not yet available.
  *********************************************************/
 native int SBPP_CheckerGetClientsBans(int iClient);
 
@@ -62,6 +62,14 @@ native int SBPP_CheckerGetClientsBans(int iClient);
  * Get the number of comms bans of a client.
  *
  * @param iClient	The client index of who you want to get the number of comms bans.
- * @return        The number of comms bans of the client.
+ * @return        The number of comms bans of the client, or -1 if not yet available.
  *********************************************************/
 native int SBPP_CheckerGetClientsComms(int iClient);
+
+/**********************************************************
+ * Called when the ban counts for a client are checked.
+ * Use the other natives to retrieve values.
+ *
+ * @param iClient	The client index that was checked.
+ **********************************************************/
+forward void SBPP_CheckerClientBanCheckPost(int iClient);
