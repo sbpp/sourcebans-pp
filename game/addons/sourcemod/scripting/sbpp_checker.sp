@@ -117,26 +117,27 @@ public void OnClientAuthorized(int client, const char[] auth)
 
 	char query[512], ip[30];
 	GetClientIP(client, ip, sizeof(ip));
-	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE (type = 0 AND authid LIKE 'STEAM_%:%s') UNION ALL SELECT COUNT(bid) FROM %s_bans WHERE (type = 1 AND ip = '%s') UNION ALL SELECT COUNT(bid) FROM %s_comms WHERE authid LIKE 'STEAM_%:%s'", g_DatabasePrefix, auth[8], g_DatabasePrefix, ip, g_DatabasePrefix, auth[8]);
+	FormatEx(query, sizeof(query), "SELECT COUNT(bid) FROM %s_bans WHERE (type = 0 AND authid LIKE 'STEAM_%%:%s') UNION ALL SELECT COUNT(bid) FROM %s_bans WHERE (type = 1 AND ip = '%s') UNION ALL SELECT COUNT(bid) FROM %s_comms WHERE authid LIKE 'STEAM_%%:%s'", g_DatabasePrefix, auth[8], g_DatabasePrefix, ip, g_DatabasePrefix, auth[8]);
 	g_DB.Query(OnConnectBanCheck, query, GetClientUserId(client), DBPrio_Low);
 }
 
 public void OnConnectBanCheck(Database db, DBResultSet results, const char[] error, any userid)
 {
 	int client = GetClientOfUserId(userid);
+	int steamIdBanCount = 0;
 	if (!client || results == null || !results.FetchRow())
 		return;
 
-	int steamIdBancount = results.FetchInt(0);
+	steamIdBanCount = results.FetchInt(0);
 
 	int ipBanCount = 0;
-	if (results.FetchRow()){
+	if (results.FetchRow()) {
 		ipBanCount = results.FetchInt(0);
 	}
-	int bancount = steamIdBancount + ipBanCount;
+	int bancount = steamIdBanCount + ipBanCount;
 
 	int commcount = 0;
-	if (results.FetchRow()){
+	if (results.FetchRow()) {
 		commcount = results.FetchInt(0);
 	}
 
