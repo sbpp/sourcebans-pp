@@ -31,7 +31,7 @@ class Auth
         $token = JWT::create($jti, $maxlife, $aid);
         self::updateLastVisit($aid);
 
-        self::setCookie($token->toString(), time() + $maxlife, Host::domain(), Host::isSecure());
+        self::setCookie($token->toString(), time() + $maxlife, Host::cookieDomain(), Host::isSecure());
 
         //Login / Logout requests will trigger GC routine
         self::gc();
@@ -54,7 +54,7 @@ class Auth
 //            self::$dbs->execute();
 //        }
 
-        self::setCookie('', 1, Host::domain(), Host::isSecure());
+        self::setCookie('', 1, Host::cookieDomain(), Host::isSecure());
 
         //Login / Logout requests will trigger GC routine
         self::gc();

@@ -16,6 +16,17 @@ class Host
     /**
      * @return string
      */
+    public static function cookieDomain(): string {
+        $domain = self::domain();
+        if( ($p = strpos($domain, ':')) === false ) {
+            return $domain;
+        }
+        return substr($domain, 0, $p);
+    }
+
+    /**
+     * @return string
+     */
     public static function protocol(): string
     {
         return sprintf('http%s://',  self::isSecure() ? 's' : '');
