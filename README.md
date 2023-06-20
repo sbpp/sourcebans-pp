@@ -40,7 +40,7 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 The easiest way of installing SourceBans++ is to use a [release version](https://github.com/sbpp/sourcebans-pp/releases), since 
 those come bundled with all requiered code dependencies and pre-compiled sourcemod plugins.
 
-The [quickstart](https://sbpp.dev/docs/quickstart/) guide gives you a detailed walktrough of the installation process.
+The [quickstart](https://sbpp.github.io/docs/quickstart/) guide gives you a detailed walktrough of the installation process.
 
 ## How to install the current master branch version
 
@@ -48,12 +48,12 @@ The master branch doesn't include the required dependencies or compiled plugins 
 Here is a quick summary of getting the master branch code up and running.
 
 ### Installing webpanel dependencies
-- Follow the [quickstart](https://sbpp.dev/docs/quickstart/) guide and upload the webpanel files to your web server
+- Follow the [quickstart](https://sbpp.github.io/docs/quickstart/) guide and upload the webpanel files to your web server
 - Install [composer](https://getcomposer.org/) - [Installation Guide](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-macos)
 - Go to the root of your SourceBans++ installation (where index.php is located)
 - run ```composer install```
 
-After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.dev/docs/quickstart/) guide.
+After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.github.io/docs/quickstart/) guide.
 
 ### PHP 8.1 major changes
 ## Upgrade
