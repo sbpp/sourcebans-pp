@@ -168,7 +168,7 @@ class CUserManager
             $this->GetUserArray($aid);
         }
 
-        return $this->admins[$aid][$name];
+        return $this->admins[$aid][$name] ?? null;
     }
 
     /**
