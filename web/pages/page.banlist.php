@@ -483,6 +483,10 @@ while (!$res->EOF) {
     $data['player']      = addslashes($res->fields['player_name']);
     $data['type']        = $res->fields['type'];
     $data['steamid']     = $res->fields['authid'];
+    // Fix #900 - Bad SteamID Format broke the page view, so give them an null SteamID.
+	if (isset($data['steamid']) && !empty($data['steamid']) && !\SteamID\SteamID::isValidID($data['steamid'])) {
+		$data['steamid'] = 'STEAM_0:0:00000000';
+	}
     $data['communityid'] = $res->fields['community_id'];
     $data['steamid3']    = \SteamID\SteamID::toSteam3($data['steamid']);
 
