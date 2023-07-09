@@ -456,6 +456,10 @@ while (!$res->EOF) {
     $data['ban_date']    = Config::time($res->fields['ban_created']);
     $data['player']      = addslashes($res->fields['player_name']);
     $data['steamid']     = $res->fields['authid'];
+    // Fix #906 - Bad SteamID Format broke the page view, so skip them.
+    if (!\SteamID\SteamID::isValidID($data['steamid'])) {
+		break;
+	}
     $data['communityid'] = $res->fields['community_id'];
     $steam2id            = $data['steamid'];
     $steam3parts         = explode(':', $steam2id);
