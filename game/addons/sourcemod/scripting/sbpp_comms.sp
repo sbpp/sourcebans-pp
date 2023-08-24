@@ -1540,11 +1540,6 @@ public void Query_UnBlockSelect(Database db, DBResultSet results, const char[] e
 				dataPack.Reset();
 				dataPack.ReadCell();
 				dataPack.ReadCell();
-				dataPack.ReadCell();
-				#if defined DEBUG
-				PrintToServer("Position: %i", dataPack.Position);
-				#endif
-
 
 				if (g_MuteType[target] > bNot)
 				{
