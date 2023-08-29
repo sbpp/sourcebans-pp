@@ -553,7 +553,7 @@ while (!$res->EOF) {
     $data['mod_icon'] = '<img src="images/games/' . $modicon . '" alt="MOD" border="0" align="absmiddle" />&nbsp;' . $data['type_icon'];
 
     if ($history_count > 1) {
-        $data['prevoff_link'] = $history_count . " " . CreateLinkR("(search)", "index.php?p=commslist&searchText=" . $data['steamid'] . "&Submit");
+        $data['prevoff_link'] = $history_count . " " . CreateLinkR("&nbsp;(search)", "index.php?p=commslist&searchText=" . $data['steamid'] . "&Submit");
     } else {
         $data['prevoff_link'] = "No previous blocks";
     }
