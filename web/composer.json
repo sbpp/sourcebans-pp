@@ -10,9 +10,9 @@
     "support": {
         "issues": "https://github.com/sbpp/sourcebans-pp/issues",
         "forum": "https://forums.alliedmods.net/forumdisplay.php?f=152",
-        "wiki": "https://sbpp.dev/faq/",
+        "wiki": "https://sbpp.github.io/faq/",
         "source": "https://github.com/sbpp/sourcebans-pp",
-        "docs": "https://sbpp.dev/docs/",
+        "docs": "https://sbpp.github.io/docs/",
         "chat": "https://discord.gg/4Bhj6NU"
     },
     "config": {
