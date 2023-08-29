@@ -449,7 +449,7 @@ while (!$res->EOF) {
             $gag_count         = $gag_count - 1;
             break;
         default:
-            $data['type_icon'] = '<img src="images/country/zz.jpg" alt="Unknown block type" border="0" align="absmiddle" />';
+            $data['type_icon'] = '<img src="images/country/zz.png" alt="Unknown block type" border="0" align="absmiddle" />';
             break;
     }
 
