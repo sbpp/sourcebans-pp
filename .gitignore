@@ -51,7 +51,6 @@ Temporary Items
 /web/cache/*.php
 /web/cache/*.tmp
 /web/cache/sessions/sess_*
-*.smx
 
 # VSCode
 .vscode
@@ -62,6 +61,5 @@ Temporary Items
 # Plugin compilation
 build/
 release/
-plugins/
 .sourceknight
 .venv
