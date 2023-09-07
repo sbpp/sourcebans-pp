@@ -7,8 +7,13 @@
 	      <a href="https://sbpp.github.io/" target="_blank" rel="noopener">SourceBans++</a> {$version}{$git}
 	      <span>Powered by <a href="https://www.sourcemod.net" target="_blank" rel="noopener">SourceMod</a></span>
 	    </div>
+		<div class="flex flex-fd:column text:center">
+			<a href="https://www.serverscstrike.com/" target="_blank">
+	    		<img alt="logoSCS" draggable="false" width="72" height="44" style="color:transparent;cursor:pointer" src="https://www.serverscstrike.com/_next/image?url=%2Fscs-logo-min.png&w=96&q=75">
+			</a>
+	    </div>
 	    <div class="flex flex-fd:column text:right">
-	      <span>Copyright © (website name)</span>
+	      <span>Copyright © ServersCStrike</span>
 	      <span><i class="fas fa-code"></i> Original <a href="https://github.com/Rushaway/sourcebans-web-theme-fluent" title="Theme Fluent for SourceBans++" target="_blank" rel="noopener">Theme</a> by <a href="https://axendev.net/" title="Theme by aXenDev" target="_blank" rel="noopener">aXenDev</a></span>
 	    </div>
 	  </div>
