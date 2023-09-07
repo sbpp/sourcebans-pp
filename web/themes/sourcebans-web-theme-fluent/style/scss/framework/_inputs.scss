@@ -1,0 +1,167 @@
+@mixin input-focus($border) {
+    &:focus {
+        border-radius: $border;
+        box-shadow: var(--input--border-focusShadow);
+        border-color: var(--layout_main--color);
+        outline: 0;
+    }
+}
+
+.form {
+    &-full {
+        display: block;
+        width: 100%;
+    }
+
+    &-label {
+        font-size: 1.4rem;
+        display: inline-block;
+
+        &\:bottom {
+            margin-bottom: 5px;
+        }
+
+        &\:left {
+            margin-left: 5px;
+        }
+
+        &\:right {
+            margin-right: 5px;
+        }
+    }
+
+    &-desc {
+        margin-top: 5px;
+        color: var(--input--desc);
+    }
+
+    &-input {
+        border-radius: var(--border--radius);
+        padding: 1.3rem 1.2rem;
+        color: inherit;
+        background-color: var(--box--backgroundColor);
+        border: 1px solid var(--input--border);
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        &:disabled {
+            background-color: var(--input-disabled);
+            cursor: default;
+        }
+
+        @include input-focus(var(--border--radius));
+    }
+
+    &-check {
+        border-radius: var(--border--radius);
+        width: 1.6rem;
+        height: 1.6rem;
+        margin-top: 0.2rem;
+        vertical-align: top;
+        background-color: var(--box--backgroundColor);
+        border: 1px solid var(--input--border);
+        appearance: none;
+        color-adjust: exact;
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out, background-position 0.15s ease-in-out,
+            border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        @include input-focus(var(--border--radius));
+
+        &:checked {
+            background-color: var(--layout_main--color);
+            border-color: var(--layout_main--color);
+
+            &[type='checkbox'] {
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+            }
+        }
+
+        &:not(:disabled) + .form-label {
+            cursor: pointer;
+        }
+
+        &:disabled {
+            background-color: var(--input-disabled);
+            cursor: default;
+        }
+    }
+
+    &-select {
+        border-radius: var(--border--radius);
+        padding: 1.3rem 3.2rem 1.3rem 1.2rem;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+        background-size: 16px 12px;
+        background-color: var(--box--backgroundColor);
+        color: inherit;
+        border: 1px solid var(--input--border);
+        appearance: none;
+        transition: background-color 0.15s ease-in-out, background-position 0.15s ease-in-out,
+            border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        &::-ms-expand {
+            display: none;
+        }
+
+        @include input-focus(var(--border--radius));
+    }
+
+    &-text {
+        border-radius: var(--border--radius);
+        border: 1px solid var(--input--border);
+        background-color: var(--box--backgroundColor);
+        padding: 1.3rem 1.2rem;
+        color: inherit;
+        font-family: inherit;
+        width: 100%;
+        max-width: 100% !important;
+        height: 200px;
+        transition: background-color 0.15s ease-in-out, background-position 0.15s ease-in-out,
+            border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        @include input-focus(var(--border--radius));
+
+        &\:rcron {
+            overflow: auto;
+            height: 250px;
+        }
+    }
+
+    &-file {
+        border-radius: var(--border--radius);
+        padding: 1.3rem 1.2rem;
+        color: inherit;
+        background-color: var(--box--backgroundColor);
+        border: 1px solid var(--input--border);
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        @include input-focus(var(--border--radius));
+    }
+
+    &-radio {
+        border-radius: 50%;
+        width: 1.6rem;
+        height: 1.6rem;
+        margin-top: 0.2rem;
+        vertical-align: top;
+        background-color: var(--box--backgroundColor);
+        border: 1px solid var(--input--border);
+        appearance: none;
+        color-adjust: exact;
+        cursor: pointer;
+        transition: background-color 0.15s ease-in-out, background-position 0.15s ease-in-out,
+            border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+        &:checked {
+            background-color: var(--layout_main--color);
+            border-color: var(--layout_main--color);
+
+            &[type='radio'] {
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='2' fill='%23fff'/%3e%3c/svg%3e");
+            }
+        }
+
+        @include input-focus(50%);
+    }
+}

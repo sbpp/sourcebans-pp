@@ -1,0 +1,134 @@
+.admin {
+    &_nav {
+        background-color: var(--layout_main--color);
+        border-radius: 4px;
+        width: 100%;
+        overflow-x: auto;
+        color: #fff;
+
+        ul {
+            @include reset-list(0, 0);
+
+            li {
+                a {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    color: inherit;
+                    text-align: center;
+                    width: 115px;
+                    height: 100%;
+                    padding: 15px 10px;
+                    transition: background-color 0.2s ease, color 0.2s ease;
+
+                    &:hover {
+                        background-color: rgba(0, 0, 0, 0.2);
+                        border-radius: inherit;
+                        text-decoration: none;
+                    }
+
+                    i {
+                        font-size: 40px;
+                    }
+
+                    span {
+                        margin-top: 10px;
+                    }
+                }
+            }
+        }
+    }
+
+    &_dashboard {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        grid-gap: 10px;
+    }
+
+    &_tab {
+        width: 280px;
+        margin-right: 20px;
+
+        @media screen and (max-width: 980px) {
+            width: 100%;
+        }
+
+        &_mobile {
+            width: 100%;
+        }
+
+        @media screen and (max-width: 980px) {
+            margin-right: 0;
+            margin-bottom: 20px;
+        }
+
+        &_ul {
+            max-height: 100%;
+            transition: max-height 0.3s ease;
+
+            @media screen and (max-width: 980px) {
+                max-height: 0;
+                overflow: hidden;
+            }
+
+            a,
+            button {
+                display: block;
+                width: 100%;
+                padding: 8px 10px;
+                border-radius: 5px;
+                font-family: inherit;
+                font-size: 14px;
+                color: inherit;
+                text-align: left;
+                border: 0;
+                background-color: transparent;
+                transition: none;
+                cursor: pointer;
+
+                &:hover {
+                    background-color: var(--layout_main--color);
+                    color: #fff;
+                    text-decoration: none;
+                }
+            }
+        }
+
+        &_content {
+            width: 100%;
+
+            &_title {
+                padding: 20px;
+                background-color: var(--theme-area_background_light);
+                border-bottom: 1px solid var(--line-hr);
+
+                h2,
+                h3 {
+                    padding: 0;
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: bold;
+                    line-height: 1.2;
+                    letter-spacing: -0.02em;
+                }
+            }
+        }
+    }
+}
+
+.theme_list {
+    display: flex;
+    flex-direction: column;
+    list-style: none;
+
+    li {
+        h3 {
+            margin: 0;
+            padding: 0;
+        }
+
+        &:not(:last-child) {
+            margin-bottom: 10px;
+        }
+    }
+}

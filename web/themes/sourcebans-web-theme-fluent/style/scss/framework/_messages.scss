@@ -1,0 +1,48 @@
+.message {
+    position: relative;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    padding: 16px 16px 16px 44px;
+    color: #fff;
+
+    h3 {
+        padding: 0;
+        margin: 0;
+        font-size: 18px;
+    }
+
+    &::before {
+        content: '\f129';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: bold;
+        position: absolute;
+        top: 16px;
+        left: 16px;
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    &\:info {
+        background-color: var(--message-info);
+    }
+
+    &\:succes {
+        background-color: var(--message-succes);
+
+        &::before {
+            content: '\f00c';
+        }
+    }
+
+    &\:error {
+        background-color: var(--message-error);
+
+        &::before {
+            content: '\f00d';
+        }
+    }
+
+    &\:general {
+        background-color: var(--message-general);
+    }
+}

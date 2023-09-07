@@ -1,0 +1,27 @@
+.error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    flex: 1;
+
+    > i {
+        font-size: 64px;
+        margin-bottom: 10px;
+    }
+
+    &_title {
+        color: var(--theme-text_light);
+        font-size: 16px;
+    }
+
+    &_content {
+        font-size: 24px;
+        font-weight: 500;
+        max-width: 800px;
+    }
+
+    &_code {
+        color: var(--theme-text_light);
+    }
+}

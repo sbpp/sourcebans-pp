@@ -1,0 +1,21 @@
+.text {
+    &\:center {
+        text-align: center;
+    }
+
+    &\:left {
+        text-align: left;
+    }
+
+    &\:right {
+        text-align: right;
+    }
+
+    &\:italic {
+        font-style: italic;
+    }
+
+    &\:bold {
+        font-weight: bold;
+    }
+}

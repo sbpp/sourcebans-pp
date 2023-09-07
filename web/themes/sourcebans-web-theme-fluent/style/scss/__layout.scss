@@ -1,0 +1,180 @@
+.layout {
+    &_container {
+        max-width: var(--container--width);
+        padding: 0 15px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    &_box {
+        box-shadow: var(--box-shadow);
+        border-radius: var(--border--radius);
+        background-color: var(--box--backgroundColor);
+
+        &_title {
+            background-color: var(--layout_main--color);
+            padding: 16px;
+            border-top-left-radius: inherit;
+            border-top-right-radius: inherit;
+            color: #fff;
+
+            h2,
+            h3,
+            h4 {
+                padding: 0;
+                margin: 0;
+                color: #fff;
+                font-size: 16px;
+                font-weight: bold;
+            }
+        }
+
+        &_small {
+            width: 98%;
+            max-width: 450px;
+        }
+
+        &_medium {
+            width: 98%;
+            max-width: 700px;
+        }
+
+        &-child {
+            box-shadow: var(--box-shadow--child);
+            border-radius: 4px;
+        }
+    }
+
+    &_topBar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background-color: var(--backdrop-background);
+        backdrop-filter: var(--backdrop-filter-value);
+        color: var(--backdrop-text_color);
+        box-shadow: 0 0 40px 0 rgba(56, 55, 93, 0.3);
+        padding: 10px 0;
+
+        @media screen and (max-width: 980px) {
+            padding: 0;
+            height: 50px;
+
+            > .layout_container {
+                padding: 0;
+                margin: 0;
+            }
+        }
+
+        &_action {
+            @include reset-list(0, 0);
+            margin-right: auto;
+
+            @media screen and (max-width: 980px) {
+                margin-right: initial;
+            }
+
+            li {
+                font-size: 20px;
+
+                @media screen and (max-width: 980px) {
+                    font-size: 22px;
+                }
+
+                button {
+                    background: transparent !important;
+                    padding: 0;
+                    color: var(--backdrop-text_color);
+                    border: 0;
+                    font-size: inherit;
+                    width: 20px;
+                    cursor: pointer;
+
+                    @media screen and (max-width: 980px) {
+                        @include mobile-button;
+                    }
+
+                    &:focus {
+                        outline: none;
+                    }
+                }
+
+                &:not(:last-child) {
+                    margin-right: 15px;
+
+                    @media screen and (max-width: 980px) {
+                        margin-right: 0;
+                    }
+                }
+            }
+        }
+
+        &_userBar {
+            @include reset-list(0, 0);
+        }
+    }
+}
+
+.padding {
+    padding: 20px;
+
+    &\:half {
+        padding: 10px;
+    }
+}
+
+.margin {
+    margin: 20px;
+
+    &\:half {
+        margin: 10px;
+    }
+
+    &-top {
+        margin-top: 20px;
+
+        &\:half {
+            margin-top: 10px;
+        }
+    }
+
+    &-bottom {
+        margin-bottom: 20px;
+
+        &\:half {
+            margin-bottom: 10px;
+        }
+    }
+
+    &-left {
+        margin-left: 20px;
+
+        &\:half {
+            margin-left: 10px;
+        }
+    }
+
+    &-right {
+        margin-right: 20px;
+
+        &\:half {
+            margin-right: 10px;
+        }
+    }
+}
+
+.listtable_1_unbanned {
+    background-color: var(--table-unbanned);
+    color: var(--table-unbanned-text);
+}
+
+.listtable_1_permanent {
+    background-color: var(--table-permanent);
+    color: var(--table-permanent-text);
+}
+
+.listtable_1_banned {
+    background-color: var(--table-banned);
+    color: var(--table-banned-text);
+}

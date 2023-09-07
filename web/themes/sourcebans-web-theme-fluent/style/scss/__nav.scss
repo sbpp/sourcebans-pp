@@ -1,0 +1,222 @@
+.nav {
+    width: 255px;
+    background-color: var(--box--backgroundColor);
+
+    ul {
+        @include reset-list(0, 0);
+
+        li {
+            &.active {
+                border-left: 5px solid var(--layout_main--color);
+                font-weight: bold;
+            }
+
+            a {
+                display: block;
+                padding: 15px 25px;
+                color: var(--theme-text_light);
+                position: relative;
+                z-index: 1;
+                overflow: hidden;
+
+                &::before {
+                    content: '\f0c9';
+                    font-family: 'Font Awesome 6 Free';
+                    font-size: 14px;
+                    font-weight: 700;
+                    margin-right: 3px;
+                }
+
+                &[data-nav='home']::before {
+                    content: '\f015';
+                }
+
+                &[data-nav='servers']::before {
+                    content: '\f233';
+                }
+
+                &[data-nav='banlist']::before {
+                    content: '\f05e';
+                }
+
+                &[data-nav='commslist']::before {
+                    content: '\f539';
+                }
+
+                &[data-nav='submit']::before {
+                    content: '\f11e';
+                }
+
+                &[data-nav='protest']::before {
+                    content: '\f4fd';
+                }
+
+                &[data-nav='admin']::before {
+                    content: '\f023';
+                }
+
+                &:hover {
+                    color: var(--theme-text_light-hover);
+                    text-decoration: none;
+
+                    &::after {
+                        transform: scaleX(1);
+                        transition-timing-function: ease;
+                    }
+                }
+
+                &::after {
+                    content: '';
+                    position: absolute;
+                    z-index: -1;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: var(--layout_main--color_0_15);
+                    transform: scaleX(0);
+                    height: 100%;
+                    transition-property: transform;
+                    transition-duration: 0.3s;
+                    transition-timing-function: ease-out;
+                    transform-origin: left;
+                }
+            }
+        }
+    }
+
+    &_mobile {
+        &.show {
+            .nav_mobile_content {
+                transform: translateX(0);
+            }
+
+            .nav_mobile_background {
+                display: block;
+            }
+
+            .nav_mobile_close {
+                animation: fadeIn 0.2s 0.5s ease-out forwards;
+            }
+        }
+
+        &_content {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1100;
+            width: 340px;
+            max-width: calc(100% - 50px);
+            background-color: var(--box--backgroundColor);
+            box-shadow: 0px 0px 25px rgba(0, 0, 0, 0.2);
+            transform: translateX(calc(100% + 45px));
+            transition: transform 0.3s ease;
+            overflow: auto;
+        }
+
+        &_tab {
+            &_nav {
+                ul {
+                    @include reset-list(0, 0);
+
+                    li {
+                        &.active {
+                            font-weight: bold;
+                        }
+
+                        a {
+                            display: block;
+                            padding: 12px 20px;
+                            color: var(--theme-text_light);
+
+                            &:hover {
+                                text-decoration: none;
+                            }
+
+                            &::before {
+                                content: '\f0c9';
+                                font-family: 'Font Awesome 6 Free';
+                                font-size: 14px;
+                                font-weight: 700;
+                                margin-right: 3px;
+                            }
+
+                            &[data-nav='home']::before {
+                                content: '\f015';
+                            }
+
+                            &[data-nav='servers']::before {
+                                content: '\f233';
+                            }
+
+                            &[data-nav='banlist']::before {
+                                content: '\f05e';
+                            }
+
+                            &[data-nav='commslist']::before {
+                                content: '\f539';
+                            }
+
+                            &[data-nav='submit']::before {
+                                content: '\f11e';
+                            }
+
+                            &[data-nav='protest']::before {
+                                content: '\f4fd';
+                            }
+
+                            &[data-nav='admin']::before {
+                                content: '\f023';
+                            }
+                        }
+                    }
+                }
+            }
+
+            &_top {
+                background-color: var(--box--backgroundColor);
+                position: sticky;
+                top: 0;
+                border-bottom: 1px solid var(--line-hr);
+            }
+        }
+
+        &_background {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        &_open {
+            @include mobile-button;
+            font-size: 22px;
+            background: transparent;
+            border: 0;
+            color: var(--backdrop-text_color);
+            cursor: pointer;
+        }
+
+        &_close {
+            background: var(--box--backgroundColor);
+            width: 35px;
+            height: 35px;
+            border-radius: 40px;
+            color: var(--backdrop-text_color);
+            text-align: center;
+            font-size: 22px;
+            position: fixed;
+            opacity: 0;
+            top: 5px;
+            right: 345px;
+            z-index: 2000;
+            border: 0;
+            cursor: pointer;
+        }
+    }
+}

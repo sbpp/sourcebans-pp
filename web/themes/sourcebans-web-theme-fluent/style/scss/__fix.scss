@@ -1,0 +1,59 @@
+#admin-page-content {
+    flex: 1;
+    width: 100%;
+    box-shadow: var(--box-shadow);
+    border-radius: var(--border--radius);
+    background-color: var(--box--backgroundColor);
+
+    > .tabcontent > .admin_tab_content_title {
+        border-radius: var(--border--radius) var(--border--radius) 0 0;
+    }
+}
+
+#tabsWrapper {
+    #tabs {
+        ul {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            @include reset-list(0, 10px 10px 0 10px);
+            background-color: var(--layout_main--color);
+            border-radius: var(--border--radius) var(--border--radius) 0 0;
+            color: var(--theme-text);
+
+            li {
+                flex: 1;
+                text-align: center;
+                height: 100%;
+
+                &.active a {
+                    background-color: var(--theme-area_background_light);
+                    font-weight: bold;
+                    color: inherit;
+                }
+
+                &:not(.active) a:hover {
+                    background-color: rgba(255, 255, 255, 0.15);
+                }
+
+                a {
+                    display: block;
+                    width: 100%;
+                    color: #fff;
+                    text-decoration: none;
+                    line-height: 3;
+                    font-size: 14px;
+                    border-radius: var(--border--radius) var(--border--radius) 0 0;
+                }
+            }
+        }
+    }
+}
+
+.test {
+    height: 100% !important;
+}
+
+.ok {
+    background-color: var(--button-success);
+}

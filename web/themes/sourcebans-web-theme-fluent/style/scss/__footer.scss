@@ -1,0 +1,11 @@
+.footer {
+    background-color: var(--box--backgroundColor);
+
+    > .layout_container {
+        padding: 20px 15px;
+    }
+
+    a {
+        font-weight: bold;
+    }
+}

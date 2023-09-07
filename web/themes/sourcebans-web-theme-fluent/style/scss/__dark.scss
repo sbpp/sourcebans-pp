@@ -1,0 +1,28 @@
+[data-theme='dark'] {
+    &:root {
+        --theme-background: #0f1015;
+        --theme-text: #efefef;
+        --theme-text_light: #bdbdbd;
+        --theme-text_light-hover: #fff;
+        --theme-area_background_light: #171821;
+        --button--background-hover: rgba(255, 255, 255, 0.08);
+
+        --button-light: #22242f;
+        --button-light-text: #fff;
+
+        --box--backgroundColor: #13141b;
+        --box-shadow: none;
+        --box-shadow--child: 0 0 0 1px rgba(147, 161, 181, 0.2), 0 0 40px 0 transparent;
+
+        --backdrop-background: rgba(19, 20, 27, 0.65);
+        --backdrop-text_color: #fff;
+        --input--desc: #98a3ad;
+        --input-disabled: #3e4050;
+
+        --line-hr: rgba(255, 255, 255, 0.1);
+    }
+
+    .layout_topBar .layout_topBar_action li #user_action_change_dark i {
+        color: #ffe200;
+    }
+}
