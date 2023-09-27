@@ -278,6 +278,8 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
             $steamloginopt = (isset($_POST['enable_steamlogin']) && $_POST['enable_steamlogin'] == "on" ? 1 : 0);
 
             $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] == "on" ? 1 : 0);
+	
+            $gametracker = (isset($_POST['enable_gametracker']) && $_POST['enable_gametracker'] == "on" ? 1 : 0);
 
             $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
 											(" . (int) $exportpub . ", 'config.exportpublic'),
@@ -286,6 +288,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 											(" . (int) $friendsban . ", 'config.enablefriendsbanning'),
 											(" . (int) $adminrehash . ", 'config.enableadminrehashing'),
 											(" . (int) $publiccomments . ", 'config.enablepubliccomments'),
+											(" . (int) $gametracker . ", 'config.enablegametracker'),
 											(" . (int) $steamloginopt . ", 'config.enablesteamlogin')");
 
 
@@ -369,6 +372,7 @@ $('enable_friendsbanning').checked = <?=(int)Config::getBool('config.enablefrien
 $('enable_adminrehashing').checked = <?=(int)Config::getBool('config.enableadminrehashing');?>;
 $('enable_steamlogin').checked = <?=(int)Config::getBool('config.enablesteamlogin');?>;
 $('enable_publiccomments').checked = <?=(int)Config::getBool('config.enablepubliccomments');?>;
+$('enable_gametracker').checked = <?=(int)Config::getBool('config.enablegametracker');?>;
 $('mail_verify_peer').checked = <?=(int)Config::getBool('smtp.verify_peer');?>;
 
 <?php
