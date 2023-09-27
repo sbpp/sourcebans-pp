@@ -43,6 +43,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('config.enablesubmit', '1'),
 ('config.exportpublic', '0'),
 ('config.enablepubliccomments', '0'),
+('config.enablegametracker', '0'),
 ('config.enablekickit', '1'),
 ('config.dateformat', 'Y-m-d H:i:s'),
 ('config.theme', 'default'),
