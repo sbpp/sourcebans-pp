@@ -17,8 +17,18 @@ class VanityURL
     {
         $endpoint = "https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=$steamApiKey&vanityurl=$url";
 
-        //TODO: Rewrite with curl
-        $data = json_decode(file_get_contents($endpoint), true);
+        $curl = curl_init($endpoint);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($curl);
+
+        if (curl_errno($curl)) {
+            curl_close($curl);
+            return false;
+        }
+
+        curl_close($curl);
+        $data = json_decode($response, true);
+
         if ($data['response']['success'] === 1) {
             return $data['response']['steamid'];
         }
