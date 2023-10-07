@@ -40,7 +40,7 @@
                                                 <br />
                                                 <div align='center'>
                                                     <p style="font-size: 13px;">{$server.ip}:{$server.port}</p>
-                                                    <input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0px;' id='button' value='Join game' />
+                                                    <input type='submit' onclick="document.location = 'steam://connect/{$server.dns}:{$server.port}'" name='button' class='btn game' style='margin:0px;' id='button' value='Join game' />
                                                     <input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', false);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' />
                                                 </div>
                                                 <br />
@@ -52,7 +52,7 @@
                                     <h2 style="color: #333;">No players in the server</h2><br />
                                     <div align='center'>
                                         <p style="font-size: 13px;">{$server.ip}:{$server.port}</p>
-                                        <input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0;' id='button' value='Join game' />
+                                        <input type='submit' onclick="document.location = 'steam://connect/{$server.dns}:{$server.port}'" name='button' class='btn game' style='margin:0;' id='button' value='Join game' />
                                         <input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', false);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' /><br /><br />
                                     </div>
                                 </div>
