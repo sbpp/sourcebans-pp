@@ -21,10 +21,10 @@
 		"hu"			"Figyelem: \"{1:N}\" van {2} korábbi kommunikációs tiltása{3}."
 		"chi"			"警告: \"{1:N}\" 之前有 {2} 次禁言{3}."
 		"pl"			"Uwaga: \"{1:N}\" posiada {2} poprzednie blokady czatu{3}."
-		"pt"			"Aviso: \"{1:N}\" tem {2} bloqueio{3} de comunicação registrado{3}."
+		"pt"			"Aviso: \"{1:N}\" tem {2} bloqueio{3} de comunicação registrado."
 		"de"			"Warnung: \"{1:N}\" hatte bisher {2} Sprachchat ban{3}."
 		"tr"			"Uyarı: \"{1:N}\" daha önceden {2} defa iletişim yasağı aldı{3}."
-		"fr"			"Attention: \"{1:N}\" a déjà reçu {2} blocage{3} de communication{3}."
+		"fr"			"Attention: \"{1:N}\" a déjà reçu {2} blocage{3} de communication."
 	}
 	"Ban and Comm Warning"
 	{
@@ -34,9 +34,9 @@
 		"hu"			"Figyelem: \"{1:N}\" van {2} korábbi kitiltása és {4} korábbi kommunikációs tiltása{5}."
 		"chi"			"警告: \"{1:N}\" 之前有 {2} 次封禁和 {4} 次禁言{5}."
 		"pl"			"Uwaga: \"{1:N}\" posiada {2} poprzednie bany{3} oraz {4} poprzednie blokady czatu{5}."
-		"pt"			"Aviso: \"{1:N}\" tem {2} banimento{3} e {4} bloqueio{5} de comunicação registrado{5}."
+		"pt"			"Aviso: \"{1:N}\" tem {2} banimento{3} e {4} bloqueio{5} de comunicação registrado."
 		"de"			"Warnung: \"{1:N}\" hatte bisher {2} ban{3} und {4} Sprachchat ban{5}."
 		"tr"			"Uyarı: \"{1:N}\" daha önceden {2} defa yasaklandı ve {4} defa iletişim yasağı aldı{5}."
-		"fr"			"Attention: \"{1:N}\" a déjà reçu {2} ban{3} et {4} blocage{5} de communication{5}."
+		"fr"			"Attention: \"{1:N}\" a déjà reçu {2} ban{3} et {4} blocage{5} de communication."
 	}
 }
