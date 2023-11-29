@@ -134,7 +134,7 @@ class CUserManager
         }
 
         if (is_numeric($flags)) {
-            return ($this->admins[$aid]['extraflags'] & $flags) != 0 ? true : false;
+            return ((int)$this->admins[$aid]['extraflags'] & (int)$flags) != 0 ? true : false;
         }
 
         for ($i=0; $i < strlen($this->admins[$aid]['srv_flags']); $i++) {
