@@ -71,7 +71,7 @@
 
     "SM_ROOT": {
         "value": "z",
-        "display": "Full Admin"
+        "display": "ALL Permissions (Root)"
     },
 
     "SM_CUSTOM1": {
@@ -91,7 +91,7 @@
 
     "SM_CUSTOM4": {
         "value": "r",
-        "display": "Custom flag 4"
+        "display": "Custom Flag 4"
     },
 
     "SM_CUSTOM5": {
