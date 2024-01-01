@@ -39,7 +39,10 @@
                                                 <br />
                                                 <br />
                                                 <div align='center'>
-                                                    <p style="font-size: 13px;">{$server.ip}:{$server.port}</p>
+                                                    <p style="font-size: 13px;">{$server.ip}:{$server.port}</p> 
+                                                    {if (Config::getBool('config.enablegametracker')) }
+                                                    <div style='padding-right:13px;'<a href="https://www.gametracker.com/server_info/{$server.ip}:{$server.port}/" target="_blank"><img src="https://cache.gametracker.com/server_info/{$server.ip}:{$server.port}/b_350_20_eaebeb_eaebeb_2a2723_eaebeb.png" border="0" width="350" height="20" alt=""/></a></div>
+                                                    {/if}
                                                     <input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0px;' id='button' value='Join game' />
                                                     <input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', false);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' />
                                                 </div>
@@ -51,7 +54,10 @@
                                 <div id="noplayer_{$server.sid}" name="noplayer_{$server.sid}" style="display:none;"><br />
                                     <h2 style="color: #333;">No players in the server</h2><br />
                                     <div align='center'>
-                                        <p style="font-size: 13px;">{$server.ip}:{$server.port}</p>
+                                        <p style="font-size: 13px;">{$server.ip}:{$server.port}</p> 
+                                        {if (Config::getBool('config.enablegametracker')) }
+                                        <div style='padding-right:13px;'><a href="https://www.gametracker.com/server_info/{$server.ip}:{$server.port}/" target="_blank"><img src='https://cache.gametracker.com/server_info/{$server.ip}:{$server.port}/banner_560x95.png'/></a></div>
+                                        {/if}
                                         <input type='submit' onclick="document.location = 'steam://connect/{$server.ip}:{$server.port}'" name='button' class='btn game' style='margin:0;' id='button' value='Join game' />
                                         <input type='button' onclick="ShowBox('Reloading..','<b>Refreshing the Serverdata...</b><br><i>Please Wait!</i>', 'blue', '', false);document.getElementById('dialog-control').setStyle('display', 'none');xajax_RefreshServer({$server.sid});" name='button' class='btn refresh' style='margin:0;' id='button' value='Refresh' /><br /><br />
                                     </div>

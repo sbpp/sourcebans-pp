@@ -83,6 +83,21 @@
 
         <!-- end public comments -->
 
+        <!-- gametracker support -->
+
+
+        <tr>
+            <td valign="top"><div class="rowdesc">{help_icon title="Enable GameTracker Support" message="Check this box, if you want to enable GameTracker support."}Enable GameTracker Support</div></td>
+            <td>
+                <div align="left">
+                    <input type="checkbox" name="enable_gametracker" id="enable_gametracker" />
+                </div>
+                <div id="enable_gametracker.msg" class="badentry"></div>
+            </td>
+        </tr>
+
+        <!-- end gametracker support -->
+
 
         <tr>
             <td colspan="2" align="center">
