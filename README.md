@@ -64,7 +64,7 @@ Once done, delete it, as it may output sensitive information.
 
 #### Smarty
 #### Updated Smarty version dropped support for the `{php}` tag. 
-Custom themes must to use the new [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/php81/web/includes/SmartyCustomFunctions.php#L54) tag.
+Custom themes must use the new [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/php81/web/includes/SmartyCustomFunctions.php#L54) tag.
 
 #### JWT Update
 *If you ran the installer or upgrade file, this step is unecessary.* \
