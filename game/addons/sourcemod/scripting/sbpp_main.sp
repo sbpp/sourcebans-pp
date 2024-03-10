@@ -450,6 +450,11 @@ public Action CommandBan(int client, int args)
 	GetCmdArg(2, buffer, sizeof(buffer));
 
 	int time = StringToInt(buffer);
+	if (time < 0)
+	{
+		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
+		return Plugin_Handled;
+	}
 	
 	if (!StringToIntEx(buffer, time))
 	{
@@ -547,6 +552,12 @@ public Action CommandBanIp(int client, int args)
 	char adminIp[24], adminAuth[64];
 
 	int minutes = StringToInt(time);
+
+	if (time < 0)
+	{
+		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
+		return Plugin_Handled;
+	}
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
@@ -680,6 +691,12 @@ public Action CommandAddBan(int client, int args)
 	char adminIp[24], adminAuth[64];
 
 	int  minutes = StringToInt(time);
+
+	if (time < 0)
+	{
+		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
+		return Plugin_Handled;
+	}
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
