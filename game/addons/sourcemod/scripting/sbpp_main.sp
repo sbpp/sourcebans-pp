@@ -553,7 +553,7 @@ public Action CommandBanIp(int client, int args)
 
 	int minutes = StringToInt(time);
 
-	if (time < 0)
+	if (minutes < 0)
 	{
 		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
 		return Plugin_Handled;
@@ -692,7 +692,7 @@ public Action CommandAddBan(int client, int args)
 
 	int  minutes = StringToInt(time);
 
-	if (time < 0)
+	if (minutes < 0)
 	{
 		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
 		return Plugin_Handled;
