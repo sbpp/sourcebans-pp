@@ -450,13 +450,8 @@ public Action CommandBan(int client, int args)
 	GetCmdArg(2, buffer, sizeof(buffer));
 
 	int time = StringToInt(buffer);
-	if (time < 0)
-	{
-		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
-		return Plugin_Handled;
-	}
 	
-	if (!StringToIntEx(buffer, time))
+	if (!StringToIntEx(buffer, time) || time < 0)
 	{
 		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
 		return Plugin_Handled;
