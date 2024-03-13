@@ -451,7 +451,7 @@ public Action CommandBan(int client, int args)
 
 	int time = StringToInt(buffer);
 	
-	if (!StringToIntEx(buffer, time))
+	if (!StringToIntEx(buffer, time) || time < 0)
 	{
 		ReplyToCommand(client, "%sUsage: sm_ban <#userid|name> <time|0> [reason]", Prefix);
 		return Plugin_Handled;
@@ -545,8 +545,13 @@ public Action CommandBanIp(int client, int args)
 	}
 
 	char adminIp[24], adminAuth[64];
-
 	int minutes = StringToInt(time);
+
+	if (!StringToIntEx(time, minutes) || minutes < 0)
+	{
+		ReplyToCommand(client, "%sUsage: sm_banip <#userid|name> <time> [reason]", Prefix);
+		return Plugin_Handled;
+	}
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
@@ -678,8 +683,13 @@ public Action CommandAddBan(int client, int args)
 	}
 
 	char adminIp[24], adminAuth[64];
+	int minutes = StringToInt(time);
 
-	int  minutes = StringToInt(time);
+	if (!StringToIntEx(time, minutes) || minutes < 0)
+	{
+		ReplyToCommand(client, "%sUsage: sm_addban <time> <steamid> [reason]", Prefix);
+		return Plugin_Handled;
+	}
 
 	if (!minutes && client && !(CheckCommandAccess(client, "sm_unban", ADMFLAG_UNBAN | ADMFLAG_ROOT)))
 	{
