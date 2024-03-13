@@ -545,12 +545,11 @@ public Action CommandBanIp(int client, int args)
 	}
 
 	char adminIp[24], adminAuth[64];
-
 	int minutes = StringToInt(time);
 
-	if (minutes < 0)
+	if (!StringToIntEx(time, minutes) || minutes < 0)
 	{
-		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
+		ReplyToCommand(client, "%sUsage: sm_banip <#userid|name> <time> [reason]", Prefix);
 		return Plugin_Handled;
 	}
 
@@ -684,12 +683,11 @@ public Action CommandAddBan(int client, int args)
 	}
 
 	char adminIp[24], adminAuth[64];
+	int minutes = StringToInt(time);
 
-	int  minutes = StringToInt(time);
-
-	if (minutes < 0)
+	if (!StringToIntEx(time, minutes) || minutes < 0)
 	{
-		ReplyToCommand(client, "%sInvalid duration. Duration must be 0 or higher", Prefix);
+		ReplyToCommand(client, "%sUsage: sm_addban <time> <steamid> [reason]", Prefix);
 		return Plugin_Handled;
 	}
 
