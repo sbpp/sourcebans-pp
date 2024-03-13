@@ -29,7 +29,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.8.0"
+#define VERSION "1.9.0"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
@@ -39,8 +39,9 @@ char g_DatabasePrefix[10] = "sb";
 SMCParser g_ConfigParser;
 Database g_DB;
 
-int g_iBanCounts[MAXPLAYERS + 1];
-int g_iCommsCounts[MAXPLAYERS + 1];
+int g_iBanCounts[MAXPLAYERS + 1] = {-1, ...};
+int g_iCommsCounts[MAXPLAYERS + 1] = {-1, ...};
+GlobalForward g_fwdClientBanCheckPost;
 
 
 public Plugin myinfo =
@@ -61,6 +62,8 @@ public void OnPluginStart()
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_GENERIC, LISTBANS_USAGE);
 	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_GENERIC, LISTCOMMS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
+	
+	g_fwdClientBanCheckPost = CreateGlobalForward("SBPP_CheckerClientBanCheckPost", ET_Ignore, Param_Cell);
 
 	Database.Connect(OnDatabaseConnected, "sourcebans");
 }
@@ -104,6 +107,12 @@ public int Native_SBCheckerGetClientsComms(Handle plugin, int numParams)
 {
 	int client = GetNativeCell(1);
 	return g_iCommsCounts[client];
+}
+
+public void OnClientDisconnect_Post(int client)
+{
+	g_iBanCounts[client] = -1;
+	g_iCommsCounts[client] = -1;
 }
 
 public void OnClientAuthorized(int client, const char[] auth)
@@ -153,6 +162,10 @@ public void OnConnectBanCheck(Database db, DBResultSet results, const char[] err
 	else if ( bancount ) {
 		PrintToBanAdmins("%s%t", Prefix, "Ban Warning", client, bancount, ((bancount > 1 || bancount == 0) ? "s":""));
 	}
+	
+	Call_StartForward(g_fwdClientBanCheckPost);
+	Call_PushCell(client);
+	Call_Finish();
 }
 
 public Action OnListSourceBansCmd(int client, int args)
