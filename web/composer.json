@@ -19,7 +19,7 @@
         "vendor-dir": "includes/vendor"
     },
     "require": {
-        "lcobucci/jwt": "~4.2.1",
+        "lcobucci/jwt": "~5.2.0",
         "maxmind-db/reader": "~1.0",
         "smarty/smarty": "~v4.3.0",
         "xpaw/php-source-query-class": "dev-master",
