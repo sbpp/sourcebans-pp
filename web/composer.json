@@ -21,7 +21,7 @@
     "require": {
         "lcobucci/jwt": "~4.2.1",
         "maxmind-db/reader": "~1.0",
-        "smarty/smarty": "~v4.3.0",
+        "smarty/smarty": "~v4.4.1",
         "xpaw/php-source-query-class": "dev-master",
         "adodb/adodb-php": "5.22.7",
         "symfony/mailer": "^6.0",
