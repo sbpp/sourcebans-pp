@@ -43,7 +43,6 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.8.1"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 //GLOBAL DEFINES
@@ -134,10 +133,12 @@ int
 
 SMCParser ConfigParser;
 
-Handle 
-	g_hFwd_OnPlayerPunished
-	, g_hFwd_OnPlayerUnpunished
-	, g_hGagExpireTimer[MAXPLAYERS + 1] = { null, ... }
+GlobalForward g_hFwd_StatusOK
+			, g_hFwd_StatusNotOK
+			, g_hFwd_OnPlayerPunished
+			, g_hFwd_OnPlayerUnpunished;
+
+Handle g_hGagExpireTimer[MAXPLAYERS + 1] = { null, ... }
 	, g_hMuteExpireTimer[MAXPLAYERS + 1] = { null, ... };
 
 bType g_MuteType[MAXPLAYERS + 1];
@@ -170,7 +171,7 @@ public Plugin myinfo =
 	name = "SourceBans++: SourceComms",
 	author = "Alex, SourceBans++ Dev Team",
 	description = "Advanced punishments management for the Source engine in SourceBans style",
-	version = PLUGIN_VERSION,
+	version = SBPPComms_VERSION,
 	url = "https://sbpp.github.io"
 };
 
@@ -182,6 +183,9 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("SourceComms_SetClientGag", Native_SetClientGag);
 	CreateNative("SourceComms_GetClientMuteType", Native_GetClientMuteType);
 	CreateNative("SourceComms_GetClientGagType", Native_GetClientGagType);
+
+	g_hFwd_StatusOK = CreateGlobalForward("SourceComms_OnPluginOK", ET_Ignore);
+	g_hFwd_StatusNotOK = CreateGlobalForward("SourceComms_OnPluginNotOK", ET_Ignore);
 
 	g_hFwd_OnPlayerPunished = CreateGlobalForward("SourceComms_OnBlockAdded", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hFwd_OnPlayerUnpunished = CreateGlobalForward("SourceComms_OnBlockRemoved", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
@@ -203,7 +207,7 @@ public void OnPluginStart()
 	CvarPort = FindConVar("hostport");
 	g_hServersWhiteList = new ArrayList();
 
-	CreateConVar("sourcecomms_version", PLUGIN_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
+	CreateConVar("sourcecomms_version", SBPPComms_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
 	AddCommandListener(CommandCallback, "sm_gag");
 	AddCommandListener(CommandCallback, "sm_mute");
 	AddCommandListener(CommandCallback, "sm_silence");
@@ -222,7 +226,7 @@ public void OnPluginStart()
 	#endif
 
 	#if defined DEBUG
-	PrintToServer("Sourcecomms plugin loading. Version %s", PLUGIN_VERSION);
+	PrintToServer("Sourcecomms plugin loading. Version %s", SBPPComms_VERSION);
 	#endif
 
 	// Catch config error
@@ -246,6 +250,24 @@ public void OnPluginStart()
 	}
 
 	g_bLate = false;
+}
+
+public void OnAllPluginsLoaded()
+{
+	SendForward_Available();
+}
+
+public void OnPluginPauseChange(bool pause)
+{
+	if (pause)
+		SendForward_NotAvailable();
+	else
+		SendForward_Available();
+}
+
+public void OnPluginEnd()
+{
+	SendForward_NotAvailable();
 }
 
 public void OnLibraryRemoved(const char[] name)
@@ -3503,4 +3525,17 @@ public int Native_GetClientGagType(Handle hPlugin, int numParams)
 
 	return g_GagType[target];
 }
+
+stock void SendForward_Available()
+{
+	Call_StartForward(g_hFwd_StatusOK);
+	Call_Finish();
+}
+
+stock void SendForward_NotAvailable()
+{
+	Call_StartForward(g_hFwd_StatusNotOK);
+	Call_Finish();
+}
+
 //Yarr!

@@ -29,6 +29,12 @@
 #endif
 #define _sourcecomms_included
 
+#define SBPPComms_VERSION_MAJOR 1
+#define SBPPComms_VERSION_MINOR 8
+#define SBPPComms_VERSION_PATCH 2
+
+#define SBPPComms_VERSION "1.8.2"
+
 /**
  * @section Int definitions for punishments types.
  */
@@ -97,6 +103,21 @@ native bType SourceComms_GetClientMuteType(int client);
 native bType SourceComms_GetClientGagType(int client);
 
 /**
+ * Called when the plugin becomes available.
+ * 
+ * @noreturn
+ */
+forward void SourceComms_OnPluginOK();
+
+/**
+ * Called when the plugin becomes unavailable.
+ * This can happen when the plugin is paused or unloaded.
+ * 
+ * @noreturn
+ */
+forward void SourceComms_OnPluginNotOK();
+
+/**
  * Called when added communication block for player.
  *
  * @param client	The client index of the admin who is blocking the client.
@@ -134,5 +155,4 @@ public void __pl_sourcecomms_SetNTVOptional()
 	MarkNativeAsOptional("SourceComms_SetClientGag");
 	MarkNativeAsOptional("SourceComms_GetClientMuteType");
 	MarkNativeAsOptional("SourceComms_GetClientGagType");
-
 }
