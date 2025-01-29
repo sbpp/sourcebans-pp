@@ -29,7 +29,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.8.3"
+#define VERSION "1.8.4"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
@@ -95,7 +95,7 @@ public void OnDatabaseConnected(Database db, const char[] error, any data)
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	RegPluginLibrary("sourcebans++");
+	RegPluginLibrary("sourcechecker++");
 
 	CreateNative("SBPP_CheckerGetClientsBans", Native_SBCheckerGetClientsBans);
 	CreateNative("SBPP_CheckerGetClientsComms", Native_SBCheckerGetClientsComms);
