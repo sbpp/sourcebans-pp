@@ -35,6 +35,8 @@
 
 #pragma newdecls required
 
+#define SB_VERSION "1.8.2"
+
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
 #endif
@@ -118,13 +120,11 @@ int
 
 SMCParser ConfigParser;
 
-GlobalForward g_hFwd_StatusOK
-			, g_hFwd_StatusNotOK
-			, g_hFwd_OnBanAdded
-			, g_hFwd_OnReportAdded
-			, g_hFwd_OnClientPreAdminCheck;
-
-Handle PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
+Handle
+	g_hFwd_OnBanAdded
+	, g_hFwd_OnReportAdded
+	, g_hFwd_OnClientPreAdminCheck
+	, PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
 
 DataPack PlayerDataPack[MAXPLAYERS + 1] =  { null, ... };
 
@@ -151,9 +151,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("SBBanPlayer", Native_SBBanPlayer);
 	CreateNative("SBPP_BanPlayer", Native_SBBanPlayer);
 	CreateNative("SBPP_ReportPlayer", Native_SBReportPlayer);
-
-	g_hFwd_StatusOK = CreateGlobalForward("SBPP_OnPluginOK", ET_Ignore);
-	g_hFwd_StatusNotOK = CreateGlobalForward("SBPP_OnPluginNotOK", ET_Ignore);
 
 	g_hFwd_OnBanAdded = CreateGlobalForward("SBPP_OnBanPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_String);
 	g_hFwd_OnReportAdded = CreateGlobalForward("SBPP_OnReportPlayer", ET_Ignore, Param_Cell, Param_Cell, Param_String);
@@ -263,8 +260,6 @@ public void OnLibraryAdded(const char[] name)
 
 public void OnAllPluginsLoaded()
 {
-	SendForward_Available();
-
 	TopMenu topmenu;
 	#if defined DEBUG
 	LogToFile(logFile, "OnAllPluginsLoaded()");
@@ -274,19 +269,6 @@ public void OnAllPluginsLoaded()
 	{
 		OnAdminMenuReady(topmenu);
 	}
-}
-
-public void OnPluginPauseChange(bool pause)
-{
-	if (pause)
-		SendForward_NotAvailable();
-	else
-		SendForward_Available();
-}
-
-public void OnPluginEnd()
-{
-	SendForward_NotAvailable();
 }
 
 public void OnConfigsExecuted()
@@ -2845,18 +2827,6 @@ stock void AccountForLateLoading()
 			OnClientConnected(i);
 		}
 	}
-}
-
-stock void SendForward_Available()
-{
-	Call_StartForward(g_hFwd_StatusOK);
-	Call_Finish();
-}
-
-stock void SendForward_NotAvailable()
-{
-	Call_StartForward(g_hFwd_StatusNotOK);
-	Call_Finish();
 }
 
 //Yarr!

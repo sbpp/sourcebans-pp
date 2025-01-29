@@ -29,12 +29,6 @@
 #endif
 #define _sourcebanschecker_included
 
-#define SBPPChecker_V_MAJOR   1
-#define SBPPChecker_V_MINOR   8
-#define SBPPChecker_V_PATCH   4
-
-#define SBPPChecker_VERSION "1.8.4"
-
 public SharedPlugin __pl_sourcebanschecker =
 {
 	name = "sourcebans++",
@@ -89,18 +83,3 @@ native int SBPP_CheckerGetClientsMutes(int iClient);
  * @return        The number of gags of the client.
  *********************************************************/
 native int SBPP_CheckerGetClientsGags(int iClient);
-
-/*********************************************************
- * Called when the plugin becomes available.
- *
- * @noreturn
- *********************************************************/
-forward void SBPPChecker_OnPluginOK();
-
-/*********************************************************
- * Called when the plugin becomes unavailable.
- * This can happen when the plugin is paused or unloaded.
- *
- * @noreturn
- *********************************************************/
-forward void SBPPChecker_OnPluginNotOK();

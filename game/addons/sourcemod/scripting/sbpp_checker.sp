@@ -28,8 +28,8 @@
 #pragma newdecls required
 
 #include <sourcemod>
-#include <sourcebanschecker>
 
+#define VERSION "1.8.3"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
@@ -47,15 +47,12 @@ int g_iBanCounts[MAXPLAYERS + 1];
 int g_iMuteCounts[MAXPLAYERS + 1];
 int g_iGagCounts[MAXPLAYERS + 1];
 
-GlobalForward g_hFwd_StatusOK;
-GlobalForward g_hFwd_StatusNotOK;
-
 public Plugin myinfo =
 {
 	name = "SourceBans++: Bans Checker",
 	author = "psychonic, Ca$h Munny, SourceBans++ Dev Team",
 	description = "Notifies admins of prior bans from Sourcebans upon player connect.",
-	version = SBPPChecker_VERSION,
+	version = VERSION,
 	url = "https://sbpp.github.io"
 };
 
@@ -64,7 +61,7 @@ public void OnPluginStart()
 	LoadTranslations("common.phrases");
 	LoadTranslations("sbpp_checker.phrases");
 
-	CreateConVar("sbchecker_version", SBPPChecker_VERSION, "", FCVAR_NOTIFY);
+	CreateConVar("sbchecker_version", VERSION, "", FCVAR_NOTIFY);
 	RegAdminCmd("sm_listbans", OnListSourceBansCmd, ADMFLAG_GENERIC, LISTBANS_USAGE);
 	RegAdminCmd("sm_listcomms", OnListSourceCommsCmd, ADMFLAG_GENERIC, LISTCOMMS_USAGE);
 	RegAdminCmd("sb_reload", OnReloadCmd, ADMFLAG_RCON, "Reload sourcebans config and ban reason menu options");
@@ -75,24 +72,6 @@ public void OnPluginStart()
 	{
 		LateLoading();
 	}
-}
-
-public void OnAllPluginsLoaded()
-{
-	SendForward_Available();
-}
-
-public void OnPluginPauseChange(bool pause)
-{
-	if (pause)
-		SendForward_NotAvailable();
-	else
-		SendForward_Available();
-}
-
-public void OnPluginEnd()
-{
-	SendForward_NotAvailable();
 }
 
 public void OnMapStart()
@@ -116,15 +95,12 @@ public void OnDatabaseConnected(Database db, const char[] error, any data)
 
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
-	RegPluginLibrary("sourcechecker++");
+	RegPluginLibrary("sourcebans++");
 
 	CreateNative("SBPP_CheckerGetClientsBans", Native_SBCheckerGetClientsBans);
 	CreateNative("SBPP_CheckerGetClientsComms", Native_SBCheckerGetClientsComms);
 	CreateNative("SBPP_CheckerGetClientsMutes", Native_SBCheckerGetClientsMutes);
 	CreateNative("SBPP_CheckerGetClientsGags", Native_SBCheckerGetClientsGags);
-
-	g_hFwd_StatusOK = CreateGlobalForward("SBPPChecker_OnPluginOK", ET_Ignore);
-	g_hFwd_StatusNotOK = CreateGlobalForward("SBPPChecker_OnPluginNotOK", ET_Ignore);
 
 	g_bLate = late;
 
@@ -679,16 +655,4 @@ stock void LateLoading()
 		GetClientAuthId(i, AuthId_Steam2, sSteam32ID, sizeof(sSteam32ID));
 		OnClientAuthorized(i, sSteam32ID);
 	}
-}
-
-stock void SendForward_Available()
-{
-	Call_StartForward(g_hFwd_StatusOK);
-	Call_Finish();
-}
-
-stock void SendForward_NotAvailable()
-{
-	Call_StartForward(g_hFwd_StatusNotOK);
-	Call_Finish();
 }

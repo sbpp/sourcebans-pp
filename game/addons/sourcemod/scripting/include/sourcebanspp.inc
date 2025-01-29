@@ -29,12 +29,6 @@
 #endif
 #define _sourcebanspp_included
 
-#define SB_VERSION_MAJOR 1
-#define SB_VERSION_MINOR 8
-#define SB_VERSION_PATCH 3
-
-#define SB_VERSION "1.8.3"
-
 public SharedPlugin __pl_sourcebanspp =
 {
 	name = "sourcebans++",
@@ -88,21 +82,6 @@ native void SBPP_BanPlayer(int iAdmin, int iTarget, int iTime, const char[] sRea
  * @noreturn
  *********************************************************/
 native void SBPP_ReportPlayer(int iReporter, int iTarget, const char[] sReason);
-
-/*********************************************************
- * Called when the plugin becomes available.
- * 
- * @noreturn
-*********************************************************/
-forward void SBPP_OnPluginOK();
-
-/*********************************************************
- * Called when the plugin becomes unavailable.
- * This can happen when the plugin is paused or unloaded.
- * 
- * @noreturn
-*********************************************************/
-forward void SBPP_OnPluginNotOK();
 
 /*********************************************************
  * Called when the admin banning the player.
