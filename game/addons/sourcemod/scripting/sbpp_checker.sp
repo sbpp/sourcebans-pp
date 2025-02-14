@@ -29,7 +29,7 @@
 
 #include <sourcemod>
 
-#define VERSION "1.9.0"
+#define VERSION "2.0.0"
 #define LISTBANS_USAGE "sm_listbans <#userid|name> - Lists a user's prior bans from Sourcebans"
 #define LISTCOMMS_USAGE "sm_listcomms <#userid|name> - Lists a user's prior comms from Sourcebans"
 #define INVALID_TARGET -1
