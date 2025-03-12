@@ -43,7 +43,6 @@
 // Do not edit below this line //
 //-----------------------------//
 
-#define PLUGIN_VERSION "1.8.1"
 #define PREFIX "\x04[SourceComms++]\x01 "
 
 //GLOBAL DEFINES
@@ -134,10 +133,10 @@ int
 
 SMCParser ConfigParser;
 
-Handle 
-	g_hFwd_OnPlayerPunished
-	, g_hFwd_OnPlayerUnpunished
-	, g_hGagExpireTimer[MAXPLAYERS + 1] = { null, ... }
+GlobalForward g_hFwd_OnPlayerPunished
+			, g_hFwd_OnPlayerUnpunished;
+
+Handle g_hGagExpireTimer[MAXPLAYERS + 1] = { null, ... }
 	, g_hMuteExpireTimer[MAXPLAYERS + 1] = { null, ... };
 
 bType g_MuteType[MAXPLAYERS + 1];
@@ -170,7 +169,7 @@ public Plugin myinfo =
 	name = "SourceBans++: SourceComms",
 	author = "Alex, SourceBans++ Dev Team",
 	description = "Advanced punishments management for the Source engine in SourceBans style",
-	version = PLUGIN_VERSION,
+	version = SBPPComms_VERSION,
 	url = "https://sbpp.github.io"
 };
 
@@ -203,7 +202,7 @@ public void OnPluginStart()
 	CvarPort = FindConVar("hostport");
 	g_hServersWhiteList = new ArrayList();
 
-	CreateConVar("sourcecomms_version", PLUGIN_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
+	CreateConVar("sourcecomms_version", SBPPComms_VERSION, _, FCVAR_SPONLY | FCVAR_REPLICATED | FCVAR_NOTIFY);
 	AddCommandListener(CommandCallback, "sm_gag");
 	AddCommandListener(CommandCallback, "sm_mute");
 	AddCommandListener(CommandCallback, "sm_silence");
@@ -222,7 +221,7 @@ public void OnPluginStart()
 	#endif
 
 	#if defined DEBUG
-	PrintToServer("Sourcecomms plugin loading. Version %s", PLUGIN_VERSION);
+	PrintToServer("Sourcecomms plugin loading. Version %s", SBPPComms_VERSION);
 	#endif
 
 	// Catch config error
@@ -660,7 +659,7 @@ public Action CommandCallback(int client, const char[] command, int args)
 	if (type <= TYPE_SILENCE)
 		CreateBlock(client, _, _, type, _, sBuffer);
 	else
-		ProcessUnBlock(client, _, type, _, sBuffer);
+		ProcessUnBlock(client, _, type, sBuffer);
 
 	return Plugin_Stop;
 }
@@ -2430,10 +2429,10 @@ stock void CreateBlock(int client, int targetId = 0, int length = -1, int type, 
 	return;
 }
 
-stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason = "", const char[] sArgs = "")
+stock void ProcessUnBlock(int client, int targetId = 0, int type, char[] sReason = "")
 {
 	#if defined DEBUG
-	PrintToServer("ProcessUnBlock(admin: %d, target: %d, type: %d, reason: %s, args: %s)", client, targetId, type, sReason, sArgs);
+	PrintToServer("ProcessUnBlock(admin: %d, target: %d, type: %d, reason: %s)", client, targetId, type, sReason);
 	#endif
 
 	int target_list[MAXPLAYERS], target_count;

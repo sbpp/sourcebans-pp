@@ -29,6 +29,12 @@
 #endif
 #define _sourcecomms_included
 
+#define SBPPComms_VERSION_MAJOR "1"
+#define SBPPComms_VERSION_MINOR "8"
+#define SBPPComms_VERSION_PATCH "3"
+
+#define SBPPComms_VERSION   SBPPComms_VERSION_MAJOR..."."...SBPPComms_VERSION_MINOR..."."...SBPPComms_VERSION_PATCH
+
 /**
  * @section Int definitions for punishments types.
  */
@@ -134,5 +140,4 @@ public void __pl_sourcecomms_SetNTVOptional()
 	MarkNativeAsOptional("SourceComms_SetClientGag");
 	MarkNativeAsOptional("SourceComms_GetClientMuteType");
 	MarkNativeAsOptional("SourceComms_GetClientGagType");
-
 }

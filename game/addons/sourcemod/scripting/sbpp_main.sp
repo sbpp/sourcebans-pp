@@ -35,8 +35,6 @@
 
 #pragma newdecls required
 
-#define SB_VERSION "1.8.2"
-
 #if defined _updater_included
 #define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
 #endif
@@ -120,11 +118,11 @@ int
 
 SMCParser ConfigParser;
 
-Handle
-	g_hFwd_OnBanAdded
-	, g_hFwd_OnReportAdded
-	, g_hFwd_OnClientPreAdminCheck
-	, PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
+GlobalForward g_hFwd_OnBanAdded
+			, g_hFwd_OnReportAdded
+			, g_hFwd_OnClientPreAdminCheck;
+
+Handle PlayerRecheck[MAXPLAYERS + 1] =  { INVALID_HANDLE, ... }; /* Timer handle */
 
 DataPack PlayerDataPack[MAXPLAYERS + 1] =  { null, ... };
 
@@ -433,7 +431,7 @@ public Action ChatHook(int client, int args)
 		}
 
 		// ban him!
-		PrepareBan(client, g_BanTarget[client], g_BanTime[client], reason, sizeof(reason));
+		PrepareBan(client, g_BanTarget[client], g_BanTime[client], reason);
 
 		// block the reason to be sent in chat
 		return Plugin_Handled;
@@ -863,7 +861,7 @@ public int ReasonSelected(Menu menu, MenuAction action, int param1, int param2)
 			}
 
 			else if (g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
+				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info);
 		}
 
 		case MenuAction_Cancel:
@@ -896,7 +894,7 @@ public int HackingSelected(Menu menu, MenuAction action, int param1, int param2)
 			menu.GetItem(param2, key, sizeof(key), _, info, sizeof(info));
 
 			if (g_BanTarget[param1] != -1 && g_BanTime[param1] != -1)
-				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info, sizeof(info));
+				PrepareBan(param1, g_BanTarget[param1], g_BanTime[param1], info);
 		}
 
 		case MenuAction_Cancel:
@@ -2387,7 +2385,7 @@ public int Native_SBBanPlayer(Handle plugin, int numParams)
 		}
 	}
 
-	PrepareBan(client, target, time, reason, sizeof(reason));
+	PrepareBan(client, target, time, reason);
 	return true;
 }
 
@@ -2662,7 +2660,7 @@ stock void InsertServerInfo()
     }
 }
 
-stock void PrepareBan(int client, int target, int time, char[] reason, int size)
+stock void PrepareBan(int client, int target, int time, char[] reason)
 {
 	#if defined DEBUG
 	LogToFile(logFile, "PrepareBan()");

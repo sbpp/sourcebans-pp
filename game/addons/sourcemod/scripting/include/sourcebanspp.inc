@@ -29,6 +29,12 @@
 #endif
 #define _sourcebanspp_included
 
+#define SB_VERSION_MAJOR "1"
+#define SB_VERSION_MINOR "8"
+#define SB_VERSION_PATCH "4"
+
+#define SB_VERSION   SB_VERSION_MAJOR..."."...SB_VERSION_MINOR..."."...SB_VERSION_PATCH
+
 public SharedPlugin __pl_sourcebanspp =
 {
 	name = "sourcebans++",
