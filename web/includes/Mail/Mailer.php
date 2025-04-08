@@ -52,7 +52,9 @@ class Mailer
                          ?array $files = null
     ): bool
     {
-        $dsn = "smtp://$this->user:$this->password@$this->host";
+        $encodedUser = urlencode($this->user);
+		$encodedPassword = urlencode($this->password);
+		$dsn = "smtp://$encodedUser:$encodedPassword@$this->host:$this->port";
 
         if ($this->port != null)
             $dsn .= ":$this->port";
