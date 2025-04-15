@@ -1,7 +1,7 @@
 {
     "name": "sbpp/sourcebans-pp",
     "description": "Admin, ban, and comms management system for the Source engine.",
-    "version": "1.7.0",
+    "version": "1.8.1",
     "type": "project",
     "keywords": [],
     "homepage": "https://sbpp.github.io",
@@ -19,15 +19,15 @@
         "vendor-dir": "includes/vendor"
     },
     "require": {
-        "lcobucci/jwt": "5.4.2",
+        "lcobucci/jwt": "^5.0",
         "maxmind-db/reader": "~1.0",
-        "smarty/smarty": "~v5.4.1",
+        "smarty/smarty": "^v5.4",
         "xpaw/php-source-query-class": "dev-master",
-        "adodb/adodb-php": "5.22.7",
+        "adodb/adodb-php": "^5.22",
         "symfony/mailer": "^7.2",
         "ext-pdo": "*",
         "ext-openssl": "*",
-        "php": ">=8.1"
+        "php": ">=8.2"
     },
 
     "autoload": {
