@@ -46,7 +46,7 @@ while (!$res->EOF) {
     }
     $cleaned_name = trim($cleaned_name);
     $info['name']       = htmlspecialchars(addslashes($cleaned_name), ENT_QUOTES, 'UTF-8');
-    $info['short_name'] = trunc($info['name'], 40);
+    $info['short_name'] = trunc($cleaned_name, 40);
     $info['auth']       = $res->fields['authid'];
     $info['ip']         = $res->fields['ip'];
     $info['server']     = "block_" . $res->fields['sid'] . "_$blcount";
@@ -65,7 +65,7 @@ while (!$res->EOF) {
     if (empty($cleaned_name)) {
         $cleaned_name = "<i>No nickname present</i>";
     }
-    $info['popup']    = "ShowBox('Blocked player: " . $info['name'] . "', '" . $cleaned_name . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
+    $info['popup']    = "ShowBox('Blocked player: " . $cleaned_name . "', '" . $cleaned_name . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
 
     $GLOBALS['server_qry'] .= "xajax_ServerHostProperty(" . $res->fields['sid'] . ", 'block_" . $res->fields['sid'] . "_$blcount', 'title', 100);";
 
@@ -119,7 +119,7 @@ while (!$res->EOF) {
         $info['search_link'] = "index.php?p=banlist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     }
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
-    $info['short_name'] = trunc($info['name'], 40);
+    $info['short_name'] = trunc($cleaned_name, 40);
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
         $info['unbanned'] = true;
@@ -177,7 +177,7 @@ while (!$res->EOF) {
     $info['authid']      = $res->fields['authid'];
     $info['search_link'] = "index.php?p=commslist&advSearch=" . $info['authid'] . "&advType=steamid&Submit";
     $info['link_url']    = "window.location = '" . $info['search_link'] . "';";
-    $info['short_name']  = trunc($info['name'], 40);
+    $info['short_name']  = trunc($cleaned_name, 40);
     $info['type']        = $res->fields['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
     if ($res->fields[14] == 'D' || $res->fields[14] == 'U' || $res->fields[14] == 'E' || ($res->fields[6] && $res->fields[5] < time())) {
