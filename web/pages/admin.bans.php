@@ -241,7 +241,7 @@ foreach ($protests as $prot) {
             $cdata['added']      = Config::time($commentres->fields['added']);
             $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
-            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="\$1" target="_blank">\$1</a>', $commentText);
+            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
             if (!empty($commentres->fields['edittime'])) {
@@ -404,7 +404,7 @@ foreach ($protestsarchiv as $prot) {
             $cdata['added']      = Config::time($commentres->fields['added']);
             $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
-            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="\$1" target="_blank">\$1</a>', $commentText);
+            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
             if (!empty($commentres->fields['edittime'])) {
@@ -561,7 +561,7 @@ foreach ($submissions as $sub) {
             $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
             // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
-            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="\$1" target="_blank">\$1</a>', $commentText);
+            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
             if (!empty($commentres->fields['edittime'])) {
@@ -704,7 +704,7 @@ foreach ($submissionsarchiv as $sub) {
             $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
             // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
-            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="\$1" target="_blank">\$1</a>', $commentText);
+            $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
             if (!empty($commentres->fields['edittime'])) {
