@@ -761,7 +761,7 @@ if (isset($_GET["comment"])) {
         $coment['added']      = Config::time($cotherdata->fields['added']);
         $commentText          = html_entity_decode($cotherdata->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $commentText          = encodePreservingBr($commentText);
-        $commentText          = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="\$1" target="_blank">\$1</a>', $commentText);
+        $commentText          = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
         $coment['commenttxt'] = $commentText;
         if ($cotherdata->fields['editname'] != "") {
             $coment['edittime'] = Config::time($cotherdata->fields['edittime']);
