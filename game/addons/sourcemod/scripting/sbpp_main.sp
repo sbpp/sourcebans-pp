@@ -2467,11 +2467,19 @@ public void InitializeBackupDB()
 
 	SQLiteDB = SQLite_UseDatabase("sourcebans-queue", error, sizeof(error));
 	if (SQLiteDB == INVALID_HANDLE)
+	{
 		SetFailState(error);
+	}
 
-	SQL_LockDatabase(SQLiteDB);
-	SQL_FastQuery(SQLiteDB, "CREATE TABLE IF NOT EXISTS queue (steam_id TEXT PRIMARY KEY ON CONFLICT REPLACE, time INTEGER, start_time INTEGER, reason TEXT, name TEXT, ip TEXT, admin_id TEXT, admin_ip TEXT);");
-	SQL_UnlockDatabase(SQLiteDB);
+	SQLiteDB.Query(ErrorCheckCallback, 
+			"CREATE TABLE IF NOT EXISTS queue ( \
+				steam_id TEXT PRIMARY KEY ON CONFLICT REPLACE, \
+				time INTEGER, \
+				start_time INTEGER, \
+				reason TEXT, \
+				name TEXT, \
+				ip TEXT, \
+				admin_id TEXT, admin_ip TEXT);");
 }
 
 public bool CreateBan(int client, int target, int time, const char[] reason)
