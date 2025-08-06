@@ -9,7 +9,7 @@
             <tr>
                 <td valign="top" width="25%">
                     <div class="rowdesc">
-                        {help_icon title="File" message="Select the banned_users.cfg or banned_ip.cfg file to upload and add bans."}File
+                        {help_icon title="File" message="Select the banned_user.cfg or banned_ip.cfg file to upload and add bans."}File
                     </div>
                 </td>
                 <td>
@@ -20,7 +20,7 @@
                 </td>
             </tr>
             <tr>
-                <td valign="top"><div class="rowdesc">{help_icon title="Get Names" message="Check this box, if you want to get the names of the players from their steam community profile. (just works with banned_users.cfg)"}Get Names</div></td>
+                <td valign="top"><div class="rowdesc">{help_icon title="Get Names" message="Check this box if you want to get player names via their Steam Community profiles (only works with banned_user.cfg)"}Get Names</div></td>
                 <td>
                     <div align="left">
                         <input type="checkbox" name="friendsname" id="friendsname" />
