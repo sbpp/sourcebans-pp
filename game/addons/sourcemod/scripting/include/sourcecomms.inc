@@ -31,7 +31,7 @@
 
 #define SBPPComms_VERSION_MAJOR "1"
 #define SBPPComms_VERSION_MINOR "8"
-#define SBPPComms_VERSION_PATCH "3"
+#define SBPPComms_VERSION_PATCH "4"
 
 #define SBPPComms_VERSION   SBPPComms_VERSION_MAJOR..."."...SBPPComms_VERSION_MINOR..."."...SBPPComms_VERSION_PATCH
 
