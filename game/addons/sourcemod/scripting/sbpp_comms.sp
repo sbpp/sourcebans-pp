@@ -1380,9 +1380,15 @@ public void GotDatabase(Database db, const char[] error, any data)
 	}
 
 	// Set character set to UTF8MB4 in the database
-	char query[128];
-	Format(query, sizeof(query), "SET NAMES utf8mb4");
-	db.Query(Query_ErrorCheck, query);
+	// Use SQL_SetCharset to ensure charset is set synchronously before any operations
+	if (!db.SetCharset("utf8mb4"))
+	{
+		LogError("Failed to set database charset to utf8mb4");
+		// Fallback to async method
+		char query[128];
+		Format(query, sizeof(query), "SET NAMES utf8mb4");
+		db.Query(Query_ErrorCheck, query);
+	}
 
 	// Process queue
 	SQLiteDB.Query(Query_ProcessQueue,

@@ -1090,8 +1090,15 @@ public void GotDatabase(Database db, const char[] error, any data)
 
 	char query[1024];
 
-	Format(query, sizeof(query), "SET NAMES utf8mb4");
-	DB.Query(ErrorCheckCallback, query);
+	// Set character set to UTF8MB4 in the database
+	// Use SetCharset to ensure charset is set synchronously before any operations
+	if (!DB.SetCharset("utf8mb4"))
+	{
+		LogToFile(logFile, "Failed to set database charset to utf8mb4, trying async method");
+		// Fallback to async method
+		Format(query, sizeof(query), "SET NAMES utf8mb4");
+		DB.Query(ErrorCheckCallback, query);
+	}
 
 	InsertServerInfo();
 
