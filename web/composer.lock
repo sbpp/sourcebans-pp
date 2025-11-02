@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "adodb/adodb-php",
-            "version": "v5.22.8",
+            "version": "v5.22.10",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ADOdb/ADOdb.git",
-                "reference": "bc0d3e05ce89f3c73c24d1cb78de57793d1afe3a"
+                "reference": "38ce257600e67b1e854f2e9054166569cff4bf6b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ADOdb/ADOdb/zipball/bc0d3e05ce89f3c73c24d1cb78de57793d1afe3a",
-                "reference": "bc0d3e05ce89f3c73c24d1cb78de57793d1afe3a",
+                "url": "https://api.github.com/repos/ADOdb/ADOdb/zipball/38ce257600e67b1e854f2e9054166569cff4bf6b",
+                "reference": "38ce257600e67b1e854f2e9054166569cff4bf6b",
                 "shasum": ""
             },
             "require": {
@@ -65,7 +65,7 @@
                 "issues": "https://github.com/ADOdb/ADOdb/issues",
                 "source": "https://github.com/ADOdb/ADOdb"
             },
-            "time": "2025-01-25T01:10:09+00:00"
+            "time": "2025-08-03T16:20:39+00:00"
         },
         {
             "name": "doctrine/lexer",
@@ -1403,6 +1403,6 @@
         "ext-openssl": "*",
         "php": ">=8.2"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.2.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.6.0"
 }
