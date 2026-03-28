@@ -1,17 +1,19 @@
 project:
-  sourceknight: 0.2
+  sourceknight: 0.3
   name: SBPP
+
   dependencies:
     - name: sourcemod
       type: tar
-      version: 1.12.0-git7165
-      location: https://sm.alliedmods.net/smdrop/1.12/sourcemod-1.12.0-git7165-linux.tar.gz
+      version: 1.12
+      location: https://sm.alliedmods.net/smdrop/1.12/sourcemod-1.12.0-git7223-linux.tar.gz
       unpack:
-      - source: /addons
-        dest: /addons
+        - source: /addons
+          dest: /addons
 
   root: /game
   output: /game/addons/sourcemod/plugins
+
   targets:
     - sbpp_admcfg
     - sbpp_checker
