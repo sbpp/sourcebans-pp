@@ -55,6 +55,13 @@ jobs:
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
           cp -R web "/tmp/${pkg}"
+          cat > "/tmp/${pkg}/configs/version.json" <<EOF
+          {
+              "version": "${GITHUB_REF_NAME}",
+              "git": "$(git rev-parse --short HEAD)",
+              "dev": false
+          }
+          EOF
           (cd /tmp && zip -rq "${GITHUB_WORKSPACE}/${pkg}.zip" "${pkg}")
 
       - uses: actions/upload-artifact@v4

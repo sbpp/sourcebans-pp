@@ -89,7 +89,22 @@ require_once(INCLUDES_PATH.'/auth/Host.php');
 require_once(INCLUDES_PATH.'/CUserManager.php');
 require_once(INCLUDES_PATH.'/AdminTabs.php');
 
-$version = @json_decode(file_get_contents('configs/version.json'), true);
+$version = is_readable('configs/version.json')
+    ? @json_decode(file_get_contents('configs/version.json'), true)
+    : null;
+
+if (!$version) {
+    $tag = trim((string) @shell_exec('git describe --tags --always 2>/dev/null'));
+    $sha = trim((string) @shell_exec('git rev-parse --short HEAD 2>/dev/null'));
+    if ($tag !== '' || $sha !== '') {
+        $version = [
+            'version' => $tag !== '' ? $tag : 'N/A',
+            'git' => $sha,
+            'dev' => true,
+        ];
+    }
+}
+
 define('SB_VERSION', $version['version'] ?? 'N/A');
 define('SB_GITREV', $version['git'] ??  0);
 define('SB_DEV', $version['dev'] ?? false);
