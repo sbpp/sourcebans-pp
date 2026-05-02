@@ -24,16 +24,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build sourcemod plugin
-        uses: maxime1907/action-sourceknight@v1
+      - name: Setup SourcePawn compiler
+        uses: rumblefrog/setup-sp@master
         with:
-          cmd: build
+          version: '1.12.x'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compile plugins
+        working-directory: game/addons/sourcemod/scripting
+        run: |
+          for plugin in sbpp_admcfg sbpp_checker sbpp_comms sbpp_main sbpp_report sbpp_sleuth; do
+            spcomp -i include -o "../plugins/${plugin}.smx" "${plugin}.sp"
+          done
 
       - name: Create plugin package
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.plugin-only"
-          mkdir -p "/tmp/${pkg}"
-          cp -R .sourceknight/package/. "/tmp/${pkg}/"
+          mkdir -p "/tmp/${pkg}/common/addons/sourcemod/plugins"
+          cp game/addons/sourcemod/plugins/*.smx "/tmp/${pkg}/common/addons/sourcemod/plugins/"
           cp -R game/addons/sourcemod/configs "/tmp/${pkg}/common/addons/sourcemod/"
           cp -R game/addons/sourcemod/translations "/tmp/${pkg}/common/addons/sourcemod/"
           tar -C /tmp -czf "${pkg}.tar.gz" "${pkg}"
