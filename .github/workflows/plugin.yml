@@ -6,10 +6,9 @@ on:
       - main
       - master
       - php81
-    tags:
-      - '*'
-      - '![0-9]+.[0-9]+.[0-9]+'
-      - '![0-9]+.[0-9]+.[0-9]+-*'
+    tags-ignore:
+      - '*.*.*'
+      - '*.*.*-*'
     paths:
       - 'game/**'
   pull_request:
