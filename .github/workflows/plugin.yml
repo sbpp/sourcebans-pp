@@ -7,8 +7,7 @@ on:
       - master
       - php81
     tags-ignore:
-      - '[0-9]*.[0-9]*.[0-9]*'
-      - '[0-9]*.[0-9]*.[0-9]*-*'
+      - '*.*.*'
     paths:
       - 'game/**'
   pull_request:
