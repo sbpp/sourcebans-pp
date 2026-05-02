@@ -799,6 +799,6 @@ $theme->assign('admin_nick', $userbank->GetProperty("user"));
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
 $theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
-$theme->assign('can_delete', $userbank->HasAccess(ADMIN_DELETE_BAN));
+$theme->assign('can_delete', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
 $theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));
 $theme->display('page_comms.tpl');
