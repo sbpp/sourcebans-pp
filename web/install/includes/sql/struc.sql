@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins` (
   `srv_flags` varchar(64) default NULL,
   `srv_password` varchar(128) default NULL,
   `lastvisit` int(11) NULL,
+  `attempts` int(11) NOT NULL default '0',
+  `lockout_until` datetime default NULL,
   PRIMARY KEY  (`aid`),
   UNIQUE KEY `user` (`user`)
 ) ENGINE=InnoDB  DEFAULT CHARSET={charset};
