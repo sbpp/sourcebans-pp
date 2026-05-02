@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+
+jobs:
+  build-plugin:
+    name: Build SourceMod plugin
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build sourcemod plugin
+        uses: maxime1907/action-sourceknight@v1
+        with:
+          cmd: build
+
+      - name: Create plugin package
+        run: |
+          pkg="sourcebans-pp-${GITHUB_REF_NAME}.plugin-only"
+          mkdir -p "/tmp/${pkg}"
+          cp -R .sourceknight/package/. "/tmp/${pkg}/"
+          cp -R game/addons/sourcemod/configs "/tmp/${pkg}/common/addons/sourcemod/"
+          cp -R game/addons/sourcemod/translations "/tmp/${pkg}/common/addons/sourcemod/"
+          tar -C /tmp -czf "${pkg}.tar.gz" "${pkg}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: sourcebans-pp-${{ github.ref_name }}.plugin-only.tar.gz
+          if-no-files-found: error
+
+  build-webpanel:
+    name: Package webpanel
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create webpanel package
+        run: |
+          pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
+          cp -R web "/tmp/${pkg}"
+          (cd /tmp && zip -rq "${GITHUB_WORKSPACE}/${pkg}.zip" "${pkg}")
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webpanel
+          path: sourcebans-pp-${{ github.ref_name }}.webpanel-only.zip
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: [build-plugin, build-webpanel]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            assets/sourcebans-pp-${{ github.ref_name }}.plugin-only.tar.gz
+            assets/sourcebans-pp-${{ github.ref_name }}.webpanel-only.zip
