@@ -1,0 +1,3529 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: exportbans.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: exportbans.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: exportbans.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: getdemo.php
+
+		-
+			message: '#^Call to method assign\(\) on an unknown class Smarty\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/AdminTabs.php
+
+		-
+			message: '#^Call to method display\(\) on an unknown class Smarty\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/AdminTabs.php
+
+		-
+			message: '#^Parameter \$theme of method AdminTabs\:\:__construct\(\) has invalid type Smarty\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/AdminTabs.php
+
+		-
+			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Call to function is_null\(\) with null will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant ALL_WEB not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant DB_HOST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant DB_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant DB_PASS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant DB_PORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Constant DB_USER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^PHPDoc tag @return has invalid value \(mixed\.\)\: Unexpected token "\.", expected TOKEN_HORIZONTAL_WS at offset 172 on line 6$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: includes/CUserManager.php
+
+		-
+			message: '#^Offset int\<0, max\> on array\{function\: string, line\?\: int, file\?\: string, class\?\: class\-string, type\?\: ''\-\>''\|''\:\:'', args\?\: list\<mixed\>, object\?\: object\} in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: includes/Log.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$search$#'
+			identifier: parameter.notFound
+			count: 1
+			path: includes/Log.php
+
+		-
+			message: '#^Constant SB_THEME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/Mail/Mail.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(Smarty\)\: Unexpected token "\\n \* ", expected variable at offset 261 on line 10$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: includes/SmartyCustomFunctions.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(Smarty\)\: Unexpected token "\\n \* ", expected variable at offset 295 on line 10$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: includes/SmartyCustomFunctions.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(array\)\: Unexpected token "\\n \* ", expected variable at offset 244 on line 9$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: includes/SmartyCustomFunctions.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(array\)\: Unexpected token "\\n \* ", expected variable at offset 278 on line 9$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: includes/SmartyCustomFunctions.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$params$#'
+			identifier: parameter.notFound
+			count: 2
+			path: includes/SmartyCustomFunctions.php
+
+		-
+			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/auth/Auth.php
+
+		-
+			message: '#^Comparison operation "\>\=" between 1 and 0 is always true\.$#'
+			identifier: greaterOrEqual.alwaysTrue
+			count: 1
+			path: includes/auth/Auth.php
+
+		-
+			message: '#^Static method Auth\:\:getTokenSecret\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: includes/auth/Auth.php
+
+		-
+			message: '#^Static method Auth\:\:insertNewToken\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: includes/auth/Auth.php
+
+		-
+			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/auth/JWT.php
+
+		-
+			message: '#^Constant SB_SECRET_KEY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/auth/JWT.php
+
+		-
+			message: '#^Method JWT\:\:create\(\) should return Lcobucci\\JWT\\Token\\Plain but returns Lcobucci\\JWT\\UnencryptedToken\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/auth/JWT.php
+
+		-
+			message: '#^Unsafe call to private method JWT\:\:getConfig\(\) through static\:\:\.$#'
+			identifier: staticClassAccess.privateMethod
+			count: 1
+			path: includes/auth/JWT.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/auth/handler/NormalAuthHandler.php
+
+		-
+			message: '#^Constant SB_NEW_SALT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/auth/handler/NormalAuthHandler.php
+
+		-
+			message: '#^Variable \$password in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: includes/auth/handler/NormalAuthHandler.php
+
+		-
+			message: '#^Access to property \$data on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Access to property \$identity on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 3
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Access to property \$mode on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Call to method authUrl\(\) on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Call to method validate\(\) on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Parameter \$openid of method SteamAuthHandler\:\:__construct\(\) has invalid type LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Property SteamAuthHandler\:\:\$openid has unknown class LightOpenID as its type\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/auth/handler/SteamAuthHandler.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_LIST_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_LIST_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_LIST_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_LIST_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Constant ALL_WEB not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Instantiated class LightOpenID not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^PHPDoc tag @param for parameter \$title with type null is incompatible with native type string\.$#'
+			identifier: parameter.phpDocType
+			count: 1
+			path: includes/page-builder.php
+
+		-
+			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to function is_string\(\) with non\-falsy\-string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method AddScript\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method addAlert\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 7
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method addAppend\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 9
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method addAssign\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 107
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method addRedirect\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 8
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method addScript\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 308
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method addScriptCall\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 4
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method redirect\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 39
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method registerFunction\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 54
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Call to method setRequestURI\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Comparison operation "\<" between int\<1, max\> and 1 is always false\.$#'
+			identifier: smaller.alwaysFalse
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 37
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 103
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant SM_RCON not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant SM_ROOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddAdmin\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddAdmin\(\) should return xajaxResponse but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddBan\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddBlock\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddComment\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddGroup\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddMod\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function AddServer\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ApplyTheme\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function BanMemberOfGroup\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ChangeEmail\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ChangePassword\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ChangeSrvPassword\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function CheckPassword\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function CheckSrvPassword\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function EditAdminPerms\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function GetGroups\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function GroupBan\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function KickPlayer\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function LostPassword\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function PasteBlock\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function Plogin\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function PrepareBlockFromBan\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function PrepareReban\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function PrepareReblock\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function RemoveAdmin\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function RemoveServer\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function RemoveSubmission\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function SendMessage\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function SendRcon\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ServerHostPlayers_list\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ServerHostProperty\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function ServerPlayers\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function SetupBan\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function SetupEditServer\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function UpdateAdminPermissions\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function UpdateGroupPermissions\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function generatePassword\(\) has invalid return type xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Function getGroupMembers not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Inner named functions are not supported by PHPStan\. Consider refactoring to an anonymous function, class method, or a top\-level\-defined function\. See issue \#165 \(https\://github\.com/phpstan/phpstan/issues/165\) for more details\.$#'
+			identifier: function.inner
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Instantiated class xajax not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Instantiated class xajaxResponse not found\.$#'
+			identifier: class.notFound
+			count: 54
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Loose comparison using \=\= between '''' and '''' will always evaluate to true\.$#'
+			identifier: equal.alwaysTrue
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Undefined variable\: \$data$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Undefined variable\: \$res$#'
+			identifier: variable.undefined
+			count: 4
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Undefined variable\: \$username$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$allservers might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$id might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$immunity might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$name might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$permissions might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$playercount might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$ret in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Variable \$ret in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: includes/sb-callback.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/system-functions.php
+
+		-
+			message: '#^Constant ALL_WEB not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: includes/system-functions.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: includes/system-functions.php
+
+		-
+			message: '#^Function SecondsToString\(\) never returns false so it can be removed from the return type\.$#'
+			identifier: return.unusedType
+			count: 1
+			path: includes/system-functions.php
+
+		-
+			message: '#^Invalid array key type float\.$#'
+			identifier: offsetAccess.invalidOffset
+			count: 2
+			path: includes/system-functions.php
+
+		-
+			message: '#^Function build invoked with 2 parameters, 3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: index.php
+
+		-
+			message: '#^Path in include_once\(\) "config\.php" is not a file or it does not exist\.$#'
+			identifier: includeOnce.fileNotFound
+			count: 1
+			path: index.php
+
+		-
+			message: '#^Variable \$xajax might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: index.php
+
+		-
+			message: '#^Constant DB_HOST not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: init.php
+
+		-
+			message: '#^Constant DB_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: init.php
+
+		-
+			message: '#^Constant DB_PASS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: init.php
+
+		-
+			message: '#^Constant DB_PORT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: init.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: init.php
+
+		-
+			message: '#^Constant DB_USER not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: init.php
+
+		-
+			message: '#^Path in require_once\(\) "\.\./config\.php" is not a file or it does not exist\.$#'
+			identifier: requireOnce.fileNotFound
+			count: 1
+			path: install/includes/converter.inc.php
+
+		-
+			message: '#^Path in require_once\(\) "\.\./includes/Database\.php" is not a file or it does not exist\.$#'
+			identifier: requireOnce.fileNotFound
+			count: 1
+			path: install/includes/converter.inc.php
+
+		-
+			message: '#^Variable \$title might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: install/template/content.header.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: install/template/page.2.php
+
+		-
+			message: '#^Loose comparison using \!\= between 1 and \-1 will always evaluate to true\.$#'
+			identifier: notEqual.alwaysTrue
+			count: 1
+			path: install/template/page.3.php
+
+		-
+			message: '#^Variable \$sql_version might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: install/template/page.3.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: install/template/page.5.php
+
+		-
+			message: '#^Variable \$errors might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: install/template/page.5.php
+
+		-
+			message: '#^Constant DB_HOST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: install/template/page.6.php
+
+		-
+			message: '#^Constant DB_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: install/template/page.6.php
+
+		-
+			message: '#^Constant DB_PASS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: install/template/page.6.php
+
+		-
+			message: '#^Constant DB_PORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: install/template/page.6.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: install/template/page.6.php
+
+		-
+			message: '#^Constant DB_USER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: install/template/page.6.php
+
+		-
+			message: '#^Variable \$step might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: install/template/submenu.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant ADMIN_LIST_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 8
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 20
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant SM_ROOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Variable \$accessaid might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/admin.admins.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.admins.search.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.admins.search.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.admins.search.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_BAN_IMPORT not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 24
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 37
+			path: pages/admin.bans.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.bans.search.php
+
+		-
+			message: '#^Call to method addAssign\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 5
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Call to method addScript\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 5
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Call to method printJavascript\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Call to method processRequests\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Call to method redirect\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 2
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Call to method registerFunction\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 2
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Call to method setRequestURI\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Instantiated class xajax not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Instantiated class xajaxResponse not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Variable \$theme might not be defined\.$#'
+			identifier: variable.undefined
+			count: 11
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/admin.blockit.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.comms.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.comms.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.comms.search.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.edit.admindetails.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.edit.admindetails.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 8
+			path: pages/admin.edit.admindetails.php
+
+		-
+			message: '#^Variable \$allservers might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/admin.edit.admindetails.php
+
+		-
+			message: '#^Variable \$name might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/admin.edit.admindetails.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.admingroup.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.admingroup.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: pages/admin.edit.admingroup.php
+
+		-
+			message: '#^Offset ''sg'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: pages/admin.edit.admingroup.php
+
+		-
+			message: '#^Offset ''wg'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: pages/admin.edit.admingroup.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_BAN_IMPORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_LIST_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_LIST_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_LIST_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_LIST_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_NOTIFY_PROTEST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_NOTIFY_SUB not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CHAT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CHEATS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CONFIG not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CUSTOM1 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CUSTOM2 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CUSTOM3 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CUSTOM4 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CUSTOM5 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CUSTOM6 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_CVAR not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_GENERIC not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_KICK not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_MAP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_PASSWORD not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_RCON not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_RESERVED_SLOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_ROOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_SLAY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_UNBAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant SM_VOTE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Variable \$theme might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/admin.edit.adminperms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminservers.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.adminservers.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 13
+			path: pages/admin.edit.adminservers.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 5
+			path: pages/admin.edit.adminservers.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.ban.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.ban.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.ban.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.ban.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 12
+			path: pages/admin.edit.ban.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 9
+			path: pages/admin.edit.ban.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.comms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.comms.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.comms.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.comms.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: pages/admin.edit.comms.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: pages/admin.edit.comms.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_BAN_IMPORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_LIST_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_LIST_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_LIST_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_LIST_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_NOTIFY_PROTEST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_NOTIFY_SUB not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CHAT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CHEATS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CONFIG not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CUSTOM1 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CUSTOM2 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CUSTOM3 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CUSTOM4 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CUSTOM5 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CUSTOM6 not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_CVAR not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_GENERIC not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_KICK not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_MAP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_PASSWORD not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_RCON not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_RESERVED_SLOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_ROOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_SLAY not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_UNBAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant SM_VOTE not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Variable \$theme might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 3
+			path: pages/admin.edit.group.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.mod.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.mod.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/admin.edit.mod.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.server.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.edit.server.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: pages/admin.edit.server.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/admin.edit.server.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.email.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Constant ADMIN_LIST_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Function BitToString invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: pages/admin.groups.php
+
+		-
+			message: '#^Call to method addAssign\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 6
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Call to method addScript\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 6
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Call to method printJavascript\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Call to method processRequests\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Call to method redirect\(\) on an unknown class xajaxResponse\.$#'
+			identifier: class.notFound
+			count: 2
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Call to method registerFunction\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 2
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Call to method setRequestURI\(\) on an unknown class xajax\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Instantiated class xajax not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Instantiated class xajaxResponse not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Variable \$sdata might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Variable \$theme might not be defined\.$#'
+			identifier: variable.undefined
+			count: 10
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/admin.kickit.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.log.search.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.mods.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.mods.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.mods.php
+
+		-
+			message: '#^Constant ADMIN_LIST_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.mods.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 6
+			path: pages/admin.mods.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.mods.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.rcon.php
+
+		-
+			message: '#^Constant SM_RCON not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.rcon.php
+
+		-
+			message: '#^Constant SM_ROOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.rcon.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant ADMIN_LIST_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 6
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant SM_RCON not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant SM_ROOT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.servers.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Constant ALL_WEB not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Constant SB_THEME not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Loose comparison using \!\= between '''' and '''' will always evaluate to false\.$#'
+			identifier: notEqual.alwaysFalse
+			count: 1
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Variable \$themes might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/admin.settings.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/admin.srvadmins.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/admin.srvadmins.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploaddemo.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploaddemo.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploaddemo.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploaddemo.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploaddemo.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploadicon.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploadicon.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploadicon.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploadmapimg.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/admin.uploadmapimg.php
+
+		-
+			message: '#^Variable \$title might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/core/header.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_LIST_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_LIST_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_LIST_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_LIST_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 7
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/core/navbar.php
+
+		-
+			message: '#^Variable \$title might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/core/title.php
+
+		-
+			message: '#^Constant ADMIN_ADD_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_ADD_GROUP not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_ADD_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_ADD_SERVER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_LIST_ADMINS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_LIST_GROUPS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_LIST_MODS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_LIST_SERVERS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 6
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_WEB_SETTINGS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 9
+			path: pages/page.admin.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 13
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 59
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Offset ''advSearch'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Offset ''ub_reason'' on array\{ban_id\: mixed, country\: non\-falsy\-string, ban_date\: string, player\: string, type\: mixed, steamid\: mixed, communityid\: mixed, steamid3\: mixed, \.\.\.\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Variable \$ctext in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Variable \$prev might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Variable \$res might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Variable \$res_count might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Variable \$searchlink might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.banlist.php
+
+		-
+			message: '#^Constant ADMIN_DELETE_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_ALL_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_EDIT_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 11
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_GROUP_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant ADMIN_UNBAN_OWN_BANS not found\.$#'
+			identifier: constant.notFound
+			count: 5
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 47
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 2
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Offset ''advSearch'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Variable \$ctext in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.variable
+			count: 1
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Variable \$prev might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Variable \$res might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Variable \$res_count might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Variable \$searchlink might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.commslist.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 13
+			path: pages/page.home.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: pages/page.home.php
+
+		-
+			message: '#^Right side of \|\| is always false\.$#'
+			identifier: booleanOr.rightAlwaysFalse
+			count: 1
+			path: pages/page.lostpassword.php
+
+		-
+			message: '#^Constant ADMIN_BAN_PROTESTS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.protest.php
+
+		-
+			message: '#^Constant ADMIN_NOTIFY_PROTEST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.protest.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.protest.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 10
+			path: pages/page.protest.php
+
+		-
+			message: '#^Constant ADMIN_ADD_BAN not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.servers.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.servers.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: pages/page.servers.php
+
+		-
+			message: '#^Variable \$userbank might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: pages/page.servers.php
+
+		-
+			message: '#^Constant ADMIN_BAN_SUBMISSIONS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.submit.php
+
+		-
+			message: '#^Constant ADMIN_NOTIFY_SUB not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.submit.php
+
+		-
+			message: '#^Constant ADMIN_OWNER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.submit.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 3
+			path: pages/page.submit.php
+
+		-
+			message: '#^Constant ALL_WEB not found\.$#'
+			identifier: constant.notFound
+			count: 4
+			path: pages/page.youraccount.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: pages/page.youraccount.php
+
+		-
+			message: '#^Variable \$errors in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 2
+			path: sb_debug_connection.php
+
+		-
+			message: '#^Variable \$serverip in empty\(\) always exists and is always falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: sb_debug_connection.php
+
+		-
+			message: '#^Variable \$serverport in empty\(\) always exists and is always falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: sb_debug_connection.php
+
+		-
+			message: '#^Variable \$serverrcon in empty\(\) always exists and is always falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: sb_debug_connection.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/1.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 30
+			path: updater/data/112.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: updater/data/130.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 19
+			path: updater/data/150.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 6
+			path: updater/data/153.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/158.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/160.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/165.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/171.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/175.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: updater/data/176.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/179.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/189.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/191.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: updater/data/219.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/241.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 15
+			path: updater/data/291.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 15
+			path: updater/data/295.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/342.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/350.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/351.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 16
+			path: updater/data/352.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/353.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/354.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 8
+			path: updater/data/355.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/356.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/475.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/476.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/555.php
+
+		-
+			message: '#^Constant DB_HOST not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: updater/data/600.php
+
+		-
+			message: '#^Constant DB_NAME not found\.$#'
+			identifier: constant.notFound
+			count: 2
+			path: updater/data/600.php
+
+		-
+			message: '#^Constant DB_PASS not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: updater/data/600.php
+
+		-
+			message: '#^Constant DB_PORT not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: updater/data/600.php
+
+		-
+			message: '#^Constant DB_PREFIX not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: updater/data/600.php
+
+		-
+			message: '#^Constant DB_USER not found\.$#'
+			identifier: constant.notFound
+			count: 1
+			path: updater/data/600.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 10
+			path: updater/data/600.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/602.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/603.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 6
+			path: updater/data/604.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 6
+			path: updater/data/605.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 7
+			path: updater/data/700.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/701.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/702.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/703.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/data/704.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/705.php
+
+		-
+			message: '#^Variable \$this might not be defined\.$#'
+			identifier: variable.undefined
+			count: 4
+			path: updater/data/801.php
+
+		-
+			message: '#^Variable \$theme might not be defined\.$#'
+			identifier: variable.undefined
+			count: 2
+			path: updater/index.php

@@ -34,5 +34,8 @@
         "psr-4": {
             "Sbpp\\": "includes/"
         }
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1"
     }
 }

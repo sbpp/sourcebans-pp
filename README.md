@@ -55,6 +55,25 @@ Here is a quick summary of getting the master branch code up and running.
 
 After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.github.io/docs/quickstart/) guide.
 
+### Static analysis (PHPStan)
+
+The web panel is checked with [PHPStan](https://phpstan.org/) on every pull request. To run it locally:
+
+```sh
+cd web
+composer install
+includes/vendor/bin/phpstan analyse
+```
+
+Existing violations are captured in `web/phpstan-baseline.neon` so CI passes from a clean tree; new code should be free of new errors. If a legitimate change fixes a baseline entry, regenerate the baseline:
+
+```sh
+cd web
+includes/vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon
+```
+
+Configuration lives in `web/phpstan.neon`.
+
 ### PHP 8.1 major changes
 ## Upgrade
 *If you ran the installer, this step is unnecessary.*
