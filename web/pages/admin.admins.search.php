@@ -20,53 +20,49 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 global $userbank, $theme;
 
 //serverlist
-$server_list  = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
+$server_list  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
 $servers      = [];
 $serverscript = "<script type=\"text/javascript\">";
-while (!$server_list->EOF) {
+foreach ($server_list as $row) {
     $info = [];
-    $serverscript .= "xajax_ServerHostPlayers('" . $server_list->fields[0] . "', 'id', 'ss" . $server_list->fields[0] . "', '', '', false, 200);";
-    $info['sid']  = $server_list->fields[0];
-    $info['ip']   = $server_list->fields[1];
-    $info['port'] = $server_list->fields[2];
+    $serverscript .= "xajax_ServerHostPlayers('" . $row['sid'] . "', 'id', 'ss" . $row['sid'] . "', '', '', false, 200);";
+    $info['sid']  = $row['sid'];
+    $info['ip']   = $row['ip'];
+    $info['port'] = $row['port'];
     array_push($servers, $info);
-    $server_list->MoveNext();
 }
 $serverscript .= "</script>";
 
 //webgrouplist
-$webgroup_list = $GLOBALS['db']->Execute("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = '1'");
+$webgroup_list = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = '1'")->resultset();
 $webgroups     = [];
-while (!$webgroup_list->EOF) {
+foreach ($webgroup_list as $row) {
     $data         = [];
-    $data['gid']  = $webgroup_list->fields['gid'];
-    $data['name'] = $webgroup_list->fields['name'];
+    $data['gid']  = $row['gid'];
+    $data['name'] = $row['name'];
 
     array_push($webgroups, $data);
-    $webgroup_list->MoveNext();
 }
 
 //serveradmingrouplist
-$srvadmgroup_list = $GLOBALS['db']->Execute("SELECT name FROM " . DB_PREFIX . "_srvgroups ORDER BY name ASC");
+$srvadmgroup_list = $GLOBALS['PDO']->query("SELECT name FROM `:prefix_srvgroups` ORDER BY name ASC")->resultset();
 $srvadmgroups     = [];
-while (!$srvadmgroup_list->EOF) {
+foreach ($srvadmgroup_list as $row) {
     $data         = [];
-    $data['name'] = $srvadmgroup_list->fields['name'];
+    $data['name'] = $row['name'];
 
     array_push($srvadmgroups, $data);
-    $srvadmgroup_list->MoveNext();
 }
 
 //servergroup
-$srvgroup_list = $GLOBALS['db']->Execute("SELECT gid, name FROM " . DB_PREFIX . "_groups WHERE type = '3'");
+$srvgroup_list = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = '3'")->resultset();
 $srvgroups     = [];
-while (!$srvgroup_list->EOF) {
+foreach ($srvgroup_list as $row) {
     $data         = [];
-    $data['gid']  = $srvgroup_list->fields['gid'];
-    $data['name'] = $srvgroup_list->fields['name'];
+    $data['gid']  = $row['gid'];
+    $data['name'] = $row['name'];
 
     array_push($srvgroups, $data);
-    $srvgroup_list->MoveNext();
 }
 
 //webpermissions

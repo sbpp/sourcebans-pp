@@ -42,19 +42,18 @@ function LoadServers2($check, $type, $length)
         return $objResponse;
     }
     $id      = 0;
-    $servers = $GLOBALS['db']->Execute("SELECT sid, rcon FROM " . DB_PREFIX . "_servers WHERE enabled = 1 ORDER BY modid, sid;");
-    while (!$servers->EOF) {
+    $servers = $GLOBALS['PDO']->query("SELECT sid, rcon FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid")->resultset();
+    foreach ($servers as $server) {
         //search for player
-        if (!empty($servers->fields["rcon"])) {
+        if (!empty($server["rcon"])) {
             $text = '<font size="1">Searching...</font>';
-            $objResponse->addScript("xajax_BlockPlayer('" . $check . "', '" . $servers->fields["sid"] . "', '" . $id . "', '" . $type . "', '" . $length . "');");
+            $objResponse->addScript("xajax_BlockPlayer('" . $check . "', '" . $server["sid"] . "', '" . $id . "', '" . $type . "', '" . $length . "');");
         } else { //no rcon = servercount + 1 ;)
             $text = '<font size="1">No rcon password.</font>';
             $objResponse->addScript('set_counter(1);');
         }
         $objResponse->addAssign("srv_" . $id, "innerHTML", $text);
         $id++;
-        $servers->MoveNext();
     }
     return $objResponse;
 }
@@ -109,18 +108,17 @@ function BlockPlayer($check, int $sid, $num, $type, int $length)
     $objResponse->addScript('set_counter(1);');
     return $objResponse;
 }
-$servers = $GLOBALS['db']->Execute("SELECT ip, port, rcon FROM " . DB_PREFIX . "_servers WHERE enabled = 1 ORDER BY modid, sid;");
-$theme->assign('total', $servers->RecordCount());
+$servers = $GLOBALS['PDO']->query("SELECT ip, port, rcon FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid")->resultset();
+$theme->assign('total', count($servers));
 $serverlinks = [];
 $num         = 0;
-while (!$servers->EOF) {
+foreach ($servers as $server) {
     $info         = [];
     $info['num']  = $num;
-    $info['ip']   = $servers->fields["ip"];
-    $info['port'] = $servers->fields["port"];
+    $info['ip']   = $server["ip"];
+    $info['port'] = $server["port"];
     array_push($serverlinks, $info);
     $num++;
-    $servers->MoveNext();
 }
 $theme->assign('servers', $serverlinks);
 $theme->assign('xajax_functions', $xajax->printJavascript("../scripts", "xajax.js"));

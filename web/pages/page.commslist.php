@@ -65,35 +65,39 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
     //we have a multiple unban asking
     $bid = intval($_GET['id']);
-    $res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `" . DB_PREFIX . "_comms` c INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = c.aid WHERE bid = '" . $bid . "' AND c.type = 2;");
-    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid'))) {
+    $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 2");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $res = $GLOBALS['PDO']->single();
+    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
 
-    $row = $GLOBALS['db']->GetRow("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
-										FROM " . DB_PREFIX . "_comms b
-										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
-										WHERE b.bid = ? AND b.RemoveType IS NULL AND b.type = 2 AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP())", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
+										FROM `:prefix_comms` b
+										LEFT JOIN `:prefix_servers` s ON s.sid = b.sid
+										WHERE b.bid = :bid AND b.RemoveType IS NULL AND b.type = 2 AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP())");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $row = $GLOBALS['PDO']->single();
     if (empty($row) || !$row) {
         echo "<script>ShowBox('Player Not UnGagged', 'The player was not ungagged, either already ungagged or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
 
     $unbanReason = htmlspecialchars(trim($_GET['ureason']));
-    $ins         = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET
-										`RemovedBy` = ?,
+    $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
+										`RemovedBy` = :removedby,
 										`RemoveType` = 'U',
 										`RemovedOn` = UNIX_TIMESTAMP(),
-										`ureason` = ?
-										WHERE `bid` = ?;", array(
-        $userbank->GetAid(),
-        $unbanReason,
-        $bid
-    ));
+										`ureason` = :ureason
+										WHERE `bid` = :bid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':removedby' => $userbank->GetAid(),
+        ':ureason'   => $unbanReason,
+        ':bid'       => $bid,
+    ]);
+    $GLOBALS['PDO']->execute();
 
-    $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
+    $blocked = $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE `enabled`=1")->resultset();
     foreach ($blocked as $tempban) {
         rcon(("sc_fw_ungag " . $row['authid']), $tempban['sid']);
     }
@@ -110,35 +114,39 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
     //we have a multiple unban asking
     $bid = intval($_GET['id']);
-    $res = $GLOBALS['db']->Execute("SELECT a.aid, a.gid FROM `" . DB_PREFIX . "_comms` c INNER JOIN " . DB_PREFIX . "_admins a ON a.aid = c.aid WHERE bid = '" . $bid . "' AND c.type = 1;");
-    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid'))) {
+    $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 1");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $res = $GLOBALS['PDO']->single();
+    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
 
-    $row = $GLOBALS['db']->GetRow("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
-										FROM " . DB_PREFIX . "_comms b
-										LEFT JOIN " . DB_PREFIX . "_servers s ON s.sid = b.sid
-										WHERE b.bid = ? AND b.RemoveType IS NULL AND b.type = 1 AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP())", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query("SELECT b.authid, b.name, b.created, b.sid, UNIX_TIMESTAMP() as now
+										FROM `:prefix_comms` b
+										LEFT JOIN `:prefix_servers` s ON s.sid = b.sid
+										WHERE b.bid = :bid AND b.RemoveType IS NULL AND b.type = 1 AND (b.length = '0' OR b.ends > UNIX_TIMESTAMP())");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $row = $GLOBALS['PDO']->single();
     if (empty($row) || !$row) {
         echo "<script>ShowBox('Player Not UnGagged', 'The player was not unmuted, either already unmuted or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
 
     $unbanReason = htmlspecialchars(trim($_GET['ureason']));
-    $ins         = $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_comms` SET
-										`RemovedBy` = ?,
+    $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
+										`RemovedBy` = :removedby,
 										`RemoveType` = 'U',
 										`RemovedOn` = UNIX_TIMESTAMP(),
-										`ureason` = ?
-										WHERE `bid` = ?;", array(
-        $userbank->GetAid(),
-        $unbanReason,
-        $bid
-    ));
+										`ureason` = :ureason
+										WHERE `bid` = :bid");
+    $GLOBALS['PDO']->bindMultiple([
+        ':removedby' => $userbank->GetAid(),
+        ':ureason'   => $unbanReason,
+        ':bid'       => $bid,
+    ]);
+    $GLOBALS['PDO']->execute();
 
-    $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
+    $blocked = $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE `enabled`=1")->resultset();
     foreach ($blocked as $tempban) {
         rcon(("sc_fw_unmute " . $row['authid']), $tempban['sid']);
     }
@@ -161,10 +169,10 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     $bid = intval($_GET['id']);
 
-    $steam  = $GLOBALS['db']->GetRow("SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now
-									FROM " . DB_PREFIX . "_comms WHERE bid=?", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query("SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now
+									FROM `:prefix_comms` WHERE bid = :bid");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $steam = $GLOBALS['PDO']->single();
     $end    = (int) $steam['ends'];
     $length = (int) $steam['length'];
     $now    = (int) $steam['now'];
@@ -182,12 +190,12 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
             break;
     }
 
-    $res = $GLOBALS['db']->Execute("DELETE FROM `" . DB_PREFIX . "_comms` WHERE `bid` = ?", array(
-        $bid
-    ));
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_comms` WHERE `bid` = :bid");
+    $GLOBALS['PDO']->bind(':bid', $bid);
+    $res = $GLOBALS['PDO']->execute();
 
     if (empty($steam['RemoveType']) && ($length == 0 || $end > $now)) {
-        $blocked = $GLOBALS['db']->GetAll("SELECT sid FROM `" . DB_PREFIX . "_servers` WHERE `enabled`=1");
+        $blocked = $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE `enabled`=1")->resultset();
         foreach ($blocked as $tempban) {
             rcon(($cmd . " " . $steam['authid']), $tempban['sid']);
         }
@@ -239,18 +247,18 @@ if (isset($_GET['searchText'])) {
 
     $search = "%{$searchText}%";
 
-    $res = $GLOBALS['db']->Execute("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
+    $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
-		(SELECT count(*) FROM " . DB_PREFIX . "_comms as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
-		(SELECT count(*) FROM " . DB_PREFIX . "_comms as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
+		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
+		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
 		UNIX_TIMESTAMP() as c_time
-		FROM " . DB_PREFIX . "_comms AS CO FORCE INDEX (created)
-		LEFT JOIN " . DB_PREFIX . "_servers AS SE ON SE.sid = CO.sid
-		LEFT JOIN " . DB_PREFIX . "_mods AS MO on SE.modid = MO.mid
-		LEFT JOIN " . DB_PREFIX . "_admins AS AD ON CO.aid = AD.aid
+		FROM `:prefix_comms` AS CO FORCE INDEX (created)
+		LEFT JOIN `:prefix_servers` AS SE ON SE.sid = CO.sid
+		LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
+		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
       	WHERE CO.authid LIKE ? or CO.name LIKE ? or CO.reason LIKE ?" . $hideinactive . "
-   		ORDER BY CO.created DESC LIMIT ?,?", array(
+   		ORDER BY CO.created DESC LIMIT ?,?")->resultset(array(
         $search,
         $search,
         $search,
@@ -259,31 +267,31 @@ if (isset($_GET['searchText'])) {
     ));
 
 
-    $res_count  = $GLOBALS['db']->Execute("SELECT count(CO.bid) FROM " . DB_PREFIX . "_comms AS CO WHERE CO.authid LIKE ? OR CO.name LIKE ? OR CO.reason LIKE ?" . $hideinactive, array(
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO WHERE CO.authid LIKE ? OR CO.name LIKE ? OR CO.reason LIKE ?" . $hideinactive)->resultset(array(
         $search,
         $search,
         $search
     ));
     $searchlink = "&searchText=" . urlencode($_GET["searchText"]);
 } elseif (!isset($_GET['advSearch'])) {
-    $res = $GLOBALS['db']->Execute("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
+    $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
-		(SELECT count(*) FROM " . DB_PREFIX . "_comms as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
-		(SELECT count(*) FROM " . DB_PREFIX . "_comms as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
+		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
+		(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
 		UNIX_TIMESTAMP() as c_time
-		FROM " . DB_PREFIX . "_comms AS CO FORCE INDEX (created)
-		LEFT JOIN " . DB_PREFIX . "_servers AS SE ON SE.sid = CO.sid
-		LEFT JOIN " . DB_PREFIX . "_mods AS MO on SE.modid = MO.mid
-		LEFT JOIN " . DB_PREFIX . "_admins AS AD ON CO.aid = AD.aid
+		FROM `:prefix_comms` AS CO FORCE INDEX (created)
+		LEFT JOIN `:prefix_servers` AS SE ON SE.sid = CO.sid
+		LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
+		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
 		" . $hideinactiven . "
 		ORDER BY created DESC
-		LIMIT ?,?", array(
+		LIMIT ?,?")->resultset(array(
         intval($BansStart),
         intval($BansPerPage)
     ));
 
-    $res_count  = $GLOBALS['db']->Execute("SELECT count(bid) FROM " . DB_PREFIX . "_comms" . $hideinactiven);
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $hideinactiven);
     $searchlink = "";
 }
 
@@ -419,30 +427,30 @@ if (isset($_GET['advSearch'])) {
             break;
     }
 
-    $res = $GLOBALS['db']->Execute("SELECT CO.bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
+    $res = $GLOBALS['PDO']->query("SELECT CO.bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 			CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
-			(SELECT count(*) FROM " . DB_PREFIX . "_comms as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
-			(SELECT count(*) FROM " . DB_PREFIX . "_comms as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
+			(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 1)) as mute_count,
+			(SELECT count(*) FROM `:prefix_comms` as BH WHERE (BH.authid = CO.authid AND BH.authid != '' AND BH.authid IS NOT NULL AND BH.type = 2)) as gag_count,
 			UNIX_TIMESTAMP() as c_time
-			FROM " . DB_PREFIX . "_comms AS CO FORCE INDEX (created)
-			LEFT JOIN " . DB_PREFIX . "_servers AS SE ON SE.sid = CO.sid
-			LEFT JOIN " . DB_PREFIX . "_mods AS MO on SE.modid = MO.mid
-			LEFT JOIN " . DB_PREFIX . "_admins AS AD ON CO.aid = AD.aid
-  			" . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN " . DB_PREFIX . "_comments AS CM ON CO.bid = CM.bid" : "") . "
+			FROM `:prefix_comms` AS CO FORCE INDEX (created)
+			LEFT JOIN `:prefix_servers` AS SE ON SE.sid = CO.sid
+			LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
+			LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
+  			" . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . "
       " . $where . $hideinactive . "
    ORDER BY CO.created DESC
-   LIMIT ?,?", array_merge($advcrit, array(
+   LIMIT ?,?")->resultset(array_merge($advcrit, array(
         intval($BansStart),
         intval($BansPerPage)
     )));
 
-    $res_count  = $GLOBALS['db']->Execute("SELECT count(CO.bid) FROM " . DB_PREFIX . "_comms AS CO
-										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN " . DB_PREFIX . "_comments AS CM ON CO.bid = CM.bid" : "") . " " . $where . $hideinactive, $advcrit);
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO
+										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . " " . $where . $hideinactive)->resultset($advcrit);
     $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']);
 }
 
-$BanCount = $res_count->fields[0];
+$BanCount = isset($res_count[0]['cnt']) ? (int) $res_count[0]['cnt'] : 0;
 if ($BansEnd > $BanCount) {
     $BansEnd = $BanCount;
 }
@@ -453,15 +461,15 @@ if (!$res) {
 
 $view_comments = false;
 $bans          = [];
-while (!$res->EOF) {
+foreach ($res as $row) {
     $data = [];
 
-    $data['ban_id'] = $res->fields['ban_id'];
-    $data['type']   = $res->fields['type'];
-    $data['c_time'] = $res->fields['c_time'];
+    $data['ban_id'] = $row['ban_id'];
+    $data['type']   = $row['type'];
+    $data['c_time'] = $row['c_time'];
 
-    $mute_count    = (int) $res->fields['mute_count'];
-    $gag_count     = (int) $res->fields['gag_count'];
+    $mute_count    = (int) $row['mute_count'];
+    $gag_count     = (int) $row['gag_count'];
     $history_count = $mute_count + $gag_count;
 
     $delimiter = "";
@@ -480,10 +488,10 @@ while (!$res->EOF) {
             break;
     }
 
-    $data['ban_date']    = Config::time($res->fields['ban_created']);
+    $data['ban_date']    = Config::time($row['ban_created']);
 
     // Fix #1008 - bug: Player Names Contain Unwanted Non-Standard Characters
-    $raw_name = $res->fields['player_name'];
+    $raw_name = $row['player_name'];
     $cleaned_name = mb_convert_encoding($raw_name, 'UTF-8', 'UTF-8');
     $unwanted_sequences = ["\xF3\xA0\x80\xA1"];
     foreach ($unwanted_sequences as $sequence) {
@@ -492,12 +500,12 @@ while (!$res->EOF) {
     $cleaned_name = trim($cleaned_name);
 
     $data['player']      = addslashes($cleaned_name);
-    $data['steamid']     = $res->fields['authid'];
+    $data['steamid']     = $row['authid'];
     // Fix #906 - Bad SteamID Format broke the page view, so give them an null SteamID.
     if (!\SteamID\SteamID::isValidID($data['steamid'])) {
 		$data['steamid'] = 'STEAM_0:0:00000000';
 	}
-    $data['communityid'] = $res->fields['community_id'];
+    $data['communityid'] = $row['community_id'];
     $steam2id            = $data['steamid'];
     $steam3parts         = explode(':', $steam2id);
     $data['steamid3']    = \SteamID\SteamID::toSteam3($data['steamid']);
@@ -505,14 +513,14 @@ while (!$res->EOF) {
     if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
-        $data['admin'] = stripslashes($res->fields['admin_name']);
+        $data['admin'] = stripslashes($row['admin_name']);
     }
-    $data['reason'] = stripslashes($res->fields['ban_reason']);
+    $data['reason'] = stripslashes($row['ban_reason']);
 
-    if ($res->fields['ban_length'] > 0) {
-        $data['ban_length'] = SecondsToString(intval($res->fields['ban_length']));
-        $data['expires']    = Config::time($res->fields['ban_ends']);
-    } else if ($res->fields['ban_length'] == 0) {
+    if ($row['ban_length'] > 0) {
+        $data['ban_length'] = SecondsToString(intval($row['ban_length']));
+        $data['expires']    = Config::time($row['ban_ends']);
+    } else if ($row['ban_length'] == 0) {
         $data['ban_length'] = 'Permanent';
         $data['expires']    = 'never';
     } else {
@@ -521,25 +529,27 @@ while (!$res->EOF) {
     }
 
     // Что за тип разбана - D? Я такой не видел, но оставлю так и быть.. for feature use...
-    if ($res->fields['row_type'] == 'D' || $res->fields['row_type'] == 'U' || $res->fields['row_type'] == 'E' || ($res->fields['ban_length'] && $res->fields['ban_ends'] < $data['c_time'])) {
+    if ($row['row_type'] == 'D' || $row['row_type'] == 'U' || $row['row_type'] == 'E' || ($row['ban_length'] && $row['ban_ends'] < $data['c_time'])) {
         $data['unbanned'] = true;
         $data['class']    = "listtable_1_unbanned";
 
-        if ($res->fields['row_type'] == "D") {
+        if ($row['row_type'] == "D") {
             $data['ub_reason'] = "(Deleted)";
-        } elseif ($res->fields['row_type'] == "U") {
+        } elseif ($row['row_type'] == "U") {
             $data['ub_reason'] = "(Unbanned)";
         } else {
             $data['ub_reason'] = "(Expired)";
         }
 
-        if (isset($res->fields['unban_reason']))
-            $data['ureason'] = stripslashes($res->fields['unban_reason']);
+        if (isset($row['unban_reason']))
+            $data['ureason'] = stripslashes($row['unban_reason']);
 
-        $removedby         = $GLOBALS['db']->GetRow("SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = '" . $res->fields['RemovedBy'] . "'");
+        $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
+        $GLOBALS['PDO']->bind(':aid', $row['RemovedBy']);
+        $removedby         = $GLOBALS['PDO']->single();
         $data['removedby'] = "";
-        if (isset($removedby[0]) && $data['admin']) {
-            $data['removedby'] = $removedby[0];
+        if (!empty($removedby['user']) && $data['admin']) {
+            $data['removedby'] = $removedby['user'];
         }
     } else if ($data['ban_length'] == 'Permanent') {
         $data['class'] = "listtable_1_permanent";
@@ -549,16 +559,21 @@ while (!$res->EOF) {
         $data['ub_reason'] = "";
     }
 
-    $data['layer_id'] = 'layer_' . $res->fields['ban_id'];
+    $data['layer_id'] = 'layer_' . $row['ban_id'];
     // Запрос текущего статуса игрока для рисования ссылки на мьют или гаг
-    $alrdybnd         = $GLOBALS['db']->Execute("SELECT count(bid) as count FROM `" . DB_PREFIX . "_comms` WHERE authid = '" . $data['steamid'] . "' AND RemovedBy IS NULL AND type = '" . $data['type'] . "' AND (length = 0 OR ends > UNIX_TIMESTAMP());");
-    if ($alrdybnd->fields['count'] == 0) {
+    $GLOBALS['PDO']->query("SELECT count(bid) as count FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND (length = 0 OR ends > UNIX_TIMESTAMP())");
+    $GLOBALS['PDO']->bindMultiple([
+        ':authid' => $data['steamid'],
+        ':type'   => $data['type'],
+    ]);
+    $alrdybnd         = $GLOBALS['PDO']->single();
+    if ($alrdybnd['count'] == 0) {
         switch ($data['type']) {
             case 1:
-                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReMute', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReMute', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
                 break;
             case 2:
-                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReGag', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReGag', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
                 break;
             default:
                 break;
@@ -568,27 +583,27 @@ while (!$res->EOF) {
     }
 
 
-    $data['edit_link'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=comms&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
+    $data['edit_link'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=comms&o=edit" . $pagelink . "&id=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
     switch ($data['type']) {
         case 2:
-            $data['unban_link'] = CreateLinkR('<i class="fas fa-undo fa-lg"></i> UnGag', "#", "", "_self", false, "UnGag('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<i class="fas fa-undo fa-lg"></i> UnGag', "#", "", "_self", false, "UnGag('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         case 1:
-            $data['unban_link'] = CreateLinkR('<i class="fas fa-undo fa-lg"></i> UnMute', "#", "", "_self", false, "UnMute('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
+            $data['unban_link'] = CreateLinkR('<i class="fas fa-undo fa-lg"></i> UnMute', "#", "", "_self", false, "UnMute('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
             break;
         default:
             break;
     }
 
-    $data['delete_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $res->fields['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0);return false;");
+    $data['delete_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0);return false;");
 
-    $data['server_id'] = $res->fields['ban_server'];
+    $data['server_id'] = $row['ban_server'];
 
-    if (empty($res->fields['mod_icon'])) {
+    if (empty($row['mod_icon'])) {
         $modicon = "web.png";
     } else {
-        $modicon = $res->fields['mod_icon'];
+        $modicon = $row['mod_icon'];
     }
 
     $data['mod_icon'] = '<img src="images/games/' . $modicon . '" alt="MOD" border="0" align="absmiddle" />&nbsp;' . $data['type_icon'];
@@ -611,48 +626,50 @@ while (!$res->EOF) {
         $gags = $gag_count . '<i class="fas fa-comment-slash fa-lg"></i>';
     }
 
-    $data['server_id'] = $res->fields['ban_server'];
+    $data['server_id'] = $row['ban_server'];
 
     //COMMENT STUFF
     //-----------------------------------
     if (Config::getBool('config.enablepubliccomments') || $userbank->is_admin()) {
         $view_comments = true;
-        $commentres    = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
-											FROM `" . DB_PREFIX . "_comments` AS C
-											WHERE C.type = 'C' AND bid = '" . $data['ban_id'] . "' ORDER BY added desc");
+        $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
+											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+											FROM `:prefix_comments` AS C
+											WHERE C.type = 'C' AND bid = :bid ORDER BY added desc");
+        $GLOBALS['PDO']->bind(':bid', $data['ban_id']);
+        $commentres    = $GLOBALS['PDO']->resultset();
 
-        if ($commentres->RecordCount() > 0) {
+        if (count($commentres) > 0) {
             if ($mute_count > 0 || $gag_count > 0) {
                 $delimiter = "&ensp;";
             }
             $comment = [];
             $morecom = 0;
-            while (!$commentres->EOF) {
+            foreach ($commentres as $crow) {
                 $cdata            = [];
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
-                if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $commentres->fields['cid'] . $pagelink, 'Edit Comment');
+                if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+                    $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $crow['cid'] . $pagelink, 'Edit Comment');
                     if ($userbank->HasAccess(ADMIN_OWNER)) {
-                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'C'," . (isset($_GET["page"]) ? $_GET["page"] : -1) . ");\"><i class='fas fa-trash fa-lg'></i></a>";
+                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'C'," . (isset($_GET["page"]) ? $_GET["page"] : -1) . ");\"><i class='fas fa-trash fa-lg'></i></a>";
                     }
                 } else {
                     $cdata['editcomlink'] = "";
                     $cdata['delcomlink']  = "";
                 }
 
-                $cdata['comname']    = $commentres->fields['comname'];
-                $cdata['added']      = Config::time($commentres->fields['added']);
-                $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $cdata['comname']    = $crow['comname'];
+                $cdata['added']      = Config::time($crow['added']);
+                $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
                 $commentText         = encodePreservingBr($commentText);
                 // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
                 $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
                 $cdata['commenttxt'] = $commentText;
 
-                if (!empty($commentres->fields['edittime'])) {
-                    $cdata['edittime'] = Config::time($commentres->fields['edittime']);
-                    $cdata['editname'] = $commentres->fields['editname'];
+                if (!empty($crow['edittime'])) {
+                    $cdata['edittime'] = Config::time($crow['edittime']);
+                    $cdata['editname'] = $crow['editname'];
                 } else {
                     $cdata['edittime'] = "";
                     $cdata['editname'] = "";
@@ -660,7 +677,6 @@ while (!$res->EOF) {
 
                 $morecom = 1;
                 array_push($comment, $cdata);
-                $commentres->MoveNext();
             }
         } else {
             $comment = "None";
@@ -675,11 +691,10 @@ while (!$res->EOF) {
 
     $data['ub_reason']   = (isset($data['ub_reason']) ? $data['ub_reason'] : "");
     $data['banlength']   = $data['ban_length'] . " " . $data['ub_reason'];
-    $data['view_edit']   = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid')));
-    $data['view_unban']  = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res->fields['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res->fields['gid'] == $userbank->GetProperty('gid')));
+    $data['view_edit']   = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
+    $data['view_unban']  = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
     $data['view_delete'] = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
     array_push($bans, $data);
-    $res->MoveNext();
 }
 
 if (isset($_GET['advSearch'])) {
@@ -737,40 +752,41 @@ if ($pages > 1) {
 if (isset($_GET["comment"])) {
     $theme->assign('commenttype', (isset($_GET["cid"]) ? "Edit" : "Add"));
     if (isset($_GET["cid"])) {
-        $ceditdata      = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_comments WHERE cid = '" . (int) $_GET["cid"] . "'");
+        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_comments` WHERE cid = :cid");
+        $GLOBALS['PDO']->bind(':cid', (int) $_GET["cid"]);
+        $ceditdata      = $GLOBALS['PDO']->single();
         $ctext          = html_entity_decode($ceditdata['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $cotherdataedit = " AND cid != '" . (int) $_GET["cid"] . "'";
     } else {
         $cotherdataedit = "";
         $ctext          = "";
     }
-    $cotherdata = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
-											(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
-											FROM `" . DB_PREFIX . "_comments` AS C
-											WHERE type = ? AND bid = ?" . $cotherdataedit . " ORDER BY added desc", array(
+    $cotherdata = $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
+											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+											FROM `:prefix_comments` AS C
+											WHERE type = ? AND bid = ?" . $cotherdataedit . " ORDER BY added desc")->resultset(array(
         $_GET["ctype"],
         $_GET["comment"]
     ));
 
     $ocomments = [];
-    while (!$cotherdata->EOF) {
+    foreach ($cotherdata as $cdrow) {
         $coment               = [];
-        $coment['comname']    = $cotherdata->fields['comname'];
-        $coment['added']      = Config::time($cotherdata->fields['added']);
-        $commentText          = html_entity_decode($cotherdata->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $coment['comname']    = $cdrow['comname'];
+        $coment['added']      = Config::time($cdrow['added']);
+        $commentText          = html_entity_decode($cdrow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $commentText          = encodePreservingBr($commentText);
         $commentText          = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
         $coment['commenttxt'] = $commentText;
-        if ($cotherdata->fields['editname'] != "") {
-            $coment['edittime'] = Config::time($cotherdata->fields['edittime']);
-            $coment['editname'] = $cotherdata->fields['editname'];
+        if ($cdrow['editname'] != "") {
+            $coment['edittime'] = Config::time($cdrow['edittime']);
+            $coment['editname'] = $cdrow['editname'];
         } else {
             $coment['editname'] = "";
             $coment['edittime'] = "";
         }
         array_push($ocomments, $coment);
-        $cotherdata->MoveNext();
     }
 
     $theme->assign('page', (isset($_GET["page"]) ? $_GET["page"] : -1));

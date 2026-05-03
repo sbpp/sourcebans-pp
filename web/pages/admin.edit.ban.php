@@ -36,15 +36,17 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 }
 $_GET['id'] = (int) $_GET['id'];
 
-$res = $GLOBALS['db']->GetRow("
-    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port), se.sid, mo.icon, (SELECT origname FROM " . DB_PREFIX . "_demos WHERE demtype = 'b' AND demid = ?)
-    				FROM " . DB_PREFIX . "_bans AS ba
-    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
-    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
-    				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
-    				WHERE bid = ?", array($_GET['id'], $_GET['id']));
+$GLOBALS['PDO']->query("
+    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, (SELECT origname FROM `:prefix_demos` WHERE demtype = 'b' AND demid = :id) AS dname
+    				FROM `:prefix_bans` AS ba
+    				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
+    				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
+    				LEFT JOIN `:prefix_mods` AS mo ON mo.mid = se.modid
+    				WHERE bid = :id");
+$GLOBALS['PDO']->bind(':id', $_GET['id']);
+$res = $GLOBALS['PDO']->single();
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res[8] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid'] != $userbank->GetProperty('gid'))) {
+if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] != $userbank->GetProperty('gid'))) {
     echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=bans");</script>';
     PageDie();
 }
@@ -92,12 +94,14 @@ if (isset($_POST['name'])) {
     if ($error == 0) {
         // Check if the new steamid is already banned
         if ($_POST['type'] == 0) {
-            $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_bans WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != ?", array(
-                $_POST['steam'],
-                (int) $_GET['id']
-            ));
+            $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != :bid");
+            $GLOBALS['PDO']->bindMultiple([
+                ':authid' => $_POST['steam'],
+                ':bid'    => (int) $_GET['id'],
+            ]);
+            $chk = $GLOBALS['PDO']->single();
 
-            if ((int) $chk[0] > 0) {
+            if ((int) $chk['count'] > 0) {
                 $error++;
                 $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already banned';";
                 $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -115,12 +119,14 @@ if (isset($_POST['name'])) {
             }
         } elseif ($_POST['type'] == 1) {
             // Check if the ip is already banned
-            $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_bans WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != ?", array(
-                $_POST['ip'],
-                (int) $_GET['id']
-            ));
+            $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != :bid");
+            $GLOBALS['PDO']->bindMultiple([
+                ':ip'  => $_POST['ip'],
+                ':bid' => (int) $_GET['id'],
+            ]);
+            $chk = $GLOBALS['PDO']->single();
 
-            if ((int) $chk[0] > 0) {
+            if ((int) $chk['count'] > 0) {
                 $error++;
                 $errorScript .= "$('ip.msg').innerHTML = 'This IP is already banned';";
                 $errorScript .= "$('ip.msg').setStyle('display', 'block');";
@@ -147,57 +153,65 @@ if (isset($_POST['name'])) {
 
     // Only process if there are still no errors
     if ($error == 0) {
-        $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM " . DB_PREFIX . "_bans WHERE bid = ?", array($_GET['id']));
+        $GLOBALS['PDO']->query("SELECT length, authid FROM `:prefix_bans` WHERE bid = :bid");
+        $GLOBALS['PDO']->bind(':bid', $_GET['id']);
+        $lengthrev = $GLOBALS['PDO']->single();
 
-
-        $edit = $GLOBALS['db']->Execute(
-            "UPDATE " . DB_PREFIX . "_bans SET
-            `name` = ?, `type` = ?, `reason` = ?, `authid` = ?,
-            `length` = ?,
-            `ip` = ?,
+        $GLOBALS['PDO']->query(
+            "UPDATE `:prefix_bans` SET
+            `name` = :name, `type` = :type, `reason` = :reason, `authid` = :authid,
+            `length` = :length,
+            `ip` = :ip,
             `country` = '',
-            `ends` 	 =  `created` + ?
-            WHERE bid = ?",
-            array(
-                $_POST['name'],
-                $_POST['type'],
-                $reason,
-                $_POST['steam'],
-                $_POST['banlength'],
-                $_POST['ip'],
-                $_POST['banlength'],
-                (int) $_GET['id']
-            )
+            `ends` 	 =  `created` + :ends
+            WHERE bid = :bid"
         );
+        $GLOBALS['PDO']->bindMultiple([
+            ':name'   => $_POST['name'],
+            ':type'   => $_POST['type'],
+            ':reason' => $reason,
+            ':authid' => $_POST['steam'],
+            ':length' => $_POST['banlength'],
+            ':ip'     => $_POST['ip'],
+            ':ends'   => $_POST['banlength'],
+            ':bid'    => (int) $_GET['id'],
+        ]);
+        $GLOBALS['PDO']->execute();
 
         // Set all submissions to archived for that steamid
-        $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_submissions` SET archiv = '3', archivedby = '" . $userbank->GetAid() . "' WHERE SteamId = ?;", array(
-            $_POST['steam']
-        ));
+        $GLOBALS['PDO']->query("UPDATE `:prefix_submissions` SET archiv = '3', archivedby = :aid WHERE SteamId = :steam");
+        $GLOBALS['PDO']->bindMultiple([
+            ':aid'   => $userbank->GetAid(),
+            ':steam' => $_POST['steam'],
+        ]);
+        $GLOBALS['PDO']->execute();
 
         if (!empty($_POST['dname'])) {
-            $demoid = $GLOBALS['db']->GetRow("SELECT filename FROM `" . DB_PREFIX . "_demos` WHERE demid = ?;", array($_GET['id']));
+            $GLOBALS['PDO']->query("SELECT filename FROM `:prefix_demos` WHERE demid = :id");
+            $GLOBALS['PDO']->bind(':id', $_GET['id']);
+            $demoid = $GLOBALS['PDO']->single();
             @unlink(SB_DEMOS . "/" . $demoid['filename']);
-            $edit         = $GLOBALS['db']->Execute(
-                "REPLACE INTO " . DB_PREFIX . "_demos
+            $GLOBALS['PDO']->query(
+                "REPLACE INTO `:prefix_demos`
                 (`demid`, `demtype`, `filename`, `origname`)
                 VALUES
-                (?,
+                (:demid,
                 'b',
-                ?,
-                ?)",
-                array(
-                    (int) $_GET['id'],
-                    $_POST['did'],
-                    $_POST['dname']
-                )
+                :filename,
+                :origname)"
             );
+            $GLOBALS['PDO']->bindMultiple([
+                ':demid'    => (int) $_GET['id'],
+                ':filename' => $_POST['did'],
+                ':origname' => $_POST['dname'],
+            ]);
+            $GLOBALS['PDO']->execute();
             $res['dname'] = $_POST['dname'];
         }
 
-        if ($_POST['banlength'] != $lengthrev->fields['length']) {
-            Log::add("m", "Ban length edited", "Ban length for ({$lengthrev->fields['authid']}) has been updated."
-                . " Before: {$lengthrev->fields['length']}; Now: {$_POST['banlength']}.");
+        if ($_POST['banlength'] != $lengthrev['length']) {
+            Log::add("m", "Ban length edited", "Ban length for ({$lengthrev['authid']}) has been updated."
+                . " Before: {$lengthrev['length']}; Now: {$_POST['banlength']}.");
         }
         echo '<script>ShowBox("Ban updated", "The ban has been updated successfully", "green", "index.php?p=banlist' . $pagelink . '");</script>';
     }

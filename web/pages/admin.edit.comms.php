@@ -36,12 +36,14 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 }
 $_GET['id'] = (int) $_GET['id'];
 
-$res = $GLOBALS['db']->GetRow("SELECT bid, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid
-    FROM " . DB_PREFIX . "_comms AS ba
-    LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
-    WHERE bid = ?", array($_GET['id']));
+$GLOBALS['PDO']->query("SELECT bid, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid
+    FROM `:prefix_comms` AS ba
+    LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
+    WHERE bid = :bid");
+$GLOBALS['PDO']->bind(':bid', $_GET['id']);
+$res = $GLOBALS['PDO']->single();
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res[8] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid'] != $userbank->GetProperty('gid'))) {
+if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] != $userbank->GetProperty('gid'))) {
     echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=comms");</script>';
     PageDie();
 }
@@ -79,12 +81,14 @@ if (isset($_POST['name'])) {
 
     if ($error == 0) {
         // Check if the new steamid is already banned
-        $chk = $GLOBALS['db']->GetRow("SELECT count(bid) AS count FROM " . DB_PREFIX . "_comms WHERE authid = ? AND RemovedBy IS NULL AND type = ? AND bid != ? AND (length = 0 OR ends > UNIX_TIMESTAMP())", array(
-            $_POST['steam'],
-            (int) $_POST['type'],
-            (int) $_GET['id']
-        ));
-        if ((int) $chk[0] > 0) {
+        $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND bid != :bid AND (length = 0 OR ends > UNIX_TIMESTAMP())");
+        $GLOBALS['PDO']->bindMultiple([
+            ':authid' => $_POST['steam'],
+            ':type'   => (int) $_POST['type'],
+            ':bid'    => (int) $_GET['id'],
+        ]);
+        $chk = $GLOBALS['PDO']->single();
+        if ((int) $chk['count'] > 0) {
             $error++;
             $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already blocked';";
             $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -119,26 +123,31 @@ if (isset($_POST['name'])) {
 
     // Only process if there are still no errors
     if ($error == 0) {
-        $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid, type FROM " . DB_PREFIX . "_comms WHERE bid = ?", array($_GET['id']));
-        $edit = $GLOBALS['db']->Execute(
-            "UPDATE " . DB_PREFIX . "_comms SET
-            `name` = ?, `type` = ?, `reason` = ?, `authid` = ?,
-            `length` = ?,
-            `ends` 	 =  `created` + ?
-            WHERE bid = ?",
-            array(
-                $_POST['name'],
-                $_POST['type'],
-                $reason,
-                $_POST['steam'],
-                $_POST['banlength'],
-                $_POST['banlength'],
-                (int) $_GET['id']
-            )
+        $GLOBALS['PDO']->query("SELECT length, authid, type FROM `:prefix_comms` WHERE bid = :bid");
+        $GLOBALS['PDO']->bind(':bid', $_GET['id']);
+        $lengthrev = $GLOBALS['PDO']->single();
+
+        $GLOBALS['PDO']->query(
+            "UPDATE `:prefix_comms` SET
+            `name` = :name, `type` = :type, `reason` = :reason, `authid` = :authid,
+            `length` = :length,
+            `ends` 	 =  `created` + :ends
+            WHERE bid = :bid"
         );
-        if ($_POST['banlength'] != $lengthrev->fields['length']) {
-            Log::add("m", "Block edited", "Block for ({$lengthrev->fields['authid']}) has been updated."
-                . " Before: length ({$lengthrev->fields['length']}), type ({$lengthrev->fields['type']});"
+        $GLOBALS['PDO']->bindMultiple([
+            ':name'   => $_POST['name'],
+            ':type'   => $_POST['type'],
+            ':reason' => $reason,
+            ':authid' => $_POST['steam'],
+            ':length' => $_POST['banlength'],
+            ':ends'   => $_POST['banlength'],
+            ':bid'    => (int) $_GET['id'],
+        ]);
+        $GLOBALS['PDO']->execute();
+
+        if ($_POST['banlength'] != $lengthrev['length']) {
+            Log::add("m", "Block edited", "Block for ({$lengthrev['authid']}) has been updated."
+                . " Before: length ({$lengthrev['length']}), type ({$lengthrev['type']});"
                 . " Now: length ({$_POST['banlength']}), type ({$_POST['type']}).");
         }
         echo '<script>ShowBox("Block updated", "The block has been updated successfully", "green", "index.php?p=commslist' . $pagelink . '");</script>';

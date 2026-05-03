@@ -37,7 +37,7 @@ if (isset($_GET['page']) && $_GET['page'] > 0) {
 
 if (isset($_GET['log_clear']) && $_GET['log_clear'] == "true") {
     if ($userbank->HasAccess(ADMIN_OWNER)) {
-        $result = $GLOBALS['db']->Execute("TRUNCATE TABLE `" . DB_PREFIX . "_log`");
+        $GLOBALS['PDO']->query("TRUNCATE TABLE `:prefix_log`")->execute();
     } else {
         Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to clear the logs, but doesn't have access.");
     }
@@ -46,9 +46,6 @@ if (isset($_GET['log_clear']) && $_GET['log_clear'] == "true") {
 // search
 $where = "";
 if (isset($_GET['advSearch'])) {
-    // Escape the value, but strip the leading and trailing quote
-    $value = substr($GLOBALS['db']->qstr($_GET['advSearch']), 1, -1);
-    $type  = $_GET['advType'];
 //    switch ($type) {
 //        case "admin":
 //            $where = " WHERE l.aid = '" . $value . "'";
@@ -220,7 +217,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $smtpConfig []= $_POST['mail_pass'];
                 }
 
-                $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
+                $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
                     (?, 'template.title'),
                     (?,'template.logo'),
                     (" . (int) $_POST['config_password_minlength'] . ", 'config.password.minlength'),
@@ -242,10 +239,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     (?, 'auth.maxlife.remember'),
                     (?, 'auth.maxlife.steam'),
                     (" . (int) $_POST['default_page'] . ", 'config.defaultpage')"
-                    . $smtpConfigSql,
-
-                    // Values
-                    [
+                    . $smtpConfigSql)->execute([
                         $_POST['template_title'],
                         $_POST['template_logo'],
                         $_POST['config_dateformat'],
@@ -256,7 +250,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                         $_POST['auth_maxlife_remember'],
                         $_POST['auth_maxlife_steam'],
                         ...$smtpConfig,
-                ]);
+                    ]);
 
 ?>
 <script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
@@ -281,14 +275,14 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 
             $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] == "on" ? 1 : 0);
 
-            $edit = $GLOBALS['db']->Execute("REPLACE INTO " . DB_PREFIX . "_settings (`value`, `setting`) VALUES
+            $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
 											(" . (int) $exportpub . ", 'config.exportpublic'),
 											(" . (int) $kickit . ", 'config.enablekickit'),
 											(" . (int) $groupban . ", 'config.enablegroupbanning'),
 											(" . (int) $friendsban . ", 'config.enablefriendsbanning'),
 											(" . (int) $adminrehash . ", 'config.enableadminrehashing'),
 											(" . (int) $publiccomments . ", 'config.enablepubliccomments'),
-											(" . (int) $steamloginopt . ", 'config.enablesteamlogin')");
+											(" . (int) $steamloginopt . ", 'config.enablesteamlogin')")->execute();
 
 
 ?>

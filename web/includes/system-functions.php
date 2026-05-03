@@ -94,7 +94,7 @@ function SmFlagsToSb($flagstring)
  */
 function NextSid()
 {
-    $sid = $GLOBALS['db']->GetRow("SELECT MAX(sid) AS next_sid FROM `" . DB_PREFIX . "_servers`");
+    $sid = $GLOBALS['PDO']->query("SELECT MAX(sid) AS next_sid FROM `:prefix_servers`")->single();
     return ($sid['next_sid'] + 1);
 }
 
@@ -103,7 +103,7 @@ function NextSid()
  */
 function NextAid()
 {
-    $aid = $GLOBALS['db']->GetRow("SELECT MAX(aid) AS next_aid FROM `" . DB_PREFIX . "_admins`");
+    $aid = $GLOBALS['PDO']->query("SELECT MAX(aid) AS next_aid FROM `:prefix_admins`")->single();
     return ($aid['next_aid'] + 1);
 }
 

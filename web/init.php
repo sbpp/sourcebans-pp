@@ -110,17 +110,8 @@ if (!defined('SB_EMAIL')) {
     define('SB_EMAIL', '');
 }
 
-//include_once(INCLUDES_PATH . "/adodb/adodb.inc.php");
-//include_once(INCLUDES_PATH . "/adodb/adodb-errorhandler.inc.php");
 require_once(INCLUDES_PATH.'/Database.php');
-$GLOBALS['db'] =  ADONewConnection("mysqli://".DB_USER.':'.urlencode(DB_PASS).'@'.DB_HOST.':'.DB_PORT.'/'.DB_NAME);
 $GLOBALS['PDO'] = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
-
-if (!is_object($GLOBALS['db'])) {
-    die();
-}
-
-$GLOBALS['db']->Execute("SET NAMES ".DB_CHARSET.";");
 
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
 \SteamID\SteamID::init($GLOBALS['PDO']);

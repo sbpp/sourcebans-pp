@@ -5,11 +5,10 @@ class NormalAuthHandler
     private $result = false;
 
     public function __construct(
-        private $dbs,
+        private Database $dbs,
         string $username, string $password, bool $remember
     )
     {
-        $this->dbs = $dbs;
         $user = $this->getInfosFromDatabase($username);
 
         $maxlife = (($remember) ? Config::get('auth.maxlife.remember') : Config::get('auth.maxlife')) * 60;
@@ -49,41 +48,18 @@ class NormalAuthHandler
 
     private function updatePasswordHash(string $password, int $aid)
     {
-        $query = "UPDATE ".DB_PREFIX."_admins SET password = ? WHERE aid = ?";
-        $stmt = $this->dbs->Prepare($query);
-
-        if (!$stmt) {
-            error_log("Failed to prepare SQL query for updating password: " . implode(" ", $this->dbs->errorInfo()));
-            return false;
-        }
-
-        $result = $this->dbs->Execute($stmt, array(password_hash($password, PASSWORD_BCRYPT), $aid));
-
-        if (!$result) {
-            error_log("Failed to execute SQL query for updating password: " . implode(" ", $this->dbs->errorInfo()));
-            return false;
-        }
-
-        return true;
+        $this->dbs->query("UPDATE `:prefix_admins` SET password = :password WHERE aid = :aid");
+        $this->dbs->bindMultiple([
+            ':password' => password_hash($password, PASSWORD_BCRYPT),
+            ':aid'      => $aid,
+        ]);
+        return $this->dbs->execute();
     }
 
     private function getInfosFromDatabase(string $username)
     {
-        $query = "SELECT aid, password FROM ".DB_PREFIX."_admins WHERE user = ?";
-        $stmt = $this->dbs->Prepare($query);
-
-        if (!$stmt) {
-            error_log("Failed to prepare SQL query: " . implode(" ", $this->dbs->errorInfo()));
-            return false;
-        }
-
-        $result = $this->dbs->Execute($stmt, array($username));
-
-        if (!$result) {
-            error_log("Failed to execute SQL query: " . implode(" ", $this->dbs->errorInfo()));
-            return false;
-        }
-
-        return $result->fetchRow();
+        $this->dbs->query("SELECT aid, password FROM `:prefix_admins` WHERE user = :user");
+        $this->dbs->bind(':user', $username);
+        return $this->dbs->single();
     }
 }

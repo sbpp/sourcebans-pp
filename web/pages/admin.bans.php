@@ -139,8 +139,8 @@ $page         = 1;
 if (isset($_GET['ppage']) && $_GET['ppage'] > 0) {
     $page = intval($_GET['ppage']);
 }
-$protests       = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0' ORDER BY pid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-$protests_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM `" . DB_PREFIX . "_protests` WHERE archiv = '0' ORDER BY pid DESC");
+$protests       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_protests` WHERE archiv = '0' ORDER BY pid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+$protests_count = $GLOBALS['PDO']->query("SELECT count(pid) AS count FROM `:prefix_protests` WHERE archiv = '0' ORDER BY pid DESC")->single();
 $page_count     = $protests_count['count'];
 $PageStart      = intval(($page - 1) * $ItemsPerPage);
 $PageEnd        = intval($PageStart + $ItemsPerPage);
@@ -184,18 +184,20 @@ $delete       = [];
 $protest_list = [];
 foreach ($protests as $prot) {
     $prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
-    $protestb       = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
-							    				FROM " . DB_PREFIX . "_bans AS ba
-							    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
-							    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
-							    				WHERE bid = \"" . (int) $prot['bid'] . "\"");
+    $GLOBALS['PDO']->query("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, email, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid
+							    				FROM `:prefix_bans` AS ba
+							    				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
+							    				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
+							    				WHERE bid = :bid");
+    $GLOBALS['PDO']->bind(':bid', (int) $prot['bid']);
+    $protestb = $GLOBALS['PDO']->single();
     if (!$protestb) {
         $delete[] = $prot['bid'];
         continue;
     }
 
-    $prot['name']   = $protestb[3];
-    $prot['authid'] = $protestb[2];
+    $prot['name']   = $protestb['name'];
+    $prot['authid'] = $protestb['authid'];
     $prot['ip']     = $protestb['ip'];
 
     $prot['date'] = Config::time($protestb['created']);
@@ -206,48 +208,50 @@ foreach ($protests as $prot) {
     }
     $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
 
-    $prot['admin'] = $protestb[11];
-    if (!$protestb[12]) {
+    $prot['admin'] = $protestb['user'];
+    if (!$protestb['server_addr']) {
         $prot['server'] = "Web Ban";
     } else {
-        $prot['server'] = $protestb[12];
+        $prot['server'] = $protestb['server_addr'];
     }
     $prot['datesubmitted'] = Config::time($prot['datesubmitted']);
     //COMMENT STUFF
     //-----------------------------------
     $view_comments         = true;
-    $commentres            = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-												(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
-												(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
-												FROM `" . DB_PREFIX . "_comments` AS C
-												WHERE type = 'P' AND bid = '" . (int) $prot['pid'] . "' ORDER BY added desc");
+    $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
+												(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+												(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+												FROM `:prefix_comments` AS C
+												WHERE type = 'P' AND bid = :bid ORDER BY added desc");
+    $GLOBALS['PDO']->bind(':bid', (int) $prot['pid']);
+    $commentres            = $GLOBALS['PDO']->resultset();
 
-    if ($commentres->RecordCount() > 0) {
+    if (count($commentres) > 0) {
         $comment = [];
         $morecom = 0;
-        while (!$commentres->EOF) {
+        foreach ($commentres as $crow) {
             $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
-            if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
+            if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $crow['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'P',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'P',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
                 $cdata['delcomlink']  = "";
             }
 
-            $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = Config::time($commentres->fields['added']);
-            $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $cdata['comname']    = $crow['comname'];
+            $cdata['added']      = Config::time($crow['added']);
+            $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
             $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
-            if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
-                $cdata['editname'] = $commentres->fields['editname'];
+            if (!empty($crow['edittime'])) {
+                $cdata['edittime'] = Config::time($crow['edittime']);
+                $cdata['editname'] = $crow['editname'];
             } else {
                 $cdata['edittime'] = "";
                 $cdata['editname'] = "";
@@ -255,7 +259,6 @@ foreach ($protests as $prot) {
 
             $morecom = 1;
             array_push($comment, $cdata);
-            $commentres->MoveNext();
         }
     } else {
         $comment = "None";
@@ -268,9 +271,9 @@ foreach ($protests as $prot) {
     array_push($protest_list, $prot);
 }
 if (count($delete) > 0) { //time for protest cleanup
-    $ids = rtrim(implode(',', $delete), ',');
     $cnt = count($delete);
-    $GLOBALS['db']->Execute("UPDATE " . DB_PREFIX . "_protests SET archiv = '2' WHERE bid IN($ids) limit $cnt");
+    $placeholders = implode(',', array_fill(0, $cnt, '?'));
+    $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '2' WHERE bid IN($placeholders) LIMIT $cnt")->execute($delete);
 }
 
 $theme->assign('permission_protests', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS));
@@ -281,7 +284,6 @@ $theme->assign('protest_count', $page_count - (isset($cnt) ? $cnt : 0));
 $theme->display('page_admin_bans_protests.tpl');
 echo '</div>';
 
-$protestsarchiv = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_protests` WHERE archiv > '0' ORDER BY pid DESC");
 // archived protests
 echo '<div id="p1" style="display:none;">';
 
@@ -290,8 +292,8 @@ $page         = 1;
 if (isset($_GET['papage']) && $_GET['papage'] > 0) {
     $page = intval($_GET['papage']);
 }
-$protestsarchiv       = $GLOBALS['db']->GetAll("SELECT p.*, (SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = p.archivedby) AS archivedby FROM `" . DB_PREFIX . "_protests` p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-$protestsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(pid) AS count FROM `" . DB_PREFIX . "_protests` WHERE archiv > '0' ORDER BY pid DESC");
+$protestsarchiv       = $GLOBALS['PDO']->query("SELECT p.*, (SELECT user FROM `:prefix_admins` WHERE aid = p.archivedby) AS archivedby FROM `:prefix_protests` p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+$protestsarchiv_count = $GLOBALS['PDO']->query("SELECT count(pid) AS count FROM `:prefix_protests` WHERE archiv > '0' ORDER BY pid DESC")->single();
 $page_count           = $protestsarchiv_count['count'];
 $PageStart            = intval(($page - 1) * $ItemsPerPage);
 $PageEnd              = intval($PageStart + $ItemsPerPage);
@@ -337,18 +339,22 @@ foreach ($protestsarchiv as $prot) {
     $prot['reason'] = wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true);
 
     if ($prot['archiv'] != "2") {
-        $protestb = $GLOBALS['db']->GetRow("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, email,ad.user, CONCAT(se.ip,':',se.port), se.sid
-								    				FROM " . DB_PREFIX . "_bans AS ba
-								    				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
-								    				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
-								    				WHERE bid = \"" . (int) $prot['bid'] . "\"");
+        $GLOBALS['PDO']->query("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, email, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid
+								    				FROM `:prefix_bans` AS ba
+								    				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
+								    				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
+								    				WHERE bid = :bid");
+        $GLOBALS['PDO']->bind(':bid', (int) $prot['bid']);
+        $protestb = $GLOBALS['PDO']->single();
         if (!$protestb) {
-            $GLOBALS['db']->Execute("UPDATE `" . DB_PREFIX . "_protests` SET archiv = '2' WHERE pid = '" . (int) $prot['pid'] . "';");
+            $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '2' WHERE pid = :pid");
+            $GLOBALS['PDO']->bind(':pid', (int) $prot['pid']);
+            $GLOBALS['PDO']->execute();
             $prot['archiv']  = "2";
             $prot['archive'] = "ban has been deleted.";
         } else {
-            $prot['name']   = $protestb[3];
-            $prot['authid'] = $protestb[2];
+            $prot['name']   = $protestb['name'];
+            $prot['authid'] = $protestb['authid'];
             $prot['ip']     = $protestb['ip'];
 
             $prot['date'] = Config::time($protestb['created']);
@@ -358,11 +364,11 @@ foreach ($protestsarchiv as $prot) {
                 $prot['ends'] = Config::time($protestb['ends']);
             }
             $prot['ban_reason'] = htmlspecialchars($protestb['reason']);
-            $prot['admin']      = $protestb[11];
-            if (!$protestb[12]) {
+            $prot['admin']      = $protestb['user'];
+            if (!$protestb['server_addr']) {
                 $prot['server'] = "Web Ban";
             } else {
-                $prot['server'] = $protestb[12];
+                $prot['server'] = $protestb['server_addr'];
             }
             if ($prot['archiv'] == "1") {
                 $prot['archive'] = "protest has been archived.";
@@ -379,38 +385,40 @@ foreach ($protestsarchiv as $prot) {
     //COMMENT STUFF
     //-----------------------------------
     $view_comments         = true;
-    $commentres            = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-												(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
-												(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
-												FROM `" . DB_PREFIX . "_comments` AS C
-												WHERE type = 'P' AND bid = '" . (int) $prot['pid'] . "' ORDER BY added desc");
+    $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
+												(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+												(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+												FROM `:prefix_comments` AS C
+												WHERE type = 'P' AND bid = :bid ORDER BY added desc");
+    $GLOBALS['PDO']->bind(':bid', (int) $prot['pid']);
+    $commentres            = $GLOBALS['PDO']->resultset();
 
-    if ($commentres->RecordCount() > 0) {
+    if (count($commentres) > 0) {
         $comment = [];
         $morecom = 0;
-        while (!$commentres->EOF) {
+        foreach ($commentres as $crow) {
             $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
-            if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $commentres->fields['cid'], 'Edit Comment');
+            if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $prot['pid'] . '&ctype=P&cid=' . $crow['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'P',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'P',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
                 $cdata['delcomlink']  = "";
             }
 
-            $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = Config::time($commentres->fields['added']);
-            $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $cdata['comname']    = $crow['comname'];
+            $cdata['added']      = Config::time($crow['added']);
+            $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
             $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
-            if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
-                $cdata['editname'] = $commentres->fields['editname'];
+            if (!empty($crow['edittime'])) {
+                $cdata['edittime'] = Config::time($crow['edittime']);
+                $cdata['editname'] = $crow['editname'];
             } else {
                 $cdata['edittime'] = "";
                 $cdata['editname'] = "";
@@ -418,7 +426,6 @@ foreach ($protestsarchiv as $prot) {
 
             $morecom = 1;
             array_push($comment, $cdata);
-            $commentres->MoveNext();
         }
     } else {
         $comment = "None";
@@ -462,8 +469,8 @@ $page         = 1;
 if (isset($_GET['spage']) && $_GET['spage'] > 0) {
     $page = intval($_GET['spage']);
 }
-$submissions       = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0' ORDER BY subid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-$submissions_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM `" . DB_PREFIX . "_submissions` WHERE archiv = '0' ORDER BY subid DESC");
+$submissions       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_submissions` WHERE archiv = '0' ORDER BY subid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+$submissions_count = $GLOBALS['PDO']->query("SELECT count(subid) AS count FROM `:prefix_submissions` WHERE archiv = '0' ORDER BY subid DESC")->single();
 $page_count        = $submissions_count['count'];
 $PageStart         = intval(($page - 1) * $ItemsPerPage);
 $PageEnd           = intval($PageStart + $ItemsPerPage);
@@ -511,8 +518,9 @@ foreach ($submissions as $sub) {
     $sub['name']   = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
     $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
 
-    $dem = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos
-												WHERE demtype = \"S\" AND demid = " . (int) $sub['subid']);
+    $GLOBALS['PDO']->query("SELECT filename FROM `:prefix_demos` WHERE demtype = 'S' AND demid = :subid");
+    $GLOBALS['PDO']->bind(':subid', (int) $sub['subid']);
+    $dem = $GLOBALS['PDO']->single();
 
     if ($dem && !empty($dem['filename']) && @file_exists(SB_DEMOS . "/" . $dem['filename'])) {
         $sub['demo'] = '<a href="getdemo.php?id=' . urlencode($sub['subid']) . '&type=S"><i class=\'fas fa-video fa-lg\'></i> Get Demo</a>';
@@ -522,9 +530,9 @@ foreach ($submissions as $sub) {
 
     $sub['submitted'] = Config::time($sub['submitted']);
 
-    $mod        = $GLOBALS['db']->GetRow("SELECT m.name FROM `" . DB_PREFIX . "_submissions` AS s
-												LEFT JOIN `" . DB_PREFIX . "_mods` AS m ON m.mid = s.ModID
-												WHERE s.subid = " . (int) $sub['subid']);
+    $GLOBALS['PDO']->query("SELECT m.name FROM `:prefix_submissions` AS s LEFT JOIN `:prefix_mods` AS m ON m.mid = s.ModID WHERE s.subid = :subid");
+    $GLOBALS['PDO']->bind(':subid', (int) $sub['subid']);
+    $mod        = $GLOBALS['PDO']->single();
     $sub['mod'] = $mod['name'];
 
     if (empty($sub['server'])) {
@@ -535,39 +543,41 @@ foreach ($submissions as $sub) {
     //COMMENT STUFF
     //-----------------------------------
     $view_comments = true;
-    $commentres    = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-														(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
-														(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
-														FROM `" . DB_PREFIX . "_comments` AS C
-														WHERE type = 'S' AND bid = '" . (int) $sub['subid'] . "' ORDER BY added desc");
+    $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
+														(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+														(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+														FROM `:prefix_comments` AS C
+														WHERE type = 'S' AND bid = :bid ORDER BY added desc");
+    $GLOBALS['PDO']->bind(':bid', (int) $sub['subid']);
+    $commentres    = $GLOBALS['PDO']->resultset();
 
-    if ($commentres->RecordCount() > 0) {
+    if (count($commentres) > 0) {
         $comment = [];
         $morecom = 0;
-        while (!$commentres->EOF) {
+        foreach ($commentres as $crow) {
             $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
-            if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
+            if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $crow['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'S',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'S',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
                 $cdata['delcomlink']  = "";
             }
 
-            $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = Config::time($commentres->fields['added']);
-            $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $cdata['comname']    = $crow['comname'];
+            $cdata['added']      = Config::time($crow['added']);
+            $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
             // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
             $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
-            if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
-                $cdata['editname'] = $commentres->fields['editname'];
+            if (!empty($crow['edittime'])) {
+                $cdata['edittime'] = Config::time($crow['edittime']);
+                $cdata['editname'] = $crow['editname'];
             } else {
                 $cdata['edittime'] = "";
                 $cdata['editname'] = "";
@@ -575,7 +585,6 @@ foreach ($submissions as $sub) {
 
             $morecom = 1;
             array_push($comment, $cdata);
-            $commentres->MoveNext();
         }
     } else {
         $comment = "None";
@@ -599,8 +608,8 @@ $page         = 1;
 if (isset($_GET['sapage']) && $_GET['sapage'] > 0) {
     $page = intval($_GET['sapage']);
 }
-$submissionsarchiv       = $GLOBALS['db']->GetAll("SELECT s.*, (SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = s.archivedby) AS archivedby FROM `" . DB_PREFIX . "_submissions` s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage));
-$submissionsarchiv_count = $GLOBALS['db']->GetRow("SELECT count(subid) AS count FROM `" . DB_PREFIX . "_submissions` WHERE archiv > '0' ORDER BY subid DESC");
+$submissionsarchiv       = $GLOBALS['PDO']->query("SELECT s.*, (SELECT user FROM `:prefix_admins` WHERE aid = s.archivedby) AS archivedby FROM `:prefix_submissions` s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+$submissionsarchiv_count = $GLOBALS['PDO']->query("SELECT count(subid) AS count FROM `:prefix_submissions` WHERE archiv > '0' ORDER BY subid DESC")->single();
 $page_count              = $submissionsarchiv_count['count'];
 $PageStart               = intval(($page - 1) * $ItemsPerPage);
 $PageEnd                 = intval($PageStart + $ItemsPerPage);
@@ -648,8 +657,9 @@ foreach ($submissionsarchiv as $sub) {
     $sub['name']   = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
     $sub['reason'] = wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true);
 
-    $dem = $GLOBALS['db']->GetRow("SELECT filename FROM " . DB_PREFIX . "_demos
-												WHERE demtype = \"S\" AND demid = " . (int) $sub['subid']);
+    $GLOBALS['PDO']->query("SELECT filename FROM `:prefix_demos` WHERE demtype = 'S' AND demid = :subid");
+    $GLOBALS['PDO']->bind(':subid', (int) $sub['subid']);
+    $dem = $GLOBALS['PDO']->single();
 
     if ($dem && !empty($dem['filename']) && @file_exists(SB_DEMOS . "/" . $dem['filename'])) {
         $sub['demo'] = '<a href="getdemo.php?id=' . urlencode($sub['subid']) . '&type=S"><i class=\'fas fa-video fa-lg\'></i> Get Demo</a>';
@@ -659,9 +669,9 @@ foreach ($submissionsarchiv as $sub) {
 
     $sub['submitted'] = Config::time($sub['submitted']);
 
-    $mod        = $GLOBALS['db']->GetRow("SELECT m.name FROM `" . DB_PREFIX . "_submissions` AS s
-												LEFT JOIN `" . DB_PREFIX . "_mods` AS m ON m.mid = s.ModID
-												WHERE s.subid = " . (int) $sub['subid']);
+    $GLOBALS['PDO']->query("SELECT m.name FROM `:prefix_submissions` AS s LEFT JOIN `:prefix_mods` AS m ON m.mid = s.ModID WHERE s.subid = :subid");
+    $GLOBALS['PDO']->bind(':subid', (int) $sub['subid']);
+    $mod        = $GLOBALS['PDO']->single();
     $sub['mod'] = $mod['name'];
     if (empty($sub['server'])) {
         $sub['hostname'] = '<i><font color="#677882">Other server...</font></i>';
@@ -678,39 +688,41 @@ foreach ($submissionsarchiv as $sub) {
     //COMMENT STUFF
     //-----------------------------------
     $view_comments = true;
-    $commentres    = $GLOBALS['db']->Execute("SELECT cid, aid, commenttxt, added, edittime,
-														(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.aid) AS comname,
-														(SELECT user FROM `" . DB_PREFIX . "_admins` WHERE aid = C.editaid) AS editname
-														FROM `" . DB_PREFIX . "_comments` AS C
-														WHERE type = 'S' AND bid = '" . (int) $sub['subid'] . "' ORDER BY added desc");
+    $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
+														(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
+														(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
+														FROM `:prefix_comments` AS C
+														WHERE type = 'S' AND bid = :bid ORDER BY added desc");
+    $GLOBALS['PDO']->bind(':bid', (int) $sub['subid']);
+    $commentres    = $GLOBALS['PDO']->resultset();
 
-    if ($commentres->RecordCount() > 0) {
+    if (count($commentres) > 0) {
         $comment = [];
         $morecom = 0;
-        while (!$commentres->EOF) {
+        foreach ($commentres as $crow) {
             $cdata            = [];
             $cdata['morecom'] = ($morecom == 1 ? true : false);
-            if ($commentres->fields['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
-                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $commentres->fields['cid'], 'Edit Comment');
+            if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+                $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . (int) $sub['subid'] . '&ctype=S&cid=' . $crow['cid'], 'Edit Comment');
                 if ($userbank->HasAccess(ADMIN_OWNER)) {
-                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $commentres->fields['cid'] . ",'S',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
+                    $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'S',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
                 }
             } else {
                 $cdata['editcomlink'] = "";
                 $cdata['delcomlink']  = "";
             }
 
-            $cdata['comname']    = $commentres->fields['comname'];
-            $cdata['added']      = Config::time($commentres->fields['added']);
-            $commentText         = html_entity_decode($commentres->fields['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $cdata['comname']    = $crow['comname'];
+            $cdata['added']      = Config::time($crow['added']);
+            $commentText         = html_entity_decode($crow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $commentText         = encodePreservingBr($commentText);
             // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
             $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
             $cdata['commenttxt'] = $commentText;
 
-            if (!empty($commentres->fields['edittime'])) {
-                $cdata['edittime'] = Config::time($commentres->fields['edittime']);
-                $cdata['editname'] = $commentres->fields['editname'];
+            if (!empty($crow['edittime'])) {
+                $cdata['edittime'] = Config::time($crow['edittime']);
+                $cdata['editname'] = $crow['editname'];
             } else {
                 $cdata['edittime'] = "";
                 $cdata['editname'] = "";
@@ -718,7 +730,6 @@ foreach ($submissionsarchiv as $sub) {
 
             $morecom = 1;
             array_push($comment, $cdata);
-            $commentres->MoveNext();
         }
     } else {
         $comment = "None";

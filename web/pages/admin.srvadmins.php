@@ -24,16 +24,18 @@ new AdminTabs([], $userbank, $theme);
 $admsteam = [];
 $admins = [];
 
-$srv_admins = $GLOBALS['db']->GetAll("SELECT authid, user
-    FROM " . DB_PREFIX . "_admins_servers_groups AS asg
-    LEFT JOIN " . DB_PREFIX . "_admins AS a ON a.aid = asg.admin_id
-    WHERE (server_id = " . (int) $_GET['id'] . " OR srv_group_id = ANY
+$GLOBALS['PDO']->query("SELECT authid, user
+    FROM `:prefix_admins_servers_groups` AS asg
+    LEFT JOIN `:prefix_admins` AS a ON a.aid = asg.admin_id
+    WHERE (server_id = :sid OR srv_group_id = ANY
     (
             SELECT group_id
-            FROM " . DB_PREFIX . "_servers_groups
-            WHERE server_id = " . (int) $_GET['id'] . ")
+            FROM `:prefix_servers_groups`
+            WHERE server_id = :sid)
     )
     GROUP BY aid, authid, srv_password, srv_group, srv_flags, user ");
+$GLOBALS['PDO']->bind(':sid', (int) $_GET['id']);
+$srv_admins = $GLOBALS['PDO']->resultset();
 $i = 0;
 foreach ($srv_admins as $admin) {
     if (!is_null($admin['authid'])) {

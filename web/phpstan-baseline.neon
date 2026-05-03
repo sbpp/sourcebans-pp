@@ -715,12 +715,6 @@ parameters:
 			path: install/template/submenu.php
 
 		-
-			message: '#^Variable \$accessaid might not be defined\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: pages/admin.admins.php
-
-		-
 			message: '#^Call to method addAssign\(\) on an unknown class xajaxResponse\.$#'
 			identifier: class.notFound
 			count: 5
@@ -1015,12 +1009,6 @@ parameters:
 			path: pages/page.banlist.php
 
 		-
-			message: '#^Variable \$res_count might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/page.banlist.php
-
-		-
 			message: '#^Variable \$searchlink might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -1052,12 +1040,6 @@ parameters:
 
 		-
 			message: '#^Variable \$res might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/page.commslist.php
-
-		-
-			message: '#^Variable \$res_count might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
 			path: pages/page.commslist.php
