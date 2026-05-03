@@ -26,7 +26,7 @@ function api_servers_add(array $params): array
     if ($ip === '') {
         throw new ApiError('validation', 'You must type the server address.', 'address');
     }
-    if (!filter_var($ip, FILTER_VALIDATE_IP) && !is_string($ip)) {
+    if (!filter_var($ip, FILTER_VALIDATE_IP)) {
         throw new ApiError('validation', 'You must type a valid IP.', 'address');
     }
     if ($port === '') {
@@ -200,11 +200,11 @@ function api_servers_host_players(array $params): array
         'os_class' => $os,
         'secure'   => (bool)$info['Secure'],
         'player_list' => array_map(fn($p) => [
-            'id'     => $p['Id'] ?? null,
-            'name'   => $p['Name'] ?? '',
-            'frags'  => (int)($p['Frags'] ?? 0),
-            'time'   => $p['Time'] ?? 0,
-            'time_f' => $p['TimeF'] ?? '',
+            'id'     => $p['Id'],
+            'name'   => $p['Name'],
+            'frags'  => (int)$p['Frags'],
+            'time'   => $p['Time'],
+            'time_f' => $p['TimeF'],
         ], $players ?: []),
         'can_ban' => $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
     ];
@@ -291,9 +291,9 @@ function api_servers_players(array $params): array
     return [
         'sid' => $sid,
         'players' => array_map(fn($p) => [
-            'name'  => $p['Name']  ?? '',
-            'frags' => (int)($p['Frags'] ?? 0),
-            'time'  => $p['Time']  ?? 0,
+            'name'  => $p['Name'],
+            'frags' => (int)$p['Frags'],
+            'time'  => $p['Time'],
         ], $players ?: []),
     ];
 }
@@ -326,8 +326,5 @@ function api_servers_send_rcon(array $params): array
     }
 
     $ret = str_replace("\n", '<br />', $ret);
-    if ($ret === '') {
-        return ['kind' => 'append', 'text' => '-> ' . $command . '<br />Command Executed.'];
-    }
     return ['kind' => 'append', 'text' => '-> ' . $command . '<br />' . $ret];
 }

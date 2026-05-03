@@ -19,6 +19,8 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 include_once '../init.php';
 
+global $userbank, $theme;
+
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
     echo "No Access";
     die();

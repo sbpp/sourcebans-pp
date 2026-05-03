@@ -15,6 +15,18 @@ use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
 use SteamID\SteamID;
 
+/**
+ * Resolve STEAMAPIKEY at runtime. Wrapped in a function so static analysis
+ * can't narrow the constant value (the test bootstrap defines it as '',
+ * but in production it's set in config.php).
+ */
+function _api_bans_steam_api_key(): string
+{
+    /** @var string $key */
+    $key = defined('STEAMAPIKEY') ? (string)constant('STEAMAPIKEY') : '';
+    return $key;
+}
+
 function api_bans_add(array $params): array
 {
     global $userbank;
@@ -325,7 +337,11 @@ function api_bans_group_ban(array $params): array
 function api_bans_ban_member_of_group(array $params): array
 {
     set_time_limit(0);
-    if (!Config::getBool('config.enablegroupbanning') || !defined('STEAMAPIKEY') || STEAMAPIKEY === '') {
+    if (!Config::getBool('config.enablegroupbanning')) {
+        return [];
+    }
+    $apiKey = _api_bans_steam_api_key();
+    if ($apiKey === '') {
         return [];
     }
     global $userbank;
@@ -351,7 +367,7 @@ function api_bans_ban_member_of_group(array $params): array
     $data = [];
     foreach (array_chunk($steamids, 100) as $package) {
         $package = rawurlencode(json_encode($package));
-        $url = 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2?key=' . STEAMAPIKEY . '&steamids=' . $package;
+        $url = 'https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2?key=' . $apiKey . '&steamids=' . $package;
         $raw = @json_decode((string)@file_get_contents($url), true);
         $data = array_merge($data, $raw['response']['players'] ?? []);
     }
@@ -412,7 +428,7 @@ function api_bans_get_groups(array $params): array
     preg_match('/<privacyState>([^\]]*)<\/privacyState>/', $raw, $status);
 
     $groups = [];
-    if (($status && ($status[1] ?? '') !== 'public') || str_contains($raw, '<groups>')) {
+    if (($status && $status[1] !== 'public') || str_contains($raw, '<groups>')) {
         $raw = str_replace('&', '', $raw);
         $xml = @simplexml_load_string($raw);
         if ($xml) {
@@ -454,7 +470,8 @@ function api_bans_ban_friends(array $params): array
     }
 
     $steam = SteamID::toSteam64($friendid);
-    $raw = @file_get_contents('http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key=' . STEAMAPIKEY . '&steamid=' . $steam . '&relationship=friend');
+    $apiKey = _api_bans_steam_api_key();
+    $raw = @file_get_contents('http://api.steampowered.com/ISteamUser/GetFriendList/v0001/?key=' . $apiKey . '&steamid=' . $steam . '&relationship=friend');
     $data = $raw ? json_decode($raw, true) : null;
     $friends = $data['friendslist']['friends'] ?? null;
 

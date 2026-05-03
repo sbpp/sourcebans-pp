@@ -153,7 +153,7 @@ function api_admins_add(array $params): array
         throw new ApiError('validation', 'You must choose a group.', 'server');
     }
     if ($sg === 'n') {
-        if ($serverName === null || $serverName === '') {
+        if ($serverName === null) {
             throw new ApiError('validation', 'You need to type a name for the new group.', 'servername_err');
         }
         if (str_contains((string)$serverName, ',')) {

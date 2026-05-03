@@ -59,7 +59,7 @@ function api_blockit_block_player(array $params): array
     }
 
     if (preg_match('/hostname:[ ]*(.+)/', $ret, $hostname)) {
-        $hostname = trunc(htmlspecialchars($hostname[1] ?? ''), 25);
+        $hostname = trunc(htmlspecialchars($hostname[1]), 25);
     } else {
         $hostname = '';
     }

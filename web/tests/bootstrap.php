@@ -71,5 +71,7 @@ foreach (json_decode((string)file_get_contents(ROOT . 'configs/permissions/sourc
 require_once __DIR__ . '/Fixture.php';
 require_once __DIR__ . '/ApiTestCase.php';
 
-// One-shot DB bring-up. Tests then truncate and re-seed per case.
-\Sbpp\Tests\Fixture::install();
+// DB bring-up is lazy: ApiTestCase::setUp() calls Fixture::reset(),
+// which calls Fixture::install() the first time it's invoked. This
+// keeps `phpunit --list-tests` (test discovery in IDEs and CI) from
+// requiring a live database.

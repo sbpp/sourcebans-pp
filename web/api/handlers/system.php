@@ -185,7 +185,7 @@ function api_system_rehash_admins(array $params): array
         $ret = rcon('sm_rehash', (int)$sid);
         $results[] = [
             'sid'     => (int)$sid,
-            'success' => isset($ret) && $ret === '',
+            'success' => $ret === '',
         ];
     }
     return ['results' => $results];
