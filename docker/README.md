@@ -61,11 +61,29 @@ don't leak onto the host filesystem.
 ./sbpp.sh shell db                # mariadb client connected to dev DB
 ./sbpp.sh composer install        # run composer in the web container
 ./sbpp.sh phpstan                 # phpstan analyse with the project's phpstan.neon
+./sbpp.sh ts-check                # tsc --checkJs gate over web/scripts (mirror of CI)
 ./sbpp.sh db-dump backup.sql      # mysqldump to host file
 ./sbpp.sh db-load fixtures.sql    # pipe a SQL file into the DB
 ./sbpp.sh db-reset                # drop just the DB volume and re-seed
 ./sbpp.sh rebuild                 # `--no-cache` rebuild of the web image
 ```
+
+## Quality gates
+
+Three gates run in CI on every PR; each has a one-shot wrapper for local runs.
+
+```sh
+./sbpp.sh phpstan                 # static analysis (web/phpstan.neon, baseline at web/phpstan-baseline.neon)
+./sbpp.sh test                    # PHPUnit against the dedicated sourcebans_test DB
+./sbpp.sh ts-check                # tsc --checkJs over web/scripts (#1098)
+```
+
+`ts-check` runs the TypeScript compiler in `--checkJs` mode against the
+vanilla JS in `web/scripts/`, using `web/scripts/tsconfig.json` plus the
+`@ts-check` directives and JSDoc annotations on each file. The first run
+inside a fresh container does an `npm install` (cached afterwards) — total
+cold cost is a few seconds, subsequent runs are sub-second. There is no
+build step; nothing in `web/node_modules/` ships to production.
 
 ## How the bootstrap works
 
