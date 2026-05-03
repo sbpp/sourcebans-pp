@@ -2,7 +2,7 @@
 
 /**
  * Per-session CSRF token issued at session start and validated on every
- * state-changing request (POST forms and xajax callbacks).
+ * state-changing request (POST forms and JSON API calls).
  */
 class CSRF
 {

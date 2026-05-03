@@ -39,7 +39,7 @@
             <tr>
                 <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Password</div></td>
                 <td><div align="left">
-                        <input type="password" onblur="xajax_CheckPassword(-{$user_aid}-, $('current').value);" class="textbox" id="current" name="current" />
+                        <input type="password" onblur="LoadCheckPassword(-{$user_aid}-, $('current').value);" class="textbox" id="current" name="current" />
                     </div>
                     <div id="current.msg" class="badentry"></div></td>
             </tr>
@@ -64,7 +64,7 @@
             <tr>
                 <td>&nbsp;</td>
                 <td>
-                    <input type="submit" onclick="xajax_CheckPassword(-{$user_aid}-, $('current').value);dispatch();" name="button" class="btn ok" id="button" value="Save" />
+                    <input type="submit" onclick="LoadCheckPassword(-{$user_aid}-, $('current').value);dispatch();" name="button" class="btn ok" id="button" value="Save" />
                     &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
             </tr>
         </table>
@@ -79,7 +79,7 @@
             <tr>
                 <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Server Password</div></td>
                 <td><div align="left">
-                        <input type="password" onblur="xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);" class="textbox" id="scurrent" name="scurrent" />
+                        <input type="password" onblur="LoadCheckSrvPassword(-{$user_aid}-, $('scurrent').value);" class="textbox" id="scurrent" name="scurrent" />
                     </div>
                     <div id="scurrent.msg" class="badentry"></div></td>
             </tr>
@@ -113,7 +113,7 @@
             <tr>
                 <td>&nbsp;</td>
                 <td>
-                    <input type="submit" onclick="-{if $srvpwset}-xajax_CheckSrvPassword(-{$user_aid}-, $('scurrent').value);-{/if}-srvdispatch();" name="button" class="btn ok" id="button" value="Save" />
+                    <input type="submit" onclick="-{if $srvpwset}-LoadCheckSrvPassword(-{$user_aid}-, $('scurrent').value);-{/if}-srvdispatch();" name="button" class="btn ok" id="button" value="Save" />
                     &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
             </tr>
         </table>
@@ -202,7 +202,7 @@
             }
             if(checkYourAcctPass() && error == 0)
             {
-                xajax_ChangePassword(-{$user_aid}-, $('pass2').value, $('current').value);
+                LoadChangePassword(-{$user_aid}-, $('pass2').value, $('current').value);
             }
         }
         function checkYourSrvPass()
@@ -257,11 +257,11 @@
             -{/if}-
             if(checkYourSrvPass() && error == 0 && (!$('delspass') || $('delspass').checked == false))
             {
-                xajax_ChangeSrvPassword(-{$user_aid}-, $('spass2').value);
+                LoadChangeSrvPassword(-{$user_aid}-, $('spass2').value);
             }
             if($('delspass').checked == true)
             {
-                xajax_ChangeSrvPassword(-{$user_aid}-, 'NULL');
+                LoadChangeSrvPassword(-{$user_aid}-, 'NULL');
             }
         }
         function checkmail()
@@ -312,7 +312,7 @@
             }
             if(error == 0)
             {
-                xajax_ChangeEmail(-{$user_aid}-, $('email2').value, $('emailpw').value);
+                LoadChangeEmail(-{$user_aid}-, $('email2').value, $('emailpw').value);
             }
         }
     </script>

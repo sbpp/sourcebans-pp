@@ -163,7 +163,7 @@
             <td valign="top"><div class="rowdesc">{help_icon title="Clear Cache" message="Click this button, to clean the cache folder."}Clear Cache</div></td>
             <td>
                 <div align="left">
-                    {sb_button text="Clear Cache" onclick="xajax_ClearCache();" class="cancel" id="clearcache" submit=false}
+                    {sb_button text="Clear Cache" onclick="LoadClearCache();" class="cancel" id="clearcache" submit=false}
                 </div><div id="clearcache.msg"></div>
             </td>
         </tr>

@@ -250,7 +250,7 @@ $server_group_list       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups
 $server_list             = [];
 $serverscript            = "<script type=\"text/javascript\">";
 foreach ($servers as $server) {
-    $serverscript .= "xajax_ServerHostPlayers('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";
+    $serverscript .= "LoadServerHost('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";
     $info['sid']  = $server['sid'];
     $info['ip']   = $server['ip'];
     $info['port'] = $server['port'];

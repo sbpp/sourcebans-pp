@@ -1,69 +1,119 @@
-/*
- @description		mootools based context menu
- @author			Daniel Niquet | http://utils.softr.net
- @based in			http://thinkweb2.com/projects/prototype
- @version			0.5
- @date				8/25/07
- @requires			mootools 1.11
-*/
-contextMenoo = new Class({
-	options:{
-		selector: '.contextmenu', className: '.protoMenu', pageOffset: 25, fade: false, headline: 'Menu'
-	},
-	initialize: function (op) {
-		this.setOptions(op);
-		this.cont=new Element('div',{'class': this.options.className});
-		this.Fade=this.cont.effect('opacity');
-		
-		this.cont.adopt(new Element('b', {'class': 'head'}).setHTML(this.options.headline));
-		this.options.menuItems.each(function(item){
-			this.cont.adopt(item.separator ? 
-				new Element('div', {'class': 'separator'}) :
-				new Element('a', {	'href': '#', 'title': item.name, 'onclick': 'return false;', 'class': item.disabled ? 'disabled' : ''}).addEvent('click', this.onClick.bindWithEvent(this,[item.callback])).setHTML(item.name))
-		}.bind(this));
-		this.Fade.set(0);
-		$(document.body).adopt(this.cont);
-		document.addEvents({
-			'click':this.hide.bind(this),'contextmenu':this.hide.bind(this)
-		});
+/*************************************************************************
+This file is part of SourceBans++
 
-		$$(this.options.selector).each(function(el){
-			el.addEvent(window.opera?'click':'contextmenu',function(e){
-				if(window.opera && !e.ctrlKey) return;
-				this.show(e);
-			}.bind(this));
-		},this);
-	},
-	hide: function(){this.Fade.set(0);},
-	show: function(e) {
-		e=new Event(e).stop();
-		var oCont=this.cont.getCoordinates(),
-		size = {'height':window.getHeight(), 'width':window.getWidth(), 'top': window.getScrollTop(),'cW':oCont.width, 'cH':oCont.height};
+SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
 
-		this.cont.setStyles({
-			left: ((e.page.x + size.cW + this.options.pageOffset) > size.width ? (size.width - size.cW - this.options.pageOffset) : e.page.x),
-			top: ((e.page.y - size.top + size.cH) > size.height && (e.page.y - size.top) > size.cH ? (e.page.y - size.cH) : e.page.y)
-		});
-		this.Fade.set(0);
-		this.options.fade?this.Fade.start(0,1):this.Fade.set(1);
-	},
-	onClick:function(e,args){
-		if (args && !e.target.hasClass('disabled')) this.Fade.set(0);args();
-	}
-});
-contextMenoo.implement(new Options());
+The SourceBans++ Web panel is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
 
-function AddContextMenu(select, classNames, fader, headl, oLinks)
-{
-	window.addEvent('domready', function(){
+You should have received a copy of the license along with this
+work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
-		var menuObj = new contextMenoo({
-			selector: select,
-			className: classNames,
-			fade: fader,
-			menuItems: oLinks,
-			headline: headl
-		});
-		
-	});
-}
+Vanilla replacement for the original MooTools-based contextMenoo. Keeps
+the same `contextMenoo` constructor + `AddContextMenu()` global so that
+existing template wiring (admin.bans / admin.comms server tooltips)
+keeps working without changes.
+*************************************************************************/
+
+(function (global) {
+    'use strict';
+
+    function contextMenoo(opts) {
+        const options = Object.assign({
+            selector: '.contextmenu',
+            className: 'protoMenu',
+            pageOffset: 25,
+            fade: false,
+            headline: 'Menu',
+            menuItems: [],
+        }, opts || {});
+
+        let cont = null;
+
+        const build = () => {
+            const c = document.createElement('div');
+            c.className = options.className;
+            c.style.position = 'absolute';
+            c.style.display = 'none';
+            c.style.zIndex = '10000';
+            c.style.opacity = '0';
+            if (options.headline) {
+                const head = document.createElement('b');
+                head.className = 'head';
+                head.innerHTML = options.headline;
+                c.appendChild(head);
+            }
+            options.menuItems.forEach((item) => {
+                if (item.separator) {
+                    const sep = document.createElement('div');
+                    sep.className = 'separator';
+                    c.appendChild(sep);
+                    return;
+                }
+                const a = document.createElement('a');
+                a.href = '#';
+                a.title = item.name;
+                if (item.disabled) a.className = 'disabled';
+                a.innerHTML = item.name;
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    hide();
+                    if (!item.disabled && typeof item.callback === 'function') item.callback();
+                });
+                c.appendChild(a);
+            });
+            document.body.appendChild(c);
+            return c;
+        };
+
+        const hide = () => { if (cont) cont.style.opacity = '0'; if (cont) cont.style.display = 'none'; };
+
+        document.addEventListener('click', hide);
+        document.addEventListener('contextmenu', (e) => {
+            // Only hide if the contextmenu happened outside one of our targets.
+            if (!e.target.closest(options.selector)) hide();
+        });
+
+        document.querySelectorAll(options.selector).forEach((el) => {
+            el.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!cont) cont = build();
+                const w = window.innerWidth;
+                const h = window.innerHeight;
+                const r = cont.getBoundingClientRect();
+                const left = (e.pageX + r.width + options.pageOffset > w + window.scrollX)
+                    ? (w + window.scrollX - r.width - options.pageOffset)
+                    : e.pageX;
+                const top = (e.pageY - window.scrollY + r.height > h && (e.pageY - window.scrollY) > r.height)
+                    ? (e.pageY - r.height)
+                    : e.pageY;
+                cont.style.left = left + 'px';
+                cont.style.top  = top  + 'px';
+                cont.style.display = 'block';
+                if (options.fade) {
+                    requestAnimationFrame(() => { cont.style.transition = 'opacity 200ms'; cont.style.opacity = '1'; });
+                } else {
+                    cont.style.opacity = '1';
+                }
+            });
+        });
+    }
+
+    global.contextMenoo = contextMenoo;
+
+    global.AddContextMenu = function (select, classNames, fader, headl, oLinks) {
+        const wire = () => new contextMenoo({
+            selector: select,
+            className: classNames,
+            fade: fader,
+            menuItems: oLinks,
+            headline: headl,
+        });
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', wire);
+        } else {
+            wire();
+        }
+    };
+})(typeof window !== 'undefined' ? window : this);

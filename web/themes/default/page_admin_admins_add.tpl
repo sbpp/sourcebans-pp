@@ -67,7 +67,7 @@
                         <div id="password.msg" class="badentry"></div>
                     </td>
                     <td align="left">
-                        <button onclick="xajax_generatePassword();" class="tip" title="::Generate random password">
+                        <button type="button" onclick="LoadGeneratePassword();return false;" class="tip" title="::Generate random password">
                             <i class="fas fa-sync fa-lg"></i>
                         </button>
                         <button onclick="$('password').type='text'" class="tip" title="::Show password">

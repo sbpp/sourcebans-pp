@@ -48,7 +48,7 @@
                 if($('group_{$asrv[1]}'))$('group_{$asrv[1]}').checked = true;
                 {/foreach}
                 {foreach from=$server_list item="server"}
-                xajax_ServerHostPlayers({$server.sid}, "id", "host_{$server.sid}");
+                LoadServerHost({$server.sid}, "id", "host_{$server.sid}");
                 {/foreach}
             </script>
         </div>

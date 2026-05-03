@@ -135,8 +135,9 @@ Auth::init($GLOBALS['PDO']);
 $userbank = new CUserManager(Auth::verify());
 
 // ---------------------------------------------------
-// Bind a CSRF token to the session (must run before xajax dispatch
-// and before any form is rendered so the token is available).
+// Bind a CSRF token to the session (must run before any form is
+// rendered so the token is available, and before any state-changing
+// API request reaches the dispatcher).
 // ---------------------------------------------------
 CSRF::init();
 

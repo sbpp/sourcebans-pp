@@ -46,7 +46,7 @@ foreach ($rows as $row) {
         $info['evOnClick'] = "window.location = 'index.php?p=servers&s=" . $info['index'] . "';";
     }
 
-    $GLOBALS['server_qry'] .= "xajax_ServerHostPlayers({$info['sid']}, 'servers', '', '" . $i . "', '" . $number . "', '" . defined('IN_HOME') . "', 70);";
+    $GLOBALS['server_qry'] .= "LoadServerHost({$info['sid']}, 'servers', '', '" . $i . "', '" . $number . "', " . (defined('IN_HOME') ? 'true' : 'false') . ", 70);";
     array_push($servers, $info);
     $i++;
 }

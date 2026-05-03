@@ -66,7 +66,7 @@ foreach ($rows as $row) {
     }
     $info['popup']    = "ShowBox('Blocked player: " . $cleaned_name . "', '" . $cleaned_name . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
 
-    $GLOBALS['server_qry'] .= "xajax_ServerHostProperty(" . $row['sid'] . ", 'block_" . $row['sid'] . "_$blcount', 'title', 100);";
+    $GLOBALS['server_qry'] .= "LoadServerHostProperty(" . $row['sid'] . ", 'block_" . $row['sid'] . "_$blcount', 'title', 100);";
 
     $stopped []= $info;
     ++$blcount;

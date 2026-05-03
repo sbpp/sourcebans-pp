@@ -13,11 +13,11 @@
             <td width="25%" height='16' class="listtable_top"><strong>Action</strong></td>
         </tr>
         {foreach from=$submission_list item="sub"}
-            <tr id="sid_{$sub.subid}" class="opener3 tbl_out" {if $sub.hostname == ""}onclick="xajax_ServerHostPlayers('{$sub.server}', 'id', 'sub{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
+            <tr id="sid_{$sub.subid}" class="opener3 tbl_out" {if $sub.hostname == ""}onclick="LoadServerHost('{$sub.server}', 'id', 'sub{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
                 <td class="listtable_1" height='16'>{$sub.name nofilter}</td>
                 <td class="listtable_1" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
                 <td class="listtable_1" height='16'>
-                    <a href="#" onclick="xajax_SetupBan({$sub.subid});return false;">Ban</a> -
+                    <a href="#" onclick="LoadSetupBan({$sub.subid});return false;">Ban</a> -
                     {if $permissions_editsub}
                         <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|smarty_stripslashes}', '1');return false;">Remove</a> -
                     {/if}

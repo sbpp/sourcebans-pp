@@ -41,19 +41,25 @@
         </div></div>
     <script>
 
-        $E('html').onkeydown = function(event){
-            var event = new Event(event);
-            if (event.key == 'enter' ) SendRcon();
-        };
+        document.documentElement.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') SendRcon();
+        });
 
         function SendRcon()
         {
-            xajax_SendRcon('-{$id}-', $('cmd').value, true);
-            $('cmd').value='Executing, Please Wait...'; $('cmd').disabled='true'; $('rcon_btn').disabled='true';
-
+            LoadSendRcon('-{$id}-', sb.$id('cmd').value, true);
+            sb.$id('cmd').value = 'Executing, Please Wait...';
+            sb.$id('cmd').disabled = true;
+            sb.$id('rcon_btn').disabled = true;
         }
 
-        var scroll = new Fx.Scroll($('rcon'),{duration: 500, transition: Fx.Transitions.Cubic.easeInOut});
-        if(scroll)scroll.toBottom();
+        // Auto-scroll the RCON pane to the bottom (replaces Fx.Scroll).
+        var scroll = (function () {
+            var box = sb.$id('rcon');
+            return {
+                toBottom: function () { if (box) box.scrollTop = box.scrollHeight; },
+            };
+        })();
+        scroll.toBottom();
     </script>
     -{/if}-

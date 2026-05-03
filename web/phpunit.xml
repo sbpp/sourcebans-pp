@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory=".phpunit.cache"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnRisky="true"
+         failOnWarning="true">
+    <testsuites>
+        <testsuite name="api">
+            <directory>tests/api</directory>
+        </testsuite>
+        <testsuite name="integration">
+            <directory>tests/integration</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <directory>api</directory>
+            <directory>includes</directory>
+        </include>
+        <exclude>
+            <directory>includes/vendor</directory>
+            <directory>includes/tinymce</directory>
+        </exclude>
+    </source>
+    <php>
+        <env name="DB_HOST" value="db"/>
+        <env name="DB_PORT" value="3306"/>
+        <env name="DB_NAME" value="sourcebans_test"/>
+        <env name="DB_USER" value="sourcebans"/>
+        <env name="DB_PASS" value="sourcebans"/>
+        <env name="DB_PREFIX" value="sb_"/>
+        <env name="DB_CHARSET" value="utf8mb4"/>
+    </php>
+</phpunit>

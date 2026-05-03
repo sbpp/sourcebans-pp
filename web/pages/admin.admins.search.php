@@ -25,7 +25,7 @@ $servers      = [];
 $serverscript = "<script type=\"text/javascript\">";
 foreach ($server_list as $row) {
     $info = [];
-    $serverscript .= "xajax_ServerHostPlayers('" . $row['sid'] . "', 'id', 'ss" . $row['sid'] . "', '', '', false, 200);";
+    $serverscript .= "LoadServerHost('" . $row['sid'] . "', 'id', 'ss" . $row['sid'] . "', '', '', false, 200);";
     $info['sid']  = $row['sid'];
     $info['ip']   = $row['ip'];
     $info['port'] = $row['port'];

@@ -11,11 +11,9 @@ parameters:
         - .
     excludePaths:
         - includes/vendor/*
-        - includes/xajax.inc.php
-        - includes/xajaxResponse.inc.php
-        - includes/xajaxCompress.php
         - includes/auth/openid.php
         - includes/tinymce/*
         - cache/*
         - templates_c/*
+        - tests/*
         - phpstan-bootstrap.php

@@ -1,0 +1,90 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/test.yml'
+
+jobs:
+  phpunit:
+    name: PHPUnit
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+
+    services:
+      mariadb:
+        image: mariadb:10.11
+        ports:
+          - 3306:3306
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sourcebans_test
+          MARIADB_USER: sourcebans
+          MARIADB_PASSWORD: sourcebans
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, pdo_mysql, openssl, gmp, mbstring, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Get composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('web/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --no-interaction
+
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; then
+              echo "ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "MariaDB never came up" >&2; exit 1
+
+      - name: Grant test user CREATE/DROP on test database
+        run: |
+          mysql -h 127.0.0.1 -u root -proot <<'SQL'
+            GRANT ALL PRIVILEGES ON *.* TO 'sourcebans'@'%';
+            FLUSH PRIVILEGES;
+          SQL
+
+      - name: Run PHPUnit
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_NAME: sourcebans_test
+          DB_USER: sourcebans
+          DB_PASS: sourcebans
+          DB_PREFIX: sb
+          DB_CHARSET: utf8mb4
+        run: includes/vendor/bin/phpunit --testdox

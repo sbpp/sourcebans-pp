@@ -77,7 +77,7 @@ for ($i = 0; $i < count($server_group_list); $i++) {
         $server_arr .= $server['server_id'] . ";";
     }
     echo "<script>";
-    echo "xajax_ServerHostPlayers_list('" . $server_arr . "', 'id', 'servers_" . $server_group_list[$i]['gid'] . "');";
+    echo "LoadServerHostPlayersList('" . $server_arr . "', 'id', 'servers_" . $server_group_list[$i]['gid'] . "');";
     echo "</script>";
 }
 // List Group

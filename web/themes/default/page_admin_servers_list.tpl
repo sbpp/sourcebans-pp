@@ -14,7 +14,7 @@
                     <td class="front-module-header" height='16'><strong>Action</strong></td>
                 </tr>
                 {foreach from=$server_list item="server"}
-                    <script>xajax_ServerHostPlayers({$server.sid});</script>
+                    <script>LoadServerHost({$server.sid});</script>
                     <tr id="sid_{$server.sid}" {if $server.enabled==0}style="background-color:#eaeaea" title="Disabled"{/if}>
                         <td style="border-bottom: solid 1px #ccc" height='16'>{$server.sid}</td>
                         <td style="border-bottom: solid 1px #ccc" height='16' id="host_{$server.sid}"><i>Querying Server Data...</i></td>

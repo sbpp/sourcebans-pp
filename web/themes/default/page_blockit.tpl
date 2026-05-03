@@ -1,21 +1,65 @@
 <html>
 <head>
-    -{$xajax_functions nofilter}-
+    <meta name="csrf-token" content="-{$csrf_token}-" />
+    <script type="text/javascript" src="../scripts/sb.js"></script>
+    <script type="text/javascript" src="../scripts/api.js"></script>
     <script type="text/javascript">
         //<![CDATA[
-        window.onload = function() {xajax_LoadServers2('-{$check}-', '-{$type}-', '-{$length}-');}
         var srvcount = 0;
-        function set_counter(count)
-        {
+        function set_counter(count) {
             srvcount += count;
-            if(srvcount==-{$total}- || count=='-1') {
-                parent.document.getElementById('dialog-control').innerHTML = "<font color=\"green\" style=\"font-size: 12px;\"><b>Done searching.</b></font>"+parent.document.getElementById('dialog-control').innerHTML;
-                parent.document.getElementById('dialog-control').setStyle('display', 'block');
-                setTimeout("parent.document.getElementById('dialog-placement').setStyle('display', 'none');",5000);
-                setTimeout("window.location='../index.php?p=admin&c=comms'",5000);
+            if (srvcount === -{$total}- || count === -1 || count === '-1') {
+                parent.document.getElementById('dialog-control').innerHTML =
+                    '<font color="green" style="font-size: 12px;"><b>Done searching.</b></font>'
+                    + parent.document.getElementById('dialog-control').innerHTML;
+                parent.document.getElementById('dialog-control').style.display = 'block';
+                setTimeout(function () {
+                    parent.document.getElementById('dialog-placement').style.display = 'none';
+                }, 5000);
+                setTimeout(function () { window.location = '../index.php?p=admin&c=comms'; }, 5000);
             }
         }
-        parent.document.getElementById('dialog-control').setStyle('display', 'none');
+
+        function processRow(check, type, length, sid, num) {
+            sb.api.call('blockit.block_player', { check: check, sid: sid, num: num, type: Number(type), length: Number(length) })
+                .then(function (r) {
+                    if (!r || !r.ok || !r.data) {
+                        sb.setHTML('srv_' + num, "<font color='red' size='1'><i>Error.</i></font>");
+                        set_counter(1);
+                        return;
+                    }
+                    var d = r.data;
+                    if (d.hostname) {
+                        sb.setHTML('srvip_' + num, "<font size='1'><span title='" + d.ip + ':' + d.port + "'>" + d.hostname + "</span></font>");
+                    }
+                    if (d.status === 'no_connect') {
+                        sb.setHTML('srv_' + num, "<font color='red' size='1'><i>Can't connect to server.</i></font>");
+                        set_counter(1);
+                    } else if (d.status === 'blocked') {
+                        sb.setHTML('srv_' + num, "<font color='green' size='1'><b><u>Player Found & blocked!</u></b></font>");
+                        set_counter(-1);
+                    } else {
+                        sb.setHTML('srv_' + num, "<font size='1'>Player not found.</font>");
+                        set_counter(1);
+                    }
+                });
+        }
+
+        window.addEventListener('load', function () {
+            parent.document.getElementById('dialog-control').style.display = 'none';
+            sb.api.call('blockit.load_servers', {}).then(function (r) {
+                if (!r || !r.ok || !r.data) return;
+                r.data.servers.forEach(function (s) {
+                    if (s.has_rcon) {
+                        sb.setHTML('srv_' + s.num, '<font size="1">Searching...</font>');
+                        processRow('-{$check}-', '-{$type}-', '-{$length}-', s.sid, s.num);
+                    } else {
+                        sb.setHTML('srv_' + s.num, '<font size="1">No rcon password.</font>');
+                        set_counter(1);
+                    }
+                });
+            });
+        });
         //]]>
     </script>
 </head>
@@ -42,11 +86,9 @@
     </table>
 </div>
 <script type="text/javascript">
-    if(document.all) {
-        parent.document.all["srvkicker"].height = document.all["container"].offsetHeight + 10;
-    }
-    else {
-        parent.document.getElementById("srvkicker").height = document.documentElement.clientHeight;
+    if (parent.document.getElementById('srvkicker')) {
+        parent.document.getElementById('srvkicker').height =
+            (document.getElementById('container').offsetHeight + 10) + 'px';
     }
 </script>
 </body>

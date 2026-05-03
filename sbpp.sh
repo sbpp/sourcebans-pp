@@ -22,6 +22,7 @@ Run things inside containers:
   shell [svc]     Open a shell. Default svc=web (root). svc=db opens mysql client.
   composer ...    Run composer inside the web container.
   phpstan         Run phpstan from web/phpstan.neon inside the web container.
+  test [args...]  Run PHPUnit (web/phpunit.xml) inside the web container.
   exec <cmd...>   Run an arbitrary command in the web container.
   mysql           Open a mysql client connected to the dev DB.
 
@@ -89,6 +90,17 @@ case "$cmd" in
             [ -f config.php ] && mv config.php config.php.devstash
             includes/vendor/bin/phpstan analyse "$@"
         ' -- "$@"
+        ;;
+    test)
+        # Behavioral gate added in #1081 alongside the xajax→JSON migration.
+        # Each test runs against a dedicated `sourcebans_test` database so it
+        # never stomps the dev data in `sourcebans`.
+        dc exec \
+            -e DB_HOST=db -e DB_PORT=3306 \
+            -e DB_NAME=sourcebans_test \
+            -e DB_USER=sourcebans -e DB_PASS=sourcebans \
+            -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
+            web includes/vendor/bin/phpunit -c /var/www/html/web/phpunit.xml --testdox "$@"
         ;;
     exec)
         dc exec web "$@"

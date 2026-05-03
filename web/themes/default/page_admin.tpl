@@ -123,4 +123,4 @@
         <td class="listtable_1" style="border-left: 3px solid #CFCAC6;">&nbsp;</td>
     </tr>
 </table>
-<script type="text/javascript">xajax_CheckVersion();</script>
+<script type="text/javascript">LoadCheckVersion();</script>

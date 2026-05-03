@@ -13,12 +13,12 @@
             <td width="25%" height='16' class="listtable_top"><strong>Action</strong></td>
         </tr>
         {foreach from=$submission_list_archiv item="sub"}
-            <tr id="asid_{$sub.subid}" class="opener4 tbl_out" {if $sub.hostname == ""}onclick="xajax_ServerHostPlayers('{$sub.server}', 'id', 'suba{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
+            <tr id="asid_{$sub.subid}" class="opener4 tbl_out" {if $sub.hostname == ""}onclick="LoadServerHost('{$sub.server}', 'id', 'suba{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
                 <td style="border-bottom: solid 1px #ccc" height='16'>{$sub.name nofilter}</td>
                 <td style="border-bottom: solid 1px #ccc" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
                 <td style="border-bottom: solid 1px #ccc" height='16'>
                     {if $sub.archiv != "2" and $sub.archiv != "3"}
-                        <a href="#" onclick="xajax_SetupBan({$sub.subid});">Ban</a> -
+                        <a href="#" onclick="LoadSetupBan({$sub.subid});">Ban</a> -
                         {if $permissions_editsub}
                             <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|smarty_stripslashes}', '2');">Restore</a> -
                         {/if}

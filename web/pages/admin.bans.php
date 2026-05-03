@@ -103,11 +103,11 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
 }
 
 if (isset($_GET["rebanid"])) {
-    echo '<script type="text/javascript">xajax_PrepareReban("' . (int) $_GET["rebanid"] . '");</script>';
+    echo '<script type="text/javascript">LoadPrepareReban("' . (int) $_GET["rebanid"] . '");</script>';
 }
 if ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pName']) && isset($_GET['sid'])) {
     $pNameJs = json_encode((string) $_GET['pName'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_PasteBan(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
+    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);sb.hide('dialog-control');LoadPasteBan(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
 }
 
 echo '<div id="admin-page-content">';
@@ -843,15 +843,24 @@ function ProcessBan()
         return 0;
     }
 
-    xajax_AddBan($('nickname').value,
-                 $('type').value,
-                 $('steam').value,
-                 $('ip').value,
-                 $('banlength').value,
-                 did,
-                 dname,
-                 reason,
-                 $('fromsub').value);
+    sb.api.call('bans.add', {
+        nickname: $('nickname').value,
+        type:     Number($('type').value),
+        steam:    $('steam').value,
+        ip:       $('ip').value,
+        length:   Number($('banlength').value),
+        dfile:    did,
+        dname:    dname,
+        reason:   reason,
+        fromsub:  Number($('fromsub').value || 0),
+    }).then(function (r) {
+        if (r && r.ok && r.data && r.data.kickit) {
+            ShowKickBox(r.data.kickit.check, r.data.kickit.type);
+            if (r.data.reload) TabToReload();
+            return;
+        }
+        applyApiResponse(r);
+    });
 }
 function ProcessGroupBan()
 {
@@ -861,7 +870,7 @@ function ProcessGroupBan()
     } else {
         $('groupurl.msg').setHTML('');
         $('groupurl.msg').setStyle('display', 'none');
-        xajax_GroupBan($('groupurl').value, "no", "no", $('groupreason').value, "");
+        LoadGroupBan($('groupurl').value, "no", "no", $('groupreason').value, "");
     }
 }
 function CheckGroupBan()
@@ -874,7 +883,7 @@ function CheckGroupBan()
     }
     for (var i=0;$('chkb_' + i);i++) {
         if($('chkb_' + i).checked == true) {
-            xajax_GroupBan($('chkb_' + i).value, "yes", "yes", $('groupreason').value, last);
+            LoadGroupBan($('chkb_' + i).value, "yes", "yes", $('groupreason').value, last);
         }
     }
 }

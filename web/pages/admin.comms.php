@@ -44,12 +44,12 @@ if (isset($GLOBALS['IN_ADMIN'])) {
 
 
 if (isset($_GET["rebanid"])) {
-    echo '<script type="text/javascript">xajax_PrepareReblock("' . (int) $_GET["rebanid"] . '");</script>';
+    echo '<script type="text/javascript">LoadPrepareReblock("' . (int) $_GET["rebanid"] . '");</script>';
 } elseif (isset($_GET["blockfromban"])) {
-    echo '<script type="text/javascript">xajax_PrepareBlockFromBan("' . (int) $_GET["blockfromban"] . '");</script>';
+    echo '<script type="text/javascript">LoadPrepareBlockFromBan("' . (int) $_GET["blockfromban"] . '");</script>';
 } elseif ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pName']) && isset($_GET['sid'])) {
     $pNameJs = json_encode((string) $_GET['pName'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_PasteBlock(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
+    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);sb.hide('dialog-control');LoadPasteBlock(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
 }
 
 echo '<div id="admin-page-content">';
@@ -70,12 +70,20 @@ function ProcessBan()
     if (reason == "other") {
         reason = $('txtReason').value;
     }
-    xajax_AddBlock($('nickname').value,
-        $('type').value,
-        $('steam').value,
-        $('banlength').value,
-        reason
-    );
+    sb.api.call('comms.add', {
+        nickname: $('nickname').value,
+        type:     Number($('type').value),
+        steam:    $('steam').value,
+        length:   Number($('banlength').value),
+        reason:   reason,
+    }).then(function (r) {
+        if (r && r.ok && r.data && r.data.block) {
+            ShowBlockBox(r.data.block.steam, r.data.block.type, r.data.block.length);
+            if (r.data.reload) TabToReload();
+            return;
+        }
+        applyApiResponse(r);
+    });
 }
 </script>
 </div>
