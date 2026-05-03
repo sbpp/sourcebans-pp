@@ -34,11 +34,12 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     echo '<script>ShowBox("Error", "No block id specified. Please only follow links!", "red", "index.php?p=admin&c=comms");</script>';
     PageDie();
 }
+$_GET['id'] = (int) $_GET['id'];
 
 $res = $GLOBALS['db']->GetRow("SELECT bid, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid
     FROM " . DB_PREFIX . "_comms AS ba
     LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
-    WHERE bid = {$_GET['id']}");
+    WHERE bid = ?", array($_GET['id']));
 
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res[8] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid'] != $userbank->GetProperty('gid'))) {
     echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=comms");</script>';
@@ -118,7 +119,7 @@ if (isset($_POST['name'])) {
 
     // Only process if there are still no errors
     if ($error == 0) {
-        $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid, type FROM " . DB_PREFIX . "_comms WHERE bid = '" . (int) $_GET['id'] . "'");
+        $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid, type FROM " . DB_PREFIX . "_comms WHERE bid = ?", array($_GET['id']));
         $edit = $GLOBALS['db']->Execute(
             "UPDATE " . DB_PREFIX . "_comms SET
             `name` = ?, `type` = ?, `reason` = ?, `authid` = ?,

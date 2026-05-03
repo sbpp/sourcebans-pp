@@ -3626,9 +3626,11 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
 function PrepareReblock($bid)
 {
     $objResponse = new xajaxResponse();
+    $bid = (int)$bid;
 
     $ban = $GLOBALS['db']->GetRow(
-        "SELECT name, authid, type, length, reason FROM ".DB_PREFIX."_comms WHERE bid = '".$bid."';"
+        "SELECT name, authid, type, length, reason FROM ".DB_PREFIX."_comms WHERE bid = ?;",
+        array($bid)
     );
 
     // clear any old stuff
@@ -3665,6 +3667,7 @@ function generatePassword()
 function PrepareBlockFromBan($bid)
 {
     $objResponse = new xajaxResponse();
+    $bid = (int)$bid;
 
     // clear any old stuff
     $objResponse->addScript("$('nickname').value = ''");
@@ -3672,7 +3675,7 @@ function PrepareBlockFromBan($bid)
     $objResponse->addScript("$('txtReason').value = ''");
     $objResponse->addAssign("txtReason", "innerHTML",  "");
 
-    $ban = $GLOBALS['db']->GetRow("SELECT name, authid FROM ".DB_PREFIX."_bans WHERE bid = '".$bid."';");
+    $ban = $GLOBALS['db']->GetRow("SELECT name, authid FROM ".DB_PREFIX."_bans WHERE bid = ?;", array($bid));
 
     // add new stuff
     $objResponse->addScript("$('nickname').value = '" . $ban['name'] . "'");

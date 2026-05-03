@@ -596,10 +596,11 @@ public Action CommandBanIp(int client, int args)
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 
-	char sQuery[256];
+	char sQuery[256], argEscaped[sizeof(arg) * 2 + 1];
+	DB.Escape(arg, argEscaped, sizeof(argEscaped));
 
 	FormatEx(sQuery, sizeof(sQuery), "SELECT bid FROM %s_bans WHERE type = 1 AND ip     = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
-		DatabasePrefix, arg);
+		DatabasePrefix, argEscaped);
 
 	DB.Query(SelectBanIpCallback, sQuery, dataPack, DBPrio_High);
 
@@ -646,13 +647,14 @@ public Action CommandUnban(int client, int args)
 	dataPack.WriteString(arg); // Steamid - IP
 	dataPack.WriteString(adminAuth); // Admin SteamID
 
-	char query[256];
+	char query[256], argEscaped[sizeof(arg) * 2 + 1];
+	DB.Escape(arg, argEscaped, sizeof(argEscaped));
 
 	if (strncmp(arg, "STEAM_", 6) == 0)
 	{
-		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 0 AND authid = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, arg);
+		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 0 AND authid = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, argEscaped);
 	} else {
-		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 1 AND ip     = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, arg);
+		Format(query, sizeof(query), "SELECT bid FROM %s_bans WHERE (type = 1 AND ip     = '%s') AND (length = '0' OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL", DatabasePrefix, argEscaped);
 	}
 
 	DB.Query(SelectUnbanCallback, query, dataPack);
@@ -734,10 +736,11 @@ public Action CommandAddBan(int client, int args)
 	dataPack.WriteString(adminAuth);
 	dataPack.WriteString(adminIp);
 
-	char sQuery[256];
+	char sQuery[256], authidEscaped[sizeof(authid) * 2 + 1];
+	DB.Escape(authid, authidEscaped, sizeof(authidEscaped));
 
 	FormatEx(sQuery, sizeof sQuery, "SELECT bid FROM %s_bans WHERE type = 0 AND authid = '%s' AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemoveType IS NULL",
-		DatabasePrefix, authid);
+		DatabasePrefix, authidEscaped);
 
 	DB.Query(SelectAddbanCallback, sQuery, dataPack, DBPrio_High);
 
@@ -1654,7 +1657,8 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 	if (!results.RowCount)
 	{
 		// get the game folder name used to determine the mod
-		char desc[64], query[200], rcon[128];
+		char desc[64], query[512], rcon[128];
+		char descEscaped[sizeof(desc) * 2 + 1], rconEscaped[sizeof(rcon) * 2 + 1];
 		GetGameFolderName(desc, sizeof(desc));
 		Format(rcon, sizeof(rcon), "");
 
@@ -1667,7 +1671,10 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 			}
 		}
 
-		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, rcon, DatabasePrefix, desc);
+		db.Escape(desc, descEscaped, sizeof(descEscaped));
+		db.Escape(rcon, rconEscaped, sizeof(rconEscaped));
+
+		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, rconEscaped, DatabasePrefix, descEscaped);
 		db.Query(ErrorCheckCallback, query);
 	}
 }

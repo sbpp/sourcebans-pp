@@ -34,14 +34,15 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     echo '<script>ShowBox("Error", "No ban id specified. Please only follow links!", "red", "index.php?p=admin&c=bans");</script>';
     PageDie();
 }
+$_GET['id'] = (int) $_GET['id'];
 
 $res = $GLOBALS['db']->GetRow("
-    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port), se.sid, mo.icon, (SELECT origname FROM " . DB_PREFIX . "_demos WHERE demtype = 'b' AND demid = {$_GET['id']})
+    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port), se.sid, mo.icon, (SELECT origname FROM " . DB_PREFIX . "_demos WHERE demtype = 'b' AND demid = ?)
     				FROM " . DB_PREFIX . "_bans AS ba
     				LEFT JOIN " . DB_PREFIX . "_admins AS ad ON ba.aid = ad.aid
     				LEFT JOIN " . DB_PREFIX . "_servers AS se ON se.sid = ba.sid
     				LEFT JOIN " . DB_PREFIX . "_mods AS mo ON mo.mid = se.modid
-    				WHERE bid = {$_GET['id']}");
+    				WHERE bid = ?", array($_GET['id'], $_GET['id']));
 
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res[8] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res->fields['gid'] != $userbank->GetProperty('gid'))) {
     echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=bans");</script>';
@@ -146,7 +147,7 @@ if (isset($_POST['name'])) {
 
     // Only process if there are still no errors
     if ($error == 0) {
-        $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM " . DB_PREFIX . "_bans WHERE bid = '" . (int) $_GET['id'] . "'");
+        $lengthrev = $GLOBALS['db']->Execute("SELECT length, authid FROM " . DB_PREFIX . "_bans WHERE bid = ?", array($_GET['id']));
 
 
         $edit = $GLOBALS['db']->Execute(
@@ -175,7 +176,7 @@ if (isset($_POST['name'])) {
         ));
 
         if (!empty($_POST['dname'])) {
-            $demoid = $GLOBALS['db']->GetRow("SELECT filename FROM `" . DB_PREFIX . "_demos` WHERE demid = '" . $_GET['id'] . "';");
+            $demoid = $GLOBALS['db']->GetRow("SELECT filename FROM `" . DB_PREFIX . "_demos` WHERE demid = ?;", array($_GET['id']));
             @unlink(SB_DEMOS . "/" . $demoid['filename']);
             $edit         = $GLOBALS['db']->Execute(
                 "REPLACE INTO " . DB_PREFIX . "_demos

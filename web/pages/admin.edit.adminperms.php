@@ -25,7 +25,7 @@ global $userbank;
 
 new AdminTabs([], $userbank, $theme);
 
-if (!isset($_GET['id'])) {
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -34,7 +34,8 @@ if (!isset($_GET['id'])) {
 </div>';
     PageDie();
 }
-$admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE aid = \"" . $_GET['id'] . "\"");
+$_GET['id'] = (int) $_GET['id'];
+$admin = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_admins WHERE aid = ?", array($_GET['id']));
 
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
@@ -48,7 +49,6 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
     PageDie();
 }
 
-$_GET['id'] = (int) $_GET['id'];
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
     Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access.");
     echo '<div id="msg-red" >
