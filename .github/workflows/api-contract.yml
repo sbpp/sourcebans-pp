@@ -1,0 +1,52 @@
+name: API contract
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/api/handlers/**'
+      - 'web/configs/permissions/**'
+      - 'web/bin/generate-api-contract.php'
+      - 'web/scripts/api-contract.js'
+      - 'web/composer.json'
+      - '.github/workflows/api-contract.yml'
+  pull_request:
+    paths:
+      - 'web/api/handlers/**'
+      - 'web/configs/permissions/**'
+      - 'web/bin/generate-api-contract.php'
+      - 'web/scripts/api-contract.js'
+      - 'web/composer.json'
+      - '.github/workflows/api-contract.yml'
+
+jobs:
+  api-contract:
+    name: Generated JS contract is up to date
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo, openssl, gmp, mbstring, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Regenerate api-contract.js
+        run: composer api-contract
+
+      # The generator is deterministic (sorted keys, stable formatting). Any
+      # diff here means the committed file is stale: run
+      # `./sbpp.sh composer api-contract` locally and commit the result.
+      - name: Fail on drift
+        run: |
+          if ! git diff --exit-code -- scripts/api-contract.js; then
+            echo "::error::web/scripts/api-contract.js is out of date — run 'composer api-contract' and commit the result."
+            exit 1
+          fi

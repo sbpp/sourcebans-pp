@@ -40,6 +40,7 @@
     },
     "scripts": {
         "test": "phpunit",
-        "phpstan": "phpstan analyse"
+        "phpstan": "phpstan analyse",
+        "api-contract": "php bin/generate-api-contract.php"
     }
 }

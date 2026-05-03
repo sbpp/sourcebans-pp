@@ -17,39 +17,11 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 Vanilla rewrite. Talks to /api.php through sb.api.call() (see api.js) and
 manipulates the DOM directly through sb.* helpers (see sb.js).
-*************************************************************************/
 
-const ADMIN_LIST_ADMINS       = (1 << 0);
-const ADMIN_ADD_ADMINS        = (1 << 1);
-const ADMIN_EDIT_ADMINS       = (1 << 2);
-const ADMIN_DELETE_ADMINS     = (1 << 3);
-const ADMIN_LIST_SERVERS      = (1 << 4);
-const ADMIN_ADD_SERVER        = (1 << 5);
-const ADMIN_EDIT_SERVERS      = (1 << 6);
-const ADMIN_DELETE_SERVERS    = (1 << 7);
-const ADMIN_ADD_BAN           = (1 << 8);
-const ADMIN_EDIT_OWN_BANS     = (1 << 10);
-const ADMIN_EDIT_GROUP_BANS   = (1 << 11);
-const ADMIN_EDIT_ALL_BANS     = (1 << 12);
-const ADMIN_BAN_PROTESTS      = (1 << 13);
-const ADMIN_BAN_SUBMISSIONS   = (1 << 14);
-const ADMIN_DELETE_BAN        = (1 << 25);
-const ADMIN_UNBAN             = (1 << 26);
-const ADMIN_BAN_IMPORT        = (1 << 27);
-const ADMIN_UNBAN_OWN_BANS    = (1 << 30);
-const ADMIN_UNBAN_GROUP_BANS  = (1 << 31);
-const ADMIN_NOTIFY_SUB        = (1 << 28);
-const ADMIN_NOTIFY_PROTEST    = (1 << 29);
-const ADMIN_LIST_GROUPS       = (1 << 15);
-const ADMIN_ADD_GROUP         = (1 << 16);
-const ADMIN_EDIT_GROUPS       = (1 << 17);
-const ADMIN_DELETE_GROUPS     = (1 << 18);
-const ADMIN_WEB_SETTINGS      = (1 << 19);
-const ADMIN_LIST_MODS         = (1 << 20);
-const ADMIN_ADD_MODS          = (1 << 21);
-const ADMIN_EDIT_MODS         = (1 << 22);
-const ADMIN_DELETE_MODS       = (1 << 23);
-const ADMIN_OWNER             = (1 << 24);
+Action names (Actions.*) and permission flags (Perms.*) come from the
+generated contract in scripts/api-contract.js — see #1097. Don't redeclare
+them here; regenerate the contract with `composer api-contract` instead.
+*************************************************************************/
 
 let accordion;
 
@@ -152,7 +124,7 @@ function DoLogin(redir) {
     if (err) return false;
     if (typeof redir === 'undefined') redir = '';
 
-    sb.api.call('auth.login', { username, password, remember, redirect: redir });
+    sb.api.call(Actions.AuthLogin, { username, password, remember, redirect: redir });
 }
 
 // Slide an element up and remove it from the DOM (replaces MooTools Fx.Slide).
@@ -164,12 +136,12 @@ function SlideUp(id) {
 
 function RemoveGroup(id, name, type) {
     if (!confirm(`Are you sure you want to delete the group: '${name}'?`)) return;
-    sb.api.call('groups.remove', { gid: id, type }).then(applyApiResponse);
+    sb.api.call(Actions.GroupsRemove, { gid: id, type }).then(applyApiResponse);
 }
 
 function RemoveAdmin(id, name) {
     if (!confirm(`Are you sure you want to delete '${name}'?`)) return;
-    sb.api.call('admins.remove', { aid: id }).then(applyApiResponse);
+    sb.api.call(Actions.AdminsRemove, { aid: id }).then(applyApiResponse);
 }
 
 function RemoveSubmission(id, name, archiv) {
@@ -178,7 +150,7 @@ function RemoveSubmission(id, name, archiv) {
     else if (archiv === '1') msg = `Are you sure you want to move the ban submission for '${name}' to the archive?`;
     else msg = `Are you sure you want to delete the ban submission for '${name}'?`;
     if (!confirm(msg)) return;
-    sb.api.call('submissions.remove', { sid: id, archiv }).then(applyApiResponse);
+    sb.api.call(Actions.SubmissionsRemove, { sid: id, archiv }).then(applyApiResponse);
 }
 
 function RemoveProtest(id, name, archiv) {
@@ -187,12 +159,12 @@ function RemoveProtest(id, name, archiv) {
     else if (archiv === '1') msg = `Are you sure you want to move the ban protest for '${name}' to the archive?`;
     else msg = `Are you sure you want to delete the ban protest for '${name}'?`;
     if (!confirm(msg)) return;
-    sb.api.call('protests.remove', { pid: id, archiv }).then(applyApiResponse);
+    sb.api.call(Actions.ProtestsRemove, { pid: id, archiv }).then(applyApiResponse);
 }
 
 function RemoveServer(id, name) {
     if (!confirm(`Are you sure you want to delete the server: '${name}'?`)) return;
-    sb.api.call('servers.remove', { sid: id }).then(applyApiResponse);
+    sb.api.call(Actions.ServersRemove, { sid: id }).then(applyApiResponse);
 }
 
 function RemoveBan(id, key, page, name, confirmStep, bulk) {
@@ -232,15 +204,15 @@ function BoxToMask() {
     let m = 0;
     if (!sb.$id('p4')) return m;
     const map = {
-        p4: ADMIN_LIST_ADMINS, p5: ADMIN_ADD_ADMINS, p6: ADMIN_EDIT_ADMINS, p7: ADMIN_DELETE_ADMINS,
-        p9: ADMIN_LIST_SERVERS, p10: ADMIN_ADD_SERVER, p11: ADMIN_EDIT_SERVERS, p12: ADMIN_DELETE_SERVERS,
-        p14: ADMIN_ADD_BAN, p16: ADMIN_EDIT_OWN_BANS, p17: ADMIN_EDIT_GROUP_BANS, p18: ADMIN_EDIT_ALL_BANS,
-        p19: ADMIN_BAN_PROTESTS, p20: ADMIN_BAN_SUBMISSIONS, p38: ADMIN_UNBAN_OWN_BANS, p39: ADMIN_UNBAN_GROUP_BANS,
-        p32: ADMIN_UNBAN, p33: ADMIN_DELETE_BAN, p34: ADMIN_BAN_IMPORT,
-        p36: ADMIN_NOTIFY_SUB, p37: ADMIN_NOTIFY_PROTEST,
-        p22: ADMIN_LIST_GROUPS, p23: ADMIN_ADD_GROUP, p24: ADMIN_EDIT_GROUPS, p25: ADMIN_DELETE_GROUPS,
-        p26: ADMIN_WEB_SETTINGS, p28: ADMIN_LIST_MODS, p29: ADMIN_ADD_MODS, p30: ADMIN_EDIT_MODS, p31: ADMIN_DELETE_MODS,
-        p2: ADMIN_OWNER,
+        p4: Perms.ADMIN_LIST_ADMINS, p5: Perms.ADMIN_ADD_ADMINS, p6: Perms.ADMIN_EDIT_ADMINS, p7: Perms.ADMIN_DELETE_ADMINS,
+        p9: Perms.ADMIN_LIST_SERVERS, p10: Perms.ADMIN_ADD_SERVER, p11: Perms.ADMIN_EDIT_SERVERS, p12: Perms.ADMIN_DELETE_SERVERS,
+        p14: Perms.ADMIN_ADD_BAN, p16: Perms.ADMIN_EDIT_OWN_BANS, p17: Perms.ADMIN_EDIT_GROUP_BANS, p18: Perms.ADMIN_EDIT_ALL_BANS,
+        p19: Perms.ADMIN_BAN_PROTESTS, p20: Perms.ADMIN_BAN_SUBMISSIONS, p38: Perms.ADMIN_UNBAN_OWN_BANS, p39: Perms.ADMIN_UNBAN_GROUP_BANS,
+        p32: Perms.ADMIN_UNBAN, p33: Perms.ADMIN_DELETE_BAN, p34: Perms.ADMIN_BAN_IMPORT,
+        p36: Perms.ADMIN_NOTIFY_SUB, p37: Perms.ADMIN_NOTIFY_PROTEST,
+        p22: Perms.ADMIN_LIST_GROUPS, p23: Perms.ADMIN_ADD_GROUP, p24: Perms.ADMIN_EDIT_GROUPS, p25: Perms.ADMIN_DELETE_GROUPS,
+        p26: Perms.ADMIN_WEB_SETTINGS, p28: Perms.ADMIN_LIST_MODS, p29: Perms.ADMIN_ADD_MODS, p30: Perms.ADMIN_EDIT_MODS, p31: Perms.ADMIN_DELETE_MODS,
+        p2: Perms.ADMIN_OWNER,
     };
     Object.keys(map).forEach((k) => { const el = sb.$id(k); if (el && el.checked) m |= map[k]; });
     return m;
@@ -260,7 +232,7 @@ function UpdateCheckBox(tgl, start, stop) {
 }
 
 function ProcessGroup() {
-    sb.api.call('groups.add', {
+    sb.api.call(Actions.GroupsAdd, {
         name:     sb.$id('groupname').value,
         type:     sb.$id('grouptype').value,
         bitmask:  BoxToMask(),
@@ -281,7 +253,7 @@ function update_web() {
 
     if (v === 'c' || v === 'n') {
         setTimeout(() => {
-            sb.api.call('admins.update_perms', { type: 1, value: v }).then((r) => {
+            sb.api.call(Actions.AdminsUpdatePerms, { type: 1, value: v }).then((r) => {
                 if (r && r.ok) {
                     const id = (r.data && r.data.id) || 'web';
                     sb.setHTML(id + 'perm', (r.data && r.data.permissions) || '');
@@ -304,7 +276,7 @@ function update_server_groups() {
         sb.setHTML('group.msg', 'Please Wait...'); sb.show('group.msg');
         Shrink('nsgroup', 500, 50);
         setTimeout(() => {
-            sb.api.call('groups.add_server_group_name', {}).then((r) => {
+            sb.api.call(Actions.GroupsAddServerGroupName, {}).then((r) => {
                 if (r && r.ok && r.data) {
                     sb.setHTML('nsgroup', r.data.html || '');
                     sb.setHTML('group.msg', '');
@@ -352,7 +324,7 @@ function ProcessAddAdmin() {
         servers:        grp,
         single_servers: svr,
     };
-    sb.api.call('admins.add', params).then(applyApiResponse);
+    sb.api.call(Actions.AdminsAdd, params).then(applyApiResponse);
 }
 
 function ProcessEditAdminPermissions() {
@@ -364,7 +336,7 @@ function ProcessEditAdminPermissions() {
         ShowBox('Error', 'Immunity must be a numerical value (0-9)', 'red', '', true);
         return;
     }
-    sb.api.call('admins.edit_perms', { aid, web_flags: mask, srv_flags: srvMask }).then(applyApiResponse);
+    sb.api.call(Actions.AdminsEditPerms, { aid, web_flags: mask, srv_flags: srvMask }).then(applyApiResponse);
 }
 
 function ProcessEditGroup(type, name) {
@@ -420,7 +392,7 @@ function ProcessEditGroup(type, name) {
         };
     }
 
-    sb.api.call('groups.edit', {
+    sb.api.call(Actions.GroupsEdit, {
         gid: group, web_flags: mask, srv_flags: srvMask, type, name,
         overrides: JSON.stringify(overrides),
         new_override: JSON.stringify(newOverride),
@@ -439,7 +411,7 @@ function update_server() {
 
     if (v === 'c' || v === 'n') {
         setTimeout(() => {
-            sb.api.call('admins.update_perms', { type: 2, value: v }).then((r) => {
+            sb.api.call(Actions.AdminsUpdatePerms, { type: 2, value: v }).then((r) => {
                 if (r && r.ok) {
                     const id = (r.data && r.data.id) || 'server';
                     sb.setHTML(id + 'perm', (r.data && r.data.permissions) || '');
@@ -459,7 +431,7 @@ function update_server() {
 function process_add_server() {
     let grp = '';
     document.getElementsByName('groups[]').forEach((el) => { if (el.checked) grp += `,${el.value}`; });
-    sb.api.call('servers.add', {
+    sb.api.call(Actions.ServersAdd, {
         ip:       sb.$id('address').value,
         port:     sb.$id('port').value,
         rcon:     sb.$id('rcon').value,
@@ -548,7 +520,7 @@ function ProcessMod() {
     else                          { sb.setHTML('folder.msg', ''); sb.hide('folder.msg'); }
     if (err) return 0;
 
-    sb.api.call('mods.add', {
+    sb.api.call(Actions.ModsAdd, {
         name:           sb.$id('name').value,
         folder:         sb.$id('folder').value,
         icon:           icname,
@@ -575,7 +547,7 @@ function CheckEmail(type, id) {
     if (!sb.$id('message').value) { sb.setHTML('message.msg', 'You must type a message for the email.'); sb.show('message.msg'); err++; }
     else                           { sb.setHTML('message.msg', ''); sb.hide('message.msg'); }
     if (err > 0) return;
-    sb.api.call('system.send_mail', {
+    sb.api.call(Actions.SystemSendMail, {
         subject: sb.$id('subject').value,
         message: sb.$id('message').value,
         type, id,
@@ -604,7 +576,7 @@ function ClearLogs() {
 
 function RemoveMod(name, id) {
     if (!confirm(`Are you sure you want to delete '${name}'?`)) return;
-    sb.api.call('mods.remove', { mid: id }).then(applyApiResponse);
+    sb.api.call(Actions.ModsRemove, { mid: id }).then(applyApiResponse);
 }
 
 function UpdateGroupPermissionCheckBoxes() {
@@ -620,7 +592,7 @@ function UpdateGroupPermissionCheckBoxes() {
 
     if (v !== '3' && v !== '0') {
         setTimeout(() => {
-            sb.api.call('groups.update_perms', { gid: Number(v) }).then((r) => {
+            sb.api.call(Actions.GroupsUpdatePerms, { gid: Number(v) }).then((r) => {
                 if (r && r.ok && r.data) {
                     sb.setHTML('perms', r.data.permissions || '');
                     if (!r.data.is_owner) {
@@ -666,7 +638,7 @@ function ShowRehashBox(servers, title, msg, color, redir) {
     ShowBox(title, msg, color, redir, true);
     sb.hide('dialog-control');
 
-    sb.api.call('system.rehash_admins', { servers }).then((r) => {
+    sb.api.call(Actions.SystemRehashAdmins, { servers }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const div = sb.$id('rehashDiv');
         if (!div) return;
@@ -697,15 +669,15 @@ function ProcessComment() {
         page:  Number(sb.$id('page').value),
     };
     if (cid === '-1' || Number(cid) === -1) {
-        sb.api.call('bans.add_comment', params).then(applyApiResponse);
+        sb.api.call(Actions.BansAddComment, params).then(applyApiResponse);
     } else {
-        sb.api.call('bans.edit_comment', params).then(applyApiResponse);
+        sb.api.call(Actions.BansEditComment, params).then(applyApiResponse);
     }
 }
 
 function RemoveComment(cid, type, page) {
     if (!confirm('Are you sure you want to delete the comment?')) return;
-    sb.api.call('bans.remove_comment', { cid, ctype: type, page: Number(page) }).then(applyApiResponse);
+    sb.api.call(Actions.BansRemoveComment, { cid, ctype: type, page: Number(page) }).then(applyApiResponse);
 }
 
 function TickSelectAll() {
@@ -740,7 +712,7 @@ function BanFriendsProcess(fid, name) {
     if (!confirm(`Are you sure you want to ban all steam community friends of '${name}'?`)) return;
     ShowBox(`Banning friends of ${name}`, `Banning all steam community friends of '${name}'.<br />Please wait...`, 'blue', '', true);
     sb.hide('dialog-control');
-    sb.api.call('bans.ban_friends', { friendid: fid, name }).then((r) => { applyApiResponse(r); });
+    sb.api.call(Actions.BansBanFriends, { friendid: fid, name }).then((r) => { applyApiResponse(r); });
 }
 
 function OpenMessageBox(sid, name, popup) {
@@ -754,7 +726,7 @@ function OpenMessageBox(sid, name, popup) {
         sb.setHTML('ingamemsg.msg', ''); sb.hide('ingamemsg.msg');
         sb.hide('dialog-control');
         sb.$id('ingamemsg').readOnly = true;
-        sb.api.call('bans.send_message', { sid, name, message }).then(applyApiResponse);
+        sb.api.call(Actions.BansSendMessage, { sid, name, message }).then(applyApiResponse);
     }
 }
 
@@ -765,7 +737,7 @@ function KickPlayerConfirm(sid, name, conf) {
         sb.$id('kbutton').addEventListener('click', () => KickPlayerConfirm(sid, name, 1));
     } else if (conf === 1) {
         sb.hide('dialog-control');
-        sb.api.call('bans.kick_player', { sid, name }).then(applyApiResponse);
+        sb.api.call(Actions.BansKickPlayer, { sid, name }).then(applyApiResponse);
     }
 }
 
@@ -802,7 +774,7 @@ function selectLengthTypeReason(length, type, reason) {
 function ViewCommunityProfile(sid, name) {
     ShowBox('View Community Profile', `Generating Community Profile link for "${name}", please wait...`, 'blue', '', true);
     sb.hide('dialog-control');
-    sb.api.call('bans.view_community', { sid, name }).then((r) => {
+    sb.api.call(Actions.BansViewCommunity, { sid, name }).then((r) => {
         if (r && r.ok && r.data && r.data.url) {
             window.open(r.data.url);
             sb.message.show('Community Profile', `<b>Watch the profile <a href="${r.data.url}" target="_blank">here</a>.</b>`, 'green', '', true);
@@ -909,7 +881,7 @@ function LoadServerHost(sid, type, obId, tplsid, open, inHome, trunchostname) {
     open          = open          || '';
     trunchostname = trunchostname || 48;
 
-    sb.api.call('servers.host_players', { sid, trunchostname }).then((r) => {
+    sb.api.call(Actions.ServersHostPlayers, { sid, trunchostname }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const d = r.data;
 
@@ -1017,7 +989,7 @@ function renderPlayerTable(sid, players, canBan) {
 
 /** Replace xajax_ServerHostProperty: fetch and assign one property. */
 function LoadServerHostProperty(sid, obId, obProp, trunchostname) {
-    sb.api.call('servers.host_property', { sid, trunchostname: trunchostname || 48 }).then((r) => {
+    sb.api.call(Actions.ServersHostProperty, { sid, trunchostname: trunchostname || 48 }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const text = (r.data.error === 'connect')
             ? `Error connecting (${r.data.ip}:${r.data.port})`
@@ -1031,7 +1003,7 @@ function LoadServerHostProperty(sid, obId, obProp, trunchostname) {
 
 /** Replace xajax_ServerHostPlayers_list (used on the public servers page). */
 function LoadServerHostPlayersList(sids, type, obId) {
-    sb.api.call('servers.host_players_list', { sids }).then((r) => {
+    sb.api.call(Actions.ServersHostPlayersList, { sids }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const html = (r.data.lines || []).map((l) => `${l}<br />`).join('');
         if (type === 'id') sb.setHTML(obId, html);
@@ -1041,7 +1013,7 @@ function LoadServerHostPlayersList(sids, type, obId) {
 
 /** Replace xajax_ServerPlayers (poll). */
 function LoadServerPlayers(sid) {
-    sb.api.call('servers.players', { sid }).then((r) => {
+    sb.api.call(Actions.ServersPlayers, { sid }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const tbl = sb.$id(`player_detail_${sid}`);
         if (tbl) {
@@ -1087,19 +1059,19 @@ function applyBanFields(d, opts) {
 }
 
 function LoadSetupBan(subid) {
-    sb.api.call('bans.setup_ban', { subid }).then((r) => {
+    sb.api.call(Actions.BansSetupBan, { subid }).then((r) => {
         if (r && r.ok && r.data) applyBanFields(r.data);
     });
 }
 
 function LoadPrepareReban(bid) {
-    sb.api.call('bans.prepare_reban', { bid }).then((r) => {
+    sb.api.call(Actions.BansPrepareReban, { bid }).then((r) => {
         if (r && r.ok && r.data) applyBanFields(r.data);
     });
 }
 
 function LoadPasteBan(sid, name, type) {
-    sb.api.call('bans.paste', { sid, name, type: type || 0 }).then((r) => {
+    sb.api.call(Actions.BansPaste, { sid, name, type: type || 0 }).then((r) => {
         if (r && r.ok && r.data) {
             applyBanFields(r.data);
             sb.show('dialog-control');
@@ -1112,13 +1084,13 @@ function LoadPasteBan(sid, name, type) {
 }
 
 function LoadPrepareReblock(bid) {
-    sb.api.call('comms.prepare_reblock', { bid }).then((r) => {
+    sb.api.call(Actions.CommsPrepareReblock, { bid }).then((r) => {
         if (r && r.ok && r.data) applyBanFields(r.data);
     });
 }
 
 function LoadPasteBlock(sid, name) {
-    sb.api.call('comms.paste', { sid, name }).then((r) => {
+    sb.api.call(Actions.CommsPaste, { sid, name }).then((r) => {
         if (r && r.ok && r.data) {
             applyBanFields(r.data);
             sb.show('dialog-control');
@@ -1131,7 +1103,7 @@ function LoadPasteBlock(sid, name) {
 }
 
 function LoadPrepareBlockFromBan(bid) {
-    sb.api.call('comms.prepare_block_from_ban', { bid }).then((r) => {
+    sb.api.call(Actions.CommsPrepareBlockFromBan, { bid }).then((r) => {
         if (r && r.ok && r.data) applyBanFields(r.data);
     });
 }
@@ -1140,7 +1112,7 @@ function LoadPrepareBlockFromBan(bid) {
 // Setup edit server — replace xajax_SetupEditServer.
 // =====================================================================
 function LoadSetupEditServer(sid) {
-    sb.api.call('servers.setup_edit', { sid }).then((r) => {
+    sb.api.call(Actions.ServersSetupEdit, { sid }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const d = r.data;
         if (sb.$id('address'))     sb.$id('address').value     = d.ip   || '';
@@ -1156,7 +1128,7 @@ function LoadSetupEditServer(sid) {
 // Replace xajax_CheckVersion — fills #relver / #svnrev / #versionmsg.
 // =====================================================================
 function LoadCheckVersion() {
-    sb.api.call('system.check_version', {}).then((r) => {
+    sb.api.call(Actions.SystemCheckVersion, {}).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const d = r.data;
         const colour = (ok) => ok ? '#aa0000' : '#00aa00';
@@ -1174,7 +1146,7 @@ function LoadCheckVersion() {
 // Replace xajax_CheckPassword / CheckSrvPassword — show inline error.
 // =====================================================================
 function LoadCheckPassword(aid, pass) {
-    sb.api.call('account.check_password', { aid, password: pass }).then((r) => {
+    sb.api.call(Actions.AccountCheckPassword, { aid, password: pass }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         if (!r.data.matches) {
             sb.show('current.msg'); sb.setHTML('current.msg', 'Incorrect password.');
@@ -1187,7 +1159,7 @@ function LoadCheckPassword(aid, pass) {
 }
 
 function LoadCheckSrvPassword(aid, pass) {
-    sb.api.call('account.check_srv_password', { aid, password: pass }).then((r) => {
+    sb.api.call(Actions.AccountCheckSrvPassword, { aid, password: pass }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         if (!r.data.matches) {
             sb.show('scurrent.msg'); sb.setHTML('scurrent.msg', 'Incorrect password.');
@@ -1200,22 +1172,22 @@ function LoadCheckSrvPassword(aid, pass) {
 }
 
 function LoadChangePassword(aid, newPass, oldPass) {
-    sb.api.call('account.change_password', { aid, new_password: newPass, old_password: oldPass }).then(applyApiResponse);
+    sb.api.call(Actions.AccountChangePassword, { aid, new_password: newPass, old_password: oldPass }).then(applyApiResponse);
 }
 
 function LoadChangeSrvPassword(aid, srv) {
-    sb.api.call('account.change_srv_password', { aid, srv_password: srv }).then(applyApiResponse);
+    sb.api.call(Actions.AccountChangeSrvPassword, { aid, srv_password: srv }).then(applyApiResponse);
 }
 
 function LoadChangeEmail(aid, email, password) {
-    sb.api.call('account.change_email', { aid, email, password }).then(applyApiResponse);
+    sb.api.call(Actions.AccountChangeEmail, { aid, email, password }).then(applyApiResponse);
 }
 
 // =====================================================================
 // Replace xajax_GeneratePassword.
 // =====================================================================
 function LoadGeneratePassword() {
-    sb.api.call('admins.generate_password', {}).then((r) => {
+    sb.api.call(Actions.AdminsGeneratePassword, {}).then((r) => {
         if (r && r.ok && r.data && r.data.password) {
             if (sb.$id('password'))  sb.$id('password').value  = r.data.password;
             if (sb.$id('password2')) sb.$id('password2').value = r.data.password;
@@ -1227,7 +1199,7 @@ function LoadGeneratePassword() {
 // Replace xajax_ClearCache, xajax_SelTheme, xajax_ApplyTheme.
 // =====================================================================
 function LoadClearCache() {
-    sb.api.call('system.clear_cache', {}).then((r) => {
+    sb.api.call(Actions.SystemClearCache, {}).then((r) => {
         if (r && r.ok) {
             const el = sb.$id('clearcache.msg');
             if (el) el.innerHTML = '<span style="color: green; font-size: xx-small; ">Cache cleared.</span>';
@@ -1236,7 +1208,7 @@ function LoadClearCache() {
 }
 
 function LoadSelTheme(theme) {
-    sb.api.call('system.sel_theme', { theme }).then((r) => {
+    sb.api.call(Actions.SystemSelTheme, { theme }).then((r) => {
         if (r && r.ok && r.data) {
             sb.setHTML('current-theme-screenshot', `<img width="250px" height="170px" src="${r.data.screenshot}">`);
             sb.setHTML('theme.name', r.data.name);
@@ -1251,7 +1223,7 @@ function LoadSelTheme(theme) {
 }
 
 function LoadApplyTheme(theme) {
-    sb.api.call('system.apply_theme', { theme }).then((r) => {
+    sb.api.call(Actions.SystemApplyTheme, { theme }).then((r) => {
         if (r && r.ok) window.location.reload(false);
     });
 }
@@ -1260,7 +1232,7 @@ function LoadApplyTheme(theme) {
 // Replace xajax_SendRcon.
 // =====================================================================
 function LoadSendRcon(sid, command, output) {
-    sb.api.call('servers.send_rcon', { sid, command, output: output !== false }).then((r) => {
+    sb.api.call(Actions.ServersSendRcon, { sid, command, output: output !== false }).then((r) => {
         const cmdEl = sb.$id('cmd');
         const btnEl = sb.$id('rcon_btn');
         if (cmdEl) { cmdEl.value = ''; cmdEl.disabled = false; }
@@ -1303,7 +1275,7 @@ function LoadSendRcon(sid, command, output) {
 // Replace xajax_GetGroups + xajax_BanFriends — group ban orchestration.
 // =====================================================================
 function LoadGetGroups(friendid) {
-    sb.api.call('bans.get_groups', { friendid }).then((r) => {
+    sb.api.call(Actions.BansGetGroups, { friendid }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const groups = r.data.groups || [];
         const tbl = sb.$id('steamGroupsTable');
@@ -1353,7 +1325,7 @@ function LoadGetGroups(friendid) {
 }
 
 function LoadBanMemberOfGroup(grpurl, queue, reason, last) {
-    sb.api.call('bans.ban_member_of_group', { grpurl, queue, reason, last }).then((r) => {
+    sb.api.call(Actions.BansBanMemberOfGroup, { grpurl, queue, reason, last }).then((r) => {
         if (!r || !r.ok || !r.data) return;
         const a = r.data.amount;
         const sumLine = `<p>Banned ${a.total - a.before - a.failed}/${a.total} players of group '${r.data.grpurl}'. | ${a.before} were banned already. | ${a.failed} failed.</p>`;
@@ -1372,7 +1344,7 @@ function LoadBanMemberOfGroup(grpurl, queue, reason, last) {
 }
 
 function LoadGroupBan(groupuri, isgrpurl, queue, reason, last) {
-    sb.api.call('bans.group_ban', { groupuri, isgrpurl, queue, reason, last }).then((r) => {
+    sb.api.call(Actions.BansGroupBan, { groupuri, isgrpurl, queue, reason, last }).then((r) => {
         if (!r || !r.ok || !r.data) {
             applyApiResponse(r, { errorTitle: 'Error parsing the group url' });
             return;
@@ -1384,6 +1356,6 @@ function LoadGroupBan(groupuri, isgrpurl, queue, reason, last) {
 }
 
 // (admin.bans.php and admin.comms.php define their own page-local
-// ProcessBan() that maps the form to sb.api.call('bans.add' / 'comms.add').
+// ProcessBan() that maps the form to sb.api.call(Actions.BansAdd / Actions.CommsAdd).
 // We don't define a global wrapper here to avoid the name collision.)
 
