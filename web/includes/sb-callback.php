@@ -3332,7 +3332,6 @@ function BanFriends($friendid, $name)
     set_time_limit(0);
     global $userbank, $username;
     $objResponse = new xajaxResponse();
-    $name = filter_var($name, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
     if (!Config::getBool('config.enablefriendsbanning') || !is_numeric($friendid)) {
         return $objResponse;
     }
@@ -3382,7 +3381,7 @@ function BanFriends($friendid, $name)
         $GLOBALS['PDO']->bindMultiple(
             [
             ':authid' => $steam,
-            ':name' => filter_var($fname, FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES),
+            ':name' => $fname,
             ':reason' => "Steam Community Friend Ban (".$name.")",
             ':aid' => $userbank->GetAid(),
             ':admip' => $_SERVER['REMOTE_ADDR']
@@ -3401,8 +3400,9 @@ function BanFriends($friendid, $name)
         return $objResponse;
     }
 
+    $safeName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
     $objResponse->addScript(
-        "ShowBox('Friends banned successfully', 'Banned ".($total-$before-$error)."/".$total." friends of \'".$name."\'.<br>".$before." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);"
+        "ShowBox('Friends banned successfully', 'Banned ".($total-$before-$error)."/".$total." friends of \'".$safeName."\'.<br>".$before." were banned already.<br>".$error." failed.', 'green', 'index.php?p=banlist', true);"
     );
     $objResponse->addScript("$('dialog-control').setStyle('display', 'block');");
     Log::add("m",

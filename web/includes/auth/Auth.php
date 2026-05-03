@@ -186,10 +186,6 @@ class Auth
      */
     private static function getJWTFromCookie(): string
     {
-        if (isset($_COOKIE['sbpp_auth'])) {
-            return filter_var($_COOKIE['sbpp_auth'], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-        }
-
-        return '';
+        return is_string($_COOKIE['sbpp_auth'] ?? null) ? $_COOKIE['sbpp_auth'] : '';
     }
 }

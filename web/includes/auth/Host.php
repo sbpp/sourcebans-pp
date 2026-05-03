@@ -10,7 +10,8 @@ class Host
      */
     public static function domain(): string
     {
-        return filter_var($_SERVER['HTTP_HOST'], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+        $host = $_SERVER['HTTP_HOST'] ?? '';
+        return preg_match('/^[A-Za-z0-9._:\[\]-]+$/', $host) ? $host : '';
     }
 
     /**
@@ -47,12 +48,13 @@ class Host
      */
     public static function complete(bool $withoutRequest = false): string
     {
-        $request = explode('/',
-            filter_var($_SERVER['REQUEST_URI'], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES));
+        $uri = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
+        $request = explode('/', is_string($uri) ? $uri : '');
         foreach ($request as $id => $fragment) {
             switch (true) {
                 case empty($fragment):
                 case str_contains($fragment, '.php'):
+                case !preg_match('#^[A-Za-z0-9._~!$&\'()*+,;=:@%-]+$#', $fragment):
                     unset($request[$id]);
                     break;
                 default:

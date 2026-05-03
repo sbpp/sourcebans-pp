@@ -44,11 +44,12 @@ if (isset($GLOBALS['IN_ADMIN'])) {
 
 
 if (isset($_GET["rebanid"])) {
-    echo '<script type="text/javascript">xajax_PrepareReblock("' . $_GET["rebanid"] . '");</script>';
+    echo '<script type="text/javascript">xajax_PrepareReblock("' . (int) $_GET["rebanid"] . '");</script>';
 } elseif (isset($_GET["blockfromban"])) {
-    echo '<script type="text/javascript">xajax_PrepareBlockFromBan("' . $_GET["blockfromban"] . '");</script>';
+    echo '<script type="text/javascript">xajax_PrepareBlockFromBan("' . (int) $_GET["blockfromban"] . '");</script>';
 } elseif ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pName']) && isset($_GET['sid'])) {
-    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_PasteBlock('" . (int) $_GET['sid'] . "', '" . addslashes($_GET['pName']) . "');</script>";
+    $pNameJs = json_encode((string) $_GET['pName'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);document.getElementById('dialog-control').setStyle('display', 'none');xajax_PasteBlock(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
 }
 
 echo '<div id="admin-page-content">';

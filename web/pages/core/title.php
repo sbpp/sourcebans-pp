@@ -8,7 +8,7 @@ $breadcrumb = [
     ],
     [
         'title' => $title,
-        'url' => 'index.php?p=' . urlencode((string) filter_input(INPUT_GET, 'p', FILTER_SANITIZE_SPECIAL_CHARS))
+        'url' => 'index.php?p=' . urlencode((string) ($_GET['p'] ?? ''))
     ]
 ];
 

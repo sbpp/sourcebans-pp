@@ -37,11 +37,11 @@ class Log
             "INSERT INTO `:prefix_log` (`type`, `title`, `message`, `function`, `query`, `aid`, `host`, `created`)
             VALUES (:type, :title, :message, :function, :query, :aid, :host, UNIX_TIMESTAMP())"
         );
-        self::$dbs->bind(':type', filter_var($type, FILTER_SANITIZE_SPECIAL_CHARS));
-        self::$dbs->bind(':title', filter_var($title, FILTER_SANITIZE_SPECIAL_CHARS));
-        self::$dbs->bind(':message', filter_var($message, FILTER_SANITIZE_SPECIAL_CHARS));
-        self::$dbs->bind(':function', filter_var(self::getCaller(), FILTER_SANITIZE_SPECIAL_CHARS));
-        self::$dbs->bind(':query', filter_var($_SERVER['QUERY_STRING'] ?? '', FILTER_SANITIZE_SPECIAL_CHARS));
+        self::$dbs->bind(':type', $type);
+        self::$dbs->bind(':title', $title);
+        self::$dbs->bind(':message', $message);
+        self::$dbs->bind(':function', self::getCaller());
+        self::$dbs->bind(':query', $_SERVER['QUERY_STRING'] ?? '');
         self::$dbs->bind(':aid', self::$user->GetAid());
         self::$dbs->bind(':host', $host);
         self::$dbs->execute();

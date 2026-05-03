@@ -38,7 +38,7 @@ $blcount               = 0;
 while (!$res->EOF) {
     $info               = [];
     $info['date']       = Config::time($res->fields[1]);
-    $raw_name           = stripslashes(filter_var($res->fields[0], FILTER_SANITIZE_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES));
+    $raw_name           = htmlspecialchars(stripslashes((string) $res->fields[0]), ENT_NOQUOTES, 'UTF-8');
     $cleaned_name       = mb_convert_encoding($raw_name, 'UTF-8', 'UTF-8');
     $unwanted_sequences = ["\xF3\xA0\x80\xA1"];
     foreach ($unwanted_sequences as $sequence) {

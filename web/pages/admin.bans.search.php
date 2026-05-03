@@ -32,7 +32,7 @@ while (!$server_list->EOF) {
     $server_list->MoveNext();
 }
 $serverscript .= "</script>";
-$page = $_GET['page'] ?? 1;
+$page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
 
 $theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
 $theme->assign('is_admin', $userbank->is_admin());

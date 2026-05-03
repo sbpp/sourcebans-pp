@@ -7,9 +7,9 @@
  */
 function route($fallback)
 {
-    $page = filter_input(INPUT_GET, 'p', FILTER_SANITIZE_SPECIAL_CHARS);
-    $categorie = filter_input(INPUT_GET, 'c', FILTER_SANITIZE_SPECIAL_CHARS);
-    $option = filter_input(INPUT_GET, 'o', FILTER_SANITIZE_SPECIAL_CHARS);
+    $page = $_GET['p'] ?? null;
+    $categorie = $_GET['c'] ?? null;
+    $option = $_GET['o'] ?? null;
 
     switch ($page) {
         case 'login':

@@ -21,7 +21,7 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
-global $userbank, $theme, $dash_intro_text;
+global $userbank, $theme;
 
 new AdminTabs([
     ['name' => 'Main Settings', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS],
@@ -104,7 +104,9 @@ if ($pages > 1) {
         $_GET['advSearch'] = "";
         $_GET['advType']   = "";
     }
-    $page_numbers .= '&nbsp;<select onchange="changePage(this,\'L\',\'' . $_GET['advSearch'] . '\',\'' . $_GET['advType'] . '\');">';
+    $advSearchJs = htmlspecialchars(json_encode((string) $_GET['advSearch']), ENT_QUOTES, 'UTF-8');
+    $advTypeJs   = htmlspecialchars(json_encode((string) $_GET['advType']), ENT_QUOTES, 'UTF-8');
+    $page_numbers .= '&nbsp;<select onchange="changePage(this,\'L\',' . $advSearchJs . ',' . $advTypeJs . ');">';
     for ($i = 1; $i <= $pages; $i++) {
         if (isset($_GET["page"]) && $i == $_GET["page"]) {
             $page_numbers .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
@@ -248,7 +250,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                         $_POST['template_logo'],
                         $_POST['config_dateformat'],
                         $_POST['dash_intro_title'],
-                        $dash_intro_text,
+                        $_POST['dash_intro_text'],
                         $cureason,
                         $_POST['auth_maxlife'],
                         $_POST['auth_maxlife_remember'],

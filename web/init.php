@@ -16,18 +16,7 @@ Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-//Hotfix for dash_intro_text
 use Smarty\Smarty;
-
-if (isset($_POST['dash_intro_text'])) {
-    $dash_intro_text = $_POST['dash_intro_text'];
-}
-//Filter all user inputs
-//Should be changed to individual filtering
-$_GET = filter_input_array(INPUT_GET, FILTER_SANITIZE_SPECIAL_CHARS);
-$_POST = filter_input_array(INPUT_POST, FILTER_SANITIZE_SPECIAL_CHARS);
-$_COOKIE = filter_input_array(INPUT_COOKIE, FILTER_SANITIZE_SPECIAL_CHARS);
-//$_SERVER = filter_input_array(INPUT_SERVER, FILTER_SANITIZE_SPECIAL_CHARS);
 
 // ---------------------------------------------------
 //  Directories
