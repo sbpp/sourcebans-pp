@@ -53,6 +53,10 @@ Temporary Items
 /web/cache/sessions/sess_*
 *.smx
 
+# Local Docker dev stack
+/.env
+/dump-*.sql
+
 # VSCode
 .vscode
 

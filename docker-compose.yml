@@ -1,0 +1,89 @@
+# Local development stack for SourceBans++.
+# See docker/README.md for the full guide. Quick start:
+#   ./sbpp.sh up           # build + start everything
+#   ./sbpp.sh logs         # tail web/db logs
+#   open http://localhost:8080  # panel — login admin / admin
+#
+# This file is for development only. Do NOT use it in production: it disables
+# the install-folder safety check, ships a known admin password, and exposes
+# the database port to the host.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: sbpp-dev-web:latest
+    container_name: sbpp-web
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${SBPP_WEB_PORT:-8080}:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: sourcebans
+      DB_USER: sourcebans
+      DB_PASS: sourcebans
+      DB_PREFIX: sb
+      DB_CHARSET: utf8mb4
+      SB_EMAIL: admin@example.test
+      # SB_SECRET_KEY is generated on first boot if empty.
+      SB_SECRET_KEY: ""
+      STEAMAPIKEY: ""
+    volumes:
+      - ./web:/var/www/html/web
+      # Keep generated/cached content off the host bind mount so composer
+      # install and Smarty compile output don't fight with the host.
+      - vendor:/var/www/html/web/includes/vendor
+      - cache:/var/www/html/web/cache
+      - smarty:/var/www/html/web/templates_c
+
+  db:
+    image: mariadb:10.11
+    container_name: sbpp-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: sourcebans
+      MYSQL_USER: sourcebans
+      MYSQL_PASSWORD: sourcebans
+      DB_PREFIX: sb
+      DB_CHARSET: utf8mb4
+    ports:
+      - "${SBPP_DB_PORT:-3307}:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+      - ./docker/db-init:/docker-entrypoint-initdb.d:ro
+      - ./web/install/includes/sql:/sbpp-sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  adminer:
+    image: adminer:4
+    container_name: sbpp-adminer
+    depends_on:
+      - db
+    ports:
+      - "${SBPP_ADMINER_PORT:-8081}:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+      ADMINER_DESIGN: pepa-linha
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sbpp-mailpit
+    ports:
+      - "${SBPP_MAILPIT_UI_PORT:-8025}:8025"
+      - "${SBPP_MAILPIT_SMTP_PORT:-1025}:1025"
+    environment:
+      MP_MAX_MESSAGES: 500
+
+volumes:
+  dbdata:
+  vendor:
+  cache:
+  smarty:

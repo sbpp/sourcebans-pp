@@ -55,6 +55,21 @@ Here is a quick summary of getting the master branch code up and running.
 
 After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.github.io/docs/quickstart/) guide.
 
+### Local development with Docker
+
+A one-command Docker stack (PHP 8.2 + Apache, MariaDB, Adminer, Mailpit) is
+included for rapid local iteration:
+
+```sh
+./sbpp.sh up        # build + start; panel at http://localhost:8080 (admin/admin)
+./sbpp.sh logs web  # tail logs
+./sbpp.sh phpstan   # run static analysis in the container
+./sbpp.sh down      # stop (./sbpp.sh reset to also drop volumes)
+```
+
+The DB schema and a default admin are seeded automatically on first boot —
+no installer wizard required. Full guide in [`docker/README.md`](docker/README.md).
+
 ### Static analysis (PHPStan)
 
 The web panel is checked with [PHPStan](https://phpstan.org/) on every pull request. To run it locally:
