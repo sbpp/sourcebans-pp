@@ -274,7 +274,7 @@ function LostPassword(string $email)
     $GLOBALS['PDO']->bind(':email', $email);
     $GLOBALS['PDO']->execute();
 
-    $passResetUrl = Host::complete(true) . "/index.php?p=lostpassword&email=$email&validation=$validation";
+    $passResetUrl = Host::complete(true) . '/index.php?p=lostpassword&email=' . urlencode($email) . '&validation=' . urlencode($validation);
 
     $isEmailSent = Mail::send($email, EmailType::PasswordReset, [
         '{link}' => $passResetUrl,
@@ -1653,8 +1653,8 @@ function ServerHostPlayers($sid, $type="servers", $obId="", $tplsid="", $open=""
                                 $objResponse->addScript(
                                     'AddContextMenu("#player_s'.$sid.'p'.$player["Id"].'", "contextmenu", true, "Player Commands", [
                                     {name: "Kick", callback: function(){KickPlayerConfirm('.$sid.', "'.str_replace('"', '\"', $player["Name"]).'", 0);}},
-                                    {name: "Block Comms", callback: function(){window.location = "index.php?p=admin&c=comms&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["Name"]).'"}},
-                                    {name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.$sid.'&pName='.str_replace('"', '\"', $player["Name"]).'"}},
+                                    {name: "Block Comms", callback: function(){window.location = "index.php?p=admin&c=comms&action=pasteBan&sid='.urlencode($sid).'&pName='.urlencode($player["Name"]).'"}},
+                                    {name: "Ban", callback: function(){window.location = "index.php?p=admin&c=bans&action=pasteBan&sid='.urlencode($sid).'&pName='.urlencode($player["Name"]).'"}},
                                     {separator: true},
                                     '.(ini_get('safe_mode')==0 ? '{name: "View Profile", callback: function(){ViewCommunityProfile('.$sid.', "'.str_replace('"', '\"', $player["Name"]).'")}},':'').'
                                     {name: "Send Message", callback: function(){OpenMessageBox('.$sid.', "'.str_replace('"', '\"', $player["Name"]).'", 1)}}
@@ -3317,7 +3317,7 @@ function GetGroups($friendid)
         }
     } else {
         $objResponse->addScript(
-            "ShowBox('Error', 'There was an error retrieving the group data. <br>Maybe the player isn\'t member of any group or his profile is private?<br><a href=\"http://steamcommunity.com/profiles/" . $friendid . "/\" title=\"Community profile\" target=\"_blank\">Community profile</a>', 'red', 'index.php?p=banlist', true);"
+            "ShowBox('Error', 'There was an error retrieving the group data. <br>Maybe the player isn\'t member of any group or his profile is private?<br><a href=\"http://steamcommunity.com/profiles/" . urlencode($friendid) . "/\" title=\"Community profile\" target=\"_blank\">Community profile</a>', 'red', 'index.php?p=banlist', true);"
         );
         $objResponse->addScript("$('steamGroupsText').innerHTML = '<i>No groups...</i>';");
         return $objResponse;

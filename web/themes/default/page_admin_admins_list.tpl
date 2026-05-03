@@ -20,7 +20,7 @@
                     </tr>
                     {foreach from=$admins item="admin"}
                         <tr onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" class="tbl_out opener">
-                            <td class="listtable_1" style="padding:3px;">{$admin.user} (<a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=admin" title="Show bans">{$admin.bancount} bans</a> | <a href="./index.php?p=banlist&advSearch={$admin.aid}&advType=nodemo" title="Show bans without demo">{$admin.nodemocount} w.d.</a>)</td>
+                            <td class="listtable_1" style="padding:3px;">{$admin.user} (<a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=admin" title="Show bans">{$admin.bancount} bans</a> | <a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=nodemo" title="Show bans without demo">{$admin.nodemocount} w.d.</a>)</td>
                             <td class="listtable_1" style="padding:3px;">{$admin.server_group}</td>
                             <td class="listtable_1" style="padding:3px;">{$admin.web_group}</td>
                         </tr>
@@ -66,16 +66,16 @@
                                                     <ul>
                                                         {if $permission_editadmin}
                                                             <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid}"><i class="fas fa-clipboard-list fa-lg"></i> Edit Details</a>
+                                                                <a href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid|escape:'url'}"><i class="fas fa-clipboard-list fa-lg"></i> Edit Details</a>
                                                             </li>
                                                             <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid}"><i class="fas fa-subscript fa-lg"></i> Edit Permissions</a>
+                                                                <a href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid|escape:'url'}"><i class="fas fa-subscript fa-lg"></i> Edit Permissions</a>
                                                             </li>
                                                             <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid}"><i class="fas fa-server fa-lg"></i> Edit Server Access</a>
+                                                                <a href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid|escape:'url'}"><i class="fas fa-server fa-lg"></i> Edit Server Access</a>
                                                             </li>
                                                             <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid}"><i class="fas fa-users fa-lg"></i> Edit Groups</a>
+                                                                <a href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid|escape:'url'}"><i class="fas fa-users fa-lg"></i> Edit Groups</a>
                                                             </li>
                                                         {/if}
                                                         {if $permission_deleteadmin}

@@ -22,13 +22,13 @@
                         <td style="border-bottom: solid 1px #ccc" height='16'><img width="16px" height="16px" src="images/games/{$server.icon}"></td>
                         <td style="border-bottom: solid 1px #ccc" height='16'>
                             {if $server.rcon_access}
-                                <a href="index.php?p=admin&c=servers&o=rcon&id={$server.sid}">RCON</a> -
+                                <a href="index.php?p=admin&c=servers&o=rcon&id={$server.sid|escape:'url'}">RCON</a> -
                             {/if}
 
-                            <a href="index.php?p=admin&c=servers&o=admincheck&id={$server.sid}">Admins</a>
+                            <a href="index.php?p=admin&c=servers&o=admincheck&id={$server.sid|escape:'url'}">Admins</a>
 
                             {if $permission_editserver}
-                                - <a href="index.php?p=admin&c=servers&o=edit&id={$server.sid}">Edit</a>
+                                - <a href="index.php?p=admin&c=servers&o=edit&id={$server.sid|escape:'url'}">Edit</a>
                             {/if}
 
                             {if $pemission_delserver}

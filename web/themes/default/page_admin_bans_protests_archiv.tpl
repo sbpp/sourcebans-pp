@@ -15,14 +15,14 @@
             </tr>
             {foreach from=$protest_list_archiv item="protest"}
                 <tr id="apid_{$protest.pid}" class="opener5 tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-                    <td class="toggler" style="border-bottom: solid 1px #ccc" height='16'>{if $protest.archiv!=2}<a href="./index.php?p=banlist{if $protest.authid!=""}&advSearch={$protest.authid}&advType=steamid{else}&advSearch={$protest.ip}&advType=ip{/if}" title="Show ban">{$protest.name}</a>{else}<i><font color="#677882">ban removed</font></i>{/if}</td>
+                    <td class="toggler" style="border-bottom: solid 1px #ccc" height='16'>{if $protest.archiv!=2}<a href="./index.php?p=banlist{if $protest.authid!=""}&advSearch={$protest.authid|escape:'url'}&advType=steamid{else}&advSearch={$protest.ip|escape:'url'}&advType=ip{/if}" title="Show ban">{$protest.name}</a>{else}<i><font color="#677882">ban removed</font></i>{/if}</td>
                     <td style="border-bottom: solid 1px #ccc" height='16'>{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}</td>
                     <td style="border-bottom: solid 1px #ccc" height='16'>
                         {if $permission_editban}
                             <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '2');">Restore</a> -
                             <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '0');">Delete</a> -
                         {/if}
-                        <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid}">Contact</a>
+                        <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid|escape:'url'}">Contact</a>
                     </td>
                 </tr>
                 <tr id="apid_{$protest.pid}a" >

@@ -514,7 +514,7 @@ foreach ($submissions as $sub) {
 												WHERE demtype = \"S\" AND demid = " . (int) $sub['subid']);
 
     if ($dem && !empty($dem['filename']) && @file_exists(SB_DEMOS . "/" . $dem['filename'])) {
-        $sub['demo'] = "<a href=\"getdemo.php?id=" . $sub['subid'] . "&type=S\"><i class='fas fa-video fa-lg'></i> Get Demo</a>";
+        $sub['demo'] = '<a href="getdemo.php?id=' . urlencode($sub['subid']) . '&type=S"><i class=\'fas fa-video fa-lg\'></i> Get Demo</a>';
     } else {
         $sub['demo'] = "<a href=\"#\"><i class='fas fa-video-slash fa-lg'></i> No Demo</a>";
     }
@@ -651,7 +651,7 @@ foreach ($submissionsarchiv as $sub) {
 												WHERE demtype = \"S\" AND demid = " . (int) $sub['subid']);
 
     if ($dem && !empty($dem['filename']) && @file_exists(SB_DEMOS . "/" . $dem['filename'])) {
-        $sub['demo'] = "<a href=\"getdemo.php?id=" . $sub['subid'] . "&type=S\"><i class='fas fa-video fa-lg'></i> Get Demo</a>";
+        $sub['demo'] = '<a href="getdemo.php?id=' . urlencode($sub['subid']) . '&type=S"><i class=\'fas fa-video fa-lg\'></i> Get Demo</a>';
     } else {
         $sub['demo'] = "<a href=\"#\"><i class='fas fa-video-slash fa-lg'></i> No Demo</a>";
     }

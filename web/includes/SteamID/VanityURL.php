@@ -15,7 +15,7 @@ class VanityURL
      */
     public static function resolve($url, $steamApiKey)
     {
-        $endpoint = "https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=$steamApiKey&vanityurl=$url";
+        $endpoint = 'https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=' . urlencode($steamApiKey) . '&vanityurl=' . urlencode($url);
 
         //TODO: Rewrite with curl
         $data = json_decode(file_get_contents($endpoint), true);

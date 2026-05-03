@@ -73,7 +73,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
     $password = $GLOBALS['userbank']->GetProperty('password', $_GET['id']);
     $email    = $GLOBALS['userbank']->GetProperty('email', $_GET['id']);
     if ($_POST['wg'] > 0 && (empty($password) || empty($email))) {
-        echo '<script>ShowBox("Error", "Admins have to have a password and email set in order to get web permissions.<br /><a href=\"index.php?p=admin&c=admins&o=editdetails&id=' . $_GET['id'] . '\" title=\"Edit Admin Details\">Set the details</a> first and try again.", "red");</script>';
+        echo '<script>ShowBox("Error", "Admins have to have a password and email set in order to get web permissions.<br /><a href=\"index.php?p=admin&c=admins&o=editdetails&id=' . urlencode($_GET['id']) . '\" title=\"Edit Admin Details\">Set the details</a> first and try again.", "red");</script>';
     } else {
         if (isset($_POST['wg']) && $_POST['wg'] != "-2") {
             if ($_POST['wg'] == -1) {

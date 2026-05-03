@@ -271,7 +271,7 @@ if (isset($_GET['searchText'])) {
         $search,
         $search
     )));
-    $searchlink = "&searchText=" . $_GET["searchText"];
+    $searchlink = "&searchText=" . urlencode($_GET["searchText"]);
 } elseif (!isset($_GET['advSearch'])) {
     $res = $GLOBALS['db']->Execute("SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
@@ -467,7 +467,7 @@ if (isset($_GET['advSearch'])) {
 
     $res_count  = $GLOBALS['db']->Execute("SELECT count(BA.bid) FROM " . DB_PREFIX . "_bans AS BA
 										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN " . DB_PREFIX . "_comments AS CO ON BA.bid = CO.bid" : "") . " " . $where . $hideinactive, $advcrit);
-    $searchlink = "&advSearch=" . $_GET['advSearch'] . "&advType=" . $_GET['advType'];
+    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']);
 }
 
 $BanCount = $res_count->fields[0];
@@ -592,8 +592,8 @@ while (!$res->EOF) {
         $data['reban_link'] = false;
     }
     $data['blockcomm_link']  = CreateLinkR('<i class="fas fa-ban fa-lg"></i> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
-    $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . $res->fields['ban_id']);
-    $data['groups_link']     = CreateLinkR('<i class="fas fa-users fa-lg"></i> Show Groups', "index.php?p=admin&c=bans&fid=" . $data['communityid'] . "#^4");
+    $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . urlencode($res->fields['ban_id']));
+    $data['groups_link']     = CreateLinkR('<i class="fas fa-users fa-lg"></i> Show Groups', "index.php?p=admin&c=bans&fid=" . urlencode($data['communityid']) . "#^4");
     $data['friend_ban_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
     $data['edit_link']       = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $res->fields['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
@@ -612,7 +612,7 @@ while (!$res->EOF) {
     $data['mod_icon'] = '<img src="images/games/' . $modicon . '" alt="MOD" border="0" align="absmiddle" />&nbsp;' . $data['country'];
 
     if ($res->fields['history_count'] > 1) {
-        $data['prevoff_link'] = $res->fields['history_count'] . " " . CreateLinkR("&nbsp;(search)", "index.php?p=banlist&searchText=" . ($data['type'] == 0 ? $data['steamid'] : $res->fields['ban_ip']) . "&Submit");
+        $data['prevoff_link'] = $res->fields['history_count'] . " " . CreateLinkR("&nbsp;(search)", "index.php?p=banlist&searchText=" . urlencode($data['type'] == 0 ? $data['steamid'] : $res->fields['ban_ip']) . "&Submit");
     } else {
         $data['prevoff_link'] = "No previous bans";
     }
@@ -638,8 +638,8 @@ while (!$res->EOF) {
         $data['demo_link']      = CreateLinkR('<i class="fas fa-video-slash fa-lg"></i> No Demos', "#");
     } else {
         $data['demo_available'] = true;
-        $data['demo_quick']     = CreateLinkR('Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
-        $data['demo_link']      = CreateLinkR('<i class="fas fa-video fa-lg"></i> Review Demo', "getdemo.php?type=B&id=" . $data['ban_id']);
+        $data['demo_quick']     = CreateLinkR('Demo', "getdemo.php?type=B&id=" . urlencode($data['ban_id']));
+        $data['demo_link']      = CreateLinkR('<i class="fas fa-video fa-lg"></i> Review Demo', "getdemo.php?type=B&id=" . urlencode($data['ban_id']));
     }
 
 
@@ -724,7 +724,7 @@ while (!$res->EOF) {
 }
 
 if (isset($_GET['advSearch'])) {
-    $advSearchString = "&advSearch=" . (isset($_GET['advSearch']) ? $_GET['advSearch'] : '') . "&advType=" . (isset($_GET['advType']) ? $_GET['advType'] : '');
+    $advSearchString = "&advSearch=" . urlencode(isset($_GET['advSearch']) ? $_GET['advSearch'] : '') . "&advType=" . urlencode(isset($_GET['advType']) ? $_GET['advType'] : '');
 } else {
     $advSearchString = '';
 }
@@ -733,7 +733,7 @@ if ($page > 1) {
     if (isset($_GET['c']) && $_GET['c'] == "bans") {
         $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "javascript:void(0);", "", "_self", false, $prev);
     } else {
-        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
     }
 } else {
     $prev = "";
@@ -745,7 +745,7 @@ if ($BansEnd < $BanCount) {
         }
         $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "javascript:void(0);", "", "_self", false, $nxt);
     } else {
-        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . $_GET['searchText'] : '' . $advSearchString));
+        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
     }
 } else {
     $next = "";

@@ -21,7 +21,7 @@
                 {if $permission_editmods || $permission_deletemods}
                     <td class="listtable_1" height='16'>
                         {if $permission_editmods}
-                            <a href="index.php?p=admin&c=mods&o=edit&id={$mod.mid}">Edit</a> -
+                            <a href="index.php?p=admin&c=mods&o=edit&id={$mod.mid|escape:'url'}">Edit</a> -
                         {/if}
                         {if $permission_deletemods}
                             <a href="#" onclick="RemoveMod('{$mod.name|escape:'quotes'|smarty_htmlspecialchars}', '{$mod.mid}');">Delete</a>

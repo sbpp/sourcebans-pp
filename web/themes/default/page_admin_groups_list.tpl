@@ -27,7 +27,7 @@
                 <td class="listtable_1" height='16'>{$web_admins[$smarty.foreach.web_group.index]}</td>
                 <td class="listtable_1" height='16'>
                     {if $permission_editgroup}
-                        <a href="index.php?p=admin&c=groups&o=edit&type=web&id={$group.gid}">Edit</a>
+                        <a href="index.php?p=admin&c=groups&o=edit&type=web&id={$group.gid|escape:'url'}">Edit</a>
                     {/if}
                     {if $permission_deletegroup}
                         - <a href="#" onclick="RemoveGroup({$group.gid}, '{$group.name}', 'web');">Delete</a>
@@ -65,8 +65,8 @@
                                             <tr>
                                                 <td width="60%" height="16" class="listtable_1">{$web_admin.user}</td>
                                                 {if $permission_editadmin}
-                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$web_admin.aid}" title="Edit Groups">Edit</a></td>
-                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$web_admin.aid}&wg=" title="Remove From Group">Remove</a></td>
+                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$web_admin.aid|escape:'url'}" title="Edit Groups">Edit</a></td>
+                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$web_admin.aid|escape:'url'}&wg=" title="Remove From Group">Remove</a></td>
                                                 {/if}
                                             </tr>
                                         {/foreach}
@@ -104,7 +104,7 @@
                 <td class="listtable_1" height='16'>{$server_admins[$smarty.foreach.server_admin_group.index]}</td>
                 <td class="listtable_1" height='16'>
                     {if $permission_editgroup}
-                        <a href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id}">Edit</a>
+                        <a href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id|escape:'url'}">Edit</a>
                     {/if}
                     {if $permission_deletegroup}
                         - <a href="#" onclick="RemoveGroup({$group.id}, '{$group.name}', 'srv');">Delete</a>
@@ -142,8 +142,8 @@
                                             <tr>
                                                 <td width="60%" height="16" class="listtable_1">{$server_admin.user}</td>
                                                 {if $permission_editadmin}
-                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid}" title="Edit Groups">Edit</a></td>
-                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid}&sg=" title="Remove From Group">Remove</a></td>
+                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid|escape:'url'}" title="Edit Groups">Edit</a></td>
+                                                    <td width="20%" height="16" class="listtable_1"><a href="index.php?p=admin&c=admins&o=editgroup&id={$server_admin.aid|escape:'url'}&sg=" title="Remove From Group">Remove</a></td>
                                                 {/if}
                                             </tr>
                                         {/foreach}
@@ -201,7 +201,7 @@
                 <td class="listtable_1" height='16'>{$server_counts[$smarty.foreach.server_group.index]}</td>
                 <td class="listtable_1" height='16'>
                     {if $permission_editgroup}
-                        <a href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid}">Edit</a>
+                        <a href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid|escape:'url'}">Edit</a>
                     {/if}
                     {if $permission_deletegroup}
                         - <a href="#" onclick="RemoveGroup({$group.gid}, '{$group.name}', 'server');">Delete</a>

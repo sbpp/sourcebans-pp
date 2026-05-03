@@ -15,13 +15,13 @@
             </tr>
             {foreach from=$protest_list item="protest"}
                 <tr id="pid_{$protest.pid}" class="opener2 tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-                    <td class="toggler listtable_1" height='16'><a href="./index.php?p=banlist&advSearch={$protest.authid}&advType=steamid" title="Show ban">{$protest.name}</a></td>
+                    <td class="toggler listtable_1" height='16'><a href="./index.php?p=banlist&advSearch={$protest.authid|escape:'url'}&advType=steamid" title="Show ban">{$protest.name}</a></td>
                     <td class="listtable_1" height='16'>{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}</td>
                     <td class="listtable_1" height='16'>
                         {if $permission_editban}
                             <a href="#" onclick="RemoveProtest('{$protest.pid}', '{if $protest.authid!=""}{$protest.authid}{else}{$protest.ip}{/if}', '1');">Remove</a> -
                         {/if}
-                        <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid}">Contact</a>
+                        <a href="index.php?p=admin&c=bans&o=email&type=p&id={$protest.pid|escape:'url'}">Contact</a>
                     </td>
                 </tr>
                 <tr id="pid_{$protest.pid}a" >

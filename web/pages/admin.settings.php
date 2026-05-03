@@ -73,7 +73,7 @@ if (isset($_GET['advSearch'])) {
 //            $_GET['advSearch'] = "";
 //            break;
 //    }
-    $searchlink = "&advSearch=" . $_GET['advSearch'] . "&advType=" . $_GET['advType'];
+    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']);
 } else {
     $searchlink = "";
 }

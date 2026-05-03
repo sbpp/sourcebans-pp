@@ -49,7 +49,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->Has
     PageDie();
 }
 
-isset($_GET["page"]) ? $pagelink = "&page=" . $_GET["page"] : $pagelink = "";
+isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
 
 $errorScript = "";
 
