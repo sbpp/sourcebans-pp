@@ -1968,7 +1968,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
             AND type = '0'")->single(array($steam)
         );
 
-        if (intval($chk[0]) > 0) {
+        if (intval($chk['count']) > 0) {
             $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already banned.', 'red', '');");
             return $objResponse;
         }
@@ -1989,7 +1989,7 @@ function AddBan($nickname, $type, $steam, $ip, $length, $dfile, $dname, $reason,
             "SELECT count(bid) AS count FROM `:prefix_bans` WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1'")->single(array($ip)
         );
 
-        if (intval($chk[0]) > 0) {
+        if (intval($chk['count']) > 0) {
             $objResponse->addScript("ShowBox('Error', 'IP: $ip is already banned.', 'red', '');");
             return $objResponse;
         }
@@ -3442,7 +3442,7 @@ function AddBlock($nickname, $type, $steam, $length, $reason)
         "SELECT count(bid) AS count FROM `:prefix_comms` WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND ".$typeW)->single(array($steam)
     );
 
-    if (intval($chk[0]) > 0) {
+    if (intval($chk['count']) > 0) {
         $objResponse->addScript("ShowBox('Error', 'SteamID: $steam is already blocked.', 'red', '');");
         return $objResponse;
     }
