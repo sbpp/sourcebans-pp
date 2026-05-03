@@ -70,7 +70,7 @@ function ProcessBan()
     if (reason == "other") {
         reason = $('txtReason').value;
     }
-    sb.api.call('comms.add', {
+    sb.api.call(Actions.CommsAdd, {
         nickname: $('nickname').value,
         type:     Number($('type').value),
         steam:    $('steam').value,
