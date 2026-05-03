@@ -28,6 +28,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER)) {
 
 $message = "";
 if (isset($_POST['upload'])) {
+    CSRF::rejectIfInvalid();
     if (checkExtension($_FILES['mapimg_file']['name'], ['jpg'])) {
         move_uploaded_file($_FILES['mapimg_file']['tmp_name'], SB_MAPS . "/" . $_FILES['mapimg_file']['name']);
         $message = "<script>window.opener.mapimg('" . $_FILES['mapimg_file']['name'] . "');self.close()</script>";

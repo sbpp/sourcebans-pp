@@ -7,6 +7,10 @@
  */
 function route($fallback)
 {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+        CSRF::rejectIfInvalid();
+    }
+
     $page = $_GET['p'] ?? null;
     $categorie = $_GET['c'] ?? null;
     $option = $_GET['o'] ?? null;

@@ -66,6 +66,7 @@ require_once(INCLUDES_PATH.'/vendor/autoload.php');
 //  Initial setup
 // ---------------------------------------------------
 require_once(INCLUDES_PATH.'/security/Crypto.php');
+require_once(INCLUDES_PATH.'/security/CSRF.php');
 
 require_once(INCLUDES_PATH.'/auth/JWT.php');
 
@@ -142,6 +143,12 @@ Auth::init($GLOBALS['PDO']);
 
 $userbank = new CUserManager(Auth::verify());
 
+// ---------------------------------------------------
+// Bind a CSRF token to the session (must run before xajax dispatch
+// and before any form is rendered so the token is available).
+// ---------------------------------------------------
+CSRF::init();
+
 require_once(INCLUDES_PATH.'/Log.php');
 Log::init($GLOBALS['PDO'], $userbank);
 
@@ -210,8 +217,12 @@ $theme->setEscapeHtml(true);
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'help_icon', 'smarty_function_help_icon');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'sb_button', 'smarty_function_sb_button');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'load_template', 'smarty_function_load_template');
+$theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'csrf_field', 'smarty_function_csrf_field');
 $theme->registerPlugin('modifier', 'smarty_stripslashes', 'smarty_stripslashes');
 $theme->registerPlugin('modifier', 'smarty_htmlspecialchars', 'smarty_htmlspecialchars');
+
+$theme->assign('csrf_token', CSRF::token());
+$theme->assign('csrf_field_name', CSRF::FIELD_NAME);
 
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->setForceCompile(true);

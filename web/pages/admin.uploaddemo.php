@@ -30,6 +30,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN | ADMIN_EDIT_OWN_BANS | AD
 $message = "";
 
 if (isset($_POST['upload'])) {
+    CSRF::rejectIfInvalid();
     if (checkExtension($_FILES['demo_file']['name'], ['zip', 'rar', 'dem', '7z', 'bz2', 'gz'])) {
         $filename = md5(time() . rand(0, 1000));
         move_uploaded_file($_FILES['demo_file']['tmp_name'], SB_DEMOS . "/" . $filename);

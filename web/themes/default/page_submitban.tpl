@@ -9,6 +9,7 @@
     If you are unsure on how to record evidence within in-game, please click
     <a href="javascript:void(0)" onclick="ShowBox('How To Record Evidence', 'The best way to record evidence on someone breaking the rules would be to use Shadow Play or Plays.TV. Both pieces of software will record your game 24/7 with little to no impact on your game and you simply press a keybind to record the last X amount of minutes of gameplay which is perfect for catching rule breakers.<br /><br /> Alternatively, you can use the old method of using demos. While you are spectating the offending player, press the ` key on your keyboard to show the Developers Console. If this does not show, you will need to go into your Game Settings and enable this. Then type `record [demoname]` and hit enter, the file will then be in your mod folder of your game directory.', 'blue', '', true);">here</a> for an explanation.<br /><br />
     <form action="index.php?p=submit" method="post" enctype="multipart/form-data">
+        {csrf_field}
         <input type="hidden" name="subban" value="1">
         <table cellspacing='10' width='100%' align='center'>
             <tr>

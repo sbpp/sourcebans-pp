@@ -19,6 +19,7 @@
 Plese select the file to upload. The file must either be {$formats} file format.<br>
 <b>{$message nofilter}</b>
 <form action="" method="POST" id="{$form_name}" enctype="multipart/form-data">
+{csrf_field}
 <input name="upload" value="1" type="hidden">
 <input name="{$input_name}" size="25" class="submit-fields" type="file"> <br />
 <button style="background-color: #e9e9e9;

@@ -1,4 +1,5 @@
 <form action="" method="post">
+    {csrf_field}
     <div id="admin-page-content">
         <div id="0">
             <div id="msg-green" style="display:none;">

@@ -1,4 +1,5 @@
 <form action="" method="post">
+    {csrf_field}
     <div id="add-group">
         <h3>Mod Details</h3>
         For more information or help regarding a certain subject move your mouse over the question mark.<br /><br />

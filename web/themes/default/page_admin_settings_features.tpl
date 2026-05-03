@@ -1,4 +1,5 @@
 <form action="" method="post">
+    {csrf_field}
     <input type="hidden" name="settingsGroup" value="features" />
     <table width="99%" border="0" style="border-collapse:collapse;" id="group.features" cellpadding="3">
         <tr>

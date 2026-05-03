@@ -4,6 +4,7 @@
     <h3>Import Bans</h3>
     For more information or help regarding a certain subject move your mouse over the question mark.<br /><br />
     <form action="" method="post" enctype="multipart/form-data">
+        {csrf_field}
         <input type="hidden" name="action" value="importBans" />
         <table width="90%" style="border-collapse:collapse;" id="group.details" cellpadding="3">
             <tr>

@@ -75,7 +75,7 @@ function smarty_stripslashes($string)
 
 /**
  *  Smarty {smarty_htmlspecialchars} function plugin
- * 
+ *
  * Type:     function<br>
  * Name:     smarty_htmlspecialchars<br>
  * Purpose:  custom htmlspecialchars function
@@ -85,4 +85,14 @@ function smarty_stripslashes($string)
  */
 function smarty_htmlspecialchars($string, $flags = ENT_COMPAT | ENT_HTML401, $encoding = 'UTF-8', $double_encode = true) {
     return htmlspecialchars($string, $flags, $encoding, $double_encode);
+}
+
+/**
+ * Smarty {csrf_field} function plugin: renders the hidden CSRF token input.
+ */
+function smarty_function_csrf_field()
+{
+    $token = htmlspecialchars(CSRF::token(), ENT_QUOTES, 'UTF-8');
+    $name = htmlspecialchars(CSRF::FIELD_NAME, ENT_QUOTES, 'UTF-8');
+    return '<input type="hidden" name="' . $name . '" value="' . $token . '" />';
 }

@@ -10,6 +10,7 @@
     {/if}
         <div id="add-group">
             <form action="" method="post">
+                {csrf_field}
                 <h3>Overrides</h3>
                 With Overrides you can change the flags or permissions on any command, either globally, or for a specific group, without editing plugin source code.<br />
                 <i>Read about <b><a href="http://wiki.alliedmods.net/Overriding_Command_Access_%28SourceMod%29" title="Overriding Command Access (SourceMod)" target="_blank">overriding command access</a></b> in the AlliedModders Wiki!</i><br /><br />

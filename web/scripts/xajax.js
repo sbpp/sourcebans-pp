@@ -95,7 +95,7 @@ else{var xajaxRequestType=sRequestType;}
 var uri=xajaxRequestUri;var value;switch(xajaxRequestType){case xajaxDefinedGet:{var uriGet=uri.indexOf("?")==-1?"?xajax="+encodeURIComponent(sFunction):"&xajax="+encodeURIComponent(sFunction);if(aArgs){for(i=0;i<aArgs.length;i++){value=aArgs[i];if(typeof(value)=="object")
 value=this.objectToXML(value);uriGet+="&xajaxargs[]="+encodeURIComponent(value);}
 }
-uriGet+="&xajaxr="+new Date().getTime();uri+=uriGet;postData=null;}break;case xajaxDefinedPost:{postData="xajax="+encodeURIComponent(sFunction);postData+="&xajaxr="+new Date().getTime();if(aArgs){for(i=0;i <aArgs.length;i++){value=aArgs[i];if(typeof(value)=="object")
+uriGet+="&xajaxr="+new Date().getTime();if(typeof xajaxCsrfToken!="undefined"&&xajaxCsrfToken)uriGet+="&csrf_token="+encodeURIComponent(xajaxCsrfToken);uri+=uriGet;postData=null;}break;case xajaxDefinedPost:{postData="xajax="+encodeURIComponent(sFunction);postData+="&xajaxr="+new Date().getTime();if(typeof xajaxCsrfToken!="undefined"&&xajaxCsrfToken)postData+="&csrf_token="+encodeURIComponent(xajaxCsrfToken);if(aArgs){for(i=0;i <aArgs.length;i++){value=aArgs[i];if(typeof(value)=="object")
 value=this.objectToXML(value);postData=postData+"&xajaxargs[]="+encodeURIComponent(value);}
 }
 }break;default:

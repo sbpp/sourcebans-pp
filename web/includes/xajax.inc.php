@@ -639,7 +639,22 @@ class xajax
 		$bEndRequest = false;
 		$requestMode = $this->getRequestMode();
 		if ($requestMode == -1) return;
-	
+
+		// CSRF protection: reject any xajax call without a valid token
+		// before dispatching to the registered callback.
+		if (class_exists('CSRF') && !CSRF::validate(CSRF::fromRequest()))
+		{
+			$sContentHeader = "Content-type: text/xml;";
+			if ($this->sEncoding && strlen(trim($this->sEncoding)) > 0)
+				$sContentHeader .= " charset=".$this->sEncoding;
+			header($sContentHeader);
+			$oCsrfResponse = new xajaxResponse($this->sEncoding, $this->bOutputEntities);
+			$oCsrfResponse->addAlert("Security check failed: CSRF token missing or invalid. Please reload the page and try again.");
+			print $oCsrfResponse->getOutput();
+			if ($this->bExitAllowed) exit();
+			return;
+		}
+
 		if ($requestMode == XAJAX_POST)
 		{
 			$sFunctionName = $_POST["xajax"];
@@ -863,6 +878,9 @@ class xajax
 		$html .= "var xajaxDefinedGet=".XAJAX_GET.";\n";
 		$html .= "var xajaxDefinedPost=".XAJAX_POST.";\n";
 		$html .= "var xajaxLoaded=false;\n";
+		if (class_exists('CSRF')) {
+			$html .= "var xajaxCsrfToken=\"".addslashes(CSRF::token())."\";\n";
+		}
 
 		foreach($this->aFunctions as $sFunction => $bExists) {
 			$html .= $this->_wrap($sFunction,$this->aFunctionRequestTypes[$sFunction]);

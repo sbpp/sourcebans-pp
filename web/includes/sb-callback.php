@@ -113,11 +113,6 @@ function Plogin(string $username, string $password, string $remember = '', strin
         return $objResponse;
     }
     
-    // Initialize session if not already started
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-
     // Rate limiting configuration
     $maxAttempts = 5;
     $lockoutTime = 10 * 60; // 10 minutes lockout
@@ -3023,7 +3018,6 @@ function RefreshServer($sid)
 {
     $objResponse = new xajaxResponse();
     $sid = (int)$sid;
-    session_start();
     $data = $GLOBALS['db']->GetRow("SELECT ip, port FROM `".DB_PREFIX."_servers` WHERE sid = ?;", array($sid));
 
     $objResponse->addScript("xajax_ServerHostPlayers('".$sid."');");
