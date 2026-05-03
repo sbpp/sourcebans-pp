@@ -23,6 +23,7 @@ Run things inside containers:
   composer ...    Run composer inside the web container.
   phpstan         Run phpstan from web/phpstan.neon inside the web container.
   test [args...]  Run PHPUnit (web/phpunit.xml) inside the web container.
+  ts-check        Run tsc --checkJs over web/scripts (npm-installs typescript on demand).
   exec <cmd...>   Run an arbitrary command in the web container.
   mysql           Open a mysql client connected to the dev DB.
 
@@ -101,6 +102,13 @@ case "$cmd" in
             -e DB_USER=sourcebans -e DB_PASS=sourcebans \
             -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
             web includes/vendor/bin/phpunit -c /var/www/html/web/phpunit.xml --testdox "$@"
+        ;;
+    ts-check)
+        # JS type-checking gate added in #1098. We `npm install` lazily on
+        # first run so a fresh dev container doesn't pay the cost up front;
+        # the install is a no-op once node_modules/ is populated thanks to
+        # `--prefer-offline`.
+        dc exec web bash -lc 'cd /var/www/html/web && npm install --silent --no-audit --no-fund --prefer-offline && npm run --silent ts-check'
         ;;
     exec)
         dc exec web "$@"
