@@ -380,7 +380,7 @@ function AddGroup($name, $type, $bitmask, $srvflags)
     $error = 0;
     $query = $GLOBALS['PDO']->query("SELECT `gid` FROM `:prefix_groups` WHERE `name` = ?")->single(array($name));
     $query2 = $GLOBALS['PDO']->query("SELECT `id` FROM `:prefix_srvgroups` WHERE `name` = ?")->single(array($name));
-    if (strlen($name) == 0 || count($query) > 0 || count($query2) > 0) {
+    if (strlen($name) == 0 || $query || $query2) {
         if (strlen($name) == 0) {
             $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
             $objResponse->addScript("$('name.msg').setHTML('Please enter a name for this group.');");
@@ -389,7 +389,7 @@ function AddGroup($name, $type, $bitmask, $srvflags)
             $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
             $objResponse->addScript("$('name.msg').setHTML('You cannot have a comma \',\' in a group name.');");
             $error++;
-        } elseif (count($query) > 0 || count($query2) > 0) {
+        } elseif ($query || $query2) {
             $objResponse->addScript("$('name.msg').setStyle('display', 'block');");
             $objResponse->addScript("$('name.msg').setHTML('A group is already named \'" . $name . "\'');");
             $error++;
@@ -717,7 +717,7 @@ function RemoveAdmin($aid)
     }
     $aid = (int)$aid;
     $gid = $GLOBALS['PDO']->query("SELECT gid, authid, extraflags, user FROM `:prefix_admins` WHERE aid = $aid")->single();
-    if((intval($gid[2]) & ADMIN_OWNER) != 0) {
+    if($gid && (intval($gid['extraflags']) & ADMIN_OWNER) != 0) {
         $objResponse->addAlert("Error: You cannot delete the owner.");
         return $objResponse;
     }
@@ -3246,7 +3246,7 @@ function BanFriends($friendid, $name)
         $GLOBALS['PDO']->bind(':authid', $steam);
         $banned = $GLOBALS['PDO']->single();
 
-        if ((bool)$banned[1]) {
+        if ($banned) {
             $before++;
             continue;
         }

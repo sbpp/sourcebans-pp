@@ -291,7 +291,7 @@ if (isset($_GET['searchText'])) {
         intval($BansPerPage)
     ));
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $hideinactiven);
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $hideinactiven)->resultset();
     $searchlink = "";
 }
 
