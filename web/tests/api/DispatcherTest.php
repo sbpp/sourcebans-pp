@@ -41,4 +41,69 @@ final class DispatcherTest extends ApiTestCase
         $this->assertTrue($env['ok'], 'expected ok envelope, got ' . json_encode($env));
         $this->assertArrayHasKey('release_latest', $env['data']);
     }
+
+    /**
+     * Regression: a handler registered with all defaults (no perm, not
+     * requireAdmin, not public) used to fall through to the handler with
+     * no auth check. Verify the dispatcher now enforces a logged-in
+     * baseline for every non-public action.
+     *
+     * account.check_password is exactly such a registration.
+     */
+    public function testNonPublicActionRejectsAnonymousByDefault(): void
+    {
+        $env = $this->api('account.check_password', ['aid' => 1, 'password' => 'x']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    /**
+     * The HTTP-boundary gates (method, JSON body, CSRF) live in
+     * Api::handle(). The default `api()` helper goes via Api::invoke()
+     * and bypasses them — so without these tests the CSRF code path has
+     * zero coverage.
+     */
+    public function testDispatcherRejectsGetRequests(): void
+    {
+        [$status, $env] = \Api::handle('GET', '', 'tok');
+        $this->assertSame(405, $status);
+        $this->assertSame('method_not_allowed', $env['error']['code']);
+    }
+
+    public function testDispatcherRejectsInvalidJsonBody(): void
+    {
+        [$status, $env] = \Api::handle('POST', 'this is not JSON', 'tok');
+        $this->assertSame(400, $status);
+        $this->assertSame('bad_request', $env['error']['code']);
+    }
+
+    public function testDispatcherRejectsMissingAction(): void
+    {
+        [$status, $env] = \Api::handle('POST', json_encode(['params' => []]) ?: '', 'tok');
+        $this->assertSame(400, $status);
+        $this->assertSame('bad_request', $env['error']['code']);
+    }
+
+    public function testDispatcherRejectsBadCsrfToken(): void
+    {
+        $body = json_encode(['action' => 'system.check_version', 'params' => []]) ?: '';
+        [$status, $env] = \Api::handle('POST', $body, 'definitely-not-the-session-token');
+        $this->assertSame(403, $status);
+        $this->assertSame('csrf', $env['error']['code']);
+    }
+
+    public function testDispatcherAcceptsCsrfTokenFromBodyField(): void
+    {
+        $sessionToken = \CSRF::token();
+        $this->assertNotSame('', $sessionToken, 'CSRF::init() should have seeded the session');
+
+        $body = json_encode([
+            'action'     => 'system.check_version',
+            'params'     => [],
+            'csrf_token' => $sessionToken,
+        ]) ?: '';
+        // Header token is wrong, body token is right — body should win.
+        [$status, $env] = \Api::handle('POST', $body, 'wrong-token');
+        $this->assertSame(200, $status);
+        $this->assertTrue($env['ok'] ?? false, 'expected ok envelope, got: ' . json_encode($env));
+    }
 }

@@ -39,6 +39,17 @@ class Api
      * $perm is either an int bitmask (web flags from web.json) or a string
      * of sourcemod flag chars (m, z, ...). CUserManager::HasAccess() accepts
      * both forms; we forward whichever was registered.
+     *
+     * Auth model:
+     *   public=true                            -> anyone (login form, public pages)
+     *   public=false, perm=0, requireAdmin=0   -> any logged-in user (dispatcher-enforced)
+     *   public=false, requireAdmin=true        -> any web admin (HasAccess(ALL_WEB))
+     *   public=false, perm!=0                  -> caller must hold the flag bitmask / sm chars
+     *
+     * The "logged-in" baseline is enforced by the dispatcher itself, so a
+     * registration that omits perm/requireAdmin still fails closed for
+     * anonymous callers — handlers do not have to remember to call
+     * is_logged_in() themselves.
      */
     public static function register(
         string $action,
@@ -94,17 +105,50 @@ class Api
         }
 
         if (!$entry['public']) {
+            // Baseline: any non-public action requires a logged-in caller.
+            // Without this, registering Api::register('foo', 'fn') with all
+            // defaults silently exposes the handler to anonymous callers.
+            if (!$userbank->is_logged_in()) {
+                self::logHackingAttempt($action, 'not logged in');
+                throw new ApiError('forbidden', 'No access', null, 403);
+            }
             if ($entry['requireAdmin'] && !$userbank->is_admin()) {
+                self::logHackingAttempt($action, 'not an admin');
                 throw new ApiError('forbidden', 'No access', null, 403);
             }
             $hasPerm = $entry['perm'] !== 0 && $entry['perm'] !== '';
             if ($hasPerm && !$userbank->HasAccess($entry['perm'])) {
+                self::logHackingAttempt($action, 'missing required permission');
                 throw new ApiError('forbidden', 'No access', null, 403);
             }
         }
 
         $result = ($entry['fn'])($params);
         return is_array($result) ? $result : [];
+    }
+
+    /**
+     * Centralised audit log for permission-denied API calls. The xajax
+     * handlers used to emit a per-action "Hacking Attempt" warning; this
+     * preserves that signal for SIEM consumers now that auth is enforced
+     * in the dispatcher.
+     */
+    private static function logHackingAttempt(string $action, string $why): void
+    {
+        global $userbank;
+        // Don't blow up the request if Log isn't initialised yet (CLI tests
+        // that hit invoke() before bootstrap).
+        if (!class_exists('Log', false)) {
+            return;
+        }
+        $who = ($userbank instanceof CUserManager && $userbank->is_logged_in())
+            ? (string)$userbank->GetProperty('user')
+            : ($_SERVER['REMOTE_ADDR'] ?? 'anonymous');
+        try {
+            Log::add('w', 'Hacking Attempt', "$who tried to call $action ($why).");
+        } catch (\Throwable $e) {
+            // Logging must never block the auth response.
+        }
     }
 
     /**
@@ -116,66 +160,71 @@ class Api
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store');
 
-        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['ok' => false, 'error' => ['code' => 'method_not_allowed', 'message' => 'POST required']]);
-            exit;
+        $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $rawBody = file_get_contents('php://input') ?: '';
+        // CSRF::fromRequest() reads $_POST/$_GET/X-CSRF-Token header, so it
+        // works as a fallback when the body isn't JSON or doesn't carry
+        // csrf_token. The body field still wins when present.
+        $headerToken = CSRF::fromRequest() ?? '';
+
+        [$status, $envelope] = self::handle($method, $rawBody, $headerToken);
+        if ($status !== 200) {
+            http_response_code($status);
+        }
+        echo json_encode($envelope, JSON_UNESCAPED_SLASHES);
+        exit;
+    }
+
+    /**
+     * Pure dispatcher: accepts the raw HTTP-shaped inputs and returns
+     * `[status_code, envelope_array]`. Extracted so tests can exercise
+     * method/JSON/CSRF gates without spawning a subprocess.
+     *
+     * @return array{0: int, 1: array<string, mixed>}
+     */
+    public static function handle(string $method, string $rawBody, string $headerToken): array
+    {
+        if (strtoupper($method) !== 'POST') {
+            return [405, ['ok' => false, 'error' => ['code' => 'method_not_allowed', 'message' => 'POST required']]];
         }
 
-        $raw  = file_get_contents('php://input') ?: '';
-        $body = json_decode($raw, true);
+        $body = json_decode($rawBody, true);
         if (!is_array($body)) {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => ['code' => 'bad_request', 'message' => 'Invalid JSON body']]);
-            exit;
+            return [400, ['ok' => false, 'error' => ['code' => 'bad_request', 'message' => 'Invalid JSON body']]];
         }
 
         $action = is_string($body['action'] ?? null) ? $body['action'] : '';
         $params = is_array($body['params'] ?? null) ? $body['params'] : [];
 
         if ($action === '') {
-            http_response_code(400);
-            echo json_encode(['ok' => false, 'error' => ['code' => 'bad_request', 'message' => 'Missing action']]);
-            exit;
+            return [400, ['ok' => false, 'error' => ['code' => 'bad_request', 'message' => 'Missing action']]];
         }
 
         // CSRF protection. The token may also arrive in the JSON body for
         // tools that can't set headers (xhr fallback).
-        $token = is_string($body['csrf_token'] ?? null) ? $body['csrf_token'] : CSRF::fromRequest();
+        $token = is_string($body['csrf_token'] ?? null) ? $body['csrf_token'] : $headerToken;
         if (!CSRF::validate($token)) {
-            http_response_code(403);
-            echo json_encode(['ok' => false, 'error' => ['code' => 'csrf', 'message' => 'CSRF token validation failed']]);
-            exit;
+            return [403, ['ok' => false, 'error' => ['code' => 'csrf', 'message' => 'CSRF token validation failed']]];
         }
 
         try {
             $result = self::invoke($action, $params);
             if (isset($result['__redirect']) && is_string($result['__redirect'])) {
-                echo json_encode(['ok' => false, 'redirect' => $result['__redirect']]);
-                exit;
+                return [200, ['ok' => false, 'redirect' => $result['__redirect']]];
             }
-            echo json_encode(['ok' => true, 'data' => (object)$result], JSON_UNESCAPED_SLASHES);
-            exit;
+            return [200, ['ok' => true, 'data' => (object)$result]];
         } catch (ApiError $e) {
-            if ($e->httpStatus !== 200) {
-                http_response_code($e->httpStatus);
-            }
             $err = ['code' => $e->errorCode, 'message' => $e->getMessage()];
             if ($e->field !== null) {
                 $err['field'] = $e->field;
             }
-            echo json_encode(['ok' => false, 'error' => $err]);
-            exit;
+            return [$e->httpStatus, ['ok' => false, 'error' => $err]];
         } catch (\Throwable $e) {
-            if (defined('DEBUG_MODE') && DEBUG_MODE) {
-                $msg = $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine();
-            } else {
-                $msg = 'An unexpected error occurred. See server logs for details.';
-            }
+            $msg = (defined('DEBUG_MODE') && DEBUG_MODE)
+                ? $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()
+                : 'An unexpected error occurred. See server logs for details.';
             error_log('[api] uncaught: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-            http_response_code(500);
-            echo json_encode(['ok' => false, 'error' => ['code' => 'server_error', 'message' => $msg]]);
-            exit;
+            return [500, ['ok' => false, 'error' => ['code' => 'server_error', 'message' => $msg]]];
         }
     }
 }

@@ -13,6 +13,38 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
 use xPaw\SourceQuery\SourceQuery;
 
+/**
+ * Mirrors the access loop in web/pages/admin.rcon.php so the API enforces
+ * the same per-server scoping the UI does. The dispatcher's SM_RCON|SM_ROOT
+ * check is a global "is this admin allowed to RCON anything?" flag; this
+ * adds the per-`sid` check that says "is this admin actually mapped to
+ * this server (directly or via a server group)?".
+ */
+function _api_servers_admin_can_rcon(int $aid, int $sid): bool
+{
+    if ($aid <= 0 || $sid <= 0) {
+        return false;
+    }
+    $GLOBALS['PDO']->query("SELECT server_id, srv_group_id FROM `:prefix_admins_servers_groups` WHERE admin_id = :aid");
+    $GLOBALS['PDO']->bind(':aid', $aid);
+    $rows = $GLOBALS['PDO']->resultset();
+    foreach ($rows as $row) {
+        if ((int)$row['server_id'] === $sid) {
+            return true;
+        }
+        if ((int)$row['srv_group_id'] > 0) {
+            $GLOBALS['PDO']->query("SELECT server_id FROM `:prefix_servers_groups` WHERE group_id = :gid");
+            $GLOBALS['PDO']->bind(':gid', (int)$row['srv_group_id']);
+            foreach ($GLOBALS['PDO']->resultset() as $g) {
+                if ((int)$g['server_id'] === $sid) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 function api_servers_add(array $params): array
 {
     $ip      = (string)($params['ip'] ?? '');
@@ -124,18 +156,20 @@ function api_servers_setup_edit(array $params): array
 {
     $sid = (int)($params['sid'] ?? 0);
 
-    $server = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers` WHERE sid = :sid");
+    $server = $GLOBALS['PDO']->query("SELECT sid, ip, port, modid, gid FROM `:prefix_servers` WHERE sid = :sid");
     $GLOBALS['PDO']->bind(':sid', $sid);
     $server = $GLOBALS['PDO']->single();
     if (!$server) {
         throw new ApiError('not_found', 'Server not found');
     }
 
+    // The rcon password is intentionally not returned. admin.edit.server.php
+    // pre-fills the form with the placeholder '+-#*_'; the client treats an
+    // unchanged value as "keep the existing password" on submit.
     return [
         'sid'   => (int)$server['sid'],
         'ip'    => $server['ip'],
         'port'  => $server['port'],
-        'rcon'  => $server['rcon'],
         'mod'   => $server['modid'],
         'group' => $server['gid'] ?? 0,
     ];
@@ -301,9 +335,19 @@ function api_servers_players(array $params): array
 
 function api_servers_send_rcon(array $params): array
 {
+    global $userbank;
     $sid     = (int)($params['sid'] ?? 0);
     $command = (string)($params['command'] ?? '');
     $output  = (bool)($params['output'] ?? true);
+
+    // The dispatcher already checked the caller's global SM_RCON|SM_ROOT
+    // flag. Verify they are also mapped to this specific server, mirroring
+    // the access check admin.rcon.php uses to render the page.
+    if (!_api_servers_admin_can_rcon($userbank->GetAid(), $sid)) {
+        Log::add('w', 'Hacking Attempt',
+            $userbank->GetProperty('user') . " tried to RCON server $sid without per-server access.");
+        throw new ApiError('forbidden', 'No access to that server', null, 403);
+    }
 
     if ($command === '') {
         return ['kind' => 'noop'];
@@ -311,21 +355,34 @@ function api_servers_send_rcon(array $params): array
     if ($command === 'clr') {
         return ['kind' => 'clear'];
     }
+
+    // Decode entities first, then check for `rcon_password` so that
+    // `rcon&#95;password` doesn't slip past the filter.
+    $command = html_entity_decode($command, ENT_QUOTES);
+
     if (stripos($command, 'rcon_password') !== false) {
-        return ['kind' => 'append', 'text' => "> Error: You have to use this console. Don't try to cheat the rcon password!"];
+        return [
+            'kind'  => 'error',
+            'error' => "You have to use this console. Don't try to cheat the rcon password!",
+        ];
     }
 
-    $command = html_entity_decode($command, ENT_QUOTES);
     $ret = rcon($command, $sid);
 
     if (!$ret) {
-        return ['kind' => 'append', 'text' => '> Error: Can\'t connect to server!'];
+        return ['kind' => 'error', 'error' => "Can't connect to server!"];
     }
 
     if (!$output) {
         return ['kind' => 'noop'];
     }
 
-    $ret = str_replace("\n", '<br />', $ret);
-    return ['kind' => 'append', 'text' => '-> ' . $command . '<br />' . $ret];
+    // Return command + raw output as separate fields. The client renders
+    // them with textContent so a malicious gameserver response cannot
+    // inject HTML into an admin's panel.
+    return [
+        'kind'    => 'append',
+        'command' => $command,
+        'output'  => (string)$ret,
+    ];
 }

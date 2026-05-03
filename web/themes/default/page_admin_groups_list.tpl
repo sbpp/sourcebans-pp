@@ -99,7 +99,7 @@
             <td width="30%" height='16' class="listtable_top"><strong>Action</strong></td>
         </tr>
         {foreach from=$server_group_list item="group" name="server_admin_group"}
-            <tr id="gid_{$group.id}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.setProperty('class', 'tbl_hover')">
+            <tr id="gid_{$group.id}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
                 <td class="listtable_1" height='16'>{$group.name}</td>
                 <td class="listtable_1" height='16'>{$server_admins[$smarty.foreach.server_admin_group.index]}</td>
                 <td class="listtable_1" height='16'>
@@ -196,7 +196,7 @@
             <td width="30%" height='16' class="listtable_top"><strong>Action</strong></td>
         </tr>
         {foreach from=$server_list item="group" name="server_group"}
-            <tr id="gid_{$group.gid}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.setProperty('class', 'tbl_hover')">
+            <tr id="gid_{$group.gid}" class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
                 <td class="listtable_1" height='16'>{$group.name}</td>
                 <td class="listtable_1" height='16'>{$server_counts[$smarty.foreach.server_group.index]}</td>
                 <td class="listtable_1" height='16'>

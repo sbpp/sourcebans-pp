@@ -86,6 +86,13 @@ Loaded before sourcebans.js. Exposes a single global `sb` namespace and a
     sb.setText = (el, text) => { el = sb.$id(el); if (el) el.textContent = text; };
     sb.setStyle = (el, prop, val) => { el = sb.$id(el); if (el) el.style[camel(prop)] = val; };
 
+    // Escape any string before splicing it into innerHTML or an HTML
+    // attribute. Use textContent/setAttribute when you can; reach for this
+    // only when you must build a chunk of HTML.
+    sb.escapeHtml = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+    }[c]));
+
     // ---------------------------------------------------------------
     // Animations (CSS-transition based, replaces Fx.Slide / Fx.Style).
     // ---------------------------------------------------------------
@@ -174,8 +181,15 @@ Loaded before sourcebans.js. Exposes a single global `sb` namespace and a
             if ($place) sb.fadeIn($place, 250);
 
             if ($ctrl) {
-                const safeRedir = (redir || '').replace(/'/g, "\\'");
-                $ctrl.innerHTML = `<input name="dialog-close" onclick="sb.message.close('${safeRedir}')" class="btn ok" id="dialog-close" value="OK" type="button">`;
+                $ctrl.innerHTML = '';
+                const btn = document.createElement('input');
+                btn.type = 'button';
+                btn.name = 'dialog-close';
+                btn.id   = 'dialog-close';
+                btn.className = 'btn ok';
+                btn.value = 'OK';
+                btn.addEventListener('click', () => sb.message.close(redir || ''));
+                $ctrl.appendChild(btn);
                 $ctrl.style.display = 'block';
             }
 

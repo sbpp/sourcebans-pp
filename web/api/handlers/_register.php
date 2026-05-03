@@ -32,7 +32,7 @@ require_once __DIR__ . '/system.php';
 Api::register('auth.login',         'api_auth_login',         0, false, true);
 Api::register('auth.lost_password', 'api_auth_lost_password', 0, false, true);
 
-// ---- account: requires logged-in user, handler enforces aid match -----
+// ---- account: dispatcher enforces login; handler enforces aid match ---
 Api::register('account.check_password',     'api_account_check_password');
 Api::register('account.change_password',    'api_account_change_password');
 Api::register('account.check_srv_password', 'api_account_check_srv_password');

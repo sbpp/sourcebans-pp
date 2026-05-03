@@ -28,8 +28,17 @@ function api_comms_add(array $params): array
     if (!SteamID::isValidID($steam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
     }
+    if (!in_array($type, [1, 2, 3], true)) {
+        throw new ApiError('validation', 'Invalid block type. Must be one of: gag (1), mute (2), or both (3).', 'type');
+    }
     if ($length < 0) {
         throw new ApiError('validation', 'Length must be positive or 0', 'length');
+    }
+    // Block lengths are stored in INT(11) seconds. Cap at ~100 years to
+    // keep `UNIX_TIMESTAMP() + length*60` below 2^31-1 and avoid silently
+    // producing rows whose `ends` lands in 1970.
+    if ($length > 60 * 24 * 365 * 100) {
+        throw new ApiError('validation', 'Length is unrealistically large.', 'length');
     }
 
     $len = $length ? $length * 60 : 0;
@@ -40,7 +49,6 @@ function api_comms_add(array $params): array
         1 => "type = 1",
         2 => "type = 2",
         3 => "(type = 1 OR type = 2)",
-        default => '',
     };
 
     $chk = $GLOBALS['PDO']->query(

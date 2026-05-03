@@ -11,12 +11,22 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 *************************************************************************/
 
-/** @return array{matches: bool} */
 function api_account_check_password(array $params): array
 {
     global $userbank;
     $aid  = (int)($params['aid']  ?? 0);
     $pass = (string)($params['password'] ?? '');
+
+    // The dispatcher already enforces is_logged_in() for non-public actions,
+    // but check the aid match here so a logged-in user can only probe their
+    // own password. Without this, any admin could brute-force any other
+    // admin's password through the API.
+    if ($aid !== $userbank->GetAid()) {
+        $affected = $userbank->GetProperty('user', $aid);
+        Log::add('w', 'Hacking Attempt',
+            $userbank->GetProperty('user') . " tried to check {$affected}'s password, but doesn't have access.");
+        return Api::redirect('index.php?p=login&m=no_access');
+    }
 
     $GLOBALS['PDO']->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', $aid);
@@ -25,7 +35,6 @@ function api_account_check_password(array $params): array
     return ['matches' => (bool)($row && password_verify($pass, $row['password']))];
 }
 
-/** @return array{matches: bool} */
 function api_account_check_srv_password(array $params): array
 {
     global $userbank;

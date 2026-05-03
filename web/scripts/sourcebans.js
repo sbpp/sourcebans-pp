@@ -914,9 +914,10 @@ function LoadServerHost(sid, type, obId, tplsid, open, inHome, trunchostname) {
         const d = r.data;
 
         if (d.error === 'connect') {
+            const ipPort = `${sb.escapeHtml(d.ip)}:${sb.escapeHtml(d.port)}`;
             const html = d.is_owner
-                ? `<b>Error connecting</b> (<i>${d.ip}:${d.port}</i>) <small><a href="https://sbpp.github.io/faq/">Help</a></small>`
-                : `<b>Error connecting</b> (<i>${d.ip}:${d.port}</i>)`;
+                ? `<b>Error connecting</b> (<i>${ipPort}</i>) <small><a href="https://sbpp.github.io/faq/">Help</a></small>`
+                : `<b>Error connecting</b> (<i>${ipPort}</i>)`;
             if (type === 'servers') {
                 sb.setHTML(`host_${sid}`, html);
                 if (!d.is_owner) {
@@ -937,11 +938,13 @@ function LoadServerHost(sid, type, obId, tplsid, open, inHome, trunchostname) {
         }
 
         if (type === 'servers') {
+            // d.hostname is already htmlspecialchars()'d server-side. d.map /
+            // d.mapfull come from the gameserver verbatim — set as text.
             sb.setHTML(`host_${sid}`,    d.hostname);
-            sb.setHTML(`players_${sid}`, `${d.players}/${d.maxplayers}`);
-            sb.setHTML(`os_${sid}`,      `<i class='${d.os_class} fa-2x'></i>`);
+            sb.setText(`players_${sid}`, `${d.players}/${d.maxplayers}`);
+            sb.setHTML(`os_${sid}`,      `<i class='${sb.escapeHtml(d.os_class)} fa-2x'></i>`);
             if (d.secure) sb.setHTML(`vac_${sid}`, `<i class='fas fa-shield-alt fa-2x'></i>`);
-            sb.setHTML(`map_${sid}`,     d.map);
+            sb.setText(`map_${sid}`,     d.map);
             if (!inHome) {
                 const img = sb.$id(`mapimg_${sid}`);
                 if (img) { img.src = d.mapimg; img.alt = d.mapfull; img.title = d.map; }
@@ -1040,13 +1043,20 @@ function LoadServerHostPlayersList(sids, type, obId) {
 function LoadServerPlayers(sid) {
     sb.api.call('servers.players', { sid }).then((r) => {
         if (!r || !r.ok || !r.data) return;
-        const html = r.data.players.map((p) => `
-            <tr>
-                <td class="listtable_1">${p.name}</td>
-                <td class="listtable_1">${p.frags}</td>
-                <td class="listtable_1">${p.time}</td>
-            </tr>`).join('');
-        sb.setHTML(`player_detail_${sid}`, html);
+        const tbl = sb.$id(`player_detail_${sid}`);
+        if (tbl) {
+            // Build rows with DOM ops so attacker-controlled player names
+            // (which Source servers send unescaped) cannot inject HTML.
+            tbl.innerHTML = '';
+            r.data.players.forEach((p) => {
+                const tr = tbl.insertRow ? tbl.insertRow() : tbl.appendChild(document.createElement('tr'));
+                ['name', 'frags', 'time'].forEach((field) => {
+                    const td = (tr.insertCell ? tr.insertCell() : tr.appendChild(document.createElement('td')));
+                    td.className = 'listtable_1';
+                    td.textContent = String(p[field] ?? '');
+                });
+            });
+        }
         setTimeout(() => LoadServerPlayers(sid), 5000);
         const op = sb.$id(`opener_${sid}`);
         if (op) op.removeAttribute('onclick');
@@ -1135,8 +1145,6 @@ function LoadSetupEditServer(sid) {
         const d = r.data;
         if (sb.$id('address'))     sb.$id('address').value     = d.ip   || '';
         if (sb.$id('port'))        sb.$id('port').value        = d.port || '';
-        if (sb.$id('rcon'))        sb.$id('rcon').value        = d.rcon || '';
-        if (sb.$id('rcon2'))       sb.$id('rcon2').value       = d.rcon || '';
         if (sb.$id('mod'))         sb.$id('mod').value         = String(d.mod);
         if (sb.$id('serverg'))     sb.$id('serverg').value     = String(d.group);
         if (sb.$id('insert_type')) sb.$id('insert_type').value = String(d.sid);
@@ -1261,8 +1269,33 @@ function LoadSendRcon(sid, command, output) {
         if (!r || !r.ok || !r.data) return;
         const out = sb.$id('rcon_con');
         if (!out) return;
-        if (r.data.kind === 'clear') { out.innerHTML = ''; return; }
-        if (r.data.kind === 'append') { out.insertAdjacentHTML('beforeend', r.data.text + '<br />'); return; }
+        const d = r.data;
+        if (d.kind === 'clear') { out.innerHTML = ''; return; }
+        if (d.kind === 'error') {
+            // Build the error line with textContent — gameserver-controlled
+            // bytes never reach innerHTML.
+            const div = document.createElement('div');
+            div.textContent = `> Error: ${d.error || ''}`;
+            out.appendChild(div);
+            out.appendChild(document.createElement('br'));
+            return;
+        }
+        if (d.kind === 'append') {
+            const cmdLine = document.createElement('div');
+            cmdLine.textContent = `-> ${d.command || ''}`;
+            out.appendChild(cmdLine);
+
+            // Preserve newlines from the rcon response without splicing
+            // anything into innerHTML.
+            String(d.output || '').split('\n').forEach((line, i, arr) => {
+                const span = document.createElement('span');
+                span.textContent = line;
+                out.appendChild(span);
+                if (i < arr.length - 1) out.appendChild(document.createElement('br'));
+            });
+            out.appendChild(document.createElement('br'));
+            return;
+        }
     });
 }
 
@@ -1281,15 +1314,38 @@ function LoadGetGroups(friendid) {
             return;
         }
         groups.forEach((g, i) => {
+            // Steam group names/URLs are attacker-controlled (any Steam user
+            // can pick a group name with HTML in it). Build the row with DOM
+            // ops — never let g.name or g.url touch innerHTML/setAttribute
+            // for href without sanitisation.
+            const safeUrl = encodeURIComponent(String(g.url ?? ''));
             const tr = tbl.insertRow();
+
             const td1 = tr.insertCell();
             td1.className = 'listtable_1';
             td1.style.padding = '0px';
             td1.style.width   = '3px';
-            td1.innerHTML = `<input type="checkbox" id="chkb_${i}" value="${g.url}">`;
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.id   = `chkb_${i}`;
+            cb.value = String(g.url ?? '');
+            td1.appendChild(cb);
+
             const td2 = tr.insertCell();
             td2.className = 'listtable_1';
-            td2.innerHTML = `<a href="http://steamcommunity.com/groups/${g.url}" target="_blank">${g.name}</a> (<span id="membcnt_${i}" value="${g.member_count}">${g.member_count}</span> Members)`;
+            const a = document.createElement('a');
+            a.href = `http://steamcommunity.com/groups/${safeUrl}`;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = String(g.name ?? '');
+            td2.appendChild(a);
+            td2.appendChild(document.createTextNode(' ('));
+            const span = document.createElement('span');
+            span.id = `membcnt_${i}`;
+            span.setAttribute('value', String(g.member_count ?? 0));
+            span.textContent = String(g.member_count ?? 0);
+            td2.appendChild(span);
+            td2.appendChild(document.createTextNode(' Members)'));
         });
         sb.hide('steamGroupsText');
         sb.show('steamGroups');

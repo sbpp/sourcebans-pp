@@ -31,7 +31,7 @@
         <env name="DB_NAME" value="sourcebans_test"/>
         <env name="DB_USER" value="sourcebans"/>
         <env name="DB_PASS" value="sourcebans"/>
-        <env name="DB_PREFIX" value="sb_"/>
+        <env name="DB_PREFIX" value="sb"/>
         <env name="DB_CHARSET" value="utf8mb4"/>
     </php>
 </phpunit>

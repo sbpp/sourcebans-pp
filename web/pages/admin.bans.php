@@ -812,7 +812,7 @@ function ProcessBan()
         $('nick.msg').setStyle('display', 'none');
     }
 
-    if (!$('steam').value.test(/(?:STEAM_[01]:[01]:\d+)|(?:\[U:1:\d+\])|(?:\d{17})/) && type == 0) {
+    if (!/(?:STEAM_[01]:[01]:\d+)|(?:\[U:1:\d+\])|(?:\d{17})/.test($('steam').value) && type == 0) {
         $('steam.msg').setHTML('You must enter a valid STEAM ID or Community ID');
         $('steam.msg').setStyle('display', 'block');
         err++;

@@ -55,6 +55,12 @@ function api_bans_add(array $params): array
     if ($length < 0) {
         throw new ApiError('validation', 'Length must be positive or 0', 'length');
     }
+    // Ban lengths are stored in INT(10/11) seconds. Cap at ~100 years to
+    // keep `length * 60` and `UNIX_TIMESTAMP() + length*60` below 2^31-1
+    // and avoid silently producing rows whose `ends` lands in 1970.
+    if ($length > 60 * 24 * 365 * 100) {
+        throw new ApiError('validation', 'Length is unrealistically large.', 'length');
+    }
 
     $len = $length ? $length * 60 : 0;
 

@@ -29,7 +29,10 @@ define('DB_PORT',    (int)(getenv('DB_PORT') ?: 3306));
 define('DB_NAME',    getenv('DB_NAME')    ?: 'sourcebans_test');
 define('DB_USER',    getenv('DB_USER')    ?: 'sourcebans');
 define('DB_PASS',    getenv('DB_PASS')    ?: 'sourcebans');
-define('DB_PREFIX',  getenv('DB_PREFIX')  ?: 'sb_');
+// Default matches docker/db-init/00-render-schema.sh, sbpp.sh, and CI.
+// Database::setPrefix() turns ":prefix_admins" into "{DB_PREFIX}_admins",
+// so the right value here is "sb" (no trailing underscore).
+define('DB_PREFIX',  getenv('DB_PREFIX')  ?: 'sb');
 define('DB_CHARSET', getenv('DB_CHARSET') ?: 'utf8mb4');
 
 define('STEAMAPIKEY', '');
