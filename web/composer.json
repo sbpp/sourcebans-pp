@@ -22,7 +22,7 @@
         "lcobucci/jwt": "^5.0",
         "maxmind-db/reader": "~1.0",
         "smarty/smarty": "^v5.4",
-        "xpaw/php-source-query-class": "dev-master",
+        "xpaw/php-source-query-class": "^6.0.0",
         "adodb/adodb-php": "^5.22",
         "symfony/mailer": "^7.2",
         "ext-pdo": "*",

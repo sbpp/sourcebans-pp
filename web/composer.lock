@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "22ca493463c1934a272e792d89a6496d",
+    "content-hash": "d69e3672123f834080b9808142157dc4",
     "packages": [
         {
             "name": "adodb/adodb-php",
@@ -1360,27 +1360,26 @@
         },
         {
             "name": "xpaw/php-source-query-class",
-            "version": "dev-master",
+            "version": "6.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/xPaw/PHP-Source-Query.git",
-                "reference": "18423a4efd80cb9786741d1308e0b392e8059a56"
+                "reference": "fe854e0e582b3da4261034bbc0f1e9b1e5e5bd73"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/xPaw/PHP-Source-Query/zipball/18423a4efd80cb9786741d1308e0b392e8059a56",
-                "reference": "18423a4efd80cb9786741d1308e0b392e8059a56",
+                "url": "https://api.github.com/repos/xPaw/PHP-Source-Query/zipball/fe854e0e582b3da4261034bbc0f1e9b1e5e5bd73",
+                "reference": "fe854e0e582b3da4261034bbc0f1e9b1e5e5bd73",
                 "shasum": ""
             },
             "require": {
-                "php": ">=8.1"
+                "php": ">=8.2"
             },
             "require-dev": {
-                "phpstan/phpstan": "^1.10",
-                "phpstan/phpstan-strict-rules": "^1.6",
-                "phpunit/phpunit": "^10.3"
+                "phpstan/phpstan": "^2.0",
+                "phpstan/phpstan-strict-rules": "^2.0",
+                "phpunit/phpunit": "^12.0"
             },
-            "default-branch": true,
             "type": "library",
             "autoload": {
                 "psr-4": {
@@ -1405,17 +1404,21 @@
                 "team fortress"
             ],
             "support": {
-                "source": "https://github.com/xPaw/PHP-Source-Query/tree/master"
+                "source": "https://github.com/xPaw/PHP-Source-Query/tree/6.0.0"
             },
-            "time": "2024-09-24T20:06:19+00:00"
+            "funding": [
+                {
+                    "url": "https://github.com/sponsors/xPaw",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-01-29T10:35:30+00:00"
         }
     ],
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {
-        "xpaw/php-source-query-class": 20
-    },
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
@@ -1424,5 +1427,5 @@
         "php": ">=8.2"
     },
     "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
