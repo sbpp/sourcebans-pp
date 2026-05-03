@@ -45,4 +45,4 @@ jobs:
         run: composer install --no-progress --prefer-dist --no-interaction
 
       - name: Run PHPStan
-        run: includes/vendor/bin/phpstan analyse --no-progress --error-format=github
+        run: includes/vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=1G

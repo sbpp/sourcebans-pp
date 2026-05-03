@@ -3,6 +3,9 @@ includes:
 
 parameters:
     level: 4
+    bootstrapFiles:
+        - includes/vendor/autoload.php
+        - phpstan-bootstrap.php
     paths:
         - .
     excludePaths:
@@ -14,3 +17,4 @@ parameters:
         - includes/tinymce/*
         - cache/*
         - templates_c/*
+        - phpstan-bootstrap.php
