@@ -58,12 +58,22 @@
         <!-- added for steam login option mod -->
 
         <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Normal Login" message="Check this box, if you want to enable the Normal login option on the login form."}Enable Normal Login</div></td>
+            <td valign="top"><div class="rowdesc">{help_icon title="Enable Steam Login" message="Check this box to show the Sign in through Steam button on the login form."}Enable Steam Login</div></td>
             <td>
                 <div align="left">
                     <input type="checkbox" name="enable_steamlogin" id="enable_steamlogin" />
                 </div>
                 <div id="enable_steamlogin.msg" class="badentry"></div>
+            </td>
+        </tr>
+
+        <tr>
+            <td valign="top"><div class="rowdesc">{help_icon title="Enable Normal Login" message="Check this box to allow logging in with a username and password. Disable to require Steam login."}Enable Normal Login</div></td>
+            <td>
+                <div align="left">
+                    <input type="checkbox" name="enable_normallogin" id="enable_normallogin" />
+                </div>
+                <div id="enable_normallogin.msg" class="badentry"></div>
             </td>
         </tr>
 

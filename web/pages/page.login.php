@@ -104,6 +104,7 @@ HTML;
 }
 
 $theme->assign('steamlogin_show', Config::getBool('config.enablesteamlogin'));
+$theme->assign('normallogin_show', Config::getBool('config.enablenormallogin'));
 $theme->assign('redir', "DoLogin('');");
 $theme->setLeftDelimiter("-{");
 $theme->setRightDelimiter("}-");

@@ -53,6 +53,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('protest.emailonlyinvolved', '0'),
 ('config.version', '705'),
 ('config.enablesteamlogin', '1'),
+('config.enablenormallogin', '1'),
 ('auth.maxlife', '1440'),
 ('auth.maxlife.remember', '10080'),
 ('auth.maxlife.steam', '10080'),

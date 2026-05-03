@@ -273,6 +273,8 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 
             $steamloginopt = (isset($_POST['enable_steamlogin']) && $_POST['enable_steamlogin'] == "on" ? 1 : 0);
 
+            $normalloginopt = (isset($_POST['enable_normallogin']) && $_POST['enable_normallogin'] == "on" ? 1 : 0);
+
             $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] == "on" ? 1 : 0);
 
             $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
@@ -282,7 +284,8 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
 											(" . (int) $friendsban . ", 'config.enablefriendsbanning'),
 											(" . (int) $adminrehash . ", 'config.enableadminrehashing'),
 											(" . (int) $publiccomments . ", 'config.enablepubliccomments'),
-											(" . (int) $steamloginopt . ", 'config.enablesteamlogin')")->execute();
+											(" . (int) $steamloginopt . ", 'config.enablesteamlogin'),
+											(" . (int) $normalloginopt . ", 'config.enablenormallogin')")->execute();
 
 
 ?>
@@ -364,6 +367,7 @@ $('enable_groupbanning').checked = <?=(int)Config::getBool('config.enablegroupba
 $('enable_friendsbanning').checked = <?=(int)Config::getBool('config.enablefriendsbanning');?>;
 $('enable_adminrehashing').checked = <?=(int)Config::getBool('config.enableadminrehashing');?>;
 $('enable_steamlogin').checked = <?=(int)Config::getBool('config.enablesteamlogin');?>;
+$('enable_normallogin').checked = <?=(int)Config::getBool('config.enablenormallogin');?>;
 $('enable_publiccomments').checked = <?=(int)Config::getBool('config.enablepubliccomments');?>;
 $('mail_verify_peer').checked = <?=(int)Config::getBool('smtp.verify_peer');?>;
 
