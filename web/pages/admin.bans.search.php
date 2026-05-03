@@ -18,18 +18,17 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $theme;
-$admin_list   = $GLOBALS['db']->GetAll("SELECT * FROM `" . DB_PREFIX . "_admins` ORDER BY user ASC");
-$server_list  = $GLOBALS['db']->Execute("SELECT sid, ip, port FROM `" . DB_PREFIX . "_servers` WHERE enabled = 1");
+$admin_list   = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` ORDER BY user ASC")->resultset();
+$server_list  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
 $servers      = [];
 $serverscript = "<script type=\"text/javascript\">";
-while (!$server_list->EOF) {
+foreach ($server_list as $row) {
     $info = [];
-    $serverscript .= "xajax_ServerHostPlayers('" . $server_list->fields[0] . "', 'id', 'ss" . $server_list->fields[0] . "', '', '', false, 200);";
-    $info['sid']  = $server_list->fields[0];
-    $info['ip']   = $server_list->fields[1];
-    $info['port'] = $server_list->fields[2];
+    $serverscript .= "xajax_ServerHostPlayers('" . $row['sid'] . "', 'id', 'ss" . $row['sid'] . "', '', '', false, 200);";
+    $info['sid']  = $row['sid'];
+    $info['ip']   = $row['ip'];
+    $info['port'] = $row['port'];
     $servers[] = $info;
-    $server_list->MoveNext();
 }
 $serverscript .= "</script>";
 $page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
