@@ -67,6 +67,35 @@ don't leak onto the host filesystem.
 ./sbpp.sh rebuild                 # `--no-cache` rebuild of the web image
 ```
 
+## Static analysis with phpstan-dba
+
+`./sbpp.sh phpstan` runs PHPStan inside the web container with
+[`staabm/phpstan-dba`](https://github.com/staabm/phpstan-dba) wired up against
+the running `db` service. The wrapper exports `DBA_HOST=db` (plus `DBA_USER`,
+`DBA_PASS`, `DBA_NAME`, `DBA_PREFIX`) so `web/phpstan-dba-bootstrap.php` can
+introspect the live schema and type-check raw SQL strings — column names,
+table names, and statement syntax in every `Database::query(...)` call get
+validated against `web/install/includes/sql/struc.sql` as it would be loaded
+by the seed script.
+
+To skip the DBA pass (useful when the DB container is down or you're
+iterating on unrelated rules), set `PHPSTAN_DBA_DISABLE=1`:
+
+```sh
+PHPSTAN_DBA_DISABLE=1 ./sbpp.sh phpstan
+```
+
+The bootstrap also degrades gracefully if it can't reach the DB at all, so a
+fresh checkout without `./sbpp.sh up` won't break the gate — it just runs the
+non-DBA rules.
+
+CI mirrors this: `.github/workflows/phpstan.yml` spins up MariaDB 10.11,
+renders `struc.sql` (no `data.sql` — phpstan-dba only needs structure), and
+points the same env vars at it. Renaming or removing a column in `struc.sql`
+without updating its callers will fail the PHPStan job. CI also sets
+`DBA_REQUIRE=1` so a missing service or credentials drift fails the job
+loudly instead of silently disabling the SQL checks.
+
 ## How the bootstrap works
 
 1. **DB**: MariaDB only runs `/docker-entrypoint-initdb.d/*` on the **first**

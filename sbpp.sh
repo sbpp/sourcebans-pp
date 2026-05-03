@@ -83,7 +83,19 @@ case "$cmd" in
         # found" warnings disappear and triggers PHPStan's
         # `reportUnmatchedIgnoredErrors`. Stash config.php for the duration of
         # the analysis so locally we get the same result CI does.
-        dc exec web bash -lc '
+        #
+        # phpstan-dba (#1100) needs a live MariaDB to introspect schema; the
+        # dev `db` service is reachable from inside the web container as
+        # `db:3306`. Set PHPSTAN_DBA_DISABLE=1 to bypass when working
+        # offline — the bootstrap also degrades gracefully if the connection
+        # fails for any other reason.
+        dc exec \
+            -e DBA_HOST=db -e DBA_PORT=3306 \
+            -e DBA_NAME=sourcebans \
+            -e DBA_USER=sourcebans -e DBA_PASS=sourcebans \
+            -e DBA_PREFIX=sb -e DBA_CHARSET=utf8mb4 \
+            -e PHPSTAN_DBA_DISABLE="${PHPSTAN_DBA_DISABLE:-}" \
+            web bash -lc '
             cd /var/www/html/web
             cleanup() { [ -f config.php.devstash ] && mv config.php.devstash config.php; }
             trap cleanup EXIT

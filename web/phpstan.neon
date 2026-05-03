@@ -1,5 +1,6 @@
 includes:
     - phpstan-baseline.neon
+    - includes/vendor/staabm/phpstan-dba/config/dba.neon
 
 parameters:
     level: 4
@@ -7,6 +8,7 @@ parameters:
     bootstrapFiles:
         - includes/vendor/autoload.php
         - phpstan-bootstrap.php
+        - phpstan-dba-bootstrap.php
     paths:
         - .
     excludePaths:
@@ -16,4 +18,20 @@ parameters:
         - cache/*
         - templates_c/*
         - tests/*
+        - phpstan/*
         - phpstan-bootstrap.php
+        - phpstan-dba-bootstrap.php
+
+services:
+    -
+        class: Sbpp\PhpStan\SbppSyntaxErrorInQueryMethodRule
+        tags: [phpstan.rules.rule]
+        arguments:
+            classMethods:
+                - 'Database::query#0'
+            # Hard-coded to match Database::__construct's dev/CI default
+            # (see docker-compose.yml DB_PREFIX=sb, .github/workflows/* and
+            # docker/db-init/00-render-schema.sh). Bump in lockstep if the
+            # convention ever changes — the reflector reads DBA_PREFIX from
+            # the env (see phpstan-dba-bootstrap.php) and must agree.
+            prefix: sb

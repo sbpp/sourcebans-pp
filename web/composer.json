@@ -34,9 +34,13 @@
             "Sbpp\\": "includes/"
         }
     },
+    "autoload-dev": {
+        "classmap": ["phpstan/"]
+    },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^11"
+        "phpunit/phpunit": "^11",
+        "staabm/phpstan-dba": "^0.4"
     },
     "scripts": {
         "test": "phpunit",
