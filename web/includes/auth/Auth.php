@@ -90,18 +90,14 @@ class Auth
      */
     private static function setCookie(string $data, int $lifetime, string $domain, bool $secure): void
     {
-        if (version_compare(PHP_VERSION, '7.3.0') >= 0) {
-            setcookie('sbpp_auth', $data, [
-                'expires' => $lifetime,
-                'path' => '/',
-                'domain' => $domain,
-                'secure' => $secure,
-                'httponly' => true,
-                'samesite' => 'Lax'
-            ]);
-        } else {
-            setcookie('sbpp_auth', $data, $lifetime, '/', $domain, $secure, true);
-        }
+        setcookie('sbpp_auth', $data, [
+            'expires' => $lifetime,
+            'path' => '/',
+            'domain' => $domain,
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]);
     }
 
     /**
