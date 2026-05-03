@@ -843,7 +843,7 @@ function ProcessBan()
         return 0;
     }
 
-    sb.api.call('bans.add', {
+    sb.api.call(Actions.BansAdd, {
         nickname: $('nickname').value,
         type:     Number($('type').value),
         steam:    $('steam').value,

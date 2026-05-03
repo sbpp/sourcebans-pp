@@ -1765,7 +1765,7 @@ function LoadGroupBan(groupuri, isgrpurl, queue, reason, last) {
     });
 }
 
-// (admin.bans.php and admin.comms.php define their own page-local
-// ProcessBan() that maps the form to sb.api.call(Actions.BansAdd / Actions.CommsAdd).
-// We don't define a global wrapper here to avoid the name collision.)
+// `ProcessBan()` lives page-local in admin.bans.php and admin.comms.php
+// (each calls sb.api.call(Actions.BansAdd / Actions.CommsAdd) against its
+// own form). No global wrapper here on purpose — both pages would collide.
 

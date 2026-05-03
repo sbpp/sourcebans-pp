@@ -13,18 +13,20 @@ type SbElLike = string | HTMLElement | null;
  * Permissive element type returned by sb.$id / sb.$idRequired. The legacy
  * panel mutates DOM directly through getElementById and treats the result
  * as whatever element it knows it asked for — input, select, textarea,
- * div. We model that by surfacing the common form-element members as
- * optional so .value / .checked / .selectedIndex access compiles without
- * a per-site cast. Where a method is genuinely missing at runtime we'd
- * see a TypeError today already; this typing matches the existing
- * runtime contract rather than tightening it.
+ * div. We surface the common form-element members as REQUIRED (not
+ * optional) so existing call sites compile without a per-site cast.
+ *
+ * Trade-off: this lets `sb.$id('some-div').value` type-check even though
+ * `value` is `undefined` on a `<div>` at runtime. We accept that hazard
+ * for the legacy panel because the alternative (optional fields) would
+ * require ~hundreds of `if (el.value !== undefined)` narrowings in code
+ * that already works. New code should prefer typed selectors
+ * (`document.querySelector<HTMLInputElement>(...)`) or per-call casts so
+ * `tsc` can catch the wrong-element-kind bug. A follow-up issue should
+ * introduce typed `sb.$input(id)` / `sb.$select(id)` helpers and
+ * progressively migrate call sites off `SbAnyEl` to tighten the contract.
  */
 interface SbAnyEl extends HTMLElement {
-    // The legacy panel reads/writes these without per-site casts. We model
-    // them as required strings/booleans so call sites compile; at runtime
-    // a missing one comes back as `undefined`, which matches today's
-    // behaviour. Where TS *can* see a real type (e.g. via querySelector
-    // on a typed selector) prefer that.
     value: string;
     checked: boolean;
     disabled: boolean;
