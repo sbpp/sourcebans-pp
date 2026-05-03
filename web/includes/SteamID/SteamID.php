@@ -15,14 +15,9 @@ require_once __DIR__ . '/calc/BCMATH.php';
  */
 class SteamID
 {
-    /**
-     * @var string
-     */
-    private static $calcMethod = null;
-    /**
-     * @var array
-     */
-    private static $validFormat = ['Steam2', 'Steam3', 'Steam64'];
+    private static ?string $calcMethod = null;
+
+    private static array $validFormat = ['Steam2', 'Steam3', 'Steam64'];
 
     /**
      * @param  Database|null $dbs

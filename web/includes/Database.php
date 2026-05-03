@@ -5,18 +5,11 @@
  */
 class Database
 {
-    /**
-     * @var string
-     */
-    private $prefix;
-    /**
-     * @var PDO
-     */
-    private $dbh;
-    /**
-     * @var PDOStatement
-     */
-    private $stmt;
+    private readonly string $prefix;
+
+    private PDO $dbh;
+
+    private ?PDOStatement $stmt = null;
 
     /**
      * Database constructor.

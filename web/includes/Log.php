@@ -5,13 +5,8 @@
  */
 class Log
 {
-    /**
-     * @var Database
-     */
     private static ?Database $dbs = null;
-    /**
-     * @var CUserManager
-     */
+
     private static ?CUserManager $user = null;
 
     /**

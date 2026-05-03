@@ -5,7 +5,7 @@
  */
 class AdminTabs
 {
-    private $tabs = [];
+    private array $tabs = [];
 
     /**
      * AdminTabs constructor.

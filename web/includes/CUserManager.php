@@ -21,30 +21,17 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 class CUserManager
 {
-    /**
-     * @var int|mixed
-     */
-    private $aid = -1;
+    private readonly int $aid;
 
-    /**
-     * @var array
-     */
-    private $admins = [];
+    private array $admins = [];
 
-    /**
-     * @var Database
-     */
-    private $dbh;
+    private readonly Database $dbh;
 
-    /**
-     * CUserManager constructor.
-     * @param ?Token $token
-     */
     public function __construct(?Token $token)
     {
         $this->dbh = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
-        $this->aid = $token?->claims()->get('aid') ?? -1;
+        $this->aid = (int)($token?->claims()->get('aid') ?? -1);
 
         $this->GetUserArray($this->aid);
     }
@@ -231,7 +218,7 @@ class CUserManager
         if (is_null($aid)) {
             $aid = $this->aid;
         }
-        if ($aid < 0 || !is_int($aid)) {
+        if ($aid < 0) {
             return false;
         }
 

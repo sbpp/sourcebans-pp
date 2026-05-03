@@ -7,9 +7,6 @@ use Lcobucci\JWT\Token;
  */
 class Auth
 {
-    /**
-     * @var Database
-     */
     private static ?Database $dbs = null;
 
     /**
