@@ -19,16 +19,18 @@ final class SubmissionsTest extends ApiTestCase
         // Insert a submission directly via PDO
         $pdo = Fixture::rawPdo();
         $pdo->prepare(sprintf(
-            'INSERT INTO `%ssubmissions` (`name`, `SteamId`, `email`, `reason`, `archiv`) VALUES (?, ?, ?, ?, "0")',
+            'INSERT INTO `%s_submissions`
+              (`name`, `SteamId`, `email`, `reason`, `archiv`, `submitted`, `ModID`, `ip`, `server`)
+             VALUES (?, ?, ?, ?, "0", ?, 0, "127.0.0.1", 0)',
             DB_PREFIX
-        ))->execute(['Bob', 'STEAM_0:1:1', 'b@b', 'cheating']);
+        ))->execute(['Bob', 'STEAM_0:1:1', 'b@b', 'cheating', time()]);
         $sid = (int)$pdo->lastInsertId();
 
         $env = $this->api('submissions.remove', ['sid' => $sid, 'archiv' => '1']);
         $this->assertTrue($env['ok']);
 
         $row = $this->row('submissions', ['subid' => $sid]);
-        $this->assertSame('1', $row['archiv']);
-        $this->assertSame((string)Fixture::adminAid(), $row['archivedby']);
+        $this->assertSame(1, (int)$row['archiv']);
+        $this->assertSame(Fixture::adminAid(), (int)$row['archivedby']);
     }
 }

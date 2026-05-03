@@ -30,15 +30,20 @@ require_once __DIR__ . '/ApiError.php';
  */
 class Api
 {
-    /** @var array<string, array{fn: callable, perm: int, requireAdmin: bool, public: bool}> */
+    /** @var array<string, array{fn: callable, perm: int|string, requireAdmin: bool, public: bool}> */
     private static array $registry = [];
 
     private static bool $bootstrapped = false;
 
+    /**
+     * $perm is either an int bitmask (web flags from web.json) or a string
+     * of sourcemod flag chars (m, z, ...). CUserManager::HasAccess() accepts
+     * both forms; we forward whichever was registered.
+     */
     public static function register(
         string $action,
         callable $fn,
-        int $perm = 0,
+        int|string $perm = 0,
         bool $requireAdmin = false,
         bool $public = false
     ): void {
@@ -92,7 +97,8 @@ class Api
             if ($entry['requireAdmin'] && !$userbank->is_admin()) {
                 throw new ApiError('forbidden', 'No access', null, 403);
             }
-            if ($entry['perm'] !== 0 && !$userbank->HasAccess($entry['perm'])) {
+            $hasPerm = $entry['perm'] !== 0 && $entry['perm'] !== '';
+            if ($hasPerm && !$userbank->HasAccess($entry['perm'])) {
                 throw new ApiError('forbidden', 'No access', null, 403);
             }
         }

@@ -3,3 +3,4 @@
 cache/*
 includes/vendor
 templates_c
+/.phpunit.cache/

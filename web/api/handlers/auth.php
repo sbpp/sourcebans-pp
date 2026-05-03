@@ -26,7 +26,8 @@ function api_auth_login(array $params): array
 {
     $username = (string)($params['username'] ?? '');
     $password = (string)($params['password'] ?? '');
-    $remember = ($params['remember'] ?? null) === true || $params['remember'] === 'true';
+    $rememberRaw = $params['remember'] ?? null;
+    $remember    = $rememberRaw === true || $rememberRaw === 'true';
     $redirect = (string)($params['redirect'] ?? '');
 
     if (!Config::getBool('config.enablesteamlogin')) {

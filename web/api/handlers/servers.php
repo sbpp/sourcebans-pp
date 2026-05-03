@@ -20,7 +20,8 @@ function api_servers_add(array $params): array
     $rcon    = (string)($params['rcon'] ?? '');
     $rcon2   = (string)($params['rcon2'] ?? '');
     $mod     = (int)($params['mod'] ?? -2);
-    $enabled = ($params['enabled'] ?? null) === true || $params['enabled'] === 'true';
+    $enabledRaw = $params['enabled'] ?? null;
+    $enabled    = $enabledRaw === true || $enabledRaw === 'true';
     $group   = (string)($params['group'] ?? '');
 
     if ($ip === '') {

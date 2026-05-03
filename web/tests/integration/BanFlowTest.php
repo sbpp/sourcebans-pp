@@ -32,7 +32,7 @@ final class BanFlowTest extends ApiTestCase
         $ban = $this->row('bans', ['bid' => $env['data']['bid']]);
         $this->assertSame('STEAM_0:1:99999', $ban['authid']);
         $this->assertSame('aimbot', $ban['reason']);
-        $this->assertSame((string)Fixture::adminAid(), $ban['aid']);
+        $this->assertSame(Fixture::adminAid(), (int)$ban['aid']);
     }
 
     public function testDuplicateSteamRejected(): void

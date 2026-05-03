@@ -19,9 +19,9 @@ final class ModsTest extends ApiTestCase
         $this->assertTrue($env['ok']);
         $this->assertSame('Mod Added', $env['data']['message']['title']);
 
-        $rows = $this->rows('mods');
-        $this->assertCount(1, $rows);
-        $this->assertSame('tmod', $rows[0]['modfolder']);
+        $row = $this->row('mods', ['modfolder' => 'tmod']);
+        $this->assertNotNull($row);
+        $this->assertSame('Test Mod', $row['name']);
     }
 
     public function testAddRejectsAnonymous(): void

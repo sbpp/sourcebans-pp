@@ -67,8 +67,18 @@ class Fixture
         }
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
-        // Re-seed admin row on a clean DB.
+        // Re-seed the rows data.sql provides (settings, mods, ...) so
+        // tests that read Config (auth.maxlife, config.enablesteamlogin,
+        // ...) see the same defaults as a freshly-installed panel.
+        $data = self::renderSql(ROOT . 'install/includes/sql/data.sql');
+        self::executeBatch($pdo, $data);
+
+        // And the admin row.
         self::seedAdmin($pdo);
+
+        // Settings cache lives in Config's static array; re-read so
+        // post-truncate tests see the re-seeded values.
+        \Config::init($GLOBALS['PDO']);
     }
 
     public static function rawPdo(): \PDO

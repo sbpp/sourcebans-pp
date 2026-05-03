@@ -19,6 +19,6 @@ final class LoginFlowTest extends ApiTestCase
         $this->assertSame('?p=login&m=failed', $env['redirect'] ?? null);
 
         $row = $this->row('admins', ['user' => 'admin']);
-        $this->assertSame('1', $row['attempts']);
+        $this->assertSame(1, (int)$row['attempts']);
     }
 }

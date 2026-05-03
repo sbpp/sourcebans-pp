@@ -74,7 +74,7 @@ abstract class ApiTestCase extends TestCase
             $clauses[] = "`$k` = ?";
             $vals[] = $v;
         }
-        $sql = sprintf('SELECT * FROM `%s%s` WHERE %s LIMIT 1', DB_PREFIX, $table, implode(' AND ', $clauses));
+        $sql = sprintf('SELECT * FROM `%s_%s` WHERE %s LIMIT 1', DB_PREFIX, $table, implode(' AND ', $clauses));
         $stmt = $pdo->prepare($sql);
         $stmt->execute($vals);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -92,11 +92,11 @@ abstract class ApiTestCase extends TestCase
                 $clauses[] = "`$k` = ?";
                 $vals[] = $v;
             }
-            $sql = sprintf('SELECT * FROM `%s%s` WHERE %s', DB_PREFIX, $table, implode(' AND ', $clauses));
+            $sql = sprintf('SELECT * FROM `%s_%s` WHERE %s', DB_PREFIX, $table, implode(' AND ', $clauses));
             $stmt = $pdo->prepare($sql);
             $stmt->execute($vals);
         } else {
-            $sql = sprintf('SELECT * FROM `%s%s`', DB_PREFIX, $table);
+            $sql = sprintf('SELECT * FROM `%s_%s`', DB_PREFIX, $table);
             $stmt = $pdo->prepare($sql);
             $stmt->execute();
         }

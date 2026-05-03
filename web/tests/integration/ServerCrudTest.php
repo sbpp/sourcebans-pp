@@ -15,13 +15,8 @@ final class ServerCrudTest extends ApiTestCase
     {
         $this->loginAsAdmin();
 
-        // Need at least one mod row so the FK on modid validates downstream usage.
-        $pdo = Fixture::rawPdo();
-        $pdo->prepare(sprintf(
-            'INSERT INTO `%smods` (mid, name, icon, modfolder, steam_universe, enabled) VALUES (1, ?, ?, ?, 0, 1)',
-            DB_PREFIX
-        ))->execute(['CSGO', 'csgo.png', 'csgo']);
-
+        // data.sql already seeds the mods table with mid=1 (Half-Life 2 DM)
+        // so we don't need to insert one — just reference an existing row.
         $add = $this->api('servers.add', [
             'ip'      => '10.0.0.1',
             'port'    => '27015',
@@ -36,7 +31,7 @@ final class ServerCrudTest extends ApiTestCase
 
         $row = $this->row('servers', ['sid' => $sid]);
         $this->assertSame('10.0.0.1', $row['ip']);
-        $this->assertSame('27015',    $row['port']);
+        $this->assertSame(27015,      (int)$row['port']);
 
         $del = $this->api('servers.remove', ['sid' => $sid]);
         $this->assertTrue($del['ok']);
