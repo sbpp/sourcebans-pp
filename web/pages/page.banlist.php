@@ -782,7 +782,6 @@ if (isset($_GET["comment"])) {
         $_GET["cid"]    = (int) $_GET["cid"];
         $ceditdata      = $GLOBALS['db']->GetRow("SELECT * FROM " . DB_PREFIX . "_comments WHERE cid = '" . $_GET["cid"] . "'");
         $ctext          = html_entity_decode($ceditdata['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $ctext          = htmlspecialchars($ctext, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $cotherdataedit = " AND cid != '" . $_GET["cid"] . "'";
     } else {
         $cotherdataedit = "";

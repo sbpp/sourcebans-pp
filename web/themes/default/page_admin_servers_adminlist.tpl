@@ -8,7 +8,7 @@
     {foreach from=$admin_list item=admin}
         {if $admin.user}
             <tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-                <td class="listtable_1{if $admin.ingame}_unbanned{/if}" style="border-bottom: solid 1px #ccc" height="16">{$admin.user|escape:'html'}</td>
+                <td class="listtable_1{if $admin.ingame}_unbanned{/if}" style="border-bottom: solid 1px #ccc" height="16">{$admin.user}</td>
                 <td class="listtable_1{if $admin.ingame}_unbanned{/if}" style="border-bottom: solid 1px #ccc" height="16">{$admin.authid}</td>
             </tr>
             <tr align="left">
@@ -28,7 +28,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td height="16" class="listtable_1">
-                                        {$admin.iname|escape:'html'}
+                                        {$admin.iname}
                                     </td>
                                     <td height="16" class="listtable_1">
                                         {$admin.authid}

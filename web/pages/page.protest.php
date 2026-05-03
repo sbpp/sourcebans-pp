@@ -40,11 +40,11 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     $Email       = "";
 } else {
     $Type        = (int) $_POST['Type'];
-    $SteamID     = htmlspecialchars($_POST['SteamID']);
-    $IP          = htmlspecialchars($_POST['IP']);
-    $PlayerName  = htmlspecialchars($_POST['PlayerName']);
-    $UnbanReason = htmlspecialchars($_POST['BanReason']);
-    $Email       = htmlspecialchars($_POST['EmailAddr']);
+    $SteamID     = $_POST['SteamID'];
+    $IP          = $_POST['IP'];
+    $PlayerName  = $_POST['PlayerName'];
+    $UnbanReason = $_POST['BanReason'];
+    $Email       = $_POST['EmailAddr'];
     $validsubmit = true;
     $errors      = "";
     $BanId       = -1;

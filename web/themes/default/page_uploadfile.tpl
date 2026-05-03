@@ -17,7 +17,7 @@
 
 
 Plese select the file to upload. The file must either be {$formats} file format.<br>
-<b>{$message}</b>
+<b>{$message nofilter}</b>
 <form action="" method="POST" id="{$form_name}" enctype="multipart/form-data">
 <input name="upload" value="1" type="hidden">
 <input name="{$input_name}" size="25" class="submit-fields" type="file"> <br />

@@ -14,10 +14,10 @@
         </tr>
         {foreach from=$mod_list item="mod" name="gaben"}
             <tr id="mid_{$mod.mid}">
-                <td class="listtable_1" height='16'>{$mod.name|smarty_htmlspecialchars}</td>
-                <td class="listtable_1" height='16'>{$mod.modfolder|smarty_htmlspecialchars}</td>
+                <td class="listtable_1" height='16'>{$mod.name}</td>
+                <td class="listtable_1" height='16'>{$mod.modfolder}</td>
                 <td class="listtable_1" height='16'><img src="images/games/{$mod.icon}" width="16"></td>
-                <td class="listtable_1" height='16'>{$mod.steam_universe|smarty_htmlspecialchars}</td>
+                <td class="listtable_1" height='16'>{$mod.steam_universe}</td>
                 {if $permission_editmods || $permission_deletemods}
                     <td class="listtable_1" height='16'>
                         {if $permission_editmods}

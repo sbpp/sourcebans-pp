@@ -39,7 +39,7 @@
             </tr>
             <tr>
                 <td colspan='2'>
-                    {$com.commenttxt}
+                    {$com.commenttxt nofilter}
                 </td>
             </tr>
             {if $com.editname != ''}
@@ -57,9 +57,9 @@
     {load_template file='admin.comms.search'}
     <br />
     <div id="banlist-nav">
-        {$ban_nav}
+        {$ban_nav nofilter}
     </div>
-    <a href="index.php?p=commslist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink|smarty_htmlspecialchars}" title="{$hidetext} inactive">{$hidetext} inactive</a>
+    <a href="index.php?p=commslist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}" title="{$hidetext} inactive">{$hidetext} inactive</a>
     <div id="banlist">
         <table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
             <tr>
@@ -77,14 +77,14 @@
                             onclick="xajax_ServerHostPlayers({$ban.server_id}, 'id', 'host_{$ban.ban_id}');"
                         {/if}
                 >
-                    <td height="16" align="center" class="listtable_1">{$ban.mod_icon}</td>
+                    <td height="16" align="center" class="listtable_1">{$ban.mod_icon nofilter}</td>
                     <td height="16" align="center" class="listtable_1">{$ban.ban_date}</td>
                     <td height="16" class="listtable_1">
                         <div style="float:left;">
                             {if empty($ban.player)}
                                 <i><font color="#677882">no nickname present</font></i>
                             {else}
-                                {$ban.player|escape:'html'|smarty_stripslashes}
+                                {$ban.player|smarty_stripslashes}
                             {/if}
                         </div>
                         <div style="float:right;">
@@ -92,14 +92,14 @@
                                 {$ban.commentdata|@count}&thinsp;<i class="fas fa-clipboard-list fa-lg"></i>
                             {/if}
                             {if $view_bans}
-                                {$ban.counts}
+                                {$ban.counts nofilter}
                             {/if}
                         </div>
                     </td>
                     {if !$hideadminname}
                         <td height="16" class="listtable_1">
                             {if !empty($ban.admin)}
-                                {$ban.admin|escape:'html'}
+                                {$ban.admin}
                             {else}
                                 <i><font color="#677882">Admin deleted</font></i>
                             {/if}
@@ -127,7 +127,7 @@
                                         {if empty($ban.player)}
                                             <i><font color="#677882">no nickname present</font></i>
                                         {else}
-                                            {$ban.player|escape:'html'|smarty_stripslashes}
+                                            {$ban.player|smarty_stripslashes}
                                         {/if}
                                     </td>
                                     <!-- ###############[ Start Admin Controls ]################## -->
@@ -136,17 +136,17 @@
                                             <div class="ban-edit">
                                                 <ul>
                                                     {if isset($ban.unbanned) && $ban.reban_link != false}
-                                                        <li>{$ban.reban_link}</li>
+                                                        <li>{$ban.reban_link nofilter}</li>
                                                     {/if}
-                                                    <li>{$ban.addcomment}</li>
+                                                    <li>{$ban.addcomment nofilter}</li>
                                                     {if ($ban.view_edit && (!isset($ban.unbanned) || !$ban.unbanned))}
-                                                        <li>{$ban.edit_link}</li>
+                                                        <li>{$ban.edit_link nofilter}</li>
                                                     {/if}
                                                     {if isset($ban.unbanned) && ($ban.unbanned == false && $ban.view_unban)}
-                                                        <li>{$ban.unban_link}</li>
+                                                        <li>{$ban.unban_link nofilter}</li>
                                                     {/if}
                                                     {if $ban.view_delete}
-                                                        <li>{$ban.delete_link}</li>
+                                                        <li>{$ban.delete_link nofilter}</li>
                                                     {/if}
                                                 </ul>
                                             </div>
@@ -207,7 +207,7 @@
                                         <td width="20%" height="16" class="listtable_1">Unblocked by Admin</td>
                                         <td height="16" class="listtable_1">
                                             {if !empty($ban.removedby)}
-                                                {$ban.removedby|escape:'html'}
+                                                {$ban.removedby}
                                             {else}
                                                 <i><font color="#677882">Admin deleted.</font></i>
                                             {/if}
@@ -226,14 +226,14 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Reason</td>
-                                    <td height="16" class="listtable_1">{$ban.reason|escape:'html'}</td>
+                                    <td height="16" class="listtable_1">{$ban.reason}</td>
                                 </tr>
                                 {if !$hideadminname}
                                     <tr align="left">
                                         <td width="20%" height="16" class="listtable_1">Blocked by Admin</td>
                                         <td height="16" class="listtable_1">
                                             {if !empty($ban.admin)}
-                                                {$ban.admin|escape:'html'}
+                                                {$ban.admin}
                                             {else}
                                                 <i><font color="#677882">Admin deleted.</font></i>
                                             {/if}
@@ -252,7 +252,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Total Blocks</td>
-                                    <td height="16" class="listtable_1">{$ban.prevoff_link}</td>
+                                    <td height="16" class="listtable_1">{$ban.prevoff_link nofilter}</td>
                                 </tr>
                                 {if $view_comments}
                                     <tr align="left">
@@ -271,7 +271,7 @@
                                                         <tr>
                                                             <td>
                                                                 {if !empty($commenta.comname)}
-                                                                    <b>{$commenta.comname|escape:'html'}</b>
+                                                                    <b>{$commenta.comname}</b>
                                                                 {else}
                                                                     <i><font color="#677882">Admin deleted</font></i>
                                                                 {/if}
@@ -281,13 +281,13 @@
                                                             </td>
                                                             {if $commenta.editcomlink != ""}
                                                                 <td align="right">
-                                                                    {$commenta.editcomlink} {$commenta.delcomlink}
+                                                                    {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
                                                                 </td>
                                                             {/if}
                                                         </tr>
                                                         <tr>
                                                             <td colspan='3'>
-                                                                {$commenta.commenttxt}
+                                                                {$commenta.commenttxt nofilter}
                                                             </td>
                                                         </tr>
                                                         {if !empty($commenta.edittime)}

@@ -9,7 +9,7 @@
     <link href="themes/{$theme}/css/main.css" rel="stylesheet" type="text/css" />
     <script type="text/javascript" src="./scripts/mootools.js"></script>
     <script type="text/javascript" src="./scripts/contextMenoo.js"></script>
-    {$xajax}
+    {$xajax nofilter}
 </head>
 <body>
 <div id="header">

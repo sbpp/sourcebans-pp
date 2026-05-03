@@ -69,7 +69,7 @@ if (empty($email)) {
     PageDie();
 }
 
-$theme->assign('email_addr', htmlspecialchars($email));
+$theme->assign('email_addr', $email);
 $theme->assign('email_js', "CheckEmail('" . $_GET['type'] . "', " . (int) $_GET['id'] . ")");
 ?>
 

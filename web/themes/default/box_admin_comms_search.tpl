@@ -151,5 +151,5 @@
 		</tr>
 	</table>
 </div>
-{$server_script}
+{$server_script nofilter}
 <script>InitAccordion('tr.sea_open', 'div.panel', 'mainwrapper');</script>

@@ -3,7 +3,7 @@
         Access Denied!
     {else}
     {if $overrides_error != ""}
-        <script type="text/javascript">ShowBox("Error", "{$overrides_error}", "red");</script>
+        <script type="text/javascript">ShowBox("Error", "{$overrides_error nofilter}", "red");</script>
     {/if}
     {if $overrides_save_success}
         <script type="text/javascript">ShowBox("Overrides updated", "The changes have been saved successfully.", "green", "index.php?p=admin&c=admins");</script>
@@ -29,8 +29,8 @@
                                 </select>
                                 <input type="hidden" name="override_id[]" value="{$override.id}" />
                             </td>
-                            <td class="tablerow1"><input name="override_name[]" value="{$override.name|smarty_htmlspecialchars}" /></td>
-                            <td class="tablerow1"><input name="override_flags[]" value="{$override.flags|smarty_htmlspecialchars}" /></td>
+                            <td class="tablerow1"><input name="override_name[]" value="{$override.name}" /></td>
+                            <td class="tablerow1"><input name="override_flags[]" value="{$override.flags}" /></td>
                         </tr>
                     {/foreach}
                     <tr>

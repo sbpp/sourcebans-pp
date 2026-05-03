@@ -9,7 +9,7 @@
             {load_template file="admin.admins.search"}
 
             <div id="banlist-nav">
-                {$admin_nav}
+                {$admin_nav nofilter}
             </div>
             <div id="banlist">
                 <table width="99%" cellspacing="0" cellpadding="0" align="center">

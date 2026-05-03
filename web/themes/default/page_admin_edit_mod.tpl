@@ -8,8 +8,8 @@
                 <td valign="top" width="35%"><div class="rowdesc">{help_icon title="Mod Name" message="Type the name of the mod you are adding."}Mod Name</div></td>
                 <td>
                     <div align="left">
-                        <input type="hidden" id="icon_hid" name="icon_hid" value="{$mod_icon}">
-                        <input type="text" TABINDEX=1 class="textbox" id="name" name="name" value="{$name}" />
+                        <input type="hidden" id="icon_hid" name="icon_hid" value="{$mod_icon nofilter}">
+                        <input type="text" TABINDEX=1 class="textbox" id="name" name="name" value="{$name nofilter}" />
                     </div>
                     <div id="name.msg" class="badentry"></div>
                 </td>
@@ -19,7 +19,7 @@
                 <td valign="top"><div class="rowdesc">{help_icon title="Folder Name" message="Type the name of this mods folder. For example, Counter-Strike: Source's mod folder is 'cstrike'"}Mod Folder</div></td>
                 <td>
                     <div align="left">
-                        <input type="text" TABINDEX=2 class="textbox" id="folder" name="folder" value="{$folder}" />
+                        <input type="text" TABINDEX=2 class="textbox" id="folder" name="folder" value="{$folder nofilter}" />
                     </div>
                     <div id="folder.msg" class="badentry"></div>
                 </td>
@@ -49,7 +49,7 @@
                     </div>
                     <div id="icon.msg" class="badentry" style="display:block;">
                         {if $mod_icon}
-                            Uploaded: <b>{$mod_icon}</b>
+                            Uploaded: <b>{$mod_icon nofilter}</b>
                         {/if}
                     </div>
                 </td>

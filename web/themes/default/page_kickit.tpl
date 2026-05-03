@@ -1,6 +1,6 @@
 <html>
 <head>
-    -{$xajax_functions}-
+    -{$xajax_functions nofilter}-
     <script type="text/javascript">
         //<![CDATA[
         window.onload = function() {xajax_LoadServers('-{$check}-', '-{$type}-');}

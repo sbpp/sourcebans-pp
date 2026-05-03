@@ -99,7 +99,7 @@
                             {if $customreason}
                                 <optgroup label="Custom">
                                     {foreach from=$customreason item="creason"}
-                                        <option value="{$creason}">{$creason}</option>
+                                        <option value="{$creason nofilter}">{$creason nofilter}</option>
                                     {/foreach}
                                 </optgroup>
                             {/if}

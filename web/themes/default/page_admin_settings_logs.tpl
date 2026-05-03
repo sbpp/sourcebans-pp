@@ -1,9 +1,9 @@
-<h3 align="left">System Log {$clear_logs}</h3>
+<h3 align="left">System Log {$clear_logs nofilter}</h3>
 Click on a row to see more details about the event.
 <br /><br />
 {load_template file="admin.log.search" }
 
-<div id="banlist-nav">{$page_numbers}</div>
+<div id="banlist-nav">{$page_numbers nofilter}</div>
 <br /><br />
 
 <table width="100%" cellspacing="0" cellpadding="0" align="center" class="listtable">
@@ -16,7 +16,7 @@ Click on a row to see more details about the event.
 
     {foreach from=$log_items item="log"}
         <tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-            <td height="16" align="center" class="listtable_1">{$log.type_img}</td>
+            <td height="16" align="center" class="listtable_1">{$log.type_img nofilter}</td>
             <td height="16" class="listtable_1">{$log.title}</td>
             <td height="16" class="listtable_1">{$log.user}</td>
             <td height="16" class="listtable_1">{$log.date_str}</td>

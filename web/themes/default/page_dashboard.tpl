@@ -2,7 +2,7 @@
     <table width="100%" cellpadding="1">
         <tr>
             <td>
-                {$dashboard_text}
+                {$dashboard_text nofilter}
             </td>
         </tr>
     </table>
@@ -43,7 +43,7 @@
                     {if empty($player.short_name)}
                         <i><font color="#677882">no nickname present</font></i>
                     {else}
-                        {$player.short_name|escape:'html'}
+                        {$player.short_name}
                     {/if}
                 </td>
                 <td class="listtable_1{if $player.unbanned}_unbanned{elseif $player.perm}_permanent{elseif $player.temp}_banned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>
@@ -81,7 +81,7 @@
                     {if empty($player.short_name)}
                         <i><font color="#677882">no nickname present</font></i>
                     {else}
-                        <span>{$player.short_name|escape:'html'}</span>
+                        <span>{$player.short_name}</span>
                     {/if}
                 </td>
             </tr>
@@ -123,7 +123,7 @@
                     {if empty($player.short_name)}
                         <i><font color="#677882">no nickname present</font></i>
                     {else}
-                        {$player.short_name|escape:'html'}
+                        {$player.short_name}
                     {/if}
                 </td>
                 <td class="listtable_1{if $player.unbanned}_unbanned{elseif $player.perm}_permanent{elseif $player.temp}_banned{/if}">{$player.length}{if $player.unbanned} ({$player.ub_reason}){/if}</td>

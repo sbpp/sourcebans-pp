@@ -156,7 +156,7 @@
                             </div></td>
                         <td><div align="left">
                                 -{sb_button text="Upload a Demo" onclick="childWindow=open('pages/admin.uploaddemo.php','upload','resizable=no,width=300,height=130');" class="save" id="uploaddemo" submit=false}-
-                            </div><div id="demo.msg" style="color:#CC0000;">-{$ban_demo}-</div></td>
+                            </div><div id="demo.msg" style="color:#CC0000;">-{$ban_demo nofilter}-</div></td>
                     </tr>
 
                     <tr>

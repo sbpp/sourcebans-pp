@@ -209,7 +209,7 @@
                     </td>
                 </tr>
             </table>
-            {$server_script}
+            {$server_script nofilter}
         </div>
     {/if}
 </div>

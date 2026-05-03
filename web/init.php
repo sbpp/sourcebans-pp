@@ -217,6 +217,7 @@ $theme->setCompileId($theme_name);
 $theme->setCaching(Smarty::CACHING_OFF);
 $theme->setTemplateDir(SB_THEMES . $theme_name);
 $theme->setCacheDir(SB_CACHE);
+$theme->setEscapeHtml(true);
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'help_icon', 'smarty_function_help_icon');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'sb_button', 'smarty_function_sb_button');
 $theme->registerPlugin(Smarty::PLUGIN_FUNCTION, 'load_template', 'smarty_function_load_template');

@@ -5,7 +5,7 @@
         <h3 style="margin-top:0px;">Ban Protests (<span id="protcount">{$protest_count}</span>)</h3>
         Click a player's nickname to view information about their ban<br /><br />
         <div id="banlist-nav">
-            {$protest_nav}
+            {$protest_nav nofilter}
         </div>
         <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
@@ -39,7 +39,7 @@
                                     <td width="30%" rowspan="11" class="listtable_2">
                                         <div class="ban-edit">
                                             <ul>
-                                                <li>{$protest.protaddcomment}</li>
+                                                <li>{$protest.protaddcomment nofilter}</li>
                                             </ul>
                                         </div>
                                     </td>
@@ -80,7 +80,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Reason</td>
-                                    <td height="16" class="listtable_1">{$protest.ban_reason}</td>
+                                    <td height="16" class="listtable_1">{$protest.ban_reason nofilter}</td>
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Banned by Admin</td>
@@ -100,7 +100,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Protest message</td>
-                                    <td height="16" class="listtable_1">{$protest.reason}</td>
+                                    <td height="16" class="listtable_1">{$protest.reason nofilter}</td>
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Comments</td>
@@ -118,7 +118,7 @@
                                                     <tr>
                                                         <td>
                                                             {if !empty($commenta.comname)}
-                                                                <b>{$commenta.comname|escape:'html'}</b>
+                                                                <b>{$commenta.comname}</b>
                                                             {else}
                                                                 <i><font color="#677882">Admin deleted</font></i>
                                                             {/if}
@@ -126,13 +126,13 @@
                                                         </td>
                                                         {if $commenta.editcomlink != ""}
                                                             <td align="right">
-                                                                {$commenta.editcomlink} {$commenta.delcomlink}
+                                                                {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
                                                             </td>
                                                         {/if}
                                                     </tr>
                                                     <tr>
                                                         <td colspan="2" style="word-break: break-all;word-wrap: break-word;">
-                                                            {$commenta.commenttxt}
+                                                            {$commenta.commenttxt nofilter}
                                                         </td>
                                                     </tr>
                                                     {if !empty($commenta.edittime)}

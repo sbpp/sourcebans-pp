@@ -2,7 +2,7 @@
 <div id="current-theme-holder">
     <h4 class="largetitle">Selected Theme: <span id="theme.name">{$theme_name}</span></h4>
     <div id="current-theme-screenshot">
-        {$theme_screenshot}
+        {$theme_screenshot nofilter}
     </div>
     <div id="current-theme-details">
         <table width="98%" cellspacing="0" cellpadding="3" align="left">

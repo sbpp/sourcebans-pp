@@ -9,7 +9,7 @@
 </div>
 <script>
 
-{$query}
+{$query nofilter}
 
 {literal}
 window.addEvent('domready', function(){
