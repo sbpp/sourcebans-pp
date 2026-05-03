@@ -541,6 +541,12 @@ parameters:
 			path: includes/sb-callback.php
 
 		-
+			message: '#^Offset ''Players'' on array\{Protocol\: int, HostName\: non\-falsy\-string, Map\: string, ModDir\: string, ModDesc\: string, AppID\?\: int, Players\: int\<min, \-1\>\|int\<1, max\>, MaxPlayers\: int, \.\.\.\} in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.offset
+			count: 1
+			path: includes/sb-callback.php
+
+		-
 			message: '#^Result of && is always false\.$#'
 			identifier: booleanAnd.alwaysFalse
 			count: 1

@@ -2,6 +2,8 @@ name: PHPStan
 
 on:
   push:
+    branches:
+      - main
     paths:
       - 'web/**'
       - '.github/workflows/phpstan.yml'
