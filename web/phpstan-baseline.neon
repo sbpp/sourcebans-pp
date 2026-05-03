@@ -109,12 +109,6 @@ parameters:
 			path: includes/auth/Auth.php
 
 		-
-			message: '#^Comparison operation "\>\=" between 1 and 0 is always true\.$#'
-			identifier: greaterOrEqual.alwaysTrue
-			count: 1
-			path: includes/auth/Auth.php
-
-		-
 			message: '#^Static method Auth\:\:getTokenSecret\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
