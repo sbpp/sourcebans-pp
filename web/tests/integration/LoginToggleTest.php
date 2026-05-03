@@ -9,10 +9,13 @@ use Sbpp\Tests\Fixture;
  * Issue #1102: normal-auth login is gated by `config.enablenormallogin`,
  * not `config.enablesteamlogin`.
  *
- * Three things are exercised here:
+ * Four things are exercised here:
  *   1. Disabling the Steam-login button must NOT block normal-auth logins.
  *   2. Disabling normal login does block auth.login.
- *   3. The 802 updater step inserts the new key when upgrading from a
+ *   3. Disabling normal login also blocks auth.lost_password (a reset
+ *      password is unusable when normal login is off, and the form would
+ *      otherwise let a visitor probe for registered email addresses).
+ *   4. The 802 updater step inserts the new key when upgrading from a
  *      panel that pre-dates it.
  */
 final class LoginToggleTest extends ApiTestCase
@@ -59,10 +62,10 @@ final class LoginToggleTest extends ApiTestCase
         $this->setSetting('config.enablesteamlogin', '0');
         $this->setSetting('config.enablenormallogin', '1');
 
-        // The handler still reaches NormalAuthHandler (bad password -> failed).
-        // Pre-fix, this would short-circuit with the same redirect *and* a
-        // bogus "Hacking attempt" log entry, so we also assert no such log
-        // row was emitted.
+        // Regression guard for issue #1102: pre-fix, auth.login was gated on
+        // `config.enablesteamlogin`, so this call would short-circuit (never
+        // reaching NormalAuthHandler) and the lockout counter below would
+        // stay at 0 instead of advancing to 1.
         $env = $this->api('auth.login', ['username' => 'admin', 'password' => 'wrong']);
         $this->assertSame('?p=login&m=failed', $env['redirect'] ?? null);
 
@@ -70,6 +73,8 @@ final class LoginToggleTest extends ApiTestCase
         $this->assertSame(1, (int)$row['attempts'],
             'Wrong password should still increment the lockout counter when steam login is disabled.');
 
+        // Pre-fix the short-circuit also emitted a bogus "Hacking attempt"
+        // log entry; that line is gone now.
         $hackingLogs = Fixture::rawPdo()->query(sprintf(
             "SELECT COUNT(*) FROM `%s_log` WHERE title = 'Hacking attempt'",
             DB_PREFIX
@@ -98,11 +103,15 @@ final class LoginToggleTest extends ApiTestCase
         $this->assertSame(0, (int)$hackingLogs);
     }
 
-    public function testEnableSteamLoginToggleDoesNotTouchNormalLoginKey(): void
+    public function testDisablingNormalLoginAlsoBlocksLostPassword(): void
     {
-        // Sanity: the two settings are independent rows.
-        $this->setSetting('config.enablesteamlogin', '0');
-        $this->assertSame('1', $this->readSetting('config.enablenormallogin'));
+        $this->setSetting('config.enablenormallogin', '0');
+
+        // The handler should refuse with a structured ApiError envelope, not
+        // probe the admins table or send mail. (Pre-fix the form's link was
+        // hidden in the template but the handler URL was still reachable.)
+        $env = $this->api('auth.lost_password', ['email' => 'admin@example.test']);
+        $this->assertEnvelopeError($env, 'disabled');
     }
 
     public function testUpdater802InsertsEnableNormalLoginIfMissing(): void

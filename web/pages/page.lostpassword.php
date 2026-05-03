@@ -6,6 +6,16 @@ use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
 use Sbpp\Mail\Mailer;
 
+// Issue #1102: when normal login is disabled the entire password-recovery
+// flow is meaningless (a reset password can't be used to log in), and the
+// reachable form would otherwise let an unauthenticated visitor probe for
+// registered email addresses via the "not_registered" error. Bounce both
+// the form and the recovery-link branch back to the login page.
+if (!Config::getBool('config.enablenormallogin')) {
+    header('Location: index.php?p=login');
+    die();
+}
+
 if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !empty($_GET['validation']))) {
     $email = $_GET['email'];
     $validation = $_GET['validation'];

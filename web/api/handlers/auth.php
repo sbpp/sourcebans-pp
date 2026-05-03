@@ -80,6 +80,10 @@ function api_auth_login(array $params): array
 
 function api_auth_lost_password(array $params): array
 {
+    if (!Config::getBool('config.enablenormallogin')) {
+        throw new ApiError('disabled', 'Normal login is disabled.');
+    }
+
     $email = (string)($params['email'] ?? '');
 
     $GLOBALS['PDO']->query("SELECT aid, user FROM `:prefix_admins` WHERE email = :email");
