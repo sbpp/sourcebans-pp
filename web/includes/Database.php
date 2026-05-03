@@ -133,6 +133,18 @@ class Database
     }
 
     /**
+     * Yields rows one at a time so callers can stream large result sets
+     * without materialising the full set in PHP memory like resultset() does.
+     */
+    public function iterate(?array $inputParams = null, $fetchType = PDO::FETCH_ASSOC): Generator
+    {
+        $this->execute($inputParams);
+        while (($row = $this->stmt->fetch($fetchType)) !== false) {
+            yield $row;
+        }
+    }
+
+    /**
      * @return int
      */
     public function rowCount()

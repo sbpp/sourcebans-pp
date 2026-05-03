@@ -10,7 +10,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER) && !Config::getBool('config.exportpublic'
         header('Content-Disposition: attachment; filename="banned_user.cfg"');
         $bans = $GLOBALS['PDO']->query(
             "SELECT authid FROM `:prefix_bans` WHERE length = '0' AND RemoveType IS NULL AND type = '0'"
-        )->resultset();
+        )->iterate();
         foreach ($bans as $ban) {
             print("banid 0 " . $ban['authid'] . "\r\n");
         }
@@ -19,7 +19,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER) && !Config::getBool('config.exportpublic'
         header('Content-Disposition: attachment; filename="banned_ip.cfg"');
         $bans = $GLOBALS['PDO']->query(
             "SELECT ip FROM `:prefix_bans` WHERE length = '0' AND RemoveType IS NULL AND type = '1'"
-        )->resultset();
+        )->iterate();
         foreach ($bans as $ban) {
             print("addip 0 " . $ban['ip'] . "\r\n");
         }
