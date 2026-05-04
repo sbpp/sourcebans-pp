@@ -397,16 +397,6 @@ function parseRconStatus(string $status)
 }
 
 /**
- * @param  string $str1
- * @param  string $str2
- * @return bool
- */
-function compareSanitizedString(string $str1, string $str2)
-{
-    return strcmp(htmlspecialchars($str1), htmlspecialchars($str2)) === 0;
-}
-
-/**
  * @param  string $text
  * @return string
  */

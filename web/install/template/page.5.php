@@ -6,7 +6,7 @@ define('DB_PASS', '{pass}');						// The password
 define('DB_NAME', '{db}');  						// Database name
 define('DB_PREFIX', '{prefix}');					// The table prefix for SourceBans
 define('DB_PORT', '{port}');							// The SQL port (Default: 3306)
-define('DB_CHARSET', '{charset}');                    // The Database charset (Default: utf8)
+define('DB_CHARSET', '{charset}');                    // The Database charset (Default: utf8mb4)
 define('STEAMAPIKEY', '{steamapikey}');				// Steam API Key for Shizz
 define('SB_EMAIL', '{sbwpemail}');
 define('SB_NEW_SALT', '{sbsalt}'); //Salt for passwords

@@ -16,11 +16,15 @@ use SteamID\SteamID;
 function api_comms_add(array $params): array
 {
     global $userbank;
-    $nickname = htmlspecialchars_decode((string)($params['nickname'] ?? ''), ENT_QUOTES);
+    // See api_bans_add: the JSON API delivers raw UTF-8, so the
+    // legacy xajax-era `htmlspecialchars_decode` would clobber a
+    // literal `&amp;` and double-escape every subsequent render now
+    // that Smarty auto-escapes (#1087). Store raw, escape on display.
+    $nickname = (string)($params['nickname'] ?? '');
     $type     = (int)($params['type']   ?? 0);
     $steam    = SteamID::toSteam2(trim((string)($params['steam']  ?? '')));
     $length   = (int)($params['length'] ?? 0);
-    $reason   = htmlspecialchars_decode((string)($params['reason'] ?? ''), ENT_QUOTES);
+    $reason   = (string)($params['reason'] ?? '');
 
     if (empty($steam)) {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
@@ -114,9 +118,9 @@ function api_comms_paste(array $params): array
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (compareSanitizedString($player['name'], $name)) {
+        if ($player['name'] === $name) {
             return [
-                'nickname' => html_entity_decode($name, ENT_QUOTES),
+                'nickname' => $player['name'],
                 'steam'    => $player['steamid'],
             ];
         }

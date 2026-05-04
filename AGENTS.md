@@ -306,6 +306,14 @@ of the diff ship together or not at all.
 - New `install/` flow → DB is seeded out-of-band in dev.
 - String literals for action names → `Actions.PascalName`.
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.
+- `htmlspecialchars_decode` / `html_entity_decode` on JSON-API params
+  (nickname, reason, chat message, …) → the JSON body is raw UTF-8. The
+  xajax callbacks used to HTML-encode payloads in transit; the JSON API
+  does not, and re-decoding now silently collapses literal `&amp;` and
+  double-escapes on re-render (#1108). Store raw, escape on display.
+- `utf8` (3-byte alias) for `DB_CHARSET` → always `utf8mb4`. 4-byte
+  sequences (emoji, some CJK) otherwise trip `Incorrect string value`
+  from the plugin's insert path (#1108, #765).
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 

@@ -30,14 +30,22 @@ function _api_bans_steam_api_key(): string
 function api_bans_add(array $params): array
 {
     global $userbank;
-    $nickname = htmlspecialchars_decode((string)($params['nickname'] ?? ''), ENT_QUOTES);
+    // Names/reasons arrive as raw UTF-8 in the JSON body. The legacy
+    // xajax callbacks HTML-encoded payloads in transit and needed a
+    // matching decode here, but the JSON dispatcher does not; decoding
+    // again silently collapses a user-typed literal `&amp;` into `&`
+    // and, worse, it made `htmlspecialchars_decode` a no-op for the
+    // common case while masking the double-escape on re-render. Store
+    // raw bytes and let the Smarty auto-escape layer (see #1087) turn
+    // `<Msg>` into `&lt;Msg&gt;` at display time.
+    $nickname = (string)($params['nickname'] ?? '');
     $type     = (int)($params['type'] ?? 0);
     $steam    = SteamID::toSteam2(trim((string)($params['steam'] ?? '')));
     $ip       = preg_replace('#[^\d\.]#', '', (string)($params['ip'] ?? ''));
     $length   = (int)($params['length'] ?? 0);
     $dfile    = (string)($params['dfile'] ?? '');
-    $dname    = htmlspecialchars_decode((string)($params['dname'] ?? ''), ENT_QUOTES);
-    $reason   = htmlspecialchars_decode((string)($params['reason'] ?? ''), ENT_QUOTES);
+    $dname    = (string)($params['dname'] ?? '');
+    $reason   = (string)($params['reason'] ?? '');
     $fromsub  = (int)($params['fromsub'] ?? 0);
 
     if (empty($steam) && $type === 0) {
@@ -191,9 +199,13 @@ function api_bans_paste(array $params): array
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (compareSanitizedString($player['name'], $name)) {
+        if ($player['name'] === $name) {
+            // Return the raw name the rcon status reported; the client
+            // assigns it to the "nickname" input value. The previous
+            // `html_entity_decode` was a no-op on raw UTF-8 and actively
+            // harmful when a literal `&amp;` should be preserved.
             return [
-                'nickname' => html_entity_decode($name, ENT_QUOTES),
+                'nickname' => $player['name'],
                 'steam'    => SteamID::toSteam2($player['steamid']),
                 'ip'       => $player['ip'] ?? '',
                 'type'     => 0,
@@ -546,7 +558,7 @@ function api_bans_kick_player(array $params): array
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (compareSanitizedString($player['name'], $name)) {
+        if ($player['name'] === $name) {
             $GLOBALS['PDO']->query("SELECT a.immunity AS aimmune, g.immunity AS gimmune FROM `:prefix_admins` AS a
                 LEFT JOIN `:prefix_srvgroups` AS g ON g.name = a.srv_group WHERE authid = :authid");
             $GLOBALS['PDO']->bind(':authid', SteamID::toSteam2($player['steamid']));
@@ -594,11 +606,15 @@ function api_bans_send_message(array $params): array
         throw new ApiError('rcon_failed', "Can't connect to server!");
     }
 
-    $message = html_entity_decode($message, ENT_QUOTES);
+    // The message goes into an rcon command wrapped in double quotes.
+    // Replace any user-supplied `"` so the argument stays a single token,
+    // but do NOT html_entity_decode the body first — the panel now
+    // receives it as raw UTF-8 via the JSON API and decoding would
+    // silently collapse a literal `&amp;` the admin typed.
     $message = str_replace('"', "'", $message);
 
     foreach (parseRconStatus($ret) as $player) {
-        if (compareSanitizedString($name, $player['name'])) {
+        if ($name === $player['name']) {
             rcon("sm_psay #{$player['id']} \"$message\"", $sid);
         }
     }
@@ -630,7 +646,7 @@ function api_bans_view_community(array $params): array
     }
 
     foreach (parseRconStatus($ret) as $player) {
-        if (compareSanitizedString($player['name'], $name)) {
+        if ($player['name'] === $name) {
             return ['url' => 'https://www.steamcommunity.com/profiles/' . SteamID::toSteam64($player['steamid']) . '/'];
         }
     }

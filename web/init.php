@@ -102,8 +102,13 @@ define('SB_DEV', $version['dev'] ?? false);
 // ---------------------------------------------------
 //  Setup our DB
 // ---------------------------------------------------
+// utf8mb4 is the project-wide default so multi-byte player names (CJK,
+// Cyrillic, emoji) survive inserts. The narrower `utf8` alias is the 3-byte
+// subset MariaDB kept for back-compat; upgrades that still define it should
+// migrate their tables with `ALTER TABLE … CONVERT TO CHARACTER SET
+// utf8mb4` (see `upgrade.php`).
 if (!defined('DB_CHARSET')) {
-    define('DB_CHARSET', 'utf8');
+    define('DB_CHARSET', 'utf8mb4');
 }
 
 if (!defined('SB_EMAIL')) {

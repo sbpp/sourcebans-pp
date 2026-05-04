@@ -288,6 +288,15 @@ reintroduce it. PHPStan + `staabm/phpstan-dba` introspect the live
 schema (rendered from `install/includes/sql/struc.sql`) and type-check
 every raw SQL string at analysis time.
 
+The PDO DSN defaults to `charset=utf8mb4` (MariaDB's 4-byte-safe
+alias). `init.php` wires `DB_CHARSET` → the Database constructor →
+`mysql:…;charset=utf8mb4`, which issues `SET NAMES utf8mb4` on every
+connection. That matches the SourceMod plugin (`sbpp_comms.sp`,
+`sbpp_main.sp`) and the `{charset}` placeholder the installer renders
+into `struc.sql`. The older `utf8` alias is a 3-byte subset and will
+reject supplementary-plane characters (emoji, some CJK), so do not
+downgrade the default.
+
 ### Config (`includes/Config.php`)
 
 - Settings live in `sb_settings` as a flat key/value table.
@@ -577,3 +586,5 @@ but don't bulk-rewrite legacy code without justification.
 | Ad-hoc `$theme->assign()` chains           | `Sbpp\View\*` DTO + `Renderer::render`                   |
 | String literals for action names           | `Actions.PascalName` (from `api-contract.js`)            |
 | `install/` flow as a runtime concern       | DB seeded out-of-band; installer left for production users |
+| `htmlspecialchars_decode` on JSON params   | Store raw UTF-8; Smarty auto-escape handles display (#1108) |
+| `DB_CHARSET = 'utf8'` (3-byte alias)       | `utf8mb4` end-to-end (panel PDO + plugin `SET NAMES`) (#1108)|
