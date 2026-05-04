@@ -109,4 +109,81 @@ abstract class ApiTestCase extends TestCase
         $this->assertSame($code, $env['error']['code'] ?? null,
             'expected error.code=' . $code . ', got: ' . json_encode($env));
     }
+
+    /**
+     * Compare an envelope against a checked-in snapshot under
+     * web/tests/api/__snapshots__/. The snapshot files document the
+     * exact wire format of every state-changing handler so themes and
+     * external integrations are protected from accidental drift across
+     * the 2.0 break (#1112).
+     *
+     * Set the env var `UPDATE_SNAPSHOTS=1` to (re)write the file. CI
+     * never sets it, so a missing or stale snapshot fails the gate.
+     *
+     * `$redact` is a list of dot-paths inside the envelope whose values
+     * should be replaced with the literal string `<*>` before comparing.
+     * Use it for values that legitimately vary across runs (autoincrement
+     * IDs that depend on insertion order, UNIX timestamps, fixture-seeded
+     * aids, ...) so the snapshot still locks the rest of the shape.
+     *
+     * @param array<string, mixed> $envelope
+     * @param list<string>         $redact
+     */
+    protected function assertSnapshot(string $name, array $envelope, array $redact = []): void
+    {
+        $normalized = $envelope;
+        foreach ($redact as $path) {
+            $normalized = self::redactPath($normalized, explode('.', $path));
+        }
+
+        $json = json_encode($normalized, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            $this->fail('failed to JSON-encode envelope: ' . json_last_error_msg());
+        }
+        $json .= "\n";
+
+        $file = ROOT . 'tests/api/__snapshots__/' . $name . '.json';
+        if (getenv('UPDATE_SNAPSHOTS') === '1') {
+            $dir = dirname($file);
+            if (!is_dir($dir) && !@mkdir($dir, 0o775, true) && !is_dir($dir)) {
+                $this->fail("could not create snapshot dir $dir");
+            }
+            file_put_contents($file, $json);
+        }
+
+        $this->assertFileExists(
+            $file,
+            "Snapshot $name is missing. Re-run with UPDATE_SNAPSHOTS=1 to create it."
+        );
+        $this->assertSame(
+            file_get_contents($file),
+            $json,
+            "Snapshot $name out of date. If the change is intentional, re-run with UPDATE_SNAPSHOTS=1."
+        );
+    }
+
+    /**
+     * Replace the value at $path inside $arr with the literal `<*>`.
+     * Walks through nested arrays; missing keys are no-ops so callers
+     * don't have to special-case optional fields.
+     *
+     * @param array<string|int, mixed> $arr
+     * @param list<string>             $path
+     * @return array<string|int, mixed>
+     */
+    private static function redactPath(array $arr, array $path): array
+    {
+        $key = array_shift($path);
+        if ($key === null || !array_key_exists($key, $arr)) {
+            return $arr;
+        }
+        if ($path === []) {
+            $arr[$key] = '<*>';
+            return $arr;
+        }
+        if (is_array($arr[$key])) {
+            $arr[$key] = self::redactPath($arr[$key], $path);
+        }
+        return $arr;
+    }
 }

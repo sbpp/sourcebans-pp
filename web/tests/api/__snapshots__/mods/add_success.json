@@ -1,0 +1,12 @@
+{
+    "ok": true,
+    "data": {
+        "reload": true,
+        "message": {
+            "title": "Mod Added",
+            "body": "The game mod has been successfully added",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=mods"
+        }
+    }
+}

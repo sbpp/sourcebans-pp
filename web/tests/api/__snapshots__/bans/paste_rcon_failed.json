@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "rcon_failed",
+        "message": "Can't connect to server!"
+    }
+}

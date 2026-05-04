@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "already_banned",
+        "message": "SteamID: STEAM_0:1:8888 is already banned."
+    }
+}

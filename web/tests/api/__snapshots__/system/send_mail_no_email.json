@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "no_email",
+        "message": "There is no email to send to supplied."
+    }
+}

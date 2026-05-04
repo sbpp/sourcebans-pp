@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "invalid_theme",
+        "message": "Invalid theme selected."
+    }
+}

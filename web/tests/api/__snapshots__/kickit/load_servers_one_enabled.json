@@ -1,0 +1,12 @@
+{
+    "ok": true,
+    "data": {
+        "servers": [
+            {
+                "num": 0,
+                "sid": 5,
+                "has_rcon": true
+            }
+        ]
+    }
+}

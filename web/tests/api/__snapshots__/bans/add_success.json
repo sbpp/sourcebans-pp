@@ -1,0 +1,12 @@
+{
+    "ok": true,
+    "data": {
+        "bid": "<*>",
+        "reload": true,
+        "kickit": {
+            "check": "STEAM_0:1:7777",
+            "type": 0
+        },
+        "message": null
+    }
+}

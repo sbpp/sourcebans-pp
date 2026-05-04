@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "bad_type",
+        "message": "Bad comment type."
+    }
+}

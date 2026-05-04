@@ -1,0 +1,11 @@
+{
+    "ok": true,
+    "data": {
+        "reload": true,
+        "block": {
+            "steam": "STEAM_0:0:42",
+            "type": 1,
+            "length": 1800
+        }
+    }
+}

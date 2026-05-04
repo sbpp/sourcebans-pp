@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "data": {
+        "remove": "<*>",
+        "counter": {
+            "protcountarchiv": 0
+        },
+        "message": {
+            "title": "Protest Deleted",
+            "body": "The selected protest has been deleted from the database",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=bans"
+        }
+    }
+}

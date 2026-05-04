@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "duplicate_override",
+        "message": "There already is an override with name \"sm_ban\" from the selected type."
+    }
+}

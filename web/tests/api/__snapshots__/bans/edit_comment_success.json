@@ -1,0 +1,12 @@
+{
+    "ok": true,
+    "data": {
+        "reload": true,
+        "message": {
+            "title": "Comment Edited",
+            "body": "<*>",
+            "kind": "green",
+            "redir": "index.php?p=banlist"
+        }
+    }
+}

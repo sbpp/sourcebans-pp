@@ -37,6 +37,11 @@ define('DB_CHARSET', getenv('DB_CHARSET') ?: 'utf8mb4');
 
 define('STEAMAPIKEY', '');
 define('SB_NEW_SALT', 'test-salt');
+// JWT signing key used by Auth::login() / Auth::verify() inside auth.login.
+// Production reads this from config.php (rendered by web/upgrade.php). Tests
+// just need a valid base64-encoded HS256 key so the lcobucci config object
+// can sign + verify the issued tokens.
+define('SB_SECRET_KEY', base64_encode(str_repeat('test-jwt-secret!', 4)));
 
 // Some handlers (and Log::add) read $_SERVER. Default these so warnings
 // don't fire under failOnWarning.

@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "cannot_delete_owner",
+        "message": "Error: You cannot delete the owner."
+    }
+}

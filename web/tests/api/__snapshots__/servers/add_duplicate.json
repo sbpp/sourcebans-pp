@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "duplicate",
+        "message": "There already is a server with that IP:Port combination."
+    }
+}

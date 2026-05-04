@@ -89,6 +89,19 @@ class Api
     }
 
     /**
+     * Enumerate every registered action name. Exposed so the permission-
+     * matrix test (`web/tests/api/PermissionMatrixTest.php`) can assert
+     * the wire surface against an explicit allowlist — adding an action
+     * without touching the test fails the build.
+     *
+     * @return list<string>
+     */
+    public static function actions(): array
+    {
+        return array_keys(self::$registry);
+    }
+
+    /**
      * Invoke a registered handler in-process (used by the test harness so
      * it can bypass the HTTP boundary). Throws ApiError on any failure.
      *

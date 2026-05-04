@@ -1,0 +1,8 @@
+{
+    "ok": false,
+    "error": {
+        "code": "validation",
+        "message": "You must type a Steam ID or Community ID",
+        "field": "steam"
+    }
+}

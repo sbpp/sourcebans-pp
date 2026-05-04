@@ -8,6 +8,9 @@ use Sbpp\Tests\ApiTestCase;
  * Smoke tests for the Api dispatcher itself: unknown actions, auth gating,
  * envelope shape. These do not require any handler logic to be sound, just
  * the registry + ApiError plumbing.
+ *
+ * The exhaustive permission matrix lock lives in PermissionMatrixTest so
+ * the per-row data provider doesn't pay the cost of Fixture::reset().
  */
 final class DispatcherTest extends ApiTestCase
 {

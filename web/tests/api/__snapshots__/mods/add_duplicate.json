@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "mod_exists",
+        "message": "A mod using that folder or name already exists."
+    }
+}

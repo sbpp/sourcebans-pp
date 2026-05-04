@@ -1,0 +1,10 @@
+{
+    "ok": true,
+    "data": {
+        "sid": 33,
+        "ip": "203.0.113.1",
+        "port": 27015,
+        "error": "connect",
+        "is_owner": false
+    }
+}

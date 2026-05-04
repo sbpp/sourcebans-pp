@@ -558,8 +558,10 @@ Tests live in `web/tests/`:
 tests/
 ├── bootstrap.php            Defines path/env/permission constants without config.php
 ├── Fixture.php              Drops + re-creates sourcebans_test, seeds admin row
-├── ApiTestCase.php          Base class: setUp() truncates DB, $this->loginAs(aid)
-├── api/                     Per-handler tests (AccountTest, BanTest, …)
+├── ApiTestCase.php          Base class: setUp() truncates DB, $this->loginAs(aid),
+│                            $this->assertSnapshot() for wire-format snapshots
+├── api/                     Per-handler tests + the per-action permission-matrix lock
+│   └── __snapshots__/       Checked-in JSON envelopes asserted byte-for-byte (#1112)
 └── integration/             End-to-end flows (LoginFlowTest, BanFlowTest, …)
 ```
 
@@ -571,6 +573,23 @@ truncates every table and re-seeds defaults between tests so each
 `Api::invoke()` and returns the same envelope the dispatcher would
 produce, so auth/permission checks are exercised exactly the way HTTP
 requests would exercise them.
+
+`ApiTestCase::assertSnapshot(name, envelope, redact)` (#1112) compares
+the envelope against a checked-in JSON file under
+`tests/api/__snapshots__/<topic>/<scenario>.json`. The file is the
+contract between the panel and any custom theme / external integration:
+shape changes have to be intentional and re-recorded with
+`UPDATE_SNAPSHOTS=1 ./sbpp.sh test`. Dynamic values (autoincrement IDs,
+the seeded admin's aid, RNG-derived passwords) are passed in as a
+`redact` list of dot-paths and replaced with the literal `<*>` so the
+rest of the shape still locks down.
+
+`web/tests/api/PermissionMatrixTest.php` (#1112) pins every registered
+action's `(perm, requireAdmin, public)` triple via PHPUnit dataProvider
+rows. A new action without a matrix entry — or an existing action whose
+gate moves — fails the build loudly. `Api::actions()` (added alongside)
+exposes the registry's keys for the matrix sweep so the test can detect
+both directions of drift (extra registrations, removed registrations).
 
 ## Legacy patterns being phased out
 

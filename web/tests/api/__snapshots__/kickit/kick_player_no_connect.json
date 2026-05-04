@@ -1,0 +1,11 @@
+{
+    "ok": true,
+    "data": {
+        "status": "no_connect",
+        "sid": 0,
+        "num": 0,
+        "ip": "",
+        "port": "",
+        "hostname": ""
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "ok": true,
+    "data": {
+        "subid": "<*>",
+        "nickname": "Setup",
+        "steam": "STEAM_0:1:1234",
+        "ip": "",
+        "length": 0,
+        "type": 0,
+        "reason": "cheating",
+        "demo": null
+    }
+}

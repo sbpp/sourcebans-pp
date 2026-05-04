@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "bad_request",
+        "message": "friendid must be numeric"
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "ok": true,
+    "data": {
+        "bid": "<*>",
+        "nickname": "Cheater",
+        "steam": "STEAM_0:1:7766",
+        "ip": "",
+        "length": 0,
+        "type": 0,
+        "reason": "reban-source",
+        "demo": null
+    }
+}

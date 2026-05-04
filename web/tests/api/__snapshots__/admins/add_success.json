@@ -1,0 +1,14 @@
+{
+    "ok": true,
+    "data": {
+        "aid": "<*>",
+        "reload": true,
+        "rehash": null,
+        "message": {
+            "title": "Admin Added",
+            "body": "The admin has been added successfully",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=admins"
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "ok": true,
+    "data": {
+        "reload": true,
+        "message": {
+            "title": "Group Created",
+            "body": "Your group has been successfully created.",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=groups"
+        }
+    }
+}

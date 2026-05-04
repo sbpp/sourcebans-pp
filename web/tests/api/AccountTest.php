@@ -16,6 +16,7 @@ final class AccountTest extends ApiTestCase
         ]);
         $this->assertTrue($env['ok']);
         $this->assertTrue($env['data']['matches']);
+        $this->assertSnapshot('account/check_password_matches', $env);
     }
 
     public function testCheckPasswordRejectsWrongPassword(): void
@@ -27,6 +28,7 @@ final class AccountTest extends ApiTestCase
         ]);
         $this->assertTrue($env['ok']);
         $this->assertFalse($env['data']['matches']);
+        $this->assertSnapshot('account/check_password_no_match', $env);
     }
 
     /**
@@ -43,6 +45,7 @@ final class AccountTest extends ApiTestCase
             'password' => 'admin',
         ]);
         $this->assertEnvelopeError($env, 'forbidden');
+        $this->assertSnapshot('account/check_password_forbidden', $env);
     }
 
     /**
@@ -96,5 +99,159 @@ final class AccountTest extends ApiTestCase
         $this->assertTrue($env['ok']);
         $row = $this->row('admins', ['aid' => Fixture::adminAid()]);
         $this->assertSame('newpass', $row['srv_password']);
+        $this->assertSnapshot('account/change_srv_password_success', $env);
+    }
+
+    public function testChangeSrvPasswordClearsValueWhenSentEmpty(): void
+    {
+        // Set a password first so we can confirm the empty-value path
+        // really nulls the column out (matches the legacy `'NULL'` magic
+        // string still accepted by the handler).
+        $this->loginAsAdmin();
+        $this->api('account.change_srv_password', [
+            'aid'          => Fixture::adminAid(),
+            'srv_password' => 'temporary',
+        ]);
+        $env = $this->api('account.change_srv_password', [
+            'aid'          => Fixture::adminAid(),
+            'srv_password' => '',
+        ]);
+        $this->assertTrue($env['ok']);
+        $row = $this->row('admins', ['aid' => Fixture::adminAid()]);
+        $this->assertNull($row['srv_password']);
+    }
+
+    public function testCheckSrvPasswordMatches(): void
+    {
+        $this->loginAsAdmin();
+        // Seed a srv_password to match against.
+        $this->api('account.change_srv_password', [
+            'aid'          => Fixture::adminAid(),
+            'srv_password' => 'serverpw',
+        ]);
+
+        $env = $this->api('account.check_srv_password', [
+            'aid'      => Fixture::adminAid(),
+            'password' => 'serverpw',
+        ]);
+        $this->assertTrue($env['ok']);
+        $this->assertTrue($env['data']['matches']);
+        $this->assertSnapshot('account/check_srv_password_matches', $env);
+    }
+
+    public function testCheckSrvPasswordRejectsWrong(): void
+    {
+        $this->loginAsAdmin();
+        $this->api('account.change_srv_password', [
+            'aid'          => Fixture::adminAid(),
+            'srv_password' => 'serverpw',
+        ]);
+        $env = $this->api('account.check_srv_password', [
+            'aid'      => Fixture::adminAid(),
+            'password' => 'not-it',
+        ]);
+        $this->assertTrue($env['ok']);
+        $this->assertFalse($env['data']['matches']);
+    }
+
+    public function testCheckSrvPasswordRejectsCrossAccount(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.check_srv_password', [
+            'aid'      => 9999, // someone else's aid
+            'password' => 'whatever',
+        ]);
+        $this->assertFalse($env['ok'] ?? true);
+        $this->assertSame('index.php?p=login&m=no_access', $env['redirect'] ?? null);
+    }
+
+    public function testChangePasswordHappyPath(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.change_password', [
+            'aid'          => Fixture::adminAid(),
+            'old_password' => 'admin',
+            'new_password' => 'a-much-better-password',
+        ]);
+        // The handler logs the user out and returns a redirect envelope.
+        $this->assertFalse($env['ok'] ?? true);
+        $this->assertSame('index.php?p=login', $env['redirect'] ?? null);
+
+        // The bcrypt hash on the row should now match the new password.
+        $row = $this->row('admins', ['aid' => Fixture::adminAid()]);
+        $this->assertTrue(password_verify('a-much-better-password', $row['password']));
+        $this->assertSnapshot('account/change_password_success', $env);
+    }
+
+    public function testChangePasswordRejectsBadCurrentPassword(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.change_password', [
+            'aid'          => Fixture::adminAid(),
+            'old_password' => 'wrong-current',
+            'new_password' => 'doesntmatter',
+        ]);
+        $this->assertEnvelopeError($env, 'bad_password');
+        $this->assertSame('current', $env['error']['field']);
+        $this->assertSnapshot('account/change_password_bad_current', $env);
+    }
+
+    public function testChangePasswordRejectsAnonymousCaller(): void
+    {
+        $env = $this->api('account.change_password', [
+            'aid'          => Fixture::adminAid(),
+            'old_password' => 'admin',
+            'new_password' => 'anything',
+        ]);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testChangeEmailHappyPath(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.change_email', [
+            'aid'      => Fixture::adminAid(),
+            'email'    => 'admin+new@example.test',
+            'password' => 'admin',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $row = $this->row('admins', ['aid' => Fixture::adminAid()]);
+        $this->assertSame('admin+new@example.test', $row['email']);
+        $this->assertSnapshot('account/change_email_success', $env);
+    }
+
+    public function testChangeEmailRejectsBadPassword(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.change_email', [
+            'aid'      => Fixture::adminAid(),
+            'email'    => 'admin+x@example.test',
+            'password' => 'wrong',
+        ]);
+        $this->assertEnvelopeError($env, 'bad_password');
+        $this->assertSame('emailpw', $env['error']['field']);
+        $this->assertSnapshot('account/change_email_bad_password', $env);
+    }
+
+    public function testChangeEmailRejectsBadEmail(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('account.change_email', [
+            'aid'      => Fixture::adminAid(),
+            'email'    => 'not-an-email',
+            'password' => 'admin',
+        ]);
+        $this->assertEnvelopeError($env, 'bad_email');
+        $this->assertSame('email1', $env['error']['field']);
+    }
+
+    public function testChangeEmailRejectsAnonymousCaller(): void
+    {
+        $env = $this->api('account.change_email', [
+            'aid'      => Fixture::adminAid(),
+            'email'    => 'somehow@example.test',
+            'password' => 'admin',
+        ]);
+        $this->assertEnvelopeError($env, 'forbidden');
     }
 }

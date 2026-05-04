@@ -1,0 +1,7 @@
+{
+    "ok": false,
+    "error": {
+        "code": "mail_failed",
+        "message": "Failed to send the email to the user."
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "data": {
+        "remove": "<*>",
+        "counter": {
+            "subcountarchiv": 1
+        },
+        "message": {
+            "title": "Submission Restored",
+            "body": "The selected submission has been restored from the archive!",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=bans"
+        }
+    }
+}

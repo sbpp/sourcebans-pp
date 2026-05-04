@@ -1,0 +1,16 @@
+{
+    "ok": true,
+    "data": {
+        "remove": "<*>",
+        "counter": {
+            "admincount": "<*>"
+        },
+        "rehash": null,
+        "message": {
+            "title": "Admin Deleted",
+            "body": "The selected admin has been deleted from the database",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=admins"
+        }
+    }
+}

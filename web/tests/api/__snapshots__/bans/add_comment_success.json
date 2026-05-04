@@ -1,0 +1,12 @@
+{
+    "ok": true,
+    "data": {
+        "reload": true,
+        "message": {
+            "title": "Comment Added",
+            "body": "The comment has been successfully published",
+            "kind": "green",
+            "redir": "index.php?p=banlist"
+        }
+    }
+}

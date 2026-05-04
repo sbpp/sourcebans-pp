@@ -1,0 +1,13 @@
+{
+    "ok": true,
+    "data": {
+        "sid": "<*>",
+        "reload": true,
+        "message": {
+            "title": "Server Added",
+            "body": "Your server has been successfully created.",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=servers"
+        }
+    }
+}

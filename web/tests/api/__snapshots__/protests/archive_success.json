@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "data": {
+        "remove": "<*>",
+        "counter": {
+            "protcount": 0
+        },
+        "message": {
+            "title": "Protest Archived",
+            "body": "The selected protest has been moved to the archive.",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=bans"
+        }
+    }
+}

@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "data": {
+        "remove": "<*>",
+        "counter": {
+            "subcount": 0
+        },
+        "message": {
+            "title": "Submission Archived",
+            "body": "The selected submission has been moved to the archive!",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=bans"
+        }
+    }
+}

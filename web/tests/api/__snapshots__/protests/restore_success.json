@@ -1,0 +1,15 @@
+{
+    "ok": true,
+    "data": {
+        "remove": "<*>",
+        "counter": {
+            "protcountarchiv": 0
+        },
+        "message": {
+            "title": "Protest Restored",
+            "body": "The selected protest has been restored from the archive.",
+            "kind": "green",
+            "redir": "index.php?p=admin&c=bans"
+        }
+    }
+}

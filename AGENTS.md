@@ -171,6 +171,20 @@ PHPUnit specifics:
   ./sbpp.sh test tests/api/AccountTest.php
   ```
 
+- API contract snapshots live under `web/tests/api/__snapshots__/`. CI
+  asserts byte-for-byte. When you intentionally change a handler's wire
+  format, regenerate them in the same PR:
+
+  ```sh
+  UPDATE_SNAPSHOTS=1 ./sbpp.sh test
+  ```
+
+- The action-to-permission matrix is locked in
+  `web/tests/api/PermissionMatrixTest.php`. **Adding or renaming an
+  action in `_register.php` requires a matching row there** — the
+  cross-check fails the build otherwise. Use `Api::actions()` if you
+  ever need to enumerate the live registry from another test.
+
 ts-check specifics:
 
 - Runs `tsc --noEmit --checkJs` against the `.js` files in place using
@@ -334,5 +348,7 @@ of the diff ship together or not at all.
 | Seed `sb_settings` rows for fresh installs | `web/install/includes/sql/data.sql`                  |
 | Add a one-off DB upgrade for existing installs | `web/updater/data/<N>.php` + `web/updater/store.json` |
 | Test fixtures                          | `web/tests/Fixture.php`, `web/tests/ApiTestCase.php`     |
+| API wire-format snapshots              | `web/tests/api/__snapshots__/<topic>/<scenario>.json`    |
+| Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
