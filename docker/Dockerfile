@@ -19,6 +19,8 @@ RUN apt-get update \
         libonig-dev \
         default-mysql-client \
         gettext-base \
+        nodejs \
+        npm \
  && docker-php-ext-install -j"$(nproc)" \
         pdo_mysql \
         gmp \

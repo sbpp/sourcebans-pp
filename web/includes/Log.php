@@ -70,7 +70,7 @@ class Log
                 $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
                 $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
                 $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $where = " l.created > :value AND l.created :valueOther";
+                $where = " l.created > :value AND l.created < :valueOther";
                 break;
             case "type":
                 $where = " l.type = :value";
@@ -120,7 +120,7 @@ class Log
                 $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
                 $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
                 $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $query .= "WHERE l.created > :value AND l.created :valueOther";
+                $query .= "WHERE l.created > :value AND l.created < :valueOther";
                 break;
             case "type":
                 $query .= "WHERE l.type = :value";

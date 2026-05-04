@@ -19,6 +19,27 @@ jobs:
     defaults:
       run:
         working-directory: web
+
+    # Schema-only MariaDB so phpstan-dba (#1100) can introspect column types.
+    # Mirrors test.yml's service block deliberately — same image, same creds —
+    # so a contributor's mental model of "MariaDB lives at 127.0.0.1:3306" works
+    # for both jobs.
+    services:
+      mariadb:
+        image: mariadb:10.11
+        ports:
+          - 3306:3306
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: sourcebans
+          MARIADB_USER: sourcebans
+          MARIADB_PASSWORD: sourcebans
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
       - uses: actions/checkout@v4
 
@@ -26,7 +47,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: pdo, openssl, gmp, mbstring, sodium
+          extensions: pdo, pdo_mysql, openssl, gmp, mbstring, sodium
           coverage: none
           tools: composer:v2
 
@@ -44,5 +65,42 @@ jobs:
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist --no-interaction
 
+      - name: Wait for MariaDB
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; then
+              echo "ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "MariaDB never came up" >&2; exit 1
+
+      # phpstan-dba doesn't execute queries, but it does call
+      # information_schema for column metadata, so the schema needs to be
+      # loaded against the same DB the bootstrap connects to. Render the
+      # `{prefix}` / `{charset}` placeholders the same way docker/db-init
+      # does locally so we can't drift.
+      - name: Render and load schema for phpstan-dba
+        run: |
+          tmp=$(mktemp)
+          sed -e 's/{prefix}/sb/g' -e 's/{charset}/utf8mb4/g' \
+              install/includes/sql/struc.sql > "$tmp"
+          mysql -h 127.0.0.1 -u root -proot sourcebans < "$tmp"
+          # Sanity check: a known table should now exist.
+          mysql -h 127.0.0.1 -u root -proot sourcebans -e 'SHOW TABLES LIKE "sb_admins"' \
+            | grep -q sb_admins
+
       - name: Run PHPStan
+        env:
+          DBA_HOST: 127.0.0.1
+          DBA_PORT: 3306
+          DBA_NAME: sourcebans
+          DBA_USER: sourcebans
+          DBA_PASS: sourcebans
+          DBA_PREFIX: sb
+          DBA_CHARSET: utf8mb4
+          # The whole point of the new MariaDB service is to gate schema drift.
+          # Refuse to run if the bootstrap can't connect — otherwise a creds
+          # mismatch would silently disable phpstan-dba and CI would stay green.
+          DBA_REQUIRE: '1'
         run: includes/vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=1G

@@ -18,7 +18,7 @@
         </div>
 
         <div id="loginSubmit">
-            {sb_button text=Ok onclick="sb.api.call('auth.lost_password', {email: sb.$id('email').value}).then(applyApiResponse);" class=ok id=alogin submit=false}
+            {sb_button text=Ok onclick="sb.api.call(Actions.AuthLostPassword, {email: sb.$id('email').value}).then(applyApiResponse);" class=ok id=alogin submit=false}
         </div>
 
     </div>

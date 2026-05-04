@@ -7,6 +7,7 @@
     <link rel="Shortcut Icon" href="themes/{$theme}/images/favicon.ico" />
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.7.0/css/all.css">
     <link href="themes/{$theme}/css/main.css" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="./scripts/api-contract.js"></script>
     <script type="text/javascript" src="./scripts/sb.js"></script>
     <script type="text/javascript" src="./scripts/api.js"></script>
     <script type="text/javascript" src="./scripts/sourcebans.js"></script>

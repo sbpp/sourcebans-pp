@@ -4,3 +4,4 @@ cache/*
 includes/vendor
 templates_c
 /.phpunit.cache/
+/node_modules/
