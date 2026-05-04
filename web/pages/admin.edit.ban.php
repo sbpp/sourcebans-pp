@@ -225,7 +225,17 @@ $theme->assign('ban_name', $res['name']);
 $theme->assign('ban_reason', $res['reason']);
 $theme->assign('ban_authid', trim($res['authid']));
 $theme->assign('ban_ip', $res['ip']);
-$theme->assign('ban_demo', (!empty($res['dname']) ? "Uploaded: <b>" . $res['dname'] . "</b>" : ""));
+// Issue #1113: dname is the admin-supplied original filename of the demo
+// (POST'd by whoever edited the ban + uploaded the demo, stored as
+// `:prefix_demos.origname`). It used to be interpolated raw into HTML
+// rendered with `nofilter`, so a filename like `<img src=x onerror=…>`
+// turned the edit-ban page into stored XSS for any admin viewing that ban.
+// htmlspecialchars + ENT_QUOTES so the value is safe inside both the
+// surrounding `<b>…</b>` text and the wrapping JS string the edit-ban
+// template emits it from.
+$theme->assign('ban_demo', !empty($res['dname'])
+    ? 'Uploaded: <b>' . htmlspecialchars((string) $res['dname'], ENT_QUOTES, 'UTF-8') . '</b>'
+    : '');
 $theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
 
 $theme->setLeftDelimiter('-{');

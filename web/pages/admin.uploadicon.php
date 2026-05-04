@@ -31,7 +31,11 @@ if (isset($_POST['upload'])) {
     CSRF::rejectIfInvalid();
     if (checkExtension($_FILES['icon_file']['name'], ['gif', 'jpg', 'png'])) {
         move_uploaded_file($_FILES['icon_file']['tmp_name'], SB_ICONS . "/" . $_FILES['icon_file']['name']);
-        $message = "<script>window.opener.icon('" . $_FILES['icon_file']['name'] . "');self.close()</script>";
+        // Issue #1113: filename is admin-controlled; see admin.uploaddemo.php
+        // for the rationale behind json_encode + HEX flags.
+        $jsFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES;
+        $jsName = json_encode((string) $_FILES['icon_file']['name'], $jsFlags);
+        $message = "<script>window.opener.icon($jsName);self.close()</script>";
         Log::add("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");
     } else {
         $message = "<b> File must be gif, jpg or png filetype.</b><br><br>";

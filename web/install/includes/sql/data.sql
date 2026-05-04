@@ -26,7 +26,7 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe
 (22, 'Synergy', 'synergy.png', 'synergy', '0');
 
 INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
-('dash.intro.text', '<center><p>Your new SourceBans install</p><p>SourceBans++ successfully installed!</center>'),
+('dash.intro.text', '# Your new SourceBans install\n\nSourceBans++ successfully installed!'),
 ('dash.intro.title', 'Your SourceBans++ install'),
 ('dash.lognopopup', '0'),
 ('banlist.bansperpage', '30'),

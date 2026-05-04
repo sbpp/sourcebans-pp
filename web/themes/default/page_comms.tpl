@@ -38,7 +38,8 @@
                 </td>
             </tr>
             <tr>
-                <td colspan='2'>
+                    <td colspan='2'>
+                    {* nofilter: comment text passes through encodePreservingBr (htmlspecialchars per-segment, only `<br/>` survives) + a URL-wrap regex; admin input is HTML-escaped before `<a>`/`<br>` tags are reintroduced — see page.commslist.php *}
                     {$com.commenttxt nofilter}
                 </td>
             </tr>
@@ -57,6 +58,7 @@
     {load_template file='admin.comms.search'}
     <br />
     <div id="banlist-nav">
+        {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in page.commslist.php (#1113) *}
         {$ban_nav nofilter}
     </div>
     <a href="index.php?p=commslist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}" title="{$hidetext} inactive">{$hidetext} inactive</a>
@@ -77,6 +79,7 @@
                             onclick="LoadServerHost({$ban.server_id}, 'id', 'host_{$ban.ban_id}');"
                         {/if}
                 >
+                    {* nofilter: ban.mod_icon is `<img src="images/games/{ICON}" …>` server-built from `:prefix_mods.icon` in page.commslist.php (mod metadata is htmlspecialchars'd on store, see admin.edit.mod.php) *}
                     <td height="16" align="center" class="listtable_1">{$ban.mod_icon nofilter}</td>
                     <td height="16" align="center" class="listtable_1">{$ban.ban_date}</td>
                     <td height="16" class="listtable_1">
@@ -92,6 +95,7 @@
                                 {$ban.commentdata|@count}&thinsp;<i class="fas fa-clipboard-list fa-lg"></i>
                             {/if}
                             {if $view_bans}
+                                {* nofilter: ban.counts is server-built HTML built from integer DB counts in page.commslist.php, no user input *}
                                 {$ban.counts nofilter}
                             {/if}
                         </div>
@@ -135,6 +139,7 @@
                                         <td width="30%" rowspan="{if isset($ban.unbanned)}13{else}11{/if}" class="listtable_2 opener">
                                             <div class="ban-edit">
                                                 <ul>
+                                                    {* nofilter: each *_link below is CreateLinkR()-built HTML with integer ban_id / static URL templates from page.commslist.php, no user input *}
                                                     {if isset($ban.unbanned) && $ban.reban_link != false}
                                                         <li>{$ban.reban_link nofilter}</li>
                                                     {/if}
@@ -252,6 +257,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Total Blocks</td>
+                                    {* nofilter: prevoff_link is server-built `<a>` from page.commslist.php using integer counts, no user input *}
                                     <td height="16" class="listtable_1">{$ban.prevoff_link nofilter}</td>
                                 </tr>
                                 {if $view_comments}
@@ -281,12 +287,14 @@
                                                             </td>
                                                             {if $commenta.editcomlink != ""}
                                                                 <td align="right">
+                                                                    {* nofilter: editcomlink/delcomlink are CreateLinkR-built HTML from page.commslist.php, no user input *}
                                                                     {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
                                                                 </td>
                                                             {/if}
                                                         </tr>
                                                         <tr>
                                                             <td colspan='3'>
+                                                                {* nofilter: see com.commenttxt above — encodePreservingBr-escaped + URL-wrap regex output *}
                                                                 {$commenta.commenttxt nofilter}
                                                             </td>
                                                         </tr>

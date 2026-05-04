@@ -2,6 +2,7 @@
 <div id="current-theme-holder">
     <h4 class="largetitle">Selected Theme: <span id="theme.name">{$theme_name}</span></h4>
     <div id="current-theme-screenshot">
+        {* nofilter: theme_screenshot is `<img … src="themes/SB_THEME/" . strip_tags(theme_screenshot)>` built in admin.settings.php from server constants + a theme.conf.php-defined screenshot filename (server-controlled), no user input *}
         {$theme_screenshot nofilter}
     </div>
     <div id="current-theme-details">

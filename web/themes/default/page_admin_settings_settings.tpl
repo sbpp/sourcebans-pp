@@ -95,9 +95,15 @@
                 <div id="dash.intro.msg" class="badentry"></div></td>
         </tr>
         <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Intro Text" message="Set the text for the dashboard introduction."}Intro Text </div></td>
+            <td valign="top"><div class="rowdesc">{help_icon title="Intro Text" message="Markdown supported (CommonMark — see https://commonmark.org/help/). Raw HTML is escaped for safety; the dashboard renders this through Sbpp\\Markup\\IntroRenderer."}Intro Text </div></td>
             <td><div align="left">  </div></td>
         </tr>
+        {* TinyMCE removed for #1113 (#521): the WYSIWYG accepted arbitrary HTML        *}
+        {* which got dumped raw on the dashboard for every visitor (stored XSS).        *}
+        {* Replaced with a plain textarea; values render via IntroRenderer (CommonMark, *}
+        {* html_input=escape, allow_unsafe_links=false). The static asset bundle at     *}
+        {* web/includes/tinymce/ is no longer referenced anywhere; deleting it is a     *}
+        {* separate cleanup tracked in #1113.                                           *}
         <tr>
             <td valign="top" colspan="2"> <textarea TABINDEX=6 cols="80" rows="20" id="dash_intro_text" name="dash_intro_text">{$config_dash_text}</textarea>
             </td>
@@ -213,6 +219,7 @@
                     <table width="100%" border="0" style="border-collapse:collapse;" id="custom.reasons" name="custom.reasons">
                         {foreach from=$bans_customreason item="creason"}
                             <tr>
+                                {* nofilter: bans.customreasons round-trips through htmlspecialchars in admin.settings.php before serialize() into sb_settings, so the value is already entity-encoded; auto-escaping would double-encode. Admin-only input + already-escaped on store. *}
                                 <td><input type="text" class="textbox" name="bans_customreason[]" id="bans_customreason[]" value="{$creason nofilter}"/></td>
                             </tr>
                         {/foreach}
@@ -310,15 +317,3 @@
         </tr>
     </table>
 </form>
-<script type="text/javascript" src="./includes/tinymce/tinymce.min.js"></script>
-{literal}
-    <script language="javascript" type="text/javascript">
-        tinyMCE.init({
-            selector: "textarea",
-            height: 500,
-            theme : "silver",
-            plugins : "advlist, autolink, lists, link, image, charmap, print, preview, hr, anchor, pagebreak, searchreplace, wordcount, visualblocks, visualchars, code, fullscreen, insertdatetime, media, nonbreaking, save, table, directionality, emoticons, template, paste, textpattern, imagetools, codesample, toc",
-            extended_valid_elements : "a[name|href|target|title|onclick],img[class|src|border=0|alt|title|hspace|vspace|width|height|align|onmouseover|onmouseout|name],hr[class|width|size|noshade],font[face|size|color|style],span[class|align|style]"
-        });
-    </script>
-{/literal}

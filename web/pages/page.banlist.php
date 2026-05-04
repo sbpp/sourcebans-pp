@@ -778,7 +778,17 @@ if (strlen($next) > 0) {
 }
 $pages = ceil($BanCount / $BansPerPage);
 if ($pages > 1) {
-    $ban_nav .= '&nbsp;<select onchange="changePage(this,\'B\',\'' . (isset($_GET['advSearch']) ? $_GET['advSearch'] : '') . '\',\'' . (isset($_GET['advType']) ? $_GET['advType'] : '') . '\');">';
+    // Issue #1113: $_GET['advSearch']/['advType'] used to be interpolated
+    // raw into the JS-string-inside-HTML-attribute below, so e.g.
+    // ?advSearch=x');alert(1);// closed the JS string and ran arbitrary
+    // script on every banlist visit. addslashes escapes the `'`/`\` for
+    // the JS-string layer, htmlspecialchars(ENT_QUOTES) escapes the
+    // `<`/`>`/`&`/`'`/`"` for the HTML-attribute layer; both layers are
+    // necessary because the browser unescapes attribute entities before
+    // the JS engine sees the string.
+    $advSearchJs = htmlspecialchars(addslashes((string)($_GET['advSearch'] ?? '')), ENT_QUOTES, 'UTF-8');
+    $advTypeJs   = htmlspecialchars(addslashes((string)($_GET['advType']   ?? '')), ENT_QUOTES, 'UTF-8');
+    $ban_nav .= '&nbsp;<select onchange="changePage(this,\'B\',\'' . $advSearchJs . '\',\'' . $advTypeJs . '\');">';
     for ($i = 1; $i <= $pages; $i++) {
         if (isset($_GET["page"]) && $i == $page) {
             $ban_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';

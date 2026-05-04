@@ -3,6 +3,7 @@
         Access Denied!
     {else}
     {if $overrides_error != ""}
+        {* nofilter: overrides_error is an Exception::getMessage() built server-side; any admin input embedded in it is htmlspecialchars(addslashes(...))'d in admin.admins.php so it survives both the JS-string and HTML-attribute layers *}
         <script type="text/javascript">ShowBox("Error", "{$overrides_error nofilter}", "red");</script>
     {/if}
     {if $overrides_save_success}

@@ -312,6 +312,49 @@ of the diff ship together or not at all.
 - Templates with non-default delimiters (currently only
   `page_youraccount.tpl` using `-{ … }-`) override `View::DELIMITERS`.
 
+### `nofilter` discipline
+
+Smarty auto-escape is on globally (`$theme->setEscapeHtml(true)` in
+`init.php`). `{$foo nofilter}` is the escape hatch. Every use is a load
+bearing assertion that the value is already safe HTML, so:
+
+- Each `{$foo nofilter}` (or `{$foo|nofilter}`) needs a Smarty comment
+  immediately above it explaining **why** the value is safe to drop in
+  raw. One-line format:
+
+  ```smarty
+  {* nofilter: <one-line reason — what built it, why no user input flows in unescaped> *}
+  {$foo nofilter}
+  ```
+
+  A foreach block emitting many sibling `nofilter` items can share one
+  annotation if the comment explicitly covers the block (e.g. `each
+  *_link below is CreateLinkR-built …`).
+- If you can't write a one-liner that's true, the value isn't safe —
+  fix the upstream PHP (escape on store, or rebuild without `nofilter`)
+  rather than papering over it. Admin-controlled display text that's
+  meant to be rich rendering goes through `Sbpp\Markup\IntroRenderer`
+  (CommonMark, `html_input: 'escape'`, `allow_unsafe_links: false`); see
+  the `IntroRenderer` row in "Where to find what".
+
+### Admin-authored display text (`Sbpp\Markup\IntroRenderer`)
+
+- Anything an admin types in the panel that we render to other users
+  (currently the dashboard `dash.intro.text` setting) goes through
+  `Sbpp\Markup\IntroRenderer::renderIntroText()` before it reaches
+  Smarty. The renderer wraps `league/commonmark` with
+  `html_input: 'escape'` and `allow_unsafe_links: false`, so:
+  - Inline HTML is rendered as visible escaped text, not parsed.
+  - `javascript:` / `data:` / `vbscript:` URLs are stripped during
+    rendering.
+- Page handlers pass the **rendered HTML** into the View DTO and the
+  template emits it with `nofilter`, with the canonical safety comment
+  above the line (see `web/themes/default/page_dashboard.tpl` for the
+  reference shape).
+- Settings UIs surface a Markdown cheat-sheet link in the help icon.
+  **Do not** reintroduce a WYSIWYG editor for these fields; the
+  WYSIWYG was the source of #1113's stored-XSS vector.
+
 ## Anti-patterns (do NOT reintroduce)
 
 - `xajax` / `sb-callback.php` → use the JSON API.
@@ -330,6 +373,15 @@ of the diff ship together or not at all.
   from the plugin's insert path (#1108, #765).
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
+- WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored
+  in `sb_settings` and rendered to other users → these fields end up
+  emitted through `nofilter` and become a stored-XSS vector for every
+  admin with the relevant flag (#1113). Use a plain `<textarea>` and
+  pipe the value through `Sbpp\Markup\IntroRenderer` (Markdown).
+- Unannotated `{$foo nofilter}` → every `nofilter` is an assertion the
+  value is safe HTML; without a `{* nofilter: <why> *}` comment above
+  it, future readers can't tell whether it's a real escape hatch or a
+  copy-paste accident waiting to be exploited (#1113 audit).
 
 ## Where to find what
 
@@ -340,6 +392,7 @@ of the diff ship together or not at all.
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
 | Edit a template                        | `web/themes/default/*.tpl`                               |
+| Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
 | Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php`                          |
 | Auth / JWT cookie                      | `web/includes/auth/`                                     |

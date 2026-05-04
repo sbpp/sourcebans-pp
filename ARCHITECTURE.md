@@ -54,6 +54,8 @@ plugins are stable and updated less often.
 - **Smarty 5** for server-side templates.
 - **lcobucci/jwt** for the auth cookie.
 - **symfony/mailer** for outbound email.
+- **league/commonmark** for safely rendering admin-authored Markdown
+  (dashboard intro text — see `Sbpp\Markup\IntroRenderer`).
 - **xpaw/php-source-query-class** for live server queries.
 - **maxmind-db/reader** for IP→country lookups (`web/data/GeoLite2-Country.mmdb`).
 - **Vanilla JavaScript** on the client — no framework, no bundler. Files
@@ -86,6 +88,7 @@ web/
 │   ├── system-functions.php  Legacy helpers shared across pages
 │   ├── SmartyCustomFunctions.php  {help_icon} / {csrf_field} / {load_template}
 │   ├── View/                 Typed Smarty view-model DTOs
+│   ├── Markup/               Admin-authored Markdown -> safe HTML (IntroRenderer)
 │   ├── auth/                 JWT cookie auth + Steam OpenID + login handlers
 │   ├── security/             CSRF + Crypto helpers
 │   ├── Mail/                 Symfony Mailer wrapper + email templates
@@ -402,6 +405,48 @@ legacy `SB_EMAIL` constant in `config.php` as a fallback that emits a
 once-per-process deprecation warning to `sb_log`. `Mailer::resolveFrom()`
 formats the chosen pair into `"Name" <email>` for Symfony's `Email::from()`.
 Email templates live in `themes/<name>/mails/*.html`.
+
+### Markup (`includes/Markup/`)
+
+`Sbpp\Markup\IntroRenderer::renderIntroText($markdown)` wraps
+`league/commonmark` for any DB-stored display text that admins type into
+the panel and we then render to other users. Currently used only by the
+dashboard `dash.intro.text` setting; the convention is "if a panel form
+saves rich text into `sb_settings` and a template will render it to
+arbitrary visitors, the value goes through `IntroRenderer` first."
+
+The converter is configured with:
+
+- `html_input: 'escape'` — inline HTML is rendered as visible escaped
+  text, not parsed. So a `<script>` an admin pastes shows up literally
+  in the dashboard, it does not execute. We deliberately don't use
+  `'strip'` so admins notice when they pasted HTML by accident.
+- `allow_unsafe_links: false` — `javascript:`, `data:`, `vbscript:`
+  hrefs are stripped during rendering, so a Markdown link can't be
+  turned into an XSS vector either.
+- `max_nesting_level: 50` — belt-and-braces against pathological
+  inputs blowing the parser stack.
+
+The converter is constructed lazily and cached as a `private static`,
+so configuration cost is paid once per request. Call sites pass the
+**rendered HTML** (not the raw Markdown) into the View DTO; the
+template emits with `nofilter` and a Smarty comment pointing back at
+the renderer (see `web/themes/default/page_dashboard.tpl`).
+
+Issue #1113 is the audit that introduced this: `dash.intro.text` used
+to render straight DB HTML through `{$dashboard_text nofilter}`,
+making any admin with `ADMIN_SETTINGS` a stored-XSS source. The
+companion changes:
+
+- A paired updater migration (`web/updater/data/804.php`) replaces
+  only the legacy default value (`<center><p>Your new SourceBans
+  install</p>…`) with the new Markdown default; admins who customised
+  the value keep their text unchanged, but now rendered as escaped
+  text — acceptable degradation for a security fix.
+- The settings UI swapped the TinyMCE WYSIWYG for a plain `<textarea>`
+  with a Markdown cheat-sheet link; the static `web/includes/tinymce/`
+  bundle is no longer referenced and its directory is a follow-up
+  cleanup.
 
 ### Logging (`includes/Log.php`)
 

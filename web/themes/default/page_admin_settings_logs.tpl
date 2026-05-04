@@ -1,8 +1,10 @@
+{* nofilter: clear_logs is a static "( <a href='javascript:ClearLogs();'>Clear Log</a> )" assigned in admin.settings.php, no user input *}
 <h3 align="left">System Log {$clear_logs nofilter}</h3>
 Click on a row to see more details about the event.
 <br /><br />
 {load_template file="admin.log.search" }
 
+{* nofilter: server-built nav HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(json_encode(...)) before interpolation in admin.settings.php *}
 <div id="banlist-nav">{$page_numbers nofilter}</div>
 <br /><br />
 
@@ -16,6 +18,7 @@ Click on a row to see more details about the event.
 
     {foreach from=$log_items item="log"}
         <tr class="opener tbl_out" onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
+            {* nofilter: log.type_img is "<img src='themes/SB_THEME/images/admin/{help,warning,error}.png' alt='…'>" built in admin.settings.php from a server constant + a static set of three filenames, no user input *}
             <td height="16" align="center" class="listtable_1">{$log.type_img nofilter}</td>
             <td height="16" class="listtable_1">{$log.title}</td>
             <td height="16" class="listtable_1">{$log.user}</td>

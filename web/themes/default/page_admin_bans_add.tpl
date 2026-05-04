@@ -99,6 +99,7 @@
                             {if $customreason}
                                 <optgroup label="Custom">
                                     {foreach from=$customreason item="creason"}
+                                        {* nofilter: bans.customreasons round-trips through htmlspecialchars in admin.settings.php before serialize() into sb_settings, so the value is already entity-encoded; auto-escaping would double-encode. *}
                                         <option value="{$creason nofilter}">{$creason nofilter}</option>
                                     {/foreach}
                                 </optgroup>

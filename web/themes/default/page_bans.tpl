@@ -39,6 +39,7 @@
             </tr>
             <tr>
                 <td colspan='2'>
+                    {* nofilter: comment text passes through encodePreservingBr (htmlspecialchars per-segment, only `<br/>` survives) + a URL-wrap regex; admin input is HTML-escaped before `<a>`/`<br>` tags are reintroduced — see page.banlist.php *}
                     {$com.commenttxt nofilter}
                 </td>
             </tr>
@@ -80,6 +81,7 @@
                     {if $view_bans}
                         <td height="16" align="center" class="listtable_1" style="padding:0px;width:3px;"><input type="checkbox" name="chkb_{$smarty.foreach.banlist.index}" id="chkb_{$smarty.foreach.banlist.index}" value="{$ban.ban_id}"></td>
                     {/if}
+                    {* nofilter: ban.mod_icon is `<img src="images/games/{ICON}" …>` server-built from `:prefix_mods.icon` in page.banlist.php (mod metadata is htmlspecialchars'd on store, see admin.edit.mod.php) *}
                     <td height="16" align="center" class="listtable_1">{$ban.mod_icon nofilter}</td>
                     <td height="16" align="center" class="listtable_1">{$ban.ban_date}</td>
                     <td height="16" class="listtable_1">
@@ -136,6 +138,7 @@
                                         <td width="30%" rowspan="{if $ban.unbanned}15{else}13{/if}" class="listtable_2 opener">
                                             <div class="ban-edit">
                                                 <ul>
+                                                    {* nofilter: each *_link below is CreateLinkR()-built HTML with integer ban_id / static URL templates from page.banlist.php, no user input *}
                                                     {if $ban.unbanned && $ban.reban_link != false}
                                                         <li>{$ban.reban_link nofilter}</li>
                                                     {/if}
@@ -166,6 +169,7 @@
                                         <td width="30%" rowspan="{if $ban.unbanned}13{else}11{/if}" class="listtable_2 opener">
                                             <div class="ban-edit">
                                                 <ul>
+                                                    {* nofilter: see *_link block above — CreateLinkR-built HTML, no user input *}
                                                     <li>{$ban.demo_link nofilter}</li>
                                                 </ul>
                                             </div>
@@ -212,6 +216,7 @@
                                             {if $ban.ip == "none"}
                                                 <i><font color="#677882">no IP address present</font></i>
                                             {else}
+                                                {* nofilter: ban.ip is filter_var(...,FILTER_VALIDATE_IP)-validated on store and read from `:prefix_bans.ip` (varchar of digits/dots), no HTML-special characters possible *}
                                                 {$ban.ip nofilter}
                                             {/if}
                                         </td>
@@ -285,6 +290,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Total Bans</td>
+                                    {* nofilter: prevoff_link is server-built `<a>` from page.banlist.php using integer counts, no user input *}
                                     <td height="16" class="listtable_1">{$ban.prevoff_link nofilter}</td>
                                 </tr>
                                 <tr align="left">
@@ -293,6 +299,7 @@
                                         {if $ban.banlog == ""}
                                             <i><font color="#677882">never</font></i>
                                         {else}
+                                            {* nofilter: ban.banlog is server-built HTML built in page.banlist.php from `:prefix_banlog` rows + Config::time(...) timestamps, no user input *}
                                             {$ban.banlog nofilter}
                                         {/if}
                                     </td>
@@ -324,12 +331,14 @@
                                                             </td>
                                                             {if $commenta.editcomlink != ""}
                                                                 <td align="right">
+                                                                    {* nofilter: editcomlink/delcomlink are CreateLinkR-built HTML from page.banlist.php, no user input *}
                                                                     {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
                                                                 </td>
                                                             {/if}
                                                         </tr>
                                                         <tr>
                                                             <td colspan='3'>
+                                                                {* nofilter: see com.commenttxt above — encodePreservingBr-escaped + URL-wrap regex output *}
                                                                 {$commenta.commenttxt nofilter}
                                                             </td>
                                                         </tr>
@@ -357,6 +366,7 @@
             {/foreach}
         </table>
         <div id="banlist-nav">
+            {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in page.banlist.php (#1113) *}
             {$ban_nav nofilter}
         </div>
         {if $general_unban || $can_delete}

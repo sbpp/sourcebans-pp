@@ -34,7 +34,16 @@ if (isset($_POST['upload'])) {
     if (checkExtension($_FILES['demo_file']['name'], ['zip', 'rar', 'dem', '7z', 'bz2', 'gz'])) {
         $filename = md5(time() . rand(0, 1000));
         move_uploaded_file($_FILES['demo_file']['tmp_name'], SB_DEMOS . "/" . $filename);
-        $message = "<script>window.opener.demo('" . $filename . "','" . $_FILES['demo_file']['name'] . "');self.close()</script>";
+        // Issue #1113: original filename is admin-controlled and used to be
+        // interpolated raw into a <script>…</script> blob, so anything an
+        // uploader put in the filename ran in their (or the parent window's)
+        // browser. JSON-encode with HEX flags so `'`, `"`, `<`, `>`, `&` all
+        // become \uXXXX escapes that survive both the HTML-attribute and the
+        // JS-string layers the popup template renders us into.
+        $jsFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES;
+        $jsHash = json_encode($filename, $jsFlags);
+        $jsName = json_encode((string) $_FILES['demo_file']['name'], $jsFlags);
+        $message = "<script>window.opener.demo($jsHash,$jsName);self.close()</script>";
         Log::add("m", "Demo Uploaded", "A new demo has been uploaded: $_FILES[demo_file][name]");
     } else {
         $message = "<b> File must be dem, zip, rar, 7z, bz2 or gz filetype.</b><br><br>";

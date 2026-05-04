@@ -198,7 +198,9 @@ require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\HomeDashboardView(
     dashboard_title: (string) (Config::get('dash.intro.title') ?? ''),
-    dashboard_text: (string) (Config::get('dash.intro.text') ?? ''),
+    dashboard_text: \Sbpp\Markup\IntroRenderer::renderIntroText(
+        (string) (Config::get('dash.intro.text') ?? '')
+    ),
     dashboard_lognopopup: Config::getBool('dash.lognopopup'),
     players_blocked: $stopped,
     total_blocked: $totalstopped,

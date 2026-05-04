@@ -157,6 +157,7 @@
                             </div></td>
                         <td><div align="left">
                                 -{sb_button text="Upload a Demo" onclick="childWindow=open('pages/admin.uploaddemo.php','upload','resizable=no,width=300,height=130');" class="save" id="uploaddemo" submit=false}-
+                            {* nofilter: ban_demo is `Uploaded: <b>` + htmlspecialchars($res['dname']) + `</b>` (or empty) built in admin.edit.ban.php; the `<b>…</b>` literals are server-controlled, the user-supplied dname is escaped (#1113) *}
                             </div><div id="demo.msg" style="color:#CC0000;">-{$ban_demo nofilter}-</div></td>
                     </tr>
 

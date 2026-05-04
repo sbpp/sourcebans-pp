@@ -9,6 +9,7 @@
                 <td valign="top" width="35%"><div class="rowdesc">{help_icon title="Mod Name" message="Type the name of the mod you are adding."}Mod Name</div></td>
                 <td>
                     <div align="left">
+                        {* nofilter: mod metadata is htmlspecialchars(strip_tags($_POST[…]))'d in admin.edit.mod.php before INSERT/UPDATE, so values pulled back out of `:prefix_mods` are already entity-encoded; auto-escaping would double-encode (#1113 audit). *}
                         <input type="hidden" id="icon_hid" name="icon_hid" value="{$mod_icon nofilter}">
                         <input type="text" TABINDEX=1 class="textbox" id="name" name="name" value="{$name nofilter}" />
                     </div>
@@ -20,6 +21,7 @@
                 <td valign="top"><div class="rowdesc">{help_icon title="Folder Name" message="Type the name of this mods folder. For example, Counter-Strike: Source's mod folder is 'cstrike'"}Mod Folder</div></td>
                 <td>
                     <div align="left">
+                        {* nofilter: see "mod metadata" note above — folder is htmlspecialchars'd on store. *}
                         <input type="text" TABINDEX=2 class="textbox" id="folder" name="folder" value="{$folder nofilter}" />
                     </div>
                     <div id="folder.msg" class="badentry"></div>
@@ -50,6 +52,7 @@
                     </div>
                     <div id="icon.msg" class="badentry" style="display:block;">
                         {if $mod_icon}
+                            {* nofilter: see "mod metadata" note above — icon filename is htmlspecialchars'd on store. *}
                             Uploaded: <b>{$mod_icon nofilter}</b>
                         {/if}
                     </div>

@@ -31,7 +31,11 @@ if (isset($_POST['upload'])) {
     CSRF::rejectIfInvalid();
     if (checkExtension($_FILES['mapimg_file']['name'], ['jpg'])) {
         move_uploaded_file($_FILES['mapimg_file']['tmp_name'], SB_MAPS . "/" . $_FILES['mapimg_file']['name']);
-        $message = "<script>window.opener.mapimg('" . $_FILES['mapimg_file']['name'] . "');self.close()</script>";
+        // Issue #1113: filename is admin-controlled; see admin.uploaddemo.php
+        // for the rationale behind json_encode + HEX flags.
+        $jsFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES;
+        $jsName = json_encode((string) $_FILES['mapimg_file']['name'], $jsFlags);
+        $message = "<script>window.opener.mapimg($jsName);self.close()</script>";
         Log::add("m", "Map Image Uploaded", "A new map image has been uploaded: $_FILES[mapimg_file][name]");
     } else {
         $message = "<b> File must be jpg filetype.</b><br><br>";

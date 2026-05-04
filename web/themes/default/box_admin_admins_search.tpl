@@ -104,5 +104,6 @@
 		</tr>
 	</table>
 </div>
+{* nofilter: server-built `<script>LoadServerHost('SID', …)</script>` from `:prefix_servers.sid` integer column, no user input — see admin.admins.search.php *}
 {$server_script nofilter}
 <script>InitAccordion('tr.sea_open', 'div.panel', 'mainwrapper');</script>

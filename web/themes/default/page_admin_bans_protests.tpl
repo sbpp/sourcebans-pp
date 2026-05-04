@@ -5,6 +5,7 @@
         <h3 style="margin-top:0px;">Ban Protests (<span id="protcount">{$protest_count}</span>)</h3>
         Click a player's nickname to view information about their ban<br /><br />
         <div id="banlist-nav">
+            {* nofilter: protest_nav is server-built pagination from admin.bans.php with no $_GET interpolation in this branch *}
             {$protest_nav nofilter}
         </div>
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -39,6 +40,7 @@
                                     <td width="30%" rowspan="11" class="listtable_2">
                                         <div class="ban-edit">
                                             <ul>
+                                                {* nofilter: protaddcomment is CreateLinkR-built HTML with integer pid + static URL, no user input *}
                                                 <li>{$protest.protaddcomment nofilter}</li>
                                             </ul>
                                         </div>
@@ -80,6 +82,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Reason</td>
+                                    {* nofilter: protest.ban_reason is htmlspecialchars($protestb['reason']) in admin.bans.php, already entity-escaped *}
                                     <td height="16" class="listtable_1">{$protest.ban_reason nofilter}</td>
                                 </tr>
                                 <tr align="left">
@@ -100,6 +103,7 @@
                                 </tr>
                                 <tr align="left">
                                     <td width="20%" height="16" class="listtable_1">Protest message</td>
+                                    {* nofilter: protest.reason is wordwrap(htmlspecialchars($prot['reason']), 55, "<br />\n", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced *}
                                     <td height="16" class="listtable_1">{$protest.reason nofilter}</td>
                                 </tr>
                                 <tr align="left">
@@ -126,12 +130,14 @@
                                                         </td>
                                                         {if $commenta.editcomlink != ""}
                                                             <td align="right">
+                                                                {* nofilter: editcomlink/delcomlink are CreateLinkR-built HTML from admin.bans.php, no user input *}
                                                                 {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
                                                             </td>
                                                         {/if}
                                                     </tr>
                                                     <tr>
                                                         <td colspan="2" style="word-break: break-all;word-wrap: break-word;">
+                                                            {* nofilter: commenttxt passes through encodePreservingBr (htmlspecialchars per-segment) + URL-wrap regex; admin input is HTML-escaped before `<a>`/`<br>` tags are reintroduced *}
                                                             {$commenta.commenttxt nofilter}
                                                         </td>
                                                     </tr>

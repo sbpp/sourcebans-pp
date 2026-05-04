@@ -4,6 +4,7 @@
     <h3 style="margin-top:0px;">Ban Submissions Archive (<span id="subcountarchiv">{$submission_count_archiv}</span>)</h3>
     Click a player's nickname to view information about their submission<br /><br />
     <div id="banlist-nav">
+        {* nofilter: asubmission_nav is server-built pagination from admin.bans.php with no $_GET interpolation in this branch *}
         {$asubmission_nav nofilter}
     </div>
     <table width="100%" cellpadding="0" cellspacing="0">
@@ -14,6 +15,7 @@
         </tr>
         {foreach from=$submission_list_archiv item="sub"}
             <tr id="asid_{$sub.subid}" class="opener4 tbl_out" {if $sub.hostname == ""}onclick="LoadServerHost('{$sub.server}', 'id', 'suba{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
+                {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced *}
                 <td style="border-bottom: solid 1px #ccc" height='16'>{$sub.name nofilter}</td>
                 <td style="border-bottom: solid 1px #ccc" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
                 <td style="border-bottom: solid 1px #ccc" height='16'>
@@ -45,6 +47,7 @@
                                 <td width="30%" rowspan="11" class="listtable_2">
                                     <div class="ban-edit">
                                         <ul>
+                                            {* nofilter: sub.demo is server-built `<a href="getdemo.php?id={URLENCODED INT}…">` HTML, sub.subaddcomment is CreateLinkR-built; no user input *}
                                             <li>{$sub.demo nofilter}</li>
                                             <li>{$sub.subaddcomment nofilter}</li>
                                         </ul>
@@ -53,6 +56,7 @@
                             </tr>
                             <tr align="left">
                                 <td width="20%" height="16" class="listtable_1">Player</td>
+                                {* nofilter: see sub.name above — wordwrap(htmlspecialchars(...))-encoded in admin.bans.php *}
                                 <td height="16" class="listtable_1">{$sub.name nofilter}</td>
                             </tr>
                             <tr align="left">
@@ -81,10 +85,12 @@
                             </tr>
                             <tr align="left">
                                 <td width="20%" height="16" class="listtable_1">Reason</td>
+                                {* nofilter: sub.reason is wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced *}
                                 <td height="" class="listtable_1">{$sub.reason nofilter}</td>
                             </tr>
                             <tr align="left">
                                 <td width="20%" height="16" class="listtable_1">Server</td>
+                                {* nofilter: sub.hostname is either "" or the static `<i><font color="#677882">Other server...</font></i>` literal in admin.bans.php — server-controlled, no user input *}
                                 <td height="" class="listtable_1" id="suba{$sub.subid}">{if $sub.hostname == ""}<i>Retrieving Hostname</i>{else}{$sub.hostname nofilter}{/if}</td>
                             </tr>
                             <tr align="left">
@@ -139,12 +145,14 @@
                                                     </td>
                                                     {if $commenta.editcomlink != ""}
                                                         <td align="right">
+                                                            {* nofilter: editcomlink/delcomlink are CreateLinkR-built HTML / static `<a … onclick="RemoveComment(INT,'S',-1)">` from admin.bans.php with integer cid + literal subid, no user input *}
                                                             {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
                                                         </td>
                                                     {/if}
                                                 </tr>
                                                 <tr>
                                                     <td colspan="2" style="word-break: break-all;word-wrap: break-word;">
+                                                        {* nofilter: commenttxt passes through encodePreservingBr (htmlspecialchars per-segment, only `<br/>` survives) + URL-wrap regex on already-escaped text in admin.bans.php *}
                                                         {$commenta.commenttxt nofilter}
                                                     </td>
                                                 </tr>

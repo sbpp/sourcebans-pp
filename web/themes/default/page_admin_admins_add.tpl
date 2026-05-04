@@ -209,6 +209,7 @@
                     </td>
                 </tr>
             </table>
+            {* nofilter: server-built `<script>LoadServerHost('SID', 'id', 'saSID');…</script>` from `:prefix_servers.sid` integer column, no user input — see admin.admins.php *}
             {$server_script nofilter}
         </div>
     {/if}

@@ -9,6 +9,7 @@
 </div>
 <script>
 
+{* nofilter: server-built JS that calls LoadServerHostProperty(SID, 'block_SID_N', 'title', 100) — both args are integers cast/sourced from server-side state in pages/page.home.php, no user input *}
 {$query nofilter}
 
 {literal}

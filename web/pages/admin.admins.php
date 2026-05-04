@@ -223,7 +223,10 @@ if (strlen($next) > 0) {
 
 $pages = ceil($admin_count / $AdminsPerPage);
 if ($pages > 1) {
-    $admin_nav .= '&nbsp;<select onchange="changePage(this,\'A\',\'' . (isset($_GET['advSearch']) ? $_GET['advSearch'] : '') . '\',\'' . (isset($_GET['advType']) ? $_GET['advType'] : '') . '\');">';
+    // Issue #1113: see page.banlist.php for the layered-escape rationale.
+    $advSearchJs = htmlspecialchars(addslashes((string)($_GET['advSearch'] ?? '')), ENT_QUOTES, 'UTF-8');
+    $advTypeJs   = htmlspecialchars(addslashes((string)($_GET['advType']   ?? '')), ENT_QUOTES, 'UTF-8');
+    $admin_nav .= '&nbsp;<select onchange="changePage(this,\'A\',\'' . $advSearchJs . '\',\'' . $advTypeJs . '\');">';
     for ($i = 1; $i <= $pages; $i++) {
         if (isset($_GET['page']) && $i === $_GET['page']) {
             $admin_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';

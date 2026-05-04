@@ -9,6 +9,7 @@
             {load_template file="admin.admins.search"}
 
             <div id="banlist-nav">
+                {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in admin.admins.php *}
                 {$admin_nav nofilter}
             </div>
             <div id="banlist">

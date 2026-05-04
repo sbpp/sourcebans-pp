@@ -17,6 +17,7 @@
 
 
 Plese select the file to upload. The file must either be {$formats} file format.<br>
+{* nofilter: server-built popup-callback <script> wrapping json_encode'd filenames (HEX flags), see admin.upload{demo,icon,mapimg}.php *}
 <b>{$message nofilter}</b>
 <form action="" method="POST" id="{$form_name}" enctype="multipart/form-data">
 {csrf_field}

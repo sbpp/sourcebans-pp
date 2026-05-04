@@ -2,6 +2,7 @@
     <table width="100%" cellpadding="1">
         <tr>
             <td>
+                {* nofilter: HTML produced by IntroRenderer; raw HTML in source is escaped, see web/includes/Markup/IntroRenderer.php *}
                 {$dashboard_text nofilter}
             </td>
         </tr>
