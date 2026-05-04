@@ -40,9 +40,18 @@ PHPStan is the project's static-analysis gate. Inside the dev container:
 ./sbpp.sh phpstan
 ```
 
+`web/phpstan.neon` currently runs at **level 5** (bumped from 4 in #1101).
+When raising the level further, move one step at a time — do not jump past
+5 → 7 in a single PR. Regenerate the baseline with:
+
+```sh
+./sbpp.sh phpstan --generate-baseline=phpstan-baseline.neon
+```
+
 `web/phpstan-baseline.neon` captures pre-existing violations so a clean tree
 passes; new code should be clean. Regenerate the baseline only when a real
-fix removes an entry — see the README for the command.
+fix removes an entry or when bumping the level — see the README for the
+command.
 
 PHPUnit is the behavioural gate (added in #1081 alongside the JSON API).
 Tests live under `web/tests/` and run against a dedicated `sourcebans_test`
@@ -76,3 +85,29 @@ CI runs both gates on every PR (`.github/workflows/phpstan.yml` and
 - **Client code** uses vanilla JS through `web/scripts/sb.js` (DOM helpers,
   message box, tabs, tooltips, accordion) and `web/scripts/api.js` (the
   `sb.api.call(action, params)` wrapper). Don't reintroduce MooTools.
+- **Page templates** are rendered through typed view-model DTOs in the
+  `Sbpp\View` namespace (`web/includes/View/`) rather than ad-hoc
+  `$theme->assign(...)` chains. The pattern is:
+
+  ```php
+  use Sbpp\View\HomeDashboardView;
+  use Sbpp\View\Renderer;
+
+  Renderer::render($theme, new HomeDashboardView(
+      dashboard_text: (string) Config::get('dash.intro.text'),
+      // … every other variable the template consumes …
+  ));
+  ```
+
+  One View class per `.tpl` file, keyed by its `TEMPLATE` constant. A
+  custom PHPStan rule (`web/includes/PHPStan/SmartyTemplateRule.php`)
+  cross-checks each concrete view's public properties against the
+  variables its template actually references, catching typos and dead
+  assigns at static-analysis time. Include-expanded templates (e.g.
+  `page_dashboard.tpl` pulling in `page_servers.tpl`) need the outer view
+  to declare the union of both templates' variables — that's the price of
+  the contract. Pages that render multiple templates build a View per
+  template and call `Renderer::render` for each. Views whose template
+  uses a non-default delimiter pair (see `YourAccountView` for the
+  `-{ … }-` case) override the `DELIMITERS` constant so the rule parses
+  them correctly.

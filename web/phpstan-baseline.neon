@@ -1,6 +1,12 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Parameter \#2 \$associative of function get_headers expects bool, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: api/handlers/bans.php
+
+		-
 			message: '#^Variable \$userbank might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -67,6 +73,18 @@ parameters:
 			path: includes/Log.php
 
 		-
+			message: '#^Parameter \#1 \$hour of function mktime expects int, string given\.$#'
+			identifier: argument.type
+			count: 4
+			path: includes/Log.php
+
+		-
+			message: '#^Parameter \#2 \$minute of function mktime expects int\|null, string given\.$#'
+			identifier: argument.type
+			count: 4
+			path: includes/Log.php
+
+		-
 			message: '#^Constant SB_THEME not found\.$#'
 			identifier: constant.notFound
 			count: 2
@@ -103,6 +121,54 @@ parameters:
 			path: includes/SmartyCustomFunctions.php
 
 		-
+			message: '#^Parameter \#2 \$num2 of function bcdiv expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: includes/SteamID/calc/BCMATH.php
+
+		-
+			message: '#^Parameter \#2 \$num2 of function bcmod expects string, int given\.$#'
+			identifier: argument.type
+			count: 2
+			path: includes/SteamID/calc/BCMATH.php
+
+		-
+			message: '#^Parameter \#2 \$num2 of function bcmul expects numeric\-string, 2 given\.$#'
+			identifier: argument.type
+			count: 2
+			path: includes/SteamID/calc/BCMATH.php
+
+		-
+			message: '#^Template "page_admin_bans_groups\.tpl" references \{\$player_name\} but Sbpp\\View\\AdminBansGroupsView has no public \$player_name property\.$#'
+			identifier: sbpp.view.missingProperty
+			count: 1
+			path: includes/View/AdminBansGroupsView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminServersAddView\:\:\$modid is never referenced in template "page_admin_servers_add\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminServersAddView.php
+
+		-
+			message: '#^Property Sbpp\\View\\HomeDashboardView\:\:\$dashboard_title is never referenced in template "page_dashboard\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/HomeDashboardView.php
+
+		-
+			message: '#^Property Sbpp\\View\\HomeDashboardView\:\:\$opened_server is never referenced in template "page_dashboard\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/HomeDashboardView.php
+
+		-
+			message: '#^Property Sbpp\\View\\ServersView\:\:\$opened_server is never referenced in template "page_servers\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/ServersView.php
+
+		-
 			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
 			identifier: method.notFound
 			count: 1
@@ -129,6 +195,12 @@ parameters:
 		-
 			message: '#^Method JWT\:\:create\(\) should return Lcobucci\\JWT\\Token\\Plain but returns Lcobucci\\JWT\\UnencryptedToken\.$#'
 			identifier: return.type
+			count: 1
+			path: includes/auth/JWT.php
+
+		-
+			message: '#^Parameter \#1 \$contents of static method Lcobucci\\JWT\\Signer\\Key\\InMemory\:\:base64Encoded\(\) expects non\-empty\-string, '''' given\.$#'
+			identifier: argument.type
 			count: 1
 			path: includes/auth/JWT.php
 
@@ -303,6 +375,12 @@ parameters:
 		-
 			message: '#^Offset ''wg'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
 			identifier: isset.offset
+			count: 1
+			path: pages/admin.edit.admingroup.php
+
+		-
+			message: '#^Parameter \#1 \$string of function urlencode expects string, int given\.$#'
+			identifier: argument.type
 			count: 1
 			path: pages/admin.edit.admingroup.php
 
@@ -523,6 +601,12 @@ parameters:
 			path: sb_debug_connection.php
 
 		-
+			message: '#^Parameter \#1 \$array of function array_pop is passed by reference, so it expects variables only\.$#'
+			identifier: argument.byRef
+			count: 1
+			path: updater/Updater.php
+
+		-
 			message: '#^Variable \$this might not be defined\.$#'
 			identifier: variable.undefined
 			count: 2
@@ -695,6 +779,12 @@ parameters:
 			identifier: variable.undefined
 			count: 4
 			path: updater/data/555.php
+
+		-
+			message: '#^Parameter \#2 \$replace of function str_replace expects array\<string\>\|string, int given\.$#'
+			identifier: argument.type
+			count: 1
+			path: updater/data/600.php
 
 		-
 			message: '#^Variable \$this might not be defined\.$#'

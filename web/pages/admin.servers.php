@@ -48,26 +48,23 @@ $modlist = $GLOBALS['PDO']->query("SELECT mid, name FROM `:prefix_mods` WHERE `m
 // List groups
 $grouplist = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = 3 ORDER BY name ASC")->resultset();
 
-// Vars for server list
-$theme->assign('permission_list', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS));
-$theme->assign('permission_editserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_SERVERS));
-$theme->assign('pemission_delserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_SERVERS));
-$theme->assign('server_count', $server_count['cnt']);
-$theme->assign('server_list', $servers);
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersListView(
+    permission_list: $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS),
+    permission_editserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_SERVERS),
+    pemission_delserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_SERVERS),
+    permission_addserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER),
+    server_count: (int) $server_count['cnt'],
+    server_list: $servers,
+));
 
-// Vars for add server
-$theme->assign('permission_addserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER));
-$theme->assign('modlist', $modlist);
-$theme->assign('grouplist', $grouplist);
-// set vars from edit form
-$theme->assign('edit_server', false);
-$theme->assign('ip', '');
-$theme->assign('port', '');
-$theme->assign('rcon', '');
-$theme->assign('modid', '');
-
-$theme->assign('submit_text', "Add Server");
-
-$theme->display('page_admin_servers_list.tpl');
-
-$theme->display('page_admin_servers_add.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersAddView(
+    permission_addserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER),
+    edit_server: false,
+    ip: '',
+    port: '',
+    rcon: '',
+    modid: '',
+    modlist: $modlist,
+    grouplist: $grouplist,
+    submit_text: 'Add Server',
+));

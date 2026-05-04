@@ -40,15 +40,17 @@ $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
 $res      = $GLOBALS['PDO']->single();
 $srvpwset = !empty($res['srv_password']);
 
-$theme->assign('srvpwset', $srvpwset);
-$theme->assign('email', $res['email']);
-$theme->assign('user_aid', $userbank->GetAid());
-$theme->assign('web_permissions', BitToString($userbank->GetProperty("extraflags")));
-$theme->assign('server_permissions', SmFlagsToSb($userbank->GetProperty("srv_flags")));
-$theme->assign('min_pass_len', MIN_PASS_LENGTH);
+$youraccountView = new \Sbpp\View\YourAccountView(
+    srvpwset: $srvpwset,
+    email: (string) ($res['email'] ?? ''),
+    user_aid: (int) $userbank->GetAid(),
+    web_permissions: BitToString($userbank->GetProperty("extraflags")),
+    server_permissions: SmFlagsToSb($userbank->GetProperty("srv_flags")),
+    min_pass_len: MIN_PASS_LENGTH,
+);
 
 $theme->setLeftDelimiter('-{');
 $theme->setRightDelimiter('}-');
-$theme->display('page_youraccount.tpl');
+\Sbpp\View\Renderer::render($theme, $youraccountView);
 $theme->setLeftDelimiter('{');
 $theme->setRightDelimiter('}');

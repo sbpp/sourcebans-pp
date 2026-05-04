@@ -2,7 +2,7 @@ includes:
     - phpstan-baseline.neon
 
 parameters:
-    level: 4
+    level: 5
     phpVersion: 80200
     bootstrapFiles:
         - includes/vendor/autoload.php
@@ -17,3 +17,11 @@ parameters:
         - templates_c/*
         - tests/*
         - phpstan-bootstrap.php
+
+services:
+    -
+        class: Sbpp\PHPStan\SmartyTemplateRule
+        arguments:
+            templatesDir: %currentWorkingDirectory%/themes/default
+        tags:
+            - phpstan.rules.rule

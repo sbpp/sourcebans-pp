@@ -51,11 +51,15 @@ foreach ($rows as $row) {
     $i++;
 }
 
-$theme->assign('access_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN) ? true : false));
-$theme->assign('server_list', $servers);
-$theme->assign('IN_SERVERS_PAGE', !defined('IN_HOME'));
-$theme->assign('opened_server', $number);
+$serversView = new \Sbpp\View\ServersView(
+    access_bans: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    server_list: $servers,
+    IN_SERVERS_PAGE: !defined('IN_HOME'),
+    opened_server: $number,
+);
 
 if (!defined('IN_HOME')) {
-    $theme->display('page_servers.tpl');
+    \Sbpp\View\Renderer::render($theme, $serversView);
+} else {
+    \Sbpp\View\Renderer::assign($theme, $serversView);
 }

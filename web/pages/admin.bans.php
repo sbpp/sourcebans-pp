@@ -113,9 +113,14 @@ if ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pN
 echo '<div id="admin-page-content">';
 // Add Ban
 echo '<div class="tabcontent" id="Add a ban">';
-$theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
-$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
-$theme->display('page_admin_bans_add.tpl');
+$customReason = Config::getBool('bans.customreasons')
+    ? unserialize((string) Config::get('bans.customreasons'))
+    : false;
+/** @var false|list<string> $customReason */
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansAddView(
+    permission_addban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    customreason: $customReason,
+));
 echo '</div>';
 
 // Protests
@@ -276,12 +281,13 @@ if (count($delete) > 0) { //time for protest cleanup
     $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '2' WHERE bid IN($placeholders) LIMIT $cnt")->execute($delete);
 }
 
-$theme->assign('permission_protests', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS));
-$theme->assign('permission_editban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS));
-$theme->assign('protest_nav', $page_nav);
-$theme->assign('protest_list', $protest_list);
-$theme->assign('protest_count', $page_count - (isset($cnt) ? $cnt : 0));
-$theme->display('page_admin_bans_protests.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansProtestsView(
+    permission_protests: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS),
+    permission_editban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+    protest_nav: $page_nav,
+    protest_list: $protest_list,
+    protest_count: (int) $page_count - (isset($cnt) ? $cnt : 0),
+));
 echo '</div>';
 
 // archived protests
@@ -438,12 +444,13 @@ foreach ($protestsarchiv as $prot) {
     array_push($protest_list_archiv, $prot);
 }
 
-$theme->assign('permission_protests', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS));
-$theme->assign('permission_editban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS));
-$theme->assign('aprotest_nav', $page_nav);
-$theme->assign('protest_list_archiv', $protest_list_archiv);
-$theme->assign('protest_count_archiv', $page_count);
-$theme->display('page_admin_bans_protests_archiv.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansProtestsArchivView(
+    permission_protests: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS),
+    permission_editban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+    aprotest_nav: $page_nav,
+    protest_list_archiv: $protest_list_archiv,
+    protest_count_archiv: (int) $page_count,
+));
 echo '</div>';
 echo '</div>';
 
@@ -510,9 +517,6 @@ if ($pages > 1) {
     $page_nav .= '</select>';
 }
 
-$theme->assign('permissions_submissions', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS));
-$theme->assign('permissions_editsub', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS));
-$theme->assign('submission_count', $page_count);
 $submission_list = [];
 foreach ($submissions as $sub) {
     $sub['name']   = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
@@ -596,9 +600,13 @@ foreach ($submissions as $sub) {
 
     array_push($submission_list, $sub);
 }
-$theme->assign('submission_nav', $page_nav);
-$theme->assign('submission_list', $submission_list);
-$theme->display('page_admin_bans_submissions.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansSubmissionsView(
+    permissions_submissions: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS),
+    permissions_editsub: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+    submission_count: (int) $page_count,
+    submission_nav: $page_nav,
+    submission_list: $submission_list,
+));
 echo '</div>';
 
 // submission archiv
@@ -649,9 +657,6 @@ if ($pages > 1) {
     $page_nav .= '</select>';
 }
 
-$theme->assign('permissions_submissions', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS));
-$theme->assign('permissions_editsub', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS));
-$theme->assign('submission_count_archiv', $page_count);
 $submission_list_archiv = [];
 foreach ($submissionsarchiv as $sub) {
     $sub['name']   = wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true);
@@ -741,32 +746,29 @@ foreach ($submissionsarchiv as $sub) {
 
     array_push($submission_list_archiv, $sub);
 }
-$theme->assign('asubmission_nav', $page_nav);
-$theme->assign('submission_list_archiv', $submission_list_archiv);
-$theme->display('page_admin_bans_submissions_archiv.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansSubmissionsArchivView(
+    permissions_submissions: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS),
+    permissions_editsub: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+    submission_count_archiv: (int) $page_count,
+    asubmission_nav: $page_nav,
+    submission_list_archiv: $submission_list_archiv,
+));
 echo '</div>';
 echo '</div>';
 
 echo '<div class="tabcontent" id="Import bans">';
-$theme->assign('permission_import', $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT));
-if (ini_get('safe_mode') == 1) {
-    $requirements = false;
-} else {
-    $requirements = true;
-}
-$theme->assign('extreq', $requirements);
-$theme->display('page_admin_bans_import.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansImportView(
+    permission_import: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT),
+    extreq: ini_get('safe_mode') != 1,
+));
 echo '</div>';
 
 echo '<div class="tabcontent" id="Group ban">';
-$theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
-$theme->assign('groupbanning_enabled', Config::getBool('config.enablegroupbanning'));
-if (isset($_GET['fid'])) {
-    $theme->assign('list_steam_groups', $_GET['fid']);
-} else {
-    $theme->assign('list_steam_groups', false);
-}
-$theme->display('page_admin_bans_groups.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansGroupsView(
+    permission_addban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    groupbanning_enabled: Config::getBool('config.enablegroupbanning'),
+    list_steam_groups: isset($_GET['fid']) ? (string) $_GET['fid'] : false,
+));
 echo '</div>';
 ?>
 

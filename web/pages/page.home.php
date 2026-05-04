@@ -193,18 +193,21 @@ foreach ($rows as $row) {
 }
 
 
-require(TEMPLATES_PATH . "/page.servers.php"); //Set theme vars from servers page
+require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
+/** @var \Sbpp\View\ServersView $serversView */
 
-$theme->assign('dashboard_lognopopup', Config::getBool('dash.lognopopup'));
-$theme->assign('dashboard_title', Config::get('dash.intro.title'));
-$theme->assign('dashboard_text', Config::get('dash.intro.text'));
-$theme->assign('players_blocked', $stopped);
-$theme->assign('total_blocked', $totalstopped);
-
-$theme->assign('players_banned', $bans);
-$theme->assign('total_bans', $BanCount);
-
-$theme->assign('total_comms', $CommCount);
-$theme->assign('players_commed', $comms);
-
-$theme->display('page_dashboard.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\HomeDashboardView(
+    dashboard_title: (string) (Config::get('dash.intro.title') ?? ''),
+    dashboard_text: (string) (Config::get('dash.intro.text') ?? ''),
+    dashboard_lognopopup: Config::getBool('dash.lognopopup'),
+    players_blocked: $stopped,
+    total_blocked: $totalstopped,
+    players_banned: $bans,
+    total_bans: $BanCount,
+    players_commed: $comms,
+    total_comms: $CommCount,
+    access_bans: $serversView->access_bans,
+    server_list: $serversView->server_list,
+    IN_SERVERS_PAGE: $serversView->IN_SERVERS_PAGE,
+    opened_server: $serversView->opened_server,
+));
