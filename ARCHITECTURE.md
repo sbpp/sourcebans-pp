@@ -106,7 +106,7 @@ web/
 ├── bin/                  CLI tools (currently just generate-api-contract.php)
 ├── install/              Legacy installer wizard (skipped in dev)
 │   └── includes/sql/         struc.sql + data.sql — the schema source of truth
-├── updater/              Runtime upgrade flow (legacy; mirrors install/)
+├── updater/              Per-version migrations existing installs run after upgrade
 ├── phpstan.neon          PHPStan level 5 + custom rules + dba bootstrap
 ├── phpstan-baseline.neon Existing violations (regenerate only on real fixes)
 ├── phpunit.xml           PHPUnit config (tests bootstrap from tests/bootstrap.php)
@@ -430,6 +430,49 @@ in dev/CI). Major tables:
 Reseeded in tests via `web/tests/Fixture.php`, which renders `struc.sql`
 + `data.sql` against a dedicated `sourcebans_test` database before every
 test method.
+
+### Updater (`web/updater/`)
+
+The updater is how *existing* installs catch up to schema or data changes
+that fresh installs receive via `install/includes/sql/{struc,data}.sql`.
+Operators run it by visiting `web/updater/index.php` after dropping in a
+new release.
+
+`Updater.php` reads `web/updater/store.json`, a sorted map of integer
+version keys to PHP file names:
+
+```json
+{
+  "1": "1.php",
+  "...": "...",
+  "802": "802.php",
+  "803": "803.php"
+}
+```
+
+It selects `config.version` from `sb_settings`, then runs every script
+whose key is greater than that value, in order, and bumps `config.version`
+to the highest key on success. The keys are loose historical numbers, not
+semver — pick the next integer above the current max when adding one.
+
+Each script is a tiny PHP file `require_once`'d inside the `Updater`
+instance scope, so `$this->dbs` (the `Database` wrapper) is in scope.
+Migrations should:
+
+- Use the `:prefix_` placeholder, never a literal table prefix.
+- Be **idempotent**: prefer `INSERT IGNORE`, `CREATE TABLE IF NOT EXISTS`,
+  and `ALTER TABLE` paired with a `SHOW COLUMNS` guard. The runner has no
+  rollback — partial state must be safe to re-run.
+- Mirror the corresponding seed in `web/install/includes/sql/data.sql`
+  (or DDL in `struc.sql`). `data.sql` is consulted **only** on a fresh
+  install; a row added there without a matching updater script will be
+  missing on every upgraded install. The two are halves of the same change.
+
+PHPStan can't see that `$this` is supplied by the loader, so each script
+suppresses the false positive with `// @phpstan-ignore variable.undefined`
+above each `$this->dbs` call. See `802.php` (new `sb_settings` row) and
+`803.php` (the `config.mail.from_*` rows for #1109) for the canonical
+shape; `700.php` shows a multi-row insert and `801.php` shows DDL.
 
 ## SourceMod plugins (`game/addons/sourcemod/`)
 
