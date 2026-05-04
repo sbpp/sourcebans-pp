@@ -40,4 +40,13 @@
 		"chi"		"您因主动禁止您的 IP 而被踢"
 		"tr"		"IP'nizi aktif olarak yasakladığınız için atıldınız"
 	}
+	"sourcesleuth_sdr_admintext"
+	{
+		"#format"	"{1:N},{2:s}"
+		"en"		"Player {1} (ID: {2}) connected via Steam Datagram Relay; IP-based alt detection skipped."
+	}
+	"sourcesleuth_sdr_kicktext"
+	{
+		"en"		"Steam Datagram Relay connections are not permitted on this server."
+	}
 }
