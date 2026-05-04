@@ -104,9 +104,14 @@ define('SB_DEV', $version['dev'] ?? false);
 // ---------------------------------------------------
 // utf8mb4 is the project-wide default so multi-byte player names (CJK,
 // Cyrillic, emoji) survive inserts. The narrower `utf8` alias is the 3-byte
-// subset MariaDB kept for back-compat; upgrades that still define it should
-// migrate their tables with `ALTER TABLE … CONVERT TO CHARACTER SET
-// utf8mb4` (see `upgrade.php`).
+// subset MariaDB kept for back-compat. The updater wizard at
+// `web/updater/data/600.php` already converts every table with
+// `ALTER TABLE … CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+// and rewrites `config.php` to define `DB_CHARSET = 'utf8mb4'`, so any
+// operator who has run the updater past version 600 is already on
+// utf8mb4. This define is the safety net for the (unlikely) case of a
+// `config.php` written without the constant — it does NOT override an
+// operator who explicitly set `'utf8'` in their config.
 if (!defined('DB_CHARSET')) {
     define('DB_CHARSET', 'utf8mb4');
 }

@@ -2,6 +2,7 @@
 
 namespace Sbpp\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Sbpp\Tests\ApiTestCase;
 use Sbpp\Tests\Fixture;
 
@@ -102,9 +103,7 @@ final class BanFlowTest extends ApiTestCase
         ];
     }
 
-    /**
-     * @dataProvider multiByteBanProvider
-     */
+    #[DataProvider('multiByteBanProvider')]
     public function testBanRoundTripPreservesUnicodeAndAngleBrackets(string $nickname, string $reason, string $steam): void
     {
         $this->loginAsAdmin();
@@ -172,19 +171,49 @@ final class BanFlowTest extends ApiTestCase
      * response collapsed the whole envelope to `false` and the per-server
      * admin tile saw a `bad_response` error (#971). The handler layer
      * passes server-query output through verbatim, so the guard has to
-     * live at the encode boundary.
+     * live at the encode boundary — exercised here via
+     * `Api::encodeEnvelope()`, which `dispatch()` delegates to.
      */
-    public function testDispatcherSubstitutesInvalidUtf8InResponse(): void
+    public function testEncodeEnvelopeSubstitutesInvalidUtf8(): void
     {
-        [$status, $envelope] = \Api::handle('POST', '', '');
-        $this->assertSame(400, $status, 'empty body should produce 400 but with a valid JSON envelope');
-
-        $payload = [
+        // `\xC3\x28` is a stray Latin-1 byte sequence PHP treats as
+        // invalid UTF-8 (the second byte isn't a valid continuation),
+        // which is exactly the shape of a CP1252 hostname coming out
+        // of `xpaw/php-source-query`.
+        $encoded = \Api::encodeEnvelope([
             'ok'   => true,
             'data' => ['name' => "bad \xC3\x28 bytes"],
-        ];
-        $encoded = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
-        $this->assertIsString($encoded, 'json_encode must succeed with JSON_INVALID_UTF8_SUBSTITUTE');
-        $this->assertStringContainsString('"ok":true', $encoded);
+        ]);
+        $this->assertNotSame(
+            '',
+            $encoded,
+            'encoder must produce a non-empty string for a valid envelope with a bad UTF-8 byte (regression check for #971)'
+        );
+
+        $decoded = json_decode($encoded, true);
+        $this->assertIsArray($decoded, 'encoder output must round-trip back to an array');
+        $this->assertTrue($decoded['ok'] ?? null);
+        $this->assertStringContainsString(
+            "\xEF\xBF\xBD",
+            (string) ($decoded['data']['name'] ?? ''),
+            'invalid UTF-8 byte must be substituted with U+FFFD (REPLACEMENT CHARACTER)'
+        );
+    }
+
+    /**
+     * The dispatcher's outer error path (empty/non-JSON body) still has
+     * to produce a well-formed envelope, not an empty response. Pinned
+     * separately from the encoder test so a regression in either one
+     * reads cleanly.
+     */
+    public function testHandleEmptyBodyProducesValidErrorEnvelope(): void
+    {
+        [$status, $envelope] = \Api::handle('POST', '', '');
+        $this->assertSame(400, $status);
+        $this->assertFalse($envelope['ok'] ?? null);
+        $this->assertSame('bad_request', $envelope['error']['code'] ?? null);
+
+        $encoded = \Api::encodeEnvelope($envelope);
+        $this->assertNotSame('', $encoded, 'error envelopes must also encode cleanly through the dispatcher path');
     }
 }

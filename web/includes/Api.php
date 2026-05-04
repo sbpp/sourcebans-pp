@@ -171,15 +171,28 @@ class Api
         if ($status !== 200) {
             http_response_code($status);
         }
-        // JSON_INVALID_UTF8_SUBSTITUTE: server-query responses sometimes
-        // surface legacy-encoded player/host names (Latin-1, CP1252) that
-        // PHP treats as UTF-8. Without the substitute flag json_encode
-        // returns FALSE on the first bad byte, the client sees an empty
-        // body, and the per-server admin tile goes dark (#971). Replacing
-        // invalid sequences with U+FFFD keeps the response well-formed
-        // and the rest of the payload readable.
-        echo json_encode($envelope, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+        echo self::encodeEnvelope($envelope);
         exit;
+    }
+
+    /**
+     * JSON-encode the response envelope. Extracted from dispatch() so
+     * tests can assert encoder behaviour in-process without spawning a
+     * subprocess (dispatch() exits).
+     *
+     * JSON_INVALID_UTF8_SUBSTITUTE: server-query responses sometimes
+     * surface legacy-encoded player/host names (Latin-1, CP1252) that
+     * PHP treats as UTF-8. Without the substitute flag json_encode
+     * returns FALSE on the first bad byte, the client sees an empty
+     * body, and the per-server admin tile goes dark (#971). Replacing
+     * invalid sequences with U+FFFD keeps the response well-formed
+     * and the rest of the payload readable.
+     *
+     * @param array<string, mixed> $envelope
+     */
+    public static function encodeEnvelope(array $envelope): string
+    {
+        return (string) json_encode($envelope, JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     }
 
     /**

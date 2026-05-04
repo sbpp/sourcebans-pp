@@ -356,8 +356,17 @@ function api_servers_send_rcon(array $params): array
         return ['kind' => 'clear'];
     }
 
-    // Decode entities first, then check for `rcon_password` so that
-    // `rcon&#95;password` doesn't slip past the filter.
+    // Defense-in-depth substring filter: AGENTS.md disallows
+    // `html_entity_decode` on JSON-API params (#1108) because the
+    // dispatcher already gives us raw UTF-8 and re-decoding silently
+    // collapses literal `&amp;`. This call site is a deliberate
+    // exemption — the decoded value is *only* inspected for the
+    // substring `rcon_password` and never stored or rendered, so a
+    // user typing `rcon&#95;password` to dodge the filter still gets
+    // caught. The literal-typed-entity attack remains plausible
+    // because the rcon console is a free-text input forwarded to a
+    // Source-engine RCON socket; the substring guard is the last
+    // line of defense before the command leaves the panel.
     $command = html_entity_decode($command, ENT_QUOTES);
 
     if (stripos($command, 'rcon_password') !== false) {

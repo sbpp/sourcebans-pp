@@ -178,8 +178,12 @@ function api_groups_edit(array $params): array
                 ->execute([$name, (int)$o['aid']]);
         }
 
-        $overridesArr   = is_array($overrides)    ? $overrides    : json_decode(html_entity_decode((string)$overrides,    ENT_QUOTES), true);
-        $newOverrideArr = is_array($newOverride)  ? $newOverride  : json_decode(html_entity_decode((string)$newOverride,  ENT_QUOTES), true);
+        // The JS at sourcebans.js wraps these in JSON.stringify before
+        // sending (legacy wire shape from the xajax era), so we still
+        // need json_decode here. The xajax-era html_entity_decode is
+        // gone: the JSON dispatcher hands us raw UTF-8 (#1108).
+        $overridesArr   = is_array($overrides)   ? $overrides   : json_decode((string)$overrides,   true);
+        $newOverrideArr = is_array($newOverride) ? $newOverride : json_decode((string)$newOverride, true);
 
         if (!empty($overridesArr)) {
             foreach ($overridesArr as $override) {
