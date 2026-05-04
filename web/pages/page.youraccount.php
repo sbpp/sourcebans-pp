@@ -46,7 +46,7 @@ $youraccountView = new \Sbpp\View\YourAccountView(
     user_aid: (int) $userbank->GetAid(),
     web_permissions: BitToString($userbank->GetProperty("extraflags")),
     server_permissions: SmFlagsToSb($userbank->GetProperty("srv_flags")),
-    min_pass_len: MIN_PASS_LENGTH,
+    min_pass_len: (int) MIN_PASS_LENGTH,
 );
 
 $theme->setLeftDelimiter('-{');

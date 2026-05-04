@@ -12,7 +12,8 @@ namespace Sbpp\View;
  *
  * The SmartyTemplateRule PHPStan rule inspects concrete subclasses and
  * verifies that the declared property set matches the variables actually
- * referenced in the bound template. See `web/phpstan/SmartyTemplateRule.php`.
+ * referenced in the bound template.
+ * See `web/includes/PHPStan/SmartyTemplateRule.php`.
  *
  * Most templates use Smarty's default `{…}` delimiters. Views whose template
  * uses the custom `-{…}-` pair (currently only `page_youraccount.tpl`) must

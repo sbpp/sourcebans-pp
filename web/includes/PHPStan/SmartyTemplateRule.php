@@ -259,10 +259,6 @@ final class SmartyTemplateRule implements Rule
                 continue;
             }
 
-            if ($this->looksLikeJsInsideScript($match[0])) {
-                continue;
-            }
-
             if (preg_match('/^foreach\b/i', $body)) {
                 $this->handleForeach($body, $vars, $locals);
                 continue;
@@ -287,17 +283,6 @@ final class SmartyTemplateRule implements Rule
         }
 
         return ['vars' => $vars, 'includes' => $includes];
-    }
-
-    /**
-     * Inside a <script> block, `$foo` most commonly means jQuery, not a
-     * Smarty variable. We don't try to parse HTML — the full-tag match
-     * inside `parseTemplate` has already constrained us to Smarty `{ … }`
-     * bodies, so there's no ambiguity at this point.
-     */
-    private function looksLikeJsInsideScript(string $fullMatch): bool
-    {
-        return false;
     }
 
     /**
