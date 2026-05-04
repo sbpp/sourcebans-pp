@@ -385,9 +385,14 @@ never raw strings.
 ### Mail (`includes/Mail/`)
 
 `Sbpp\Mail\Mail::send($to, EmailType::PasswordReset, ['{link}' => …])`
-wraps `symfony/mailer`. SMTP creds + sender come from the `sb_settings`
-keys (`config.mail.*`). Email templates live in
-`themes/<name>/mails/*.html`.
+wraps `symfony/mailer`. SMTP creds come from the `smtp.*` keys in
+`sb_settings` (`smtp.host` / `smtp.user` / `smtp.pass` / `smtp.port` /
+`smtp.verify_peer`); the sender identity comes from
+`config.mail.from_email` + `config.mail.from_name` (#1109), with the
+legacy `SB_EMAIL` constant in `config.php` as a fallback that emits a
+once-per-process deprecation warning to `sb_log`. `Mailer::resolveFrom()`
+formats the chosen pair into `"Name" <email>` for Symfony's `Email::from()`.
+Email templates live in `themes/<name>/mails/*.html`.
 
 ### Logging (`includes/Log.php`)
 

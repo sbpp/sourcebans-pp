@@ -277,6 +277,24 @@
                 <div id="mail_verify_peer.msg" class="badentry"></div>
             </td>
         </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">{help_icon title="From Email" message="The address outgoing mail is sent from. Modern transactional providers (SendGrid, Mailgun, Amazon SES) use API keys or system identifiers as the SMTP user, so the user is rarely a valid sender. Set a real address you control here so SPF/DKIM align and replies land somewhere useful."}From Email</div></td>
+            <td>
+                <div align="left">
+                    <input type="email" TABINDEX=12 class="textbox" id="mail_from_email" name="mail_from_email" value="{$config_mail_from_email}" />
+                </div>
+                <div id="mail_from_email.msg" class="badentry"></div>
+            </td>
+        </tr>
+        <tr>
+            <td valign="top"><div class="rowdesc">{help_icon title="From Name" message="Display name shown next to the From Email in recipients' inboxes. Defaults to SourceBans++ if left empty."}From Name</div></td>
+            <td>
+                <div align="left">
+                    <input type="text" TABINDEX=12 class="textbox" id="mail_from_name" name="mail_from_name" value="{$config_mail_from_name}" />
+                </div>
+                <div id="mail_from_name.msg" class="badentry"></div>
+            </td>
+        </tr>
 
 
         <tr>

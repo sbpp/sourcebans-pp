@@ -61,7 +61,9 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('smtp.pass', ''),
 ('smtp.port', ''),
 ('smtp.user', ''),
-('smtp.verify_peer', '');
+('smtp.verify_peer', ''),
+('config.mail.from_email', ''),
+('config.mail.from_name', 'SourceBans++');
 
 INSERT INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
 (0 , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);

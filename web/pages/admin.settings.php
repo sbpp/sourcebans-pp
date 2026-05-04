@@ -208,9 +208,12 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
                     $cureason = "";
                 }
 
-                $smtpConfigSql = ", (?, 'smtp.host'), (?, 'smtp.user'), (?, 'smtp.port'), (?, 'smtp.verify_peer')";
+                $smtpConfigSql = ", (?, 'smtp.host'), (?, 'smtp.user'), (?, 'smtp.port'), (?, 'smtp.verify_peer')"
+                    . ", (?, 'config.mail.from_email'), (?, 'config.mail.from_name')";
                 $smtpConfig = [trim($_POST['mail_host']), trim($_POST['mail_user']), trim($_POST['mail_port'])];
                 $smtpConfig []= isset($_POST['mail_verify_peer']) && $_POST['mail_verify_peer'] === 'on' ? 1 : 0;
+                $smtpConfig []= trim((string)($_POST['mail_from_email'] ?? ''));
+                $smtpConfig []= trim((string)($_POST['mail_from_name'] ?? ''));
 
                 if (isset($_POST['mail_pass']) && !empty($_POST['mail_pass'])) {
                     $smtpConfigSql .= ", (?, 'smtp.pass')";
@@ -309,6 +312,8 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
     $theme->assign('config_smtp', Config::getMulti([
         'smtp.host', 'smtp.user', 'smtp.port'
     ]));
+    $theme->assign('config_mail_from_email', (string) Config::get('config.mail.from_email'));
+    $theme->assign('config_mail_from_name', (string) Config::get('config.mail.from_name'));
 
     $theme->assign('bans_customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : []);
 
