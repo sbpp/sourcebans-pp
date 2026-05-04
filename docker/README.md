@@ -141,6 +141,13 @@ To pre-seed your own data, drop additional `*.sql` or `*.sh` files into
 `docker/db-init/`. They'll be picked up on the next fresh init (after
 `./sbpp.sh reset`).
 
+To run two stacks side-by-side (e.g. one per git worktree, or one per
+parallel agent), drop a worktree-local `docker-compose.override.yml`
+that sets a unique top-level `name:`, renames each `container_name`,
+and remaps the host ports. The file is auto-loaded by `docker compose`
+and gitignored. See [`AGENTS.md` → "Parallel stacks"](../AGENTS.md#parallel-stacks-subagents--multiple-worktrees)
+for the canonical template.
+
 ## Caveats
 
 - **Dev only.** The `HTTP_HOST` shim, the seeded admin password, and the

@@ -83,6 +83,58 @@ request — no restart. Restart only when:
 - `composer.json` changed → `./sbpp.sh composer install`
 - anything in `docker/` changed → `./sbpp.sh rebuild`
 
+## Parallel stacks (subagents / multiple worktrees)
+
+`docker-compose.yml` ships hardcoded `container_name`s (`sbpp-web`,
+`sbpp-db`, `sbpp-adminer`, `sbpp-mailpit`) and lets `docker compose`
+derive the project name from the cwd basename. Every worktree of this
+repo has the same basename (`sourcebans-pp`), so two `./sbpp.sh up`
+invocations from different worktrees collide on **container names** (Docker
+rejects the second one), **host ports** (default `8080` / `8081` / `8025`
+/ `1025` / `3307`), **and the project's named volumes** (`dbdata`,
+`vendor`, `cache`, `smarty`) — they'd silently share/corrupt each
+other's DB state.
+
+If you're a subagent (or a human) running in a worktree alongside another
+stack, drop a worktree-local `docker-compose.override.yml` that scopes
+the project name, container names, and host ports to this worktree.
+`docker compose` auto-loads it on top of `docker-compose.yml` and the
+file is gitignored so it never sneaks into a PR:
+
+```yaml
+# docker-compose.override.yml — parallel-stack scaffolding for this worktree.
+name: sbpp-task-1109                # unique project name → unique volumes/network
+
+services:
+  web:
+    container_name: sbpp-1109-web
+    ports: !override
+      - "${SBPP_WEB_PORT:-8189}:80"
+  db:
+    container_name: sbpp-1109-db
+    ports: !override
+      - "${SBPP_DB_PORT:-3416}:3306"
+  adminer:
+    container_name: sbpp-1109-adminer
+    ports: !override
+      - "${SBPP_ADMINER_PORT:-9189}:8080"
+  mailpit:
+    container_name: sbpp-1109-mailpit
+    ports: !override
+      - "${SBPP_MAILPIT_UI_PORT:-10189}:8025"
+      - "${SBPP_MAILPIT_SMTP_PORT:-1134}:1025"
+```
+
+- The suffix (`1109` here) and host-port offsets are arbitrary — pick
+  a free range tied to the issue/PR/task you're working on so two
+  parallel agents don't collide on each other's overrides either.
+- `./sbpp.sh up` / `phpstan` / `test` / `mysql` continue to work
+  unchanged; `sbpp.sh` shells out to `docker compose` which composes
+  both YAMLs.
+- **Tear down before deleting the worktree.** `./sbpp.sh down` (or
+  `reset`) removes the named containers/volumes; otherwise they leak
+  and you'll discover orphan `sbpp-task-*_dbdata` volumes weeks later.
+
 ## Quality gates
 
 CI runs four gates on every PR. Match them locally before opening one.
@@ -274,4 +326,5 @@ of the diff ship together or not at all.
 | Seed `sb_settings` rows for fresh installs | `web/install/includes/sql/data.sql`                  |
 | Add a one-off DB upgrade for existing installs | `web/updater/data/<N>.php` + `web/updater/store.json` |
 | Test fixtures                          | `web/tests/Fixture.php`, `web/tests/ApiTestCase.php`     |
+| Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
