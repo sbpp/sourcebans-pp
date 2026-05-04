@@ -190,3 +190,95 @@ function api_system_rehash_admins(array $params): array
     }
     return ['results' => $results];
 }
+
+/**
+ * Compute the schema-migrator dry-run plan against the live database.
+ *
+ * Backs the `?p=admin&c=upgrade` page's "Refresh dry-run" button. Read-only
+ * — never mutates the schema. Permission gating (`ADMIN_OWNER`) is enforced
+ * at the {@see Api::register()} call in `_register.php`.
+ *
+ * The exact response shape is documented on
+ * {@see \Sbpp\Migrator\MigrationPlan::toArray()}; we keep the @return tag
+ * loose here on purpose — the api-contract generator's JSDoc emitter
+ * trips on `?T`-followed-by-comma in nested array shapes, and the JS
+ * caller (`UpgradeRefresh()`) re-types the response inline anyway.
+ *
+ * @return array
+ */
+function api_system_upgrade_diff(array $params): array
+{
+    $migrator = api_system_make_migrator();
+    return $migrator->plan(api_system_raw_pdo())->toArray();
+}
+
+/**
+ * Apply the schema-migrator plan against the live database.
+ *
+ * Re-computes the plan inside the handler so the apply always reflects the
+ * live diff at the moment of click — staleness between a "Refresh" view
+ * and the "Apply" click would otherwise let an admin try to apply a
+ * change that's already been satisfied. Permission gating (`ADMIN_OWNER`)
+ * is enforced at the {@see Api::register()} call in `_register.php`.
+ *
+ * The exact response shape is documented on
+ * {@see \Sbpp\Migrator\MigrationResult::toArray()}; we keep the @return
+ * tag loose here on purpose — the api-contract generator's JSDoc emitter
+ * trips on `?T`-followed-by-comma in nested array shapes, and the JS
+ * caller (`UpgradeApply()`) re-types the response inline anyway.
+ *
+ * @return array
+ */
+function api_system_upgrade_apply(array $params): array
+{
+    $migrator = api_system_make_migrator();
+    $pdo      = api_system_raw_pdo();
+
+    $plan    = $migrator->plan($pdo);
+    $applier = new \Sbpp\Migrator\MigrationApplier($GLOBALS['PDO']->getPrefix());
+    $result  = $applier->apply($pdo, $plan);
+
+    Log::add(
+        $result->success ? 'm' : 'e',
+        $result->success ? 'Schema upgrade applied' : 'Schema upgrade failed',
+        sprintf(
+            '%d step(s); %s',
+            count($result->steps),
+            $result->error ?? 'ok'
+        ),
+    );
+
+    return $result->toArray();
+}
+
+/**
+ * Build the migrator façade pointed at the canonical SQL files shipped
+ * in `web/install/includes/sql/`. Helper kept inside the handler file
+ * because nothing else needs it.
+ */
+function api_system_make_migrator(): \Sbpp\Migrator\Migrator
+{
+    return \Sbpp\Migrator\Migrator::fromInstallSql(
+        ROOT,
+        $GLOBALS['PDO']->getPrefix(),
+        defined('DB_CHARSET') ? (string) DB_CHARSET : 'utf8mb4',
+    );
+}
+
+/**
+ * Open a fresh PDO connection for the migrator. The differ runs raw
+ * `information_schema` queries, which is awkward through `Database`
+ * (the `:prefix_` rewriter would mangle bound table names). A bare PDO
+ * sidesteps the whole issue.
+ */
+function api_system_raw_pdo(): \PDO
+{
+    $dsn = sprintf(
+        'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+        DB_HOST,
+        defined('DB_PORT') ? (int) DB_PORT : 3306,
+        DB_NAME,
+        defined('DB_CHARSET') ? (string) DB_CHARSET : 'utf8mb4',
+    );
+    return new \PDO($dsn, DB_USER, DB_PASS, [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION]);
+}

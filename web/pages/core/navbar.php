@@ -81,6 +81,11 @@ $admin = [
         'title' => 'Mods',
         'endpoint' => 'mods',
         'permission' => ADMIN_OWNER|ADMIN_LIST_MODS|ADMIN_ADD_MODS|ADMIN_EDIT_MODS|ADMIN_DELETE_MODS
+    ],
+    [
+        'title' => 'Upgrade',
+        'endpoint' => 'upgrade',
+        'permission' => ADMIN_OWNER
     ]
 ];
 

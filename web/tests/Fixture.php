@@ -13,6 +13,21 @@ class Fixture
     private static bool $installed = false;
     private static int $adminAid   = 0;
 
+    /**
+     * Forget the once-per-process install flag so the next call to
+     * {@see install()} re-runs the full DROP DATABASE / re-render of
+     * struc.sql + data.sql.
+     *
+     * Useful for tests (e.g. `UpgradeRunnerTest`) that intentionally
+     * mutate the schema with DROP TABLE / DROP COLUMN; the default
+     * `reset()` only truncates rows, so a dropped table would otherwise
+     * stay missing for every subsequent test in the run.
+     */
+    public static function forgetInstallFlag(): void
+    {
+        self::$installed = false;
+    }
+
     public static function install(): void
     {
         if (self::$installed) {

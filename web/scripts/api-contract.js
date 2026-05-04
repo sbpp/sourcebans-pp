@@ -252,6 +252,34 @@
  * @typedef {Object} ApiSystemSendMailRequest
  * @typedef {Object} ApiSystemSendMailResponse
  */
+/**
+ * Apply the schema-migrator plan against the live database.  Re-computes the
+ * plan inside the handler so the apply always reflects the live diff at the
+ * moment of click — staleness between a "Refresh" view and the "Apply" click
+ * would otherwise let an admin try to apply a change that's already been
+ * satisfied. Permission gating (`ADMIN_OWNER`) is enforced at the {@see
+ * Api::register()} call in `_register.php`.  The exact response shape is
+ * documented on {@see \Sbpp\Migrator\MigrationResult::toArray()}; we keep the
+ * @return tag loose here on purpose — the api-contract generator's JSDoc
+ * emitter trips on `?T`-followed-by-comma in nested array shapes, and the JS
+ * caller (`UpgradeApply()`) re-types the response inline anyway.
+ *
+ * @typedef {Object} ApiSystemUpgradeApplyRequest
+ * @typedef {Object} ApiSystemUpgradeApplyResponse
+ */
+/**
+ * Compute the schema-migrator dry-run plan against the live database.  Backs
+ * the `?p=admin&c=upgrade` page's "Refresh dry-run" button. Read-only —
+ * never mutates the schema. Permission gating (`ADMIN_OWNER`) is enforced at
+ * the {@see Api::register()} call in `_register.php`.  The exact response
+ * shape is documented on {@see \Sbpp\Migrator\MigrationPlan::toArray()}; we
+ * keep the @return tag loose here on purpose — the api-contract generator's
+ * JSDoc emitter trips on `?T`-followed-by-comma in nested array shapes, and
+ * the JS caller (`UpgradeRefresh()`) re-types the response inline anyway.
+ *
+ * @typedef {Object} ApiSystemUpgradeDiffRequest
+ * @typedef {Object} ApiSystemUpgradeDiffResponse
+ */
 
 /**
  * Action names accepted by sb.api.call(). Keys are PascalCase derived from
@@ -316,6 +344,8 @@ var Actions = Object.freeze({
     SystemRehashAdmins: 'system.rehash_admins',
     SystemSelTheme: 'system.sel_theme',
     SystemSendMail: 'system.send_mail',
+    SystemUpgradeApply: 'system.upgrade_apply',
+    SystemUpgradeDiff: 'system.upgrade_diff',
 });
 
 /**

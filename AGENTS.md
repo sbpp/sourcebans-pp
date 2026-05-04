@@ -23,7 +23,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Add/rename/remove a top-level subsystem in `web/includes/`  | `ARCHITECTURE.md` (Web panel → Directory layout, and the relevant subsystem section) |
 | Change a request lifecycle (page or JSON API)               | `ARCHITECTURE.md` (the lifecycle section + any diagrams) |
 | Add an API handler **topic file** (new file in `api/handlers/`) | `ARCHITECTURE.md` (handler list under "Handler registration") |
-| Add or rename a DB table, or change the schema substantively | `ARCHITECTURE.md` (Database schema table) + ensure `install/includes/sql/struc.sql` is the source of truth |
+| Add or rename a DB table, or change the schema substantively | `ARCHITECTURE.md` (Database schema table) + ensure `install/includes/sql/struc.sql` is the source of truth (the migrator at `web/includes/Migrator/` reads it directly to back-fill upgrading panels) |
 | Add or remove a quality gate / CI workflow                  | `ARCHITECTURE.md` (Quality gates) **and** `AGENTS.md` (Quality gates) |
 | Change a `./sbpp.sh` command surface                        | `AGENTS.md` (Dev commands) + `docker/README.md`       |
 | Introduce a new convention or pattern (e.g. View DTOs)      | `AGENTS.md` (Conventions) + `ARCHITECTURE.md` if it's an architectural shift |
@@ -142,6 +142,13 @@ API-contract specifics:
   `Database::query()` rewrites the placeholder. Never inline the prefix.
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
+- Schema additions for 1.x → 2.0 go in `web/install/includes/sql/struc.sql`
+  (or `data.sql` for new `sb_settings` keys). The
+  `web/includes/Migrator/` runner reads those files as the source of
+  truth and back-fills any deployed panel through
+  `php web/bin/upgrade.php` (CLI) or `?p=admin&c=upgrade` (panel page,
+  `ADMIN_OWNER` only). Do **not** add new files under `web/install/` or
+  `web/updater/` for this work.
 
 ### JSON API
 
@@ -245,5 +252,6 @@ API-contract specifics:
 | Auth / JWT cookie                      | `web/includes/auth/`                                     |
 | CSRF                                   | `web/includes/security/CSRF.php`                         |
 | Schema                                 | `web/install/includes/sql/struc.sql`                     |
+| 1.x → 2.0 schema migrator              | `web/includes/Migrator/` + `web/bin/upgrade.php` + `?p=admin&c=upgrade` |
 | Test fixtures                          | `web/tests/Fixture.php`, `web/tests/ApiTestCase.php`     |
 | Local dev stack details                | `docker/README.md`                                       |

@@ -68,6 +68,15 @@
                 </a>
             </li>
         {/if}
+        {if $access_upgrade}
+            <li>
+                <a href="index.php?p=admin&amp;c=upgrade">
+                    <i class="fas fa-database fa-5x"></i>
+                    <br/><br/>
+                    <b>Schema Upgrade</b>
+                </a>
+            </li>
+        {/if}
     </ul>
 </div>
 <br />

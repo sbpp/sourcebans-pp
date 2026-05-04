@@ -110,6 +110,12 @@ function route($fallback)
                 case 'settings':
                     CheckAdminAccess(ADMIN_OWNER|ADMIN_WEB_SETTINGS);
                     return ['SourceBans++ Settings', '/admin.settings.php'];
+                case 'upgrade':
+                    // Owner-only because applying schema changes is a
+                    // root-of-trust action; even a permissive web settings
+                    // role shouldn't be able to alter the table layout.
+                    CheckAdminAccess(ADMIN_OWNER);
+                    return ['Schema Upgrade', '/admin.upgrade.php'];
                 default:
                     CheckAdminAccess(ALL_WEB);
                     return ['Administration', '/page.admin.php'];

@@ -86,6 +86,7 @@ web/
 │   ├── system-functions.php  Legacy helpers shared across pages
 │   ├── SmartyCustomFunctions.php  {help_icon} / {csrf_field} / {load_template}
 │   ├── View/                 Typed Smarty view-model DTOs
+│   ├── Migrator/             1.x → 2.0 schema migrator (CLI + JSON API + panel page)
 │   ├── auth/                 JWT cookie auth + Steam OpenID + login handlers
 │   ├── security/             CSRF + Crypto helpers
 │   ├── Mail/                 Symfony Mailer wrapper + email templates
@@ -225,6 +226,9 @@ Api::register('admins.update_perms', 'api_admins_update_perms', 0, true);  // an
 
 Handler functions live in topic-grouped files
 (`api/handlers/{account,admins,auth,bans,blockit,comms,groups,kickit,mods,protests,servers,submissions,system}.php`).
+The `system` topic also hosts the schema-migrator actions
+(`system.upgrade_diff` / `system.upgrade_apply`); both are gated to
+`ADMIN_OWNER` and back the `?p=admin&c=upgrade` page.
 
 ### Auth (`includes/auth/`)
 
@@ -388,6 +392,45 @@ never raw strings.
 wraps `symfony/mailer`. SMTP creds + sender come from the `sb_settings`
 keys (`config.mail.*`). Email templates live in
 `themes/<name>/mails/*.html`.
+
+### Schema migrator (`includes/Migrator/`)
+
+The migrator brings a 1.x panel up to 2.0 by diffing the live database
+against `web/install/includes/sql/struc.sql` + `data.sql` and applying
+the additive deltas (missing tables, missing columns, missing settings
+rows). It deliberately does *not* extend `web/install/`: the installer is
+for greenfield deployments, the migrator is for upgrading panels.
+
+The same code path drives three surfaces:
+
+| Surface | Entry point |
+| ------- | ----------- |
+| CLI (operators on the host) | `php web/bin/upgrade.php [--apply]` |
+| JSON API (panel button) | `system.upgrade_diff` / `system.upgrade_apply` (gated to `ADMIN_OWNER`) |
+| Panel page | `?p=admin&c=upgrade` (rendered via `AdminUpgradeView`) |
+
+Pieces:
+
+- `Migrator` — façade. `plan(PDO)` returns a `MigrationPlan`;
+  `apply(PDO)` runs the plan and returns a `MigrationResult`.
+- `SchemaParser` — regex-based reader for `struc.sql` + `data.sql`;
+  preserves `{prefix}` / `{charset}` placeholders so one parsed value can
+  be diffed against any deployment.
+- `SchemaDiffer` — compares the parsed structure to a live PDO using
+  `information_schema` lookups. Additive only; never proposes a DROP.
+- `MigrationApplier` — runs the deltas. DDL statements (`CREATE TABLE`,
+  `ALTER TABLE … ADD COLUMN`) are executed one at a time fail-fast
+  (MariaDB implicitly commits around them, so wrapping them in a
+  transaction is a no-op). The settings INSERT IGNORE rows are wrapped
+  in a single transaction.
+- `CliRunner` / `CliPrinter` — argv parsing and ANSI-aware pretty-print
+  for the CLI; loaded by the one-line `web/bin/upgrade.php` shim.
+
+Idempotence comes from the diff itself: re-running `plan()` after
+`apply()` returns an empty plan because every delta type is recomputed
+from the current schema state. Test coverage lives in
+`web/tests/integration/UpgradeRunnerTest.php`, which knocks out one of
+each delta type and asserts the diff converges to zero.
 
 ### Logging (`includes/Log.php`)
 

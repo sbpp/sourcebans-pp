@@ -1769,3 +1769,78 @@ function LoadGroupBan(groupuri, isgrpurl, queue, reason, last) {
 // (each calls sb.api.call(Actions.BansAdd / Actions.CommsAdd) against its
 // own form). No global wrapper here on purpose — both pages would collide.
 
+// =====================================================================
+// Schema upgrade page (?p=admin&c=upgrade)
+//
+// Backed by api/handlers/system.php#api_system_upgrade_diff /
+// api_system_upgrade_apply. Both are gated to `Perms.ADMIN_OWNER` by
+// the registry. The page server-side renders an initial dry run, so
+// these are only invoked on operator action (refresh / apply button).
+// =====================================================================
+
+/**
+ * Re-fetch the dry-run plan and reload the page so the freshly-computed
+ * summary replaces the one we rendered server-side. Reload (rather than
+ * patching the DOM in place) keeps the apply button visibility logic in
+ * exactly one place — the template.
+ */
+function UpgradeRefresh() {
+    sb.api.callOrAlert(Actions.SystemUpgradeDiff, {}).then((r) => {
+        if (!r || r.ok === false) return;
+        window.location.reload();
+    });
+}
+
+/**
+ * Apply the queued plan. The handler re-computes the diff inside the
+ * call so we never apply a stale snapshot. Renders the per-step result
+ * table inline and reloads on success so the dry-run summary at the top
+ * collapses to "nothing to do".
+ */
+function UpgradeApply() {
+    if (!confirm('Apply the pending schema changes? This is non-destructive (additive only) but cannot be reverted by this tool.')) {
+        return;
+    }
+    const apply = sb.$id('upgrade-apply');
+    if (apply) apply.disabled = true;
+
+    sb.api.callOrAlert(Actions.SystemUpgradeApply, {}).then((r) => {
+        if (apply) apply.disabled = false;
+        if (!r || r.ok === false) return;
+
+        const data = r.data || {};
+        const steps = Array.isArray(data.steps) ? data.steps : [];
+
+        const wrap = sb.$id('upgrade-results');
+        const body = sb.$id('upgrade-results-body');
+        const errBox = sb.$id('upgrade-results-error');
+        if (!wrap || !body) return;
+
+        body.innerHTML = '';
+        /** @type {Array<{kind: string, target: string, summary: string, success: boolean, error: string|null}>} */
+        const typedSteps = steps;
+        typedSteps.forEach((s) => {
+            const row = document.createElement('tr');
+            row.innerHTML =
+                '<td class="listtable_1">' + (s.success ? '<span style="color:green">&#10003;</span>' : '<span style="color:red">&#10007;</span>') + '</td>' +
+                '<td class="listtable_1">' + sb.escapeHtml(s.kind) + '</td>' +
+                '<td class="listtable_1">' + sb.escapeHtml(s.target) + '</td>' +
+                '<td class="listtable_1">' + sb.escapeHtml(s.summary) + (s.error ? '<br /><i>' + sb.escapeHtml(s.error) + '</i>' : '') + '</td>';
+            body.appendChild(row);
+        });
+
+        wrap.style.display = '';
+
+        if (data.ok && !data.error) {
+            if (errBox) errBox.style.display = 'none';
+            sb.message.success('Upgrade complete', 'Schema is now up to date. Reloading…', 'index.php?p=admin&c=upgrade');
+        } else {
+            if (errBox) {
+                errBox.style.display = '';
+                errBox.textContent = data.error || 'Apply failed; see the per-step log.';
+            }
+            sb.message.error('Upgrade failed', data.error || 'See the per-step log.');
+        }
+    });
+}
+

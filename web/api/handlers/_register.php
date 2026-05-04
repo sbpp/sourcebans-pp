@@ -111,3 +111,9 @@ Api::register('system.check_version',         'api_system_check_version',       
 Api::register('system.sel_theme',             'api_system_sel_theme',             ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 Api::register('system.apply_theme',           'api_system_apply_theme',           ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 Api::register('system.clear_cache',           'api_system_clear_cache',           ADMIN_OWNER | ADMIN_WEB_SETTINGS);
+// Schema migrator: owner-only on both ends. The diff handler is read-only
+// but still gated to ADMIN_OWNER to keep the action surface symmetric
+// with apply (no point letting any admin scout the schema diff if they
+// can't do anything with it).
+Api::register('system.upgrade_diff',          'api_system_upgrade_diff',          ADMIN_OWNER);
+Api::register('system.upgrade_apply',         'api_system_upgrade_apply',         ADMIN_OWNER);
