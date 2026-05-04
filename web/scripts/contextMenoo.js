@@ -1,3 +1,4 @@
+// @ts-check
 /*************************************************************************
 This file is part of SourceBans++
 
@@ -18,6 +19,16 @@ keeps working without changes.
 (function (global) {
     'use strict';
 
+    /**
+     * @param {{
+     *   selector?: string,
+     *   className?: string,
+     *   pageOffset?: number,
+     *   fade?: boolean,
+     *   headline?: string,
+     *   menuItems?: SbContextMenuItem[],
+     * }} [opts]
+     */
     function contextMenoo(opts) {
         const options = Object.assign({
             selector: '.contextmenu',
@@ -25,9 +36,11 @@ keeps working without changes.
             pageOffset: 25,
             fade: false,
             headline: 'Menu',
+            /** @type {SbContextMenuItem[]} */
             menuItems: [],
         }, opts || {});
 
+        /** @type {HTMLDivElement | null} */
         let cont = null;
 
         const build = () => {
@@ -52,9 +65,9 @@ keeps working without changes.
                 }
                 const a = document.createElement('a');
                 a.href = '#';
-                a.title = item.name;
+                a.title = item.name ?? '';
                 if (item.disabled) a.className = 'disabled';
-                a.innerHTML = item.name;
+                a.innerHTML = item.name ?? '';
                 a.addEventListener('click', (e) => {
                     e.preventDefault();
                     hide();
@@ -66,35 +79,39 @@ keeps working without changes.
             return c;
         };
 
-        const hide = () => { if (cont) cont.style.opacity = '0'; if (cont) cont.style.display = 'none'; };
+        const hide = () => { if (cont) { cont.style.opacity = '0'; cont.style.display = 'none'; } };
 
         document.addEventListener('click', hide);
         document.addEventListener('contextmenu', (e) => {
             // Only hide if the contextmenu happened outside one of our targets.
-            if (!e.target.closest(options.selector)) hide();
+            // e.target is EventTarget | null and only Element has .closest().
+            const target = e.target instanceof Element ? e.target : null;
+            if (!target || !target.closest(options.selector)) hide();
         });
 
         document.querySelectorAll(options.selector).forEach((el) => {
-            el.addEventListener('contextmenu', (e) => {
+            el.addEventListener('contextmenu', (/** @type {Event} */ rawEvent) => {
+                const e = /** @type {MouseEvent} */ (rawEvent);
                 e.preventDefault();
                 e.stopPropagation();
                 if (!cont) cont = build();
+                const c = cont;
                 const w = window.innerWidth;
                 const h = window.innerHeight;
-                const r = cont.getBoundingClientRect();
+                const r = c.getBoundingClientRect();
                 const left = (e.pageX + r.width + options.pageOffset > w + window.scrollX)
                     ? (w + window.scrollX - r.width - options.pageOffset)
                     : e.pageX;
                 const top = (e.pageY - window.scrollY + r.height > h && (e.pageY - window.scrollY) > r.height)
                     ? (e.pageY - r.height)
                     : e.pageY;
-                cont.style.left = left + 'px';
-                cont.style.top  = top  + 'px';
-                cont.style.display = 'block';
+                c.style.left = left + 'px';
+                c.style.top  = top  + 'px';
+                c.style.display = 'block';
                 if (options.fade) {
-                    requestAnimationFrame(() => { cont.style.transition = 'opacity 200ms'; cont.style.opacity = '1'; });
+                    requestAnimationFrame(() => { c.style.transition = 'opacity 200ms'; c.style.opacity = '1'; });
                 } else {
-                    cont.style.opacity = '1';
+                    c.style.opacity = '1';
                 }
             });
         });
@@ -103,7 +120,7 @@ keeps working without changes.
     global.contextMenoo = contextMenoo;
 
     global.AddContextMenu = function (select, classNames, fader, headl, oLinks) {
-        const wire = () => new contextMenoo({
+        const wire = () => contextMenoo({
             selector: select,
             className: classNames,
             fade: fader,

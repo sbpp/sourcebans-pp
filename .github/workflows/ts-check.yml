@@ -1,0 +1,38 @@
+name: ts-check
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - '.github/workflows/ts-check.yml'
+  pull_request:
+    paths:
+      - 'web/**'
+      - '.github/workflows/ts-check.yml'
+
+jobs:
+  ts-check:
+    name: tsc --checkJs over web/scripts
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: web/package-lock.json
+
+      # `npm ci` requires the lockfile to be in sync with package.json. We
+      # commit web/package-lock.json so this is the fast, deterministic path.
+      - name: Install dev dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Type-check JS with tsc
+        run: npm run ts-check

@@ -1,0 +1,11 @@
+{
+    "name": "sourcebans-pp-scripts",
+    "private": true,
+    "description": "Dev-time type checking for web/scripts. The browser payload is plain JS; nothing in node_modules ships.",
+    "scripts": {
+        "ts-check": "tsc -p scripts/tsconfig.json"
+    },
+    "devDependencies": {
+        "typescript": "^5.6.0"
+    }
+}

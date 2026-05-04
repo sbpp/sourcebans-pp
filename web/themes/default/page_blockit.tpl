@@ -1,6 +1,7 @@
 <html>
 <head>
     <meta name="csrf-token" content="-{$csrf_token}-" />
+    <script type="text/javascript" src="../scripts/api-contract.js"></script>
     <script type="text/javascript" src="../scripts/sb.js"></script>
     <script type="text/javascript" src="../scripts/api.js"></script>
     <script type="text/javascript">
@@ -21,7 +22,7 @@
         }
 
         function processRow(check, type, length, sid, num) {
-            sb.api.call('blockit.block_player', { check: check, sid: sid, num: num, type: Number(type), length: Number(length) })
+            sb.api.call(Actions.BlockitBlockPlayer, { check: check, sid: sid, num: num, type: Number(type), length: Number(length) })
                 .then(function (r) {
                     if (!r || !r.ok || !r.data) {
                         sb.setHTML('srv_' + num, "<font color='red' size='1'><i>Error.</i></font>");
@@ -47,7 +48,7 @@
 
         window.addEventListener('load', function () {
             parent.document.getElementById('dialog-control').style.display = 'none';
-            sb.api.call('blockit.load_servers', {}).then(function (r) {
+            sb.api.call(Actions.BlockitLoadServers, {}).then(function (r) {
                 if (!r || !r.ok || !r.data) return;
                 r.data.servers.forEach(function (s) {
                     if (s.has_rcon) {

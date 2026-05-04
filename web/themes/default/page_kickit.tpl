@@ -1,6 +1,7 @@
 <html>
 <head>
     <meta name="csrf-token" content="-{$csrf_token}-" />
+    <script type="text/javascript" src="../scripts/api-contract.js"></script>
     <script type="text/javascript" src="../scripts/sb.js"></script>
     <script type="text/javascript" src="../scripts/api.js"></script>
     <script type="text/javascript">
@@ -21,7 +22,7 @@
         }
 
         function processRow(check, type, sid, num) {
-            sb.api.call('kickit.kick_player', { check: check, sid: sid, num: num, type: Number(type) })
+            sb.api.call(Actions.KickitKickPlayer, { check: check, sid: sid, num: num, type: Number(type) })
                 .then(function (r) {
                     if (!r || !r.ok || !r.data) {
                         sb.setHTML('srv_' + num, "<font color='red' size='1'><i>Error.</i></font>");
@@ -47,7 +48,7 @@
 
         window.addEventListener('load', function () {
             parent.document.getElementById('dialog-control').style.display = 'none';
-            sb.api.call('kickit.load_servers', {}).then(function (r) {
+            sb.api.call(Actions.KickitLoadServers, {}).then(function (r) {
                 if (!r || !r.ok || !r.data) return;
                 r.data.servers.forEach(function (s) {
                     if (s.has_rcon) {

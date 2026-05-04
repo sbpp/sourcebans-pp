@@ -1,3 +1,4 @@
+// @ts-check
 /*************************************************************************
 This file is part of SourceBans++
 
@@ -18,13 +19,15 @@ to special-case fetch rejections.
 (function (global) {
     'use strict';
 
-    const sb = global.sb || (global.sb = {});
+    /** @type {SbNamespace} */
+    const sb = global.sb || (global.sb = /** @type {any} */ ({}));
 
     function csrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');
-        return meta ? meta.getAttribute('content') : '';
+        return meta ? (meta.getAttribute('content') || '') : '';
     }
 
+    /** @type {SbApiNamespace} */
     sb.api = {
         endpoint: './api.php',
 
@@ -42,9 +45,11 @@ to special-case fetch rejections.
                     body: JSON.stringify({ action, params: params || {} }),
                 });
             } catch (e) {
-                return { ok: false, error: { code: 'network', message: 'Network error: ' + (e && e.message) } };
+                const msg = e instanceof Error ? e.message : String(e);
+                return { ok: false, error: { code: 'network', message: 'Network error: ' + msg } };
             }
 
+            /** @type {SbApiEnvelope} */
             let envelope;
             try {
                 envelope = await res.json();
@@ -53,7 +58,7 @@ to special-case fetch rejections.
             }
 
             if (envelope && typeof envelope.redirect === 'string') {
-                window.location = envelope.redirect;
+                window.location.href = envelope.redirect;
                 return envelope;
             }
             return envelope;
