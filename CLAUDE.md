@@ -12,16 +12,18 @@
 Everything in `docker/README.md`. The TL;DR for an LLM that wants to run things:
 
 ```sh
-./sbpp.sh up                # build + start; idempotent, safe to re-run
-./sbpp.sh status            # are containers up?
-./sbpp.sh logs web          # tail web logs
-./sbpp.sh phpstan           # run static analysis
-./sbpp.sh test              # run PHPUnit (against sourcebans_test DB)
-./sbpp.sh shell             # bash inside the web container
-./sbpp.sh mysql             # mariadb client on the dev DB
-./sbpp.sh db-reset          # wipe DB volume and re-seed
-./sbpp.sh down              # stop, keep volumes
-./sbpp.sh reset             # stop and drop ALL volumes
+./sbpp.sh up                          # build + start; idempotent, safe to re-run
+./sbpp.sh status                      # are containers up?
+./sbpp.sh logs web                    # tail web logs
+./sbpp.sh phpstan                     # run static analysis
+./sbpp.sh test                        # run PHPUnit (against sourcebans_test DB)
+./sbpp.sh ts-check                    # run tsc --checkJs over web/scripts
+./sbpp.sh composer api-contract       # regenerate web/scripts/api-contract.js
+./sbpp.sh shell                       # bash inside the web container
+./sbpp.sh mysql                       # mariadb client on the dev DB
+./sbpp.sh db-reset                    # wipe DB volume and re-seed
+./sbpp.sh down                        # stop, keep volumes
+./sbpp.sh reset                       # stop and drop ALL volumes
 ```
 
 After `up`, the panel is at <http://localhost:8080>, login **admin / admin**.
@@ -54,8 +56,18 @@ database so they never stomp dev data:
 ./sbpp.sh test tests/api/AccountTest.php  # run a single file
 ```
 
-CI runs both gates on every PR (`.github/workflows/phpstan.yml` and
-`.github/workflows/test.yml`).
+`tsc --checkJs` is the JS gate (added in #1098). It runs against the
+existing `.js` files in place using `// @ts-check` + JSDoc — no `.ts`
+sources, no bundler, nothing in `web/node_modules/` ever ships:
+
+```sh
+./sbpp.sh ts-check
+```
+
+CI runs all three gates on every PR (`.github/workflows/phpstan.yml`,
+`.github/workflows/test.yml`, `.github/workflows/ts-check.yml`), plus a
+fourth gate (`.github/workflows/api-contract.yml`) that regenerates
+`web/scripts/api-contract.js` and fails on diff — see Conventions below.
 
 ## Conventions
 
@@ -75,4 +87,29 @@ CI runs both gates on every PR (`.github/workflows/phpstan.yml` and
   (it's been removed) or reach for xajax (also removed).
 - **Client code** uses vanilla JS through `web/scripts/sb.js` (DOM helpers,
   message box, tabs, tooltips, accordion) and `web/scripts/api.js` (the
-  `sb.api.call(action, params)` wrapper). Don't reintroduce MooTools.
+  `sb.api.call(action, params)` wrapper). Don't reintroduce MooTools, React,
+  or a runtime bundler — self-hosters deploy by unzipping the release.
+- **Action names and permission masks** in JS come from
+  `web/scripts/api-contract.js`, generated from `_register.php` +
+  `configs/permissions/web.json` by `web/bin/generate-api-contract.php`
+  (#1097). Always call `sb.api.call(Actions.PascalName, ...)` — never a
+  string literal — and reference perms as `Perms.ADMIN_*`. The contract
+  file is checked-in source (like a lockfile), not a build artifact:
+  release tarballs ship it; self-hosters need no codegen step. Regenerate
+  whenever you touch a handler's name, perm mask, or `@param`/`@return`
+  docblock, or edit the perm constants:
+
+  ```sh
+  ./sbpp.sh composer api-contract
+  ```
+
+  Commit the regenerated file in the same PR as the PHP change. CI
+  (`api-contract.yml`) re-runs the generator on a clean checkout and
+  fails on `git diff`, so a stale file blocks merge.
+- **JS files** under `web/scripts/` all carry `// @ts-check` and run
+  through `tsc --noEmit` in CI (#1098). Keep `// @ts-check` on any new
+  file you add there. Use `sb.$idRequired(id)` when a missing element is
+  a programmer error; `sb.$id(id)` returns `HTMLElement | null` and must
+  be narrowed. `SbAnyEl` (in `web/scripts/globals.d.ts`) is intentionally
+  permissive for legacy form-element access — prefer typed selectors
+  (`document.querySelector<HTMLInputElement>(...)`) in new code.
