@@ -1,23 +1,24 @@
 {*
-    page_admin_audit.tpl — Admin → Audit log (#1123 B19).
+    page_admin_audit.tpl -- Admin -> Audit log (#1123 B19).
 
     NEW page (no legacy template). Pair: web/pages/admin.audit.php +
     web/includes/View/AuditLogView.php. The page handler reads the
-    `:prefix_log` table (no schema change), normalises each row into
-    the `{tid, severity, severity_label, severity_class, time_human,
-    time_iso, actor, title, detail, ip}` shape this template iterates,
-    and SSRs the filter/page state into the form below.
+    :prefix_log table (no schema change), normalises each row into the
+    handoff-style shape this template iterates over (tid, severity,
+    severity_label, severity_class, time_human, time_iso, actor, title,
+    detail, ip), and SSRs the filter/page state into the forms below.
 
-    Auto-escape is on globally (web/init.php), so every {$foo} is
-    HTML-escaped — there is no {$foo nofilter} in this template, and
-    none is needed: all values are either DB-stored strings rendered as
-    text or numbers / class tokens we built ourselves above.
+    Auto-escape is on globally (web/init.php), so every Smarty
+    variable below is HTML-escaped automatically. There is no nofilter
+    use in this template, and none is needed: all values are either
+    DB-stored strings rendered as text or numbers / class tokens we
+    built ourselves in the page handler.
 
-    Testability hooks (#1123 issue body, "Testability hooks"):
-      - audit-search          → free-text input
-      - filter-chip-{kind}    → severity filter buttons (all|info|warning|error)
-      - audit-row             → each log row, with data-id="{tid}" + data-severity
-      - page-prev / page-next → pager links
+    Testability hooks (per #1123 issue body):
+      - audit-search           -- free-text input
+      - filter-chip-<kind>     -- severity filter buttons (all|info|warning|error)
+      - audit-row              -- each log row, with data-id and data-severity
+      - page-prev / page-next  -- pager links
 *}
 <style>
     .audit-page {
