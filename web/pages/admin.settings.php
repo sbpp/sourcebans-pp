@@ -63,6 +63,24 @@ if (isset($_GET['log_clear']) && $_GET['log_clear'] === 'true') {
 
 $canSettings = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 
+/*
+ * Post-save flash, emitted at the bottom of this file.
+ *
+ * `header('Location: …')` after a successful save *doesn't work here*
+ * because by the time admin.settings.php runs, build() in
+ * includes/page-builder.php has already required core/header.php →
+ * core/navbar.php → core/title.php — each of which calls
+ * `$theme->display()` and flushes Smarty output to stdout. PHP has no
+ * global output buffer (no ob_start in init.php / index.php, no
+ * `output_buffering` in docker/Dockerfile), so a server-side redirect
+ * here triggers `headers already sent` and the user lands on a partial
+ * page with a raw PHP warning. The pre-B18 code dodged this by emitting
+ * a JS-side `ShowBox(…, redir)` bounce instead; we keep that shape but
+ * make it theme-aware so it works under both `default` and `sbpp2026`
+ * chrome.
+ */
+$savedSection = '';
+
 if ($canSettings && isset($_POST['settingsGroup'])) {
     $errors = '';
 
@@ -148,8 +166,7 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
                     ...$smtpConfig,
                 ]);
             Log::add('m', 'Settings updated', 'Main settings were updated.');
-            header('Location: index.php?p=admin&c=settings&section=settings&saved=1');
-            exit();
+            $savedSection = 'settings';
         }
     }
 
@@ -173,8 +190,7 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
             (" . $steamloginopt  . ", 'config.enablesteamlogin'),
             (" . $normalloginopt . ", 'config.enablenormallogin')")->execute();
         Log::add('m', 'Settings updated', 'Feature toggles were updated.');
-        header('Location: index.php?p=admin&c=settings&section=features&saved=1');
-        exit();
+        $savedSection = 'features';
     }
 
     if (!empty($errors)) {
@@ -411,6 +427,47 @@ if ($section === 'themes') {
     ));
 }
 
+/*
+ * Post-save flash + bounce.
+ *
+ * Emitted only when a settings-group POST just succeeded. We can't use
+ * `header('Location: …')` from this file (see the `$savedSection`
+ * declaration near the top for why); instead we render a small inline
+ * <script> that:
+ *
+ *   1. Surfaces a "Settings saved" toast via the active theme's toast
+ *      surface — `window.SBPP.showToast` on sbpp2026, `ShowBox` on
+ *      `default`. Both already exist before this script runs because
+ *      the chrome's footer.tpl loads them.
+ *   2. Bounces to the GET URL after a short delay so a refresh doesn't
+ *      re-POST the form (the legacy `ShowBox(…, redir)` hook does this
+ *      itself; on sbpp2026 we issue an explicit `location.href` after
+ *      `setTimeout`).
+ *
+ * Cooperatively no-op if neither toast surface is available — the
+ * `location.href` fallback still cleans the request method.
+ */
+if ($savedSection !== ''):
+    $bouncePath = 'index.php?p=admin&c=settings&section=' . htmlspecialchars($savedSection, ENT_QUOTES, 'UTF-8');
+?>
+<script>
+(function () {
+    var url   = '<?= $bouncePath ?>';
+    var title = 'Settings updated';
+    var msg   = 'The changes have been saved.';
+    if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+        window.SBPP.showToast({ kind: 'success', title: title, body: msg });
+        setTimeout(function () { window.location.href = url; }, 1200);
+    } else if (typeof ShowBox === 'function') {
+        ShowBox(title, msg, 'green', url);
+    } else {
+        window.location.href = url;
+    }
+})();
+</script>
+<?php endif; ?>
+
+<?php
 /*
  * Legacy default-theme tail.
  *
