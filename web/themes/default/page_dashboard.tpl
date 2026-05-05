@@ -82,8 +82,8 @@
 
     </div>
 
-    {* -- Recent bans + Servers (2-col) -------------------------------- *}
-    <div class="grid gap-4" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+    {* -- Recent bans + Servers (2-col on desktop, collapses to 1-col below ~320px+gap per card; #1188) *}
+    <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))">
 
         <section class="card" data-testid="dashboard-recent-bans">
             <div class="card__header">
