@@ -10,7 +10,11 @@ new AdminTabs([
     ['name' => 'Add new server', 'permission' => ADMIN_OWNER|ADMIN_ADD_SERVER]
 ], $userbank, $theme);
 
-$servers = $GLOBALS['PDO']->query("SELECT srv.ip ip, srv.port port, srv.sid sid, mo.icon icon, srv.enabled enabled FROM `:prefix_servers` AS srv
+// `mod_name` (mod display name) was added in #1123 B15 so the sbpp2026
+// card grid can render the mod label without a second per-card query.
+// The legacy `default/` template ignores the column; both themes share
+// the same data shape.
+$servers = $GLOBALS['PDO']->query("SELECT srv.ip ip, srv.port port, srv.sid sid, mo.icon icon, mo.name mod_name, srv.enabled enabled FROM `:prefix_servers` AS srv
    LEFT JOIN `:prefix_mods` AS mo ON mo.mid = srv.modid
    ORDER BY modid, sid")->resultset();
 $server_count = $GLOBALS['PDO']->query("SELECT COUNT(sid) AS cnt FROM `:prefix_servers`")->single();
