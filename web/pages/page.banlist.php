@@ -508,10 +508,17 @@ $BanCount = isset($res_count[0]['cnt']) ? (int) $res_count[0]['cnt'] : 0;
 if ($BansEnd > $BanCount) {
     $BansEnd = $BanCount;
 }
-if (!$res) {
-    echo "No Bans Found.";
-    PageDie();
-}
+// $res is the LIMIT-paginated result list. An empty result is the
+// expected state on a fresh install (or when filters match nothing) —
+// the redesigned page_bans.tpl renders its own "No bans match those
+// filters." empty state inside the table (see the {foreachelse} block
+// in the template). Short-circuiting with PageDie() here was a holdover
+// from the legacy theme where the table didn't have an empty state, and
+// it now suppresses the marquee chrome on empty installs.
+//
+// We can't reach `$res === false` because the PDO error mode is set to
+// EXCEPTION (see Database::__construct), so a real SQL failure throws
+// before we get here.
 
 $canEditComment = false;
 $view_comments = false;

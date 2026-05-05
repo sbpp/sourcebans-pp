@@ -618,3 +618,149 @@ test.describe('@screenshot flow-ui', () => {
         });
     }
 });
+
+/* ============================================================
+ * Responsive (#1124 Slice 7) stateful captures.
+ * ============================================================
+ *
+ * The static-route gallery above already runs each ROUTE through
+ * mobile-chromium, so we don't need MORE captures of bare pages —
+ * we need pictures of the mobile-only INTERACTIONS that the
+ * specs/responsive/*.spec.ts files exercise:
+ *
+ *   - Sidebar drawer open (hamburger toggled)
+ *   - Banlist card view, populated with a seed row
+ *   - Drawer overlay open at full viewport width
+ *
+ * Each scenario emits `screenshots/<theme>/mobile/responsive-<state>.png`.
+ * upload-screenshots.sh's `find -mindepth 3 -maxdepth 3 -name '*.png'`
+ * picks every distinct filename up; the desktop columns of the
+ * markdown table render `—` for these mobile-only rows, which is
+ * the intended shape.
+ *
+ * Each seed uses a unique SteamID (separate from the responsive
+ * specs' seeds) so a screenshot run after a regular spec run inside
+ * the same `playwright test` invocation doesn't trip
+ * `bans.add` -> `already_banned`. The `bans.add` envelope is
+ * `expect()`'d to be ok; if a future change makes the seed
+ * collision benign, tighten this back to a hard assert.
+ */
+const RESPONSIVE_SCREENSHOTS = ['sidebar-open', 'banlist-cards', 'drawer-open'] as const;
+type ResponsiveScenario = (typeof RESPONSIVE_SCREENSHOTS)[number];
+
+async function pinThemeResponsive(activePage: import('@playwright/test').Page, theme: Theme): Promise<void> {
+    // Mirror the gallery loop's three-step pattern: bootstrap an
+    // origin so localStorage is reachable, write the preference,
+    // then RE-navigate so theme.js's IIFE runs with the new value
+    // on first paint. Setting localStorage and waiting on the
+    // class without a second goto silently times out on the dark
+    // path because theme.js's `applyTheme(currentTheme())` already
+    // ran during the first nav.
+    await activePage.goto('/');
+    await activePage.evaluate((mode: Theme) => {
+        try { localStorage.setItem('sbpp-theme', mode); } catch (_e) { /* unavailable */ }
+    }, theme);
+    await activePage.goto('/');
+    await activePage.waitForFunction((expected: Theme) => {
+        const isDark = document.documentElement.classList.contains('dark');
+        return expected === 'dark' ? isDark : !isDark;
+    }, theme);
+}
+
+async function seedBan(
+    activePage: import('@playwright/test').Page,
+    steam: string,
+    nickname: string,
+): Promise<void> {
+    const env = await activePage.evaluate(
+        async ({ steam: s, nickname: n }) => {
+            const w = /** @type {any} */ (window);
+            return await w.sb.api.call(w.Actions.BansAdd, {
+                nickname: n,
+                type: 0,
+                steam: s,
+                length: 0,
+                reason: 'e2e/responsive screenshot seed',
+            });
+        },
+        { steam, nickname },
+    );
+    // `already_banned` is a benign collision when the same seed
+    // ran in an earlier spec of the same playwright invocation —
+    // the row we want is already there, carry on.
+    if (env && env.ok === false && env.error?.code !== 'already_banned') {
+        throw new Error(`bans.add seed failed: ${JSON.stringify(env)}`);
+    }
+}
+
+test.describe('@screenshot responsive', () => {
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
+
+    test.beforeEach(({}, testInfo) => {
+        test.skip(
+            testInfo.project.name !== 'mobile-chromium',
+            'Responsive captures are mobile-chromium only.',
+        );
+    });
+
+    for (const scenario of RESPONSIVE_SCREENSHOTS) {
+        for (const theme of THEMES) {
+            test(`responsive ${scenario} ${theme}`, async ({ page }) => {
+                const outPath = resolve(
+                    __dirname,
+                    '..',
+                    'screenshots',
+                    theme,
+                    'mobile',
+                    `responsive-${scenario}.png`,
+                );
+                await mkdir(dirname(outPath), { recursive: true });
+
+                await pinThemeResponsive(page, theme);
+                await captureResponsive(page, scenario);
+                await page.screenshot({ fullPage: true, path: outPath });
+                expect(outPath).toMatch(/\.png$/);
+            });
+        }
+    }
+});
+
+/**
+ * Drive the browser into the per-scenario terminal state. Kept out
+ * of the `test()` body so the screenshot loop reads as a flat
+ * (scenario, theme) cross product.
+ */
+async function captureResponsive(
+    page: import('@playwright/test').Page,
+    scenario: ResponsiveScenario,
+): Promise<void> {
+    if (scenario === 'sidebar-open') {
+        // dispatchEvent('click') rather than click({ force: true })
+        // because the hamburger is `display:none` in the current
+        // theme — see specs/responsive/sidebar.spec.ts divergence #1.
+        await page.locator('[data-mobile-menu]').dispatchEvent('click');
+        await expect(page.locator('#sidebar')).toHaveClass(/\bis-open\b/);
+        return;
+    }
+
+    if (scenario === 'banlist-cards') {
+        await seedBan(page, 'STEAM_0:0:71090007', 'e2e-screenshot-banlist');
+        await page.goto('/index.php?p=banlist');
+        await expect(page.locator('#banlist-root .ban-cards')).toBeVisible();
+        return;
+    }
+
+    if (scenario === 'drawer-open') {
+        await seedBan(page, 'STEAM_0:0:72090007', 'e2e-screenshot-drawer');
+        await page.goto('/index.php?p=banlist');
+        const trigger = page
+            .locator('#banlist-root .ban-cards [data-testid="drawer-trigger"]')
+            .filter({ hasText: 'e2e-screenshot-drawer' });
+        await trigger.click();
+        const drawerRoot = page.locator('#drawer-root');
+        await expect(drawerRoot).toHaveAttribute('data-drawer-open', 'true');
+        await expect(drawerRoot).not.toHaveAttribute('data-loading', 'true');
+        await expect(drawerRoot.locator('.drawer')).toBeVisible();
+        return;
+    }
+}
