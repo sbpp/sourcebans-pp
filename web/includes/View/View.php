@@ -19,6 +19,38 @@ namespace Sbpp\View;
  * uses the custom `-{…}-` pair (currently only `page_youraccount.tpl`) must
  * override {@see View::DELIMITERS} with the matching pair so the rule parses
  * the template correctly.
+ *
+ * ### Permission booleans
+ *
+ * Views that gate template content on the current user's permissions
+ * declare each gate as its own constructor-promoted
+ * `public readonly bool $can_<flag>` property (e.g. `$can_add_ban`,
+ * `$can_edit_all_bans`, `$can_owner`). The page handler builds the View
+ * by splatting {@see Perms::for()} into the named arguments:
+ *
+ * ```php
+ * use Sbpp\View\Perms;
+ * use Sbpp\View\Renderer;
+ *
+ * Renderer::render($theme, new BanListView(
+ *     ...Perms::for($userbank),
+ *     ban_list: $bans,
+ *     // …
+ * ));
+ * ```
+ *
+ * `Perms::for()` returns a flat `['can_<flag>' => bool, …]` array
+ * covering every `ADMIN_*` constant defined from
+ * `web/configs/permissions/web.json`. PHP discards splatted keys the
+ * View doesn't declare, so each subclass opts in to only the booleans
+ * its template actually consumes. `SmartyTemplateRule` keeps both
+ * sides honest: every template-referenced `$can_*` must be declared,
+ * and every declared `$can_*` must be referenced.
+ *
+ * Each `bool` lives on the concrete subclass (NOT on this base) on
+ * purpose: declaring booleans the template never reads would silently
+ * defeat `SmartyTemplateRule`'s parity check, so dead permission
+ * checks would accumulate untestably across pages.
  */
 abstract class View
 {

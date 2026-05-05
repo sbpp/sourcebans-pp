@@ -96,3 +96,62 @@ function smarty_function_csrf_field()
     $name = htmlspecialchars(CSRF::FIELD_NAME, ENT_QUOTES, 'UTF-8');
     return '<input type="hidden" name="' . $name . '" value="' . $token . '" />';
 }
+
+/**
+ * Smarty {has_access flag=…}…{/has_access} BLOCK plugin: render the inner
+ * content only when the current user holds the given permission flag.
+ *
+ * This is the deliberate ESCAPE HATCH for ad-hoc per-row checks (e.g.
+ * gating an action button inside a `{foreach}` over admins). The
+ * PRIMARY pattern stays precomputed `can_*` booleans on the View — see
+ * `Sbpp\View\Perms::for()` and the convention block on
+ * `Sbpp\View\View` — so most templates should keep using
+ * `{if $can_add_ban} … {/if}`.
+ *
+ * Usage examples (the `flag=` parameter accepts either a web-flag
+ * integer or a SourceMod char-flag string; `CUserManager::HasAccess()`
+ * dispatches on the type):
+ *
+ * ```smarty
+ * {has_access flag=$smarty.const.ADMIN_ADD_BAN}
+ *     <a href="?p=admin&c=bans&o=add">Add ban</a>
+ * {/has_access}
+ *
+ * {foreach $admins as $a}
+ *     {has_access flag=$smarty.const.ADMIN_EDIT_ADMINS}
+ *         <a href="?p=admin&c=admins&o=edit&id={$a.aid}">Edit</a>
+ *     {/has_access}
+ * {/foreach}
+ * ```
+ *
+ * Smarty 5 invokes block plugins twice per render — once on the
+ * opening tag (`$content === null`, `$repeat === true`) and once on
+ * the closing tag (`$content` populated, `$repeat === false`). We
+ * suppress output on the opening pass and gate on the closing pass.
+ *
+ * Reads `$userbank` from the request-global the rest of the panel
+ * exposes (set by `init.php`; same convention as every page handler's
+ * `global $userbank;`). When unset (no session, no user manager
+ * bound — should not happen in normal request flow), the plugin
+ * fails closed and emits nothing.
+ *
+ * @param array{flag?: int|string} $params
+ * @param string|null              $content
+ * @param mixed                    $template
+ * @param bool                     $repeat
+ */
+function smarty_block_has_access(array $params, ?string $content, $template, &$repeat): string
+{
+    if ($content === null) {
+        return '';
+    }
+    global $userbank;
+    if (!$userbank instanceof CUserManager) {
+        return '';
+    }
+    $flag = $params['flag'] ?? null;
+    if ($flag === null || $flag === '' || $flag === 0) {
+        return '';
+    }
+    return $userbank->HasAccess($flag) ? $content : '';
+}
