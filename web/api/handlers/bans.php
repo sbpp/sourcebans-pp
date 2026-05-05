@@ -833,3 +833,71 @@ function api_bans_detail(array $params): array
         'comments'         => $comments,
     ];
 }
+
+/**
+ * Autocomplete backend for the sbpp2026 command palette (#1123 C2).
+ *
+ * Returns up to `limit` matching ban rows for a free-text query that the
+ * palette types into as the admin presses keys. The handler is admin-only
+ * (the palette only mounts when logged in) so the wire format can include
+ * IPs unconditionally; the public ban list separately gates IP exposure
+ * behind `banlist.hideplayerips` but the palette never renders to anonymous
+ * visitors. Matching covers `name` (LIKE %q%), `authid`, and `ip`. Steam
+ * IDs are normalised through `SteamID::toSearchPattern()` so `STEAM_0`
+ * and `STEAM_1` variants of the same account both match (#1130 fix
+ * extended to autocomplete). Numeric queries shorter than 2 chars short-
+ * circuit to an empty result so a single keypress doesn't sweep the bans
+ * table.
+ *
+ * @param array{q?: string, limit?: int} $params
+ * @return array{bans: array<int, array{bid:int, name:string, steam:string, ip:string, type:int}>}
+ */
+function api_bans_search(array $params): array
+{
+    $q = trim((string)($params['q'] ?? ''));
+    if ($q === '' || mb_strlen($q) < 2) {
+        return ['bans' => []];
+    }
+
+    $limit = (int)($params['limit'] ?? 10);
+    if ($limit < 1) $limit = 1;
+    if ($limit > 20) $limit = 20;
+
+    // Mirror page.banlist.php's authid handling so the palette finds the
+    // same rows the full search would. `toSearchPattern()` returns a
+    // REGEXP that matches both STEAM_0 and STEAM_1 variants; if the input
+    // isn't a recognisable Steam ID it returns null and we fall back to
+    // a plain LIKE on the raw query.
+    $authidPattern = SteamID::toSearchPattern($q);
+    if ($authidPattern !== null) {
+        $authidClause = 'BA.authid REGEXP ?';
+        $authidParam  = $authidPattern;
+    } else {
+        $authidClause = 'BA.authid LIKE ?';
+        $authidParam  = '%' . $q . '%';
+    }
+
+    $like = '%' . $q . '%';
+
+    $rows = $GLOBALS['PDO']->query(
+        "SELECT BA.bid, BA.name, BA.authid, BA.ip, BA.type
+           FROM `:prefix_bans` AS BA
+          WHERE BA.name LIKE ?
+             OR " . $authidClause . "
+             OR BA.ip   LIKE ?
+       ORDER BY BA.created DESC
+          LIMIT ?"
+    )->resultset([$like, $authidParam, $like, $limit]);
+
+    $out = [];
+    foreach ($rows as $r) {
+        $out[] = [
+            'bid'   => (int)$r['bid'],
+            'name'  => (string)$r['name'],
+            'steam' => (string)$r['authid'],
+            'ip'    => (string)($r['ip'] ?? ''),
+            'type'  => (int)$r['type'],
+        ];
+    }
+    return ['bans' => $out];
+}

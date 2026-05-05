@@ -480,4 +480,84 @@ final class BansTest extends ApiTestCase
         $this->assertTrue($env['ok']);
         $this->assertSame([], (array)$env['data']);
     }
+
+    public function testSearchRejectsAnonymous(): void
+    {
+        // Palette only mounts for logged-in admins; the dispatcher rejects
+        // anonymous calls before the handler runs.
+        $env = $this->api('bans.search', ['q' => 'whatever']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testSearchShortCircuitsForShortQuery(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedBan('STEAM_0:1:42', 'cheating');
+
+        // Single-character (or empty) queries are intentionally a no-op so
+        // the very first keypress in the palette doesn't sweep `:prefix_bans`.
+        $env = $this->api('bans.search', ['q' => 'a']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame([], $env['data']['bans']);
+
+        $env2 = $this->api('bans.search', ['q' => '']);
+        $this->assertTrue($env2['ok'], json_encode($env2));
+        $this->assertSame([], $env2['data']['bans']);
+
+        $this->assertSnapshot('bans/search_short_query', $env);
+    }
+
+    public function testSearchMatchesByName(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:7777', 'wallhack');
+        // seedBan() inserts `Cheater` as the player name.
+
+        $env = $this->api('bans.search', ['q' => 'Chea', 'limit' => 5]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $bans = $env['data']['bans'];
+        $this->assertNotEmpty($bans, 'expected at least one match');
+        $this->assertSame($bid,            (int)$bans[0]['bid']);
+        $this->assertSame('Cheater',       $bans[0]['name']);
+        $this->assertSame('STEAM_0:1:7777', $bans[0]['steam']);
+        $this->assertSame(0,               (int)$bans[0]['type']);
+    }
+
+    public function testSearchMatchesBySteamIdAcrossUniverseDigits(): void
+    {
+        // #1130: the search input may carry STEAM_1:… but rows are stored
+        // as STEAM_0:… (and vice versa). The palette mirrors the page-level
+        // banlist's REGEXP fallback so neither variant gets silently lost.
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:5555', 'mirror');
+
+        $env = $this->api('bans.search', ['q' => 'STEAM_1:1:5555']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame($bid, (int)$env['data']['bans'][0]['bid']);
+    }
+
+    public function testSearchLimitClampedToTwenty(): void
+    {
+        $this->loginAsAdmin();
+        for ($i = 0; $i < 25; $i++) {
+            $this->seedBan('STEAM_0:1:' . (1000 + $i), 'bulk-' . $i);
+        }
+        // Names are all `Cheater`; default `limit` is 10 but a 999 request
+        // should be capped, not honoured verbatim.
+        $env = $this->api('bans.search', ['q' => 'Chea', 'limit' => 999]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertCount(20, $env['data']['bans'], 'limit should clamp to 20');
+    }
+
+    public function testSearchSnapshotShape(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedBan('STEAM_0:1:7777', 'wallhack');
+
+        $env = $this->api('bans.search', ['q' => 'Chea', 'limit' => 5]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        // bid is an autoincrement; redact so the snapshot only locks shape.
+        $this->assertSnapshot('bans/search_success', $env, ['data.bans.0.bid']);
+    }
 }

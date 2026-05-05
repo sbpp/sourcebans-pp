@@ -55,20 +55,58 @@
   });
 
   // ---- COMMAND PALETTE -------------------------------------
-  const palette = document.getElementById('palette-root');
+  // Markup ships from web/themes/sbpp2026/core/footer.tpl. The dialog
+  // is the deterministic "closed" state on first paint (`hidden` boolean
+  // attribute) so a JS failure leaves the palette unreachable rather than
+  // silently broken-open. Visibility is mirrored to
+  // `[data-palette-open="true"|"false"]` so e2e selectors don't have to
+  // probe the `hidden` property directly.
+  const PALETTE_DEBOUNCE_MS = 200;
+  const PALETTE_LIMIT = 8;
+  const PALETTE_MIN_QUERY = 2;
+
+  const palette = /** @type {HTMLDialogElement | null} */ (document.getElementById('palette-root'));
   const paletteInput = /** @type {HTMLInputElement | null} */ (document.getElementById('palette-input'));
   const paletteResults = document.getElementById('palette-results');
+  const paletteSupportsDialog = !!(palette && typeof palette.showModal === 'function');
+
+  /**
+   * Mirror palette visibility into a data-attribute for tests + CSS.
+   * @param {boolean} open
+   * @returns {void}
+   */
+  function setPaletteOpenAttr(open) {
+    if (!palette) return;
+    palette.dataset.paletteOpen = open ? 'true' : 'false';
+  }
 
   /** @returns {void} */
   function openPalette() {
     if (!palette) return;
     palette.hidden = false;
-    setTimeout(() => paletteInput && paletteInput.focus(), 10);
-    renderPaletteResults('');
+    if (paletteSupportsDialog && !palette.open) {
+      try { palette.showModal(); } catch (_e) { /* already open or unsupported state */ }
+    }
+    setPaletteOpenAttr(true);
+    setTimeout(() => {
+      if (paletteInput) {
+        paletteInput.value = '';
+        paletteInput.focus();
+      }
+    }, 10);
+    void renderPaletteResults('');
   }
 
   /** @returns {void} */
-  function closePalette() { if (palette) palette.hidden = true; }
+  function closePalette() {
+    if (!palette) return;
+    if (paletteSupportsDialog && palette.open) {
+      try { palette.close(); } catch (_e) { /* already closed */ }
+    }
+    palette.hidden = true;
+    setPaletteOpenAttr(false);
+    delete palette.dataset.loading;
+  }
 
   document.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -86,13 +124,30 @@
     if (target && target.closest('[data-palette-close]') && !target.closest('.palette')) closePalette();
   });
 
+  // <dialog>'s native backdrop swallows clicks until they reach the dialog
+  // itself; if the click lands on the dialog (i.e. the backdrop area) and
+  // not on the inner panel, treat it as a close request.
+  if (palette) {
+    palette.addEventListener('click', (/** @type {MouseEvent} */ e) => {
+      const target = /** @type {Element | null} */ (e.target);
+      if (target === palette) closePalette();
+    });
+    palette.addEventListener('cancel', (/** @type {Event} */ e) => {
+      // ESC inside <dialog> fires `cancel` instead of bubbling keydown out.
+      e.preventDefault();
+      closePalette();
+    });
+  }
+
   /** @type {ReturnType<typeof setTimeout> | null} */
   let paletteTimer = null;
+  /** Monotonic call counter so a stale fetch can't overwrite a newer one. */
+  let paletteCallSeq = 0;
   if (paletteInput) {
     paletteInput.addEventListener('input', (/** @type {Event} */ e) => {
       if (paletteTimer) clearTimeout(paletteTimer);
       const value = /** @type {HTMLInputElement} */ (e.target).value;
-      paletteTimer = setTimeout(() => renderPaletteResults(value), 150);
+      paletteTimer = setTimeout(() => { void renderPaletteResults(value); }, PALETTE_DEBOUNCE_MS);
     });
   }
 
@@ -111,26 +166,77 @@
   ];
 
   /**
-   * Render filtered navigation results into the palette.
-   * Player search is intentionally a no-op until C2 wires it via
-   * `sb.api.call(Actions.BansSearch, ...)`.
+   * Render filtered navigation + player search results into the palette.
+   * Player search hits `bans.search` once `q.length >= PALETTE_MIN_QUERY`
+   * so the very first keypress doesn't fire a request. Stale calls are
+   * dropped via a monotonic sequence counter.
    * @param {string} q
-   * @returns {void}
+   * @returns {Promise<void>}
    */
-  function renderPaletteResults(q) {
+  async function renderPaletteResults(q) {
     if (!paletteResults) return;
     const ql = (q || '').toLowerCase();
     const nav = NAV_ITEMS.filter((n) => !ql || n.label.toLowerCase().includes(ql));
 
-    // TODO(C2): wire to sb.api.call(Actions.BansSearch, { q: ql, limit: 5 })
-    // and render the returned `bans` array beneath the nav section.
-    // Until C2 lands, the palette returns navigation items only.
-
+    const sectionStyle = 'padding:4px 8px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);font-weight:600';
     const navHtml = nav.length
-      ? '<div style="padding:4px 8px;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-faint);font-weight:600">Navigate</div>'
-        + nav.map((n) => '<a href="' + n.href + '" class="sidebar__link"><i data-lucide="' + n.icon + '"></i><span>' + escapeHtml(n.label) + '</span></a>').join('')
+      ? '<div style="' + sectionStyle + '">Navigate</div>'
+        + nav.map((n) => '<a href="' + n.href + '" class="sidebar__link" data-testid="palette-result" data-result-kind="nav"><i data-lucide="' + n.icon + '"></i><span>' + escapeHtml(n.label) + '</span></a>').join('')
       : '';
+
+    // Render nav immediately so the palette feels responsive while the
+    // network call (if any) is in flight.
     paletteResults.innerHTML = navHtml;
+    if (window.lucide) window.lucide.createIcons();
+
+    if (ql.length < PALETTE_MIN_QUERY) {
+      if (palette) delete palette.dataset.loading;
+      return;
+    }
+
+    const seq = ++paletteCallSeq;
+    if (palette) palette.dataset.loading = 'true';
+    /** @type {SbApiEnvelope | null} */
+    let envelope = null;
+    try {
+      // Actions.BansSearch is autogenerated from
+      // web/api/handlers/_register.php — never inline 'bans.search' as
+      // a string literal here, the api-contract gate exists to catch that.
+      envelope = await sb.api.call(Actions.BansSearch, { q: ql, limit: PALETTE_LIMIT });
+    } catch (_err) {
+      envelope = null;
+    }
+
+    // Bail out if a newer keypress already kicked off another fetch.
+    if (seq !== paletteCallSeq) return;
+    if (palette) delete palette.dataset.loading;
+
+    /** @type {Array<{bid:number,name:string,steam:string,ip:string,type:number}>} */
+    let bans = [];
+    if (envelope && envelope.ok && envelope.data && Array.isArray(envelope.data.bans)) {
+      bans = envelope.data.bans;
+    }
+
+    const playersHtml = bans.length
+      ? '<div style="' + sectionStyle + ';margin-top:8px">Players</div>'
+        + bans.map((b) => {
+            const href = '?p=banlist&advType=name&advSearch=' + encodeURIComponent(b.name);
+            return '<a href="' + href + '"'
+              + ' class="sidebar__link"'
+              + ' data-testid="palette-result"'
+              + ' data-result-kind="ban"'
+              + ' data-id="' + escapeHtml(String(b.bid)) + '"'
+              + ' style="height:auto;padding:8px">'
+              + '<i data-lucide="user"></i>'
+              + '<div style="min-width:0">'
+              + '<div class="text-sm">' + escapeHtml(b.name || '(no name)') + '</div>'
+              + '<div class="font-mono text-xs text-muted">' + escapeHtml(b.steam || b.ip || '') + '</div>'
+              + '</div>'
+              + '</a>';
+          }).join('')
+      : '<div class="text-xs text-muted" style="padding:8px">No matching bans.</div>';
+
+    paletteResults.innerHTML = navHtml + playersHtml;
     if (window.lucide) window.lucide.createIcons();
   }
 

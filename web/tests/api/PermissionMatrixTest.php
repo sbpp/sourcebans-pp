@@ -82,6 +82,7 @@ final class PermissionMatrixTest extends TestCase
             'bans.kick_player'            => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
             'bans.send_message'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.view_community'         => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            'bans.search'                 => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
 
             // -- blockit.
             'blockit.load_servers'        => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
