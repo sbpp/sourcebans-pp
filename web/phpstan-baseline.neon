@@ -144,6 +144,69 @@ parameters:
 			count: 1
 			path: includes/View/AdminBansGroupsView.php
 
+		# CommsListView declares the union of variables both
+		# `themes/default/page_comms.tpl` (legacy) and
+		# `themes/sbpp2026/page_comms.tpl` (#1123 B4 redesign) reference;
+		# the new theme doesn't render the legacy comment-edit drawer or
+		# pagination HTML, so its sbpp2026-only properties fire as
+		# "unused" against the default-theme template. The phpstan-sbpp2026
+		# leg disables `reportUnmatchedIgnoredErrors` so these baseline
+		# entries don't have to fire there. D1 deletes the legacy theme
+		# and these entries collapse with it.
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$can_add_comm is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$can_delete_comm is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$can_edit_comm is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$can_unmute_gag is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$filters is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$hide_inactive is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$hide_inactive_toggle_url is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$pagination is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\CommsListView\:\:\$servers is never referenced in template "page_comms\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/CommsListView.php
+
 		-
 			message: '#^Property Sbpp\\View\\AdminServersAddView\:\:\$modid is never referenced in template "page_admin_servers_add\.tpl"\.$#'
 			identifier: sbpp.view.unusedProperty
@@ -535,12 +598,6 @@ parameters:
 			path: pages/page.commslist.php
 
 		-
-			message: '#^Variable \$ctext in isset\(\) always exists and is not nullable\.$#'
-			identifier: isset.variable
-			count: 1
-			path: pages/page.commslist.php
-
-		-
 			message: '#^Variable \$prev might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
@@ -548,12 +605,6 @@ parameters:
 
 		-
 			message: '#^Variable \$res might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/page.commslist.php
-
-		-
-			message: '#^Variable \$searchlink might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
 			path: pages/page.commslist.php
