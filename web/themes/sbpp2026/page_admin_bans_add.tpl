@@ -12,8 +12,8 @@
         from a submission's "Ban" link.
 
     sbpp2026 doesn't ship sourcebans.js so applyApiResponse() isn't
-    available; the inline {literal} script at the bottom of this file
-    intercepts clicks on [data-action="addban-submit"], mirrors the
+    available; the inline literal-block script at the bottom of this
+    file intercepts clicks on [data-action="addban-submit"], mirrors the
     legacy ProcessBan validation, and dispatches Actions.BansAdd
     directly through sb.api.call. Toasts go through window.SBPP.showToast
     when present (theme.js, sbpp2026) with sb.message as a fallback.

@@ -12,8 +12,8 @@
     The legacy CheckEmail() helper from web/scripts/sourcebans.js posts
     the actual subject + body via Actions.SystemSendMail — that path
     remains in the default theme. sbpp2026 doesn't load sourcebans.js,
-    so the inline {literal} script at the bottom of this file installs
-    a window.CheckEmail shim (only when one isn't already defined) that
+    so the inline literal-block script at the bottom of this file
+    installs a window.CheckEmail shim (only when one isn't defined) that
     runs the same validation, dispatches Actions.SystemSendMail through
     sb.api.call, and surfaces success / failure via window.SBPP.showToast
     (theme.js) or sb.message as a fallback. Custom forks that still ship
@@ -56,7 +56,7 @@
                     class="btn btn--ghost"
                     onclick="history.go(-1)"
                     data-testid="banemail-back">Back</button>
-            {* nofilter: $email_js is server-built ("CheckEmail('s', INT)" or "CheckEmail('p', INT)") in admin.email.php after $_GET['type'] is constrained to the literal 's'/'p' and $_GET['id'] is cast to int — no caller-controlled data flows through. CheckEmail itself comes from sourcebans.js on the default theme; on sbpp2026 the {literal} block below installs a same-name shim that calls Actions.SystemSendMail directly. *}
+            {* nofilter: $email_js is server-built ("CheckEmail('s', INT)" or "CheckEmail('p', INT)") in admin.email.php after $_GET['type'] is constrained to the literal 's'/'p' and $_GET['id'] is cast to int — no caller-controlled data flows through. CheckEmail itself comes from sourcebans.js on the default theme; on sbpp2026 the literal-block script below installs a same-name shim that calls Actions.SystemSendMail directly. *}
             <button type="button"
                     class="btn btn--primary"
                     id="aemail"
