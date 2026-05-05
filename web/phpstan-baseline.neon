@@ -857,9 +857,3 @@ parameters:
 			identifier: variable.undefined
 			count: 4
 			path: updater/data/801.php
-
-		-
-			message: '#^Variable \$theme might not be defined\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: updater/index.php

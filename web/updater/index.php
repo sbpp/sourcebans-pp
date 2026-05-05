@@ -28,11 +28,14 @@
 define('IS_UPDATE', true);
 include "../init.php";
 
+global $theme;
+
 require_once('Updater.php');
 $updater = new Updater($GLOBALS['PDO']);
 
-$theme->assign('updates', $updater->getMessageStack());
-$theme->display('updater.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\UpdaterView(
+    updates: array_values(array_map('strval', $updater->getMessageStack())),
+));
 
 //clear compiled themes
 $cachedir = dir(SB_CACHE);

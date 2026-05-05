@@ -28,29 +28,16 @@ if ($userbank->GetAid() == -1) {
     die();
 }
 
-new AdminTabs([
-    ['name' => 'View Permissions', 'permission' => ALL_WEB],
-    ['name' => 'Change Password', 'permission' => ALL_WEB],
-    ['name' => 'Server Password', 'permission' => ALL_WEB],
-    ['name' => 'Change Email', 'permission' => ALL_WEB]
-], $userbank, $theme);
-
 $GLOBALS['PDO']->query("SELECT `srv_password`, `email` FROM `:prefix_admins` WHERE `aid` = :aid");
 $GLOBALS['PDO']->bind(':aid', $userbank->GetAid());
 $res      = $GLOBALS['PDO']->single();
 $srvpwset = !empty($res['srv_password']);
 
-$youraccountView = new \Sbpp\View\YourAccountView(
-    srvpwset: $srvpwset,
-    email: (string) ($res['email'] ?? ''),
-    user_aid: (int) $userbank->GetAid(),
-    web_permissions: BitToString($userbank->GetProperty("extraflags")),
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\YourAccountView(
+    srvpwset:           $srvpwset,
+    email:              (string) ($res['email'] ?? ''),
+    user_aid:           (int) $userbank->GetAid(),
+    web_permissions:    BitToString($userbank->GetProperty("extraflags")),
     server_permissions: SmFlagsToSb($userbank->GetProperty("srv_flags")),
-    min_pass_len: (int) MIN_PASS_LENGTH,
-);
-
-$theme->setLeftDelimiter('-{');
-$theme->setRightDelimiter('}-');
-\Sbpp\View\Renderer::render($theme, $youraccountView);
-$theme->setLeftDelimiter('{');
-$theme->setRightDelimiter('}');
+    min_pass_len:       (int) MIN_PASS_LENGTH,
+));
