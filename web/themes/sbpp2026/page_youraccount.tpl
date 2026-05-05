@@ -24,7 +24,9 @@
     web/api/handlers/_register.php; on success the dispatcher already
     returns either an `Api::redirect` envelope (password change) or a
     `data.message` describing a success toast (server password / email
-    change).
+    change). Toasts go through window.SBPP.showToast (theme.js), with a
+    sb.message.* fallback so the same JS still works if this page is
+    ever rendered under the legacy default chrome.
 
     Test hooks: every input + submit button carries a stable
     `data-testid="account-<field>"` attribute matching the names
@@ -291,28 +293,49 @@
         fields.forEach(function (f) { setMsg(prefix + f + '-msg', ''); });
     }
 
-    function showFieldError(prefix, err) {
-        if (err && err.field) {
-            setMsg(prefix + err.field + '-msg', err.message || 'Invalid value.');
-            return true;
+    // Server-side ApiError `field` strings don't always match our DOM ids
+    // (e.g. account.change_password throws field='current' but the input
+    // is #account-current-password). Each form passes its own map; missing
+    // keys fall through to the raw field name so newly added fields
+    // surface *something* instead of silently no-opping.
+    function showFieldError(prefix, err, fieldMap) {
+        if (!err || !err.field) return false;
+        var domId = (fieldMap && fieldMap[err.field]) || err.field;
+        setMsg(prefix + domId + '-msg', err.message || 'Invalid value.');
+        return true;
+    }
+
+    // sbpp2026 doesn't ship #dialog-placement (that's a legacy default-theme
+    // chrome element from core/title.tpl), so sb.message.show() silently
+    // no-ops here. Prefer the theme's SBPP.showToast and fall back to
+    // sb.message for callers that survive into the legacy theme.
+    function showToast(kind, title, body) {
+        if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+            window.SBPP.showToast({ kind: kind, title: title, body: body });
+            return;
         }
-        return false;
+        if (sb.message) {
+            if (kind === 'success') sb.message.success(title, body);
+            else sb.message.error(title, body);
+        }
     }
 
     function flashSuccess(envelope) {
-        if (envelope && envelope.ok && envelope.data && envelope.data.message && sb.message) {
-            var m = envelope.data.message;
-            sb.message.success(m.title || 'Saved', m.body || '', m.redir || '');
+        if (!envelope || !envelope.ok || !envelope.data || !envelope.data.message) return;
+        var m = envelope.data.message;
+        showToast('success', m.title || 'Saved', m.body || '');
+        if (m.redir) {
+            // Short delay so the toast is visible before the same-page
+            // refresh swaps in the new email / srv-password state.
+            setTimeout(function () { window.location.href = m.redir; }, 1500);
         }
     }
 
     function flashFailure(envelope) {
-        if (sb.message) {
-            var msg = (envelope && envelope.error && envelope.error.message)
-                ? envelope.error.message
-                : 'The request failed. Please try again.';
-            sb.message.error('Error', msg);
-        }
+        var msg = (envelope && envelope.error && envelope.error.message)
+            ? envelope.error.message
+            : 'The request failed. Please try again.';
+        showToast('error', 'Error', msg);
     }
 
     // -- Change password ------------------------------------------------
@@ -348,8 +371,13 @@
                 old_password: current,
                 new_password: next
             }).then(function (env) {
-                if (env && env.ok) return; // Dispatcher returns Api::redirect.
-                if (showFieldError('account-', env && env.error)) return;
+                // On success the dispatcher returns Api::redirect, which
+                // api.js translates into `window.location.href = …`. The
+                // .then still fires before navigation; bail before the
+                // failure path mistakes the redirect envelope for an error.
+                if (env && env.ok) return;
+                if (env && env.redirect) return;
+                if (showFieldError('account-', env && env.error, { current: 'current-password' })) return;
                 flashFailure(env);
             });
         });
@@ -377,6 +405,7 @@
                     srv_password: 'NULL'
                 }).then(function (env) {
                     if (env && env.ok) { flashSuccess(env); return; }
+                    if (env && env.redirect) return;
                     flashFailure(env);
                 });
                 return;
@@ -403,6 +432,7 @@
                     srv_password: next
                 }).then(function (env) {
                     if (env && env.ok) { flashSuccess(env); return; }
+                    if (env && env.redirect) return;
                     flashFailure(env);
                 });
             }
@@ -465,15 +495,12 @@
                 password: pw
             }).then(function (env) {
                 if (env && env.ok) { flashSuccess(env); return; }
-                if (env && env.error) {
-                    // Map server-side field names to our DOM ids.
-                    var map = { emailpw: 'email-password', email1: 'email', email2: 'email-confirm' };
-                    var domId = map[env.error.field || ''] || env.error.field || '';
-                    if (domId) {
-                        setMsg('account-' + domId + '-msg', env.error.message || 'Invalid value.');
-                        return;
-                    }
-                }
+                if (env && env.redirect) return;
+                if (showFieldError(
+                    'account-',
+                    env && env.error,
+                    { emailpw: 'email-password', email1: 'email', email2: 'email-confirm' }
+                )) return;
                 flashFailure(env);
             });
         });
