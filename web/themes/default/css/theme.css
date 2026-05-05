@@ -169,6 +169,28 @@ html.dark .btn:hover { background: white; }
 .btn--sm { height: 2rem; padding: 0 0.75rem; font-size: var(--fs-xs); }
 .btn--icon { width: 2.25rem; padding: 0; }
 
+/* ---- Admin sub-tabs (intra-page section nav) ----
+   Pair: web/includes/AdminTabs.php +
+   web/themes/default/core/admin_tabs.tpl. The active tab carries
+   aria-current="page" (set by the template when $tab.name ==
+   $active_tab); the rule below underlines + bolds it so the strip
+   no longer reads as an undifferentiated row of buttons (#1186).
+   The selector intentionally targets any direct child carrying the
+   attribute so it works for both <button> tabs (this template) and
+   <a> tabs (page_admin_edit_admins_*.tpl) without per-element
+   scoping. ".admin-tabs__back" pushes the Back link to the right
+   edge so it visibly separates from the tab cluster. */
+.admin-tabs > [aria-current="page"] {
+  background: var(--bg-surface);
+  color: var(--text);
+  border-bottom: 2px solid var(--brand-600);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  font-weight: 600;
+}
+html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand-500); }
+.admin-tabs__back { margin-left: auto; }
+
 /* ---- Inputs ---- */
 .input, .select, .textarea {
   width: 100%; height: 2.25rem; padding: 0 0.75rem;
