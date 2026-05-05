@@ -768,6 +768,13 @@ echo '<div class="tabcontent" id="Group ban">';
     permission_addban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
     groupbanning_enabled: Config::getBool('config.enablegroupbanning'),
     list_steam_groups: isset($_GET['fid']) ? (string) $_GET['fid'] : false,
+    // `player_name` is rendered next to the steam-groups list when an
+    // admin reaches Group Ban via "Ban groups of player X" from the
+    // banlist (?fid=…). The legacy template emitted `{$player_name}`
+    // unguarded but no caller ever assigned it; we now pass an empty
+    // string so the SmartyTemplateRule contract holds and the new
+    // sbpp2026 template can render the placeholder when wired up.
+    player_name: '',
 ));
 echo '</div>';
 ?>

@@ -139,12 +139,6 @@ parameters:
 			path: includes/SteamID/calc/BCMATH.php
 
 		-
-			message: '#^Template "page_admin_bans_groups\.tpl" references \{\$player_name\} but Sbpp\\View\\AdminBansGroupsView has no public \$player_name property\.$#'
-			identifier: sbpp.view.missingProperty
-			count: 1
-			path: includes/View/AdminBansGroupsView.php
-
-		-
 			message: '#^Property Sbpp\\View\\AdminServersAddView\:\:\$modid is never referenced in template "page_admin_servers_add\.tpl"\.$#'
 			identifier: sbpp.view.unusedProperty
 			count: 1

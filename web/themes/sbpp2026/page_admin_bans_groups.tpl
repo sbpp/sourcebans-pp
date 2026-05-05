@@ -1,6 +1,174 @@
-<div class="card">
-    <div class="card__body">
-        <h1>{$title}</h1>
-        <p class="text-muted">This page hasn't been redesigned yet.</p>
+{*
+    SourceBans++ 2026 — page_admin_bans_groups.tpl
+    Bound to Sbpp\View\AdminBansGroupsView (validated by SmartyTemplateRule).
+
+    "Group ban" tab on the admin bans page. Two modes share this surface:
+      - Default: a small form to ban a Steam community group by URL.
+        Submission goes through the legacy ProcessGroupBan() helper in
+        admin.bans.php's tail script (which dispatches to
+        Actions.GroupbanCheck via sb.api.call).
+      - "From player" mode (?fid=STEAMID): the legacy LoadGetGroups()
+        helper enumerates the player's group memberships into the
+        #steamGroupsTable list; ticking groups + clicking "Add Group Ban"
+        runs CheckGroupBan() to issue Actions.GroupbanCheck for each
+        selected group.
+
+    Both helpers (LoadGetGroups, TickSelectAll, CheckGroupBan) live in
+    web/scripts/sourcebans.js and aren't loaded by the sbpp2026 chrome;
+    that flow remains a default-theme feature for the rollout window.
+    DOM ids (groupurl, groupreason, *.msg, agban, aback, gban,
+    tickswitch, tickswitchlink, steamGroups, steamGroupsText,
+    steamGroupsTable, steamGroupStatus) are preserved so legacy callers
+    continue to find them on default.
+
+    `$player_name` is rendered above the group list when reaching this
+    tab from a banlist row (?fid=STEAMID&player=…). admin.bans.php
+    currently passes an empty string; Phase B/C may wire the lookup
+    later, the placeholder is here so SmartyTemplateRule sees the
+    template + view are in agreement.
+*}
+{if NOT $permission_addban}
+    <div class="card" data-testid="groupban-denied">
+        <div class="card__body">
+            <h1 style="font-size:1.25rem;font-weight:600;margin:0">Access denied</h1>
+            <p class="text-sm text-muted m-0 mt-2">You don't have permission to add bans.</p>
+        </div>
     </div>
-</div>
+{else}
+    {if NOT $groupbanning_enabled}
+        <div class="card" data-testid="groupban-disabled">
+            <div class="card__body">
+                <h1 style="font-size:1.25rem;font-weight:600;margin:0">Feature disabled</h1>
+                <p class="text-sm text-muted m-0 mt-2">
+                    Group banning is turned off in
+                    <strong>config.enablegroupbanning</strong>.
+                    Re-enable it from the Settings tab to use this surface.
+                </p>
+            </div>
+        </div>
+    {else}
+        <section class="p-6" data-testid="groupban-section" style="max-width:48rem">
+            <div class="mb-6">
+                <h1 style="font-size:1.5rem;font-weight:600;margin:0">Group ban</h1>
+                <p class="text-sm text-muted m-0 mt-2">
+                    Ban every member of a Steam community group at once.
+                </p>
+            </div>
+
+            {if NOT $list_steam_groups}
+                <form id="groupban-form"
+                      class="card p-6 space-y-4"
+                      data-testid="groupban-form"
+                      onsubmit="return false;">
+                    {csrf_field}
+                    <div>
+                        <label class="label" for="groupurl">Steam community group URL</label>
+                        <input type="text"
+                               class="input font-mono"
+                               id="groupurl"
+                               name="groupurl"
+                               data-testid="groupban-url"
+                               placeholder="http://steamcommunity.com/groups/interwavestudios">
+                        <div class="text-xs mt-2" id="groupurl.msg" style="color:var(--danger);display:none"></div>
+                    </div>
+                    <div>
+                        <label class="label" for="groupreason">Group ban reason</label>
+                        <textarea class="textarea"
+                                  id="groupreason"
+                                  name="groupreason"
+                                  rows="4"
+                                  placeholder="Why is this group being banned?"
+                                  data-testid="groupban-reason"></textarea>
+                        <div class="text-xs mt-2" id="groupreason.msg" style="color:var(--danger);display:none"></div>
+                    </div>
+                    <div class="flex justify-end gap-2"
+                         style="border-top:1px solid var(--border);padding-top:0.75rem">
+                        <button type="button"
+                                class="btn btn--ghost"
+                                id="aback"
+                                data-testid="groupban-back"
+                                onclick="history.go(-1);">Back</button>
+                        <button type="button"
+                                class="btn btn--primary"
+                                id="agban"
+                                data-testid="groupban-submit"
+                                onclick="ProcessGroupBan();">
+                            Add group ban
+                        </button>
+                    </div>
+                </form>
+            {else}
+                <div class="card p-6 space-y-4" data-testid="groupban-from-player">
+                    <p class="text-sm text-muted m-0">
+                        {if $player_name}
+                            Groups <strong class="font-medium">{$player_name|escape}</strong> belongs to are loaded below.
+                        {else}
+                            All groups the player is a member of are listed here.
+                        {/if}
+                        Tick the ones you want to ban.
+                    </p>
+
+                    <div id="steamGroupsText"
+                         name="steamGroupsText"
+                         class="text-sm text-muted">Loading the groups…</div>
+
+                    <div id="steamGroups"
+                         name="steamGroups"
+                         style="display:none">
+                        <table id="steamGroupsTable"
+                               name="steamGroupsTable"
+                               class="table"
+                               style="margin-bottom:1rem">
+                            <thead>
+                                <tr>
+                                    <th style="width:2.5rem">
+                                        <button type="button"
+                                                id="tickswitch"
+                                                name="tickswitch"
+                                                class="btn btn--secondary btn--sm btn--icon"
+                                                onclick="TickSelectAll();"
+                                                title="Select all">+</button>
+                                    </th>
+                                    <th>Group</th>
+                                </tr>
+                            </thead>
+                        </table>
+                        <a class="btn btn--ghost btn--sm"
+                           href="#"
+                           onclick="TickSelectAll();return false;"
+                           name="tickswitchlink"
+                           id="tickswitchlink">Select all</a>
+
+                        <div class="mt-4">
+                            <label class="label" for="groupreason">Group ban reason</label>
+                            <textarea class="textarea"
+                                      id="groupreason"
+                                      name="groupreason"
+                                      rows="4"
+                                      placeholder="Why is this group being banned?"
+                                      data-testid="groupban-reason"></textarea>
+                            <div class="text-xs mt-2" id="groupreason.msg" style="color:var(--danger);display:none"></div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 mt-4">
+                            <button type="button"
+                                    class="btn btn--primary"
+                                    id="gban"
+                                    name="gban"
+                                    data-testid="groupban-bulk-submit"
+                                    onclick="CheckGroupBan();">
+                                Add group ban
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="steamGroupStatus"
+                         name="steamGroupStatus"
+                         class="text-sm" style="width:100%"></div>
+                </div>
+                {* nofilter: $list_steam_groups is the literal value of $_GET['fid'], which is dropped into a JS arg position. The legacy default theme does the same; LoadGetGroups uses it as a Steam profile id only. Re-implement the workflow on a future ticket if stricter validation is needed. *}
+                <script>LoadGetGroups('{$list_steam_groups nofilter}');</script>
+            {/if}
+        </section>
+    {/if}
+{/if}

@@ -71,14 +71,16 @@ if (empty($email)) {
     PageDie();
 }
 
-$theme->assign('email_addr', $email);
-$theme->assign('email_js', "CheckEmail('" . $_GET['type'] . "', " . (int) $_GET['id'] . ")");
-?>
+// $_GET['type'] is constrained above to the literal 's' or 'p' and
+// $_GET['id'] is cast to int, so the resulting `CheckEmail('s', 42)`
+// JS expression contains no caller-controlled data and is safe to drop
+// into the template's onclick attribute via {nofilter} in the
+// sbpp2026 / default themes.
+$emailJs = "CheckEmail('" . $_GET['type'] . "', " . (int) $_GET['id'] . ")";
 
-<div id="admin-page-content">
-    <div id="1">
-        <?php
-        $theme->display('page_admin_bans_email.tpl');
-        ?>
-    </div>
-</div>
+echo '<div id="admin-page-content"><div id="1">';
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansEmailView(
+    email_addr: (string) $email,
+    email_js: $emailJs,
+));
+echo '</div></div>';
