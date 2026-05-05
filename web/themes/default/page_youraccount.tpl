@@ -1,319 +1,510 @@
-<div id="admin-page-content">
+{*
+    SourceBans++ 2026 — page_youraccount.tpl
 
+    Self-service account page. View: Sbpp\View\YourAccountView.
 
-    <div class="tabcontent" id="View Permissions"> <!-- div ID 0 is the first 'panel' to be shown -->
-        <h3>Your Permissions</h3>
-        The following is a list of the permissions that you have on this system.<br /><br /> <br />
-        <table width="100%" border="0">
-            <tr>
-                <td width="35%" valign="top">
-                    <span style='font-size:10px;color:#1b75d1;'>Web Permissions</span>
-                    <br/>
-                    -{if $web_permissions}-
-                    -{foreach from=$web_permissions item=permission}-
-                &bull; -{$permission}- <br/>
-                    -{/foreach}-
-                    -{else}-
-                    <i>None</i>
-                    -{/if}-
-                </td>
-                <td valign="top">
-                    <span style='font-size:10px;color:#1b75d1;'>Server Permissions</span>
-                    <br/>
-                    -{if $server_permissions}-
-                    -{foreach from=$server_permissions item=permission}-
-                &bull; -{$permission}- <br/>
-                    -{/foreach}-
-                    -{else}-
-                    <i>None</i>
-                    -{/if}-
-                </td>
-            </tr>
-        </table>
-    </div>
+    Delimiters: standard `{ }`. The legacy default theme's
+    `page_youraccount.tpl` used `-{ }-` (a SourceBans-1.x oddity). The
+    redesign deliberately drops that override so the View doesn't have
+    to carry a `View::DELIMITERS` exception; see the View's docblock
+    for the rollout note. D1 deletes the legacy delimiter use entirely.
 
+    Each form below is state-changing and submits via sb.api.call,
+    which sends the CSRF token in the `X-CSRF-Token` header (see
+    web/scripts/api.js). `{csrf_field}` is still included in every
+    form so the markup follows the project-wide convention — it
+    becomes a bonus belt-and-braces hidden input the dispatcher would
+    accept as `params.csrf_token` even if a future submit path were
+    to bypass the JS helper.
 
-    <div class="tabcontent" id="Change Password"> <!-- div ID 1 is the second 'panel' to be shown -->
-        <h3>Change Password</h3>
-        <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
-            <tr>
-                <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Password</div></td>
-                <td><div align="left">
-                        <input type="password" onblur="LoadCheckPassword(-{$user_aid}-, $('current').value);" class="textbox" id="current" name="current" />
+    The forms are wired by inline vanilla JS at the bottom of the page
+    (no MooTools, no jQuery — only `sb.api.call(Actions.*)` and
+    standard DOM APIs). Submit handlers preventDefault and call the
+    Account* JSON actions registered in
+    web/api/handlers/_register.php; on success the dispatcher already
+    returns either an `Api::redirect` envelope (password change) or a
+    `data.message` describing a success toast (server password / email
+    change). Toasts go through window.SBPP.showToast (theme.js), with a
+    sb.message.* fallback so the same JS still works if this page is
+    ever rendered under the legacy default chrome.
+
+    Test hooks: every input + submit button carries a stable
+    `data-testid="account-<field>"` attribute matching the names
+    listed in plan #1123 B20.
+*}
+<div class="p-6 space-y-6" style="max-width:64rem;margin:0 auto;width:100%">
+
+    <header data-testid="account-header">
+        <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Your account</h1>
+        <p class="text-sm text-muted m-0 mt-2">Permissions, password, server password, and email.</p>
+    </header>
+
+    {* -- Permissions card --------------------------------------------- *}
+    <section class="card" data-testid="account-permissions">
+        <div class="card__header">
+            <div>
+                <h3>Your permissions</h3>
+                <p>The flags currently granted to your admin account.</p>
+            </div>
+        </div>
+        <div class="card__body">
+            <div class="grid gap-6" style="grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))">
+                <div>
+                    <div class="text-xs font-semibold text-muted mb-2" style="text-transform:uppercase;letter-spacing:0.06em">Web</div>
+                    {if $web_permissions}
+                        <ul class="m-0 text-sm" style="padding-left:1.25rem">
+                            {foreach from=$web_permissions item=permission}
+                                <li>{$permission}</li>
+                            {/foreach}
+                        </ul>
+                    {else}
+                        <div class="text-sm text-muted" data-testid="account-permissions-web-empty"><em>None</em></div>
+                    {/if}
+                </div>
+                <div>
+                    <div class="text-xs font-semibold text-muted mb-2" style="text-transform:uppercase;letter-spacing:0.06em">Server</div>
+                    {if $server_permissions}
+                        <ul class="m-0 text-sm" style="padding-left:1.25rem">
+                            {foreach from=$server_permissions item=permission}
+                                <li>{$permission}</li>
+                            {/foreach}
+                        </ul>
+                    {else}
+                        <div class="text-sm text-muted" data-testid="account-permissions-server-empty"><em>None</em></div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {* -- Change password card ----------------------------------------- *}
+    <section class="card" data-testid="account-change-password">
+        <div class="card__header">
+            <div>
+                <h3>Change password</h3>
+                <p>Use at least {$min_pass_len} character{if $min_pass_len != 1}s{/if}. You will be signed out after a successful change.</p>
+            </div>
+        </div>
+        <div class="card__body">
+            <form id="account-password-form"
+                  class="space-y-4"
+                  autocomplete="off"
+                  novalidate
+                  data-aid="{$user_aid}"
+                  data-min-pass-len="{$min_pass_len}">
+                {csrf_field}
+                <div>
+                    <label class="label" for="account-current-password">Current password</label>
+                    <input class="input" type="password"
+                           id="account-current-password"
+                           name="current_password"
+                           data-testid="account-current-password"
+                           autocomplete="current-password" required>
+                    <div id="account-current-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div>
+                    <label class="label" for="account-new-password">New password</label>
+                    <input class="input" type="password"
+                           id="account-new-password"
+                           name="new_password"
+                           data-testid="account-new-password"
+                           minlength="{$min_pass_len}"
+                           autocomplete="new-password" required>
+                    <div id="account-new-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div>
+                    <label class="label" for="account-confirm-password">Confirm new password</label>
+                    <input class="input" type="password"
+                           id="account-confirm-password"
+                           name="confirm_password"
+                           data-testid="account-confirm-password"
+                           minlength="{$min_pass_len}"
+                           autocomplete="new-password" required>
+                    <div id="account-confirm-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button class="btn btn--secondary" type="reset" data-testid="account-cancel">Cancel</button>
+                    <button class="btn btn--primary" type="submit" data-testid="account-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    {* -- Server password card ----------------------------------------- *}
+    <section class="card" data-testid="account-server-password">
+        <div class="card__header">
+            <div>
+                <h3>Server password</h3>
+                <p>You need this in the game server to use your admin rights.
+                    <a href="https://wiki.alliedmods.net/Adding_Admins_%28SourceMod%29#Passwords"
+                       target="_blank" rel="noopener"
+                       style="color:var(--accent);text-decoration:underline">SourceMod docs</a>.</p>
+            </div>
+        </div>
+        <div class="card__body">
+            <form id="account-srv-password-form"
+                  class="space-y-4"
+                  autocomplete="off"
+                  novalidate
+                  data-aid="{$user_aid}"
+                  data-min-pass-len="{$min_pass_len}"
+                  data-srv-pw-set="{if $srvpwset}1{else}0{/if}">
+                {csrf_field}
+                {if $srvpwset}
+                    <div>
+                        <label class="label" for="account-current-srv-password">Current server password</label>
+                        <input class="input" type="password"
+                               id="account-current-srv-password"
+                               name="current_srv_password"
+                               data-testid="account-current-srv-password" required>
+                        <div id="account-current-srv-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
                     </div>
-                    <div id="current.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-            </tr>
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="New password" message="Type your new password here. <br /><br /><i>Min Length: $min_pass_len</i>"}-New Password</div></td>
-                <td><div align="left">
-                        <input class="textbox" type="password" onkeyup="checkYourAcctPass();" id="pass1" value="" name="pass1" />
-                    </div><div id="pass1.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="Confirm Password" message="Please type your new password again to avoid a mistake"}-Confirm Password</div></td>
-                <td><div align="left">
-                        <input type="password" onkeyup="checkYourAcctPass();" class="textbox" id="pass2" name="pass2" />
-                    </div>
-                    <div id="pass2.msg" class="badentry"></div></td>
-            </tr>
+                {/if}
+                <div>
+                    <label class="label" for="account-new-srv-password">New server password</label>
+                    <input class="input" type="password"
+                           id="account-new-srv-password"
+                           name="new_srv_password"
+                           data-testid="account-new-srv-password"
+                           minlength="{$min_pass_len}">
+                    <div id="account-new-srv-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div>
+                    <label class="label" for="account-confirm-srv-password">Confirm new server password</label>
+                    <input class="input" type="password"
+                           id="account-confirm-srv-password"
+                           name="confirm_srv_password"
+                           data-testid="account-confirm-srv-password"
+                           minlength="{$min_pass_len}">
+                    <div id="account-confirm-srv-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                {if $srvpwset}
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox"
+                               id="account-remove-srv-password"
+                               name="remove_srv_password"
+                               data-testid="account-remove-srv-password">
+                        <span>Remove the existing server password (clears the field).</span>
+                    </label>
+                {/if}
+                <div class="flex justify-end gap-2">
+                    <button class="btn btn--secondary" type="reset" data-testid="account-srv-cancel">Cancel</button>
+                    <button class="btn btn--primary" type="submit" data-testid="account-srv-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </section>
 
-            <tr>
-                <td>&nbsp;</td>
-                <td>
-                    <input type="submit" onclick="LoadCheckPassword(-{$user_aid}-, $('current').value);dispatch();" name="button" class="btn ok" id="button" value="Save" />
-                    &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
-            </tr>
-        </table>
-    </div>
+    {* -- Change email card -------------------------------------------- *}
+    <section class="card" data-testid="account-change-email">
+        <div class="card__header">
+            <div>
+                <h3>Change email</h3>
+                <p>Current address:
+                    {if $email}
+                        <span class="font-mono text-sm" data-testid="account-current-email">{$email}</span>
+                    {else}
+                        <span class="text-sm text-muted" data-testid="account-current-email-empty">(not set)</span>
+                    {/if}
+                </p>
+            </div>
+        </div>
+        <div class="card__body">
+            <form id="account-email-form"
+                  class="space-y-4"
+                  autocomplete="off"
+                  novalidate
+                  data-aid="{$user_aid}">
+                {csrf_field}
+                <div>
+                    <label class="label" for="account-email-password">Password</label>
+                    <input class="input" type="password"
+                           id="account-email-password"
+                           name="email_password"
+                           data-testid="account-email-password"
+                           autocomplete="current-password" required>
+                    <div id="account-email-password-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div>
+                    <label class="label" for="account-email">New email address</label>
+                    <input class="input" type="email"
+                           id="account-email"
+                           name="email"
+                           data-testid="account-email"
+                           autocomplete="email" required>
+                    <div id="account-email-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div>
+                    <label class="label" for="account-email-confirm">Confirm new email address</label>
+                    <input class="input" type="email"
+                           id="account-email-confirm"
+                           name="email_confirm"
+                           data-testid="account-email-confirm"
+                           autocomplete="email" required>
+                    <div id="account-email-confirm-msg" class="text-xs" style="color:var(--danger);display:none;margin-top:0.375rem"></div>
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button class="btn btn--secondary" type="reset" data-testid="account-email-cancel">Cancel</button>
+                    <button class="btn btn--primary" type="submit" data-testid="account-email-save">Save</button>
+                </div>
+            </form>
+        </div>
+    </section>
 
-
-    <div class="tabcontent" id="Server Password"> <!-- div ID 2 is the third 'panel' to be shown -->
-        <h3>Change Server Password</h3>
-        You will need to specify this password in the game server before you can use your admin rights.<br />Click <a href="http://wiki.alliedmods.net/Adding_Admins_%28SourceMod%29#Passwords" title="SourceMod Password Info" target="_blank"><b>here</b></a> for more infos.
-        <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
-            -{if $srvpwset}-
-            <tr>
-                <td valign="top" width="35%"><div class="rowdesc">-{help_icon title="Current Password" message="We need to know your current password to verify its you."}-Current Server Password</div></td>
-                <td><div align="left">
-                        <input type="password" onblur="LoadCheckSrvPassword(-{$user_aid}-, $('scurrent').value);" class="textbox" id="scurrent" name="scurrent" />
-                    </div>
-                    <div id="scurrent.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-            </tr>
-            -{/if}-
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="New password" message="Type your new server password here. <br /><br /><i>Min Length: $min_pass_len"}-New Password</div></td>
-                <td><div align="left">
-                        <input class="textbox" type="password" onkeyup="checkYourSrvPass();" id="spass1" value="" name="spass1" />
-                    </div><div id="spass1.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="Confirm Password" message="Please type your new server password again to avoid a mistake."}-Confirm Password</div></td>
-                <td><div align="left">
-                        <input type="password" onkeyup="checkYourSrvPass();" class="textbox" id="spass2" name="spass2" />
-                    </div>
-                    <div id="spass2.msg" class="badentry"></div></td>
-            </tr>
-            -{if $srvpwset}-
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="Remove Server Password" message="Check this box, if you want to delete your server password"}-Remove Password</div></td>
-                <td><div align="left">
-                        <input type="checkbox" id="delspass" name="delspass" />
-                    </div>
-                </td>
-            </tr>
-            -{/if}-
-            <tr>
-                <td>&nbsp;</td>
-                <td>
-                    <input type="submit" onclick="-{if $srvpwset}-LoadCheckSrvPassword(-{$user_aid}-, $('scurrent').value);-{/if}-srvdispatch();" name="button" class="btn ok" id="button" value="Save" />
-                    &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
-            </tr>
-        </table>
-    </div>
-
-
-    <div class="tabcontent" id="Change Email"> <!-- div ID 3 is the fourth 'panel' to be shown -->
-        <h3>Change E-Mail</h3>
-        <table width="90%" border="0" style="border-collapse:collapse;" id="group.details" cellpadding="3">
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="Current E-Mail" message="This is your current saved E-mail address."}-Current E-Mail</div></td>
-                <td><div align="left">-{$email}-</div></td>
-            </tr>
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="Current Password" message="Type your password here."}-Password</div></td>
-                <td><div align="left">
-                        <input class="textbox" type="password" id="emailpw" value="" name="emailpw" />
-                    </div><div id="emailpw.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="New E-mail" message="Type your new email address here."}-New E-mail</div></td>
-                <td><div align="left">
-                        <input class="textbox" type="text" id="email1" value="" name="email1" />
-                    </div><div id="email1.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td valign="top"><div class="rowdesc">-{help_icon title="Confirm E-mail" message="Please type your new email address again to avoid a mistake."}-Confirm E-mail</div></td>
-                <td><div align="left">
-                        <input type="text" class="textbox" id="email2" name="email2" />
-                    </div>
-                    <div id="email2.msg" class="badentry"></div></td>
-            </tr>
-            <tr>
-                <td>&nbsp;</td>
-                <td>
-                    <input type="submit" onclick="checkmail();" name="button" class="btn ok" id="button" value="Save" />
-                    &nbsp; <input type="submit" onclick="history.go(-1)" name="button" class="btn cancel" id="button" value="Cancel" />	</td>
-            </tr>
-        </table>
-    </div>
-    <script>
-        var error = 0;
-        function set_error(count)
-        {
-            error = count;
-        }
-        function checkYourAcctPass()
-        {
-            var err = 0;
-
-            if($('pass1').value.length < -{$min_pass_len}-)
-            {
-                $('pass1.msg').setStyle('display', 'block');
-                $('pass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
-                err++;
-            }
-            else
-            {
-                $('pass1.msg').setStyle('display', 'none');
-            }
-            if($('pass2').value != "" && $('pass2').value != $('pass1').value)
-            {
-                $('pass2.msg').setStyle('display', 'block');
-                $('pass2.msg').setHTML('Your passwords dont match');
-                err++;
-            }else{
-                $('pass2.msg').setStyle('display', 'none');
-            }
-            if(err > 0)
-            {
-                set_error(1);
-                return false;
-            }
-            else
-            {
-                set_error(0);
-                return true;
-            }
-        }
-        function dispatch()
-        {
-            if($('current.msg').innerHTML == "Incorrect password.")
-            {
-                alert("Incorrect Password");
-                return false;
-            }
-            if(checkYourAcctPass() && error == 0)
-            {
-                LoadChangePassword(-{$user_aid}-, $('pass2').value, $('current').value);
-            }
-        }
-        function checkYourSrvPass()
-        {
-            if(!$('delspass') || $('delspass').checked == false)
-            {
-                var err = 0;
-
-                if($('spass1').value.length < -{$min_pass_len}-)
-                {
-                    $('spass1.msg').setStyle('display', 'block');
-                    $('spass1.msg').setHTML('Your password must be atleast -{$min_pass_len}- letters long');
-                    err++;
-                }
-                else
-                {
-                    $('spass1.msg').setStyle('display', 'none');
-                }
-                if($('spass2').value != "" && $('spass2').value != $('spass1').value)
-                {
-                    $('spass2.msg').setStyle('display', 'block');
-                    $('spass2.msg').setHTML('Your passwords dont match');
-                    err++;
-                }else{
-                    $('spass2.msg').setStyle('display', 'none');
-                }
-                if(err > 0)
-                {
-                    set_error(1);
-                    return false;
-                }
-                else
-                {
-                    set_error(0);
-                    return true;
-                }
-            }
-            else
-            {
-                set_error(0);
-                return true;
-            }
-        }
-        function srvdispatch()
-        {
-            -{if $srvpwset}-
-            if($('scurrent.msg').innerHTML == "Incorrect password.")
-            {
-                alert("Incorrect Password");
-                return false;
-            }
-            -{/if}-
-            if(checkYourSrvPass() && error == 0 && (!$('delspass') || $('delspass').checked == false))
-            {
-                LoadChangeSrvPassword(-{$user_aid}-, $('spass2').value);
-            }
-            if($('delspass').checked == true)
-            {
-                LoadChangeSrvPassword(-{$user_aid}-, 'NULL');
-            }
-        }
-        function checkmail()
-        {
-            var err = 0;
-            if($('email1').value == "")
-            {
-                $('email1.msg').setStyle('display', 'block');
-                $('email1.msg').setHTML('Please type the new E-mail.');
-                err++;
-            }else{
-                $('email1.msg').setStyle('display', 'none');
-            }
-
-            if($('email2').value == "")
-            {
-                $('email2.msg').setStyle('display', 'block');
-                $('email2.msg').setHTML('Please retype the new E-mail.');
-                err++;
-            }else{
-                $('email2.msg').setStyle('display', 'none');
-            }
-
-            if(err == 0 && $('email2').value != $('email1').value)
-            {
-                $('email2.msg').setStyle('display', 'block');
-                $('email2.msg').setHTML('The typed E-mails doesn\'t match.');
-                err++;
-            }
-
-            if($('emailpw').value == "")
-            {
-                $('emailpw.msg').setStyle('display', 'block');
-                $('emailpw.msg').setHTML('Please type your password.');
-                err++;
-            }else{
-                $('emailpw.msg').setStyle('display', 'none');
-            }
-
-            if(err > 0)
-            {
-                set_error(1);
-                return false;
-            }
-            else
-            {
-                set_error(0);
-            }
-            if(error == 0)
-            {
-                LoadChangeEmail(-{$user_aid}-, $('email2').value, $('emailpw').value);
-            }
-        }
-    </script>
 </div>
+
+{*
+    Inline vanilla-JS controllers for the three forms above. We
+    deliberately keep the wiring inline (rather than adding a new file
+    under web/themes/sbpp2026/js/) so this self-contained page stays
+    self-contained — the script only runs when this template is on
+    screen. `Actions.*` is the Action-name registry exported by the
+    auto-generated web/scripts/api-contract.js (loaded by core/header.tpl).
+*}
+{literal}
+<script>
+(function () {
+    'use strict';
+    if (typeof sb === 'undefined' || !sb.api || typeof Actions === 'undefined') return;
+
+    function setMsg(id, text) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (text) {
+            el.textContent = text;
+            el.style.display = 'block';
+        } else {
+            el.textContent = '';
+            el.style.display = 'none';
+        }
+    }
+
+    function val(id) {
+        var el = document.getElementById(id);
+        return el && 'value' in el ? String(el.value) : '';
+    }
+
+    function num(form, key, fallback) {
+        var n = parseInt(form.dataset[key] || '', 10);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
+    function clearMsgs(prefix, fields) {
+        fields.forEach(function (f) { setMsg(prefix + f + '-msg', ''); });
+    }
+
+    // Server-side ApiError `field` strings don't always match our DOM ids
+    // (e.g. account.change_password throws field='current' but the input
+    // is #account-current-password). Each form passes its own map; missing
+    // keys fall through to the raw field name so newly added fields
+    // surface *something* instead of silently no-opping.
+    function showFieldError(prefix, err, fieldMap) {
+        if (!err || !err.field) return false;
+        var domId = (fieldMap && fieldMap[err.field]) || err.field;
+        setMsg(prefix + domId + '-msg', err.message || 'Invalid value.');
+        return true;
+    }
+
+    // sbpp2026 doesn't ship #dialog-placement (that's a legacy default-theme
+    // chrome element from core/title.tpl), so sb.message.show() silently
+    // no-ops here. Prefer the theme's SBPP.showToast and fall back to
+    // sb.message for callers that survive into the legacy theme.
+    function showToast(kind, title, body) {
+        if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+            window.SBPP.showToast({ kind: kind, title: title, body: body });
+            return;
+        }
+        if (sb.message) {
+            if (kind === 'success') sb.message.success(title, body);
+            else sb.message.error(title, body);
+        }
+    }
+
+    function flashSuccess(envelope) {
+        if (!envelope || !envelope.ok || !envelope.data || !envelope.data.message) return;
+        var m = envelope.data.message;
+        showToast('success', m.title || 'Saved', m.body || '');
+        if (m.redir) {
+            // Short delay so the toast is visible before the same-page
+            // refresh swaps in the new email / srv-password state.
+            setTimeout(function () { window.location.href = m.redir; }, 1500);
+        }
+    }
+
+    function flashFailure(envelope) {
+        var msg = (envelope && envelope.error && envelope.error.message)
+            ? envelope.error.message
+            : 'The request failed. Please try again.';
+        showToast('error', 'Error', msg);
+    }
+
+    // -- Change password ------------------------------------------------
+    var pwForm = document.getElementById('account-password-form');
+    if (pwForm) {
+        pwForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            clearMsgs('account-', ['current-password', 'new-password', 'confirm-password']);
+
+            var minLen = num(pwForm, 'minPassLen', 1);
+            var current = val('account-current-password');
+            var next    = val('account-new-password');
+            var confirm = val('account-confirm-password');
+            var aid     = parseInt(pwForm.dataset.aid || '0', 10);
+            var bad = false;
+
+            if (next.length < minLen) {
+                setMsg('account-new-password-msg', 'Password must be at least ' + minLen + ' characters.');
+                bad = true;
+            }
+            if (confirm !== next) {
+                setMsg('account-confirm-password-msg', 'Passwords do not match.');
+                bad = true;
+            }
+            if (current.length === 0) {
+                setMsg('account-current-password-msg', 'Enter your current password.');
+                bad = true;
+            }
+            if (bad) return;
+
+            sb.api.call(Actions.AccountChangePassword, {
+                aid: aid,
+                old_password: current,
+                new_password: next
+            }).then(function (env) {
+                // On success the dispatcher returns Api::redirect, which
+                // api.js translates into `window.location.href = …`. The
+                // .then still fires before navigation; bail before the
+                // failure path mistakes the redirect envelope for an error.
+                if (env && env.ok) return;
+                if (env && env.redirect) return;
+                if (showFieldError('account-', env && env.error, { current: 'current-password' })) return;
+                flashFailure(env);
+            });
+        });
+    }
+
+    // -- Server password ------------------------------------------------
+    var srvForm = document.getElementById('account-srv-password-form');
+    if (srvForm) {
+        srvForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            clearMsgs('account-', ['current-srv-password', 'new-srv-password', 'confirm-srv-password']);
+
+            var minLen   = num(srvForm, 'minPassLen', 1);
+            var hasExisting = srvForm.dataset.srvPwSet === '1';
+            var aid      = parseInt(srvForm.dataset.aid || '0', 10);
+            var current  = val('account-current-srv-password');
+            var next     = val('account-new-srv-password');
+            var confirm  = val('account-confirm-srv-password');
+            var removeEl = document.getElementById('account-remove-srv-password');
+            var remove   = !!(removeEl && 'checked' in removeEl && removeEl.checked);
+
+            if (remove) {
+                sb.api.call(Actions.AccountChangeSrvPassword, {
+                    aid: aid,
+                    srv_password: 'NULL'
+                }).then(function (env) {
+                    if (env && env.ok) { flashSuccess(env); return; }
+                    if (env && env.redirect) return;
+                    flashFailure(env);
+                });
+                return;
+            }
+
+            var bad = false;
+            if (next.length < minLen) {
+                setMsg('account-new-srv-password-msg', 'Password must be at least ' + minLen + ' characters.');
+                bad = true;
+            }
+            if (confirm !== next) {
+                setMsg('account-confirm-srv-password-msg', 'Passwords do not match.');
+                bad = true;
+            }
+            if (hasExisting && current.length === 0) {
+                setMsg('account-current-srv-password-msg', 'Enter your current server password.');
+                bad = true;
+            }
+            if (bad) return;
+
+            function send() {
+                sb.api.call(Actions.AccountChangeSrvPassword, {
+                    aid: aid,
+                    srv_password: next
+                }).then(function (env) {
+                    if (env && env.ok) { flashSuccess(env); return; }
+                    if (env && env.redirect) return;
+                    flashFailure(env);
+                });
+            }
+
+            if (hasExisting) {
+                sb.api.call(Actions.AccountCheckSrvPassword, {
+                    aid: aid,
+                    password: current
+                }).then(function (env) {
+                    if (!env || !env.ok || !env.data) {
+                        flashFailure(env);
+                        return;
+                    }
+                    if (!env.data.matches) {
+                        setMsg('account-current-srv-password-msg', 'Incorrect server password.');
+                        return;
+                    }
+                    send();
+                });
+            } else {
+                send();
+            }
+        });
+    }
+
+    // -- Change email ---------------------------------------------------
+    var emailForm = document.getElementById('account-email-form');
+    if (emailForm) {
+        emailForm.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            clearMsgs('account-', ['email-password', 'email', 'email-confirm']);
+
+            var aid     = parseInt(emailForm.dataset.aid || '0', 10);
+            var pw      = val('account-email-password');
+            var email   = val('account-email');
+            var confirm = val('account-email-confirm');
+            var bad = false;
+
+            if (email.length === 0) {
+                setMsg('account-email-msg', 'Enter your new email address.');
+                bad = true;
+            }
+            if (confirm.length === 0) {
+                setMsg('account-email-confirm-msg', 'Confirm your new email address.');
+                bad = true;
+            }
+            if (!bad && email !== confirm) {
+                setMsg('account-email-confirm-msg', 'Email addresses do not match.');
+                bad = true;
+            }
+            if (pw.length === 0) {
+                setMsg('account-email-password-msg', 'Enter your password.');
+                bad = true;
+            }
+            if (bad) return;
+
+            sb.api.call(Actions.AccountChangeEmail, {
+                aid: aid,
+                email: email,
+                password: pw
+            }).then(function (env) {
+                if (env && env.ok) { flashSuccess(env); return; }
+                if (env && env.redirect) return;
+                if (showFieldError(
+                    'account-',
+                    env && env.error,
+                    { emailpw: 'email-password', email1: 'email', email2: 'email-confirm' }
+                )) return;
+                flashFailure(env);
+            });
+        });
+    }
+})();
+</script>
+{/literal}

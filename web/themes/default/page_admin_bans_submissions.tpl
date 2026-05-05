@@ -1,161 +1,264 @@
+{*
+    SourceBans++ 2026 — page_admin_bans_submissions.tpl
+    Bound to Sbpp\View\AdminBansSubmissionsView (validated by SmartyTemplateRule).
+
+    Current ban submissions queue. Each item collapses to a <details>
+    block instead of the legacy InitAccordion('tr.opener3', …) row pair
+    so no JS is required to expand. The row id `sid_<subid>` is kept to
+    satisfy Swap2ndPane()/applyApiResponse() callers from the default
+    theme (those still read the same DOM when admins land here on the
+    legacy chrome).
+
+    Actions per row (gated on the precomputed perms):
+      - Ban: opens the Add Ban form prefilled (Actions.BansSetupBan via
+        the legacy LoadSetupBan; falls back to a no-op when sourcebans.js
+        isn't loaded — sbpp2026 inline script below also wires the call
+        directly so the button works in both themes).
+      - Remove: archiv=1 (move to archive). Requires $permissions_editsub.
+      - Contact: opens admin.email.php with the submitter's email.
+
+    `$submission_nav` is server-built pagination HTML emitted with
+    nofilter; safety annotation matches the default template.
+*}
 {if NOT $permissions_submissions}
-    Access Denied!
-{else}
-    <h3 style="margin-top:0px;">Ban Submissions (<span id="subcount">{$submission_count}</span>)</h3>
-    Click a player's nickname to view information about their submission<br /><br />
-    <div id="banlist-nav">
-        {* nofilter: submission_nav is server-built pagination from admin.bans.php with no $_GET interpolation in this branch *}
-        {$submission_nav nofilter}
+    <div class="card" data-testid="submissions-denied">
+        <div class="card__body">
+            <h1 style="font-size:1.25rem;font-weight:600;margin:0">Access denied</h1>
+            <p class="text-sm text-muted m-0 mt-2">You don't have permission to view ban submissions.</p>
+        </div>
     </div>
-    <table width="100%" cellpadding="0" cellspacing="0">
-        <tr  class="tbl_out">
-            <td width="40%" height='16' class="listtable_top"><strong>Nickname</strong></td>
-            <td width="20%" height='16' class="listtable_top"><strong>SteamID</strong></td>
-            <td width="25%" height='16' class="listtable_top"><strong>Action</strong></td>
-        </tr>
-        {foreach from=$submission_list item="sub"}
-            <tr id="sid_{$sub.subid}" class="opener3 tbl_out" {if $sub.hostname == ""}onclick="LoadServerHost('{$sub.server}', 'id', 'sub{$sub.subid}');"{/if} onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'">
-                {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced *}
-                <td class="listtable_1" height='16'>{$sub.name nofilter}</td>
-                <td class="listtable_1" height='16'>{if $sub.SteamId!=""}{$sub.SteamId}{else}{$sub.sip}{/if}</td>
-                <td class="listtable_1" height='16'>
-                    <a href="#" onclick="LoadSetupBan({$sub.subid});return false;">Ban</a> -
-                    {if $permissions_editsub}
-                        <a href="#" onclick="RemoveSubmission({$sub.subid}, '{$sub.name|smarty_stripslashes}', '1');return false;">Remove</a> -
-                    {/if}
-                    <a href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid|escape:'url'}">Contact</a>
-                </td>
-            </tr>
-            <tr id="sid_{$sub.subid}a">
-                <td colspan="3">
-                    <div class="opener3" width="100%" align="center">
-                        <table width="90%" cellspacing="0" cellpadding="0" class="listtable">
-                            <tr>
-                                <td height="16" align="left" class="listtable_top" colspan="3">
-                                    <b>Ban Details</b>
-                                </td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Player</td>
-                                {* nofilter: see sub.name above — wordwrap(htmlspecialchars(...))-encoded in admin.bans.php *}
-                                <td height="16" class="listtable_1">{$sub.name nofilter}</td>
-                                <td width="30%" rowspan="9" class="listtable_2">
-                                    <div class="ban-edit">
-                                        <ul>
-                                            {* nofilter: sub.demo is server-built `<a href="getdemo.php?id={URLENCODED INT}…">` HTML, sub.subaddcomment is CreateLinkR-built; no user input *}
-                                            <li>{$sub.demo nofilter}</li>
-                                            <li>{$sub.subaddcomment nofilter}</li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Submitted</td>
-                                <td height="16" class="listtable_1">{$sub.submitted}</td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">SteamID</td>
-                                <td height="16" class="listtable_1">
-                                    {if $sub.SteamId == ""}
-                                        <i><font color="#677882">no steamid present</font></i>
-                                    {else}
-                                        {$sub.SteamId}
-                                    {/if}
-                                </td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">IP</td>
-                                <td height="16" class="listtable_1">
-                                    {if $sub.sip == ""}
-                                        <i><font color="#677882">no ip address present</font></i>
-                                    {else}
-                                        {$sub.sip}
-                                    {/if}
-                                </td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Reason</td>
-                                {* nofilter: sub.reason is wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced *}
-                                <td height="" class="listtable_1">{$sub.reason nofilter}</td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Server</td>
-                                {* nofilter: sub.hostname is either "" or the static `<i><font color="#677882">Other server...</font></i>` literal in admin.bans.php — server-controlled, no user input *}
-                                <td height="" class="listtable_1" id="sub{$sub.subid}">{if $sub.hostname == ""}<i>Retrieving Hostname</i>{else}{$sub.hostname nofilter}{/if}</td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">MOD</td>
-                                <td height="" class="listtable_1">{$sub.mod}</td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Submitter Name</td>
-                                <td height="" class="listtable_1">
-                                    {if $sub.subname == ""}
-                                        <i><font color="#677882">no name present</font></i>
-                                    {else}
-                                        {$sub.subname}
-                                    {/if}
-                                </td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Submitter IP</td>
-                                <td height="" class="listtable_1">{$sub.ip}</td>
-                            </tr>
-                            <tr align="left">
-                                <td width="20%" height="16" class="listtable_1">Comments</td>
-                                <td height="60" class="listtable_1" colspan="3">
-                                    {if $sub.commentdata != "None"}
-                                        <table width="100%" border="0">
-                                            {foreach from=$sub.commentdata item=commenta}
-                                                {if $commenta.morecom}
-                                                    <tr>
-                                                        <td colspan="3">
-                                                            <hr />
-                                                        </td>
-                                                    </tr>
-                                                {/if}
-                                                <tr>
-                                                    <td>
-                                                        {if !empty($commenta.comname)}
-                                                            <b>{$commenta.comname}</b>
-                                                        {else}
-                                                            <i><font color="#677882">Admin deleted</font></i>
+{else}
+    <section class="p-6" data-testid="submissions-section" style="max-width:1400px">
+        <div class="flex items-center justify-between gap-4 mb-4" style="flex-wrap:wrap">
+            <div>
+                <h1 style="font-size:1.5rem;font-weight:600;margin:0">
+                    Ban submissions
+                    <span class="text-sm text-muted" style="font-weight:400">
+                        (<span id="subcount" data-testid="submissions-count">{$submission_count}</span>)
+                    </span>
+                </h1>
+                <p class="text-sm text-muted m-0 mt-2">
+                    Player-reported bans waiting for an admin to review.
+                </p>
+            </div>
+            <div class="text-xs text-muted" data-testid="submissions-nav">
+                {* nofilter: $submission_nav is server-built pagination HTML from admin.bans.php with no $_GET interpolation in this branch. *}
+                {$submission_nav nofilter}
+            </div>
+        </div>
+
+        {if $submission_list|@count == 0}
+            <div class="card" data-testid="submissions-empty">
+                <div class="card__body">
+                    <p class="text-sm text-muted m-0">No pending submissions. The queue is clear.</p>
+                </div>
+            </div>
+        {else}
+            <div class="card" style="overflow:hidden" data-testid="submissions-list">
+                {foreach from=$submission_list item="sub"}
+                    <details class="ban-row ban-row--active"
+                             id="sid_{$sub.subid}"
+                             data-testid="submission-row"
+                             data-id="{$sub.subid}"
+                             style="border-bottom:1px solid var(--border)">
+                        <summary class="flex items-center gap-3 p-4"
+                                 style="cursor:pointer;list-style:none">
+                            <div style="flex:1;min-width:0">
+                                <div class="font-medium text-sm truncate" data-testid="submission-row-name">
+                                    {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced. *}
+                                    {$sub.name nofilter}
+                                </div>
+                                <div class="font-mono text-xs text-muted truncate" data-testid="submission-row-steam">
+                                    {if $sub.SteamId != ""}{$sub.SteamId|escape}{else}{$sub.sip|escape}{/if}
+                                </div>
+                            </div>
+                            <div class="text-xs text-muted" style="flex-shrink:0">
+                                {$sub.submitted|escape}
+                            </div>
+                            <div class="row-actions" style="opacity:1;flex-shrink:0">
+                                <button type="button"
+                                        class="btn btn--secondary btn--sm"
+                                        data-testid="row-action-ban"
+                                        data-action="submission-ban"
+                                        data-subid="{$sub.subid}">
+                                    Ban
+                                </button>
+                                {if $permissions_editsub}
+                                    <button type="button"
+                                            class="btn btn--ghost btn--sm"
+                                            data-testid="row-action-remove"
+                                            data-action="submission-archive"
+                                            data-subid="{$sub.subid}"
+                                            data-name="{$sub.name|smarty_stripslashes|escape}"
+                                            data-archiv="1"
+                                            style="color:var(--danger)">
+                                        Remove
+                                    </button>
+                                {/if}
+                                <a class="btn btn--ghost btn--sm"
+                                   data-testid="row-action-contact"
+                                   href="index.php?p=admin&c=bans&o=email&type=s&id={$sub.subid|escape:'url'}">
+                                    Contact
+                                </a>
+                            </div>
+                        </summary>
+
+                        <div class="p-4" style="background:var(--bg-muted);border-top:1px solid var(--border)">
+                            <div class="grid gap-4" style="grid-template-columns:2fr 1fr">
+                                <dl class="text-sm" style="margin:0;display:grid;grid-template-columns:auto 1fr;gap:0.375rem 0.75rem">
+                                    <dt class="text-muted">Player</dt>
+                                    {* nofilter: see sub.name above — wordwrap(htmlspecialchars(...))-encoded in admin.bans.php. *}
+                                    <dd class="font-medium" style="margin:0">{$sub.name nofilter}</dd>
+
+                                    <dt class="text-muted">Submitted</dt>
+                                    <dd style="margin:0">{$sub.submitted|escape}</dd>
+
+                                    <dt class="text-muted">SteamID</dt>
+                                    <dd class="font-mono" style="margin:0">
+                                        {if $sub.SteamId == ""}<span class="text-faint">no steamid present</span>{else}{$sub.SteamId|escape}{/if}
+                                    </dd>
+
+                                    <dt class="text-muted">IP</dt>
+                                    <dd class="font-mono" style="margin:0">
+                                        {if $sub.sip == ""}<span class="text-faint">no IP address present</span>{else}{$sub.sip|escape}{/if}
+                                    </dd>
+
+                                    <dt class="text-muted">Reason</dt>
+                                    {* nofilter: sub.reason is wordwrap(htmlspecialchars($sub['reason']), 55, "<br />", true) — already entity-escaped in admin.bans.php. *}
+                                    <dd style="margin:0">{$sub.reason nofilter}</dd>
+
+                                    <dt class="text-muted">Server</dt>
+                                    <dd style="margin:0" id="sub{$sub.subid}">
+                                        {if $sub.hostname == ""}
+                                            <i class="text-faint">Retrieving Hostname</i>
+                                        {else}
+                                            {* nofilter: sub.hostname is the literal `<i><font color="#677882">Other server...</font></i>` HTML emitted by admin.bans.php for non-tracked servers — server-controlled, no user input. *}
+                                            {$sub.hostname nofilter}
+                                        {/if}
+                                    </dd>
+
+                                    <dt class="text-muted">MOD</dt>
+                                    <dd style="margin:0">{$sub.mod|escape}</dd>
+
+                                    <dt class="text-muted">Submitter</dt>
+                                    <dd style="margin:0">
+                                        {if $sub.subname == ""}<span class="text-faint">no name present</span>{else}{$sub.subname|escape}{/if}
+                                    </dd>
+
+                                    <dt class="text-muted">Submitter IP</dt>
+                                    <dd class="font-mono" style="margin:0">{$sub.ip|escape}</dd>
+                                </dl>
+
+                                <ul class="text-sm" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.375rem">
+                                    {* nofilter: sub.demo is server-built `<a href="getdemo.php?id={URLENCODED INT}…">` HTML, sub.subaddcomment is CreateLinkR-built; no user input flows in. *}
+                                    <li>{$sub.demo nofilter}</li>
+                                    <li>{$sub.subaddcomment nofilter}</li>
+                                </ul>
+                            </div>
+
+                            {if $sub.commentdata != "None"}
+                                <div class="mt-4">
+                                    <h4 class="text-xs text-muted" style="font-weight:600;margin:0 0 0.5rem;text-transform:uppercase;letter-spacing:0.06em">Comments</h4>
+                                    <div class="space-y-3">
+                                        {foreach from=$sub.commentdata item=commenta}
+                                            <div class="card p-4">
+                                                <div class="flex items-center justify-between gap-2 text-xs text-muted mb-2">
+                                                    <strong style="color:var(--text);font-weight:600">
+                                                        {if !empty($commenta.comname)}{$commenta.comname|escape}{else}<i class="text-faint">Admin deleted</i>{/if}
+                                                    </strong>
+                                                    <span class="flex items-center gap-2">
+                                                        <span>{$commenta.added|escape}</span>
+                                                        {if $commenta.editcomlink != ""}
+                                                            {* nofilter: editcomlink/delcomlink are CreateLinkR-built `<a … onclick="…">` HTML from admin.bans.php with integer cid + literal subid; no user input. *}
+                                                            <span>{$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}</span>
                                                         {/if}
-                                                    </td><td align="right"><b>{$commenta.added}</b>
-                                                    </td>
-                                                    {if $commenta.editcomlink != ""}
-                                                        <td align="right">
-                                                            {* nofilter: editcomlink/delcomlink are CreateLinkR-built HTML / static `<a … onclick="RemoveComment(INT,'S',-1)">` from admin.bans.php with integer cid + literal subid, no user input *}
-                                                            {$commenta.editcomlink nofilter} {$commenta.delcomlink nofilter}
-                                                        </td>
-                                                    {/if}
-                                                </tr>
-                                                <tr>
-                                                    <td colspan="2" style="word-break: break-all;word-wrap: break-word;">
-                                                        {* nofilter: commenttxt passes through encodePreservingBr (htmlspecialchars per-segment, only `<br/>` survives) + URL-wrap regex on already-escaped text in admin.bans.php *}
-                                                        {$commenta.commenttxt nofilter}
-                                                    </td>
-                                                </tr>
+                                                    </span>
+                                                </div>
+                                                <div class="text-sm" style="word-break:break-all;word-wrap:break-word">
+                                                    {* nofilter: commenttxt passes through encodePreservingBr (htmlspecialchars per-segment, only `<br/>` survives) + URL-wrap regex on already-escaped text in admin.bans.php. *}
+                                                    {$commenta.commenttxt nofilter}
+                                                </div>
                                                 {if !empty($commenta.edittime)}
-                                                    <tr>
-                                                        <td colspan="3">
-                                                            <span style="font-size:6pt;color:grey;">last edit {$commenta.edittime} by {if !empty($commenta.editname)}{$commenta.editname}{else}<i><font color="#677882">Admin deleted</font></i>{/if}</span>
-                                                        </td>
-                                                    </tr>
+                                                    <div class="text-xs text-faint mt-2">
+                                                        last edit {$commenta.edittime|escape} by
+                                                        {if !empty($commenta.editname)}{$commenta.editname|escape}{else}<i>Admin deleted</i>{/if}
+                                                    </div>
                                                 {/if}
-                                            {/foreach}
-                                        </table>
-                                    {/if}
-                                    {if $sub.commentdata == "None"}
-                                        {$sub.commentdata}
-                                    {/if}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                </td>
-            </tr>
-        {/foreach}
-    </table>
-    <script>InitAccordion('tr.opener3', 'div.opener3', 'mainwrapper');</script>
+                                            </div>
+                                        {/foreach}
+                                    </div>
+                                </div>
+                            {else}
+                                <div class="text-xs text-faint mt-3">{$sub.commentdata|escape}</div>
+                            {/if}
+                        </div>
+                    </details>
+                {/foreach}
+            </div>
+        {/if}
+    </section>
 {/if}
+{* Inline action wiring — works in both themes, sb.api.call + Actions are
+   loaded by both core/header.tpl variants. The legacy theme also exposes
+   LoadSetupBan/RemoveSubmission via sourcebans.js; we prefer the inline
+   handler so the buttons behave identically in either chrome. *}
+{literal}
+<script>
+(function () {
+    'use strict';
+    function api() { return (window.sb && window.sb.api) || null; }
+    function actions() { return window.Actions || null; }
+    function toast(kind, title, body) {
+        if (window.sb && window.sb.message && window.sb.message[kind]) {
+            window.sb.message[kind](title, body || '');
+        }
+    }
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var btn = t.closest('[data-action]');
+        if (!btn) return;
+        var act = btn.getAttribute('data-action');
+        if (act === 'submission-ban') {
+            e.preventDefault();
+            var subid = Number(btn.dataset.subid);
+            var a = api(), A = actions();
+            if (!a || !A || !Number.isFinite(subid)) return;
+            a.call(A.BansSetupBan, { subid: subid }).then(function (r) {
+                if (r && r.ok && r.data && typeof window.applyBanFields === 'function') {
+                    window.applyBanFields(r.data);
+                }
+                if (typeof window.swapTab === 'function') window.swapTab(0);
+            });
+            return;
+        }
+        if (act === 'submission-archive') {
+            e.preventDefault();
+            var sid = Number(btn.dataset.subid);
+            var name = btn.dataset.name || ('submission #' + sid);
+            var archiv = btn.dataset.archiv || '1';
+            var msg;
+            if (archiv === '2') msg = 'Restore the ban submission for "' + name + '" from the archive?';
+            else if (archiv === '1') msg = 'Move the ban submission for "' + name + '" to the archive?';
+            else msg = 'Delete the ban submission for "' + name + '"?';
+            if (!window.confirm(msg)) return;
+            var a2 = api(), A2 = actions();
+            if (!a2 || !A2 || !Number.isFinite(sid)) return;
+            btn.disabled = true;
+            a2.call(A2.SubmissionsRemove, { sid: sid, archiv: archiv }).then(function (r) {
+                if (!r || r.ok === false) {
+                    btn.disabled = false;
+                    toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
+                    return;
+                }
+                var node = document.getElementById('sid_' + sid);
+                if (node && node.parentNode) node.parentNode.removeChild(node);
+                var counter = document.getElementById('subcount');
+                if (counter) counter.textContent = String(Math.max(0, Number(counter.textContent) - 1));
+                toast('success', 'Done', 'Submission updated.');
+            });
+        }
+    });
+})();
+</script>
+{/literal}

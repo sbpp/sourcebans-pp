@@ -2,7 +2,7 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-SourceBans++ (c) 2014-2019 by SourceBans++ Dev Team
+SourceBans++ (c) 2014-2026 by SourceBans++ Dev Team
 
 The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
@@ -16,20 +16,16 @@ Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
-SourceBans TF2 Theme v1.0
-Copyright © 2014 IceMan
-Page: <https://forums.alliedmods.net/showthread.php?t=252533>
-
 *************************************************************************/
 
 // Set the name of this theme here
-define('theme_name', "SourceBans++ Default Theme");
+define('theme_name', "SourceBans++ 2026");
 
 // Set the author of this theme here
-define('theme_author', "IceMan, SourceBans++ Dev Team");
+define('theme_author', "SourceBans++ Dev Team");
 
 // Set the version of the theme here
-define('theme_version', "1.8.0-dev");
+define('theme_version', "2.0.0-dev");
 
 // Set the link of the theme here
 define('theme_link', "https://github.com/sbpp/sourcebans-pp");

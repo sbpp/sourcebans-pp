@@ -1,106 +1,168 @@
-<form action="" method="post">
-    {csrf_field}
-    <input type="hidden" name="settingsGroup" value="features" />
-    <table width="99%" border="0" style="border-collapse:collapse;" id="group.features" cellpadding="3">
-        <tr>
-            <td valign="top" colspan="2"><h3>Ban Features</h3>For more information or help regarding a certain subject move your mouse over the question mark.<br /><br /></td>
-        </tr>
-        <tr>
-            <td valign="top" width="35%"><div class="rowdesc">{help_icon title="Enable Public Bans" message="Check this box to enable the entire ban list to be publically downloaded and shared."}Make Export Bans Public</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="export_public" id="export_public" />
+{*
+    SourceBans++ 2026 — page / page_admin_settings_features.tpl
+
+    "Features" sub-tab on the admin Settings page. Pair:
+    Sbpp\View\AdminFeaturesView + web/pages/admin.settings.php (which
+    routes by ?section= and renders one View per request — see
+    sibling page_admin_settings_settings.tpl for the rationale).
+
+    Variable contract (kept in sync by SmartyTemplateRule):
+        Permission gates:
+            $can_web_settings — gates the entire body.
+            $can_owner — currently unused in this section but kept
+                across all settings views for parity.
+        Section nav: $active_section.
+        Toggles: $export_public, $enable_kickit,
+            $enable_groupbanning, $enable_friendsbanning,
+            $enable_adminrehashing, $enable_steamlogin,
+            $enable_normallogin, $enable_publiccomments.
+        Steam Web API key probe: $steamapi (true when STEAMAPIKEY
+            is defined and non-empty; gates Group/Friends banning
+            inputs the same way the legacy theme did).
+
+    Testability hooks:
+        - Sub-nav links: data-testid="settings-tab-<key>".
+        - Each toggle row: data-testid="setting-row" + data-key="<key>".
+        - Save button: data-testid="settings-save".
+*}
+<div class="p-6">
+    <div class="mb-6">
+        <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
+        <p class="text-sm text-muted m-0 mt-2">Optional features and integrations.</p>
+    </div>
+
+    <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
+        <nav aria-label="Settings sections" role="tablist">
+            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
+               role="tab"
+               data-testid="settings-tab-settings"
+               {if $active_section == 'settings'}aria-current="page"{/if}>
+                <i data-lucide="settings"></i> Main
+            </a>
+            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=features"
+               role="tab"
+               data-testid="settings-tab-features"
+               {if $active_section == 'features'}aria-current="page"{/if}>
+                <i data-lucide="toggle-right"></i> Features
+            </a>
+            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=logs"
+               role="tab"
+               data-testid="settings-tab-logs"
+               {if $active_section == 'logs'}aria-current="page"{/if}>
+                <i data-lucide="scroll-text"></i> System Log
+            </a>
+            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=themes"
+               role="tab"
+               data-testid="settings-tab-themes"
+               {if $active_section == 'themes'}aria-current="page"{/if}>
+                <i data-lucide="palette"></i> Themes
+            </a>
+        </nav>
+
+        <div>
+            {if NOT $can_web_settings}
+                <div class="card">
+                    <div class="card__body">
+                        <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
+                    </div>
                 </div>
-            </td>
-        </tr>
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable KickIt" message="Check this box to kick a player when a ban is posted."}Enable KickIt</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="enable_kickit" id="enable_kickit" />
-                </div>
-            </td>
-        </tr>
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Group Banning" message="Check this box, if you want to enable banning of whole steam community groups."}Enable Group Banning</div></td>
-            <td>
-                <div align="left">
-                    {if $steamapi}
-                        <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" />
-                    {else}
-                        <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning" disabled />
-                        <br/>You haven't set a valid steamapi key in the config
-                    {/if}
-                </div>
-                <div id="enable_groupbanning.msg" class="badentry"></div>
-            </td>
-        </tr>
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Friend Banning" message="Check this box, if you want to enable banning all steam community friends of a player."}Enable Friends Banning</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="enable_friendsbanning" id="enable_friendsbanning" />
-                </div>
-                <div id="enable_friendsbanning.msg" class="badentry"></div>
-            </td>
-        </tr>
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Admin Rehashing" message="Check this box, if you want to enable the admin rehashing everytime an admin/group has been changed."}Enable Admin Rehashing</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="enable_adminrehashing" id="enable_adminrehashing" />
-                </div>
-                <div id="enable_adminrehashing.msg" class="badentry"></div>
-            </td>
-        </tr>
+            {else}
+                <form action="?p=admin&amp;c=settings&amp;section=features" method="post" class="space-y-4">
+                    {csrf_field}
+                    <input type="hidden" name="settingsGroup" value="features">
 
+                    <div class="card">
+                        <div class="card__header"><div><h3>Bans</h3><p>Public exports, KickIt, group / friend banning.</p></div></div>
+                        <div class="card__body space-y-3">
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.exportpublic">
+                                <span class="text-sm">
+                                    <span class="font-medium">Public ban export</span>
+                                    <span class="block text-xs text-muted mt-2">Lets unauthenticated visitors download the full ban list.</span>
+                                </span>
+                                <input type="checkbox" name="export_public" id="export_public"{if $export_public} checked{/if}>
+                            </label>
 
-        <!-- added for steam login option mod -->
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablekickit">
+                                <span class="text-sm">
+                                    <span class="font-medium">KickIt</span>
+                                    <span class="block text-xs text-muted mt-2">Auto-kick a player when their ban lands.</span>
+                                </span>
+                                <input type="checkbox" name="enable_kickit" id="enable_kickit"{if $enable_kickit} checked{/if}>
+                            </label>
 
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Steam Login" message="Check this box to show the Sign in through Steam button on the login form."}Enable Steam Login</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="enable_steamlogin" id="enable_steamlogin" />
-                </div>
-                <div id="enable_steamlogin.msg" class="badentry"></div>
-            </td>
-        </tr>
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablegroupbanning">
+                                <span class="text-sm">
+                                    <span class="font-medium">Steam group banning</span>
+                                    <span class="block text-xs text-muted mt-2">
+                                        Ban every member of a Steam community group.
+                                        {if NOT $steamapi}<br><span style="color:var(--warning)">Requires a Steam Web API key in <code>config.php</code>.</span>{/if}
+                                    </span>
+                                </span>
+                                <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning"{if $enable_groupbanning} checked{/if}{if NOT $steamapi} disabled{/if}>
+                            </label>
 
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Normal Login" message="Check this box to allow logging in with a username and password. Disable to require Steam login."}Enable Normal Login</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="enable_normallogin" id="enable_normallogin" />
-                </div>
-                <div id="enable_normallogin.msg" class="badentry"></div>
-            </td>
-        </tr>
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablefriendsbanning">
+                                <span class="text-sm">
+                                    <span class="font-medium">Steam friends banning</span>
+                                    <span class="block text-xs text-muted mt-2">
+                                        Ban every Steam friend of a player.
+                                        {if NOT $steamapi}<br><span style="color:var(--warning)">Requires a Steam Web API key in <code>config.php</code>.</span>{/if}
+                                    </span>
+                                </span>
+                                <input type="checkbox" name="enable_friendsbanning" id="enable_friendsbanning"{if $enable_friendsbanning} checked{/if}{if NOT $steamapi} disabled{/if}>
+                            </label>
 
-        <!-- end steam login option mod -->
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enableadminrehashing">
+                                <span class="text-sm">
+                                    <span class="font-medium">Auto admin rehash</span>
+                                    <span class="block text-xs text-muted mt-2">Push admin/group changes to servers immediately.</span>
+                                </span>
+                                <input type="checkbox" name="enable_adminrehashing" id="enable_adminrehashing"{if $enable_adminrehashing} checked{/if}>
+                            </label>
+                        </div>
+                    </div>
 
+                    <div class="card">
+                        <div class="card__header"><div><h3>Login</h3><p>Sign-in surfaces exposed to admins.</p></div></div>
+                        <div class="card__body space-y-3">
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablesteamlogin">
+                                <span class="text-sm">
+                                    <span class="font-medium">Steam OpenID login</span>
+                                    <span class="block text-xs text-muted mt-2">Show "Sign in through Steam" on the login page.</span>
+                                </span>
+                                <input type="checkbox" name="enable_steamlogin" id="enable_steamlogin"{if $enable_steamlogin} checked{/if}>
+                            </label>
 
-        <!-- public comments -->
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablenormallogin">
+                                <span class="text-sm">
+                                    <span class="font-medium">Username/password login</span>
+                                    <span class="block text-xs text-muted mt-2">Disable to require Steam login for all admins.</span>
+                                </span>
+                                <input type="checkbox" name="enable_normallogin" id="enable_normallogin"{if $enable_normallogin} checked{/if}>
+                            </label>
+                        </div>
+                    </div>
 
-        <tr>
-            <td valign="top"><div class="rowdesc">{help_icon title="Enable Public Comments" message="Check this box, if you want to make admin comments on bans viewable by everyone."}Enable Public Comments</div></td>
-            <td>
-                <div align="left">
-                    <input type="checkbox" name="enable_publiccomments" id="enable_publiccomments" />
-                </div>
-                <div id="enable_publiccomments.msg" class="badentry"></div>
-            </td>
-        </tr>
+                    <div class="card">
+                        <div class="card__header"><div><h3>Comments</h3><p>Visibility of admin commentary on bans / submissions.</p></div></div>
+                        <div class="card__body space-y-3">
+                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablepubliccomments">
+                                <span class="text-sm">
+                                    <span class="font-medium">Public admin comments</span>
+                                    <span class="block text-xs text-muted mt-2">Show admin comments on a ban to anonymous visitors.</span>
+                                </span>
+                                <input type="checkbox" name="enable_publiccomments" id="enable_publiccomments"{if $enable_publiccomments} checked{/if}>
+                            </label>
+                        </div>
+                    </div>
 
-        <!-- end public comments -->
-
-
-        <tr>
-            <td colspan="2" align="center">
-                {sb_button text="Save Changes" class="ok" id="fsettings" submit=true}
-                &nbsp;
-                {sb_button text="Back" class="cancel" id="fback"}
-            </td>
-        </tr>
-    </table>
-</form>
+                    <div class="flex items-center justify-end gap-2">
+                        <button type="submit" class="btn btn--primary" data-testid="settings-save">
+                            <i data-lucide="save"></i> Save changes
+                        </button>
+                    </div>
+                </form>
+            {/if}
+        </div>
+    </div>
+</div>

@@ -1,163 +1,503 @@
-<div align="center">
-    <table width="50%" cellpadding="0" class="listtable" cellspacing="0">
-        <tr class="sea_open">
-            <td width="2%" height="16" class="listtable_top" colspan="3" style="text-align: center;"><b>Advanced Search</b> (Click)</td>
-        </tr>
-        <tr>
-            <td>
-                <div class="panel">
-                    <table width="100%" cellpadding="0" class="listtable" cellspacing="0">
-                        <tr>
-                            <td class="listtable_1" width="8%" align="center"><input id="name" name="search_type" type="radio" value="name"></td>
-                            <td class="listtable_1" width="26%">Nickname</td>
-                            <td class="listtable_1" width="66%"><input class="textbox" type="text" id="nick" value="" onmouseup="$('name').checked = true" style="width: 87%;"></td>
-                        </tr>
-                        <tr>
-                            <td align="center" class="listtable_1" ><input id="steam_" type="radio" name="search_type" value="radiobutton"></td>
-                            <td class="listtable_1" >Steam ID</td>
-                            <td class="listtable_1" >
-                                <input class="textbox" type="text" id="steamid" value="" onmouseup="$('steam_').checked = true"style="width: 50%; margin-right: 12px;"><select class="select" id="steam_match" onmouseup="$('steam_').checked = true" style="width: 33%;">
-                                    <option value="0" selected>Exact Match</option>
-                                    <option value="1">Partial Match</option>
-                                </select>
-                            </td>
-                        </tr>
-                        {if !$hideplayerips}
-                            <tr>
-                                <td align="center" class="listtable_1" ><input id="ip_" type="radio" name="search_type" value="radiobutton"></td>
-                                <td class="listtable_1" >IP</td>
-                                <td class="listtable_1" ><input class="textbox" type="text" id="ip" value="" onmouseup="$('ip_').checked = true"style="width: 87%;"></td>
-                            </tr>
-                        {/if}
-                        <tr>
-                            <td align="center" class="listtable_1" ><input id="reason_" type="radio" name="search_type" value="radiobutton"></td>
-                            <td class="listtable_1" >Reason</td>
-                            <td class="listtable_1" ><input class="textbox" type="text" id="ban_reason" value="" onmouseup="$('reason_').checked = true" style="width: 87%;"></td>
-                        </tr>
-                        <tr>
-                            <td align="center" class="listtable_1" ><input id="date" type="radio" name="search_type" value="radiobutton"></td>
-                            <td class="listtable_1" >Date</td>
-                            <td class="listtable_1" >
-                                <input class="textbox" type="text" id="day" value="DD" onmouseup="$('date').checked = true" maxlength="2" style="width: 22%;">
-                                <input class="textbox" type="text" id="month" value="MM" onmouseup="$('date').checked = true" maxlength="2" style="width: 22%;">
-                                <input class="textbox" type="text" id="year" value="YY" onmouseup="$('date').checked = true" maxlength="4" style="width: 24%;">
-                            </td>
-                        </tr>
-                        <tr>
-                            <td align="center" class="listtable_1" ><input id="length_" type="radio" name="search_type" value="radiobutton"></td>
-                            <td class="listtable_1" >Length</td>
-                            <td class="listtable_1" >
-                                <table border="0" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td>
-                                            <select class="select" id="length_type" onmouseup="$('length_').checked = true" style="width: 60px; margin-right: 12px;">
-                                                <option value="e" title="equal to">=</option>
-                                                <option value="h" title="greater">&gt;</option>
-                                                <option value="l" title="smaller">&lt;</option>
-                                                <option value="eh" title="equal to or greater">&gt;=</option>
-                                                <option value="el" title="equal to or smaller">&lt;=</option>
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <input type="text" id="other_length" name="other_length" onmouseup="$('length_').checked = true" style="border: 1px solid #000000; font-size: 12px; background-color: rgb(215, 215, 215);width: 190px;display:none;">
-                                        </td>
-                                        <td>
-                                            <select class="select" id="length" onmouseup="$('length_').checked = true" onchange="switch_length(this);" onmouseover="if(this.options[this.selectedIndex].value=='other')$('length').setStyle('width', '210px');if(this.options[this.selectedIndex].value=='other')this.focus();" onblur="if(this.options[this.selectedIndex].value=='other')$('length').setStyle('width', '20px');" style="width: 127%;">
-                                                <option value="0">Permanent</option>
-                                                <optgroup label="minutes">
-                                                    <option value="1">1 minute</option>
-                                                    <option value="5">5 minutes</option>
-                                                    <option value="10">10 minutes</option>
-                                                    <option value="15">15 minutes</option>
-                                                    <option value="30">30 minutes</option>
-                                                    <option value="45">45 minutes</option>
-                                                </optgroup>
-                                                <optgroup label="hours">
-                                                    <option value="60">1 hour</option>
-                                                    <option value="120">2 hours</option>
-                                                    <option value="180">3 hours</option>
-                                                    <option value="240">4 hours</option>
-                                                    <option value="480">8 hours</option>
-                                                    <option value="720">12 hours</option>
-                                                </optgroup>
-                                                <optgroup label="days">
-                                                    <option value="1440">1 day</option>
-                                                    <option value="2880">2 days</option>
-                                                    <option value="4320">3 days</option>
-                                                    <option value="5760">4 days</option>
-                                                    <option value="7200">5 days</option>
-                                                    <option value="8640">6 days</option>
-                                                </optgroup>
-                                                <optgroup label="weeks">
-                                                    <option value="10080">1 week</option>
-                                                    <option value="20160">2 weeks</option>
-                                                    <option value="30240">3 weeks</option>
-                                                </optgroup>
-                                                <optgroup label="months">
-                                                    <option value="40320">1 month</option>
-                                                    <option value="80640">2 months</option>
-                                                    <option value="120960">3 months</option>
-                                                    <option value="241920">6 months</option>
-                                                    <option value="483840">12 months</option>
-                                                </optgroup>
-                                                <option value="other">Other length in minutes</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td align="center" class="listtable_1" ><input id="ban_type_" type="radio" name="search_type" value="radiobutton"></td>
-                            <td class="listtable_1" >Type</td>
-                            <td class="listtable_1" >
-                                <select class="select" id="ban_type" onmouseup="$('ban_type_').checked = true" style="width: 95%;">
-                                    <option value="0" selected>Steam ID</option>
-                                    <option value="1">IP Address</option>
-                                </select>
-                            </td>
-                        </tr>
-                        {if !$hideadminname}
-                        <tr>
-                            <td class="listtable_1"  align="center"><input id="admin" name="search_type" type="radio" value="radiobutton"></td>
-                            <td class="listtable_1" >Admin</td>
-                            <td class="listtable_1" >
-                                <select class="select" id="ban_admin" onmouseup="$('admin').checked = true" style="width: 95%;">
-                {foreach from=$admin_list item="admin"}
-								    <option label="{$admin.user}" value="{$admin.aid}">{$admin.user}</option>
-							  {/foreach}
-						</select>
-					</td>
-				</tr>
-                {/if}
-			    <tr>
-			    	<td class="listtable_1"  align="center"><input id="where_banned" name="search_type" type="radio" value="radiobutton"></td>
-					<td class="listtable_1" >Server</td>
-			        <td class="listtable_1" >
-						<select class="select" id="server" onmouseup="$('where_banned').checked = true" style="width: 95%;">
-						<option label="Web Ban" value="0">Web Ban</option>
-							{foreach from=$server_list item="server"}
-								<option value="{$server.sid}" id="ss{$server.sid}">Retrieving Hostname... ({$server.ip}:{$server.port})</option>
-							{/foreach}
-						</select>
-					</td>
-			    </tr>
-				{if $is_admin}
-				<tr>
-			        <td align="center" class="listtable_1" ><input id="comment_" type="radio" name="search_type" value="radiobutton"></td>
-			        <td class="listtable_1" >Comment</td>
-			        <td class="listtable_1" ><input class="textbox" type="text" id="ban_comment" value="" onmouseup="$('comment_').checked = true" style="width: 87%;"></td>
-			    </tr>
-				{/if}
-			    <tr>
-			        <td colspan="4">{sb_button text="Search" onclick="search_bans();" class="ok searchbtn" id="searchbtn" submit=false}</td>
-			    </tr>
-			   </table>
-			   </div>
-		  </td>
-		</tr>
-	</table>
-</div>
-{* nofilter: server-built `<script>LoadServerHost('SID', …)</script>` from `:prefix_servers.sid` integer column, no user input — see admin.bans.search.php *}
-{$server_script nofilter}
-<script>InitAccordion('tr.sea_open', 'div.panel', 'mainwrapper');</script>
+{*
+    SourceBans++ 2026 — public ban list advanced-search box.
+
+    Pair: web/pages/admin.bans.search.php +
+          web/includes/View/AdminBansSearchView.php (typed DTO that
+          SmartyTemplateRule keeps in lockstep with this template).
+
+    This box is included via {load_template file="admin.bans.search"}
+    from any consumer page that wants the legacy advanced-search
+    affordance. The new sbpp2026 page_bans.tpl ships its own filter
+    bar inline; this box stays as a fully-functional, paired-View
+    drop-in so future redesigns (or a "more filters" disclosure) can
+    re-mount it without re-plumbing the form.
+
+    Wire format (kept identical to the legacy box so
+    page.banlist.php?advSearch=…&advType=… continues to parse the
+    same `$_GET` shape):
+        advType=name           advSearch=<text>           (nickname)
+        advType=steam|steamid  advSearch=<text>           (partial vs exact)
+        advType=ip             advSearch=<text>           (gated by !hideplayerips)
+        advType=reason         advSearch=<text>
+        advType=date           advSearch="<dd>,<mm>,<yyyy>"
+        advType=length         advSearch="<op>,<minutes>" op ∈ e|h|l|eh|el
+        advType=btype          advSearch=<0|1>            0 = SteamID, 1 = IP
+        advType=admin          advSearch=<aid>            (gated by !hideadminname)
+        advType=where_banned   advSearch=<sid>            0 = web ban
+        advType=comment        advSearch=<text>           (admin-only)
+
+    Why we drop sourcebans.js' search_bans() global
+    -----------------------------------------------
+    sourcebans.js disappears at #1123 D1, so the legacy
+    `onclick="search_bans()"` button would `ReferenceError` post-cutover.
+    Each row gets its own submit button, with the dispatch logic inlined
+    under {literal}<script>…{/literal}` — vanilla, no globals, no
+    `sb.$idRequired` (the inline script owns its own DOM). The hidden
+    `advType` / `advSearch` inputs are populated from the row's source
+    field on click and the form submits natively; a no-JS browser still
+    gets a working (if type-less) form.
+
+    LoadServerHost replacement
+    --------------------------
+    The legacy `$server_script` payload built inline `<script>` tags
+    that called `LoadServerHost('SID', 'id', 'ssSID', '', '', false, 200)`
+    per server option to fetch the live hostname. After D1 removes
+    sourcebans.js, that helper is gone; the server-side list is now
+    plain `<option>`s carrying `data-sid` / `data-ip` / `data-port`,
+    and the inline initializer below issues one
+    `sb.api.call(Actions.ServersHostPlayers, {sid})` per option — same
+    pattern B5 established in page_servers.tpl.
+
+    Testability hooks (per #1123 issue body, "search-<scope>-<…>"):
+        data-testid="search-bans-form"           outer form
+        data-testid="search-bans-name"           nickname <input>
+        data-testid="search-bans-steamid"        SteamID <input>
+        data-testid="search-bans-steam-match"    exact / partial match
+        data-testid="search-bans-ip"             IP <input>     (gated)
+        data-testid="search-bans-reason"         reason <input>
+        data-testid="search-bans-date-day"       date triple, …-month, …-year
+        data-testid="search-bans-length-op"      length comparator
+        data-testid="search-bans-length"         length <select>
+        data-testid="search-bans-other-length"   "other length" <input>
+        data-testid="search-bans-btype"          steam / ip <select>
+        data-testid="search-bans-admin"          admin <select> (gated)
+        data-testid="search-bans-server"         server <select>
+        data-testid="search-bans-comment"        admin comment <input> (gated)
+        data-testid="search-bans-submit-<key>"   one per searchable field
+*}
+<form method="get"
+      action="index.php"
+      data-testid="search-bans-form"
+      class="card"
+      style="margin-top:1rem;margin-bottom:1rem">
+    <input type="hidden" name="p" value="banlist">
+    <input type="hidden" name="advType" value="" data-search-type>
+    <input type="hidden" name="advSearch" value="" data-search-value>
+
+    <div class="card__header">
+        <div>
+            <h3>Advanced search</h3>
+            <p>Each row is its own search criterion &mdash; the &laquo;Search&raquo; button on the right submits using just that row's value.</p>
+        </div>
+    </div>
+
+    <div class="card__body space-y-3">
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <label class="label" for="search-bans-name" style="grid-column:1;align-self:end">Nickname</label>
+            <input class="input"
+                   id="search-bans-name"
+                   type="text"
+                   placeholder="Substring match against the player nickname&hellip;"
+                   data-testid="search-bans-name"
+                   autocomplete="off">
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-name"
+                    data-search-key="name"
+                    data-search-from="search-bans-name">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <label class="label" for="search-bans-steamid" style="grid-column:1;align-self:end">Steam ID</label>
+            <div class="flex gap-2" style="flex-wrap:wrap">
+                <input class="input font-mono"
+                       id="search-bans-steamid"
+                       type="text"
+                       placeholder="STEAM_0:0:1234 or [U:1:1234]&hellip;"
+                       data-testid="search-bans-steamid"
+                       style="flex:1;min-width:14rem"
+                       autocomplete="off">
+                <select class="select"
+                        id="search-bans-steam-match"
+                        data-testid="search-bans-steam-match"
+                        style="width:9rem">
+                    <option value="0" selected>Exact match</option>
+                    <option value="1">Partial match</option>
+                </select>
+            </div>
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-steamid"
+                    data-search-key=""
+                    data-search-compose="steam">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        {if NOT $hideplayerips}
+            <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+                <label class="label" for="search-bans-ip" style="grid-column:1;align-self:end">IP</label>
+                <input class="input font-mono"
+                       id="search-bans-ip"
+                       type="text"
+                       placeholder="Exact IP address&hellip;"
+                       data-testid="search-bans-ip"
+                       autocomplete="off">
+                <button type="submit"
+                        class="btn btn--secondary btn--sm"
+                        data-testid="search-bans-submit-ip"
+                        data-search-key="ip"
+                        data-search-from="search-bans-ip">
+                    <i data-lucide="search" style="width:14px;height:14px"></i> Search
+                </button>
+            </div>
+        {/if}
+
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <label class="label" for="search-bans-reason" style="grid-column:1;align-self:end">Reason</label>
+            <input class="input"
+                   id="search-bans-reason"
+                   type="text"
+                   placeholder="Substring match against the recorded reason&hellip;"
+                   data-testid="search-bans-reason"
+                   autocomplete="off">
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-reason"
+                    data-search-key="reason"
+                    data-search-from="search-bans-reason">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <span class="label" style="grid-column:1;align-self:end">Date</span>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap">
+                <input class="input font-mono" style="width:3rem" type="text" maxlength="2" placeholder="DD"
+                       data-testid="search-bans-date-day"
+                       data-search-date="day"
+                       autocomplete="off"
+                       inputmode="numeric"
+                       pattern="[0-9]*">
+                <span class="text-faint">/</span>
+                <input class="input font-mono" style="width:3rem" type="text" maxlength="2" placeholder="MM"
+                       data-testid="search-bans-date-month"
+                       data-search-date="month"
+                       autocomplete="off"
+                       inputmode="numeric"
+                       pattern="[0-9]*">
+                <span class="text-faint">/</span>
+                <input class="input font-mono" style="width:4.25rem" type="text" maxlength="4" placeholder="YYYY"
+                       data-testid="search-bans-date-year"
+                       data-search-date="year"
+                       autocomplete="off"
+                       inputmode="numeric"
+                       pattern="[0-9]*">
+            </div>
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-date"
+                    data-search-key="date"
+                    data-search-compose="date">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <span class="label" style="grid-column:1;align-self:end">Length</span>
+            <div class="flex items-center gap-2" style="flex-wrap:wrap">
+                <select class="select"
+                        id="search-bans-length-op"
+                        data-testid="search-bans-length-op"
+                        style="width:5rem">
+                    <option value="e"  title="equal to">=</option>
+                    <option value="h"  title="greater">&gt;</option>
+                    <option value="l"  title="smaller">&lt;</option>
+                    <option value="eh" title="equal to or greater">&gt;=</option>
+                    <option value="el" title="equal to or smaller">&lt;=</option>
+                </select>
+                <select class="select"
+                        id="search-bans-length"
+                        data-testid="search-bans-length"
+                        style="flex:1;min-width:12rem"
+                        data-search-length-select>
+                    <option value="0">Permanent</option>
+                    <optgroup label="Minutes">
+                        <option value="1">1 minute</option>
+                        <option value="5">5 minutes</option>
+                        <option value="10">10 minutes</option>
+                        <option value="15">15 minutes</option>
+                        <option value="30">30 minutes</option>
+                        <option value="45">45 minutes</option>
+                    </optgroup>
+                    <optgroup label="Hours">
+                        <option value="60">1 hour</option>
+                        <option value="120">2 hours</option>
+                        <option value="180">3 hours</option>
+                        <option value="240">4 hours</option>
+                        <option value="480">8 hours</option>
+                        <option value="720">12 hours</option>
+                    </optgroup>
+                    <optgroup label="Days">
+                        <option value="1440">1 day</option>
+                        <option value="2880">2 days</option>
+                        <option value="4320">3 days</option>
+                        <option value="5760">4 days</option>
+                        <option value="7200">5 days</option>
+                        <option value="8640">6 days</option>
+                    </optgroup>
+                    <optgroup label="Weeks">
+                        <option value="10080">1 week</option>
+                        <option value="20160">2 weeks</option>
+                        <option value="30240">3 weeks</option>
+                    </optgroup>
+                    <optgroup label="Months">
+                        <option value="40320">1 month</option>
+                        <option value="80640">2 months</option>
+                        <option value="120960">3 months</option>
+                        <option value="241920">6 months</option>
+                        <option value="483840">12 months</option>
+                    </optgroup>
+                    <option value="other">Other length (minutes)&hellip;</option>
+                </select>
+                <input type="text"
+                       class="input font-mono"
+                       id="search-bans-other-length"
+                       data-testid="search-bans-other-length"
+                       data-search-length-other
+                       placeholder="Minutes"
+                       hidden
+                       inputmode="numeric"
+                       pattern="[0-9]*"
+                       style="width:7rem">
+            </div>
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-length"
+                    data-search-key="length"
+                    data-search-compose="length">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <div>
+                <label class="label" for="search-bans-btype">Type</label>
+                <select class="select"
+                        id="search-bans-btype"
+                        data-testid="search-bans-btype">
+                    <option value="0" selected>Steam ID</option>
+                    <option value="1">IP address</option>
+                </select>
+            </div>
+            <div class="text-xs text-muted">Filter to either SteamID-only or IP-only ban records.</div>
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-btype"
+                    data-search-key="btype"
+                    data-search-from="search-bans-btype">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        {if NOT $hideadminname}
+            <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+                <div>
+                    <label class="label" for="search-bans-admin">Admin</label>
+                    <select class="select"
+                            id="search-bans-admin"
+                            data-testid="search-bans-admin">
+                        <option value="">&mdash;</option>
+                        {foreach from=$admin_list item="admin"}
+                            <option value="{$admin.aid}">{$admin.user}</option>
+                        {/foreach}
+                    </select>
+                </div>
+                <div class="text-xs text-muted">Show only bans issued by the selected admin.</div>
+                <button type="submit"
+                        class="btn btn--secondary btn--sm"
+                        data-testid="search-bans-submit-admin"
+                        data-search-key="admin"
+                        data-search-from="search-bans-admin">
+                    <i data-lucide="search" style="width:14px;height:14px"></i> Search
+                </button>
+            </div>
+        {/if}
+
+        <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+            <div>
+                <label class="label" for="search-bans-server">Server</label>
+                <select class="select"
+                        id="search-bans-server"
+                        data-testid="search-bans-server">
+                    <option value="0" selected>Web Ban</option>
+                    {foreach from=$server_list item="server"}
+                        <option value="{$server.sid}"
+                                data-sid="{$server.sid}"
+                                data-ip="{$server.ip}"
+                                data-port="{$server.port}"
+                                data-server-host>Loading&hellip; ({$server.ip}:{$server.port})</option>
+                    {/foreach}
+                </select>
+            </div>
+            <div class="text-xs text-muted">Hostnames load asynchronously; pre-resolution shows ip:port.</div>
+            <button type="submit"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="search-bans-submit-server"
+                    data-search-key="where_banned"
+                    data-search-from="search-bans-server">
+                <i data-lucide="search" style="width:14px;height:14px"></i> Search
+            </button>
+        </div>
+
+        {if $is_admin}
+            <div class="grid gap-3" style="grid-template-columns:10rem 1fr auto;align-items:end">
+                <label class="label" for="search-bans-comment" style="grid-column:1;align-self:end">Comment</label>
+                <input class="input"
+                       id="search-bans-comment"
+                       type="text"
+                       placeholder="Substring match against admin notes&hellip;"
+                       data-testid="search-bans-comment"
+                       autocomplete="off">
+                <button type="submit"
+                        class="btn btn--secondary btn--sm"
+                        data-testid="search-bans-submit-comment"
+                        data-search-key="comment"
+                        data-search-from="search-bans-comment">
+                    <i data-lucide="search" style="width:14px;height:14px"></i> Search
+                </button>
+            </div>
+        {/if}
+    </div>
+</form>
+
+{*
+    Inline submit dispatcher + LoadServerHost replacement.
+
+    Submit dispatcher: each per-row button declares its search
+    criterion via `data-search-key` and either points at a single
+    source field via `data-search-from` or composes a multi-field tuple
+    via `data-search-compose` ("steam", "date", "length"). On click,
+    the hidden `advType` / `advSearch` inputs are populated and the
+    form submits natively (no preventDefault on the success path), so
+    the browser navigates to the consumer URL with the correct query
+    string. Empty values cancel the submit.
+
+    LoadServerHost replacement: the legacy box appended a
+    server-built `<script>LoadServerHost(...)</script>` blob that
+    called the (now-gone) sourcebans.js helper per option. We replace
+    it with one `sb.api.call(Actions.ServersHostPlayers, {sid})` per
+    `<option data-server-host>` option, mirroring B5's pattern in
+    page_servers.tpl. Resolved hostnames replace the loading text in
+    place; failures fall back to "Offline (ip:port)".
+*}
+<script>
+{literal}
+(function () {
+    'use strict';
+    var form = document.querySelector('[data-testid="search-bans-form"]');
+    if (!(form instanceof HTMLFormElement)) return;
+
+    var typeField = form.querySelector('[data-search-type]');
+    var valueField = form.querySelector('[data-search-value]');
+    if (!(typeField instanceof HTMLInputElement) || !(valueField instanceof HTMLInputElement)) return;
+
+    var lengthSelect = form.querySelector('[data-search-length-select]');
+    var lengthOther = form.querySelector('[data-search-length-other]');
+    if (lengthSelect instanceof HTMLSelectElement && lengthOther instanceof HTMLInputElement) {
+        var sync = function () {
+            if (lengthSelect.value === 'other') {
+                lengthOther.hidden = false;
+                lengthOther.focus();
+            } else {
+                lengthOther.hidden = true;
+            }
+        };
+        lengthSelect.addEventListener('change', sync);
+        sync();
+    }
+
+    /**
+     * @param {Element} btn
+     * @returns {{ key: string, value: string }}
+     */
+    function readPair(btn) {
+        var compose = btn.getAttribute('data-search-compose');
+        if (compose === 'steam') {
+            var sid = document.getElementById('search-bans-steamid');
+            var match = document.getElementById('search-bans-steam-match');
+            var sval = (sid instanceof HTMLInputElement) ? sid.value.trim() : '';
+            var mval = (match instanceof HTMLSelectElement) ? match.value : '0';
+            return { key: (mval === '1' ? 'steam' : 'steamid'), value: sval };
+        }
+        if (compose === 'date') {
+            var keys = ['day', 'month', 'year'];
+            var parts = keys.map(function (k) {
+                var el = form.querySelector('[data-search-date="' + k + '"]');
+                return (el instanceof HTMLInputElement) ? el.value : '';
+            });
+            return { key: 'date', value: parts.join(',') };
+        }
+        if (compose === 'length') {
+            var op = document.getElementById('search-bans-length-op');
+            var sel = document.getElementById('search-bans-length');
+            var oth = document.getElementById('search-bans-other-length');
+            var opv = (op instanceof HTMLSelectElement) ? op.value : 'e';
+            var selv = (sel instanceof HTMLSelectElement) ? sel.value : '';
+            var lv = (selv === 'other' && oth instanceof HTMLInputElement) ? oth.value : selv;
+            return { key: 'length', value: opv + ',' + lv };
+        }
+        var fromId = btn.getAttribute('data-search-from');
+        if (!fromId) return { key: '', value: '' };
+        var src = document.getElementById(fromId);
+        if (src instanceof HTMLInputElement || src instanceof HTMLSelectElement || src instanceof HTMLTextAreaElement) {
+            return { key: btn.getAttribute('data-search-key') || '', value: src.value.trim() };
+        }
+        return { key: '', value: '' };
+    }
+
+    Array.prototype.forEach.call(form.querySelectorAll('button[data-search-compose], button[data-search-from]'), function (btn) {
+        btn.addEventListener('click', function (ev) {
+            var pair = readPair(btn);
+            if (pair.key === '' || pair.value === '' || pair.value.replace(/[,]/g, '') === '') {
+                ev.preventDefault();
+                return;
+            }
+            typeField.value = pair.key;
+            valueField.value = pair.value;
+        });
+    });
+
+    if (typeof sb === 'undefined' || !sb || !sb.api || typeof Actions === 'undefined') {
+        return;
+    }
+
+    Array.prototype.forEach.call(form.querySelectorAll('option[data-server-host]'), function (opt) {
+        var sid = Number(opt.getAttribute('data-sid'));
+        var ip = opt.getAttribute('data-ip') || '';
+        var port = opt.getAttribute('data-port') || '';
+        if (!sid) return;
+        sb.api.call(Actions.ServersHostPlayers, { sid: sid, trunchostname: 70 }).then(function (r) {
+            if (!r || !r.ok || !r.data) {
+                opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                return;
+            }
+            var d = r.data;
+            if (d.error === 'connect') {
+                opt.textContent = 'Offline (' + ip + ':' + port + ')';
+                return;
+            }
+            opt.textContent = (d.hostname || (ip + ':' + port)) + ' (' + ip + ':' + port + ')';
+        }, function () {
+            opt.textContent = 'Offline (' + ip + ':' + port + ')';
+        });
+    });
+})();
+{/literal}
+</script>
+
+{*
+    Parity reference for the legacy default-theme `$server_script` blob.
+    AdminBansSearchView declares `$server_script` so the legacy
+    PHPStan leg (which scans `web/themes/default/box_admin_bans_search.tpl`)
+    finds it; the sbpp2026 leg would otherwise flag it
+    `unusedProperty`. The if-false branch is unreachable at render
+    time so no script blob is emitted twice — this template owns the
+    DOM and uses its own inline script above. Mirrors the parity-block
+    pattern AdminHomeView established in `page_admin.tpl` (#1123 B10).
+    D1 deletes the legacy template + the legacy-only `$server_script`
+    property; this block leaves with them.
+*}
+{if false}{$server_script nofilter}{/if}

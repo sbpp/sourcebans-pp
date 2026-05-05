@@ -1,69 +1,205 @@
-<table style="width: 101%; margin: 0 0 -2px -2px;">
-    <tr>
-        <td colspan="3" class="listtable_top"><b>Appeal a Ban</b></td>
-    </tr>
-</table>
-<div id="submit-main">
-    In order to appeal a ban, you must make sure you are banned via clicking <a href="index.php?p=banlist">here</a> to see if you are banned and for what reason.<br />
-    If you are indeed on our ban list and you feel it is unjust or any other circumstances, please fill out the appeal format below.<br /><br />
-    <form action="index.php?p=protest" method="post">
-        {csrf_field}
-        <input type="hidden" name="subprotest" value="1">
-        <table cellspacing='10' width='100%' align='center'>
-            <tr>
-                <td colspan="3">
-                    Your Details:	</td>
-            </tr>
-            <tr>
-                <td width="20%">Ban Type:</td>
-                <td>
-                    <select id="Type" name="Type" class="select" style="width: 250px;" onChange="changeType(this[this.selectedIndex].value);">
-                        <option value="0">Steam ID</option>
-                        <option value="1">IP Address</option>
+{*
+    SourceBans++ 2026 — page / page_protestban.tpl
+
+    Public ban-appeal form. Replaces the A1 stub. Pair view:
+    Sbpp\View\ProtestBanView, page handler: web/pages/page.protest.php.
+
+    Layout follows the handoff "submit + login two-column" shell
+    pattern: a primary form card (the handoff submit.tpl shape) sits
+    next to a slim info aside that mirrors login.tpl's right-rail —
+    "what happens next" plus the threat-warning blurb the legacy
+    page already shipped, so the public-facing copy is preserved
+    without leaning on the legacy table chrome.
+
+    Variable parity with the legacy default theme is intentional: the
+    paired view declares exactly $steam_id, $ip, $player_name, $reason
+    and $player_email so the dual-theme PHPStan matrix (#1123 A2) is
+    happy on both legs until D1 collapses it. We DON'T introduce a
+    $type property — instead we infer the initially-visible row from
+    whether $ip arrived non-empty, which is the only way the legacy
+    POST handler can leave $ip populated on a re-render after a
+    failed submit.
+
+    Form field name= attributes (Type, SteamID, IP, PlayerName,
+    BanReason, EmailAddr, subprotest) are FROZEN — page.protest.php
+    reads them straight off $_POST. Test hooks (data-testid="protest-…")
+    are additive and stable per the issue's "Testability hooks" rule.
+*}
+{assign var="ip_first" value=($ip != '')}
+<section class="p-6 space-y-6" style="max-width:64rem">
+    <header>
+        <h1 style="font-size:1.5rem;font-weight:600;margin:0">Appeal a ban</h1>
+        <p class="text-sm text-muted m-0 mt-2">
+            Think a ban on your account is a mistake? Submit an appeal
+            below and the staff team will review it. Confirm the ban first
+            on the <a href="index.php?p=banlist" style="color:var(--accent)">ban list</a>.
+        </p>
+    </header>
+
+    <div class="grid gap-4" style="grid-template-columns:minmax(0,2fr) minmax(0,1fr)">
+        <form class="card"
+              method="post"
+              action="index.php?p=protest"
+              data-testid="protest-form"
+              data-protest-form>
+            <div class="card__header">
+                <div>
+                    <h3>Your details</h3>
+                    <p>Fields marked <span style="color:var(--danger)">*</span> are required.</p>
+                </div>
+                <i data-lucide="megaphone" style="color:var(--text-faint)"></i>
+            </div>
+            <div class="card__body space-y-4">
+                {csrf_field}
+                <input type="hidden" name="subprotest" value="1">
+
+                <div>
+                    <label class="label" for="protest-type">Ban type</label>
+                    <select id="protest-type"
+                            name="Type"
+                            class="select"
+                            data-testid="protest-type"
+                            data-protest-type>
+                        <option value="0" {if !$ip_first}selected{/if}>Steam ID</option>
+                        <option value="1" {if $ip_first}selected{/if}>IP Address</option>
                     </select>
-                </td>
-            </tr>
-            <tr id="steam.row">
-                <td width="20%">
-                    Your SteamID<span class="mandatory">*</span>:</td>
-                <td>
-                    <input type="text" name="SteamID" size="40" maxlength="64" value="{$steam_id}" class="textbox" style="width: 223px;" />
-                </td>
-            </tr>
-            <tr id="ip.row" style="display: none;">
-                <td width="20%">
-                    Your IP<span class="mandatory">*</span>:</td>
-                <td>
-                    <input type="text" name="IP" size="40" maxlength="64" value="{$ip}" class="textbox" style="width: 223px;" />
-                </td>
-            </tr>
-            <tr>
-                <td width="20%">
-                    Name<span class="mandatory">*</span>:</td>
-                <td>
-                    <input type="text" size="40" maxlength="70" name="PlayerName" value="{$player_name}" class="textbox" style="width: 223px;" /></td>
-            </tr>
-            <tr>
-                <td width="20%" valign="top">
-                    Reason why you should be unbanned <span class="mandatory">*</span>: (Be as descriptive as possible) </td>
-                <td><textarea name="BanReason" cols="30" rows="5" class="textbox" style="width: 223px;">{$reason}</textarea></td>
-            </tr>
-            <tr>
-                <td width="20%">
-                    Your Email<span class="mandatory">*</span>:	</td>
-                <td>
-                    <input type="text" size="40" maxlength="70" name="EmailAddr" value="{$player_email}" class="textbox" style="width: 223px;" /></td>
-            </tr>
-            <tr>
-                <td width="20%"><span class="mandatory">*</span> = Mandatory Field</td>
-                <td>
-                    {sb_button text=Submit class=ok id=alogin submit=true}
-                </td>
-                <td>&nbsp;</td>
-            </tr>
-        </table>
-    </form>
-    <br /><b>What happens after I post my appeal?</b><br />
-    The staff team will be notified of your appeal. They will then review if the ban is conclusive. After reviewing you will get a reply, which usally means within 24 hours.<br />
-    <b>Note:</b> Sending emails with threats to our admins, scolding or shouting will not get you unbanned and you will be permanently denied from using any of our services.
-</div>
+                </div>
+
+                <div data-protest-row="steam" {if $ip_first}hidden{/if}>
+                    <label class="label" for="protest-steam">
+                        Your SteamID <span style="color:var(--danger)">*</span>
+                    </label>
+                    <input id="protest-steam"
+                           type="text"
+                           name="SteamID"
+                           maxlength="64"
+                           value="{$steam_id|escape}"
+                           class="input font-mono"
+                           placeholder="STEAM_0:1:23498765"
+                           autocomplete="off"
+                           data-testid="protest-steam"
+                           {if !$ip_first}required{/if}>
+                </div>
+
+                <div data-protest-row="ip" {if !$ip_first}hidden{/if}>
+                    <label class="label" for="protest-ip">
+                        Your IP <span style="color:var(--danger)">*</span>
+                    </label>
+                    <input id="protest-ip"
+                           type="text"
+                           name="IP"
+                           maxlength="64"
+                           value="{$ip|escape}"
+                           class="input font-mono"
+                           placeholder="192.0.2.1"
+                           autocomplete="off"
+                           data-testid="protest-ip"
+                           {if $ip_first}required{/if}>
+                </div>
+
+                <div class="grid gap-4" style="grid-template-columns:1fr 1fr">
+                    <div>
+                        <label class="label" for="protest-name">
+                            In-game name <span style="color:var(--danger)">*</span>
+                        </label>
+                        <input id="protest-name"
+                               type="text"
+                               name="PlayerName"
+                               maxlength="70"
+                               value="{$player_name|escape}"
+                               class="input"
+                               required
+                               data-testid="protest-name">
+                    </div>
+                    <div>
+                        <label class="label" for="protest-email">
+                            Your email <span style="color:var(--danger)">*</span>
+                        </label>
+                        <input id="protest-email"
+                               type="email"
+                               name="EmailAddr"
+                               maxlength="70"
+                               value="{$player_email|escape}"
+                               class="input"
+                               required
+                               data-testid="protest-email">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="label" for="protest-reason">
+                        Why should you be unbanned? <span style="color:var(--danger)">*</span>
+                    </label>
+                    <textarea id="protest-reason"
+                              name="BanReason"
+                              rows="6"
+                              class="textarea"
+                              required
+                              data-testid="protest-reason"
+                              placeholder="Be as descriptive as possible. The more context staff have, the faster your appeal can be reviewed.">{$reason|escape}</textarea>
+                </div>
+            </div>
+            <div class="card__header" style="justify-content:flex-end;border-top:1px solid var(--border);border-bottom:0">
+                <button type="submit"
+                        class="btn btn--primary"
+                        data-testid="protest-submit">
+                    <i data-lucide="send-horizontal"></i> Submit appeal
+                </button>
+            </div>
+        </form>
+
+        <aside class="card">
+            <div class="card__header">
+                <div>
+                    <h3>What happens next?</h3>
+                    <p>Typical turnaround</p>
+                </div>
+                <i data-lucide="info" style="color:var(--text-faint)"></i>
+            </div>
+            <div class="card__body space-y-4 text-sm">
+                <p class="m-0 text-muted">
+                    The staff team is notified the moment you submit.
+                    They review the original ban evidence and the context
+                    you provide here.
+                </p>
+                <p class="m-0 text-muted">
+                    You'll receive a reply by email — usually within
+                    <span class="font-medium" style="color:var(--text)">24 hours</span>.
+                </p>
+                <div class="space-y-3"
+                     style="border-top:1px solid var(--border);padding-top:1rem">
+                    <div class="flex gap-2 items-start">
+                        <i data-lucide="alert-triangle" style="color:var(--warning);flex-shrink:0;width:16px;height:16px;margin-top:2px"></i>
+                        <p class="m-0 text-xs text-muted">
+                            Threats, harassment, or abuse aimed at the
+                            staff will not get you unbanned and will get
+                            you permanently banned from every service.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</section>
+
+<script>
+(function () {
+    var form = document.querySelector('[data-protest-form]');
+    if (!form) { return; }
+    var typeSelect = form.querySelector('[data-protest-type]');
+    var steamRow = form.querySelector('[data-protest-row="steam"]');
+    var ipRow = form.querySelector('[data-protest-row="ip"]');
+    var steamInput = steamRow ? steamRow.querySelector('input') : null;
+    var ipInput = ipRow ? ipRow.querySelector('input') : null;
+    if (!typeSelect || !steamRow || !ipRow || !steamInput || !ipInput) { return; }
+    function sync() {
+        var ipPicked = typeSelect.value === '1';
+        steamRow.hidden = ipPicked;
+        ipRow.hidden = !ipPicked;
+        steamInput.required = !ipPicked;
+        ipInput.required = ipPicked;
+    }
+    typeSelect.addEventListener('change', sync);
+    sync();
+})();
+</script>

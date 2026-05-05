@@ -1,103 +1,137 @@
-<div id="admin-page-content">
-    <div class="tabcontent" id="List admins">
-        {if not $can_list_admins}
-            Access Denied
-        {else}
-            <h3>Admins (<span id="admincount">{$admin_count}</span>)</h3>
-            Click on an admin to see more detailed information and actions to perform on them.
-            {if $can_add_admins}<a href="?p=admin&c=admins#Add%20new%20admin" title="Switch to the Add new admin tab">[Add new admin]</a>{/if}<br /><br />
+{*
+    SourceBans++ 2026 — admin/admins list
 
-            {load_template file="admin.admins.search"}
+    Pair: web/pages/admin.admins.php (renders this + the add tab) and
+    web/includes/View/AdminAdminsListView.php (typed DTO that
+    SmartyTemplateRule keeps in lockstep with this file).
 
-            <div id="banlist-nav">
-                {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in admin.admins.php *}
-                {$admin_nav nofilter}
+    Layout note: the embedded {load_template file="admin.admins.search"}
+    runs admin.admins.search.php inline; that handler does its own
+    $theme->assign / $theme->display, so the search-box variables are
+    NOT part of this View's contract. Keep that boundary intact — adding
+    search vars here would silently double-bind them.
+
+    UX note: the legacy theme used MooTools' InitAccordion to expand a
+    sub-row per admin with permission flags + actions. The 2026 footer
+    intentionally drops sourcebans.js (#1123 D1 prep), so this template
+    flattens the row into one table row with hover-revealed action
+    buttons. Per-flag permission lists move to the edit-permissions
+    page where they're actionable; the list page stays scannable.
+*}
+<div class="card-tab" id="List admins">
+    {if !$can_list_admins}
+        <div class="card">
+            <div class="card__body">
+                <p class="text-sm text-muted m-0">Access denied.</p>
             </div>
-            <div id="banlist">
-                <table width="99%" cellspacing="0" cellpadding="0" align="center">
+        </div>
+    {else}
+        <div class="flex items-end justify-between gap-3 mb-4" style="flex-wrap:wrap">
+            <div>
+                <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Admins
+                    <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="admin-count">({$admin_count})</span>
+                </h1>
+                <p class="text-sm text-muted m-0 mt-2">Click an admin row's actions to edit details, permissions, or server access.</p>
+            </div>
+            {if $can_add_admins}
+                <a class="btn btn--primary btn--sm"
+                   href="?p=admin&c=admins#Add%20new%20admin"
+                   data-testid="admin-add-cta"><i data-lucide="user-plus"></i> Add admin</a>
+            {/if}
+        </div>
+
+        {load_template file="admin.admins.search"}
+
+        <div class="text-xs text-muted mb-2" data-testid="admin-nav">
+            {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in admin.admins.php — same escape pipeline as the legacy theme. *}
+            {$admin_nav nofilter}
+        </div>
+
+        <div class="card" style="overflow:hidden">
+            <table class="table" role="table" aria-label="Admins">
+                <thead>
                     <tr>
-                        <td width="34%" class="listtable_top"><b>Name</b></td>
-                        <td width="33%" class="listtable_top"><b>Server Admin Group </b></td>
-                        <td width="33%" class="listtable_top"><b>Web Admin Group</b></td>
+                        <th scope="col">Name</th>
+                        <th scope="col">Bans</th>
+                        <th scope="col">Server group</th>
+                        <th scope="col">Web group</th>
+                        <th scope="col">Immunity</th>
+                        <th scope="col">Last visit</th>
+                        <th scope="col" style="width:1%"></th>
                     </tr>
-                    {foreach from=$admins item="admin"}
-                        <tr onmouseout="this.className='tbl_out'" onmouseover="this.className='tbl_hover'" class="tbl_out opener">
-                            <td class="listtable_1" style="padding:3px;">{$admin.user} (<a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=admin" title="Show bans">{$admin.bancount} bans</a> | <a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=nodemo" title="Show bans without demo">{$admin.nodemocount} w.d.</a>)</td>
-                            <td class="listtable_1" style="padding:3px;">{$admin.server_group}</td>
-                            <td class="listtable_1" style="padding:3px;">{$admin.web_group}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="3">
-                                <div class="opener" align="center" border="1">
-                                    <table width="100%" cellspacing="0" cellpadding="3" bgcolor="#eaebeb">
-                                        <tr>
-                                            <td align="left" colspan="3" class="front-module-header">
-                                                <b>Admin Details of {$admin.user}</b>
-                                            </td>
-                                        </tr>
-                                        <tr align="left">
-                                            <td width="35%" class="front-module-line"><b>Server Admin Permissions</b></td>
-                                            <td width="35%" class="front-module-line"><b>Web Admin Permissions</b></td>
-                                            <td width="30%" valign="top" class="front-module-line"><b>Action</b></td>
-                                        </tr>
-                                        <tr align="left">
-                                            <td valign="top">
-                                                <span style='font-size:10px;color:#1b75d1;'>Server Permissions</span>
-                                                <br/>
-                                                {if $admin.server_flag_string}
-                                                    {foreach from=$admin.server_flag_string item=permission}
-                                                        &bull; {$permission} <br/>
-                                                    {/foreach}
-                                                {else}
-                                                    <i>None</i>
-                                                {/if}
-                                            </td>
-                                            <td valign="top">
-                                                <span style='font-size:10px;color:#1b75d1;'>Web Permissions</span>
-                                                <br/>
-                                                {if $admin.web_flag_string}
-                                                    {foreach from=$admin.web_flag_string item=permission}
-                                                        &bull; {$permission} <br/>
-                                                    {/foreach}
-                                                {else}
-                                                    <i>None</i>
-                                                {/if}
-                                            </td>
-                                            <td width="30%" valign="top">
-                                                <div class="ban-edit">
-                                                    <ul>
-                                                        {if $can_edit_admins}
-                                                            <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid|escape:'url'}"><i class="fas fa-clipboard-list fa-lg"></i> Edit Details</a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid|escape:'url'}"><i class="fas fa-subscript fa-lg"></i> Edit Permissions</a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid|escape:'url'}"><i class="fas fa-server fa-lg"></i> Edit Server Access</a>
-                                                            </li>
-                                                            <li>
-                                                                <a href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid|escape:'url'}"><i class="fas fa-users fa-lg"></i> Edit Groups</a>
-                                                            </li>
-                                                        {/if}
-                                                        {if $can_delete_admins}
-                                                            <li>
-                                                                <a href="#" onclick="RemoveAdmin({$admin.aid}, '{$admin.user}');"><i class="fas fa-trash fa-lg"></i> Delete Admin</a>
-                                                            </li>
-                                                        {/if}
-                                                    </ul>
-                                                </div>
-                                                <div class="front-module-line" style="padding:3px;">Immunity Level: <b>{$admin.immunity}</b></div>
-                                                <div class="front-module-line" style="padding:3px;">Last Visited: <b><small>{$admin.lastvisit}</small></b></div>
-                                            </td>
-                                        </tr>
-                                    </table>
+                </thead>
+                <tbody>
+                {foreach $admins as $admin}
+                    <tr data-testid="admin-row" data-id="{$admin.aid}">
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="avatar" style="width:1.75rem;height:1.75rem;background:var(--brand-600);font-size:var(--fs-xs)">
+                                    {$admin.user|truncate:1:'':true|upper|escape}
                                 </div>
-                            </td>
-                        </tr>
-                    {/foreach}
-                </table>
-            </div>
-            <script type="text/javascript">InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
-        {/if}
-    </div>
+                                <div>
+                                    <div class="font-medium">{$admin.user|escape}</div>
+                                    <div class="text-xs text-faint" style="margin-top:0.125rem">aid {$admin.aid}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="tabular-nums text-muted">
+                            <a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=admin"
+                               title="Show bans">{$admin.bancount}</a>
+                            <span class="text-faint"> · </span>
+                            <a href="./index.php?p=banlist&advSearch={$admin.aid|escape:'url'}&advType=nodemo"
+                               title="Show bans without demo">{$admin.nodemocount} w/o demo</a>
+                        </td>
+                        <td class="text-muted">{$admin.server_group|escape}</td>
+                        <td class="text-muted">{$admin.web_group|escape}</td>
+                        <td class="tabular-nums text-muted">{$admin.immunity}</td>
+                        <td class="text-xs text-muted">{$admin.lastvisit|escape}</td>
+                        <td>
+                            <div class="row-actions" style="white-space:nowrap">
+                                {if $can_edit_admins}
+                                    <a class="btn btn--ghost btn--icon btn--sm"
+                                       href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid|escape:'url'}"
+                                       title="Edit details"
+                                       aria-label="Edit details for {$admin.user|escape}"
+                                       data-testid="admin-action-edit-details">
+                                        <i data-lucide="clipboard-list" style="width:14px;height:14px"></i>
+                                    </a>
+                                    <a class="btn btn--ghost btn--icon btn--sm"
+                                       href="index.php?p=admin&c=admins&o=editpermissions&id={$admin.aid|escape:'url'}"
+                                       title="Edit permissions"
+                                       aria-label="Edit permissions for {$admin.user|escape}"
+                                       data-testid="admin-action-edit-perms">
+                                        <i data-lucide="shield" style="width:14px;height:14px"></i>
+                                    </a>
+                                    <a class="btn btn--ghost btn--icon btn--sm"
+                                       href="index.php?p=admin&c=admins&o=editservers&id={$admin.aid|escape:'url'}"
+                                       title="Edit server access"
+                                       aria-label="Edit server access for {$admin.user|escape}"
+                                       data-testid="admin-action-edit-servers">
+                                        <i data-lucide="server" style="width:14px;height:14px"></i>
+                                    </a>
+                                    <a class="btn btn--ghost btn--icon btn--sm"
+                                       href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid|escape:'url'}"
+                                       title="Edit groups"
+                                       aria-label="Edit groups for {$admin.user|escape}"
+                                       data-testid="admin-action-edit-group">
+                                        <i data-lucide="users" style="width:14px;height:14px"></i>
+                                    </a>
+                                {/if}
+                                {if $can_delete_admins}
+                                    <button type="button" class="btn btn--ghost btn--icon btn--sm"
+                                            onclick="if (typeof RemoveAdmin === 'function') RemoveAdmin({$admin.aid}, '{$admin.user|escape:'javascript'}');"
+                                            title="Delete admin"
+                                            aria-label="Delete admin {$admin.user|escape}"
+                                            data-testid="admin-action-delete">
+                                        <i data-lucide="trash-2" style="width:14px;height:14px;color:var(--danger)"></i>
+                                    </button>
+                                {/if}
+                            </div>
+                        </td>
+                    </tr>
+                {/foreach}
+                </tbody>
+            </table>
+        </div>
+    {/if}
+</div>

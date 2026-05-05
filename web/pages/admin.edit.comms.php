@@ -158,27 +158,10 @@ if (!$res) {
     echo '<script>ShowBox("Error", "There was an error getting details. Maybe the block has been deleted?", "red", "index.php?p=commslist' . $pagelink . '");</script>';
 }
 
-// Legacy default theme renders this template with non-standard `-{ … }-`
-// delimiters; the sbpp2026 redesign uses the standard pair so the View
-// binds with View::DELIMITERS' default. Switch the Smarty delimiters
-// only for the default theme so both legs of the dual-theme PHPStan
-// matrix render correctly during the v2.0.0 rollout window (#1123 A2).
-// Read the theme via Config rather than the SB_THEME constant so PHPStan
-// (which inlines string sentinels for runtime constants) doesn't fold
-// the comparison to a constant truthiness.
-$useLegacyDelims = Config::get('config.theme') !== 'sbpp2026';
-if ($useLegacyDelims) {
-    $theme->setLeftDelimiter('-{');
-    $theme->setRightDelimiter('}-');
-}
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsEditView(
     ban_name: (string) $res['name'],
     ban_authid: trim((string) $res['authid']),
 ));
-if ($useLegacyDelims) {
-    $theme->setLeftDelimiter('{');
-    $theme->setRightDelimiter('}');
-}
 ?>
 <script type="text/javascript">window.addEvent('domready', function(){
 <?=$errorScript?>

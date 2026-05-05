@@ -343,16 +343,16 @@ Loaded before sourcebans.js. Exposes a single global `sb` namespace and a
             const pos = url.indexOf('^') + 1;
             if (pos > 0) {
                 const tabNo = url.charAt(pos);
-                if (tabNo !== '' && !Number.isNaN(Number(tabNo)) && typeof swapTab === 'function') {
-                    swapTab(tabNo);
+                if (tabNo !== '' && !Number.isNaN(Number(tabNo)) && typeof window.swapTab === 'function') {
+                    window.swapTab(tabNo);
                 }
             }
             const upos = url.indexOf('~') + 1;
             if (upos > 0) {
                 const utabType = url.charAt(upos);
                 const utabNo   = url.charAt(upos + 1);
-                if (utabNo !== '' && !Number.isNaN(Number(utabNo)) && typeof Swap2ndPane === 'function') {
-                    Swap2ndPane(utabNo, utabType);
+                if (utabNo !== '' && !Number.isNaN(Number(utabNo)) && typeof window.Swap2ndPane === 'function') {
+                    window.Swap2ndPane(utabNo, utabType);
                 }
             }
         },

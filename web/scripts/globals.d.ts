@@ -1,10 +1,11 @@
 // Ambient declarations for the SourceBans++ vanilla-JS panel.
 //
-// The runtime files (sb.js, api.js, sourcebans.js, contextMenoo.js) ship as
-// classic <script> tags rather than ESM modules and stash their public surface
-// on `window` from inside an IIFE. tsc --checkJs cannot see those assignments
-// without help, so we restate the public contract here. Keep this in sync
-// with sb.js / api.js / api-contract.js when the runtime contract changes.
+// The runtime files (sb.js, api.js, contextMenoo.js) ship as classic
+// <script> tags rather than ESM modules and stash their public surface
+// on `window` from inside an IIFE. tsc --checkJs cannot see those
+// assignments without help, so we restate the public contract here.
+// Keep this in sync with sb.js / api.js / api-contract.js when the
+// runtime contract changes.
 
 /** Element id, raw element, or null (the latter passes through every helper). */
 type SbElLike = string | HTMLElement | null;
@@ -177,23 +178,25 @@ declare var AddContextMenu: (
     oLinks: SbContextMenuItem[]
 ) => void;
 
-// addslashes / ShowBox / closeMsg / Load* / Process* / Remove* / etc are
-// all declared as plain `function` in scripts/sourcebans.js. tsc picks them
-// up across files as ambient script-scope globals; we don't need to
-// re-declare them here. Re-declaring would conflict (TS6200).
-
 /**
- * Per-page hooks defined ad-hoc in inline templates (account.php, etc.).
- * Declared as optional Window properties so call sites narrow with
- * `typeof window.x === 'function'` rather than crashing tsc.
+ * Per-page hooks defined ad-hoc in inline templates (account.php, etc.)
+ * or in raw HTML echoed by legacy page handlers. Declared as optional
+ * Window properties so call sites narrow with `typeof window.x ===
+ * 'function'` rather than crashing tsc.
  *
- * Note: we do NOT redeclare `window.scroll` here even though sourcebans.js
- * sometimes uses it as a `{ toBottom?: () => void }` namespace. The
- * built-in `Window.scroll(x, y)` collides; cast at the call site instead.
+ * `swapTab` / `Swap2ndPane` used to live in `web/scripts/sourcebans.js`
+ * (deleted at #1123 D1). They're still emitted as `onclick="Swap2ndPane(…)"`
+ * in raw HTML by some legacy admin pages (`web/pages/admin.bans.php`)
+ * and `sb.tabs.init()` (`web/scripts/sb.js`) calls them through the
+ * guarded `window.*` lookup so the panel doesn't crash when no inline
+ * definition is present. Replacements for those legacy tab navs ship
+ * with the new theme's per-page redesigns.
  */
 interface Window {
     set_error?: (n: number) => void;
     SwapPane?: (n: number) => void;
+    swapTab?: (tabNo: number | string) => void;
+    Swap2ndPane?: (n: number | string, type: string) => void;
     demo?: (filename: string, origname: string) => void;
 }
 

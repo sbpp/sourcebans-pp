@@ -14,25 +14,11 @@ on:
 
 jobs:
   phpstan:
-    name: Static analysis (theme=${{ matrix.theme }})
+    name: Static analysis
     runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: web
-
-    # During the v2.0.0 theme rollout (#1123) we ship two coexistent
-    # themes — the legacy `default/` bundle and the new `sbpp2026/`
-    # incrementally being redesigned per-page. SmartyTemplateRule only
-    # scans the active theme, so without this matrix new template/View
-    # drift in `sbpp2026/` would only surface at D1's hard cutover.
-    # The matrix collapses back to a single run when D1 deletes
-    # `sbpp2026/` and renames it into `default/` (see plan A2 + D1).
-    strategy:
-      fail-fast: false
-      matrix:
-        theme:
-          - default
-          - sbpp2026
 
     # Schema-only MariaDB so phpstan-dba (#1100) can introspect column types.
     # Mirrors test.yml's service block deliberately — same image, same creds —
@@ -117,14 +103,4 @@ jobs:
           # Refuse to run if the bootstrap can't connect — otherwise a creds
           # mismatch would silently disable phpstan-dba and CI would stay green.
           DBA_REQUIRE: '1'
-          # Tells SmartyTemplateRule which theme directory to scan (see
-          # the rule's class-level docblock + plan A2). The default scan
-          # is `web/themes/default/`; this matrix also runs against
-          # `web/themes/sbpp2026/` so per-page PRs catch View ↔ template
-          # drift in the new theme during the rollout window.
-          SBPP_PHPSTAN_THEME: ${{ matrix.theme }}
-        # The sbpp2026 leg uses phpstan-sbpp2026.neon (which inherits
-        # phpstan.neon) so it can disable reportUnmatchedIgnoredErrors —
-        # see that file's header for the why. D1 deletes both the
-        # override config and this matrix step.
-        run: includes/vendor/bin/phpstan analyse --configuration=${{ matrix.theme == 'sbpp2026' && 'phpstan-sbpp2026.neon' || 'phpstan.neon' }} --no-progress --error-format=github --memory-limit=1G
+        run: includes/vendor/bin/phpstan analyse --configuration=phpstan.neon --no-progress --error-format=github --memory-limit=1G

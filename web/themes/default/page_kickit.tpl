@@ -1,96 +1,142 @@
-<html>
+-{*
+    SourceBans++ 2026 — page_kickit.tpl
+    Bound view: \Sbpp\View\KickitView (web/includes/View/KickitView.php).
+
+    Self-contained <html> doc loaded by the parent admin/bans page in
+    an iframe (no chrome shell), so we link directly to the active
+    theme's stylesheet — the iframe URL is /pages/admin.kickit.php so
+    `../themes/default/css/theme.css` resolves correctly. The custom
+    `-{ … }-` delimiter pair lets the inline JS keep its raw `{` /
+    `}` tokens — see KickitView::DELIMITERS.
+
+    The window title, return URL, and theme path are NOT template
+    variables — they're fixed for this theme/page.
+
+    Per-row JS calls Actions.KickitLoadServers + Actions.KickitKickPlayer
+    via sb.api.call (CSRF token forwarded as the X-CSRF-Token header
+    read from the <meta> tag below). No <form> on this page, so no
+    {csrf_field} needed. Per-row containers (`srv_<n>`, `srvip_<n>`)
+    preserve the IDs the legacy template used so existing
+    parent-window dialog hooks (set_counter, height adjustment) keep
+    working.
+*}-
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta name="csrf-token" content="-{$csrf_token}-" />
-    <script type="text/javascript" src="../scripts/api-contract.js"></script>
-    <script type="text/javascript" src="../scripts/sb.js"></script>
-    <script type="text/javascript" src="../scripts/api.js"></script>
-    <script type="text/javascript">
-        //<![CDATA[
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="csrf-token" content="-{$csrf_token}-">
+    <title>Kick player</title>
+    <link rel="stylesheet" href="../themes/default/css/theme.css">
+    <script src="../scripts/api-contract.js"></script>
+    <script src="../scripts/sb.js"></script>
+    <script src="../scripts/api.js"></script>
+</head>
+<body style="background:transparent;padding:0.5rem">
+<div id="container" class="card" data-testid="kickit-container">
+    <div class="card__header">
+        <div>
+            <h3>Searching for the player on all servers&hellip;</h3>
+            <p>Each row is polled live; rows update as servers respond.</p>
+        </div>
+    </div>
+    <div class="card__body">
+        <table class="table" data-testid="kickit-results">
+            <thead>
+                <tr>
+                    <th>Server</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                -{foreach from=$servers item=serv}-
+                <tr data-testid="kickit-row--{$serv.num}-">
+                    <td class="font-mono text-xs">
+                        <div id="srvip_-{$serv.num}-"
+                             data-testid="kickit-host--{$serv.num}-">-{$serv.ip}-:-{$serv.port}-</div>
+                    </td>
+                    <td>
+                        <div id="srv_-{$serv.num}-"
+                             class="text-xs text-muted"
+                             data-testid="kickit-status--{$serv.num}-">Waiting&hellip;</div>
+                    </td>
+                </tr>
+                -{/foreach}-
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    (function () {
+        var TOTAL = -{$total}-;
+        var CHECK = '-{$check}-';
+        var TYPE = -{$type}-;
         var srvcount = 0;
-        function set_counter(count) {
+
+        function setCounter(count) {
             srvcount += count;
-            if (srvcount === -{$total}- || count === -1 || count === '-1') {
-                parent.document.getElementById('dialog-control').innerHTML =
-                    '<font color="green" style="font-size: 12px;"><b>Done searching.</b></font>'
-                    + parent.document.getElementById('dialog-control').innerHTML;
-                parent.document.getElementById('dialog-control').style.display = 'block';
+            if (srvcount === TOTAL || count === -1) {
+                var ctl = parent.document.getElementById('dialog-control');
+                if (ctl) {
+                    ctl.innerHTML = '<font color="green" style="font-size: 12px;"><b>Done searching.</b></font>' + ctl.innerHTML;
+                    ctl.style.display = 'block';
+                }
                 setTimeout(function () {
-                    parent.document.getElementById('dialog-placement').style.display = 'none';
+                    var place = parent.document.getElementById('dialog-placement');
+                    if (place) place.style.display = 'none';
                 }, 5000);
                 setTimeout(function () { window.location = '../index.php?p=admin&c=bans'; }, 5000);
             }
         }
 
-        function processRow(check, type, sid, num) {
-            sb.api.call(Actions.KickitKickPlayer, { check: check, sid: sid, num: num, type: Number(type) })
+        function processRow(sid, num) {
+            sb.api.call(Actions.KickitKickPlayer, { check: CHECK, sid: sid, num: num, type: TYPE })
                 .then(function (r) {
                     if (!r || !r.ok || !r.data) {
-                        sb.setHTML('srv_' + num, "<font color='red' size='1'><i>Error.</i></font>");
-                        set_counter(1);
+                        sb.setHTML('srv_' + num, "<span class='text-xs' style='color:var(--danger)'><i>Error.</i></span>");
+                        setCounter(1);
                         return;
                     }
                     var d = r.data;
                     if (d.hostname) {
-                        sb.setHTML('srvip_' + num, "<font size='1'><span title='" + d.ip + ':' + d.port + "'>" + d.hostname + "</span></font>");
+                        sb.setHTML('srvip_' + num, "<span class='font-mono text-xs' title='" + d.ip + ':' + d.port + "'>" + d.hostname + "</span>");
                     }
                     if (d.status === 'no_connect') {
-                        sb.setHTML('srv_' + num, "<font color='red' size='1'><i>Can't connect to server.</i></font>");
-                        set_counter(1);
+                        sb.setHTML('srv_' + num, "<span class='text-xs' style='color:var(--danger)'><i>Can't connect to server.</i></span>");
+                        setCounter(1);
                     } else if (d.status === 'kicked') {
-                        sb.setHTML('srv_' + num, "<font color='green' size='1'><b><u>Player Found & Kicked!</u></b></font>");
-                        set_counter(-1);
+                        sb.setHTML('srv_' + num, "<span class='text-xs font-semibold' style='color:var(--success)'><u>Player Found &amp; Kicked!</u></span>");
+                        setCounter(-1);
                     } else {
-                        sb.setHTML('srv_' + num, "<font size='1'>Player not found.</font>");
-                        set_counter(1);
+                        sb.setHTML('srv_' + num, "<span class='text-xs text-muted'>Player not found.</span>");
+                        setCounter(1);
                     }
                 });
         }
 
         window.addEventListener('load', function () {
-            parent.document.getElementById('dialog-control').style.display = 'none';
+            var ctl = parent.document.getElementById('dialog-control');
+            if (ctl) ctl.style.display = 'none';
+
             sb.api.call(Actions.KickitLoadServers, {}).then(function (r) {
                 if (!r || !r.ok || !r.data) return;
                 r.data.servers.forEach(function (s) {
                     if (s.has_rcon) {
-                        sb.setHTML('srv_' + s.num, '<font size="1">Searching...</font>');
-                        processRow('-{$check}-', '-{$type}-', s.sid, s.num);
+                        sb.setHTML('srv_' + s.num, '<span class="text-xs text-muted">Searching&hellip;</span>');
+                        processRow(s.sid, s.num);
                     } else {
-                        sb.setHTML('srv_' + s.num, '<font size="1">No rcon password.</font>');
-                        set_counter(1);
+                        sb.setHTML('srv_' + s.num, '<span class="text-xs text-faint">No rcon password.</span>');
+                        setCounter(1);
                     }
                 });
             });
+
+            var srvkicker = parent.document.getElementById('srvkicker');
+            if (srvkicker) {
+                srvkicker.height = (document.getElementById('container').offsetHeight + 20) + 'px';
+            }
         });
-        //]]>
-    </script>
-</head>
-<body style="
-	background-repeat: repeat-x;
-	color: #444;
-	font-family: Verdana, Arial, Tahoma, Trebuchet MS, Sans-Serif, Georgia, Courier, Times New Roman, Serif;
-	font-size: 11px;
-	line-height: 135%;
-	margin: 5px;
-	padding: 0px;
-   ">
-<div id="container" name="container">
-    <h3 style="font-size: 12px;">Searching for the player on all servers...</h3>
-    <table border="0">
-        -{foreach from=$servers item=serv}-
-        <tr>
-            <td><div id="srvip_-{$serv.num}-"><font size="1">-{$serv.ip}-:-{$serv.port}-</font></div></td>
-            <td>
-                <div id="srv_-{$serv.num}-"><font size="1">Waiting...</font></div>
-            </td>
-        </tr>
-        -{/foreach}-
-    </table>
-</div>
-<script type="text/javascript">
-    if (parent.document.getElementById('srvkicker')) {
-        parent.document.getElementById('srvkicker').height =
-            (document.getElementById('container').offsetHeight + 10) + 'px';
-    }
+    })();
 </script>
 </body>
 </html>

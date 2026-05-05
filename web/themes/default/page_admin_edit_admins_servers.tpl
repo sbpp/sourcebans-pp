@@ -1,56 +1,109 @@
-<form action="" method="post">
-    {csrf_field}
-    <div id="admin-page-content">
-        <div id="add-group">
-            <h3>Admin Server Access</h3>
-            Please select the servers and/or groups of servers you want this admin to have access to.<br /><br />
-            <table width="90%" border="0" cellspacing="0" cellpadding="4" align="center">
-                {if $row_count < 1}
-                    <tr>
-                        <td colspan="3" class=""><b><i>You need to add a server or a server group, before you can setup admin server permissions</i></b></td>
-                    </tr>
-                {else}
-                    <tr>
-                        <td colspan="3" class="tablerow4"><b><i>Server Groups</i></b></td>
-                    </tr>
-                    {foreach from=$group_list item="group"}
-                        <tr>
-                            <td colspan="2" class="tablerow1">{$group.name}</td>
-                            <td align="center" class="tablerow1"><input type="checkbox" id="group_{$group.gid}" name="group[]" value="g{$group.gid}" onclick="" /></td>
-                        </tr>
-                    {/foreach}
-                    <tr>
-                        <td colspan="3" class="tablerow4"><b><i>Servers</i></b></td>
-                    </tr>
-                    {foreach from=$server_list item="server"}
-                        <tr class="tablerow1">
-                            <td colspan="2" class="tablerow1" id="host_{$server.sid}">Please Wait...</td>
-                            <td align="center" class="tablerow1">
-                                <input type="checkbox" name="servers[]" id="server_{$server.sid}" value="s{$server.sid}" onclick=""/>
-                            </td>
-                        </tr>
-                    {/foreach}
-                {/if}
-                <tr><td>&nbsp;</td></tr>
-                <tr>
-                    <td align="center">
-                        {if $row_count > 0}
-                            {sb_button text="Save Changes" class="ok" id="editadminserver" submit=true}
-                            &nbsp;
-                        {/if}
-                        {sb_button text="Back" onclick="history.go(-1)" class="cancel" id="aback"}
-                    </td>
-                </tr>
-            </table>
-            <script>
-                {foreach from=$assigned_servers item="asrv"}
-                if($('server_{$asrv.0}'))$('server_{$asrv.0}').checked = true;
-                if($('group_{$asrv[1]}'))$('group_{$asrv[1]}').checked = true;
-                {/foreach}
-                {foreach from=$server_list item="server"}
-                LoadServerHost({$server.sid}, "id", "host_{$server.sid}");
-                {/foreach}
-            </script>
-        </div>
+{*
+    SourceBans++ 2026 — admin/admins edit server access
+
+    Pair: web/pages/admin.edit.adminservers.php and
+    web/includes/View/EditAdminServersView.php.
+
+    The handler gates entry on ADMIN_OWNER | ADMIN_EDIT_ADMINS before
+    reaching this template, so there is no per-template access boolean.
+    The admin id rides the URL via $smarty.get.id rather than a View
+    property so this template stays compatible with the unmodified
+    handler (which never assigned $aid).
+
+    The cross-page tab nav (Details / Group / Servers / Permissions)
+    keeps the URL bar honest about which sub-page you're on; the
+    data-testid hooks match the issue's edit-form-tabs contract.
+
+    The legacy template re-checked boxes via inline JS that drove
+    LoadServerHost(); the 2026 footer drops sourcebans.js, so this
+    template renders the persisted hostname server-side from $server_list
+    and pre-checks via Smarty {if} comparisons against $assigned_servers.
+*}
+<div class="card-tab" id="Edit Admin Server Access">
+    <div class="mb-4">
+        <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Edit admin server access</h1>
+        <p class="text-sm text-muted m-0 mt-2">Pick the servers and server groups this admin can administer in-game.</p>
     </div>
-</form>
+
+    <nav class="flex gap-2 mb-4" role="tablist" aria-label="Edit admin sections">
+        <a class="btn btn--ghost btn--sm" role="tab"
+           href="?p=admin&c=admins&o=editdetails&id={$smarty.get.id|escape:'url'}"
+           data-testid="admin-tab-details">Details</a>
+        <a class="btn btn--ghost btn--sm" role="tab"
+           href="?p=admin&c=admins&o=editgroup&id={$smarty.get.id|escape:'url'}"
+           data-testid="admin-tab-group">Group</a>
+        <a class="btn btn--secondary btn--sm" role="tab" aria-current="page"
+           href="?p=admin&c=admins&o=editservers&id={$smarty.get.id|escape:'url'}"
+           data-testid="admin-tab-servers">Servers</a>
+        <a class="btn btn--ghost btn--sm"
+           href="?p=admin&c=admins&o=editpermissions&id={$smarty.get.id|escape:'url'}">Permissions</a>
+    </nav>
+
+    {if $row_count < 1}
+        <div class="card">
+            <div class="card__body">
+                <p class="text-sm text-muted m-0"><em>You need to add a server or a server group before you can set up admin server permissions.</em></p>
+            </div>
+        </div>
+    {else}
+        <form method="post" action="" class="space-y-4">
+            {csrf_field}
+            <input type="hidden" name="editadminserver" value="1">
+
+            {if $group_list}
+                <div class="card">
+                    <div class="card__header">
+                        <div>
+                            <h3>Server groups</h3>
+                            <p>Granting a group covers every server in that group.</p>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(14rem,1fr))">
+                            {foreach $group_list as $group}
+                                <label class="flex items-center gap-2 p-3"
+                                       style="border:1px solid var(--border);border-radius:var(--radius-md)">
+                                    <input type="checkbox" id="group_{$group.gid}" name="group[]" value="g{$group.gid}"
+                                           data-testid="edit-admin-server-group"
+                                           {foreach $assigned_servers as $asrv}{if $asrv.srv_group_id == $group.gid}checked{/if}{/foreach}>
+                                    <span class="text-sm">{$group.name|escape}</span>
+                                </label>
+                            {/foreach}
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            {if $server_list}
+                <div class="card">
+                    <div class="card__header">
+                        <div>
+                            <h3>Individual servers</h3>
+                            <p>One-off access for servers that aren't part of a granted group.</p>
+                        </div>
+                    </div>
+                    <div class="card__body">
+                        <div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))">
+                            {foreach $server_list as $server}
+                                <label class="flex items-center gap-2 p-3"
+                                       style="border:1px solid var(--border);border-radius:var(--radius-md)">
+                                    <input type="checkbox" id="server_{$server.sid}" name="servers[]" value="s{$server.sid}"
+                                           data-testid="edit-admin-server"
+                                           {foreach $assigned_servers as $asrv}{if $asrv.server_id == $server.sid}checked{/if}{/foreach}>
+                                    <span class="text-sm font-mono">{$server.ip|escape}:{$server.port|escape}</span>
+                                </label>
+                            {/foreach}
+                        </div>
+                    </div>
+                </div>
+            {/if}
+
+            <div class="flex justify-end gap-2">
+                <button type="button" class="btn btn--ghost btn--sm"
+                        onclick="history.go(-1);">Back</button>
+                <button type="submit" class="btn btn--primary btn--sm" id="editadminserver"
+                        data-testid="edit-admin-servers-save"><i data-lucide="save"></i> Save changes</button>
+            </div>
+        </form>
+    {/if}
+</div>
