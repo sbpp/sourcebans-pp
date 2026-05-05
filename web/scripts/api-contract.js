@@ -119,6 +119,23 @@
  * @typedef {Object} ApiBansRemoveCommentResponse
  */
 /**
+ * Autocomplete backend for the sbpp2026 command palette (#1123 C2).  Returns
+ * up to `limit` matching ban rows for a free-text query that the palette types
+ * into as the admin presses keys. The handler is admin-only (the palette only
+ * mounts when logged in) so the wire format can include IPs unconditionally;
+ * the public ban list separately gates IP exposure behind
+ * `banlist.hideplayerips` but the palette never renders to anonymous visitors.
+ * Matching covers `name` (LIKE %q%), `authid`, and `ip`. Steam IDs are
+ * normalised through `SteamID::toSearchPattern()` so `STEAM_0` and `STEAM_1`
+ * variants of the same account both match (#1130 fix extended to
+ * autocomplete). Numeric queries shorter than 2 chars short- circuit to an
+ * empty result so a single keypress doesn't sweep the bans table.  Inputs: `q`
+ * (string, free text) and `limit` (int, default 10, clamped to 20).
+ *
+ * @typedef {Object} ApiBansSearchRequest
+ * @typedef {{bans: Array<{bid:number, name:string, steam:string, ip:string, type:number}>}} ApiBansSearchResponse
+ */
+/**
  * @typedef {Object} ApiBansSendMessageRequest
  * @typedef {Object} ApiBansSendMessageResponse
  */
@@ -297,6 +314,7 @@ var Actions = Object.freeze({
     BansPaste: 'bans.paste',
     BansPrepareReban: 'bans.prepare_reban',
     BansRemoveComment: 'bans.remove_comment',
+    BansSearch: 'bans.search',
     BansSendMessage: 'bans.send_message',
     BansSetupBan: 'bans.setup_ban',
     BansViewCommunity: 'bans.view_community',

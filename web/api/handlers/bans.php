@@ -849,7 +849,8 @@ function api_bans_detail(array $params): array
  * circuit to an empty result so a single keypress doesn't sweep the bans
  * table.
  *
- * @param array{q?: string, limit?: int} $params
+ * Inputs: `q` (string, free text) and `limit` (int, default 10, clamped to 20).
+ *
  * @return array{bans: array<int, array{bid:int, name:string, steam:string, ip:string, type:int}>}
  */
 function api_bans_search(array $params): array
@@ -879,6 +880,11 @@ function api_bans_search(array $params): array
 
     $like = '%' . $q . '%';
 
+    // PDO emulation prepare quotes bound parameters; MariaDB rejects a
+    // quoted string in `LIMIT`. The value is server-clamped to 1..20
+    // a few lines above, so inlining the int literal is safe and avoids
+    // the per-call PDOStatement::bindValue dance the wrapper doesn't
+    // expose for LIMIT.
     $rows = $GLOBALS['PDO']->query(
         "SELECT BA.bid, BA.name, BA.authid, BA.ip, BA.type
            FROM `:prefix_bans` AS BA
@@ -886,8 +892,8 @@ function api_bans_search(array $params): array
              OR " . $authidClause . "
              OR BA.ip   LIKE ?
        ORDER BY BA.created DESC
-          LIMIT ?"
-    )->resultset([$like, $authidParam, $like, $limit]);
+          LIMIT " . $limit
+    )->resultset([$like, $authidParam, $like]);
 
     $out = [];
     foreach ($rows as $r) {

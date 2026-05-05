@@ -1,0 +1,14 @@
+{
+    "ok": true,
+    "data": {
+        "bans": [
+            {
+                "bid": "<*>",
+                "name": "Cheater",
+                "steam": "STEAM_0:1:7777",
+                "ip": "",
+                "type": 0
+            }
+        ]
+    }
+}
