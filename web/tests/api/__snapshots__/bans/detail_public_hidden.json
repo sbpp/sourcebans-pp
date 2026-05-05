@@ -1,0 +1,41 @@
+{
+    "ok": true,
+    "data": {
+        "bid": "<*>",
+        "player": {
+            "name": "Cheater",
+            "type": 0,
+            "steam_id": "STEAM_0:1:1010",
+            "steam_id_3": "[U:1:2021]",
+            "community_id": "76561197960267749",
+            "ip": null,
+            "country": null
+        },
+        "ban": {
+            "reason": "public-view",
+            "banned_at": "<*>",
+            "banned_at_human": "<*>",
+            "length_seconds": 0,
+            "length_human": "Permanent",
+            "expires_at": "<*>",
+            "expires_at_human": "<*>",
+            "state": "permanent",
+            "unban_reason": "",
+            "removed_at": null,
+            "removed_at_human": null,
+            "removed_by": null
+        },
+        "admin": {
+            "name": null
+        },
+        "server": {
+            "sid": 0,
+            "name": null,
+            "mod_icon": null
+        },
+        "demo_count": 0,
+        "history_count": 1,
+        "comments_visible": false,
+        "comments": []
+    }
+}

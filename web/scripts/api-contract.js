@@ -76,6 +76,21 @@
  * @typedef {Object} ApiBansBanMemberOfGroupResponse
  */
 /**
+ * Player-detail payload for the sbpp2026 right-side drawer (#1123 C1). 
+ * Returns the same data the public ban-list page already exposes, in a stable
+ * JSON shape the drawer JS renders client-side. Action is registered public so
+ * the drawer matches the public ban-list reach; fields that the public
+ * ban-list selectively hides via `banlist.hideplayerips` /
+ * `banlist.hideadminname` (player IP, admin name, removed-by) follow the same
+ * gating here so a public caller can never fan out the same data through the
+ * JSON API that the page intentionally suppresses. Comments are only included
+ * when `config.enablepubliccomments` is set or the caller is an admin —
+ * mirroring page.banlist.php's `$view_comments` switch.
+ *
+ * @typedef {Object} ApiBansDetailRequest
+ * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiBansDetailResponse
+ */
+/**
  * @typedef {Object} ApiBansEditCommentRequest
  * @typedef {Object} ApiBansEditCommentResponse
  */
@@ -274,6 +289,7 @@ var Actions = Object.freeze({
     BansAddComment: 'bans.add_comment',
     BansBanFriends: 'bans.ban_friends',
     BansBanMemberOfGroup: 'bans.ban_member_of_group',
+    BansDetail: 'bans.detail',
     BansEditComment: 'bans.edit_comment',
     BansGetGroups: 'bans.get_groups',
     BansGroupBan: 'bans.group_ban',

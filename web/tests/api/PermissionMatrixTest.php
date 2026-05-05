@@ -63,6 +63,12 @@ final class PermissionMatrixTest extends TestCase
 
             // -- bans.
             'bans.add'                    => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
+            // bans.detail is intentionally public: same reach as the public
+            // ban-list page. The handler hides admin-only fields itself
+            // (player IP, admin name, removed-by, comments) so the wire
+            // format stays consistent with what the HTML page would have
+            // shown the same caller. See api_bans_detail() docblock.
+            'bans.detail'                 => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
             'bans.setup_ban'              => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.prepare_reban'          => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.paste'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],

@@ -196,6 +196,94 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/prepare_reban_success', $env, ['data.bid']);
     }
 
+    public function testDetailRejectsMissingBid(): void
+    {
+        // bans.detail is public; the dispatcher lets the call through and
+        // the handler validates `bid` itself. An unknown id 404s; bid=0
+        // surfaces as a 'bad_request' validation error.
+        $env = $this->api('bans.detail', ['bid' => 0]);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+        $this->assertSnapshot('bans/detail_bad_request', $env);
+    }
+
+    public function testDetailReturns404ForUnknownBid(): void
+    {
+        $env = $this->api('bans.detail', ['bid' => 999999]);
+        $this->assertEnvelopeError($env, 'not_found');
+        $this->assertSnapshot('bans/detail_not_found', $env);
+    }
+
+    public function testDetailPublicViewHidesAdminFields(): void
+    {
+        // Public caller (not logged in). The handler must (a) succeed,
+        // (b) hide the IP when banlist.hideplayerips is on, (c) hide the
+        // admin name when banlist.hideadminname is on, and (d) only
+        // include comments when config.enablepubliccomments is on.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideplayerips', '1'),
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '0')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $bid = $this->seedBan('STEAM_0:1:1010', 'public-view');
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame($bid,            (int)$env['data']['bid']);
+        $this->assertSame('STEAM_0:1:1010', $env['data']['player']['steam_id']);
+        $this->assertNull($env['data']['player']['ip'],   'IP should be hidden for public + hideplayerips');
+        $this->assertNull($env['data']['admin']['name'],  'admin should be hidden for public + hideadminname');
+        $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
+        $this->assertSame([], $env['data']['comments']);
+        $this->assertSnapshot('bans/detail_public_hidden', $env, ['data.bid', 'data.ban.banned_at', 'data.ban.banned_at_human', 'data.ban.expires_at', 'data.ban.expires_at_human']);
+    }
+
+    public function testDetailAdminViewExposesEverything(): void
+    {
+        // Same hide-* flags on, but as an admin: handler must NOT honour
+        // them (admins always see the underlying data) and comments must
+        // come back even with the public-comments flag off.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideplayerips', '1'),
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '0')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:2020', 'admin-view');
+
+        // Add a comment via the public API so the snapshot exercises the
+        // comment-list shape end-to-end.
+        $this->api('bans.add_comment', [
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'note for the drawer', 'page' => -1,
+        ]);
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('STEAM_0:1:2020', $env['data']['player']['steam_id']);
+        $this->assertNotNull($env['data']['admin']['name']);
+        $this->assertTrue($env['data']['comments_visible']);
+        $this->assertCount(1, $env['data']['comments']);
+        $this->assertSame('note for the drawer', $env['data']['comments'][0]['text']);
+        $this->assertSnapshot('bans/detail_admin_view', $env, [
+            'data.bid',
+            'data.ban.banned_at',
+            'data.ban.banned_at_human',
+            'data.ban.expires_at',
+            'data.ban.expires_at_human',
+            'data.comments.0.cid',
+            'data.comments.0.added',
+            'data.comments.0.added_human',
+        ]);
+    }
+
     public function testAddCommentInsertsRow(): void
     {
         $this->loginAsAdmin();

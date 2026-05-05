@@ -653,3 +653,183 @@ function api_bans_view_community(array $params): array
 
     throw new ApiError('player_not_found', "Can't get playerinfo for " . htmlspecialchars($name) . '. Player not on the server anymore!');
 }
+
+/**
+ * Player-detail payload for the sbpp2026 right-side drawer (#1123 C1).
+ *
+ * Returns the same data the public ban-list page already exposes, in a
+ * stable JSON shape the drawer JS renders client-side. Action is
+ * registered public so the drawer matches the public ban-list reach;
+ * fields that the public ban-list selectively hides via
+ * `banlist.hideplayerips` / `banlist.hideadminname` (player IP, admin
+ * name, removed-by) follow the same gating here so a public caller can
+ * never fan out the same data through the JSON API that the page
+ * intentionally suppresses. Comments are only included when
+ * `config.enablepubliccomments` is set or the caller is an admin —
+ * mirroring page.banlist.php's `$view_comments` switch.
+ *
+ * @param array{bid?: int|string} $params
+ * @return array{
+ *   bid: int,
+ *   player: array{name: string, type: int, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null},
+ *   ban: array{reason: string, banned_at: int, banned_at_human: string, length_seconds: int, length_human: string, expires_at: int|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: int|null, removed_at_human: string|null, removed_by: string|null},
+ *   admin: array{name: string|null},
+ *   server: array{sid: int, name: string|null, mod_icon: string|null},
+ *   demo_count: int,
+ *   history_count: int,
+ *   comments_visible: bool,
+ *   comments: list<array{cid: int, added: int, added_human: string, author: string|null, text: string, edited_at: int|null, edited_by: string|null}>
+ * }
+ */
+function api_bans_detail(array $params): array
+{
+    global $userbank;
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+
+    // Mirror page.banlist.php: an admin (or any logged-in user with the
+    // appropriate flag) sees the IP and admin nick; public visitors
+    // get them suppressed when the corresponding hide-* settings are
+    // on. `is_admin()` is the same gate the page uses, so the JSON
+    // surface stays consistent with what the HTML page would have
+    // shown the same caller.
+    $isAdmin = $userbank->is_admin();
+    $hideIps   = Config::getBool('banlist.hideplayerips') && !$isAdmin;
+    $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
+
+    $row = $GLOBALS['PDO']->query(
+        "SELECT BA.bid, BA.type, BA.ip, BA.authid, BA.name, BA.created, BA.ends, BA.length,
+                BA.reason, BA.aid, BA.adminIp, BA.sid, BA.country, BA.RemovedOn, BA.RemovedBy,
+                BA.RemoveType, BA.ureason,
+                AD.user AS admin_name,
+                SE.ip AS server_ip, SE.port AS server_port,
+                MO.icon AS mod_icon, MO.name AS mod_name,
+                CAST(MID(BA.authid, 9, 1) AS UNSIGNED)
+                  + CAST('76561197960265728' AS UNSIGNED)
+                  + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
+                (SELECT count(*) FROM `:prefix_demos` AS DM
+                  WHERE DM.demtype = 'B' AND DM.demid = BA.bid) AS demo_count,
+                (SELECT count(*) FROM `:prefix_bans` AS BH
+                  WHERE (BH.type = 0 AND BA.type = 0 AND BH.authid = BA.authid AND BA.authid <> '')
+                     OR (BH.type = 1 AND BA.type = 1 AND BH.ip = BA.ip AND BA.ip <> '' AND BA.ip IS NOT NULL))
+                  AS history_count
+           FROM `:prefix_bans` AS BA
+      LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
+      LEFT JOIN `:prefix_mods`    AS MO ON MO.mid = SE.modid
+      LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
+          WHERE BA.bid = ?"
+    )->single([$bid]);
+    if (!$row) {
+        throw new ApiError('not_found', 'Ban not found.', null, 404);
+    }
+
+    $type      = (int)$row['type'];
+    $authid    = (string)$row['authid'];
+    $banIp     = (string)($row['ip'] ?? '');
+    $created   = (int)$row['created'];
+    $length    = (int)$row['length'];
+    $ends      = (int)$row['ends'];
+    $removedOn = $row['RemovedOn'] !== null ? (int)$row['RemovedOn'] : null;
+
+    // Mirror the page-side state machine: `length=0` is permanent;
+    // RemoveType marks deleted/unbanned/expired explicitly; otherwise
+    // an `ends` timestamp in the past collapses to "expired" even
+    // without a row update (PruneBans() catches those eventually).
+    $removeType = (string)($row['RemoveType'] ?? '');
+    if ($removeType === 'U' || $removeType === 'D') {
+        $state = 'unbanned';
+    } elseif ($removeType === 'E') {
+        $state = 'expired';
+    } elseif ($length === 0) {
+        $state = 'permanent';
+    } elseif ($ends > 0 && $ends < time()) {
+        $state = 'expired';
+    } else {
+        $state = 'active';
+    }
+
+    $steam2 = $authid !== '' && SteamID::isValidID($authid) ? $authid : '';
+    // Some legacy rows hold malformed authids (#900); fall back to a
+    // canonical placeholder so toSteam3() doesn't blow up the response.
+    $steam3 = $steam2 !== '' ? (string)SteamID::toSteam3($steam2) : '';
+
+    $removedByName = null;
+    if ($row['RemovedBy'] !== null && (int)$row['RemovedBy'] > 0 && !$hideAdmin) {
+        $removedRow = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")
+            ->single([(int)$row['RemovedBy']]);
+        if ($removedRow && !empty($removedRow['user'])) {
+            $removedByName = (string)$removedRow['user'];
+        }
+    }
+
+    $serverName = null;
+    if (!empty($row['server_ip'])) {
+        $serverName = $row['server_ip'] . (!empty($row['server_port']) ? ':' . $row['server_port'] : '');
+    }
+
+    $comments = [];
+    $commentsVisible = Config::getBool('config.enablepubliccomments') || $isAdmin;
+    if ($commentsVisible) {
+        $commentRows = $GLOBALS['PDO']->query(
+            "SELECT C.cid, C.commenttxt, C.added, C.edittime,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.aid)     AS author,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editor
+               FROM `:prefix_comments` AS C
+              WHERE C.type = 'B' AND C.bid = ?
+           ORDER BY C.added DESC"
+        )->resultset([$bid]);
+        foreach ($commentRows as $crow) {
+            $editTime = $crow['edittime'] !== null ? (int)$crow['edittime'] : null;
+            $comments[] = [
+                'cid'        => (int)$crow['cid'],
+                'added'      => (int)$crow['added'],
+                'added_human'=> Config::time((int)$crow['added']),
+                'author'     => $crow['author'] !== null ? (string)$crow['author'] : null,
+                'text'       => (string)$crow['commenttxt'],
+                'edited_at'  => $editTime,
+                'edited_by'  => $crow['editor'] !== null ? (string)$crow['editor'] : null,
+            ];
+        }
+    }
+
+    return [
+        'bid' => $bid,
+        'player' => [
+            'name'         => (string)$row['name'],
+            'type'         => $type,
+            'steam_id'     => $steam2,
+            'steam_id_3'   => $steam3,
+            'community_id' => (string)$row['community_id'],
+            'ip'           => $hideIps || $banIp === '' ? null : $banIp,
+            'country'      => !empty($row['country']) && trim((string)$row['country']) !== '' ? (string)$row['country'] : null,
+        ],
+        'ban' => [
+            'reason'           => (string)$row['reason'],
+            'banned_at'        => $created,
+            'banned_at_human'  => Config::time($created),
+            'length_seconds'   => $length,
+            'length_human'     => $length === 0 ? 'Permanent' : SecondsToString($length),
+            'expires_at'       => $length === 0 ? null : $ends,
+            'expires_at_human' => $length === 0 ? null : Config::time($ends),
+            'state'            => $state,
+            'unban_reason'     => (string)($row['ureason'] ?? ''),
+            'removed_at'       => $removedOn,
+            'removed_at_human' => $removedOn !== null ? Config::time($removedOn) : null,
+            'removed_by'       => $removedByName,
+        ],
+        'admin' => [
+            'name' => $hideAdmin ? null : ($row['admin_name'] !== null ? (string)$row['admin_name'] : null),
+        ],
+        'server' => [
+            'sid'      => (int)$row['sid'],
+            'name'     => $serverName,
+            'mod_icon' => !empty($row['mod_icon']) ? (string)$row['mod_icon'] : null,
+        ],
+        'demo_count'       => (int)$row['demo_count'],
+        'history_count'    => (int)$row['history_count'],
+        'comments_visible' => $commentsVisible,
+        'comments'         => $comments,
+    ];
+}
