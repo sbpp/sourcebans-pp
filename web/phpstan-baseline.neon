@@ -168,6 +168,66 @@ parameters:
 			count: 1
 			path: includes/View/ServersView.php
 
+		# AdminHomeView (#1123 B10) declares the union of variables both
+		# themes need: the new sbpp2026 `page_admin.tpl` uses 8 composite
+		# `$can_<area>` booleans for the card grid, while the legacy
+		# `web/themes/default/page_admin.tpl` keeps using the per-flag
+		# `$access_*` booleans + stat counts. The default PHPStan leg
+		# scans the legacy template, which doesn't reference any
+		# `$can_<area>` field, so these 8 entries silence the resulting
+		# `unusedProperty` errors. The sbpp2026 leg passes cleanly thanks
+		# to the parity `{if false}…{/if}` block at the bottom of
+		# `web/themes/sbpp2026/page_admin.tpl`. D1's hard cutover deletes
+		# the legacy template + the matching legacy props on
+		# AdminHomeView; these 8 entries should be removed in lockstep.
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_admins is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_groups is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_servers is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_bans is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_mods is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_overrides is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_settings is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminHomeView\:\:\$can_audit is never referenced in template "page_admin\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminHomeView.php
+
 		-
 			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
 			identifier: method.notFound
