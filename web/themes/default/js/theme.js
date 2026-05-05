@@ -410,8 +410,14 @@
 
     /**
      * Build a hidden, empty tabpanel placeholder. The lazy loader fills
-     * it in on first activation. `aria-hidden` plus `hidden` keep the
-     * panel out of the a11y tree until we open it.
+     * it in on first activation. `hidden` keeps the panel out of the
+     * a11y tree until we open it.
+     *
+     * Note: inactive panels start with `display:none` rather than
+     * `display:flex`. Inline `display:flex` would otherwise override the
+     * `[hidden]` UA rule (`display:none`) and every panel would render
+     * stacked on top of the active one. `activateDrawerTab` flips both
+     * attributes together when a tab is activated.
      * @param {string} id
      * @returns {string}
      */
@@ -423,7 +429,7 @@
       + ' aria-labelledby="drawer-tab-' + id + '"'
       + ' tabindex="0"'
       + ' hidden'
-      + ' style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.75rem;overflow-y:auto;flex:1">'
+      + ' style="padding:1rem 1.25rem;display:none;flex-direction:column;gap:0.75rem;overflow-y:auto;flex:1">'
       +   '<div data-pane-empty class="text-sm text-muted">Loading\u2026</div>'
       + '</div>';
 
@@ -646,6 +652,11 @@
       const el = /** @type {HTMLElement} */ (p);
       const active = el.dataset.drawerPanel === tabId;
       el.hidden = !active;
+      // Inline `display:flex` would otherwise override the [hidden] UA
+      // rule (`display:none`) so toggling `el.hidden` alone leaves every
+      // panel visually stacked. Mirror the toggle inline so the panels
+      // actually swap.
+      el.style.display = active ? 'flex' : 'none';
     });
     if (moveFocus) {
       const target = drawerRoot.querySelector('[role="tab"][data-drawer-tab="' + tabId + '"]');

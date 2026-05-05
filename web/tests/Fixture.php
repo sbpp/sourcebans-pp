@@ -135,6 +135,14 @@ class Fixture
         // procedure bodies, so splitting on `;` followed by newline is safe.
         $stmts = preg_split('/;\s*\n/', $sql) ?: [];
         foreach ($stmts as $stmt) {
+            // Strip any leading `-- …` line comments + blank lines. The
+            // splitter groups a documentation block with the following
+            // statement when no `;\n` separates them (e.g. the comment
+            // above `:prefix_notes` in struc.sql). Without this strip,
+            // `str_starts_with($stmt, '--')` below would skip the whole
+            // chunk — table and all — and the e2e/PHPUnit DB would silently
+            // be missing the table whose comment we wrote.
+            $stmt = preg_replace('/^(?:\s*--[^\n]*\n)+/', '', $stmt) ?? $stmt;
             $stmt = trim($stmt);
             if ($stmt === '' || str_starts_with($stmt, '--') || str_starts_with($stmt, '/*')) continue;
             $pdo->exec($stmt);
