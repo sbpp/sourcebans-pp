@@ -145,6 +145,18 @@ parameters:
 			path: includes/View/AdminBansGroupsView.php
 
 		-
+			message: '#^Property Sbpp\\View\\AdminGroupsListView\:\:\$all_flags is never referenced in template "page_admin_groups_list\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminGroupsListView.php
+
+		-
+			message: '#^Property Sbpp\\View\\AdminGroupsListView\:\:\$selected_group is never referenced in template "page_admin_groups_list\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminGroupsListView.php
+
+		-
 			message: '#^Property Sbpp\\View\\AdminServersAddView\:\:\$modid is never referenced in template "page_admin_servers_add\.tpl"\.$#'
 			identifier: sbpp.view.unusedProperty
 			count: 1
@@ -425,12 +437,6 @@ parameters:
 			identifier: variable.undefined
 			count: 2
 			path: pages/admin.edit.server.php
-
-		-
-			message: '#^Function BitToString invoked with 2 parameters, 1 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: pages/admin.groups.php
 
 		-
 			message: '#^Constant SB_THEME not found\.$#'
