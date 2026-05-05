@@ -24,7 +24,14 @@ export default defineConfig({
     // can capture diagnostic artifacts; the gate stays strict. See AGENTS.md
     // "Playwright E2E specifics".
     failOnFlakyTests: !!process.env.CI,
-    workers: process.env.CI ? 2 : undefined,
+    // workers:1 in CI because the suite shares one MySQL DB
+    // (`sourcebans_e2e`). With workers:2, two specs run simultaneously
+    // and the second's truncate-and-reseed (correctly serialized via the
+    // GET_LOCK in Sbpp\Tests\Fixture::truncateAndReseed) still wipes
+    // table state out from under the first spec's in-flight test ->
+    // missing-row / forbidden / silent-empty-list flakes. Until each
+    // worker has its own DB, parallelism here is unsound.
+    workers: process.env.CI ? 1 : undefined,
     reporter: [['html', { open: 'never' }], ['list']],
     globalSetup: './fixtures/global-setup.ts',
     use: {
