@@ -110,6 +110,14 @@ function route($fallback)
                 case 'settings':
                     CheckAdminAccess(ADMIN_OWNER|ADMIN_WEB_SETTINGS);
                     return ['SourceBans++ Settings', '/admin.settings.php'];
+                case 'audit':
+                    // Audit log is owner-restricted: there is no dedicated
+                    // ADMIN_LIST_LOGS / ADMIN_LIST_AUDIT flag in
+                    // web/configs/permissions/web.json (#1123 B19), and the
+                    // legacy `TRUNCATE :prefix_log` path in
+                    // admin.settings.php is also gated on ADMIN_OWNER.
+                    CheckAdminAccess(ADMIN_OWNER);
+                    return ['Audit Log', '/admin.audit.php'];
                 default:
                     CheckAdminAccess(ALL_WEB);
                     return ['Administration', '/page.admin.php'];
