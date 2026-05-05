@@ -163,6 +163,25 @@ parameters:
 			path: includes/View/HomeDashboardView.php
 
 		-
+			# active_bans/total_servers are sbpp2026-only stat-card fields
+			# (#1123 B3). The legacy `default/page_dashboard.tpl` doesn't
+			# render them; the sbpp2026 leg of the dual-theme PHPStan
+			# matrix runs with reportUnmatchedIgnoredErrors=false so
+			# these baseline entries auto-skip when the new template
+			# does reference them. D1 deletes the legacy template and
+			# both entries collapse into the property cleanup PR.
+			message: '#^Property Sbpp\\View\\HomeDashboardView\:\:\$active_bans is never referenced in template "page_dashboard\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/HomeDashboardView.php
+
+		-
+			message: '#^Property Sbpp\\View\\HomeDashboardView\:\:\$total_servers is never referenced in template "page_dashboard\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/HomeDashboardView.php
+
+		-
 			message: '#^Property Sbpp\\View\\ServersView\:\:\$opened_server is never referenced in template "page_servers\.tpl"\.$#'
 			identifier: sbpp.view.unusedProperty
 			count: 1
