@@ -138,6 +138,21 @@ parameters:
 			count: 2
 			path: includes/SteamID/calc/BCMATH.php
 
+		# AdminBansEditView declares $can_edit_ban for the sbpp2026
+		# redesign's `{if NOT $can_edit_ban}` access-denied gate; the
+		# legacy `themes/default/page_admin_edit_ban.tpl` doesn't carry
+		# that gate (the page handler PageDie's on access denial under
+		# both themes), so the property fires as "unused" on the
+		# default-theme PHPStan leg. The phpstan-sbpp2026 leg disables
+		# `reportUnmatchedIgnoredErrors` so this entry doesn't have to
+		# fire there. D1 deletes the legacy theme and this entry
+		# collapses with it. (#1123 B13 follow-up.)
+		-
+			message: '#^Property Sbpp\\View\\AdminBansEditView\:\:\$can_edit_ban is never referenced in template "page_admin_edit_ban\.tpl"\.$#'
+			identifier: sbpp.view.unusedProperty
+			count: 1
+			path: includes/View/AdminBansEditView.php
+
 		# CommsListView declares the union of variables both
 		# `themes/default/page_comms.tpl` (legacy) and
 		# `themes/sbpp2026/page_comms.tpl` (#1123 B4 redesign) reference;
@@ -735,12 +750,6 @@ parameters:
 			identifier: variable.undefined
 			count: 5
 			path: pages/admin.edit.adminservers.php
-
-		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 9
-			path: pages/admin.edit.ban.php
 
 		-
 			message: '#^Variable \$theme might not be defined\.$#'

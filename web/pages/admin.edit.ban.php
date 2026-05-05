@@ -22,16 +22,57 @@ if (!defined("IN_SB")) {
     die();
 }
 
-global $theme;
+global $userbank, $theme;
 
 new AdminTabs([], $userbank, $theme);
 
+/**
+ * Vanilla replacement for sourcebans.js' ShowBox(): emits an inline
+ * <script> that surfaces a toast via window.SBPP.showToast (theme.js,
+ * sbpp2026) with sb.message.* (sb.js, both themes) as a fallback, then
+ * redirects after a short delay. Used in place of the legacy
+ * `<script>ShowBox(…)</script>` calls so the page works under sbpp2026
+ * (which does NOT load sourcebans.js) without losing the legacy theme.
+ *
+ * The strings are JSON-encoded so embedded quotes / newlines / non-ASCII
+ * survive the round-trip into the script body without further escaping.
+ */
+function emitEditBanToastAndRedirect(string $kind, string $title, string $body, string $redirect): void
+{
+    $kindJs = json_encode($kind, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $titleJs = json_encode($title, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $bodyJs = json_encode($body, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    $redirectJs = json_encode($redirect, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    echo <<<HTML
+<script>
+(function () {
+    var kind = {$kindJs};
+    var title = {$titleJs};
+    var body = {$bodyJs};
+    var redirect = {$redirectJs};
+    var SBPP = window.SBPP;
+    if (SBPP && typeof SBPP.showToast === 'function') {
+        SBPP.showToast({ kind: kind === 'red' ? 'error' : kind === 'green' ? 'success' : kind, title: title, body: body });
+    } else if (window.sb && window.sb.message) {
+        var fn = (kind === 'red') ? window.sb.message.error
+            : (kind === 'green') ? window.sb.message.success
+            : window.sb.message.info;
+        if (typeof fn === 'function') fn(title, body, redirect);
+    }
+    if (redirect) {
+        setTimeout(function () { window.location.href = redirect; }, 1500);
+    }
+})();
+</script>
+HTML;
+}
+
 if ($_GET['key'] != $_SESSION['banlist_postkey']) {
-    echo '<script>ShowBox("Error", "Possible hacking attempt (URL Key mismatch)!", "red", "index.php?p=admin&c=bans");</script>';
+    emitEditBanToastAndRedirect('red', 'Error', 'Possible hacking attempt (URL Key mismatch)!', 'index.php?p=admin&c=bans');
     PageDie();
 }
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    echo '<script>ShowBox("Error", "No ban id specified. Please only follow links!", "red", "index.php?p=admin&c=bans");</script>';
+    emitEditBanToastAndRedirect('red', 'Error', 'No ban id specified. Please only follow links!', 'index.php?p=admin&c=bans');
     PageDie();
 }
 $_GET['id'] = (int) $_GET['id'];
@@ -46,14 +87,37 @@ $GLOBALS['PDO']->query("
 $GLOBALS['PDO']->bind(':id', $_GET['id']);
 $res = $GLOBALS['PDO']->single();
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] != $userbank->GetProperty('gid'))) {
-    echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=bans");</script>';
+isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
+
+if (!$res) {
+    emitEditBanToastAndRedirect('red', 'Error', 'There was an error getting details. Maybe the ban has been deleted?', 'index.php?p=banlist' . $pagelink);
     PageDie();
 }
 
-isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
+$canEditBan = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS)
+    || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] == $userbank->GetAid())
+    || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'));
 
-$errorScript = "";
+if (!$canEditBan) {
+    emitEditBanToastAndRedirect('red', 'Error', "You don't have access to this!", 'index.php?p=admin&c=bans');
+    PageDie();
+}
+
+/**
+ * Per-field validation errors collected during the POST step.
+ * Replayed at the bottom of the page by the tail <script>: each entry
+ * sets the matching `<id>.msg` div's textContent + reveals it via
+ * `style.display = 'block'`. Vanilla DOM only — no MooTools `setStyle()`
+ * / `setHTML()` (the sbpp2026 stack does not load sourcebans.js).
+ *
+ * @var array<string, string> $validationErrors  field id (`name`, `steam`,
+ *     `ip`, `reason`, `length`, `demo`) → message string.
+ */
+$validationErrors = [];
+
+/** Whether the current POST resulted in a successful UPDATE; drives the
+ *  success toast + redirect emitted by the tail script. */
+$postSuccess = false;
 
 if (isset($_POST['name'])) {
     $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
@@ -64,28 +128,23 @@ if (isset($_POST['name'])) {
     // If they didn't type a steamid
     if (empty($_POST['steam']) && $_POST['type'] == 0) {
         $error++;
-        $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
-        $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+        $validationErrors['steam'] = 'You must type a Steam ID or Community ID';
     } elseif ($_POST['type'] == 0 && !\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
-        $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
-        $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+        $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID';
     } elseif (empty($_POST['ip']) && $_POST['type'] == 1) {
         // Didn't type an IP
         $error++;
-        $errorScript .= "$('ip.msg').innerHTML = 'You must type an IP';";
-        $errorScript .= "$('ip.msg').setStyle('display', 'block');";
+        $validationErrors['ip'] = 'You must type an IP';
     } elseif ($_POST['type'] == 1 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
-        $errorScript .= "$('ip.msg').innerHTML = 'You must type a valid IP';";
-        $errorScript .= "$('ip.msg').setStyle('display', 'block');";
+        $validationErrors['ip'] = 'You must type a valid IP';
     }
 
     // Didn't type a custom reason
     if ($_POST['listReason'] == "other" && empty($_POST['txtReason'])) {
         $error++;
-        $errorScript .= "$('reason.msg').innerHTML = 'You must type a reason';";
-        $errorScript .= "$('reason.msg').setStyle('display', 'block');";
+        $validationErrors['reason'] = 'You must type a reason';
     }
 
     // prune any old bans
@@ -103,16 +162,14 @@ if (isset($_POST['name'])) {
 
             if ((int) $chk['count'] > 0) {
                 $error++;
-                $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already banned';";
-                $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+                $validationErrors['steam'] = 'This SteamID is already banned';
             } else {
                 // Check if player is immune
                 $admchk = $userbank->GetAllAdmins();
                 foreach ($admchk as $admin) {
                     if ($admin['authid'] == $_POST['steam'] && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity']) {
                         $error++;
-                        $errorScript .= "$('steam.msg').innerHTML = 'Admin " . $admin['user'] . " is immune';";
-                        $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+                        $validationErrors['steam'] = 'Admin ' . $admin['user'] . ' is immune';
                         break;
                     }
                 }
@@ -128,8 +185,7 @@ if (isset($_POST['name'])) {
 
             if ((int) $chk['count'] > 0) {
                 $error++;
-                $errorScript .= "$('ip.msg').innerHTML = 'This IP is already banned';";
-                $errorScript .= "$('ip.msg').setStyle('display', 'block');";
+                $validationErrors['ip'] = 'This IP is already banned';
             }
         }
     }
@@ -213,43 +269,184 @@ if (isset($_POST['name'])) {
             Log::add("m", "Ban length edited", "Ban length for ({$lengthrev['authid']}) has been updated."
                 . " Before: {$lengthrev['length']}; Now: {$_POST['banlength']}.");
         }
-        echo '<script>ShowBox("Ban updated", "The ban has been updated successfully", "green", "index.php?p=banlist' . $pagelink . '");</script>';
+        $postSuccess = true;
     }
 }
 
-if (!$res) {
-    echo '<script>ShowBox("Error", "There was an error getting details. Maybe the ban has been deleted?", "red", "index.php?p=banlist' . $pagelink . '");</script>';
-}
+$customReason = Config::getBool('bans.customreasons')
+    ? unserialize((string) Config::get('bans.customreasons'))
+    : false;
+/** @var false|list<string> $customReason */
 
-$theme->assign('ban_name', $res['name']);
-$theme->assign('ban_reason', $res['reason']);
-$theme->assign('ban_authid', trim($res['authid']));
-$theme->assign('ban_ip', $res['ip']);
-// Issue #1113: dname is the admin-supplied original filename of the demo
-// (POST'd by whoever edited the ban + uploaded the demo, stored as
-// `:prefix_demos.origname`). It used to be interpolated raw into HTML
-// rendered with `nofilter`, so a filename like `<img src=x onerror=…>`
-// turned the edit-ban page into stored XSS for any admin viewing that ban.
-// htmlspecialchars + ENT_QUOTES so the value is safe inside both the
-// surrounding `<b>…</b>` text and the wrapping JS string the edit-ban
-// template emits it from.
-$theme->assign('ban_demo', !empty($res['dname'])
-    ? 'Uploaded: <b>' . htmlspecialchars((string) $res['dname'], ENT_QUOTES, 'UTF-8') . '</b>'
-    : '');
-$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansEditView(
+    can_edit_ban: $canEditBan,
+    ban_name:     (string) $res['name'],
+    ban_authid:   trim((string) $res['authid']),
+    ban_ip:       (string) $res['ip'],
+    // Issue #1113: dname is the admin-supplied original filename of the
+    // demo (POST'd by whoever edited the ban + uploaded the demo, stored
+    // as `:prefix_demos.origname`). It used to be interpolated raw into
+    // HTML rendered with `nofilter`, so a filename like
+    // `<img src=x onerror=…>` turned the edit-ban page into stored XSS
+    // for any admin viewing that ban. htmlspecialchars + ENT_QUOTES so
+    // the value is safe inside both the surrounding `<b>…</b>` text and
+    // the `nofilter` render in the template.
+    ban_demo: !empty($res['dname'])
+        ? 'Uploaded: <b>' . htmlspecialchars((string) $res['dname'], ENT_QUOTES, 'UTF-8') . '</b>'
+        : '',
+    customreason: $customReason,
+));
 
-$theme->setLeftDelimiter('-{');
-$theme->setRightDelimiter('}-');
-$theme->display('page_admin_edit_ban.tpl');
-$theme->setLeftDelimiter('{');
-$theme->setRightDelimiter('}');
+// Tail script — vanilla replacements for sourcebans.js helpers the
+// sbpp2026 stack does not load. The default theme also gets this script
+// (it's idempotent / additive); the legacy MooTools-style helpers it
+// shipped (`changeReason`, `selectLengthTypeReason`, `demo`) are
+// shadowed by these vanilla declarations on a per-page basis without
+// touching `web/scripts/sourcebans.js` (which #1123 D1 deletes outright).
+//
+// Order:
+//   1. Replay POST validation errors into the per-field `*.msg` divs.
+//   2. Emit the "saved" toast + redirect on success.
+//   3. Define `changeReason`, `selectLengthTypeReason`, `demo` as
+//      vanilla functions targeting the matching DOM ids.
+//   4. Hydrate the `<select>`s with the row's current type/length/
+//      reason via `selectLengthTypeReason`.
+$validationErrorsJs = json_encode($validationErrors, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$banLengthSeconds = (int) $res['length'];
+$banType = (int) $res['type'];
+// $res['reason'] is admin-controlled free text — JSON-encode it so any
+// quote / backslash / non-ASCII byte survives the round-trip into the
+// inline script body unmolested. The hydrator does an equality check on
+// `<option>.value` against this string, so preserving the literal byte
+// sequence matters.
+$banReasonJs = json_encode((string) $res['reason'], JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$redirectUrl = 'index.php?p=banlist' . $pagelink;
+$redirectUrlJs = json_encode($redirectUrl, JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+$postSuccessJs = $postSuccess ? 'true' : 'false';
 ?>
-<script type="text/javascript">window.addEvent('domready', function(){
-<?=$errorScript?>
-});
-function changeReason(szListValue)
-{
-    $('dreason').style.display = (szListValue == "other" ? "block" : "none");
-}
-selectLengthTypeReason('<?=(int) $res['length']?>', '<?=$res['type']?>', '<?=addslashes($res['reason'])?>');
+<script>
+(function () {
+    'use strict';
+
+    /** @type {{[k: string]: string}} */
+    var validationErrors = <?=$validationErrorsJs?>;
+    var postSuccess = <?=$postSuccessJs?>;
+    var redirectUrl = <?=$redirectUrlJs?>;
+
+    function $id(id) { return document.getElementById(id); }
+    function setMsg(id, text) {
+        var el = $id(id);
+        if (!el) return;
+        if (text) {
+            el.textContent = text;
+            el.style.display = 'block';
+        } else {
+            el.textContent = '';
+            el.style.display = 'none';
+        }
+    }
+    function toast(kind, title, body) {
+        var SBPP = window.SBPP;
+        if (SBPP && typeof SBPP.showToast === 'function') {
+            SBPP.showToast({
+                kind: kind === 'red' ? 'error' : kind === 'green' ? 'success' : kind,
+                title: title,
+                body: body
+            });
+            return;
+        }
+        if (window.sb && window.sb.message) {
+            var fn = (kind === 'red') ? window.sb.message.error
+                : (kind === 'green') ? window.sb.message.success
+                : window.sb.message.info;
+            if (typeof fn === 'function') fn(title, body || '');
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        Object.keys(validationErrors).forEach(function (field) {
+            setMsg(field + '.msg', validationErrors[field]);
+        });
+        if (postSuccess) {
+            toast('green', 'Ban updated', 'The ban has been updated successfully');
+            setTimeout(function () { window.location.href = redirectUrl; }, 1500);
+        }
+    });
+
+    // Toggle the custom-reason textarea on/off based on the listReason
+    // dropdown. Replaces the legacy `$('dreason').style.display = …`
+    // helper that used the MooTools `$()` selector.
+    window.changeReason = function (szListValue) {
+        var dre = $id('dreason');
+        if (dre) dre.style.display = (szListValue === 'other' ? 'block' : 'none');
+    };
+
+    // Vanilla replacement for sourcebans.js' `selectLengthTypeReason`:
+    // hydrate the type / banlength / listReason <select>s with the
+    // current ban's stored values after the form has rendered. Falls
+    // back to the "Other reason" branch (revealing the textarea +
+    // pre-filling its value) when the stored reason isn't one of the
+    // hard-coded preset options or a configured custom reason.
+    window.selectLengthTypeReason = function (length, type, reason) {
+        var banlength = $id('banlength');
+        if (banlength) {
+            for (var i = 0; i < banlength.options.length; i++) {
+                if (banlength.options[i].value === String(length / 60)) {
+                    banlength.options[i].selected = true;
+                    break;
+                }
+            }
+        }
+        var ttype = $id('type');
+        if (ttype && ttype.options[type]) {
+            ttype.options[type].selected = true;
+        }
+        var list = $id('listReason');
+        if (!list) return;
+        for (var j = 0; j < list.options.length; j++) {
+            if (list.options[j].innerHTML === reason) {
+                list.options[j].selected = true;
+                return;
+            }
+            if (list.options[j].value === 'other') {
+                var txt = $id('txtReason');
+                var dre = $id('dreason');
+                if (txt) txt.value = reason;
+                if (dre) dre.style.display = 'block';
+                list.options[j].selected = true;
+                return;
+            }
+        }
+    };
+
+    // The "Upload a demo" popup (pages/admin.uploaddemo.php) calls
+    // `window.opener.demo(id, name)` after a successful upload. Update
+    // the demo-status inline banner + the hidden `did`/`dname` inputs
+    // so the next save persists the new demo.
+    //
+    // The popup escapes `id` and `name` via JSON encoding before the
+    // call (admin.uploaddemo.php), so they are JavaScript primitives
+    // here; we still treat `name` as untrusted text and write it via
+    // textContent + a leading static label so any HTML metacharacters
+    // render literally, not as markup.
+    window.demo = function (id, name) {
+        var msg = $id('demo.msg');
+        if (msg) {
+            msg.textContent = '';
+            var label = document.createTextNode('Uploaded: ');
+            var b = document.createElement('b');
+            b.textContent = String(name);
+            msg.appendChild(label);
+            msg.appendChild(b);
+        }
+        var did = $id('did');
+        var dname = $id('dname');
+        if (did) did.value = id;
+        if (dname) dname.value = name;
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        window.selectLengthTypeReason(<?=$banLengthSeconds?>, <?=$banType?>, <?=$banReasonJs?>);
+    });
+})();
 </script>
