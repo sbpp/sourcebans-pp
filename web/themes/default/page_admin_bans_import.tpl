@@ -40,14 +40,21 @@
 
             <div>
                 <label class="label" for="importFile">Ban file</label>
-                <input type="file"
-                       class="input"
-                       id="importFile"
-                       name="importFile"
-                       accept=".cfg,.txt"
-                       required
-                       data-testid="banimport-file"
-                       style="padding:0.375rem 0.5rem">
+                <div class="file-input">
+                    <label class="btn btn--secondary">
+                        <input type="file"
+                               id="importFile"
+                               name="importFile"
+                               accept=".cfg,.txt"
+                               required
+                               data-testid="banimport-file"
+                               data-file-input
+                               hidden>
+                        <i data-lucide="upload" style="width:14px;height:14px"></i>
+                        Choose file&hellip;
+                    </label>
+                    <span class="text-muted text-sm" data-file-name>No file chosen</span>
+                </div>
                 <div class="text-xs mt-2" id="file.msg" style="color:var(--danger);display:none"></div>
             </div>
 

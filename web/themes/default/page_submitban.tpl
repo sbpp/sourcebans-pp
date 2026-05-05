@@ -175,12 +175,20 @@
 
             <div>
                 <label class="label" for="submitban-demo">Upload demo or evidence</label>
-                <input type="file"
-                       class="input"
-                       id="submitban-demo"
-                       name="demo_file"
-                       accept=".dem,.zip,.rar,.7z,.bz2,.gz"
-                       data-testid="submitban-demo">
+                <div class="file-input">
+                    <label class="btn btn--secondary">
+                        <input type="file"
+                               id="submitban-demo"
+                               name="demo_file"
+                               accept=".dem,.zip,.rar,.7z,.bz2,.gz"
+                               data-testid="submitban-demo"
+                               data-file-input
+                               hidden>
+                        <i data-lucide="upload" style="width:14px;height:14px"></i>
+                        Choose file&hellip;
+                    </label>
+                    <span class="text-muted text-sm" data-file-name>No file chosen</span>
+                </div>
                 <p class="text-xs text-muted m-0 mt-2">
                     Optional. Allowed formats: <code class="font-mono">.dem</code>,
                     <code class="font-mono">.zip</code>, <code class="font-mono">.rar</code>,

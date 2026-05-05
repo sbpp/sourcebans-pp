@@ -518,6 +518,32 @@
     showToast({ kind: 'success', title: 'Copied to clipboard' });
   });
 
+  // ---- FILE INPUTS -----------------------------------------
+  // Native <input type="file"> ships an unstyleable user-agent button
+  // that pops out of the panel's design language (#1189). Each callsite
+  // wraps the input in:
+  //   <div class="file-input">
+  //     <label class="btn btn--secondary">
+  //       <input type="file" name="…" hidden data-file-input>
+  //       Choose file…
+  //     </label>
+  //     <span class="text-muted text-sm" data-file-name>No file chosen</span>
+  //   </div>
+  // The label-wraps-input pattern preserves native click-through to the
+  // file picker; this delegated listener just mirrors the chosen
+  // filename into the sibling span so the user sees what they picked.
+  document.addEventListener('change', (/** @type {Event} */ e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.type !== 'file' || !target.matches('[data-file-input]')) return;
+    const lbl = target.closest('label');
+    const wrap = lbl && lbl.parentElement;
+    const span = wrap && wrap.querySelector('[data-file-name]');
+    if (!span) return;
+    const file = target.files && target.files[0];
+    span.textContent = file ? file.name : 'No file chosen';
+  });
+
   // ---- TOASTS ----------------------------------------------
   /**
    * @typedef {Object} ToastOpts

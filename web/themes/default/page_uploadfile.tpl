@@ -51,12 +51,19 @@
             <input type="hidden" name="upload" value="1">
 
             <label class="label" for="uploadfile-input">Select file</label>
-            <input type="file"
-                   id="uploadfile-input"
-                   class="input"
-                   name="{$input_name}"
-                   data-testid="uploadfile-input"
-                   required>
+            <div class="file-input">
+                <label class="btn btn--secondary">
+                    <input type="file"
+                           id="uploadfile-input"
+                           name="{$input_name}"
+                           data-testid="uploadfile-input"
+                           data-file-input
+                           required
+                           hidden>
+                    Choose file&hellip;
+                </label>
+                <span class="text-muted text-sm" data-file-name>No file chosen</span>
+            </div>
 
             <div style="margin-top:0.75rem;display:flex;justify-content:flex-end">
                 <button type="submit"
@@ -68,5 +75,21 @@
         </form>
     </div>
 </div>
+{* Popup window has no theme.js (only theme.css), so the filename mirror runs inline. *}
+<script>
+(function () {
+    document.addEventListener('change', function (e) {
+        var t = e.target;
+        if (!t || !(t instanceof HTMLInputElement)) return;
+        if (t.type !== 'file' || !t.matches('[data-file-input]')) return;
+        var lbl = t.closest('label');
+        var wrap = lbl && lbl.parentElement;
+        var span = wrap && wrap.querySelector('[data-file-name]');
+        if (!span) return;
+        var f = t.files && t.files[0];
+        span.textContent = f ? f.name : 'No file chosen';
+    });
+})();
+</script>
 </body>
 </html>
