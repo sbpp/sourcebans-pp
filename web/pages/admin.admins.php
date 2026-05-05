@@ -279,90 +279,9 @@ $serverscript .= "</script>";
     server_group_list: $server_group_list,
     server_script: $serverscript,
 ));
-// Overrides
 
-// Saving changed overrides
-$overrides_error        = "";
-$overrides_save_success = false;
-try {
-    if (isset($_POST['new_override_name'])) {
-        // Handle old overrides, if there are any.
-        if (isset($_POST['override_id'])) {
-            // Apply changes first
-            $edit_errors = "";
-            foreach ($_POST['override_id'] as $index => $id) {
-                // Skip invalid stuff?!
-                if ($_POST['override_type'][$index] != "command" && $_POST['override_type'][$index] != "group") {
-                    continue;
-                }
-
-                $id = (int) $id;
-                // Wants to delete this override?
-                if (empty($_POST['override_name'][$index])) {
-                    $GLOBALS['PDO']->query("DELETE FROM `:prefix_overrides` WHERE id = :id");
-                    $GLOBALS['PDO']->bind(':id', $id);
-                    $GLOBALS['PDO']->execute();
-                    continue;
-                }
-
-                // Check for duplicates
-                $chk = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_overrides` WHERE name = ? AND type = ? AND id != ?")->resultset([
-                    $_POST['override_name'][$index],
-                    $_POST['override_type'][$index],
-                    $id,
-                ]);
-                if (!empty($chk)) {
-                    $edit_errors .= "&bull; There already is an override with name \\\"" . htmlspecialchars(addslashes($_POST['override_name'][$index])) . "\\\" from the selected type.<br />";
-                    continue;
-                }
-
-                // Edit the override
-                $GLOBALS['PDO']->query("UPDATE `:prefix_overrides` SET name = ?, type = ?, flags = ? WHERE id = ?")->execute([
-                    $_POST['override_name'][$index],
-                    $_POST['override_type'][$index],
-                    trim($_POST['override_flags'][$index]),
-                    $id,
-                ]);
-            }
-
-            if (!empty($edit_errors)) {
-                throw new Exception("There were errors applying your changes:<br /><br />" . $edit_errors);
-            }
-        }
-
-        // Add a new override
-        if (!empty($_POST['new_override_name'])) {
-            if ($_POST['new_override_type'] != "command" && $_POST['new_override_type'] != "group") {
-                throw new Exception("Invalid override type.");
-            }
-
-            // Check for duplicates
-            $chk = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_overrides` WHERE name = ? AND type = ?")->resultset([
-                $_POST['new_override_name'],
-                $_POST['new_override_type'],
-            ]);
-            if (!empty($chk)) {
-                throw new Exception("There already is an override with that name from the selected type.");
-            }
-
-            // Insert the new override
-            $GLOBALS['PDO']->query("INSERT INTO `:prefix_overrides` (type, name, flags) VALUES (?, ?, ?)")->execute([
-                $_POST['new_override_type'],
-                $_POST['new_override_name'],
-                trim($_POST['new_override_flags']),
-            ]);
-        }
-
-        $overrides_save_success = true;
-    }
-} catch (Exception $e) {
-    $overrides_error = $e->getMessage();
-}
-
-$overrides_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_overrides`")->resultset();
-
-$theme->assign('overrides_list', $overrides_list);
-$theme->assign('overrides_error', $overrides_error);
-$theme->assign('overrides_save_success', $overrides_save_success);
-$theme->assign('permission_addadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS));
-$theme->display('page_admin_overrides.tpl');
+// Overrides — extracted into its own handler in #1123 B17 so the
+// "single-template, single-View" pattern lines up with one .tpl per
+// theme and one Sbpp\View\AdminOverridesView. The require keeps the
+// existing AdminTabs ?p=admin&c=admins URL working unchanged.
+require(TEMPLATES_PATH . "/admin.overrides.php");
