@@ -403,12 +403,6 @@ parameters:
 			path: pages/admin.edit.ban.php
 
 		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 8
-			path: pages/admin.edit.comms.php
-
-		-
 			message: '#^Variable \$theme might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
