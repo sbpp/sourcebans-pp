@@ -216,5 +216,10 @@ echo '<div class="tabcontent" id="Add a group">';
 ));
 echo '</div>';
 ?>
-<script>InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
+<script>
+// Inlined sourcebans.js helper (#1123 D1 prep): InitAccordion is removed at D1; sb.accordion (sb.js)
+// is the actual implementation, so call it directly. The legacy helper also stashed the controller in
+// a global `accordion` variable, but no template reads it back, so we drop that side effect.
+sb.ready(function () { sb.accordion('tr.opener', 'div.opener', 'mainwrapper', -1); });
+</script>
 </div>

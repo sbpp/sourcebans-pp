@@ -24,6 +24,22 @@ if (!defined("IN_SB")) {
 }
 define('IN_HOME', true);
 
+/**
+ * Inlined sourcebans.js helpers (#1123 D1 prep): see page.servers.php for the canonical
+ * definition. Duplicated under function_exists() because page.home.php builds its
+ * LoadServerHostProperty()-equivalent calls before it requires page.servers.php, and we
+ * need the helper definitions to land at the head of $server_qry.
+ */
+if (!function_exists('SbppServerQryHelpers')) {
+    function SbppServerQryHelpers(): string
+    {
+        return <<<'JS'
+if(typeof window.__sbppLoadServerHost!=="function"){window.__sbppLoadServerHost=function(sid){sb.api.call(Actions.ServersHostPlayers,{sid:sid,trunchostname:70}).then(function(r){if(!r||!r.ok||!r.data)return;var d=r.data,hostEl=sb.$id("host_"+sid),playersEl=sb.$id("players_"+sid),osEl=sb.$id("os_"+sid),vacEl=sb.$id("vac_"+sid),mapEl=sb.$id("map_"+sid);if(d.error==="connect"){var ipPort=(d.ip||"")+":"+(d.port||"");if(hostEl)hostEl.innerHTML="<b>Error connecting</b> (<i>"+ipPort+"</i>)";if(!d.is_owner){if(playersEl)playersEl.textContent="N/A";if(osEl)osEl.textContent="N/A";if(vacEl)vacEl.textContent="N/A";if(mapEl)mapEl.textContent="N/A";}return;}if(hostEl)hostEl.innerHTML=d.hostname;if(playersEl)playersEl.textContent=(d.players||0)+"/"+(d.maxplayers||0);if(osEl)osEl.innerHTML="<i class='"+(d.os_class||"")+" fa-2x'></i>";if(vacEl&&d.secure)vacEl.innerHTML="<i class='fas fa-shield-alt fa-2x'></i>";if(mapEl)mapEl.textContent=d.map||"";});};}
+if(typeof window.__sbppLoadServerHostProperty!=="function"){window.__sbppLoadServerHostProperty=function(sid,obId,obProp){sb.api.call(Actions.ServersHostProperty,{sid:sid,trunchostname:100}).then(function(r){if(!r||!r.ok||!r.data)return;var text=r.data.error==="connect"?("Error connecting ("+(r.data.ip||"")+":"+(r.data.port||"")+")"):r.data.hostname;var el=sb.$id(obId);if(!el)return;if(obProp==="innerHTML")el.innerHTML=text;else el.setAttribute(obProp,text);});};}
+JS;
+    }
+}
+
 $totalstopped = (int) $GLOBALS['PDO']->query("SELECT count(name) AS cnt FROM `:prefix_banlog`")->single()['cnt'];
 
 $rows = $GLOBALS['PDO']->query("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.authid, b.ip,
@@ -33,7 +49,7 @@ $rows = $GLOBALS['PDO']->query("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.
 								LEFT JOIN `:prefix_servers` AS se ON se.sid = bl.sid
 								ORDER BY time DESC LIMIT 10")->resultset();
 
-$GLOBALS['server_qry'] = "";
+$GLOBALS['server_qry'] = SbppServerQryHelpers();
 $stopped               = [];
 $blcount               = 0;
 foreach ($rows as $row) {
@@ -68,7 +84,7 @@ foreach ($rows as $row) {
     }
     $info['popup']    = "ShowBox('Blocked player: " . $cleaned_name . "', '" . $cleaned_name . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
 
-    $GLOBALS['server_qry'] .= "LoadServerHostProperty(" . $row['sid'] . ", 'block_" . $row['sid'] . "_$blcount', 'title', 100);";
+    $GLOBALS['server_qry'] .= "__sbppLoadServerHostProperty(" . (int) $row['sid'] . ", 'block_" . (int) $row['sid'] . "_$blcount', 'title');";
 
     // sbpp2026 fields. Stored alongside the legacy keys above so the
     // new dashboard template reads `$player.bid` / `$player.sname`

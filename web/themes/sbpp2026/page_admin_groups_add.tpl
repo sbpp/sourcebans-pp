@@ -94,7 +94,33 @@ function SbppGroupsAdd(event) {
         type: type,
         bitmask: 0,
         srvflags: srvflags
-    }).then(function (r) { applyApiResponse(r); });
+    }).then(function (r) {
+        // Inlined sourcebans.js helper (#1123 D1 prep): applyApiResponse is removed at D1.
+        // sb.api.call already follows r.redirect natively, so we only need to surface
+        // the success/error toast. Prefer the new theme's toast; fall back to sb.message.
+        if (!r) return;
+        if (r.redirect) return;
+        if (r.ok === false) {
+            var em = (r.error && r.error.message) || 'Unknown error';
+            if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+                window.SBPP.showToast({ type: 'error', message: em });
+            } else {
+                sb.message.error('Error', em);
+            }
+            return;
+        }
+        var data = r.data || {};
+        var msg = (data.message && data.message.body) || 'Group added.';
+        var title = (data.message && data.message.title) || 'Group added';
+        if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+            window.SBPP.showToast({ type: 'success', message: msg });
+        } else {
+            sb.message.success(title, msg, data.message ? data.message.redir : '');
+        }
+        if (data.reload) {
+            setTimeout(function () { window.location.reload(); }, 1500);
+        }
+    });
     return false;
 }
 {/literal}

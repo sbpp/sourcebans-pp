@@ -32,9 +32,10 @@ new AdminTabs([
 ], $userbank, $theme);
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
-    echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    echo "<script>sb.message.show('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
 } elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
-    echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+    echo "<script>sb.message.show('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
 }
 
 if (isset($GLOBALS['IN_ADMIN'])) {
@@ -99,15 +100,20 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
         Log::add("m", "Bans imported", "$bancnt Ban(s) imported");
     }
 
-    echo "<script>ShowBox('Bans Import', '$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.', 'green', '');</script>";
+    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    echo "<script>sb.message.show('Bans Import', '$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.', 'green', '');</script>";
 }
 
+// Inlined sourcebans.js helpers (#1123 D1 prep): LoadPrepareReban / LoadPasteBan / ShowBox / applyBanFields
+// disappear at D1; rebuild on top of sb.api.call + a small DOM-prefill helper that lives in this file's
+// tail script (window.__sbppApplyBanFields). Both inline scripts below dispatch through Actions.*
+// (api-contract.js) and use sb.ready so the helper is defined by the time the API response lands.
 if (isset($_GET["rebanid"])) {
-    echo '<script type="text/javascript">LoadPrepareReban("' . (int) $_GET["rebanid"] . '");</script>';
+    echo '<script type="text/javascript">sb.ready(function(){sb.api.call(Actions.BansPrepareReban,{bid:' . (int) $_GET["rebanid"] . '}).then(function(r){if(r&&r.ok&&r.data&&typeof window.__sbppApplyBanFields==="function")window.__sbppApplyBanFields(r.data);});});</script>';
 }
 if ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pName']) && isset($_GET['sid'])) {
     $pNameJs = json_encode((string) $_GET['pName'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);sb.hide('dialog-control');LoadPasteBan(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
+    echo "<script type=\"text/javascript\">sb.ready(function(){sb.message.show('Loading..','<b>Loading...</b><br><i>Please Wait!</i>','blue','',true);sb.hide('dialog-control');sb.api.call(Actions.BansPaste,{sid:" . (int) $_GET['sid'] . ",name:" . $pNameJs . ",type:0}).then(function(r){if(r&&r.ok&&r.data){if(typeof window.__sbppApplyBanFields==='function')window.__sbppApplyBanFields(r.data);sb.show('dialog-control');sb.hide('dialog-placement');}else if(r&&r.ok===false&&r.error){sb.message.error('Error',r.error.message);sb.show('dialog-control');}});});</script>";
 }
 
 echo '<div id="admin-page-content">';
@@ -174,7 +180,7 @@ if (strlen($next) > 0) {
 
 $pages = ceil($page_count / $ItemsPerPage);
 if ($pages > 1) {
-    $page_nav .= '&nbsp;<select onchange="changePage(this,\'P\',\'\',\'\');">';
+    $page_nav .= '&nbsp;<select onchange="if(this.value!==\'0\')window.location.href=\'index.php?p=admin&c=bans&ppage=\'+this.value+\'#^1\';">';
     for ($i = 1; $i <= $pages; $i++) {
         if ($i == $page) {
             $page_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
@@ -328,7 +334,7 @@ if (strlen($next) > 0) {
 
 $pages = ceil($page_count / $ItemsPerPage);
 if ($pages > 1) {
-    $page_nav .= '&nbsp;<select onchange="changePage(this,\'PA\',\'\',\'\');">';
+    $page_nav .= '&nbsp;<select onchange="if(this.value!==\'0\')window.location.href=\'index.php?p=admin&c=bans&papage=\'+this.value+\'#^1~p1\';">';
     for ($i = 1; $i <= $pages; $i++) {
         if ($i == $page) {
             $page_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
@@ -506,7 +512,7 @@ if (strlen($next) > 0) {
 
 $pages = ceil($page_count / $ItemsPerPage);
 if ($pages > 1) {
-    $page_nav .= '&nbsp;<select onchange="changePage(this,\'S\',\'\',\'\');">';
+    $page_nav .= '&nbsp;<select onchange="if(this.value!==\'0\')window.location.href=\'index.php?p=admin&c=bans&spage=\'+this.value+\'#^2\';">';
     for ($i = 1; $i <= $pages; $i++) {
         if ($i == $page) {
             $page_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
@@ -646,7 +652,7 @@ if (strlen($next) > 0) {
 
 $pages = ceil($page_count / $ItemsPerPage);
 if ($pages > 1) {
-    $page_nav .= '&nbsp;<select onchange="changePage(this,\'SA\',\'\',\'\');">';
+    $page_nav .= '&nbsp;<select onchange="if(this.value!==\'0\')window.location.href=\'index.php?p=admin&c=bans&sapage=\'+this.value+\'#^2~s1\';">';
     for ($i = 1; $i <= $pages; $i++) {
         if ($i == $page) {
             $page_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
@@ -863,12 +869,33 @@ function ProcessBan()
         reason:   reason,
         fromsub:  Number($('fromsub').value || 0),
     }).then(function (r) {
+        // Inlined sourcebans.js helpers (#1123 D1 prep): ShowKickBox / TabToReload /
+        // applyApiResponse are deleted at D1; rebuild on top of sb.message (sb.js, survives D1).
         if (r && r.ok && r.data && r.data.kickit) {
-            ShowKickBox(r.data.kickit.check, r.data.kickit.type);
-            if (r.data.reload) TabToReload();
+            sb.message.show(
+                'Ban Added',
+                'The ban has been successfully added<br><iframe id="srvkicker" frameborder="0" width="100%" src="pages/admin.kickit.php?check='
+                    + encodeURIComponent(r.data.kickit.check) + '&type=' + encodeURIComponent(r.data.kickit.type) + '"></iframe>',
+                'green',
+                'index.php?p=admin&c=bans',
+                true
+            );
+            if (r.data.reload) setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
             return;
         }
-        applyApiResponse(r);
+        if (!r) return;
+        if (r.redirect) return;
+        if (r.ok === false) {
+            if (r.error) sb.message.error('Error', r.error.message || 'Unknown error');
+            return;
+        }
+        var data = r.data || {};
+        if (data.message) {
+            sb.message.show(data.message.title, data.message.body, data.message.kind, data.message.redir, data.message.noclose);
+        }
+        if (data.reload) {
+            setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
+        }
     });
 }
 function ProcessGroupBan()
@@ -896,5 +923,25 @@ function CheckGroupBan()
         }
     }
 }
+
+// Inlined sourcebans.js helper (#1123 D1 prep): applyBanFields disappears at D1; rebuild on top of sb.js
+// primitives so both LoadPrepareReban and LoadPasteBan keep prefilling the form post-cutover.
+window.__sbppApplyBanFields = function (d) {
+    var byId = function (id) { return document.getElementById(id); };
+    if (byId('nickname'))   byId('nickname').value   = d.nickname || '';
+    if (byId('fromsub'))    byId('fromsub').value    = d.subid    || '';
+    if (byId('steam'))      byId('steam').value      = d.steam    || '';
+    if (byId('ip'))         byId('ip').value         = d.ip       || '';
+    if (byId('txtReason'))  byId('txtReason').value  = '';
+    if (byId('demo.msg'))   byId('demo.msg').innerHTML = '';
+    if (typeof window.selectLengthTypeReason === 'function') {
+        window.selectLengthTypeReason(d.length || 0, d.type || 0, d.reason || '');
+    }
+    if (d.demo) {
+        if (byId('demo.msg')) byId('demo.msg').innerHTML = d.demo.origname || '';
+        if (typeof window.demo === 'function') window.demo(d.demo.filename, d.demo.origname);
+    }
+    if (typeof window.swapTab === 'function') window.swapTab(0);
+};
 </script>
 </div>

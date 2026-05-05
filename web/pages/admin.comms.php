@@ -33,9 +33,11 @@ new AdminTabs([
 ], $userbank, $theme);
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
-    echo "<script>ShowBox('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
+    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    echo "<script>sb.message.show('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
 } elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
-    echo "<script>ShowBox('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
+    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    echo "<script>sb.message.show('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
 }
 
 if (isset($GLOBALS['IN_ADMIN'])) {
@@ -43,13 +45,16 @@ if (isset($GLOBALS['IN_ADMIN'])) {
 }
 
 
+// Inlined sourcebans.js helpers (#1123 D1 prep): LoadPrepareReblock / LoadPrepareBlockFromBan /
+// LoadPasteBlock / ShowBox / applyBlockFields disappear at D1; rebuild on top of sb.api.call +
+// a small DOM-prefill helper (window.__sbppApplyBlockFields) defined in this file's tail script.
 if (isset($_GET["rebanid"])) {
-    echo '<script type="text/javascript">LoadPrepareReblock("' . (int) $_GET["rebanid"] . '");</script>';
+    echo '<script type="text/javascript">sb.ready(function(){sb.api.call(Actions.CommsPrepareReblock,{bid:' . (int) $_GET["rebanid"] . '}).then(function(r){if(r&&r.ok&&r.data&&typeof window.__sbppApplyBlockFields==="function")window.__sbppApplyBlockFields(r.data);});});</script>';
 } elseif (isset($_GET["blockfromban"])) {
-    echo '<script type="text/javascript">LoadPrepareBlockFromBan("' . (int) $_GET["blockfromban"] . '");</script>';
+    echo '<script type="text/javascript">sb.ready(function(){sb.api.call(Actions.CommsPrepareBlockFromBan,{bid:' . (int) $_GET["blockfromban"] . '}).then(function(r){if(r&&r.ok&&r.data&&typeof window.__sbppApplyBlockFields==="function")window.__sbppApplyBlockFields(r.data);});});</script>';
 } elseif ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pName']) && isset($_GET['sid'])) {
     $pNameJs = json_encode((string) $_GET['pName'], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
-    echo "<script type=\"text/javascript\">ShowBox('Loading..','<b>Loading...</b><br><i>Please Wait!</i>', 'blue', '', true);sb.hide('dialog-control');LoadPasteBlock(" . (int) $_GET['sid'] . ", " . $pNameJs . ");</script>";
+    echo "<script type=\"text/javascript\">sb.ready(function(){sb.message.show('Loading..','<b>Loading...</b><br><i>Please Wait!</i>','blue','',true);sb.hide('dialog-control');sb.api.call(Actions.CommsPaste,{sid:" . (int) $_GET['sid'] . ",name:" . $pNameJs . ",type:0}).then(function(r){if(r&&r.ok&&r.data){if(typeof window.__sbppApplyBlockFields==='function')window.__sbppApplyBlockFields(r.data);sb.show('dialog-control');sb.hide('dialog-placement');}else if(r&&r.ok===false&&r.error){sb.message.error('Error',r.error.message);sb.show('dialog-control');}});});</script>";
 }
 
 echo '<div id="admin-page-content">';
@@ -86,13 +91,47 @@ function ProcessBan()
         length:   Number($('banlength').value),
         reason:   reason,
     }).then(function (r) {
+        // Inlined sourcebans.js helpers (#1123 D1 prep): ShowBlockBox / TabToReload /
+        // applyApiResponse are deleted at D1; rebuild on top of sb.message (sb.js, survives D1).
         if (r && r.ok && r.data && r.data.block) {
-            ShowBlockBox(r.data.block.steam, r.data.block.type, r.data.block.length);
-            if (r.data.reload) TabToReload();
+            sb.message.show(
+                'Block Added',
+                'The block has been successfully added.',
+                'green',
+                'index.php?p=admin&c=comms',
+                false
+            );
+            if (r.data.reload) setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
             return;
         }
-        applyApiResponse(r);
+        if (!r) return;
+        if (r.redirect) return;
+        if (r.ok === false) {
+            if (r.error) sb.message.error('Error', r.error.message || 'Unknown error');
+            return;
+        }
+        var data = r.data || {};
+        if (data.message) {
+            sb.message.show(data.message.title, data.message.body, data.message.kind, data.message.redir, data.message.noclose);
+        }
+        if (data.reload) {
+            setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
+        }
     });
 }
+
+// Inlined sourcebans.js helper (#1123 D1 prep): applyBlockFields disappears at D1; rebuild on top
+// of sb.js primitives so reblock / blockfromban / pasteBlock all keep prefilling the form.
+window.__sbppApplyBlockFields = function (d) {
+    var byId = function (id) { return document.getElementById(id); };
+    if (byId('nickname'))   byId('nickname').value   = d.nickname || '';
+    if (byId('fromsub'))    byId('fromsub').value    = d.subid    || '';
+    if (byId('steam'))      byId('steam').value      = d.steam    || '';
+    if (byId('txtReason'))  byId('txtReason').value  = '';
+    if (typeof window.selectLengthTypeReason === 'function') {
+        window.selectLengthTypeReason(d.length || 0, d.type || 0, d.reason || '');
+    }
+    if (typeof window.swapTab === 'function') window.swapTab(0);
+};
 </script>
 </div>

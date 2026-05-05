@@ -173,7 +173,58 @@
                    string contents and never terminates early. Matches the legacy default theme's behaviour.
                    DO NOT add `nofilter` here without an alternative escape (e.g. json_encode in the View);
                    doing so re-opens a reflected XSS via `?p=admin&c=bans&fid=…');alert(1);//`. *}
-                <script>LoadGetGroups('{$list_steam_groups}');</script>
+                <script>
+                {literal}
+                // Inlined sourcebans.js helper (#1123 D1 prep): the legacy LoadGetGroups lives in
+                // sourcebans.js, which sbpp2026 doesn't load. Vanilla replacement against
+                // Actions.BansGetGroups; mirrors the legacy DOM-ops shape so #steamGroupsTable
+                // rows stay structurally identical (TickSelectAll / CheckGroupBan keep working).
+                (function (friendid) {
+                    sb.ready(function () {
+                        sb.api.call(Actions.BansGetGroups, { friendid: friendid }).then(function (r) {
+                            if (!r || !r.ok || !r.data) return;
+                            var groups = r.data.groups || [];
+                            var tbl = sb.$id('steamGroupsTable');
+                            if (!tbl) return;
+                            if (groups.length === 0) {
+                                sb.message.error('Error', "There was an error retrieving the group data. Maybe the player isn't member of any group or his profile is private?", 'index.php?p=banlist');
+                                var txt = sb.$id('steamGroupsText');
+                                if (txt) txt.innerHTML = '<i>No groups...</i>';
+                                return;
+                            }
+                            groups.forEach(function (g, i) {
+                                var safeUrl = encodeURIComponent(String(g.url || ''));
+                                var tr = tbl.insertRow();
+                                var td1 = tr.insertCell();
+                                td1.style.padding = '0px';
+                                td1.style.width = '3px';
+                                var cb = document.createElement('input');
+                                cb.type = 'checkbox';
+                                cb.id = 'chkb_' + i;
+                                cb.value = String(g.url || '');
+                                td1.appendChild(cb);
+                                var td2 = tr.insertCell();
+                                var a = document.createElement('a');
+                                a.href = 'http://steamcommunity.com/groups/' + safeUrl;
+                                a.target = '_blank';
+                                a.rel = 'noopener noreferrer';
+                                a.textContent = String(g.name || '');
+                                td2.appendChild(a);
+                                td2.appendChild(document.createTextNode(' ('));
+                                var span = document.createElement('span');
+                                span.id = 'membcnt_' + i;
+                                span.setAttribute('value', String(g.member_count || 0));
+                                span.textContent = String(g.member_count || 0);
+                                td2.appendChild(span);
+                                td2.appendChild(document.createTextNode(' Members)'));
+                            });
+                            sb.hide('steamGroupsText');
+                            sb.show('steamGroups');
+                        });
+                    });
+                })({/literal}'{$list_steam_groups}'{literal});
+                {/literal}
+                </script>
             {/if}
         </section>
     {/if}

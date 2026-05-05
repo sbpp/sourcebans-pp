@@ -133,9 +133,14 @@ if (isset($_POST['editadminserver'])) {
             }
         }
 
-        echo '<script>ShowRehashBox("' . implode(",", $allservers) . '", "Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+        // Inlined sourcebans.js helpers (#1123 D1 prep): ShowRehashBox / ShowBox / TabToReload disappear
+        // at D1; replicate the rehash dialog on top of sb.message + sb.api.call (sb.js, survives D1).
+        $serversJs = json_encode(implode(",", $allservers), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        echo '<script>(function(){var servers=' . $serversJs . ';var msg="The admin server access has been updated successfully<br /><hr /><i>Rehashing Admin and Group data on all related servers...</i><div id=\"rehashDiv\" name=\"rehashDiv\" width=\"100%\"></div>";sb.message.show("Admin server access updated",msg,"green","index.php?p=admin&c=admins",true);sb.hide("dialog-control");sb.api.call(Actions.SystemRehashAdmins,{servers:servers}).then(function(r){if(!r||!r.ok||!r.data)return;var div=sb.$id("rehashDiv");if(!div)return;var total=r.data.results.length;r.data.results.forEach(function(row,i){div.innerHTML+="Server #"+row.sid+" ("+(i+1)+"/"+total+"): "+(row.success?"<font color=\"green\">successful</font>.":"<font color=\"red\">failed</font>.")+"<br />";});sb.show("dialog-control");setTimeout(function(){window.location.href=window.location.href.replace(/#\^.*$/,"");},2000);});})();</script>';
     } else {
-        echo '<script>ShowBox("Admin server access updated", "The admin server access has been updated successfully", "green", "index.php?p=admin&c=admins");TabToReload();</script>';
+        // Inlined sourcebans.js helpers (#1123 D1 prep): ShowBox / TabToReload disappear at D1;
+        // sb.message (sb.js) survives D1, and we just reload after the success toast.
+        echo '<script>sb.message.show("Admin server access updated","The admin server access has been updated successfully","green","index.php?p=admin&c=admins",false);setTimeout(function(){window.location.href=window.location.href.replace(/#\^.*$/,"");},2000);</script>';
     }
 
     $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");

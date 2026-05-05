@@ -23,9 +23,35 @@ if (!defined("IN_SB")) {
     die();
 }
 
+/**
+ * Inlined sourcebans.js helpers (#1123 D1 prep): vanilla replacements for
+ * LoadServerHost / LoadServerHostProperty. Both are emitted into
+ * $GLOBALS['server_qry'] from page.{servers,home}.php and rendered through
+ * legacy themes' core/footer.tpl. Post-D1 sourcebans.js is gone, so we
+ * define the helper as window.__sbppLoadServerHost{,Property} and call those
+ * instead. The new sbpp2026 theme's footer doesn't emit {$query nofilter} so
+ * neither the helper definition nor the calls run there; legacy + third-party
+ * themes that copy the legacy footer pattern still get the populate behavior.
+ *
+ * Wrapped in function_exists so the same helper definition can ship from
+ * page.home.php too without redefining the function.
+ */
+if (!function_exists('SbppServerQryHelpers')) {
+    function SbppServerQryHelpers(): string
+    {
+        return <<<'JS'
+if(typeof window.__sbppLoadServerHost!=="function"){window.__sbppLoadServerHost=function(sid){sb.api.call(Actions.ServersHostPlayers,{sid:sid,trunchostname:70}).then(function(r){if(!r||!r.ok||!r.data)return;var d=r.data,hostEl=sb.$id("host_"+sid),playersEl=sb.$id("players_"+sid),osEl=sb.$id("os_"+sid),vacEl=sb.$id("vac_"+sid),mapEl=sb.$id("map_"+sid);if(d.error==="connect"){var ipPort=(d.ip||"")+":"+(d.port||"");if(hostEl)hostEl.innerHTML="<b>Error connecting</b> (<i>"+ipPort+"</i>)";if(!d.is_owner){if(playersEl)playersEl.textContent="N/A";if(osEl)osEl.textContent="N/A";if(vacEl)vacEl.textContent="N/A";if(mapEl)mapEl.textContent="N/A";}return;}if(hostEl)hostEl.innerHTML=d.hostname;if(playersEl)playersEl.textContent=(d.players||0)+"/"+(d.maxplayers||0);if(osEl)osEl.innerHTML="<i class='"+(d.os_class||"")+" fa-2x'></i>";if(vacEl&&d.secure)vacEl.innerHTML="<i class='fas fa-shield-alt fa-2x'></i>";if(mapEl)mapEl.textContent=d.map||"";});};}
+if(typeof window.__sbppLoadServerHostProperty!=="function"){window.__sbppLoadServerHostProperty=function(sid,obId,obProp){sb.api.call(Actions.ServersHostProperty,{sid:sid,trunchostname:100}).then(function(r){if(!r||!r.ok||!r.data)return;var text=r.data.error==="connect"?("Error connecting ("+(r.data.ip||"")+":"+(r.data.port||"")+")"):r.data.hostname;var el=sb.$id(obId);if(!el)return;if(obProp==="innerHTML")el.innerHTML=text;else el.setAttribute(obProp,text);});};}
+JS;
+    }
+}
+
 $number = -1;
 if (!defined('IN_HOME')) {
-    $GLOBALS['server_qry'] = "";
+    // The legacy default theme wraps {$query nofilter} in <script>...</script> via core/footer.tpl,
+    // so we emit RAW JS here. The new sbpp2026 footer drops {$query nofilter} entirely, so this
+    // payload only runs under themes that preserved the legacy footer pattern.
+    $GLOBALS['server_qry'] = SbppServerQryHelpers();
     if (isset($_GET['s'])) {
         $number = (int) $_GET['s'];
     }
@@ -51,7 +77,7 @@ foreach ($rows as $row) {
         $info['evOnClick'] = "window.location = 'index.php?p=servers&s=" . $info['index'] . "';";
     }
 
-    $GLOBALS['server_qry'] .= "LoadServerHost({$info['sid']}, 'servers', '', '" . $i . "', '" . $number . "', " . (defined('IN_HOME') ? 'true' : 'false') . ", 70);";
+    $GLOBALS['server_qry'] .= '__sbppLoadServerHost(' . (int) $info['sid'] . ');';
     array_push($servers, $info);
     $i++;
 }
