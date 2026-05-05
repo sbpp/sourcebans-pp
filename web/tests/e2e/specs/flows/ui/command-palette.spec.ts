@@ -131,14 +131,21 @@ test.describe('command palette', () => {
         // is 2, so any length >=2 fires the bans.search call; the server
         // caps results at 10 ordered by created DESC. A short prefix like
         // `e2e-palette-ta` matches every accumulated palette-* seed across
-        // the suite (open/type/enter × desktop/mobile) — under workers:1 the
-        // brand-new mobile-type row consistently lands in the top 10, but a
-        // single in-flight debounce wave can render a stale top-10 that
-        // excludes it. Typing the full unique nick collapses the search to
-        // exactly one matching row, removing the dependency on result
-        // ordering. Playwright's auto-retry on the locator still covers
-        // the 200ms input debounce.
+        // the suite (open/type/enter × desktop/mobile), and a stale debounce
+        // wave can render a top-10 that excludes the brand-new row. Typing
+        // the full unique nick collapses the search to exactly one matching
+        // row, removing the dependency on result ordering.
         await input.fill(seed.nick);
+
+        // Wait on the dialog's data-loading flag — theme.js sets it to
+        // 'true' while the bans.search fetch is in flight and deletes it
+        // on completion. This is the terminal-state hook (#1123 testability
+        // contract) for the search: more reliable on mobile-chromium than
+        // betting on the default 5s polling on the result locator, where
+        // a slow runner can let the 200ms debounce + fetch land outside
+        // the assertion window. 10s gives generous headroom for cold
+        // runner I/O without making real flakes wait forever.
+        await expect(dialog).not.toHaveAttribute('data-loading', 'true', { timeout: 10000 });
 
         const banResults = page.locator(
             '[data-testid="palette-result"][data-result-kind="ban"]',
