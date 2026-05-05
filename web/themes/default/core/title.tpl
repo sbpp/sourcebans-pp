@@ -24,8 +24,7 @@
                 data-mobile-menu
                 data-testid="mobile-menu-toggle"
                 aria-label="Open navigation menu"
-                aria-controls="sidebar"
-                style="display:none">
+                aria-controls="sidebar">
             <i data-lucide="menu"></i>
         </button>
 

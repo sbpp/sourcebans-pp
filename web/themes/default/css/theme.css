@@ -258,9 +258,11 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zinc-700) 40px, var(--zinc-800) 80px); background-size: 200px 100%; }
 
 /* ---- Responsive ---- */
+[data-mobile-menu] { display: none; }
 @media (max-width: 1024px) {
   .sidebar { display: none; }
   .sidebar.is-open { display: flex; position: fixed; inset: 0 auto 0 0; z-index: 41; box-shadow: var(--shadow-lg); }
+  [data-mobile-menu] { display: inline-flex; }
 }
 @media (max-width: 768px) {
   .table { display: none; }

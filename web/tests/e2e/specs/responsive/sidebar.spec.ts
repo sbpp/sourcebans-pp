@@ -14,21 +14,7 @@
  *
  * == Divergences from the #1123 testability-hooks contract ==
  *
- *   1. (Tracked as #1177.) The hamburger button in core/title.tpl
- *      carries an inline `style="display:none"` and theme.css ships
- *      no media-query override to surface it on mobile. The click
- *      handler in theme.js (lines 49–55) IS wired correctly, but
- *      Playwright's actionability checks (and `click({ force: true })`'s
- *      "scroll into view" pre-step) refuse to fire a click against
- *      a `display:none` element regardless. We `dispatchEvent('click')`
- *      directly so the document-level listener still receives the
- *      bubbling click event and toggles `is-open` — the production
- *      JS path. A flesh-and-blood mobile user can't see the button
- *      until the theme regression is fixed in a follow-up; this
- *      spec asserts the JS contract rather than gate the slice on
- *      a CSS bug.
- *
- *   2. (Tracked as #1178.) theme.js only ADDS `is-open` (line 53).
+ *   1. (Tracked as #1178.) theme.js only ADDS `is-open` (line 53).
  *      It does not toggle, and there is no close trigger inside the
  *      open sidebar (no X button, no backdrop). The brief calls for
  *      a "click again to close" assertion; with no implementation to
@@ -37,7 +23,7 @@
  *      sidebar grows a real close affordance, replace the omission
  *      with a real assertion.
  *
- *   3. (Tracked as #1179.) The `data-mobile-open` attribute on
+ *   2. (Tracked as #1179.) The `data-mobile-open` attribute on
  *      `<aside id="sidebar">` is rendered as `"false"` from the
  *      server (navbar.tpl line 20) but theme.js's open path doesn't
  *      update it — it flips the `.is-open` class instead. We assert
@@ -62,7 +48,7 @@ test.describe('responsive: sidebar', () => {
         // Server-rendered marker; static at this point in the lifecycle.
         await expect(sidebar).toHaveAttribute('data-mobile-open', 'false');
         // The CSS contract at <=1024px sets `display: none` on the
-        // un-opened sidebar (theme.css line 261-264). `toBeHidden()`
+        // un-opened sidebar (theme.css "Responsive" block). `toBeHidden()`
         // observes the resolved style without depending on whether
         // the element is sticky-positioned off-screen.
         await expect(sidebar).toBeHidden();
@@ -75,13 +61,9 @@ test.describe('responsive: sidebar', () => {
         const sidebar = page.locator('#sidebar');
         await expect(sidebar).toBeHidden();
 
-        // The hamburger is `display:none` (divergence #1). Both
-        // `click()` and `click({ force: true })` refuse a hidden
-        // element. theme.js's handler attaches at `document` and
-        // uses `closest('[data-mobile-menu]')`, so a synthetic
-        // click event dispatched at the button still bubbles to
-        // the listener and runs the production code path.
-        await page.locator('[data-mobile-menu]').dispatchEvent('click');
+        const hamburger = page.locator('[data-mobile-menu]');
+        await expect(hamburger).toBeVisible();
+        await hamburger.click();
 
         await expect(sidebar).toHaveClass(/\bis-open\b/);
         await expect(sidebar).toBeVisible();
@@ -94,6 +76,6 @@ test.describe('responsive: sidebar', () => {
 
     // NOTE: a "second click closes" assertion belongs here per the
     // brief, but theme.js currently lacks any close affordance for
-    // the mobile sidebar (divergence #2 / #1178). Document the gap;
+    // the mobile sidebar (divergence #1 / #1178). Document the gap;
     // do not fake-pass by manually mutating classes from the spec.
 });
