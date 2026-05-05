@@ -6,22 +6,16 @@
  *   - The hamburger trigger (`[data-mobile-menu]` in core/title.tpl)
  *     opens it as a left-edge drawer; a second click, the
  *     [data-sidebar-backdrop] overlay, or Escape closes it (#1178).
+ *   - `data-mobile-open` on the sidebar mirrors the live `.is-open`
+ *     class state on every open/close, so external observers (e2e
+ *     specs, CSS sibling selectors) can read state without probing
+ *     the class chain (#1179).
  *
  * Project gating: this whole describe runs only on `mobile-chromium`.
  * We use the `test.beforeEach` skip-guard form rather than
  * `test.describe.configure({ project })`: at @playwright/test 1.59
  * `describe.configure` only accepts `mode/retries/timeout`, not a
  * project filter, so a `beforeEach` skip is the canonical pattern.
- *
- * == Divergences from the #1123 testability-hooks contract ==
- *
- *   1. (Tracked as #1179.) The `data-mobile-open` attribute on
- *      `<aside id="sidebar">` is rendered as `"false"` from the
- *      server (navbar.tpl line 20). theme.js (post-#1178) now
- *      mirrors the class flip into the attribute on open/close,
- *      but tests still assert against the class — the canonical
- *      signal — to stay decoupled from the in-flight #1179 work
- *      that's reshaping how the server-side default is wired.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
@@ -38,7 +32,8 @@ test.describe('responsive: sidebar', () => {
         await page.goto('/');
 
         const sidebar = page.locator('#sidebar');
-        // Server-rendered marker; static at this point in the lifecycle.
+        // Server-rendered initial state; theme.js mirrors it to the
+        // live class on every open/close (#1179).
         await expect(sidebar).toHaveAttribute('data-mobile-open', 'false');
         // The CSS contract at <=1024px sets `display: none` on the
         // un-opened sidebar (theme.css "Responsive" block). `toBeHidden()`
@@ -53,12 +48,17 @@ test.describe('responsive: sidebar', () => {
 
         const sidebar = page.locator('#sidebar');
         await expect(sidebar).toBeHidden();
+        // Pre-open: the attribute is the server-rendered "false".
+        await expect(sidebar).toHaveAttribute('data-mobile-open', 'false');
 
         const hamburger = page.locator('[data-mobile-menu]');
         await expect(hamburger).toBeVisible();
         await hamburger.click();
 
         await expect(sidebar).toHaveClass(/\bis-open\b/);
+        // Post-open: theme.js flips the attribute in lockstep with
+        // the class so external observers see the truth (#1179).
+        await expect(sidebar).toHaveAttribute('data-mobile-open', 'true');
         await expect(sidebar).toBeVisible();
         // The open drawer should occupy the left edge of the viewport.
         const box = await sidebar.boundingBox();

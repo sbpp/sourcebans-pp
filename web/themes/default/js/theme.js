@@ -52,8 +52,9 @@
   // closes the drawer. Fixes #1178 — the original handler only
   // ever added `is-open`, leaving the user no way to dismiss the
   // drawer short of navigating away. `data-mobile-open` mirrors
-  // the class state so tests + CSS selectors can read state without
-  // probing the class chain (#1179 owns the server-side default).
+  // the class state on every open/close so tests and CSS sibling
+  // selectors can read state without probing the class chain
+  // (#1179).
 
   /** @type {HTMLElement | null} */
   let sidebarBackdrop = null;
