@@ -120,8 +120,22 @@
 
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {
     const target = /** @type {Element | null} */ (e.target);
-    if (target && target.closest('[data-palette-open]')) openPalette();
-    if (target && target.closest('[data-palette-close]') && !target.closest('.palette')) closePalette();
+    // `data-palette-open` does double duty: the topbar trigger button
+    // (core/title.tpl) carries it as the open hook, and the dialog itself
+    // carries it as a `"true"|"false"` open-state mirror for tests + CSS.
+    // Without the `!.palette` guard, a click on the input or any result
+    // row inside the open dialog would re-trigger openPalette(), which
+    // wipes the input mid-search via the focus-then-clear setTimeout.
+    if (target && target.closest('[data-palette-open]') && !target.closest('.palette')) openPalette();
+    // The close-handler does NOT need a `!.palette` guard: the X button
+    // sits inside `.palette` and exposes `data-palette-close` /
+    // `data-testid="palette-close"` precisely so it can close. Backdrop
+    // clicks (`target === palette`) are already covered by the dialog's
+    // own handler below, so excluding `.palette` here just made the X
+    // dead — the contract `data-testid="palette-close"` advertises has
+    // to actually close the dialog or future Playwright tests would
+    // silently pass against a no-op.
+    if (target && target.closest('[data-palette-close]')) closePalette();
   });
 
   // <dialog>'s native backdrop swallows clicks until they reach the dialog
