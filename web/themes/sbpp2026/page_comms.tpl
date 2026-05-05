@@ -305,3 +305,26 @@
     <input type="hidden" form="comms-filters" name="_searchlink" value="{$searchlink|escape}" data-testid="comms-searchlink-shadow">
 
 </div>
+
+{* ============================================================
+   Manifest of properties only consumed by themes/default/page_comms.tpl.
+   Mirrors the dual-theme bridging pattern established by #1123 B2's
+   themes/sbpp2026/page_bans.tpl: the `CommsListView` declares the
+   union of variables both themes consume, and SmartyTemplateRule's
+   "every declared property is referenced" check applies per theme.
+   Without the references below, the sbpp2026 leg of the dual-theme
+   PHPStan matrix (#1123 A2) would flag every legacy-only property on
+   the View as unused.
+
+   {if false} blocks render to nothing — the parser still walks the
+   tag bodies, so the variable refs are seen, but no output is
+   produced. Putting them in the shared phpstan-baseline.neon would
+   instead break the default leg, where these properties are
+   referenced naturally and the entry would fire 0 times
+   (`reportUnmatchedIgnoredErrors` is on for the default leg).
+
+   D1 deletes themes/default/, the legacy template stops needing
+   these props, this manifest stops being necessary, and the View
+   drops them. Until then, keep this block at EOF.
+   ============================================================ *}
+{if false}{$ban_nav}{$canedit}{$cid}{$comment}{$commenttext}{$commenttype}{$ctype}{$hideadminname}{$hidetext}{$othercomments}{$page}{$view_bans}{$view_comments}{/if}
