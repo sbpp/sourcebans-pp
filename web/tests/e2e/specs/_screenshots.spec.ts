@@ -46,6 +46,7 @@ import {
     type SubmissionFixture,
 } from '../pages/SubmitBanFlow.ts';
 import { seedBanViaApi } from '../fixtures/seeds.ts';
+import { truncateE2eDb } from '../fixtures/db.ts';
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
@@ -764,3 +765,134 @@ async function captureResponsive(
         return;
     }
 }
+
+/**
+ * Flow gallery — Slice 5 (`flow-comms-gag-mute`).
+ *
+ * Drives the `comms-gag-mute.spec.ts` flow once per (theme × viewport)
+ * and captures three screenshots along the way:
+ *
+ *   1. `flow-comms-gag-mute-add-form`       — empty add-block form.
+ *   2. `flow-comms-gag-mute-list-active`    — /commslist with the new
+ *                                              gag visible (state=active).
+ *   3. `flow-comms-gag-mute-list-unblocked` — /commslist after the
+ *                                              unmute URL fired
+ *                                              (state=unmuted).
+ *
+ * The brief asks for a fourth shot of the "unblock prompt/modal";
+ * there is no such modal in the new theme — the row's `unmute_url`
+ * is a direct anchor (the legacy `UnGag()` JS confirm prompt was
+ * removed at #1123 D1) and `sb.message.show()` is a silent no-op
+ * because sbpp2026 dropped the `#dialog-placement` shell. The PR
+ * body flags both as follow-ups.
+ *
+ * The flow mirrors the assertions in `specs/flows/comms-gag-mute.spec.ts`
+ * but does NOT re-import them — keeping the gallery as its own spec
+ * means a flow regression doesn't silently kill the gallery, and a
+ * gallery breakage doesn't spam the flow's failure with screenshot
+ * noise. The DB is reset per-test so the row's `data-id` is stable
+ * across runs.
+ */
+test.describe('@screenshot flow-comms-gag-mute', () => {
+    // Same race surfaces *within* a project too: light + dark would
+    // run in parallel under `fullyParallel: true`, hit truncate at
+    // overlapping times, and collide on the seed insert. Serial mode
+    // sequences the two theme runs within this describe.
+    test.describe.configure({ mode: 'serial' });
+
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
+
+    test.beforeEach(async ({}, testInfo) => {
+        // Flow gallery is desktop-only for now: state-mutating specs
+        // share the `sourcebans_e2e` schema and `truncateE2eDb()`
+        // doesn't hold a cross-process lock, so two projects
+        // (chromium + mobile-chromium) racing on `beforeEach` for the
+        // same test fail with `1062 Duplicate entry '0' for key
+        // 'PRIMARY'`. Mobile viewport coverage for the comms-add
+        // chrome will move into the gallery once Slice 0 grows a
+        // per-DB advisory lock around `Fixture::truncateOnly()`.
+        test.skip(
+            testInfo.project.name !== 'chromium',
+            'state-mutating gallery; truncateE2eDb is not parallel-project-safe (Slice 0 follow-up)',
+        );
+        await truncateE2eDb();
+    });
+
+    for (const theme of THEMES) {
+        test(`flow ${theme}`, async ({ page }, testInfo) => {
+            const viewport = viewportFor(testInfo.project.name);
+            const outDir = resolve(__dirname, '..', 'screenshots', theme, viewport);
+            await mkdir(outDir, { recursive: true });
+
+            // Pin theme via localStorage BEFORE the form-page nav:
+            // theme.js reads `sbpp-theme` on every boot via
+            // applyTheme(currentTheme()), so a hit on `/` to seed the
+            // origin then a navigation to the actual page lands the
+            // right mode on first paint. Mirrors the static-route
+            // gallery contract (see file-level docblock for the
+            // `sbpp-theme` localStorage / `<html>.dark` rationale).
+            await page.goto('/');
+            await page.evaluate((mode: Theme) => {
+                try { localStorage.setItem('sbpp-theme', mode); } catch (_e) { /* unavailable; skip */ }
+            }, theme);
+
+            // ---- 1. Add form (empty) -----------------------------
+            await page.goto('/index.php?p=admin&c=comms');
+            await page.waitForFunction((expected: Theme) => {
+                const isDark = document.documentElement.classList.contains('dark');
+                return expected === 'dark' ? isDark : !isDark;
+            }, theme);
+            await expect(page.locator('[data-testid="addcomm-form"]')).toBeVisible();
+            await page.screenshot({
+                fullPage: true,
+                path: resolve(outDir, 'flow-comms-gag-mute-add-form.png'),
+            });
+
+            // ---- 2. Submit; wait for the JSON API to settle ------
+            // (`sb.message.show` is a silent no-op in the new theme —
+            // see the file-level docblock — so we can't screenshot a
+            // success dialog here.)
+            await page.locator('[data-testid="addcomm-steam"]').fill('STEAM_0:1:7654321');
+            await page.locator('[data-testid="addcomm-nickname"]').fill('e2e-gag-target');
+            await page.locator('[data-testid="addcomm-type"]').selectOption('2');
+            await page.locator('[data-testid="addcomm-length"]').selectOption('5');
+            await page.locator('[data-testid="addcomm-reason"]').selectOption('other');
+            await page.locator('[data-testid="addcomm-reason-custom"]').fill('e2e: comms gag flow');
+            const apiSettled = page.waitForResponse(
+                (r) => r.url().includes('/api.php') && r.request().method() === 'POST',
+            );
+            await page.locator('[data-testid="addcomm-submit"]').click();
+            const apiBody = await (await apiSettled).json();
+            expect(apiBody, 'gallery comms.add succeeded').toMatchObject({ ok: true });
+
+            // ---- 3. /commslist with the gag visible --------------
+            await page.goto('/index.php?p=commslist');
+            const activeRow = page
+                .locator('[data-testid="comm-row"]')
+                .filter({ hasText: 'STEAM_0:1:7654321' });
+            await expect(activeRow).toHaveCount(1);
+            await expect(activeRow).toHaveAttribute('data-state', 'active');
+            await page.screenshot({
+                fullPage: true,
+                path: resolve(outDir, 'flow-comms-gag-mute-list-active.png'),
+            });
+
+            // ---- 4. Trigger the unblock + capture the unblocked list
+            const unmuteHref = await activeRow
+                .locator('[data-testid="row-action-unmute"]')
+                .getAttribute('href');
+            expect(unmuteHref, 'unmute href present').toBeTruthy();
+            await page.goto(`${unmuteHref}&ureason=${encodeURIComponent('e2e: lifted')}`);
+
+            await page.goto('/index.php?p=commslist');
+            const unblockedRow = page
+                .locator('[data-testid="comm-row"]')
+                .filter({ hasText: 'STEAM_0:1:7654321' });
+            await expect(unblockedRow).toHaveAttribute('data-state', 'unmuted');
+            await page.screenshot({
+                fullPage: true,
+                path: resolve(outDir, 'flow-comms-gag-mute-list-unblocked.png'),
+            });
+        });
+    }
+});
