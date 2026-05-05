@@ -237,13 +237,22 @@ if ($pages > 1) {
     $admin_nav .= '</select>';
 }
 
-$theme->assign('permission_listadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS));
-$theme->assign('permission_editadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS));
-$theme->assign('permission_deleteadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS));
-$theme->assign('admin_count', $admin_count);
-$theme->assign('admin_nav', $admin_nav);
-$theme->assign('admins', $admin_list);
-$theme->display('page_admin_admins_list.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsListView(
+    // We pass the can_* gates explicitly rather than splatting
+    // ...Perms::for($userbank): the helper's @return array<string,bool>
+    // doesn't expose a constant key shape, so PHPStan can't prove the
+    // splat fills these named params and reports argument.missing.
+    // Listing them by hand keeps the page handler PHPStan-clean while
+    // the View itself still follows the can_* convention from
+    // Sbpp\View\View's class-level docblock.
+    can_list_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS),
+    can_add_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS),
+    can_edit_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
+    can_delete_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS),
+    admin_count: (int) $admin_count,
+    admin_nav: (string) $admin_nav,
+    admins: $admin_list,
+));
 
 // Add Page
 $group_list              = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
@@ -261,13 +270,15 @@ foreach ($servers as $server) {
 }
 $serverscript .= "</script>";
 
-$theme->assign('group_list', $group_list);
-$theme->assign('server_list', $server_list);
-$theme->assign('server_script', $serverscript);
-$theme->assign('server_admin_group_list', $server_admin_group_list);
-$theme->assign('server_group_list', $server_group_list);
-$theme->assign('permission_addadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS));
-$theme->display('page_admin_admins_add.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsAddView(
+    // See AdminAdminsListView above for why we don't splat Perms::for().
+    can_add_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS),
+    group_list: $group_list,
+    server_list: $server_list,
+    server_admin_group_list: $server_admin_group_list,
+    server_group_list: $server_group_list,
+    server_script: $serverscript,
+));
 // Overrides
 
 // Saving changed overrides
