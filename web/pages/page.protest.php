@@ -174,20 +174,10 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     }
 }
 
-$theme->assign('steam_id', $SteamID);
-$theme->assign('ip', $IP);
-$theme->assign('player_name', $PlayerName);
-$theme->assign('reason', $UnbanReason);
-$theme->assign('player_email', $Email);
-
-$theme->display('page_protestban.tpl');
-?>
-<script type="text/javascript">
-function changeType(szListValue)
-{
-    $('steam.row').style.display = (szListValue == "0" ? "" : "none");
-    $('ip.row').style.display    = (szListValue == "1" ? "" : "none");
-}
-$('Type').options[<?=$Type;?>].selected = true;
-changeType(<?=$Type?>);
-</script>
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\ProtestBanView(
+    steam_id: (string) $SteamID,
+    ip: (string) $IP,
+    player_name: (string) $PlayerName,
+    reason: (string) $UnbanReason,
+    player_email: (string) $Email,
+));

@@ -1,10 +1,11 @@
 <div id="admin-page-content">
     <div class="tabcontent" id="List admins">
-        {if not $permission_listadmin}
+        {if not $can_list_admins}
             Access Denied
         {else}
             <h3>Admins (<span id="admincount">{$admin_count}</span>)</h3>
-            Click on an admin to see more detailed information and actions to perform on them.<br /><br />
+            Click on an admin to see more detailed information and actions to perform on them.
+            {if $can_add_admins}<a href="?p=admin&c=admins#Add%20new%20admin" title="Switch to the Add new admin tab">[Add new admin]</a>{/if}<br /><br />
 
             {load_template file="admin.admins.search"}
 
@@ -65,7 +66,7 @@
                                             <td width="30%" valign="top">
                                                 <div class="ban-edit">
                                                     <ul>
-                                                        {if $permission_editadmin}
+                                                        {if $can_edit_admins}
                                                             <li>
                                                                 <a href="index.php?p=admin&c=admins&o=editdetails&id={$admin.aid|escape:'url'}"><i class="fas fa-clipboard-list fa-lg"></i> Edit Details</a>
                                                             </li>
@@ -79,7 +80,7 @@
                                                                 <a href="index.php?p=admin&c=admins&o=editgroup&id={$admin.aid|escape:'url'}"><i class="fas fa-users fa-lg"></i> Edit Groups</a>
                                                             </li>
                                                         {/if}
-                                                        {if $permission_deleteadmin}
+                                                        {if $can_delete_admins}
                                                             <li>
                                                                 <a href="#" onclick="RemoveAdmin({$admin.aid}, '{$admin.user}');"><i class="fas fa-trash fa-lg"></i> Delete Admin</a>
                                                             </li>

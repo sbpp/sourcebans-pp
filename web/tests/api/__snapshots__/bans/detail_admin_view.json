@@ -1,0 +1,51 @@
+{
+    "ok": true,
+    "data": {
+        "bid": "<*>",
+        "player": {
+            "name": "Cheater",
+            "type": 0,
+            "steam_id": "STEAM_0:1:2020",
+            "steam_id_3": "[U:1:4041]",
+            "community_id": "76561197960269769",
+            "ip": null,
+            "country": null
+        },
+        "ban": {
+            "reason": "admin-view",
+            "banned_at": "<*>",
+            "banned_at_human": "<*>",
+            "length_seconds": 0,
+            "length_human": "Permanent",
+            "expires_at": "<*>",
+            "expires_at_human": "<*>",
+            "state": "permanent",
+            "unban_reason": "",
+            "removed_at": null,
+            "removed_at_human": null,
+            "removed_by": null
+        },
+        "admin": {
+            "name": "admin"
+        },
+        "server": {
+            "sid": 0,
+            "name": null,
+            "mod_icon": null
+        },
+        "demo_count": 0,
+        "history_count": 1,
+        "comments_visible": true,
+        "comments": [
+            {
+                "cid": "<*>",
+                "added": "<*>",
+                "added_human": "<*>",
+                "author": "admin",
+                "text": "note for the drawer",
+                "edited_at": null,
+                "edited_by": null
+            }
+        ]
+    }
+}

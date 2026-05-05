@@ -54,8 +54,17 @@ if (isset($_GET["rebanid"])) {
 
 echo '<div id="admin-page-content">';
 echo '<div class="tabcontent" id="Add a block">';
-$theme->assign('permission_addban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN));
-$theme->display('page_admin_comms_add.tpl');
+// SourceComms reuses the bans permission set: there is no
+// ADMIN_ADD_COMM flag, so the gate uses ADMIN_OWNER|ADMIN_ADD_BAN.
+// Splatting Perms::for(...) into the View pulls `can_add_ban` (and
+// the owner-bypass) without re-deriving the bitmask here; the
+// view-level property name stays `permission_addban` to match the
+// legacy default-theme template's existing reference (#1123 A3 +
+// SmartyTemplateRule's per-leg cross-check).
+$perms = \Sbpp\View\Perms::for($userbank);
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsAddView(
+    permission_addban: $perms['can_add_ban'],
+));
 ?>
 </div>
 <script type="text/javascript">

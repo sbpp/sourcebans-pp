@@ -23,337 +23,465 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-new AdminTabs([
-    ['name' => 'Main Settings', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS],
-    ['name' => 'Themes', 'permission' => ALL_WEB],
-    ['name' => 'System Log', 'permission' => ALL_WEB],
-    ['name' => 'Features', 'permission' => ADMIN_OWNER|ADMIN_WEB_SETTINGS]
-], $userbank, $theme);
+use Sbpp\View\AdminFeaturesView;
+use Sbpp\View\AdminLogsView;
+use Sbpp\View\AdminSettingsView;
+use Sbpp\View\AdminThemesView;
+use Sbpp\View\Perms;
+use Sbpp\View\Renderer;
 
-$page = 1;
-if (isset($_GET['page']) && $_GET['page'] > 0) {
-    $page = intval($_GET['page']);
+/*
+ * Section routing (B18 redesign).
+ *
+ * The legacy AdminTabs JS tab switcher rendered all four sub-tabs
+ * inside `.tabcontent` divs and toggled them with `openTab()`. The
+ * sbpp2026 redesign drops that pattern: each section becomes its own
+ * page request keyed on `?section=settings|features|logs|themes` and
+ * the new templates render the sub-nav at the top with
+ * `aria-current="page"` on the active tab. CSRF is enforced globally
+ * by `route()` in includes/page-builder.php.
+ *
+ * The legacy default theme keeps working: each settings template
+ * still renders standalone (no AdminTabs chrome / no `.tabcontent`
+ * wrapper) and the inline `<script>` tail at the bottom of this file
+ * patches checkbox state for it. D1 deletes both that tail and this
+ * paragraph when the default theme retires.
+ */
+$validSections = ['settings', 'features', 'logs', 'themes'];
+$section = (string)($_GET['section'] ?? 'settings');
+if (!in_array($section, $validSections, true)) {
+    $section = 'settings';
 }
 
-if (isset($_GET['log_clear']) && $_GET['log_clear'] == "true") {
+if (isset($_GET['log_clear']) && $_GET['log_clear'] === 'true') {
     if ($userbank->HasAccess(ADMIN_OWNER)) {
         $GLOBALS['PDO']->query("TRUNCATE TABLE `:prefix_log`")->execute();
     } else {
-        Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to clear the logs, but doesn't have access.");
+        Log::add('w', 'Hacking Attempt', $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
     }
 }
 
-// search
-$where = "";
-if (isset($_GET['advSearch'])) {
-//    switch ($type) {
-//        case "admin":
-//            $where = " WHERE l.aid = '" . $value . "'";
-//            break;
-//        case "message":
-//            $where = " WHERE l.message LIKE '%" . $value . "%' OR l.title LIKE '%" . $value . "%'";
-//            break;
-//        case "date":
-//            $date  = explode(",", $value);
-//            $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
-//            $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
-//            $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
-//            $time  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
-//            $time2 = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-//            $where = " WHERE l.created > '$time' AND l.created < '$time2'";
-//            break;
-//        case "type":
-//            $where = " WHERE l.type = '" . $value . "'";
-//            break;
-//        default:
-//            $_GET['advType']   = "";
-//            $_GET['advSearch'] = "";
-//            break;
-//    }
-    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']);
-} else {
-    $searchlink = "";
-}
-$list_start = ($page - 1) * SB_BANS_PER_PAGE;
-$list_end   = $list_start + SB_BANS_PER_PAGE;
+$canSettings = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 
-$log_count = Log::getCount($where);
-$log       = Log::getAll($list_start, SB_BANS_PER_PAGE,);
-if (($page > 1)) {
-    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page - 1) . "#^2");
-} else {
-    $prev = "";
-}
-if ($list_end < $log_count) {
-    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=settings" . $searchlink . "&page=" . ($page + 1) . "#^2");
-} else {
-    $next = "";
-}
-$pages = (round($log_count / SB_BANS_PER_PAGE) == 0) ? 1 : round($log_count / SB_BANS_PER_PAGE);
-if ($pages > 1) {
-    $page_numbers = 'Page ' . $page . ' of ' . $pages . " - " . $prev . " | " . $next;
-} else {
-    $page_numbers = 'Page ' . $page . ' of ' . $pages;
-}
-$pages = ceil($log_count / SB_BANS_PER_PAGE);
-if ($pages > 1) {
-    if (!isset($_GET['advSearch']) || !isset($_GET['advType'])) {
-        $_GET['advSearch'] = "";
-        $_GET['advType']   = "";
-    }
-    $advSearchJs = htmlspecialchars(json_encode((string) $_GET['advSearch']), ENT_QUOTES, 'UTF-8');
-    $advTypeJs   = htmlspecialchars(json_encode((string) $_GET['advType']), ENT_QUOTES, 'UTF-8');
-    $page_numbers .= '&nbsp;<select onchange="changePage(this,\'L\',' . $advSearchJs . ',' . $advTypeJs . ');">';
-    for ($i = 1; $i <= $pages; $i++) {
-        if (isset($_GET["page"]) && $i == $_GET["page"]) {
-            $page_numbers .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
-            continue;
+/*
+ * Post-save flash, emitted at the bottom of this file.
+ *
+ * `header('Location: …')` after a successful save *doesn't work here*
+ * because by the time admin.settings.php runs, build() in
+ * includes/page-builder.php has already required core/header.php →
+ * core/navbar.php → core/title.php — each of which calls
+ * `$theme->display()` and flushes Smarty output to stdout. PHP has no
+ * global output buffer (no ob_start in init.php / index.php, no
+ * `output_buffering` in docker/Dockerfile), so a server-side redirect
+ * here triggers `headers already sent` and the user lands on a partial
+ * page with a raw PHP warning. The pre-B18 code dodged this by emitting
+ * a JS-side `ShowBox(…, redir)` bounce instead; we keep that shape but
+ * make it theme-aware so it works under both `default` and `sbpp2026`
+ * chrome.
+ */
+$savedSection = '';
+
+if ($canSettings && isset($_POST['settingsGroup'])) {
+    $errors = '';
+
+    if ($_POST['settingsGroup'] === 'mainsettings') {
+        if (!is_numeric($_POST['config_password_minlength'] ?? '')) {
+            $errors .= "Min password length must be a number<br />";
         }
-        $page_numbers .= '<option value="' . $i . '">' . $i . '</option>';
-    }
-    $page_numbers .= '</select>';
-}
-$log_list = [];
-foreach ($log as $l) {
-    $log_item = [];
-    if ($l['type'] == "m") {
-        $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/help.png' alt='Info'>";
-    } elseif ($l['type'] == "w") {
-        $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/warning.png' alt='Warning'>";
-    } elseif ($l['type'] == "e") {
-        $log_item['type_img'] = "<img src='themes/" . SB_THEME . "/images/admin/error.png' alt='Warning'>";
-    }
-    $log_item['user']     = !empty($l['user']) ? $l['user'] : 'Guest';
-    $log_item['date_str'] = Config::time($l['created']);
-    $log_item             = array_merge($l, $log_item);
-    $log_item['message']  = str_replace("\n", "<br />", htmlentities(str_replace(["<br />", "<br>", "<br/>"], "\n", $log_item['message'])));
-    array_push($log_list, $log_item);
-}
-// Theme stuff
-$dh = opendir(SB_THEMES);
-while (false !== ($filename = readdir($dh))) {
-    $themes[] = $filename;
-}
-//$themes = scandir(SB_THEMES);
-$valid_themes = [];
-foreach ($themes as $thm) {
-    if (@file_exists(SB_THEMES . $thm . "/theme.conf.php")) {
-        $file = file_get_contents(SB_THEMES . $thm . "/theme.conf.php");
-        if ($namesearch = preg_match_all('/define\(\'theme_name\',[ ]*\"(.+)\"\);/', $file, $thmname, PREG_PATTERN_ORDER)) {
-            $thme['name'] = $thmname[1][0];
-        } else {
-            $thme['name'] = $thm;
-        }
-        $thme['dir'] = $thm;
-        array_push($valid_themes, $thme);
-    }
-}
-require(SB_THEMES . SB_THEME . "/theme.conf.php");
-?>
-<div id="admin-page-content">
-<?php
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS)) {
-    echo '<div id="0" style="display:none;">Access Denied!</div>';
-} else {
-    if (isset($_POST['settingsGroup'])) {
-        $errors = "";
-
-        if ($_POST['settingsGroup'] == "mainsettings") {
-            if (!is_numeric($_POST['config_password_minlength'])) {
-                $errors .= "Min password length must be a number<br />";
-            }
-            if (!is_numeric($_POST['banlist_bansperpage'])) {
-                $errors .= "Bans per page must be a number";
-            }
-            if (empty($errors)) {
-                if (isset($_POST['enable_submit']) && $_POST['enable_submit'] == "on") {
-                    $submit = 1;
-                } else {
-                    $submit = 0;
-                }
-                if (isset($_POST['enable_protest']) && $_POST['enable_protest'] == "on") {
-                    $protest = 1;
-                } else {
-                    $protest = 0;
-                }
-                if (isset($_POST['enable_commslist']) && $_POST['enable_commslist'] == "on") {
-                    $commslist = 1;
-                } else {
-                    $commslist = 0;
-                }
-
-                $lognopopup = (isset($_POST['dash_nopopup']) && $_POST['dash_nopopup'] == "on" ? 1 : 0);
-
-                $debugmode = (isset($_POST['config_debug']) && $_POST['config_debug'] == "on" ? 1 : 0);
-
-                $hideadmname = (isset($_POST['banlist_hideadmname']) && $_POST['banlist_hideadmname'] == "on" ? 1 : 0);
-
-                $hideplayerips = (isset($_POST['banlist_hideplayerips']) && $_POST['banlist_hideplayerips'] == "on" ? 1 : 0);
-
-                $nocountryfetch = (isset($_POST['banlist_nocountryfetch']) && $_POST['banlist_nocountryfetch'] == "on" ? 1 : 0);
-
-                $onlyinvolved = (isset($_POST['protest_emailonlyinvolved']) && $_POST['protest_emailonlyinvolved'] == "on" ? 1 : 0);
-
-                $size = sizeof($_POST['bans_customreason']);
-                for ($i = 0; $i < $size; $i++) {
-                    if (empty($_POST['bans_customreason'][$i])) {
-                        unset($_POST['bans_customreason'][$i]);
-                    } else {
-                        $_POST['bans_customreason'][$i] = htmlspecialchars($_POST['bans_customreason'][$i]);
-                    }
-                }
-                if (sizeof($_POST['bans_customreason']) != 0) {
-                    $cureason = serialize($_POST['bans_customreason']);
-                } else {
-                    $cureason = "";
-                }
-
-                $smtpConfigSql = ", (?, 'smtp.host'), (?, 'smtp.user'), (?, 'smtp.port'), (?, 'smtp.verify_peer')"
-                    . ", (?, 'config.mail.from_email'), (?, 'config.mail.from_name')";
-                $smtpConfig = [trim($_POST['mail_host']), trim($_POST['mail_user']), trim($_POST['mail_port'])];
-                $smtpConfig []= isset($_POST['mail_verify_peer']) && $_POST['mail_verify_peer'] === 'on' ? 1 : 0;
-                $smtpConfig []= trim((string)($_POST['mail_from_email'] ?? ''));
-                $smtpConfig []= trim((string)($_POST['mail_from_name'] ?? ''));
-
-                if (isset($_POST['mail_pass']) && !empty($_POST['mail_pass'])) {
-                    $smtpConfigSql .= ", (?, 'smtp.pass')";
-                    $smtpConfig []= $_POST['mail_pass'];
-                }
-
-                $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
-                    (?, 'template.title'),
-                    (?,'template.logo'),
-                    (" . (int) $_POST['config_password_minlength'] . ", 'config.password.minlength'),
-                    (" . $debugmode . ", 'config.debug'),
-                    (?, 'config.dateformat'),
-                    (?, 'dash.intro.title'),
-                    (" . (int) $_POST['banlist_bansperpage'] . ", 'banlist.bansperpage'),
-                    (" . (int) $hideadmname . ", 'banlist.hideadminname'),
-                    (" . (int) $hideplayerips . ", 'banlist.hideplayerips'),
-                    (" . (int) $nocountryfetch . ", 'banlist.nocountryfetch'),
-                    (?, 'dash.intro.text'),
-                    (" . (int) $lognopopup . ", 'dash.lognopopup'),
-                    (" . (int) $protest . ", 'config.enableprotest'),
-                    (" . (int) $commslist . ", 'config.enablecomms'),
-                    (" . (int) $submit . ", 'config.enablesubmit'),
-                    (" . (int) $onlyinvolved . ", 'protest.emailonlyinvolved'),
-                    (?, 'bans.customreasons'),
-                    (?, 'auth.maxlife'),
-                    (?, 'auth.maxlife.remember'),
-                    (?, 'auth.maxlife.steam'),
-                    (" . (int) $_POST['default_page'] . ", 'config.defaultpage')"
-                    . $smtpConfigSql)->execute([
-                        $_POST['template_title'],
-                        $_POST['template_logo'],
-                        $_POST['config_dateformat'],
-                        $_POST['dash_intro_title'],
-                        $_POST['dash_intro_text'],
-                        $cureason,
-                        $_POST['auth_maxlife'],
-                        $_POST['auth_maxlife_remember'],
-                        $_POST['auth_maxlife_steam'],
-                        ...$smtpConfig,
-                    ]);
-
-?>
-<script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
-<?php
-            } else {
-                print "<script>ShowBox('Error', '$errors', 'red');</script>";
-            }
+        if (!is_numeric($_POST['banlist_bansperpage'] ?? '')) {
+            $errors .= 'Bans per page must be a number';
         }
 
-        if ($_POST['settingsGroup'] == "features") {
-            $kickit = (isset($_POST['enable_kickit']) && $_POST['enable_kickit'] == "on" ? 1 : 0);
+        if (empty($errors)) {
+            $submit         = (isset($_POST['enable_submit'])    && $_POST['enable_submit']    === 'on') ? 1 : 0;
+            $protest        = (isset($_POST['enable_protest'])   && $_POST['enable_protest']   === 'on') ? 1 : 0;
+            $commslist      = (isset($_POST['enable_commslist']) && $_POST['enable_commslist'] === 'on') ? 1 : 0;
+            $lognopopup     = (isset($_POST['dash_nopopup'])     && $_POST['dash_nopopup']     === 'on') ? 1 : 0;
+            $debugmode      = (isset($_POST['config_debug'])     && $_POST['config_debug']     === 'on') ? 1 : 0;
+            $hideadmname    = (isset($_POST['banlist_hideadmname'])    && $_POST['banlist_hideadmname']    === 'on') ? 1 : 0;
+            $hideplayerips  = (isset($_POST['banlist_hideplayerips'])  && $_POST['banlist_hideplayerips']  === 'on') ? 1 : 0;
+            $nocountryfetch = (isset($_POST['banlist_nocountryfetch']) && $_POST['banlist_nocountryfetch'] === 'on') ? 1 : 0;
+            $onlyinvolved   = (isset($_POST['protest_emailonlyinvolved']) && $_POST['protest_emailonlyinvolved'] === 'on') ? 1 : 0;
 
-            $exportpub = (isset($_POST['export_public']) && $_POST['export_public'] == "on" ? 1 : 0);
+            $rawReasons = $_POST['bans_customreason'] ?? [];
+            if (!is_array($rawReasons)) {
+                $rawReasons = [];
+            }
+            $reasons = [];
+            foreach ($rawReasons as $r) {
+                if (is_string($r) && $r !== '') {
+                    $reasons[] = htmlspecialchars($r);
+                }
+            }
+            $cureason = !empty($reasons) ? serialize($reasons) : '';
 
-            $groupban = (isset($_POST['enable_groupbanning']) && $_POST['enable_groupbanning'] == "on" ? 1 : 0);
+            $smtpConfigSql = ", (?, 'smtp.host'), (?, 'smtp.user'), (?, 'smtp.port'), (?, 'smtp.verify_peer')"
+                . ", (?, 'config.mail.from_email'), (?, 'config.mail.from_name')";
+            $smtpConfig = [
+                trim((string) ($_POST['mail_host'] ?? '')),
+                trim((string) ($_POST['mail_user'] ?? '')),
+                trim((string) ($_POST['mail_port'] ?? '')),
+                isset($_POST['mail_verify_peer']) && $_POST['mail_verify_peer'] === 'on' ? 1 : 0,
+                trim((string) ($_POST['mail_from_email'] ?? '')),
+                trim((string) ($_POST['mail_from_name'] ?? '')),
+            ];
 
-            $friendsban = (isset($_POST['enable_friendsbanning']) && $_POST['enable_friendsbanning'] == "on" ? 1 : 0);
-
-            $adminrehash = (isset($_POST['enable_adminrehashing']) && $_POST['enable_adminrehashing'] == "on" ? 1 : 0);
-
-            $steamloginopt = (isset($_POST['enable_steamlogin']) && $_POST['enable_steamlogin'] == "on" ? 1 : 0);
-
-            $normalloginopt = (isset($_POST['enable_normallogin']) && $_POST['enable_normallogin'] == "on" ? 1 : 0);
-
-            $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] == "on" ? 1 : 0);
+            if (!empty($_POST['mail_pass'])) {
+                $smtpConfigSql .= ", (?, 'smtp.pass')";
+                $smtpConfig[]   = (string) $_POST['mail_pass'];
+            }
 
             $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
-											(" . (int) $exportpub . ", 'config.exportpublic'),
-											(" . (int) $kickit . ", 'config.enablekickit'),
-											(" . (int) $groupban . ", 'config.enablegroupbanning'),
-											(" . (int) $friendsban . ", 'config.enablefriendsbanning'),
-											(" . (int) $adminrehash . ", 'config.enableadminrehashing'),
-											(" . (int) $publiccomments . ", 'config.enablepubliccomments'),
-											(" . (int) $steamloginopt . ", 'config.enablesteamlogin'),
-											(" . (int) $normalloginopt . ", 'config.enablenormallogin')")->execute();
-
-
-?>
-<script>ShowBox('Settings updated', 'The changes have been successfully updated', 'green', 'index.php?p=admin&c=settings');</script>
-<?php
+                (?, 'template.title'),
+                (?, 'template.logo'),
+                (" . (int) $_POST['config_password_minlength'] . ", 'config.password.minlength'),
+                (" . $debugmode . ", 'config.debug'),
+                (?, 'config.dateformat'),
+                (?, 'dash.intro.title'),
+                (" . (int) $_POST['banlist_bansperpage'] . ", 'banlist.bansperpage'),
+                (" . (int) $hideadmname . ", 'banlist.hideadminname'),
+                (" . (int) $hideplayerips . ", 'banlist.hideplayerips'),
+                (" . (int) $nocountryfetch . ", 'banlist.nocountryfetch'),
+                (?, 'dash.intro.text'),
+                (" . (int) $lognopopup . ", 'dash.lognopopup'),
+                (" . (int) $protest . ", 'config.enableprotest'),
+                (" . (int) $commslist . ", 'config.enablecomms'),
+                (" . (int) $submit . ", 'config.enablesubmit'),
+                (" . (int) $onlyinvolved . ", 'protest.emailonlyinvolved'),
+                (?, 'bans.customreasons'),
+                (?, 'auth.maxlife'),
+                (?, 'auth.maxlife.remember'),
+                (?, 'auth.maxlife.steam'),
+                (" . (int) ($_POST['default_page'] ?? 0) . ", 'config.defaultpage')"
+                . $smtpConfigSql)->execute([
+                    (string) ($_POST['template_title'] ?? ''),
+                    (string) ($_POST['template_logo'] ?? ''),
+                    (string) ($_POST['config_dateformat'] ?? ''),
+                    (string) ($_POST['dash_intro_title'] ?? ''),
+                    (string) ($_POST['dash_intro_text'] ?? ''),
+                    $cureason,
+                    (string) ($_POST['auth_maxlife'] ?? ''),
+                    (string) ($_POST['auth_maxlife_remember'] ?? ''),
+                    (string) ($_POST['auth_maxlife_steam'] ?? ''),
+                    ...$smtpConfig,
+                ]);
+            Log::add('m', 'Settings updated', 'Main settings were updated.');
+            $savedSection = 'settings';
         }
     }
 
-    #########[Settings Page]###############
-    echo '<div class="tabcontent" id="Main Settings">';
-    $theme->assign('config_title', Config::get('template.title'));
-    $theme->assign('config_logo', Config::get('template.logo'));
-    $theme->assign('config_min_password', MIN_PASS_LENGTH);
-    $theme->assign('config_dateformat', Config::get('config.dateformat'));
-    $theme->assign('config_dash_title', Config::get('dash.intro.title'));
-    $theme->assign('config_dash_text', Config::get('dash.intro.text'));
-    $theme->assign('auth_maxlife', Config::get('auth.maxlife'));
-    $theme->assign('auth_maxlife_remember', Config::get('auth.maxlife.remember'));
-    $theme->assign('auth_maxlife_steam', Config::get('auth.maxlife.steam'));
-    $theme->assign('config_bans_per_page', SB_BANS_PER_PAGE);
-    $theme->assign('config_smtp', Config::getMulti([
-        'smtp.host', 'smtp.user', 'smtp.port'
-    ]));
-    $theme->assign('config_mail_from_email', (string) Config::get('config.mail.from_email'));
-    $theme->assign('config_mail_from_name', (string) Config::get('config.mail.from_name'));
+    if ($_POST['settingsGroup'] === 'features') {
+        $kickit         = (isset($_POST['enable_kickit'])         && $_POST['enable_kickit']         === 'on') ? 1 : 0;
+        $exportpub      = (isset($_POST['export_public'])         && $_POST['export_public']         === 'on') ? 1 : 0;
+        $groupban       = (isset($_POST['enable_groupbanning'])   && $_POST['enable_groupbanning']   === 'on') ? 1 : 0;
+        $friendsban     = (isset($_POST['enable_friendsbanning']) && $_POST['enable_friendsbanning'] === 'on') ? 1 : 0;
+        $adminrehash    = (isset($_POST['enable_adminrehashing']) && $_POST['enable_adminrehashing'] === 'on') ? 1 : 0;
+        $steamloginopt  = (isset($_POST['enable_steamlogin'])     && $_POST['enable_steamlogin']     === 'on') ? 1 : 0;
+        $normalloginopt = (isset($_POST['enable_normallogin'])    && $_POST['enable_normallogin']    === 'on') ? 1 : 0;
+        $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] === 'on') ? 1 : 0;
 
-    $theme->assign('bans_customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : []);
-
-    $theme->display('page_admin_settings_settings.tpl');
-    echo '</div>';
-    #########/[Settings Page]###############
-
-    #########[Features Page]###############
-    echo '<div class="tabcontent" id="Features">';
-    $theme->assign('steamapi', (defined('STEAMAPIKEY') && STEAMAPIKEY != '') ? true : false);
-    $theme->display('page_admin_settings_features.tpl');
-    echo '</div>';
-    #########/[Features Page]###############
-
-    #########[Themes Page]###############
-    echo '<div class="tabcontent" id="Themes">';
-    $theme->assign('theme_list', $valid_themes);
-
-    $theme->assign('theme_name', strip_tags(theme_name));
-    $theme->assign('theme_author', strip_tags(theme_author));
-    $theme->assign('theme_version', strip_tags(theme_version));
-    $theme->assign('theme_link', strip_tags(theme_link));
-    $theme->assign('theme_screenshot', '<img width="250px" height="170px" src="themes/' . SB_THEME . '/' . strip_tags(theme_screenshot) . '">');
-
-    $theme->display('page_admin_settings_themes.tpl');
-    echo '</div>';
-    #########/[Settings Page]###############
-
-    #########[Logs Page]###############
-    echo '<div class="tabcontent" id="System Log">';
-    if ($userbank->HasAccess(ADMIN_OWNER)) {
-        $theme->assign('clear_logs', "( <a href='javascript:ClearLogs();'>Clear Log</a> )");
+        $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
+            (" . $exportpub      . ", 'config.exportpublic'),
+            (" . $kickit         . ", 'config.enablekickit'),
+            (" . $groupban       . ", 'config.enablegroupbanning'),
+            (" . $friendsban     . ", 'config.enablefriendsbanning'),
+            (" . $adminrehash    . ", 'config.enableadminrehashing'),
+            (" . $publiccomments . ", 'config.enablepubliccomments'),
+            (" . $steamloginopt  . ", 'config.enablesteamlogin'),
+            (" . $normalloginopt . ", 'config.enablenormallogin')")->execute();
+        Log::add('m', 'Settings updated', 'Feature toggles were updated.');
+        $savedSection = 'features';
     }
-    $theme->assign('page_numbers', $page_numbers);
-    $theme->assign('log_items', $log_list);
 
-    $theme->display('page_admin_settings_logs.tpl');
-    echo '</div>';
-    #########/[Logs Page]###############
+    if (!empty($errors)) {
+        echo '<div class="card" style="margin:1rem"><div class="card__body" style="color:var(--danger)">' . $errors . '</div></div>';
+    }
 }
+
+/*
+ * Theme discovery.
+ *
+ * The legacy version of this loop only captured `theme_name` per theme
+ * via regex against theme.conf.php (PHP can't `define()` the same
+ * constant twice in one process, so the regex is the only way to
+ * enumerate without resetting state). B18 keeps the regex-based
+ * discovery and just enriches it with author / version / link /
+ * screenshot — every theme.conf.php declares those four constants, so
+ * the same shape works for both default and sbpp2026.
+ */
+$validThemes = [];
+$themesDir   = opendir(SB_THEMES);
+if ($themesDir !== false) {
+    while (($filename = readdir($themesDir)) !== false) {
+        if ($filename[0] === '.') {
+            continue;
+        }
+        $confPath = SB_THEMES . $filename . '/theme.conf.php';
+        if (!@is_file($confPath)) {
+            continue;
+        }
+        $confSrc = (string) @file_get_contents($confPath);
+        $validThemes[] = [
+            'dir'        => $filename,
+            'name'       => themeConfMatch($confSrc, 'theme_name', $filename),
+            'author'     => themeConfMatch($confSrc, 'theme_author', 'Unknown'),
+            'version'    => themeConfMatch($confSrc, 'theme_version', '?'),
+            'link'       => themeConfMatch($confSrc, 'theme_link', ''),
+            'screenshot' => 'themes/' . $filename . '/' . themeConfMatch($confSrc, 'theme_screenshot', 'screenshot.jpg'),
+            'active'     => $filename === SB_THEME,
+        ];
+    }
+    closedir($themesDir);
+}
+usort($validThemes, fn(array $a, array $b): int => strcasecmp($a['name'], $b['name']));
+
+/**
+ * Pluck a `define('<key>', "<value>")` literal out of a theme.conf.php
+ * source string. Mirrors the legacy regex shape (double-quoted only)
+ * so existing theme manifests keep parsing identically.
+ */
+function themeConfMatch(string $src, string $key, string $default): string
+{
+    $pattern = '/define\(\s*\'' . preg_quote($key, '/') . '\'\s*,\s*"([^"]*)"\s*\)\s*;/';
+    if (preg_match($pattern, $src, $m) === 1) {
+        return strip_tags($m[1]);
+    }
+    return $default;
+}
+
+/**
+ * Whether STEAMAPIKEY is set to a non-empty value at runtime. Wrapped
+ * in a function so PHPStan can't narrow the constant value against its
+ * phpstan-bootstrap.php sentinel ('') — see the same workaround in
+ * web/api/handlers/bans.php::_api_bans_steam_api_key().
+ */
+function adminSettingsHasSteamApiKey(): bool
+{
+    /** @var string $key */
+    $key = defined('STEAMAPIKEY') ? (string)constant('STEAMAPIKEY') : '';
+    return $key !== '';
+}
+
+/*
+ * Currently-selected theme metadata.
+ *
+ * The legacy default theme template renders these as a standalone
+ * "current theme" panel; sbpp2026 derives the same info from the
+ * $theme_list[].active row. Both shapes share the View so the
+ * dual-theme PHPStan matrix stays green.
+ *
+ * `require()` is intentional here (matches the legacy loop) — by the
+ * time this page renders, init.php has already require'd the same
+ * theme.conf.php exactly once, so re-requiring it is a no-op.
+ */
+require(SB_THEMES . SB_THEME . '/theme.conf.php');
+$currentScreenshotUrl = 'themes/' . SB_THEME . '/' . strip_tags((string) constant('theme_screenshot'));
+$currentScreenshotImg = '<img width="250px" height="170px" src="' . htmlspecialchars($currentScreenshotUrl, ENT_QUOTES, 'UTF-8') . '">';
+
+/*
+ * Permission snapshot used by every settings sub-tab. We pick the
+ * specific `can_*` keys each View declares rather than splatting
+ * `...Perms::for()` whole — the helper returns every ADMIN_* flag
+ * the panel knows about, but PHP 8.1 throws "Unknown named parameter"
+ * on a constructor that doesn't declare them all. Picking explicitly
+ * is also self-documenting: the page handler enumerates exactly which
+ * gates this template surfaces.
+ */
+$perms = Perms::for($userbank);
+
+if ($section === 'themes') {
+    Renderer::render($theme, new AdminThemesView(
+        can_web_settings:  $perms['can_web_settings'],
+        can_owner:         $perms['can_owner'],
+        active_section:    $section,
+        current_theme_dir: SB_THEME,
+        theme_list:        $validThemes,
+        theme_name:        strip_tags((string) constant('theme_name')),
+        theme_author:      strip_tags((string) constant('theme_author')),
+        theme_version:     strip_tags((string) constant('theme_version')),
+        theme_link:        strip_tags((string) constant('theme_link')),
+        theme_screenshot:  $currentScreenshotImg,
+    ));
+} elseif ($section === 'logs') {
+    $page = 1;
+    if (isset($_GET['page']) && (int) $_GET['page'] > 0) {
+        $page = (int) $_GET['page'];
+    }
+    $listStart = ($page - 1) * SB_BANS_PER_PAGE;
+    $listEnd   = $listStart + SB_BANS_PER_PAGE;
+
+    if (isset($_GET['advSearch'])) {
+        $searchlink = '&advSearch=' . urlencode((string) $_GET['advSearch']) . '&advType=' . urlencode((string) ($_GET['advType'] ?? ''));
+    } else {
+        $searchlink = '';
+    }
+
+    $logCount = (int) Log::getCount('');
+    $log      = Log::getAll($listStart, SB_BANS_PER_PAGE);
+
+    $prev = '';
+    $next = '';
+    if ($page > 1) {
+        $prev = CreateLinkR('&laquo; prev', 'index.php?p=admin&c=settings&section=logs' . $searchlink . '&page=' . ($page - 1));
+    }
+    if ($listEnd < $logCount) {
+        $next = CreateLinkR('next &raquo;', 'index.php?p=admin&c=settings&section=logs' . $searchlink . '&page=' . ($page + 1));
+    }
+    $pages = (int) max(1, (int) ceil($logCount / SB_BANS_PER_PAGE));
+    $pageNumbers = 'Page ' . $page . ' of ' . $pages;
+    if ($pages > 1) {
+        if ($prev !== '') {
+            $pageNumbers .= ' &nbsp; ' . $prev;
+        }
+        if ($next !== '') {
+            $pageNumbers .= ' &nbsp; ' . $next;
+        }
+    }
+
+    $logList = [];
+    foreach ($log as $l) {
+        $item             = $l;
+        $item['user']     = !empty($l['user']) ? $l['user'] : 'Guest';
+        $item['date_str'] = Config::time((int) $l['created']);
+        $item['message']  = str_replace("\n", '<br />', htmlentities(str_replace(['<br />', '<br>', '<br/>'], "\n", (string) $l['message'])));
+        $item['type_img'] = match ((string) $l['type']) {
+            'm'     => "<img src='themes/" . SB_THEME . "/images/admin/help.png' alt='Info'>",
+            'w'     => "<img src='themes/" . SB_THEME . "/images/admin/warning.png' alt='Warning'>",
+            'e'     => "<img src='themes/" . SB_THEME . "/images/admin/error.png' alt='Error'>",
+            default => '',
+        };
+        $logList[]        = $item;
+    }
+
+    Renderer::render($theme, new AdminLogsView(
+        can_web_settings: $perms['can_web_settings'],
+        can_owner:        $perms['can_owner'],
+        active_section:   $section,
+        clear_logs:       $userbank->HasAccess(ADMIN_OWNER) ? "( <a href='javascript:ClearLogs();'>Clear Log</a> )" : '',
+        page_numbers:     $pageNumbers,
+        log_items:        $logList,
+    ));
+} elseif ($section === 'features') {
+    Renderer::render($theme, new AdminFeaturesView(
+        can_web_settings:      $perms['can_web_settings'],
+        can_owner:             $perms['can_owner'],
+        active_section:        $section,
+        steamapi:              adminSettingsHasSteamApiKey(),
+        export_public:         Config::getBool('config.exportpublic'),
+        enable_kickit:         Config::getBool('config.enablekickit'),
+        enable_groupbanning:   Config::getBool('config.enablegroupbanning'),
+        enable_friendsbanning: Config::getBool('config.enablefriendsbanning'),
+        enable_adminrehashing: Config::getBool('config.enableadminrehashing'),
+        enable_steamlogin:     Config::getBool('config.enablesteamlogin'),
+        enable_normallogin:    Config::getBool('config.enablenormallogin'),
+        enable_publiccomments: Config::getBool('config.enablepubliccomments'),
+    ));
+} else {
+    $rawCustomReasons = Config::getBool('bans.customreasons')
+        ? @unserialize((string) Config::get('bans.customreasons'))
+        : [];
+    if (!is_array($rawCustomReasons)) {
+        $rawCustomReasons = [];
+    }
+    $customReasons = array_values(array_filter(
+        array_map(fn($v) => is_string($v) ? $v : '', $rawCustomReasons),
+        fn(string $v): bool => $v !== ''
+    ));
+
+    /** @var array{0: string, 1: string, 2: string} $smtpTuple */
+    $smtpTuple = [
+        (string) Config::get('smtp.host'),
+        (string) Config::get('smtp.user'),
+        (string) Config::get('smtp.port'),
+    ];
+
+    Renderer::render($theme, new AdminSettingsView(
+        can_web_settings:          $perms['can_web_settings'],
+        can_owner:                 $perms['can_owner'],
+        active_section:            $section,
+        config_title:              (string) Config::get('template.title'),
+        config_logo:               (string) Config::get('template.logo'),
+        config_min_password:       (int) MIN_PASS_LENGTH,
+        config_dateformat:         (string) Config::get('config.dateformat'),
+        config_dash_title:         (string) Config::get('dash.intro.title'),
+        config_dash_text:          (string) Config::get('dash.intro.text'),
+        auth_maxlife:              (int) Config::get('auth.maxlife'),
+        auth_maxlife_remember:     (int) Config::get('auth.maxlife.remember'),
+        auth_maxlife_steam:        (int) Config::get('auth.maxlife.steam'),
+        config_debug:              Config::getBool('config.debug'),
+        enable_submit:             Config::getBool('config.enablesubmit'),
+        enable_protest:            Config::getBool('config.enableprotest'),
+        enable_commslist:          Config::getBool('config.enablecomms'),
+        protest_emailonlyinvolved: Config::getBool('protest.emailonlyinvolved'),
+        dash_lognopopup:           Config::getBool('dash.lognopopup'),
+        config_default_page:       (int) Config::get('config.defaultpage'),
+        config_bans_per_page:      (int) SB_BANS_PER_PAGE,
+        banlist_hideadmname:       Config::getBool('banlist.hideadminname'),
+        banlist_nocountryfetch:    Config::getBool('banlist.nocountryfetch'),
+        banlist_hideplayerips:     Config::getBool('banlist.hideplayerips'),
+        bans_customreason:         $customReasons,
+        config_smtp:               $smtpTuple,
+        config_smtp_verify_peer:   Config::getBool('smtp.verify_peer'),
+        config_mail_from_email:    (string) Config::get('config.mail.from_email'),
+        config_mail_from_name:     (string) Config::get('config.mail.from_name'),
+    ));
+}
+
+/*
+ * Post-save flash + bounce.
+ *
+ * Emitted only when a settings-group POST just succeeded. We can't use
+ * `header('Location: …')` from this file (see the `$savedSection`
+ * declaration near the top for why); instead we render a small inline
+ * <script> that:
+ *
+ *   1. Surfaces a "Settings saved" toast via the active theme's toast
+ *      surface — `window.SBPP.showToast` on sbpp2026, `ShowBox` on
+ *      `default`. Both already exist before this script runs because
+ *      the chrome's footer.tpl loads them.
+ *   2. Bounces to the GET URL after a short delay so a refresh doesn't
+ *      re-POST the form (the legacy `ShowBox(…, redir)` hook does this
+ *      itself; on sbpp2026 we issue an explicit `location.href` after
+ *      `setTimeout`).
+ *
+ * Cooperatively no-op if neither toast surface is available — the
+ * `location.href` fallback still cleans the request method.
+ */
+if ($savedSection !== ''):
+    $bouncePath = 'index.php?p=admin&c=settings&section=' . htmlspecialchars($savedSection, ENT_QUOTES, 'UTF-8');
+?>
+<script>
+(function () {
+    var url   = '<?= $bouncePath ?>';
+    var title = 'Settings updated';
+    var msg   = 'The changes have been saved.';
+    if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+        window.SBPP.showToast({ kind: 'success', title: title, body: msg });
+        setTimeout(function () { window.location.href = url; }, 1200);
+    } else if (typeof ShowBox === 'function') {
+        ShowBox(title, msg, 'green', url);
+    } else {
+        window.location.href = url;
+    }
+})();
+</script>
+<?php endif; ?>
+
+<?php
+/*
+ * Legacy default-theme tail.
+ *
+ * The legacy `web/themes/default/page_admin_settings_*.tpl` markup
+ * renders empty checkboxes and lets this script set their state via
+ * direct `$('id').checked = N` writes (a MooTools $-shorthand the
+ * default theme still ships in scripts/sourcebans.js). The sbpp2026
+ * templates render `{if $config_debug}checked{/if}` declaratively
+ * and sbpp2026's chrome doesn't load sourcebans.js — so we gate on
+ * the active theme name to avoid `$ is not defined` on the new theme.
+ *
+ * D1 deletes this whole tail when the legacy theme retires.
+ */
+if (SB_THEME !== 'sbpp2026'):
 ?>
 <script>
 $('config_debug').checked = <?=(int)Config::getBool('config.debug');?>;
@@ -363,7 +491,7 @@ $('enable_commslist').checked = <?=(int)Config::getBool('config.enablecomms');?>
 $('enable_kickit').checked = <?=(int)Config::getBool('config.enablekickit');?>;
 $('export_public').checked = <?=(int)Config::getBool('config.exportpublic');?>;
 $('dash_nopopup').checked = <?=(int)Config::getBool('dash.lognopopup');?>;
-$('default_page').value = <?=(int)Config::getBool('config.defaultpage');?>;
+$('default_page').value = <?=(int)Config::get('config.defaultpage');?>;
 $('protest_emailonlyinvolved').checked = <?=(int)Config::getBool('protest.emailonlyinvolved');?>;
 $('banlist_hideadmname').checked = <?=(int)Config::getBool('banlist.hideadminname');?>;
 $('banlist_nocountryfetch').checked = <?=(int)Config::getBool('banlist.nocountryfetch');?>;
@@ -376,17 +504,10 @@ $('enable_normallogin').checked = <?=(int)Config::getBool('config.enablenormallo
 $('enable_publiccomments').checked = <?=(int)Config::getBool('config.enablepubliccomments');?>;
 $('mail_verify_peer').checked = <?=(int)Config::getBool('smtp.verify_peer');?>;
 
-<?php
-if (ini_get('safe_mode') == 1) {
-    print "$('enable_groupbanning').disabled = true;\n";
-    print "$('enable_friendsbanning').disabled = true;\n";
-    print "$('enable_friendsbanning.msg').setHTML('You can\'t use these features. You need to set PHP safe mode off.');\n";
-    print "$('enable_friendsbanning.msg').setStyle('display', 'block');\n";
-}
-?>
 function MoreFields()
 {
     var t = document.getElementById("custom.reasons");
+    if (!t) return;
     var tr = t.insertRow("-1");
     var td = tr.insertCell("-1");
     var inp = document.createElement("input");
@@ -397,4 +518,4 @@ function MoreFields()
     td.appendChild(inp);
 }
 </script>
-</div>
+<?php endif; ?>

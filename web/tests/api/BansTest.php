@@ -196,6 +196,94 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/prepare_reban_success', $env, ['data.bid']);
     }
 
+    public function testDetailRejectsMissingBid(): void
+    {
+        // bans.detail is public; the dispatcher lets the call through and
+        // the handler validates `bid` itself. An unknown id 404s; bid=0
+        // surfaces as a 'bad_request' validation error.
+        $env = $this->api('bans.detail', ['bid' => 0]);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+        $this->assertSnapshot('bans/detail_bad_request', $env);
+    }
+
+    public function testDetailReturns404ForUnknownBid(): void
+    {
+        $env = $this->api('bans.detail', ['bid' => 999999]);
+        $this->assertEnvelopeError($env, 'not_found');
+        $this->assertSnapshot('bans/detail_not_found', $env);
+    }
+
+    public function testDetailPublicViewHidesAdminFields(): void
+    {
+        // Public caller (not logged in). The handler must (a) succeed,
+        // (b) hide the IP when banlist.hideplayerips is on, (c) hide the
+        // admin name when banlist.hideadminname is on, and (d) only
+        // include comments when config.enablepubliccomments is on.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideplayerips', '1'),
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '0')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $bid = $this->seedBan('STEAM_0:1:1010', 'public-view');
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame($bid,            (int)$env['data']['bid']);
+        $this->assertSame('STEAM_0:1:1010', $env['data']['player']['steam_id']);
+        $this->assertNull($env['data']['player']['ip'],   'IP should be hidden for public + hideplayerips');
+        $this->assertNull($env['data']['admin']['name'],  'admin should be hidden for public + hideadminname');
+        $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
+        $this->assertSame([], $env['data']['comments']);
+        $this->assertSnapshot('bans/detail_public_hidden', $env, ['data.bid', 'data.ban.banned_at', 'data.ban.banned_at_human', 'data.ban.expires_at', 'data.ban.expires_at_human']);
+    }
+
+    public function testDetailAdminViewExposesEverything(): void
+    {
+        // Same hide-* flags on, but as an admin: handler must NOT honour
+        // them (admins always see the underlying data) and comments must
+        // come back even with the public-comments flag off.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideplayerips', '1'),
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '0')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:2020', 'admin-view');
+
+        // Add a comment via the public API so the snapshot exercises the
+        // comment-list shape end-to-end.
+        $this->api('bans.add_comment', [
+            'bid' => $bid, 'ctype' => 'B', 'ctext' => 'note for the drawer', 'page' => -1,
+        ]);
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('STEAM_0:1:2020', $env['data']['player']['steam_id']);
+        $this->assertNotNull($env['data']['admin']['name']);
+        $this->assertTrue($env['data']['comments_visible']);
+        $this->assertCount(1, $env['data']['comments']);
+        $this->assertSame('note for the drawer', $env['data']['comments'][0]['text']);
+        $this->assertSnapshot('bans/detail_admin_view', $env, [
+            'data.bid',
+            'data.ban.banned_at',
+            'data.ban.banned_at_human',
+            'data.ban.expires_at',
+            'data.ban.expires_at_human',
+            'data.comments.0.cid',
+            'data.comments.0.added',
+            'data.comments.0.added_human',
+        ]);
+    }
+
     public function testAddCommentInsertsRow(): void
     {
         $this->loginAsAdmin();
@@ -391,5 +479,85 @@ final class BansTest extends ApiTestCase
         ]);
         $this->assertTrue($env['ok']);
         $this->assertSame([], (array)$env['data']);
+    }
+
+    public function testSearchRejectsAnonymous(): void
+    {
+        // Palette only mounts for logged-in admins; the dispatcher rejects
+        // anonymous calls before the handler runs.
+        $env = $this->api('bans.search', ['q' => 'whatever']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testSearchShortCircuitsForShortQuery(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedBan('STEAM_0:1:42', 'cheating');
+
+        // Single-character (or empty) queries are intentionally a no-op so
+        // the very first keypress in the palette doesn't sweep `:prefix_bans`.
+        $env = $this->api('bans.search', ['q' => 'a']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame([], $env['data']['bans']);
+
+        $env2 = $this->api('bans.search', ['q' => '']);
+        $this->assertTrue($env2['ok'], json_encode($env2));
+        $this->assertSame([], $env2['data']['bans']);
+
+        $this->assertSnapshot('bans/search_short_query', $env);
+    }
+
+    public function testSearchMatchesByName(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:7777', 'wallhack');
+        // seedBan() inserts `Cheater` as the player name.
+
+        $env = $this->api('bans.search', ['q' => 'Chea', 'limit' => 5]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $bans = $env['data']['bans'];
+        $this->assertNotEmpty($bans, 'expected at least one match');
+        $this->assertSame($bid,            (int)$bans[0]['bid']);
+        $this->assertSame('Cheater',       $bans[0]['name']);
+        $this->assertSame('STEAM_0:1:7777', $bans[0]['steam']);
+        $this->assertSame(0,               (int)$bans[0]['type']);
+    }
+
+    public function testSearchMatchesBySteamIdAcrossUniverseDigits(): void
+    {
+        // #1130: the search input may carry STEAM_1:… but rows are stored
+        // as STEAM_0:… (and vice versa). The palette mirrors the page-level
+        // banlist's REGEXP fallback so neither variant gets silently lost.
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:5555', 'mirror');
+
+        $env = $this->api('bans.search', ['q' => 'STEAM_1:1:5555']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame($bid, (int)$env['data']['bans'][0]['bid']);
+    }
+
+    public function testSearchLimitClampedToTwenty(): void
+    {
+        $this->loginAsAdmin();
+        for ($i = 0; $i < 25; $i++) {
+            $this->seedBan('STEAM_0:1:' . (1000 + $i), 'bulk-' . $i);
+        }
+        // Names are all `Cheater`; default `limit` is 10 but a 999 request
+        // should be capped, not honoured verbatim.
+        $env = $this->api('bans.search', ['q' => 'Chea', 'limit' => 999]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertCount(20, $env['data']['bans'], 'limit should clamp to 20');
+    }
+
+    public function testSearchSnapshotShape(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedBan('STEAM_0:1:7777', 'wallhack');
+
+        $env = $this->api('bans.search', ['q' => 'Chea', 'limit' => 5]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        // bid is an autoincrement; redact so the snapshot only locks shape.
+        $this->assertSnapshot('bans/search_success', $env, ['data.bans.0.bid']);
     }
 }

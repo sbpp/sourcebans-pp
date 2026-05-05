@@ -22,6 +22,9 @@ include_once("../init.php");
 include_once("../includes/system-functions.php");
 global $theme, $userbank;
 
+// See admin.kickit.php for why this chdir() is needed.
+chdir(ROOT);
+
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_ALL_BANS)) {
     Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a demo, but doesn't have access.");
     die("You don't have access to this!");
@@ -50,10 +53,10 @@ if (isset($_POST['upload'])) {
     }
 }
 
-$theme->assign("title", "Upload Demo");
-$theme->assign("message", $message);
-$theme->assign("input_name", "demo_file");
-$theme->assign("form_name", "demup");
-$theme->assign("formats", "a DEM, ZIP, RAR, 7Z, BZ2 or GZ");
-
-$theme->display('page_uploadfile.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\UploadFileView(
+    title: 'Upload Demo',
+    message: $message,
+    input_name: 'demo_file',
+    form_name: 'demup',
+    formats: 'a DEM, ZIP, RAR, 7Z, BZ2 or GZ',
+));

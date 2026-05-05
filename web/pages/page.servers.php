@@ -31,7 +31,11 @@ if (!defined('IN_HOME')) {
     }
 }
 
-$rows = $GLOBALS['PDO']->query("SELECT se.sid, se.ip, se.port, se.modid, se.rcon, md.icon FROM `:prefix_servers` se LEFT JOIN `:prefix_mods` md ON md.mid=se.modid WHERE se.sid > 0 AND se.enabled = 1 ORDER BY se.modid, se.sid")->resultset();
+// `md.name` (mod display name) is added for the sbpp2026 card label
+// (#1123 B5). The legacy default theme ignores extra row keys; the new
+// theme renders it next to the mod icon as a short tag (e.g. "TF2") so
+// the card is meaningful before the live UDP query lands.
+$rows = $GLOBALS['PDO']->query("SELECT se.sid, se.ip, se.port, se.modid, se.rcon, md.icon, md.name AS mod_name FROM `:prefix_servers` se LEFT JOIN `:prefix_mods` md ON md.mid=se.modid WHERE se.sid > 0 AND se.enabled = 1 ORDER BY se.modid, se.sid")->resultset();
 $servers = [];
 $i       = 0;
 foreach ($rows as $row) {
@@ -41,6 +45,7 @@ foreach ($rows as $row) {
     $info['dns']   = gethostbyname($row['ip']);
     $info['port']  = $row['port'];
     $info['icon']  = $row['icon'];
+    $info['mod']   = (string) ($row['mod_name'] ?? '');
     $info['index'] = $i;
     if (defined('IN_HOME')) {
         $info['evOnClick'] = "window.location = 'index.php?p=servers&s=" . $info['index'] . "';";

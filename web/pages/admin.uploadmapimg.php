@@ -21,6 +21,9 @@ include_once("../init.php");
 include_once("../includes/system-functions.php");
 global $theme, $userbank;
 
+// See admin.kickit.php for why this chdir() is needed.
+chdir(ROOT);
+
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER)) {
     Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a mapimage, but doesn't have access.");
     die("You don't have access to this!");
@@ -42,10 +45,10 @@ if (isset($_POST['upload'])) {
     }
 }
 
-$theme->assign("title", "Upload Mapimage");
-$theme->assign("message", $message);
-$theme->assign("input_name", "mapimg_file");
-$theme->assign("form_name", "mapimgup");
-$theme->assign("formats", "a JPG");
-
-$theme->display('page_uploadfile.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\UploadFileView(
+    title: 'Upload Mapimage',
+    message: $message,
+    input_name: 'mapimg_file',
+    form_name: 'mapimgup',
+    formats: 'a JPG',
+));

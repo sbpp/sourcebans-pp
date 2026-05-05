@@ -1,0 +1,69 @@
+<?php
+declare(strict_types=1);
+
+namespace Sbpp\View;
+
+/**
+ * Public ban list page — binds to `page_bans.tpl`.
+ *
+ * The shape carries every variable both themes consume:
+ *
+ * - `themes/sbpp2026/page_bans.tpl` (the marquee redesign, #1123 B2) reads the
+ *   handoff-keyed names: `$ban_list` items expose `bid|name|steam|state|
+ *   length_human|banned_human|sname|can_edit_ban|can_unban` plus avatar
+ *   metadata; the page chrome reads `$total_bans`, `$can_export`,
+ *   `$hidetext`, `$searchlink`, `$ban_nav`, the comment-edit scratch pad
+ *   (`$comment`, `$commenttype`, `$commenttext`, `$ctype`, `$cid`, `$page`,
+ *   `$canedit`, `$othercomments`), and the testid hooks reach the per-row
+ *   `state`.
+ * - `themes/default/page_bans.tpl` (the legacy theme, until #1123 D1 cuts
+ *   over) reads the same `$ban_list` items by their legacy keys
+ *   (`ban_id|player|class|reban_link|edit_link|…`) and additionally pulls
+ *   in `$general_unban`, `$can_delete`, `$groupban`, `$friendsban`,
+ *   `$hideadminname`, `$hideplayerips`, `$view_bans`, `$view_comments`,
+ *   `$admin_postkey` for the bulk-actions UI.
+ *
+ * Both shapes coexist on each `$ban_list` item; SmartyTemplateRule does not
+ * introspect array contents so the View only needs to expose the top-level
+ * variables. The legacy-only top-level vars are preserved here (and
+ * referenced by an `{if false}…{/if}` manifest at the EOF of the new
+ * template) so the dual-theme PHPStan matrix stays green until D1 deletes
+ * `themes/default/`.
+ */
+final class BanListView extends View
+{
+    public const TEMPLATE = 'page_bans.tpl';
+
+    /**
+     * @param list<array<string,mixed>>           $ban_list
+     * @param int|false                           $comment        Bid being commented on, or false when not in comment-edit mode.
+     * @param int                                 $page           Active pagination page (or -1 when not paginated).
+     * @param array<int, array<string,mixed>>|string $othercomments  Sibling comments shown beneath the editor; "None" string when the ban has no other comments.
+     */
+    public function __construct(
+        public readonly array $ban_list,
+        public readonly string $ban_nav,
+        public readonly int $total_bans,
+        public readonly bool $view_bans,
+        public readonly bool $view_comments,
+        public readonly int|false $comment,
+        public readonly string $commenttype,
+        public readonly string $commenttext,
+        public readonly string $ctype,
+        public readonly string $cid,
+        public readonly int $page,
+        public readonly bool $canedit,
+        public readonly array|string $othercomments,
+        public readonly string $searchlink,
+        public readonly string $hidetext,
+        public readonly bool $hideadminname,
+        public readonly bool $hideplayerips,
+        public readonly bool $groupban,
+        public readonly bool $friendsban,
+        public readonly bool $general_unban,
+        public readonly bool $can_delete,
+        public readonly bool $can_export,
+        public readonly string $admin_postkey,
+    ) {
+    }
+}

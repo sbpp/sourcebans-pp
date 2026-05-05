@@ -31,6 +31,13 @@ require_once __DIR__ . '/system.php';
 // ---- public actions (no auth required) --------------------------------
 Api::register('auth.login',         'api_auth_login',         0, false, true);
 Api::register('auth.lost_password', 'api_auth_lost_password', 0, false, true);
+// bans.detail mirrors the public ban-list page's reach: any visitor can
+// click a ban row in the sbpp2026 drawer (#1123 C1). Player IP, admin
+// name, removed-by and comments are gated *inside* the handler against
+// banlist.hideplayerips / banlist.hideadminname / config.enablepubliccomments
+// + is_admin(), matching page.banlist.php exactly so we don't leak
+// fields the page intentionally suppresses.
+Api::register('bans.detail',        'api_bans_detail',        0, false, true);
 
 // ---- account: dispatcher enforces login; handler enforces aid match ---
 Api::register('account.check_password',     'api_account_check_password');
@@ -61,6 +68,7 @@ Api::register('bans.get_groups',          'api_bans_get_groups',           ADMIN
 Api::register('bans.kick_player',         'api_bans_kick_player',          ADMIN_OWNER | ADMIN_ADD_BAN);
 Api::register('bans.send_message',        'api_bans_send_message',         0, true);
 Api::register('bans.view_community',      'api_bans_view_community',       0, true);
+Api::register('bans.search',              'api_bans_search',               0, true);
 
 // ---- blockit (single-page admin.blockit.php iframe) -------------------
 Api::register('blockit.load_servers', 'api_blockit_load_servers', ADMIN_OWNER | ADMIN_ADD_BAN);

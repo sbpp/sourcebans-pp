@@ -56,5 +56,5 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     print "<script>ShowBox('Password Reset', 'Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.', 'blue');</script>";
     PageDie();
 } else {
-    $theme->display('page_lostpassword.tpl');
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\LostPasswordView());
 }

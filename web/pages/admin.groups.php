@@ -28,87 +28,193 @@ new AdminTabs([
     ['name' => 'Add a group', 'permission' => ADMIN_OWNER|ADMIN_ADD_GROUP]
 ], $userbank, $theme);
 
-?>
-<div id="admin-page-content">
-<?php
-// web groups
-$web_group_admins = [];
-$web_group_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != '3'")->resultset();
-for ($i = 0; $i < count($web_group_list); $i++) {
-    $web_group_list[$i]['permissions'] = BitToString($web_group_list[$i]['flags'], $web_group_list[$i]['type']);
-    $GLOBALS['PDO']->query("SELECT COUNT(gid) AS cnt FROM `:prefix_admins` WHERE gid = :gid");
-    $GLOBALS['PDO']->bind(':gid', $web_group_list[$i]['gid']);
-    $query                             = $GLOBALS['PDO']->single();
-    $web_group_count[$i]               = $query['cnt'];
-    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE gid = :gid");
-    $GLOBALS['PDO']->bind(':gid', $web_group_list[$i]['gid']);
-    $web_group_admins[$i]              = $GLOBALS['PDO']->resultset();
-}
+// ------------------------------------------------------------------
+// Web admin groups (`:prefix_groups` WHERE type != 3).
+//
+// We keep two parallel arrays for the legacy default-theme template
+// (`web_admins` / `web_admins_list` indexed by foreach position) AND
+// inline `member_count` on each row for the sbpp2026 master-detail
+// rail. Both shapes derive from the same per-group queries below.
+// ------------------------------------------------------------------
+$web_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != '3'")->resultset();
+$web_group_list          = [];
+$web_admins              = [];
+$web_admins_list         = [];
+foreach ($web_group_rows as $row) {
+    $row['gid']         = (int) $row['gid'];
+    $row['flags']       = (int) $row['flags'];
+    $row['permissions'] = BitToString($row['flags']);
 
-// Server admin groups
-$server_admin_group_overrides = [];
-$server_admin_group_admins = [];
-$server_admin_group_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`")->resultset();
-for ($i = 0; $i < count($server_admin_group_list); $i++) {
-    $server_admin_group_list[$i]['permissions'] = SmFlagsToSb($server_admin_group_list[$i]['flags']);
-    $GLOBALS['PDO']->query("SELECT COUNT(aid) AS cnt FROM `:prefix_admins` WHERE srv_group = :srv_group");
-    $GLOBALS['PDO']->bind(':srv_group', $server_admin_group_list[$i]['name']);
-    $query                                      = $GLOBALS['PDO']->single();
-    $server_admin_group_count[$i]               = $query['cnt'];
-    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE srv_group = :srv_group");
-    $GLOBALS['PDO']->bind(':srv_group', $server_admin_group_list[$i]['name']);
-    $server_admin_group_admins[$i]              = $GLOBALS['PDO']->resultset();
-    $GLOBALS['PDO']->query("SELECT type, name, access FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid");
-    $GLOBALS['PDO']->bind(':gid', $server_admin_group_list[$i]['id']);
-    $server_admin_group_overrides[$i]           = $GLOBALS['PDO']->resultset();
+    $cnt = $GLOBALS['PDO']->query("SELECT COUNT(gid) AS cnt FROM `:prefix_admins` WHERE gid = :gid");
+    $GLOBALS['PDO']->bind(':gid', $row['gid']);
+    $cnt = $GLOBALS['PDO']->single();
+    $row['member_count'] = (int) $cnt['cnt'];
+
+    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE gid = :gid");
+    $GLOBALS['PDO']->bind(':gid', $row['gid']);
+    $members = $GLOBALS['PDO']->resultset();
+
+    $web_group_list[]  = $row;
+    $web_admins[]      = $row['member_count'];
+    $web_admins_list[] = $members;
 }
-// server groups
-$server_group_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
-for ($i = 0; $i < count($server_group_list); $i++) {
+$web_group_count = count($web_group_list);
+
+// ------------------------------------------------------------------
+// Server admin groups (`:prefix_srvgroups`).
+// ------------------------------------------------------------------
+$server_admin_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`")->resultset();
+$server_group_list       = [];
+$server_admins           = [];
+$server_admins_list      = [];
+$server_overrides_list   = [];
+foreach ($server_admin_group_rows as $row) {
+    $row['id']          = (int) $row['id'];
+    $row['immunity']    = (int) ($row['immunity'] ?? 0);
+    $row['permissions'] = SmFlagsToSb($row['flags']);
+
+    $GLOBALS['PDO']->query("SELECT COUNT(aid) AS cnt FROM `:prefix_admins` WHERE srv_group = :srv_group");
+    $GLOBALS['PDO']->bind(':srv_group', $row['name']);
+    $cnt = $GLOBALS['PDO']->single();
+    $row['member_count'] = (int) $cnt['cnt'];
+
+    $GLOBALS['PDO']->query("SELECT aid, user, authid FROM `:prefix_admins` WHERE srv_group = :srv_group");
+    $GLOBALS['PDO']->bind(':srv_group', $row['name']);
+    $members = $GLOBALS['PDO']->resultset();
+
+    $GLOBALS['PDO']->query("SELECT type, name, access FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid");
+    $GLOBALS['PDO']->bind(':gid', $row['id']);
+    $overrides = $GLOBALS['PDO']->resultset();
+
+    $server_group_list[]     = $row;
+    $server_admins[]         = $row['member_count'];
+    $server_admins_list[]    = $members;
+    $server_overrides_list[] = $overrides;
+}
+$server_admin_group_count = count($server_group_list);
+
+// ------------------------------------------------------------------
+// Server groups (`:prefix_groups` WHERE type = 3).
+//
+// The legacy default template emits `LoadServerHostPlayersList(...)`
+// inline scripts to fill an accordion-revealed server list per row.
+// The sbpp2026 redesign omits the accordion entirely (the marquee
+// surface is the master-detail flag grid above, not these
+// server-of-servers groupings), but we keep emitting the script tags
+// so the default theme keeps working until D1 cuts over.
+// ------------------------------------------------------------------
+$server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
+$server_list   = [];
+$server_counts = [];
+foreach ($server_group_rows as $row) {
+    $row['gid'] = (int) $row['gid'];
+
     $GLOBALS['PDO']->query("SELECT COUNT(server_id) AS cnt FROM `:prefix_servers_groups` WHERE `group_id` = :gid");
-    $GLOBALS['PDO']->bind(':gid', $server_group_list[$i]['gid']);
-    $query                  = $GLOBALS['PDO']->single();
-    $server_group_count[$i] = $query['cnt'];
+    $GLOBALS['PDO']->bind(':gid', $row['gid']);
+    $cnt = $GLOBALS['PDO']->single();
+    $row['server_count'] = (int) $cnt['cnt'];
+
     $GLOBALS['PDO']->query("SELECT server_id FROM `:prefix_servers_groups` WHERE group_id = :gid");
-    $GLOBALS['PDO']->bind(':gid', $server_group_list[$i]['gid']);
-    $servers_in_group       = $GLOBALS['PDO']->resultset();
-    $server_arr             = "";
+    $GLOBALS['PDO']->bind(':gid', $row['gid']);
+    $servers_in_group = $GLOBALS['PDO']->resultset();
+
+    $server_arr = "";
     foreach ($servers_in_group as $server) {
         $server_arr .= $server['server_id'] . ";";
     }
     echo "<script>";
-    echo "LoadServerHostPlayersList('" . $server_arr . "', 'id', 'servers_" . $server_group_list[$i]['gid'] . "');";
+    echo "LoadServerHostPlayersList('" . $server_arr . "', 'id', 'servers_" . $row['gid'] . "');";
     echo "</script>";
+
+    $server_list[]   = $row;
+    $server_counts[] = $row['server_count'];
 }
-// List Group
+$server_group_count = count($server_list);
+
+// ------------------------------------------------------------------
+// Web flag definitions (drives the master-detail flag grid). Sourced
+// from `web/configs/permissions/web.json`; we strip the meta entries
+// (`ALL_WEB`, `ADMIN_OWNER`) since they're not assignable per-group.
+// ------------------------------------------------------------------
+$flagDefsRaw = json_decode((string) file_get_contents(ROOT . '/configs/permissions/web.json'), true);
+$all_flags = [];
+if (is_array($flagDefsRaw)) {
+    foreach ($flagDefsRaw as $constName => $info) {
+        if (!is_string($constName) || !str_starts_with($constName, 'ADMIN_')) {
+            continue;
+        }
+        if ($constName === 'ADMIN_OWNER') {
+            continue;
+        }
+        if (!is_array($info) || !isset($info['value'], $info['display'])) {
+            continue;
+        }
+        $all_flags[] = [
+            'name'  => strtolower(substr($constName, strlen('ADMIN_'))),
+            'value' => (int) $info['value'],
+            'label' => (string) $info['display'],
+        ];
+    }
+}
+
+// ------------------------------------------------------------------
+// Selected group: ?gid=<n> falls back to the first row so the
+// master-detail panel always has something to render when the
+// directory is non-empty.
+// ------------------------------------------------------------------
+$selected_group = null;
+if (!empty($web_group_list)) {
+    $requestedGid = isset($_GET['gid']) ? (int) $_GET['gid'] : 0;
+    $match = null;
+    foreach ($web_group_list as $g) {
+        if ($g['gid'] === $requestedGid) {
+            $match = $g;
+            break;
+        }
+    }
+    if ($match === null) {
+        $match = $web_group_list[0];
+    }
+    $selected_group = [
+        'gid'          => (int) $match['gid'],
+        'name'         => (string) $match['name'],
+        'flags'        => (int) $match['flags'],
+        'member_count' => (int) $match['member_count'],
+    ];
+}
+
+echo '<div id="admin-page-content">';
+
+// List groups tab.
+echo '<div class="tabcontent" id="List groups">';
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsListView(
+    permission_listgroups:    $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS),
+    permission_editgroup:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS),
+    permission_deletegroup:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_GROUPS),
+    permission_editadmin:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
+    web_group_count:          $web_group_count,
+    web_admins:               $web_admins,
+    web_admins_list:          $web_admins_list,
+    web_group_list:           $web_group_list,
+    server_admin_group_count: $server_admin_group_count,
+    server_admins:            $server_admins,
+    server_admins_list:       $server_admins_list,
+    server_overrides_list:    $server_overrides_list,
+    server_group_list:        $server_group_list,
+    server_group_count:       $server_group_count,
+    server_counts:            $server_counts,
+    server_list:              $server_list,
+    all_flags:                $all_flags,
+    selected_group:           $selected_group,
+));
+echo '</div>';
+
+// Add a group tab.
+echo '<div class="tabcontent" id="Add a group">';
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
+    permission_addgroup: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP),
+));
+echo '</div>';
 ?>
-<div class="tabcontent" id="List groups">
-<?php
-$theme->assign('permission_listgroups', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS));
-$theme->assign('permission_editgroup', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS));
-$theme->assign('permission_deletegroup', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_GROUPS));
-$theme->assign('permission_editadmin', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS));
-$theme->assign('web_group_count', count($web_group_list));
-$theme->assign('web_admins', (isset($web_group_count) ? $web_group_count : '0'));
-$theme->assign('web_admins_list', $web_group_admins);
-$theme->assign('web_group_list', $web_group_list);
-$theme->assign('server_admin_group_count', count($server_admin_group_list));
-$theme->assign('server_admins', (isset($server_admin_group_count) ? $server_admin_group_count : '0'));
-$theme->assign('server_admins_list', $server_admin_group_admins);
-$theme->assign('server_overrides_list', $server_admin_group_overrides);
-$theme->assign('server_group_list', $server_admin_group_list);
-$theme->assign('server_group_count', count($server_group_list));
-$theme->assign('server_counts', (isset($server_group_count) ? $server_group_count : '0'));
-$theme->assign('server_list', $server_group_list);
-$theme->display('page_admin_groups_list.tpl');
-// Add Groups
-?>
-</div>
-<div class="tabcontent" id="Add a group">
-<?php
-$theme->assign('permission_addgroup', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP));
-$theme->display('page_admin_groups_add.tpl');
-?>
-</div>
 <script>InitAccordion('tr.opener', 'div.opener', 'mainwrapper');</script>
 </div>

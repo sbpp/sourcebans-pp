@@ -713,6 +713,90 @@ foreach ($res as $row) {
     $data['view_edit']   = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
     $data['view_unban']  = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
     $data['view_delete'] = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
+
+    // === sbpp2026 row augmentation (#1123 B4) =============================
+    // Layer the slim handoff-style keys ($comm.cid / .name / .steam /
+    // .type / .length_human / .started_human / .started_iso / .state /
+    // .sname / .admin / .reason / .{edit,unmute,delete}_url) onto the
+    // same $data row the legacy theme already consumes. Doing it inside
+    // the original loop is what lets us read raw SQL columns (row_type,
+    // ban_server, server_ip, ban_created) that don't survive into
+    // $data otherwise.
+    $rowTypeStr   = isset($row['row_type']) ? (string) $row['row_type'] : '';
+    $banLengthInt = (int) $row['ban_length'];
+    $banEndsInt   = (int) $row['ban_ends'];
+    $cTimeInt     = (int) $row['c_time'];
+    if ($rowTypeStr === 'D' || $rowTypeStr === 'U') {
+        $state2026 = 'unmuted';
+    } elseif ($rowTypeStr === 'E' || ($banLengthInt > 0 && $banEndsInt < $cTimeInt)) {
+        $state2026 = 'expired';
+    } elseif ($banLengthInt === 0) {
+        $state2026 = 'permanent';
+    } else {
+        $state2026 = 'active';
+    }
+
+    $typeInt = (int) $row['type'];
+    switch ($typeInt) {
+        case 1:
+            $typeLabel = 'mute';
+            break;
+        case 2:
+            $typeLabel = 'gag';
+            break;
+        case 3:
+            // SourceComms forks sometimes assign 3 to the combined
+            // "silence" (mute+gag); display it the same way regardless
+            // of whether a write path actually emits the row.
+            $typeLabel = 'silence';
+            break;
+        default:
+            $typeLabel = 'unknown';
+    }
+
+    $banServerInt = (int) $row['ban_server'];
+    if ($banServerInt === 0) {
+        $sname2026 = 'Web Block';
+    } else {
+        $sname2026 = !empty($row['server_ip'])
+            ? (string) $row['server_ip']
+            : 'Server #' . $banServerInt;
+    }
+
+    $startedTs = (int) $row['ban_created'];
+    $key       = (string) ($_SESSION['banlist_postkey'] ?? '');
+
+    $data['cid']           = (int) $row['ban_id'];
+    $data['name']          = stripslashes((string) $data['player']);
+    $data['steam']         = (string) $data['steamid'];
+    // Stable per-name hue for the row's avatar tile. crc32 keeps
+    // identically-named players coloured the same across sessions
+    // without any storage; the modulo into 360 gives an HSL hue.
+    $data['avatar_hue']    = (int) (sprintf('%u', crc32($data['name'] . $data['steam'])) % 360);
+    // Kept as a string label for the new theme's pill/icon switch. The
+    // legacy default theme only reads `type_icon` (HTML-rendered above)
+    // so overwriting `type` is safe — see the dual-theme audit in the
+    // CommsListView class docblock.
+    $data['type']          = $typeLabel;
+    $data['length_human']  = (string) $data['ban_length'];
+    $data['started_human'] = (string) $data['ban_date'];
+    // ISO 8601 (`c`) so the new theme's <time datetime="…"> hooks give
+    // the browser a parseable absolute timestamp regardless of the
+    // admin-configured `config.dateformat`.
+    $data['started_iso']   = date('c', $startedTs);
+    $data['state']         = $state2026;
+    $data['sname']         = $sname2026;
+    $data['edit_url']      = 'index.php?p=admin&c=comms&o=edit&id=' . (int) $row['ban_id'] . '&key=' . urlencode($key);
+    $data['delete_url']    = 'index.php?p=commslist&a=delete&id=' . (int) $row['ban_id'] . '&key=' . urlencode($key);
+    if ($state2026 === 'active' || $state2026 === 'permanent') {
+        $verb              = $typeInt === 1 ? 'unmute' : ($typeInt === 2 ? 'ungag' : null);
+        $data['unmute_url'] = $verb !== null
+            ? 'index.php?p=commslist&a=' . $verb . '&id=' . (int) $row['ban_id'] . '&key=' . urlencode($key)
+            : null;
+    } else {
+        $data['unmute_url'] = null;
+    }
+
     array_push($bans, $data);
 }
 
@@ -771,17 +855,30 @@ if ($pages > 1) {
 
 //COMMENT STUFF
 //----------------------------------------
+// Comment-drawer locals. The legacy default theme renders the editor
+// when {if $comment} is truthy; the sbpp2026 redesign defers the
+// editor to a follow-up ticket, so the new theme just ignores all of
+// these. We compute them into PHP locals here (instead of the legacy
+// `$theme->assign(...)` calls) so they can be threaded into the View
+// constructor below — Renderer copies every public property onto
+// $theme, which keeps the legacy template rendering off the same
+// source of truth as the new one.
+$commenttype2026  = '';
+$commenttext2026  = '';
+$ctype2026        = '';
+$cid2026          = '';
+$page2026         = -1;
+$othercomments2026 = [];
 if (isset($_GET["comment"])) {
-    $theme->assign('commenttype', (isset($_GET["cid"]) ? "Edit" : "Add"));
+    $commenttype2026 = isset($_GET["cid"]) ? "Edit" : "Add";
     if (isset($_GET["cid"])) {
         $GLOBALS['PDO']->query("SELECT * FROM `:prefix_comments` WHERE cid = :cid");
         $GLOBALS['PDO']->bind(':cid', (int) $_GET["cid"]);
         $ceditdata      = $GLOBALS['PDO']->single();
-        $ctext          = html_entity_decode($ceditdata['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $commenttext2026 = html_entity_decode($ceditdata['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $cotherdataedit = " AND cid != '" . (int) $_GET["cid"] . "'";
     } else {
         $cotherdataedit = "";
-        $ctext          = "";
     }
     $cotherdata = $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
 											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
@@ -792,7 +889,6 @@ if (isset($_GET["comment"])) {
         $_GET["comment"]
     ));
 
-    $ocomments = [];
     foreach ($cotherdata as $cdrow) {
         $coment               = [];
         $coment['comname']    = $cdrow['comname'];
@@ -808,34 +904,112 @@ if (isset($_GET["comment"])) {
             $coment['editname'] = "";
             $coment['edittime'] = "";
         }
-        array_push($ocomments, $coment);
+        array_push($othercomments2026, $coment);
     }
 
-    $theme->assign('page', (isset($_GET["page"]) ? $_GET["page"] : -1));
-    $theme->assign('othercomments', $ocomments);
-    $theme->assign('commenttext', (isset($ctext) ? $ctext : ""));
-    $theme->assign('ctype', $_GET["ctype"]);
-    $theme->assign('cid', (isset($_GET["cid"]) ? $_GET["cid"] : ""));
-    $theme->assign('canedit', $userbank->is_admin());
+    $page2026 = isset($_GET["page"]) ? (int) $_GET["page"] : -1;
+    $ctype2026 = (string) $_GET["ctype"];
+    $cid2026   = isset($_GET["cid"]) ? (int) $_GET["cid"] : '';
 }
-$theme->assign('view_comments', $view_comments);
-$theme->assign('comment', (isset($_GET["comment"]) && $view_comments ? $_GET["comment"] : false));
+$comment2026 = (isset($_GET["comment"]) && $view_comments) ? (int) $_GET["comment"] : false;
 //----------------------------------------
 
 unset($_SESSION['CountryFetchHndl']);
 
-$theme->assign('searchlink', $searchlink);
-$theme->assign('hidetext', $hidetext);
-$theme->assign('total_bans', $BanCount);
-$theme->assign('active_bans', $BanCount);
+// `searchlink` is conditionally assigned in the search/advSearch/no-search
+// branches above. Normalise it before any sbpp2026 code reads it so we
+// don't widen the existing `Variable $searchlink might not be defined`
+// baseline entry that catches the legacy `$theme->assign('searchlink', …)`
+// reference in the original code path.
+$searchlink = $searchlink ?? '';
 
-$theme->assign('ban_nav', $ban_nav);
-$theme->assign('ban_list', $bans);
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
-
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
+$theme->assign('active_bans', $BanCount);
 $theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
 $theme->assign('can_delete', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
-$theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));
-$theme->display('page_comms.tpl');
+
+$hideAdminName2026 = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
+$viewBans2026      = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN);
+
+// === sbpp2026 view bag (#1123 B4) =====================================
+// Server filter dropdown — small list (one row per enabled server). The
+// schema has no hostname column, so the legacy `LoadServerHost` JS
+// resolves names lazily; the filter dropdown just shows ip:port and a
+// follow-up ticket can swap in a sb.api.call-driven resolver.
+$server_rows_2026 = $GLOBALS['PDO']->query(
+    "SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1 ORDER BY ip"
+)->resultset();
+$servers_2026 = [];
+foreach ($server_rows_2026 as $sr) {
+    $servers_2026[] = [
+        'sid'  => (int) $sr['sid'],
+        'name' => (string) $sr['ip'] . ':' . (int) $sr['port'],
+    ];
+}
+
+$filters_2026 = [
+    'search' => isset($_GET['searchText']) ? (string) $_GET['searchText'] : '',
+    'server' => isset($_GET['server']) ? (string) $_GET['server'] : '',
+    'time'   => isset($_GET['time']) ? (string) $_GET['time'] : '',
+    'state'  => isset($_GET['state']) ? (string) $_GET['state'] : '',
+    'type'   => isset($_GET['type']) ? (string) $_GET['type'] : '',
+];
+
+$pagination_2026 = [
+    'from'     => $BanCount === 0 ? 0 : $BansStart + 1,
+    'to'       => $BansEnd,
+    'total'    => $BanCount,
+    'prev_url' => $page > 1
+        ? 'index.php?p=commslist&page=' . ($page - 1) . $searchlink
+        : null,
+    'next_url' => $BansEnd < $BanCount
+        ? 'index.php?p=commslist&page=' . ($page + 1) . $searchlink
+        : null,
+];
+
+$hideInactive2026       = isset($_SESSION['hideinactive']);
+$hideInactive2026Toggle = 'index.php?p=commslist&hideinactive=' . ($hideInactive2026 ? 'false' : 'true') . $searchlink;
+
+// Aggregate permission flags. Each precomputed via Perms::for($userbank)
+// so the template's {if $can_*} reads stay opinion-free about the bit
+// math — see the AGENTS.md "Permissions" section + Perms::for() docblock.
+$perms2026             = \Sbpp\View\Perms::for($userbank);
+$can_add_comm_2026     = $perms2026['can_owner'] || $perms2026['can_add_ban'];
+$can_edit_comm_2026    = $perms2026['can_owner']
+    || $perms2026['can_edit_all_bans']
+    || $perms2026['can_edit_own_bans']
+    || $perms2026['can_edit_group_bans'];
+$can_unmute_gag_2026   = $perms2026['can_owner']
+    || $perms2026['can_unban']
+    || $perms2026['can_unban_own_bans']
+    || $perms2026['can_unban_group_bans'];
+$can_delete_comm_2026  = $perms2026['can_owner'] || $perms2026['can_delete_ban'];
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\CommsListView(
+    total_bans:               $BanCount,
+    searchlink:               $searchlink,
+    ban_list:                 $bans,
+    filters:                  $filters_2026,
+    servers:                  $servers_2026,
+    pagination:               $pagination_2026,
+    hide_inactive:            $hideInactive2026,
+    hide_inactive_toggle_url: $hideInactive2026Toggle,
+    can_add_comm:             $can_add_comm_2026,
+    can_edit_comm:            $can_edit_comm_2026,
+    can_unmute_gag:           $can_unmute_gag_2026,
+    can_delete_comm:          $can_delete_comm_2026,
+    comment:                  $comment2026,
+    commenttype:              $commenttype2026,
+    canedit:                  $userbank->is_admin(),
+    commenttext:              $commenttext2026,
+    ctype:                    $ctype2026,
+    cid:                      $cid2026,
+    page:                     $page2026,
+    othercomments:            $othercomments2026,
+    ban_nav:                  $ban_nav,
+    hidetext:                 $hidetext,
+    hideadminname:            $hideAdminName2026,
+    view_comments:            (bool) $view_comments,
+    view_bans:                $viewBans2026,
+));

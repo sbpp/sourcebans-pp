@@ -17,6 +17,8 @@ Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
+use Sbpp\View\BanListView;
+use Sbpp\View\Renderer;
 use SteamID\SteamID;
 
 global $theme;
@@ -760,6 +762,72 @@ foreach ($res as $row) {
     $data['view_edit']   = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
     $data['view_unban']  = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
     $data['view_delete'] = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
+
+    // ------------------------------------------------------------------
+    // sbpp2026 (#1123 B2): per-row keys consumed by the new
+    // page_bans.tpl. Aliases of the legacy fields above so the legacy
+    // default theme (which reads `$ban.player`, `$ban.ban_id`,
+    // `$ban.class`, …) continues to work unchanged. The handoff design
+    // uses `bid|name|steam|state|length_human|banned_human|sname` plus
+    // pre-derived per-row permission booleans (`can_edit_ban`,
+    // `can_unban`) that the template gates the inline action buttons
+    // on. SmartyTemplateRule does not introspect array contents, so
+    // both shapes can coexist on each item.
+    //
+    // `state` collapses the four UI states the design separates
+    // (matches the 3px coloured left-border + status pill from
+    // handoff/pages/banlist.tpl):
+    //     permanent → length == 0 AND not removed
+    //     active    → length > 0  AND ends >= now AND not removed
+    //     expired   → length > 0  AND ends < now  AND not removed
+    //     unbanned  → RemoveType set (D/U/E rows that aren't natural expiry)
+    // Natural expiry (length>0 && ends<now && RemoveType IS NULL) is
+    // surfaced as `expired` separately from admin-driven `unbanned`,
+    // matching the design's distinction.
+    $banLengthInt = (int) $row['ban_length'];
+    $banEndsInt   = (int) $row['ban_ends'];
+    $removeTypeRaw = $row['row_type'] ?? null;
+    if ($removeTypeRaw === 'D' || $removeTypeRaw === 'U') {
+        $state = 'unbanned';
+    } elseif ($removeTypeRaw === 'E') {
+        $state = 'expired';
+    } elseif ($banLengthInt === 0) {
+        $state = 'permanent';
+    } elseif ($banEndsInt < time()) {
+        $state = 'expired';
+    } else {
+        $state = 'active';
+    }
+
+    $data['bid']          = (int) $row['ban_id'];
+    $data['name']         = $cleaned_name;
+    $data['steam']        = (string) $data['steamid'];
+    $data['ban_ip_raw']   = (string) ($row['ban_ip'] ?? '');
+    $data['length']       = $banLengthInt;
+    $data['length_human'] = $banLengthInt === 0 ? 'Permanent' : SecondsToString($banLengthInt);
+    $data['banned']       = (int) $row['ban_created'];
+    $data['banned_human'] = Config::time((int) $row['ban_created']);
+    $data['banned_iso']   = date('c', (int) $row['ban_created']);
+    if ((int) $row['ban_server'] === 0 || $row['server_ip'] === null || $row['server_ip'] === '') {
+        $data['sname'] = (int) $row['ban_server'] === 0 ? 'Web Ban' : 'Server #' . (int) $row['ban_server'];
+    } else {
+        $data['sname'] = (string) $row['server_ip'];
+    }
+    $data['aname']        = is_string($data['admin']) ? $data['admin'] : '';
+    $data['state']        = $state;
+    $data['can_edit_ban'] = (bool) $data['view_edit'];
+    $data['can_unban']    = (bool) $data['view_unban'];
+
+    // Avatar metadata precomputed server-side so the template doesn't
+    // have to lean on Smarty's `%` arithmetic operator (parses
+    // ambiguously next to modifier syntax). `avatar_initials` is the
+    // upper-cased first two grapheme bytes of the cleaned name (empty
+    // if no nickname); `avatar_hue` is a deterministic 0–359 hue
+    // derived from the bid so a player's avatar colour stays stable
+    // across reloads / paginations.
+    $data['avatar_initials'] = mb_strtoupper(mb_substr($cleaned_name !== '' ? $cleaned_name : '?', 0, 2));
+    $data['avatar_hue']      = ((int) $row['ban_id'] * 47) % 360;
+
     array_push($bans, $data);
 }
 
@@ -769,65 +837,93 @@ if (isset($_GET['advSearch'])) {
     $advSearchString = '';
 }
 
+// ---------------------------------------------------------------------
+// Pagination markup ($ban_nav). Built server-side and consumed by
+// BOTH themes via {$ban_nav nofilter}; the legacy default theme
+// expects a flat string of inline-styled HTML and the sbpp2026 theme
+// drops it inside a card. Both themes render the same string.
+//
+// Notable changes vs. the pre-#1123 builder:
+//
+//   1. The prev/next anchors carry `data-testid="page-prev"` /
+//      `page-next` so the marquee page's E2E hooks (issue #1123
+//      "Testability hooks" table) work without a per-theme view-model
+//      detour. The attributes are inert in browsers that don't query
+//      them, so the legacy theme is unaffected.
+//   2. The page-jump <select> no longer calls into
+//      web/scripts/sourcebans.js's changePage(); it sets
+//      window.location directly via inline vanilla JS. The new
+//      sbpp2026 theme drops sourcebans.js (#1123 D1), so any reach
+//      into legacy bulk JS would silently break the navigator there.
+//      The legacy theme keeps working because the new inline JS uses
+//      only window.location, which is universally available.
+//   3. The advSearch/advType $_GET values are still escaped through
+//      the htmlspecialchars(addslashes(...)) double-pass added in
+//      #1113 — the JS-string-inside-HTML-attribute injection vector
+//      is unchanged by the testid/vanilla-JS rework.
+//   4. FA icons (`<i class="fas fa-arrow-…">`) are dropped in favour
+//      of plain "Prev" / "Next" + Unicode arrows. The new theme
+//      ships Lucide instead of FontAwesome, and the legacy theme
+//      reads fine with plain text either way.
+// ---------------------------------------------------------------------
+
+$searchTextParam = isset($_GET['searchText']) ? '&searchText=' . urlencode((string) $_GET['searchText']) : '';
+$pageQuerySuffix = $searchTextParam . $advSearchString;
+
+$prev = '';
 if ($page > 1) {
-    if (isset($_GET['c']) && $_GET['c'] == "bans") {
-        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "javascript:void(0);", "", "_self", false, $prev);
-    } else {
-        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=banlist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
-    }
-} else {
-    $prev = "";
-}
-if ($BansEnd < $BanCount) {
-    if (isset($_GET['c']) && $_GET['c'] == "bans") {
-        if (!isset($nxt)) {
-            $nxt = "";
-        }
-        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "javascript:void(0);", "", "_self", false, $nxt);
-    } else {
-        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=banlist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
-    }
-} else {
-    $next = "";
+    $prevUrl = 'index.php?p=banlist&page=' . ($page - 1) . $pageQuerySuffix;
+    $prev = '<a href="' . htmlspecialchars($prevUrl, ENT_QUOTES, 'UTF-8')
+        . '" data-testid="page-prev" rel="prev" aria-label="Previous page">&laquo; prev</a>';
 }
 
-//=================[ Start Layout ]==================================
+$next = '';
+if ($BansEnd < $BanCount) {
+    $nextUrl = 'index.php?p=banlist&page=' . ($page + 1) . $pageQuerySuffix;
+    $next = '<a href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8')
+        . '" data-testid="page-next" rel="next" aria-label="Next page">next &raquo;</a>';
+}
+
 $ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
 
-if (strlen($prev) > 0) {
+if ($prev !== '') {
     $ban_nav .= ' | <b>' . $prev . '</b>';
 }
-if (strlen($next) > 0) {
+if ($next !== '') {
     $ban_nav .= ' | <b>' . $next . '</b>';
 }
-$pages = ceil($BanCount / $BansPerPage);
+
+$pages = (int) ceil($BanCount / $BansPerPage);
 if ($pages > 1) {
-    // Issue #1113: $_GET['advSearch']/['advType'] used to be interpolated
-    // raw into the JS-string-inside-HTML-attribute below, so e.g.
-    // ?advSearch=x');alert(1);// closed the JS string and ran arbitrary
-    // script on every banlist visit. addslashes escapes the `'`/`\` for
-    // the JS-string layer, htmlspecialchars(ENT_QUOTES) escapes the
-    // `<`/`>`/`&`/`'`/`"` for the HTML-attribute layer; both layers are
-    // necessary because the browser unescapes attribute entities before
-    // the JS engine sees the string.
-    $advSearchJs = htmlspecialchars(addslashes((string)($_GET['advSearch'] ?? '')), ENT_QUOTES, 'UTF-8');
-    $advTypeJs   = htmlspecialchars(addslashes((string)($_GET['advType']   ?? '')), ENT_QUOTES, 'UTF-8');
-    $ban_nav .= '&nbsp;<select onchange="changePage(this,\'B\',\'' . $advSearchJs . '\',\'' . $advTypeJs . '\');">';
+    // Page-jump select: vanilla inline navigation, no JS dependency.
+    // The query-suffix template (`pageQuerySuffix`) is double-escaped
+    // for the JS-string-inside-HTML-attribute boundary: addslashes
+    // for the JS string layer, htmlspecialchars(ENT_QUOTES) for the
+    // HTML attribute layer. Same defence-in-depth pattern as #1113.
+    $pageQueryJs = htmlspecialchars(addslashes($pageQuerySuffix), ENT_QUOTES, 'UTF-8');
+    $jumpHandler = "if(this.value!=='0')window.location.href='index.php?p=banlist&page='+this.value+'" . $pageQueryJs . "';";
+    $ban_nav .= '&nbsp;<select aria-label="Jump to page" onchange="' . $jumpHandler . '">';
     for ($i = 1; $i <= $pages; $i++) {
-        if (isset($_GET["page"]) && $i == $page) {
-            $ban_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
-            continue;
-        }
-        $ban_nav .= '<option value="' . $i . '">' . $i . '</option>';
+        $selected = (isset($_GET['page']) && (int) $_GET['page'] === $i) ? ' selected="selected"' : '';
+        $ban_nav .= '<option value="' . $i . '"' . $selected . '>' . $i . '</option>';
     }
     $ban_nav .= '</select>';
 }
 
 //COMMENT STUFF
 //----------------------------------------
+$commentMode    = false;
+$commentType    = '';
+$commentText    = '';
+$commentCtype   = '';
+$commentCid     = '';
+$commentCanedit = false;
+/** @var array<int, array<string, mixed>>|string $commentOthers */
+$commentOthers  = '';
 if (isset($_GET["comment"])) {
     $_GET["comment"] = (int) $_GET["comment"];
-    $theme->assign('commenttype', (isset($_GET["cid"]) ? "Edit" : "Add"));
+    $commentMode  = $_GET["comment"];
+    $commentType  = isset($_GET["cid"]) ? "Edit" : "Add";
     if (isset($_GET["cid"])) {
         $_GET["cid"]    = (int) $_GET["cid"];
         $GLOBALS['PDO']->query("SELECT * FROM `:prefix_comments` WHERE cid = :cid");
@@ -856,11 +952,11 @@ if (isset($_GET["comment"])) {
         $coment               = [];
         $coment['comname']    = $cdrow['comname'];
         $coment['added']      = Config::time($cdrow['added']);
-        $commentText          = html_entity_decode($cdrow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $commentText          = encodePreservingBr($commentText);
+        $commentTextRow       = html_entity_decode($cdrow['commenttxt'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $commentTextRow       = encodePreservingBr($commentTextRow);
         // Parse links and wrap them in a <a href=""></a> tag to be easily clickable
-        $commentText         = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentText);
-        $coment['commenttxt'] = $commentText;
+        $commentTextRow       = preg_replace('@(https?://([-\w\.]+)+(:\d+)?(/([\w/_\.]*(\?\S+)?)?)?)@', '<a href="$1" target="_blank">$1</a>', $commentTextRow);
+        $coment['commenttxt'] = $commentTextRow;
 
         if ($cdrow['editname'] != "") {
             $coment['edittime'] = Config::time($cdrow['edittime']);
@@ -872,36 +968,37 @@ if (isset($_GET["comment"])) {
         array_push($ocomments, $coment);
     }
 
-    $theme->assign('page', (isset($_GET["page"]) ? $page : -1));
-    $theme->assign('othercomments', $ocomments);
-    $theme->assign('commenttext', (isset($ctext) ? $ctext : ""));
-    $theme->assign('ctype', $_GET["ctype"]);
-    $theme->assign('cid', (isset($_GET["cid"]) ? $_GET["cid"] : ""));
-    $theme->assign('canedit', $userbank->is_admin());
+    $commentText    = (string) (isset($ctext) ? $ctext : '');
+    $commentCtype   = (string) $_GET["ctype"];
+    $commentCid     = isset($_GET["cid"]) ? (string) $_GET["cid"] : '';
+    $commentCanedit = $userbank->is_admin();
+    $commentOthers  = $ocomments;
 }
-$theme->assign('view_comments', $view_comments);
-$theme->assign('comment', (isset($_GET["comment"]) && $view_comments ? $_GET["comment"] : false));
-$theme->assign('canEditComment', $canEditComment);
-//----------------------------------------
 
 unset($_SESSION['CountryFetchHndl']);
 
-$theme->assign('searchlink', $searchlink);
-$theme->assign('hidetext', $hidetext);
-$theme->assign('total_bans', $BanCount);
-$theme->assign('active_bans', $BanCount);
-
-$theme->assign('ban_nav', $ban_nav);
-$theme->assign('ban_list', $bans);
-$theme->assign('admin_nick', $userbank->GetProperty("user"));
-
-$theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
-$theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
-$theme->assign('hideadminname', (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()));
-$theme->assign('groupban', (Config::getBool('config.enablegroupbanning') && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
-$theme->assign('friendsban', (Config::getBool('config.enablefriendsbanning') && $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)));
-$theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
-$theme->assign('can_delete', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
-$theme->assign('view_bans', ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN)));
-$theme->assign('can_export', ($userbank->HasAccess(ADMIN_OWNER) || Config::getBool('config.exportpublic')));
-$theme->display('page_bans.tpl');
+Renderer::render($theme, new BanListView(
+    ban_list:        $bans,
+    ban_nav:         $ban_nav,
+    total_bans:      $BanCount,
+    view_bans:       (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN),
+    view_comments:   $view_comments,
+    comment:         $commentMode === false ? false : (int) $commentMode,
+    commenttype:     $commentType,
+    commenttext:     $commentText,
+    ctype:           $commentCtype,
+    cid:             $commentCid,
+    page:            isset($_GET["page"]) ? $page : -1,
+    canedit:         $commentCanedit,
+    othercomments:   $commentOthers,
+    searchlink:      $searchlink,
+    hidetext:        $hidetext,
+    hideadminname:   Config::getBool('banlist.hideadminname') && !$userbank->is_admin(),
+    hideplayerips:   Config::getBool('banlist.hideplayerips') && !$userbank->is_admin(),
+    groupban:        Config::getBool('config.enablegroupbanning') && (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    friendsban:      Config::getBool('config.enablefriendsbanning') && (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    general_unban:   (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS),
+    can_delete:      (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN),
+    can_export:      (bool) $userbank->HasAccess(ADMIN_OWNER) || Config::getBool('config.exportpublic'),
+    admin_postkey:   $_SESSION['banlist_postkey'],
+));

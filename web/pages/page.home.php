@@ -26,9 +26,11 @@ define('IN_HOME', true);
 
 $totalstopped = (int) $GLOBALS['PDO']->query("SELECT count(name) AS cnt FROM `:prefix_banlog`")->single()['cnt'];
 
-$rows = $GLOBALS['PDO']->query("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.authid, b.ip
+$rows = $GLOBALS['PDO']->query("SELECT bl.name, time, bl.sid, bl.bid, b.type, b.authid, b.ip,
+                                CONCAT(se.ip,':',se.port) AS server_addr
 								FROM `:prefix_banlog` AS bl
 								LEFT JOIN `:prefix_bans` AS b ON b.bid = bl.bid
+								LEFT JOIN `:prefix_servers` AS se ON se.sid = bl.sid
 								ORDER BY time DESC LIMIT 10")->resultset();
 
 $GLOBALS['server_qry'] = "";
@@ -68,11 +70,25 @@ foreach ($rows as $row) {
 
     $GLOBALS['server_qry'] .= "LoadServerHostProperty(" . $row['sid'] . ", 'block_" . $row['sid'] . "_$blcount', 'title', 100);";
 
+    // sbpp2026 fields. Stored alongside the legacy keys above so the
+    // new dashboard template reads `$player.bid` / `$player.sname`
+    // without breaking the legacy template (which simply ignores extra
+    // keys). Both themes share this view during the v2.0.0 rollout.
+    $info['bid']           = (int) ($row['bid'] ?? 0);
+    $info['sname']         = (string) ($row['server_addr'] ?? '');
+    $info['blocked_human'] = $info['date'];
+
     $stopped []= $info;
     ++$blcount;
 }
 
 $BanCount = (int) $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_bans`")->single()['cnt'];
+
+$ActiveBanCount = (int) $GLOBALS['PDO']
+    ->query("SELECT count(bid) AS cnt FROM `:prefix_bans`
+             WHERE RemoveType IS NULL
+               AND (length = 0 OR ends > UNIX_TIMESTAMP())")
+    ->single()['cnt'];
 
 $rows = $GLOBALS['PDO']->query("SELECT bid, ba.ip, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, ba.RemoveType, ba.type
 			    				FROM `:prefix_bans` AS ba
@@ -119,17 +135,35 @@ foreach ($rows as $row) {
     $info['short_name'] = trunc($cleaned_name, 40);
 
     if ($row['RemoveType'] == 'D' || $row['RemoveType'] == 'U' || $row['RemoveType'] == 'E' || ($row['length'] && $row['ends'] < time())) {
-        $info['unbanned'] = true;
-
-        if ($row['RemoveType'] == 'D') {
-            $info['ub_reason'] = 'D';
-        } elseif ($row['RemoveType'] == 'U') {
-            $info['ub_reason'] = 'U';
-        } else {
-            $info['ub_reason'] = 'E';
-        }
+        $info['unbanned']  = true;
+        $info['ub_reason'] = match (true) {
+            $row['RemoveType'] === 'D' => 'D',
+            $row['RemoveType'] === 'U' => 'U',
+            default                    => 'E',
+        };
     } else {
         $info['unbanned'] = false;
+    }
+
+    // sbpp2026 fields, derived from the same row so the new template
+    // reads handoff-style keys without re-querying. The legacy template
+    // ignores extras. Stored raw — Smarty's global auto-escape
+    // (init.php: $theme->setEscapeHtml(true)) handles HTML-escaping at
+    // emit time; pre-escaping here would double-encode `&`/`<`/`>` in
+    // ban reasons (AGENTS.md: "Store raw, escape on display").
+    $info['bid']          = (int) $row['bid'];
+    $info['reason']       = (string) ($row['reason'] ?? '');
+    $info['sname']        = (string) ($row['server_addr'] ?? '');
+    $info['length_human'] = $info['length'];
+    $info['banned_human'] = $info['created'];
+    // 'expired' (natural end) vs 'unbanned' (explicit D/U removal) so
+    // .pill / .ban-row state classes can render them differently.
+    if ($info['unbanned']) {
+        $info['state'] = $info['ub_reason'] === 'E' ? 'expired' : 'unbanned';
+    } elseif ($info['perm']) {
+        $info['state'] = 'permanent';
+    } else {
+        $info['state'] = 'active';
     }
 
     array_push($bans, $info);
@@ -176,17 +210,31 @@ foreach ($rows as $row) {
     $info['type']        = $row['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
     if ($row['RemoveType'] == 'D' || $row['RemoveType'] == 'U' || $row['RemoveType'] == 'E' || ($row['length'] && $row['ends'] < time())) {
-        $info['unbanned'] = true;
-
-        if ($row['RemoveType'] == 'D') {
-            $info['ub_reason'] = 'D';
-        } elseif ($row['RemoveType'] == 'U') {
-            $info['ub_reason'] = 'U';
-        } else {
-            $info['ub_reason'] = 'E';
-        }
+        $info['unbanned']  = true;
+        $info['ub_reason'] = match (true) {
+            $row['RemoveType'] === 'D' => 'D',
+            $row['RemoveType'] === 'U' => 'U',
+            default                    => 'E',
+        };
     } else {
         $info['unbanned'] = false;
+    }
+
+    // sbpp2026 fields, mirroring the bans loop above (raw — Smarty
+    // escapes on display).
+    $info['bid']          = (int) $row['bid'];
+    $info['reason']       = (string) ($row['reason'] ?? '');
+    $info['sname']        = (string) ($row['server_addr'] ?? '');
+    $info['length_human'] = $info['length'];
+    $info['banned_human'] = $info['created'];
+    // Lucide icon name. ba.type=2 is text-chat block, otherwise voice.
+    $info['lucide_icon']  = $row['type'] == 2 ? 'message-square-off' : 'mic-off';
+    if ($info['unbanned']) {
+        $info['state'] = $info['ub_reason'] === 'E' ? 'expired' : 'unbanned';
+    } elseif ($info['perm']) {
+        $info['state'] = 'permanent';
+    } else {
+        $info['state'] = 'active';
     }
 
     array_push($comms, $info);
@@ -206,10 +254,12 @@ require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
     total_blocked: $totalstopped,
     players_banned: $bans,
     total_bans: $BanCount,
+    active_bans: $ActiveBanCount,
     players_commed: $comms,
     total_comms: $CommCount,
     access_bans: $serversView->access_bans,
     server_list: $serversView->server_list,
+    total_servers: count($serversView->server_list),
     IN_SERVERS_PAGE: $serversView->IN_SERVERS_PAGE,
     opened_server: $serversView->opened_server,
 ));

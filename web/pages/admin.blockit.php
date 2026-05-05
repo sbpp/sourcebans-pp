@@ -21,26 +21,31 @@ include_once '../init.php';
 
 global $userbank, $theme;
 
+// See admin.kickit.php for why this chdir() is needed.
+chdir(ROOT);
+
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
     echo "No Access";
     die();
 }
 
 $servers = $GLOBALS['PDO']->query("SELECT ip, port, rcon FROM `:prefix_servers` WHERE enabled = 1 ORDER BY modid, sid")->resultset();
-$theme->assign('total', count($servers));
 $serverlinks = [];
 $num         = 0;
 foreach ($servers as $server) {
-    $serverlinks[] = ['num' => $num, 'ip' => $server['ip'], 'port' => $server['port']];
+    $serverlinks[] = ['num' => $num, 'ip' => (string)$server['ip'], 'port' => (string)$server['port']];
     $num++;
 }
-$theme->assign('servers', $serverlinks);
-$theme->assign('check', $_GET['check'] ?? '');
-$theme->assign('type', $_GET['type'] ?? 0);
-$theme->assign('length', $_GET['length'] ?? 0);
 
 $theme->setLeftDelimiter('-{');
 $theme->setRightDelimiter('}-');
-$theme->display('page_blockit.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\BlockitView(
+    csrf_token: CSRF::token(),
+    total: count($serverlinks),
+    check: (string) ($_GET['check'] ?? ''),
+    type: (int) ($_GET['type'] ?? 0),
+    length: (int) ($_GET['length'] ?? 0),
+    servers: $serverlinks,
+));
 $theme->setLeftDelimiter('{');
 $theme->setRightDelimiter('}');

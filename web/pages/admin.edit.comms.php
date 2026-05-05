@@ -22,7 +22,7 @@ if (!defined("IN_SB")) {
     die();
 }
 
-global $theme;
+global $userbank, $theme;
 
 new AdminTabs([], $userbank, $theme);
 
@@ -158,16 +158,27 @@ if (!$res) {
     echo '<script>ShowBox("Error", "There was an error getting details. Maybe the block has been deleted?", "red", "index.php?p=commslist' . $pagelink . '");</script>';
 }
 
-$theme->assign('ban_name', $res['name']);
-$theme->assign('ban_reason', $res['reason']);
-$theme->assign('ban_authid', trim($res['authid']));
-$theme->assign('customreason', (Config::getBool('bans.customreasons')) ? unserialize(Config::get('bans.customreasons')) : false);
-
-$theme->setLeftDelimiter('-{');
-$theme->setRightDelimiter('}-');
-$theme->display('page_admin_edit_comms.tpl');
-$theme->setLeftDelimiter('{');
-$theme->setRightDelimiter('}');
+// Legacy default theme renders this template with non-standard `-{ … }-`
+// delimiters; the sbpp2026 redesign uses the standard pair so the View
+// binds with View::DELIMITERS' default. Switch the Smarty delimiters
+// only for the default theme so both legs of the dual-theme PHPStan
+// matrix render correctly during the v2.0.0 rollout window (#1123 A2).
+// Read the theme via Config rather than the SB_THEME constant so PHPStan
+// (which inlines string sentinels for runtime constants) doesn't fold
+// the comparison to a constant truthiness.
+$useLegacyDelims = Config::get('config.theme') !== 'sbpp2026';
+if ($useLegacyDelims) {
+    $theme->setLeftDelimiter('-{');
+    $theme->setRightDelimiter('}-');
+}
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsEditView(
+    ban_name: (string) $res['name'],
+    ban_authid: trim((string) $res['authid']),
+));
+if ($useLegacyDelims) {
+    $theme->setLeftDelimiter('{');
+    $theme->setRightDelimiter('}');
+}
 ?>
 <script type="text/javascript">window.addEvent('domready', function(){
 <?=$errorScript?>
@@ -175,6 +186,46 @@ $theme->setRightDelimiter('}');
 function changeReason(szListValue)
 {
     $('dreason').style.display = (szListValue == "other" ? "block" : "none");
+}
+// `selectLengthTypeReason` is the post-mount hydrator that picks the
+// existing block's type / length / reason on the <select>s. The legacy
+// default theme inherits it from web/scripts/sourcebans.js, but the
+// sbpp2026 chrome doesn't load sourcebans.js (and #1123 D1 deletes that
+// file outright). Inline a self-contained vanilla version so the call
+// below works on both legs of the dual-theme matrix and keeps working
+// post-D1 — without it, sbpp2026 would throw ReferenceError, leave the
+// type/length/reason at their defaults, and silently clobber the row
+// when the admin clicks Save.
+function selectLengthTypeReason(length, type, reason) {
+    var banlength = document.getElementById('banlength');
+    if (banlength) {
+        for (var i = 0; i < banlength.options.length; i++) {
+            if (banlength.options[i].value === String(length / 60)) {
+                banlength.options[i].selected = true;
+                break;
+            }
+        }
+    }
+    var ttype = document.getElementById('type');
+    if (ttype && ttype.options[type]) ttype.options[type].selected = true;
+
+    var list = document.getElementById('listReason');
+    if (list) {
+        for (var i = 0; i < list.options.length; i++) {
+            if (list.options[i].innerHTML === reason) {
+                list.options[i].selected = true;
+                break;
+            }
+            if (list.options[i].value === 'other') {
+                var txt = document.getElementById('txtReason');
+                var dre = document.getElementById('dreason');
+                if (txt) txt.value = reason;
+                if (dre) dre.style.display = 'block';
+                list.options[i].selected = true;
+                break;
+            }
+        }
+    }
 }
 selectLengthTypeReason('<?=(int) $res['length']?>', '<?=(int) $res['type'] - 1?>', '<?=addslashes($res['reason'])?>');
 </script>

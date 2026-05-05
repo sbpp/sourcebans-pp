@@ -21,6 +21,9 @@ include_once("../init.php");
 include_once("../includes/system-functions.php");
 global $theme, $userbank;
 
+// See admin.kickit.php for why this chdir() is needed.
+chdir(ROOT);
+
 if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS | ADMIN_ADD_MODS)) {
     Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a mod icon, but doesn't have access.");
     die("You don't have access to this!");
@@ -42,10 +45,10 @@ if (isset($_POST['upload'])) {
     }
 }
 
-$theme->assign("title", "Upload Icon");
-$theme->assign("message", $message);
-$theme->assign("input_name", "icon_file");
-$theme->assign("form_name", "iconup");
-$theme->assign("formats", "a GIF, PNG or JPG");
-
-$theme->display('page_uploadfile.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\UploadFileView(
+    title: 'Upload Icon',
+    message: $message,
+    input_name: 'icon_file',
+    form_name: 'iconup',
+    formats: 'a GIF, PNG or JPG',
+));

@@ -1,5 +1,5 @@
 <div class="tabcontent" id="Add new admin">
-    {if NOT $permission_addadmin}
+    {if NOT $can_add_admins}
         Access Denied!
     {else}
         <div id="msg-green" style="display:none;">

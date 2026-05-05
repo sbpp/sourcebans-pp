@@ -211,13 +211,13 @@ foreach ($servers as $key => $server) {
     }
 }
 
-$theme->assign('STEAMID', $SteamID == "" ? "STEAM_0:" : $SteamID);
-$theme->assign('ban_ip', $BanIP);
-$theme->assign('ban_reason', $BanReason);
-$theme->assign('player_name', $PlayerName);
-$theme->assign('subplayer_name', $SubmitterName);
-$theme->assign('player_email', $Email);
-$theme->assign('server_list', $servers);
-$theme->assign('server_selected', $SID);
-
-$theme->display('page_submitban.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\SubmitBanView(
+    STEAMID: $SteamID == "" ? "STEAM_0:" : $SteamID,
+    ban_ip: $BanIP,
+    player_name: $PlayerName,
+    ban_reason: $BanReason,
+    subplayer_name: $SubmitterName,
+    player_email: $Email,
+    server_list: $servers,
+    server_selected: $SID,
+));

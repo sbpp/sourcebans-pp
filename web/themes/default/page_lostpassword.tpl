@@ -18,7 +18,12 @@
         </div>
 
         <div id="loginSubmit">
-            {sb_button text=Ok onclick="sb.api.call(Actions.AuthLostPassword, {email: sb.$id('email').value}).then(applyApiResponse);" class=ok id=alogin submit=false}
+            {* `sb.$id('email')` would otherwise be parsed by Smarty as a *}
+            {* `{$id}` reference inside this tag's onclick attribute and trip *}
+            {* SmartyTemplateRule once a paired View binds to this template; *}
+            {* `document.getElementById` is the literal body of `sb.$id` *}
+            {* (web/scripts/sb.js), so the runtime behaviour is unchanged. *}
+            {sb_button text=Ok onclick="sb.api.call(Actions.AuthLostPassword, {email: document.getElementById('email').value}).then(applyApiResponse);" class=ok id=alogin submit=false}
         </div>
 
     </div>
