@@ -28,8 +28,70 @@ if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();
 }
+
+/**
+ * Emits an inline `<script>` that surfaces a toast via
+ * `window.SBPP.showToast` (theme.js) on the current response, with
+ * `sb.message.*` (sb.js) as a fallback. Replaces the v1.x-era
+ * `<script>ShowBox(…)</script>` calls — `ShowBox` shipped in
+ * `web/scripts/sourcebans.js`, which was deleted in #1123 D1 / #1160,
+ * so the legacy callsite throws ReferenceError and silently swallows
+ * the message in the sbpp2026 chrome (#1176).
+ *
+ * No redirect: the submit page re-renders its own form on the same URL
+ * (validation-error replay or post-success reset to empty values), so
+ * the toast fires inline on whichever response the browser is already
+ * loading. The helper waits for `DOMContentLoaded` before calling
+ * `window.SBPP.showToast` because page handlers emit this `<script>`
+ * mid-body, before `core/footer.tpl` includes `theme.js` — the IIFE
+ * runs synchronously during parse, when `window.SBPP` is still
+ * undefined.
+ *
+ * `$kind` is one of `'info' | 'success' | 'warn' | 'error'`, matching
+ * the `ToastOpts.kind` typedef in `web/themes/default/js/theme.js`.
+ *
+ * Strings are JSON-encoded with the same flag set as the canonical
+ * helper in `web/pages/admin.edit.ban.php` so embedded quotes /
+ * newlines / non-ASCII bytes survive the round-trip into the script
+ * body without further escaping.
+ */
+function emitSubmitToast(string $kind, string $title, string $body): void
+{
+    $flags = JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+    $kindJs = json_encode($kind, $flags);
+    $titleJs = json_encode($title, $flags);
+    $bodyJs = json_encode($body, $flags);
+    echo <<<HTML
+<script>
+(function () {
+    var kind = {$kindJs};
+    var title = {$titleJs};
+    var body = {$bodyJs};
+    function show() {
+        var SBPP = window.SBPP;
+        if (SBPP && typeof SBPP.showToast === 'function') {
+            SBPP.showToast({ kind: kind, title: title, body: body });
+            return;
+        }
+        if (window.sb && window.sb.message) {
+            var fn = (kind === 'error') ? window.sb.message.error
+                : (kind === 'success') ? window.sb.message.success
+                : window.sb.message.info;
+            if (typeof fn === 'function') fn(title, body || '');
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', show);
+    } else {
+        show();
+    }
+})();
+</script>
+HTML;
+}
+
 if (!Config::getBool('config.enablesubmit')) {
-    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
+    emitSubmitToast('error', 'Submissions disabled', 'This page is disabled. You should not be here.');
     PageDie();
 }
 if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
@@ -90,7 +152,15 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
 
 
     if (!$validsubmit) {
-        print "<script>ShowBox('Error', '$errors', 'red');</script>";
+        // Validation errors are accumulated as `* msg<br>` HTML
+        // fragments (legacy ShowBox markup). Convert <br> separators
+        // to plain spaces so the toast `body` (rendered as text via
+        // theme.js's escapeHtml) reads as a single line per error.
+        emitSubmitToast(
+            'error',
+            'Please fix the following',
+            (string) preg_replace('#<br\s*/?>#i', ' ', $errors)
+        );
     }
 
     if ($validsubmit) {
@@ -186,9 +256,17 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 ]);
             }
 
-            print "<script>ShowBox('Successful', 'Your submission has been added into the database, and will be reviewed by one of our admins.', 'green');</script>";
+            emitSubmitToast(
+                'success',
+                'Submitted',
+                'Your submission has been added into the database, and will be reviewed by one of our admins.'
+            );
         } else {
-            print "<script>ShowBox('Error', 'There was an error uploading your demo to the server. Please try again later.', 'red');</script>";
+            emitSubmitToast(
+                'error',
+                'Upload failed',
+                'There was an error uploading your demo to the server. Please try again later.'
+            );
             Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }
     }

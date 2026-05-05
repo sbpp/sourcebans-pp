@@ -42,17 +42,16 @@
  *     drives that real flow end-to-end via the UI; it does not
  *     introduce a new `row-action-approve` testid.
  *
- *   - The page handler `web/pages/page.submit.php` still emits
- *     `print "<script>ShowBox('Successful', …)</script>"` on success,
- *     but `ShowBox` was deleted in #1123 D1 (it lived in
- *     `web/scripts/sourcebans.js`). The script tag therefore fires a
- *     ReferenceError and no visible "thank you" toast lands in the
- *     sbpp2026 chrome. The deterministic terminal state we anchor on
- *     instead is the form-reset behaviour of page.submit.php (every
- *     captured POST value is set to `""` before re-rendering on
- *     success), so the BanReason textarea round-trips to empty. We
- *     flag this in the PR body so the missing visible feedback gets
- *     a follow-up; it doesn't block this slice's contract.
+ *   - The deterministic terminal state we anchor on for a successful
+ *     submission is the form-reset behaviour of page.submit.php
+ *     (every captured POST value is set to `""` before re-rendering
+ *     on success), so the BanReason textarea round-trips to empty.
+ *     The handler also emits a success toast via
+ *     `window.SBPP.showToast` (#1176 replaced the dead `ShowBox(...)`
+ *     callsite that ate it before this slice landed), but the toast
+ *     is animated chrome that races with the navigation, not server
+ *     state — the form-reset anchor stays the deterministic hook
+ *     even now that the toast lands.
  *
  *   - The inline ban-from-submission handler in
  *     `page_admin_bans_submissions.tpl` originally referenced the
