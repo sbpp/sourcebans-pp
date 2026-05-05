@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SBPP — Form inputs</title>
+<style>
+  html,body { margin:0; background:#e0e0e0; }
+  body { font: 11px Verdana, Arial, sans-serif; color:#444; padding:18px; }
+  label { display:block; font-size:11px; color:#444; margin-bottom:4px; font-weight:700; }
+  .textbox{ background:#fff; font-size:13px; padding:6px 12px; border:1px solid #ccc; border-radius:3px; width:240px; box-sizing:border-box; }
+  .select{ background:#fff; font-size:13px; padding:5px 8px; border:1px solid #ccc; border-radius:3px; width:240px; }
+  .file { background:#fff; border:1px solid #ccc; border-radius:3px; padding:3px; width:240px; }
+  .searchbox { width:200px; padding:10px 6px 12px 6px; background:#dadfe1; color:#34495e; border:0; }
+  .row { display:grid; grid-template-columns: repeat(2, 1fr); gap:14px 24px; }
+  .badentry { color:#cc0000; font-size:11px; padding-top:3px; }
+  .mandatory { color:#ff0000; }
+</style></head>
+<body>
+<div class="row">
+  <div><label>SteamID <span class="mandatory">*</span></label><input class="textbox" value="STEAM_0:1:12345678"></div>
+  <div><label>Reason</label><select class="select"><option>Cheating / Hacking</option><option>VAC Ban</option></select></div>
+  <div><label>Demo upload</label><input type="file" class="file"></div>
+  <div><label>Header search (dark)</label><input class="searchbox" placeholder="Search ban list…"></div>
+  <div><label>Length</label><input class="textbox" value="" placeholder="0 = permanent"><div class="badentry">Required field.</div></div>
+  <div><label>Mod</label><select class="select"><option>Team Fortress 2</option><option>Counter-Strike: GO</option><option>Garry's Mod</option></select></div>
+</div>
+</body></html>

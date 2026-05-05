@@ -1,0 +1,175 @@
+/* ============================================================
+   SourceBans++ — Color & Type Tokens
+   Extracted from the default theme (web/themes/default/css/main.css)
+   The palette is a warm, desaturated Source-engine / TF2-adjacent
+   greige + chocolate brown system with a single rust accent and a
+   secondary blue-slate accent. Banlist rows introduce 4 muted
+   "state" pastels (green / red / amber / grey).
+   ============================================================ */
+
+/* ---------- Webfonts (lifted directly from the theme) ---------- */
+@font-face {
+  font-family: "TF2 Build";
+  src: url("fonts/tf2build.ttf") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Danube";
+  src: url("fonts/DANUBE__.TTF") format("truetype");
+  font-display: swap;
+}
+@font-face {
+  font-family: "Danube Bold";
+  src: url("fonts/DANUB___.TTF") format("truetype");
+  font-display: swap;
+}
+
+/* ---------- Color tokens ---------- */
+:root {
+  /* Surface / page chrome */
+  --sb-page-bg:        #bab5b2;   /* the signature greige body */
+  --sb-tab-bar:        #38322c;   /* dark chocolate top + footer bar */
+  --sb-tab-active:     #2a2723;   /* near-black active tab + table head */
+  --sb-table-head:     #2a2723;
+  --sb-card-bg:        #e0e0e0;   /* admin / login / cpanel surface */
+  --sb-card-bg-soft:   #eaebeb;   /* subtle row, current-theme holder */
+  --sb-card-bg-medium: #a69e97;   /* h3 / front-module-line */
+
+  /* Foreground */
+  --sb-fg-1:        #444444;     /* body text */
+  --sb-fg-2:        #4d4742;     /* link rest, content title */
+  --sb-fg-3:        #919191;     /* footer dim text */
+  --sb-fg-on-dark:  #e6e6e6;     /* table head, footer-on-dark text */
+  --sb-fg-white:    #ffffff;
+
+  /* Brand accents */
+  --sb-rust:        #b05015;     /* link hover / Source-engine rust */
+  --sb-rust-soft:   #bd754b;     /* user link in header */
+  --sb-orange:      #cf7336;     /* cancel button */
+  --sb-plum:        #7d4071;     /* save button */
+  --sb-blue:        #5885a2;     /* primary button (login/search) */
+  --sb-info-blue:   #3bafda;     /* refresh button rest */
+  --sb-info-blue-2: #4fc1e9;     /* refresh button hover */
+  --sb-game-green:  #8cc152;     /* game button rest */
+  --sb-game-green-2:#a0d468;     /* game button hover */
+  --sb-ok-green:    #729e42;     /* "ok" button rest */
+  --sb-ok-green-2:  #558126;     /* "ok" button hover */
+
+  /* Admin sidebar (left rail in admin panel) */
+  --sb-admin-rail:        #4f463e;
+  --sb-admin-rail-hover:  #3d3631;
+
+  /* Banlist row states */
+  --sb-state-unbanned:    #c8f7c5;    /* pastel green */
+  --sb-state-permanent:   #f1a9a0;    /* pastel red */
+  --sb-state-banned:      #fde3a7;    /* pastel amber */
+  --sb-state-default:     #e0e0e0;    /* neutral grey */
+
+  /* Status / dialog headers */
+  --sb-h2-error-bg:    #b46d6d;  --sb-h2-error-bd:    #983b3b;
+  --sb-h2-info-bg:     #6d8bb4;  --sb-h2-info-bd:     #3b6298;
+  --sb-h2-warning-bg:  #b4ae6d;  --sb-h2-warning-bd:  #887a2c;
+  --sb-h2-ok-bg:       #75b46d;  --sb-h2-ok-bd:       #46983b;
+
+  /* Inline message blocks */
+  --sb-msg-red-bg:     #fefad3;  --sb-msg-red-fg:     #e80909;
+  --sb-msg-green-bg:   #fcf7c9;  --sb-msg-green-fg:   #339933;
+  --sb-msg-blue-bg:    #fcf7c9;  --sb-msg-blue-fg:    #0066ff;
+  --sb-msg-amber-bg:   #ffdd87;  --sb-msg-amber-fg:   #8a6d3b;
+  --sb-msg-amber-bd:   #ffce54;
+  --sb-msg-cyan-bg:    #7cd1ef;  --sb-msg-cyan-bd:    #4fc1e9;
+
+  /* Borders & rules */
+  --sb-border-soft:    #dddddd;
+  --sb-border-medium:  #cccccc;
+  --sb-border-strong:  #aaa9a9;
+  --sb-border-table:   #c5c5c5;
+
+  /* Selection / search input on dark */
+  --sb-search-bg:    #dadfe1;
+  --sb-search-fg:    #34495e;
+
+  /* Tooltip surface (the tooltip is over a translucent slate) */
+  --sb-tooltip-bg:   rgba(108, 122, 137, 0.7);
+
+  /* ---------- Type tokens ---------- */
+  --sb-font-body: Verdana, Arial, Tahoma, "Trebuchet MS", Sans-Serif,
+                  Georgia, Courier, "Times New Roman", Serif;
+  --sb-font-display: "TF2 Build", "Danube Bold", Verdana, sans-serif;
+  --sb-font-display-alt: "Danube", "TF2 Build", Verdana, sans-serif;
+
+  --sb-text-xxs: 10px;          /* table cell body text */
+  --sb-text-xs:  11px;          /* default body, tabs, button label */
+  --sb-text-sm:  12px;          /* breadcrumb, h3, front module */
+  --sb-text-md:  13px;          /* nav, button, select, textbox */
+  --sb-text-lg:  14px;          /* h2, login button, search button */
+  --sb-text-xl:  16px;          /* msg block bold */
+  --sb-text-2xl: 18px;          /* large title, login medium input */
+  --sb-text-3xl: 26px;          /* page content title */
+
+  --sb-leading-tight:  1.2;
+  --sb-leading-normal: 1.35;
+  --sb-leading-loose:  1.5;
+
+  /* ---------- Radius / shadow / motion ---------- */
+  --sb-radius-sm: 3px;          /* buttons, inputs */
+  --sb-radius-0:  0px;          /* table heads, tabs */
+
+  --sb-shadow-card: 0 1px 0 rgba(0,0,0,0.05);
+
+  --sb-ease: all 0.5s ease;     /* the theme's stock transition */
+}
+
+/* ---------- Semantic helpers ---------- */
+.sb-h1, .sb-content-title {
+  font-family: var(--sb-font-body);
+  font-size:   var(--sb-text-3xl);
+  color:       var(--sb-fg-2);
+  margin-bottom: 10px;
+}
+.sb-h2 {
+  font-family: var(--sb-font-body);
+  font-size: var(--sb-text-lg);
+  color: var(--sb-fg-white);
+  font-weight: 700;
+  padding: 4px 10px 5px;
+  margin: 0;
+}
+.sb-h3 {
+  font-family: var(--sb-font-body);
+  font-size: var(--sb-text-sm);
+  color: var(--sb-fg-on-dark);
+  background: var(--sb-card-bg-medium);
+  padding: 10px;
+  font-weight: 700;
+  margin: 5px 0 15px;
+}
+.sb-display {
+  font-family: var(--sb-font-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.sb-tab-label {
+  font-family: var(--sb-font-body);
+  font-size: var(--sb-text-xs);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.sb-breadcrumb {
+  font-size: var(--sb-text-sm);
+  text-transform: uppercase;
+  color: var(--sb-fg-1);
+}
+.sb-table-head {
+  font-family: var(--sb-font-body);
+  font-size: var(--sb-text-xs);
+  font-weight: 700;
+  background: var(--sb-table-head);
+  color: var(--sb-fg-on-dark);
+  text-transform: uppercase;
+  padding: 6px 10px;
+  height: 30px;
+}
+.sb-body { font: var(--sb-text-xs)/var(--sb-leading-normal) var(--sb-font-body); color: var(--sb-fg-1); }
+.sb-mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
