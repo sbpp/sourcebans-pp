@@ -19,286 +19,140 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 
 global $userbank, $theme;
 
-//serverlist
-$server_list  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
+// Server list, plus a server-built `<script>` blob the legacy
+// default-theme template emits via {$server_script nofilter} to populate
+// each `<option id="ssSID">Loading…</option>`. The legacy blob called
+// `LoadServerHost('SID', 'id', 'ssSID', '', '', false, 200)` from
+// sourcebans.js per option; that helper is removed at #1123 D1, so we
+// emit a vanilla `sb.api.call(Actions.ServersHostPlayers, {sid})` per
+// option here — same pattern B5 established for the public servers
+// list, just in a server-built script tag because the legacy template
+// has no inline `{literal}<script>…{/literal}` of its own.
+//
+// The new sbpp2026 template owns its own inline initializer (carries an
+// `{if false}…{/if}` parity reference to `$server_script` to keep
+// SmartyTemplateRule's "unused property" check happy on the sbpp2026
+// PHPStan leg) and ignores the blob built here.
+//
+// Inputs to the blob are server-controlled integers (`:prefix_servers.sid`)
+// only — no user input flows into the emitted JS. Safe under the
+// `{$server_script nofilter}` annotation in the legacy template.
+$server_rows  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
 $servers      = [];
-$serverscript = "<script type=\"text/javascript\">";
-foreach ($server_list as $row) {
-    $info = [];
-    $serverscript .= "LoadServerHost('" . $row['sid'] . "', 'id', 'ss" . $row['sid'] . "', '', '', false, 200);";
-    $info['sid']  = $row['sid'];
-    $info['ip']   = $row['ip'];
-    $info['port'] = $row['port'];
-    array_push($servers, $info);
+$serverscript = '<script>(function(){'
+    . 'if (typeof sb === "undefined" || !sb || !sb.api || typeof Actions === "undefined") return;';
+foreach ($server_rows as $row) {
+    $sid          = (int) $row['sid'];
+    $servers[]    = [
+        'sid'  => $sid,
+        'ip'   => (string) $row['ip'],
+        'port' => (int) $row['port'],
+    ];
+    $serverscript .= 'sb.api.call(Actions.ServersHostPlayers,{sid:' . $sid . ',trunchostname:200}).then(function(r){'
+        . 'var el=document.getElementById("ss' . $sid . '");'
+        . 'if(!el)return;'
+        . 'if(!r||!r.ok||!r.data){el.textContent="Offline";return;}'
+        . 'var d=r.data;'
+        . 'if(d.error==="connect"){el.textContent="Offline ("+d.ip+":"+d.port+")";return;}'
+        . 'el.textContent=(d.hostname||"")+" ("+d.ip+":"+d.port+")";'
+        . '});';
 }
-$serverscript .= "</script>";
+$serverscript .= '})();</script>';
 
-//webgrouplist
 $webgroup_list = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = '1'")->resultset();
 $webgroups     = [];
 foreach ($webgroup_list as $row) {
-    $data         = [];
-    $data['gid']  = $row['gid'];
-    $data['name'] = $row['name'];
-
-    array_push($webgroups, $data);
+    $webgroups[] = [
+        'gid'  => $row['gid'],
+        'name' => (string) $row['name'],
+    ];
 }
 
-//serveradmingrouplist
 $srvadmgroup_list = $GLOBALS['PDO']->query("SELECT name FROM `:prefix_srvgroups` ORDER BY name ASC")->resultset();
 $srvadmgroups     = [];
 foreach ($srvadmgroup_list as $row) {
-    $data         = [];
-    $data['name'] = $row['name'];
-
-    array_push($srvadmgroups, $data);
+    $srvadmgroups[] = ['name' => (string) $row['name']];
 }
 
-//servergroup
 $srvgroup_list = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = '3'")->resultset();
 $srvgroups     = [];
 foreach ($srvgroup_list as $row) {
-    $data         = [];
-    $data['gid']  = $row['gid'];
-    $data['name'] = $row['name'];
-
-    array_push($srvgroups, $data);
+    $srvgroups[] = [
+        'gid'  => $row['gid'],
+        'name' => (string) $row['name'],
+    ];
 }
 
-//webpermissions
-$webflag[] = array(
-    "name" => "Root Admin",
-    "flag" => "ADMIN_OWNER"
-);
-$webflag[] = array(
-    "name" => "View admins",
-    "flag" => "ADMIN_LIST_ADMINS"
-);
-$webflag[] = array(
-    "name" => "Add admins",
-    "flag" => "ADMIN_ADD_ADMINS"
-);
-$webflag[] = array(
-    "name" => "Edit admins",
-    "flag" => "ADMIN_EDIT_ADMINS"
-);
-$webflag[] = array(
-    "name" => "Delete admins",
-    "flag" => "ADMIN_DELETE_ADMINS"
-);
-$webflag[] = array(
-    "name" => "View servers",
-    "flag" => "ADMIN_LIST_SERVERS"
-);
-$webflag[] = array(
-    "name" => "Add servers",
-    "flag" => "ADMIN_ADD_SERVER"
-);
-$webflag[] = array(
-    "name" => "Edit servers",
-    "flag" => "ADMIN_EDIT_SERVERS"
-);
-$webflag[] = array(
-    "name" => "Delete servers",
-    "flag" => "ADMIN_DELETE_SERVERS"
-);
-$webflag[] = array(
-    "name" => "Add bans",
-    "flag" => "ADMIN_ADD_BAN"
-);
-$webflag[] = array(
-    "name" => "Edit own bans",
-    "flag" => "ADMIN_EDIT_OWN_BANS"
-);
-$webflag[] = array(
-    "name" => "Edit groups bans",
-    "flag" => "ADMIN_EDIT_GROUP_BANS"
-);
-$webflag[] = array(
-    "name" => "Edit all bans",
-    "flag" => "ADMIN_EDIT_ALL_BANS"
-);
-$webflag[] = array(
-    "name" => "Ban protests",
-    "flag" => "ADMIN_BAN_PROTESTS"
-);
-$webflag[] = array(
-    "name" => "Ban submissions",
-    "flag" => "ADMIN_BAN_SUBMISSIONS"
-);
-$webflag[] = array(
-    "name" => "Delete bans",
-    "flag" => "ADMIN_DELETE_BAN"
-);
-$webflag[] = array(
-    "name" => "Unban own bans",
-    "flag" => "ADMIN_UNBAN_OWN_BANS"
-);
-$webflag[] = array(
-    "name" => "Unban group bans",
-    "flag" => "ADMIN_UNBAN_GROUP_BANS"
-);
-$webflag[] = array(
-    "name" => "Unban all bans",
-    "flag" => "ADMIN_UNBAN"
-);
-$webflag[] = array(
-    "name" => "Import bans",
-    "flag" => "ADMIN_BAN_IMPORT"
-);
-$webflag[] = array(
-    "name" => "Submission email notifying",
-    "flag" => "ADMIN_NOTIFY_SUB"
-);
-$webflag[] = array(
-    "name" => "Protest email notifying",
-    "flag" => "ADMIN_NOTIFY_PROTEST"
-);
-$webflag[] = array(
-    "name" => "List groups",
-    "flag" => "ADMIN_LIST_GROUPS"
-);
-$webflag[] = array(
-    "name" => "Add groups",
-    "flag" => "ADMIN_ADD_GROUP"
-);
-$webflag[] = array(
-    "name" => "Edit groups",
-    "flag" => "ADMIN_EDIT_GROUPS"
-);
-$webflag[] = array(
-    "name" => "Delete groups",
-    "flag" => "ADMIN_DELETE_GROUPS"
-);
-$webflag[] = array(
-    "name" => "Web settings",
-    "flag" => "ADMIN_WEB_SETTINGS"
-);
-$webflag[] = array(
-    "name" => "List mods",
-    "flag" => "ADMIN_LIST_MODS"
-);
-$webflag[] = array(
-    "name" => "Add mods",
-    "flag" => "ADMIN_ADD_MODS"
-);
-$webflag[] = array(
-    "name" => "Edit mods",
-    "flag" => "ADMIN_EDIT_MODS"
-);
-$webflag[] = array(
-    "name" => "Delete mods",
-    "flag" => "ADMIN_DELETE_MODS"
-);
-$webflags  = [];
-foreach ($webflag as $flag) {
-    $data['name'] = $flag["name"];
-    $data['flag'] = $flag["flag"];
+// Web-permission catalogue. Submitted as comma-joined `ADMIN_*` constant
+// names; admin.admins.php resolves each via `constant()` to build the
+// bitmask filter — same wire shape the legacy box emitted.
+$webflag = [
+    ['name' => 'Root Admin',                 'flag' => 'ADMIN_OWNER'],
+    ['name' => 'View admins',                'flag' => 'ADMIN_LIST_ADMINS'],
+    ['name' => 'Add admins',                 'flag' => 'ADMIN_ADD_ADMINS'],
+    ['name' => 'Edit admins',                'flag' => 'ADMIN_EDIT_ADMINS'],
+    ['name' => 'Delete admins',              'flag' => 'ADMIN_DELETE_ADMINS'],
+    ['name' => 'View servers',               'flag' => 'ADMIN_LIST_SERVERS'],
+    ['name' => 'Add servers',                'flag' => 'ADMIN_ADD_SERVER'],
+    ['name' => 'Edit servers',               'flag' => 'ADMIN_EDIT_SERVERS'],
+    ['name' => 'Delete servers',             'flag' => 'ADMIN_DELETE_SERVERS'],
+    ['name' => 'Add bans',                   'flag' => 'ADMIN_ADD_BAN'],
+    ['name' => 'Edit own bans',              'flag' => 'ADMIN_EDIT_OWN_BANS'],
+    ['name' => 'Edit groups bans',           'flag' => 'ADMIN_EDIT_GROUP_BANS'],
+    ['name' => 'Edit all bans',              'flag' => 'ADMIN_EDIT_ALL_BANS'],
+    ['name' => 'Ban protests',               'flag' => 'ADMIN_BAN_PROTESTS'],
+    ['name' => 'Ban submissions',            'flag' => 'ADMIN_BAN_SUBMISSIONS'],
+    ['name' => 'Delete bans',                'flag' => 'ADMIN_DELETE_BAN'],
+    ['name' => 'Unban own bans',             'flag' => 'ADMIN_UNBAN_OWN_BANS'],
+    ['name' => 'Unban group bans',           'flag' => 'ADMIN_UNBAN_GROUP_BANS'],
+    ['name' => 'Unban all bans',             'flag' => 'ADMIN_UNBAN'],
+    ['name' => 'Import bans',                'flag' => 'ADMIN_BAN_IMPORT'],
+    ['name' => 'Submission email notifying', 'flag' => 'ADMIN_NOTIFY_SUB'],
+    ['name' => 'Protest email notifying',    'flag' => 'ADMIN_NOTIFY_PROTEST'],
+    ['name' => 'List groups',                'flag' => 'ADMIN_LIST_GROUPS'],
+    ['name' => 'Add groups',                 'flag' => 'ADMIN_ADD_GROUP'],
+    ['name' => 'Edit groups',                'flag' => 'ADMIN_EDIT_GROUPS'],
+    ['name' => 'Delete groups',              'flag' => 'ADMIN_DELETE_GROUPS'],
+    ['name' => 'Web settings',               'flag' => 'ADMIN_WEB_SETTINGS'],
+    ['name' => 'List mods',                  'flag' => 'ADMIN_LIST_MODS'],
+    ['name' => 'Add mods',                   'flag' => 'ADMIN_ADD_MODS'],
+    ['name' => 'Edit mods',                  'flag' => 'ADMIN_EDIT_MODS'],
+    ['name' => 'Delete mods',                'flag' => 'ADMIN_DELETE_MODS'],
+];
 
-    array_push($webflags, $data);
-}
+// SourceMod-permission catalogue. Same wire shape (comma-joined `SM_*`
+// constant names).
+$serverflag = [
+    ['name' => 'Full Admin',     'flag' => 'SM_ROOT'],
+    ['name' => 'Reserved slot',  'flag' => 'SM_RESERVED_SLOT'],
+    ['name' => 'Generic admin',  'flag' => 'SM_GENERIC'],
+    ['name' => 'Kick',           'flag' => 'SM_KICK'],
+    ['name' => 'Ban',            'flag' => 'SM_BAN'],
+    ['name' => 'Un-ban',         'flag' => 'SM_UNBAN'],
+    ['name' => 'Slay',           'flag' => 'SM_SLAY'],
+    ['name' => 'Map change',     'flag' => 'SM_MAP'],
+    ['name' => 'Change cvars',   'flag' => 'SM_CVAR'],
+    ['name' => 'Run configs',    'flag' => 'SM_CONFIG'],
+    ['name' => 'Admin chat',     'flag' => 'SM_CHAT'],
+    ['name' => 'Start votes',    'flag' => 'SM_VOTE'],
+    ['name' => 'Password server','flag' => 'SM_PASSWORD'],
+    ['name' => 'RCON',           'flag' => 'SM_RCON'],
+    ['name' => 'Enable Cheats',  'flag' => 'SM_CHEATS'],
+    ['name' => 'Custom flag 1',  'flag' => 'SM_CUSTOM1'],
+    ['name' => 'Custom flag 2',  'flag' => 'SM_CUSTOM2'],
+    ['name' => 'Custom flag 3',  'flag' => 'SM_CUSTOM3'],
+    ['name' => 'Custom flag 4',  'flag' => 'SM_CUSTOM4'],
+    ['name' => 'Custom flag 5',  'flag' => 'SM_CUSTOM5'],
+    ['name' => 'Custom flag 6',  'flag' => 'SM_CUSTOM6'],
+];
 
-//server permissions
-$serverflag[] = array(
-    "name" => "Full Admin",
-    "flag" => "SM_ROOT"
-);
-$serverflag[] = array(
-    "name" => "Reserved slot",
-    "flag" => "SM_RESERVED_SLOT"
-);
-$serverflag[] = array(
-    "name" => "Generic admin",
-    "flag" => "SM_GENERIC"
-);
-$serverflag[] = array(
-    "name" => "Kick",
-    "flag" => "SM_KICK"
-);
-$serverflag[] = array(
-    "name" => "Ban",
-    "flag" => "SM_BAN"
-);
-$serverflag[] = array(
-    "name" => "Un-ban",
-    "flag" => "SM_UNBAN"
-);
-$serverflag[] = array(
-    "name" => "Slay",
-    "flag" => "SM_SLAY"
-);
-$serverflag[] = array(
-    "name" => "Map change",
-    "flag" => "SM_MAP"
-);
-$serverflag[] = array(
-    "name" => "Change cvars",
-    "flag" => "SM_CVAR"
-);
-$serverflag[] = array(
-    "name" => "Run configs",
-    "flag" => "SM_CONFIG"
-);
-$serverflag[] = array(
-    "name" => "Admin chat",
-    "flag" => "SM_CHAT"
-);
-$serverflag[] = array(
-    "name" => "Start votes",
-    "flag" => "SM_VOTE"
-);
-$serverflag[] = array(
-    "name" => "Password server",
-    "flag" => "SM_PASSWORD"
-);
-$serverflag[] = array(
-    "name" => "RCON",
-    "flag" => "SM_RCON"
-);
-$serverflag[] = array(
-    "name" => "Enable Cheats",
-    "flag" => "SM_CHEATS"
-);
-$serverflag[] = array(
-    "name" => "Custom flag 1",
-    "flag" => "SM_CUSTOM1"
-);
-$serverflag[] = array(
-    "name" => "Custom flag 2",
-    "flag" => "SM_CUSTOM2"
-);
-$serverflag[] = array(
-    "name" => "Custom flag 3",
-    "flag" => "SM_CUSTOM3"
-);
-$serverflag[] = array(
-    "name" => "Custom flag 4",
-    "flag" => "SM_CUSTOM4"
-);
-$serverflag[] = array(
-    "name" => "Custom flag 5",
-    "flag" => "SM_CUSTOM5"
-);
-$serverflag[] = array(
-    "name" => "Custom flag 6",
-    "flag" => "SM_CUSTOM6"
-);
-$serverflags  = [];
-foreach ($serverflag as $flag) {
-    $data['name'] = $flag["name"];
-    $data['flag'] = $flag["flag"];
-
-    array_push($serverflags, $data);
-}
-
-
-$theme->assign('server_list', $servers);
-$theme->assign('server_script', $serverscript);
-$theme->assign('webgroup_list', $webgroups);
-$theme->assign('srvadmgroup_list', $srvadmgroups);
-$theme->assign('srvgroup_list', $srvgroups);
-$theme->assign('admwebflag_list', $webflags);
-$theme->assign('admsrvflag_list', $serverflags);
-$theme->assign('can_editadmin', $userbank->HasAccess(ADMIN_EDIT_ADMINS | ADMIN_OWNER));
-
-$theme->display('box_admin_admins_search.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsSearchView(
+    can_editadmin:    $userbank->HasAccess(ADMIN_EDIT_ADMINS | ADMIN_OWNER),
+    server_list:      $servers,
+    server_script:    $serverscript,
+    webgroup_list:    $webgroups,
+    srvadmgroup_list: $srvadmgroups,
+    srvgroup_list:    $srvgroups,
+    admwebflag_list:  $webflag,
+    admsrvflag_list:  $serverflag,
+));

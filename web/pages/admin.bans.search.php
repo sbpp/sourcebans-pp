@@ -18,39 +18,54 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 global $userbank, $theme;
-$admin_list   = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` ORDER BY user ASC")->resultset();
-$server_list  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
-$servers      = [];
-$serverscript = "<script type=\"text/javascript\">";
-foreach ($server_list as $row) {
-    $info = [];
-    $serverscript .= "LoadServerHost('" . $row['sid'] . "', 'id', 'ss" . $row['sid'] . "', '', '', false, 200);";
-    $info['sid']  = $row['sid'];
-    $info['ip']   = $row['ip'];
-    $info['port'] = $row['port'];
-    $servers[] = $info;
-}
-$serverscript .= "</script>";
-$page = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT, ['options' => ['default' => 1, 'min_range' => 1]]);
 
-$theme->assign('hideplayerips', (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()));
-$theme->assign('is_admin', $userbank->is_admin());
-$theme->assign('admin_list', $admin_list);
-$theme->assign('server_list', $servers);
-$theme->assign('server_script', $serverscript);
+$admin_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` ORDER BY user ASC")->resultset();
 
-$theme->display('box_admin_bans_search.tpl');
-?>
-<script type="text/javascript">
-function switch_length(opt)
-{
-    if (opt.options[opt.selectedIndex].value=='other') {
-        $('other_length').setStyle('display', 'block');
-        $('other_length').focus();
-        $('length').setStyle('width', '20px');
-    } else {
-        $('other_length').setStyle('display', 'none');
-        $('length').setStyle('width', '210px');
-    }
+// Server list, plus a server-built `<script>` blob the legacy
+// default-theme template emits via {$server_script nofilter} to populate
+// each `<option id="ssSID">Loading…</option>`. The legacy blob called
+// `LoadServerHost('SID', 'id', 'ssSID', '', '', false, 200)` from
+// sourcebans.js per option; that helper is removed at #1123 D1, so we
+// emit a vanilla `sb.api.call(Actions.ServersHostPlayers, {sid})` per
+// option here — same pattern B5 established for the public servers
+// list, just in a server-built script tag because the legacy template
+// has no inline `{literal}<script>…{/literal}` of its own.
+//
+// The new sbpp2026 template owns its own inline initializer (carries an
+// `{if false}…{/if}` parity reference to `$server_script` to keep
+// SmartyTemplateRule's "unused property" check happy on the sbpp2026
+// PHPStan leg) and ignores the blob built here.
+//
+// Inputs to the blob are server-controlled integers (`:prefix_servers.sid`)
+// only — no user input flows into the emitted JS. Safe under the
+// `{$server_script nofilter}` annotation in the legacy template.
+$server_rows  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
+$server_list  = [];
+$serverscript = '<script>(function(){'
+    . 'if (typeof sb === "undefined" || !sb || !sb.api || typeof Actions === "undefined") return;';
+foreach ($server_rows as $row) {
+    $sid           = (int) $row['sid'];
+    $server_list[] = [
+        'sid'  => $sid,
+        'ip'   => (string) $row['ip'],
+        'port' => (int) $row['port'],
+    ];
+    $serverscript .= 'sb.api.call(Actions.ServersHostPlayers,{sid:' . $sid . ',trunchostname:200}).then(function(r){'
+        . 'var el=document.getElementById("ss' . $sid . '");'
+        . 'if(!el)return;'
+        . 'if(!r||!r.ok||!r.data){el.textContent="Offline";return;}'
+        . 'var d=r.data;'
+        . 'if(d.error==="connect"){el.textContent="Offline ("+d.ip+":"+d.port+")";return;}'
+        . 'el.textContent=(d.hostname||"")+" ("+d.ip+":"+d.port+")";'
+        . '});';
 }
-</script>
+$serverscript .= '})();</script>';
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansSearchView(
+    admin_list:    $admin_list,
+    server_list:   $server_list,
+    server_script: $serverscript,
+    hideplayerips: (Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()),
+    hideadminname: (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()),
+    is_admin:      $userbank->is_admin(),
+));

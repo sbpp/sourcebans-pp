@@ -20,6 +20,7 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 global $theme;
 
 $admin_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` ORDER BY user ASC")->resultset();
-$theme->assign('admin_list', $admin_list);
 
-$theme->display('box_admin_log_search.tpl');
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminLogSearchView(
+    admin_list: $admin_list,
+));
