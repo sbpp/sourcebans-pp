@@ -27,8 +27,17 @@ export class BasePage {
     }
 
     async waitForReady(): Promise<void> {
+        // The marquee banlist redesign (#1123 B2) keeps a dormant
+        // `<div data-skeleton hidden>` always-mounted in the DOM so
+        // `banlist.js` can flip it visible during chip-filter
+        // re-renders without re-creating the node. Treat any
+        // `[hidden]` skeleton as inert — only a *visible* skeleton
+        // (or any `[data-loading="true"]` surface) counts as the
+        // page still mid-load. The contract from #1123's testability
+        // hooks is "skeleton elements are torn down OR hidden when
+        // content lands"; either path lands the same terminal state.
         await this.page.waitForFunction(
-            () => !document.querySelector('[data-loading="true"], [data-skeleton]'),
+            () => !document.querySelector('[data-loading="true"], [data-skeleton]:not([hidden])'),
         );
     }
 }

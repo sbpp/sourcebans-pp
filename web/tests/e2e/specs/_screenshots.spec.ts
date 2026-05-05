@@ -38,6 +38,8 @@
  * in the same PR — don't fork the chrome contract here.
  */
 
+import type { Browser, Page, TestInfo } from '@playwright/test';
+
 import { test, expect } from '../fixtures/auth.ts';
 import {
     adminApprove,
@@ -72,64 +74,122 @@ function viewportFor(projectName: string): string {
     return 'desktop';
 }
 
+/**
+ * Capture a single (route × theme × project) screenshot.
+ *
+ * The route gallery's per-test body lives here so future slices
+ * can append a new block (e.g. `ROUTES_SMOKE_PUBLIC` below) and
+ * call this helper, instead of forking the loop and drifting on
+ * the chrome contract. Theme pinning, anonymous-context handling,
+ * and the `<html class="dark">` wait predicate stay in one place.
+ *
+ * Exported as a module-scope function rather than re-exported via
+ * a fixture so the surface stays small (no `test.extend<…>(…)`
+ * gymnastics for a helper that's purely DOM-side).
+ *
+ * @param route   Route descriptor — name slug, target path, auth flag.
+ * @param theme   `'light'` or `'dark'`; pinned via localStorage.
+ * @param page    Default project Page (logged-in admin).
+ * @param browser Browser used to mint a logged-out context if `route.auth` is false.
+ * @param testInfo Playwright TestInfo — used for project name + project use options.
+ */
+async function captureRoute(
+    route: RouteSpec,
+    theme: Theme,
+    page: Page,
+    browser: Browser,
+    testInfo: TestInfo,
+): Promise<void> {
+    const viewport = viewportFor(testInfo.project.name);
+    const outPath = resolve(
+        __dirname,
+        '..',
+        'screenshots',
+        theme,
+        viewport,
+        `${route.name}.png`,
+    );
+    await mkdir(dirname(outPath), { recursive: true });
+
+    let activePage = page;
+    let ownContext: Awaited<ReturnType<typeof browser.newContext>> | null = null;
+    try {
+        if (!route.auth) {
+            // Spin up a logged-out context so the chrome matches
+            // what an anonymous visitor would see.
+            ownContext = await browser.newContext({
+                ...testInfo.project.use,
+                storageState: { cookies: [], origins: [] },
+            });
+            activePage = await ownContext.newPage();
+        }
+
+        // Pin theme via localStorage BEFORE navigation: theme.js
+        // reads `localStorage['sbpp-theme']` on boot via
+        // applyTheme(currentTheme()), so a hit before that runs
+        // lands the right mode on first paint. We `goto('/')`
+        // first because origin localStorage requires a
+        // same-origin document.
+        await activePage.goto('/');
+        await activePage.evaluate((mode: Theme) => {
+            try { localStorage.setItem('sbpp-theme', mode); } catch (_e) { /* unavailable; skip */ }
+        }, theme);
+
+        await activePage.goto(route.path);
+
+        // Wait until theme.js's applyTheme has run and the
+        // resolved mode is reflected on <html>. We don't wait on
+        // a `[data-theme]` attribute (the chrome uses the `dark`
+        // class, not a data-attribute); see the file-level
+        // comment for the rationale.
+        await activePage.waitForFunction((expected: Theme) => {
+            const isDark = document.documentElement.classList.contains('dark');
+            return expected === 'dark' ? isDark : !isDark;
+        }, theme);
+
+        await activePage.screenshot({ fullPage: true, path: outPath });
+        expect(outPath).toMatch(/\.png$/);
+    } finally {
+        if (ownContext) await ownContext.close();
+    }
+}
+
 test.describe('@screenshot gallery', () => {
     test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
 
     for (const route of ROUTES) {
         for (const theme of THEMES) {
             test(`${route.name} ${theme}`, async ({ page, browser }, testInfo) => {
-                const viewport = viewportFor(testInfo.project.name);
-                const outPath = resolve(
-                    __dirname,
-                    '..',
-                    'screenshots',
-                    theme,
-                    viewport,
-                    `${route.name}.png`,
-                );
-                await mkdir(dirname(outPath), { recursive: true });
+                await captureRoute(route, theme, page, browser, testInfo);
+            });
+        }
+    }
+});
 
-                let activePage = page;
-                let ownContext: Awaited<ReturnType<typeof browser.newContext>> | null = null;
-                try {
-                    if (!route.auth) {
-                        // Spin up a logged-out context so the chrome
-                        // matches what an anonymous visitor would see.
-                        ownContext = await browser.newContext({
-                            ...testInfo.project.use,
-                            storageState: { cookies: [], origins: [] },
-                        });
-                        activePage = await ownContext.newPage();
-                    }
+// ---- Slice 1: smoke-public ----
+//
+// Public route gallery for #1124 Slice 1. Each entry maps a slug
+// (used as the screenshot filename and the markdown row label) to
+// the canonical `?p=` query string. `auth: true` because every
+// public route renders fine for the seeded admin (and storage
+// state is the default), so we don't pay the per-test
+// browser-context spin-up that the logged-out login capture pays.
+const ROUTES_SMOKE_PUBLIC: RouteSpec[] = [
+    { name: 'home',      path: '/',                       auth: true },
+    { name: 'banlist',   path: '/index.php?p=banlist',    auth: true },
+    { name: 'commslist', path: '/index.php?p=commslist',  auth: true },
+    { name: 'servers',   path: '/index.php?p=servers',    auth: true },
+    { name: 'submit',    path: '/index.php?p=submit',     auth: true },
+    { name: 'protest',   path: '/index.php?p=protest',    auth: true },
+];
 
-                    // Pin theme via localStorage BEFORE navigation:
-                    // theme.js reads `localStorage['sbpp-theme']` on
-                    // boot via applyTheme(currentTheme()), so a hit
-                    // before that runs lands the right mode on first
-                    // paint. We `goto('/')` first because origin
-                    // localStorage requires a same-origin document.
-                    await activePage.goto('/');
-                    await activePage.evaluate((mode: Theme) => {
-                        try { localStorage.setItem('sbpp-theme', mode); } catch (_e) { /* unavailable; skip */ }
-                    }, theme);
+test.describe('@screenshot smoke-public', () => {
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
 
-                    await activePage.goto(route.path);
-
-                    // Wait until theme.js's applyTheme has run and the
-                    // resolved mode is reflected on <html>. We don't
-                    // wait on a `[data-theme]` attribute (the chrome
-                    // uses the `dark` class, not a data-attribute);
-                    // see the file-level comment for the rationale.
-                    await activePage.waitForFunction((expected: Theme) => {
-                        const isDark = document.documentElement.classList.contains('dark');
-                        return expected === 'dark' ? isDark : !isDark;
-                    }, theme);
-
-                    await activePage.screenshot({ fullPage: true, path: outPath });
-                    expect(outPath).toMatch(/\.png$/);
-                } finally {
-                    if (ownContext) await ownContext.close();
-                }
+    for (const route of ROUTES_SMOKE_PUBLIC) {
+        for (const theme of THEMES) {
+            test(`${route.name} ${theme}`, async ({ page, browser }, testInfo) => {
+                await captureRoute(route, theme, page, browser, testInfo);
             });
         }
     }
