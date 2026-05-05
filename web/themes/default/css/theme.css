@@ -162,7 +162,7 @@ html.dark .btn:hover { background: white; }
 .btn--primary:hover { background: var(--brand-700); }
 .btn--secondary { background: var(--bg-surface); color: var(--text); border-color: var(--border); }
 .btn--secondary:hover { background: var(--bg-muted); }
-.btn--ghost { background: transparent; color: var(--text-muted); }
+.btn--ghost { background: transparent; color: var(--text-muted); border: 1px solid transparent; }
 .btn--ghost:hover { background: var(--bg-muted); color: var(--text); }
 .btn--danger { background: var(--danger); color: white; }
 .btn--danger:hover { background: #b91c1c; }
