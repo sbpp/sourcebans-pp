@@ -147,10 +147,13 @@ foreach ($rows as $row) {
 
     // sbpp2026 fields, derived from the same row so the new template
     // reads handoff-style keys without re-querying. The legacy template
-    // ignores extras.
+    // ignores extras. Stored raw — Smarty's global auto-escape
+    // (init.php: $theme->setEscapeHtml(true)) handles HTML-escaping at
+    // emit time; pre-escaping here would double-encode `&`/`<`/`>` in
+    // ban reasons (AGENTS.md: "Store raw, escape on display").
     $info['bid']          = (int) $row['bid'];
-    $info['reason']       = htmlspecialchars((string) $row['reason'], ENT_QUOTES, 'UTF-8');
-    $info['sname']        = htmlspecialchars((string) ($row['server_addr'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $info['reason']       = (string) ($row['reason'] ?? '');
+    $info['sname']        = (string) ($row['server_addr'] ?? '');
     $info['length_human'] = $info['length'];
     $info['banned_human'] = $info['created'];
     // 'expired' (natural end) vs 'unbanned' (explicit D/U removal) so
@@ -217,10 +220,11 @@ foreach ($rows as $row) {
         $info['unbanned'] = false;
     }
 
-    // sbpp2026 fields, mirroring the bans loop above.
+    // sbpp2026 fields, mirroring the bans loop above (raw — Smarty
+    // escapes on display).
     $info['bid']          = (int) $row['bid'];
-    $info['reason']       = htmlspecialchars((string) $row['reason'], ENT_QUOTES, 'UTF-8');
-    $info['sname']        = htmlspecialchars((string) ($row['server_addr'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $info['reason']       = (string) ($row['reason'] ?? '');
+    $info['sname']        = (string) ($row['server_addr'] ?? '');
     $info['length_human'] = $info['length'];
     $info['banned_human'] = $info['created'];
     // Lucide icon name. ba.type=2 is text-chat block, otherwise voice.
