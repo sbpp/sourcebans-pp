@@ -141,7 +141,17 @@
                  precomputed in page.banlist.php so the template
                  doesn't depend on Smarty's `%` operator parsing. *}
               <span class="avatar" style="width:28px;height:28px;background:hsl({$ban.avatar_hue} 55% 45%);font-size:10px" aria-hidden="true">{$ban.avatar_initials|escape}</span>
-              <a class="font-medium truncate" href="?p=banlist&amp;id={$ban.bid}" data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}" data-testid="drawer-trigger" onclick="event.stopPropagation()">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</a>
+              {* No `onclick="event.stopPropagation()"` here even though
+                 the row's action buttons carry it. theme.js wires the
+                 drawer via a delegated `document.addEventListener('click',
+                 …)` on `[data-drawer-href]`; stopping bubble at the
+                 anchor would silently fall back to native href
+                 navigation and bypass the drawer entirely (#1124 Slice 6
+                 found this — tests asserted `[data-drawer-open=true]`
+                 after a row click, the page just navigated to the legacy
+                 `?id=N` href instead). The mobile `.ban-cards` branch
+                 below already follows this no-stopPropagation shape. *}
+              <a class="font-medium truncate" href="?p=banlist&amp;id={$ban.bid}" data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}" data-testid="drawer-trigger">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</a>
               {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
               <span class="text-xs text-muted" title="{$ban.commentdata|@count} comment(s)">[{$ban.commentdata|@count}]</span>
               {/if}

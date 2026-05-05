@@ -45,6 +45,7 @@ import {
     newAnonymousContext,
     type SubmissionFixture,
 } from '../pages/SubmitBanFlow.ts';
+import { seedBanViaApi } from '../fixtures/seeds.ts';
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
@@ -436,6 +437,181 @@ test.describe('@screenshot flow-public-submission', () => {
             const present = row.or(card);
             await expect(present.first()).toBeAttached();
             await expectTheme(page, theme);
+
+            await page.screenshot({ fullPage: true, path });
+            expect(path).toMatch(/\.png$/);
+        });
+    }
+});
+
+/**
+ * Flow-UI gallery (Slice 6 of #1124).
+ *
+ * The route-driven gallery above can't capture transient interactive
+ * states (palette open, drawer loaded), so this block emits its own
+ * PNGs for the three flow-ui surfaces:
+ *   - `flow-ui-theme`   : home dashboard rendered in the active theme
+ *                          (light/dark variants come from the THEMES loop).
+ *   - `flow-ui-palette` : ⌘K-opened palette with a seeded "e2e-pal" hit.
+ *   - `flow-ui-drawer`  : `/bans` row drawer, post-load (no skeletons).
+ *
+ * Each variant pins theme via `localStorage['sbpp-theme']` BEFORE the
+ * target navigation so theme.js's boot path lands the right mode on
+ * first paint, then drives the interactive state via the same testability
+ * hooks the gate specs use (`[data-palette-open]`, `[data-drawer-open]`,
+ * `[data-loading]`). Seeded data uses a per-(state × theme × viewport)
+ * unique nickname so the two projects (chromium + mobile-chromium) don't
+ * race on the same bans.search query.
+ */
+test.describe('@screenshot flow-ui', () => {
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
+
+    /**
+     * Pin the theme key in localStorage on the same origin as the
+     * subsequent navigation. theme.js reads it on boot via
+     * `applyTheme(currentTheme())` so the resolved class lands on
+     * first paint.
+     */
+    async function pinTheme(page: import('@playwright/test').Page, theme: Theme): Promise<void> {
+        await page.goto('/');
+        await page.evaluate((mode: Theme) => {
+            try {
+                localStorage.setItem('sbpp-theme', mode);
+            } catch {
+                /* localStorage unavailable; skip */
+            }
+        }, theme);
+    }
+
+    async function waitForThemeApplied(
+        page: import('@playwright/test').Page,
+        theme: Theme,
+    ): Promise<void> {
+        await page.waitForFunction((expected: Theme) => {
+            const isDark = document.documentElement.classList.contains('dark');
+            return expected === 'dark' ? isDark : !isDark;
+        }, theme);
+    }
+
+    function outPath(theme: Theme, viewport: string, route: string): string {
+        return resolve(__dirname, '..', 'screenshots', theme, viewport, `${route}.png`);
+    }
+
+    for (const theme of THEMES) {
+        test(`flow-ui-theme ${theme}`, async ({ page }, testInfo) => {
+            const viewport = viewportFor(testInfo.project.name);
+            const path = outPath(theme, viewport, 'flow-ui-theme');
+            await mkdir(dirname(path), { recursive: true });
+
+            await pinTheme(page, theme);
+            // The home dashboard (`/`) is the canonical surface for
+            // theme-mode screenshots — it carries the topbar
+            // (theme toggle button + palette trigger) so the same
+            // PNG doubles as the chrome reference for the slice.
+            await page.goto('/');
+            await waitForThemeApplied(page, theme);
+
+            await page.screenshot({ fullPage: true, path });
+            expect(path).toMatch(/\.png$/);
+        });
+
+        test(`flow-ui-palette ${theme}`, async ({ page }, testInfo) => {
+            const viewport = viewportFor(testInfo.project.name);
+            const path = outPath(theme, viewport, 'flow-ui-palette');
+            await mkdir(dirname(path), { recursive: true });
+
+            // Per-(state × theme × viewport) unique nickname so the
+            // two projects' searches never collide on a shared "ban"
+            // result row, and so re-running the gallery without a
+            // truncate doesn't snowball duplicates.
+            const nick = `e2e-palette-${theme}-${viewport}`;
+            // Spread STEAM_0:1:N values across enough room that the
+            // four (theme × viewport) variants don't collide.
+            const steamSeed = `STEAM_0:1:6660${theme === 'dark' ? '1' : '0'}${viewport === 'mobile' ? '01' : '00'}`;
+            // Tolerate `already_banned` on retry — a previous failed
+            // attempt leaves the row in place and the search filter
+            // below still finds it.
+            try {
+                await seedBanViaApi(page, { nickname: nick, steam: steamSeed });
+            } catch (err) {
+                if (!String(err).includes('already_banned')) throw err;
+            }
+
+            await pinTheme(page, theme);
+            await page.goto('/');
+            await waitForThemeApplied(page, theme);
+
+            await page.keyboard.press('Meta+k');
+            const dialog = page.locator('#palette-root');
+            await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+            await expect(page.locator('#palette-input')).toBeFocused();
+
+            // Type a long-enough prefix to clear PALETTE_MIN_QUERY (2)
+            // and then wait on the result locator instead of a fixed
+            // 200ms debounce timer.
+            await page.locator('#palette-input').fill(nick.slice(0, 14));
+            await expect(
+                page
+                    .locator('[data-testid="palette-result"][data-result-kind="ban"]')
+                    .filter({ hasText: nick })
+                    .first(),
+            ).toBeVisible();
+
+            await page.screenshot({ fullPage: true, path });
+            expect(path).toMatch(/\.png$/);
+        });
+
+        test(`flow-ui-drawer ${theme}`, async ({ page }, testInfo) => {
+            // Drawer screenshots are desktop-only — the marquee
+            // banlist's mobile chrome is `.ban-cards`, not a `<table>`,
+            // and `responsive/drawer.spec.ts` already covers a mobile
+            // capture of an open drawer. Re-shooting it here would
+            // duplicate that PNG without adding flow coverage.
+            test.skip(testInfo.project.name === 'mobile-chromium', 'drawer mobile chrome covered by responsive/drawer.spec.ts');
+
+            const viewport = viewportFor(testInfo.project.name);
+            const path = outPath(theme, viewport, 'flow-ui-drawer');
+            await mkdir(dirname(path), { recursive: true });
+
+            const nick = `e2e-drawer-${theme}-${viewport}`;
+            const steamSeed = `STEAM_0:1:7770${theme === 'dark' ? '1' : '0'}${viewport === 'mobile' ? '01' : '00'}`;
+            let seededBid: number | null = null;
+            try {
+                const seeded = await seedBanViaApi(page, {
+                    nickname: nick,
+                    steam: steamSeed,
+                    reason: 'flow-ui drawer reference screenshot',
+                });
+                seededBid = seeded.bid;
+            } catch (err) {
+                if (!String(err).includes('already_banned')) throw err;
+                // Retry path: look up the existing row via bans.search.
+                seededBid = await page.evaluate(async (steam) => {
+                    const w = window as unknown as {
+                        sb: { api: { call: (a: string, p: object) => Promise<{ ok?: boolean; data?: { bans?: Array<{ bid: number; steam: string }> } }> } };
+                        Actions: Record<string, string>;
+                    };
+                    const env = await w.sb.api.call(w.Actions.BansSearch, { q: steam, limit: 5 });
+                    const found = env?.data?.bans?.find((b) => b.steam === steam);
+                    return found?.bid ?? null;
+                }, steamSeed);
+                if (seededBid === null) throw err;
+            }
+
+            await pinTheme(page, theme);
+            await page.goto('/index.php?p=banlist');
+            await waitForThemeApplied(page, theme);
+
+            await page
+                .locator(
+                    `[data-testid="drawer-trigger"][data-drawer-href*="id=${seededBid}"]`,
+                )
+                .first()
+                .click();
+
+            const drawer = page.locator('#drawer-root');
+            await expect(drawer).toHaveAttribute('data-drawer-open', 'true');
+            await expect(drawer).not.toHaveAttribute('data-loading', /.+/);
 
             await page.screenshot({ fullPage: true, path });
             expect(path).toMatch(/\.png$/);
