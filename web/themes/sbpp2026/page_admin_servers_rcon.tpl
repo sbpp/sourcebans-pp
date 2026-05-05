@@ -2,17 +2,18 @@
     SourceBans++ 2026 — page_admin_servers_rcon.tpl
     Bound to Sbpp\View\AdminServersRconView (validated by SmartyTemplateRule).
 
-    Rendered by web/pages/admin.rcon.php with the custom -{ … }- delimiter
-    pair (the legacy template body shipped with literal jQuery/JS braces
-    that would otherwise collide with default { … } Smarty markers). The
-    paired view declares DELIMITERS = ['-{', '}-'] so the analyser knows
-    to scan for -{$var}- references.
+    Rendered by web/pages/admin.rcon.php with the custom alternate
+    delimiter pair (the legacy template body shipped with literal
+    jQuery/JS braces that would otherwise collide with the default
+    Smarty markers). The paired view overrides View::DELIMITERS so the
+    analyser scans this template with the alternate pair too — see the
+    AdminServersRconView class docblock for the literal pair.
 
     The console talks to Actions.ServersSendRcon (registered in
     web/api/handlers/_register.php with the SM_RCON|SM_ROOT mask). The
     dispatcher enforces the permission flag and the per-server scoping
     re-check; this page additionally hides the UI entirely when
-    $permission_rcon is false so a stray link can't surface a console an
+    permission_rcon is false so a stray link can't surface a console an
     admin can't actually use.
 
     Inline <script> is intentional — sbpp2026's chrome only loads sb.js
