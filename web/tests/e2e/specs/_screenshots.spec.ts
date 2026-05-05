@@ -127,3 +127,74 @@ test.describe('@screenshot gallery', () => {
         }
     }
 });
+
+// ---- Slice 2: smoke-admin (#1124) ----
+//
+// One row per admin route covered by `specs/smoke/admin/*.spec.ts`.
+// The `auth: true` flag means we reuse the project-default storage
+// state (admin/admin minted in fixtures/global-setup.ts) instead of
+// spinning up a logged-out context. The describe block below mirrors
+// the `@screenshot gallery` shape exactly, just looped over this
+// slice's route list — kept inline rather than lifted into a shared
+// helper because Slice 0 left the gallery as a flat literal and the
+// extraction is a separate concern best done once a third slice has
+// to repeat the same body.
+const ROUTES_SMOKE_ADMIN: RouteSpec[] = [
+    { name: 'admin-home',     path: '/index.php?p=admin',             auth: true },
+    { name: 'admin-bans',     path: '/index.php?p=admin&c=bans',      auth: true },
+    { name: 'admin-admins',   path: '/index.php?p=admin&c=admins',    auth: true },
+    { name: 'admin-groups',   path: '/index.php?p=admin&c=groups',    auth: true },
+    { name: 'admin-settings', path: '/index.php?p=admin&c=settings',  auth: true },
+    { name: 'admin-audit',    path: '/index.php?p=admin&c=audit',     auth: true },
+    { name: 'myaccount',      path: '/index.php?p=account',           auth: true },
+];
+
+test.describe('@screenshot smoke-admin', () => {
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
+
+    for (const route of ROUTES_SMOKE_ADMIN) {
+        for (const theme of THEMES) {
+            test(`${route.name} ${theme}`, async ({ page, browser }, testInfo) => {
+                const viewport = viewportFor(testInfo.project.name);
+                const outPath = resolve(
+                    __dirname,
+                    '..',
+                    'screenshots',
+                    theme,
+                    viewport,
+                    `${route.name}.png`,
+                );
+                await mkdir(dirname(outPath), { recursive: true });
+
+                let activePage = page;
+                let ownContext: Awaited<ReturnType<typeof browser.newContext>> | null = null;
+                try {
+                    if (!route.auth) {
+                        ownContext = await browser.newContext({
+                            ...testInfo.project.use,
+                            storageState: { cookies: [], origins: [] },
+                        });
+                        activePage = await ownContext.newPage();
+                    }
+
+                    await activePage.goto('/');
+                    await activePage.evaluate((mode: Theme) => {
+                        try { localStorage.setItem('sbpp-theme', mode); } catch (_e) { /* unavailable; skip */ }
+                    }, theme);
+
+                    await activePage.goto(route.path);
+
+                    await activePage.waitForFunction((expected: Theme) => {
+                        const isDark = document.documentElement.classList.contains('dark');
+                        return expected === 'dark' ? isDark : !isDark;
+                    }, theme);
+
+                    await activePage.screenshot({ fullPage: true, path: outPath });
+                    expect(outPath).toMatch(/\.png$/);
+                } finally {
+                    if (ownContext) await ownContext.close();
+                }
+            });
+        }
+    }
+});

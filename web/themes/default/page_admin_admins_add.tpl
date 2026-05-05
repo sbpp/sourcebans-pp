@@ -106,7 +106,8 @@
                         <label for="a_useserverpass" class="text-sm font-medium" style="margin:0">Set in-game admin password</label>
                         <input class="input" id="a_serverpass" name="a_serverpass" type="password"
                                style="max-width:14rem;margin-left:auto" disabled tabindex="7"
-                               data-testid="admin-add-serverpass" autocomplete="new-password">
+                               data-testid="admin-add-serverpass" autocomplete="new-password"
+                               aria-label="In-game admin password">
                     </div>
                     <div id="a_serverpass.msg" class="text-xs" style="color:var(--danger)"></div>
                 </div>

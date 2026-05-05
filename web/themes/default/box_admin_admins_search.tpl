@@ -111,6 +111,7 @@
                 <select class="select"
                         id="search-admins-steam-match"
                         data-testid="search-admins-steam-match"
+                        aria-label="Steam ID match mode"
                         style="width:9rem">
                     <option value="0" selected>Exact match</option>
                     <option value="1">Partial match</option>
