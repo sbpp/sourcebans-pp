@@ -1,0 +1,16 @@
+{
+  "name": "sourcebans-pp-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Playwright E2E suite for the SourceBans++ web panel (#1124).",
+  "scripts": {
+    "test": "playwright test",
+    "install-browsers": "playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.3",
+    "@playwright/test": "1.59.1",
+    "@types/node": "25.6.0",
+    "typescript": "6.0.3"
+  }
+}

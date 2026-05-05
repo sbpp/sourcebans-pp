@@ -1,0 +1,94 @@
+name: E2E
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'web/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - 'sbpp.sh'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'docker/**'
+      - 'docker-compose.yml'
+      - 'sbpp.sh'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  playwright:
+    name: Playwright + axe
+    runs-on: ubuntu-24.04
+    # Generous overall timeout: first-run includes a full chromium
+    # download + apt-install. Subsequent runs come back inside this
+    # cap easily. Persistent failures (no retries left) still fail the
+    # job — there's no `continue-on-error`.
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bring up the same stack a developer gets locally via
+      # `./sbpp.sh up`. CI owns the runner, so no override file is
+      # needed; the published ports default to 8080 / 8081 / 8025 /
+      # 1025 / 3307 (see docker-compose.yml).
+      - name: Bring up the dev stack
+        run: docker compose up -d --wait
+
+      - name: Wait for the panel
+        run: |
+          for i in {1..30}; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/index.php?p=login || true)
+            if [[ "$code" == "200" ]]; then
+              echo "panel ready after attempt $i"
+              exit 0
+            fi
+            echo "attempt $i: HTTP $code, retrying"
+            sleep 3
+          done
+          echo "panel never came up" >&2
+          docker compose logs --tail=200 web db
+          exit 1
+
+      # Run the suite. `./sbpp.sh e2e` exec's into the web container
+      # and lazily installs @playwright/test + chromium + system deps
+      # on first run; CI pays this cost once per workflow because
+      # nothing is cached between runs (the install footprint is small
+      # enough that caching is more effort than it saves).
+      #
+      # Retries are wired in `playwright.config.ts` via
+      # `retries: process.env.CI ? 1 : 0` — one retry on flake, fail
+      # the job on persistent failure.
+      - name: Run E2E
+        env:
+          CI: '1'
+        run: ./sbpp.sh e2e
+
+      # Upload artifacts on failure so reviewers can debug from the
+      # PR UI without re-running locally. The HTML report and the
+      # raw test-results (traces, videos, axe report attachments)
+      # together cover almost every "what failed and why" question.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: web/tests/e2e/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Upload Playwright test-results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: web/tests/e2e/test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+      - name: Tear down
+        if: always()
+        run: ./sbpp.sh down

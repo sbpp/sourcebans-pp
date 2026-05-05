@@ -56,6 +56,37 @@ class Fixture
     public static function reset(): void
     {
         self::install();
+        self::truncateAndReseed();
+    }
+
+    /**
+     * Truncate every table in the configured DB and re-seed defaults
+     * + the admin row, WITHOUT going through install()'s DROP DATABASE +
+     * CREATE DATABASE cycle.
+     *
+     * Used by the e2e DB shim (`web/tests/e2e/scripts/reset-e2e-db.php`),
+     * which is invoked from a fresh PHP process per call. install()'s
+     * static `$installed` flag is process-local, so calling reset()
+     * from a fresh process (the shim does this every time) would try
+     * to DROP+CREATE on every invocation and race with parallel
+     * Playwright workers on the same DB. truncateOnly() opens a single
+     * connection, truncates, re-seeds, and is safe to call multiple
+     * times within one process.
+     *
+     * Caller responsibility: the schema must already exist (i.e.
+     * Fixture::install() was run earlier — the e2e harness does this
+     * once in `fixtures/global-setup.ts`).
+     */
+    public static function truncateOnly(): void
+    {
+        if (!isset($GLOBALS['PDO'])) {
+            $GLOBALS['PDO'] = new \Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
+        }
+        self::truncateAndReseed();
+    }
+
+    private static function truncateAndReseed(): void
+    {
         $pdo = self::rawPdo();
         $tables = $pdo->query(
             sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s'", DB_NAME)

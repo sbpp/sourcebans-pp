@@ -24,6 +24,9 @@ Run things inside containers:
   phpstan         Run phpstan from web/phpstan.neon inside the web container.
   test [args...]  Run PHPUnit (web/phpunit.xml) inside the web container.
   ts-check        Run tsc --checkJs over web/scripts (npm-installs typescript on demand).
+  e2e [args...]   Run the Playwright E2E suite inside the web container.
+                  Lazily npm-installs @playwright/test + chromium on first run;
+                  forwards args to `npx playwright test` (e.g. `--grep @screenshot`).
   exec <cmd...>   Run an arbitrary command in the web container.
   mysql           Open a mysql client connected to the dev DB.
 
@@ -121,6 +124,55 @@ case "$cmd" in
         # the install is a no-op once node_modules/ is populated thanks to
         # `--prefer-offline`.
         dc exec web bash -lc 'cd /var/www/html/web && npm install --silent --no-audit --no-fund --prefer-offline && npm run --silent ts-check'
+        ;;
+    e2e)
+        # Playwright E2E gate added in #1124. Mirrors `ts-check`'s
+        # lazy-install pattern: first run apt-installs chromium's
+        # system deps via `playwright install --with-deps chromium`,
+        # subsequent runs are sub-second to start.
+        #
+        # We auto-bring-up the dev stack if it's not already running
+        # so `./sbpp.sh e2e` works from a fresh checkout. The suite
+        # then runs INSIDE the web container and hits Apache on the
+        # in-container port 80 (E2E_BASE_URL=http://localhost). The
+        # DB seeder (web/tests/e2e/fixtures/db.ts) flips
+        # E2E_IN_CONTAINER=1 so it calls `php` directly instead of
+        # `docker compose exec` (we're already inside the container,
+        # the Docker socket isn't reachable from here).
+        if [ -z "$(dc ps -q web 2>/dev/null)" ]; then dc up -d; fi
+        # Idempotent grant: ensures `sourcebans_e2e` is writable by
+        # the panel user even on dev stacks whose db-init/ ran before
+        # this script started provisioning the e2e DB. Fresh stacks
+        # already get the grant from docker/db-init/00-render-schema.sh.
+        dc exec -T db mariadb -uroot -proot -e "
+            GRANT ALL PRIVILEGES ON \`sourcebans_e2e\`.* TO 'sourcebans'@'%';
+            GRANT CREATE, DROP ON *.* TO 'sourcebans'@'%';
+            FLUSH PRIVILEGES;" >/dev/null
+        dc exec -T \
+            -e E2E_BASE_URL="${E2E_BASE_URL:-http://localhost}" \
+            -e E2E_IN_CONTAINER=1 \
+            -e SCREENSHOTS="${SCREENSHOTS:-}" \
+            -e CI="${CI:-}" \
+            -e DB_HOST=db -e DB_PORT=3306 \
+            -e DB_NAME="${E2E_DB_NAME:-sourcebans_e2e}" \
+            -e DB_USER=sourcebans -e DB_PASS=sourcebans \
+            -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
+            web bash -lc '
+                set -e
+                cd /var/www/html/web/tests/e2e
+                if [ ! -d node_modules/@playwright/test ]; then
+                    npm install --silent --no-audit --no-fund --prefer-offline
+                fi
+                # Browser install is also lazy. The marker file is
+                # what `playwright install` drops once it has finished
+                # provisioning chromium + the Debian deps under
+                # ~/.cache/ms-playwright. If the user nukes the cache,
+                # the next run reinstalls.
+                if [ ! -d "$HOME/.cache/ms-playwright" ] || [ -z "$(ls "$HOME/.cache/ms-playwright" 2>/dev/null)" ]; then
+                    npx playwright install --with-deps chromium
+                fi
+                exec npx playwright test "$@"
+            ' -- "$@"
         ;;
     exec)
         dc exec web "$@"

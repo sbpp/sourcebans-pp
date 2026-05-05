@@ -66,6 +66,7 @@ Run from the repo root. All commands are idempotent.
 ./sbpp.sh test [args]              # PHPUnit on sourcebans_test DB
 ./sbpp.sh ts-check                 # tsc --checkJs over web/scripts
 ./sbpp.sh composer api-contract    # regen scripts/api-contract.js
+./sbpp.sh e2e [args]               # Playwright E2E suite (lazy npm install + chromium browser)
 
 # DB
 ./sbpp.sh db-dump [file]           # mysqldump to host
@@ -137,14 +138,15 @@ services:
 
 ## Quality gates
 
-CI runs four gates on every PR. Match them locally before opening one.
+CI runs five gates on every PR. Match them locally before opening one.
 
-| Gate          | Local                                | CI workflow            |
-| ------------- | ------------------------------------ | ---------------------- |
-| PHPStan       | `./sbpp.sh phpstan`                  | `phpstan.yml`          |
-| PHPUnit       | `./sbpp.sh test`                     | `test.yml`             |
-| ts-check      | `./sbpp.sh ts-check`                 | `ts-check.yml`         |
-| API contract  | `./sbpp.sh composer api-contract`    | `api-contract.yml`     |
+| Gate           | Local                                | CI workflow            |
+| -------------- | ------------------------------------ | ---------------------- |
+| PHPStan        | `./sbpp.sh phpstan`                  | `phpstan.yml`          |
+| PHPUnit        | `./sbpp.sh test`                     | `test.yml`             |
+| ts-check       | `./sbpp.sh ts-check`                 | `ts-check.yml`         |
+| API contract   | `./sbpp.sh composer api-contract`    | `api-contract.yml`     |
+| Playwright E2E | `./sbpp.sh e2e`                      | `e2e.yml`              |
 
 PHPStan specifics:
 
@@ -199,6 +201,40 @@ API-contract specifics:
   need no codegen step.
 - CI fails on `git diff` after regeneration. Always commit the
   regenerated file in the same PR as the PHP change.
+
+Playwright E2E specifics:
+
+- Suite location: `web/tests/e2e/` with its own `package.json`
+  (separate from PHPUnit; PHPUnit owns `web/composer.json` /
+  `web/package.json`).
+- DB: `sourcebans_e2e` (parallel to `sourcebans_test`). Reset between
+  specs via `truncateE2eDb()` (truncate + re-seed); full
+  install only on global setup. The shim
+  `web/tests/e2e/scripts/reset-e2e-db.php` reuses
+  `Sbpp\Tests\Fixture` so the fixture stays single-source.
+- Auth: storage state minted once per run by
+  `fixtures/global-setup.ts` against the seeded `admin/admin` user.
+  The login spec is the **one** exception that drives the form
+  itself — every other spec inherits the storage state.
+- Selectors must use #1123's testability hooks (`data-testid`,
+  `[data-active]`, `[data-loading]`, `[data-skeleton]`, ARIA roles,
+  `<html class="dark">` for resolved theme). Never CSS class chains;
+  never visible text as the *primary* selector. `hasText` filters
+  are fine to disambiguate when the primary selector matches more
+  than one node (e.g. multiple toasts).
+- axe (`@axe-core/playwright`) threshold is **critical**. Use
+  `expectNoCriticalA11y(page, testInfo)` from `fixtures/axe.ts`;
+  do NOT downgrade the threshold to make tests green — file a
+  follow-up against the underlying #1123 testability patterns.
+- `prefers-reduced-motion: reduce` is set globally via
+  `playwright.config.ts`. Animations should never gate visibility;
+  if a test needs a `setTimeout`, the chrome's missing a terminal
+  attribute (see `_base.ts`).
+- `./sbpp.sh e2e --grep @screenshot SCREENSHOTS=1` produces the
+  per-PR screenshot gallery. The
+  `web/tests/e2e/scripts/upload-screenshots.sh` wrapper pushes the
+  PNGs to the `screenshots-archive` orphan branch under a per-PR
+  subdirectory and prints the markdown table to comment on the PR.
 
 ## Conventions
 
@@ -388,6 +424,13 @@ bearing assertion that the value is already safe HTML, so:
   value is safe HTML; without a `{* nofilter: <why> *}` comment above
   it, future readers can't tell whether it's a real escape hatch or a
   copy-paste accident waiting to be exploited (#1113 audit).
+- `setTimeout` / `waitForTimeout` waits in E2E specs → wait on
+  terminal attributes (`[data-loading="false"]` settled, `[data-skeleton]`
+  removed) per #1123's "Testability hooks" rule.
+- CSS class chains or visible-text *primary* selectors in E2E specs
+  → use `data-testid` / ARIA roles per #1123. `hasText` filters for
+  disambiguation are fine; "find element by its label text" as the
+  whole selector is not.
 
 ## Where to find what
 
@@ -409,5 +452,7 @@ bearing assertion that the value is already safe HTML, so:
 | Test fixtures                          | `web/tests/Fixture.php`, `web/tests/ApiTestCase.php`     |
 | API wire-format snapshots              | `web/tests/api/__snapshots__/<topic>/<scenario>.json`    |
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
+| Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
+| Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |

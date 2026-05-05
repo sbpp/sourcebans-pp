@@ -604,14 +604,15 @@ documented as such in `docker-compose.yml`.
 
 ## Quality gates
 
-Four CI jobs run on every PR (`.github/workflows/`):
+Five CI jobs run on every PR (`.github/workflows/`):
 
-| Gate          | Workflow              | Local command                | What it covers                                |
-| ------------- | --------------------- | ---------------------------- | --------------------------------------------- |
-| PHPStan       | `phpstan.yml`         | `./sbpp.sh phpstan`          | Static analysis (level 5) + Smarty rule + phpstan-dba SQL checks. |
-| PHPUnit       | `test.yml`            | `./sbpp.sh test`             | Behavioural tests against `sourcebans_test`.  |
-| ts-check      | `ts-check.yml`        | `./sbpp.sh ts-check`         | `tsc --checkJs` over `web/scripts/`.          |
-| API contract  | `api-contract.yml`    | `./sbpp.sh composer api-contract` | Regenerates `scripts/api-contract.js` and fails on diff. |
+| Gate           | Workflow              | Local command                | What it covers                                |
+| -------------- | --------------------- | ---------------------------- | --------------------------------------------- |
+| PHPStan        | `phpstan.yml`         | `./sbpp.sh phpstan`          | Static analysis (level 5) + Smarty rule + phpstan-dba SQL checks. |
+| PHPUnit        | `test.yml`            | `./sbpp.sh test`             | Behavioural tests against `sourcebans_test`.  |
+| ts-check       | `ts-check.yml`        | `./sbpp.sh ts-check`         | `tsc --checkJs` over `web/scripts/`.          |
+| API contract   | `api-contract.yml`    | `./sbpp.sh composer api-contract` | Regenerates `scripts/api-contract.js` and fails on diff. |
+| Playwright E2E | `e2e.yml`             | `./sbpp.sh e2e`              | Browser-level smoke / flows / a11y against the dev stack (chromium + mobile-chromium). |
 
 PHPStan is at level 5 (bumped from 4 in #1101); raise one step at a
 time, never jump 5→7. The baseline at `web/phpstan-baseline.neon`
@@ -662,6 +663,63 @@ rows. A new action without a matrix entry — or an existing action whose
 gate moves — fails the build loudly. `Api::actions()` (added alongside)
 exposes the registry's keys for the matrix sweep so the test can detect
 both directions of drift (extra registrations, removed registrations).
+
+### End-to-end tests (`web/tests/e2e/`)
+
+Browser-level coverage on top of the unit + API gates. Lives under
+`web/tests/e2e/` with its own `package.json` so PHPUnit and Playwright
+don't fight over a shared dependency surface.
+
+```
+web/tests/e2e/
+├── package.json              # @playwright/test, @axe-core/playwright, typescript
+├── playwright.config.ts      # baseURL, projects (chromium + mobile-chromium), reporters
+├── tsconfig.json             # strict, ES2020, bundler resolution
+├── fixtures/
+│   ├── auth.ts               # single-import surface re-exporting test/expect (extended in later slices)
+│   ├── axe.ts                # expectNoCriticalA11y(page, testInfo, …)
+│   ├── db.ts                 # resetE2eDb / truncateE2eDb helpers (host-side or in-container)
+│   └── global-setup.ts       # one-time: reset sourcebans_e2e + mint admin storageState
+├── pages/                    # Page Object Models (BasePage in _base.ts)
+├── scripts/
+│   ├── reset-e2e-db.php      # bridge to Sbpp\Tests\Fixture pointed at sourcebans_e2e
+│   └── upload-screenshots.sh # pushes per-PR PNGs to the screenshots-archive orphan branch
+└── specs/
+    ├── _screenshots.spec.ts  # @screenshot gallery spec (skipped unless SCREENSHOTS=1)
+    ├── smoke/                # one .spec.ts per route — login.spec.ts is the seed
+    ├── flows/                # multi-step critical flows (added in later slices)
+    ├── a11y/                 # axe scans (added in later slices)
+    └── responsive/           # mobile-viewport behaviour (added in later slices)
+```
+
+Three properties drive the harness:
+
+- **DB isolation.** The suite owns a dedicated `sourcebans_e2e`
+  schema, parallel to `sourcebans_test`. `reset-e2e-db.php` reuses
+  the same `Sbpp\Tests\Fixture` PHPUnit uses (struc.sql + data.sql,
+  same seeded admin) but pointed at the e2e DB, so a passing PHPUnit
+  run guarantees the e2e fixture is structurally identical. Specs
+  call `truncateE2eDb()` between cases for the cheap reset path;
+  full install only runs once per `playwright test` invocation.
+- **Storage-state auth.** `fixtures/global-setup.ts` drives the
+  login form once against the seeded admin/admin user and writes
+  `playwright/.auth/admin.json`. Every spec inherits that storage
+  state via `playwright.config.ts` so they don't pay the login cost
+  per-test. The login spec is the only spec that opts back out
+  (`test.use({ storageState: { cookies: [], origins: [] } })`) so
+  the form itself stays exercised.
+- **axe gate at `critical`.** `expectNoCriticalA11y` runs
+  `@axe-core/playwright` against the current page, attaches the full
+  report to the failing test as `axe`, and asserts zero
+  `critical`-impact violations. The threshold is locked here — see
+  `AGENTS.md` "Playwright E2E specifics" for why.
+
+A separate `_screenshots.spec.ts` walks every route × theme × project
+and emits PNGs into `web/tests/e2e/screenshots/<theme>/<viewport>/`.
+The accompanying `upload-screenshots.sh` pushes the gallery to the
+`screenshots-archive` orphan branch under `screenshots/pr-<N>/<slug>/`
+(unique per PR + slice, so the orphan branch never has merge
+conflicts) and prints a markdown table for `gh pr comment`.
 
 ## Legacy patterns being phased out
 
