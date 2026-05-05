@@ -239,6 +239,7 @@ final class BansTest extends ApiTestCase
         $this->assertNull($env['data']['admin']['name'],  'admin should be hidden for public + hideadminname');
         $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
         $this->assertSame([], $env['data']['comments']);
+        $this->assertFalse($env['data']['notes_visible'], 'notes_visible should be false for public callers (#1165)');
         $this->assertSnapshot('bans/detail_public_hidden', $env, ['data.bid', 'data.ban.banned_at', 'data.ban.banned_at_human', 'data.ban.expires_at', 'data.ban.expires_at_human']);
     }
 
@@ -270,6 +271,7 @@ final class BansTest extends ApiTestCase
         $this->assertSame('STEAM_0:1:2020', $env['data']['player']['steam_id']);
         $this->assertNotNull($env['data']['admin']['name']);
         $this->assertTrue($env['data']['comments_visible']);
+        $this->assertTrue($env['data']['notes_visible'], 'notes_visible should be true for admin callers (#1165)');
         $this->assertCount(1, $env['data']['comments']);
         $this->assertSame('note for the drawer', $env['data']['comments'][0]['text']);
         $this->assertSnapshot('bans/detail_admin_view', $env, [

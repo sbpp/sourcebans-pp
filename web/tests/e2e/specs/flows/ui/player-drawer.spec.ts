@@ -1,21 +1,15 @@
 /**
- * Player drawer (#1124, Slice 6).
+ * Player drawer (#1124, Slice 6 / #1165).
  *
  * Acceptance criteria from #1124:
  *   "click a row in /bans, drawer opens with player data, tabs
  *    (Overview / History / Comms / Notes) all populate, Esc closes."
  *
- * == Divergence from the issue's literal text ==
- *
- * The drawer that ships with #1123 (`web/themes/default/js/theme.js`,
- * `renderDrawerBody` ~line 422) is a SINGLE BODY: an id grid
- * (`.drawer__ids`), a ban grid (`.drawer__ban`), and an optional
- * comments section. There are no Overview / History / Comms / Notes
- * tabs.
- *
- * Rather than write a tab-switching test that asserts against UI that
- * doesn't exist (and would silently rot once tabs land), this spec
- * gates the present-day chrome contract:
+ * #1165 landed the four-tab UI (`renderDrawerBody` in
+ * `web/themes/default/js/theme.js` is now a `role=tablist` with four
+ * `role=tabpanel` panes lazy-loaded via `bans.player_history` /
+ * `comms.player_history` / `notes.list`). This spec drives each tab
+ * end-to-end:
  *   - Open trigger: `[data-drawer-href*="id=<bid>"]` on the row anchor
  *     (the marquee `page_bans.tpl` uses the legacy-handoff form;
  *     `theme.js#bidFromTrigger` extracts the bid from either
@@ -23,14 +17,20 @@
  *   - Open state:  `#drawer-root[data-drawer-open="true"]`.
  *   - Loaded state: `#drawer-root` no longer carries `data-loading="true"`
  *     once `bans.detail` settles.
+ *   - Tabs: `[data-testid="drawer-tab-{overview|history|comms|notes}"]`
+ *     each control `[data-testid="drawer-panel-..."]`. Overview is
+ *     active on first paint (`aria-selected="true"`). Clicking another
+ *     tab activates its panel (`hidden=false`) and lazy-loads its
+ *     feed. Each panel exposes a `data-testid="drawer-{kind}-heading"`
+ *     so we can assert the right pane is in front of the user
+ *     without screen-scraping the body.
  *   - Close: Esc OR a click on `[data-drawer-close]`.
  *
- * The four-tabs expansion is real product work (new server-side feeds
- * for History / Comms, a notes scratch pad, lazy-loaded panes) and is
- * tracked as the follow-up:
- *   #1165 — "Player drawer: implement Overview/History/Comms/Notes tabs"
- * When that lands, fold the tab-switching subtests in here in the
- * same PR (don't write them against the no-tabs chrome).
+ * The Notes tab is admin-only — `bans.detail` returns
+ * `notes_visible: true` for admin callers, and the drawer renders the
+ * fourth tab only in that case. The default storage state minted by
+ * `fixtures/global-setup.ts` logs in as the seeded admin so all four
+ * tabs are present.
  */
 
 import { expect, test } from '../../../fixtures/auth.ts';
@@ -50,6 +50,8 @@ const SUBTEST_OFFSETS = {
     open: 0,
     esc: 1,
     xbutton: 2,
+    tabs: 3,
+    notes: 4,
 } as const;
 
 function uniqueSeed(
@@ -160,13 +162,15 @@ test.describe('player drawer', () => {
         // `delete` shape never sets a string value.
         await expect(drawer).not.toHaveAttribute('data-loading', /.+/);
 
-        // Body assertions: the rendered drawer contains the seeded
-        // SteamID, nickname, and reason. We anchor on the
-        // `.drawer__ids` `<dl>` for SteamID (definition-list pairs
-        // are the chrome's stable shape) and on `.drawer__ban` for
-        // reason. The header carries the nickname.
+        // Body assertions: the Overview pane (active on first paint)
+        // contains the seeded SteamID, nickname, and reason. We anchor
+        // on the `.drawer__ids` `<dl>` for SteamID (definition-list
+        // pairs are the chrome's stable shape) and on `.drawer__ban`
+        // for reason. The header carries the nickname.
         await expect(drawer.locator('.drawer__header')).toContainText(seed.nick);
-        const idGrid = drawer.locator('.drawer__ids');
+        const overview = drawer.locator('[data-testid="drawer-panel-overview"]');
+        await expect(overview).toBeVisible();
+        const idGrid = overview.locator('.drawer__ids');
         await expect(idGrid).toBeVisible();
         // SteamID rows are `<dt>SteamID</dt><dd>STEAM_0:…</dd>` pairs.
         // `:has-text` plus the trailing `+ dd` would over-specify the
@@ -175,10 +179,130 @@ test.describe('player drawer', () => {
         // idiomatic shape and survives DT/DD reorder.
         await expect(idGrid.locator('dt', { hasText: 'SteamID' })).toBeVisible();
         await expect(idGrid).toContainText(seed.steam);
-        const banGrid = drawer.locator('.drawer__ban');
+        const banGrid = overview.locator('.drawer__ban');
         await expect(banGrid).toBeVisible();
         await expect(banGrid.locator('dt', { hasText: 'Reason' })).toBeVisible();
         await expect(banGrid).toContainText(SEED_REASON);
+
+        // Tab chrome: Overview is active by default; the other three
+        // start aria-selected=false. The tablist is keyboard-reachable
+        // (button[role=tab] tabindex management is asserted by the
+        // dedicated tabs subtest below).
+        const tablist = drawer.locator('[data-testid="drawer-tablist"]');
+        await expect(tablist).toBeVisible();
+        await expect(drawer.locator('[data-testid="drawer-tab-overview"]')).toHaveAttribute('aria-selected', 'true');
+        await expect(drawer.locator('[data-testid="drawer-tab-history"]')).toHaveAttribute('aria-selected', 'false');
+        await expect(drawer.locator('[data-testid="drawer-tab-comms"]')).toHaveAttribute('aria-selected', 'false');
+        // The seeded auth state is admin/admin so the Notes tab is
+        // present (notes_visible=true on bans.detail). A non-admin
+        // caller would see only three tabs; that path is covered by
+        // `tests/api/BansTest::testDetailPublicViewHidesAdminFields`
+        // at the API boundary so we don't double-cover it here.
+        await expect(drawer.locator('[data-testid="drawer-tab-notes"]')).toHaveAttribute('aria-selected', 'false');
+    });
+
+    test('switching tabs reveals each pane with the right content', async ({ page }, testInfo) => {
+        const seed = uniqueSeed(testInfo, 'tabs');
+        const bid = await seedOrLookup(page, seed);
+
+        await page.goto('/index.php?p=banlist');
+        await page
+            .locator(
+                `[data-testid="drawer-trigger"][data-drawer-href*="id=${bid}"]`,
+            )
+            .first()
+            .click();
+
+        const drawer = page.locator('#drawer-root');
+        await expect(drawer).toHaveAttribute('data-drawer-open', 'true');
+        await expect(drawer).not.toHaveAttribute('data-loading', /.+/);
+
+        // History tab. The seeded ban is the only one for this player,
+        // so the empty-state copy ("No prior bans on file.") matches
+        // the issue's literal acceptance text and proves the lazy
+        // fetch landed.
+        const historyTab = drawer.locator('[data-testid="drawer-tab-history"]');
+        const historyPanel = drawer.locator('[data-testid="drawer-panel-history"]');
+        await expect(historyPanel).toBeHidden();
+        await historyTab.click();
+        await expect(historyTab).toHaveAttribute('aria-selected', 'true');
+        await expect(historyPanel).toBeVisible();
+        await expect(historyPanel.locator('[data-testid="drawer-history-heading"]')).toBeVisible();
+        await expect(historyPanel).toContainText('No prior bans on file.');
+
+        // Comms tab. The seed is a ban (no comm-block) so this also
+        // hits the empty state. The empty-state copy is asserted
+        // verbatim so a regression that drops the heading falls out.
+        const commsTab = drawer.locator('[data-testid="drawer-tab-comms"]');
+        const commsPanel = drawer.locator('[data-testid="drawer-panel-comms"]');
+        await commsTab.click();
+        await expect(commsTab).toHaveAttribute('aria-selected', 'true');
+        await expect(historyTab).toHaveAttribute('aria-selected', 'false');
+        await expect(commsPanel).toBeVisible();
+        await expect(historyPanel).toBeHidden();
+        await expect(commsPanel.locator('[data-testid="drawer-comms-heading"]')).toBeVisible();
+        await expect(commsPanel).toContainText('No prior comm-blocks on file.');
+
+        // Notes tab (admin-only). The default seeded auth state is
+        // admin so the tab is present.
+        const notesTab = drawer.locator('[data-testid="drawer-tab-notes"]');
+        const notesPanel = drawer.locator('[data-testid="drawer-panel-notes"]');
+        await notesTab.click();
+        await expect(notesTab).toHaveAttribute('aria-selected', 'true');
+        await expect(notesPanel).toBeVisible();
+        await expect(notesPanel.locator('[data-testid="drawer-notes-heading"]')).toBeVisible();
+        await expect(notesPanel.locator('[data-testid="drawer-notes-add"]')).toBeVisible();
+        // Empty state — the seed is fresh so no notes have been added.
+        await expect(notesPanel.locator('[data-testid="drawer-notes-empty"]')).toBeVisible();
+
+        // Going back to Overview re-hides the others. The Overview
+        // pane was server-populated on first paint (it's not lazy)
+        // so this round-trip exercises the show/hide toggle without
+        // re-fetching.
+        const overviewTab = drawer.locator('[data-testid="drawer-tab-overview"]');
+        const overviewPanel = drawer.locator('[data-testid="drawer-panel-overview"]');
+        await overviewTab.click();
+        await expect(overviewTab).toHaveAttribute('aria-selected', 'true');
+        await expect(overviewPanel).toBeVisible();
+        await expect(notesPanel).toBeHidden();
+    });
+
+    test('Notes tab persists across add + delete', async ({ page }, testInfo) => {
+        const seed = uniqueSeed(testInfo, 'notes');
+        const bid = await seedOrLookup(page, seed);
+
+        await page.goto('/index.php?p=banlist');
+        await page
+            .locator(
+                `[data-testid="drawer-trigger"][data-drawer-href*="id=${bid}"]`,
+            )
+            .first()
+            .click();
+
+        const drawer = page.locator('#drawer-root');
+        await expect(drawer).toHaveAttribute('data-drawer-open', 'true');
+        await expect(drawer).not.toHaveAttribute('data-loading', /.+/);
+
+        await drawer.locator('[data-testid="drawer-tab-notes"]').click();
+        const notesPanel = drawer.locator('[data-testid="drawer-panel-notes"]');
+        await expect(notesPanel.locator('[data-testid="drawer-notes-empty"]')).toBeVisible();
+
+        // Type a note + submit. The handler returns the new row and the
+        // pane re-fetches `notes.list` so the empty state goes away
+        // and one item appears.
+        const body = `e2e-note-${testInfo.workerIndex}-${Date.now()}`;
+        await notesPanel.locator('textarea[name="body"]').fill(body);
+        await notesPanel.locator('[data-testid="drawer-notes-submit"]').click();
+
+        await expect(notesPanel.locator('[data-testid="drawer-notes-empty"]')).toBeHidden();
+        const item = notesPanel.locator('[data-testid="drawer-notes-item"]').first();
+        await expect(item).toBeVisible();
+        await expect(item).toContainText(body);
+
+        // Delete it. The trash button is per-row; after the round-trip
+        // the empty state comes back.
+        await item.locator('[data-notes-delete]').click();
+        await expect(notesPanel.locator('[data-testid="drawer-notes-empty"]')).toBeVisible();
     });
 
     test('Esc closes the open drawer', async ({ page }, testInfo) => {

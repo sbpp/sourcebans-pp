@@ -227,7 +227,11 @@ Api::register('admins.update_perms', 'api_admins_update_perms', 0, true);  // an
 ```
 
 Handler functions live in topic-grouped files
-(`api/handlers/{account,admins,auth,bans,blockit,comms,groups,kickit,mods,protests,servers,submissions,system}.php`).
+(`api/handlers/{account,admins,auth,bans,blockit,comms,groups,kickit,mods,notes,protests,servers,submissions,system}.php`).
+The `notes` topic was added with #1165 to back the player-detail
+drawer's admin-only Notes tab; `bans.player_history` and
+`comms.player_history` (live in their existing topic files) feed the
+drawer's History and Comms tabs.
 
 ### Auth (`includes/auth/`)
 
@@ -507,6 +511,7 @@ in dev/CI). Major tables:
 | `sb_settings`               | Flat key/value config used by `Config`.       |
 | `sb_log`                    | Audit log (see `Log.php`).                    |
 | `sb_login_tokens`           | JWT id (`jti`) → last-accessed for GC.        |
+| `sb_notes`                  | Per-Steam-ID admin scratchpad (Notes tab in the player drawer, #1165). |
 
 Reseeded in tests via `web/tests/Fixture.php`, which renders `struc.sql`
 + `data.sql` against a dedicated `sourcebans_test` database before every

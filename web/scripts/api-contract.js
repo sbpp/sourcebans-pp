@@ -88,7 +88,7 @@
  * page.banlist.php's `$view_comments` switch.
  *
  * @typedef {Object} ApiBansDetailRequest
- * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiBansDetailResponse
+ * @typedef {{ bid: number, player: {name: string, type: number, steam_id: string, steam_id_3: string, community_id: string, ip: string|null, country: string|null}, ban: {reason: string, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unban_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null}, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, demo_count: number, history_count: number, comments_visible: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiBansDetailResponse
  */
 /**
  * @typedef {Object} ApiBansEditCommentRequest
@@ -109,6 +109,20 @@
 /**
  * @typedef {Object} ApiBansPasteRequest
  * @typedef {Object} ApiBansPasteResponse
+ */
+/**
+ * Sibling-bans feed for the player-detail drawer's History tab (#1165). 
+ * Returns the player's other bans (same authid for type=0, same IP for type=1)
+ * excluding the bid the drawer is currently displaying. The Overview tab
+ * already shows the current ban; the History tab is "what else is on file for
+ * this player". Action is registered public to match `bans.detail`'s reach so
+ * the drawer's tab chrome behaves identically for anonymous and admin callers
+ * — IP exposure follows the same `banlist.hideplayerips` / admin gate
+ * `bans.detail` enforces, and admin names follow `banlist.hideadminname`. 
+ * Inputs: `bid` (int, the drawer's current ban id).
+ *
+ * @typedef {Object} ApiBansPlayerHistoryRequest
+ * @typedef {{ items: Array<{ bid: number, type: number, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, reason: string, admin_name: string|null, removed_by: string|null, removed_at: number|null, removed_at_human: string|null, server_name: string|null }>, total: number }} ApiBansPlayerHistoryResponse
  */
 /**
  * @typedef {Object} ApiBansPrepareRebanRequest
@@ -164,6 +178,19 @@
  * @typedef {Object} ApiCommsPasteResponse
  */
 /**
+ * Comm-block feed for the player-detail drawer's Comms tab (#1165).  Looks up
+ * the player's Steam ID from `:prefix_bans` for the supplied `bid` and returns
+ * every gag/mute on file for the same Steam ID. Action is registered public to
+ * match `bans.detail` / `bans.player_history` — comms-list is a public
+ * surface (`?p=commslist`) so the drawer's Comms tab follows the same reach.
+ * Admin-name exposure is gated by `banlist.hideadminname` for non-admin
+ * callers, mirroring how `bans.detail` handles it.  Inputs: `bid` (int, the
+ * drawer's current ban id).
+ *
+ * @typedef {Object} ApiCommsPlayerHistoryRequest
+ * @typedef {{ items: Array<{ bid: number, type: number, type_label: string, created: number, created_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, reason: string, admin_name: string|null, removed_by: string|null, removed_at: number|null, removed_at_human: string|null }>, total: number }} ApiCommsPlayerHistoryResponse
+ */
+/**
  * @typedef {Object} ApiCommsPrepareBlockFromBanRequest
  * @typedef {Object} ApiCommsPrepareBlockFromBanResponse
  */
@@ -212,6 +239,31 @@
 /**
  * @typedef {Object} ApiModsRemoveRequest
  * @typedef {Object} ApiModsRemoveResponse
+ */
+/**
+ * Add a note for the given Steam ID. The current admin's `aid` is recorded as
+ * the author; the body is stored raw UTF-8 and escaped on display.  Inputs:
+ * `steam_id` (string), `body` (string, 1..4000 chars after trim).
+ *
+ * @typedef {Object} ApiNotesAddRequest
+ * @typedef {{nid: number, item: {nid: number, body: string, created: number, created_human: string, author: string|null, author_aid: number}}} ApiNotesAddResponse
+ */
+/**
+ * Delete a single note. Only the note's author or an `ADMIN_OWNER` may delete
+ * it; any other admin gets `forbidden` so the casual reader of the Notes tab
+ * can't blow away another admin's pinned context.  Inputs: `nid` (int).
+ *
+ * @typedef {Object} ApiNotesDeleteRequest
+ * @typedef {{nid: number}} ApiNotesDeleteResponse
+ */
+/**
+ * List the notes attached to a Steam ID, newest first. Returns the same
+ * `{items, total}` shape `bans.player_history` / `comms.player_history` use so
+ * the drawer's pane builders can share a list renderer.  Inputs: `steam_id`
+ * (string, Steam2 form — `STEAM_0:1:N`).
+ *
+ * @typedef {Object} ApiNotesListRequest
+ * @typedef {{items: Array<{nid: number, body: string, created: number, created_human: string, author: string|null, author_aid: number}>, total: number}} ApiNotesListResponse
  */
 /**
  * @typedef {Object} ApiProtestsRemoveRequest
@@ -312,6 +364,7 @@ var Actions = Object.freeze({
     BansGroupBan: 'bans.group_ban',
     BansKickPlayer: 'bans.kick_player',
     BansPaste: 'bans.paste',
+    BansPlayerHistory: 'bans.player_history',
     BansPrepareReban: 'bans.prepare_reban',
     BansRemoveComment: 'bans.remove_comment',
     BansSearch: 'bans.search',
@@ -322,6 +375,7 @@ var Actions = Object.freeze({
     BlockitLoadServers: 'blockit.load_servers',
     CommsAdd: 'comms.add',
     CommsPaste: 'comms.paste',
+    CommsPlayerHistory: 'comms.player_history',
     CommsPrepareBlockFromBan: 'comms.prepare_block_from_ban',
     CommsPrepareReblock: 'comms.prepare_reblock',
     GroupsAdd: 'groups.add',
@@ -333,6 +387,9 @@ var Actions = Object.freeze({
     KickitLoadServers: 'kickit.load_servers',
     ModsAdd: 'mods.add',
     ModsRemove: 'mods.remove',
+    NotesAdd: 'notes.add',
+    NotesDelete: 'notes.delete',
+    NotesList: 'notes.list',
     ProtestsRemove: 'protests.remove',
     ServersAdd: 'servers.add',
     ServersHostPlayers: 'servers.host_players',

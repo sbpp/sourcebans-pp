@@ -678,6 +678,7 @@ function api_bans_view_community(array $params): array
  *   demo_count: int,
  *   history_count: int,
  *   comments_visible: bool,
+ *   notes_visible: bool,
  *   comments: list<array{cid: int, added: int, added_human: string, author: string|null, text: string, edited_at: int|null, edited_by: string|null}>
  * }
  */
@@ -830,6 +831,11 @@ function api_bans_detail(array $params): array
         'demo_count'       => (int)$row['demo_count'],
         'history_count'    => (int)$row['history_count'],
         'comments_visible' => $commentsVisible,
+        // notes_visible is the drawer's signal for whether to render the
+        // Notes tab at all (#1165). It mirrors the dispatcher gate on
+        // `notes.list` (requireAdmin=true) so a public visitor sees three
+        // tabs (Overview / History / Comms) and an admin sees four.
+        'notes_visible'    => $isAdmin,
         'comments'         => $comments,
     ];
 }
@@ -906,4 +912,140 @@ function api_bans_search(array $params): array
         ];
     }
     return ['bans' => $out];
+}
+
+/**
+ * Sibling-bans feed for the player-detail drawer's History tab (#1165).
+ *
+ * Returns the player's other bans (same authid for type=0, same IP for
+ * type=1) excluding the bid the drawer is currently displaying. The
+ * Overview tab already shows the current ban; the History tab is "what
+ * else is on file for this player". Action is registered public to
+ * match `bans.detail`'s reach so the drawer's tab chrome behaves
+ * identically for anonymous and admin callers — IP exposure follows the
+ * same `banlist.hideplayerips` / admin gate `bans.detail` enforces, and
+ * admin names follow `banlist.hideadminname`.
+ *
+ * Inputs: `bid` (int, the drawer's current ban id).
+ *
+ * @return array{
+ *   items: list<array{
+ *     bid: int, type: int, banned_at: int, banned_at_human: string,
+ *     length_seconds: int, length_human: string,
+ *     expires_at: int|null, expires_at_human: string|null,
+ *     state: string, reason: string,
+ *     admin_name: string|null, removed_by: string|null,
+ *     removed_at: int|null, removed_at_human: string|null,
+ *     server_name: string|null
+ *   }>,
+ *   total: int
+ * }
+ */
+function api_bans_player_history(array $params): array
+{
+    global $userbank;
+
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+
+    $isAdmin = $userbank->is_admin();
+    $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
+
+    // Look up the anchor ban so we can match siblings by the same
+    // authid (type=0) or the same IP (type=1). Both columns are
+    // forwarded as plain string params; `:prefix_bans` is the same
+    // table the dispatcher's existing handlers read so phpstan-dba
+    // type-checks the SQL.
+    $anchor = $GLOBALS['PDO']->query(
+        "SELECT type, authid, ip FROM `:prefix_bans` WHERE bid = ?"
+    )->single([$bid]);
+    if (!$anchor) {
+        throw new ApiError('not_found', 'Ban not found.', null, 404);
+    }
+
+    $type   = (int)$anchor['type'];
+    $authid = (string)$anchor['authid'];
+    $ip     = (string)($anchor['ip'] ?? '');
+
+    // No anchor identifier -> no siblings to match against. This also
+    // shields the SQL from a `WHERE authid = ''` sweep on legacy rows
+    // that have a blank authid + blank ip.
+    if (($type === 0 && $authid === '') || ($type === 1 && $ip === '')) {
+        return ['items' => [], 'total' => 0];
+    }
+
+    $matchClause = $type === 1
+        ? "BA.type = 1 AND BA.ip = ? AND BA.ip <> ''"
+        : "BA.type = 0 AND BA.authid = ? AND BA.authid <> ''";
+    $matchParam  = $type === 1 ? $ip : $authid;
+
+    $rows = $GLOBALS['PDO']->query(
+        "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
+                BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
+                AD.user AS admin_name,
+                SE.ip AS server_ip, SE.port AS server_port
+           FROM `:prefix_bans` AS BA
+      LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
+      LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
+          WHERE " . $matchClause . " AND BA.bid <> ?
+       ORDER BY BA.created DESC, BA.bid DESC
+          LIMIT 100"
+    )->resultset([$matchParam, $bid]);
+
+    $items = [];
+    foreach ($rows as $r) {
+        $created = (int)$r['created'];
+        $length  = (int)$r['length'];
+        $ends    = (int)$r['ends'];
+        $removeType = (string)($r['RemoveType'] ?? '');
+
+        if ($removeType === 'U' || $removeType === 'D') {
+            $state = 'unbanned';
+        } elseif ($removeType === 'E') {
+            $state = 'expired';
+        } elseif ($length === 0) {
+            $state = 'permanent';
+        } elseif ($ends > 0 && $ends < time()) {
+            $state = 'expired';
+        } else {
+            $state = 'active';
+        }
+
+        $removedOn = $r['RemovedOn'] !== null ? (int)$r['RemovedOn'] : null;
+        $removedByName = null;
+        if ($r['RemovedBy'] !== null && (int)$r['RemovedBy'] > 0 && !$hideAdmin) {
+            $removedRow = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")
+                ->single([(int)$r['RemovedBy']]);
+            if ($removedRow && !empty($removedRow['user'])) {
+                $removedByName = (string)$removedRow['user'];
+            }
+        }
+
+        $serverName = null;
+        if (!empty($r['server_ip'])) {
+            $serverName = $r['server_ip'] . (!empty($r['server_port']) ? ':' . $r['server_port'] : '');
+        }
+
+        $items[] = [
+            'bid'              => (int)$r['bid'],
+            'type'             => (int)$r['type'],
+            'banned_at'        => $created,
+            'banned_at_human'  => Config::time($created),
+            'length_seconds'   => $length,
+            'length_human'     => $length === 0 ? 'Permanent' : SecondsToString($length),
+            'expires_at'       => $length === 0 ? null : $ends,
+            'expires_at_human' => $length === 0 ? null : Config::time($ends),
+            'state'            => $state,
+            'reason'           => (string)$r['reason'],
+            'admin_name'       => $hideAdmin ? null : ($r['admin_name'] !== null ? (string)$r['admin_name'] : null),
+            'removed_by'       => $removedByName,
+            'removed_at'       => $removedOn,
+            'removed_at_human' => $removedOn !== null ? Config::time($removedOn) : null,
+            'server_name'      => $serverName,
+        ];
+    }
+
+    return ['items' => $items, 'total' => count($items)];
 }

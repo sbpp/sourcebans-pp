@@ -36,6 +36,7 @@
         "demo_count": 0,
         "history_count": 1,
         "comments_visible": false,
+        "notes_visible": false,
         "comments": []
     }
 }

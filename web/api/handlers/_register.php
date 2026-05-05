@@ -23,6 +23,7 @@ require_once __DIR__ . '/comms.php';
 require_once __DIR__ . '/groups.php';
 require_once __DIR__ . '/kickit.php';
 require_once __DIR__ . '/mods.php';
+require_once __DIR__ . '/notes.php';
 require_once __DIR__ . '/protests.php';
 require_once __DIR__ . '/servers.php';
 require_once __DIR__ . '/submissions.php';
@@ -38,6 +39,12 @@ Api::register('auth.lost_password', 'api_auth_lost_password', 0, false, true);
 // + is_admin(), matching page.banlist.php exactly so we don't leak
 // fields the page intentionally suppresses.
 Api::register('bans.detail',        'api_bans_detail',        0, false, true);
+// bans.player_history + comms.player_history feed the drawer's History
+// and Comms tabs (#1165). Same public reach as `bans.detail` so the
+// drawer's tab chrome behaves identically for anonymous and admin
+// callers; `banlist.hideadminname` is honoured inside each handler.
+Api::register('bans.player_history',  'api_bans_player_history',  0, false, true);
+Api::register('comms.player_history', 'api_comms_player_history', 0, false, true);
 
 // ---- account: dispatcher enforces login; handler enforces aid match ---
 Api::register('account.check_password',     'api_account_check_password');
@@ -94,6 +101,14 @@ Api::register('kickit.kick_player',  'api_kickit_kick_player',  ADMIN_OWNER | AD
 // ---- mods -------------------------------------------------------------
 Api::register('mods.add',    'api_mods_add',    ADMIN_OWNER | ADMIN_ADD_MODS);
 Api::register('mods.remove', 'api_mods_remove', ADMIN_OWNER | ADMIN_DELETE_MODS);
+
+// ---- notes (player-detail drawer's Notes tab, #1165) ------------------
+// Admin-only: the drawer hides the Notes tab for non-admins via the
+// `notes_visible` flag in `bans.detail`, so the dispatcher gate here is
+// the load-bearing one.
+Api::register('notes.list',   'api_notes_list',   0, true);
+Api::register('notes.add',    'api_notes_add',    0, true);
+Api::register('notes.delete', 'api_notes_delete', 0, true);
 
 // ---- protests ---------------------------------------------------------
 Api::register('protests.remove', 'api_protests_remove', ADMIN_OWNER | ADMIN_BAN_PROTESTS);

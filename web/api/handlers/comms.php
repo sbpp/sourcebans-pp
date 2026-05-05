@@ -141,3 +141,125 @@ function api_comms_prepare_block_from_ban(array $params): array
         'steam'    => $row['authid'] ?? '',
     ];
 }
+
+/**
+ * Comm-block feed for the player-detail drawer's Comms tab (#1165).
+ *
+ * Looks up the player's Steam ID from `:prefix_bans` for the supplied
+ * `bid` and returns every gag/mute on file for the same Steam ID. Action
+ * is registered public to match `bans.detail` / `bans.player_history` —
+ * comms-list is a public surface (`?p=commslist`) so the drawer's Comms
+ * tab follows the same reach. Admin-name exposure is gated by
+ * `banlist.hideadminname` for non-admin callers, mirroring how
+ * `bans.detail` handles it.
+ *
+ * Inputs: `bid` (int, the drawer's current ban id).
+ *
+ * @return array{
+ *   items: list<array{
+ *     bid: int, type: int, type_label: string,
+ *     created: int, created_human: string,
+ *     length_seconds: int, length_human: string,
+ *     expires_at: int|null, expires_at_human: string|null,
+ *     state: string, reason: string,
+ *     admin_name: string|null,
+ *     removed_by: string|null, removed_at: int|null, removed_at_human: string|null
+ *   }>,
+ *   total: int
+ * }
+ */
+function api_comms_player_history(array $params): array
+{
+    global $userbank;
+
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+
+    $isAdmin   = $userbank->is_admin();
+    $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
+
+    $anchor = $GLOBALS['PDO']->query("SELECT authid FROM `:prefix_bans` WHERE bid = ?")
+        ->single([$bid]);
+    if (!$anchor) {
+        throw new ApiError('not_found', 'Ban not found.', null, 404);
+    }
+
+    $authid = (string)($anchor['authid'] ?? '');
+    if ($authid === '') {
+        // The anchor was an IP-only ban. Comm-blocks are keyed off
+        // authid (no IP column on `:prefix_comms`), so there's nothing
+        // we can match against — return an empty feed cleanly rather
+        // than 404'ing on what is a legitimate state.
+        return ['items' => [], 'total' => 0];
+    }
+
+    $rows = $GLOBALS['PDO']->query(
+        "SELECT C.bid, C.type, C.created, C.ends, C.length, C.reason,
+                C.RemovedOn, C.RemovedBy, C.RemoveType,
+                AD.user AS admin_name
+           FROM `:prefix_comms` AS C
+      LEFT JOIN `:prefix_admins` AS AD ON C.aid = AD.aid
+          WHERE C.authid = ?
+       ORDER BY C.created DESC, C.bid DESC
+          LIMIT 100"
+    )->resultset([$authid]);
+
+    $items = [];
+    foreach ($rows as $r) {
+        $created = (int)$r['created'];
+        $length  = (int)$r['length'];
+        $ends    = (int)$r['ends'];
+        $type    = (int)$r['type'];
+        $removeType = (string)($r['RemoveType'] ?? '');
+
+        if ($removeType === 'U' || $removeType === 'D') {
+            $state = 'unblocked';
+        } elseif ($removeType === 'E') {
+            $state = 'expired';
+        } elseif ($length === 0) {
+            $state = 'permanent';
+        } elseif ($ends > 0 && $ends < time()) {
+            $state = 'expired';
+        } else {
+            $state = 'active';
+        }
+
+        $typeLabel = match ($type) {
+            1 => 'Mute',
+            2 => 'Gag',
+            default => 'Block',
+        };
+
+        $removedOn = $r['RemovedOn'] !== null ? (int)$r['RemovedOn'] : null;
+        $removedByName = null;
+        if ($r['RemovedBy'] !== null && (int)$r['RemovedBy'] > 0 && !$hideAdmin) {
+            $removedRow = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")
+                ->single([(int)$r['RemovedBy']]);
+            if ($removedRow && !empty($removedRow['user'])) {
+                $removedByName = (string)$removedRow['user'];
+            }
+        }
+
+        $items[] = [
+            'bid'              => (int)$r['bid'],
+            'type'             => $type,
+            'type_label'       => $typeLabel,
+            'created'          => $created,
+            'created_human'    => Config::time($created),
+            'length_seconds'   => $length,
+            'length_human'     => $length === 0 ? 'Permanent' : SecondsToString($length),
+            'expires_at'       => $length === 0 ? null : $ends,
+            'expires_at_human' => $length === 0 ? null : Config::time($ends),
+            'state'            => $state,
+            'reason'           => (string)$r['reason'],
+            'admin_name'       => $hideAdmin ? null : ($r['admin_name'] !== null ? (string)$r['admin_name'] : null),
+            'removed_by'       => $removedByName,
+            'removed_at'       => $removedOn,
+            'removed_at_human' => $removedOn !== null ? Config::time($removedOn) : null,
+        ];
+    }
+
+    return ['items' => $items, 'total' => count($items)];
+}

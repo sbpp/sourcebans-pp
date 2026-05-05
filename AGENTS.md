@@ -441,6 +441,8 @@ bearing assertion that the value is already safe HTML, so:
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
 | Edit a template                        | `web/themes/default/*.tpl`                               |
+| Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
+| Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
 | Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php`                          |

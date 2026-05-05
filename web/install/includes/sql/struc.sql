@@ -246,3 +246,20 @@ CREATE TABLE IF NOT EXISTS `{prefix}_login_tokens` (
     PRIMARY KEY (`jti`),
     UNIQUE KEY `secret` (`secret`)
 ) ENGINE=InnoDB DEFAULT CHARSET={charset};
+
+-- Player notes scratchpad surfaced by the player-detail drawer (#1165).
+-- Notes are scoped per Steam ID so an admin can pin context that survives
+-- ban-row churn (a re-ban or unban makes a new bid; notes follow the
+-- player). The Notes pane in the drawer is admin-only — `is_admin()`
+-- gates both the JSON actions and the tab visibility.
+CREATE TABLE IF NOT EXISTS `{prefix}_notes` (
+    `nid` int(10) NOT NULL AUTO_INCREMENT,
+    `steam_id` varchar(64) character set {charset} NOT NULL DEFAULT '',
+    `aid` int(6) NOT NULL,
+    `body` text character set {charset} NOT NULL,
+    `created` int(11) NOT NULL DEFAULT '0',
+    PRIMARY KEY (`nid`),
+    KEY `steam_id` (`steam_id`),
+    KEY `aid` (`aid`),
+    KEY `created` (`created`)
+) ENGINE=InnoDB DEFAULT CHARSET={charset};

@@ -288,6 +288,7 @@
     drawerRoot.dataset.drawerOpen = 'false';
     delete drawerRoot.dataset.loading;
     drawerRoot.innerHTML = '';
+    drawerDetail = null;
   }
 
   /**
@@ -331,20 +332,33 @@
   }
 
   /**
+   * Cached `bans.detail` payload for the currently-open drawer. Pane
+   * builders (`renderHistoryPane`, `renderCommsPane`, `renderNotesPane`)
+   * read this for context (the bid to fetch, the steam_id to look up
+   * notes against). Cleared on `closeDrawer()`.
+   * @type {Object | null}
+   */
+  let drawerDetail = null;
+
+  /**
    * Build the rendered drawer HTML for a successful bans.detail
-   * envelope. Every value that ends up in innerHTML is funnelled
-   * through escapeHtml(); the only literal HTML is the static layout
-   * we author here.
+   * envelope. The drawer is a four-tab UI per #1165:
+   *   Overview — id grid + ban grid + comments (the legacy single body)
+   *   History  — sibling bans for the same player (lazy)
+   *   Comms    — gags/mutes for the same player  (lazy)
+   *   Notes    — admin-only scratchpad           (lazy, gated by data.notes_visible)
+   *
+   * Every value that ends up in innerHTML is funnelled through
+   * escapeHtml(); the only literal HTML is the static layout we author
+   * here. The History/Comms/Notes panes start empty (a single
+   * `[data-pane-empty]` child) and are populated on first activation
+   * by `loadPaneIfNeeded()`.
    * @param {Object} data
    * @returns {string}
    */
   function renderDrawerBody(data) {
     const player = (data && data.player) || {};
-    const ban    = (data && data.ban)    || {};
-    const admin  = (data && data.admin)  || {};
-    const server = (data && data.server) || {};
-    const comments = Array.isArray(data && data.comments) ? data.comments : [];
-    const commentsVisible = !!(data && data.comments_visible);
+    const notesVisible = !!(data && data.notes_visible);
 
     const headerHtml =
       '<header class="drawer__header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
@@ -357,6 +371,84 @@
       +   '</button>'
       + '</header>';
 
+    /** @type {Array<{id: string, label: string}>} */
+    const tabDefs = [
+      { id: 'overview', label: 'Overview' },
+      { id: 'history',  label: 'History'  },
+      { id: 'comms',    label: 'Comms'    },
+    ];
+    if (notesVisible) tabDefs.push({ id: 'notes', label: 'Notes' });
+
+    const tablistHtml =
+      '<div role="tablist" aria-label="Player drawer sections" class="drawer__tabs" data-testid="drawer-tablist" style="display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 0.75rem;overflow-x:auto">'
+      + tabDefs.map((tab, i) => {
+          const selected = i === 0;
+          return '<button type="button"'
+            + ' role="tab"'
+            + ' id="drawer-tab-' + tab.id + '"'
+            + ' data-testid="drawer-tab-' + tab.id + '"'
+            + ' data-drawer-tab="' + tab.id + '"'
+            + ' aria-controls="drawer-panel-' + tab.id + '"'
+            + ' aria-selected="' + (selected ? 'true' : 'false') + '"'
+            + ' tabindex="' + (selected ? '0' : '-1') + '"'
+            + ' style="appearance:none;background:none;border:0;padding:0.625rem 0.875rem;font:inherit;color:inherit;cursor:pointer;border-bottom:2px solid ' + (selected ? 'var(--accent)' : 'transparent') + ';font-weight:' + (selected ? '600' : '400') + '">'
+            + escapeHtml(tab.label)
+            + '</button>';
+        }).join('')
+      + '</div>';
+
+    const overviewHtml =
+      '<div role="tabpanel"'
+      + ' id="drawer-panel-overview"'
+      + ' data-testid="drawer-panel-overview"'
+      + ' data-drawer-panel="overview"'
+      + ' aria-labelledby="drawer-tab-overview"'
+      + ' tabindex="0"'
+      + ' style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex:1">'
+      +   renderOverviewPane(data)
+      + '</div>';
+
+    /**
+     * Build a hidden, empty tabpanel placeholder. The lazy loader fills
+     * it in on first activation. `aria-hidden` plus `hidden` keep the
+     * panel out of the a11y tree until we open it.
+     * @param {string} id
+     * @returns {string}
+     */
+    const lazyPanel = (id) =>
+      '<div role="tabpanel"'
+      + ' id="drawer-panel-' + id + '"'
+      + ' data-testid="drawer-panel-' + id + '"'
+      + ' data-drawer-panel="' + id + '"'
+      + ' aria-labelledby="drawer-tab-' + id + '"'
+      + ' tabindex="0"'
+      + ' hidden'
+      + ' style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.75rem;overflow-y:auto;flex:1">'
+      +   '<div data-pane-empty class="text-sm text-muted">Loading\u2026</div>'
+      + '</div>';
+
+    let panelsHtml = overviewHtml + lazyPanel('history') + lazyPanel('comms');
+    if (notesVisible) panelsHtml += lazyPanel('notes');
+
+    return headerHtml + tablistHtml + panelsHtml;
+  }
+
+  /**
+   * Render the Overview pane content (id grid + ban grid + comments).
+   * Extracted from the pre-#1165 single-body drawer so the new tabbed
+   * UI can drop it into the Overview panel verbatim — no behaviour
+   * change for the data the pane displays.
+   * @param {Object} data
+   * @returns {string}
+   */
+  function renderOverviewPane(data) {
+    const player = (data && data.player) || {};
+    const ban    = (data && data.ban)    || {};
+    const admin  = (data && data.admin)  || {};
+    const server = (data && data.server) || {};
+    const comments = Array.isArray(data && data.comments) ? data.comments : [];
+    const commentsVisible = !!(data && data.comments_visible);
+
     /** @type {Array<[string, string]>} */
     const idRows = [];
     if (player.steam_id)     idRows.push(['SteamID',    String(player.steam_id)]);
@@ -366,7 +458,7 @@
     if (player.country)      idRows.push(['Country',    String(player.country)]);
 
     const idHtml = idRows.length === 0 ? '' :
-      '<dl class="drawer__ids" style="display:grid;grid-template-columns:6rem 1fr;gap:0.25rem 0.75rem;margin:0;font-size:0.8125rem">'
+      '<dl class="drawer__ids" data-testid="drawer-ids" style="display:grid;grid-template-columns:6rem 1fr;gap:0.25rem 0.75rem;margin:0;font-size:0.8125rem">'
       + idRows.map((row) =>
           '<dt class="text-faint">' + escapeHtml(row[0]) + '</dt>'
           + '<dd class="font-mono" style="margin:0">' + escapeHtml(row[1])
@@ -392,7 +484,7 @@
     if (server.name)          banRows.push(['Server', String(server.name)]);
 
     const banHtml =
-      '<dl class="drawer__ban" style="display:grid;grid-template-columns:6rem 1fr;gap:0.25rem 0.75rem;margin:0;font-size:0.8125rem">'
+      '<dl class="drawer__ban" data-testid="drawer-ban" style="display:grid;grid-template-columns:6rem 1fr;gap:0.25rem 0.75rem;margin:0;font-size:0.8125rem">'
       + banRows.map((row) =>
           '<dt class="text-faint">' + escapeHtml(row[0]) + '</dt>'
           + '<dd style="margin:0">' + escapeHtml(row[1]) + '</dd>'
@@ -401,7 +493,7 @@
 
     let commentsHtml = '';
     if (commentsVisible) {
-      commentsHtml = '<section style="padding:0 1.25rem 1.25rem">'
+      commentsHtml = '<section data-testid="drawer-comments" style="margin-top:0.5rem">'
         + '<h3 class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0 0 0.5rem">Comments</h3>'
         + (comments.length === 0
           ? '<p class="text-sm text-muted" style="margin:0">No comments.</p>'
@@ -419,14 +511,211 @@
         + '</section>';
     }
 
-    const bodyHtml =
-      '<div class="drawer__body" style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:1rem;overflow-y:auto;flex:1">'
-      +   idHtml
-      +   banHtml
-      + '</div>'
-      + commentsHtml;
+    return idHtml + banHtml + commentsHtml;
+  }
 
-    return headerHtml + bodyHtml;
+  /**
+   * Render the History pane content from a `bans.player_history`
+   * envelope. Empty state matches the issue's acceptance criteria
+   * verbatim ("No prior bans on file") so the e2e spec can latch on.
+   * @param {Array<any>} items
+   * @returns {string}
+   */
+  function renderHistoryPane(items) {
+    const heading = '<h3 data-testid="drawer-history-heading" class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0 0 0.5rem">Other bans on file</h3>';
+    if (!items.length) {
+      return heading + '<p class="text-sm text-muted" style="margin:0">No prior bans on file.</p>';
+    }
+    return heading
+      + '<ul data-testid="drawer-history-list" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.625rem">'
+      + items.map((b) =>
+          '<li data-testid="drawer-history-item" data-bid="' + escapeHtml(String(b.bid)) + '" style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">'
+          +   '<span class="font-medium">' + escapeHtml(stateLabel(b.state)) + ' \u00b7 ' + escapeHtml(b.length_human || '') + '</span>'
+          +   '<span>' + escapeHtml(b.banned_at_human || '') + '</span>'
+          + '</div>'
+          + '<div class="text-sm" style="white-space:pre-wrap">' + escapeHtml(b.reason || '(no reason)') + '</div>'
+          + (b.admin_name || b.server_name
+            ? '<div class="text-xs text-faint" style="margin-top:0.25rem">'
+              + (b.admin_name ? 'by ' + escapeHtml(b.admin_name) : '')
+              + (b.admin_name && b.server_name ? ' \u00b7 ' : '')
+              + (b.server_name ? escapeHtml(b.server_name) : '')
+              + '</div>'
+            : '')
+          + '</li>'
+        ).join('')
+      + '</ul>';
+  }
+
+  /**
+   * Render the Comms pane content from a `comms.player_history`
+   * envelope. Same shape as History; "No prior comm-blocks on file"
+   * empty state.
+   * @param {Array<any>} items
+   * @returns {string}
+   */
+  function renderCommsPane(items) {
+    const heading = '<h3 data-testid="drawer-comms-heading" class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0 0 0.5rem">Comm-blocks on file</h3>';
+    if (!items.length) {
+      return heading + '<p class="text-sm text-muted" style="margin:0">No prior comm-blocks on file.</p>';
+    }
+    return heading
+      + '<ul data-testid="drawer-comms-list" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.625rem">'
+      + items.map((c) =>
+          '<li data-testid="drawer-comms-item" data-bid="' + escapeHtml(String(c.bid)) + '" style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">'
+          + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">'
+          +   '<span class="font-medium">' + escapeHtml(c.type_label || 'Block') + ' \u00b7 ' + escapeHtml(stateLabel(c.state)) + ' \u00b7 ' + escapeHtml(c.length_human || '') + '</span>'
+          +   '<span>' + escapeHtml(c.created_human || '') + '</span>'
+          + '</div>'
+          + '<div class="text-sm" style="white-space:pre-wrap">' + escapeHtml(c.reason || '(no reason)') + '</div>'
+          + (c.admin_name
+            ? '<div class="text-xs text-faint" style="margin-top:0.25rem">by ' + escapeHtml(c.admin_name) + '</div>'
+            : '')
+          + '</li>'
+        ).join('')
+      + '</ul>';
+  }
+
+  /**
+   * Render the Notes pane content. Includes a `<form>` with a textarea
+   * + Add button for new notes; existing notes render as a list with a
+   * per-row Delete button. The form posts via `sb.api.call`
+   * (`notes.add` / `notes.delete`); the dispatcher requires admin and
+   * the X-CSRF-Token header is set automatically by `sb.api.call`.
+   * @param {Array<any>} items
+   * @returns {string}
+   */
+  function renderNotesPane(items) {
+    const heading = '<h3 data-testid="drawer-notes-heading" class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;margin:0 0 0.5rem">Notes</h3>';
+
+    const formHtml =
+      '<form data-notes-add data-testid="drawer-notes-add" style="display:flex;flex-direction:column;gap:0.5rem;margin:0">'
+      + '<label class="text-xs text-faint" for="drawer-notes-body">Add a note (admins only)</label>'
+      + '<textarea id="drawer-notes-body" name="body" rows="3" maxlength="4000"'
+      +   ' style="width:100%;padding:0.5rem;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-surface);color:inherit;font:inherit;resize:vertical"'
+      +   ' placeholder="Pin context that should follow this player"></textarea>'
+      + '<div style="display:flex;justify-content:flex-end">'
+      +   '<button type="submit" class="btn btn--primary" data-testid="drawer-notes-submit">Add note</button>'
+      + '</div>'
+      + '</form>';
+
+    const listHtml = !items.length
+      ? '<p class="text-sm text-muted" data-testid="drawer-notes-empty" style="margin:0">No notes on file.</p>'
+      : '<ul data-testid="drawer-notes-list" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.625rem">'
+        + items.map((n) =>
+            '<li data-testid="drawer-notes-item" data-nid="' + escapeHtml(String(n.nid)) + '" style="border:1px solid var(--border);border-radius:var(--radius-md);padding:0.625rem 0.75rem;background:var(--bg-surface)">'
+            + '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:0.5rem;font-size:0.75rem;color:var(--text-muted);margin-bottom:0.25rem">'
+            +   '<span class="font-medium">' + escapeHtml(n.author || 'unknown') + '</span>'
+            +   '<span style="display:flex;gap:0.5rem;align-items:center">'
+            +     '<span>' + escapeHtml(n.created_human || '') + '</span>'
+            +     '<button type="button" class="btn--ghost btn--icon" data-notes-delete="' + escapeHtml(String(n.nid)) + '" aria-label="Delete note" title="Delete note">'
+            +       '<i data-lucide="trash-2" style="width:14px;height:14px"></i>'
+            +     '</button>'
+            +   '</span>'
+            + '</div>'
+            + '<div class="text-sm" style="white-space:pre-wrap">' + escapeHtml(n.body || '') + '</div>'
+            + '</li>'
+          ).join('')
+        + '</ul>';
+
+    return heading + formHtml + listHtml;
+  }
+
+  /**
+   * Activate the named tab inside the open drawer: flip aria-selected
+   * + tabindex on the buttons, hide every panel except the matching
+   * one, focus-shift to the activated tab button, and lazy-load the
+   * panel's content if this is its first activation.
+   * @param {string} tabId
+   * @param {boolean} [moveFocus] when true, focus the tab button (used by keyboard nav)
+   * @returns {void}
+   */
+  function activateDrawerTab(tabId, moveFocus) {
+    if (!drawerRoot) return;
+    const tabs = drawerRoot.querySelectorAll('[role="tab"][data-drawer-tab]');
+    const panels = drawerRoot.querySelectorAll('[role="tabpanel"][data-drawer-panel]');
+    tabs.forEach((/** @type {Element} */ btn) => {
+      const el = /** @type {HTMLButtonElement} */ (btn);
+      const active = el.dataset.drawerTab === tabId;
+      el.setAttribute('aria-selected', active ? 'true' : 'false');
+      el.tabIndex = active ? 0 : -1;
+      el.style.borderBottomColor = active ? 'var(--accent)' : 'transparent';
+      el.style.fontWeight = active ? '600' : '400';
+    });
+    panels.forEach((/** @type {Element} */ p) => {
+      const el = /** @type {HTMLElement} */ (p);
+      const active = el.dataset.drawerPanel === tabId;
+      el.hidden = !active;
+    });
+    if (moveFocus) {
+      const target = drawerRoot.querySelector('[role="tab"][data-drawer-tab="' + tabId + '"]');
+      if (target instanceof HTMLElement) target.focus();
+    }
+    void loadPaneIfNeeded(tabId);
+  }
+
+  /**
+   * Lazy-load the tab content the first time the user activates a
+   * non-Overview tab. The Overview pane is always populated server-
+   * side via `bans.detail`; the others fetch their own feed.
+   * @param {string} tabId
+   * @returns {Promise<void>}
+   */
+  async function loadPaneIfNeeded(tabId) {
+    if (!drawerRoot || !drawerDetail) return;
+    if (tabId === 'overview') return;
+    const panel = /** @type {HTMLElement | null} */ (drawerRoot.querySelector('[role="tabpanel"][data-drawer-panel="' + tabId + '"]'));
+    if (!panel) return;
+    if (panel.dataset.loaded === 'true' || panel.dataset.loading === 'true') return;
+    panel.dataset.loading = 'true';
+
+    const bid = drawerDetail.bid;
+    const steamId = (drawerDetail.player && drawerDetail.player.steam_id) || '';
+    let html = '';
+    /** @type {SbApiEnvelope | null} */
+    let env = null;
+
+    try {
+      if (tabId === 'history') {
+        env = await sb.api.call(Actions.BansPlayerHistory, { bid: bid });
+        const items = (env && env.ok && env.data && Array.isArray(env.data.items)) ? env.data.items : [];
+        html = renderHistoryPane(items);
+      } else if (tabId === 'comms') {
+        env = await sb.api.call(Actions.CommsPlayerHistory, { bid: bid });
+        const items = (env && env.ok && env.data && Array.isArray(env.data.items)) ? env.data.items : [];
+        html = renderCommsPane(items);
+      } else if (tabId === 'notes') {
+        env = await sb.api.call(Actions.NotesList, { steam_id: steamId });
+        const items = (env && env.ok && env.data && Array.isArray(env.data.items)) ? env.data.items : [];
+        html = renderNotesPane(items);
+      }
+    } catch (_e) {
+      env = null;
+    }
+
+    delete panel.dataset.loading;
+    if (env && env.ok) {
+      panel.innerHTML = html;
+      panel.dataset.loaded = 'true';
+    } else {
+      const msg = (env && env.error && env.error.message) || 'Couldn\u2019t load.';
+      panel.innerHTML = '<p class="text-sm text-muted" style="margin:0" data-testid="drawer-pane-error">' + escapeHtml(msg) + '</p>';
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  /**
+   * Reload the Notes pane after an add/delete mutation. Forces the
+   * lazy loader to re-run by clearing `data-loaded`.
+   * @returns {Promise<void>}
+   */
+  async function refreshNotesPane() {
+    if (!drawerRoot) return;
+    const panel = /** @type {HTMLElement | null} */ (drawerRoot.querySelector('[role="tabpanel"][data-drawer-panel="notes"]'));
+    if (!panel) return;
+    delete panel.dataset.loaded;
+    panel.innerHTML = '<div data-pane-empty class="text-sm text-muted">Loading\u2026</div>';
+    await loadPaneIfNeeded('notes');
   }
 
   /**
@@ -482,8 +771,10 @@
 
     delete drawerRoot.dataset.loading;
     if (env && env.ok && env.data) {
+      drawerDetail = env.data;
       showDrawer(renderDrawerBody(env.data));
     } else {
+      drawerDetail = null;
       const msg = (env && env.error && env.error.message) || 'Unknown error.';
       showDrawer(renderDrawerError(msg));
     }
@@ -500,12 +791,123 @@
         return;
       }
     }
+
+    // Tab buttons inside the open drawer activate their pane.
+    const tabBtn = target && target.closest('[role="tab"][data-drawer-tab]');
+    if (tabBtn instanceof HTMLElement) {
+      const tabId = tabBtn.dataset.drawerTab;
+      if (tabId) {
+        e.preventDefault();
+        activateDrawerTab(tabId, false);
+        return;
+      }
+    }
+
+    // Per-note delete (Notes pane). The handler enforces "own notes
+    // only OR ADMIN_OWNER"; we still send the request and let the
+    // server decide so the UI doesn't have to know the caller's flags.
+    const delBtn = target && target.closest('[data-notes-delete]');
+    if (delBtn instanceof HTMLElement) {
+      const nid = parseInt(delBtn.dataset.notesDelete || '0', 10);
+      if (nid > 0) {
+        e.preventDefault();
+        void deleteNote(nid);
+        return;
+      }
+    }
+
     // Any element marked `data-drawer-close` closes the drawer — both the
     // backdrop (sibling of .drawer) and the in-header X button (descendant
     // of .drawer) carry the attribute. The earlier `!closest('.drawer')`
     // guard predated the X button and would silently swallow its clicks.
     if (target && target.closest('[data-drawer-close]')) closeDrawer();
   });
+
+  // Tablist arrow-key navigation. Left/Right move + activate; Home/End
+  // jump to the first/last visible tab. Pattern matches the W3C ARIA
+  // Authoring Practices' "manual activation" tablist; e2e specs in
+  // `flows/ui/player-drawer.spec.ts` exercise the keys directly.
+  document.addEventListener('keydown', (/** @type {KeyboardEvent} */ e) => {
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) return;
+    if (active.getAttribute('role') !== 'tab' || !active.dataset.drawerTab) return;
+    if (!drawerRoot || !drawerRoot.contains(active)) return;
+
+    const tabs = Array.from(drawerRoot.querySelectorAll('[role="tab"][data-drawer-tab]'));
+    const currentIndex = tabs.indexOf(active);
+    if (currentIndex === -1) return;
+
+    /** @type {number | null} */
+    let nextIndex = null;
+    switch (e.key) {
+      case 'ArrowLeft':  nextIndex = (currentIndex - 1 + tabs.length) % tabs.length; break;
+      case 'ArrowRight': nextIndex = (currentIndex + 1) % tabs.length;                break;
+      case 'Home':       nextIndex = 0;                                                break;
+      case 'End':        nextIndex = tabs.length - 1;                                  break;
+      default: return;
+    }
+    if (nextIndex === null) return;
+    e.preventDefault();
+    const next = /** @type {HTMLElement} */ (tabs[nextIndex]);
+    const nextId = next.dataset.drawerTab;
+    if (nextId) activateDrawerTab(nextId, true);
+  });
+
+  // Notes pane: form submit -> notes.add. Delegated so the form being
+  // (re-)rendered by the lazy loader keeps working.
+  document.addEventListener('submit', (/** @type {SubmitEvent} */ e) => {
+    const target = /** @type {Element | null} */ (e.target);
+    const form = target && target.closest('[data-notes-add]');
+    if (!(form instanceof HTMLFormElement)) return;
+    e.preventDefault();
+    void submitNoteForm(form);
+  });
+
+  /**
+   * POST `notes.add` and refresh the Notes pane.
+   * @param {HTMLFormElement} form
+   * @returns {Promise<void>}
+   */
+  async function submitNoteForm(form) {
+    if (!drawerDetail) return;
+    const textarea = /** @type {HTMLTextAreaElement | null} */ (form.querySelector('textarea[name="body"]'));
+    const body = textarea ? textarea.value.trim() : '';
+    const steamId = (drawerDetail.player && drawerDetail.player.steam_id) || '';
+    if (!body) {
+      showToast({ kind: 'warn', title: 'Note is empty' });
+      return;
+    }
+    if (!steamId) {
+      showToast({ kind: 'error', title: 'No Steam ID on this ban' });
+      return;
+    }
+
+    const env = await sb.api.call(Actions.NotesAdd, { steam_id: steamId, body: body });
+    if (env && env.ok) {
+      if (textarea) textarea.value = '';
+      await refreshNotesPane();
+      showToast({ kind: 'success', title: 'Note added' });
+    } else {
+      const msg = (env && env.error && env.error.message) || 'Couldn\u2019t add note.';
+      showToast({ kind: 'error', title: 'Note not saved', body: msg });
+    }
+  }
+
+  /**
+   * POST `notes.delete` and refresh the Notes pane.
+   * @param {number} nid
+   * @returns {Promise<void>}
+   */
+  async function deleteNote(nid) {
+    const env = await sb.api.call(Actions.NotesDelete, { nid: nid });
+    if (env && env.ok) {
+      await refreshNotesPane();
+      showToast({ kind: 'success', title: 'Note deleted' });
+    } else {
+      const msg = (env && env.error && env.error.message) || 'Couldn\u2019t delete note.';
+      showToast({ kind: 'error', title: 'Note not deleted', body: msg });
+    }
+  }
 
   // ---- COPY BUTTONS ----------------------------------------
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {

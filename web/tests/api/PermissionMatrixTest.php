@@ -69,6 +69,11 @@ final class PermissionMatrixTest extends TestCase
             // format stays consistent with what the HTML page would have
             // shown the same caller. See api_bans_detail() docblock.
             'bans.detail'                 => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
+            // bans.player_history is public for the same reason
+            // bans.detail is — the drawer's History tab matches the public
+            // ban-list reach. Admin-only fields (admin name, removed-by)
+            // are gated inside the handler.
+            'bans.player_history'         => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
             'bans.setup_ban'              => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.prepare_reban'          => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.paste'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
@@ -93,6 +98,8 @@ final class PermissionMatrixTest extends TestCase
             'comms.prepare_reblock'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'comms.paste'                     => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
             'comms.prepare_block_from_ban'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            // comms.player_history follows bans.player_history (#1165).
+            'comms.player_history'            => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
 
             // -- groups.
             'groups.add'                      => ['perm' => ADMIN_OWNER | ADMIN_ADD_GROUP,    'requireAdmin' => false, 'public' => false],
@@ -108,6 +115,13 @@ final class PermissionMatrixTest extends TestCase
             // -- mods.
             'mods.add'                        => ['perm' => ADMIN_OWNER | ADMIN_ADD_MODS,    'requireAdmin' => false, 'public' => false],
             'mods.remove'                     => ['perm' => ADMIN_OWNER | ADMIN_DELETE_MODS, 'requireAdmin' => false, 'public' => false],
+
+            // -- notes (player-detail drawer's Notes tab, #1165). Admin-only
+            // surface — the drawer hides the tab for non-admins via the
+            // `notes_visible` flag in `bans.detail`.
+            'notes.list'                      => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            'notes.add'                       => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            'notes.delete'                    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
 
             // -- protests.
             'protests.remove'                 => ['perm' => ADMIN_OWNER | ADMIN_BAN_PROTESTS, 'requireAdmin' => false, 'public' => false],
