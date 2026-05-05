@@ -148,13 +148,44 @@ case "$cmd" in
             GRANT ALL PRIVILEGES ON \`sourcebans_e2e\`.* TO 'sourcebans'@'%';
             GRANT CREATE, DROP ON *.* TO 'sourcebans'@'%';
             FLUSH PRIVILEGES;" >/dev/null
+        # Pin the panel at the e2e DB for the duration of the run, then
+        # restore on exit. docker/php/web-entrypoint.sh renders config.php
+        # once at container start with `define('DB_NAME', 'sourcebans')`
+        # — the dev DB. Apache+mod_php holds that constant for the life
+        # of the container, so the `-e DB_NAME=sourcebans_e2e` below only
+        # affects the bash shell that drives `npx playwright test` (and
+        # the truncate shim it shells into). Without this swap the panel
+        # the test browser hits writes to `sourcebans` while the fixture
+        # truncates `sourcebans_e2e`, and any spec that mutates DB state
+        # is non-hermetic across runs (#1124 Slice 3 was the first slice
+        # to exercise the write path; Slice 0's smoke specs only login,
+        # which masked the gap). Apache re-reads config.php on every
+        # request so an in-place sed takes effect immediately with no
+        # restart; the trap restores the dev-DB value so the developer's
+        # browser session is unaffected once the suite finishes.
+        e2e_db="${E2E_DB_NAME:-sourcebans_e2e}"
+        dc exec -T web bash -c "
+            set -e
+            cfg=/var/www/html/web/config.php
+            stash=/var/www/html/web/config.php.e2e-stash
+            [ ! -f \$stash ] && cp \$cfg \$stash
+            sed -i \"s/define('DB_NAME', '[^']*');/define('DB_NAME', '${e2e_db}');/\" \$cfg
+        "
+        restore_panel_db() {
+            dc exec -T web bash -c '
+                cfg=/var/www/html/web/config.php
+                stash=/var/www/html/web/config.php.e2e-stash
+                if [ -f $stash ]; then mv $stash $cfg; fi
+            ' 2>/dev/null || true
+        }
+        trap restore_panel_db EXIT INT TERM
         dc exec -T \
             -e E2E_BASE_URL="${E2E_BASE_URL:-http://localhost}" \
             -e E2E_IN_CONTAINER=1 \
             -e SCREENSHOTS="${SCREENSHOTS:-}" \
             -e CI="${CI:-}" \
             -e DB_HOST=db -e DB_PORT=3306 \
-            -e DB_NAME="${E2E_DB_NAME:-sourcebans_e2e}" \
+            -e DB_NAME="${e2e_db}" \
             -e DB_USER=sourcebans -e DB_PASS=sourcebans \
             -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
             web bash -lc '

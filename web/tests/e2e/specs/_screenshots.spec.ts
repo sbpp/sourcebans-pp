@@ -39,6 +39,12 @@
  */
 
 import { test, expect } from '../fixtures/auth.ts';
+import {
+    adminApprove,
+    anonymousSubmit,
+    newAnonymousContext,
+    type SubmissionFixture,
+} from '../pages/SubmitBanFlow.ts';
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
@@ -196,5 +202,243 @@ test.describe('@screenshot smoke-admin', () => {
                 }
             });
         }
+    }
+});
+
+/**
+ * Stateful captures specific to Slice 3 (flow-public-submission).
+ *
+ * The route-driven gallery above can't capture the moderation queue
+ * with a row visible (it'd render the empty state) or the public
+ * banlist with the freshly-approved ban (it'd render "no bans match
+ * those filters"). This block walks the actual flow up to each
+ * capture point, reusing the helpers in `pages/SubmitBanFlow.ts` so
+ * the screenshot path and the gate spec drive exactly the same UI.
+ *
+ * Captures (one PNG per theme × viewport for each):
+ *
+ *   - `flow-public-submit-form`         — public `/submit` form, logged
+ *                                          out. No DB state required.
+ *   - `flow-public-submit-admin-queue`  — admin moderation queue with
+ *                                          the just-submitted row.
+ *   - `flow-public-submit-banlist`      — public ban list with the
+ *                                          freshly-approved ban.
+ *
+ * Why the inline-flow shape (vs the issue's "small PHP shim that
+ * inserts the same submission" alternative): we already have
+ * page-object helpers from Slice 3's gate spec, and reusing them
+ * keeps the shotline data identical to what a real admin would see
+ * after going through the form. A shim would need its own truncate,
+ * its own DB-side fixture insert, and its own approve path — three
+ * surfaces that drift over time. The flow approach has zero
+ * additional surfaces; the runtime cost (a few extra page hits per
+ * variant) is acceptable when SCREENSHOTS=1 is the only invocation
+ * that exercises this block.
+ *
+ * Cross-project parallelism: chromium + mobile-chromium share a single
+ * `sourcebans_e2e` DB, so naively running the same fixture in both
+ * would race on `(SteamId)` uniqueness inside `:prefix_submissions`
+ * and trip BansAdd's `already_banned` guard on the second admin
+ * approve. We give every (state × theme × viewport) variant a unique
+ * SteamID seed, so concurrent runs never collide. We also do NOT
+ * `truncateE2eDb()` between captures — that would race the gate spec
+ * if both ran in the same invocation (which is the supported case
+ * when CI runs `npx playwright test` once with SCREENSHOTS=1 set in
+ * a different job, or when a developer runs the full suite locally).
+ */
+test.describe('@screenshot flow-public-submission', () => {
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
+
+    /**
+     * Pin the theme key in localStorage on the panel origin so the
+     * NEXT navigation boots theme.js with the right value (theme.js
+     * reads `localStorage['sbpp-theme']` once at IIFE-time via
+     * `applyTheme(currentTheme())`; setting localStorage on the page
+     * we're already on is too late, the class is locked at the
+     * pre-set value until a fresh document loads). Pair with
+     * `expectTheme()` after the screenshot navigation if you need a
+     * deterministic post-navigation wait — the form/queue/banlist
+     * screenshot anchors below already gate on a visible primary
+     * element, which is enough to guarantee theme.js has resolved.
+     */
+    async function pinTheme(page: import('@playwright/test').Page, theme: Theme): Promise<void> {
+        await page.goto('/');
+        await page.evaluate((mode: Theme) => {
+            try {
+                localStorage.setItem('sbpp-theme', mode);
+            } catch {
+                /* localStorage unavailable; skip */
+            }
+        }, theme);
+    }
+
+    /**
+     * Wait until <html> reflects the resolved theme. Call AFTER the
+     * page navigates to the screenshot target, never on the
+     * `pinTheme` page (where the class is already locked at the
+     * pre-pin value).
+     */
+    async function expectTheme(page: import('@playwright/test').Page, theme: Theme): Promise<void> {
+        await page.waitForFunction((expected: Theme) => {
+            const isDark = document.documentElement.classList.contains('dark');
+            return expected === 'dark' ? isDark : !isDark;
+        }, theme);
+    }
+
+    function snapshotPath(theme: Theme, viewport: string, name: string): string {
+        return resolve(__dirname, '..', 'screenshots', theme, viewport, `${name}.png`);
+    }
+
+    /**
+     * Build a fixture whose SteamID, name, and email are unique per
+     * (state × theme × viewport). The third octet of the steamid
+     * encodes the state (queue vs banlist), the fourth is the
+     * theme/viewport tuple. Without this, two parallel projects'
+     * `BansAdd` calls would race on `(authid)` and the second one
+     * would 4xx as `already_banned`.
+     */
+    function fixture(
+        state: 'queue' | 'banlist',
+        theme: Theme,
+        viewport: string,
+    ): SubmissionFixture {
+        // Two distinct seeds keep `queue` and `banlist` from sharing a
+        // SteamID — the banlist capture inserts a ban with the
+        // submission's SteamID, and the next queue capture would
+        // otherwise trip `already_banned` on its own approve step.
+        const stateSeed = state === 'queue' ? '88' : '99';
+        // Theme + viewport seed: `light/desktop = 0`, `light/mobile = 1`,
+        // `dark/desktop = 2`, `dark/mobile = 3`. Numeric to keep the
+        // SteamID's third group a plain integer (SteamID::isValidID
+        // only accepts /STEAM_[01]:[01]:\d+/).
+        const tvSeed =
+            (theme === 'dark' ? 2 : 0) + (viewport === 'mobile' ? 1 : 0);
+        const tag = `${state}-${theme}-${viewport}`;
+        return {
+            steam: `STEAM_0:1:${stateSeed}1124${tvSeed}`,
+            playerName: `e2e-flow-${tag}`,
+            reason: `e2e screenshot: ${tag}`,
+            reporterName: `e2e-screenshot-${tag}`,
+            email: `e2e-${tag}@example.test`,
+        };
+    }
+
+    for (const theme of THEMES) {
+        test(`flow-public-submit-form ${theme}`, async ({ browser }, testInfo) => {
+            const viewport = viewportFor(testInfo.project.name);
+            const path = snapshotPath(theme, viewport, 'flow-public-submit-form');
+            await mkdir(dirname(path), { recursive: true });
+
+            // Public form is rendered for logged-out visitors; spin up
+            // an anonymous context so the chrome matches what a real
+            // submitter would see (no admin chrome, no nav-account).
+            const ctx = await newAnonymousContext(browser, testInfo.project.use);
+            try {
+                const anon = await ctx.newPage();
+                await pinTheme(anon, theme);
+                await anon.goto('/index.php?p=submit');
+                // The form has no async loads (the server list is
+                // pre-rendered into the <select>), so a successful
+                // navigation is itself the terminal state. We assert
+                // on the submit button to make sure the form mounted
+                // before snapshotting, then on the resolved theme so
+                // the screenshot shows the right palette.
+                await expect(anon.locator('[data-testid="submitban-submit"]')).toBeVisible();
+                await expectTheme(anon, theme);
+                await anon.screenshot({ fullPage: true, path });
+                expect(path).toMatch(/\.png$/);
+            } finally {
+                await ctx.close();
+            }
+        });
+
+        test(`flow-public-submit-admin-queue ${theme}`, async ({ page, browser }, testInfo) => {
+            const viewport = viewportFor(testInfo.project.name);
+            const path = snapshotPath(theme, viewport, 'flow-public-submit-admin-queue');
+            await mkdir(dirname(path), { recursive: true });
+
+            const fx = fixture('queue', theme, viewport);
+
+            // Submit anonymously first (separate context) so the
+            // queue has a row to render.
+            const anonCtx = await newAnonymousContext(browser, testInfo.project.use);
+            try {
+                const anon = await anonCtx.newPage();
+                await anonymousSubmit(anon, fx);
+            } finally {
+                await anonCtx.close();
+            }
+
+            // Pin theme on the admin context, then navigate to the
+            // queue. The page is server-rendered (no skeletons on
+            // this surface) so the row is in the DOM by the time
+            // theme application is observable on <html>.
+            await pinTheme(page, theme);
+            await page.goto('/index.php?p=admin&c=bans');
+            await expect(
+                page
+                    .locator('[data-testid="submission-row"]')
+                    .filter({ has: page.locator('[data-testid="submission-row-steam"]', { hasText: fx.steam }) }),
+            ).toBeVisible();
+            await expectTheme(page, theme);
+
+            await page.screenshot({ fullPage: true, path });
+            expect(path).toMatch(/\.png$/);
+        });
+
+        test(`flow-public-submit-banlist ${theme}`, async ({ page, browser }, testInfo) => {
+            const viewport = viewportFor(testInfo.project.name);
+            const path = snapshotPath(theme, viewport, 'flow-public-submit-banlist');
+            await mkdir(dirname(path), { recursive: true });
+
+            const fx = fixture('banlist', theme, viewport);
+
+            // Walk submit → approve via the same helpers the gate
+            // spec uses. The DB stays mutated after this test
+            // finishes; that's intentional — every fixture is unique
+            // per (theme × viewport), so the next gallery run won't
+            // collide. `globalSetup` runs `Fixture::install()` (drop +
+            // recreate sourcebans_e2e) at the start of every
+            // `playwright test` invocation, so the leftover rows
+            // never accumulate across runs.
+            const anonCtx = await newAnonymousContext(browser, testInfo.project.use);
+            try {
+                const anon = await anonCtx.newPage();
+                await anonymousSubmit(anon, fx);
+            } finally {
+                await anonCtx.close();
+            }
+
+            // Pin theme on the admin context BEFORE the approve flow
+            // navigates the page — adminApprove does its own
+            // page.goto under the hood and we want the resolved theme
+            // to land on first paint there too. (pinTheme does the
+            // localStorage write on `/`, which is a same-origin
+            // document, so the value carries over.)
+            await pinTheme(page, theme);
+            await adminApprove(page, fx);
+
+            // Public ban list should now show the row. We pick the
+            // desktop testid; on mobile-chromium the `<tr>` is in the
+            // DOM but `display:none`, and the visible card view's
+            // `<a class="ban-row">` is selected by `.ban-cards
+            // .ban-row[data-state]` rather than testid (the testid
+            // only lives on the desktop `<tr>` in #1123 B2). For the
+            // screenshot we just need the page to settle in a
+            // post-load state; either projection is acceptable.
+            await page.goto('/index.php?p=banlist');
+            const row = page.locator('[data-testid="ban-row"]').filter({ hasText: fx.steam });
+            const card = page.locator(`.ban-cards .ban-row[data-state]`).filter({ hasText: fx.steam });
+            // `attached` rather than `visible` so the assertion holds
+            // for both desktop (testid'd `<tr>` is visible) and mobile
+            // (testid'd `<tr>` exists in the DOM but is `display:none`,
+            // and the card sibling carries the visible markup).
+            const present = row.or(card);
+            await expect(present.first()).toBeAttached();
+            await expectTheme(page, theme);
+
+            await page.screenshot({ fullPage: true, path });
+            expect(path).toMatch(/\.png$/);
+        });
     }
 });

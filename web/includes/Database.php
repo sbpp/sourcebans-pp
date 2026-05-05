@@ -26,7 +26,20 @@ class Database
         $this->prefix = $prefix;
         $dsn = 'mysql:host=' . $host . ';port=' . $port . ';dbname=' . $dbname . ';charset=' . $charset;
         $options = array(
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            // Native (non-emulated) prepares: PDOStatement::execute([...])
+            // forwards values via MySQL's binary protocol with proper
+            // type metadata, instead of literal-substituting them as
+            // strings client-side. The latter breaks `LIMIT ?,?` (MariaDB
+            // rejects `LIMIT '0','30'` as a syntax error) — a regression
+            // that surfaced once page.banlist.php / page.commslist.php
+            // started running on PDO post-#1092 (the ADOdb→PDO refactor)
+            // and went unnoticed until the e2e suite first exercised the
+            // public ban list with rows present (#1124 Slice 3). Existing
+            // call sites that go through Database::bind() already auto-
+            // detect PARAM_INT for ints, so this is purely additive on
+            // the array-shortcut path.
+            PDO::ATTR_EMULATE_PREPARES => false,
         );
 
         try {

@@ -225,9 +225,19 @@
             var a = api(), A = actions();
             if (!a || !A || !Number.isFinite(subid)) return;
             a.call(A.BansSetupBan, { subid: subid }).then(function (r) {
-                if (r && r.ok && r.data && typeof window.applyBanFields === 'function') {
-                    window.applyBanFields(r.data);
-                }
+                if (!r || !r.ok || !r.data) return;
+                // sbpp2026 ships __sbppApplyBanFields (defined in
+                // admin.bans.php's tail script) as the replacement for
+                // sourcebans.js's legacy applyBanFields. Without this
+                // call the BansSetupBan response would arrive but the
+                // Add Ban form above the queue would stay empty —
+                // silently breaking the entire "Ban a submission" UX.
+                // We keep the legacy name as a fallback so a third-party
+                // theme that still loads sourcebans.js keeps working.
+                var fill = (typeof window.__sbppApplyBanFields === 'function')
+                    ? window.__sbppApplyBanFields
+                    : (typeof window.applyBanFields === 'function' ? window.applyBanFields : null);
+                if (fill) fill(r.data);
                 if (typeof window.swapTab === 'function') window.swapTab(0);
             });
             return;
