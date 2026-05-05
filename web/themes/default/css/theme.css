@@ -162,23 +162,51 @@ html.dark .theme-toggle__sun { display: none; }
 html.dark .theme-toggle__moon { display: inline-block; }
 
 /* ---- Buttons ---- */
+/* Buttons resolve colour through --btn-bg / --btn-color / --btn-border /
+   --btn-bg-hover so modifiers (.btn--primary, --secondary, --ghost,
+   --danger) override the rendered colour via the cascade. The dark-mode
+   base override is wrapped in :where() so its specificity drops to
+   (0,1,0) — matching .btn / .btn--primary — which lets later modifier
+   declarations win on source order. Without :where(), html.dark .btn
+   would have specificity (0,2,1) and outrank every .btn--* modifier
+   (orange CTA disappeared in dark mode — #1182). */
 .btn {
+  --btn-bg: var(--zinc-900);
+  --btn-color: white;
+  --btn-border: transparent;
+  --btn-bg-hover: var(--zinc-800);
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   height: 2.25rem; padding: 0 0.875rem; border-radius: var(--radius-md);
-  font-size: var(--fs-base); font-weight: 500; border: 1px solid transparent;
-  background: var(--zinc-900); color: white; transition: background-color .15s, border-color .15s;
+  font-size: var(--fs-base); font-weight: 500;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg); color: var(--btn-color);
+  transition: background-color .15s, border-color .15s;
 }
-html.dark .btn { background: var(--zinc-100); color: var(--zinc-900); }
-.btn:hover { background: var(--zinc-800); }
-html.dark .btn:hover { background: white; }
-.btn--primary { background: var(--brand-600); color: white; }
-.btn--primary:hover { background: var(--brand-700); }
-.btn--secondary { background: var(--bg-surface); color: var(--text); border-color: var(--border); }
-.btn--secondary:hover { background: var(--bg-muted); }
-.btn--ghost { background: transparent; color: var(--text-muted); border: 1px solid transparent; }
-.btn--ghost:hover { background: var(--bg-muted); color: var(--text); }
-.btn--danger { background: var(--danger); color: white; }
-.btn--danger:hover { background: #b91c1c; }
+.btn:hover { background: var(--btn-bg-hover); }
+:where(html.dark) .btn {
+  --btn-bg: var(--zinc-100);
+  --btn-color: var(--zinc-900);
+  --btn-bg-hover: white;
+}
+.btn--primary { --btn-bg: var(--brand-600); --btn-color: white; --btn-bg-hover: var(--brand-700); }
+.btn--secondary {
+  --btn-bg: var(--bg-surface);
+  --btn-color: var(--text);
+  --btn-border: var(--border);
+  --btn-bg-hover: var(--bg-muted);
+}
+/* --btn-border self-reset keeps .btn--ghost transparent even when a
+   sibling modifier (.btn--secondary, etc.) had set --btn-border earlier
+   in the cascade — see #1183 (icon-only ghost should never show a
+   border). */
+.btn--ghost {
+  --btn-bg: transparent;
+  --btn-color: var(--text-muted);
+  --btn-border: transparent;
+  --btn-bg-hover: var(--bg-muted);
+}
+.btn--ghost:hover { --btn-color: var(--text); }
+.btn--danger { --btn-bg: var(--danger); --btn-color: white; --btn-bg-hover: #b91c1c; }
 .btn--sm { height: 2rem; padding: 0 0.75rem; font-size: var(--fs-xs); }
 .btn--icon { width: 2.25rem; padding: 0; }
 
