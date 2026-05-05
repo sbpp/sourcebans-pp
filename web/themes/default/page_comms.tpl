@@ -68,13 +68,13 @@
                        placeholder="Player, SteamID, or reason…"
                        data-testid="comms-search">
             </div>
-            <select class="select" name="server" style="width:auto;min-width:11rem" data-testid="comms-server-filter">
+            <select class="select" name="server" style="width:auto;min-width:11rem" data-testid="comms-server-filter" aria-label="Filter by server">
                 <option value="">All servers</option>
                 {foreach $servers as $s}
                     <option value="{$s.sid}" {if $filters.server == $s.sid}selected{/if}>{$s.name|escape}</option>
                 {/foreach}
             </select>
-            <select class="select" name="time" style="width:auto" data-testid="comms-time-filter">
+            <select class="select" name="time" style="width:auto" data-testid="comms-time-filter" aria-label="Filter by time range">
                 <option value="">All time</option>
                 <option value="1d" {if $filters.time == '1d'}selected{/if}>Today</option>
                 <option value="7d" {if $filters.time == '7d'}selected{/if}>Last 7 days</option>

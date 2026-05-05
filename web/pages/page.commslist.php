@@ -271,12 +271,10 @@ if (isset($_GET['searchText'])) {
 		LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
 		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
       	WHERE " . $authidClause . " or CO.name LIKE ? or CO.reason LIKE ?" . $hideinactive . "
-   		ORDER BY CO.created DESC LIMIT ?,?")->resultset(array(
+   		ORDER BY CO.created DESC LIMIT " . intval($BansStart) . "," . intval($BansPerPage))->resultset(array(
         $authidParam,
         $search,
         $search,
-        intval($BansStart),
-        intval($BansPerPage)
     ));
 
 
@@ -299,10 +297,7 @@ if (isset($_GET['searchText'])) {
 		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
 		" . $hideinactiven . "
 		ORDER BY created DESC
-		LIMIT ?,?")->resultset(array(
-        intval($BansStart),
-        intval($BansPerPage)
-    ));
+		LIMIT " . intval($BansStart) . "," . intval($BansPerPage))->resultset();
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $hideinactiven)->resultset();
     $searchlink = "";
@@ -459,10 +454,7 @@ if (isset($_GET['advSearch'])) {
   			" . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . "
       " . $where . $hideinactive . "
    ORDER BY CO.created DESC
-   LIMIT ?,?")->resultset(array_merge($advcrit, array(
-        intval($BansStart),
-        intval($BansPerPage)
-    )));
+   LIMIT " . intval($BansStart) . "," . intval($BansPerPage))->resultset($advcrit);
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO
 										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . " " . $where . $hideinactive)->resultset($advcrit);
@@ -473,10 +465,12 @@ $BanCount = isset($res_count[0]['cnt']) ? (int) $res_count[0]['cnt'] : 0;
 if ($BansEnd > $BanCount) {
     $BansEnd = $BanCount;
 }
-if (!$res) {
-    echo "No Blocks Found.";
-    PageDie();
-}
+// Mirrors page.banlist.php: the redesigned page_comms.tpl renders its
+// own "No comm blocks match those filters." empty state inside the
+// table, so we let the template handle the empty case rather than
+// short-circuiting with PageDie() and dropping the marquee chrome.
+// PDO error mode is EXCEPTION, so a real SQL failure throws before
+// reaching this point.
 
 $view_comments = false;
 $bans          = [];

@@ -282,12 +282,10 @@ if (isset($_GET['searchText'])) {
   LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
       WHERE " . $search_ips . $authidClause . " or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive . "
    ORDER BY BA.created DESC
-   LIMIT ?,?")->resultset(array_merge($search_array, [
+   LIMIT " . intval($BansStart) . "," . intval($BansPerPage))->resultset(array_merge($search_array, [
         $authidParam,
         $search,
         $search,
-        intval($BansStart),
-        intval($BansPerPage),
     ]));
 
 
@@ -309,10 +307,7 @@ if (isset($_GET['searchText'])) {
   LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
   " . $hideinactiven . "
    ORDER BY created DESC
-   LIMIT ?,?")->resultset([
-        intval($BansStart),
-        intval($BansPerPage),
-    ]);
+   LIMIT " . intval($BansStart) . "," . intval($BansPerPage))->resultset();
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_bans`" . $hideinactiven)->resultset();
     $searchlink = "";
@@ -494,10 +489,7 @@ if (isset($_GET['advSearch'])) {
   " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CO ON BA.bid = CO.bid" : "") . "
       " . $where . $hideinactive . "
    ORDER BY BA.created DESC
-   LIMIT ?,?")->resultset(array_merge($advcrit, [
-        intval($BansStart),
-        intval($BansPerPage),
-    ]));
+   LIMIT " . intval($BansStart) . "," . intval($BansPerPage))->resultset($advcrit);
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA
 										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CO ON BA.bid = CO.bid" : "") . " " . $where . $hideinactive)->resultset($advcrit);
