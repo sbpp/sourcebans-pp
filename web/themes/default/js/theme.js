@@ -591,4 +591,27 @@
   const initIcons = () => { if (window.lucide) window.lucide.createIcons(); };
   if (document.readyState !== 'loading') initIcons();
   else document.addEventListener('DOMContentLoaded', initIcons);
+
+  // ---- PLATFORM-AWARE SHORTCUT HINTS -----------------------
+  // The Cmd glyph (U+2318 ⌘) is missing from the vendored JetBrains Mono
+  // and the generic CSS mono fallback on every non-Mac browser, so a
+  // server-rendered '⌘' renders as tofu for the majority of users
+  // (#1184). Templates render the Ctrl form server-side; on macOS /
+  // iOS, swap the visible label to the Cmd form here at boot. The
+  // shortcut handler at line ~112 already accepts metaKey || ctrlKey,
+  // so behavior is platform-correct regardless of the visible hint.
+  /** @returns {void} */
+  function applyPlatformHints() {
+    const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent)
+      || navigator.platform.toUpperCase().includes('MAC');
+    if (!isMac) return;
+    document.querySelectorAll('.topbar__search kbd').forEach((/** @type {Element} */ el) => {
+      el.textContent = '\u2318K';
+    });
+    document.querySelectorAll('[data-modkey]').forEach((/** @type {Element} */ el) => {
+      el.textContent = '\u2318';
+    });
+  }
+  if (document.readyState !== 'loading') applyPlatformHints();
+  else document.addEventListener('DOMContentLoaded', applyPlatformHints);
 })();

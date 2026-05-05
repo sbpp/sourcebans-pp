@@ -226,7 +226,7 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hold Ctrl / &#8984; to multi-select. Submits the current selection as a comma-joined list of <code>ADMIN_*</code> constant names.</div>
+            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as a comma-joined list of <code>ADMIN_*</code> constant names.</div>
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-admins-submit-admwebflag"
@@ -251,7 +251,7 @@
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hold Ctrl / &#8984; to multi-select. Submits the current selection as a comma-joined list of <code>SM_*</code> constant names.</div>
+            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as a comma-joined list of <code>SM_*</code> constant names.</div>
             <button type="submit"
                     class="btn btn--secondary btn--sm"
                     data-testid="search-admins-submit-admsrvflag"

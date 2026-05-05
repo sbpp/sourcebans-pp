@@ -48,7 +48,12 @@
                 aria-label="Open command palette (search players, SteamIDs, pages)">
             <i data-lucide="search" style="width:14px;height:14px"></i>
             <span>Search players, SteamIDs…</span>
-            <kbd>&#8984;K</kbd>
+            {* The U+2318 ⌘ glyph is missing from the vendored JetBrains Mono
+               and the generic CSS mono fallback on every non-Mac browser, so
+               a server-rendered '⌘K' renders as tofu for the majority of users
+               (#1184). Render the Ctrl form here and let theme.js upgrade
+               Mac/iOS clients to '⌘K' at boot. *}
+            <kbd>Ctrl K</kbd>
         </button>
 
         <button type="button"
