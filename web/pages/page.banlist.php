@@ -233,6 +233,13 @@ if (isset($_SESSION["hideinactive"])) {
 if (isset($_GET['searchText'])) {
     $searchText = trim($_GET['searchText']);
 
+    // #1130: when the input parses as any Steam-ID format, match `authid`
+    // via REGEXP so both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants hit
+    // (the SourceMod plugin can write either depending on the game). The
+    // Y:Z tail is invariant across the normalisation block below, so the
+    // ordering of the two calls is academic.
+    $authidPattern = SteamID::toSearchPattern($searchText);
+
     try {
         SteamID::init();
         if (SteamID::isValidID($searchText)) {
@@ -245,6 +252,14 @@ if (isset($_GET['searchText'])) {
     } catch (Exception $e) { }
 
     $search = "%{$searchText}%";
+
+    if ($authidPattern !== null) {
+        $authidClause = "BA.authid REGEXP ?";
+        $authidParam  = $authidPattern;
+    } else {
+        $authidClause = "BA.authid LIKE ?";
+        $authidParam  = $search;
+    }
 
     // disable ip search if hiding player ips
     $search_ips   = "";
@@ -263,10 +278,10 @@ if (isset($_GET['searchText'])) {
   LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
   LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
   LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
-      WHERE " . $search_ips . "BA.authid LIKE ? or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive . "
+      WHERE " . $search_ips . $authidClause . " or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive . "
    ORDER BY BA.created DESC
    LIMIT ?,?")->resultset(array_merge($search_array, [
-        $search,
+        $authidParam,
         $search,
         $search,
         intval($BansStart),
@@ -274,8 +289,8 @@ if (isset($_GET['searchText'])) {
     ]));
 
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA WHERE " . $search_ips . "BA.authid LIKE ? OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive)->resultset(array_merge($search_array, [
-        $search,
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA WHERE " . $search_ips . $authidClause . " OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive)->resultset(array_merge($search_array, [
+        $authidParam,
         $search,
         $search,
     ]));
@@ -331,10 +346,19 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "steamid":
-            $where   = "WHERE BA.authid = ?";
-            $advcrit = array(
-                $value
-            );
+            // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
+            // see SteamID::toSearchPattern() for rationale. The pre-switch
+            // normalisation block above has already canonicalised $value to
+            // STEAM_0 form, but the Y:Z tail is invariant so the pattern is
+            // the same either way.
+            $authidPattern = SteamID::toSearchPattern($value);
+            if ($authidPattern !== null) {
+                $where   = "WHERE BA.authid REGEXP ?";
+                $advcrit = array($authidPattern);
+            } else {
+                $where   = "WHERE BA.authid = ?";
+                $advcrit = array($value);
+            }
             break;
         case "steam":
             $where   = "WHERE BA.authid LIKE ?";

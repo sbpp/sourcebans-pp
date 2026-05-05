@@ -139,6 +139,45 @@ class SteamID
     }
 
     /**
+     * Build a MySQL REGEXP that matches an `authid` column against both
+     * `STEAM_0:Y:Z` and `STEAM_1:Y:Z` forms of the same account, mirroring
+     * the pattern the SourceMod plugin uses (see `sbpp_main.sp` /
+     * `sbpp_checker.sp`, which always query `authid REGEXP '^STEAM_[0-9]:Y:Z$'`
+     * because both universe digits legitimately end up in the column —
+     * `GetClientAuthId(client, AuthId_Steam2, …)` returns `STEAM_1:…` on
+     * TF2/L4D and similar Source titles).
+     *
+     * Returns `null` when `$value` isn't a recognisable Steam ID, so callers
+     * can fall back to plain equality / LIKE for non-Steam inputs.
+     *
+     * Defends #1128 / #1130: `toSteam2()` always rewrites `STEAM_1` →
+     * `STEAM_0`, so a strict-equality search after that normalisation
+     * silently misses any row stored under the other universe digit.
+     *
+     * @param  mixed $value
+     * @return string|null
+     */
+    public static function toSearchPattern($value): ?string
+    {
+        if (!is_string($value) || $value === '') {
+            return null;
+        }
+        try {
+            self::init();
+            if (!self::isValidID($value)) {
+                return null;
+            }
+            $steam2 = self::toSteam2($value);
+            if (!is_string($steam2) || !preg_match('/^STEAM_[01]:([01]):(\d+)$/', $steam2, $m)) {
+                return null;
+            }
+            return '^STEAM_[0-9]:' . $m[1] . ':' . $m[2] . '$';
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
      * @return string
      */
     private static function getCalcMethod()

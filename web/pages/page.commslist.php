@@ -234,6 +234,11 @@ if (isset($_SESSION["hideinactive"])) {
 if (isset($_GET['searchText'])) {
     $searchText = trim($_GET['searchText']);
 
+    // #1130: when the input parses as any Steam-ID format, match `authid`
+    // via REGEXP so both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants hit
+    // (the SourceMod plugin can write either depending on the game).
+    $authidPattern = SteamID::toSearchPattern($searchText);
+
     try {
         SteamID::init();
         if (SteamID::isValidID($searchText)) {
@@ -247,6 +252,14 @@ if (isset($_GET['searchText'])) {
 
     $search = "%{$searchText}%";
 
+    if ($authidPattern !== null) {
+        $authidClause = "CO.authid REGEXP ?";
+        $authidParam  = $authidPattern;
+    } else {
+        $authidClause = "CO.authid LIKE ?";
+        $authidParam  = $search;
+    }
+
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -257,9 +270,9 @@ if (isset($_GET['searchText'])) {
 		LEFT JOIN `:prefix_servers` AS SE ON SE.sid = CO.sid
 		LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
 		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
-      	WHERE CO.authid LIKE ? or CO.name LIKE ? or CO.reason LIKE ?" . $hideinactive . "
+      	WHERE " . $authidClause . " or CO.name LIKE ? or CO.reason LIKE ?" . $hideinactive . "
    		ORDER BY CO.created DESC LIMIT ?,?")->resultset(array(
-        $search,
+        $authidParam,
         $search,
         $search,
         intval($BansStart),
@@ -267,8 +280,8 @@ if (isset($_GET['searchText'])) {
     ));
 
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO WHERE CO.authid LIKE ? OR CO.name LIKE ? OR CO.reason LIKE ?" . $hideinactive)->resultset(array(
-        $search,
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO WHERE " . $authidClause . " OR CO.name LIKE ? OR CO.reason LIKE ?" . $hideinactive)->resultset(array(
+        $authidParam,
         $search,
         $search
     ));
@@ -325,10 +338,16 @@ if (isset($_GET['advSearch'])) {
             );
             break;
         case "steamid":
-            $where   = "WHERE CO.authid = ?";
-            $advcrit = array(
-                $value
-            );
+            // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
+            // see SteamID::toSearchPattern() for rationale.
+            $authidPattern = SteamID::toSearchPattern($value);
+            if ($authidPattern !== null) {
+                $where   = "WHERE CO.authid REGEXP ?";
+                $advcrit = array($authidPattern);
+            } else {
+                $where   = "WHERE CO.authid = ?";
+                $advcrit = array($value);
+            }
             break;
         case "steam":
             $where   = "WHERE CO.authid LIKE ?";
