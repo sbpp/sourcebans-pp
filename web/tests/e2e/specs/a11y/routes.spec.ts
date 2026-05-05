@@ -141,9 +141,17 @@ test.describe('a11y axe scan (0 critical)', () => {
 
                     // Wait for any [data-loading] / [data-skeleton] terminal
                     // attributes to clear — see `pages/_base.ts` for the
-                    // shared definition of "page is ready".
+                    // canonical predicate. The marquee banlist (#1123 B2)
+                    // keeps a dormant `<div data-skeleton hidden>`
+                    // always-mounted so banlist.js can flip it visible
+                    // during chip-filter re-renders without re-creating
+                    // the node, so we treat any `[hidden]` skeleton as
+                    // inert (only a *visible* skeleton means the page is
+                    // still loading).
                     await activePage.waitForFunction(
-                        () => !document.querySelector('[data-loading="true"], [data-skeleton]'),
+                        () => !document.querySelector(
+                            '[data-loading="true"], [data-skeleton]:not([hidden])',
+                        ),
                     );
 
                     await expectNoCriticalA11y(activePage, testInfo);
