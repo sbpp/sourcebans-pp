@@ -230,11 +230,18 @@ html.dark .pill--online    { color: #6ee7b7; }
   height: 1.75rem; border-radius: var(--radius-full); border: 1px solid var(--border);
   background: var(--bg-surface); color: var(--text-muted);
   font-size: var(--fs-xs); font-weight: 500; transition: background-color .15s, color .15s;
+  text-decoration: none;
 }
 .chip:hover { background: var(--bg-muted); color: var(--text); }
-.chip[aria-pressed="true"] { background: var(--zinc-900); color: white; border-color: var(--zinc-900); }
-html.dark .chip[aria-pressed="true"] { background: var(--zinc-100); color: var(--zinc-900); border-color: var(--zinc-100); }
+.chip[aria-pressed="true"],
+.chip[data-active="true"] { background: var(--zinc-900); color: white; border-color: var(--zinc-900); }
+html.dark .chip[aria-pressed="true"],
+html.dark .chip[data-active="true"] { background: var(--zinc-100); color: var(--zinc-900); border-color: var(--zinc-100); }
 .chip__dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; }
+/* Segmented chip group (e.g. admin/bans Current/Archive). The chips
+   inside inherit `.chip` styling; this just lays them out and gives
+   the row a consistent gap so it doesn't collapse onto the heading. */
+.chip-row { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 
 /* ---- Table ---- */
 .table { width: 100%; font-size: var(--fs-base); border-collapse: collapse; }

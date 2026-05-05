@@ -133,17 +133,17 @@ echo '</div>';
 
 // Protests
 echo '<div class="tabcontent" id="Ban protests">';
-echo '<div id="tabsWrapper" style="margin:0px;">
-    <div id="tabs">
-	<ul>
-		<li id="utab-p0" class="active">
-			<a href="index.php?p=admin&c=bans#^1~p0" id="admin_utab_p0" onclick="Swap2ndPane(0,\'p\');" class="tip" title="Show Protests :: Show current protests." target="_self">Current</a>
-		</li>
-		<li id="utab-p1" class="nonactive">
-			<a href="index.php?p=admin&c=bans#^1~p1" id="admin_utab_p1" onclick="Swap2ndPane(1,\'p\');" class="tip" title="Show Archive :: Show the protest archive." target="_self">Archive</a>
-		</li>
-	</ul>
-	</div>
+// Current/Archive segmented control. v1.x emitted a <ul><li> styled by
+// the (now-removed) #tabsWrapper / .nonactive CSS pair (#1124, #1187);
+// the v2.0.0 sweep deleted those rules but kept the bullet markup, so
+// it was rendering as a browser-default disc list. Re-skinned as a
+// .chip-row matching banlist/comms/audit; `data-active="true"` is the
+// #1123 testability hook. The legacy id="admin_utab_p*" + onclick=
+// Swap2ndPane attribute is kept verbatim so any caller that re-supplies
+// that helper (or sb.tabs.init() reading the URL anchor) keeps working.
+echo '<div class="chip-row" role="tablist" aria-label="Protest archive filter" data-testid="protests-archive-tabs" style="margin-bottom:0.75rem">
+		<a class="chip" id="admin_utab_p0" data-active="true" data-testid="filter-chip-protests-current" role="tab" aria-selected="true" aria-controls="p0" href="index.php?p=admin&c=bans#^1~p0" onclick="Swap2ndPane(0,\'p\');" title="Show current protests">Current</a>
+		<a class="chip" id="admin_utab_p1" data-active="false" data-testid="filter-chip-protests-archive" role="tab" aria-selected="false" aria-controls="p1" href="index.php?p=admin&c=bans#^1~p1" onclick="Swap2ndPane(1,\'p\');" title="Show the protest archive">Archive</a>
 	</div>';
 // current protests
 echo '<div id="p0">';
@@ -466,17 +466,13 @@ echo '</div>';
 
 //Submissions page
 echo '<div class="tabcontent" id="Ban submissions">';
-echo '<div id="tabsWrapper" style="margin:0px;">
-    <div id="tabs">
-	<ul>
-		<li id="utab-s0" class="active">
-			<a href="index.php?p=admin&c=bans#^2~s0" id="admin_utab_s0" onclick="Swap2ndPane(0,\'s\');" class="tip" title="Show Submissions :: Show current submissions." target="_self">Current</a>
-		</li>
-		<li id="utab-s1" class="nonactive">
-			<a href="index.php?p=admin&c=bans#^2~s1" id="admin_utab_s1" onclick="Swap2ndPane(1,\'s\');" class="tip" title="Show Archive :: Show the submission archive." target="_self">Archive</a>
-		</li>
-	</ul>
-	</div>
+// Same Current/Archive segmented control as the protests block above —
+// see the comment on the protests echo for the bullet-list backstory
+// (#1124, #1187). Aria/testid hooks are scoped with `submissions-` so
+// e2e specs can target each filter row independently.
+echo '<div class="chip-row" role="tablist" aria-label="Submission archive filter" data-testid="submissions-archive-tabs" style="margin-bottom:0.75rem">
+		<a class="chip" id="admin_utab_s0" data-active="true" data-testid="filter-chip-submissions-current" role="tab" aria-selected="true" aria-controls="s0" href="index.php?p=admin&c=bans#^2~s0" onclick="Swap2ndPane(0,\'s\');" title="Show current submissions">Current</a>
+		<a class="chip" id="admin_utab_s1" data-active="false" data-testid="filter-chip-submissions-archive" role="tab" aria-selected="false" aria-controls="s1" href="index.php?p=admin&c=bans#^2~s1" onclick="Swap2ndPane(1,\'s\');" title="Show the submission archive">Archive</a>
 	</div>';
 echo '<div id="s0">'; // current submissions
 $ItemsPerPage = SB_BANS_PER_PAGE;
