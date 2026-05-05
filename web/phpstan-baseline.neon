@@ -505,12 +505,6 @@ parameters:
 			path: pages/page.banlist.php
 
 		-
-			message: '#^Variable \$prev might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/page.banlist.php
-
-		-
 			message: '#^Variable \$res might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
