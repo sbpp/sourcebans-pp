@@ -6,29 +6,17 @@
  *     `.ban-cards` block (page_bans.tpl L204) becomes the canonical
  *     listing. Each card preserves the `[data-testid="drawer-trigger"]`
  *     hook so the drawer flow still works on mobile.
- *   - The sticky filter chip bar above the list keeps every chip
- *     reachable on mobile widths.
+ *   - The sticky filter chip bar above the list wraps onto multiple
+ *     rows (#1181, theme.css `<=768px`) so every chip is statically
+ *     visible without a horizontal swipe. The chip container itself
+ *     must therefore have NO internal horizontal overflow:
+ *     `scrollWidth <= clientWidth + 1`.
+ *   - Page-level `documentElement.scrollWidth <= clientWidth` is now
+ *     asserted too — #1180 dropped the topbar's `min-width: 16rem`
+ *     at <=1024px, so the chrome no longer overflows iPhone-13.
  *
  * Project gating: mobile-chromium only (see sidebar.spec.ts header
  * for the rationale on `beforeEach` skip vs. `describe.configure`).
- *
- * == Divergence from the issue's literal text ==
- *
- *   The brief's "filter chips wrap" subtest assumes flex-wrap, but
- *   page_bans.tpl wraps the chip group in `.scroll-x` (theme.css
- *   L291) — `overflow-x: auto; scrollbar-width: none`. At iPhone-13
- *   width the chip row's `scrollWidth` legitimately EXCEEDS its
- *   `clientWidth` because that's the design: chips horizontal-scroll
- *   inside a viewport-constrained container, they don't wrap. We
- *   therefore assert the OUTER chip-row container is bounded by the
- *   viewport (the user contract: "no chip silently lives at
- *   x=2000px") rather than chip-row `scrollWidth <= clientWidth`.
- *   Page-level `documentElement.scrollWidth <= clientWidth` IS now
- *   asserted: #1180 dropped the topbar's `min-width: 16rem` at
- *   <=1024px so the chrome no longer overflows iPhone-13. If a
- *   future redesign switches the chip row to `flex-wrap: wrap`,
- *   tighten the chip-container assertion below to
- *   `scrollWidth <= clientWidth + 1`.
  */
 
 import type { Page } from '@playwright/test';
@@ -118,12 +106,17 @@ test.describe('responsive: ban list', () => {
             await expect(chip).toHaveCount(1);
         }
 
-        // Spirit of "no horizontal overflow": the chip row container
-        // is bounded by the viewport. Chips inside may horizontally
-        // scroll inside the `.scroll-x` wrapper (by design, see the
-        // file-level divergence note); what the user contract gates
-        // is that the OUTER row doesn't extend past the viewport,
-        // which is what `.scroll-x` clamps it to.
+        // #1181: at <=768px the chip row wraps via `flex-wrap: wrap`,
+        // so the container must have NO internal horizontal scroll.
+        // Allow a 1px tolerance for sub-pixel rounding.
+        const overflow = await chipBar.evaluate((el) => ({
+            scrollWidth: el.scrollWidth,
+            clientWidth: el.clientWidth,
+        }));
+        expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1);
+
+        // And the row itself is bounded by the viewport horizontally —
+        // no chip silently lives at x=2000px off-screen.
         const vw = page.viewportSize()?.width ?? 0;
         const barBox = await chipBar.boundingBox();
         expect(barBox, 'chip bar must render a bounding box').not.toBeNull();
@@ -139,9 +132,10 @@ test.describe('responsive: ban list', () => {
             document.documentElement.scrollWidth - document.documentElement.clientWidth
         )).toBeLessThanOrEqual(1);
 
-        // Every chip is reachable on mobile: Playwright's auto-scroll
-        // brings horizontally-scrolled-out elements into view, so a
-        // `.click()` succeeds on the rightmost chip and toggles state.
+        // Every chip is reachable on mobile: with wrap in place the
+        // rightmost chip renders within the viewport (possibly on a
+        // second row), so `.click()` succeeds without horizontal
+        // auto-scroll and toggles state.
         const last = page.locator('[data-testid="filter-chip-unbanned"]');
         await last.click();
         await expect(last).toHaveAttribute('aria-pressed', 'true');

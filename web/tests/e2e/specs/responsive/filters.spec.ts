@@ -3,11 +3,11 @@
  *
  * iPhone-13 viewport contract:
  *   - Every filter chip on the public ban list (`page_bans.tpl`) is
- *     clickable and updates the URL state — even when chips
- *     horizontally scroll inside their `.scroll-x` container at
- *     mobile widths (see banlist.spec.ts for the wrap/scroll
- *     divergence note; banlist.spec.ts already covers the geometry,
- *     so this file focuses on interaction).
+ *     clickable and updates the URL state. At mobile widths the chip
+ *     row wraps via `flex-wrap` (#1181, theme.css `<=768px`), so
+ *     every chip renders inside the viewport without horizontal
+ *     scroll; banlist.spec.ts covers the wrap geometry, this file
+ *     focuses on interaction.
  *   - Each click pins `aria-pressed="true"` on the chosen chip and
  *     stamps `?state=<name>` onto the URL (banlist.js
  *     `applyStateFilter`).
@@ -41,10 +41,10 @@ test.describe('responsive: filter bar', () => {
             const chip = page.locator(`[data-testid="filter-chip-${id}"]`);
             await expect(chip).toHaveAttribute('aria-pressed', 'false');
 
-            // Playwright auto-scrolls a horizontally scrolled-out
-            // chip into view before clicking; that's the contract
-            // banlist.spec.ts (geometry) and this file (interaction)
-            // jointly rely on. No `force: true` needed.
+            // After #1181 the row wraps onto multiple lines at
+            // <=768px, so every chip renders within the viewport.
+            // `.click()` works directly — no horizontal auto-scroll
+            // and no `force: true` needed.
             await chip.click();
 
             await expect(chip).toHaveAttribute('aria-pressed', 'true');

@@ -285,6 +285,12 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
 @media (max-width: 768px) {
   .table { display: none; }
   .ban-cards { display: block; }
+  /* #1181: filter chip rows wrap onto multiple lines on mobile
+     instead of horizontal-scrolling, so every chip is reachable
+     without a swipe. The .scroll-x desktop affordance is the
+     overflow fallback when the chip row would otherwise extend
+     past a wide viewport. */
+  .scroll-x { overflow-x: visible; flex-wrap: wrap; row-gap: 0.5rem; }
 }
 @media (min-width: 769px) {
   .ban-cards { display: none; }
