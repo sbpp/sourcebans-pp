@@ -956,3 +956,208 @@ test.describe('@screenshot flow-comms-gag-mute', () => {
         });
     }
 });
+
+/**
+ * Per-flow gallery — admin ban lifecycle (#1124 Slice 4).
+ *
+ * Five frames, each its own deterministic test so a single failure
+ * scopes to one PNG (the gallery rebuilds the DB per test):
+ *
+ *   1. addban-empty           — pristine "Add a ban" form
+ *   2. list-after-add         — admin list with the new permanent ban
+ *   3. editban-prefilled      — edit-ban form hydrated from the row
+ *   4. list-with-unban-action — admin list pre-unban (the legacy
+ *                                `confirm()` modal lived in sourcebans.js
+ *                                — gone since #1123 D1; v2.0.0 unban is
+ *                                a direct GET. The closest "modal/prompt
+ *                                open" frame is the row showing the
+ *                                unban affordance, so we capture that.)
+ *   5. list-after-unban       — admin list with the row's state pill
+ *                                flipped to `unbanned`
+ *
+ * Mobile chromium and the `dark` theme run the full matrix too, on the
+ * same admin storageState (no anonymous context — the entire flow is
+ * admin-only). Each test calls `truncateE2eDb()` so the captures are
+ * hermetic and never depend on the order tests ran in.
+ */
+const FLOW_FIXTURE = {
+    steam: 'STEAM_0:1:1234567',
+    nickname: 'e2e-banned-player',
+    initialReason: 'e2e: admin lifecycle test',
+};
+
+interface FlowFrame {
+    name: string;
+    /** Sets up the state to capture; resolves once the page is stable. */
+    drive: (page: Page) => Promise<void>;
+}
+
+async function applyFlowTheme(page: Page, theme: Theme): Promise<void> {
+    // Mirror the smoke gallery's pattern: pin sbpp-theme in
+    // localStorage before the screenshot route loads, then wait for
+    // theme.js's applyTheme to flip the `dark` class on <html>. We
+    // can't `goto('/')` here because some frames (list-after-unban)
+    // rely on a multi-step setup that already left the page on its
+    // final URL — we set the storage value, hard-reload, and let
+    // applyTheme re-run.
+    await page.evaluate((mode: Theme) => {
+        try { localStorage.setItem('sbpp-theme', mode); } catch (_e) { /* unavailable; skip */ }
+    }, theme);
+    await page.reload();
+    await page.waitForFunction((expected: Theme) => {
+        const isDark = document.documentElement.classList.contains('dark');
+        return expected === 'dark' ? isDark : !isDark;
+    }, theme);
+}
+
+/** Add the fixture ban via the UI; the 'Ban added' toast is the
+ *  deterministic success signal (same matrix the flow spec uses). */
+async function addFixtureBan(page: Page): Promise<void> {
+    await page.goto('/index.php?p=admin&c=bans');
+    const form = page.locator('[data-testid="addban-form"]');
+    await form.locator('[data-testid="addban-nickname"]').fill(FLOW_FIXTURE.nickname);
+    await form.locator('[data-testid="addban-steam"]').fill(FLOW_FIXTURE.steam);
+    await form.locator('[data-testid="addban-reason"]').selectOption({ value: 'other' });
+    await form.locator('[data-testid="addban-reason-custom"]').fill(FLOW_FIXTURE.initialReason);
+    await form.locator('[data-testid="addban-submit"]').click();
+    await page
+        .locator('.toast[data-kind="success"]')
+        .filter({ hasText: /ban added/i })
+        .waitFor({ state: 'visible' });
+}
+
+const FLOW_FRAMES: FlowFrame[] = [
+    {
+        name: 'addban-empty',
+        async drive(page) {
+            await page.goto('/index.php?p=admin&c=bans');
+            await page.locator('[data-testid="addban-form"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        name: 'list-after-add',
+        async drive(page) {
+            await addFixtureBan(page);
+            await page.goto('/index.php?p=banlist');
+            await page
+                .locator('[data-testid="ban-row"]')
+                .filter({ hasText: FLOW_FIXTURE.steam })
+                .waitFor({ state: 'visible' });
+        },
+    },
+    {
+        name: 'editban-prefilled',
+        async drive(page) {
+            await addFixtureBan(page);
+            await page.goto('/index.php?p=banlist');
+            const row = page
+                .locator('[data-testid="ban-row"]')
+                .filter({ hasText: FLOW_FIXTURE.steam });
+            await row.locator('[data-testid="row-action-edit"]').click();
+            // Wait on the form being hydrated (selectLengthTypeReason
+            // populates `editban-name`'s value via DOMContentLoaded);
+            // the `toHaveValue` poll is the deterministic signal that
+            // the tail script has finished running.
+            await expect(page.locator('[data-testid="editban-name"]')).toHaveValue(FLOW_FIXTURE.nickname);
+        },
+    },
+    {
+        name: 'list-with-unban-action',
+        async drive(page) {
+            await addFixtureBan(page);
+            await page.goto('/index.php?p=banlist');
+            // Hover the row so the action cluster's :hover styles are
+            // engaged for the screenshot. Doesn't change the asserted
+            // state (the unban anchor is always visible for active
+            // rows the admin can unban) but matches what a moderator
+            // would see right before clicking.
+            const row = page
+                .locator('[data-testid="ban-row"]')
+                .filter({ hasText: FLOW_FIXTURE.steam });
+            await row.hover();
+            await row.locator('[data-testid="row-action-unban"]').waitFor({ state: 'visible' });
+        },
+    },
+    {
+        name: 'list-after-unban',
+        async drive(page) {
+            await addFixtureBan(page);
+            await page.goto('/index.php?p=banlist');
+            const row = page
+                .locator('[data-testid="ban-row"]')
+                .filter({ hasText: FLOW_FIXTURE.steam });
+            await row.locator('[data-testid="row-action-unban"]').click();
+            // Wait on the row's data-state flipping to `unbanned` after
+            // the unban GET round-trips and the page re-renders — same
+            // deterministic check the spec uses.
+            await expect(page.locator(`[data-testid="ban-row"][data-state="unbanned"]`)).toBeVisible();
+        },
+    },
+];
+
+test.describe('@screenshot flow-admin-ban-lifecycle', () => {
+    test.skip(!process.env.SCREENSHOTS, '@screenshot only runs when SCREENSHOTS=1');
+
+    // Run desktop only — same constraint as the lifecycle spec
+    // (`specs/flows/admin-ban-lifecycle.spec.ts`): both projects
+    // (chromium + mobile-chromium) share a single `sourcebans_e2e`
+    // schema, so the per-test `truncateE2eDb()` from project B races
+    // project A's add-ban half-way through and one of the truncates
+    // fails on the post-truncate re-seed (PK collision on the
+    // re-inserted admin row 0). The flow's UI surface is the same
+    // desktop chrome at mobile width — Slice 7's responsive gallery
+    // (`specs/responsive/`) locks the mobile chrome separately, so we
+    // don't need a duplicate frame here.
+    test.skip(({ isMobile }) => isMobile, 'flow gallery is desktop only (DB race + Slice 7 covers mobile)');
+
+    // Force serial mode within the project: every frame runs its own
+    // truncate + addFixtureBan against the shared `sourcebans_e2e`
+    // schema, and parallel workers from the same project would still
+    // race their truncates against each other (the PK-0 admin row's
+    // re-insert collides). `mode: 'serial'` pins all tests in this
+    // describe to one worker, so the per-test reset is the only thing
+    // touching the DB at any moment.
+    test.describe.configure({ mode: 'serial' });
+
+    test.beforeEach(async () => {
+        await truncateE2eDb();
+    });
+
+    for (const frame of FLOW_FRAMES) {
+        for (const theme of THEMES) {
+            test(`flow-admin-ban-lifecycle ${frame.name} ${theme}`, async ({ page }, testInfo) => {
+                const viewport = viewportFor(testInfo.project.name);
+                // Output `screenshots/<theme>/<viewport>/<route>.png`
+                // (flat). `upload-screenshots.sh` walks the tree at
+                // `mindepth=3 maxdepth=3` and emits one markdown row
+                // per `<route>`; nesting frames under a per-flow
+                // subdirectory hides them from the comment table, so
+                // we encode the slice + frame in the filename instead
+                // and let the per-PR/per-slice subdirectory the
+                // upload script writes to (`pr-<PR>/<slug>/`) keep
+                // gallery rows scoped by slice.
+                const outPath = resolve(
+                    __dirname,
+                    '..',
+                    'screenshots',
+                    theme,
+                    viewport,
+                    `flow-admin-ban-lifecycle--${frame.name}.png`,
+                );
+                await mkdir(dirname(outPath), { recursive: true });
+
+                // Setup runs in `light` (the chrome's first-paint
+                // default). Switching to `dark` happens *after* the
+                // flow setup completes via applyFlowTheme() so the
+                // toast + navigation events the setup waits on aren't
+                // disturbed by an in-flight reload.
+                await frame.drive(page);
+                await applyFlowTheme(page, theme);
+
+                await page.screenshot({ fullPage: true, path: outPath });
+                expect(outPath).toMatch(/\.png$/);
+            });
+        }
+    }
+});
+
