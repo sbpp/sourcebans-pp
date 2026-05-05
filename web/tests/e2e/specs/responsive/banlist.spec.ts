@@ -19,19 +19,16 @@
  *   L291) — `overflow-x: auto; scrollbar-width: none`. At iPhone-13
  *   width the chip row's `scrollWidth` legitimately EXCEEDS its
  *   `clientWidth` because that's the design: chips horizontal-scroll
- *   inside a viewport-constrained container, they don't wrap. The
- *   page-level `documentElement.scrollWidth > clientWidth` check is
- *   ALSO not a clean signal here: the topbar in core/title.tpl
- *   (`.topbar__search { min-width: 16rem }` next to the theme
- *   toggle) currently overflows the iPhone-13 viewport by ~28px,
- *   which is a separate chrome-layout regression (tracked as #1180),
- *   not a chip-bar one. The user-visible contract for THIS spec
- *   ("filter bar remains usable, every chip reachable, container
- *   is bounded by the viewport so no chip silently lives at
- *   x=2000px") still holds; we assert that and let the topbar
- *   overflow be tracked as its own follow-up. If a future redesign
- *   switches the chip row to `flex-wrap: wrap`, tighten the chip-
- *   container assertion below to `scrollWidth <= clientWidth + 1`.
+ *   inside a viewport-constrained container, they don't wrap. We
+ *   therefore assert the OUTER chip-row container is bounded by the
+ *   viewport (the user contract: "no chip silently lives at
+ *   x=2000px") rather than chip-row `scrollWidth <= clientWidth`.
+ *   Page-level `documentElement.scrollWidth <= clientWidth` IS now
+ *   asserted: #1180 dropped the topbar's `min-width: 16rem` at
+ *   <=1024px so the chrome no longer overflows iPhone-13. If a
+ *   future redesign switches the chip row to `flex-wrap: wrap`,
+ *   tighten the chip-container assertion below to
+ *   `scrollWidth <= clientWidth + 1`.
  */
 
 import type { Page } from '@playwright/test';
@@ -133,6 +130,14 @@ test.describe('responsive: ban list', () => {
         expect(barBox!.width).toBeLessThanOrEqual(vw + 1);
         expect(barBox!.x).toBeGreaterThanOrEqual(-1);
         expect(barBox!.x + barBox!.width).toBeLessThanOrEqual(vw + 1);
+
+        // Page-level: nothing in the chrome (topbar, sidebar drawer,
+        // …) leaks past the viewport either. #1180 fixed the topbar
+        // search min-width regression that previously left ~28px of
+        // horizontal scroll on iPhone-13.
+        await expect.poll(() => page.evaluate(() =>
+            document.documentElement.scrollWidth - document.documentElement.clientWidth
+        )).toBeLessThanOrEqual(1);
 
         // Every chip is reachable on mobile: Playwright's auto-scroll
         // brings horizontally-scrolled-out elements into view, so a

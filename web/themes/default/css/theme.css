@@ -146,6 +146,9 @@ html.dark .topbar { background: rgb(9 9 11 / 0.8); }
   border: 1px solid var(--border); background: var(--bg-page);
   color: var(--text-muted); font-size: var(--fs-base);
 }
+@media (max-width: 1024px) {
+  .topbar__search { min-width: 0; flex: 1 1 auto; }
+}
 .topbar__search kbd { margin-left: auto; padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.625rem; color: var(--text-muted); }
 
 /* ---- Buttons ---- */
