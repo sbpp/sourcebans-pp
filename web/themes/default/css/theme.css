@@ -148,6 +148,16 @@ html.dark .topbar { background: rgb(9 9 11 / 0.8); }
 }
 .topbar__search kbd { margin-left: auto; padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.625rem; color: var(--text-muted); }
 
+/* ---- Theme toggle icon swap ----
+   The button renders both <i data-lucide="sun"> and <i data-lucide="moon">
+   placeholders; we show whichever matches the resolved theme. theme.js
+   only toggles `<html class="dark">` — no JS click work needed here.
+   "system" mode resolves to one of the two via applyTheme(); a third
+   `monitor` icon for system is a follow-up (#1185). */
+.theme-toggle__moon { display: none; }
+html.dark .theme-toggle__sun { display: none; }
+html.dark .theme-toggle__moon { display: inline-block; }
+
 /* ---- Buttons ---- */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
