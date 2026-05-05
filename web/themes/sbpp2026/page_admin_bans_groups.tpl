@@ -166,8 +166,14 @@
                          name="steamGroupStatus"
                          class="text-sm" style="width:100%"></div>
                 </div>
-                {* nofilter: $list_steam_groups is the literal value of $_GET['fid'], which is dropped into a JS arg position. The legacy default theme does the same; LoadGetGroups uses it as a Steam profile id only. Re-implement the workflow on a future ticket if stricter validation is needed. *}
-                <script>LoadGetGroups('{$list_steam_groups nofilter}');</script>
+                {* $list_steam_groups is the literal value of $_GET['fid'] dropped into a JS string argument.
+                   Smarty's default HTML escape (init.php's setEscapeHtml(true)) renders `'` as the literal
+                   six-character sequence `&#039;` — inside a <script> element the browser does NOT decode
+                   character references, so the JS string parser sees those six characters as part of the
+                   string contents and never terminates early. Matches the legacy default theme's behaviour.
+                   DO NOT add `nofilter` here without an alternative escape (e.g. json_encode in the View);
+                   doing so re-opens a reflected XSS via `?p=admin&c=bans&fid=…');alert(1);//`. *}
+                <script>LoadGetGroups('{$list_steam_groups}');</script>
             {/if}
         </section>
     {/if}

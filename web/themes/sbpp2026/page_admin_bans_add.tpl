@@ -12,10 +12,16 @@
         from a submission's "Ban" link.
 
     sbpp2026 doesn't ship sourcebans.js so applyApiResponse() isn't
-    available; the inline {literal} script below intercepts the submit
-    button, calls Actions.BansAdd directly, and surfaces success / error
-    via sb.message (defined in sb.js). The legacy onclick="ProcessBan();"
-    path remains intact for users still on the default theme.
+    available; the inline {literal} script at the bottom of this file
+    intercepts clicks on [data-action="addban-submit"], mirrors the
+    legacy ProcessBan validation, and dispatches Actions.BansAdd
+    directly through sb.api.call. Toasts go through window.SBPP.showToast
+    when present (theme.js, sbpp2026) with sb.message as a fallback.
+    The kickit branch defers to ShowKickBox/TabToReload only when
+    sourcebans.js is also loaded — sbpp2026 has no native UI for the
+    kickit popup yet so the call would otherwise no-op silently. The
+    default theme keeps its own page_admin_bans_add.tpl which still
+    uses onclick="ProcessBan();" via sourcebans.js.
 
     Permission gate: $permission_addban is precomputed in admin.bans.php
     from ADMIN_OWNER | ADMIN_ADD_BAN.
@@ -204,10 +210,130 @@
                         class="btn btn--primary"
                         id="aban"
                         data-testid="addban-submit"
-                        onclick="ProcessBan();">
+                        data-action="addban-submit">
                     Add ban
                 </button>
             </div>
         </form>
     </section>
 {/if}
+{* Inline action wiring — sbpp2026 doesn't load sourcebans.js, so the
+   legacy ProcessBan() / applyApiResponse() pair would throw inside the
+   promise's .then() and leave the admin with no toast / no form reset.
+   We intercept the click here, mirror ProcessBan's client-side validation,
+   and dispatch Actions.BansAdd directly via sb.api.call. The default
+   theme keeps its own copy of `page_admin_bans_add.tpl` (still
+   onclick="ProcessBan();") so this script is sbpp2026-only. *}
+{literal}
+<script>
+(function () {
+    'use strict';
+    function api() { return (window.sb && window.sb.api) || null; }
+    function actions() { return window.Actions || null; }
+    function $id(id) { return document.getElementById(id); }
+    function setMsg(id, html) {
+        var el = $id(id);
+        if (!el) return;
+        el.innerHTML = html || '';
+        el.style.display = html ? 'block' : 'none';
+    }
+    function toast(kind, title, body) {
+        var SBPP = window.SBPP;
+        if (SBPP && typeof SBPP.showToast === 'function') {
+            SBPP.showToast({
+                kind: kind === 'red' ? 'error' : kind === 'green' ? 'success' : (kind || 'info'),
+                title: title,
+                body: body || ''
+            });
+            return;
+        }
+        if (window.sb && window.sb.message && window.sb.message[kind]) {
+            window.sb.message[kind](title, body || '');
+        }
+    }
+    function validate(type) {
+        var err = 0;
+        var reason = '';
+        var listReason = $id('listReason');
+        if (listReason) {
+            reason = listReason.value;
+            if (reason === 'other') {
+                var txtReason = $id('txtReason');
+                reason = txtReason ? txtReason.value : '';
+            }
+        }
+        var nick = $id('nickname');
+        if (!nick || !nick.value) { setMsg('nick.msg', 'You must enter the nickname of the person you are banning'); err++; }
+        else { setMsg('nick.msg', ''); }
+
+        var steam = $id('steam');
+        if (type === 0) {
+            if (!steam || !/(?:STEAM_[01]:[01]:\d+)|(?:\[U:1:\d+\])|(?:\d{17})/.test(steam.value)) {
+                setMsg('steam.msg', 'You must enter a valid STEAM ID or Community ID'); err++;
+            } else { setMsg('steam.msg', ''); }
+        } else { setMsg('steam.msg', ''); }
+
+        var ip = $id('ip');
+        if (type === 1) {
+            if (!ip || ip.value.length < 7) {
+                setMsg('ip.msg', 'You must enter a valid IP address'); err++;
+            } else { setMsg('ip.msg', ''); }
+        } else { setMsg('ip.msg', ''); }
+
+        if (!reason) {
+            setMsg('reason.msg', 'You must select or enter a reason for this ban.'); err++;
+        } else { setMsg('reason.msg', ''); }
+        return err === 0 ? reason : null;
+    }
+    function reset() {
+        var form = $id('addban-form');
+        if (form && typeof form.reset === 'function') form.reset();
+        var dreason = $id('dreason');
+        if (dreason) dreason.style.display = 'none';
+        var demoMsg = $id('demo.msg');
+        if (demoMsg) demoMsg.innerHTML = '';
+        var fromsub = $id('fromsub');
+        if (fromsub) fromsub.value = '';
+    }
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var btn = t.closest('[data-action="addban-submit"]');
+        if (!btn) return;
+        e.preventDefault();
+        var typeEl = $id('type');
+        var type = typeEl ? Number(typeEl.value) : 0;
+        var reason = validate(type);
+        if (reason === null) return;
+        var a = api(), A = actions();
+        if (!a || !A) return;
+        btn.disabled = true;
+        a.call(A.BansAdd, {
+            nickname: $id('nickname').value,
+            type: type,
+            steam: $id('steam').value,
+            ip: $id('ip').value,
+            length: Number($id('banlength').value),
+            dfile: (typeof window.did === 'string' || typeof window.did === 'number') ? window.did : 0,
+            dname: (typeof window.dname === 'string') ? window.dname : '',
+            reason: reason,
+            fromsub: Number(($id('fromsub') && $id('fromsub').value) || 0)
+        }).then(function (r) {
+            btn.disabled = false;
+            if (!r || r.ok === false) {
+                toast('error', 'Add ban failed', (r && r.error && r.error.message) || 'Unknown error');
+                return;
+            }
+            if (r.data && r.data.kickit && typeof window.ShowKickBox === 'function') {
+                window.ShowKickBox(r.data.kickit.check, r.data.kickit.type);
+                if (r.data.reload && typeof window.TabToReload === 'function') window.TabToReload();
+                return;
+            }
+            var msg = (r.data && r.data.message) || null;
+            toast('success', (msg && msg.title) || 'Ban added', (msg && msg.body) || 'The ban has been successfully added');
+            reset();
+        });
+    });
+})();
+</script>
+{/literal}

@@ -10,12 +10,14 @@
     that behaviour.
 
     The legacy CheckEmail() helper from web/scripts/sourcebans.js posts
-    the actual subject + body via xajax — that path remains in the
-    default theme. sbpp2026 doesn't load sourcebans.js, so an inline
-    {literal} script attempts the modern Actions.BansContact JSON path
-    when available; otherwise it falls back to the legacy onclick string
-    for full backwards-compat with custom forks that still ship
-    sourcebans.js alongside the new chrome.
+    the actual subject + body via Actions.SystemSendMail — that path
+    remains in the default theme. sbpp2026 doesn't load sourcebans.js,
+    so the inline {literal} script at the bottom of this file installs
+    a window.CheckEmail shim (only when one isn't already defined) that
+    runs the same validation, dispatches Actions.SystemSendMail through
+    sb.api.call, and surfaces success / failure via window.SBPP.showToast
+    (theme.js) or sb.message as a fallback. Custom forks that still ship
+    sourcebans.js alongside sbpp2026 keep the original CheckEmail.
 *}
 <section class="p-6" data-testid="banemail-section" style="max-width:48rem">
     <div class="mb-6">
@@ -54,7 +56,7 @@
                     class="btn btn--ghost"
                     onclick="history.go(-1)"
                     data-testid="banemail-back">Back</button>
-            {* nofilter: $email_js is server-built ("CheckEmail('s', INT)" or "CheckEmail('p', INT)") in admin.email.php after $_GET['type'] is constrained to the literal 's'/'p' and $_GET['id'] is cast to int — no caller-controlled data flows through. *}
+            {* nofilter: $email_js is server-built ("CheckEmail('s', INT)" or "CheckEmail('p', INT)") in admin.email.php after $_GET['type'] is constrained to the literal 's'/'p' and $_GET['id'] is cast to int — no caller-controlled data flows through. CheckEmail itself comes from sourcebans.js on the default theme; on sbpp2026 the {literal} block below installs a same-name shim that calls Actions.SystemSendMail directly. *}
             <button type="button"
                     class="btn btn--primary"
                     id="aemail"
@@ -65,3 +67,70 @@
         </div>
     </form>
 </section>
+{* sbpp2026 doesn't ship sourcebans.js, so window.CheckEmail (the helper
+   the button's onclick targets) is undefined and the click is a no-op.
+   We install a shim only when no CheckEmail is already loaded — custom
+   forks bundling sourcebans.js with the new chrome keep the original. *}
+{literal}
+<script>
+(function () {
+    'use strict';
+    if (typeof window.CheckEmail === 'function') return;
+    function api() { return (window.sb && window.sb.api) || null; }
+    function actions() { return window.Actions || null; }
+    function $id(id) { return document.getElementById(id); }
+    function setMsg(id, html) {
+        var el = $id(id);
+        if (!el) return;
+        el.innerHTML = html || '';
+        el.style.display = html ? 'block' : 'none';
+    }
+    function toast(kind, title, body) {
+        var SBPP = window.SBPP;
+        if (SBPP && typeof SBPP.showToast === 'function') {
+            SBPP.showToast({
+                kind: kind === 'red' ? 'error' : kind === 'green' ? 'success' : (kind || 'info'),
+                title: title,
+                body: body || ''
+            });
+            return;
+        }
+        if (window.sb && window.sb.message && window.sb.message[kind]) {
+            window.sb.message[kind](title, body || '');
+        }
+    }
+    /** @param {string} type @param {number} id */
+    window.CheckEmail = function (type, id) {
+        var err = 0;
+        var subject = $id('subject'), message = $id('message');
+        if (!subject || !subject.value) { setMsg('subject.msg', 'You must type a subject for the email.'); err++; }
+        else { setMsg('subject.msg', ''); }
+        if (!message || !message.value) { setMsg('message.msg', 'You must type a message for the email.'); err++; }
+        else { setMsg('message.msg', ''); }
+        if (err > 0) return;
+        var a = api(), A = actions();
+        if (!a || !A) return;
+        a.call(A.SystemSendMail, {
+            subject: subject.value,
+            message: message.value,
+            type: type,
+            id: id
+        }).then(function (r) {
+            if (!r || r.ok === false) {
+                toast('error', 'Email failed', (r && r.error && r.error.message) || 'Unknown error');
+                return;
+            }
+            if (typeof window.applyApiResponse === 'function') {
+                window.applyApiResponse(r);
+                return;
+            }
+            var msg = (r.data && r.data.message) || null;
+            toast('success', (msg && msg.title) || 'Email sent', (msg && msg.body) || 'The email has been sent.');
+            if (msg && msg.redir) {
+                setTimeout(function () { window.location.href = msg.redir; }, 1200);
+            }
+        });
+    };
+})();
+</script>
+{/literal}
