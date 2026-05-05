@@ -127,12 +127,18 @@ test.describe('command palette', () => {
         await expect(dialog).toHaveAttribute('data-palette-open', 'true');
         await expect(input).toBeFocused();
 
-        // Type a 7-char prefix; PALETTE_MIN_QUERY = 2 in theme.js so
-        // any length >= 2 fires the bans.search call. We use the
-        // search-results selector as the terminal state instead of
-        // a setTimeout — Playwright's auto-retry on the locator
-        // covers the 200ms debounce.
-        await input.fill(seed.nick.slice(0, 14));
+        // Type the full unique nick (not a short prefix). PALETTE_MIN_QUERY
+        // is 2, so any length >=2 fires the bans.search call; the server
+        // caps results at 10 ordered by created DESC. A short prefix like
+        // `e2e-palette-ta` matches every accumulated palette-* seed across
+        // the suite (open/type/enter × desktop/mobile) — under workers:1 the
+        // brand-new mobile-type row consistently lands in the top 10, but a
+        // single in-flight debounce wave can render a stale top-10 that
+        // excludes it. Typing the full unique nick collapses the search to
+        // exactly one matching row, removing the dependency on result
+        // ordering. Playwright's auto-retry on the locator still covers
+        // the 200ms input debounce.
+        await input.fill(seed.nick);
 
         const banResults = page.locator(
             '[data-testid="palette-result"][data-result-kind="ban"]',
