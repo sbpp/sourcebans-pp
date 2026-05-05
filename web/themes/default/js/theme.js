@@ -46,12 +46,66 @@
   });
 
   // ---- MOBILE SIDEBAR --------------------------------------
+  // The hamburger trigger ([data-mobile-menu] in core/title.tpl)
+  // toggles the off-canvas drawer; a click-dismiss
+  // [data-sidebar-backdrop] is rendered on demand and Escape also
+  // closes the drawer. Fixes #1178 — the original handler only
+  // ever added `is-open`, leaving the user no way to dismiss the
+  // drawer short of navigating away. `data-mobile-open` mirrors
+  // the class state so tests + CSS selectors can read state without
+  // probing the class chain (#1179 owns the server-side default).
+
+  /** @type {HTMLElement | null} */
+  let sidebarBackdrop = null;
+
+  /**
+   * Lazily create (or reuse) the click-dismiss backdrop appended
+   * to the body. The element survives across open/close cycles so
+   * we don't churn the DOM on every toggle.
+   * @returns {HTMLElement}
+   */
+  function ensureSidebarBackdrop() {
+    if (sidebarBackdrop && sidebarBackdrop.isConnected) return sidebarBackdrop;
+    let el = /** @type {HTMLElement | null} */ (document.querySelector('[data-sidebar-backdrop]'));
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'sidebar-backdrop';
+      el.setAttribute('data-sidebar-backdrop', '');
+      document.body.appendChild(el);
+    }
+    sidebarBackdrop = el;
+    return el;
+  }
+
+  /** @returns {void} */
+  function openMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    sidebar.classList.add('is-open');
+    sidebar.dataset.mobileOpen = 'true';
+    ensureSidebarBackdrop().dataset.visible = 'true';
+  }
+
+  /** @returns {void} */
+  function closeMobileSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
+    sidebar.classList.remove('is-open');
+    sidebar.dataset.mobileOpen = 'false';
+    if (sidebarBackdrop) sidebarBackdrop.dataset.visible = 'false';
+  }
+
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {
     const target = /** @type {Element | null} */ (e.target);
-    if (target && target.closest('[data-mobile-menu]')) {
+    if (!target) return;
+    if (target.closest('[data-mobile-menu]')) {
       const sidebar = document.getElementById('sidebar');
-      if (sidebar) sidebar.classList.add('is-open');
+      if (!sidebar) return;
+      if (sidebar.classList.contains('is-open')) closeMobileSidebar();
+      else openMobileSidebar();
+      return;
     }
+    if (target.closest('[data-sidebar-backdrop]')) closeMobileSidebar();
   });
 
   // ---- COMMAND PALETTE -------------------------------------
@@ -115,6 +169,7 @@
     } else if (e.key === 'Escape') {
       closePalette();
       closeDrawer();
+      closeMobileSidebar();
     }
   });
 

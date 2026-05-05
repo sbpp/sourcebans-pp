@@ -4,7 +4,8 @@
  * iPhone-13 viewport contract:
  *   - Sidebar (`<aside id="sidebar">`) is hidden by default.
  *   - The hamburger trigger (`[data-mobile-menu]` in core/title.tpl)
- *     opens it as a left-edge drawer.
+ *     opens it as a left-edge drawer; a second click, the
+ *     [data-sidebar-backdrop] overlay, or Escape closes it (#1178).
  *
  * Project gating: this whole describe runs only on `mobile-chromium`.
  * We use the `test.beforeEach` skip-guard form rather than
@@ -14,21 +15,13 @@
  *
  * == Divergences from the #1123 testability-hooks contract ==
  *
- *   1. (Tracked as #1178.) theme.js only ADDS `is-open` (line 53).
- *      It does not toggle, and there is no close trigger inside the
- *      open sidebar (no X button, no backdrop). The brief calls for
- *      a "click again to close" assertion; with no implementation to
- *      test against, we omit that subtest and document the gap here
- *      so future maintainers see why it isn't covered. Once the
- *      sidebar grows a real close affordance, replace the omission
- *      with a real assertion.
- *
- *   2. (Tracked as #1179.) The `data-mobile-open` attribute on
+ *   1. (Tracked as #1179.) The `data-mobile-open` attribute on
  *      `<aside id="sidebar">` is rendered as `"false"` from the
- *      server (navbar.tpl line 20) but theme.js's open path doesn't
- *      update it — it flips the `.is-open` class instead. We assert
- *      against the class (the real signal) and treat the static
- *      attribute as a marker.
+ *      server (navbar.tpl line 20). theme.js (post-#1178) now
+ *      mirrors the class flip into the attribute on open/close,
+ *      but tests still assert against the class — the canonical
+ *      signal — to stay decoupled from the in-flight #1179 work
+ *      that's reshaping how the server-side default is wired.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
@@ -74,8 +67,71 @@ test.describe('responsive: sidebar', () => {
         expect(box!.y).toBeLessThanOrEqual(1);
     });
 
-    // NOTE: a "second click closes" assertion belongs here per the
-    // brief, but theme.js currently lacks any close affordance for
-    // the mobile sidebar (divergence #1 / #1178). Document the gap;
-    // do not fake-pass by manually mutating classes from the spec.
+    test('second hamburger click closes the sidebar drawer', async ({ page }) => {
+        await page.goto('/');
+
+        const sidebar = page.locator('#sidebar');
+        const trigger = page.locator('[data-mobile-menu]');
+
+        // Once the drawer is open, `.sidebar.is-open` (z-index 41)
+        // paints over the topbar's left column (`.topbar` z-index 30),
+        // which means the hamburger sitting at the topbar's left edge
+        // is occluded — Playwright's actionability checks (and a
+        // `force: true` real click) would land on the sidebar nav,
+        // not the hamburger. `dispatchEvent('click')` synthesizes a
+        // bubbling click on the element itself; theme.js's
+        // document-level handler keys off `target.closest(...)` so
+        // the production code path runs unchanged. The
+        // "user can reach the hamburger when closed" assertion is
+        // already covered by "hamburger opens the sidebar drawer".
+        await trigger.dispatchEvent('click');
+        await expect(sidebar).toHaveClass(/\bis-open\b/);
+
+        await trigger.dispatchEvent('click');
+        await expect(sidebar).not.toHaveClass(/\bis-open\b/);
+        await expect(sidebar).toBeHidden();
+    });
+
+    test('clicking the backdrop closes the sidebar drawer', async ({ page }) => {
+        await page.goto('/');
+
+        const sidebar = page.locator('#sidebar');
+        // dispatchEvent for the same occlusion-after-open reason
+        // documented on the "second hamburger click" test above.
+        await page.locator('[data-mobile-menu]').dispatchEvent('click');
+        await expect(sidebar).toHaveClass(/\bis-open\b/);
+
+        // Backdrop is created on demand by openMobileSidebar() in
+        // theme.js; [data-visible="true"] is the terminal state hook
+        // and the same selector also closes on click via the
+        // document-level handler.
+        const backdrop = page.locator('[data-sidebar-backdrop]');
+        await expect(backdrop).toHaveAttribute('data-visible', 'true');
+        // The backdrop is positioned `inset: 0` (whole viewport, z-index
+        // 40) but `.sidebar.is-open` paints over the left 15rem column
+        // at z-index 41, so the dimmed-area-the-user-actually-taps is
+        // the strip to the right of the drawer. Playwright's default
+        // center-click would land inside the sidebar's column and the
+        // sidebar nav would swallow the click; aim past the sidebar's
+        // right edge instead. iPhone 13 viewport is 390x844 and the
+        // sidebar is 240px wide, so x≈320 sits comfortably in the
+        // dimmed strip.
+        await backdrop.click({ position: { x: 320, y: 400 } });
+
+        await expect(sidebar).not.toHaveClass(/\bis-open\b/);
+        await expect(sidebar).toBeHidden();
+        await expect(backdrop).toHaveAttribute('data-visible', 'false');
+    });
+
+    test('Escape closes the sidebar drawer', async ({ page }) => {
+        await page.goto('/');
+
+        const sidebar = page.locator('#sidebar');
+        await page.locator('[data-mobile-menu]').dispatchEvent('click');
+        await expect(sidebar).toHaveClass(/\bis-open\b/);
+
+        await page.keyboard.press('Escape');
+        await expect(sidebar).not.toHaveClass(/\bis-open\b/);
+        await expect(sidebar).toBeHidden();
+    });
 });
