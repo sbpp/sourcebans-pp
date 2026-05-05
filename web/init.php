@@ -225,6 +225,12 @@ $theme->registerPlugin('modifier', 'smarty_htmlspecialchars', 'smarty_htmlspecia
 
 $theme->assign('csrf_token', CSRF::token());
 $theme->assign('csrf_field_name', CSRF::FIELD_NAME);
+// Public web path to the active theme directory (e.g. "themes/sbpp2026").
+// Templates use it to reference theme-local CSS / JS / fonts / images
+// without hardcoding the theme name. SB_THEMES is an absolute filesystem
+// path; the public-facing equivalent is just "themes/<theme>" because
+// web/index.php is the document root.
+$theme->assign('theme_url', 'themes/' . $theme_name);
 
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->setForceCompile(true);

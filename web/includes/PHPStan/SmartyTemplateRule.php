@@ -29,10 +29,35 @@ use Sbpp\View\View;
  * can be found on disk; unresolvable includes are skipped silently so a
  * broken include never crashes the analyser.
  *
+ * The `templatesDir` constructor argument is the *default* theme to scan
+ * (wired in `web/phpstan.neon`). Setting the `SBPP_PHPSTAN_THEME`
+ * environment variable swaps in a sibling theme directory under the same
+ * parent — the v2.0.0 theme rollout (#1123 A2) uses this to drive a CI
+ * matrix that scans both `web/themes/default/` (the legacy bundle) and
+ * `web/themes/sbpp2026/` (the new theme) on every PR until D1 cuts over.
+ * The override collapses back to a single run once D1 deletes the
+ * sbpp2026 directory and renames it into `default/`.
+ *
  * @implements Rule<Node\Stmt\Class_>
  */
 final class SmartyTemplateRule implements Rule
 {
+    /**
+     * Marker phrase shared by every A1 stub template under
+     * `web/themes/sbpp2026/`. Each Phase B/C ticket replaces a stub with
+     * a real redesign keyed to its View; until a stub is replaced the
+     * View → template diff would explode into noise (the stub renders
+     * only `{$title}`, so every other declared property fires
+     * "unused property"). Skipping templates that contain this exact
+     * phrase keeps the dual-theme PHPStan matrix added in #1123 A2
+     * actionable during the rollout window. D1's pre-flight check fails
+     * the cutover if any template still contains this marker, so this
+     * escape hatch can't silently leak past v2.0.0.
+     */
+    private const STUB_MARKER = "hasn't been redesigned yet";
+
+    private readonly string $templatesDir;
+
     /**
      * Cache of variables referenced per template file, keyed by the
      * template's absolute path plus delimiter pair. Scanning each template
@@ -44,9 +69,20 @@ final class SmartyTemplateRule implements Rule
     private array $templateCache = [];
 
     public function __construct(
-        private readonly string $templatesDir,
+        string $templatesDir,
         private readonly ReflectionProvider $reflectionProvider,
     ) {
+        // CI matrix override: see class-level docblock. Only swaps the
+        // theme name, never escapes the parent themes/ directory.
+        $envTheme = getenv('SBPP_PHPSTAN_THEME');
+        if (is_string($envTheme) && $envTheme !== '' && preg_match('/^[a-zA-Z0-9_.-]+$/', $envTheme) === 1) {
+            $parent = dirname($templatesDir);
+            $candidate = $parent . '/' . $envTheme;
+            if (is_dir($candidate)) {
+                $templatesDir = $candidate;
+            }
+        }
+        $this->templatesDir = $templatesDir;
     }
 
     public function getNodeType(): string
@@ -97,6 +133,10 @@ final class SmartyTemplateRule implements Rule
             ];
         }
 
+        if ($this->isStubTemplate($templatePath)) {
+            return [];
+        }
+
         $referenced = $this->collectTemplateVars($templatePath, $delimiters, []);
 
         $declared = [];
@@ -136,6 +176,21 @@ final class SmartyTemplateRule implements Rule
         }
 
         return $errors;
+    }
+
+    /**
+     * Whether the template at $path is an A1 rollout stub (see
+     * STUB_MARKER docblock). Stubs intentionally drop their View's
+     * properties so their {missing,unused} property diff is not
+     * meaningful.
+     */
+    private function isStubTemplate(string $path): bool
+    {
+        $source = @file_get_contents($path);
+        if ($source === false) {
+            return false;
+        }
+        return str_contains($source, self::STUB_MARKER);
     }
 
     private function constantStringValue(

@@ -1,0 +1,27 @@
+# Override config for the second leg of the dual-theme PHPStan CI matrix
+# added by #1123 A2.
+#
+# The matrix runs PHPStan twice: the default leg uses phpstan.neon
+# (SBPP_PHPSTAN_THEME=default) and matches phpstan-baseline.neon
+# normally. The sbpp2026 leg uses THIS config (SBPP_PHPSTAN_THEME=sbpp2026)
+# which:
+#
+#   - Inherits everything from phpstan.neon (including the baseline).
+#   - Disables `reportUnmatchedIgnoredErrors` because in sbpp2026 mode
+#     SmartyTemplateRule short-circuits every A1 stub template (see
+#     SmartyTemplateRule::STUB_MARKER), so the baseline entries that
+#     target legacy default-theme view drift fire 0 times instead of
+#     once and PHPStan would otherwise fail with "Ignored error pattern
+#     was not matched in reported errors". We still want the rule to
+#     catch *new* template/View drift in the sbpp2026 chrome (or in
+#     non-stub templates landed by Phase B/C tickets), and the rule
+#     does — non-baseline errors still fail the build.
+#
+# D1's plan section deletes this file when the dual-theme matrix
+# collapses back to a single run. Until then, keep this file's diff
+# narrow so D1 can remove it cleanly.
+includes:
+    - phpstan.neon
+
+parameters:
+    reportUnmatchedIgnoredErrors: false
