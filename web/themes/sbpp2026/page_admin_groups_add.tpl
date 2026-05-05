@@ -97,28 +97,31 @@ function SbppGroupsAdd(event) {
     }).then(function (r) {
         // Inlined sourcebans.js helper (#1123 D1 prep): applyApiResponse is removed at D1.
         // sb.api.call already follows r.redirect natively, so we only need to surface
-        // the success/error toast. Prefer the new theme's toast; fall back to sb.message.
+        // the success/error toast. SBPP.showToast (theme.js) takes {kind,title,body};
+        // sb.message is the legacy fallback (no-ops under sbpp2026 since #dialog-* is
+        // legacy-default-only, but kept so a third-party theme that never wired SBPP
+        // still gets some signal).
         if (!r) return;
         if (r.redirect) return;
         if (r.ok === false) {
             var em = (r.error && r.error.message) || 'Unknown error';
             if (window.SBPP && typeof window.SBPP.showToast === 'function') {
-                window.SBPP.showToast({ type: 'error', message: em });
+                window.SBPP.showToast({ kind: 'error', title: 'Error', body: em });
             } else {
                 sb.message.error('Error', em);
             }
             return;
         }
         var data = r.data || {};
-        var msg = (data.message && data.message.body) || 'Group added.';
+        var body = (data.message && data.message.body) || 'Group added.';
         var title = (data.message && data.message.title) || 'Group added';
         if (window.SBPP && typeof window.SBPP.showToast === 'function') {
-            window.SBPP.showToast({ type: 'success', message: msg });
+            window.SBPP.showToast({ kind: 'success', title: title, body: body });
         } else {
-            sb.message.success(title, msg, data.message ? data.message.redir : '');
+            sb.message.success(title, body, data.message ? data.message.redir : '');
         }
         if (data.reload) {
-            setTimeout(function () { window.location.reload(); }, 1500);
+            setTimeout(function () { window.location.reload(); }, 2000);
         }
     });
     return false;

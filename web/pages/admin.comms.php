@@ -93,13 +93,18 @@ function ProcessBan()
     }).then(function (r) {
         // Inlined sourcebans.js helpers (#1123 D1 prep): ShowBlockBox / TabToReload /
         // applyApiResponse are deleted at D1; rebuild on top of sb.message (sb.js, survives D1).
+        // The iframe is load-bearing — pages/admin.blockit.php loops the enabled servers and
+        // fires `sc_fw_block` via rcon for each one. Without it the DB row exists but no live
+        // server learns about the gag/mute, matching the bans/kickit shape one branch above.
         if (r && r.ok && r.data && r.data.block) {
+            var b = r.data.block;
             sb.message.show(
                 'Block Added',
-                'The block has been successfully added.',
+                'The block has been successfully added<br><iframe id="srvkicker" frameborder="0" width="100%" src="pages/admin.blockit.php?check='
+                    + encodeURIComponent(b.steam) + '&type=' + encodeURIComponent(b.type) + '&length=' + encodeURIComponent(b.length) + '"></iframe>',
                 'green',
                 'index.php?p=admin&c=comms',
-                false
+                true
             );
             if (r.data.reload) setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
             return;
