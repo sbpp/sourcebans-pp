@@ -81,13 +81,18 @@
       const sb = /** @type {any} */ (window).sb;
       const Actions = /** @type {any} */ (window).Actions;
       if (!sb || !sb.api || !Actions) {
-        cform.removeEventListener('submit', /** @type {EventListener} */ (() => {}));
+        // sb / api-contract failed to load (offline, asset 404, …).
+        // Native form.submit() bypasses listeners per the HTML spec, so
+        // we don't need to detach this handler first; the submission
+        // POSTs to the action-less form URL, which page.banlist.php
+        // doesn't handle, but that's the same fall-through the legacy
+        // theme has when sourcebans.js fails to load.
         cform.submit();
         return;
       }
 
       const action = cid > 0 ? Actions.BansEditComment : Actions.BansAddComment;
-      sb.api.call(action, { bid: bid, cid: cid, ctype: ctype, text: value })
+      sb.api.call(action, { bid: bid, cid: cid, ctype: ctype, ctext: value, page: page })
         .then(() => {
           window.location.href = 'index.php?p=banlist' + (page > 0 ? '&page=' + page : '');
         })

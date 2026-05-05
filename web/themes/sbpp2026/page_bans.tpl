@@ -267,9 +267,16 @@
   <div class="skel" style="height:2.5rem;margin-bottom:0.5rem"></div>
   <div class="skel" style="height:2.5rem"></div>
 </div>
-
-<script src="./scripts/banlist.js" defer></script>
 {/if}
+
+{* banlist.js wires both branches: the chip filter / copy buttons /
+   skeleton hook on the listing branch, and the `#banlist-comment-form`
+   submit -> sb.api.call(BansAddComment / BansEditComment) on the
+   comment-edit branch. The IIFE feature-detects every element it
+   touches, so loading it unconditionally is safe; loading it only on
+   the listing branch silently broke comment save (no submit handler
+   attached, native form submission to action-less URL no-ops). *}
+<script src="./scripts/banlist.js" defer></script>
 
 {* ============================================================
    Manifest of properties only consumed by themes/default/page_bans.tpl.
