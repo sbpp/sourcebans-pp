@@ -380,7 +380,11 @@
         return;
       }
     }
-    if (target && target.closest('[data-drawer-close]') && !target.closest('.drawer')) closeDrawer();
+    // Any element marked `data-drawer-close` closes the drawer — both the
+    // backdrop (sibling of .drawer) and the in-header X button (descendant
+    // of .drawer) carry the attribute. The earlier `!closest('.drawer')`
+    // guard predated the X button and would silently swallow its clicks.
+    if (target && target.closest('[data-drawer-close]')) closeDrawer();
   });
 
   // ---- COPY BUTTONS ----------------------------------------
