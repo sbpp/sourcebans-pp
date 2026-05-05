@@ -6,29 +6,25 @@ namespace Sbpp\View;
 /**
  * Public ban list page — binds to `page_bans.tpl`.
  *
- * The shape carries every variable both themes consume:
+ * `$ban_list` items expose `bid|name|steam|state|length_human|
+ * banned_human|sname|can_edit_ban|can_unban` plus avatar metadata; the
+ * page chrome reads `$total_bans`, `$can_export`, `$hidetext`,
+ * `$searchlink`, `$ban_nav`, the comment-edit scratch pad
+ * (`$comment`, `$commenttype`, `$commenttext`, `$ctype`, `$cid`,
+ * `$page`, `$canedit`, `$othercomments`), and the testid hooks reach
+ * the per-row `state`.
  *
- * - `themes/sbpp2026/page_bans.tpl` (the marquee redesign, #1123 B2) reads the
- *   handoff-keyed names: `$ban_list` items expose `bid|name|steam|state|
- *   length_human|banned_human|sname|can_edit_ban|can_unban` plus avatar
- *   metadata; the page chrome reads `$total_bans`, `$can_export`,
- *   `$hidetext`, `$searchlink`, `$ban_nav`, the comment-edit scratch pad
- *   (`$comment`, `$commenttype`, `$commenttext`, `$ctype`, `$cid`, `$page`,
- *   `$canedit`, `$othercomments`), and the testid hooks reach the per-row
- *   `state`.
- * - `themes/default/page_bans.tpl` (the legacy theme, until #1123 D1 cuts
- *   over) reads the same `$ban_list` items by their legacy keys
- *   (`ban_id|player|class|reban_link|edit_link|…`) and additionally pulls
- *   in `$general_unban`, `$can_delete`, `$groupban`, `$friendsban`,
- *   `$hideadminname`, `$hideplayerips`, `$view_bans`, `$view_comments`,
- *   `$admin_postkey` for the bulk-actions UI.
+ * Each row also carries the legacy keys (`ban_id|player|class|
+ * reban_link|edit_link|…`) so any third-party theme that forked the
+ * pre-v2.0.0 default theme keeps rendering. SmartyTemplateRule does
+ * not introspect array contents, so both shapes coexist on each
+ * `$ban_list` item.
  *
- * Both shapes coexist on each `$ban_list` item; SmartyTemplateRule does not
- * introspect array contents so the View only needs to expose the top-level
- * variables. The legacy-only top-level vars are preserved here (and
- * referenced by an `{if false}…{/if}` manifest at the EOF of the new
- * template) so the dual-theme PHPStan matrix stays green until D1 deletes
- * `themes/default/`.
+ * `$general_unban`, `$can_delete`, `$groupban`, `$friendsban`,
+ * `$hideadminname`, `$hideplayerips`, `$view_bans`, `$view_comments`,
+ * `$admin_postkey` are preserved here (and referenced by an
+ * `{if false}…{/if}` manifest at the EOF of the template) for the
+ * same compatibility reason.
  */
 final class BanListView extends View
 {

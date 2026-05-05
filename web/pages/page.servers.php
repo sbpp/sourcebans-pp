@@ -24,14 +24,12 @@ if (!defined("IN_SB")) {
 }
 
 /**
- * Inlined sourcebans.js helpers (#1123 D1 prep): vanilla replacements for
- * LoadServerHost / LoadServerHostProperty. Both are emitted into
- * $GLOBALS['server_qry'] from page.{servers,home}.php and rendered through
- * legacy themes' core/footer.tpl. Post-D1 sourcebans.js is gone, so we
- * define the helper as window.__sbppLoadServerHost{,Property} and call those
- * instead. The new sbpp2026 theme's footer doesn't emit {$query nofilter} so
- * neither the helper definition nor the calls run there; legacy + third-party
- * themes that copy the legacy footer pattern still get the populate behavior.
+ * Vanilla server-host populate helpers, emitted into
+ * $GLOBALS['server_qry'] from page.{servers,home}.php and rendered into
+ * any third-party theme that forked the pre-v2.0.0 default and still
+ * emits `{$query nofilter}` from its `core/footer.tpl`. The shipped
+ * v2.0.0 default theme's footer does not emit `{$query nofilter}`, so
+ * neither the helper definition nor the calls run there.
  *
  * Wrapped in function_exists so the same helper definition can ship from
  * page.home.php too without redefining the function.
@@ -48,19 +46,20 @@ JS;
 
 $number = -1;
 if (!defined('IN_HOME')) {
-    // The legacy default theme wraps {$query nofilter} in <script>...</script> via core/footer.tpl,
-    // so we emit RAW JS here. The new sbpp2026 footer drops {$query nofilter} entirely, so this
-    // payload only runs under themes that preserved the legacy footer pattern.
+    // The shipped v2.0.0 default theme's footer does not emit
+    // `{$query nofilter}`, so this payload only runs under any
+    // third-party theme that forked the pre-v2.0.0 default and
+    // preserved the legacy footer pattern (which wraps the value in
+    // `<script>...</script>`). Emit raw JS accordingly.
     $GLOBALS['server_qry'] = SbppServerQryHelpers();
     if (isset($_GET['s'])) {
         $number = (int) $_GET['s'];
     }
 }
 
-// `md.name` (mod display name) is added for the sbpp2026 card label
-// (#1123 B5). The legacy default theme ignores extra row keys; the new
-// theme renders it next to the mod icon as a short tag (e.g. "TF2") so
-// the card is meaningful before the live UDP query lands.
+// `md.name` (mod display name) is rendered next to the mod icon as
+// a short tag (e.g. "TF2") so the card is meaningful before the live
+// UDP query lands.
 $rows = $GLOBALS['PDO']->query("SELECT se.sid, se.ip, se.port, se.modid, se.rcon, md.icon, md.name AS mod_name FROM `:prefix_servers` se LEFT JOIN `:prefix_mods` md ON md.mid=se.modid WHERE se.sid > 0 AND se.enabled = 1 ORDER BY se.modid, se.sid")->resultset();
 $servers = [];
 $i       = 0;

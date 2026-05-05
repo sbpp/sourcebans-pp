@@ -21,24 +21,17 @@ global $userbank, $theme;
 
 $admin_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` ORDER BY user ASC")->resultset();
 
-// Server list, plus a server-built `<script>` blob the legacy
-// default-theme template emits via {$server_script nofilter} to populate
-// each `<option id="ssSID">Loading…</option>`. The legacy blob called
-// `LoadServerHost('SID', 'id', 'ssSID', '', '', false, 200)` from
-// sourcebans.js per option; that helper is removed at #1123 D1, so we
-// emit a vanilla `sb.api.call(Actions.ServersHostPlayers, {sid})` per
-// option here — same pattern B5 established for the public servers
-// list, just in a server-built script tag because the legacy template
-// has no inline `{literal}<script>…{/literal}` of its own.
-//
-// The new sbpp2026 template owns its own inline initializer (carries an
-// `{if false}…{/if}` parity reference to `$server_script` to keep
-// SmartyTemplateRule's "unused property" check happy on the sbpp2026
-// PHPStan leg) and ignores the blob built here.
+// Server list, plus a server-built `<script>` blob preserved for any
+// third-party theme that forked the pre-v2.0.0 default and consumes
+// `{$server_script nofilter}` to populate each
+// `<option id="ssSID">Loading…</option>`. The shipped template owns
+// its own inline initializer (and carries an `{if false}…{/if}`
+// parity reference to `$server_script` to keep SmartyTemplateRule's
+// "unused property" check green) and ignores the blob built here.
 //
 // Inputs to the blob are server-controlled integers (`:prefix_servers.sid`)
 // only — no user input flows into the emitted JS. Safe under the
-// `{$server_script nofilter}` annotation in the legacy template.
+// `{$server_script nofilter}` annotation.
 $server_rows  = $GLOBALS['PDO']->query("SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1")->resultset();
 $server_list  = [];
 $serverscript = '<script>(function(){'

@@ -11,8 +11,8 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
 Vanilla replacements for the MooTools idioms used throughout the panel.
-Loaded before sourcebans.js. Exposes a single global `sb` namespace and a
-`$` shim so legacy id-based selectors keep working.
+Exposes a single global `sb` namespace and a `$` shim so legacy
+id-based selectors keep working.
 *************************************************************************/
 
 (function (global) {

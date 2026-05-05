@@ -33,19 +33,16 @@ use Sbpp\View\Renderer;
 /*
  * Section routing (B18 redesign).
  *
- * The legacy AdminTabs JS tab switcher rendered all four sub-tabs
- * inside `.tabcontent` divs and toggled them with `openTab()`. The
- * sbpp2026 redesign drops that pattern: each section becomes its own
- * page request keyed on `?section=settings|features|logs|themes` and
- * the new templates render the sub-nav at the top with
- * `aria-current="page"` on the active tab. CSRF is enforced globally
- * by `route()` in includes/page-builder.php.
+ * Each section is its own page request keyed on
+ * `?section=settings|features|logs|themes`; the sub-nav at the top of
+ * each template carries `aria-current="page"` on the active tab. CSRF
+ * is enforced globally by `route()` in includes/page-builder.php.
  *
- * The legacy default theme keeps working: each settings template
- * still renders standalone (no AdminTabs chrome / no `.tabcontent`
- * wrapper) and the inline `<script>` tail at the bottom of this file
- * patches checkbox state for it. D1 deletes both that tail and this
- * paragraph when the default theme retires.
+ * Any third-party theme that forked the pre-v2.0.0 default and still
+ * renders the four sub-tabs inside `.tabcontent` divs (toggled by the
+ * removed `AdminTabs` / `openTab()` JS) renders each section
+ * standalone here; templates that need the legacy checkbox-restore
+ * helper can include it themselves.
  */
 $validSections = ['settings', 'features', 'logs', 'themes'];
 $section = (string)($_GET['section'] ?? 'settings');
@@ -76,8 +73,9 @@ $canSettings = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS);
  * here triggers `headers already sent` and the user lands on a partial
  * page with a raw PHP warning. The pre-B18 code dodged this by emitting
  * a JS-side `ShowBox(…, redir)` bounce instead; we keep that shape but
- * make it theme-aware so it works under both `default` and `sbpp2026`
- * chrome.
+ * use the post-v2.0.0 `window.SBPP.showToast` helper with a
+ * `ShowBox` fallback for any third-party theme that forked the
+ * pre-v2.0.0 default.
  */
 $savedSection = '';
 
@@ -206,8 +204,8 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
  * constant twice in one process, so the regex is the only way to
  * enumerate without resetting state). B18 keeps the regex-based
  * discovery and just enriches it with author / version / link /
- * screenshot — every theme.conf.php declares those four constants, so
- * the same shape works for both default and sbpp2026.
+ * screenshot — every theme.conf.php is expected to declare those four
+ * constants.
  */
 $validThemes = [];
 $themesDir   = opendir(SB_THEMES);
@@ -265,10 +263,10 @@ function adminSettingsHasSteamApiKey(): bool
 /*
  * Currently-selected theme metadata.
  *
- * The legacy default theme template renders these as a standalone
- * "current theme" panel; sbpp2026 derives the same info from the
- * $theme_list[].active row. Both shapes share the View so the
- * dual-theme PHPStan matrix stays green.
+ * The shipped template derives the active theme card from the
+ * `$theme_list[].active` row; the standalone `theme_*` properties are
+ * still passed for any third-party theme that forked the pre-v2.0.0
+ * default and rendered them in a separate "current theme" panel.
  *
  * `require()` is intentional here (matches the legacy loop) — by the
  * time this page renders, init.php has already require'd the same
@@ -436,12 +434,12 @@ if ($section === 'themes') {
  * <script> that:
  *
  *   1. Surfaces a "Settings saved" toast via the active theme's toast
- *      surface — `window.SBPP.showToast` on sbpp2026, `ShowBox` on
- *      `default`. Both already exist before this script runs because
- *      the chrome's footer.tpl loads them.
+ *      surface — `window.SBPP.showToast` (theme.js) with `ShowBox` as
+ *      a fallback for any third-party theme that forked the
+ *      pre-v2.0.0 default.
  *   2. Bounces to the GET URL after a short delay so a refresh doesn't
- *      re-POST the form (the legacy `ShowBox(…, redir)` hook does this
- *      itself; on sbpp2026 we issue an explicit `location.href` after
+ *      re-POST the form (the `ShowBox(…, redir)` fallback does this
+ *      itself; otherwise we issue an explicit `location.href` after
  *      `setTimeout`).
  *
  * Cooperatively no-op if neither toast surface is available — the
@@ -469,19 +467,13 @@ if ($savedSection !== ''):
 
 <?php
 /*
- * Legacy default-theme tail.
- *
- * The legacy `web/themes/default/page_admin_settings_*.tpl` markup
- * renders empty checkboxes and lets this script set their state via
- * direct `$('id').checked = N` writes (a MooTools $-shorthand the
- * default theme still ships in scripts/sourcebans.js). The sbpp2026
- * templates render `{if $config_debug}checked{/if}` declaratively
- * and sbpp2026's chrome doesn't load sourcebans.js — so we gate on
- * the active theme name to avoid `$ is not defined` on the new theme.
- *
- * D1 deletes this whole tail when the legacy theme retires.
+ * Compatibility tail for any third-party theme that forked the
+ * pre-v2.0.0 default and renders empty checkboxes, relying on this
+ * script to set their state via direct `$('id').checked = N` writes.
+ * The shipped v2.0.0 templates render `{if $config_debug}checked{/if}`
+ * declaratively, so the writes are redundant there but harmless — `$`
+ * is still defined by `web/scripts/sb.js`.
  */
-if (SB_THEME !== 'sbpp2026'):
 ?>
 <script>
 $('config_debug').checked = <?=(int)Config::getBool('config.debug');?>;
@@ -518,4 +510,3 @@ function MoreFields()
     td.appendChild(inp);
 }
 </script>
-<?php endif; ?>

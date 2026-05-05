@@ -411,7 +411,7 @@ parameters:
 		-
 			message: '#^Constant SB_THEME not found\.$#'
 			identifier: constant.notFound
-			count: 8
+			count: 7
 			path: pages/admin.settings.php
 
 		-

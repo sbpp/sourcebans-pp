@@ -360,6 +360,12 @@ bearing assertion that the value is already safe HTML, so:
 - `xajax` / `sb-callback.php` → use the JSON API.
 - ADOdb → use `Database` (PDO).
 - MooTools / React / a runtime bundler → vanilla JS in `web/scripts/`.
+- `web/scripts/sourcebans.js` (the v1.x ~1.7k-line bulk file shipping
+  `ShowBox`, `DoLogin`, `LoadServerHost`, `selectLengthTypeReason`, …)
+  → removed at v2.0.0 (#1123 D1). Page-tail helpers are inlined as
+  self-contained vanilla JS per page (see `web/pages/admin.edit.ban.php`
+  / `admin.edit.comms.php` for canonical examples); toasts go through
+  `window.SBPP.showToast` from the theme JS.
 - New `install/` flow → DB is seeded out-of-band in dev.
 - String literals for action names → `Actions.PascalName`.
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.

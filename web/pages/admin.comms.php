@@ -33,10 +33,10 @@ new AdminTabs([
 ], $userbank, $theme);
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
-    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    // sb.message (sb.js) replaces the v1.x ShowBox helper.
     echo "<script>sb.message.show('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
 } elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
-    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    // sb.message (sb.js) replaces the v1.x ShowBox helper.
     echo "<script>sb.message.show('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
 }
 
@@ -45,9 +45,11 @@ if (isset($GLOBALS['IN_ADMIN'])) {
 }
 
 
-// Inlined sourcebans.js helpers (#1123 D1 prep): LoadPrepareReblock / LoadPrepareBlockFromBan /
-// LoadPasteBlock / ShowBox / applyBlockFields disappear at D1; rebuild on top of sb.api.call +
-// a small DOM-prefill helper (window.__sbppApplyBlockFields) defined in this file's tail script.
+// Self-contained reblock / paste-block / block-from-ban prefill
+// (replaces the v1.x LoadPrepareReblock / LoadPrepareBlockFromBan /
+// LoadPasteBlock / ShowBox / applyBlockFields helpers). Built on
+// sb.api.call + window.__sbppApplyBlockFields (defined in this file's
+// tail script).
 if (isset($_GET["rebanid"])) {
     echo '<script type="text/javascript">sb.ready(function(){sb.api.call(Actions.CommsPrepareReblock,{bid:' . (int) $_GET["rebanid"] . '}).then(function(r){if(r&&r.ok&&r.data&&typeof window.__sbppApplyBlockFields==="function")window.__sbppApplyBlockFields(r.data);});});</script>';
 } elseif (isset($_GET["blockfromban"])) {
@@ -91,8 +93,8 @@ function ProcessBan()
         length:   Number($('banlength').value),
         reason:   reason,
     }).then(function (r) {
-        // Inlined sourcebans.js helpers (#1123 D1 prep): ShowBlockBox / TabToReload /
-        // applyApiResponse are deleted at D1; rebuild on top of sb.message (sb.js, survives D1).
+        // sb.message (sb.js) replaces the v1.x ShowBlockBox /
+        // TabToReload / applyApiResponse helpers.
         // The iframe is load-bearing — pages/admin.blockit.php loops the enabled servers and
         // fires `sc_fw_block` via rcon for each one. Without it the DB row exists but no live
         // server learns about the gag/mute, matching the bans/kickit shape one branch above.
@@ -125,8 +127,8 @@ function ProcessBan()
     });
 }
 
-// Inlined sourcebans.js helper (#1123 D1 prep): applyBlockFields disappears at D1; rebuild on top
-// of sb.js primitives so reblock / blockfromban / pasteBlock all keep prefilling the form.
+// Self-contained DOM-prefill helper (replaces the v1.x applyBlockFields)
+// so reblock / blockfromban / pasteBlock all keep prefilling the form.
 window.__sbppApplyBlockFields = function (d) {
     var byId = function (id) { return document.getElementById(id); };
     if (byId('nickname'))   byId('nickname').value   = d.nickname || '';

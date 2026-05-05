@@ -19,13 +19,13 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
 // Set the name of this theme here
-define('theme_name', "SourceBans++ 2026");
+define('theme_name', "SourceBans++ Default");
 
 // Set the author of this theme here
 define('theme_author', "SourceBans++ Dev Team");
 
 // Set the version of the theme here
-define('theme_version', "2.0.0-dev");
+define('theme_version', "2.0.0");
 
 // Set the link of the theme here
 define('theme_link', "https://github.com/sbpp/sourcebans-pp");

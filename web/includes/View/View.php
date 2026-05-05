@@ -16,9 +16,9 @@ namespace Sbpp\View;
  * See `web/includes/PHPStan/SmartyTemplateRule.php`.
  *
  * Most templates use Smarty's default `{…}` delimiters. Views whose template
- * uses the custom `-{…}-` pair (currently only `page_login.tpl`, in both the
- * legacy and sbpp2026 themes) must override {@see View::DELIMITERS} with the
- * matching pair so the rule parses the template correctly.
+ * uses the custom `-{…}-` pair (currently only `page_login.tpl`) must override
+ * {@see View::DELIMITERS} with the matching pair so the rule parses the
+ * template correctly.
  *
  * ### Permission booleans
  *

@@ -1,9 +1,9 @@
 // @ts-check
 /* ============================================================
-   banlist.js — sbpp2026 public ban list interactions
+   banlist.js — public ban list interactions
 
    Layered on top of the server-rendered table from
-   themes/sbpp2026/page_bans.tpl. The template is fully usable
+   themes/default/page_bans.tpl. The template is fully usable
    without this script (filters fall through as a server-side
    ?searchText= query, copy buttons no-op, comment-edit is a
    normal POST round-trip), so this file only adds:
@@ -15,8 +15,8 @@
         already inert without JS; this just wires
         navigator.clipboard + the toast helper from theme.js.
      3. Comment edit form     — POSTs through sb.api.call()
-        instead of the legacy `<form action="">` so the new
-        theme doesn't need to navigate away.
+        instead of a `<form action="">` round-trip so the page
+        doesn't need to navigate away.
 
    Each interaction is wrapped in a feature-detect (`if (foo)`)
    so a missing element on the comment-only branch doesn't throw.
@@ -61,11 +61,9 @@
     if (initial) applyStateFilter(initial);
   } catch (e) { /* ignore — default "All" is already applied server-side */ }
 
-  // ---- COMMENT EDIT FORM (sbpp2026 only) -------------------
-  // Legacy theme keeps the `<form method=post>` round-trip; the
-  // new theme's form has no `action`, so submit hits this handler
-  // and goes through the JSON API. Falls back to navigation on
-  // non-OK responses.
+  // ---- COMMENT EDIT FORM ----------------------------------
+  // The form has no `action`, so submit hits this handler and goes
+  // through the JSON API. Falls back to navigation on non-OK responses.
   /** @type {HTMLFormElement | null} */
   const cform = /** @type {HTMLFormElement | null} */ (document.getElementById('banlist-comment-form'));
   if (cform) {
@@ -85,8 +83,8 @@
         // Native form.submit() bypasses listeners per the HTML spec, so
         // we don't need to detach this handler first; the submission
         // POSTs to the action-less form URL, which page.banlist.php
-        // doesn't handle, but that's the same fall-through the legacy
-        // theme has when sourcebans.js fails to load.
+        // doesn't handle, but that's an acceptable fall-through —
+        // the network call is the primary path.
         cform.submit();
         return;
       }

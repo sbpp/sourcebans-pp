@@ -10,17 +10,10 @@ namespace Sbpp\View;
  * {@see web/pages/page.submit.php}, so reaching the view at all means
  * submissions are enabled.
  *
- * Variable contract is the union of fields the legacy
- * `web/themes/default/page_submitban.tpl` references and the new
- * `web/themes/sbpp2026/page_submitban.tpl` references; both render the
- * same form, just with different chrome. Keeping the names identical
- * lets `SmartyTemplateRule`'s dual-theme matrix (#1123 A2) check both
- * templates against this single View without divergence.
- *
  * Form-input `name=` POST keys (`SteamID`, `BanIP`, `PlayerName`,
  * `BanReason`, `SubmitName`, `EmailAddr`, `server`, `demo_file`) are
  * locked by the page handler's `$_POST['…']` reads and by the
- * `:prefix_submissions` schema; only the visual layout changes.
+ * `:prefix_submissions` schema.
  */
 final class SubmitBanView extends View
 {
@@ -30,7 +23,7 @@ final class SubmitBanView extends View
      * @param list<array<string,mixed>> $server_list Each row has at
      *     least `sid` (int) and `hostname` (string), populated from
      *     `:prefix_servers` plus a SourceQuery hostname lookup in
-     *     `web/pages/page.submit.php`. The legacy template iterates as
+     *     `web/pages/page.submit.php`. The template iterates as
      *     `{$server.sid}` / `{$server.hostname}`.
      * @param int $server_selected `sid` of the server the submitter
      *     picked on the previous failed POST (or `-1` on first load),

@@ -74,8 +74,7 @@ if (empty($email)) {
 // $_GET['type'] is constrained above to the literal 's' or 'p' and
 // $_GET['id'] is cast to int, so the resulting `CheckEmail('s', 42)`
 // JS expression contains no caller-controlled data and is safe to drop
-// into the template's onclick attribute via {nofilter} in the
-// sbpp2026 / default themes.
+// into the template's onclick attribute via {nofilter}.
 $emailJs = "CheckEmail('" . $_GET['type'] . "', " . (int) $_GET['id'] . ")";
 
 echo '<div id="admin-page-content"><div id="1">';

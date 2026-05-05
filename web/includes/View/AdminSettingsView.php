@@ -15,23 +15,9 @@ namespace Sbpp\View;
  * editor here would re-open that vector. See AGENTS.md
  * "Anti-patterns" + "Admin-authored display text".
  *
- * Variable shape:
- *
- *   - The first block (`config_title`, `config_logo`, …, `config_smtp`,
- *     `config_mail_from_*`) mirrors the legacy default theme template's
- *     variables verbatim so SmartyTemplateRule passes the default-theme
- *     PHPStan leg without baseline churn. The legacy theme drives every
- *     dynamic checkbox via inline `<script>` blocks emitted by
- *     `web/pages/admin.settings.php`, so it doesn't reference the
- *     boolean toggles in this View.
- *   - The second block (`active_section`, `$can_*`, the boolean
- *     toggles, `config_default_page`, `config_smtp_verify_peer`) is
- *     consumed only by the sbpp2026 template, which renders checkboxes
- *     statefully (`{if $config_debug}checked{/if}`) instead of patching
- *     them post-hoc. PHPStan baselines these as "unused" against the
- *     default-theme leg; the sbpp2026 leg sets
- *     `reportUnmatchedIgnoredErrors=false` so the baseline collapses
- *     cleanly when D1 retires the legacy template.
+ * The template renders checkboxes statefully
+ * (`{if $config_debug}checked{/if}`) directly off the boolean
+ * properties — no inline `<script>` patching.
  */
 final class AdminSettingsView extends View
 {
@@ -41,7 +27,9 @@ final class AdminSettingsView extends View
      * @param list<string>            $bans_customreason Persisted custom ban reasons,
      *     each entity-encoded at write time. Empty list when disabled.
      * @param array{0: string, 1: string, 2: string} $config_smtp Legacy
-     *     [host, user, port] tuple used by the default theme.
+     *     [host, user, port] tuple. Preserved for any third-party theme
+     *     that forked the pre-v2.0.0 default; the shipped template
+     *     reads the individual `$config_smtp_*` properties below.
      */
     public function __construct(
         public readonly string $config_title,

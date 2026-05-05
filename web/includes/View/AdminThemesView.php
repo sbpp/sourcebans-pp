@@ -16,25 +16,20 @@ namespace Sbpp\View;
  *
  * Variable shape:
  *
- *   - `$theme_list` is the only structural variable; both themes
- *     iterate it. Each row carries `dir`, `name`, `author`, `version`,
- *     `link`, `screenshot`, and `active` — the legacy default theme
- *     only reads `dir` + `name`, the sbpp2026 card grid uses every
- *     field.
+ *   - `$theme_list` is the structural variable. Each row carries
+ *     `dir`, `name`, `author`, `version`, `link`, `screenshot`, and
+ *     `active`; the card grid uses every field.
+ *   - `$can_*`, `$active_section`, `$current_theme_dir` drive
+ *     section navigation + per-card affordances on the redesigned
+ *     template.
  *   - `$theme_name`, `$theme_author`, `$theme_version`, `$theme_link`,
- *     `$theme_screenshot` describe the currently-selected theme;
- *     they exist for the legacy default-theme template's "current
- *     theme details" panel. The sbpp2026 template derives the same
- *     info from `$theme_list[].active`, so PHPStan baselines those
- *     scalars as "unused" on the sbpp2026 leg (and the dual-theme
- *     matrix's `reportUnmatchedIgnoredErrors=false` keeps that clean).
- *     `$theme_screenshot` is intentionally a pre-built `<img>` tag
- *     string for the legacy `{nofilter}` consumer; the sbpp2026 grid
- *     uses `$theme_list[].screenshot` (URL only) for its own `<img>`
- *     elements.
- *   - `$can_*`, `$active_section`, `$current_theme_dir` are sbpp2026-only
- *     and ride the same baseline pattern (default-theme leg sees
- *     them as unused).
+ *     `$theme_screenshot` describe the currently-selected theme as
+ *     standalone scalars. They are preserved here for any third-party
+ *     theme that forked the pre-v2.0.0 default and renders a "current
+ *     theme" details panel; the shipped card grid derives the same
+ *     info from `$theme_list[].active`. `$theme_screenshot` is
+ *     intentionally a pre-built `<img>` tag string for the legacy
+ *     `{nofilter}` consumer.
  */
 final class AdminThemesView extends View
 {

@@ -655,7 +655,7 @@ function api_bans_view_community(array $params): array
 }
 
 /**
- * Player-detail payload for the sbpp2026 right-side drawer (#1123 C1).
+ * Player-detail payload for the right-side drawer (#1123 C1).
  *
  * Returns the same data the public ban-list page already exposes, in a
  * stable JSON shape the drawer JS renders client-side. Action is
@@ -835,7 +835,7 @@ function api_bans_detail(array $params): array
 }
 
 /**
- * Autocomplete backend for the sbpp2026 command palette (#1123 C2).
+ * Autocomplete backend for the command palette (#1123 C2).
  *
  * Returns up to `limit` matching ban rows for a free-text query that the
  * palette types into as the admin presses keys. The handler is admin-only

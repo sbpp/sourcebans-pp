@@ -7,23 +7,19 @@ namespace Sbpp\View;
  * "List groups" tab on the admin groups page — binds to
  * `page_admin_groups_list.tpl`.
  *
- * The marquee feature in the sbpp2026 redesign is a master-detail flag
- * grid for web admin groups: clicking a row in the left rail focuses
- * that group in the right pane, and the right pane renders one
- * checkbox per web-permission flag (sourced from
+ * The marquee feature is a master-detail flag grid for web admin
+ * groups: clicking a row in the left rail focuses that group in the
+ * right pane, and the right pane renders one checkbox per
+ * web-permission flag (sourced from
  * `web/configs/permissions/web.json`) pre-checked against the group's
  * stored bitmask. The handler precomputes `all_flags` so the template
  * is server-side rendered with no extra round-trip; the Save button
- * posts back via `sb.api.call(Actions.GroupsEdit, …)` which already
- * exists in `web/api/handlers/groups.php`.
+ * posts back via `sb.api.call(Actions.GroupsEdit, …)` which lives in
+ * `web/api/handlers/groups.php`.
  *
- * Property set is the union of (a) the marquee design's needs
- * (`all_flags`, `selected_group`, `web_group_list` enriched with
- * `member_count` per row) and (b) every variable the legacy
- * `web/themes/default/page_admin_groups_list.tpl` already references.
- * Both templates therefore reference every property; no
- * `phpstan-baseline.neon` carve-outs are required and `D1` can drop
- * the legacy bridges in lockstep with deleting the default theme.
+ * The legacy `web_admins[]` parallel-count array is preserved for any
+ * third-party theme that forked the pre-v2.0.0 default; the shipped
+ * template reads the inline `member_count` per row instead.
  */
 final class AdminGroupsListView extends View
 {
@@ -32,12 +28,13 @@ final class AdminGroupsListView extends View
     /**
      * @param list<array<string,mixed>>      $web_group_list           Web admin group rows
      *     (`:prefix_groups` WHERE type != 3) augmented with
-     *     `permissions` (legacy display list from `BitToString`) and
-     *     `member_count` (sbpp2026 inline count, mirrors the parallel
-     *     `web_admins[index]` array used by the legacy template).
+     *     `permissions` (display list from `BitToString`) and
+     *     `member_count` (inline count consumed by the master-detail
+     *     rail, mirrors the parallel `web_admins[index]` array kept
+     *     for legacy compatibility).
      * @param list<int>                      $web_admins               Per-group member counts, indexed
-     *     parallel to `$web_group_list` (legacy default-template
-     *     contract preserved as-is).
+     *     parallel to `$web_group_list`. Preserved on the View for
+     *     any third-party theme that forked the pre-v2.0.0 default.
      * @param list<list<array<string,mixed>>> $web_admins_list         Per-group member rows
      *     (`{aid, user, authid}`), indexed parallel to
      *     `$web_group_list`.

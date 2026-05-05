@@ -32,7 +32,7 @@ require_once __DIR__ . '/system.php';
 Api::register('auth.login',         'api_auth_login',         0, false, true);
 Api::register('auth.lost_password', 'api_auth_lost_password', 0, false, true);
 // bans.detail mirrors the public ban-list page's reach: any visitor can
-// click a ban row in the sbpp2026 drawer (#1123 C1). Player IP, admin
+// click a ban row in the right-side drawer (#1123 C1). Player IP, admin
 // name, removed-by and comments are gated *inside* the handler against
 // banlist.hideplayerips / banlist.hideadminname / config.enablepubliccomments
 // + is_admin(), matching page.banlist.php exactly so we don't leak

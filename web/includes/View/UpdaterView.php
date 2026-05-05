@@ -12,18 +12,9 @@ namespace Sbpp\View;
  * `$theme_url` assignment, and the configured template directory are
  * all available — but `init.php` deliberately forces
  * `$theme_name = "default"` when `IS_UPDATE` is defined (see the
- * `defined("IS_UPDATE")` branch in `init.php`). That means the updater
- * always renders the **legacy** `themes/default/updater.tpl` until D1
- * deletes the legacy theme and renames `sbpp2026/` into `default/`,
- * at which point this redesigned template takes over with no other
- * code change.
- *
- * `SmartyTemplateRule` resolves the template against whichever
- * theme directory is active (set per-leg via `SBPP_PHPSTAN_THEME` —
- * see `phpstan.yml`'s matrix). Both legs of the matrix scan a
- * template named `updater.tpl`; they share the same one-element
- * variable contract (`$updates`) so the View doesn't need a
- * per-theme alternate.
+ * `defined("IS_UPDATE")` branch in `init.php`), so the updater always
+ * renders against the shipped `themes/default/updater.tpl` regardless
+ * of the operator's `config.theme` selection.
  */
 final class UpdaterView extends View
 {

@@ -27,12 +27,11 @@ global $userbank, $theme;
 new AdminTabs([], $userbank, $theme);
 
 /**
- * Vanilla replacement for sourcebans.js' ShowBox(): emits an inline
- * <script> that surfaces a toast via window.SBPP.showToast (theme.js,
- * sbpp2026) with sb.message.* (sb.js, both themes) as a fallback, then
- * redirects after a short delay. Used in place of the legacy
- * `<script>ShowBox(…)</script>` calls so the page works under sbpp2026
- * (which does NOT load sourcebans.js) without losing the legacy theme.
+ * Emits an inline `<script>` that surfaces a toast via
+ * `window.SBPP.showToast` (theme.js) with `sb.message.*` (sb.js) as a
+ * fallback, then redirects after a short delay. Replaces the v1.x-era
+ * `<script>ShowBox(…)</script>` calls (the legacy bulk JS file is gone
+ * since v2.0.0).
  *
  * The strings are JSON-encoded so embedded quotes / newlines / non-ASCII
  * survive the round-trip into the script body without further escaping.
@@ -108,7 +107,7 @@ if (!$canEditBan) {
  * Replayed at the bottom of the page by the tail <script>: each entry
  * sets the matching `<id>.msg` div's textContent + reveals it via
  * `style.display = 'block'`. Vanilla DOM only — no MooTools `setStyle()`
- * / `setHTML()` (the sbpp2026 stack does not load sourcebans.js).
+ * / `setHTML()` (the v1.x bulk JS file is gone since v2.0.0).
  *
  * @var array<string, string> $validationErrors  field id (`name`, `steam`,
  *     `ip`, `reason`, `length`, `demo`) → message string.
@@ -297,12 +296,9 @@ $customReason = Config::getBool('bans.customreasons')
     customreason: $customReason,
 ));
 
-// Tail script — vanilla replacements for sourcebans.js helpers the
-// sbpp2026 stack does not load. The default theme also gets this script
-// (it's idempotent / additive); the legacy MooTools-style helpers it
-// shipped (`changeReason`, `selectLengthTypeReason`, `demo`) are
-// shadowed by these vanilla declarations on a per-page basis without
-// touching `web/scripts/sourcebans.js` (which #1123 D1 deletes outright).
+// Tail script — self-contained vanilla helpers the page needs after
+// the row renders (the v1.x MooTools-flavoured `changeReason`,
+// `selectLengthTypeReason`, `demo` came from the removed bulk JS file).
 //
 // Order:
 //   1. Replay POST validation errors into the per-field `*.msg` divs.
@@ -381,7 +377,7 @@ $postSuccessJs = $postSuccess ? 'true' : 'false';
         if (dre) dre.style.display = (szListValue === 'other' ? 'block' : 'none');
     };
 
-    // Vanilla replacement for sourcebans.js' `selectLengthTypeReason`:
+    // Vanilla replacement for the v1.x `selectLengthTypeReason` helper:
     // hydrate the type / banlength / listReason <select>s with the
     // current ban's stored values after the form has rendered. Falls
     // back to the "Other reason" branch (revealing the textarea +

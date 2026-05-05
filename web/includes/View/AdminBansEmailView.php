@@ -10,10 +10,9 @@ namespace Sbpp\View;
  *
  * `$email_js` is the literal JavaScript expression invoked when the
  * "Send email" button is clicked (e.g. `CheckEmail('s', 42)`). The
- * legacy default theme drops it raw into `onclick="…"`; the sbpp2026
- * template does the same so the existing `CheckEmail()` helper from
- * `web/scripts/sourcebans.js` is reused without renaming. Both halves
- * are server-built from the dispatcher's own `$_GET['type']` /
+ * template drops it raw into `onclick="…"`; the `CheckEmail()` helper
+ * is installed by the inline page-local script in the template. The
+ * value is server-built from the dispatcher's own `$_GET['type']` /
  * `$_GET['id']` after type/integer validation, so no user input flows
  * through unescaped.
  */

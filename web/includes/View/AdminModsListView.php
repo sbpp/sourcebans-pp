@@ -13,15 +13,13 @@ namespace Sbpp\View;
  * SmartyTemplateRule check is on the View → template variable parity,
  * not on the inner array shape.
  *
- * Property names keep the legacy `permission_*` shape (rather than the
- * newer `can_*` convention `Sbpp\View\Perms::for()` produces) because
- * the default theme's `page_admin_mods_list.tpl` still references
- * `{$permission_listmods}` / `{$permission_editmods}` /
- * `{$permission_deletemods}`. The dual-theme PHPStan matrix added in
- * #1123 A2 cross-checks both templates against this single View, so
- * both themes have to use the same variable names until D1 drops the
- * legacy theme. See `AdminServersListView` / `AdminBansAddView` for
- * the established Phase A→B convention.
+ * Property names keep the historical `permission_*` shape (rather than
+ * the newer `can_*` convention `Sbpp\View\Perms::for()` produces) because
+ * the template references `{$permission_listmods}` /
+ * `{$permission_editmods}` / `{$permission_deletemods}`. See
+ * `AdminServersListView` / `AdminBansAddView` for the canonical
+ * `can_*` convention on Views that don't have to honour a historical
+ * variable name.
  */
 final class AdminModsListView extends View
 {

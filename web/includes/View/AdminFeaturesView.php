@@ -12,12 +12,9 @@ namespace Sbpp\View;
  * key; `$steamapi` reflects whether `STEAMAPIKEY` is set so the
  * template can disable the toggle inline rather than failing at submit.
  *
- * The first property block (`$steamapi`) matches the legacy default
- * theme template; the rest (boolean toggles, `$can_*`, `$active_section`,
- * `$can_owner`) is consumed only by the sbpp2026 template, which
- * renders checkboxes statefully. The default theme drives them via
- * inline `<script>` blocks emitted by admin.settings.php, so PHPStan
- * baselines those as "unused" on the default leg of the matrix.
+ * The template renders checkboxes statefully
+ * (`{if $config_debug}checked{/if}`) directly off the boolean
+ * properties — no inline `<script>` patching.
  */
 final class AdminFeaturesView extends View
 {

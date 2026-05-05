@@ -6,17 +6,10 @@ namespace Sbpp\View;
 /**
  * Per-server "kick this player" iframe — binds to `page_kickit.tpl`.
  *
- * Renders inside an iframe spawned by `ShowKickBox()` in
- * `web/scripts/sourcebans.js` after a ban is added. It is a
- * self-contained `<html>` document (no chrome shell) and uses the
- * `-{ … }-` Smarty delimiter pair so the inline JS can keep its raw
- * `{` / `}` tokens.
- *
- * The property set is the union of what the **default** and
- * **sbpp2026** themes' `page_kickit.tpl` consume — both legs of the
- * dual-theme PHPStan matrix (#1123 A2) scan against the same View, so
- * mismatches between either template and this contract surface as
- * `sbpp.view.{missingProperty,unusedProperty}` errors before merge.
+ * Renders inside an iframe opened from the admin bans list after a ban
+ * is added. It is a self-contained `<html>` document (no chrome shell)
+ * and uses the `-{ … }-` Smarty delimiter pair so the inline JS can
+ * keep its raw `{` / `}` tokens.
  *
  *   - `$csrf_token`: HTML `<meta name="csrf-token">` payload — sb.api
  *     reads it for the X-CSRF-Token header on every JSON call.

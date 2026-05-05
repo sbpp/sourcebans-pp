@@ -764,26 +764,24 @@ foreach ($res as $row) {
     $data['view_delete'] = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
 
     // ------------------------------------------------------------------
-    // sbpp2026 (#1123 B2): per-row keys consumed by the new
-    // page_bans.tpl. Aliases of the legacy fields above so the legacy
-    // default theme (which reads `$ban.player`, `$ban.ban_id`,
-    // `$ban.class`, …) continues to work unchanged. The handoff design
-    // uses `bid|name|steam|state|length_human|banned_human|sname` plus
-    // pre-derived per-row permission booleans (`can_edit_ban`,
-    // `can_unban`) that the template gates the inline action buttons
-    // on. SmartyTemplateRule does not introspect array contents, so
-    // both shapes can coexist on each item.
+    // Per-row keys consumed by `page_bans.tpl`. Aliases of the legacy
+    // fields above are also kept on each row so any third-party theme
+    // that forked the pre-v2.0.0 default (and reads `$ban.player`,
+    // `$ban.ban_id`, `$ban.class`, …) continues to work unchanged.
+    // The shipped template uses `bid|name|steam|state|length_human|
+    // banned_human|sname` plus pre-derived per-row permission booleans
+    // (`can_edit_ban`, `can_unban`) that gate the inline action
+    // buttons. SmartyTemplateRule does not introspect array contents,
+    // so both shapes coexist on each item.
     //
     // `state` collapses the four UI states the design separates
-    // (matches the 3px coloured left-border + status pill from
-    // handoff/pages/banlist.tpl):
+    // (matches the 3px coloured left-border + status pill):
     //     permanent → length == 0 AND not removed
     //     active    → length > 0  AND ends >= now AND not removed
     //     expired   → length > 0  AND ends < now  AND not removed
     //     unbanned  → RemoveType set (D/U/E rows that aren't natural expiry)
     // Natural expiry (length>0 && ends<now && RemoveType IS NULL) is
-    // surfaced as `expired` separately from admin-driven `unbanned`,
-    // matching the design's distinction.
+    // surfaced as `expired` separately from admin-driven `unbanned`.
     $banLengthInt = (int) $row['ban_length'];
     $banEndsInt   = (int) $row['ban_ends'];
     $removeTypeRaw = $row['row_type'] ?? null;
@@ -838,33 +836,25 @@ if (isset($_GET['advSearch'])) {
 }
 
 // ---------------------------------------------------------------------
-// Pagination markup ($ban_nav). Built server-side and consumed by
-// BOTH themes via {$ban_nav nofilter}; the legacy default theme
-// expects a flat string of inline-styled HTML and the sbpp2026 theme
-// drops it inside a card. Both themes render the same string.
+// Pagination markup ($ban_nav). Built server-side and emitted via
+// {$ban_nav nofilter}; the shipped template drops it inside a card.
+// Any third-party theme that forked the pre-v2.0.0 default also
+// renders the same string.
 //
-// Notable changes vs. the pre-#1123 builder:
+// Notable invariants:
 //
 //   1. The prev/next anchors carry `data-testid="page-prev"` /
-//      `page-next` so the marquee page's E2E hooks (issue #1123
-//      "Testability hooks" table) work without a per-theme view-model
+//      `page-next` so E2E hooks work without a per-theme view-model
 //      detour. The attributes are inert in browsers that don't query
-//      them, so the legacy theme is unaffected.
-//   2. The page-jump <select> no longer calls into
-//      web/scripts/sourcebans.js's changePage(); it sets
-//      window.location directly via inline vanilla JS. The new
-//      sbpp2026 theme drops sourcebans.js (#1123 D1), so any reach
-//      into legacy bulk JS would silently break the navigator there.
-//      The legacy theme keeps working because the new inline JS uses
-//      only window.location, which is universally available.
-//   3. The advSearch/advType $_GET values are still escaped through
-//      the htmlspecialchars(addslashes(...)) double-pass added in
-//      #1113 — the JS-string-inside-HTML-attribute injection vector
-//      is unchanged by the testid/vanilla-JS rework.
-//   4. FA icons (`<i class="fas fa-arrow-…">`) are dropped in favour
-//      of plain "Prev" / "Next" + Unicode arrows. The new theme
-//      ships Lucide instead of FontAwesome, and the legacy theme
-//      reads fine with plain text either way.
+//      them.
+//   2. The page-jump <select> sets `window.location` directly via
+//      inline vanilla JS (no reach into legacy bulk JS, which is gone
+//      since v2.0.0).
+//   3. The advSearch/advType $_GET values are escaped through the
+//      htmlspecialchars(addslashes(...)) double-pass added in #1113 —
+//      this guards the JS-string-inside-HTML-attribute injection vector.
+//   4. Plain "Prev" / "Next" + Unicode arrows; the v2.0.0 default
+//      theme ships Lucide instead of FontAwesome.
 // ---------------------------------------------------------------------
 
 $searchTextParam = isset($_GET['searchText']) ? '&searchText=' . urlencode((string) $_GET['searchText']) : '';

@@ -25,10 +25,11 @@ if (!defined("IN_SB")) {
 define('IN_HOME', true);
 
 /**
- * Inlined sourcebans.js helpers (#1123 D1 prep): see page.servers.php for the canonical
- * definition. Duplicated under function_exists() because page.home.php builds its
- * LoadServerHostProperty()-equivalent calls before it requires page.servers.php, and we
- * need the helper definitions to land at the head of $server_qry.
+ * Self-contained server-host populate helpers — see page.servers.php for the
+ * canonical definition. Duplicated under function_exists() because page.home.php
+ * builds its LoadServerHostProperty()-equivalent calls before it requires
+ * page.servers.php, and we need the helper definitions to land at the head of
+ * $server_qry.
  */
 if (!function_exists('SbppServerQryHelpers')) {
     function SbppServerQryHelpers(): string
@@ -86,10 +87,10 @@ foreach ($rows as $row) {
 
     $GLOBALS['server_qry'] .= "__sbppLoadServerHostProperty(" . (int) $row['sid'] . ", 'block_" . (int) $row['sid'] . "_$blcount', 'title');";
 
-    // sbpp2026 fields. Stored alongside the legacy keys above so the
-    // new dashboard template reads `$player.bid` / `$player.sname`
-    // without breaking the legacy template (which simply ignores extra
-    // keys). Both themes share this view during the v2.0.0 rollout.
+    // Dashboard template reads `$player.bid` / `$player.sname` from
+    // each row. Stored alongside the legacy keys above so any third-
+    // party theme that forked the pre-v2.0.0 default keeps rendering
+    // off the same row source.
     $info['bid']           = (int) ($row['bid'] ?? 0);
     $info['sname']         = (string) ($row['server_addr'] ?? '');
     $info['blocked_human'] = $info['date'];
@@ -161,12 +162,12 @@ foreach ($rows as $row) {
         $info['unbanned'] = false;
     }
 
-    // sbpp2026 fields, derived from the same row so the new template
-    // reads handoff-style keys without re-querying. The legacy template
-    // ignores extras. Stored raw — Smarty's global auto-escape
-    // (init.php: $theme->setEscapeHtml(true)) handles HTML-escaping at
-    // emit time; pre-escaping here would double-encode `&`/`<`/`>` in
-    // ban reasons (AGENTS.md: "Store raw, escape on display").
+    // Per-row keys consumed by the dashboard template, derived from
+    // the same SQL row so we don't re-query. Stored raw — Smarty's
+    // global auto-escape (init.php: $theme->setEscapeHtml(true))
+    // handles HTML-escaping at emit time; pre-escaping here would
+    // double-encode `&`/`<`/`>` in ban reasons (AGENTS.md: "Store raw,
+    // escape on display").
     $info['bid']          = (int) $row['bid'];
     $info['reason']       = (string) ($row['reason'] ?? '');
     $info['sname']        = (string) ($row['server_addr'] ?? '');
@@ -236,8 +237,8 @@ foreach ($rows as $row) {
         $info['unbanned'] = false;
     }
 
-    // sbpp2026 fields, mirroring the bans loop above (raw — Smarty
-    // escapes on display).
+    // Per-row keys consumed by the dashboard template, mirroring the
+    // bans loop above (raw — Smarty escapes on display).
     $info['bid']          = (int) $row['bid'];
     $info['reason']       = (string) ($row['reason'] ?? '');
     $info['sname']        = (string) ($row['server_addr'] ?? '');

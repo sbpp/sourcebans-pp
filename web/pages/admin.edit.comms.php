@@ -171,14 +171,12 @@ function changeReason(szListValue)
     $('dreason').style.display = (szListValue == "other" ? "block" : "none");
 }
 // `selectLengthTypeReason` is the post-mount hydrator that picks the
-// existing block's type / length / reason on the <select>s. The legacy
-// default theme inherits it from web/scripts/sourcebans.js, but the
-// sbpp2026 chrome doesn't load sourcebans.js (and #1123 D1 deletes that
-// file outright). Inline a self-contained vanilla version so the call
-// below works on both legs of the dual-theme matrix and keeps working
-// post-D1 — without it, sbpp2026 would throw ReferenceError, leave the
-// type/length/reason at their defaults, and silently clobber the row
-// when the admin clicks Save.
+// existing block's type / length / reason on the <select>s. Inlined as
+// a self-contained vanilla function (the v1.x version lived in the
+// removed pre-v2.0.0 bulk JS file) so the call below works without any
+// chrome-level helper — without it the call would throw ReferenceError,
+// leave the type/length/reason at their defaults, and silently clobber
+// the row when the admin clicks Save.
 function selectLengthTypeReason(length, type, reason) {
     var banlength = document.getElementById('banlength');
     if (banlength) {

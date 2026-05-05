@@ -9,10 +9,9 @@ namespace Sbpp\View;
  * inline expandable detail per row.
  *
  * Only `ADMIN_OWNER` can truncate the log table; `$can_owner` gates
- * the "Clear log" button in the sbpp2026 template. The legacy default
- * theme reads the prebuilt `$clear_logs` HTML link instead, so both
- * variables sit on the View together — `SmartyTemplateRule`'s
- * cross-check lets the dual-theme matrix accept either.
+ * the "Clear log" button. `$clear_logs` is a prebuilt HTML link kept
+ * on the View for any third-party theme that forked the pre-v2.0.0
+ * default and renders it instead of the new `$can_owner`-gated button.
  */
 final class AdminLogsView extends View
 {

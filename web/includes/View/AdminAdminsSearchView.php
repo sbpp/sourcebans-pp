@@ -5,31 +5,17 @@ namespace Sbpp\View;
 
 /**
  * "Advanced search" panel on the admin/admins list — binds to
- * `box_admin_admins_search.tpl`.
- *
- * Two themes consume this view side-by-side during the v2.0.0 rollout
- * (#1123): the legacy `web/themes/default/box_admin_admins_search.tpl`
- * (table layout + xajax-style live polling driven by sourcebans.js'
- * `LoadServerHost` helper) and the new
- * `web/themes/sbpp2026/box_admin_admins_search.tpl` (card layout that
- * dispatches one `sb.api.call(Actions.ServersHostPlayers, …)` per
- * server option directly from inline `{literal}<script>…{/literal}`).
- * Both legs of the dual-theme PHPStan matrix scan this view, so it
- * declares the union of variables both templates reference; the new
- * template carries an `{if false}…{/if}` parity block for the legacy-
- * only `$server_script` so SmartyTemplateRule's "unused property"
- * check stays green for the sbpp2026 leg without bespoke baseline
- * entries. D1's hard cutover deletes the legacy template + the
- * legacy-only `$server_script` property here in lockstep.
+ * `box_admin_admins_search.tpl`. Card layout that dispatches one
+ * `sb.api.call(Actions.ServersHostPlayers, …)` per server option
+ * directly from inline `{literal}<script>…{/literal}` to populate
+ * each `<option id="ssSID">Loading…</option>`.
  *
  * Permission name shape note: the boolean is `$can_editadmin` (no
  * underscore between "edit" and "admin", and singular) to match the
- * legacy template's literal `{if $can_editadmin}` reference. The new
- * sbpp2026 template uses the same name. We deviate from the
- * `Perms::for()` `can_<lowercase ADMIN_*>` convention here only to
- * keep the dual-theme matrix happy — see {@see AdminAdminsListView}
- * for the canonical naming on Views that don't need to share a
- * template name across themes.
+ * template's literal `{if $can_editadmin}` reference. We deviate from
+ * the `Perms::for()` `can_<lowercase ADMIN_*>` convention to preserve
+ * the historical name; see {@see AdminAdminsListView} for the canonical
+ * naming on newer Views.
  *
  * Rendered inline from `web/pages/admin.admins.search.php`, which is
  * pulled in by `page_admin_admins_list.tpl` via the
@@ -49,13 +35,12 @@ final class AdminAdminsSearchView extends View
      *     Per-server entries for the "Search by server" dropdown.
      * @param string $server_script Server-built `<script>` blob that
      *     fires one `sb.api.call(Actions.ServersHostPlayers, {sid})`
-     *     per option to populate the `<option id="ssSID">` text — the
-     *     vanilla replacement for the legacy `LoadServerHost('SID', …)`
-     *     calls (sourcebans.js helper, deleted at #1123 D1). Consumed
-     *     by the legacy default-theme template only; the new sbpp2026
+     *     per option to populate the `<option id="ssSID">` text. The
      *     template inlines its own per-tile script and carries an
-     *     `{if false}…{/if}` parity reference so SmartyTemplateRule
-     *     stays green.
+     *     `{if false}…{/if}` parity reference so SmartyTemplateRule's
+     *     "every declared property is referenced" check stays green
+     *     while this server-built blob is still available for any
+     *     third-party theme that copies the legacy emit pattern.
      * @param list<array{gid: int|string, name: string}>  $webgroup_list
      *     `:prefix_groups` rows where `type=1` (web groups).
      * @param list<array{name: string}>                   $srvadmgroup_list

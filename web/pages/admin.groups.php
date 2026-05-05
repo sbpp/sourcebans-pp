@@ -31,10 +31,11 @@ new AdminTabs([
 // ------------------------------------------------------------------
 // Web admin groups (`:prefix_groups` WHERE type != 3).
 //
-// We keep two parallel arrays for the legacy default-theme template
-// (`web_admins` / `web_admins_list` indexed by foreach position) AND
-// inline `member_count` on each row for the sbpp2026 master-detail
-// rail. Both shapes derive from the same per-group queries below.
+// `web_admins` / `web_admins_list` are kept (indexed by foreach
+// position) as a compatibility shape for any third-party theme that
+// forked the pre-v2.0.0 default; the shipped template reads
+// `member_count` inlined on each row instead. Both shapes derive from
+// the same per-group queries below.
 // ------------------------------------------------------------------
 $web_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != '3'")->resultset();
 $web_group_list          = [];
@@ -96,12 +97,12 @@ $server_admin_group_count = count($server_group_list);
 // ------------------------------------------------------------------
 // Server groups (`:prefix_groups` WHERE type = 3).
 //
-// The legacy default template emits `LoadServerHostPlayersList(...)`
-// inline scripts to fill an accordion-revealed server list per row.
-// The sbpp2026 redesign omits the accordion entirely (the marquee
-// surface is the master-detail flag grid above, not these
-// server-of-servers groupings), but we keep emitting the script tags
-// so the default theme keeps working until D1 cuts over.
+// `LoadServerHostPlayersList(...)` inline scripts are still emitted
+// for any third-party theme that forked the pre-v2.0.0 default and
+// renders an accordion-revealed server list per row. The shipped
+// template omits the accordion entirely (the marquee surface is the
+// master-detail flag grid above, not these server-of-servers
+// groupings) and ignores the script tags.
 // ------------------------------------------------------------------
 $server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
 $server_list   = [];
@@ -217,9 +218,10 @@ echo '<div class="tabcontent" id="Add a group">';
 echo '</div>';
 ?>
 <script>
-// Inlined sourcebans.js helper (#1123 D1 prep): InitAccordion is removed at D1; sb.accordion (sb.js)
-// is the actual implementation, so call it directly. The legacy helper also stashed the controller in
-// a global `accordion` variable, but no template reads it back, so we drop that side effect.
+// sb.accordion (sb.js) is the actual implementation, so call it directly.
+// The v1.x InitAccordion helper also stashed the controller in a global
+// `accordion` variable, but no template reads it back, so we drop that
+// side effect.
 sb.ready(function () { sb.accordion('tr.opener', 'div.opener', 'mainwrapper', -1); });
 </script>
 </div>

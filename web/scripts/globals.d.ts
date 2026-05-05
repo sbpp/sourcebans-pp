@@ -184,13 +184,13 @@ declare var AddContextMenu: (
  * Window properties so call sites narrow with `typeof window.x ===
  * 'function'` rather than crashing tsc.
  *
- * `swapTab` / `Swap2ndPane` used to live in `web/scripts/sourcebans.js`
- * (deleted at #1123 D1). They're still emitted as `onclick="Swap2ndPane(…)"`
- * in raw HTML by some legacy admin pages (`web/pages/admin.bans.php`)
- * and `sb.tabs.init()` (`web/scripts/sb.js`) calls them through the
- * guarded `window.*` lookup so the panel doesn't crash when no inline
- * definition is present. Replacements for those legacy tab navs ship
- * with the new theme's per-page redesigns.
+ * `swapTab` / `Swap2ndPane` used to live in the v1.x bulk JS file
+ * (removed at v2.0.0, #1123 D1). They're still emitted as
+ * `onclick="Swap2ndPane(…)"` in raw HTML by some legacy admin pages
+ * (`web/pages/admin.bans.php`) and `sb.tabs.init()` (`web/scripts/sb.js`)
+ * calls them through the guarded `window.*` lookup so the panel
+ * doesn't crash when no inline definition is present. Replacements for
+ * those legacy tab navs ship with the v2.0.0 per-page redesigns.
  */
 interface Window {
     set_error?: (n: number) => void;

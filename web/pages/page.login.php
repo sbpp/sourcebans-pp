@@ -29,15 +29,14 @@ if ($userbank->is_logged_in()) {
     exit;
 }
 
-// `?m=…` query params drive a status banner. The legacy default theme
-// echoes ShowBox() <script> dialogs (which require web/scripts/sourcebans.js,
-// loaded only by the legacy chrome). The sbpp2026 chrome drops that
-// bulk file (#1123 D1) and the new page_login.tpl renders the same
-// status messages via window.SBPP.showToast() driven off the URL params
-// directly — so the new template contributes ZERO server-rendered text
-// here, and the dialog branch below stays guarded for the legacy theme
-// only via the existing $lostpassword_url interpolation. The whole `if`
-// goes away with the legacy template at #1123 D1.
+// `?m=…` query params drive a status banner. The shipped v2.0.0
+// `page_login.tpl` renders the message via `window.SBPP.showToast()`
+// driven off the URL params on page load, so this handler emits no
+// server-rendered text. The `<script>` blocks below echo the legacy
+// pre-v2.0.0 `ShowBox()` dialogs purely as a no-op for any third-party
+// theme that forked the pre-v2.0.0 default — the
+// `if (typeof ShowBox === 'function')` guard keeps them inert when
+// `ShowBox` is undefined, which is the case in the shipped chrome.
 $lostpassword_url = Host::complete() . '/index.php?p=lostpassword';
 if (isset($_GET['m'])) {
     switch ($_GET['m']) {
@@ -110,31 +109,25 @@ HTML;
     }
 }
 
-// `$redir` is a v1.x-shaped *JavaScript expression* the legacy default
-// theme inlines directly into its login button's `onclick=` and into
-// the Enter/Space `keydown` handler — see web/themes/default/page_login.tpl.
-// The literal `DoLogin('');` matches the prior assignment in this handler
-// (commit 7c8bb9d6 baseline) and depends on `DoLogin` from
-// web/scripts/sourcebans.js, which the legacy chrome loads. The new
-// sbpp2026 chrome drops sourcebans.js (#1123 D1) so `DoLogin` is
-// undefined there; the new page_login.tpl ignores `$redir` for actual
-// login wiring and posts via `sb.api.call(Actions.AuthLogin, …)` with a
-// hardcoded `redirect: ''` (= post-login destination is the dashboard).
-// We still emit `$redir` so the legacy theme keeps working through the
-// rollout window — the property goes away with the legacy template at
-// #1123 D1.
+// `$redir` is a v1.x-shaped *JavaScript expression* preserved here for
+// SmartyTemplateRule property↔reference parity (see the LoginView
+// docblock). The shipped `page_login.tpl` echoes it on a dead
+// `data-legacy-redir="…"` attribute and posts via
+// `sb.api.call(Actions.AuthLogin, …)` with a hardcoded `redirect: ''`
+// (post-login destination is the dashboard). Any third-party theme
+// that forked the pre-v2.0.0 default and still calls `DoLogin(...)`
+// from removed legacy bulk JS would no-op there.
 $loginView = new \Sbpp\View\LoginView(
     normallogin_show: Config::getBool('config.enablenormallogin'),
     steamlogin_show: Config::getBool('config.enablesteamlogin'),
     redir: "DoLogin('');",
 );
 
-// Both the legacy default-theme template and the sbpp2026 redesign
-// render with `-{ … }-` delimiters (see LoginView::DELIMITERS and the
-// docblock on LoginView for why). Mirror the YourAccountView page
-// handler's swap-around-render pattern so the chrome (which uses the
-// standard `{ … }` pair) is unaffected. The swap goes away when #1123
-// D1 rewrites both halves to standard delimiters.
+// `page_login.tpl` renders with the custom `-{ … }-` delimiter pair so
+// inline `<script>` blocks can keep `{` / `}` for JS object literals
+// without `{literal}` wrapping. Swap delimiters around
+// `Renderer::render()` so the chrome (which uses the standard
+// `{ … }` pair) is unaffected. {@see LoginView::DELIMITERS}.
 $theme->setLeftDelimiter('-{');
 $theme->setRightDelimiter('}-');
 \Sbpp\View\Renderer::render($theme, $loginView);

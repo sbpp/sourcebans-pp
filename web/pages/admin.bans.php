@@ -32,7 +32,7 @@ new AdminTabs([
 ], $userbank, $theme);
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
-    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    // sb.message (sb.js) replaces the v1.x ShowBox helper.
     echo "<script>sb.message.show('Ban Deleted', 'The ban has been deleted from SourceBans', 'green', '', true);</script>";
 } elseif (isset($_GET['mode']) && $_GET['mode']=="unban") {
     echo "<script>sb.message.show('Player Unbanned', 'The Player has been unbanned from SourceBans', 'green', '', true);</script>";
@@ -100,14 +100,16 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
         Log::add("m", "Bans imported", "$bancnt Ban(s) imported");
     }
 
-    // Inlined sourcebans.js helper (#1123 D1 prep): ShowBox is removed at D1; sb.message is in sb.js.
+    // sb.message (sb.js) replaces the v1.x ShowBox helper.
     echo "<script>sb.message.show('Bans Import', '$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.', 'green', '');</script>";
 }
 
-// Inlined sourcebans.js helpers (#1123 D1 prep): LoadPrepareReban / LoadPasteBan / ShowBox / applyBanFields
-// disappear at D1; rebuild on top of sb.api.call + a small DOM-prefill helper that lives in this file's
-// tail script (window.__sbppApplyBanFields). Both inline scripts below dispatch through Actions.*
-// (api-contract.js) and use sb.ready so the helper is defined by the time the API response lands.
+// Self-contained reban / paste-ban prefill (replaces the v1.x
+// LoadPrepareReban / LoadPasteBan / ShowBox / applyBanFields helpers).
+// Built on sb.api.call + a small DOM-prefill helper that lives in this
+// file's tail script (window.__sbppApplyBanFields). Both inline scripts
+// below dispatch through Actions.* (api-contract.js) and use sb.ready
+// so the helper is defined by the time the API response lands.
 if (isset($_GET["rebanid"])) {
     echo '<script type="text/javascript">sb.ready(function(){sb.api.call(Actions.BansPrepareReban,{bid:' . (int) $_GET["rebanid"] . '}).then(function(r){if(r&&r.ok&&r.data&&typeof window.__sbppApplyBanFields==="function")window.__sbppApplyBanFields(r.data);});});</script>';
 }
@@ -776,10 +778,10 @@ echo '<div class="tabcontent" id="Group ban">';
     list_steam_groups: isset($_GET['fid']) ? (string) $_GET['fid'] : false,
     // `player_name` is rendered next to the steam-groups list when an
     // admin reaches Group Ban via "Ban groups of player X" from the
-    // banlist (?fid=…). The legacy template emitted `{$player_name}`
-    // unguarded but no caller ever assigned it; we now pass an empty
-    // string so the SmartyTemplateRule contract holds and the new
-    // sbpp2026 template can render the placeholder when wired up.
+    // banlist (?fid=…). The pre-v2.0.0 template emitted `{$player_name}`
+    // unguarded but no caller ever assigned it; we pass an empty
+    // string so the SmartyTemplateRule contract holds and the
+    // template can render the placeholder when wired up.
     player_name: '',
 ));
 echo '</div>';
@@ -869,8 +871,8 @@ function ProcessBan()
         reason:   reason,
         fromsub:  Number($('fromsub').value || 0),
     }).then(function (r) {
-        // Inlined sourcebans.js helpers (#1123 D1 prep): ShowKickBox / TabToReload /
-        // applyApiResponse are deleted at D1; rebuild on top of sb.message (sb.js, survives D1).
+        // sb.message (sb.js) replaces the v1.x ShowKickBox /
+        // TabToReload / applyApiResponse helpers.
         if (r && r.ok && r.data && r.data.kickit) {
             sb.message.show(
                 'Ban Added',
@@ -924,8 +926,8 @@ function CheckGroupBan()
     }
 }
 
-// Inlined sourcebans.js helper (#1123 D1 prep): applyBanFields disappears at D1; rebuild on top of sb.js
-// primitives so both LoadPrepareReban and LoadPasteBan keep prefilling the form post-cutover.
+// Self-contained DOM-prefill helper (replaces the v1.x applyBanFields)
+// so both LoadPrepareReban and LoadPasteBan keep prefilling the form.
 window.__sbppApplyBanFields = function (d) {
     var byId = function (id) { return document.getElementById(id); };
     if (byId('nickname'))   byId('nickname').value   = d.nickname || '';

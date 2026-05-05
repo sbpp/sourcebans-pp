@@ -21,10 +21,9 @@ Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
  * SourceMod command/group override editor — extracted from
  * admin.admins.php during the #1123 B17 single-template redesign so
  * the overrides "tab" has a single PHP handler, a single
- * `Sbpp\View\AdminOverridesView` DTO, and a single `.tpl` per theme
- * (default + sbpp2026). admin.admins.php still routes here via a
- * top-level `require`, so the existing `?p=admin&c=admins` URL keeps
- * its three-tab layout.
+ * `Sbpp\View\AdminOverridesView` DTO, and a single `.tpl`.
+ * admin.admins.php still routes here via a top-level `require`, so the
+ * existing `?p=admin&c=admins` URL keeps its three-tab layout.
  *
  * The save/delete/duplicate-check logic below is the verbatim block
  * that used to live at the bottom of admin.admins.php; the move is
@@ -110,10 +109,9 @@ try {
 
 $overrides_rows = $GLOBALS['PDO']->query("SELECT id, type, name, flags FROM `:prefix_overrides`")->resultset();
 
-// Carry both the legacy `id`/`name` keys (used by the default theme's
-// page_admin_overrides.tpl) and the redesigned `oid`/`command_or_group`
-// aliases (used by the sbpp2026 template) so the same DTO satisfies
-// both .tpl files during the dual-theme rollout.
+// Carry both the historical `id`/`name` keys and the `oid`/`command_or_group`
+// aliases on each row so any third-party theme that forked the
+// pre-v2.0.0 default reads the same DTO as the shipped template.
 $overrides_list = [];
 foreach ($overrides_rows as $row) {
     $row['oid']              = (int) $row['id'];

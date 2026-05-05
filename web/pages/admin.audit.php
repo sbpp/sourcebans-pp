@@ -17,10 +17,9 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 // matching every other admin.*.php in this directory.
 //
 // SSR: severity chips + free-text search + numeric pager are all
-// driven by GET params, no JSON action. Variable shape mirrors the
-// handoff design (handoff/pages/admin/audit.tpl) but pivots filters
-// onto the `:prefix_log.type` enum (`m`/`w`/`e`) since the table only
-// stores severity, not the action-kind taxonomy the mockup illustrates.
+// driven by GET params, no JSON action. Filters pivot on the
+// `:prefix_log.type` enum (`m`/`w`/`e`) since the table only stores
+// severity, not a per-action-kind taxonomy.
 
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";

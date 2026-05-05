@@ -18,8 +18,7 @@ namespace Sbpp\View;
  * Each handler dies early on insufficient permissions, so the template
  * itself never gates content on `can_*` flags.
  *
- * Variables (one row per `{$prop}` reference in either default or
- * sbpp2026 `page_uploadfile.tpl`):
+ * Variables (one row per `{$prop}` reference in `page_uploadfile.tpl`):
  *
  *   - `$title`: window title + heading.
  *   - `$message`: ALREADY-RENDERED HTML emitted with `nofilter`. On a
