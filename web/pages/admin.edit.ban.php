@@ -76,14 +76,19 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 }
 $_GET['id'] = (int) $_GET['id'];
 
+// Native PDO prepares (#1175 / Slice 3) reject the same named placeholder
+// reused across positions, so split the bid lookup into two distinct
+// names and bind both. The subquery's `:demo_bid` and the outer
+// `:bid` both pull from `$_GET['id']`, which is already int-cast above.
 $GLOBALS['PDO']->query("
-    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, (SELECT origname FROM `:prefix_demos` WHERE demtype = 'b' AND demid = :id) AS dname
+    				SELECT bid, ba.ip, ba.type, ba.authid, ba.name, created, ends, length, reason, ba.aid, ba.sid AS ba_sid, ad.user, ad.gid, CONCAT(se.ip,':',se.port) AS server_addr, se.sid AS se_sid, mo.icon, (SELECT origname FROM `:prefix_demos` WHERE demtype = 'b' AND demid = :demo_bid) AS dname
     				FROM `:prefix_bans` AS ba
     				LEFT JOIN `:prefix_admins` AS ad ON ba.aid = ad.aid
     				LEFT JOIN `:prefix_servers` AS se ON se.sid = ba.sid
     				LEFT JOIN `:prefix_mods` AS mo ON mo.mid = se.modid
-    				WHERE bid = :id");
-$GLOBALS['PDO']->bind(':id', $_GET['id']);
+    				WHERE bid = :bid");
+$GLOBALS['PDO']->bind(':bid', $_GET['id']);
+$GLOBALS['PDO']->bind(':demo_bid', $_GET['id']);
 $res = $GLOBALS['PDO']->single();
 
 isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
