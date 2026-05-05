@@ -187,5 +187,45 @@ function changeReason(szListValue)
 {
     $('dreason').style.display = (szListValue == "other" ? "block" : "none");
 }
+// `selectLengthTypeReason` is the post-mount hydrator that picks the
+// existing block's type / length / reason on the <select>s. The legacy
+// default theme inherits it from web/scripts/sourcebans.js, but the
+// sbpp2026 chrome doesn't load sourcebans.js (and #1123 D1 deletes that
+// file outright). Inline a self-contained vanilla version so the call
+// below works on both legs of the dual-theme matrix and keeps working
+// post-D1 — without it, sbpp2026 would throw ReferenceError, leave the
+// type/length/reason at their defaults, and silently clobber the row
+// when the admin clicks Save.
+function selectLengthTypeReason(length, type, reason) {
+    var banlength = document.getElementById('banlength');
+    if (banlength) {
+        for (var i = 0; i < banlength.options.length; i++) {
+            if (banlength.options[i].value === String(length / 60)) {
+                banlength.options[i].selected = true;
+                break;
+            }
+        }
+    }
+    var ttype = document.getElementById('type');
+    if (ttype && ttype.options[type]) ttype.options[type].selected = true;
+
+    var list = document.getElementById('listReason');
+    if (list) {
+        for (var i = 0; i < list.options.length; i++) {
+            if (list.options[i].innerHTML === reason) {
+                list.options[i].selected = true;
+                break;
+            }
+            if (list.options[i].value === 'other') {
+                var txt = document.getElementById('txtReason');
+                var dre = document.getElementById('dreason');
+                if (txt) txt.value = reason;
+                if (dre) dre.style.display = 'block';
+                list.options[i].selected = true;
+                break;
+            }
+        }
+    }
+}
 selectLengthTypeReason('<?=(int) $res['length']?>', '<?=(int) $res['type'] - 1?>', '<?=addslashes($res['reason'])?>');
 </script>
