@@ -24,32 +24,29 @@ if (!defined("IN_SB")) {
 global $userbank, $theme;
 
 new AdminTabs([
-    ['name' => 'List MODs', 'permission' => ADMIN_OWNER|ADMIN_LIST_MODS],
-    ['name' => 'Add new MOD', 'permission' => ADMIN_OWNER|ADMIN_ADD_MODS]
+    ['name' => 'List MODs',    'permission' => ADMIN_OWNER|ADMIN_LIST_MODS],
+    ['name' => 'Add new MOD',  'permission' => ADMIN_OWNER|ADMIN_ADD_MODS],
 ], $userbank, $theme);
 
-$mod_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE mid > 0 ORDER BY name ASC")->resultset();
-$query = $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefix_mods`")->single();
-$mod_count = $query['cnt'];
-?>
-<div id="admin-page-content">
-    <!-- List Mods -->
-    <div class="tabcontent" id="List MODs">
-<?php
-$theme->assign('mod_count', $mod_count);
-$theme->assign('permission_listmods', $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS));
-$theme->assign('permission_editmods', $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS));
-$theme->assign('permission_deletemods', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_MODS));
-$theme->assign('mod_list', $mod_list);
+$mod_list  = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE mid > 0 ORDER BY name ASC")->resultset();
+$mod_count = (int) $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefix_mods`")->single()['cnt'];
 
-$theme->display('page_admin_mods_list.tpl');
-?>
-    </div>
-    <!-- Add Mods -->
-    <div class="tabcontent" id="Add new MOD">
-<?php
-$theme->assign('permission_add', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_MODS));
-$theme->display('page_admin_mods_add.tpl');
-?>
-    </div>
-</div>
+echo '<div id="admin-page-content">';
+
+echo '<div class="tabcontent" id="List MODs">';
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsListView(
+    permission_listmods:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS),
+    permission_editmods:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS),
+    permission_deletemods: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_MODS),
+    mod_count:             $mod_count,
+    mod_list:              $mod_list,
+));
+echo '</div>';
+
+echo '<div class="tabcontent" id="Add new MOD">';
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsAddView(
+    permission_add: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_MODS),
+));
+echo '</div>';
+
+echo '</div>';
