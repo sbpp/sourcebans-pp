@@ -212,6 +212,19 @@ Playwright E2E specifics:
   install only on global setup. The shim
   `web/tests/e2e/scripts/reset-e2e-db.php` reuses
   `Sbpp\Tests\Fixture` so the fixture stays single-source.
+- Cross-process resets are serialized via a MySQL named lock in
+  `Sbpp\Tests\Fixture::truncateAndReseed` (per-DB scope, 30s timeout).
+  `reset-e2e-db.php` runs in a fresh PHP process per spec and the suite
+  ships `workers: 2`, so the truncate→seed pair has to be atomic across
+  processes — without the lock two workers race and the second hits
+  `1062 Duplicate entry '0' for key 'PRIMARY'`. Don't reach around it.
+- Flake tolerance is **off**: `retries: 1` in CI **plus**
+  `failOnFlakyTests: true`. A spec that fails first try and passes on
+  retry counts as a real failure — the retry exists so
+  `trace: 'on-first-retry'` produces diagnostic artifacts, not as a
+  release valve. If a real flake creeps in, fix the underlying race
+  (the truncate-and-reseed lock above is the canonical example) instead
+  of weakening the gate.
 - Auth: storage state minted once per run by
   `fixtures/global-setup.ts` against the seeded `admin/admin` user.
   The login spec is the **one** exception that drives the form

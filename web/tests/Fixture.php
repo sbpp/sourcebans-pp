@@ -88,28 +88,55 @@ class Fixture
     private static function truncateAndReseed(): void
     {
         $pdo = self::rawPdo();
-        $tables = $pdo->query(
-            sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s'", DB_NAME)
-        )->fetchAll(\PDO::FETCH_COLUMN);
 
-        $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
-        foreach ($tables as $t) {
-            $pdo->exec("TRUNCATE TABLE `$t`");
+        // Serialize truncate+reseed across parallel Playwright workers.
+        // reset-e2e-db.php is invoked from a fresh PHP process per spec,
+        // so two workers can race: A truncates, B truncates, A inserts,
+        // B inserts -> 1062 Duplicate entry on the second insert. A MySQL
+        // named lock makes the truncate->seed pair atomic across
+        // processes (GET_LOCK is connection-scoped, so the lock is
+        // released automatically when this PDO is destroyed even if we
+        // throw mid-reseed). Lock name is DB-scoped so PHPUnit's
+        // sourcebans_test and Playwright's sourcebans_e2e don't
+        // needlessly serialize against each other.
+        $lockName       = 'sbpp_truncate_' . DB_NAME;
+        $lockNameQuoted = $pdo->quote($lockName);
+        $acquired       = (int) $pdo->query(
+            sprintf('SELECT GET_LOCK(%s, 30)', $lockNameQuoted)
+        )->fetchColumn();
+        if ($acquired !== 1) {
+            throw new \RuntimeException(
+                "Fixture::truncateAndReseed: could not acquire MySQL named "
+                . "lock '$lockName' within 30s (another process is holding it)."
+            );
         }
-        $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
-        // Re-seed the rows data.sql provides (settings, mods, ...) so
-        // tests that read Config (auth.maxlife, config.enablesteamlogin,
-        // ...) see the same defaults as a freshly-installed panel.
-        $data = self::renderSql(ROOT . 'install/includes/sql/data.sql');
-        self::executeBatch($pdo, $data);
+        try {
+            $tables = $pdo->query(
+                sprintf("SELECT table_name FROM information_schema.tables WHERE table_schema = '%s'", DB_NAME)
+            )->fetchAll(\PDO::FETCH_COLUMN);
 
-        // And the admin row.
-        self::seedAdmin($pdo);
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
+            foreach ($tables as $t) {
+                $pdo->exec("TRUNCATE TABLE `$t`");
+            }
+            $pdo->exec('SET FOREIGN_KEY_CHECKS = 1');
 
-        // Settings cache lives in Config's static array; re-read so
-        // post-truncate tests see the re-seeded values.
-        \Config::init($GLOBALS['PDO']);
+            // Re-seed the rows data.sql provides (settings, mods, ...) so
+            // tests that read Config (auth.maxlife, config.enablesteamlogin,
+            // ...) see the same defaults as a freshly-installed panel.
+            $data = self::renderSql(ROOT . 'install/includes/sql/data.sql');
+            self::executeBatch($pdo, $data);
+
+            // And the admin row.
+            self::seedAdmin($pdo);
+
+            // Settings cache lives in Config's static array; re-read so
+            // post-truncate tests see the re-seeded values.
+            \Config::init($GLOBALS['PDO']);
+        } finally {
+            $pdo->exec(sprintf('DO RELEASE_LOCK(%s)', $lockNameQuoted));
+        }
     }
 
     public static function rawPdo(): \PDO

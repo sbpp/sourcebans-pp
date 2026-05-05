@@ -19,6 +19,11 @@ export default defineConfig({
     testDir: './specs',
     fullyParallel: true,
     retries: process.env.CI ? 1 : 0,
+    // A test that fails first try and passes on retry is a real failure,
+    // not a release valve. The retry exists so `trace: 'on-first-retry'`
+    // can capture diagnostic artifacts; the gate stays strict. See AGENTS.md
+    // "Playwright E2E specifics".
+    failOnFlakyTests: !!process.env.CI,
     workers: process.env.CI ? 2 : undefined,
     reporter: [['html', { open: 'never' }], ['list']],
     globalSetup: './fixtures/global-setup.ts',
