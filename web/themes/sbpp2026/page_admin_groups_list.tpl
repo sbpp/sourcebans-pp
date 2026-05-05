@@ -51,7 +51,7 @@
                              style="width:2.25rem;height:2.25rem;background:var(--brand-600);font-size:var(--fs-base)">{$group.name|truncate:1:'':true|upper|escape}</div>
                         <div style="flex:1;min-width:0">
                             <div class="font-medium text-sm truncate">{$group.name|escape}</div>
-                            <div class="text-xs text-muted">{$web_admins[$smarty.foreach.web_group.index]} member{if $web_admins[$smarty.foreach.web_group.index] != 1}s{/if} &middot; immunity {$group.immunity}</div>
+                            <div class="text-xs text-muted">{$web_admins[$smarty.foreach.web_group.index]} member{if $web_admins[$smarty.foreach.web_group.index] != 1}s{/if}</div>
                             {if $web_admins_list[$smarty.foreach.web_group.index]}
                                 <div class="text-xs text-faint truncate" style="margin-top:0.125rem">
                                     {foreach from=$web_admins_list[$smarty.foreach.web_group.index] item="web_admin" name="web_admin"}{if $smarty.foreach.web_admin.index > 0}, {/if}{if $smarty.foreach.web_admin.index < 3}{$web_admin.user|escape}{elseif $smarty.foreach.web_admin.index == 3}&hellip;{/if}{/foreach}
@@ -75,7 +75,7 @@
                     <div class="card__header">
                         <div>
                             <h3>{$selected_group.name|escape}</h3>
-                            <p>{$selected_group.member_count} member{if $selected_group.member_count != 1}s{/if} &middot; immunity {$selected_group.immunity}</p>
+                            <p>{$selected_group.member_count} member{if $selected_group.member_count != 1}s{/if}</p>
                         </div>
                         {if $permission_deletegroup}
                             <button type="button"
@@ -85,27 +85,19 @@
                         {/if}
                     </div>
                     <div class="card__body space-y-4">
-                        <div class="grid gap-4" style="grid-template-columns:1fr 1fr">
-                            <div>
-                                <label class="label" for="group-name-input">Group name</label>
-                                <input class="input"
-                                       id="group-name-input"
-                                       name="name"
-                                       data-testid="group-name"
-                                       value="{$selected_group.name|escape}"
-                                       {if NOT $permission_editgroup}disabled{/if}>
-                            </div>
-                            <div>
-                                <label class="label" for="group-immunity-input">Immunity</label>
-                                <input class="input"
-                                       id="group-immunity-input"
-                                       name="immunity"
-                                       type="number"
-                                       min="0"
-                                       value="{$selected_group.immunity}"
-                                       data-testid="group-immunity"
-                                       {if NOT $permission_editgroup}disabled{/if}>
-                            </div>
+                        {* Immunity input intentionally omitted for web admin groups:
+                           `:prefix_groups` has no `immunity` column and
+                           `api_groups_edit` (type=web) ignores the field. SourceMod
+                           admin groups (`:prefix_srvgroups`) keep their immunity
+                           surface on the per-group cards below. *}
+                        <div>
+                            <label class="label" for="group-name-input">Group name</label>
+                            <input class="input"
+                                   id="group-name-input"
+                                   name="name"
+                                   data-testid="group-name"
+                                   value="{$selected_group.name|escape}"
+                                   {if NOT $permission_editgroup}disabled{/if}>
                         </div>
 
                         <div>
@@ -284,7 +276,6 @@ function SbppGroupsSave(event) {
     var form = event.target;
     var gid = Number(form.querySelector('input[name="gid"]').value);
     var name = form.querySelector('input[name="name"]').value;
-    var immunity = Number(form.querySelector('input[name="immunity"]').value || 0);
     var bitmask = 0;
     var checks = form.querySelectorAll('input[name="flags[]"]:checked');
     for (var i = 0; i < checks.length; i++) {
@@ -295,8 +286,7 @@ function SbppGroupsSave(event) {
         name: name,
         web_flags: bitmask,
         srv_flags: '',
-        type: 'web',
-        immunity: immunity
+        type: 'web'
     }).then(function (r) { applyApiResponse(r); });
     return false;
 }

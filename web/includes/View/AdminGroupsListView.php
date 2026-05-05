@@ -65,11 +65,15 @@ final class AdminGroupsListView extends View
      *     human-readable column from the JSON. Drives the master-detail
      *     flag-grid checkboxes; rendered server-side so the page
      *     does not need a round-trip to populate the form.
-     * @param array{gid: int, name: string, flags: int, immunity: int, member_count: int}|null $selected_group
+     * @param array{gid: int, name: string, flags: int, member_count: int}|null $selected_group
      *     The group highlighted in the master-detail. `null` when the
      *     groups list is empty or the request didn't pin one via
      *     `?gid=…` and the handler couldn't fall back to the first
      *     row. Templates render an empty-state panel in that case.
+     *     Web admin groups (`:prefix_groups`) have no `immunity` column
+     *     and `api_groups_edit` ignores the field for type=web, so the
+     *     master-detail editor never surfaces it; SourceMod admin groups
+     *     (`:prefix_srvgroups`) keep their immunity surface elsewhere.
      */
     public function __construct(
         public readonly bool $permission_listgroups,

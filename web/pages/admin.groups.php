@@ -43,7 +43,6 @@ $web_admins_list         = [];
 foreach ($web_group_rows as $row) {
     $row['gid']         = (int) $row['gid'];
     $row['flags']       = (int) $row['flags'];
-    $row['immunity']    = (int) ($row['immunity'] ?? 0);
     $row['permissions'] = BitToString($row['flags']);
 
     $cnt = $GLOBALS['PDO']->query("SELECT COUNT(gid) AS cnt FROM `:prefix_admins` WHERE gid = :gid");
@@ -180,7 +179,6 @@ if (!empty($web_group_list)) {
         'gid'          => (int) $match['gid'],
         'name'         => (string) $match['name'],
         'flags'        => (int) $match['flags'],
-        'immunity'     => (int) $match['immunity'],
         'member_count' => (int) $match['member_count'],
     ];
 }
