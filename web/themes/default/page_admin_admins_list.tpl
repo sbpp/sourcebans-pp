@@ -72,7 +72,7 @@
             <h2 id="admins-heading" class="admin-admins-section__heading">Admins list</h2>
 
             <div class="text-xs text-muted mb-2" data-testid="admin-nav">
-                {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in admin.admins.php — same escape pipeline as the legacy theme. *}
+                {* nofilter: server-built pagination HTML — `<displaying N - M of K results>` (integers), prev/next `<a>` from `CreateLinkR(…)`, and a page-jump `<select onchange>`. After #1207 ADM-4 every populated filter flows through `http_build_query($activeFilters)`, which percent-encodes filter values (so single quotes / angle brackets can't break out of the single-quoted `href='…'` or `onchange="… '…'…"` attributes). The page-jump `<select>` additionally `htmlspecialchars()`-escapes the base URL with `ENT_QUOTES` before interpolation. Loop counters and pre-computed page numbers are integers. No raw user input reaches the rendered string. *}
                 {$admin_nav nofilter}
             </div>
 

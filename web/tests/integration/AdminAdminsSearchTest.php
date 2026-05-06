@@ -241,6 +241,88 @@ final class AdminAdminsSearchTest extends ApiTestCase
         $this->assertStringContainsString('>charlie<', $html, 'charlie has ADMIN_OWNER');
     }
 
+    /**
+     * Structural invariant for #1207 ADM-3: every ToC link in the
+     * rendered HTML must point at an anchored `<section>` that's
+     * actually in the DOM. The slicing brief calls this out
+     * explicitly: "The ToC entries are gated on the same permissions
+     * the dispatcher uses (no dead links)." This case locks the
+     * happy path (owner sees every entry; every entry has its
+     * matching section); the next case locks the gated path (an
+     * admin without LIST_ADMINS doesn't see Search/Admins links).
+     */
+    public function testTocLinksMatchRenderedSectionsForOwner(): void
+    {
+        $_GET = ['p' => 'admin', 'c' => 'admins'];
+
+        $html = $this->renderAdminsPage();
+
+        $this->assertSame(
+            $this->renderedSectionSlugs($html),
+            $this->renderedTocLinkSlugs($html),
+            'every ToC link must have a matching <section> in the DOM (owner sees all five sections)'
+        );
+        // Belt-and-braces: confirm the seeded owner does in fact see
+        // all five entries — guards against a future refactor that
+        // accidentally elides every entry uniformly.
+        $this->assertSame(
+            ['add-admin', 'add-override', 'admins', 'overrides', 'search'],
+            $this->renderedTocLinkSlugs($html),
+            'owner sees the full ToC'
+        );
+    }
+
+    /**
+     * #1207 ADM-3 dead-link guard: an admin who holds ADMIN_ADD_ADMINS
+     * but NOT ADMIN_LIST_ADMINS lands on this page through the "Add
+     * new admin" tab. The Search and Admins sections live inside the
+     * `{else}` arm of `{if !$can_list_admins}` in
+     * page_admin_admins_list.tpl, so they never reach the DOM for
+     * this user. The ToC must elide their links accordingly.
+     */
+    public function testTocElidesSearchAndAdminsForAddOnlyAdmin(): void
+    {
+        // Ad-hoc admin without OWNER, without LIST_ADMINS — only
+        // ADMIN_ADD_ADMINS. extraflags carries the bit directly so
+        // CUserManager::HasAccess returns true for ADD checks and
+        // false for LIST checks. gid=-1 short-circuits group-flag
+        // inheritance (matches the Fixture seed admin shape) so
+        // bareGid/powerGid flags don't bleed into the user's
+        // effective permission set and accidentally re-grant
+        // LIST_ADMINS.
+        $addOnlyAid = $this->insertAdmin(
+            'darla',
+            'STEAM_0:0:9001',
+            'darla@example.test',
+            -1,
+            ADMIN_ADD_ADMINS,
+        );
+        $this->loginAs($addOnlyAid);
+
+        $_GET = ['p' => 'admin', 'c' => 'admins'];
+
+        $html = $this->renderAdminsPage();
+
+        $tocLinks = $this->renderedTocLinkSlugs($html);
+        $sections = $this->renderedSectionSlugs($html);
+
+        // The dead-link contract: the ToC must NEVER carry an entry
+        // that the dispatcher elided.
+        $this->assertSame(
+            $sections,
+            $tocLinks,
+            'ToC and rendered sections must stay in lockstep across permission combinations'
+        );
+
+        // And the specific narrowing this test exercises: Search and
+        // Admins are out, Add admin / Overrides / Add override are
+        // in. The list is sorted (renderedTocLinkSlugs() sorts) so we
+        // can compare against a known-good ordering.
+        $this->assertSame(['add-admin', 'add-override', 'overrides'], $tocLinks);
+        $this->assertStringNotContainsString('admin-admins-toc-link-search', $html);
+        $this->assertStringNotContainsString('admin-admins-toc-link-admins"', $html);
+    }
+
     private function seedTestAdmins(): void
     {
         $pdo = Fixture::rawPdo();
@@ -352,5 +434,35 @@ final class AdminAdminsSearchTest extends ApiTestCase
     private function countAdminRows(string $html): int
     {
         return preg_match_all('/data-testid="admin-row"/', $html);
+    }
+
+    /**
+     * Extract every ToC link slug (`search`, `admins`, `add-admin`, …)
+     * from `[data-testid="admin-admins-toc-link-<slug>"]` attributes
+     * in the rendered HTML. Sorted so callers can compare against a
+     * fixed ordering without depending on emit order.
+     *
+     * @return list<string>
+     */
+    private function renderedTocLinkSlugs(string $html): array
+    {
+        preg_match_all('/data-testid="admin-admins-toc-link-([a-z-]+)"/', $html, $m);
+        $slugs = $m[1];
+        sort($slugs);
+        return array_values(array_unique($slugs));
+    }
+
+    /**
+     * Extract every section slug from `[data-testid="admin-admins-section-<slug>"]`.
+     * Pair to {@see renderedTocLinkSlugs}.
+     *
+     * @return list<string>
+     */
+    private function renderedSectionSlugs(string $html): array
+    {
+        preg_match_all('/data-testid="admin-admins-section-([a-z-]+)"/', $html, $m);
+        $slugs = $m[1];
+        sort($slugs);
+        return array_values(array_unique($slugs));
     }
 }
