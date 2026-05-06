@@ -12,11 +12,12 @@ global $theme;
 // AFTER `$breadcrumb` has already been emitted to the wire.
 //
 // `$page_slug` (NOT `$page`) on purpose: this file is `require_once`'d
-// from `Sbpp\PageBuilder::build($title, $page)` where `$page` is the
-// path to the page handler this title block will be followed by. A
-// `$page = …` assignment here would overwrite that parameter via the
-// shared scope and the next `require_once(TEMPLATES_PATH.$page)`
-// would resolve to garbage (e.g. `pages` + `login` = `pageslogin`).
+// from the global `build($title, $page)` helper in
+// `web/includes/page-builder.php`, where `$page` is the path to the
+// page handler this title block will be followed by. A `$page = …`
+// assignment here would overwrite that parameter via the shared
+// scope and the next `require_once(TEMPLATES_PATH.$page)` would
+// resolve to garbage (e.g. `pages` + `login` = `pageslogin`).
 $page_slug = (string) ($_GET['p'] ?? '');
 $breadcrumb = match ($page_slug) {
     'login' => \Sbpp\View\LoginView::breadcrumb(),
