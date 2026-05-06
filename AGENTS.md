@@ -531,6 +531,16 @@ audit (#1207) locked in. New CTAs:
   iOS dark, blueish on Android). The chrome doesn't have a single
   phone number on it; the meta is the canonical opt-out and the
   CSS reset is the belt-and-suspenders for variants that ignore it.
+- Re-adding a labelled search input or a visible `Ctrl K` / `⌘K` hint
+  to the topbar palette trigger (the `.topbar__search` button in
+  `core/title.tpl`) → the labelled shape was a duplicate affordance
+  for the same `<dialog id="palette-root">` the ⌘K shortcut already
+  opens, and on mobile it broke the topbar (#1207 CC-1, slice 1) and
+  on desktop it visibly competed with the palette itself (#1207 CC-3,
+  slice 9). The trigger is now icon-only at every viewport, matching
+  the sibling theme-toggle's chrome. The `.topbar__search-label` /
+  `.topbar__search-kbd` spans stay in the DOM for SR users + the
+  Mac glyph swap, but `display: none` everywhere — don't unhide them.
 
 ## Where to find what
 
@@ -543,6 +553,7 @@ audit (#1207) locked in. New CTAs:
 | Edit a template                        | `web/themes/default/*.tpl`                               |
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
+| Edit the command palette (icon-only trigger, ⌘K binding, result rows, kbd hints, Ctrl+Enter copy) | `web/themes/default/js/theme.js` (`openPalette` / `closePalette` / `renderPaletteResults` / `applyPlatformHints` / `handlePaletteCopyShortcut`) + `core/title.tpl` (the `.topbar__search` icon button) + the `.palette__row*` rules in `web/themes/default/css/theme.css`. Player rows carry `data-drawer-bid="<bid>"` (bare Enter / click → `loadDrawer`, palette closes itself) + `data-steamid="<steam>"` (`Ctrl/Cmd+Enter` → `navigator.clipboard.writeText` + `showToast`). The kbd glyphs are server-rendered in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` swaps `[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ on Mac/iOS at boot and after every render (#1184, #1207 DET-2). |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |

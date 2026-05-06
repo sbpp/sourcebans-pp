@@ -336,6 +336,25 @@ controls, light/dark/system theming. Custom themes ship their own
 `theme.conf.php` with `theme_name` / `theme_author` / `theme_version` /
 `theme_link` / `theme_screenshot`.
 
+The command palette (`#palette-root` `<dialog>` rendered by
+`themes/default/js/theme.js`) is the only search affordance in the
+chrome. The topbar carries an icon-only ghost button
+(`.topbar__search` in `core/title.tpl`) that opens the same dialog as
+the `Meta+k` keybinding — the pre-v2.0.0 inline search input was
+dropped at #1207 CC-1 (mobile, slice 1) + CC-3 (desktop, slice 9)
+because the labelled "search input + Ctrl K hint" was a duplicate
+affordance for the same dialog. Player result rows in the palette
+carry `data-drawer-bid` (bare Enter / click hands off to the existing
+`[data-drawer-bid]` click delegate, which closes the palette and
+opens the player drawer) and `data-steamid` (the `Ctrl/Cmd+Enter`
+handler in `theme.js`'s `handlePaletteCopyShortcut` reads it and
+copies via `navigator.clipboard.writeText` + `showToast`). Keyboard
+glyphs in the row's `.palette__row-hints` group are server-rendered
+in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` rewrites
+`[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ on Mac/iOS clients at
+boot and after every render so glyph swaps don't require re-fetching
+results (#1184, #1207 DET-2).
+
 The preferred way to render is via typed view-model DTOs:
 
 ```php
