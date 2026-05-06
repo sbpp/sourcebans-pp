@@ -17,12 +17,15 @@ use Smarty\Smarty;
  * The fix is two-pronged:
  *
  *   1. `web/pages/page.lostpassword.php` redirects logged-in visitors
- *      to `index.php` BEFORE rendering, mirroring the equivalent guard
- *      in `page.login.php`. Logged-in admins simply never see the form.
- *      That guard's redirect+die() shape isn't directly testable in
- *      PHPUnit without process isolation; the E2E spec
- *      (`smoke/lostpassword-public-chrome.spec.ts`) covers the runtime
- *      observable.
+ *      to `index.php` BEFORE rendering the form body, mirroring the
+ *      equivalent guard in `page.login.php` (a `<script>window.location
+ *      …</script>` + `exit;` shape — `header('Location:')` would no-op
+ *      because the chrome above already flushed output). Logged-in
+ *      admins simply never see the form. That redirect's runtime shape
+ *      isn't directly testable in PHPUnit without process isolation;
+ *      the E2E spec (`smoke/routing-truthiness.spec.ts`, the
+ *      `AUTH-1: logged-in visitors get bounced off lostpassword`
+ *      describe block) covers the runtime observable.
  *   2. The navbar (the chrome's sidebar) gates the admin section on
  *      `$userbank->is_admin()`, so an unauthenticated visitor — which
  *      is the only state where the form actually renders — can never

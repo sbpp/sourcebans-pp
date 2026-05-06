@@ -157,6 +157,36 @@ test.describe('#1207 routing + truthiness fixes', () => {
         });
     });
 
+    test.describe('AUTH-1: logged-in visitors get bounced off lostpassword', () => {
+        // No storageState override here: this block inherits the
+        // project-default authenticated session minted by
+        // `fixtures/global-setup.ts` for the seeded admin. That's the
+        // exact case the audit screenshot caught — a logged-in admin
+        // landing on `?p=lostpassword` saw the admin sidebar leak
+        // around the form. The page handler's guard mirrors
+        // page.login.php: emit `<script>window.location.href = 'index.php'</script>`
+        // and `exit;`, so the user-observable result is the browser
+        // ends up on the dashboard, not on the form.
+        test('logged-in admin visiting lostpassword does NOT see the form', async ({ page }) => {
+            // The JS redirect fires on `DOMContentLoaded`-ish timing,
+            // but Playwright's default `goto` waits for `load`, by
+            // which point `window.location.href = …` has already run
+            // and the navigation chain has settled on the dashboard.
+            await page.goto('/index.php?p=lostpassword');
+
+            // Terminal assertion: the URL must NOT be lostpassword
+            // anymore. Same shape as `specs/smoke/login.spec.ts`'s
+            // logged-in redirect assertion.
+            await expect(page).not.toHaveURL(/[?&]p=lostpassword(?:&|#|$)/);
+
+            // And the form body must NOT be in the DOM — even if a
+            // future refactor changes the redirect destination, the
+            // user must never reach a state where they can fill in
+            // the lost-password email field while authenticated.
+            await expect(page.locator('[data-testid="lostpw-email"]')).toHaveCount(0);
+        });
+    });
+
     test.describe('CC-5 + CC-6: footer credibility', () => {
         test('footer carries data-version="dev" in the dev stack', async ({ page }) => {
             await page.goto('/');
