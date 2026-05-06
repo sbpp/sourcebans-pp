@@ -6,12 +6,19 @@
  * audit screenshots flagged ("hovered" rather than "selected"):
  *
  *   - CC-4: Sidebar nav, banlist filter chips, and admin/bans
- *     `Current / Archive` segmented chips all paint `var(--accent)`
- *     (the same `--brand-600` the primary CTA uses) when active.
+ *     `Current / Archive` segmented chips paint `--brand-700`
+ *     (`#c2410c`) when active in dark mode. We use brand-700 rather
+ *     than `--accent` (`--brand-600` = `#ea580c`) for accessibility:
+ *     `#ea580c` on white is ~3.56:1, which clears WCAG AA Large Text
+ *     and Non-text but FAILS AA Normal Text (4.5:1) for the 14px /
+ *     12px medium-weight nav + chip labels. `#c2410c` on white is
+ *     ~5.18:1 — clears AA Normal Text. See `theme.css` rule comments
+ *     for the full rationale.
  *   - AUTH-2: The "Continue with Steam" button paints Steam's brand
  *     chrome (`#1b2838`) in dark mode so it doesn't read as the
  *     `--bg-surface`-on-`--bg-page` near-disabled rectangle from the
- *     audit (~1.4:1 against the page background).
+ *     audit (~1.4:1 against the page background). White on `#1b2838`
+ *     ≈ 14.93:1, clears AAA.
  *
  * We assert via `expect(locator).toHaveCSS('background-color', …)`
  * rather than a one-shot `getComputedStyle()` read because theme.js
@@ -26,9 +33,10 @@
  * the DOM contract intact.
  *
  * Resolved colour values:
- *   - `--accent` = `--brand-600` = `#ea580c` = `rgb(234, 88, 12)`
+ *   - `--brand-700` = `#c2410c` = `rgb(194, 65, 12)` (active dark fill)
  *   - Steam dark chrome = `#1b2838` = `rgb(27, 40, 56)`
  *   - `--zinc-900` = `#18181b` = `rgb(24, 24, 27)` (light-theme guard)
+ *   - `--bg-surface` (light) = `#ffffff` = `rgb(255, 255, 255)`
  *
  * Theme pinning mirrors `_screenshots.spec.ts` / `a11y/routes.spec.ts`:
  * write `localStorage['sbpp-theme']` on `/`, then navigate to the
@@ -37,14 +45,15 @@
  *
  * Project filter: chromium-only. The mobile-chromium project shares
  * the same markup and computed-style computation; the rules under
- * test are token-driven (`var(--accent)`) and don't change with
- * viewport, so running on both would double the runtime without
- * revealing different findings.
+ * test are token-driven and don't change with viewport, so running
+ * on both would double the runtime without revealing different
+ * findings.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
+import type { Browser, BrowserContext, TestInfo } from '@playwright/test';
 
-const ACCENT_RGB = 'rgb(234, 88, 12)';
+const BRAND_700_RGB = 'rgb(194, 65, 12)';
 const STEAM_DARK_RGB = 'rgb(27, 40, 56)';
 const WHITE_RGB = 'rgb(255, 255, 255)';
 const ZINC_900_RGB = 'rgb(24, 24, 27)';
@@ -76,6 +85,29 @@ async function pinTheme(
     }, mode);
 }
 
+/**
+ * Anonymous context for tests that exercise logged-out chrome (the
+ * Steam login button is only rendered when no JWT cookie is present).
+ *
+ * We pass `reducedMotion: 'reduce'` explicitly because
+ * `playwright.config.ts` only sets it on the top-level `use`, not on
+ * any individual project — `testInfo.project.use` does not surface
+ * top-level `contextOptions`. Without this, a fresh anonymous context
+ * runs with motion enabled and silently drops the contract AGENTS.md
+ * "Playwright E2E specifics" calls out by name. `toHaveCSS` polls so
+ * the assertion survives either way, but the contract should hold.
+ */
+async function newAnonContext(
+    browser: Browser,
+    testInfo: TestInfo,
+): Promise<BrowserContext> {
+    return browser.newContext({
+        ...testInfo.project.use,
+        storageState: { cookies: [], origins: [] },
+        reducedMotion: 'reduce',
+    });
+}
+
 test.describe('#1207 dark-theme contrast', () => {
     test.beforeEach(({}, testInfo) => {
         test.skip(
@@ -84,7 +116,7 @@ test.describe('#1207 dark-theme contrast', () => {
         );
     });
 
-    test('CC-4 sidebar active link paints --accent', async ({ page }) => {
+    test('CC-4 sidebar active link paints --brand-700 in dark mode', async ({ page }) => {
         await pinTheme(page, 'dark', '/');
 
         // The active marker is set by navbar.tpl on whichever
@@ -94,11 +126,11 @@ test.describe('#1207 dark-theme contrast', () => {
         // attribute is in the DOM before the assertion runs.
         const active = page.locator('.sidebar__link[aria-current="page"]').first();
         await expect(active).toBeVisible();
-        await expect(active).toHaveCSS('background-color', ACCENT_RGB);
+        await expect(active).toHaveCSS('background-color', BRAND_700_RGB);
         await expect(active).toHaveCSS('color', WHITE_RGB);
     });
 
-    test('CC-4 banlist filter chip "All" paints --accent when pressed', async ({ page }) => {
+    test('CC-4 banlist filter chip "All" paints --brand-700 when pressed', async ({ page }) => {
         await pinTheme(page, 'dark', '/index.php?p=banlist');
 
         // The "All" chip is the default-selected filter in
@@ -109,11 +141,11 @@ test.describe('#1207 dark-theme contrast', () => {
         // assuming the first chip is the active one.
         const active = page.locator('.chip[aria-pressed="true"]').first();
         await expect(active).toBeVisible();
-        await expect(active).toHaveCSS('background-color', ACCENT_RGB);
+        await expect(active).toHaveCSS('background-color', BRAND_700_RGB);
         await expect(active).toHaveCSS('color', WHITE_RGB);
     });
 
-    test('CC-4 admin/bans Current sub-tab paints --accent', async ({ page }) => {
+    test('CC-4 admin/bans Current sub-tab paints --brand-700 in dark mode', async ({ page }) => {
         await pinTheme(page, 'dark', '/index.php?p=admin&c=bans');
 
         // The admin/bans page emits two `chip-row` segmented groups
@@ -127,19 +159,12 @@ test.describe('#1207 dark-theme contrast', () => {
         const active = page.locator('[data-testid="filter-chip-protests-current"]');
         await expect(active).toBeVisible();
         await expect(active).toHaveAttribute('data-active', 'true');
-        await expect(active).toHaveCSS('background-color', ACCENT_RGB);
+        await expect(active).toHaveCSS('background-color', BRAND_700_RGB);
         await expect(active).toHaveCSS('color', WHITE_RGB);
     });
 
     test('AUTH-2 Steam login button paints Steam brand chrome in dark mode', async ({ browser }, testInfo) => {
-        // Steam button is only rendered for logged-out visitors
-        // (page.login.php -> page_login.tpl). Spin up an anonymous
-        // context so the button's surroundings match what a real
-        // unauth visitor would see.
-        const ctx = await browser.newContext({
-            ...testInfo.project.use,
-            storageState: { cookies: [], origins: [] },
-        });
+        const ctx = await newAnonContext(browser, testInfo);
         try {
             const anon = await ctx.newPage();
             await pinTheme(anon, 'dark', '/index.php?p=login');
@@ -157,18 +182,55 @@ test.describe('#1207 dark-theme contrast', () => {
         }
     });
 
-    test('CC-4 light theme sidebar active link is unchanged (regression guard)', async ({ page }) => {
-        // Light-theme treatment: zinc-900 pill / white text. The
-        // dark-theme override above is scoped under `html.dark`, so
-        // the light branch must continue to resolve to `--zinc-900`
-        // even after the slice ships. This protects against an
-        // accidental light-theme regression if a future change
-        // unscopes the rule.
+    /*
+     * Light-theme regression guard.
+     *
+     * The three dark overrides above (`html.dark .sidebar__link[…]`,
+     * `html.dark .chip[…]`, `html.dark .btn[data-testid="login-steam"]`)
+     * are all scoped under `html.dark`. If a future change accidentally
+     * un-scopes any of them, the orange/Steam paint would silently
+     * leak into the light theme. Each light-theme assertion below
+     * locks the pre-PR computed colour for the corresponding surface
+     * so any single un-scoping fires here.
+     *
+     * One test per surface (rather than three light-theme `pinTheme`
+     * calls inside one mega-test) keeps the failure attribution clean —
+     * the test name tells you which override regressed.
+     */
+    test('CC-4 light theme sidebar active link stays zinc-900 (regression guard)', async ({ page }) => {
         await pinTheme(page, 'light', '/');
 
         const active = page.locator('.sidebar__link[aria-current="page"]').first();
         await expect(active).toBeVisible();
         await expect(active).toHaveCSS('background-color', ZINC_900_RGB);
         await expect(active).toHaveCSS('color', WHITE_RGB);
+    });
+
+    test('CC-4 light theme active chip stays zinc-900 (regression guard)', async ({ page }) => {
+        await pinTheme(page, 'light', '/index.php?p=banlist');
+
+        const active = page.locator('.chip[aria-pressed="true"]').first();
+        await expect(active).toBeVisible();
+        await expect(active).toHaveCSS('background-color', ZINC_900_RGB);
+        await expect(active).toHaveCSS('color', WHITE_RGB);
+    });
+
+    test('AUTH-2 light theme Steam button keeps secondary-surface chrome (regression guard)', async ({ browser }, testInfo) => {
+        // In light mode `.btn--secondary` resolves
+        // `--btn-bg = var(--bg-surface) = #ffffff`. The dark override
+        // is the only place `#1b2838` should ever appear; locking the
+        // light surface as `rgb(255, 255, 255)` catches an un-scoping
+        // of the `html.dark .btn[data-testid="login-steam"]` rule.
+        const ctx = await newAnonContext(browser, testInfo);
+        try {
+            const anon = await ctx.newPage();
+            await pinTheme(anon, 'light', '/index.php?p=login');
+
+            const steam = anon.locator('[data-testid="login-steam"]');
+            await expect(steam).toBeVisible();
+            await expect(steam).toHaveCSS('background-color', WHITE_RGB);
+        } finally {
+            await ctx.close();
+        }
     });
 });
