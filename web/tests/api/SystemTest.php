@@ -99,12 +99,96 @@ final class SystemTest extends ApiTestCase
         $this->assertSnapshot('system/check_version_error', $env);
     }
 
+    public function testCheckVersionStaleCacheServedWhenUpstreamUnreachable(): void
+    {
+        // Stale-while-error contract: cache exists but is past the
+        // 1-day TTL AND the upstream is unreachable -> serve the cached
+        // payload anyway (NOT the `Error` envelope). Prime the cache
+        // with `cached_at` one second past the TTL so the in-TTL fast
+        // path is skipped and the handler falls into the upstream-fetch
+        // branch; force the upstream URL to a refused port so that
+        // fetch returns null; assert the handler returns the formatted
+        // cached shape, not `release_latest: 'Error'`. Re-priming the
+        // cache here (rather than relying on a previously-primed file)
+        // makes the test order-independent: even if it runs after
+        // `testCheckVersionErrorWhenNoCacheAndUpstreamUnreachable`
+        // unlinked the file, the stale entry below is what the assertion
+        // depends on.
+        if (!defined('SB_RELEASE_LATEST_URL')) {
+            define('SB_RELEASE_LATEST_URL', 'http://127.0.0.1:1/');
+        }
+        $this->primeReleaseCache('1.7.2', time() - 86401);
+
+        $env = $this->api('system.check_version', []);
+
+        $this->assertTrue($env['ok']);
+        $this->assertSame('1.7.2', $env['data']['release_latest']);
+        $this->assertSame(
+            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.7.2',
+            $env['data']['release_url']
+        );
+        $this->assertNotSame('Error', $env['data']['release_latest']);
+        $this->assertSnapshot('system/check_version_stale_while_error', $env);
+    }
+
+    public function testCheckVersionDevSentinelShortCircuitsBeforeVersionCompare(): void
+    {
+        // Pin the explicit guard added in #1214: a dev-checkout panel
+        // (SB_VERSION === 'dev') must NOT compare its local version
+        // against the upstream tag with version_compare(), because PHP
+        // treats `dev` as a pre-release suffix and ranks it below every
+        // numeric tag — `version_compare('1.8.4', 'dev')` returns 1, so
+        // a naive compare would falsely advertise an update on every
+        // dev checkout. The handler short-circuits that case to return
+        // `release_update: false` + a "tracking development build" copy
+        // so dev-mode users aren't nagged.
+        //
+        // SB_VERSION is fixed at 'test' in the bootstrap and PHP can't
+        // redefine constants mid-run, so exercise the helper directly
+        // with the sentinel as the local-version argument; that's the
+        // exact branch the dispatcher would hit on a real dev checkout.
+        // The handler file is loaded transitively via Api::bootstrap()
+        // in Fixture::install(), so the global helper is in scope by
+        // the time setUp() returns. Leading `\` makes it explicit
+        // we're reaching for a global function from inside the
+        // `Sbpp\Tests\Api` namespace.
+        $resp = \_api_system_release_format(
+            '1.8.4',
+            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.8.4',
+            'dev'
+        );
+
+        $this->assertSame('1.8.4', $resp['release_latest']);
+        $this->assertSame(
+            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.8.4',
+            $resp['release_url']
+        );
+        $this->assertSame('Tracking development build.', $resp['release_msg']);
+        $this->assertFalse(
+            $resp['release_update'],
+            'dev sentinel must NOT advertise an update; PHP version_compare("1.8.4", "dev") returns 1.'
+        );
+
+        // Belt-and-suspenders: confirm `version_compare` would, in fact,
+        // return 1 for the same pair. If a future PHP version changes
+        // the comparison, the assertion above is still the correct
+        // guard, but this lets a maintainer see immediately why the
+        // short-circuit is necessary.
+        $this->assertSame(
+            1,
+            version_compare('1.8.4', 'dev'),
+            'PHP semantics changed: version_compare("1.8.4", "dev") no longer returns 1.'
+        );
+    }
+
     /**
-     * Seed the on-disk cache the handler reads first. TTL is 1 day, so
-     * the freshly-stamped `cached_at` always wins and the handler skips
-     * the upstream fetch entirely — what the snapshot tests rely on.
+     * Seed the on-disk cache the handler reads first. The default
+     * `cached_at` is `time()`, which (with the 1-day TTL) makes the
+     * handler hit the in-TTL fast path and skip the upstream fetch
+     * entirely — what the success-path snapshot tests rely on. Pass an
+     * older timestamp to exercise the stale-while-error path instead.
      */
-    private function primeReleaseCache(string $tagName): void
+    private function primeReleaseCache(string $tagName, ?int $cachedAt = null): void
     {
         $cache = SB_CACHE;
         if (!is_dir($cache) && !@mkdir($cache, 0o775, true) && !is_dir($cache)) {
@@ -113,7 +197,7 @@ final class SystemTest extends ApiTestCase
         file_put_contents($cache . 'github_release_latest.json', (string) json_encode([
             'tag_name'  => $tagName,
             'html_url'  => 'https://github.com/sbpp/sourcebans-pp/releases/tag/' . $tagName,
-            'cached_at' => time(),
+            'cached_at' => $cachedAt ?? time(),
         ]));
     }
 

@@ -1,0 +1,9 @@
+{
+    "ok": true,
+    "data": {
+        "release_latest": "1.7.2",
+        "release_url": "https://github.com/sbpp/sourcebans-pp/releases/tag/1.7.2",
+        "release_msg": "A New Release is Available.",
+        "release_update": true
+    }
+}

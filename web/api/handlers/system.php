@@ -65,6 +65,16 @@ function _api_system_release_load_cache(string $file): ?array
  * Failure to write (read-only filesystem, permission glitch, …) is
  * silently ignored; the in-memory response we already constructed is
  * still served, and the next call will just re-fetch.
+ *
+ * Writes are atomic: dump the payload into a sibling tempfile, then
+ * `rename()` it into place. Without that, two concurrent panel hits on
+ * a cold cache could both call `file_put_contents` on the live file,
+ * interleave their writes, and leave a half-written JSON that
+ * `_api_system_release_load_cache` would then reject — repeatedly,
+ * because every subsequent fetch tries to re-cache and may collide
+ * again. `rename()` is atomic on POSIX filesystems (the panel only
+ * runs on Linux per docker-compose.yml), so the live file is never
+ * partially written.
  */
 function _api_system_release_save_cache(string $file, string $tagName, string $htmlUrl): void
 {
@@ -76,7 +86,12 @@ function _api_system_release_save_cache(string $file, string $tagName, string $h
     if ($payload === false) {
         return;
     }
-    @file_put_contents($file, $payload);
+    $tmp = $file . '.' . bin2hex(random_bytes(4)) . '.tmp';
+    if (@file_put_contents($tmp, $payload) === strlen($payload)) {
+        @rename($tmp, $file);
+    } else {
+        @unlink($tmp);
+    }
 }
 
 /**
@@ -96,15 +111,15 @@ function _api_system_release_save_cache(string $file, string $tagName, string $h
  */
 function _api_system_release_fetch_upstream(): ?array
 {
-    $headers = "User-Agent: SourceBans++\r\n"
+    // Identify the panel version in the User-Agent so GitHub's rate-limit
+    // dashboards (and self-hosters tailing their proxy logs) can attribute
+    // traffic to a specific install. The upstream URL is hardcoded
+    // `https://`, so only the `https` stream wrapper key is consulted —
+    // the `http` block file_get_contents would read on a `http://` URL is
+    // dead defense; omit it.
+    $headers = 'User-Agent: SourceBans++/' . SB_VERSION . "\r\n"
              . "Accept: application/vnd.github+json\r\n";
     $context = stream_context_create([
-        'http'  => [
-            'method'        => 'GET',
-            'header'        => $headers,
-            'timeout'       => 5,
-            'ignore_errors' => true,
-        ],
         'https' => [
             'method'        => 'GET',
             'header'        => $headers,
@@ -219,8 +234,19 @@ function api_system_check_version(array $params): array
     }
 
     if ($cached !== null) {
+        // Stale-while-error: cache exists but is past TTL and the upstream
+        // call just failed. Quiet — the user-visible response is still the
+        // cached payload, panel stays green.
         return _api_system_release_format($cached['tag_name'], $cached['html_url'], SB_VERSION);
     }
+
+    // Both the upstream fetch AND the cache fallback are unavailable;
+    // there's nothing meaningful to render. Log to the PHP error log so
+    // a self-hoster troubleshooting "panel says `Error retrieving latest
+    // release.`" gets a hint pointing at the upstream rather than at the
+    // panel itself. Only fired on this fully-degraded branch — the
+    // fresh-fetch-failed-but-cache-exists path above is benign.
+    error_log('SourceBans++: system.check_version upstream fetch failed and no cache available');
 
     return [
         'release_latest' => 'Error',
