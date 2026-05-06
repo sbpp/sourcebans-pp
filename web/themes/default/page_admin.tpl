@@ -190,6 +190,22 @@
         margin: 0;
         padding: 0;
     }
+    /* #1207 ADM-10: at <768px the auto-fill grid above only fits a
+       single 15rem column so the 8 admin cards stack vertically and
+       produce a long scroll. Force 2 columns at mobile instead — at
+       the iPhone-13's 375px viewport this lands ~165px-wide cards
+       (full-width minus 1rem body padding minus 0.75rem gap, halved)
+       with ~120px+ height each (2.25rem icon + 1.25rem padding +
+       title + description), well above the 44x44 tap-target floor.
+       Tablet (768–1023px) and desktop (>=1024px) keep the auto-fill
+       behaviour above so wider viewports still get 2-3-4 columns
+       depending on how much sidebar-less width is available. */
+    @media (max-width: 767.98px) {
+        .admin-cards {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+    }
 
     .admin-card {
         display: block;
