@@ -105,7 +105,7 @@
     margin/padding) so the "Save changes" row above no longer reads
     as overlapping the credit on mobile.
 *}
-<footer class="app-footer" data-version="{$version}" data-testid="app-footer">
+<footer class="app-footer sbpp-footer" data-version="{$version}" data-testid="app-footer">
     <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
     {$version}{$git}
 </footer>
