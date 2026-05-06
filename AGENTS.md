@@ -428,6 +428,50 @@ bearing assertion that the value is already safe HTML, so:
   Reuse this pattern — never call a third-party Markdown renderer
   client-side, as it would diverge from the safe-on-render contract.
 
+### Page-level table of contents (dense admin pages)
+
+Some admin routes (`admin-admins`, the audit pegged `admin-bans` and
+`myaccount` for the same shape) cram several semi-related surfaces
+onto one long scroll. The pattern locked in by #1207 ADM-3 is a
+sticky page-level ToC: anchor sidebar at `>=1024px`, accordion
+(`<details open>`) at `<1024px`, with each section anchored via a
+unique `id="…"` + `scroll-margin-top: 4rem` so jumps clear the
+sticky topbar (3.5rem).
+
+`admin-admins` is the reference shape (see `admin.admins.toc.tpl`,
+the `.admin-admins-shell` / `.admin-admins-toc` / `.admin-admins-section`
+rules in `theme.css`, and the `<section id="…" class="admin-admins-section"
+data-testid="admin-admins-section-…">` wrapping in
+`page_admin_admins_list.tpl` / `page_admin_admins_add.tpl` /
+`page_admin_overrides.tpl`):
+
+- The ToC partial is included **once**, from the first template
+  rendered for the route (here `page_admin_admins_list.tpl`). The
+  outer `.admin-admins-shell` wrapper opens there and closes at the
+  bottom of the **last** template (`page_admin_overrides.tpl`).
+  Document the tag pairing with a Smarty comment at each end so
+  edits don't silently break the layout.
+- Each section gets `<section id="…" class="<page>-section"
+  data-testid="<page>-section-…" aria-labelledby="…-heading">` plus
+  an `<h2 id="…-heading">` so screen-readers can navigate by
+  landmark name. Reuse the `*-section` class so all sections share
+  the `scroll-margin-top` rule.
+- Permission gates on ToC entries mirror what the dispatcher would
+  render anyway (e.g. `$can_add_admins` in `admin-admins`); a ToC
+  entry for a section the dispatcher wouldn't paint is a dead link.
+- Selectors for E2E specs are `[data-testid="<page>-toc"]` (outer
+  aside), `[data-testid="<page>-toc-link-<slug>"]` (per anchor),
+  and `[data-testid="<page>-section-<slug>"]` (per section). Never
+  CSS class chains; never visible-text-as-primary. The desktop
+  contract is "scrolls to the right section" — assert via
+  `expect(section).toBeInViewport()` after the click, not against
+  a fixed `boundingBox.y` because the **last** section can never
+  reach the top of the viewport (no document below it).
+
+When the next dense page (admin-bans, myaccount) adopts this
+pattern, lift the ToC partial into a parameterized shared template
+rather than duplicating `admin.admins.toc.tpl`.
+
 ### Empty states (`first-run` vs `filtered`)
 
 Empty surfaces follow one of two shapes; pick by whether the empty
@@ -547,6 +591,8 @@ audit (#1207) locked in. New CTAs:
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
+| Add a sticky page-level ToC to a dense admin route (anchor sidebar at desktop, accordion at mobile) | `web/themes/default/admin.admins.toc.tpl` is the reference partial; `.admin-admins-shell` / `.admin-admins-toc` / `.admin-admins-section` rules in `web/themes/default/css/theme.css` carry the responsive layout. See the Conventions section "Page-level table of contents (dense admin pages)" (#1207 ADM-3). |
+| Add or rename an admin-admins advanced-search filter | `web/pages/admin.admins.php` (filter-building loop + active-filter map for pagination) + `web/pages/admin.admins.search.php` (DTO population) + `web/includes/View/AdminAdminsSearchView.php` (`active_filter_*` properties) + `web/themes/default/box_admin_admins_search.tpl` (input + pre-fill). The form is single-submit AND-semantics with a backward-compat shim for legacy `advType=…&advSearch=…` URLs (#1207 ADM-4); cover new filters in `web/tests/integration/AdminAdminsSearchTest.php`. |
 | Add a shared "1 of these required" badge for an either/or input pair | `web/themes/default/page_submitban.tpl` (`data-required-group="…"` + the inline guard script — vanilla JS `// @ts-check`, blocks submit when both are empty) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
 | Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php` — unrecognised admin `c=…` returns the 404 page slot via `web/pages/page.404.php` + `Sbpp\View\NotFoundView` (#1207 ADM-1) |
