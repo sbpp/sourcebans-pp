@@ -183,6 +183,16 @@ After `init.php` returns, callers may rely on these globals:
 3. `build(title, page)` includes `pages/core/header.php`,
    `pages/core/navbar.php`, `pages/core/title.php`, then the page file,
    then `pages/core/footer.php`.
+   - `pages/core/title.php` runs **before** the page handler, so it
+     can't read a `$breadcrumb` the page handler will assign later.
+     Instead it builds the default 2-segment "Home > $title" breadcrumb
+     itself and dispatches by `?p=…` slug to `Sbpp\View\*View::breadcrumb()`
+     for routes whose audience makes the "Home" prefix misleading
+     (currently `login` and `lostpassword`, where logged-out visitors
+     have no meaningful Home — #1207 AUTH-3). View DTOs that want to
+     publish a non-default breadcrumb shape expose a static
+     `breadcrumb(): array` returning the same `[ ['title' => ..., 'url' => ...] ]`
+     structure `core/title.tpl` consumes.
 4. The page file (e.g. `pages/page.home.php`) queries the DB and renders
    either:
    - **Legacy:** ad-hoc `$theme->assign(...)` chains followed by

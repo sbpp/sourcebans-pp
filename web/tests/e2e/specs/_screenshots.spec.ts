@@ -60,6 +60,13 @@ interface RouteSpec {
 
 const ROUTES: RouteSpec[] = [
     { name: 'login', path: '/index.php?p=login', auth: false },
+    // #1207 AUTH-3 (slice 10): lostpassword renders the same single-
+    // segment breadcrumb pattern login does. Capturing it here gives
+    // the maintainer visual confirmation of the AUTH-3 fix on the
+    // recovery surface alongside login. `auth: false` because the
+    // page handler bounces logged-in visitors (per the AUTH-1 guard
+    // shipped in slice 3) — anonymous context only.
+    { name: 'lostpassword', path: '/index.php?p=lostpassword', auth: false },
 ];
 
 const THEMES = ['light', 'dark'] as const;

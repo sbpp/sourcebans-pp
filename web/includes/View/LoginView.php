@@ -58,4 +58,32 @@ final class LoginView extends View
         public readonly string $redir,
     ) {
     }
+
+    /**
+     * Breadcrumb shape for the login page (#1207 AUTH-3).
+     *
+     * Single-segment "Sign in" rather than the default
+     * "Home > $title" pair. A logged-out visitor doesn't have a
+     * meaningful "Home" — the link in the default breadcrumb just
+     * bounces them back to the public dashboard, which isn't where
+     * they arrived to be. The single-segment shape preserves the
+     * breadcrumb's a11y contract (`<a aria-current="page">` is still
+     * the last element so `core/title.tpl`'s testability hook is
+     * unchanged) without offering a misleading parent link.
+     *
+     * `core/title.php` consults this via `$_GET['p'] === 'login'`
+     * BEFORE the page handler runs (per the page-builder lifecycle:
+     * header → navbar → title → page → footer), which is why the
+     * shape lives on the View as a static rather than as an
+     * instance property — the View instance doesn't exist yet at
+     * breadcrumb-emit time.
+     *
+     * @return list<array{title: string, url: string}>
+     */
+    public static function breadcrumb(): array
+    {
+        return [
+            ['title' => 'Sign in', 'url' => 'index.php?p=login'],
+        ];
+    }
 }
