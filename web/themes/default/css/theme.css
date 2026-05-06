@@ -387,11 +387,13 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
    The `.queue-row__*` classes carry the layout (instead of inline
    `style="flex-shrink:0"` on each child) so the mobile media query
    can override `flex` / `order` without fighting inline-style
-   specificity. Selector targets `details.queue-row > summary` so
-   the rule reaches the queue templates only (current + archive
-   submissions and protests); the public banlist's mobile cards use
-   `<a>`, not `<details>`, so they're unaffected. */
-.queue-row > summary {
+   specificity. Selector qualifies `details.queue-row > summary` so
+   the rule only reaches `<details>` rows (current + archive
+   submissions and protests). The public banlist's mobile cards use
+   `<a class="ban-row …">`, not `<details>`, so they're unaffected
+   even if a future template typos `class="queue-row"` onto the
+   wrong element. */
+details.queue-row > summary {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -399,7 +401,7 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
   cursor: pointer;
   list-style: none;
 }
-.queue-row > summary::-webkit-details-marker { display: none; }
+details.queue-row > summary::-webkit-details-marker { display: none; }
 .queue-row__body { flex: 1 1 0; min-width: 0; }
 .queue-row__date {
   flex-shrink: 0;
@@ -407,7 +409,7 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
   font-size: var(--fs-xs);
   color: var(--text-muted);
 }
-.queue-row > summary > .row-actions {
+details.queue-row > summary > .row-actions {
   flex-shrink: 0;
   display: flex;
   gap: 0.25rem;
@@ -415,7 +417,7 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
 }
 
 @media (max-width: 768px) {
-  .queue-row > summary {
+  details.queue-row > summary {
     flex-wrap: wrap;
     align-items: flex-start;
   }
@@ -431,7 +433,7 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
     flex: 1 1 auto;
     align-self: center;
   }
-  .queue-row > summary > .row-actions {
+  details.queue-row > summary > .row-actions {
     order: 3;
     flex-wrap: wrap;
     justify-content: flex-end;

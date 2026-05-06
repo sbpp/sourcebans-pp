@@ -141,12 +141,9 @@ test.describe('responsive: admin moderation queue (#1207 PUB-2)', () => {
         // pre-fix layout. Each must be visible AND its bounding
         // box must sit fully inside the queue row's container —
         // the row itself ("submission-row") is where the PUB-2
-        // contract lives. We don't assert against the document /
-        // viewport here because pre-existing chrome issues
-        // (CC-1 topbar search, ADM-8 admin tab strip) leak
-        // horizontal scroll on this page and are owned by other
-        // workers in the #1207 split; locking against the row's
-        // own bounding box keeps the assertion scoped to PUB-2.
+        // contract lives, so locking the assertion to the row's
+        // own bounding box keeps this spec scoped to the
+        // card-stack invariant rather than the page-level chrome.
         const rowBox = await row.boundingBox();
         expect(rowBox, 'queue row renders a bounding box').not.toBeNull();
         for (const testid of ['row-action-ban', 'row-action-remove', 'row-action-contact']) {
