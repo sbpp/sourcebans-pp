@@ -41,11 +41,22 @@
         <div style="flex:1"></div>
 
         {*
-            #1207 CC-1: at <=768px the search button collapses to icon-only
-            — the .topbar__search-label / .topbar__search-kbd hooks below
+            #1207 CC-1 / CC-3: the topbar palette trigger is icon-only at
+            EVERY viewport. CC-1 (slice 1, PR #1208) collapsed it at
+            <=768px because the search-input shape couldn't share a row
+            with the breadcrumb + theme toggle on mobile; CC-3 (this
+            slice) extends the same collapse to desktop because the
+            chrome's labelled "search input + Ctrl-K hint" was a
+            duplicate affordance for the same `<dialog id="palette-root">`
+            the ⌘K shortcut already opens — both surfaces competed for
+            attention and pulled the user's eye twice. The palette
+            itself owns the search semantically; the topbar trigger only
+            opens it.
+
+            The .topbar__search-label / .topbar__search-kbd hooks below
             are the CSS handles theme.css uses to hide the visible label
-            and the keyboard hint at mobile widths. Keep them BOTH in the
-            DOM unconditionally so:
+            and the keyboard hint. Keep them BOTH in the DOM
+            unconditionally so:
               - SR users hear "Open command palette …" via the existing
                 aria-label regardless of viewport,
               - theme.js's applyPlatformHints() can still rewrite the kbd

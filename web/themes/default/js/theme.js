@@ -167,12 +167,46 @@
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       if (palette && palette.hidden) openPalette(); else closePalette();
+    } else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      handlePaletteCopyShortcut(e);
     } else if (e.key === 'Escape') {
       closePalette();
       closeDrawer();
       closeMobileSidebar();
     }
   });
+
+  /**
+   * #1207 DET-2: in the open palette, Ctrl/Cmd+Enter on a focused
+   * player result row copies the row's SteamID to the clipboard and
+   * surfaces a confirmation toast. The kbd hint group rendered into
+   * each row by `renderPaletteResults` advertises this affordance
+   * server-side ("Ctrl+Enter to copy steamid"); this handler is the
+   * paired behaviour. No-op when the palette is closed or when the
+   * focused element isn't a player-kind palette result, so the
+   * binding is scoped to the surface the hint advertises and won't
+   * hijack Ctrl+Enter elsewhere (e.g. notes textarea, edit-ban form).
+   * @param {KeyboardEvent} e
+   * @returns {void}
+   */
+  function handlePaletteCopyShortcut(e) {
+    if (!palette || palette.hidden) return;
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) return;
+    const row = active.closest('[data-testid="palette-result"][data-result-kind="ban"]');
+    if (!(row instanceof HTMLElement)) return;
+    const steamid = row.dataset.steamid;
+    if (!steamid) return;
+    e.preventDefault();
+    if (!navigator.clipboard) {
+      showToast({ kind: 'error', title: 'Clipboard unavailable' });
+      return;
+    }
+    void navigator.clipboard.writeText(steamid).then(
+      () => showToast({ kind: 'success', title: 'SteamID copied', body: steamid }),
+      () => showToast({ kind: 'error', title: 'Couldn\u2019t copy SteamID' }),
+    );
+  }
 
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {
     const target = /** @type {Element | null} */ (e.target);
@@ -287,27 +321,62 @@
       bans = envelope.data.bans;
     }
 
+    // #1207 DET-2: each player result row carries:
+    //   - data-drawer-bid="<bid>"  → bare Enter / click hands off to the
+    //     existing `[data-drawer-bid]` click delegate (loadDrawer + close
+    //     the palette so the drawer isn't stacked behind it),
+    //   - data-steamid="<steam>"   → the Ctrl/Cmd+Enter handler reads this
+    //     and copies it via navigator.clipboard.writeText,
+    //   - a `.palette__row-hints` kbd group surfacing both keys so the
+    //     interactions are discoverable. The kbds are server-rendered
+    //     in the non-Mac form ("Enter", "Ctrl"); applyPlatformHints()
+    //     swaps `[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ at boot
+    //     and on every render below so Mac users see the platform-native
+    //     glyphs without re-rendering (#1184).
+    //
+    // The href is preserved as a graceful-degradation fallback —
+    // middle-click / Cmd+click still navigates to a name-filtered banlist
+    // for users who want to expand the result rather than open the drawer.
     const playersHtml = bans.length
       ? '<div style="' + sectionStyle + ';margin-top:8px">Players</div>'
         + bans.map((b) => {
             const href = '?p=banlist&advType=name&advSearch=' + encodeURIComponent(b.name);
+            const steamid = b.steam || b.ip || '';
             return '<a href="' + href + '"'
-              + ' class="sidebar__link"'
+              + ' class="sidebar__link palette__row"'
               + ' data-testid="palette-result"'
               + ' data-result-kind="ban"'
               + ' data-id="' + escapeHtml(String(b.bid)) + '"'
+              + ' data-drawer-bid="' + escapeHtml(String(b.bid)) + '"'
+              + ' data-steamid="' + escapeHtml(steamid) + '"'
               + ' style="height:auto;padding:8px">'
-              + '<i data-lucide="user"></i>'
-              + '<div style="min-width:0">'
-              + '<div class="text-sm">' + escapeHtml(b.name || '(no name)') + '</div>'
-              + '<div class="font-mono text-xs text-muted">' + escapeHtml(b.steam || b.ip || '') + '</div>'
-              + '</div>'
+              +   '<i data-lucide="user" style="flex-shrink:0"></i>'
+              +   '<div class="palette__row-meta">'
+              +     '<div class="text-sm truncate">' + escapeHtml(b.name || '(no name)') + '</div>'
+              +     '<div class="font-mono text-xs text-muted truncate">' + escapeHtml(steamid) + '</div>'
+              +   '</div>'
+              +   '<div class="palette__row-hints" data-testid="palette-row-hints" aria-hidden="true">'
+              +     '<span class="palette__row-hint">'
+              +       '<kbd data-enterkey>Enter</kbd>'
+              +       '<span class="palette__row-hint-label"> to open drawer</span>'
+              +     '</span>'
+              +     '<span class="palette__row-hint" data-palette-hint="copy">'
+              +       '<kbd data-modkey>Ctrl</kbd>+<kbd data-enterkey>Enter</kbd>'
+              +       '<span class="palette__row-hint-label"> to copy steamid</span>'
+              +     '</span>'
+              +   '</div>'
               + '</a>';
           }).join('')
       : '<div class="text-xs text-muted" style="padding:8px">No matching bans.</div>';
 
     paletteResults.innerHTML = navHtml + playersHtml;
     if (window.lucide) window.lucide.createIcons();
+    // Result rows render after first paint, so the boot-time
+    // applyPlatformHints() pass missed the dynamically-created kbds
+    // inside `.palette__row-hints`. Re-run the swap so Mac users see
+    // ⏎ / ⌘ glyphs instead of the server-rendered "Enter" / "Ctrl"
+    // text on every re-render (debounce + fetch round-trip).
+    applyPlatformHints();
   }
 
   // ---- DRAWER ----------------------------------------------
@@ -854,6 +923,15 @@
       const bid = bidFromTrigger(trigger);
       if (bid !== null) {
         e.preventDefault();
+        // #1207 DET-2: when the drawer is opened from a palette result
+        // row (bare Enter on a focused row fires a synthetic click that
+        // bubbles here), close the palette so the drawer isn't stacked
+        // behind the palette dialog. Scoped to the in-palette path via
+        // `target.closest('.palette')` so non-palette drawer triggers
+        // (banlist rows, history list items, etc.) keep their existing
+        // behaviour — the palette is only closed when it was the source
+        // of the navigation.
+        if (target && target.closest('.palette')) closePalette();
         loadDrawer(bid);
         return;
       }
@@ -1088,13 +1166,27 @@
   else document.addEventListener('DOMContentLoaded', initIcons);
 
   // ---- PLATFORM-AWARE SHORTCUT HINTS -----------------------
-  // The Cmd glyph (U+2318 ⌘) is missing from the vendored JetBrains Mono
-  // and the generic CSS mono fallback on every non-Mac browser, so a
-  // server-rendered '⌘' renders as tofu for the majority of users
-  // (#1184). Templates render the Ctrl form server-side; on macOS /
-  // iOS, swap the visible label to the Cmd form here at boot. The
-  // shortcut handler at line ~112 already accepts metaKey || ctrlKey,
-  // so behavior is platform-correct regardless of the visible hint.
+  // The Cmd glyph (U+2318 ⌘) and Return glyph (U+23CE ⏎) are missing
+  // from the vendored JetBrains Mono and the generic CSS mono fallback
+  // on every non-Mac browser, so a server-rendered '⌘' / '⏎' renders
+  // as tofu for the majority of users (#1184). Templates render the
+  // textual form server-side ("Ctrl", "Enter"); on macOS / iOS, swap
+  // the visible label to the glyph form here at boot. The shortcut
+  // handler at line ~112 already accepts metaKey || ctrlKey, so
+  // behavior is platform-correct regardless of the visible hint.
+  //
+  // Attribute contract:
+  //   [data-modkey]   → "Ctrl" (text)  → "\u2318" (⌘) on Mac
+  //   [data-enterkey] → "Enter" (text) → "\u23CE" (⏎) on Mac
+  //
+  // The topbar trigger's "Ctrl K" kbd is a special case (the entire
+  // textContent is replaced with "⌘K") — it predates `[data-modkey]`
+  // and stays scoped via `.topbar__search kbd` so the kbd group inside
+  // the palette result rows (DET-2) doesn't accidentally pick up the
+  // K-suffixed swap.
+  //
+  // `renderPaletteResults` calls this after each result-render so the
+  // dynamically-injected kbd hints get the swap on every refresh.
   /** @returns {void} */
   function applyPlatformHints() {
     const isMac = /Mac|iPhone|iPad/.test(navigator.userAgent)
@@ -1105,6 +1197,9 @@
     });
     document.querySelectorAll('[data-modkey]').forEach((/** @type {Element} */ el) => {
       el.textContent = '\u2318';
+    });
+    document.querySelectorAll('[data-enterkey]').forEach((/** @type {Element} */ el) => {
+      el.textContent = '\u23CE';
     });
   }
   if (document.readyState !== 'loading') applyPlatformHints();

@@ -163,41 +163,48 @@ html.dark .sidebar__link[aria-current="page"] { background: var(--brand-700); co
 html.dark .topbar { background: rgb(9 9 11 / 0.8); }
 .topbar__breadcrumbs { display: flex; align-items: center; gap: 0.375rem; font-size: var(--fs-base); color: var(--text-muted); }
 .topbar__breadcrumbs > [aria-current] { color: var(--text); font-weight: 500; }
+/* #1207 CC-1 + CC-3: the topbar palette trigger is icon-only at EVERY
+   viewport. CC-1 (slice 1, #1208) collapsed it at <=768px because the
+   labelled "search input + Ctrl-K hint" couldn't share a row with the
+   breadcrumb + theme toggle on mobile; CC-3 (this slice) extends the
+   same collapse to desktop because that labelled chrome was a duplicate
+   affordance for the `<dialog id="palette-root">` the ⌘K shortcut
+   already opens — both surfaces competed for attention and pulled the
+   user's eye twice. The palette itself owns the search semantically;
+   the trigger only opens it.
+
+   The button visually matches the sibling theme-toggle (a ghost icon
+   button — transparent bg, no border, hover paints `--bg-muted`) so
+   the topbar reads as `[hamburger] [breadcrumb] [spacer] [palette]
+   [theme]` with two equal-weight icon affordances on the right.
+
+   The .topbar__search-label / .topbar__search-kbd hooks stay in the
+   DOM (see core/title.tpl) but are visually hidden everywhere now so:
+     - SR users still hear "Open command palette …" via the existing
+       aria-label,
+     - theme.js's applyPlatformHints() can still rewrite the kbd glyph
+       to ⌘K on Mac after first paint without re-rendering — the
+       hidden node is the live mutation target,
+     - the kbd hints inside the palette result rows (DET-2) reuse the
+       same [data-modkey] swap mechanism applyPlatformHints() drives.
+
+   The desktop default size (2.25rem) matches `.btn--icon` so the
+   trigger lines up with the theme toggle without a custom rule;
+   the <=768px floor below bumps it to 2.75rem (44 CSS px) per the
+   slice 1 review's touch-target contract (WCAG 2.1 AAA / Apple HIG /
+   Material). */
 .topbar__search {
-  display: inline-flex; align-items: center; gap: 0.5rem; min-width: 16rem;
-  height: 2.25rem; padding: 0 0.75rem; border-radius: var(--radius-md);
-  border: 1px solid var(--border); background: var(--bg-page);
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 2.25rem; height: 2.25rem; padding: 0;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent; background: transparent;
   color: var(--text-muted); font-size: var(--fs-base);
+  transition: background-color .15s, color .15s;
 }
-@media (max-width: 1024px) {
-  .topbar__search { min-width: 0; flex: 1 1 auto; }
-}
-.topbar__search kbd { margin-left: auto; padding: 0.125rem 0.375rem; border-radius: var(--radius-sm); background: var(--bg-surface); border: 1px solid var(--border); font-family: var(--font-mono); font-size: 0.625rem; color: var(--text-muted); }
-/* #1207 CC-1: at <=768px the topbar can't fit the breadcrumb +
-   labelled search input + Ctrl-K hint + theme toggle on one row, so
-   the placeholder text wraps to 3 lines and the kbd hint slams into
-   the theme toggle. Collapse the search affordance to an icon-only
-   button — the same `data-palette-open` hook still opens the
-   palette, where typing IS the search. The label + kbd are hidden
-   visually but kept in the DOM so SR users still hear "Open command
-   palette (search players, SteamIDs, pages)" via the existing
-   aria-label.
-   The mobile button is sized to 2.75rem × 2.75rem (44×44 CSS px) —
-   that's the slice 1 review's explicit touch-target floor (WCAG
-   2.1 AAA / Apple HIG / Material). The desktop labelled variant
-   stays at 2.25rem tall (16rem-wide, so the touch target passes
-   incidentally on the wider geometry); the icon-only mobile collapse
-   needs the explicit floor because it's the smallest standalone tap
-   target in the chrome.
-   The .topbar__search-label / .topbar__search-kbd hooks below are
-   defined on the topbar markup in core/title.tpl. */
+.topbar__search:hover { background: var(--bg-muted); color: var(--text); }
+.topbar__search-label, .topbar__search-kbd { display: none; }
 @media (max-width: 768px) {
-  .topbar__search {
-    flex: 0 0 auto; min-width: 0;
-    width: 2.75rem; height: 2.75rem;
-    padding: 0; justify-content: center; gap: 0;
-  }
-  .topbar__search-label, .topbar__search-kbd { display: none; }
+  .topbar__search { width: 2.75rem; height: 2.75rem; }
 }
 
 /* ---- Theme toggle icon swap ----
@@ -600,6 +607,61 @@ html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }
 .palette { width: min(36rem, calc(100vw - 2rem)); background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-xl); box-shadow: var(--shadow-lg); overflow: hidden; }
 .palette__input { display: flex; align-items: center; gap: 0.75rem; height: 3rem; padding: 0 1rem; border-bottom: 1px solid var(--border); }
 .palette__input input { flex: 1; border: 0; outline: none; background: transparent; color: var(--text); font-size: var(--fs-base); }
+
+/* #1207 DET-2: palette result-row hint group.
+   Every player-kind result row (`[data-result-kind="ban"]`) is built
+   by `renderPaletteResults` in theme.js and lays out as
+     [icon] [name+steam stack] [kbd hint group]
+   The `.palette__row-hints` container sits at the right edge via
+   `margin-left: auto` and surfaces the two interactions the row
+   supports — bare Enter opens the player drawer, Ctrl/Cmd+Enter
+   copies the SteamID via `navigator.clipboard.writeText`. The
+   keyboard handler lives in theme.js (`handlePaletteCopyShortcut`);
+   this CSS just lays out the hints.
+
+   The kbds are server-rendered in non-Mac form ("Ctrl" / "Enter");
+   theme.js's `applyPlatformHints` swaps `[data-modkey]` → ⌘ and
+   `[data-enterkey]` → ⏎ on Mac after each render so the visible
+   glyphs match the platform's modifier vocabulary.
+
+   The label spans (".palette__row-hint-label") collapse at narrow
+   viewports so the kbd glyphs alone fit alongside a long player
+   name + SteamID — the keyboard interactions still work; the verbose
+   prose ("to open drawer", "to copy steamid") just falls back to the
+   implied conventions on a tight viewport. The paired `aria-hidden`
+   on the wrapper keeps screen readers from announcing the hint group
+   over the row's actual content (the SR user navigates the rows via
+   arrow keys, not by listening to per-row decoration). */
+.palette__row-meta { min-width: 0; flex: 1 1 0; }
+.palette__row-hints {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.palette__row-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.palette__row-hints kbd {
+  display: inline-block;
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+@media (max-width: 640px) {
+  .palette__row-hint-label { display: none; }
+}
 
 /* ---- Skeleton ---- */
 @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }

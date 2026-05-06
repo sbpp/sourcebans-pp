@@ -1,5 +1,5 @@
 /**
- * Command palette (#1124, Slice 6).
+ * Command palette (#1124, Slice 6 + #1207 CC-3, DET-2).
  *
  * Acceptance criteria from #1124:
  *   "⌘K opens, typing a SteamID surfaces the player, Enter navigates
@@ -15,9 +15,22 @@
  *     [data-result-kind="nav"|"ban"]>` once `q.length >= 2`, with a
  *     200ms input debounce.
  *
- * The third subtest (Enter navigates) follows the focused result's
- * native `<a>` activation rather than a custom keydown handler —
- * `theme.js` doesn't bind Enter on the palette input itself.
+ * #1207 CC-3 (this slice) extends slice 1's mobile icon-only collapse
+ * to desktop too: the topbar's palette trigger is icon-only at every
+ * viewport, so the topbar reads as `[hamburger] [breadcrumb] [spacer]
+ * [palette icon] [theme toggle]` consistently — the palette dialog
+ * itself owns the search affordance.
+ *
+ * #1207 DET-2 (this slice) layers two interactions onto each player
+ * result row, advertised by a kbd hint group at the right edge:
+ *   - bare Enter → opens the player drawer for the ban,
+ *   - Ctrl/Cmd+Enter → copies the row's SteamID via
+ *     navigator.clipboard.writeText + surfaces a toast.
+ * The kbds are server-rendered in non-Mac form ("Enter", "Ctrl");
+ * theme.js's applyPlatformHints swaps `[data-enterkey]` → ⏎ and
+ * `[data-modkey]` → ⌘ on Mac at boot and on every render. The Linux
+ * test runner sees the non-Mac form by default — that's what the
+ * assertions below pin.
  *
  * == Seeding strategy: unique-per-(test × project), no truncate ==
  *
@@ -60,6 +73,8 @@ const SUBTEST_OFFSETS = {
     open: 0,
     type: 1,
     enter: 2,
+    hints: 3,
+    copy: 4,
 } as const;
 
 /**
@@ -102,6 +117,76 @@ test.describe('command palette', () => {
         // dialog's showModal() finishes its focus dance first; we
         // poll on the focus state, not a fixed timeout.
         await expect(input).toBeFocused();
+
+        await page.keyboard.press('Escape');
+        await expect(dialog).toHaveAttribute('data-palette-open', 'false');
+    });
+
+    test('topbar palette trigger renders icon-only at every viewport (#1207 CC-3)', async ({ page }, testInfo) => {
+        // Slice 1 (PR #1208, CC-1) introduced the icon-only collapse
+        // at <=768px because the labelled "search input + Ctrl-K hint"
+        // couldn't share a row with the breadcrumb on mobile. Slice 9
+        // (this PR, CC-3) extends the same collapse to desktop because
+        // the labelled chrome was a duplicate affordance for the same
+        // palette dialog ⌘K opens. Both projects (`chromium` +
+        // `mobile-chromium`) lock the icon-only contract here so the
+        // existing responsive/topbar.spec.ts mobile-only assertions
+        // and this desktop counterpart fail independently if either
+        // viewport regresses.
+        //
+        // The mobile-only floor (44px tap target) lives in
+        // responsive/topbar.spec.ts; this spec asserts the cross-
+        // viewport contract: label + kbd hint visually hidden, square
+        // button shape.
+        await page.goto('/');
+
+        const trigger = page.locator('[data-testid="palette-trigger"]');
+        await expect(trigger).toBeVisible();
+
+        // Label and kbd hint stay in the DOM (so SR users still hear
+        // the parent aria-label and applyPlatformHints can rewrite the
+        // kbd text on Mac without re-rendering) but are visually
+        // hidden via `display:none` at every viewport now.
+        const label = trigger.locator('.topbar__search-label');
+        await expect(label).toBeAttached();
+        await expect(label).toBeHidden();
+
+        const kbd = trigger.locator('.topbar__search-kbd');
+        await expect(kbd).toBeAttached();
+        await expect(kbd).toBeHidden();
+
+        // Square icon-only button. Desktop is 2.25rem (36px) — matches
+        // the `.btn--icon` sibling theme-toggle so the topbar's right
+        // edge reads as two equal-weight icon affordances. Mobile bumps
+        // to 2.75rem (44px) per slice 1's tap-target floor; that
+        // contract is locked in responsive/topbar.spec.ts so we just
+        // bracket the upper bound here to make sure neither viewport
+        // accidentally re-expands to a labelled control via cascade
+        // drift.
+        const box = await trigger.boundingBox();
+        expect(box, 'palette trigger must render a bounding box').not.toBeNull();
+        expect(Math.abs(box!.width - box!.height)).toBeLessThanOrEqual(1);
+        if (testInfo.project.name === 'mobile-chromium') {
+            expect(box!.width).toBeGreaterThanOrEqual(44);
+        } else {
+            expect(box!.width).toBeGreaterThanOrEqual(34);
+        }
+        expect(box!.width).toBeLessThanOrEqual(56);
+    });
+
+    test('clicking the icon trigger opens the palette (#1207 CC-3)', async ({ page }) => {
+        // Behavioural counterpart to the icon-only-shape test above:
+        // the trigger keeps its `data-palette-open` attribute, so
+        // theme.js's document-level click handler funnels through
+        // openPalette() the same way Meta+k does. Both projects.
+        await page.goto('/');
+
+        const dialog = page.locator('#palette-root');
+        await expect(dialog).toHaveAttribute('data-palette-open', 'false');
+
+        await page.locator('[data-testid="palette-trigger"]').click();
+        await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+        await expect(page.locator('#palette-input')).toBeFocused();
 
         await page.keyboard.press('Escape');
         await expect(dialog).toHaveAttribute('data-palette-open', 'false');
@@ -158,15 +243,154 @@ test.describe('command palette', () => {
         await expect(banResults.filter({ hasText: seed.nick }).first()).toBeVisible();
     });
 
-    test('focused result + Enter navigates to the ban-list anchor', async ({ page }, testInfo) => {
+    test('player result row carries kbd hint group with Enter and Ctrl+Enter (#1207 DET-2)', async ({ page }, testInfo) => {
+        // mobile-chromium skipped per #1206 (palette typing-search
+        // flake, same root cause as the 'type' / 'enter' subtests).
+        // The kbd hint contract is viewport-independent — the kbds
+        // are in the DOM regardless — so chromium coverage is enough
+        // to lock the contract; the visual layout media query
+        // (`.palette__row-hint-label` collapsing at <=640px) is
+        // separately covered by the screenshot gallery.
+        test.skip(
+            testInfo.project.name === 'mobile-chromium',
+            'mobile-chromium palette typing-search flake; tracked in #1206',
+        );
+        const seed = uniqueSeed(testInfo, 'hints');
+        try {
+            await seedBanViaApi(page, { nickname: seed.nick, steam: seed.steam });
+        } catch (err) {
+            if (!String(err).includes('already_banned')) throw err;
+        }
+
+        await page.goto('/');
+        await page.keyboard.press('Meta+k');
+        const dialog = page.locator('#palette-root');
+        await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+
+        await page.locator('#palette-input').fill(seed.nick);
+        await expect(dialog).not.toHaveAttribute('data-loading', 'true', { timeout: 10000 });
+
+        const row = page
+            .locator('[data-testid="palette-result"][data-result-kind="ban"]')
+            .filter({ hasText: seed.nick })
+            .first();
+        await expect(row).toBeVisible();
+
+        // The kbd hint group sits at the right edge of every player
+        // row, scoped via `data-testid="palette-row-hints"`. The two
+        // hints surface the row's two interactions:
+        //   - bare Enter → opens the player drawer for the ban,
+        //   - Ctrl+Enter → copies the row's SteamID via
+        //     navigator.clipboard.
+        const hints = row.locator('[data-testid="palette-row-hints"]');
+        await expect(hints).toBeAttached();
+
+        // The first kbd is the bare-Enter hint, server-rendered as
+        // "Enter" (theme.js's applyPlatformHints rewrites it to ⏎ on
+        // Mac after first paint; this Linux runner sees the non-Mac
+        // form). The second hint pairs `Ctrl` + `Enter` for the copy
+        // affordance — both kbds present so the visible glyph reads
+        // as a key combo even when the verbose label collapses at
+        // narrow widths.
+        const enterKbds = hints.locator('kbd[data-enterkey]');
+        await expect(enterKbds).toHaveCount(2);
+        await expect(enterKbds.first()).toHaveText('Enter');
+
+        const ctrlKbd = hints.locator('kbd[data-modkey]');
+        await expect(ctrlKbd).toHaveCount(1);
+        await expect(ctrlKbd).toHaveText('Ctrl');
+
+        // The descriptive labels ("to open drawer" / "to copy
+        // steamid") render at desktop width; the test runs on
+        // chromium (1280×720) so we expect them visible here.
+        // Pin one half of each label so a future copy edit fails
+        // this spec (rather than silently slipping through).
+        await expect(hints).toContainText('open drawer');
+        await expect(hints).toContainText('copy steamid');
+    });
+
+    test('Ctrl+Enter on a focused player row copies the SteamID + toasts (#1207 DET-2)', async ({ page, context }, testInfo) => {
+        test.skip(
+            testInfo.project.name === 'mobile-chromium',
+            'mobile-chromium palette typing-search flake; tracked in #1206',
+        );
+
+        const seed = uniqueSeed(testInfo, 'copy');
+        try {
+            await seedBanViaApi(page, { nickname: seed.nick, steam: seed.steam });
+        } catch (err) {
+            if (!String(err).includes('already_banned')) throw err;
+        }
+
+        await page.goto('/');
+
+        // navigator.clipboard.readText() requires the
+        // `clipboard-read` permission. Chromium grants it in
+        // headless mode but Playwright's default permission set
+        // doesn't include it; granting explicitly per-test makes the
+        // contract loud at the call-site instead of relying on a
+        // browser default. `clipboard-write` is only required for
+        // older Chromium permissions matrices; on current builds
+        // writeText() works without the explicit grant, but we ask
+        // for both so the spec is portable across browser versions.
+        // Granting AFTER goto() so the origin is the live test
+        // origin, not 'about:blank'.
+        await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+            origin: new URL(page.url()).origin,
+        });
+
+        await page.keyboard.press('Meta+k');
+        const dialog = page.locator('#palette-root');
+        await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+
+        await page.locator('#palette-input').fill(seed.nick);
+        await expect(dialog).not.toHaveAttribute('data-loading', 'true', { timeout: 10000 });
+
+        const row = page
+            .locator('[data-testid="palette-result"][data-result-kind="ban"]')
+            .filter({ hasText: seed.nick })
+            .first();
+        await expect(row).toBeVisible();
+        // Pin the steamid on the row — that's what Ctrl+Enter will
+        // copy. theme.js writes b.steam (Steam2 form) into
+        // `data-steamid`, so the assertion below is exact.
+        await expect(row).toHaveAttribute('data-steamid', seed.steam);
+
+        await row.focus();
+
+        // Linux runner: `Control+Enter` is the primary chord. The
+        // theme.js handler accepts metaKey || ctrlKey, so a Mac
+        // runner would land here via `Meta+Enter`; we only test
+        // the Linux form because that's the CI shape (browserName
+        // 'chromium' on linux).
+        await page.keyboard.press('Control+Enter');
+
+        // Toast appears with the success copy. The toast surface is
+        // shared with the drawer's [data-copy] button (#1184); we
+        // filter by the title so a stray earlier toast doesn't false-
+        // positive.
+        const toast = page.locator('.toast').filter({ hasText: 'SteamID copied' });
+        await expect(toast).toBeVisible();
+        // The toast body echoes the copied value so the user can
+        // visually confirm the right id landed on the clipboard.
+        await expect(toast).toContainText(seed.steam);
+
+        // Read the clipboard — value matches the row's data-steamid.
+        // The grantPermissions call above is what makes this work
+        // outside Playwright's default permission set.
+        const clipboardValue = await page.evaluate(() => navigator.clipboard.readText());
+        expect(clipboardValue).toBe(seed.steam);
+
+        // The palette stays open — Ctrl+Enter is a non-navigating
+        // affordance, not a "submit + close" chord. (Bare Enter
+        // closes the palette and opens the drawer; that's the
+        // sibling 'enter' subtest below.)
+        await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+    });
+
+    test('focused result + Enter opens the player drawer (#1207 DET-2)', async ({ page }, testInfo) => {
         // Same mobile-chromium palette typing-search flake as the
-        // 'type' subtest above — the rendered <a data-testid="palette-result">
-        // is intermittently not visible on iPhone-13 viewport. Both
-        // subtests exercise the same surface (typing → bans.search → result
-        // visible) and share a single root cause. The 'open/Esc' sibling
-        // doesn't search, so it stays in mobile coverage. Tracked alongside
-        // the 'type' subtest in #1206; removing both skips is that issue's
-        // success criterion.
+        // 'type' / 'hints' / 'copy' subtests — tracked in #1206.
         test.skip(
             testInfo.project.name === 'mobile-chromium',
             'mobile-chromium palette typing-search flake; tracked in #1206',
@@ -190,22 +414,29 @@ test.describe('command palette', () => {
             .first();
         await expect(result).toBeVisible();
 
-        // theme.js builds the result `<a>` with
-        //   href="?p=banlist&advType=name&advSearch=<encoded-name>"
-        // so navigation is the browser's native anchor activation,
-        // not a JS-bound Enter handler. We focus the anchor and
-        // press Enter inside the same Promise.all that waits for
-        // the URL change so the race condition is removed.
+        // #1207 DET-2: each player row carries `data-drawer-bid="<bid>"`.
+        // Focus + Enter fires a synthetic click on the anchor that
+        // bubbles to theme.js's document-level click delegate; the
+        // delegate spots the `[data-drawer-bid]` trigger inside the
+        // open palette, calls `closePalette()` so the drawer isn't
+        // stacked behind the palette dialog, then `loadDrawer(bid)`
+        // fetches `bans.detail` and renders the player drawer.
+        //
+        // The href fallback (`?p=banlist&advType=name&advSearch=…`)
+        // is preserved on the anchor so middle-click / Cmd+click
+        // still expands the result to a name-filtered banlist for
+        // users who want the wider context — that's why we focus +
+        // press Enter rather than asserting on the href shape.
         await result.focus();
-        await Promise.all([
-            page.waitForURL(/[?&]p=banlist(?:&|$)/),
-            page.keyboard.press('Enter'),
-        ]);
+        await page.keyboard.press('Enter');
 
-        // `advSearch` carries the URL-encoded nickname; assert against
-        // both halves so we don't accidentally pass on a generic
-        // banlist URL with no search applied.
-        await expect(page).toHaveURL(/[?&]advType=name(?:&|$)/);
-        await expect(page).toHaveURL(new RegExp(`[?&]advSearch=${encodeURIComponent(seed.nick)}(?:&|$)`));
+        const drawer = page.locator('#drawer-root');
+        await expect(drawer).toHaveAttribute('data-drawer-open', 'true');
+        await expect(drawer).not.toHaveAttribute('data-loading', 'true', { timeout: 10000 });
+
+        // Palette closed — see `closePalette()` call inside the
+        // click delegate's `target.closest('.palette')` branch.
+        const dialog = page.locator('#palette-root');
+        await expect(dialog).toHaveAttribute('data-palette-open', 'false');
     });
 });
