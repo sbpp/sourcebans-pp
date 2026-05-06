@@ -7,37 +7,35 @@
 
     Included via {load_template file="admin.admins.search"} from
     page_admin_admins_list.tpl. Submits as a plain `GET` to
-    ?p=admin&c=admins&advSearch=…&advType=…, mirroring the wire
-    format admin.admins.php already parses.
+    ?p=admin&c=admins with one parameter per populated filter.
 
-    Wire format (kept identical to the legacy box):
-        advType=name           advSearch=<text>           (admin login)
-        advType=steam|steamid  advSearch=<text>           (partial vs exact)
-        advType=admemail       advSearch=<text>           (gated by can_edit_admins)
-        advType=webgroup       advSearch=<gid>
-        advType=srvadmgroup    advSearch=<group_name>
-        advType=srvgroup       advSearch=<gid>
-        advType=admwebflag     advSearch=<ADMIN_*>[,<ADMIN_*>…]   (multi)
-        advType=admsrvflag     advSearch=<SM_*>[,<SM_*>…]         (multi)
-        advType=server         advSearch=<sid>
+    Wire format (#1207 ADM-4 redesign — single submit, AND semantics):
+        name=<text>                login (substring)
+        steamid=<text>             Steam ID
+        steam_match=0|1            0 = exact, 1 = partial (default 0)
+        admemail=<text>            E-mail (substring, gated by can_edit_admins)
+        webgroup=<gid>             Panel group
+        srvadmgroup=<group_name>   SourceMod admin group
+        srvgroup=<gid>             Server group
+        admwebflag[]=ADMIN_*       Web permission flags (multi)
+        admsrvflag[]=SM_*          Server permission flags (multi)
+        server=<sid>               Server access
 
-    Why we drop sourcebans.js' search_admins() global
-    -------------------------------------------------
-    sourcebans.js disappears at #1123 D1, so `onclick="search_admins()"`
-    would `ReferenceError`. Each row gets its own submit button with
-    inline {literal}<script>…{/literal}` dispatch — vanilla, no globals.
-    The hidden `advType` / `advSearch` inputs are populated from the
-    row's source field on click; the form submits natively.
+    Multiple non-empty filters are combined with AND on the server side
+    (admin.admins.php). The legacy single-filter shape
+    (`?advType=name&advSearch=foo`) still works: admin.admins.php
+    translates it into the modern shape on entry so existing bookmarks
+    and external links keep narrowing the list.
 
-    Multi-select permission flags
-    -----------------------------
-    The legacy widget used MooTools' `getMultiple(this, 1|2)` to pull
-    the full selection from a `<select multiple>` `onblur`. The new
-    dispatcher reads `selectedOptions` directly when the user submits
-    the row, so the value collected is the full current selection at
-    submit time — tight and unsurprising. The wire shape (comma-joined
-    `ADMIN_*` constant names) is unchanged so admin.admins.php's
-    constant() resolution keeps working.
+    Why we drop the per-row Search buttons
+    --------------------------------------
+    The pre-fix shape had eight `<button data-search-key=…>` elements
+    populating hidden `advType` / `advSearch` inputs and submitting
+    with one filter at a time. Audit (#1207 ADM-4) called this out as
+    unusual — typical search UIs combine inputs with one submit at the
+    bottom. The new form drops the hidden proxies, gives every input
+    its native `name=` attribute, and renders one Search submit + one
+    Reset link.
 
     LoadServerHost replacement
     --------------------------
@@ -61,7 +59,8 @@
         data-testid="search-admins-admwebflag"     web-perms multi-select
         data-testid="search-admins-admsrvflag"     server-perms multi-select
         data-testid="search-admins-server"         server <select>
-        data-testid="search-admins-submit-<key>"   one per searchable field
+        data-testid="search-admins-submit"         the (one) submit button
+        data-testid="search-admins-reset"          reset / clear-filters link
 *}
 <form method="get"
       action="index.php"
@@ -70,202 +69,155 @@
       style="margin-top:1rem;margin-bottom:1rem">
     <input type="hidden" name="p" value="admin">
     <input type="hidden" name="c" value="admins">
-    <input type="hidden" name="advType" value="" data-search-type>
-    <input type="hidden" name="advSearch" value="" data-search-value>
 
     <div class="card__header">
         <div>
             <h3>Advanced search</h3>
-            <p>Filter the admin list by login name, group, permission flag, or server access.</p>
+            <p>Combine any of the filters below — the server narrows the admin list to rows matching <strong>every</strong> populated filter (AND semantics).</p>
         </div>
     </div>
 
     <div class="card__body space-y-3">
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <label class="label" for="search-admins-name" style="grid-column:1;align-self:end">Login name</label>
             <input class="input"
                    id="search-admins-name"
+                   name="name"
                    type="text"
                    placeholder="Substring match against the panel login&hellip;"
                    data-testid="search-admins-name"
+                   value="{$active_filter_name|escape}"
                    autocomplete="off">
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-name"
-                    data-search-key="name"
-                    data-search-from="search-admins-name">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
         </div>
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <label class="label" for="search-admins-steamid" style="grid-column:1;align-self:end">Steam ID</label>
             <div class="flex gap-2" style="flex-wrap:wrap">
                 <input class="input font-mono"
                        id="search-admins-steamid"
+                       name="steamid"
                        type="text"
                        placeholder="STEAM_0:0:1234 or [U:1:1234]&hellip;"
                        data-testid="search-admins-steamid"
+                       value="{$active_filter_steamid|escape}"
                        style="flex:1;min-width:14rem"
                        autocomplete="off">
                 <select class="select"
                         id="search-admins-steam-match"
+                        name="steam_match"
                         data-testid="search-admins-steam-match"
                         aria-label="Steam ID match mode"
                         style="width:9rem">
-                    <option value="0" selected>Exact match</option>
-                    <option value="1">Partial match</option>
+                    <option value="0"{if $active_filter_steam_match != '1'} selected{/if}>Exact match</option>
+                    <option value="1"{if $active_filter_steam_match == '1'} selected{/if}>Partial match</option>
                 </select>
             </div>
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-steamid"
-                    data-search-key=""
-                    data-search-compose="steam">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
         </div>
 
         {if $can_editadmin}
-            <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+            <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
                 <label class="label" for="search-admins-admemail" style="grid-column:1;align-self:end">E-mail</label>
                 <input class="input"
                        id="search-admins-admemail"
+                       name="admemail"
                        type="email"
                        placeholder="Substring match against the panel e-mail&hellip;"
                        data-testid="search-admins-admemail"
+                       value="{$active_filter_admemail|escape}"
                        autocomplete="off">
-                <button type="submit"
-                        class="btn btn--secondary btn--sm"
-                        data-testid="search-admins-submit-admemail"
-                        data-search-key="admemail"
-                        data-search-from="search-admins-admemail">
-                    <i data-lucide="search" style="width:14px;height:14px"></i> Search
-                </button>
             </div>
         {/if}
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <div>
                 <label class="label" for="search-admins-webgroup">Web group</label>
                 <select class="select"
                         id="search-admins-webgroup"
+                        name="webgroup"
                         data-testid="search-admins-webgroup">
                     <option value="">&mdash;</option>
                     {foreach from=$webgroup_list item="webgrp"}
-                        <option value="{$webgrp.gid}">{$webgrp.name}</option>
+                        <option value="{$webgrp.gid}"{if $active_filter_webgroup == $webgrp.gid && $active_filter_webgroup != ''} selected{/if}>{$webgrp.name}</option>
                     {/foreach}
                 </select>
             </div>
             <div class="text-xs text-muted">Filter by panel group membership.</div>
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-webgroup"
-                    data-search-key="webgroup"
-                    data-search-from="search-admins-webgroup">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
         </div>
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <div>
                 <label class="label" for="search-admins-srvadmgroup">SourceMod admin group</label>
                 <select class="select"
                         id="search-admins-srvadmgroup"
+                        name="srvadmgroup"
                         data-testid="search-admins-srvadmgroup">
                     <option value="">&mdash;</option>
                     {foreach from=$srvadmgroup_list item="srvadmgrp"}
-                        <option value="{$srvadmgrp.name}">{$srvadmgrp.name}</option>
+                        <option value="{$srvadmgrp.name}"{if $active_filter_srvadmgroup == $srvadmgrp.name && $active_filter_srvadmgroup != ''} selected{/if}>{$srvadmgrp.name}</option>
                     {/foreach}
                 </select>
             </div>
             <div class="text-xs text-muted">Filter by SourceMod admin-group attachment.</div>
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-srvadmgroup"
-                    data-search-key="srvadmgroup"
-                    data-search-from="search-admins-srvadmgroup">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
         </div>
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <div>
                 <label class="label" for="search-admins-srvgroup">Server group</label>
                 <select class="select"
                         id="search-admins-srvgroup"
+                        name="srvgroup"
                         data-testid="search-admins-srvgroup">
                     <option value="">&mdash;</option>
                     {foreach from=$srvgroup_list item="srvgrp"}
-                        <option value="{$srvgrp.gid}">{$srvgrp.name}</option>
+                        <option value="{$srvgrp.gid}"{if $active_filter_srvgroup == $srvgrp.gid && $active_filter_srvgroup != ''} selected{/if}>{$srvgrp.name}</option>
                     {/foreach}
                 </select>
             </div>
             <div class="text-xs text-muted">Filter by server-group membership.</div>
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-srvgroup"
-                    data-search-key="srvgroup"
-                    data-search-from="search-admins-srvgroup">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
         </div>
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <div>
                 <label class="label" for="search-admins-admwebflag">Web permissions</label>
                 <select class="select"
                         id="search-admins-admwebflag"
+                        name="admwebflag[]"
                         data-testid="search-admins-admwebflag"
                         size="6"
                         multiple
-                        data-search-multi
                         style="height:auto">
                     {foreach from=$admwebflag_list item="admwebflag"}
-                        <option value="{$admwebflag.flag}">{$admwebflag.name}</option>
+                        <option value="{$admwebflag.flag}"{if in_array($admwebflag.flag, $active_filter_admwebflag)} selected{/if}>{$admwebflag.name}</option>
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as a comma-joined list of <code>ADMIN_*</code> constant names.</div>
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-admwebflag"
-                    data-search-key="admwebflag"
-                    data-search-multi-from="search-admins-admwebflag">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
+            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as repeated <code>admwebflag[]=ADMIN_*</code> parameters.</div>
         </div>
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <div>
                 <label class="label" for="search-admins-admsrvflag">Server permissions</label>
                 <select class="select"
                         id="search-admins-admsrvflag"
+                        name="admsrvflag[]"
                         data-testid="search-admins-admsrvflag"
                         size="6"
                         multiple
-                        data-search-multi
                         style="height:auto">
                     {foreach from=$admsrvflag_list item="admsrvflag"}
-                        <option value="{$admsrvflag.flag}">{$admsrvflag.name}</option>
+                        <option value="{$admsrvflag.flag}"{if in_array($admsrvflag.flag, $active_filter_admsrvflag)} selected{/if}>{$admsrvflag.name}</option>
                     {/foreach}
                 </select>
             </div>
-            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as a comma-joined list of <code>SM_*</code> constant names.</div>
-            <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-admsrvflag"
-                    data-search-key="admsrvflag"
-                    data-search-multi-from="search-admins-admsrvflag">
-                <i data-lucide="search" style="width:14px;height:14px"></i> Search
-            </button>
+            <div class="text-xs text-muted">Hold <kbd data-modkey>Ctrl</kbd> to multi-select. Submits the current selection as repeated <code>admsrvflag[]=SM_*</code> parameters.</div>
         </div>
 
-        <div class="grid gap-3" style="grid-template-columns:12rem 1fr auto;align-items:end">
+        <div class="grid gap-3" style="grid-template-columns:12rem 1fr;align-items:end">
             <div>
                 <label class="label" for="search-admins-server">Server</label>
                 <select class="select"
                         id="search-admins-server"
+                        name="server"
                         data-testid="search-admins-server">
                     <option value="">&mdash;</option>
                     {foreach from=$server_list item="server"}
@@ -273,16 +225,20 @@
                                 data-sid="{$server.sid}"
                                 data-ip="{$server.ip}"
                                 data-port="{$server.port}"
-                                data-server-host>Loading&hellip; ({$server.ip}:{$server.port})</option>
+                                data-server-host{if $active_filter_server == $server.sid && $active_filter_server != ''} selected{/if}>Loading&hellip; ({$server.ip}:{$server.port})</option>
                     {/foreach}
                 </select>
             </div>
             <div class="text-xs text-muted">Show admins with explicit access to the selected server. Hostnames load asynchronously.</div>
+        </div>
+
+        <div class="flex gap-2 justify-end" style="border-top:1px solid var(--border);padding-top:0.75rem">
+            <a class="btn btn--ghost btn--sm"
+               href="?p=admin&amp;c=admins"
+               data-testid="search-admins-reset">Clear filters</a>
             <button type="submit"
-                    class="btn btn--secondary btn--sm"
-                    data-testid="search-admins-submit-server"
-                    data-search-key="server"
-                    data-search-from="search-admins-server">
+                    class="btn btn--primary btn--sm"
+                    data-testid="search-admins-submit">
                 <i data-lucide="search" style="width:14px;height:14px"></i> Search
             </button>
         </div>
@@ -290,23 +246,12 @@
 </form>
 
 {*
-    Inline submit dispatcher + LoadServerHost replacement.
+    LoadServerHost replacement (vanilla, post-#1123 D1).
 
-    Submit dispatcher: each per-row button declares its search
-    criterion via `data-search-key` and either points at a single
-    source field via `data-search-from`, a multi-select source via
-    `data-search-multi-from`, or composes the SteamID exact/partial
-    pair via `data-search-compose="steam"`. On click, the hidden
-    `advType` / `advSearch` inputs are populated and the form
-    submits natively (no preventDefault on the success path), so the
-    browser navigates to the consumer URL with the correct query
-    string. Empty selections cancel the submit.
-
-    LoadServerHost replacement: the legacy box appended a
-    server-built `<script>LoadServerHost(...)</script>` blob that
-    called the (now-gone) sourcebans.js helper per option. We replace
-    it with one `sb.api.call(Actions.ServersHostPlayers, {sid})` per
-    `<option data-server-host>` option, mirroring B5's pattern in
+    The legacy box appended a server-built `<script>LoadServerHost(...)</script>`
+    blob that called the (now-gone) sourcebans.js helper per option. We
+    replace it with one `sb.api.call(Actions.ServersHostPlayers, {sid})`
+    per `<option data-server-host>` option, mirroring B5's pattern in
     page_servers.tpl. Resolved hostnames replace the loading text in
     place; failures fall back to "Offline (ip:port)".
 *}
@@ -316,56 +261,6 @@
     'use strict';
     var form = document.querySelector('[data-testid="search-admins-form"]');
     if (!(form instanceof HTMLFormElement)) return;
-
-    var typeField = form.querySelector('[data-search-type]');
-    var valueField = form.querySelector('[data-search-value]');
-    if (!(typeField instanceof HTMLInputElement) || !(valueField instanceof HTMLInputElement)) return;
-
-    /**
-     * @param {Element} btn
-     * @returns {{ key: string, value: string }}
-     */
-    function readPair(btn) {
-        var compose = btn.getAttribute('data-search-compose');
-        if (compose === 'steam') {
-            var sid = document.getElementById('search-admins-steamid');
-            var match = document.getElementById('search-admins-steam-match');
-            var sval = (sid instanceof HTMLInputElement) ? sid.value.trim() : '';
-            var mval = (match instanceof HTMLSelectElement) ? match.value : '0';
-            return { key: (mval === '1' ? 'steam' : 'steamid'), value: sval };
-        }
-        var multiId = btn.getAttribute('data-search-multi-from');
-        if (multiId) {
-            var msel = document.getElementById(multiId);
-            if (msel instanceof HTMLSelectElement && msel.multiple) {
-                var values = [];
-                Array.prototype.forEach.call(msel.selectedOptions, function (o) {
-                    if (o instanceof HTMLOptionElement && o.value !== '') values.push(o.value);
-                });
-                return { key: btn.getAttribute('data-search-key') || '', value: values.join(',') };
-            }
-            return { key: '', value: '' };
-        }
-        var fromId = btn.getAttribute('data-search-from');
-        if (!fromId) return { key: '', value: '' };
-        var src = document.getElementById(fromId);
-        if (src instanceof HTMLInputElement || src instanceof HTMLSelectElement || src instanceof HTMLTextAreaElement) {
-            return { key: btn.getAttribute('data-search-key') || '', value: src.value.trim() };
-        }
-        return { key: '', value: '' };
-    }
-
-    Array.prototype.forEach.call(form.querySelectorAll('button[data-search-compose], button[data-search-from], button[data-search-multi-from]'), function (btn) {
-        btn.addEventListener('click', function (ev) {
-            var pair = readPair(btn);
-            if (pair.key === '' || pair.value === '' || pair.value.replace(/[,]/g, '') === '') {
-                ev.preventDefault();
-                return;
-            }
-            typeField.value = pair.key;
-            valueField.value = pair.value;
-        });
-    });
 
     if (typeof sb === 'undefined' || !sb || !sb.api || typeof Actions === 'undefined') {
         return;

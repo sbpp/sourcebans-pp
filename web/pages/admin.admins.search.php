@@ -139,13 +139,62 @@ $serverflag = [
     ['name' => 'Custom flag 6',  'flag' => 'SM_CUSTOM6'],
 ];
 
+/*
+ * #1207 ADM-4: pre-fill every input from the URL so the form reflects
+ * the request that produced the visible result list. admin.admins.php
+ * runs the legacy `advType=…&advSearch=…` shim before this file is
+ * loaded, so reading `$_GET` here picks up modern submits *and*
+ * translated legacy URLs in the same shape.
+ *
+ * Multi-select filters accept either the legacy comma-joined string
+ * (`?admwebflag=ADMIN_OWNER,ADMIN_LIST_ADMINS`, the pre-fix wire
+ * shape) or the new repeated-key array (`?admwebflag[]=ADMIN_OWNER&…`).
+ * Both are normalised to a list of validated constant names; the
+ * template uses `in_array` to mark the matching option rows.
+ */
+$rawWebFlag = $_GET['admwebflag'] ?? null;
+if (is_string($rawWebFlag)) {
+    $rawWebFlag = explode(',', $rawWebFlag);
+}
+$activeWebFlags = [];
+if (is_array($rawWebFlag)) {
+    foreach ($rawWebFlag as $f) {
+        if (is_string($f) && preg_match('/^ADMIN_[A-Z_]+$/', $f)) {
+            $activeWebFlags[] = $f;
+        }
+    }
+}
+
+$rawSrvFlag = $_GET['admsrvflag'] ?? null;
+if (is_string($rawSrvFlag)) {
+    $rawSrvFlag = explode(',', $rawSrvFlag);
+}
+$activeSrvFlags = [];
+if (is_array($rawSrvFlag)) {
+    foreach ($rawSrvFlag as $f) {
+        if (is_string($f) && preg_match('/^SM_[A-Z_]+$/', $f)) {
+            $activeSrvFlags[] = $f;
+        }
+    }
+}
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsSearchView(
-    can_editadmin:    $userbank->HasAccess(ADMIN_EDIT_ADMINS | ADMIN_OWNER),
-    server_list:      $servers,
-    server_script:    $serverscript,
-    webgroup_list:    $webgroups,
-    srvadmgroup_list: $srvadmgroups,
-    srvgroup_list:    $srvgroups,
-    admwebflag_list:  $webflag,
-    admsrvflag_list:  $serverflag,
+    can_editadmin:             $userbank->HasAccess(ADMIN_EDIT_ADMINS | ADMIN_OWNER),
+    server_list:               $servers,
+    server_script:             $serverscript,
+    webgroup_list:             $webgroups,
+    srvadmgroup_list:          $srvadmgroups,
+    srvgroup_list:             $srvgroups,
+    admwebflag_list:           $webflag,
+    admsrvflag_list:           $serverflag,
+    active_filter_name:        is_string($_GET['name']        ?? null) ? (string) $_GET['name']        : '',
+    active_filter_steamid:     is_string($_GET['steamid']     ?? null) ? (string) $_GET['steamid']     : '',
+    active_filter_steam_match: is_scalar($_GET['steam_match'] ?? null) ? (string) $_GET['steam_match'] : '0',
+    active_filter_admemail:    is_string($_GET['admemail']    ?? null) ? (string) $_GET['admemail']    : '',
+    active_filter_webgroup:    is_scalar($_GET['webgroup']    ?? null) ? (string) $_GET['webgroup']    : '',
+    active_filter_srvadmgroup: is_string($_GET['srvadmgroup'] ?? null) ? (string) $_GET['srvadmgroup'] : '',
+    active_filter_srvgroup:    is_scalar($_GET['srvgroup']    ?? null) ? (string) $_GET['srvgroup']    : '',
+    active_filter_server:      is_scalar($_GET['server']      ?? null) ? (string) $_GET['server']      : '',
+    active_filter_admwebflag:  $activeWebFlags,
+    active_filter_admsrvflag:  $activeSrvFlags,
 ));

@@ -21,10 +21,19 @@ namespace Sbpp\View;
  * pulled in by `page_admin_admins_list.tpl` via the
  * `{load_template file="admin.admins.search"}` Smarty plugin.
  *
- * The form submits as a plain `GET` to
- * `?p=admin&c=admins&advSearch=…&advType=…`, which is the wire format
- * `web/pages/admin.admins.php` already parses. No CSRF field — search
- * is read-only.
+ * The form submits as a plain `GET` to `?p=admin&c=admins` with one
+ * parameter per populated filter (`name`, `steamid`, `steam_match`,
+ * `admemail`, `webgroup`, `srvadmgroup`, `srvgroup`, `admwebflag[]`,
+ * `admsrvflag[]`, `server`). admin.admins.php AND-combines every
+ * non-empty filter — see #1207 ADM-4. No CSRF field — search is
+ * read-only.
+ *
+ * `$active_filter_*` mirror the corresponding $_GET keys so the
+ * template can pre-fill the form without splattering
+ * `$smarty.get.X|default:''` everywhere; the page handler
+ * (admin.admins.search.php) is the only place that knows whether a
+ * given $_GET shape came from a modern submit, a legacy
+ * `advType=…&advSearch=…` URL, or nothing at all.
  */
 final class AdminAdminsSearchView extends View
 {
@@ -50,11 +59,16 @@ final class AdminAdminsSearchView extends View
      * @param list<array{name: string, flag: string}>     $admwebflag_list
      *     Web permission flags as {label, ADMIN_* constant name} pairs
      *     for the "Search by web permission" multi-select. Submitted as
-     *     a comma-joined `ADMIN_*` constant-name string the consumer
-     *     handler resolves with `constant()`.
+     *     repeated `admwebflag[]=ADMIN_*` parameters; the consumer
+     *     handler resolves each via `constant()`.
      * @param list<array{name: string, flag: string}>     $admsrvflag_list
      *     SourceMod permission flags as {label, SM_* constant name}
      *     pairs for the "Search by server permission" multi-select.
+     * @param list<string> $active_filter_admwebflag Pre-filled
+     *     `admwebflag[]` values; the template `in_array`s against this
+     *     to mark the matching `<option selected>` rows.
+     * @param list<string> $active_filter_admsrvflag Pre-filled
+     *     `admsrvflag[]` values.
      */
     public function __construct(
         public readonly bool $can_editadmin,
@@ -65,6 +79,16 @@ final class AdminAdminsSearchView extends View
         public readonly array $srvgroup_list,
         public readonly array $admwebflag_list,
         public readonly array $admsrvflag_list,
+        public readonly string $active_filter_name = '',
+        public readonly string $active_filter_steamid = '',
+        public readonly string $active_filter_steam_match = '0',
+        public readonly string $active_filter_admemail = '',
+        public readonly string $active_filter_webgroup = '',
+        public readonly string $active_filter_srvadmgroup = '',
+        public readonly string $active_filter_srvgroup = '',
+        public readonly string $active_filter_server = '',
+        public readonly array $active_filter_admwebflag = [],
+        public readonly array $active_filter_admsrvflag = [],
     ) {
     }
 }

@@ -31,114 +31,236 @@ new AdminTabs([
 
 $AdminsPerPage = SB_BANS_PER_PAGE;
 $page = 1;
-$join = "";
-$where = "";
-$whereParams = [];
-$advSearchString = "";
 if (isset($_GET['page']) && $_GET['page'] > 0) {
     $page = intval($_GET['page']);
 }
-if (isset($_GET['advSearch'])) {
-    $value = $_GET['advSearch'];
-    $type = $_GET['advType'];
-    switch ($type) {
-        case "name":
-            $where = " AND ADM.user LIKE ?";
-            $whereParams[] = '%' . $value . '%';
-            break;
-        case "steamid":
-            $where = " AND ADM.authid = ?";
-            $whereParams[] = $value;
-            break;
-        case "steam":
-            $where = " AND ADM.authid LIKE ?";
-            $whereParams[] = '%' . $value . '%';
-            break;
-        case "admemail":
-            $where = " AND ADM.email LIKE ?";
-            $whereParams[] = '%' . $value . '%';
-            break;
-        case "webgroup":
-            $where = " AND ADM.gid = ?";
-            $whereParams[] = $value;
-            break;
-        case "srvadmgroup":
-            $where = " AND ADM.srv_group = ?";
-            $whereParams[] = $value;
-            break;
-        case "srvgroup":
-            $where = " AND SG.srv_group_id = ?";
-            $whereParams[] = $value;
-            $join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS SG ON SG.admin_id = ADM.aid";
-            break;
-        case "admwebflag":
-            $findflags = explode(",", $value);
-            foreach ($findflags as $flag) {
-                $flags[] = constant($flag);
-            }
-            $flagstring = implode('|', $flags);
-            $alladmins = $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0")->resultset();
-            $accessAids = [];
-            foreach ($alladmins as $row) {
-                if ($userbank->HasAccess($flagstring, $row['aid'])) {
-                    $accessAids[] = (int) $row['aid'];
-                }
-            }
-            if (empty($accessAids)) {
-                $where = " AND 0";
-            } else {
-                $placeholders = implode(',', array_fill(0, count($accessAids), '?'));
-                $where = " AND ADM.aid IN($placeholders)";
-                $whereParams = array_merge($whereParams, $accessAids);
+
+/*
+ * #1207 ADM-4: collapse the eight per-row Search buttons into one
+ * combined filter form and AND the populated filters server-side.
+ *
+ * The new wire format reads each filter from its own query parameter
+ * (`name`, `steamid`, `steam_match`, `admemail`, `webgroup`,
+ * `srvadmgroup`, `srvgroup`, `admwebflag[]`, `admsrvflag[]`, `server`)
+ * so a single GET submit carries the full filter snapshot. URL-shareable
+ * searches are preserved by the legacy-shim block below: any incoming
+ * `?advType=…&advSearch=…` is translated into the new shape so old
+ * bookmarks and cross-page links keep working.
+ *
+ * Server-side filters are AND-combined: a request with two non-empty
+ * filters narrows to admins matching both, which matches the typical
+ * search-UI mental model the audit called out (an admin in group X
+ * AND with permission Y). The pre-fix shape only honoured one filter
+ * at a time and silently dropped the rest.
+ */
+$where        = "";
+$whereParams  = [];
+$joinAdminsServersGroups = false;
+$joinServersGroups       = false;
+/** @var array<string, string|list<string>> $activeFilters */
+$activeFilters = [];
+
+// Legacy `advType=…&advSearch=…` URLs still flow through any external
+// links / bookmarks. Translate them into the modern shape so the rest
+// of this handler operates on a single, consistent input source.
+if (isset($_GET['advType']) && isset($_GET['advSearch']) && $_GET['advSearch'] !== '') {
+    /** @var string $legacyType */
+    $legacyType  = (string) $_GET['advType'];
+    /** @var string $legacyValue */
+    $legacyValue = (string) $_GET['advSearch'];
+    switch ($legacyType) {
+        case 'name':
+        case 'admemail':
+        case 'webgroup':
+        case 'srvadmgroup':
+        case 'srvgroup':
+        case 'server':
+        case 'steamid':
+            if (!isset($_GET[$legacyType]) || $_GET[$legacyType] === '') {
+                $_GET[$legacyType] = $legacyValue;
             }
             break;
-        case "admsrvflag":
-            $findflags = explode(",", $value);
-            foreach ($findflags as $flag) {
-                $flags[] = constant($flag);
-            }
-            $alladmins = $GLOBALS['PDO']->query("SELECT aid, authid FROM `:prefix_admins` WHERE aid > 0")->resultset();
-            $accessAids = [];
-            foreach ($alladmins as $row) {
-                $matched = false;
-                foreach ($flags as $fla) {
-                    if ($userbank->HasAccess($fla, $row['authid'])) {
-                        $matched = true;
-                        break;
-                    }
-                }
-                if (!$matched && $userbank->HasAccess(SM_ROOT, $row['authid'])) {
-                    $matched = true;
-                }
-                if ($matched) {
-                    $accessAids[] = (int) $row['aid'];
-                }
-            }
-            if (empty($accessAids)) {
-                $where = " AND 0";
-            } else {
-                $placeholders = implode(',', array_fill(0, count($accessAids), '?'));
-                $where = " AND ADM.aid IN($placeholders)";
-                $whereParams = array_merge($whereParams, $accessAids);
+        case 'steam':
+            // The legacy form distinguished exact (`steamid`) from
+            // partial (`steam`) matches as two distinct advTypes. The
+            // modern form folds both onto `steamid` + `steam_match`.
+            if (!isset($_GET['steamid']) || $_GET['steamid'] === '') {
+                $_GET['steamid']     = $legacyValue;
+                $_GET['steam_match'] = '1';
             }
             break;
-        case "server":
-            $where = " AND (ASG.server_id = ? OR SG.server_id = ?)";
-            $whereParams[] = $value;
-            $whereParams[] = $value;
-            $join = " LEFT JOIN `" . DB_PREFIX . "_admins_servers_groups` AS ASG ON ASG.admin_id = ADM.aid LEFT JOIN `" . DB_PREFIX . "_servers_groups` AS SG ON SG.group_id = ASG.srv_group_id";
-            break;
-        default:
-            $_GET['advSearch'] = "";
-            $_GET['advType'] = "";
-            $where = "";
+        case 'admwebflag':
+        case 'admsrvflag':
+            if (!isset($_GET[$legacyType]) || $_GET[$legacyType] === '' || (is_array($_GET[$legacyType]) && empty($_GET[$legacyType]))) {
+                $_GET[$legacyType] = explode(',', $legacyValue);
+            }
             break;
     }
-        $advSearchString = "&advSearch=".$_GET['advSearch']."&advType=".$_GET['advType'];
 }
+
+// 1) Login name (substring against ADM.user).
+if (!empty($_GET['name']) && is_string($_GET['name'])) {
+    $where                  .= " AND ADM.user LIKE ?";
+    $whereParams[]           = '%' . $_GET['name'] . '%';
+    $activeFilters['name']   = (string) $_GET['name'];
+}
+
+// 2) Steam ID (exact or partial against ADM.authid).
+if (!empty($_GET['steamid']) && is_string($_GET['steamid'])) {
+    $partial = isset($_GET['steam_match']) && (string) $_GET['steam_match'] === '1';
+    if ($partial) {
+        $where        .= " AND ADM.authid LIKE ?";
+        $whereParams[] = '%' . $_GET['steamid'] . '%';
+    } else {
+        $where        .= " AND ADM.authid = ?";
+        $whereParams[] = $_GET['steamid'];
+    }
+    $activeFilters['steamid']     = (string) $_GET['steamid'];
+    $activeFilters['steam_match'] = $partial ? '1' : '0';
+}
+
+// 3) E-mail (substring, gated on the same flag the search box gates the
+// input field on so URL forgery can't bypass the visibility gate).
+if (!empty($_GET['admemail']) && is_string($_GET['admemail']) && $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
+    $where                       .= " AND ADM.email LIKE ?";
+    $whereParams[]                = '%' . $_GET['admemail'] . '%';
+    $activeFilters['admemail']    = (string) $_GET['admemail'];
+}
+
+// 4) Web group (`:prefix_groups.gid` -> `:prefix_admins.gid`).
+if (!empty($_GET['webgroup']) && is_scalar($_GET['webgroup'])) {
+    $where                       .= " AND ADM.gid = ?";
+    $whereParams[]                = (int) $_GET['webgroup'];
+    $activeFilters['webgroup']    = (string) $_GET['webgroup'];
+}
+
+// 5) SourceMod admin group (matched by name against ADM.srv_group).
+if (!empty($_GET['srvadmgroup']) && is_string($_GET['srvadmgroup'])) {
+    $where                          .= " AND ADM.srv_group = ?";
+    $whereParams[]                   = $_GET['srvadmgroup'];
+    $activeFilters['srvadmgroup']    = $_GET['srvadmgroup'];
+}
+
+// 6) Server group (`:prefix_groups.gid` -> `:prefix_admins_servers_groups.srv_group_id`).
+if (!empty($_GET['srvgroup']) && is_scalar($_GET['srvgroup'])) {
+    $joinAdminsServersGroups       = true;
+    $where                        .= " AND ASG.srv_group_id = ?";
+    $whereParams[]                 = (int) $_GET['srvgroup'];
+    $activeFilters['srvgroup']     = (string) $_GET['srvgroup'];
+}
+
+// 7) Web permission flags (multi). Submitted as either `admwebflag[]=X&admwebflag[]=Y`
+// or the legacy comma-joined string. Resolve each name to its bit and
+// OR-combine into a single bitmask, then narrow ADM.aid to admins with
+// access — same per-admin permission probe the legacy code used.
+$rawWebFlags = $_GET['admwebflag'] ?? null;
+if (is_string($rawWebFlags)) {
+    $rawWebFlags = explode(',', $rawWebFlags);
+}
+if (is_array($rawWebFlags)) {
+    /** @var list<string> $webFlagNames */
+    $webFlagNames = [];
+    foreach ($rawWebFlags as $candidate) {
+        if (is_string($candidate) && preg_match('/^ADMIN_[A-Z_]+$/', $candidate) && defined($candidate)) {
+            $webFlagNames[] = $candidate;
+        }
+    }
+    if (!empty($webFlagNames)) {
+        $flagBits = array_map(fn(string $name): int => (int) constant($name), $webFlagNames);
+        $flagstring = implode('|', $flagBits);
+        $alladmins = $GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE aid > 0")->resultset();
+        $accessAids = [];
+        foreach ($alladmins as $row) {
+            if ($userbank->HasAccess($flagstring, $row['aid'])) {
+                $accessAids[] = (int) $row['aid'];
+            }
+        }
+        if (empty($accessAids)) {
+            $where .= " AND 0";
+        } else {
+            $placeholders  = implode(',', array_fill(0, count($accessAids), '?'));
+            $where        .= " AND ADM.aid IN($placeholders)";
+            $whereParams   = array_merge($whereParams, $accessAids);
+        }
+        $activeFilters['admwebflag'] = $webFlagNames;
+    }
+}
+
+// 8) Server permission flags (multi).
+$rawSrvFlags = $_GET['admsrvflag'] ?? null;
+if (is_string($rawSrvFlags)) {
+    $rawSrvFlags = explode(',', $rawSrvFlags);
+}
+if (is_array($rawSrvFlags)) {
+    /** @var list<string> $srvFlagNames */
+    $srvFlagNames = [];
+    foreach ($rawSrvFlags as $candidate) {
+        if (is_string($candidate) && preg_match('/^SM_[A-Z_]+$/', $candidate) && defined($candidate)) {
+            $srvFlagNames[] = $candidate;
+        }
+    }
+    if (!empty($srvFlagNames)) {
+        $flagBits = array_map(fn(string $name): int => (int) constant($name), $srvFlagNames);
+        $alladmins = $GLOBALS['PDO']->query("SELECT aid, authid FROM `:prefix_admins` WHERE aid > 0")->resultset();
+        $accessAids = [];
+        foreach ($alladmins as $row) {
+            $matched = false;
+            foreach ($flagBits as $fla) {
+                if ($userbank->HasAccess($fla, $row['authid'])) {
+                    $matched = true;
+                    break;
+                }
+            }
+            if (!$matched && $userbank->HasAccess(SM_ROOT, $row['authid'])) {
+                $matched = true;
+            }
+            if ($matched) {
+                $accessAids[] = (int) $row['aid'];
+            }
+        }
+        if (empty($accessAids)) {
+            $where .= " AND 0";
+        } else {
+            $placeholders  = implode(',', array_fill(0, count($accessAids), '?'));
+            $where        .= " AND ADM.aid IN($placeholders)";
+            $whereParams   = array_merge($whereParams, $accessAids);
+        }
+        $activeFilters['admsrvflag'] = $srvFlagNames;
+    }
+}
+
+// 9) Server (`:prefix_servers.sid`). Either via direct admin->server
+// access (`ASG.server_id`) or via the server's group attachment
+// (`SGS.server_id`). Reuses the ASG join above when "server group" is
+// also active so the WHERE still ANDs cleanly.
+if (!empty($_GET['server']) && is_scalar($_GET['server'])) {
+    $joinAdminsServersGroups   = true;
+    $joinServersGroups         = true;
+    $where                    .= " AND (ASG.server_id = ? OR SGS.server_id = ?)";
+    $whereParams[]             = (int) $_GET['server'];
+    $whereParams[]             = (int) $_GET['server'];
+    $activeFilters['server']   = (string) $_GET['server'];
+}
+
+$join = "";
+if ($joinAdminsServersGroups) {
+    $join .= " LEFT JOIN `:prefix_admins_servers_groups` AS ASG ON ASG.admin_id = ADM.aid";
+}
+if ($joinServersGroups) {
+    $join .= " LEFT JOIN `:prefix_servers_groups` AS SGS ON SGS.group_id = ASG.srv_group_id";
+}
+
+// Pagination needs the active-filter snapshot baked into every "next"
+// page link so subsequent navigation preserves the search.
+// `http_build_query` handles array values (`admwebflag[]=…&admwebflag[]=…`)
+// natively, so multi-select filters round-trip without manual joining.
+$advSearchString = empty($activeFilters) ? '' : '&' . http_build_query($activeFilters);
 $admins = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage))->resultset($whereParams);
-// quick fix for the server search showing admins mulitple times.
-if (isset($_GET['advSearch']) && isset($_GET['advType']) && $_GET['advType'] == 'server') {
+// The server filter joins through `:prefix_admins_servers_groups` and
+// `:prefix_servers_groups`, which can produce duplicate ADM.aid rows
+// when an admin reaches the same server via multiple paths. Dedupe
+// here to keep the rendered list one-row-per-admin.
+if (isset($activeFilters['server'])) {
     $aadm = [];
     $num = 0;
     foreach ($admins as $aadmin) {
@@ -223,12 +345,23 @@ if (strlen($next) > 0) {
 
 $pages = ceil($admin_count / $AdminsPerPage);
 if ($pages > 1) {
-    // Issue #1113: see page.banlist.php for the layered-escape rationale.
-    $advSearchJs = htmlspecialchars(addslashes((string)($_GET['advSearch'] ?? '')), ENT_QUOTES, 'UTF-8');
-    $advTypeJs   = htmlspecialchars(addslashes((string)($_GET['advType']   ?? '')), ENT_QUOTES, 'UTF-8');
-    $admin_nav .= '&nbsp;<select onchange="changePage(this,\'A\',\'' . $advSearchJs . '\',\'' . $advTypeJs . '\');">';
+    // The dropdown's `onchange` navigates to the keyed page directly.
+    // The legacy code reached for `changePage(this, 'A', advSearch,
+    // advType)` from `sourcebans.js`, but the bulk file was removed at
+    // #1123 D1 — clicking the picker therefore raised `ReferenceError`
+    // on origin/main. Inline a vanilla snippet that builds the URL
+    // from the same `$advSearchString` the prev/next links use, so the
+    // multi-filter snapshot round-trips through the picker too.
+    //
+    // `htmlspecialchars` on the base URL is what stops the ADM-4
+    // multi-filter `&admwebflag[]=…` from breaking out of the
+    // attribute string.
+    $baseUrl    = 'index.php?p=admin&c=admins' . $advSearchString . '&page=';
+    $baseUrlAttr = htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8');
+    $admin_nav .= '&nbsp;<select onchange="window.location.href=\'' . $baseUrlAttr . '\'+encodeURIComponent(this.value);"'
+        . ' aria-label="Jump to page">';
     for ($i = 1; $i <= $pages; $i++) {
-        if (isset($_GET['page']) && $i === $_GET['page']) {
+        if (isset($_GET['page']) && $i === (int) $_GET['page']) {
             $admin_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
             continue;
         }
