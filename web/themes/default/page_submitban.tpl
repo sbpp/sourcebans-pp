@@ -258,11 +258,12 @@
 {*
     #1207 PUB-4: client-side either/or validation for Steam ID + IP.
 
-    Server-side validation in `web/pages/page.submit.php` already
-    enforces the same rule (and stays the source of truth — JS-off
-    visitors still get a server bounce with the inline toast emitted by
-    `emitSubmitToast`). This pre-flight just keeps the user from
-    paying the round-trip when the rule is trivially violated.
+    Server-side validation in `web/pages/page.submit.php` enforces the
+    same rule (the matching `(SteamID empty + BanIP empty)` branch
+    flips `$validsubmit = false` and pushes the inline toast through
+    `emitSubmitToast`), so it stays the source of truth — JS-off
+    visitors get the same bounce. This pre-flight just keeps the user
+    from paying the round-trip when the rule is trivially violated.
 
     Inline rather than a `web/scripts/<page>.js` file because the
     contract is one form on one page and the canonical pattern for new

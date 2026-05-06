@@ -60,6 +60,15 @@ final class BanListView extends View
         public readonly bool $can_delete,
         public readonly bool $can_export,
         public readonly string $admin_postkey,
+        // #1207: gates the first-run empty-state CTA in `page_bans.tpl`
+        // (admins with `ADMIN_ADD_BAN` see "Add a ban", everyone else
+        // sees the body copy without the link). Splatted from
+        // `Perms::for($userbank)` in `web/pages/page.banlist.php`.
+        public readonly bool $can_add_ban,
+        // #1207: detects whether the current request applied any filter
+        // (search text / advSearch / hide-inactive). Drives the
+        // first-run-vs-filtered split in the empty-state shape.
+        public readonly bool $is_filtered,
     ) {
     }
 }

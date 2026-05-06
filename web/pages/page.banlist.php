@@ -974,6 +974,17 @@ if (isset($_GET["comment"])) {
 
 unset($_SESSION['CountryFetchHndl']);
 
+// #1207: detect whether the current request is filtered (search box,
+// advanced search, hide-inactive toggle). Drives the
+// first-run-vs-filtered split in the empty-state shape — when zero
+// rows AND no filter, the empty state shows "no bans recorded yet"
+// with an "Add a ban" CTA gated on can_add_ban; with a filter
+// active, it stays "No bans match those filters" + "Clear filters".
+$banlistIsFiltered =
+    (isset($_GET['searchText']) && (string) $_GET['searchText'] !== '')
+    || (isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== '')
+    || isset($_SESSION['hideinactive']);
+
 Renderer::render($theme, new BanListView(
     ban_list:        $bans,
     ban_nav:         $ban_nav,
@@ -998,4 +1009,6 @@ Renderer::render($theme, new BanListView(
     can_delete:      (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN),
     can_export:      (bool) $userbank->HasAccess(ADMIN_OWNER) || Config::getBool('config.exportpublic'),
     admin_postkey:   $_SESSION['banlist_postkey'],
+    can_add_ban:     (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    is_filtered:     $banlistIsFiltered,
 ));

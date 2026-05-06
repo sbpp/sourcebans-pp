@@ -40,9 +40,17 @@
         </div>
 
         {if $protest_list_archiv|@count == 0}
+            {* #1207 empty-state unification — read-only / closed-loop
+               surface (accepted / rejected / archived rows land here),
+               so no CTA. Kept the testid hook for any spec watching for
+               the archive's empty state. *}
             <div class="card" data-testid="protests-archive-empty">
-                <div class="card__body">
-                    <p class="text-sm text-muted m-0">The protest archive is empty.</p>
+                <div class="empty-state">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="archive" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">Protest archive is empty</h2>
+                    <p class="empty-state__body">Once protests are accepted, rejected, or archived, they'll move here for the record.</p>
                 </div>
             </div>
         {else}

@@ -78,6 +78,14 @@ final class CommsListView extends View
         public readonly bool $can_edit_comm,
         public readonly bool $can_unmute_gag,
         public readonly bool $can_delete_comm,
+        // #1207: detects whether the current request applied any filter
+        // (search text / server / time / state / type / hide-inactive).
+        // Drives the first-run-vs-filtered split in the empty-state
+        // shape — when zero rows AND no filter, the empty state shows
+        // "no comm blocks recorded yet" with an "Add a comm block" CTA;
+        // with a filter, it stays "No comm blocks match those filters"
+        // + "Clear filters".
+        public readonly bool $is_filtered,
         // Legacy template variables — preserved on the View (rather
         // than left as raw $theme->assign() calls in the handler) so
         // SmartyTemplateRule can verify any third-party theme that

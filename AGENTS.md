@@ -437,14 +437,24 @@ result is structural (no rows exist anywhere) or filter-induced
 - **first-run** (no data exists): icon + short title ("No servers
   configured yet") + one-line body explaining what will appear here +
   a primary CTA gated on the appropriate `ADMIN_*` flag (e.g.
-  `dashboard-recent-bans-empty-add`, `servers-empty-add`).
-  Read-only streams (e.g. "Latest blocked attempts") get the same
-  card layout but **no** CTA — there's no admin action that seeds it.
+  `dashboard-recent-bans-empty-add`, `servers-empty-add`,
+  `banlist-empty-add`, `comms-empty-add`). Mark the container with
+  `data-filtered="false"`. Read-only streams (e.g. "Latest blocked
+  attempts", admin submission/protest archives) get the same card
+  layout but **no** CTA — there's no admin action that seeds them.
 - **filtered** (data exists, filter excluded everything): icon +
   short title ("No bans match those filters") + one-line body + a
   secondary "Clear filters" CTA that drops the user back at the
-  unfiltered route. Add `data-filtered="true"` on the empty-state
-  container so tests can disambiguate the two shapes.
+  unfiltered route. Mark the container with `data-filtered="true"`.
+
+Surfaces that mix the two (banlist, commslist, audit log) compute an
+`$is_filtered` flag in the page handler from the active `_GET` /
+session params and branch the entire empty-state block on it; the
+View DTO carries the flag. See `page.banlist.php` /
+`page.commslist.php` / `page_admin_audit.tpl` for the reference
+shapes. Tests anchor on the `data-filtered` attribute (`[data-filtered="false"]`
+for the first-run shape, `[data-filtered="true"]` for the filtered
+shape) — never on visible copy.
 
 Use the shared `.empty-state` / `.empty-state__icon` /
 `.empty-state__title` / `.empty-state__body` /

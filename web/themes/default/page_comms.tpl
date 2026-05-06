@@ -208,12 +208,14 @@
                         </td>
                     </tr>
                 {foreachelse}
-                    {* #1207 empty-state unification — filter-aware empty.
-                       Comm blocks live behind a search box + server / time
-                       filters + chip group, so zero rows means the user's
-                       filter is too narrow. The CTA is a "Clear filters"
-                       reset that drops every $_GET param. *}
+                    {* #1207 empty-state unification — first-run vs filtered.
+                       `$is_filtered` flips on any of search / server / time /
+                       state / type / hide-inactive (see page.commslist.php
+                       for the predicate). With zero rows AND no filter we
+                       fall through to the first-run shape (CTA gated on
+                       `can_add_comm`); otherwise it stays "Clear filters". *}
                     <tr>
+                        {if $is_filtered}
                         <td colspan="9"
                             style="padding:0"
                             data-testid="comms-empty"
@@ -234,6 +236,30 @@
                                 </div>
                             </div>
                         </td>
+                        {else}
+                        <td colspan="9"
+                            style="padding:0"
+                            data-testid="comms-empty"
+                            data-filtered="false">
+                            <div class="empty-state">
+                                <span class="empty-state__icon" aria-hidden="true">
+                                    <i data-lucide="mic-off" style="width:18px;height:18px"></i>
+                                </span>
+                                <h2 class="empty-state__title">No comm blocks recorded yet</h2>
+                                <p class="empty-state__body">Mutes and gags issued from the panel or in-game will appear here.</p>
+                                {if $can_add_comm}
+                                <div class="empty-state__actions">
+                                    <a class="btn btn--primary btn--sm"
+                                       href="?p=admin&amp;c=comms"
+                                       data-testid="comms-empty-add">
+                                        <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                        Add a comm block
+                                    </a>
+                                </div>
+                                {/if}
+                            </div>
+                        </td>
+                        {/if}
                     </tr>
                 {/foreach}
             </tbody>
@@ -271,8 +297,8 @@
                 {* #1207: the desktop `<table>` is `display:none` on
                    mobile (theme.css responsive block), so its empty
                    row above never renders below 769px. Mirror the
-                   filter-aware empty state into the mobile card list
-                   so phones don't see a blank card. *}
+                   first-run-vs-filtered split here for phones. *}
+                {if $is_filtered}
                 <div class="empty-state" data-testid="comms-empty-mobile" data-filtered="true">
                     <span class="empty-state__icon" aria-hidden="true">
                         <i data-lucide="search-x" style="width:18px;height:18px"></i>
@@ -286,6 +312,23 @@
                         </a>
                     </div>
                 </div>
+                {else}
+                <div class="empty-state" data-testid="comms-empty-mobile" data-filtered="false">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="mic-off" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">No comm blocks recorded yet</h2>
+                    <p class="empty-state__body">Mutes and gags issued from the panel or in-game will appear here.</p>
+                    {if $can_add_comm}
+                    <div class="empty-state__actions">
+                        <a class="btn btn--primary btn--sm" href="?p=admin&amp;c=comms">
+                            <i data-lucide="plus" style="width:13px;height:13px"></i>
+                            Add a comm block
+                        </a>
+                    </div>
+                    {/if}
+                </div>
+                {/if}
             {/foreach}
         </div>
     </div>

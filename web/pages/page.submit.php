@@ -120,6 +120,19 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         $errors .= '* Please type a valid IP-address.<br>';
         $validsubmit = false;
     }
+    // #1207 PUB-4: at least one of Steam ID / IP must be provided.
+    // Mirrors the inline guard in `page_submitban.tpl` so JS-off
+    // visitors can't sneak an empty pair past the form. The "STEAM_0:"
+    // sentinel is what the page handler re-emits when the user blanked
+    // the Steam ID after a previous bounce (see `STEAMID:` assignment
+    // around L293 below) — treat it as empty for this rule too.
+    if (
+        (strlen($SteamID) == 0 || $SteamID == "STEAM_0:")
+        && strlen($BanIP) == 0
+    ) {
+        $errors .= '* Please enter a Steam ID or an IP address before submitting.<br>';
+        $validsubmit = false;
+    }
     if (strlen($PlayerName) == 0) {
         $errors .= '* You must include a player name<br>';
         $validsubmit = false;

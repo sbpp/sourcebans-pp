@@ -971,6 +971,17 @@ $pagination = [
 $hideInactive       = isset($_SESSION['hideinactive']);
 $hideInactiveToggle = 'index.php?p=commslist&hideinactive=' . ($hideInactive ? 'false' : 'true') . $searchlink;
 
+// #1207: filter-aware empty state. Any filter chip / search / time /
+// hide-inactive flips this; the template branches the empty-state
+// copy + CTA on the result (first-run vs filtered).
+$commsIsFiltered =
+    $filters['search'] !== ''
+    || $filters['server'] !== ''
+    || $filters['time']   !== ''
+    || $filters['state']  !== ''
+    || $filters['type']   !== ''
+    || $hideInactive;
+
 // Aggregate permission flags. Each precomputed via Perms::for($userbank)
 // so the template's {if $can_*} reads stay opinion-free about the bit
 // math — see the AGENTS.md "Permissions" section + Perms::for() docblock.
@@ -999,6 +1010,7 @@ $can_delete_comm  = $perms['can_owner'] || $perms['can_delete_ban'];
     can_edit_comm:            $can_edit_comm,
     can_unmute_gag:           $can_unmute_gag,
     can_delete_comm:          $can_delete_comm,
+    is_filtered:              $commsIsFiltered,
     comment:                  $ceditBid,
     commenttype:              $ceditType,
     canedit:                  $userbank->is_admin(),

@@ -17,7 +17,7 @@ Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
 
-global $theme;
+global $theme, $userbank;
 if (!defined("IN_SB")) {
     echo "You should not be here. Only follow links!";
     die();

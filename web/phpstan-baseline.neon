@@ -499,22 +499,10 @@ parameters:
 			path: pages/page.commslist.php
 
 		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: pages/page.home.php
-
-		-
 			message: '#^Right side of \|\| is always false\.$#'
 			identifier: booleanOr.rightAlwaysFalse
 			count: 1
 			path: pages/page.lostpassword.php
-
-		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: pages/page.servers.php
 
 		-
 			message: '#^Variable \$errors in empty\(\) always exists and is not falsy\.$#'

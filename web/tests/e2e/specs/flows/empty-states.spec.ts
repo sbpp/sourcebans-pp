@@ -119,6 +119,52 @@ test.describe('flow: empty states + copy (#1207)', () => {
         }
     });
 
+    // ----- empty-states unification: banlist / commslist first-run -----
+
+    test('banlist first-run empty state shows "Add a ban" CTA, no filter chip', async ({ page }) => {
+        // Fresh DB → zero bans, no filter active. The empty state
+        // should be the first-run shape (data-filtered="false") with
+        // an "Add a ban" CTA gated on `can_add_ban` (admin storage
+        // state holds ADMIN_OWNER → true).
+        await page.goto('/index.php?p=banlist');
+
+        const empty = page.locator('[data-testid="banlist-empty"]');
+        await expect(empty).toBeVisible();
+        await expect(empty).toHaveAttribute('data-filtered', 'false');
+
+        const cta = page.locator('[data-testid="banlist-empty-add"]');
+        await expect(cta).toBeVisible();
+        await expect(cta).toHaveAttribute('href', /\?p=admin&(amp;)?c=bans/);
+        await expect(cta).toContainText(/Add a ban/i);
+
+        // Filtered state is still on the page when a search is active —
+        // navigate with a no-match search and the empty state should
+        // flip to the filtered shape with a "Clear filters" CTA.
+        await page.goto('/index.php?p=banlist&searchText=does-not-match-anything');
+        await expect(empty).toBeVisible();
+        await expect(empty).toHaveAttribute('data-filtered', 'true');
+        await expect(page.locator('[data-testid="banlist-empty-clear"]')).toBeVisible();
+    });
+
+    test('commslist first-run empty state shows "Add a comm block" CTA, no filter chip', async ({ page }) => {
+        await page.goto('/index.php?p=commslist');
+
+        const empty = page.locator('[data-testid="comms-empty"]').first();
+        await expect(empty).toBeVisible();
+        await expect(empty).toHaveAttribute('data-filtered', 'false');
+
+        const cta = page.locator('[data-testid="comms-empty-add"]');
+        await expect(cta).toBeVisible();
+        await expect(cta).toHaveAttribute('href', /\?p=admin&(amp;)?c=comms/);
+        await expect(cta).toContainText(/Add a comm block/i);
+
+        // Filter via searchText → flips to filtered shape.
+        await page.goto('/index.php?p=commslist&searchText=does-not-match-anything');
+        await expect(empty).toBeVisible();
+        await expect(empty).toHaveAttribute('data-filtered', 'true');
+        await expect(page.locator('[data-testid="comms-empty-clear"]')).toBeVisible();
+    });
+
     // ----- PUB-4 ------------------------------------------------------
 
     test('PUB-4: submit form blocks submission when both Steam ID and IP are empty', async ({ browser }, testInfo) => {

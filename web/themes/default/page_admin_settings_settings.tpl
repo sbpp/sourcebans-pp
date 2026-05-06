@@ -204,11 +204,17 @@
                                     <div class="dash-intro-preview"
                                          data-testid="dash-intro-preview"
                                          data-loading="false"
-                                         aria-live="polite"
                                          aria-label="Markdown preview">
                                         <div class="dash-intro-preview__label">Preview</div>
+                                        {*
+                                            aria-live sits on the body (not the wrapper)
+                                            so assistive tech announces only the rendered
+                                            content on each keystroke — not the static
+                                            "Preview" label above it.
+                                        *}
                                         <div class="dash-intro-preview__body"
-                                             data-testid="dash-intro-preview-body">
+                                             data-testid="dash-intro-preview-body"
+                                             aria-live="polite">
                                             {if $config_dash_text_preview != ''}
                                                 {* nofilter: $config_dash_text_preview is `IntroRenderer::renderIntroText()` output (CommonMark + html_input=escape + allow_unsafe_links=false) — the same render path the public dashboard uses, see AGENTS.md "Admin-authored display text". *}
                                                 {$config_dash_text_preview nofilter}
