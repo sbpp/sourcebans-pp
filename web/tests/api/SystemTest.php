@@ -18,14 +18,103 @@ final class SystemTest extends ApiTestCase
 {
     public function testCheckVersionIsPublicAndReturnsShape(): void
     {
-        // Public action; the handler hits a remote URL but the envelope
-        // shape is the same regardless of fetch success.
+        // Prime the cache so the handler doesn't hit GitHub from CI: the
+        // handler always prefers a fresh cache (TTL is 1 day, our payload
+        // is `cached_at => now`) and the snapshot then locks the wire
+        // shape byte-for-byte without any network dependency. SB_VERSION
+        // is `'test'` in the bootstrap and `version_compare` ranks any
+        // unrecognised string below every numeric tag, so a tag of
+        // `1.8.4` deterministically lands on the "update available"
+        // branch; the snapshot pins that.
+        $this->primeReleaseCache('1.8.4');
+
         $env = $this->api('system.check_version', []);
         $this->assertTrue($env['ok']);
-        $this->assertArrayHasKey('release_latest', $env['data']);
-        $this->assertArrayHasKey('release_msg',    $env['data']);
-        $this->assertArrayHasKey('release_update', $env['data']);
-        $this->assertArrayHasKey('dev',            $env['data']);
+        $this->assertSame('1.8.4', $env['data']['release_latest']);
+        $this->assertSame(
+            'https://github.com/sbpp/sourcebans-pp/releases/tag/1.8.4',
+            $env['data']['release_url']
+        );
+        $this->assertTrue($env['data']['release_update']);
+        // The deprecated `dev` / `dev_*` fields from the legacy upstream
+        // shape are gone (#1214); guard against a regression that
+        // re-introduces them.
+        $this->assertArrayNotHasKey('dev',         $env['data']);
+        $this->assertArrayNotHasKey('dev_latest',  $env['data']);
+        $this->assertArrayNotHasKey('dev_msg',     $env['data']);
+        $this->assertArrayNotHasKey('dev_update',  $env['data']);
+        $this->assertSnapshot('system/check_version_update_available', $env);
+    }
+
+    public function testCheckVersionLatestReleaseFromCache(): void
+    {
+        // Tag below SB_VERSION = 'test' in version_compare's ordering is
+        // impossible (any unrecognised string sorts below every numeric
+        // tag), so seed `release_latest` equal to SB_VERSION; the
+        // version_compare branch returns 0 and we land on the "you have
+        // the latest" copy. This locks the third public response shape
+        // without depending on network or on flipping SB_VERSION.
+        $this->primeReleaseCache('test');
+
+        $env = $this->api('system.check_version', []);
+        $this->assertTrue($env['ok']);
+        $this->assertSame('test', $env['data']['release_latest']);
+        $this->assertFalse($env['data']['release_update']);
+        $this->assertSnapshot('system/check_version_latest_release', $env);
+    }
+
+    public function testCheckVersionStripsLeadingVFromTag(): void
+    {
+        // GitHub releases historically use both `1.8.4` and `v1.8.4`
+        // tag shapes; the handler normalises the stored tag so consumers
+        // never have to branch on the prefix.
+        $this->primeReleaseCache('v9.9.9');
+
+        $env = $this->api('system.check_version', []);
+        $this->assertTrue($env['ok']);
+        $this->assertSame('9.9.9', $env['data']['release_latest']);
+        $this->assertTrue($env['data']['release_update']);
+    }
+
+    public function testCheckVersionErrorWhenNoCacheAndUpstreamUnreachable(): void
+    {
+        // Force the upstream URL to a port that nothing listens on so
+        // the fetch fails immediately (ECONNREFUSED, no 5s wait), drop
+        // the cache, and assert the handler reports the documented
+        // degraded shape. SB_RELEASE_LATEST_URL is a constant; once
+        // defined it sticks for the rest of the PHPUnit process. That's
+        // fine: every other check_version test seeds a fresh cache
+        // (TTL 1d) so they never reach the upstream-fetch branch.
+        @unlink(SB_CACHE . 'github_release_latest.json');
+        if (!defined('SB_RELEASE_LATEST_URL')) {
+            define('SB_RELEASE_LATEST_URL', 'http://127.0.0.1:1/');
+        }
+
+        $env = $this->api('system.check_version', []);
+
+        $this->assertTrue($env['ok']);
+        $this->assertSame('Error', $env['data']['release_latest']);
+        $this->assertSame('', $env['data']['release_url']);
+        $this->assertFalse($env['data']['release_update']);
+        $this->assertSnapshot('system/check_version_error', $env);
+    }
+
+    /**
+     * Seed the on-disk cache the handler reads first. TTL is 1 day, so
+     * the freshly-stamped `cached_at` always wins and the handler skips
+     * the upstream fetch entirely — what the snapshot tests rely on.
+     */
+    private function primeReleaseCache(string $tagName): void
+    {
+        $cache = SB_CACHE;
+        if (!is_dir($cache) && !@mkdir($cache, 0o775, true) && !is_dir($cache)) {
+            $this->markTestSkipped('cache dir not writable');
+        }
+        file_put_contents($cache . 'github_release_latest.json', (string) json_encode([
+            'tag_name'  => $tagName,
+            'html_url'  => 'https://github.com/sbpp/sourcebans-pp/releases/tag/' . $tagName,
+            'cached_at' => time(),
+        ]));
     }
 
     public function testSelThemeRejectsBlank(): void

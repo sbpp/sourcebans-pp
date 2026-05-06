@@ -27,8 +27,10 @@ final class VersionTest extends TestCase
 {
     /**
      * Tier 1 — release tarball case: `configs/version.json` exists and
-     * decodes to a triple. The resolver returns the JSON contents
-     * verbatim; `dev` is whatever the JSON declares.
+     * decodes to a pair. The resolver returns the JSON contents
+     * verbatim. (#1214 dropped the legacy `dev: bool` field; consumers
+     * now branch on `version === Version::DEV_SENTINEL` or on `git`
+     * directly, never on a separate boolean.)
      */
     public function testTarballJsonWins(): void
     {
@@ -37,7 +39,6 @@ final class VersionTest extends TestCase
             jsonReader: static fn (): array => [
                 'version' => '2.1.0',
                 'git'     => 'abc1234',
-                'dev'     => false,
             ],
             // Both git callbacks must be inert when JSON wins; assert that
             // by erroring if they fire.
@@ -47,14 +48,13 @@ final class VersionTest extends TestCase
 
         $this->assertSame('2.1.0',   $resolved['version']);
         $this->assertSame('abc1234', $resolved['git']);
-        $this->assertFalse($resolved['dev']);
     }
 
     /**
      * Tier 2 — git checkout case: no `version.json`, but `git describe`
      * returns a tag and `git rev-parse` returns a sha. Both feed into
-     * the result; `dev` is true (we're running off a checkout, not a
-     * release tarball).
+     * the result; the dev-checkout signal is implicit in the describe
+     * string (`-N-g<sha>` suffix) — no separate boolean is carried.
      */
     public function testGitDescribeUsedWhenJsonAbsent(): void
     {
@@ -67,7 +67,6 @@ final class VersionTest extends TestCase
 
         $this->assertSame('v2.0.0-3-gabc1234', $resolved['version']);
         $this->assertSame('abc1234',           $resolved['git']);
-        $this->assertTrue($resolved['dev']);
     }
 
     /**
@@ -87,7 +86,6 @@ final class VersionTest extends TestCase
 
         $this->assertSame(Version::DEV_SENTINEL, $resolved['version']);
         $this->assertSame('abc1234',             $resolved['git']);
-        $this->assertTrue($resolved['dev']);
     }
 
     /**
@@ -108,7 +106,6 @@ final class VersionTest extends TestCase
 
         $this->assertSame(Version::DEV_SENTINEL, $resolved['version']);
         $this->assertSame(0,                     $resolved['git']);
-        $this->assertTrue($resolved['dev']);
 
         // Pin the literal too: the CC-5 contract is specifically that the
         // sentinel is `'dev'` (not `'unreleased'` / `'N/A'` / `''`).

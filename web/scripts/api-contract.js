@@ -354,8 +354,15 @@
  * @typedef {Object} ApiSystemApplyThemeResponse
  */
 /**
+ * Public action: report whether a newer SourceBans++ release is available.
+ * Sources from `api.github.com/repos/sbpp/sourcebans-pp/releases/latest` with
+ * a 1-day on-disk cache + stale-while-error fallback (the cached payload is
+ * served regardless of TTL when the upstream call fails) so a busy panel can't
+ * blow through GitHub's 60 req/hr unauthenticated limit and a transient GitHub
+ * blip doesn't paint the panel red.
+ *
  * @typedef {Object} ApiSystemCheckVersionRequest
- * @typedef {Object} ApiSystemCheckVersionResponse
+ * @typedef {{release_latest: string, release_url: string, release_msg: string, release_update: boolean}} ApiSystemCheckVersionResponse
  */
 /**
  * @typedef {Object} ApiSystemClearCacheRequest

@@ -164,7 +164,7 @@
 {if false}
     {$access_admins}{$access_bans}{$access_groups}{$access_mods}
     {$access_servers}{$access_settings}{$archived_protests}
-    {$archived_submissions}{$demosize}{$dev}{$total_admins}
+    {$archived_submissions}{$demosize}{$total_admins}
     {$total_bans}{$total_blocks}{$total_comms}{$total_protests}
     {$total_servers}{$total_submissions}
 {/if}

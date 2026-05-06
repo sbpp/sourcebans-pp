@@ -26,7 +26,7 @@ namespace Sbpp\View;
  * Comms intentionally folds into the sidebar nav (`admin/comms`) and
  * does not surface a separate Comms card on the landing.
  *
- * `access_*`, `dev`, `demosize`, `total_*`, and `archived_*` are
+ * `access_*`, `demosize`, `total_*`, and `archived_*` are
  * preserved on this View (and referenced by an unreachable
  * `{if false}` parity block in the template) so any third-party theme
  * that forked the pre-v2.0.0 default keeps rendering off the same
@@ -56,7 +56,6 @@ final class AdminHomeView extends View
         public readonly bool $access_groups,
         public readonly bool $access_settings,
         public readonly bool $access_mods,
-        public readonly bool $dev,
         public readonly string $demosize,
         public readonly int $total_admins,
         public readonly int $total_bans,

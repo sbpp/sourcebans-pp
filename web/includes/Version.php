@@ -39,14 +39,26 @@ final class Version
     public const DEV_SENTINEL = 'dev';
 
     /**
-     * Resolve the version triple `[version, git, dev]` exactly the
-     * way `init.php` consumes it for the SB_* constants.
+     * Resolve the version pair `[version, git]` exactly the way
+     * `init.php` consumes it for the `SB_VERSION` / `SB_GITREV`
+     * constants.
+     *
+     * The `'dev'` *sentinel string* in the `version` slot is the
+     * canonical way to identify a dev-checkout panel (#1207 CC-5);
+     * an out-of-band `dev: bool` field used to live alongside it but
+     * was dropped in #1214 — every consumer now branches on either
+     * `SB_VERSION === self::DEV_SENTINEL` for the "is this a dev
+     * build?" question or on `SB_GITREV` directly for the "do we
+     * have a SHA to print?" question. Carrying a separate boolean
+     * was redundant once `system.check_version` stopped gating on
+     * it (the gated branch had already gone obsolete because it
+     * compared a numeric git rev that no longer exists).
      *
      * @param  callable|null $jsonReader  fn(string $path): ?array — defaults to
      *                                    file_get_contents + json_decode.
      * @param  callable|null $gitDescribe fn(): string — defaults to shell_exec.
      * @param  callable|null $gitShortRev fn(): string — defaults to shell_exec.
-     * @return array{version: string, git: int|string, dev: bool}
+     * @return array{version: string, git: int|string}
      */
     public static function resolve(
         string $versionJsonPath,
@@ -63,7 +75,6 @@ final class Version
             return [
                 'version' => (string) $tarball['version'],
                 'git'     => $tarball['git'] ?? 0,
-                'dev'     => (bool) ($tarball['dev'] ?? false),
             ];
         }
 
@@ -73,14 +84,12 @@ final class Version
             return [
                 'version' => $tag !== '' ? $tag : self::DEV_SENTINEL,
                 'git'     => $sha,
-                'dev'     => true,
             ];
         }
 
         return [
             'version' => self::DEV_SENTINEL,
             'git'     => 0,
-            'dev'     => true,
         ];
     }
 

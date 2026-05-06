@@ -141,12 +141,15 @@ Both scripts include `init.php` first, which performs identical bootstrap.
    PSR-4 namespaced) and initialises them.
 5. Resolves the panel version via `Sbpp\Version::resolve()` — three-tier
    fallback (release tarball's `configs/version.json` → `git describe`
-   → the `'dev'` sentinel) and `define()`s `SB_VERSION` / `SB_GITREV` /
-   `SB_DEV` from the result. The chrome's `<footer data-version="…">`
-   hook (`web/themes/default/core/footer.tpl`) mirrors `SB_VERSION`
+   → the `'dev'` sentinel) and `define()`s `SB_VERSION` / `SB_GITREV`
+   from the result. The chrome's `<footer data-version="…">` hook
+   (`web/themes/default/core/footer.tpl`) mirrors `SB_VERSION`
    verbatim so telemetry and E2E specs can distinguish dev installs
    (`data-version="dev"`) from release tarball installs without
-   parsing the user-visible string (#1207 CC-5).
+   parsing the user-visible string (#1207 CC-5). Dev-checkout panels
+   are identified by `SB_VERSION === Version::DEV_SENTINEL`; the
+   footer's "| Git: <sha>" suffix gates on `SB_GITREV` directly so a
+   separate boolean isn't needed (#1214).
 6. Reads `configs/permissions/web.json` + `sourcemod.json` and `define()`s
    each flag as a global PHP constant (`ADMIN_OWNER`, `ADMIN_ADD_BAN`, …).
 7. Constructs the global `$theme` (Smarty) with the configured theme dir,

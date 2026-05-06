@@ -48,7 +48,6 @@ define('SB_SECRET_KEY', base64_encode(str_repeat('test-jwt-secret!', 4)));
 $_SERVER['REMOTE_ADDR']     = $_SERVER['REMOTE_ADDR']     ?? '127.0.0.1';
 $_SERVER['HTTP_HOST']       = $_SERVER['HTTP_HOST']       ?? 'localhost';
 $_SERVER['REQUEST_METHOD']  = $_SERVER['REQUEST_METHOD']  ?? 'POST';
-define('SB_DEV',      false);
 define('SB_VERSION',  'test');
 define('SB_GITREV',   0);
 define('SB_THEME',    'default');

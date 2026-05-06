@@ -65,7 +65,6 @@ $perms = \Sbpp\View\Perms::for($userbank);
     access_groups:        $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS  | ADMIN_ADD_GROUP   | ADMIN_EDIT_GROUPS  | ADMIN_DELETE_GROUPS),
     access_settings:      $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS),
     access_mods:          $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS    | ADMIN_ADD_MODS    | ADMIN_EDIT_MODS    | ADMIN_DELETE_MODS),
-    dev:                  SB_DEV,
     demosize:             getDirSize(SB_DEMOS),
     total_admins:         (int) $counts['admins'],
     total_bans:           (int) $counts['bans'],

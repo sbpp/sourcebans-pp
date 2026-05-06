@@ -88,7 +88,6 @@ $version = \Sbpp\Version::resolve(ROOT . 'configs/version.json');
 
 define('SB_VERSION', $version['version']);
 define('SB_GITREV', $version['git']);
-define('SB_DEV', $version['dev']);
 
 // ---------------------------------------------------
 //  Setup our DB

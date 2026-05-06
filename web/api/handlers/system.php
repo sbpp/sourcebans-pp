@@ -15,53 +15,218 @@ use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
 use Sbpp\Markup\IntroRenderer;
 
-function api_system_check_version(array $params): array
+/**
+ * Upstream GitHub Releases endpoint. Overridable via the
+ * `SB_RELEASE_LATEST_URL` constant so tests can point at a local fixture
+ * instead of the real GitHub API; defining it before the handler runs is
+ * a no-op for production self-hosters who never see the constant.
+ */
+function _api_system_release_upstream_url(): string
 {
-    $raw = (string)@file_get_contents('https://sbpp.github.io/version.json');
-    $version = $raw ? json_decode($raw, true) : null;
-    $version = is_array($version) ? $version : ['version' => '', 'git' => ''];
+    if (defined('SB_RELEASE_LATEST_URL') && is_string(SB_RELEASE_LATEST_URL) && SB_RELEASE_LATEST_URL !== '') {
+        return SB_RELEASE_LATEST_URL;
+    }
+    return 'https://api.github.com/repos/sbpp/sourcebans-pp/releases/latest';
+}
 
-    $latest = $version['version'] ?? '';
-    if (strlen((string)$latest) > 8 || $latest === '') {
-        $latest = 'Error';
-        $msg = 'Error Retrieving Latest Release.';
-        $update = false;
-    } elseif (version_compare($latest, SB_VERSION) > 0) {
-        $msg = 'A New Release is Available.';
-        $update = true;
-    } else {
-        $msg = 'You have the Latest Release.';
-        $update = false;
+/**
+ * Re-read the cached GitHub release payload, returning null when the file
+ * is missing, unreadable, or doesn't decode to the expected
+ * `{tag_name, html_url, cached_at}` shape. The "stale-while-error" branch
+ * in the main handler relies on this returning a usable payload regardless
+ * of `cached_at`, so don't filter on TTL here.
+ *
+ * @return array{tag_name: string, html_url: string, cached_at: int}|null
+ */
+function _api_system_release_load_cache(string $file): ?array
+{
+    if (!is_file($file)) {
+        return null;
+    }
+    $raw = @file_get_contents($file);
+    if ($raw === false || $raw === '') {
+        return null;
+    }
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+    $tag = $decoded['tag_name'] ?? null;
+    $url = $decoded['html_url'] ?? null;
+    $at  = $decoded['cached_at'] ?? null;
+    if (!is_string($tag) || $tag === '' || !is_string($url) || !is_int($at)) {
+        return null;
+    }
+    return ['tag_name' => $tag, 'html_url' => $url, 'cached_at' => $at];
+}
+
+/**
+ * Persist the latest upstream payload + a fresh `cached_at` timestamp.
+ * Failure to write (read-only filesystem, permission glitch, …) is
+ * silently ignored; the in-memory response we already constructed is
+ * still served, and the next call will just re-fetch.
+ */
+function _api_system_release_save_cache(string $file, string $tagName, string $htmlUrl): void
+{
+    $payload = json_encode([
+        'tag_name'  => $tagName,
+        'html_url'  => $htmlUrl,
+        'cached_at' => time(),
+    ]);
+    if ($payload === false) {
+        return;
+    }
+    @file_put_contents($file, $payload);
+}
+
+/**
+ * Fetch the latest release from the configured upstream and return the
+ * `{tag_name, html_url}` pair. Returns null on any network failure,
+ * non-2xx response, malformed JSON, or missing tag_name — the caller
+ * uses null as the "fall back to cache" signal.
+ *
+ * GitHub requires a `User-Agent` on every API call; the documented
+ * `Accept: application/vnd.github+json` pins the response shape to the
+ * v3 contract so a future server-side default change can't surprise us.
+ * The 5s timeout keeps the handler from stalling a page render on a
+ * network blip — the panel falls through to the cache (or the "Error"
+ * envelope) instead of hanging.
+ *
+ * @return array{tag_name: string, html_url: string}|null
+ */
+function _api_system_release_fetch_upstream(): ?array
+{
+    $headers = "User-Agent: SourceBans++\r\n"
+             . "Accept: application/vnd.github+json\r\n";
+    $context = stream_context_create([
+        'http'  => [
+            'method'        => 'GET',
+            'header'        => $headers,
+            'timeout'       => 5,
+            'ignore_errors' => true,
+        ],
+        'https' => [
+            'method'        => 'GET',
+            'header'        => $headers,
+            'timeout'       => 5,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $body = @file_get_contents(_api_system_release_upstream_url(), false, $context);
+    if ($body === false || $body === '') {
+        return null;
     }
 
-    $devLatest = null;
-    $devUpdate = null;
-    $devMsg = null;
-    if (SB_DEV) {
-        $git = $version['git'] ?? '';
-        if (strlen((string)$git) > 8 || $git === '') {
-            $devLatest = 'Error';
-            $devMsg = 'Error retrieving latest Dev Version.';
-            $devUpdate = false;
-        } elseif ((int)$git > SB_GITREV) {
-            $devLatest = $git;
-            $devMsg = 'A New Dev Version is Available.';
-            $devUpdate = true;
-        } else {
-            $devLatest = $git;
-            $devMsg = 'You have the Latest Dev Version.';
-            $devUpdate = false;
+    // `ignore_errors=true` makes file_get_contents return the body even on
+    // a non-2xx status, so reject anything outside 2xx explicitly. The
+    // response status line lives in the magic local $http_response_header
+    // array file_get_contents seeds; PHPStan knows it's always defined
+    // post-call so no `isset()` guard is needed.
+    /** @var list<string> $http_response_header */
+    if (isset($http_response_header[0]) && preg_match('~HTTP/\S+\s+(\d+)~', $http_response_header[0], $m)) {
+        $status = (int) $m[1];
+        if ($status < 200 || $status >= 300) {
+            return null;
         }
+    }
+
+    $decoded = json_decode($body, true);
+    if (!is_array($decoded)) {
+        return null;
+    }
+    $tag = $decoded['tag_name'] ?? null;
+    $url = $decoded['html_url'] ?? null;
+    if (!is_string($tag) || $tag === '' || !is_string($url)) {
+        return null;
+    }
+    return ['tag_name' => $tag, 'html_url' => $url];
+}
+
+/**
+ * Build the public response shape from a cached or freshly-fetched
+ * release pair, branching on whether the local panel is on a real
+ * version, on the dev sentinel, or trails / leads the upstream tag.
+ *
+ * Strips an optional leading `v`/`V` from the upstream tag (GitHub
+ * releases historically use both `v1.8.4` and `1.8.4` shapes; SB_VERSION
+ * is always plain). The `'dev'` sentinel from `init.php` is special-cased
+ * because `version_compare('1.8.4', 'dev')` returns 1 (PHP treats `dev`
+ * as a pre-release suffix), which would otherwise falsely advertise
+ * "A New Release is Available." on every dev-checkout panel.
+ *
+ * @return array{release_latest: string, release_url: string, release_msg: string, release_update: bool}
+ */
+function _api_system_release_format(string $tagName, string $htmlUrl, string $localVersion): array
+{
+    $latest = ltrim($tagName, 'vV');
+
+    if ($localVersion === 'dev') {
+        return [
+            'release_latest' => $latest,
+            'release_url'    => $htmlUrl,
+            'release_msg'    => 'Tracking development build.',
+            'release_update' => false,
+        ];
+    }
+
+    if (version_compare($latest, $localVersion) > 0) {
+        return [
+            'release_latest' => $latest,
+            'release_url'    => $htmlUrl,
+            'release_msg'    => 'A New Release is Available.',
+            'release_update' => true,
+        ];
     }
 
     return [
         'release_latest' => $latest,
-        'release_msg'    => $msg,
-        'release_update' => $update,
-        'dev'            => SB_DEV,
-        'dev_latest'     => $devLatest,
-        'dev_msg'        => $devMsg,
-        'dev_update'     => $devUpdate,
+        'release_url'    => $htmlUrl,
+        'release_msg'    => 'You have the Latest Release.',
+        'release_update' => false,
+    ];
+}
+
+/**
+ * Public action: report whether a newer SourceBans++ release is
+ * available. Sources from `api.github.com/repos/sbpp/sourcebans-pp/releases/latest`
+ * with a 1-day on-disk cache + stale-while-error fallback (the cached
+ * payload is served regardless of TTL when the upstream call fails) so a
+ * busy panel can't blow through GitHub's 60 req/hr unauthenticated limit
+ * and a transient GitHub blip doesn't paint the panel red.
+ *
+ * @return array{release_latest: string, release_url: string, release_msg: string, release_update: bool}
+ */
+function api_system_check_version(array $params): array
+{
+    // 1-day TTL is the rate-limit answer: GitHub's unauthenticated REST
+    // API caps each source IP at 60 req/hr, and a busy panel polled by
+    // every admin tab on every page render would burn that trivially.
+    // Releases ship far less often than once a day, so anything tighter
+    // wouldn't buy a more accurate "is there an upgrade?" signal.
+    $ttlSeconds = 86400;
+    $cacheFile  = SB_CACHE . 'github_release_latest.json';
+    $cached     = _api_system_release_load_cache($cacheFile);
+
+    if ($cached !== null && (time() - $cached['cached_at']) < $ttlSeconds) {
+        return _api_system_release_format($cached['tag_name'], $cached['html_url'], SB_VERSION);
+    }
+
+    $fetched = _api_system_release_fetch_upstream();
+    if ($fetched !== null) {
+        _api_system_release_save_cache($cacheFile, $fetched['tag_name'], $fetched['html_url']);
+        return _api_system_release_format($fetched['tag_name'], $fetched['html_url'], SB_VERSION);
+    }
+
+    if ($cached !== null) {
+        return _api_system_release_format($cached['tag_name'], $cached['html_url'], SB_VERSION);
+    }
+
+    return [
+        'release_latest' => 'Error',
+        'release_url'    => '',
+        'release_msg'    => 'Error retrieving latest release.',
+        'release_update' => false,
     ];
 }
 
