@@ -195,16 +195,28 @@
     if (!(active instanceof HTMLElement)) return;
     const row = active.closest('[data-testid="palette-result"][data-result-kind="ban"]');
     if (!(row instanceof HTMLElement)) return;
-    const steamid = row.dataset.steamid;
-    if (!steamid) return;
+    const value = row.dataset.steamid;
+    if (!value) return;
     e.preventDefault();
     if (!navigator.clipboard) {
       showToast({ kind: 'error', title: 'Clipboard unavailable' });
       return;
     }
-    void navigator.clipboard.writeText(steamid).then(
-      () => showToast({ kind: 'success', title: 'SteamID copied', body: steamid }),
-      () => showToast({ kind: 'error', title: 'Couldn\u2019t copy SteamID' }),
+    // #1207 DET-2 follow-up (review finding 2): an IP-only ban
+    // (`type === 1`, empty `authid`) lands here with `data-steamid`
+    // actually holding the IP — bans.search returns `steam` (= authid)
+    // and `ip` separately, and `renderPaletteResults` falls back to the
+    // IP when authid is empty. Title the toast based on the value's
+    // shape so the user sees the right label in the rare IP-only case.
+    // The regex matches both Steam2 (`STEAM_X:Y:Z`) and Steam3
+    // (`[U:1:N]`) forms — anything that isn't a SteamID is treated as
+    // an IP for labelling purposes.
+    const isSteam = /^(STEAM_|\[U:)/.test(value);
+    const titleSuccess = isSteam ? 'SteamID copied' : 'IP copied';
+    const titleError = isSteam ? "Couldn\u2019t copy SteamID" : "Couldn\u2019t copy IP";
+    void navigator.clipboard.writeText(value).then(
+      () => showToast({ kind: 'success', title: titleSuccess, body: value }),
+      () => showToast({ kind: 'error', title: titleError }),
     );
   }
 
@@ -920,6 +932,25 @@
     const target = /** @type {Element | null} */ (e.target);
     const trigger = target && target.closest('[data-drawer-bid], [data-drawer-href]');
     if (trigger) {
+      // #1207 DET-2 follow-up (review finding 1): graceful-degradation
+      // guard for modifier-clicks. Without this, Cmd/Ctrl/Shift+left-click
+      // is fired as a regular `click` event with the modifier flag set;
+      // the e.preventDefault() below would suppress the browser's native
+      // "open in new tab/window" default action and silently open the
+      // drawer in the current tab — violating the modifier-click contract
+      // every browser ships. Middle-click already worked because browsers
+      // fire `auxclick` (not `click`) for non-primary buttons; this guard
+      // restores the same graceful-degradation for the keyboard-modifier
+      // chords. The href on every [data-drawer-bid] / [data-drawer-href]
+      // anchor IS the fallback path:
+      //   - palette rows: `?p=banlist&advType=name&advSearch=<name>`
+      //     opens a name-filtered banlist in a new tab,
+      //   - banlist rows: `?p=banlist&id=<bid>` opens the banlist URL
+      //     in a new tab (the panel-history shape).
+      // `e.button !== 0` belt-and-suspenders for any future synthetic
+      // dispatch with a non-primary button (legitimate middle/right
+      // clicks reach `auxclick`, not this listener, but be defensive).
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
       const bid = bidFromTrigger(trigger);
       if (bid !== null) {
         e.preventDefault();

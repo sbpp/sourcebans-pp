@@ -75,6 +75,7 @@ const SUBTEST_OFFSETS = {
     enter: 2,
     hints: 3,
     copy: 4,
+    modclick: 5,
 } as const;
 
 /**
@@ -385,6 +386,84 @@ test.describe('command palette', () => {
         // affordance, not a "submit + close" chord. (Bare Enter
         // closes the palette and opens the drawer; that's the
         // sibling 'enter' subtest below.)
+        await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+    });
+
+    test('Ctrl+click on a player row preserves native href graceful-degradation (#1207 DET-2)', async ({ page, context }, testInfo) => {
+        // #1207 DET-2 review finding 1: the existing `[data-drawer-bid]`
+        // click delegate (theme.js) used to call `e.preventDefault()`
+        // unconditionally, which meant Cmd/Ctrl+left-click was
+        // intercepted indistinguishably from a bare left-click — the
+        // browser's native "open in new tab" default action was
+        // suppressed and the drawer opened in the current tab. The
+        // delegate now guards `e.metaKey || e.ctrlKey || e.shiftKey ||
+        // e.button !== 0` and bails before preventDefault, so the
+        // anchor's `href` (?p=banlist&advType=name&advSearch=<name>)
+        // takes over and the new tab lands on the name-filtered
+        // banlist. This test locks that contract.
+        //
+        // mobile-chromium skipped: same palette typing-search flake
+        // as the sibling 'type' / 'enter' / 'hints' / 'copy' subtests
+        // (#1206). The modifier-guard contract is viewport-independent.
+        test.skip(
+            testInfo.project.name === 'mobile-chromium',
+            'mobile-chromium palette typing-search flake; tracked in #1206',
+        );
+
+        const seed = uniqueSeed(testInfo, 'modclick');
+        try {
+            await seedBanViaApi(page, { nickname: seed.nick, steam: seed.steam });
+        } catch (err) {
+            if (!String(err).includes('already_banned')) throw err;
+        }
+
+        await page.goto('/');
+        await page.keyboard.press('Meta+k');
+        const dialog = page.locator('#palette-root');
+        await expect(dialog).toHaveAttribute('data-palette-open', 'true');
+
+        await page.locator('#palette-input').fill(seed.nick);
+        await expect(dialog).not.toHaveAttribute('data-loading', 'true', { timeout: 10000 });
+
+        const row = page
+            .locator('[data-testid="palette-result"][data-result-kind="ban"]')
+            .filter({ hasText: seed.nick })
+            .first();
+        await expect(row).toBeVisible();
+
+        // Capture the new page (tab) the browser opens for the
+        // modifier-click. `Control` is the Linux/Win chord — the
+        // Mac equivalent (`Meta`) is also covered by the same
+        // delegate guard but we test the chromium-on-Linux runner
+        // shape because that's what CI executes.
+        const newPagePromise = context.waitForEvent('page');
+        await row.click({ modifiers: ['Control'] });
+        const newPage = await newPagePromise;
+        // Playwright's 'page' event fires when the tab is created
+        // (URL still `about:blank`); the navigation lands a tick
+        // later. Wait on the URL pattern itself rather than a
+        // generic load state so the assertion below isn't racing
+        // against `about:blank`.
+        await newPage.waitForURL(/[?&]p=banlist/, { timeout: 10000 });
+
+        // The new tab's URL is the row's href fallback — the
+        // name-filtered banlist URL.
+        expect(newPage.url()).toMatch(/[?&]advType=name(?:&|$)/);
+        expect(newPage.url()).toMatch(
+            new RegExp(`[?&]advSearch=${encodeURIComponent(seed.nick)}(?:&|$)`),
+        );
+        await newPage.close();
+
+        // The original tab's drawer did NOT open — the modifier-guard
+        // returned early before `loadDrawer()` could run. This is
+        // the post-fix shape; pre-fix this assertion would have
+        // failed with `data-drawer-open="true"`.
+        const drawer = page.locator('#drawer-root');
+        await expect(drawer).toHaveAttribute('data-drawer-open', 'false');
+
+        // The palette stays open — modifier-click is a non-navigating
+        // action in the active tab; the new tab is where the
+        // navigation lands.
         await expect(dialog).toHaveAttribute('data-palette-open', 'true');
     });
 
