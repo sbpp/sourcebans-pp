@@ -363,11 +363,11 @@ Renderer::render($theme, new HomeDashboardView(
   declare the union of variables both templates use.
 - Templates that use the non-default delimiter pair `-{ … }-` (currently
   `page_login.tpl`, `page_blockit.tpl`, `page_kickit.tpl`, and
-  `admin.rcon.tpl`) override `View::DELIMITERS` so the rule parses them
-  correctly. Page handlers swap `setLeftDelimiter` / `setRightDelimiter`
-  around `Renderer::render()` so the chrome stays on the standard pair.
-  `page_youraccount.tpl` was on this list before #1123 B20 rewrote it
-  in standard `{ }` delimiters (rationale on the
+  `page_admin_servers_rcon.tpl`) override `View::DELIMITERS` so the rule
+  parses them correctly. Page handlers swap `setLeftDelimiter` /
+  `setRightDelimiter` around `Renderer::render()` so the chrome stays
+  on the standard pair. `page_youraccount.tpl` was on this list before
+  #1123 B20 rewrote it in standard `{ }` delimiters (rationale on the
   `Sbpp\View\YourAccountView` docblock).
 - Permission gates inside templates are declared on the View as `can_*`
   booleans. `Sbpp\View\Perms::for($userbank)` returns the full

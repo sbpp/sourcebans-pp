@@ -375,11 +375,11 @@ of the diff ship together or not at all.
 - Pages that render multiple templates build one View per template and
   call `Renderer::render` for each.
 - Templates with non-default delimiters (currently `page_login.tpl`,
-  `page_blockit.tpl`, `page_kickit.tpl`, and `admin.rcon.tpl` using
-  `-{ … }-`) override `View::DELIMITERS`. `page_youraccount.tpl` was
-  on this list before #1123 B20 rewrote it in standard `{ }`
-  delimiters; do NOT regress it back to `-{ … }-` without a paired
-  edit here.
+  `page_blockit.tpl`, `page_kickit.tpl`, and
+  `page_admin_servers_rcon.tpl` using `-{ … }-`) override
+  `View::DELIMITERS`. `page_youraccount.tpl` was on this list before
+  #1123 B20 rewrote it in standard `{ }` delimiters; do NOT regress
+  it back to `-{ … }-` without a paired edit here.
 
 ### Permission display surfaces
 
