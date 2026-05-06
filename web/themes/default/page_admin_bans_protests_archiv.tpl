@@ -48,14 +48,16 @@
         {else}
             <div class="card" style="overflow:hidden" data-testid="protests-archive-list">
                 {foreach from=$protest_list_archiv item="protest"}
-                    <details class="ban-row ban-row--expired"
+                    {* PUB-2 (#1207): `queue-row` is the layout class; see
+                       the `.queue-row` block in theme.css. `ban-row--expired`
+                       keeps the gray state-border. *}
+                    <details class="queue-row ban-row ban-row--expired"
                              id="apid_{$protest.pid}"
                              data-testid="protest-archive-row"
                              data-id="{$protest.pid}"
                              style="border-bottom:1px solid var(--border)">
-                        <summary class="flex items-center gap-3 p-4"
-                                 style="cursor:pointer;list-style:none">
-                            <div style="flex:1;min-width:0">
+                        <summary>
+                            <div class="queue-row__body">
                                 <div class="font-medium text-sm truncate" data-testid="protest-archive-row-name">
                                     {if $protest.archiv != 2}
                                         <a class="link"
@@ -70,10 +72,10 @@
                                     {if $protest.authid != ""}{$protest.authid|escape}{else}{$protest.ip|escape}{/if}
                                 </div>
                             </div>
-                            <div class="text-xs text-muted" style="flex-shrink:0">
+                            <div class="queue-row__date">
                                 {$protest.datesubmitted|escape}
                             </div>
-                            <div class="row-actions" style="opacity:1;flex-shrink:0">
+                            <div class="row-actions">
                                 {if $permission_editban}
                                     <button type="button"
                                             class="btn btn--ghost btn--sm"

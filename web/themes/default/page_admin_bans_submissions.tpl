@@ -56,14 +56,18 @@
         {else}
             <div class="card" style="overflow:hidden" data-testid="submissions-list">
                 {foreach from=$submission_list item="sub"}
-                    <details class="ban-row ban-row--active"
+                    {* PUB-2 (#1207): `queue-row` is the layout class for
+                       the summary; `ban-row` keeps the state border-left
+                       (orange "active" stripe). theme.css owns the flex
+                       row + mobile card-stack rules — see the
+                       `.queue-row` block there. *}
+                    <details class="queue-row ban-row ban-row--active"
                              id="sid_{$sub.subid}"
                              data-testid="submission-row"
                              data-id="{$sub.subid}"
                              style="border-bottom:1px solid var(--border)">
-                        <summary class="flex items-center gap-3 p-4"
-                                 style="cursor:pointer;list-style:none">
-                            <div style="flex:1;min-width:0">
+                        <summary>
+                            <div class="queue-row__body">
                                 <div class="font-medium text-sm truncate" data-testid="submission-row-name">
                                     {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) in admin.bans.php — already entity-escaped, only `<br />` reintroduced. *}
                                     {$sub.name nofilter}
@@ -72,10 +76,10 @@
                                     {if $sub.SteamId != ""}{$sub.SteamId|escape}{else}{$sub.sip|escape}{/if}
                                 </div>
                             </div>
-                            <div class="text-xs text-muted" style="flex-shrink:0">
+                            <div class="queue-row__date">
                                 {$sub.submitted|escape}
                             </div>
-                            <div class="row-actions" style="opacity:1;flex-shrink:0">
+                            <div class="row-actions">
                                 <button type="button"
                                         class="btn btn--secondary btn--sm"
                                         data-testid="row-action-ban"

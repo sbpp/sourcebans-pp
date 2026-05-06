@@ -49,14 +49,16 @@
         {else}
             <div class="card" style="overflow:hidden" data-testid="submissions-archive-list">
                 {foreach from=$submission_list_archiv item="sub"}
-                    <details class="ban-row ban-row--expired"
+                    {* PUB-2 (#1207): `queue-row` is the layout class; see
+                       the `.queue-row` block in theme.css. `ban-row--expired`
+                       keeps the gray state-border. *}
+                    <details class="queue-row ban-row ban-row--expired"
                              id="asid_{$sub.subid}"
                              data-testid="submission-archive-row"
                              data-id="{$sub.subid}"
                              style="border-bottom:1px solid var(--border)">
-                        <summary class="flex items-center gap-3 p-4"
-                                 style="cursor:pointer;list-style:none">
-                            <div style="flex:1;min-width:0">
+                        <summary>
+                            <div class="queue-row__body">
                                 <div class="font-medium text-sm truncate" data-testid="submission-archive-row-name">
                                     {* nofilter: sub.name is wordwrap(htmlspecialchars($sub['name']), 55, "<br />", true) — already entity-escaped in admin.bans.php. *}
                                     {$sub.name nofilter}
@@ -65,10 +67,10 @@
                                     {if $sub.SteamId != ""}{$sub.SteamId|escape}{else}{$sub.sip|escape}{/if}
                                 </div>
                             </div>
-                            <div class="text-xs text-muted" style="flex-shrink:0">
+                            <div class="queue-row__date">
                                 {$sub.submitted|escape}
                             </div>
-                            <div class="row-actions" style="opacity:1;flex-shrink:0">
+                            <div class="row-actions">
                                 {if $sub.archiv != "2" AND $sub.archiv != "3"}
                                     <button type="button"
                                             class="btn btn--secondary btn--sm"

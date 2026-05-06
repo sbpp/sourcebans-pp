@@ -311,6 +311,36 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table .row-actions { opacity: 0; transition: opacity .15s; display: flex; gap: 0.25rem; justify-content: flex-end; }
 .table tbody tr:hover .row-actions { opacity: 1; }
 
+/* PUB-1 (#1207): banlist column widths + horizontal-scroll fallback.
+   With realistic per-row content the auto-layout previously
+   compressed the BANNED date to 3 lines, clipped the STATUS header
+   to "STA…", and pushed the per-row pill partly off the right edge.
+   Two-part fix:
+
+   1. Pin the timestamp / length / admin / status / actions cells to
+      one line via `white-space: nowrap` so the column never
+      compresses below its natural content width. STATUS additionally
+      uses `width: 1%` — the canonical "shrink-to-content" trick for
+      table-layout: auto: the browser obeys the smallest width it
+      can give the cell without wrapping the content, so the column
+      ends up exactly as wide as the natural content of "Status"
+      (header) / its pill, freeing the rest of the row for the
+      truncate-able Player / Reason / Server columns.
+   2. Wrap the `<table>` in `.table-scroll` (page_bans.tpl) so when
+      the parent is narrower than the natural sum of column widths
+      (1024-1100px viewport zone after the sidebar collapses, plus
+      any unusually long player / reason combos) the table scrolls
+      horizontally instead of clipping the rightmost column. The
+      card's rounded corners stay intact because the card itself
+      keeps its own `overflow: hidden`. */
+.table-scroll { overflow-x: auto; }
+.table .col-length,
+.table .col-banned,
+.table .col-admin,
+.table .col-status,
+.table .col-actions { white-space: nowrap; }
+.table .col-status { width: 1%; }
+
 /* ---- Avatar ---- */
 .avatar { display: inline-grid; place-items: center; border-radius: 50%; color: white; font-weight: 600; flex-shrink: 0; }
 
@@ -338,6 +368,76 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
 .skel { background: linear-gradient(90deg, var(--zinc-100) 0, var(--zinc-200) 40px, var(--zinc-100) 80px); background-size: 200px 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--radius-sm); }
 html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zinc-700) 40px, var(--zinc-800) 80px); background-size: 200px 100%; }
+
+/* ---- Queue rows (admin submissions / protests) ----
+   PUB-2 (#1207): the admin moderation queues (page_admin_bans_*.tpl)
+   render each row as a `<details><summary>`. At desktop width the
+   row lays out as `[name+steam stack] [date] [Ban] [Remove]
+   [Contact]`; at mobile width that same horizontal pack pushes the
+   third action ("Contact") off the visible edge and forces the date
+   to wrap to two lines.
+
+   The fix promotes the public banlist's card chrome (see
+   `responsive-banlist-cards` in #1124) to these queues: at <=768px
+   the summary stacks vertically — name+steam on top, then a date /
+   action row below — so every action is reachable without a
+   horizontal scroll. The `[data-testid="row-action-*"]` hooks
+   stay primary (#1123 testability contract).
+
+   The `.queue-row__*` classes carry the layout (instead of inline
+   `style="flex-shrink:0"` on each child) so the mobile media query
+   can override `flex` / `order` without fighting inline-style
+   specificity. Selector targets `details.queue-row > summary` so
+   the rule reaches the queue templates only (current + archive
+   submissions and protests); the public banlist's mobile cards use
+   `<a>`, not `<details>`, so they're unaffected. */
+.queue-row > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  cursor: pointer;
+  list-style: none;
+}
+.queue-row > summary::-webkit-details-marker { display: none; }
+.queue-row__body { flex: 1 1 0; min-width: 0; }
+.queue-row__date {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.queue-row > summary > .row-actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 1;
+}
+
+@media (max-width: 768px) {
+  .queue-row > summary {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  /* `body` takes the full first row; `date` and `row-actions` share
+     a second row below. `order` keeps DOM source order intact for
+     screen readers / keyboard nav while letting the visual layout
+     match the banlist card pattern. The wrap on row-actions itself
+     means a fourth/fifth action (archive flow) re-wraps onto a
+     third visual row instead of overflowing the card. */
+  .queue-row__body { flex: 1 1 100%; }
+  .queue-row__date {
+    order: 2;
+    flex: 1 1 auto;
+    align-self: center;
+  }
+  .queue-row > summary > .row-actions {
+    order: 3;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.375rem;
+  }
+}
 
 /* ---- Responsive ---- */
 [data-mobile-menu] { display: none; }

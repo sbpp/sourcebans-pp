@@ -113,8 +113,18 @@
   </form>
 
   {* -- Desktop table (>=769px). Below that, .table is hidden by
-       theme.css and .ban-cards takes over. *}
+       theme.css and .ban-cards takes over.
+
+       The `.table-scroll` wrapper inside the card is the PUB-1
+       (#1207) horizontal-overflow fallback: at 1024-1100px (after
+       the sidebar collapses) the natural column widths can exceed
+       the panel; rather than clipping STATUS / row-actions, the
+       table scrolls horizontally inside the card's rounded frame.
+       Pair with the `col-*` classes on each cell which pin the
+       always-short columns to `white-space: nowrap` so we don't
+       waste a scroll on a 3-line wrapped date. *}
   <div class="card" style="overflow:hidden">
+    <div class="table-scroll">
     <table class="table">
       <thead>
         <tr>
@@ -122,11 +132,11 @@
           <th scope="col">SteamID</th>
           <th scope="col">Reason</th>
           <th scope="col">Server</th>
-          {if !$hideadminname}<th scope="col">Admin</th>{/if}
-          <th scope="col">Length</th>
-          <th scope="col">Banned</th>
-          <th scope="col">Status</th>
-          <th scope="col" aria-label="Row actions"></th>
+          {if !$hideadminname}<th scope="col" class="col-admin">Admin</th>{/if}
+          <th scope="col" class="col-length">Length</th>
+          <th scope="col" class="col-banned">Banned</th>
+          <th scope="col" class="col-status">Status</th>
+          <th scope="col" class="col-actions" aria-label="Row actions"></th>
         </tr>
       </thead>
       <tbody>
@@ -167,17 +177,17 @@
           <td class="text-muted truncate" style="max-width:18rem">{if empty($ban.reason)}<i class="text-faint">no reason</i>{else}{$ban.reason|escape}{/if}</td>
           <td class="text-muted truncate" style="max-width:12rem">{$ban.sname|escape}</td>
           {if !$hideadminname}
-          <td class="text-muted">
+          <td class="col-admin text-muted">
             {if empty($ban.aname)}<i class="text-faint">deleted</i>{else}{$ban.aname|escape}{/if}
           </td>
           {/if}
-          <td class="tabular-nums text-muted">{if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</td>
-          <td class="text-muted text-xs"><time datetime="{$ban.banned_iso}">{$ban.banned_human|escape}</time></td>
-          <td>
+          <td class="col-length tabular-nums text-muted">{if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</td>
+          <td class="col-banned text-muted text-xs"><time datetime="{$ban.banned_iso}">{$ban.banned_human|escape}</time></td>
+          <td class="col-status">
             {assign var=_pill_label value=$ban.state|capitalize}
             <span class="pill pill--{$ban.state}">{$_pill_label|escape}</span>
           </td>
-          <td>
+          <td class="col-actions">
             <div class="row-actions">
               {if $view_bans}
                 {if $ban.can_edit_ban && $ban.state != 'unbanned'}
@@ -207,6 +217,7 @@
         {/foreach}
       </tbody>
     </table>
+    </div>
 
     {* -- Mobile card list (<769px). Single anchor per row so a tap
          opens the detail view; data-drawer-href layers the C1 drawer
