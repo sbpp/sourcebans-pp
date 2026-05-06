@@ -178,31 +178,59 @@
                         <td>
                             <span class="pill pill--{$comm.state}" style="text-transform:capitalize">{$comm.state|escape}</span>
                         </td>
-                        <td>
+                        <td class="col-actions">
                             <div class="row-actions">
                                 {if $can_edit_comm}
-                                    <a class="btn--ghost btn--icon"
+                                    <a class="btn btn--ghost btn--sm"
                                        href="{$comm.edit_url|escape}"
-                                       title="Edit"
                                        data-testid="row-action-edit">
-                                        <i data-lucide="pencil"></i>
+                                        <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                                        Edit
                                     </a>
                                 {/if}
                                 {if $can_unmute_gag && $comm.unmute_url}
-                                    <a class="btn--ghost btn--icon"
-                                       href="{$comm.unmute_url|escape}"
-                                       title="{if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}"
-                                       data-testid="row-action-unmute">
-                                        <i data-lucide="check"></i>
+                                    {* #1207 ADM-5/ADM-6: button + data-action wires to the
+                                       inline page-tail JS below, which calls
+                                       Actions.CommsUnblock and updates the row in-place
+                                       (state pill flips, action set swaps to Re-apply,
+                                       toast fires). The href fallback preserves the
+                                       legacy GET path for no-JS callers + third-party
+                                       themes that haven't migrated. *}
+                                    <button type="button"
+                                            class="btn btn--secondary btn--sm"
+                                            data-testid="row-action-unmute"
+                                            data-action="comms-unblock"
+                                            data-bid="{$comm.cid}"
+                                            data-name="{$comm.name|escape}"
+                                            data-fallback-href="{$comm.unmute_url|escape}">
+                                        <i data-lucide="check" style="width:13px;height:13px"></i>
+                                        {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
+                                    </button>
+                                {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')}
+                                    {* #1207 ADM-6: when a row is no longer active, swap the
+                                       lift action for Re-apply. Anchor goes through the
+                                       admin-comms add form's `rebanid` flow (which calls
+                                       comms.prepare_reblock to hydrate every field) so we
+                                       don't need a separate "re-block" handler. *}
+                                    <a class="btn btn--secondary btn--sm"
+                                       href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
+                                       data-testid="row-action-reapply">
+                                        <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
+                                        Re-apply
                                     </a>
                                 {/if}
                                 {if $can_delete_comm}
-                                    <a class="btn--ghost btn--icon"
-                                       href="{$comm.delete_url|escape}"
-                                       title="Delete"
-                                       data-testid="row-action-delete">
-                                        <i data-lucide="trash-2"></i>
-                                    </a>
+                                    <button type="button"
+                                            class="btn btn--ghost btn--sm"
+                                            data-testid="row-action-delete"
+                                            data-action="comms-delete"
+                                            data-bid="{$comm.cid}"
+                                            data-name="{$comm.name|escape}"
+                                            data-fallback-href="{$comm.delete_url|escape}"
+                                            style="color:var(--danger)">
+                                        <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                        Remove
+                                    </button>
                                 {/if}
                             </div>
                         </td>
@@ -266,33 +294,93 @@
         </table>
 
         {* -- Mobile cards --------------------------------------------- *}
+        {* #1207 ADM-5: each card is now a `<div>` wrapping (a) a
+           clickable summary anchor that filters the list by the row's
+           SteamID and (b) a row-actions footer with the same
+           Edit / Unmute / Remove / Re-apply set the desktop table
+           exposes. The previous shape wrapped the whole card in a
+           single `<a>` so there was no place to put `<button>` actions
+           without producing invalid nested-interactive HTML. The
+           data-testid stays `comm-card`; the anchor's `comm-card-link`
+           sub-hook lets specs assert the navigate-to-search affordance
+           independently from the action row. *}
         <div class="ban-cards">
             {foreach $ban_list as $comm}
-                <a class="ban-row ban-row--{$comm.state} flex items-center gap-3 p-4"
-                   style="border-bottom:1px solid var(--border);text-decoration:none;color:var(--text)"
-                   href="?p=commslist&amp;searchText={$comm.steam|escape:'url'}"
-                   data-testid="comm-card"
-                   data-id="{$comm.cid}">
-                    <span class="avatar"
-                          style="width:36px;height:36px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:12px">
-                        {$comm.name|truncate:2:'':true|upper|escape}
-                    </span>
-                    <div style="flex:1;min-width:0">
-                        <div class="flex items-center gap-2">
-                            <span class="font-medium text-sm truncate">
-                                {if $comm.name}{$comm.name|escape}{else}<span class="text-faint">no nickname</span>{/if}
-                            </span>
-                            <span class="pill pill--{$comm.state}">{$comm.state|escape}</span>
+                <div class="ban-row ban-row--{$comm.state} ban-card"
+                     style="border-bottom:1px solid var(--border)"
+                     data-testid="comm-card"
+                     data-id="{$comm.cid}"
+                     data-state="{$comm.state}"
+                     data-type="{$comm.type}">
+                    <a class="ban-card__summary flex items-center gap-3 p-4"
+                       style="text-decoration:none;color:var(--text)"
+                       href="?p=commslist&amp;searchText={$comm.steam|escape:'url'}"
+                       data-testid="comm-card-link">
+                        <span class="avatar"
+                              style="width:36px;height:36px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:12px">
+                            {$comm.name|truncate:2:'':true|upper|escape}
+                        </span>
+                        <div style="flex:1;min-width:0">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-sm truncate">
+                                    {if $comm.name}{$comm.name|escape}{else}<span class="text-faint">no nickname</span>{/if}
+                                </span>
+                                <span class="pill pill--{$comm.state}">{$comm.state|escape}</span>
+                            </div>
+                            <div class="text-xs text-muted truncate" style="margin-top:0.125rem">
+                                <span style="text-transform:capitalize">{$comm.type|escape}</span>
+                                · {$comm.length_human|escape}
+                                {if $comm.sname} · {$comm.sname|escape}{/if}
+                            </div>
+                            <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem">{$comm.steam|escape}</div>
                         </div>
-                        <div class="text-xs text-muted truncate" style="margin-top:0.125rem">
-                            <span style="text-transform:capitalize">{$comm.type|escape}</span>
-                            · {$comm.length_human|escape}
-                            {if $comm.sname} · {$comm.sname|escape}{/if}
-                        </div>
-                        <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem">{$comm.steam|escape}</div>
+                        <i data-lucide="chevron-right"></i>
+                    </a>
+                    {if $can_edit_comm || ($can_unmute_gag && $comm.unmute_url) || ($can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')) || $can_delete_comm}
+                    <div class="row-actions ban-card__actions">
+                        {if $can_edit_comm}
+                            <a class="btn btn--ghost btn--sm"
+                               href="{$comm.edit_url|escape}"
+                               data-testid="row-action-edit-mobile">
+                                <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                                Edit
+                            </a>
+                        {/if}
+                        {if $can_unmute_gag && $comm.unmute_url}
+                            <button type="button"
+                                    class="btn btn--secondary btn--sm"
+                                    data-testid="row-action-unmute-mobile"
+                                    data-action="comms-unblock"
+                                    data-bid="{$comm.cid}"
+                                    data-name="{$comm.name|escape}"
+                                    data-fallback-href="{$comm.unmute_url|escape}">
+                                <i data-lucide="check" style="width:13px;height:13px"></i>
+                                {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
+                            </button>
+                        {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')}
+                            <a class="btn btn--secondary btn--sm"
+                               href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
+                               data-testid="row-action-reapply-mobile">
+                                <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
+                                Re-apply
+                            </a>
+                        {/if}
+                        {if $can_delete_comm}
+                            <button type="button"
+                                    class="btn btn--ghost btn--sm"
+                                    data-testid="row-action-delete-mobile"
+                                    data-action="comms-delete"
+                                    data-bid="{$comm.cid}"
+                                    data-name="{$comm.name|escape}"
+                                    data-fallback-href="{$comm.delete_url|escape}"
+                                    style="color:var(--danger)">
+                                <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                                Remove
+                            </button>
+                        {/if}
                     </div>
-                    <i data-lucide="chevron-right"></i>
-                </a>
+                    {/if}
+                </div>
             {foreachelse}
                 {* #1207: the desktop `<table>` is `display:none` on
                    mobile (theme.css responsive block), so its empty
@@ -387,6 +475,192 @@
     <input type="hidden" form="comms-filters" name="_searchlink" value="{$searchlink|escape}" data-testid="comms-searchlink-shadow">
 
 </div>
+
+{* ============================================================
+   #1207 ADM-5/ADM-6 — comms row-action wiring (inline page-tail JS).
+
+   Click delegation per anti-pattern: every action button in the rows
+   above (desktop table + mobile cards) carries `data-action="comms-*"`
+   plus `data-bid` / `data-name` / `data-fallback-href`. The handler
+   intercepts those clicks, calls `sb.api.call(Actions.PascalName, …)`,
+   and updates the row in-place on success (state pill flips, action
+   set re-renders, `window.SBPP.showToast` confirms). The fallback
+   href is followed as a navigation when the JSON dispatcher is
+   missing entirely (e.g. third-party theme with stripped api.js) —
+   that's the legacy GET URL the `?p=commslist&a=…` handler in
+   page.commslist.php still serves.
+
+   No `// @ts-check` here because the file is rendered by Smarty;
+   ts-check only runs against `.js` sources in `web/scripts`. The
+   shape mirrors the inline handler in page_admin_bans_submissions.tpl
+   (#1207 PUB-2 reference).
+   ============================================================ *}
+{literal}
+<script>
+(function () {
+    'use strict';
+
+    /** @returns {{call: (a:string,p?:object)=>Promise<any>}|null} */
+    function api()     { return (window.sb && window.sb.api) || null; }
+    /** @returns {Record<string,string>|null} */
+    function actions() { return /** @type {any} */ (window).Actions || null; }
+    function toast(kind, title, body) {
+        var sbpp = /** @type {any} */ (window).SBPP;
+        if (sbpp && typeof sbpp.showToast === 'function') {
+            sbpp.showToast({ kind: kind, title: title, body: body || '' });
+        }
+    }
+
+    /**
+     * Find every DOM node that mirrors the same comm-block id — the
+     * desktop `<tr data-testid="comm-row">` and the mobile
+     * `<div data-testid="comm-card">` both render the same row.
+     * theme.css's `@media (max-width: 768px)` block hides the
+     * `<table>` via `display: none` rather than removing the DOM,
+     * so an in-place state update has to flip both copies (only one
+     * is visible per viewport, but stale state in the hidden one
+     * silently breaks the next viewport switch in the E2E spec).
+     * @param {string} bid
+     * @returns {Element[]}
+     */
+    function rowsForBid(bid) {
+        var sel = '[data-testid="comm-row"][data-id="' + bid + '"], '
+                + '[data-testid="comm-card"][data-id="' + bid + '"]';
+        return Array.prototype.slice.call(document.querySelectorAll(sel));
+    }
+
+    /**
+     * Update both copies of the row from `active|permanent` → `unmuted`:
+     *  - `data-state` on the wrapper.
+     *  - `ban-row--<state>` class on the wrapper.
+     *  - The status pill in column 8 (desktop) / inline pill (mobile)
+     *    has its `pill--<state>` class swapped AND its visible label
+     *    rewritten. The type pill in column 1 also carries the
+     *    `pill--<state>` class for the colored border treatment, but
+     *    its text is the type label — we leave the text alone.
+     *  - The Unmute button is replaced by a Re-apply anchor (for
+     *    callers with the add_comm flag) so the row's "make this
+     *    block live again" affordance lands in the same slot.
+     * @param {Element} row
+     * @returns {void}
+     */
+    function flipRowToUnmuted(row) {
+        var prev = (row.getAttribute('data-state') || '').toLowerCase();
+        row.setAttribute('data-state', 'unmuted');
+        row.classList.remove('ban-row--active', 'ban-row--permanent', 'ban-row--expired');
+        row.classList.add('ban-row--unmuted');
+        Array.prototype.forEach.call(row.querySelectorAll('.pill'), function (pill) {
+            // Only the *status* pill carries the previous state as its
+            // visible label; type pills (column 1) say "mute"/"gag" and
+            // we leave their text intact. The class swap applies to
+            // both — the colored border treatment comes from
+            // `pill--<state>` and both pills should track the new
+            // state for the visual hierarchy to stay consistent.
+            pill.classList.remove('pill--active', 'pill--permanent', 'pill--expired');
+            pill.classList.add('pill--unmuted');
+            var txt = (pill.textContent || '').trim().toLowerCase();
+            if (txt === prev || txt === 'active' || txt === 'permanent' || txt === 'expired') {
+                // Preserve any leading <i> icon — only the trailing
+                // text node carries the state label. Walk children
+                // backwards to find it.
+                var lastText = null;
+                for (var i = pill.childNodes.length - 1; i >= 0; i--) {
+                    var n = pill.childNodes[i];
+                    if (n.nodeType === 3) { lastText = n; break; }
+                }
+                if (lastText) lastText.textContent = ' Unmuted';
+                else pill.textContent = 'Unmuted';
+            }
+        });
+        Array.prototype.forEach.call(
+            row.querySelectorAll('[data-action="comms-unblock"]'),
+            function (btn) {
+                var bid = btn.getAttribute('data-bid') || '';
+                var a = document.createElement('a');
+                a.className = 'btn btn--secondary btn--sm';
+                var isMobile = (btn.getAttribute('data-testid') || '').indexOf('mobile') !== -1;
+                a.setAttribute('data-testid', isMobile ? 'row-action-reapply-mobile' : 'row-action-reapply');
+                a.setAttribute('href', 'index.php?p=admin&c=comms&rebanid=' + encodeURIComponent(bid));
+                a.innerHTML = '<i data-lucide="rotate-ccw" style="width:13px;height:13px"></i> Re-apply';
+                btn.parentNode.replaceChild(a, btn);
+            }
+        );
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    /**
+     * @param {Element} row
+     * @returns {void}
+     */
+    function removeRow(row) { if (row.parentNode) row.parentNode.removeChild(row); }
+
+    /** @returns {void} */
+    function decrementCount() {
+        var el = document.querySelector('[data-testid="comms-count"]');
+        if (!el) return;
+        var n = Number((el.textContent || '').replace(/[^0-9]/g, ''));
+        if (!Number.isFinite(n) || n <= 0) return;
+        el.textContent = (n - 1).toLocaleString();
+    }
+
+    document.addEventListener('click', function (e) {
+        var t = /** @type {Element|null} */ (e.target);
+        if (!t || !t.closest) return;
+        var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action]'));
+        if (!btn) return;
+        var act = btn.getAttribute('data-action');
+        if (act !== 'comms-unblock' && act !== 'comms-delete') return;
+        e.preventDefault();
+
+        var bid = btn.getAttribute('data-bid') || '';
+        var name = btn.getAttribute('data-name') || ('block #' + bid);
+        var fallback = btn.getAttribute('data-fallback-href') || '';
+        var a = api(), A = actions();
+        if (!a || !A || !bid) {
+            // No JSON dispatcher available (e.g. third-party theme that
+            // stripped api.js). Fall back to the legacy GET URL — same
+            // outcome, full page reload.
+            if (fallback) window.location.href = fallback;
+            return;
+        }
+
+        if (act === 'comms-delete') {
+            if (!window.confirm('Delete the block for "' + name + '"?')) return;
+            /** @type {HTMLButtonElement} */ (btn).disabled = true;
+            a.call(A.CommsDelete, { bid: Number(bid) }).then(function (r) {
+                if (!r || r.ok === false) {
+                    /** @type {HTMLButtonElement} */ (btn).disabled = false;
+                    var msg = (r && r.error && r.error.message) || 'Unknown error';
+                    toast('error', 'Delete failed', msg);
+                    return;
+                }
+                rowsForBid(bid).forEach(removeRow);
+                decrementCount();
+                toast('success', 'Block removed', 'The block for ' + name + ' has been deleted.');
+            });
+            return;
+        }
+
+        // comms-unblock — lift an active block. We don't prompt for an
+        // unblock reason here; the legacy GET path didn't either (only
+        // sourcebans.js's UnGag()/UnMute() confirm prompts did, and
+        // those went away with #1123 D1). Admins who need a recorded
+        // reason can use the edit form instead.
+        /** @type {HTMLButtonElement} */ (btn).disabled = true;
+        a.call(A.CommsUnblock, { bid: Number(bid), ureason: '' }).then(function (r) {
+            if (!r || r.ok === false) {
+                /** @type {HTMLButtonElement} */ (btn).disabled = false;
+                var msg = (r && r.error && r.error.message) || 'Unknown error';
+                toast('error', 'Unblock failed', msg);
+                return;
+            }
+            rowsForBid(bid).forEach(flipRowToUnmuted);
+            toast('success', 'Block lifted', name + ' has been unblocked.');
+        });
+    });
+})();
+</script>
+{/literal}
 
 {* ============================================================
    Manifest of properties only consumed by themes/default/page_comms.tpl.

@@ -107,6 +107,161 @@ function api_comms_prepare_reblock(array $params): array
     ];
 }
 
+/**
+ * Lift an active gag/mute on a comm row (#1207 ADM-5/ADM-6).
+ *
+ * Modern JSON twin of the legacy `?p=commslist&a=ungag|unmute&id=…&key=…`
+ * GET handlers in `page.commslist.php`. The legacy GET path stays put
+ * (no-JS fallback for the icon-only theme leg + third-party themes that
+ * still ship the v1.x action links), but the comms list's visible-action
+ * affordance now wires through this action so the row can update
+ * in-place + show a toast without a full page reload. Permission gate
+ * mirrors the legacy GET handler exactly:
+ *
+ *   ADMIN_OWNER | ADMIN_UNBAN     — unconditional, lift any row.
+ *   ADMIN_UNBAN_OWN_BANS          — only the row's own admin (`aid`).
+ *   ADMIN_UNBAN_GROUP_BANS        — only rows where `gid` matches the
+ *                                   caller's `gid`.
+ *
+ * The dispatcher gate is `ADMIN_OWNER | ADMIN_UNBAN |
+ * ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS` — the broadest "any
+ * unban-ish flag" match — and the per-row precision check happens
+ * inside the handler, since the dispatcher can't see which row the
+ * caller wants to act on.
+ *
+ * Inputs:
+ *   - `bid`     (int, required) — the comm-block id.
+ *   - `ureason` (string, optional) — admin-supplied unblock reason; we
+ *     trim and store as-is. Stored raw in `ureason` (per the
+ *     "store raw, escape on display" anti-pattern); the column lives
+ *     behind the same Smarty auto-escape pipeline as `reason`.
+ *
+ * @return array{ bid: int, state: string, type: int }
+ */
+function api_comms_unblock(array $params): array
+{
+    global $userbank;
+
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+    $ureason = trim((string)($params['ureason'] ?? ''));
+
+    $row = $GLOBALS['PDO']->query(
+        "SELECT C.bid, C.authid, C.name, C.type, C.length, C.ends, C.RemoveType, C.aid, A.gid AS gid
+         FROM `:prefix_comms` AS C
+         LEFT JOIN `:prefix_admins` AS A ON A.aid = C.aid
+         WHERE C.bid = ?"
+    )->single([$bid]);
+
+    if (!$row) {
+        throw new ApiError('not_found', 'Block not found.', null, 404);
+    }
+
+    // Mirror the legacy GET handler's per-row precision check: dispatcher
+    // already accepted the caller for "some unban flag", but we only let
+    // them through if the SPECIFIC row matches what their flag covers.
+    $rowAid = (int)($row['aid'] ?? 0);
+    $rowGid = (int)($row['gid'] ?? 0);
+    $callerGid = (int)$userbank->GetProperty('gid');
+    $allowed =
+        $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN)
+        || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS)   && $rowAid === $userbank->GetAid())
+        || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $rowGid === $callerGid);
+    if (!$allowed) {
+        throw new ApiError('forbidden', "You don't have access to this block.", null, 403);
+    }
+
+    if (!empty($row['RemoveType'])) {
+        throw new ApiError('not_active', 'Block has already been lifted.', null, 409);
+    }
+    $length = (int)$row['length'];
+    $ends   = (int)$row['ends'];
+    if ($length > 0 && $ends <= time()) {
+        throw new ApiError('not_active', 'Block has already expired.', null, 409);
+    }
+
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_comms` SET `RemovedBy` = ?, `RemoveType` = 'U', `RemovedOn` = UNIX_TIMESTAMP(), `ureason` = ? WHERE `bid` = ?"
+    )->execute([$userbank->GetAid(), $ureason, $bid]);
+
+    $type = (int)$row['type'];
+    $cmd  = $type === 1 ? 'sc_fw_unmute' : ($type === 2 ? 'sc_fw_ungag' : '');
+    if ($cmd !== '') {
+        $blocked = $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE `enabled`=1")->resultset();
+        foreach ($blocked as $tempban) {
+            rcon($cmd . ' ' . (string)$row['authid'], (int)$tempban['sid']);
+        }
+    }
+
+    $verb = $type === 1 ? 'UnMuted' : ($type === 2 ? 'UnGagged' : 'Unblocked');
+    Log::add('m', "Player $verb", "{$row['name']} ({$row['authid']}) has been " . strtolower($verb) . '.');
+
+    return [
+        'bid'   => $bid,
+        'state' => 'unmuted',
+        'type'  => $type,
+    ];
+}
+
+/**
+ * Delete a comm row (#1207 ADM-5).
+ *
+ * Modern JSON twin of `?p=commslist&a=delete&id=…&key=…`. Hard-deletes
+ * the row and, if the row was still active, runs `sc_fw_un{mute,gag}`
+ * on every enabled server so the in-game state matches.
+ *
+ * Permission gate (dispatcher-enforced) is `ADMIN_OWNER | ADMIN_DELETE_BAN`,
+ * mirroring the legacy GET handler. Note the broader "delete any
+ * comm row" reach: comm rows don't have the per-admin / per-group
+ * delete flag the bans table has, so a single dispatcher gate is enough.
+ *
+ * Input: `bid` (int, required).
+ *
+ * @return array{ bid: int, deleted: bool }
+ */
+function api_comms_delete(array $params): array
+{
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+
+    $row = $GLOBALS['PDO']->query(
+        "SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now FROM `:prefix_comms` WHERE bid = ?"
+    )->single([$bid]);
+
+    if (!$row) {
+        throw new ApiError('not_found', 'Block not found.', null, 404);
+    }
+
+    $type = (int)$row['type'];
+    $cmd  = $type === 1 ? 'sc_fw_unmute' : ($type === 2 ? 'sc_fw_ungag' : '');
+
+    $GLOBALS['PDO']->query("DELETE FROM `:prefix_comms` WHERE `bid` = ?")->execute([$bid]);
+
+    // Lift the in-game state ONLY if the row was still active. A row that
+    // was already lifted/expired shouldn't fire an rcon command — the
+    // server already ran one when the original action lifted the row.
+    $end    = (int)$row['ends'];
+    $length = (int)$row['length'];
+    $now    = (int)$row['now'];
+    if (empty($row['RemoveType']) && $cmd !== '' && ($length === 0 || $end > $now)) {
+        $blocked = $GLOBALS['PDO']->query("SELECT sid FROM `:prefix_servers` WHERE `enabled`=1")->resultset();
+        foreach ($blocked as $tempban) {
+            rcon($cmd . ' ' . (string)$row['authid'], (int)$tempban['sid']);
+        }
+    }
+
+    Log::add('m', 'Block Deleted', "Block {$row['name']} ({$row['authid']}) has been deleted.");
+
+    return [
+        'bid'     => $bid,
+        'deleted' => true,
+    ];
+}
+
 function api_comms_paste(array $params): array
 {
     $sid  = (int)($params['sid']  ?? 0);

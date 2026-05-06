@@ -175,21 +175,24 @@ test.describe('flow: comms gag → list → unblock', () => {
         await expect(publicRow).toContainText(TARGET.steam);
 
         // ============================================================
-        // 5. Unblock — follow the row's unmute anchor with `&ureason=`.
+        // 5. Unblock — follow the row's unmute fallback URL with
+        //    `&ureason=`.
         //
-        // The legacy `UnGag('id', 'key', …)` JS confirm prompt is gone
-        // post-D1 (sourcebans.js removed); the new theme renders a
-        // direct anchor whose href already carries the cid + the
-        // session's `banlist_postkey`. The server reads `ureason`
-        // from $_GET, so appending it on the client side lets us
-        // record the brief's "e2e: lifted" reason without needing a
-        // modal in the theme.
+        // #1207 ADM-5/6 promoted the icon-only `<a>` into a `<button>`
+        // wired to `Actions.CommsUnblock` for the in-place flip
+        // (visible-action affordance + toast). The legacy GET URL
+        // is still rendered as `data-fallback-href` so no-JS callers
+        // and third-party themes that strip api.js degrade gracefully
+        // — that's the same string the prior `<a>`'s `href` carried.
+        // We follow it directly here to record the brief's
+        // "e2e: lifted" reason via the `ureason` GET param without
+        // depending on a modal in the theme.
         // ============================================================
         const unmuteHref = await publicRow
             .locator('[data-testid="row-action-unmute"]')
-            .getAttribute('href');
-        expect(unmuteHref, 'unmute link exposes a key/cid query').toMatch(/[?&]a=ungag(?:&|$)/);
-        expect(unmuteHref, 'unmute link carries banlist_postkey').toMatch(/[?&]key=[^&]+/);
+            .getAttribute('data-fallback-href');
+        expect(unmuteHref, 'unmute action exposes a fallback ungag URL').toMatch(/[?&]a=ungag(?:&|$)/);
+        expect(unmuteHref, 'unmute action carries banlist_postkey').toMatch(/[?&]key=[^&]+/);
 
         // URL is already query-string-encoded; appending another `&k=v`
         // pair is safe.

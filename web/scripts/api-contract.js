@@ -174,6 +174,19 @@
  * @typedef {Object} ApiCommsAddResponse
  */
 /**
+ * Delete a comm row (#1207 ADM-5).  Modern JSON twin of
+ * `?p=commslist&a=delete&id=…&key=…`. Hard-deletes the row and, if the row
+ * was still active, runs `sc_fw_un{mute,gag}` on every enabled server so the
+ * in-game state matches.  Permission gate (dispatcher-enforced) is
+ * `ADMIN_OWNER | ADMIN_DELETE_BAN`, mirroring the legacy GET handler. Note the
+ * broader "delete any comm row" reach: comm rows don't have the per-admin /
+ * per-group delete flag the bans table has, so a single dispatcher gate is
+ * enough.  Input: `bid` (int, required).
+ *
+ * @typedef {Object} ApiCommsDeleteRequest
+ * @typedef {{ bid: number, deleted: boolean }} ApiCommsDeleteResponse
+ */
+/**
  * @typedef {Object} ApiCommsPasteRequest
  * @typedef {Object} ApiCommsPasteResponse
  */
@@ -197,6 +210,30 @@
 /**
  * @typedef {Object} ApiCommsPrepareReblockRequest
  * @typedef {Object} ApiCommsPrepareReblockResponse
+ */
+/**
+ * Lift an active gag/mute on a comm row (#1207 ADM-5/ADM-6).  Modern JSON twin
+ * of the legacy `?p=commslist&a=ungag|unmute&id=…&key=…` GET handlers in
+ * `page.commslist.php`. The legacy GET path stays put (no-JS fallback for the
+ * icon-only theme leg + third-party themes that still ship the v1.x action
+ * links), but the comms list's visible-action affordance now wires through
+ * this action so the row can update in-place + show a toast without a full
+ * page reload. Permission gate mirrors the legacy GET handler exactly: 
+ * ADMIN_OWNER | ADMIN_UNBAN     — unconditional, lift any row.
+ * ADMIN_UNBAN_OWN_BANS          — only the row's own admin (`aid`).
+ * ADMIN_UNBAN_GROUP_BANS        — only rows where `gid` matches the caller's
+ * `gid`.  The dispatcher gate is `ADMIN_OWNER | ADMIN_UNBAN |
+ * ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS` — the broadest "any
+ * unban-ish flag" match — and the per-row precision check happens inside the
+ * handler, since the dispatcher can't see which row the caller wants to act
+ * on.  Inputs: - `bid`     (int, required) — the comm-block id. - `ureason`
+ * (string, optional) — admin-supplied unblock reason; we trim and store
+ * as-is. Stored raw in `ureason` (per the "store raw, escape on display"
+ * anti-pattern); the column lives behind the same Smarty auto-escape pipeline
+ * as `reason`.
+ *
+ * @typedef {Object} ApiCommsUnblockRequest
+ * @typedef {{ bid: number, state: string, type: number }} ApiCommsUnblockResponse
  */
 /**
  * @typedef {Object} ApiGroupsAddRequest
@@ -393,10 +430,12 @@ var Actions = Object.freeze({
     BlockitBlockPlayer: 'blockit.block_player',
     BlockitLoadServers: 'blockit.load_servers',
     CommsAdd: 'comms.add',
+    CommsDelete: 'comms.delete',
     CommsPaste: 'comms.paste',
     CommsPlayerHistory: 'comms.player_history',
     CommsPrepareBlockFromBan: 'comms.prepare_block_from_ban',
     CommsPrepareReblock: 'comms.prepare_reblock',
+    CommsUnblock: 'comms.unblock',
     GroupsAdd: 'groups.add',
     GroupsAddServerGroupName: 'groups.add_server_group_name',
     GroupsEdit: 'groups.edit',

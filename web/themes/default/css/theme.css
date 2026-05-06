@@ -446,8 +446,14 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; }
 .table tbody tr:hover { background: var(--bg-muted); }
 .table td { padding: 0.75rem; vertical-align: middle; }
-.table .row-actions { opacity: 0; transition: opacity .15s; display: flex; gap: 0.25rem; justify-content: flex-end; }
-.table tbody tr:hover .row-actions { opacity: 1; }
+/* #1207 ADM-5: row actions are *always* visible — the previous
+   `opacity: 0 → 1 on tr:hover` treatment was a discoverability dead
+   end (no hover on touch, hostile to `prefers-reduced-motion: reduce`,
+   and the audit's blocker for the comms list specifically). The
+   queue-row pattern (#1207 PUB-2) already drops the hover gate on
+   `<details>`-rendered queues; matching the table here means every
+   list surface in the panel exposes its actions the same way. */
+.table .row-actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
 
 /* PUB-1 (#1207): banlist column widths + horizontal-scroll fallback.
    With realistic per-row content the auto-layout previously
@@ -676,6 +682,22 @@ details.queue-row > summary > .row-actions {
     justify-content: flex-end;
     gap: 0.375rem;
   }
+}
+
+/* ---- Comms mobile card actions ----
+   #1207 ADM-5: the comms list's mobile card is split into two siblings
+   — a clickable `.ban-card__summary` anchor that filters by SteamID,
+   and a `.ban-card__actions` row of Edit / Unmute / Remove / Re-apply
+   buttons. The buttons live OUTSIDE the anchor so we don't produce
+   nested-interactive HTML; the anchor's tap target stays the full
+   summary row (avatar + name + meta + chevron) so the card's primary
+   "filter by this player" affordance keeps working unchanged. */
+.ban-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.375rem;
+  padding: 0 1rem 0.75rem;
 }
 
 /* ---- Responsive ---- */

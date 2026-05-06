@@ -522,6 +522,15 @@ audit (#1207) locked in. New CTAs:
   → use `data-testid` / ARIA roles per #1123. `hasText` filters for
   disambiguation are fine; "find element by its label text" as the
   whole selector is not.
+- Hover-only row-action affordances (`.row-actions { opacity: 0 }`
+  flipped to `1` on `tbody tr:hover`) → row-level Edit / Unmute /
+  Remove (and equivalent) buttons must be visible by default at
+  every viewport. The opacity-on-hover trick was removed from the
+  comms list in #1207 ADM-5; it never worked on touch viewports
+  (no hover state) and silently regressed discoverability for
+  every keyboard / screen-reader user. New surfaces add visible
+  buttons in the same shape as `.queue-row` (admin moderation
+  queue) or the comms-list desktop table (`web/themes/default/page_comms.tpl`).
 - Removing `<meta name="format-detection" content="telephone=no…">`
   from `core/header.tpl` (or the defensive `.drawer a[href^="tel:"]`
   reset in `theme.css`) → mobile Safari + some Android Chromes
@@ -542,6 +551,7 @@ audit (#1207) locked in. New CTAs:
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
 | Edit a template                        | `web/themes/default/*.tpl`                               |
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
+| Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. |
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |

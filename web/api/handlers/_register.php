@@ -86,6 +86,11 @@ Api::register('comms.add',                    'api_comms_add',                  
 Api::register('comms.prepare_reblock',        'api_comms_prepare_reblock',        0, true);
 Api::register('comms.paste',                  'api_comms_paste',                  ADMIN_OWNER | ADMIN_ADD_BAN);
 Api::register('comms.prepare_block_from_ban', 'api_comms_prepare_block_from_ban', 0, true);
+// comms.unblock dispatcher gate matches the legacy GET handler: any of the
+// four "lift-a-block" flags lets the request through; the handler then
+// does the precise per-row check (own/group bans). #1207 ADM-5/ADM-6.
+Api::register('comms.unblock', 'api_comms_unblock', ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS);
+Api::register('comms.delete',  'api_comms_delete',  ADMIN_OWNER | ADMIN_DELETE_BAN);
 
 // ---- groups -----------------------------------------------------------
 Api::register('groups.add',                   'api_groups_add',                   ADMIN_OWNER | ADMIN_ADD_GROUP);

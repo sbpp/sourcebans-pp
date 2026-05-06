@@ -162,4 +162,117 @@ final class CommsTest extends ApiTestCase
         $this->assertEnvelopeError($env, 'rcon_failed');
         $this->assertSnapshot('comms/paste_rcon_failed', $env);
     }
+
+    // -- comms.unblock (#1207 ADM-5/ADM-6) ---------------------------------
+
+    public function testUnblockRejectsAnonymous(): void
+    {
+        $env = $this->api('comms.unblock', ['bid' => 1]);
+        $this->assertEnvelopeError($env, 'forbidden');
+        $this->assertSnapshot('comms/unblock_forbidden', $env);
+    }
+
+    public function testUnblockBadRequestOnMissingBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('comms.unblock', []);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+    }
+
+    public function testUnblockNotFoundForUnknownBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('comms.unblock', ['bid' => 99999]);
+        $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    public function testUnblockLiftsActiveGagAndPersistsState(): void
+    {
+        $this->loginAsAdmin();
+        // Seed via the regular comms.add path so we exercise the same
+        // insert-side defaults (length seconds, aid linkage, ...) the
+        // panel writes in production.
+        $this->api('comms.add', [
+            'nickname' => 'Mouthy',
+            'type'     => 1, // gag
+            'steam'    => 'STEAM_0:0:444',
+            'length'   => 60,
+            'reason'   => 'spam',
+        ]);
+        $row = $this->row('comms', ['authid' => 'STEAM_0:0:444']);
+        $bid = (int)$row['bid'];
+
+        $env = $this->api('comms.unblock', ['bid' => $bid, 'ureason' => 'lifted by e2e']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('unmuted',     $env['data']['state']);
+        $this->assertSame($bid,          (int)$env['data']['bid']);
+
+        // Persisted: RemoveType='U', RemovedBy=admin aid, ureason stored.
+        $after = $this->row('comms', ['bid' => $bid]);
+        $this->assertSame('U',                       $after['RemoveType']);
+        $this->assertSame(Fixture::adminAid(),       (int)$after['RemovedBy']);
+        $this->assertSame('lifted by e2e',           $after['ureason']);
+        $this->assertSnapshot('comms/unblock_success', $env, ['data.bid']);
+    }
+
+    public function testUnblockRejectsAlreadyLiftedRow(): void
+    {
+        $this->loginAsAdmin();
+        $this->api('comms.add', [
+            'nickname' => 'Loud',
+            'type'     => 1,
+            'steam'    => 'STEAM_0:0:445',
+            'length'   => 60,
+            'reason'   => 'shouting',
+        ]);
+        $row = $this->row('comms', ['authid' => 'STEAM_0:0:445']);
+        $bid = (int)$row['bid'];
+
+        $first = $this->api('comms.unblock', ['bid' => $bid]);
+        $this->assertTrue($first['ok']);
+
+        // Second call against the same already-lifted row should refuse.
+        $env = $this->api('comms.unblock', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'not_active');
+    }
+
+    // -- comms.delete -------------------------------------------------------
+
+    public function testDeleteRejectsAnonymous(): void
+    {
+        $env = $this->api('comms.delete', ['bid' => 1]);
+        $this->assertEnvelopeError($env, 'forbidden');
+        $this->assertSnapshot('comms/delete_forbidden', $env);
+    }
+
+    public function testDeleteBadRequestOnMissingBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('comms.delete', []);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+    }
+
+    public function testDeleteRemovesActiveRow(): void
+    {
+        $this->loginAsAdmin();
+        $this->api('comms.add', [
+            'nickname' => 'Dropme',
+            'type'     => 2, // mute
+            'steam'    => 'STEAM_0:0:446',
+            'length'   => 60,
+            'reason'   => 'queue test',
+        ]);
+        $row = $this->row('comms', ['authid' => 'STEAM_0:0:446']);
+        $bid = (int)$row['bid'];
+
+        $env = $this->api('comms.delete', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame($bid, (int)$env['data']['bid']);
+        $this->assertTrue($env['data']['deleted']);
+
+        $this->assertNull($this->row('comms', ['bid' => $bid]));
+        $this->assertSnapshot('comms/delete_success', $env, ['data.bid']);
+    }
 }

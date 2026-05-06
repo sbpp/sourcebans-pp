@@ -938,10 +938,17 @@ test.describe('@screenshot flow-comms-gag-mute', () => {
             });
 
             // ---- 4. Trigger the unblock + capture the unblocked list
+            // #1207 ADM-5/6 promoted the unmute affordance to a
+            // `<button data-action="comms-unblock">`; the legacy GET
+            // URL still ships as `data-fallback-href` so non-JS
+            // callers + this gallery (which intentionally drives
+            // the GET path to keep the screenshot deterministic
+            // across runs) can navigate the same string the prior
+            // anchor's `href` carried.
             const unmuteHref = await activeRow
                 .locator('[data-testid="row-action-unmute"]')
-                .getAttribute('href');
-            expect(unmuteHref, 'unmute href present').toBeTruthy();
+                .getAttribute('data-fallback-href');
+            expect(unmuteHref, 'unmute fallback href present').toBeTruthy();
             await page.goto(`${unmuteHref}&ureason=${encodeURIComponent('e2e: lifted')}`);
 
             await page.goto('/index.php?p=commslist');

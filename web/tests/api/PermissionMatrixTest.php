@@ -100,6 +100,16 @@ final class PermissionMatrixTest extends TestCase
             'comms.prepare_block_from_ban'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             // comms.player_history follows bans.player_history (#1165).
             'comms.player_history'            => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
+            // comms.unblock + comms.delete drive the visible row actions
+            // on the comms list (#1207 ADM-5/ADM-6). Dispatcher gate for
+            // unblock is "any unban-ish flag"; the handler then enforces
+            // the per-row own/group precision check that the legacy
+            // `?p=commslist&a=ungag|unmute` GET path uses.
+            'comms.unblock'                   => [
+                'perm' => ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS,
+                'requireAdmin' => false, 'public' => false,
+            ],
+            'comms.delete'                    => ['perm' => ADMIN_OWNER | ADMIN_DELETE_BAN, 'requireAdmin' => false, 'public' => false],
 
             // -- groups.
             'groups.add'                      => ['perm' => ADMIN_OWNER | ADMIN_ADD_GROUP,    'requireAdmin' => false, 'public' => false],
