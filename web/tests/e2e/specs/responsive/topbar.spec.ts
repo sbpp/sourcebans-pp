@@ -53,13 +53,20 @@ test.describe('responsive: topbar', () => {
         await expect(kbd).toBeHidden();
 
         // The icon stays the visible affordance — the parent button
-        // collapses to a 2.25rem square, which is ~36px at the
-        // default font-size. Allow a 4px tolerance for sub-pixel
-        // rounding / border collapsing.
+        // collapses to a 2.75rem square (44px at the default font
+        // size). 44px is the slice 1 review's explicit touch-target
+        // floor (WCAG 2.1 AAA / Apple HIG / Material) — anything
+        // smaller and the icon-only collapse becomes the smallest
+        // tap target in the chrome (CC-1 review finding 1). Lock
+        // both axes so a future shrink fails this spec instead of
+        // silently regressing the tap target.
         const box = await trigger.boundingBox();
         expect(box, 'palette trigger must render a bounding box').not.toBeNull();
-        expect(box!.width).toBeGreaterThan(20);
-        expect(box!.width).toBeLessThanOrEqual(48);
+        expect(box!.width).toBeGreaterThanOrEqual(44);
+        expect(box!.height).toBeGreaterThanOrEqual(44);
+        // Upper bound stops the rule from accidentally re-expanding
+        // back to a labelled control via cascade drift.
+        expect(box!.width).toBeLessThanOrEqual(56);
     });
 
     test('tapping the icon-only trigger opens the command palette', async ({ page }) => {

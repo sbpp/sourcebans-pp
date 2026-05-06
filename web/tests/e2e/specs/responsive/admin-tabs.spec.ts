@@ -96,27 +96,22 @@ test.describe('responsive: admin tab strip', () => {
         expect(lastBox!.x + lastBox!.width).toBeLessThanOrEqual(vw + 1);
     });
 
-    test('active tab carries the chip-style background at iPhone-13 width', async ({ page }) => {
-        await page.goto('/index.php?p=admin&c=bans');
-
-        // First tab ("Add a ban") is the default-active one when
-        // the page lands on `?p=admin&c=bans` without a `&tab=…`
-        // qualifier (AdminTabs.php's "first accessible tab is
-        // active" fallback). It carries `aria-current="page"` per
-        // admin_tabs.tpl + AdminTabs.php's `$resolvedActive` path.
+    /**
+     * Assert the active admin-tab carries the chip-style brand-orange
+     * background at the iPhone-13 viewport. Shared between the light
+     * and dark theme tests — both variants resolve to the brand orange
+     * family (`--brand-600` in light = rgb(234, 88, 12); `--brand-500`
+     * in dark = rgb(249, 115, 22)). The R/G/B heuristic below tolerates
+     * both, which is the actual contract: "active tab is orange-ish
+     * regardless of theme", not "active tab is exactly hex X".
+     * @param {import('@playwright/test').Page} page
+     */
+    async function assertActiveTabIsBrandOrange(
+        page: import('@playwright/test').Page,
+    ): Promise<void> {
         const activeTab = page.locator('.admin-tabs > [aria-current="page"]').first();
         await expect(activeTab).toBeVisible();
 
-        // The chip-style background at <=768px maps to `var(--brand-600)`
-        // in light theme — that's the orange CTA token (#ea580c).
-        // We don't lock the exact rgb value (theme tokens may
-        // shift); instead we assert the resolved background is
-        // *not* `var(--bg-surface)` (the desktop active treatment),
-        // which would mean the mobile rule didn't apply. Asserting
-        // the COMPUTED background-color contains the orange channel
-        // catches both light and dark themes — `--brand-600` (light)
-        // is `rgb(234, 88, 12)`, `--brand-500` (dark) is `rgb(249,
-        // 115, 22)` — both have a high R / low G / low B signature.
         const bgColor = await activeTab.evaluate((el) =>
             getComputedStyle(el).backgroundColor,
         );
@@ -131,5 +126,34 @@ test.describe('responsive: admin tab strip', () => {
         expect(r).toBeGreaterThan(g);
         expect(r).toBeGreaterThan(b);
         expect(b).toBeLessThan(60);
+    }
+
+    test('active tab carries the chip-style background at iPhone-13 width (light)', async ({ page }) => {
+        // First tab ("Add a ban") is the default-active one when
+        // the page lands on `?p=admin&c=bans` without a `&tab=…`
+        // qualifier (AdminTabs.php's "first accessible tab is
+        // active" fallback). It carries `aria-current="page"` per
+        // admin_tabs.tpl + AdminTabs.php's `$resolvedActive` path.
+        // The chip-style background at <=768px maps to `var(--brand-600)`
+        // in light theme — that's the orange CTA token (#ea580c).
+        await page.goto('/index.php?p=admin&c=bans');
+        await assertActiveTabIsBrandOrange(page);
+    });
+
+    test('active tab keeps the chip-style background under html.dark', async ({ page }) => {
+        // Slice 1 review finding 3: the dark-theme override
+        // (`html.dark .admin-tabs > [aria-current="page"] { background: var(--brand-500); … }`
+        // in theme.css) was previously unlocked — a token rename
+        // would silently regress the dark variant. Seed the theme
+        // preference into localStorage before the first navigation
+        // so theme.js's init-time `applyTheme(currentTheme())`
+        // resolves to `html.dark` on first paint (no toggle click
+        // needed, no race with the post-paint click handler).
+        await page.addInitScript(() => {
+            try { localStorage.setItem('sbpp-theme', 'dark'); } catch (e) { /* ignore */ }
+        });
+        await page.goto('/index.php?p=admin&c=bans');
+        await expect(page.locator('html')).toHaveClass(/(^|\s)dark(\s|$)/);
+        await assertActiveTabIsBrandOrange(page);
     });
 });

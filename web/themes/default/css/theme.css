@@ -158,13 +158,20 @@ html.dark .topbar { background: rgb(9 9 11 / 0.8); }
    palette, where typing IS the search. The label + kbd are hidden
    visually but kept in the DOM so SR users still hear "Open command
    palette (search players, SteamIDs, pages)" via the existing
-   aria-label. The button itself trims down to a 2.25rem square so
-   it sits flush next to the theme toggle.
+   aria-label.
+   The mobile button is sized to 2.75rem × 2.75rem (44×44 CSS px) —
+   that's the slice 1 review's explicit touch-target floor (WCAG
+   2.1 AAA / Apple HIG / Material). The desktop labelled variant
+   stays at 2.25rem tall (16rem-wide, so the touch target passes
+   incidentally on the wider geometry); the icon-only mobile collapse
+   needs the explicit floor because it's the smallest standalone tap
+   target in the chrome.
    The .topbar__search-label / .topbar__search-kbd hooks below are
    defined on the topbar markup in core/title.tpl. */
 @media (max-width: 768px) {
   .topbar__search {
-    flex: 0 0 auto; min-width: 0; width: 2.25rem;
+    flex: 0 0 auto; min-width: 0;
+    width: 2.75rem; height: 2.75rem;
     padding: 0; justify-content: center; gap: 0;
   }
   .topbar__search-label, .topbar__search-kbd { display: none; }
@@ -438,9 +445,18 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
   .drawer .drawer__tabs > [role="tab"] { scroll-snap-align: start; flex-shrink: 0; }
 }
 
-/* Page-level scroll lock when the player drawer is open. The
-   <aside id="drawer-root" data-drawer-open="…"> mirror is set by
-   theme.js (showDrawer / closeDrawer) per #1123's "state in
+/* Page-level scroll lock when the player drawer is open.
+   APPLIES AT EVERY VIEWPORT — this is intentional, not a misscoped
+   mobile fix. The drawer is a modal-style surface (Linear, Vercel,
+   Notion all do the same): while it's open the underlying page
+   content is non-interactive context, and letting wheel/touch scroll
+   bleed through to the page underneath produces the "I scrolled the
+   wrong thing" misclick the audit's CC-2 flagged on mobile. Locking
+   page scroll on desktop too keeps the drawer-open state symmetric
+   across viewports so a desktop test that asserts the lock matches
+   what a mobile user observes.
+   The <aside id="drawer-root" data-drawer-open="…"> mirror is set
+   by theme.js (showDrawer / closeDrawer) per #1123's "state in
    attributes, not just styling" rule. The rule below is the only
    way to gate body scroll without a JS body class — keeping the
    gate purely declarative means a JS failure that leaves the
@@ -448,7 +464,11 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
    strictly better than the alternative (locked-body + invisible
    drawer = trapped user). The selector is intentionally rooted at
    `:has(#drawer-root[data-drawer-open="true"])` so it scopes to
-   the actual open state and unlocks automatically on close. */
+   the actual open state and unlocks automatically on close.
+   The mobile sibling rule below ALSO locks <body> because some
+   mobile chromes carry their own scroll context on <body> when
+   <html> is overflow:hidden (iOS Safari quirk) and the lock has to
+   take both. */
 html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }
 @media (max-width: 768px) {
   html:has(#drawer-root[data-drawer-open="true"]) body { overflow: hidden; }

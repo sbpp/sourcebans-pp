@@ -52,6 +52,7 @@ const SUBTEST_OFFSETS = {
     xbutton: 2,
     tabs: 3,
     notes: 4,
+    scrolllock: 5,
 } as const;
 
 function uniqueSeed(
@@ -323,6 +324,53 @@ test.describe('player drawer', () => {
 
         await page.keyboard.press('Escape');
         await expect(drawer).toHaveAttribute('data-drawer-open', 'false');
+    });
+
+    test('opening the drawer locks page scroll on desktop too (#1207 CC-2)', async ({ page }, testInfo) => {
+        // CC-2 + slice 1 review finding 2: the
+        // `html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }`
+        // rule fires at every viewport — desktop drawer is treated
+        // as a modal-style surface (Linear / Vercel / Notion idiom),
+        // so the lock symmetric across viewports keeps the
+        // drawer-open contract consistent. The mobile-side assertion
+        // lives in `responsive/drawer.spec.ts`; this is the desktop
+        // counterpart so a viewport-conditional regression in either
+        // direction lands on a different failing spec.
+        const seed = uniqueSeed(testInfo, 'scrolllock');
+        const bid = await seedOrLookup(page, seed);
+
+        await page.goto('/index.php?p=banlist');
+
+        const overflowBefore = await page.evaluate(() =>
+            getComputedStyle(document.documentElement).overflow,
+        );
+        // `scrollbar-gutter: stable` on <html> means the resolved
+        // value can be `visible` or `auto` depending on the browser
+        // — the assertion is "not yet locked", not a literal value.
+        expect(overflowBefore).not.toBe('hidden');
+
+        await page
+            .locator(
+                `[data-testid="drawer-trigger"][data-drawer-href*="id=${bid}"]`,
+            )
+            .first()
+            .click();
+        const drawer = page.locator('#drawer-root');
+        await expect(drawer).toHaveAttribute('data-drawer-open', 'true');
+        await expect(drawer).not.toHaveAttribute('data-loading', /.+/);
+
+        const overflowOpen = await page.evaluate(() =>
+            getComputedStyle(document.documentElement).overflow,
+        );
+        expect(overflowOpen).toBe('hidden');
+
+        // Lock unwinds on close — Esc is the canonical close path.
+        await page.keyboard.press('Escape');
+        await expect(drawer).toHaveAttribute('data-drawer-open', 'false');
+        const overflowAfter = await page.evaluate(() =>
+            getComputedStyle(document.documentElement).overflow,
+        );
+        expect(overflowAfter).not.toBe('hidden');
     });
 
     test('clicking the in-drawer close button collapses the same way', async ({ page }, testInfo) => {
