@@ -40,19 +40,34 @@
 
         <div style="flex:1"></div>
 
+        {*
+            #1207 CC-1: at <=768px the search button collapses to icon-only
+            — the .topbar__search-label / .topbar__search-kbd hooks below
+            are the CSS handles theme.css uses to hide the visible label
+            and the keyboard hint at mobile widths. Keep them BOTH in the
+            DOM unconditionally so:
+              - SR users hear "Open command palette …" via the existing
+                aria-label regardless of viewport,
+              - theme.js's applyPlatformHints() can still rewrite the kbd
+                text to ⌘K on Mac after first paint without re-rendering,
+              - the icon stays the visible affordance on every viewport so
+                the testability hook (`data-palette-open` /
+                `data-testid="palette-trigger"`) works the same way for
+                desktop click + mobile tap.
+        *}
         <button type="button"
                 class="topbar__search"
                 data-palette-open
                 data-testid="palette-trigger"
                 aria-label="Open command palette (search players, SteamIDs, pages)">
             <i data-lucide="search" style="width:14px;height:14px"></i>
-            <span>Search players, SteamIDs…</span>
+            <span class="topbar__search-label">Search players, SteamIDs…</span>
             {* The U+2318 ⌘ glyph is missing from the vendored JetBrains Mono
                and the generic CSS mono fallback on every non-Mac browser, so
                a server-rendered '⌘K' renders as tofu for the majority of users
                (#1184). Render the Ctrl form here and let theme.js upgrade
                Mac/iOS clients to '⌘K' at boot. *}
-            <kbd>Ctrl K</kbd>
+            <kbd class="topbar__search-kbd">Ctrl K</kbd>
         </button>
 
         <button type="button"

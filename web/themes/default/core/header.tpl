@@ -25,6 +25,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="csrf-token" content="{$csrf_token}">
+    {*
+        SteamIDs ([U:1:144180014], STEAM_0:0:..., +1 712 555 ... lookalikes)
+        and the per-row IPs the drawer shows are colon-/digit-heavy enough that
+        Mobile Safari + Chrome's auto-detection heuristics flag them as phone
+        numbers and overlay a tap-to-dial link with the platform's accent
+        colour (#1207 DET-1: pinkish on iOS dark, blueish on Android). The
+        chrome doesn't have a single phone number on it, so we opt the entire
+        document out — `format-detection` for Safari, `x-apple-data-detectors`
+        for legacy iOS WebKit, `address=no` for the postal-code variant.
+    *}
+    <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+    <meta name="x-apple-data-detectors" content="false">
     <title>{$title}</title>
     <link rel="icon" href="{$theme_url}/images/favicon.ico">
     <link rel="stylesheet" href="{$theme_url}/css/theme.css">

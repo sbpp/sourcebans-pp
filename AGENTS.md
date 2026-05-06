@@ -250,7 +250,15 @@ Playwright E2E specifics:
 - `prefers-reduced-motion: reduce` is set globally via
   `playwright.config.ts`. Animations should never gate visibility;
   if a test needs a `setTimeout`, the chrome's missing a terminal
-  attribute (see `_base.ts`).
+  attribute (see `_base.ts`). The CSS side honours the same media
+  query — `theme.css` carries a `@media (prefers-reduced-motion:
+  reduce)` global rule that collapses every `animation-duration` /
+  `transition-duration` to ~0ms (#1207). Without that guard the
+  drawer's `slide-in` keyframe would still run for 250ms inside
+  the test browser and a `boundingBox()` read right after
+  `[data-drawer-open="true"]` settles can land mid-translateX,
+  off the viewport. Don't gate animations on JS state machines;
+  let the CSS guard handle it.
 - `./sbpp.sh e2e --grep @screenshot SCREENSHOTS=1` produces the
   per-PR screenshot gallery. The
   `web/tests/e2e/scripts/upload-screenshots.sh` wrapper pushes the
@@ -452,6 +460,15 @@ bearing assertion that the value is already safe HTML, so:
   → use `data-testid` / ARIA roles per #1123. `hasText` filters for
   disambiguation are fine; "find element by its label text" as the
   whole selector is not.
+- Removing `<meta name="format-detection" content="telephone=no…">`
+  from `core/header.tpl` (or the defensive `.drawer a[href^="tel:"]`
+  reset in `theme.css`) → mobile Safari + some Android Chromes
+  auto-detect colon-/digit-heavy strings like `STEAM_0:0:N`,
+  `[U:1:N]`, and IPs as phone numbers and overlay a tap-to-dial
+  link with the platform's accent colour (#1207 DET-1: pinkish on
+  iOS dark, blueish on Android). The chrome doesn't have a single
+  phone number on it; the meta is the canonical opt-out and the
+  CSS reset is the belt-and-suspenders for variants that ignore it.
 
 ## Where to find what
 
@@ -477,5 +494,9 @@ bearing assertion that the value is already safe HTML, so:
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
+| Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock, scrollable admin tab strip with chip-style active state) |
+| Stop mobile browsers auto-linking SteamIDs / IPs as phone numbers | `web/themes/default/core/header.tpl` (`<meta name="format-detection" content="telephone=no…">` + `<meta name="x-apple-data-detectors">`) and the defensive `.drawer a[href^="tel:"]` reset in `theme.css` |
+| Lock page scroll while a modal-style chrome is open | `web/themes/default/css/theme.css` (`html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }` — pure-CSS, gates on the same `data-drawer-open` mirror theme.js sets) |
+| Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
