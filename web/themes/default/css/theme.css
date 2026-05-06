@@ -380,3 +380,19 @@ html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zi
 /* Hide scrollbars on chip rows */
 .scroll-x { overflow-x: auto; scrollbar-width: none; }
 .scroll-x::-webkit-scrollbar { display: none; }
+
+/* ---- Footer (#1207 CC-6) ----
+   Footer renders inside `.text-faint` (muted by default), but a raw
+   <a> would inherit the browser-default underlined link colour and
+   stand out as a stranded blue word. Mute the link to inherit the
+   surrounding colour and only reveal the affordance on hover/focus
+   so keyboard users still get a visible focus ring. */
+.sbpp-footer a {
+    color: inherit;
+    text-decoration: none;
+}
+.sbpp-footer a:hover,
+.sbpp-footer a:focus-visible {
+    color: var(--accent);
+    text-decoration: underline;
+}

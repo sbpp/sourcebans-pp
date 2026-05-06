@@ -139,9 +139,17 @@ Both scripts include `init.php` first, which performs identical bootstrap.
 3. Loads Composer autoload (`includes/vendor/autoload.php`).
 4. Manually requires the auth + security + Database modules (they aren't
    PSR-4 namespaced) and initialises them.
-5. Reads `configs/permissions/web.json` + `sourcemod.json` and `define()`s
+5. Resolves the panel version via `Sbpp\Version::resolve()` — three-tier
+   fallback (release tarball's `configs/version.json` → `git describe`
+   → the `'dev'` sentinel) and `define()`s `SB_VERSION` / `SB_GITREV` /
+   `SB_DEV` from the result. The chrome's `<footer data-version="…">`
+   hook (`web/themes/default/core/footer.tpl`) mirrors `SB_VERSION`
+   verbatim so telemetry and E2E specs can distinguish dev installs
+   (`data-version="dev"`) from release tarball installs without
+   parsing the user-visible string (#1207 CC-5).
+6. Reads `configs/permissions/web.json` + `sourcemod.json` and `define()`s
    each flag as a global PHP constant (`ADMIN_OWNER`, `ADMIN_ADD_BAN`, …).
-6. Constructs the global `$theme` (Smarty) with the configured theme dir,
+7. Constructs the global `$theme` (Smarty) with the configured theme dir,
    registers custom functions (`{csrf_field}`, `{help_icon}`, …), and
    assigns `csrf_token` / `csrf_field_name` so every rendered page has
    them available.
@@ -166,6 +174,12 @@ After `init.php` returns, callers may rely on these globals:
 2. `route(default_page)` reads `?p=` (page), `?c=` (category), `?o=`
    (option) from the query string and returns `[title, page_php_file]`.
    Admin pages also call `CheckAdminAccess(flags)` before returning.
+   An unrecognised admin sub-route (e.g. `?p=admin&c=overrides`,
+   `?p=admin&c=bnas`) returns `['Page not found', '/page.404.php']` and
+   sets `http_response_code(404)` so the chrome still renders around
+   the error message but the HTTP status reflects reality (#1207 ADM-1).
+   The bare admin landing (`?p=admin` with no `c=`) still resolves to
+   the admin home — only *populated*, unrecognised `c=` values 404.
 3. `build(title, page)` includes `pages/core/header.php`,
    `pages/core/navbar.php`, `pages/core/title.php`, then the page file,
    then `pages/core/footer.php`.

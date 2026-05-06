@@ -80,8 +80,27 @@
          style="max-height:60vh;overflow-y:auto;padding:0.5rem"></div>
 </dialog>
 
-<footer class="text-xs text-faint" style="text-align:center;padding:1rem 0">
-    <a href="https://sbpp.github.io/" target="_blank" rel="noopener">SourceBans++</a>
+{*
+    Footer (#1207 CC-5, CC-6).
+
+    `data-version="{$version}"` mirrors the resolved SB_VERSION constant
+    (the user-visible string minus the `| Git: …` suffix). Telemetry,
+    bug reports, and E2E specs key off the attribute so they can
+    distinguish dev installs (`data-version="dev"` — the third-tier
+    fallback in init.php) from release tarball installs
+    (`data-version="2.1.0"` etc.) without parsing the visible text.
+
+    Footer link points at the sbpp/sourcebans-pp repo (CC-6) instead of
+    the marketing site so a self-hoster's first instinct ("show me the
+    code") lands them on the place that hosts both the issue tracker
+    and the install instructions. Link styling is muted by default
+    (matches the surrounding footer text colour) and only reveals the
+    accent colour + underline on `:hover` / `:focus-visible` so the
+    chrome's footer reads as a single line of text instead of having
+    a stranded blue underlined word in the middle of it.
+*}
+<footer class="text-xs text-faint sbpp-footer" data-version="{$version}" style="text-align:center;padding:1rem 0">
+    <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
     {$version}{$git}
 </footer>
 

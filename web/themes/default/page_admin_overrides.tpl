@@ -10,8 +10,14 @@
       - The bottom "add" row maps to `new_override_*` POST fields.
       - {csrf_field} is required because the dispatcher invokes
         CSRF::rejectIfInvalid() on every POST.
+
+    The wrapper carries `id="overrides"` (URL-safe, lowercase) so the
+    admin home's Overrides card href (`?p=admin&c=admins#overrides`,
+    #1207 ADM-1) scrolls the page to this editor instead of dropping
+    the user at the top of the admins list. `scroll-margin-top` keeps
+    the heading clear of the sticky topbar after the jump.
 *}
-<div class="tabcontent" id="Overrides">
+<div class="tabcontent" id="overrides" style="scroll-margin-top:4rem">
 {if not $permission_addadmin}
     <div class="card">
         <div class="card__body">

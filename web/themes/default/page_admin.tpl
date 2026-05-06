@@ -21,10 +21,12 @@
     "card visible but route 403's" can't drift between the two.
 
     Comms folds into the sidebar nav (admin/comms) per the mockup,
-    not a card here. Audit is a forward-looking card gated to owners
-    until a future ticket adds the c=audit route + page; until then
-    the legacy router's `default:` case returns this same admin
-    landing, so the link is a harmless self-loop rather than a 404.
+    not a card here. Audit is owner-gated and points at the live
+    `c=audit` route (admin.audit.php), introduced ahead of this
+    landing's redesign. The legacy router's `default:` case now
+    returns a 404 for any unrecognised c=… (#1207 ADM-1), so a
+    typo'd href would surface visibly rather than silently
+    rendering this same landing.
 
     Testability hooks per the issue's "Testability hooks" rule:
       - card grid carries role="list" + aria-label
@@ -107,8 +109,13 @@
 
         {if $can_overrides}
             <li>
+                {* The overrides editor lives at the bottom of admin.admins.php's
+                   c=admins route (admin.overrides.php is `require`d there).
+                   The hash anchors to the `#overrides` block in
+                   page_admin_overrides.tpl so clicking the card lands on the
+                   intended editor instead of the admins list (#1207 ADM-1). *}
                 <a class="admin-card"
-                   href="index.php?p=admin&amp;c=admins"
+                   href="index.php?p=admin&amp;c=admins#overrides"
                    data-testid="admin-card-overrides">
                     <div class="admin-card__icon" aria-hidden="true"><i data-lucide="key-round"></i></div>
                     <div class="admin-card__title">Overrides</div>
@@ -136,7 +143,7 @@
                    data-testid="admin-card-audit">
                     <div class="admin-card__icon" aria-hidden="true"><i data-lucide="scroll-text"></i></div>
                     <div class="admin-card__title">Audit log</div>
-                    <div class="admin-card__desc">Admin actions across the panel (coming soon).</div>
+                    <div class="admin-card__desc">Admin actions across the panel.</div>
                 </a>
             </li>
         {/if}

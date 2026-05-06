@@ -466,7 +466,8 @@ bearing assertion that the value is already safe HTML, so:
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
-| Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php`                          |
+| Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php` — unrecognised admin `c=…` returns the 404 page slot via `web/pages/page.404.php` + `Sbpp\View\NotFoundView` (#1207 ADM-1) |
+| Resolve the panel version (`SB_VERSION`, `data-version="…"` footer hook) | `web/includes/Version.php` (`Sbpp\Version::resolve()`) — three-tier fallback: `configs/version.json` → `git describe` → the `'dev'` sentinel (#1207 CC-5) |
 | Auth / JWT cookie                      | `web/includes/auth/`                                     |
 | CSRF                                   | `web/includes/security/CSRF.php`                         |
 | Schema                                 | `web/install/includes/sql/struc.sql`                     |

@@ -119,6 +119,16 @@ function route($fallback)
                     CheckAdminAccess(ADMIN_OWNER);
                     return ['Audit Log', '/admin.audit.php'];
                 default:
+                    // Unrecognised `c=…` used to silently fall through to
+                    // the admin home (#1207 ADM-1), which made typos and
+                    // stale bookmarks invisible (?p=admin&c=overrides
+                    // looked indistinguishable from ?p=admin). Surface
+                    // them as a 404 instead. The naked admin landing
+                    // (`?p=admin` with no c=) still renders the home.
+                    if ($categorie !== null && $categorie !== '') {
+                        http_response_code(404);
+                        return ['Page not found', '/page.404.php'];
+                    }
                     CheckAdminAccess(ALL_WEB);
                     return ['Administration', '/page.admin.php'];
         }

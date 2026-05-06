@@ -1,10 +1,21 @@
 <?php
 
-global $theme;
+global $theme, $userbank;
 
 use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
 use Sbpp\Mail\Mailer;
+
+// Issue #1207 AUTH-1: a user trying to recover their password is by
+// definition logged out, so a logged-in admin (or any authenticated
+// visitor) reaching this URL should be sent home rather than rendering
+// the form with the admin sidebar leaking around it. Mirrors the
+// equivalent guard in page.login.php (which redirects logged-in users
+// to `index.php` so the form is never shown to them either).
+if ($userbank->is_logged_in()) {
+    header('Location: index.php');
+    die();
+}
 
 // Issue #1102: when normal login is disabled the entire password-recovery
 // flow is meaningless (a reset password can't be used to log in), and the

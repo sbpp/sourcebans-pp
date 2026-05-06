@@ -79,25 +79,16 @@ require_once(INCLUDES_PATH.'/auth/Host.php');
 require_once(INCLUDES_PATH.'/CUserManager.php');
 require_once(INCLUDES_PATH.'/AdminTabs.php');
 
-$version = is_readable('configs/version.json')
-    ? @json_decode(file_get_contents('configs/version.json'), true)
-    : null;
+// Three-tier version resolution (#1207 CC-5): tarball JSON, git describe,
+// then the literal 'dev' sentinel. See \Sbpp\Version::resolve() for the
+// full rationale; this block just unpacks the result into the constants
+// the chrome and views consume. \Sbpp\Version is PSR-4 autoloaded via
+// composer (Sbpp\\ -> includes/), so no explicit require is needed.
+$version = \Sbpp\Version::resolve(ROOT . 'configs/version.json');
 
-if (!$version) {
-    $tag = trim((string) @shell_exec('git describe --tags --always 2>/dev/null'));
-    $sha = trim((string) @shell_exec('git rev-parse --short HEAD 2>/dev/null'));
-    if ($tag !== '' || $sha !== '') {
-        $version = [
-            'version' => $tag !== '' ? $tag : 'N/A',
-            'git' => $sha,
-            'dev' => true,
-        ];
-    }
-}
-
-define('SB_VERSION', $version['version'] ?? 'N/A');
-define('SB_GITREV', $version['git'] ??  0);
-define('SB_DEV', $version['dev'] ?? false);
+define('SB_VERSION', $version['version']);
+define('SB_GITREV', $version['git']);
+define('SB_DEV', $version['dev']);
 
 // ---------------------------------------------------
 //  Setup our DB
