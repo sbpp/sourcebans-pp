@@ -478,6 +478,19 @@ so configuration cost is paid once per request. Call sites pass the
 template emits with `nofilter` and a Smarty comment pointing back at
 the renderer (see `web/themes/default/page_dashboard.tpl`).
 
+`IntroRenderer` is also reachable from the JSON API as
+`system.preview_intro_text` (#1207 SET-1). The settings page uses it to
+power the live Markdown preview pane next to the `dash.intro.text`
+textarea: the textarea is the source of truth, and on `input` (200ms
+debounce) the JS handler POSTs the current value, receives the rendered
+HTML back, and patches the preview pane in place. The first paint
+comes from PHP via the `AdminSettingsView::$config_dash_text_preview`
+field, so the page works without JS too. The preview pane runs the
+**same** `IntroRenderer` the public dashboard runs, so what the admin
+sees in the preview is what visitors see — never wire up a third-party
+JS Markdown renderer in its place; that would diverge from the
+safe-on-render contract.
+
 Issue #1113 is the audit that introduced this: `dash.intro.text` used
 to render straight DB HTML through `{$dashboard_text nofilter}`,
 making any admin with `ADMIN_SETTINGS` a stored-XSS source. The

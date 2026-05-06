@@ -325,6 +325,25 @@
  * @typedef {Object} ApiSystemClearCacheResponse
  */
 /**
+ * Render an admin-authored Markdown snippet (currently used by the dashboard
+ * `dash.intro.text` setting; #1207 SET-1) through the same
+ * `Sbpp\Markup\IntroRenderer` the public dashboard uses, so the settings page
+ * can show a live "this is what visitors will see" preview without forcing the
+ * admin to save + navigate to `/`.  Critical: NEVER render the supplied
+ * Markdown with anything other than `IntroRenderer::renderIntroText`. The
+ * renderer wraps league/commonmark with `html_input: 'escape'` and
+ * `allow_unsafe_links: false` — that's the only safe path documented in
+ * AGENTS.md ("Admin-authored display text"). #1113 was a stored XSS rooted in
+ * a parallel render path; ducking back into a plain CommonMark/Parsedown call
+ * here would re-open the vector.  Gated on `ADMIN_OWNER | ADMIN_WEB_SETTINGS`
+ * because the only caller is the settings page (gated on the same flag), and
+ * we'd rather refuse a stray call from another surface than discover a new
+ * caller exists.
+ *
+ * @typedef {Object} ApiSystemPreviewIntroTextRequest
+ * @typedef {{html: string}} ApiSystemPreviewIntroTextResponse
+ */
+/**
  * @typedef {Object} ApiSystemRehashAdminsRequest
  * @typedef {Object} ApiSystemRehashAdminsResponse
  */
@@ -404,6 +423,7 @@ var Actions = Object.freeze({
     SystemApplyTheme: 'system.apply_theme',
     SystemCheckVersion: 'system.check_version',
     SystemClearCache: 'system.clear_cache',
+    SystemPreviewIntroText: 'system.preview_intro_text',
     SystemRehashAdmins: 'system.rehash_admins',
     SystemSelTheme: 'system.sel_theme',
     SystemSendMail: 'system.send_mail',

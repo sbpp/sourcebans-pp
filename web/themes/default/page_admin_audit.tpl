@@ -236,7 +236,45 @@
                 </div>
             </article>
         {foreachelse}
-            <div class="audit-empty">No audit events match these filters.</div>
+            {* #1207 empty-state unification — filter-aware empty.
+               $current_severity / $search drive the GET state; either
+               the user's filtering and the result is empty, or the
+               panel really has no audit log entries (rare; the
+               install seeds at least one log row). Either way the
+               unblock action is "drop the filters", so the CTA is
+               "Clear filters" regardless. The link goes back to the
+               bare `?p=admin&c=audit` URL. *}
+            <div class="empty-state"
+                 data-testid="audit-empty"
+                 data-filtered="{if $current_severity != '' || $search != ''}true{else}false{/if}">
+                <span class="empty-state__icon" aria-hidden="true">
+                    <i data-lucide="scroll-text" style="width:18px;height:18px"></i>
+                </span>
+                <h2 class="empty-state__title">
+                    {if $current_severity != '' || $search != ''}
+                        No audit events match these filters
+                    {else}
+                        No audit events recorded yet
+                    {/if}
+                </h2>
+                <p class="empty-state__body">
+                    {if $current_severity != '' || $search != ''}
+                        Try a different search term or severity, or clear the filters to see every recorded admin action.
+                    {else}
+                        Once admins start moderating from the panel, every action will be logged here for review.
+                    {/if}
+                </p>
+                {if $current_severity != '' || $search != ''}
+                    <div class="empty-state__actions">
+                        <a class="btn btn--secondary btn--sm"
+                           href="?p=admin&amp;c=audit"
+                           data-testid="audit-empty-clear">
+                            <i data-lucide="x" style="width:13px;height:13px"></i>
+                            Clear filters
+                        </a>
+                    </div>
+                {/if}
+            </div>
         {/foreach}
     </div>
 

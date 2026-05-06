@@ -81,11 +81,19 @@ foreach ($rows as $row) {
     $i++;
 }
 
+// Pull per-flag perms by name rather than splatting `Perms::for(...)`
+// whole — the helper returns every ADMIN_* flag, but PHP 8.1 throws
+// "Unknown named parameter" on any key the View doesn't declare.
+// Listing by hand also makes the View's permission surface
+// self-documenting (matches the admin.settings.php / admin.admins.php
+// pattern).
+$serversPerms = \Sbpp\View\Perms::for($userbank);
 $serversView = new \Sbpp\View\ServersView(
     access_bans: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
     server_list: $servers,
     IN_SERVERS_PAGE: !defined('IN_HOME'),
     opened_server: $number,
+    can_add_server: $serversPerms['can_add_server'],
 );
 
 if (!defined('IN_HOME')) {

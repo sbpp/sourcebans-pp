@@ -46,6 +46,11 @@ final class ServersView extends View
         public readonly array $server_list,
         public readonly bool $IN_SERVERS_PAGE,
         public readonly int $opened_server,
+        // #1207 PUB-3: gates the "Add a server" CTA in the empty
+        // state (and is harmless when servers exist; the template
+        // only references it inside the empty branch). Splatted from
+        // `Perms::for($userbank)` in `web/pages/page.servers.php`.
+        public readonly bool $can_add_server,
     ) {
     }
 }

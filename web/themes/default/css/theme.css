@@ -720,18 +720,153 @@ details.queue-row > summary > .row-actions {
 .scroll-x { overflow-x: auto; scrollbar-width: none; }
 .scroll-x::-webkit-scrollbar { display: none; }
 
-/* ---- Footer (#1207 CC-6) ----
-   Footer renders inside `.text-faint` (muted by default), but a raw
-   <a> would inherit the browser-default underlined link colour and
-   stand out as a stranded blue word. Mute the link to inherit the
-   surrounding colour and only reveal the affordance on hover/focus
-   so keyboard users still get a visible focus ring. */
-.sbpp-footer a {
-    color: inherit;
-    text-decoration: none;
+/* ---- Empty state (#1207 unified empty-state pattern) ----
+   Used everywhere a list / table / queue renders zero rows. Two
+   flavours, picked per surface in the template:
+
+     .empty-state              -- first-run (no data exists yet);
+                                  template emits a primary CTA
+                                  ("Add a ban", "Add a server", …)
+                                  gated on the matching ADMIN_* perm.
+     .empty-state[data-filtered="true"]
+                               -- filtered state (data exists, but
+                                  the active filter excludes every
+                                  row); CTA is a secondary "Clear
+                                  filters" anchor that resets the
+                                  search/chip state via plain GET.
+
+   The split follows the AGENTS.md "Empty states" convention. CTAs
+   live in `.empty-state__actions` so the icon + heading + body copy
+   stay vertically centered while the action row keeps its own gap.
+   `.empty-state__icon` uses the muted bg + faint foreground so it
+   reads as decorative (the heading + body are the load-bearing
+   copy). All children inherit the table/card colours, so dropping
+   the block into a `<td colspan>` (banlist/commslist) renders
+   identically to a card body. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.5rem;
+  color: var(--text-muted);
 }
-.sbpp-footer a:hover,
-.sbpp-footer a:focus-visible {
-    color: var(--accent);
-    text-decoration: underline;
+.empty-state__icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-muted);
+  color: var(--text-faint);
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.25rem;
+}
+.empty-state__title {
+  margin: 0;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text);
+}
+.empty-state__body {
+  margin: 0;
+  font-size: var(--fs-sm);
+  max-width: 28rem;
+}
+.empty-state__actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ---- Settings save action row (#1207 SET-2) ----
+   The settings page's save row sits at the bottom of a tall form;
+   on mobile, with the page's `.p-6` (1.5rem) padding plus the
+   footer's own 1rem padding, the button visually butted against the
+   "SourceBans++ N/A" credit (#1207 SET-2). Adding a bottom margin
+   on the action row + a top border / extra top padding on the
+   shared footer below gives the row breathing room without a
+   sticky element. The selector is keyed to `.settings-actions` so
+   only the settings save row picks up the rule — other forms
+   (login, edit ban, …) keep their existing layouts. */
+.settings-actions {
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 768px) {
+  .settings-actions { margin-bottom: 2rem; }
+}
+
+/* ---- Footer (#1207 CC-6 + SET-2) ----
+   The page-bottom credit footer in core/footer.tpl. A subtle
+   top border + a touch more vertical padding visually separates
+   it from form action rows above so the "Save changes" button on
+   the settings page no longer reads as overlapping the credit
+   (SET-2). The link is muted by default — footer renders inside
+   `.text-faint` (muted), but a raw <a> would inherit the
+   browser-default underlined link colour and stand out as a
+   stranded blue word; only reveal the affordance on hover/focus
+   so keyboard users still get a visible focus ring (CC-6). */
+.app-footer {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+}
+.app-footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.app-footer a:hover,
+.app-footer a:focus-visible {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ---- Dashboard intro Markdown editor + preview (#1207 SET-1) ----
+   Two-column grid that drops to one column on mobile. The textarea
+   stays a plain <textarea> by design (#1113 anti-pattern: no WYSIWYG).
+   The preview pane on the right is patched in place by the inline
+   JS in page_admin_settings_settings.tpl after a debounced call to
+   `system.preview_intro_text`, which renders through
+   `Sbpp\Markup\IntroRenderer` (CommonMark, html_input=escape,
+   allow_unsafe_links=false) — so what visitors see on `/` matches
+   exactly. */
+.dash-intro-editor {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+.dash-intro-editor > .textarea { min-height: 14rem; }
+.dash-intro-preview {
+  position: relative;
+  min-height: 14rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-page);
+  overflow-y: auto;
+}
+.dash-intro-preview__label {
+  position: absolute;
+  top: 0.375rem;
+  right: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.dash-intro-preview__body { font-size: var(--fs-sm); }
+.dash-intro-preview__body > :first-child { margin-top: 0; }
+.dash-intro-preview__body > :last-child  { margin-bottom: 0; }
+.dash-intro-preview[data-loading="true"] .dash-intro-preview__body { opacity: 0.6; }
+@media (max-width: 768px) {
+  .dash-intro-editor { grid-template-columns: 1fr; }
+  .dash-intro-preview { min-height: 8rem; }
 }

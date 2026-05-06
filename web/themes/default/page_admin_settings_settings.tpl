@@ -155,10 +155,69 @@
                                 <label class="label" for="dash_intro_text">
                                     Intro body
                                     <span class="text-muted text-xs">
-                                        — Markdown supported (<a href="https://commonmark.org/help/" target="_blank" rel="noopener">CommonMark cheat-sheet</a>). Raw HTML is escaped on render.
+                                        — Markdown supported
+                                        (<a href="https://commonmark.org/help/"
+                                            target="_blank"
+                                            rel="noopener"
+                                            data-testid="dash-intro-cheatsheet-link">CommonMark cheat-sheet</a>).
+                                        Raw HTML is escaped on render.
                                     </span>
                                 </label>
-                                <textarea class="textarea" id="dash_intro_text" name="dash_intro_text" rows="10" style="width:100%;font-family:var(--font-mono);font-size:var(--fs-sm)">{$config_dash_text}</textarea>
+                                {*
+                                    #1207 SET-1: live preview pane.
+
+                                    The textarea on the left stays a plain
+                                    <textarea> by design (re-introducing a
+                                    WYSIWYG was the source of #1113 — see
+                                    AGENTS.md "Anti-patterns"). The preview
+                                    pane on the right calls the new
+                                    `system.preview_intro_text` JSON action
+                                    which pipes the value through
+                                    `Sbpp\Markup\IntroRenderer` server-side,
+                                    so the rendered HTML matches what the
+                                    public dashboard would emit byte-for-byte.
+
+                                    Layout: the grid drops to one column
+                                    below 768px so the preview stacks
+                                    underneath on mobile rather than
+                                    crushing the textarea.
+
+                                    The preview frame's `nofilter` is the
+                                    only `nofilter` use here; safety
+                                    annotation is on the `{$rendered}` line
+                                    below for the initial server-rendered
+                                    paint, and the JS-side update goes
+                                    through `el.innerHTML = r.data.html`
+                                    where `r.data.html` is the same
+                                    IntroRenderer output (`html_input:
+                                    'escape'`, `allow_unsafe_links:
+                                    'false'`).
+                                *}
+                                <div class="dash-intro-editor"
+                                     data-testid="dash-intro-editor">
+                                    <textarea class="textarea"
+                                              id="dash_intro_text"
+                                              name="dash_intro_text"
+                                              rows="10"
+                                              style="width:100%;font-family:var(--font-mono);font-size:var(--fs-sm)"
+                                              data-testid="dash-intro-textarea">{$config_dash_text}</textarea>
+                                    <div class="dash-intro-preview"
+                                         data-testid="dash-intro-preview"
+                                         data-loading="false"
+                                         aria-live="polite"
+                                         aria-label="Markdown preview">
+                                        <div class="dash-intro-preview__label">Preview</div>
+                                        <div class="dash-intro-preview__body"
+                                             data-testid="dash-intro-preview-body">
+                                            {if $config_dash_text_preview != ''}
+                                                {* nofilter: $config_dash_text_preview is `IntroRenderer::renderIntroText()` output (CommonMark + html_input=escape + allow_unsafe_links=false) — the same render path the public dashboard uses, see AGENTS.md "Admin-authored display text". *}
+                                                {$config_dash_text_preview nofilter}
+                                            {else}
+                                                <p class="text-xs text-muted m-0" data-empty>Type Markdown on the left to see how it renders to visitors.</p>
+                                            {/if}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div data-testid="setting-row" data-key="dash.lognopopup">
                                 <label class="flex items-center gap-2">
@@ -295,7 +354,14 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-end gap-2">
+                    {*
+                        #1207 SET-2: `.settings-actions` keeps clear of
+                        the page footer on mobile. The class adds a
+                        bottom margin so the "Save changes" button no
+                        longer reads as overlapping the
+                        `<footer class="app-footer">` underneath.
+                    *}
+                    <div class="settings-actions flex items-center justify-end gap-2">
                         <button type="button" class="btn btn--secondary btn--sm" onclick="clearCacheBtn();">
                             <i data-lucide="brush"></i> Clear cache
                         </button>
@@ -343,6 +409,77 @@
             window.alert('Cache cleared.');
         });
     };
+
+    /**
+     * #1207 SET-1: live Markdown preview.
+     *
+     * Debounced input handler that POSTs the textarea's current value
+     * to `system.preview_intro_text`, receives the rendered HTML back
+     * (rendered by `Sbpp\Markup\IntroRenderer` — same path the public
+     * dashboard uses), and patches the preview pane in place. The
+     * `[data-loading]` flips to `true` while a call is in flight so
+     * the contract from `_base.ts`'s `waitForReady()` (data-loading
+     * settles to "false" before tests proceed) keeps holding.
+     *
+     * The first render comes from PHP (see the `{if
+     * $config_dash_text|trim != ''}` block above); JS only kicks in
+     * once the user starts typing, so the page works without JS too —
+     * the saved-form bounce flow re-renders the page with fresh PHP
+     * markup either way.
+     */
+    var ta = /** @type {HTMLTextAreaElement|null} */ (document.getElementById('dash_intro_text'));
+    var preview = /** @type {HTMLElement|null} */ (
+        document.querySelector('[data-testid="dash-intro-preview"]')
+    );
+    var previewBody = /** @type {HTMLElement|null} */ (
+        document.querySelector('[data-testid="dash-intro-preview-body"]')
+    );
+
+    if (ta && preview && previewBody && window.sb && window.sb.api && window.Actions) {
+        var emptyHtml = '<p class="text-xs text-muted m-0" data-empty>Type Markdown on the left to see how it renders to visitors.</p>';
+
+        /** @type {number|null} */
+        var pending = null;
+        /** @type {string} */
+        var lastSent = ta.value;
+
+        function refresh() {
+            if (!ta || !preview || !previewBody) return;
+            var current = ta.value;
+            if (current === lastSent && pending === null) return;
+            lastSent = current;
+            if (current.trim() === '') {
+                previewBody.innerHTML = emptyHtml;
+                preview.setAttribute('data-loading', 'false');
+                return;
+            }
+            preview.setAttribute('data-loading', 'true');
+            window.sb.api.call(window.Actions.SystemPreviewIntroText, { markdown: current }).then(function (r) {
+                if (!preview || !previewBody) return;
+                preview.setAttribute('data-loading', 'false');
+                if (r && r.ok && r.data && typeof r.data.html === 'string') {
+                    // r.data.html is IntroRenderer output (CommonMark
+                    // with html_input=escape, allow_unsafe_links=false);
+                    // safe to drop in via innerHTML for the same reason
+                    // the server-rendered first paint above is safe
+                    // behind `nofilter`. Caveat: do NOT swap this for
+                    // a third-party Markdown library — see AGENTS.md
+                    // "Admin-authored display text" for the contract.
+                    previewBody.innerHTML = r.data.html;
+                }
+            }, function () {
+                if (preview) preview.setAttribute('data-loading', 'false');
+            });
+        }
+
+        ta.addEventListener('input', function () {
+            if (pending !== null) window.clearTimeout(pending);
+            pending = window.setTimeout(function () {
+                pending = null;
+                refresh();
+            }, 200);
+        });
+    }
 })();
 {/literal}
 </script>

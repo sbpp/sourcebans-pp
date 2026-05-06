@@ -393,6 +393,7 @@ if ($section === 'themes') {
         (string) Config::get('smtp.port'),
     ];
 
+    $dashText = (string) Config::get('dash.intro.text');
     Renderer::render($theme, new AdminSettingsView(
         can_web_settings:          $perms['can_web_settings'],
         can_owner:                 $perms['can_owner'],
@@ -402,7 +403,10 @@ if ($section === 'themes') {
         config_min_password:       (int) MIN_PASS_LENGTH,
         config_dateformat:         (string) Config::get('config.dateformat'),
         config_dash_title:         (string) Config::get('dash.intro.title'),
-        config_dash_text:          (string) Config::get('dash.intro.text'),
+        config_dash_text:          $dashText,
+        // #1207 SET-1: server-rendered first paint for the live preview.
+        // JS-side updates call system.preview_intro_text on input.
+        config_dash_text_preview:  \Sbpp\Markup\IntroRenderer::renderIntroText($dashText),
         auth_maxlife:              (int) Config::get('auth.maxlife'),
         auth_maxlife_remember:     (int) Config::get('auth.maxlife.remember'),
         auth_maxlife_steam:        (int) Config::get('auth.maxlife.steam'),

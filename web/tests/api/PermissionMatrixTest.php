@@ -155,6 +155,7 @@ final class PermissionMatrixTest extends TestCase
             'system.sel_theme'                => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
             'system.apply_theme'              => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
             'system.clear_cache'              => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
+            'system.preview_intro_text'       => ['perm' => ADMIN_OWNER | ADMIN_WEB_SETTINGS, 'requireAdmin' => false, 'public' => false],
         ];
     }
 

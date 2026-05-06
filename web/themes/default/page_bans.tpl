@@ -213,7 +213,28 @@
           </td>
         </tr>
         {foreachelse}
-        <tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text-muted)">No bans match those filters.</td></tr>
+        {* #1207 empty-state unification — filter-aware empty.
+           The public ban list always lives behind filter chips +
+           hide-inactive + a search box, so the only way to hit zero
+           rows is via filters; the CTA is a "Clear filters" reset
+           that drops every $_GET param the listing reads. *}
+        <tr>
+          <td colspan="9" style="padding:0">
+            <div class="empty-state" data-testid="banlist-empty" data-filtered="true">
+              <span class="empty-state__icon" aria-hidden="true">
+                <i data-lucide="search-x" style="width:18px;height:18px"></i>
+              </span>
+              <h2 class="empty-state__title">No bans match those filters</h2>
+              <p class="empty-state__body">Try a different search term or clear the active filters to see every recorded ban.</p>
+              <div class="empty-state__actions">
+                <a class="btn btn--secondary btn--sm" href="?p=banlist" data-testid="banlist-empty-clear">
+                  <i data-lucide="x" style="width:13px;height:13px"></i>
+                  Clear filters
+                </a>
+              </div>
+            </div>
+          </td>
+        </tr>
         {/foreach}
       </tbody>
     </table>
@@ -244,7 +265,20 @@
         <span class="text-faint" aria-hidden="true">&rsaquo;</span>
       </a>
       {foreachelse}
-      <div style="text-align:center;padding:3rem;color:var(--text-muted)">No bans match those filters.</div>
+      {* Mobile mirror of the desktop filter-aware empty above. *}
+      <div class="empty-state" data-testid="banlist-empty-mobile" data-filtered="true">
+        <span class="empty-state__icon" aria-hidden="true">
+          <i data-lucide="search-x" style="width:18px;height:18px"></i>
+        </span>
+        <h2 class="empty-state__title">No bans match those filters</h2>
+        <p class="empty-state__body">Try a different search term or clear the active filters.</p>
+        <div class="empty-state__actions">
+          <a class="btn btn--secondary btn--sm" href="?p=banlist">
+            <i data-lucide="x" style="width:13px;height:13px"></i>
+            Clear filters
+          </a>
+        </div>
+      </div>
       {/foreach}
     </div>
   </div>

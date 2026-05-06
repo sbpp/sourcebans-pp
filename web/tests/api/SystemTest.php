@@ -187,4 +187,69 @@ final class SystemTest extends ApiTestCase
         $env = $this->api('system.rehash_admins', ['servers' => '']);
         $this->assertEnvelopeError($env, 'forbidden');
     }
+
+    /**
+     * #1207 SET-1: live Markdown preview for the dashboard intro field.
+     *
+     * The handler is a thin wrapper around
+     * `Sbpp\Markup\IntroRenderer::renderIntroText()`; we lock in the
+     * rendered shape (CommonMark inline -> safe HTML) plus the two
+     * security-critical paths the renderer enforces (raw HTML escaped,
+     * `javascript:` links stripped). If a future PR routes preview
+     * through a different renderer, this row fires loudly.
+     */
+    public function testPreviewIntroTextRendersCommonMarkParagraph(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('system.preview_intro_text', [
+            'markdown' => 'Hello **world** with [a link](https://example.test).',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(
+            "<p>Hello <strong>world</strong> with <a href=\"https://example.test\">a link</a>.</p>\n",
+            $env['data']['html']
+        );
+        $this->assertSnapshot('system/preview_intro_text_paragraph', $env);
+    }
+
+    public function testPreviewIntroTextEscapesRawHtml(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('system.preview_intro_text', [
+            'markdown' => 'safe <script>alert(1)</script> text',
+        ]);
+        $this->assertTrue($env['ok']);
+        // CommonMark with html_input=escape renders inline HTML as
+        // literal text — the `<script>` shows up entity-encoded, not
+        // as a parsed tag, so the preview pane never executes admin
+        // input. This is the contract from `IntroRenderer::converter`.
+        $this->assertStringNotContainsString('<script>', $env['data']['html']);
+        $this->assertStringContainsString('&lt;script&gt;', $env['data']['html']);
+    }
+
+    public function testPreviewIntroTextStripsUnsafeLinks(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('system.preview_intro_text', [
+            'markdown' => '[click](javascript:alert(1))',
+        ]);
+        $this->assertTrue($env['ok']);
+        // `allow_unsafe_links: false` (IntroRenderer) drops
+        // javascript:/data:/vbscript: hrefs entirely.
+        $this->assertStringNotContainsString('javascript:', $env['data']['html']);
+    }
+
+    public function testPreviewIntroTextRendersEmptyForBlankInput(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('system.preview_intro_text', ['markdown' => '']);
+        $this->assertTrue($env['ok']);
+        $this->assertSame('', $env['data']['html']);
+    }
+
+    public function testPreviewIntroTextRejectsAnonymous(): void
+    {
+        $env = $this->api('system.preview_intro_text', ['markdown' => 'hi']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
 }

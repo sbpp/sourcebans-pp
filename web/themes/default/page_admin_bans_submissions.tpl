@@ -48,9 +48,16 @@
         </div>
 
         {if $submission_list|@count == 0}
+            {* #1207 empty-state unification — queue-empty. Like the
+               protests queue, "empty" here means inbox-zero, so the
+               surface stays copy-only. *}
             <div class="card" data-testid="submissions-empty">
-                <div class="card__body">
-                    <p class="text-sm text-muted m-0">No pending submissions. The queue is clear.</p>
+                <div class="empty-state">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="inbox" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">No pending submissions</h2>
+                    <p class="empty-state__body">The queue is clear. Player-reported bans will show up here for review when they're filed.</p>
                 </div>
             </div>
         {else}

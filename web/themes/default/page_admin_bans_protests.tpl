@@ -43,9 +43,19 @@
         </div>
 
         {if $protest_list|@count == 0}
+            {* #1207 empty-state unification — queue-empty.
+               The protest queue is a moderation worklist; "empty"
+               here is a desirable state (inbox-zero) rather than a
+               first-run state, so we don't surface a CTA. The
+               `.empty-state` shell keeps the typography consistent
+               with banlist / commslist / audit empties. *}
             <div class="card" data-testid="protests-empty">
-                <div class="card__body">
-                    <p class="text-sm text-muted m-0">No active protests. Nothing waiting for review.</p>
+                <div class="empty-state">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="inbox" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">No active protests</h2>
+                    <p class="empty-state__body">Nothing is waiting for review. New ban appeals will appear here as players file them.</p>
                 </div>
             </div>
         {else}

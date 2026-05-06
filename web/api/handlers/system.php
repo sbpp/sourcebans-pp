@@ -13,6 +13,7 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
 use Sbpp\Mail\EmailType;
 use Sbpp\Mail\Mail;
+use Sbpp\Markup\IntroRenderer;
 
 function api_system_check_version(array $params): array
 {
@@ -174,6 +175,43 @@ function api_system_send_mail(array $params): array
             'redir' => 'index.php?p=admin&c=bans',
         ],
     ];
+}
+
+/**
+ * Render an admin-authored Markdown snippet (currently used by the
+ * dashboard `dash.intro.text` setting; #1207 SET-1) through the same
+ * `Sbpp\Markup\IntroRenderer` the public dashboard uses, so the
+ * settings page can show a live "this is what visitors will see"
+ * preview without forcing the admin to save + navigate to `/`.
+ *
+ * Critical: NEVER render the supplied Markdown with anything other
+ * than `IntroRenderer::renderIntroText`. The renderer wraps
+ * league/commonmark with `html_input: 'escape'` and
+ * `allow_unsafe_links: false` — that's the only safe path documented
+ * in AGENTS.md ("Admin-authored display text"). #1113 was a stored
+ * XSS rooted in a parallel render path; ducking back into a plain
+ * CommonMark/Parsedown call here would re-open the vector.
+ *
+ * Gated on `ADMIN_OWNER | ADMIN_WEB_SETTINGS` because the only
+ * caller is the settings page (gated on the same flag), and we'd
+ * rather refuse a stray call from another surface than discover a
+ * new caller exists.
+ *
+ * @param array{markdown?: string} $params
+ * @return array{html: string}
+ */
+function api_system_preview_intro_text(array $params): array
+{
+    $markdown = (string) ($params['markdown'] ?? '');
+    // Long inputs can stall the renderer; the textarea has no
+    // server-side length limit but a 64 KiB ceiling is well past any
+    // reasonable intro length (the rendered field already lives in
+    // a single TEXT column) and prevents a logged-in admin from
+    // wedging the API with a runaway paste.
+    if (strlen($markdown) > 65536) {
+        $markdown = substr($markdown, 0, 65536);
+    }
+    return ['html' => IntroRenderer::renderIntroText($markdown)];
 }
 
 function api_system_rehash_admins(array $params): array

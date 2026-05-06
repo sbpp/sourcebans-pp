@@ -91,9 +91,31 @@
     </header>
 
     {if $server_list|@count == 0}
+        {* #1207 PUB-3 + empty-state unification: first-run state.
+           The body copy stays terse; the primary CTA is gated on
+           `can_add_server` (Perms::for $userbank), so a logged-out
+           visitor / admin without ADMIN_ADD_SERVER sees the copy
+           but no link to the admin form they couldn't use anyway. *}
         <div class="card" data-testid="servers-empty">
-            <div class="card__body text-sm text-muted">
-                No servers are configured yet.
+            <div class="empty-state">
+                <span class="empty-state__icon" aria-hidden="true">
+                    <i data-lucide="server" style="width:18px;height:18px"></i>
+                </span>
+                <h2 class="empty-state__title">No servers configured yet</h2>
+                <p class="empty-state__body">
+                    Once you add a server, players, status, and live
+                    counts will appear here for visitors.
+                </p>
+                {if $can_add_server}
+                    <div class="empty-state__actions">
+                        <a class="btn btn--primary btn--sm"
+                           href="?p=admin&amp;c=servers"
+                           data-testid="servers-empty-add">
+                            <i data-lucide="plus" style="width:13px;height:13px"></i>
+                            Add a server
+                        </a>
+                    </div>
+                {/if}
             </div>
         </div>
     {else}

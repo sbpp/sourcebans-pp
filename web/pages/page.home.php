@@ -261,6 +261,9 @@ foreach ($rows as $row) {
 require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
 /** @var \Sbpp\View\ServersView $serversView */
 
+// See page.servers.php / admin.settings.php for the rationale on
+// pulling `$perms['can_*']` keys by name rather than splatting whole.
+$homePerms = \Sbpp\View\Perms::for($userbank);
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\HomeDashboardView(
     dashboard_title: (string) (Config::get('dash.intro.title') ?? ''),
     dashboard_text: \Sbpp\Markup\IntroRenderer::renderIntroText(
@@ -279,4 +282,6 @@ require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
     total_servers: count($serversView->server_list),
     IN_SERVERS_PAGE: $serversView->IN_SERVERS_PAGE,
     opened_server: $serversView->opened_server,
+    can_add_ban:    $homePerms['can_add_ban'],
+    can_add_server: $homePerms['can_add_server'],
 ));

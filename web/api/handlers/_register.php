@@ -134,3 +134,8 @@ Api::register('system.check_version',         'api_system_check_version',       
 Api::register('system.sel_theme',             'api_system_sel_theme',             ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 Api::register('system.apply_theme',           'api_system_apply_theme',           ADMIN_OWNER | ADMIN_WEB_SETTINGS);
 Api::register('system.clear_cache',           'api_system_clear_cache',           ADMIN_OWNER | ADMIN_WEB_SETTINGS);
+// #1207 SET-1: live Markdown preview for admin-authored display text
+// (currently only the dashboard intro). Gated on the same flag as the
+// settings page so we don't accidentally expose the renderer to
+// non-settings surfaces.
+Api::register('system.preview_intro_text',    'api_system_preview_intro_text',    ADMIN_OWNER | ADMIN_WEB_SETTINGS);

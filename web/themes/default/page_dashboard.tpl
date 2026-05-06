@@ -116,7 +116,27 @@
                     <div class="text-xs text-muted text-right" style="white-space:nowrap">{$b.banned_human}</div>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-recent-bans-empty">No bans yet.</div>
+                {* #1207 PUB-5: first-run empty state. The "Add a ban" CTA
+                   is gated on `can_add_ban` (Perms::for $userbank), so
+                   anonymous visitors / admins without ADMIN_ADD_BAN see
+                   the copy without a link they couldn't follow. *}
+                <div class="empty-state" data-testid="dashboard-recent-bans-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="ban" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No bans yet</h4>
+                    <p class="empty-state__body">Enforcement actions will show up here as soon as admins start moderating.</p>
+                    {if $can_add_ban}
+                        <div class="empty-state__actions">
+                            <a class="btn btn--primary btn--sm"
+                               href="?p=admin&amp;c=bans"
+                               data-testid="dashboard-recent-bans-empty-add">
+                                <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                Add a ban
+                            </a>
+                        </div>
+                    {/if}
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -153,7 +173,26 @@
                     <i data-lucide="external-link" style="width:14px;height:14px;color:var(--text-faint)"></i>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-servers-empty">No servers configured.</div>
+                {* #1207 PUB-5: first-run empty state. CTA gated on
+                   `can_add_server` so visitors without ADMIN_ADD_SERVER
+                   see the copy only. *}
+                <div class="empty-state" data-testid="dashboard-servers-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="server" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No servers configured</h4>
+                    <p class="empty-state__body">Add a server so visitors can see live status and connect from the panel.</p>
+                    {if $can_add_server}
+                        <div class="empty-state__actions">
+                            <a class="btn btn--primary btn--sm"
+                               href="?p=admin&amp;c=servers"
+                               data-testid="dashboard-servers-empty-add">
+                                <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                Add a server
+                            </a>
+                        </div>
+                    {/if}
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -196,7 +235,17 @@
                     <div class="text-xs text-muted text-right" style="white-space:nowrap">{$p.blocked_human}</div>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-blocked-attempts-empty">No blocked attempts yet.</div>
+                {* #1207 PUB-5: blocked-attempts is a read-only stream
+                   of plugin-side intercepts; there's no admin "add"
+                   action that maps to it, so the empty state is copy
+                   only — no CTA. *}
+                <div class="empty-state" data-testid="dashboard-blocked-attempts-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="shield-x" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No blocked attempts yet</h4>
+                    <p class="empty-state__body">Once banned players try to rejoin, the SourceMod plugin will log every intercept here.</p>
+                </div>
                 {/foreach}
             </div>
         </section>
@@ -232,7 +281,27 @@
                     <div class="text-xs text-muted text-right" style="white-space:nowrap">{$c.banned_human}</div>
                 </a>
                 {foreachelse}
-                <div class="card__body text-sm text-muted" data-testid="dashboard-recent-comms-empty">No comm blocks yet.</div>
+                {* #1207 PUB-5: first-run empty state. The "Add a comm
+                   block" CTA reuses `can_add_ban` because admin.comms.php
+                   gates Add on the same flag (ADMIN_OWNER | ADMIN_ADD_BAN);
+                   see _register.php's `comms.add` row. *}
+                <div class="empty-state" data-testid="dashboard-recent-comms-empty">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="mic-off" style="width:18px;height:18px"></i>
+                    </span>
+                    <h4 class="empty-state__title">No comm blocks yet</h4>
+                    <p class="empty-state__body">Mutes and gags issued from the panel or in-game will appear here.</p>
+                    {if $can_add_ban}
+                        <div class="empty-state__actions">
+                            <a class="btn btn--primary btn--sm"
+                               href="?p=admin&amp;c=comms"
+                               data-testid="dashboard-recent-comms-empty-add">
+                                <i data-lucide="plus" style="width:13px;height:13px"></i>
+                                Add a comm block
+                            </a>
+                        </div>
+                    {/if}
+                </div>
                 {/foreach}
             </div>
         </section>

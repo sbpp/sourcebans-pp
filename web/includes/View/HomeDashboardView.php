@@ -39,6 +39,14 @@ final class HomeDashboardView extends View
         public readonly int $total_servers,
         public readonly bool $IN_SERVERS_PAGE,
         public readonly int $opened_server,
+        // #1207 PUB-5: gate per-card empty-state CTAs in
+        // page_dashboard.tpl. `can_add_ban` is reused for the comm
+        // blocks card too — both flow through the same admin
+        // surface (?p=admin&c=bans / ?p=admin&c=comms) which is
+        // gated on ADMIN_ADD_BAN. Splatted from
+        // `Perms::for($userbank)` in `web/pages/page.home.php`.
+        public readonly bool $can_add_ban,
+        public readonly bool $can_add_server,
     ) {
     }
 }

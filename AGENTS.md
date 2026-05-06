@@ -419,6 +419,46 @@ bearing assertion that the value is already safe HTML, so:
 - Settings UIs surface a Markdown cheat-sheet link in the help icon.
   **Do not** reintroduce a WYSIWYG editor for these fields; the
   WYSIWYG was the source of #1113's stored-XSS vector.
+- A live preview pane (textarea on the left, server-rendered HTML on
+  the right) is the canonical UX. Updates POST the textarea value to
+  the `system.preview_intro_text` JSON action, which pipes the value
+  through the same `IntroRenderer` so the preview matches the public
+  dashboard byte-for-byte. The first paint is server-rendered (so the
+  page works without JS); the JS-side update only fires on input.
+  Reuse this pattern — never call a third-party Markdown renderer
+  client-side, as it would diverge from the safe-on-render contract.
+
+### Empty states (`first-run` vs `filtered`)
+
+Empty surfaces follow one of two shapes; pick by whether the empty
+result is structural (no rows exist anywhere) or filter-induced
+(rows exist but the active filter excludes everything):
+
+- **first-run** (no data exists): icon + short title ("No servers
+  configured yet") + one-line body explaining what will appear here +
+  a primary CTA gated on the appropriate `ADMIN_*` flag (e.g.
+  `dashboard-recent-bans-empty-add`, `servers-empty-add`).
+  Read-only streams (e.g. "Latest blocked attempts") get the same
+  card layout but **no** CTA — there's no admin action that seeds it.
+- **filtered** (data exists, filter excluded everything): icon +
+  short title ("No bans match those filters") + one-line body + a
+  secondary "Clear filters" CTA that drops the user back at the
+  unfiltered route. Add `data-filtered="true"` on the empty-state
+  container so tests can disambiguate the two shapes.
+
+Use the shared `.empty-state` / `.empty-state__icon` /
+`.empty-state__title` / `.empty-state__body` /
+`.empty-state__actions` classes from `web/themes/default/css/theme.css`
+so the visual treatment stays consistent across surfaces. Never
+inline an ad-hoc empty state — the unified pattern is what the
+audit (#1207) locked in. New CTAs:
+
+- Bind to a `data-testid` per surface (e.g.
+  `dashboard-servers-empty-add`, `servers-empty-add`) so E2E specs
+  anchor on the contract, not visible text.
+- Live behind `{if $can_*}` (the `Sbpp\View\Perms::for($userbank)`
+  snapshot) so a user without the relevant `ADMIN_*` flag sees the
+  body copy without the link they couldn't follow.
 
 ## Anti-patterns (do NOT reintroduce)
 
@@ -448,7 +488,19 @@ bearing assertion that the value is already safe HTML, so:
   in `sb_settings` and rendered to other users → these fields end up
   emitted through `nofilter` and become a stored-XSS vector for every
   admin with the relevant flag (#1113). Use a plain `<textarea>` and
-  pipe the value through `Sbpp\Markup\IntroRenderer` (Markdown).
+  pipe the value through `Sbpp\Markup\IntroRenderer` (Markdown). For
+  immediate visual feedback, pair the textarea with the live preview
+  pane shape from `page_admin_settings_settings.tpl` (calls
+  `system.preview_intro_text`, server-renders through `IntroRenderer`).
+- Ad-hoc per-page empty-state copy → use the shared `.empty-state`
+  layout + the first-run-vs-filtered split documented under
+  "Empty states" above. Inconsistent voice and missing CTAs are what
+  #1207's empty-state audit caught; future surfaces stay on the
+  unified pattern.
+- Markdown-rendering admin display text client-side → use the
+  server-side `system.preview_intro_text` action (same `IntroRenderer`
+  the public dashboard uses). A bundled JS Markdown library would
+  diverge from the safe-on-render contract.
 - Unannotated `{$foo nofilter}` → every `nofilter` is an assertion the
   value is safe HTML; without a `{* nofilter: <why> *}` comment above
   it, future readers can't tell whether it's a real escape hatch or a
@@ -483,6 +535,9 @@ bearing assertion that the value is already safe HTML, so:
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
+| Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
+| Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
+| Add a shared "1 of these required" badge for an either/or input pair | `web/themes/default/page_submitban.tpl` (`data-required-group="…"` + the inline guard script — vanilla JS `// @ts-check`, blocks submit when both are empty) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
 | Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php` — unrecognised admin `c=…` returns the 404 page slot via `web/pages/page.404.php` + `Sbpp\View\NotFoundView` (#1207 ADM-1) |
 | Resolve the panel version (`SB_VERSION`, `data-version="…"` footer hook) | `web/includes/Version.php` (`Sbpp\Version::resolve()`) — three-tier fallback: `configs/version.json` → `git describe` → the `'dev'` sentinel (#1207 CC-5) |

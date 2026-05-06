@@ -38,6 +38,15 @@ final class AdminSettingsView extends View
         public readonly string $config_dateformat,
         public readonly string $config_dash_title,
         public readonly string $config_dash_text,
+        // #1207 SET-1: pre-rendered HTML for the live-preview pane's
+        // first paint. Source value is `config_dash_text` (raw
+        // Markdown); the page handler runs it through
+        // `Sbpp\Markup\IntroRenderer::renderIntroText()` so the
+        // template can drop the result into the preview pane behind
+        // `nofilter` without the JS round-trip. The JS preview update
+        // (debounced on textarea input) calls
+        // `system.preview_intro_text` for fresh renders.
+        public readonly string $config_dash_text_preview,
         public readonly int $auth_maxlife,
         public readonly int $auth_maxlife_remember,
         public readonly int $auth_maxlife_steam,

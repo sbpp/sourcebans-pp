@@ -81,7 +81,7 @@
 </dialog>
 
 {*
-    Footer (#1207 CC-5, CC-6).
+    Footer (#1207 CC-5, CC-6, SET-2).
 
     `data-version="{$version}"` mirrors the resolved SB_VERSION constant
     (the user-visible string minus the `| Git: …` suffix). Telemetry,
@@ -90,6 +90,9 @@
     fallback in init.php) from release tarball installs
     (`data-version="2.1.0"` etc.) without parsing the visible text.
 
+    `data-testid="app-footer"` is the testability hook for SET-2's
+    save-button-doesn't-overlap-footer assertion at mobile width.
+
     Footer link points at the sbpp/sourcebans-pp repo (CC-6) instead of
     the marketing site so a self-hoster's first instinct ("show me the
     code") lands them on the place that hosts both the issue tracker
@@ -97,9 +100,12 @@
     (matches the surrounding footer text colour) and only reveals the
     accent colour + underline on `:hover` / `:focus-visible` so the
     chrome's footer reads as a single line of text instead of having
-    a stranded blue underlined word in the middle of it.
+    a stranded blue underlined word in the middle of it. The
+    `.app-footer` class adds the SET-2 separator (top border + extra
+    margin/padding) so the "Save changes" row above no longer reads
+    as overlapping the credit on mobile.
 *}
-<footer class="text-xs text-faint sbpp-footer" data-version="{$version}" style="text-align:center;padding:1rem 0">
+<footer class="app-footer" data-version="{$version}" data-testid="app-footer">
     <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
     {$version}{$git}
 </footer>

@@ -208,11 +208,31 @@
                         </td>
                     </tr>
                 {foreachelse}
+                    {* #1207 empty-state unification — filter-aware empty.
+                       Comm blocks live behind a search box + server / time
+                       filters + chip group, so zero rows means the user's
+                       filter is too narrow. The CTA is a "Clear filters"
+                       reset that drops every $_GET param. *}
                     <tr>
                         <td colspan="9"
-                            style="text-align:center;padding:3rem;color:var(--text-muted)"
-                            data-testid="comms-empty">
-                            No comm blocks match those filters.
+                            style="padding:0"
+                            data-testid="comms-empty"
+                            data-filtered="true">
+                            <div class="empty-state">
+                                <span class="empty-state__icon" aria-hidden="true">
+                                    <i data-lucide="search-x" style="width:18px;height:18px"></i>
+                                </span>
+                                <h2 class="empty-state__title">No comm blocks match those filters</h2>
+                                <p class="empty-state__body">Try a different search term, server, or time range &mdash; or clear the active filters to see every recorded mute / gag.</p>
+                                <div class="empty-state__actions">
+                                    <a class="btn btn--secondary btn--sm"
+                                       href="?p=commslist"
+                                       data-testid="comms-empty-clear">
+                                        <i data-lucide="x" style="width:13px;height:13px"></i>
+                                        Clear filters
+                                    </a>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                 {/foreach}
@@ -247,6 +267,25 @@
                     </div>
                     <i data-lucide="chevron-right"></i>
                 </a>
+            {foreachelse}
+                {* #1207: the desktop `<table>` is `display:none` on
+                   mobile (theme.css responsive block), so its empty
+                   row above never renders below 769px. Mirror the
+                   filter-aware empty state into the mobile card list
+                   so phones don't see a blank card. *}
+                <div class="empty-state" data-testid="comms-empty-mobile" data-filtered="true">
+                    <span class="empty-state__icon" aria-hidden="true">
+                        <i data-lucide="search-x" style="width:18px;height:18px"></i>
+                    </span>
+                    <h2 class="empty-state__title">No comm blocks match those filters</h2>
+                    <p class="empty-state__body">Try a different search term or clear the active filters.</p>
+                    <div class="empty-state__actions">
+                        <a class="btn btn--secondary btn--sm" href="?p=commslist">
+                            <i data-lucide="x" style="width:13px;height:13px"></i>
+                            Clear filters
+                        </a>
+                    </div>
+                </div>
             {/foreach}
         </div>
     </div>
