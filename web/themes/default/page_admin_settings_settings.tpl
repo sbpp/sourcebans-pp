@@ -124,24 +124,105 @@
                         </div>
                     </div>
 
+                    {*
+                        #1207 ADM-7: token-lifetime inputs stacked,
+                        with per-input help.
+
+                        Pre-fix shape: a 3-column `display: grid` with
+                        the labels "Default", "Remember me",
+                        "Steam login" side-by-side. The labels were
+                        unequal width and the inputs themselves were
+                        narrower than their labels at desktop
+                        ("the input boxes are narrower than their
+                        labels"); on mobile the grid collapsed to a
+                        single column but the explanatory copy
+                        ("Token lifetimes (in minutes)") stayed on
+                        the card header so the user couldn't tell
+                        which input the unit applied to.
+
+                        Fix:
+
+                          - Use a `<fieldset>` + `<legend>` so the
+                            section heading is the form group's a11y
+                            label (replacing the card-level `<h3>`
+                            chrome — the outer `.card` chrome is kept
+                            for visual consistency with sibling
+                            settings sections).
+                          - Each input lives in its own `<div
+                            data-testid="setting-row">` with a
+                            description paragraph below the input so
+                            the unit ("in minutes") and the meaning
+                            ("when the user ticks Remember me", "when
+                            signed in via the Continue with Steam
+                            button") sit next to the field they apply
+                            to. The paragraphs are tied to the
+                            inputs via `aria-describedby` so screen
+                            readers announce them as the input's
+                            description.
+                          - The labels are renamed away from
+                            "Default" / "Remember me" / "Steam login"
+                            to "Default sign-in" / "\"Remember me\"
+                            sign-in" / "Steam sign-in" so users
+                            scanning the form don't have to read the
+                            section heading to know what "Default"
+                            applies to.
+                          - The vertical stack layout works the same
+                            on desktop and mobile, so the
+                            help-text-detached-from-the-card-header
+                            bug at <=768px goes away too.
+                    *}
                     <div class="card">
-                        <div class="card__header"><div><h3>Authentication</h3><p>Token lifetimes (in minutes).</p></div></div>
-                        <div class="card__body space-y-4">
-                            <div class="grid gap-4" style="grid-template-columns:repeat(3,1fr)">
+                        <fieldset class="settings-fieldset"
+                                  data-testid="settings-token-lifetimes">
+                            <legend class="settings-fieldset__legend">
+                                <span class="settings-fieldset__title">Authentication</span>
+                                <span class="settings-fieldset__hint">Session token lifetimes, measured in minutes. Set a value to <code>0</code> to disable a sign-in path.</span>
+                            </legend>
+                            <div class="settings-fieldset__body space-y-5">
                                 <div data-testid="setting-row" data-key="auth.maxlife">
-                                    <label class="label" for="auth_maxlife">Default</label>
-                                    <input class="input" type="number" min="0" id="auth_maxlife" name="auth_maxlife" value="{$auth_maxlife}">
+                                    <label class="label" for="auth_maxlife">Default sign-in</label>
+                                    <input class="input settings-fieldset__input"
+                                           type="number" min="0"
+                                           id="auth_maxlife"
+                                           name="auth_maxlife"
+                                           value="{$auth_maxlife}"
+                                           aria-describedby="auth_maxlife_help">
+                                    <p class="settings-fieldset__help"
+                                       id="auth_maxlife_help"
+                                       data-testid="setting-help-auth.maxlife">
+                                        How long a regular sign-in session lasts before the user is signed out, in minutes.
+                                    </p>
                                 </div>
                                 <div data-testid="setting-row" data-key="auth.maxlife.remember">
-                                    <label class="label" for="auth_maxlife_remember">Remember me</label>
-                                    <input class="input" type="number" min="0" id="auth_maxlife_remember" name="auth_maxlife_remember" value="{$auth_maxlife_remember}">
+                                    <label class="label" for="auth_maxlife_remember">&ldquo;Remember me&rdquo; sign-in</label>
+                                    <input class="input settings-fieldset__input"
+                                           type="number" min="0"
+                                           id="auth_maxlife_remember"
+                                           name="auth_maxlife_remember"
+                                           value="{$auth_maxlife_remember}"
+                                           aria-describedby="auth_maxlife_remember_help">
+                                    <p class="settings-fieldset__help"
+                                       id="auth_maxlife_remember_help"
+                                       data-testid="setting-help-auth.maxlife.remember">
+                                        Used when the user ticks the &ldquo;Remember me&rdquo; checkbox on the login form. Typically much longer than the default session.
+                                    </p>
                                 </div>
                                 <div data-testid="setting-row" data-key="auth.maxlife.steam">
-                                    <label class="label" for="auth_maxlife_steam">Steam login</label>
-                                    <input class="input" type="number" min="0" id="auth_maxlife_steam" name="auth_maxlife_steam" value="{$auth_maxlife_steam}">
+                                    <label class="label" for="auth_maxlife_steam">Steam sign-in</label>
+                                    <input class="input settings-fieldset__input"
+                                           type="number" min="0"
+                                           id="auth_maxlife_steam"
+                                           name="auth_maxlife_steam"
+                                           value="{$auth_maxlife_steam}"
+                                           aria-describedby="auth_maxlife_steam_help">
+                                    <p class="settings-fieldset__help"
+                                       id="auth_maxlife_steam_help"
+                                       data-testid="setting-help-auth.maxlife.steam">
+                                        Lifetime of a session opened via the &ldquo;Continue with Steam&rdquo; button.
+                                    </p>
                                 </div>
                             </div>
-                        </div>
+                        </fieldset>
                     </div>
 
                     <div class="card">

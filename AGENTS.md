@@ -374,8 +374,43 @@ of the diff ship together or not at all.
   templates' variables.
 - Pages that render multiple templates build one View per template and
   call `Renderer::render` for each.
-- Templates with non-default delimiters (currently only
-  `page_youraccount.tpl` using `-{ … }-`) override `View::DELIMITERS`.
+- Templates with non-default delimiters (currently `page_login.tpl`,
+  `page_blockit.tpl`, `page_kickit.tpl`, and `admin.rcon.tpl` using
+  `-{ … }-`) override `View::DELIMITERS`. `page_youraccount.tpl` was
+  on this list before #1123 B20 rewrote it in standard `{ }`
+  delimiters; do NOT regress it back to `-{ … }-` without a paired
+  edit here.
+
+### Permission display surfaces
+
+When a page surfaces the user's **own** permission flags back to them
+(currently `page_youraccount.tpl`'s "Your permissions" card), do NOT
+render a flat list of `BitToString()` output — group by category via
+`Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` so the
+section reads:
+
+```
+Bans            Servers
+- Add Bans      - View Servers
+- …             - …
+
+Admins          Groups          Mods            Settings
+…               …               …               …
+```
+
+The categories live in `PermissionCatalog::WEB_CATEGORIES` (Bans /
+Servers / Admins / Groups / Mods / Settings / Owner — order matters,
+it's the render order). Adding a new flag to
+`web/configs/permissions/web.json` requires a paired addition to one
+of these categories; `PermissionCatalogTest::testEveryAdminConstantBelongsToExactlyOneCategory`
+fails the gate otherwise so a new flag isn't silently invisible on
+the account page.
+
+`Perms::for()` (the permission **gate** snapshot) and
+`PermissionCatalog` (the permission **display** structure) are two
+different surfaces — don't conflate them. `Perms::for` is what page
+Views consume to gate `{if $can_add_ban}`; `PermissionCatalog` is
+what the rare display-the-user's-flags-back-to-them surfaces consume.
 
 ### `nofilter` discipline
 
@@ -545,6 +580,7 @@ audit (#1207) locked in. New CTAs:
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
+| Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
 | Add a shared "1 of these required" badge for an either/or input pair | `web/themes/default/page_submitban.tpl` (`data-required-group="…"` + the inline guard script — vanilla JS `// @ts-check`, blocks submit when both are empty) |

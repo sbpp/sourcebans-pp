@@ -39,7 +39,38 @@
         <p class="text-sm text-muted m-0 mt-2">Permissions, password, server password, and email.</p>
     </header>
 
-    {* -- Permissions card --------------------------------------------- *}
+    {*
+        Permissions card (#1207 ADM-9).
+
+        Pre-fix shape: a single 30-item `<ul>` next to a "None" column
+        for the SourceMod side — every permission shared the same
+        visual weight, so "Add Bans" was indistinguishable from
+        "Edit Groups" at a glance. Redesign:
+
+          - **Web side**: rendered as `<section>` per category
+            (`$web_permissions_grouped` is built by
+            {@see Sbpp\View\PermissionCatalog::groupedDisplayFromMask}).
+            Each `<section>` carries its own
+            `data-testid="account-perm-cat-<key>"` so e2e specs can
+            assert "the Bans category has at least one row" without
+            depending on visible copy. Empty categories are filtered
+            out by the helper, so the surface only paints buckets
+            that have content.
+          - **Server side**: stays a flat list — the SourceMod char
+            flags top out at ~14 single-letter values with no
+            natural category split, so a single column under the
+            "SourceMod" heading still scans cleanly. Wrapped in the
+            same `.permissions-group` chrome as the web side for
+            visual consistency.
+
+        Layout: `.permissions-grid` is a 1-column stack at <=1023px
+        and a 2-column (web side) / 1-column (server side) grid at
+        >=1024px; the web grid expands to 3 columns at >=1280px so a
+        full-permission owner doesn't waste any horizontal real
+        estate. See the matching block in `theme.css`. Tests anchor
+        on `[data-testid="account-permissions"]` + the per-category
+        ids, never on visible labels.
+    *}
     <section class="card" data-testid="account-permissions">
         <div class="card__header">
             <div>
@@ -47,32 +78,54 @@
                 <p>The flags currently granted to your admin account.</p>
             </div>
         </div>
-        <div class="card__body">
-            <div class="grid gap-6" style="grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))">
-                <div>
-                    <div class="text-xs font-semibold text-muted mb-2" style="text-transform:uppercase;letter-spacing:0.06em">Web</div>
-                    {if $web_permissions}
-                        <ul class="m-0 text-sm" style="padding-left:1.25rem">
-                            {foreach from=$web_permissions item=permission}
-                                <li>{$permission}</li>
-                            {/foreach}
-                        </ul>
-                    {else}
-                        <div class="text-sm text-muted" data-testid="account-permissions-web-empty"><em>None</em></div>
-                    {/if}
-                </div>
-                <div>
-                    <div class="text-xs font-semibold text-muted mb-2" style="text-transform:uppercase;letter-spacing:0.06em">Server</div>
-                    {if $server_permissions}
-                        <ul class="m-0 text-sm" style="padding-left:1.25rem">
-                            {foreach from=$server_permissions item=permission}
-                                <li>{$permission}</li>
-                            {/foreach}
-                        </ul>
-                    {else}
-                        <div class="text-sm text-muted" data-testid="account-permissions-server-empty"><em>None</em></div>
-                    {/if}
-                </div>
+        <div class="card__body permissions-card__body">
+            <div class="permissions-side permissions-side--web"
+                 data-testid="account-permissions-web">
+                <h4 class="permissions-side__heading">Web</h4>
+                {if $web_permissions_grouped}
+                    <div class="permissions-grid permissions-grid--web">
+                        {foreach from=$web_permissions_grouped item=group}
+                            <section class="permissions-group"
+                                     data-testid="account-perm-cat-{$group.key}"
+                                     data-perm-cat="{$group.key}">
+                                <h5 class="permissions-group__title">{$group.label}</h5>
+                                <ul class="permissions-group__list">
+                                    {foreach from=$group.perms item=permission}
+                                        <li>{$permission}</li>
+                                    {/foreach}
+                                </ul>
+                            </section>
+                        {/foreach}
+                    </div>
+                {else}
+                    <p class="permissions-empty"
+                       data-testid="account-permissions-web-empty">
+                        <em>No web permissions granted.</em>
+                    </p>
+                {/if}
+            </div>
+            <div class="permissions-side permissions-side--server"
+                 data-testid="account-permissions-server">
+                <h4 class="permissions-side__heading">SourceMod</h4>
+                {if $server_permissions}
+                    <div class="permissions-grid permissions-grid--server">
+                        <section class="permissions-group"
+                                 data-testid="account-perm-cat-server"
+                                 data-perm-cat="server">
+                            <h5 class="permissions-group__title">Game-server flags</h5>
+                            <ul class="permissions-group__list">
+                                {foreach from=$server_permissions item=permission}
+                                    <li>{$permission}</li>
+                                {/foreach}
+                            </ul>
+                        </section>
+                    </div>
+                {else}
+                    <p class="permissions-empty"
+                       data-testid="account-permissions-server-empty">
+                        <em>No SourceMod flags granted.</em>
+                    </p>
+                {/if}
             </div>
         </div>
     </section>

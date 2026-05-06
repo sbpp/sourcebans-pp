@@ -799,6 +799,169 @@ details.queue-row > summary > .row-actions {
   .settings-actions { margin-bottom: 2rem; }
 }
 
+/* ---- Settings fieldset (#1207 ADM-7) ----
+   Used by the "Authentication" block on the admin settings page where
+   three numeric inputs (auth.maxlife / auth.maxlife.remember /
+   auth.maxlife.steam) used to share one row. Pre-fix:
+   `.grid + grid-template-columns: repeat(3, 1fr)` left the inputs
+   narrower than their labels at desktop, and on mobile the help text
+   ("Token lifetimes (in minutes)") sat on the card header, divorced
+   from the field it qualified.
+
+   The fix replaces the `.card__header h3 + p` chrome with a real
+   `<fieldset>` + `<legend>`, stacks the three inputs vertically, and
+   ties each input to its own `.settings-fieldset__help` paragraph via
+   `aria-describedby`. The fieldset removes the browser-default
+   1px inset border + padding so it visually inherits the parent
+   `.card`'s chrome instead of double-painting it.
+
+   The `__legend` row mimics `.card__header`'s shape (title + muted
+   sub-line) so the fieldset reads as a card-section heading; the
+   `__body` re-applies the same padding `.card__body` uses so the
+   inputs sit at the same indent as sibling cards on the same form.
+
+   Inputs are width-clamped at 18rem max — wide enough that the
+   `<input type=number>` arrows + a 5-digit minute count both fit, and
+   meaningfully wider than the labels so the input never reads as a
+   smaller affordance than the prose introducing it. The clamp drops
+   to 100% at <=768px so mobile viewports never end up with an
+   18rem-locked input clipped under the chrome. */
+.settings-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.settings-fieldset__legend {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.settings-fieldset__title {
+  display: block;
+  font-size: var(--fs-base);
+  font-weight: 600;
+  color: var(--text);
+}
+.settings-fieldset__hint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.settings-fieldset__hint code {
+  padding: 0 0.25rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+.settings-fieldset__body {
+  padding: 1.25rem;
+}
+.settings-fieldset__input {
+  width: 100%;
+  max-width: 18rem;
+}
+.settings-fieldset__help {
+  margin: 0.375rem 0 0;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+@media (max-width: 768px) {
+  .settings-fieldset__input { max-width: 100%; }
+}
+
+/* ---- "Your permissions" grid (#1207 ADM-9) ----
+   The pre-fix layout was a 2-column `.grid` (web side / SourceMod
+   side) where the web side was a flat 30-item bullet list, leaving
+   "Add Bans" visually equal to "Edit Groups" — hard to scan at a
+   glance and impossible to tell where bans-related flags ended and
+   admin-management ones began.
+
+   The fix splits each side into two layers:
+     - `.permissions-side` is the outer "Web" / "SourceMod" column.
+       It owns the heading + an inner grid that lays out one
+       `.permissions-group` `<section>` per category.
+     - `.permissions-group` is the per-category card. It carries
+       a small heading (`__title`) and the granted-permissions list
+       (`__list`).
+
+   Layout schedule:
+     - <1024px (mobile + small tablet): single column. The web side
+       and the SourceMod side stack; inside each side, every
+       `.permissions-group` also stacks. This is the touch-first
+       layout per #1123's mobile-first rules.
+     - >=1024px (desktop): the two sides sit side-by-side via a
+       2-column outer grid (`.permissions-card__body`), and inside
+       the web side the categories themselves expand to a 2-column
+       grid so an owner with all 7 categories doesn't end up with a
+       narrow scroll-strip.
+     - >=1280px: the web side bumps to 3 columns so a full-permissions
+       owner sees every category in one viewport without scrolling.
+
+   The `.permissions-group__title` style intentionally mirrors the
+   "uppercase muted" aesthetic of the original "WEB" / "SERVER"
+   subheaders the previous template used, so the visual hierarchy
+   feels familiar even though the structure underneath is new. */
+.permissions-card__body {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+.permissions-side__heading {
+  margin: 0 0 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.permissions-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+.permissions-group {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-page);
+}
+.permissions-group__title {
+  margin: 0 0 0.375rem;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--text);
+}
+.permissions-group__list {
+  list-style: disc;
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: var(--fs-sm);
+  color: var(--text);
+}
+.permissions-group__list li + li { margin-top: 0.125rem; }
+.permissions-empty {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+@media (min-width: 1024px) {
+  .permissions-card__body {
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+  }
+  .permissions-grid--web { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1280px) {
+  .permissions-grid--web { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
 /* ---- Footer (#1207 CC-6 + SET-2) ----
    The page-bottom credit footer in core/footer.tpl. A subtle
    top border + a touch more vertical padding visually separates

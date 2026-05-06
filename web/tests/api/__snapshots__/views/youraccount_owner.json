@@ -1,0 +1,85 @@
+{
+    "ok": true,
+    "data": {
+        "srvpwset": false,
+        "email": "snapshot@example.test",
+        "user_aid": "<*>",
+        "web_permissions_grouped": [
+            {
+                "key": "bans",
+                "label": "Bans",
+                "perms": [
+                    "Add Bans",
+                    "Edit Own Bans",
+                    "Edit Group Bans",
+                    "Edit All Bans",
+                    "Ban Appeals",
+                    "Ban Reports",
+                    "Delete All Bans",
+                    "Unban All Bans",
+                    "Unban Own Bans",
+                    "Unban Group Bans",
+                    "Import Bans",
+                    "Ban Report Email Notifications",
+                    "Ban Appeal Email Notifications"
+                ]
+            },
+            {
+                "key": "servers",
+                "label": "Servers",
+                "perms": [
+                    "View Servers",
+                    "Add Servers",
+                    "Edit Servers",
+                    "Delete Servers"
+                ]
+            },
+            {
+                "key": "admins",
+                "label": "Admins",
+                "perms": [
+                    "View Admins",
+                    "Add Admins",
+                    "Edit Admins",
+                    "Delete Admins"
+                ]
+            },
+            {
+                "key": "groups",
+                "label": "Groups",
+                "perms": [
+                    "View Groups",
+                    "Add Groups",
+                    "Edit Groups",
+                    "Delete Groups"
+                ]
+            },
+            {
+                "key": "mods",
+                "label": "Mods",
+                "perms": [
+                    "View Mods",
+                    "Add Mods",
+                    "Edit Mods",
+                    "Delete Mods"
+                ]
+            },
+            {
+                "key": "settings",
+                "label": "Settings",
+                "perms": [
+                    "Web Settings"
+                ]
+            },
+            {
+                "key": "owner",
+                "label": "Owner",
+                "perms": [
+                    "Owner"
+                ]
+            }
+        ],
+        "server_permissions": false,
+        "min_pass_len": 6
+    }
+}
