@@ -17,7 +17,30 @@
     flattens the row into one table row with hover-revealed action
     buttons. Per-flag permission lists move to the edit-permissions
     page where they're actionable; the list page stays scannable.
+
+    #1207 ADM-3 — Page-level ToC + cross-template shell
+    ---------------------------------------------------
+    The audit (#1207 ADM-3) called out admin-admins as ~7 stacked
+    surfaces (search + admins list + add admin + overrides + add
+    override) on one long scroll with no internal navigation. We open
+    a `.admin-admins-shell` wrapper here that spans all three templates
+    (this one, page_admin_admins_add.tpl, page_admin_overrides.tpl) and
+    paint a sticky anchor sidebar at >=1024px / accordion at <1024px
+    inside it. The closing `</div>` lives at the bottom of
+    page_admin_overrides.tpl — keep these tags paired across edits.
+
+    Each section below is wrapped in a `<section id="…">` with
+    `scroll-margin-top` so the sticky topbar (3.5rem) clears the
+    heading after an anchor jump. The anchor IDs are referenced by the
+    ToC (rendered via {include file="admin.admins.toc.tpl"}) and by
+    other templates that link back into this page (e.g. the admin home
+    Overrides card already uses `#overrides`).
 *}
+<div class="admin-admins-shell" data-testid="admin-admins-shell">
+
+{include file="admin.admins.toc.tpl"}
+
+<div class="admin-admins-content">
 <div class="card-tab" id="List admins">
     {if !$can_list_admins}
         <div class="card">
@@ -35,17 +58,23 @@
             </div>
             {if $can_add_admins}
                 <a class="btn btn--primary btn--sm"
-                   href="?p=admin&c=admins#Add%20new%20admin"
+                   href="#add-admin"
                    data-testid="admin-add-cta"><i data-lucide="user-plus"></i> Add admin</a>
             {/if}
         </div>
 
-        {load_template file="admin.admins.search"}
+        <section id="search" class="admin-admins-section" data-testid="admin-admins-section-search" aria-labelledby="search-heading">
+            <h2 id="search-heading" class="admin-admins-section__heading">Search admins</h2>
+            {load_template file="admin.admins.search"}
+        </section>
 
-        <div class="text-xs text-muted mb-2" data-testid="admin-nav">
-            {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in admin.admins.php — same escape pipeline as the legacy theme. *}
-            {$admin_nav nofilter}
-        </div>
+        <section id="admins" class="admin-admins-section" data-testid="admin-admins-section-admins" aria-labelledby="admins-heading">
+            <h2 id="admins-heading" class="admin-admins-section__heading">Admins list</h2>
+
+            <div class="text-xs text-muted mb-2" data-testid="admin-nav">
+                {* nofilter: server-built pagination HTML; advSearch/advType (the only $_GET inputs) are htmlspecialchars(addslashes(...))'d before interpolation in admin.admins.php — same escape pipeline as the legacy theme. *}
+                {$admin_nav nofilter}
+            </div>
 
         <div class="card" style="overflow:hidden">
             <table class="table" role="table" aria-label="Admins">
@@ -133,5 +162,7 @@
                 </tbody>
             </table>
         </div>
+        </section>
     {/if}
 </div>
+{* admin-admins-content + admin-admins-shell remain open; closed in page_admin_overrides.tpl *}

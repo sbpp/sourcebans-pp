@@ -11,13 +11,24 @@
       - {csrf_field} is required because the dispatcher invokes
         CSRF::rejectIfInvalid() on every POST.
 
-    The wrapper carries `id="overrides"` (URL-safe, lowercase) so the
-    admin home's Overrides card href (`?p=admin&c=admins#overrides`,
-    #1207 ADM-1) scrolls the page to this editor instead of dropping
-    the user at the top of the admins list. `scroll-margin-top` keeps
-    the heading clear of the sticky topbar after the jump.
+    #1207 ADM-3 — section wrappers + cross-template close
+    -----------------------------------------------------
+    Two anchor targets for the page-level ToC:
+      - `<section id="overrides">` — the editable table of existing
+        overrides (also reachable from the admin home's Overrides card,
+        which links to `?p=admin&c=admins#overrides`).
+      - `<section id="add-override">` — the "Add an override" form
+        below the table.
+    The Save button sits in the parent `<form>` and submits both
+    sections at once; the visual split is purely navigational.
+
+    This template is the LAST one in the cross-template
+    `.admin-admins-shell` opened by page_admin_admins_list.tpl, so the
+    matching `</div></div>` closing the `.admin-admins-content` and
+    `.admin-admins-shell` lives at the bottom of this file. Keep the
+    open/close tags paired across edits.
 *}
-<div class="tabcontent" id="overrides" style="scroll-margin-top:4rem">
+<div class="tabcontent">
 {if not $permission_addadmin}
     <div class="card">
         <div class="card__body">
@@ -45,10 +56,11 @@
     <form method="post" action="index.php?p=admin&amp;c=admins" data-testid="overrides-form">
         {csrf_field}
 
+        <section id="overrides" class="admin-admins-section" data-testid="admin-admins-section-overrides" aria-labelledby="overrides-heading">
         <div class="card mb-4">
             <div class="card__header">
                 <div>
-                    <h3>Command &amp; group overrides</h3>
+                    <h3 id="overrides-heading">Command &amp; group overrides</h3>
                     <p>
                         Override the flags required to run any SourceMod command, globally
                         or per-group, without editing plugin source. Blank out a name to
@@ -100,11 +112,13 @@
                 </table>
             </div>
         </div>
+        </section>
 
+        <section id="add-override" class="admin-admins-section" data-testid="admin-admins-section-add-override" aria-labelledby="add-override-heading">
         <div class="card mb-4">
             <div class="card__header">
                 <div>
-                    <h3>Add an override</h3>
+                    <h3 id="add-override-heading">Add an override</h3>
                     <p>Pick a type, give it a command/group name and the flags admins need to run it.</p>
                 </div>
             </div>
@@ -131,6 +145,7 @@
                 </div>
             </div>
         </div>
+        </section>
 
         <div class="flex justify-end gap-2">
             <a class="btn btn--ghost" href="javascript:history.go(-1);" data-testid="overrides-back">Back</a>
@@ -139,3 +154,6 @@
     </form>
 {/if}
 </div>
+{* Close cross-template wrappers opened in page_admin_admins_list.tpl. *}
+</div>{* /.admin-admins-content *}
+</div>{* /.admin-admins-shell *}

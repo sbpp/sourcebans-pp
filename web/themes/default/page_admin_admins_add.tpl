@@ -8,6 +8,14 @@
     the JSON-API contract identical to the default theme. The CSRF
     protection comes from {csrf_field}; xajax/sb-callback are NOT
     reintroduced.
+
+    #1207 ADM-3 — section wrapper
+    -----------------------------
+    Renders inside the cross-template `.admin-admins-shell` opened by
+    page_admin_admins_list.tpl. The `<section id="add-admin">` is the
+    anchor target for the "Add admin" entry in the page-level ToC; its
+    `scroll-margin-top` (set in admins-toc CSS) clears the sticky
+    topbar after a hash-jump.
 *}
 <div class="card-tab" id="Add new admin">
     {if !$can_add_admins}
@@ -17,8 +25,9 @@
             </div>
         </div>
     {else}
+        <section id="add-admin" class="admin-admins-section" data-testid="admin-admins-section-add-admin" aria-labelledby="add-admin-heading">
         <div class="mb-4">
-            <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Add new admin</h1>
+            <h2 id="add-admin-heading" style="font-size:var(--fs-xl);font-weight:600;margin:0">Add new admin</h2>
             <p class="text-sm text-muted m-0 mt-2">Hover the help icons for field-level guidance.</p>
         </div>
 
@@ -211,5 +220,6 @@
 
         {* nofilter: server-built `<script>LoadServerHost('SID', 'id', 'saSID');…</script>` from `:prefix_servers.sid` integer column, no user input — see admin.admins.php. *}
         {$server_script nofilter}
+        </section>
     {/if}
 </div>
