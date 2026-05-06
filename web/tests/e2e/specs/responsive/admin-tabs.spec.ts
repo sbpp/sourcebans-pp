@@ -42,7 +42,12 @@ test.describe('responsive: admin tab strip', () => {
     test('admin-bans tabs render on a single scrollable line at iPhone-13 width', async ({ page }) => {
         await page.goto('/index.php?p=admin&c=bans');
 
-        const strip = page.locator('.admin-tabs').first();
+        // `data-testid="admin-tabs"` is the primary hook on the
+        // wrapper (#1123 contract); the `.first()` is defensive
+        // because edit-* pages render an empty-tabs strip alongside
+        // a populated one in some flows. See admin_tabs.tpl for the
+        // markup.
+        const strip = page.locator('[data-testid="admin-tabs"]').first();
         await expect(strip).toBeVisible();
 
         // The tabs the audit's "Add a ban · Ban protests · Ban
@@ -109,7 +114,11 @@ test.describe('responsive: admin tab strip', () => {
     async function assertActiveTabIsBrandOrange(
         page: import('@playwright/test').Page,
     ): Promise<void> {
-        const activeTab = page.locator('.admin-tabs > [aria-current="page"]').first();
+        // Scope by `[data-testid="admin-tabs"]` (the wrapper hook
+        // added in #1123 testability-hooks pass), then pivot on the
+        // ARIA `[aria-current="page"]` attribute — that's the
+        // load-bearing identifier for "active tab" on this strip.
+        const activeTab = page.locator('[data-testid="admin-tabs"] > [aria-current="page"]').first();
         await expect(activeTab).toBeVisible();
 
         const bgColor = await activeTab.evaluate((el) =>

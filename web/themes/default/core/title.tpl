@@ -18,7 +18,7 @@
     static markup contract is locked from A2 onward.
 *}
 <div class="main">
-    <header class="topbar">
+    <header class="topbar" data-testid="topbar">
         <button type="button"
                 class="btn--ghost btn--icon"
                 data-mobile-menu

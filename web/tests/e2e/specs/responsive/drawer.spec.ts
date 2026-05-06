@@ -237,6 +237,17 @@ test.describe('responsive: drawer', () => {
         //      and-suspenders; not asserted here because we'd need
         //      to forcibly inject an anchor to verify, which would
         //      hide the regression we're protecting against).
+        //
+        // Coverage caveat (#1208 review finding 3): mobile-chromium
+        // is Chrome devtools' mobile emulation, not a real iOS Safari
+        // — it doesn't replicate the actual auto-link heuristic, so
+        // the `.toHaveCount(0)` line below isn't exercising the
+        // tap-to-dial bug end-to-end. The meta-tag regex match IS
+        // load-bearing (a removal fails the regex), and the no-anchor
+        // assertion guards against an upstream change that injects
+        // an anchor literally. End-to-end iOS coverage would need a
+        // device-real WebKit run, which the suite doesn't have a
+        // gate for yet.
         await page.goto('/');
         await seedBan(page, SEED_STEAM, SEED_NICK);
         await page.goto('/index.php?p=banlist');

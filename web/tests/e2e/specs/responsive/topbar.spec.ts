@@ -101,8 +101,10 @@ test.describe('responsive: topbar', () => {
             document.documentElement.scrollWidth - document.documentElement.clientWidth
         )).toBeLessThanOrEqual(1);
 
-        // The topbar itself is bounded by the viewport.
-        const topbar = page.locator('.topbar');
+        // The topbar itself is bounded by the viewport. Selector via
+        // `data-testid="topbar"` rather than the `.topbar` class chain
+        // per AGENTS.md "Anti-patterns" (#1123 testability hooks rule).
+        const topbar = page.locator('[data-testid="topbar"]');
         const vw = page.viewportSize()?.width ?? 0;
         const box = await topbar.boundingBox();
         expect(box, 'topbar must render a bounding box').not.toBeNull();

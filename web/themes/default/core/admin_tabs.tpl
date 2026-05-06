@@ -30,7 +30,7 @@
     buttons. If a follow-up wires the full tab pattern (controls,
     selected, panel labelling) the roles can come back in lockstep.
 *}
-<div class="admin-tabs flex gap-2 mb-4 items-center" aria-label="Admin sections">
+<div class="admin-tabs flex gap-2 mb-4 items-center" data-testid="admin-tabs" aria-label="Admin sections">
     {foreach from=$tabs item=tab}
         <button type="button"
                 class="btn btn--ghost btn--sm"

@@ -427,8 +427,14 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
      copy button without overflow. Drop the label column to 4.5rem
      and let the value wrap (`min-width: 0` lets a grid track
      actually shrink below its content's natural width). */
+/* `min-width: 0` lets the 1fr grid track shrink below its content's
+   natural min-content size; `overflow-wrap: anywhere` then breaks the
+   long SteamID at any character so the value column fits inside a 100vw
+   drawer without horizontal scroll. The non-standard `word-break:
+   break-word` alias was redundant with `overflow-wrap: anywhere` and
+   has been dropped (#1208 review finding 2). */
 .drawer .drawer__ids dd,
-.drawer .drawer__ban dd { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+.drawer .drawer__ban dd { min-width: 0; overflow-wrap: anywhere; }
 .drawer a[href^="tel:"],
 .drawer a[href^="sms:"] { color: inherit; text-decoration: none; pointer-events: none; }
 @media (max-width: 768px) {
@@ -468,7 +474,13 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
    The mobile sibling rule below ALSO locks <body> because some
    mobile chromes carry their own scroll context on <body> when
    <html> is overflow:hidden (iOS Safari quirk) and the lock has to
-   take both. */
+   take both.
+   Browser baseline note (#1208 review finding 4): `:has()` is a
+   Web Baseline 2023 feature (Chrome 105+, Safari 15.4+, Firefox
+   121+). This is the codebase's first usage. On older browsers the
+   selector silently doesn't match, the lock isn't applied, and the
+   page scrolls behind the drawer — the drawer itself still opens /
+   closes, so the failure mode is degraded UX, not broken state. */
 html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }
 @media (max-width: 768px) {
   html:has(#drawer-root[data-drawer-open="true"]) body { overflow: hidden; }
