@@ -64,9 +64,9 @@ $errorScript = "";
 
 // Form submitted?
 if (isset($_POST['adminname'])) {
-    $a_name           = trim($_POST['adminname']);
-    $a_steam          = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
-    $a_email          = trim($_POST['email']);
+    $a_name           = trim((string) $_POST['adminname']);
+    $a_steam          = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
+    $a_email          = trim((string) ($_POST['email'] ?? ''));
     $a_serverpass     = isset($_POST['a_useserverpass']) && $_POST['a_useserverpass'] == "on";
     $pw_changed       = false;
     $serverpw_changed = false;
@@ -94,7 +94,7 @@ if (isset($_POST['adminname'])) {
     }
 
     // If they didnt type a steamid
-    if ((empty($a_steam) || strlen($a_steam) < 10)) {
+    if ((empty($a_steam) || strlen((string) $a_steam) < 10)) {
         $error++;
         $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID for the admin.';";
         $errorScript .= "$('steam.msg').setStyle('display', 'block');";
@@ -152,7 +152,7 @@ if (isset($_POST['adminname'])) {
             $pw_changed = true;
             // DID type a password, so he wants to change it.
             // Password too short?
-            if (strlen($_POST['password']) < MIN_PASS_LENGTH) {
+            if (strlen((string) $_POST['password']) < MIN_PASS_LENGTH) {
                 $error++;
                 $errorScript .= "$('password.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
                 $errorScript .= "$('password.msg').setStyle('display', 'block');";
@@ -183,7 +183,7 @@ if (isset($_POST['adminname'])) {
                 $error++;
                 $errorScript .= "$('a_serverpass.msg').innerHTML = 'You must type a server password or uncheck the box.';";
                 $errorScript .= "$('a_serverpass.msg').setStyle('display', 'block');";
-            } elseif (strlen($_POST['a_serverpass']) < MIN_PASS_LENGTH) {
+            } elseif (strlen((string) ($_POST['a_serverpass'] ?? '')) < MIN_PASS_LENGTH) {
                 // Password too short?
                 $error++;
                 $errorScript .= "$('a_serverpass.msg').innerHTML = 'Your password must be at-least " . MIN_PASS_LENGTH . " characters long.';";
@@ -285,7 +285,7 @@ if (isset($_POST['adminname'])) {
 } else {
     // get current values
     $a_name = $userbank->GetProperty("user", $_GET['id']);
-    $a_steam = trim($userbank->GetProperty("authid", $_GET['id']));
+    $a_steam = trim((string) $userbank->GetProperty("authid", $_GET['id']));
     $a_email = $userbank->GetProperty("email", $_GET['id']);
     $a_serverpass = $userbank->GetProperty("srv_password", $_GET['id']);
     $a_serverpass = !empty($a_serverpass);

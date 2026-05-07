@@ -103,13 +103,13 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
     $Email         = "";
     $SID           = -1;
 } else {
-    $SteamID       = trim($_POST['SteamID']);
-    $BanIP         = trim($_POST['BanIP']);
-    $PlayerName    = $_POST['PlayerName'];
-    $BanReason     = $_POST['BanReason'];
-    $SubmitterName = $_POST['SubmitName'];
-    $Email         = trim($_POST['EmailAddr']);
-    $SID           = (int) $_POST['server'];
+    $SteamID       = trim((string) ($_POST['SteamID']    ?? ''));
+    $BanIP         = trim((string) ($_POST['BanIP']      ?? ''));
+    $PlayerName    = (string) ($_POST['PlayerName']  ?? '');
+    $BanReason     = (string) ($_POST['BanReason']   ?? '');
+    $SubmitterName = (string) ($_POST['SubmitName']  ?? '');
+    $Email         = trim((string) ($_POST['EmailAddr']  ?? ''));
+    $SID           = (int) ($_POST['server']         ?? -1);
     $validsubmit   = true;
     $errors        = "";
     if ((strlen($SteamID) != 0 && $SteamID != "STEAM_0:") && !\SteamID\SteamID::isValidID($SteamID)) {
@@ -244,7 +244,8 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $headers = 'From: ' . SB_EMAIL . "\n" . 'X-Mailer: PHP/' . phpversion();
 
             $admins = $userbank->GetAllAdmins();
-            $requri = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") - 5);
+            $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+            $requri = substr($requestUri, 0, (int) strrpos($requestUri, ".php") - 5);
             $mailDests = [];
 
             foreach ($admins as $admin) {

@@ -40,6 +40,7 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpunit/phpunit": "^11",
         "staabm/phpstan-dba": "^0.4"
     },

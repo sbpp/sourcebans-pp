@@ -45,7 +45,7 @@ function setPostKey()
         $_SESSION['banlist_postkey'] = md5(time() . rand(0, 100000));
     }
 }
-if (!isset($_SESSION['banlist_postkey']) || strlen($_SESSION['banlist_postkey']) < 4) {
+if (!isset($_SESSION['banlist_postkey']) || strlen((string) $_SESSION['banlist_postkey']) < 4) {
     setPostKey();
 }
 
@@ -83,7 +83,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         PageDie();
     }
 
-    $unbanReason = htmlspecialchars(trim($_GET['ureason']));
+    $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
     $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
 										`RemovedBy` = :removedby,
 										`RemoveType` = 'U',
@@ -132,7 +132,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         PageDie();
     }
 
-    $unbanReason = htmlspecialchars(trim($_GET['ureason']));
+    $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
     $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
 										`RemovedBy` = :removedby,
 										`RemoveType` = 'U',
@@ -232,7 +232,7 @@ if (isset($_SESSION["hideinactive"])) {
 }
 
 if (isset($_GET['searchText'])) {
-    $searchText = trim($_GET['searchText']);
+    $searchText = trim((string) $_GET['searchText']);
 
     // #1130: when the input parses as any Steam-ID format, match `authid`
     // via REGEXP so both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants hit
@@ -310,7 +310,7 @@ if (isset($_GET['searchText'])) {
 
 $advcrit = [];
 if (isset($_GET['advSearch'])) {
-    $value = trim($_GET['advSearch']);
+    $value = trim((string) $_GET['advSearch']);
 
     try {
         SteamID::init();
@@ -844,10 +844,10 @@ if ($BanCount === 0) {
     //=================[ Start Layout ]==================================
     $ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
 
-    if (strlen($prev) > 0) {
+    if ($prev !== '') {
         $ban_nav .= ' | <b>' . $prev . '</b>';
     }
-    if (strlen($next) > 0) {
+    if ($next !== '') {
         $ban_nav .= ' | <b>' . $next . '</b>';
     }
     $pages = ceil($BanCount / $BansPerPage);

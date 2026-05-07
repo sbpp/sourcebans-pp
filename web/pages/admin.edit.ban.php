@@ -124,8 +124,8 @@ $validationErrors = [];
 $postSuccess = false;
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
-    $_POST['type']  = (int) $_POST['type'];
+    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
+    $_POST['type']  = (int) ($_POST['type'] ?? 0);
 
     // Form Validation
     $error = 0;
@@ -194,7 +194,7 @@ if (isset($_POST['name'])) {
         }
     }
 
-    $_POST['ip'] = preg_replace('#[^\d\.]#', '', $_POST['ip']); //strip ip of all but numbers and dots
+    $_POST['ip'] = preg_replace('#[^\d\.]#', '', (string) ($_POST['ip'] ?? '')); //strip ip of all but numbers and dots
     $reason = $_POST['listReason'] == "other" ? $_POST['txtReason'] : $_POST['listReason'];
 
     if (!$_POST['banlength']) {

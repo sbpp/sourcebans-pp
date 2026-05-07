@@ -39,12 +39,12 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     $UnbanReason = "";
     $Email       = "";
 } else {
-    $Type        = (int) $_POST['Type'];
-    $SteamID     = $_POST['SteamID'];
-    $IP          = $_POST['IP'];
-    $PlayerName  = $_POST['PlayerName'];
-    $UnbanReason = $_POST['BanReason'];
-    $Email       = $_POST['EmailAddr'];
+    $Type        = (int) ($_POST['Type']      ?? 0);
+    $SteamID     = (string) ($_POST['SteamID']   ?? '');
+    $IP          = (string) ($_POST['IP']        ?? '');
+    $PlayerName  = (string) ($_POST['PlayerName']?? '');
+    $UnbanReason = (string) ($_POST['BanReason'] ?? '');
+    $Email       = (string) ($_POST['EmailAddr'] ?? '');
     $validsubmit = true;
     $errors      = "";
     $BanId       = -1;
@@ -136,7 +136,8 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $GLOBALS['PDO']->query("SELECT aid, user, email FROM `:prefix_admins` WHERE aid = (SELECT aid FROM `:prefix_bans` WHERE bid = :bid)");
         $GLOBALS['PDO']->bind(':bid', (int) $BanId);
         $emailinfo = $GLOBALS['PDO']->single();
-        $requri    = substr($_SERVER['REQUEST_URI'], 0, strrpos($_SERVER['REQUEST_URI'], ".php") + 4);
+        $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        $requri    = substr($requestUri, 0, (int) strrpos($requestUri, ".php") + 4);
         if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo['email'])) {
             $admins = array(
                 array(

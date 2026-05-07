@@ -53,8 +53,8 @@ isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pageli
 $errorScript = "";
 
 if (isset($_POST['name'])) {
-    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim($_POST['steam']));
-    $_POST['type']  = (int) $_POST['type'];
+    $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
+    $_POST['type']  = (int) ($_POST['type'] ?? 0);
 
     // Form Validation
     $error = 0;

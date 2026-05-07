@@ -75,7 +75,11 @@ final class SmartyTemplateRule implements Rule
             return [];
         }
         $reflection = $this->reflectionProvider->getClass($className);
-        if (!$reflection->isSubclassOf(View::class)) {
+        if (!$this->reflectionProvider->hasClass(View::class)) {
+            return [];
+        }
+        $viewReflection = $this->reflectionProvider->getClass(View::class);
+        if (!$reflection->isSubclassOfClass($viewReflection)) {
             return [];
         }
 

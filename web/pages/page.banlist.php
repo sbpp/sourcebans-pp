@@ -38,7 +38,7 @@ function setPostKey()
         $_SESSION['banlist_postkey'] = md5(time() . rand(0, 100000));
     }
 }
-if (!isset($_SESSION['banlist_postkey']) || strlen($_SESSION['banlist_postkey']) < 4) {
+if (!isset($_SESSION['banlist_postkey']) || strlen((string) $_SESSION['banlist_postkey']) < 4) {
     setPostKey();
 }
 
@@ -94,7 +94,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             }
             continue;
         }
-        $unbanReason = htmlspecialchars(trim($_GET['ureason']));
+        $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
         $GLOBALS['PDO']->query("UPDATE `:prefix_bans` SET
 										`RemovedBy` = :removedby,
 										`RemoveType` = 'U',
@@ -116,10 +116,10 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         $GLOBALS['PDO']->bind(':bid', $bid);
         $blocked = $GLOBALS['PDO']->resultset();
         foreach ($blocked as $tempban) {
-            rcon(($row['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $tempban['sid']);
+            rcon(($row['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr((string) $row['authid'], 7) : "removeip " . $row['ip']), $tempban['sid']);
         }
         if (((int) $row['now'] - (int) $row['created']) <= 300 && $row['sid'] != "0" && !in_array($row['sid'], $blocked)) {
-            rcon(($row['type'] == 0 ? "removeid STEAM_" . $row['steam_universe'] . substr($row['authid'], 7) : "removeip " . $row['ip']), $row['sid']);
+            rcon(($row['type'] == 0 ? "removeid STEAM_" . $row['steam_universe'] . substr((string) $row['authid'], 7) : "removeip " . $row['ip']), $row['sid']);
         }
 
         if ($res) {
@@ -184,10 +184,10 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         $res = $GLOBALS['PDO']->execute();
         if (empty($steam['RemoveType'])) {
             foreach ($blocked as $tempban) {
-                rcon(($steam['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $tempban['sid']);
+                rcon(($steam['type'] == 0 ? "removeid STEAM_" . $tempban['steam_universe'] . substr((string) $steam['authid'], 7) : "removeip " . $steam['ip']), $tempban['sid']);
             }
             if (((int) $steam['now'] - (int) $steam['created']) <= 300 && $steam['sid'] != "0" && !in_array($steam['sid'], $blocked)) {
-                rcon(($steam['type'] == 0 ? "removeid STEAM_" . $steam['steam_universe'] . substr($steam['authid'], 7) : "removeip " . $steam['ip']), $steam['sid']);
+                rcon(($steam['type'] == 0 ? "removeid STEAM_" . $steam['steam_universe'] . substr((string) $steam['authid'], 7) : "removeip " . $steam['ip']), $steam['sid']);
             }
         }
 
@@ -273,7 +273,7 @@ if ($publicFilterClauses) {
 }
 
 if (isset($_GET['searchText'])) {
-    $searchText = trim($_GET['searchText']);
+    $searchText = trim((string) $_GET['searchText']);
 
     // #1130: when the input parses as any Steam-ID format, match `authid`
     // via REGEXP so both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants hit
@@ -367,7 +367,7 @@ if (isset($_GET['searchText'])) {
 
 $advcrit = [];
 if (isset($_GET['advSearch'])) {
-    $value = trim($_GET['advSearch']);
+    $value = trim((string) $_GET['advSearch']);
 
     try {
         SteamID::init();
@@ -723,7 +723,7 @@ foreach ($res as $row) {
 
 
 
-    if (strlen($row['ban_ip']) < 7) {
+    if (strlen((string) $row['ban_ip']) < 7) {
         $data['ip'] = 'none';
     } else {
         $data['ip'] = $data['country'] . '&nbsp;' . $row['ban_ip'];
@@ -1002,7 +1002,7 @@ if (isset($_GET["comment"])) {
         $ctext          = "";
     }
 
-    $_GET["ctype"] = substr($_GET["ctype"], 0, 1);
+    $_GET["ctype"] = substr((string) ($_GET["ctype"] ?? ''), 0, 1);
 
     $cotherdata = $GLOBALS['PDO']->query("SELECT cid, aid, commenttxt, added, edittime,
 											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,

@@ -124,9 +124,11 @@ class CUserManager
             return ((int)$this->admins[$aid]['extraflags'] & (int)$flags) != 0 ? true : false;
         }
 
-        for ($i=0; $i < strlen($this->admins[$aid]['srv_flags']); $i++) {
-            for ($a=0; $a < strlen($flags); $a++) {
-                if (strstr($this->admins[$aid]['srv_flags'][$i], $flags[$a])) {
+        $srvFlags = (string) ($this->admins[$aid]['srv_flags'] ?? '');
+        $flagsStr = (string) $flags;
+        for ($i=0; $i < strlen($srvFlags); $i++) {
+            for ($a=0; $a < strlen($flagsStr); $a++) {
+                if (strstr($srvFlags[$i], $flagsStr[$a])) {
                     return true;
                 }
             }
@@ -295,7 +297,7 @@ class CUserManager
      */
     public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
     {
-        if (!empty($password) && strlen($password) < MIN_PASS_LENGTH) {
+        if (!empty($password) && strlen((string) $password) < MIN_PASS_LENGTH) {
             throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');
         }
         if (empty($password)) {

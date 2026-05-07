@@ -7,7 +7,7 @@ if (isset($_POST['postd'])) {
         $db = new Database($_POST['server'], $_POST['port'], $_POST['database'], $_POST['username'], $_POST['password'], $_POST['prefix']);
         if (!$db) {
             echo "<script>ShowBox('Error', 'There was an error connecting to your database. <br />Recheck the details to make sure they are correct', 'red', '', true);</script>";
-        } elseif (strlen($_POST['prefix']) > 9) {
+        } elseif (strlen((string) $_POST['prefix']) > 9) {
             echo "<script>ShowBox('Error', 'The prefix cannot be longer than 9 characters.<br />Correct this and submit again.', 'red', '', true);</script>";
         } else {
 ?>

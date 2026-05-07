@@ -359,10 +359,10 @@ if ($AdminsEnd < $admin_count) {
 //=================[ Start Layout ]==================================
 $admin_nav = 'displaying&nbsp;' . $AdminsStart . '&nbsp;-&nbsp;' . $AdminsEnd . '&nbsp;of&nbsp;' . $admin_count . '&nbsp;results';
 
-if (strlen($prev) > 0) {
+if ($prev !== '') {
     $admin_nav .= ' | <b>' . $prev . '</b>';
 }
-if (strlen($next) > 0) {
+if ($next !== '') {
     $admin_nav .= ' | <b>' . $next . '</b>';
 }
 

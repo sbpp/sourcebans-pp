@@ -223,10 +223,10 @@ if ($PageEnd < $page_count) {
 
 $page_nav = 'displaying&nbsp;' . $PageStart . '&nbsp;-&nbsp;' . $PageEnd . '&nbsp;of&nbsp;' . $page_count . '&nbsp;results';
 
-if (strlen($prev) > 0) {
+if ($prev !== '') {
     $page_nav .= ' | <b>' . $prev . '</b>';
 }
-if (strlen($next) > 0) {
+if ($next !== '') {
     $page_nav .= ' | <b>' . $next . '</b>';
 }
 
@@ -377,10 +377,10 @@ if ($PageEnd < $page_count) {
 
 $page_nav = 'displaying&nbsp;' . $PageStart . '&nbsp;-&nbsp;' . $PageEnd . '&nbsp;of&nbsp;' . $page_count . '&nbsp;results';
 
-if (strlen($prev) > 0) {
+if ($prev !== '') {
     $page_nav .= ' | <b>' . $prev . '</b>';
 }
-if (strlen($next) > 0) {
+if ($next !== '') {
     $page_nav .= ' | <b>' . $next . '</b>';
 }
 
@@ -552,10 +552,10 @@ if ($PageEnd < $page_count) {
 
 $page_nav = 'displaying&nbsp;' . $PageStart . '&nbsp;-&nbsp;' . $PageEnd . '&nbsp;of&nbsp;' . $page_count . '&nbsp;results';
 
-if (strlen($prev) > 0) {
+if ($prev !== '') {
     $page_nav .= ' | <b>' . $prev . '</b>';
 }
-if (strlen($next) > 0) {
+if ($next !== '') {
     $page_nav .= ' | <b>' . $next . '</b>';
 }
 
@@ -692,10 +692,10 @@ if ($PageEnd < $page_count) {
 
 $page_nav = 'displaying&nbsp;' . $PageStart . '&nbsp;-&nbsp;' . $PageEnd . '&nbsp;of&nbsp;' . $page_count . '&nbsp;results';
 
-if (strlen($prev) > 0) {
+if ($prev !== '') {
     $page_nav .= ' | <b>' . $prev . '</b>';
 }
-if (strlen($next) > 0) {
+if ($next !== '') {
     $page_nav .= ' | <b>' . $next . '</b>';
 }
 

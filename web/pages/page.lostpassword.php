@@ -50,7 +50,7 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
         PageDie();
     }
 
-    if (strlen($validation) < 10) {
+    if (strlen((string) $validation) < 10) {
         print "<script>ShowBox('Error', 'Invalid validation string.', 'red');</script>";
         PageDie();
     }

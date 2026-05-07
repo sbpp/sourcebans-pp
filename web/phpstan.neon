@@ -1,6 +1,10 @@
 includes:
     - phpstan-baseline.neon
     - includes/vendor/staabm/phpstan-dba/config/dba.neon
+    # #1273: catch the PHP 8.1 null-to-scalar deprecation surface (strlen,
+    # trim, substr, preg_match, mb_strlen, …) before it bites us on the
+    # PHP 9 bump. The matched phpVersion below is what flips the rules on.
+    - includes/vendor/phpstan/phpstan-deprecation-rules/rules.neon
 
 parameters:
     level: 5

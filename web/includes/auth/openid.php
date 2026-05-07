@@ -46,10 +46,14 @@ class LightOpenID
         $this->set_realm($host);
         $this->set_proxy($proxy);
 
-        $uri = rtrim(preg_replace('#((?<=\?)|&)openid\.[^&]+#', '', $_SERVER['REQUEST_URI']), '?');
+        // Issue #1273: cast at the entry point so the rest of this third-party-shaped
+        // file doesn't need per-call (string) casts for the PHP 8.1 null-to-scalar
+        // deprecation. $_SERVER['REQUEST_URI'] can be null on some SAPIs.
+        $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
+        $uri = rtrim((string) preg_replace('#((?<=\?)|&)openid\.[^&]+#', '', $requestUri), '?');
         $this->returnUrl = $this->trustRoot . $uri;
 
-        $this->data = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $_POST : $_GET;
+        $this->data = (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') ? $_POST : $_GET;
 
         if(!function_exists('curl_init') && !in_array('https', stream_get_wrappers())) {
             throw new ErrorException('You must have either https wrappers or curl enabled.');
@@ -79,7 +83,9 @@ class LightOpenID
             break;
         case 'trustRoot':
         case 'realm':
-            $this->trustRoot = trim($value);
+            // Issue #1273: cast at the input — non-string values silently coerced
+            // to '' here mirror the existing 'identity' branch behaviour.
+            $this->trustRoot = trim((string) $value);
             break;
         case 'xrdsOverride':
             if (is_array($value)) {
@@ -704,8 +710,10 @@ class LightOpenID
     	$result = '';
 
     	if (!empty($provider_url)) {
+    		// Issue #1273: parse_url can return null on a malformed URL; cast so
+    		// explode() doesn't trip the PHP 8.1 null-to-scalar deprecation.
     		$tokens = array_reverse(
-    			explode('.', parse_url($provider_url, PHP_URL_HOST))
+    			explode('.', (string) parse_url($provider_url, PHP_URL_HOST))
     		);
     		$result = strtolower(
     			(count($tokens) > 1 && strlen($tokens[1]) > 3)
@@ -942,7 +950,9 @@ class LightOpenID
             $prefix = 'openid_' . $alias;
             $length = strlen('http://axschema.org/');
 
-            foreach (explode(',', $this->data['openid_signed']) as $key) {
+            // Issue #1273: cast at the explode boundary — $this->data is $_POST/$_GET,
+            // values are mixed; downstream substr/strlen on the resulting string slices is then safe.
+            foreach (explode(',', (string) ($this->data['openid_signed'] ?? '')) as $key) {
                 $keyMatch = $alias . '.type.';
 
                 if (strncmp($key, $keyMatch, strlen($keyMatch)) !== 0) {
@@ -984,7 +994,8 @@ class LightOpenID
     {
         $attributes = [];
         $sreg_to_ax = array_flip(self::$ax_to_sreg);
-        foreach (explode(',', $this->data['openid_signed']) as $key) {
+        // Issue #1273: cast at the explode boundary — see getAxAttributes() above.
+        foreach (explode(',', (string) ($this->data['openid_signed'] ?? '')) as $key) {
             $keyMatch = 'sreg.';
             if (strncmp($key, $keyMatch, strlen($keyMatch)) !== 0) {
                 continue;

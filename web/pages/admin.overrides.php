@@ -71,7 +71,7 @@ try {
                 $GLOBALS['PDO']->query("UPDATE `:prefix_overrides` SET name = ?, type = ?, flags = ? WHERE id = ?")->execute([
                     $_POST['override_name'][$index],
                     $_POST['override_type'][$index],
-                    trim($_POST['override_flags'][$index]),
+                    trim((string) ($_POST['override_flags'][$index] ?? '')),
                     $id,
                 ]);
             }
@@ -97,7 +97,7 @@ try {
             $GLOBALS['PDO']->query("INSERT INTO `:prefix_overrides` (type, name, flags) VALUES (?, ?, ?)")->execute([
                 $_POST['new_override_type'],
                 $_POST['new_override_name'],
-                trim($_POST['new_override_flags']),
+                trim((string) ($_POST['new_override_flags'] ?? '')),
             ]);
         }
 

@@ -736,6 +736,16 @@ removes an entry or when bumping the level.
 strings against the schema. Set `PHPSTAN_DBA_DISABLE=1` to skip it; CI
 sets `DBA_REQUIRE=1` so credential drift fails loudly.
 
+`phpstan/phpstan-deprecation-rules` (#1273) is wired in via
+`phpstan.neon` with `phpVersion: 80200` so the analyser flags the
+PHP 8.1 null-into-scalar deprecation surface (`strlen($null)`,
+`trim($null)`, `substr($null, ...)`, `preg_match($null, ...)`, …)
+before it bites us on the PHP 9 bump. `web/includes/auth/openid.php`
+is excluded from PHPStan, so the same surface there is gated by the
+runtime smoke test in `web/tests/integration/Php82DeprecationsTest.php`
+(per-process `set_error_handler` that promotes `E_DEPRECATED` to a
+thrown `ErrorException` while it requires each marquee page handler).
+
 ## Test architecture
 
 Tests live in `web/tests/`:

@@ -279,6 +279,49 @@ Playwright E2E specifics:
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
 
+### Null-into-scalar discipline (PHP 8.2+)
+
+`web/composer.json` requires `php >= 8.2`, so PHP's
+"`Deprecated: <fn>(): Passing null to parameter #1 of type string`"
+surface is active. PHP 9 will turn it into a `TypeError`. Every
+`strlen` / `trim` / `substr` / `preg_match` / `mb_strlen` / etc.
+call against a value that can be `null` at runtime needs one of
+two idiomatic shapes (#1273):
+
+- **Coalesce** when null is semantically "absent" — e.g. a `$_POST`
+  / `$_GET` / `$_SESSION` / `$_SERVER` lookup the form may have
+  omitted:
+
+  ```php
+  if (strlen($_POST['password'] ?? '') < MIN_PASS_LENGTH) { … }
+  $name = trim((string) ($_POST['name'] ?? ''));
+  ```
+
+- **Cast** when the value should always be a string but the type
+  system can't see it (most often a nullable `:prefix_*` row column,
+  or a `mixed`-returning helper like `CUserManager::GetProperty`):
+
+  ```php
+  if (strlen((string) $row['ban_ip']) < 7) { … }
+  $steam = trim((string) $userbank->GetProperty('authid', $aid));
+  ```
+
+- Never `if (!is_null($x) && strlen($x) > 0)` — verbose and the
+  conditional reads worse than the coalesce.
+- `phpstan/phpstan-deprecation-rules` + `phpVersion: 80200` is the
+  static gate; `Php82DeprecationsTest` (PHPUnit) is the runtime gate
+  for the bits PHPStan doesn't see (excluded paths like
+  `includes/auth/openid.php`, runtime values that look non-null to
+  the type system but actually aren't).
+- `web/includes/auth/openid.php` is excluded from PHPStan and is
+  third-party-shaped: cast at function inputs (entry points) so the
+  diff stays bounded; never sprinkle `(string)` at every internal
+  call.
+- Replacing nullable `:prefix_*` columns with `NOT NULL DEFAULT ''`
+  would also clear the deprecation, but it's a paired schema
+  migration with a separate semantic change ("no IP" vs "empty IP")
+  — file separately, not as part of a deprecation sweep.
+
 ### Dev DB seeder (`./sbpp.sh db-seed`)
 
 `./sbpp.sh db-seed` populates the dev DB (`sourcebans`) with a deterministic,
@@ -828,6 +871,16 @@ audit (#1207) locked in. New CTAs:
   value is safe HTML; without a `{* nofilter: <why> *}` comment above
   it, future readers can't tell whether it's a real escape hatch or a
   copy-paste accident waiting to be exploited (#1113 audit).
+- `strlen($_POST['x'])` / `trim($_POST['x'])` / `substr($row['col'], …)`
+  on values that can be `null` at runtime → coalesce
+  (`strlen($_POST['x'] ?? '')`) when null is "absent", or cast
+  (`strlen((string) $row['col'])`) when the value should always be a
+  string. PHP 8.1 deprecated this implicit null-into-scalar coercion;
+  PHP 9 makes it a `TypeError` (#1273). The static gate is
+  `phpstan/phpstan-deprecation-rules` + `phpVersion: 80200`; the
+  runtime gate (for PHPStan-excluded files like `auth/openid.php`) is
+  `Php82DeprecationsTest`. See "Null-into-scalar discipline" in
+  Conventions for the per-shape idiom.
 - `setTimeout` / `waitForTimeout` waits in E2E specs → wait on
   terminal attributes (`[data-loading="false"]` settled, `[data-skeleton]`
   removed) per #1123's "Testability hooks" rule.
@@ -901,6 +954,7 @@ audit (#1207) locked in. New CTAs:
 | Populate the dev DB with realistic synthetic data (banlist > 1 page, drawer history, moderation queues, audit log) | `./sbpp.sh db-seed` → `web/tests/scripts/seed-dev-db.php` (CLI driver) → `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`). Dev-only: refuses any `DB_NAME` other than `sourcebans` (so `sourcebans_test` / `sourcebans_e2e` stay untouched). Idempotent; deterministic given a fixed `--seed` (default `Synthesizer::DEFAULT_SEED`). Does NOT share plumbing with `Fixture::truncateAndReseed` — the e2e hot path stays minimal. |
 | API wire-format snapshots              | `web/tests/api/__snapshots__/<topic>/<scenario>.json`    |
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
+| Trap PHP 8.1 null-into-scalar deprecations at runtime (the bits PHPStan can't see) | `web/tests/integration/Php82DeprecationsTest.php` (#1273) — process-isolated render harness with a stub Smarty + `set_error_handler` that promotes `E_DEPRECATED` / `E_USER_DEPRECATED` to `\ErrorException`. Mirrors the LostPasswordChromeTest stub-Smarty pattern; each test method runs in a separate process because the page handlers declare top-level helpers (`setPostKey()` etc.) that PHP can't redeclare in one process. Add a marquee route here whenever a new high-traffic page handler ships, especially if it reads nullable `:prefix_*` columns or `$_POST` / `$_GET` lookups. |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
 | Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / settings) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |
