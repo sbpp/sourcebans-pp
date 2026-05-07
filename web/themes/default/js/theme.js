@@ -503,7 +503,7 @@
       +     '<div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em">Ban #' + escapeHtml(String(data.bid)) + '</div>'
       +     '<h2 class="font-semibold" style="margin:0.125rem 0 0;font-size:1.125rem">' + escapeHtml(player.name || '(unknown)') + '</h2>'
       +   '</div>'
-      +   '<button class="btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
+      +   '<button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
       +     '<i data-lucide="x"></i>'
       +   '</button>'
       + '</header>';
@@ -605,7 +605,7 @@
       + idRows.map((row) =>
           '<dt class="text-faint">' + escapeHtml(row[0]) + '</dt>'
           + '<dd class="font-mono" style="margin:0">' + escapeHtml(row[1])
-          + '<button class="btn--ghost btn--icon" type="button" data-copy="' + escapeHtml(row[1]) + '" title="Copy" style="margin-left:0.25rem">'
+          + '<button class="btn btn--ghost btn--icon btn--xs" type="button" data-copy="' + escapeHtml(row[1]) + '" title="Copy" style="margin-left:0.25rem">'
           +   '<i data-lucide="copy" style="width:12px;height:12px"></i>'
           + '</button>'
           + '</dd>'
@@ -751,7 +751,7 @@
             +   '<span class="font-medium">' + escapeHtml(n.author || 'unknown') + '</span>'
             +   '<span style="display:flex;gap:0.5rem;align-items:center">'
             +     '<span>' + escapeHtml(n.created_human || '') + '</span>'
-            +     '<button type="button" class="btn--ghost btn--icon" data-notes-delete="' + escapeHtml(String(n.nid)) + '" aria-label="Delete note" title="Delete note">'
+            +     '<button type="button" class="btn btn--ghost btn--icon" data-notes-delete="' + escapeHtml(String(n.nid)) + '" aria-label="Delete note" title="Delete note">'
             +       '<i data-lucide="trash-2" style="width:14px;height:14px"></i>'
             +     '</button>'
             +   '</span>'
@@ -873,7 +873,7 @@
   function renderDrawerLoading() {
     return '<header class="drawer__header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
       + '<div class="skeleton" style="width:8rem;height:1.25rem"></div>'
-      + '<button class="btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
+      + '<button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
       + '<i data-lucide="x"></i>'
       + '</button>'
       + '</header>'
@@ -893,7 +893,7 @@
   function renderDrawerError(message) {
     return '<header class="drawer__header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
       +   '<h2 class="font-semibold" style="margin:0;font-size:1rem">Couldn\u2019t load ban</h2>'
-      +   '<button class="btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
+      +   '<button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
       +     '<i data-lucide="x"></i>'
       +   '</button>'
       + '</header>'
@@ -1155,7 +1155,7 @@
       + '<div style="flex:1;min-width:0"><div class="font-semibold text-sm">' + escapeHtml(title) + '</div>'
       + (body ? '<div class="text-xs text-muted" style="margin-top:2px">' + escapeHtml(body) + '</div>' : '')
       + '</div>'
-      + '<button class="btn--ghost btn--icon" data-toast-close><i data-lucide="x"></i></button>';
+      + '<button class="btn btn--ghost btn--icon" data-toast-close><i data-lucide="x"></i></button>';
     stack.appendChild(el);
     if (window.lucide) window.lucide.createIcons();
     setTimeout(() => el.remove(), duration);

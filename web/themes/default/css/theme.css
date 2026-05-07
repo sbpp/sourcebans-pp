@@ -265,6 +265,11 @@ html.dark .theme-toggle__moon { display: inline-block; }
 .btn--danger { --btn-bg: var(--danger); --btn-color: white; --btn-bg-hover: #b91c1c; }
 .btn--sm { height: 2rem; padding: 0 0.75rem; font-size: var(--fs-xs); }
 .btn--icon { width: 2.25rem; padding: 0; }
+/* .btn--xs sizes an icon-only button down to 1.5rem so it can sit
+   inline next to a single line of text (drawer ID copy buttons —
+   #1236) without dwarfing the value it copies. Pair with .btn--icon
+   so width/padding stay locked to the square shape. */
+.btn--xs { height: 1.5rem; width: 1.5rem; min-width: 1.5rem; }
 
 /* #1207 AUTH-2 — "Continue with Steam" contrast in dark theme. The
    button is rendered as `.btn--secondary` (page_login.tpl), which in
