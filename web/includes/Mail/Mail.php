@@ -34,6 +34,18 @@ class Mail
         ?string $customSubject = null): bool
     {
         $mailer = Mailer::create();
+        if ($mailer === null) {
+            // #1269: Mailer::create() returns null when smtp.host /
+            // smtp.user / smtp.pass aren't configured — exactly the
+            // state a freshly-upgraded 1.x panel is in (the legacy
+            // PHP-mail() flow doesn't carry SMTP credentials forward).
+            // Log the actionable cause once instead of letting the
+            // dispatch below throw "Call to a member function send()
+            // on null" which then gets caught as a generic mail
+            // failure.
+            Log::add('e', 'Mail not configured', 'SMTP host / user / password are empty in sb_settings; configure them under Admin → Settings before sending mail.');
+            return false;
+        }
 
         $content = str_replace(
             array_keys($variables),
