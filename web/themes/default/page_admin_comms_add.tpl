@@ -30,11 +30,14 @@
         </div>
     </div>
 {else}
-    {* #1266 — outer `.p-6` removed; the 1.5rem page inset now lives on
-       `.admin-sidebar-shell` (the AdminTabs grid host). The `max-width:
-       48rem` form clamp stays so the form column doesn't grow past a
-       readable line length on wide viewports. *}
-    <div style="max-width:48rem">
+    {* #1266 — outer `.p-6` keeps the 1.5rem page inset because
+       `admin.comms.php` is a *single-section* page (simplified at
+       #1239 — no `AdminTabs` call, no `.admin-sidebar-shell`
+       wrapper), so this template is rendered directly under the
+       chrome's `<main class="page">` which has no padding of its
+       own. The `max-width: 48rem` form clamp keeps the form column
+       from growing past a readable line length on wide viewports. *}
+    <div class="p-6" style="max-width:48rem">
         <div class="mb-6">
             <h1 style="font-size:1.5rem;font-weight:600;margin:0">Add a block</h1>
             <p class="text-sm text-muted m-0 mt-2">Mute, gag, or silence a player on every connected server.</p>
