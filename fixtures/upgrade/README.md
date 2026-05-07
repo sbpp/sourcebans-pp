@@ -174,10 +174,12 @@ identical to the committed version, the snapshot is genuinely
 reproducible. If it's not, something drifted — either the upstream
 release tarball changed (unusual; releases are immutable in practice
 but can be re-uploaded) or the seeder picked up a non-deterministic
-input (`mt_srand($rng)` is the only RNG seed; `random_bytes()` is
-used **only** for the rcon strings in `sb_servers`, which are
-intentionally random and won't match across runs — check that no
-rcon-related rows are reordering the dump).
+input. `mt_srand($rng)` is the only RNG entrypoint and every column
+the seeder writes (including the `sb_servers.rcon` strings) is
+derived from it, so a clean re-capture against the same `SEED_RNG`
+must hash-match. Drift candidates to inspect first: a `data.sql`
+row with a server-side default like `CURRENT_TIMESTAMP`, or an
+ALTER somewhere that shuffled InnoDB clustered-key order.
 
 ### Adding a new starting-point version (e.g. 1.8.5 when it ships)
 

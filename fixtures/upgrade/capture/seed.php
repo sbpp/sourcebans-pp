@@ -9,7 +9,7 @@
 //
 //   - 200 admins across 5 web groups (one of them includes a 4-byte
 //     UTF-8 nickname; passwords are bcrypt-hashed `admin`).
-//   - 5 SourceMod srvgroups (Owner / Admin / Senior / Mod / Bot-flag).
+//   - 5 SourceMod srvgroups (Owner / Senior Admin / Admin / Moderator / Mute Mod).
 //   - 30 servers across 5 mods (TF2 / CSGO / CSS / L4D2 / GMod), each
 //     mapped to a randomly-picked srvgroup.
 //   - 5000 bans split as ~30% perm, ~50% temp, ~15% manually unbanned,
