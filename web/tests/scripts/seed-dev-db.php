@@ -96,6 +96,11 @@ try {
     }
     fwrite(STDOUT, "\n");
     fwrite(STDOUT, "Login at the panel as admin / admin to see the seeded data.\n");
+    // sb_login_tokens is one of the truncated tables, so any open browser
+    // session against the dev panel is invalidated and the next request
+    // will bounce back to the login form. Cheap one-line hint so the dev
+    // doesn't second-guess "did the panel break?" on a re-seed.
+    fwrite(STDOUT, "Re-login required: existing browser sessions were invalidated by the truncate.\n");
 } catch (\Throwable $e) {
     fwrite(STDERR, "seed-dev-db.php failed: " . $e->getMessage() . "\n");
     fwrite(STDERR, $e->getTraceAsString() . "\n");

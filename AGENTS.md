@@ -74,7 +74,8 @@ Run from the repo root. All commands are idempotent.
 ./sbpp.sh db-reset                 # drop the DB volume + re-seed
 ./sbpp.sh db-seed [args]           # populate dev DB with realistic synthetic data
                                    # --scale=small|medium|large (default medium),
-                                   # --seed=<int> (default pinned in code, deterministic)
+                                   # --seed=<int> (default pinned in code, deterministic).
+                                   # Re-login required after each run (login_tokens truncated).
 ./sbpp.sh rebuild                  # --no-cache rebuild of the web image
 ```
 

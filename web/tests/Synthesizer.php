@@ -17,9 +17,35 @@ namespace Sbpp\Tests;
  * Idempotent: every call truncates user-data tables first (preserving
  * `sb_settings` and `sb_mods` which `data.sql` owns), re-seeds the
  * CONSOLE + `admin/admin` rows the dev panel logs in with, then inserts
- * synthetic rows. Same `seed` ⇒ identical names, reasons, and ordering;
- * `mt_srand($seed)` pins PHP's Mersenne Twister so the dataset is
- * reproducible across machines.
+ * synthetic rows.
+ *
+ * Determinism contract — what same `seed` ⇒ same:
+ *   - row counts, ordering, authids, names, reasons, comment / note /
+ *     submission / protest / audit bodies, country codes, IPs
+ *   - timestamp _spread_ (relative to the run's `$now` anchor — i.e.
+ *     "ban X is 2 hours older than ban Y" reproduces; a re-seed three
+ *     days later shifts both by the same amount)
+ *   - high-activity cohort membership (which player indices get the
+ *     populated history shape)
+ *   - SteamID-form mix (which players get `[U:1:N]` vs `STEAM_1:…` vs
+ *     `STEAM_0:…`)
+ *
+ * Intentionally non-deterministic across runs:
+ *   - **Absolute timestamps**: anchored at `time()` so the dashboard's
+ *     "Latest …" cards always show fresh-looking rows. Re-seeding tomorrow
+ *     shifts every `created` / `ends` / `RemovedOn` / etc. by ~24h, but
+ *     the spread + ordering is identical to today's run with the same seed.
+ *   - **RCON tokens** (`sb_servers.rcon`): generated via
+ *     `bin2hex(random_bytes(8))` so each run gets a fresh token. The
+ *     server-edit form is the only surface that reads it; nothing
+ *     user-visible changes.
+ *   - **Admin password hashes** (`sb_admins.password`): bcrypt salts are
+ *     non-deterministic by construction, but `password_verify('admin', …)`
+ *     against the row holds across runs (the literal password 'admin' is
+ *     deterministic; the hash is not).
+ *
+ * `mt_srand($seed)` pins PHP's Mersenne Twister so the deterministic
+ * axes above reproduce byte-for-byte across machines.
  *
  * NOT used by the E2E suite — `Fixture::truncateAndReseed()` stays minimal
  * and the e2e DB stays empty by design (specs build the rows they need).
@@ -141,6 +167,18 @@ final class Synthesizer
      * @var list<array{steam: string, name: string, country: string, ip: string}>
      */
     private array $players = [];
+
+    /**
+     * Indices into {@see $players} for the "high-activity" cohort:
+     * roughly the first 5% of the pool, biased to receive 3-4 bans + 2
+     * comms + 2 notes apiece. Lets the drawer's per-player history /
+     * notes panes always render the populated shape on a deterministic
+     * subset of the pool, instead of being mostly-empty for the long
+     * tail (#1243 review).
+     *
+     * @var list<int>
+     */
+    private array $highActivityIdx = [];
 
     /**
      * Public entrypoint. Idempotent.
@@ -279,11 +317,26 @@ final class Synthesizer
         for ($i = 0; $i < $count; $i++) {
             $authNum = 1_000_000 + $i * 17;
             $authIdY = mt_rand(0, 1);
-            // Emit a mix of STEAM_0 and STEAM_1 (universe 0 vs 1) so the
-            // banlist exercises both legacy and "new" Steam universe paths.
-            $universe = mt_rand(0, 9) === 0 ? '1' : '0';
+            // Three-form authid mix so the drawer's copy-button paths and
+            // the format-detection regression surface (#1207 DET-1, the
+            // mobile-Safari/Android tap-to-dial guard) all exercise across
+            // every form bans/comms in the wild actually carry. $authNum
+            // stays shared across the arms so re-seeding with a different
+            // seed flips the form for the same player position rather than
+            // reshuffling identities.
+            //   ~10% [U:1:N]      Steam3 (drawer: copy button + tel: guard)
+            //   ~10% STEAM_1:Y:N  universe-1 ("new" Source engine)
+            //   ~80% STEAM_0:Y:N  universe-0 (legacy default)
+            $formRoll = mt_rand(0, 99);
+            if ($formRoll < 10) {
+                $steam = sprintf('[U:1:%d]', $authNum);
+            } elseif ($formRoll < 20) {
+                $steam = sprintf('STEAM_1:%d:%d', $authIdY, $authNum);
+            } else {
+                $steam = sprintf('STEAM_0:%d:%d', $authIdY, $authNum);
+            }
             $this->players[] = [
-                'steam'   => sprintf('STEAM_%s:%d:%d', $universe, $authIdY, $authNum),
+                'steam'   => $steam,
                 'name'    => $names[$i % count($names)],
                 'country' => $countries[mt_rand(0, count($countries) - 1)],
                 'ip'      => sprintf(
@@ -295,6 +348,55 @@ final class Synthesizer
                 ),
             ];
         }
+
+        // High-activity cohort: first ceil(5%) of the pool. Front of the
+        // pool is fine because the player-pool order is itself shuffled
+        // by the name-modulo and the seeded RNG; nothing downstream
+        // assumes "low index = special". Bans/comms/notes pull from this
+        // cohort first so each cohort player ends up with the populated
+        // history shape (3-4 bans, 2 comms, 2 notes apiece on average),
+        // making the drawer's per-player history / notes panes reliably
+        // non-empty on a deterministic subset (#1243 review).
+        $cohortSize = max(1, (int) ceil($count * 0.05));
+        $this->highActivityIdx = range(0, min($cohortSize, $count) - 1);
+    }
+
+    /**
+     * Build the list of player-pool indices to use for each row of a
+     * given table (bans / comms / notes). Front-loads the high-activity
+     * cohort so each cohort player ends up with $perCohort (+/- 1)
+     * rows, then fills the remainder uniformly at random across the
+     * full pool. Caps cohort allocation at $total so the returned list
+     * never exceeds the scale ceiling.
+     *
+     * Order is intentional: cohort first, random tail second. Per-row
+     * `created` timestamps are still fully randomised inside each
+     * insert loop, so the dashboard's "Latest …" cards (sorted by
+     * `created DESC`) still mix cohort and tail; only the bid order
+     * lands cohort rows first, which is harmless.
+     *
+     * @return list<int>
+     */
+    private function scheduleTargets(int $perCohort, int $total): array
+    {
+        if ($total <= 0 || $this->players === []) {
+            return [];
+        }
+        $list = [];
+        foreach ($this->highActivityIdx as $idx) {
+            $copies = $perCohort + mt_rand(0, 1);
+            for ($k = 0; $k < $copies; $k++) {
+                if (count($list) >= $total) {
+                    return $list;
+                }
+                $list[] = $idx;
+            }
+        }
+        $rest = $total - count($list);
+        for ($k = 0; $k < $rest; $k++) {
+            $list[] = mt_rand(0, count($this->players) - 1);
+        }
+        return $list;
     }
 
     /**
@@ -623,8 +725,12 @@ final class Synthesizer
             'Ban length reduced after appeal.',
         ];
 
-        for ($i = 0; $i < $count; $i++) {
-            $player  = $this->players[mt_rand(0, count($this->players) - 1)];
+        // High-activity cohort gets ~3-4 bans apiece up front; the
+        // remaining slots fall back to uniform random selection.
+        $targets = $this->scheduleTargets(3, $count);
+
+        foreach ($targets as $playerIdx) {
+            $player  = $this->players[$playerIdx];
             $isIpOnly = mt_rand(0, 9) === 0; // ~10% IP-only bans
 
             $created = $this->now - mt_rand(0, 60 * 60 * 24 * 90);
@@ -687,7 +793,7 @@ final class Synthesizer
             ]);
             $this->banBids[] = (int) $this->pdo->lastInsertId();
         }
-        return $count;
+        return count($targets);
     }
 
     private function insertBanlog(): int
@@ -728,8 +834,11 @@ final class Synthesizer
         ));
 
         $count = $this->scale['comms'];
-        for ($i = 0; $i < $count; $i++) {
-            $player  = $this->players[mt_rand(0, count($this->players) - 1)];
+        // Cohort gets ~2 comms apiece up front; remainder is uniform.
+        $targets = $this->scheduleTargets(2, $count);
+
+        foreach ($targets as $playerIdx) {
+            $player  = $this->players[$playerIdx];
             $created = $this->now - mt_rand(0, 60 * 60 * 24 * 60);
             $length  = mt_rand(0, 3) === 0 ? 0 : mt_rand(60 * 30, 60 * 60 * 24 * 14);
             $ends    = $length === 0 ? 0 : $created + $length;
@@ -780,7 +889,7 @@ final class Synthesizer
                 $ureason,
             ]);
         }
-        return $count;
+        return count($targets);
     }
 
     private function insertComments(): int
@@ -793,6 +902,30 @@ final class Synthesizer
             'INSERT INTO `%s_comments` (`bid`, `type`, `aid`, `commenttxt`, `added`) VALUES (?, ?, ?, ?, ?)',
             DB_PREFIX
         ));
+        // Long-form Markdown bodies live alongside the short pool so the
+        // drawer's Comments pane exercises its truncation/wrap chrome on
+        // a deterministic subset of comments, not just the one-liners.
+        // Shape mirrors the long-reason entry in buildReasonPool().
+        $longInvestigation = "**Investigation summary** — three sessions of demo review:\n\n"
+            . "1. Round 1 (`de_inferno`): clean prefires through smoke at A-site, but only on enemies. "
+            . "Suspicious; not conclusive.\n"
+            . "2. Round 2 (`de_mirage`): tracking through walls during the pre-round freeze. "
+            . "_This_ is the smoking gun — no in-game info available.\n"
+            . "3. Round 3 (`de_dust2`): aim snap to head from B-tunnels through the doorway, target "
+            . "fully off-screen. Frame 17:42-17:44.\n\n"
+            . "Recommendation: keep the perma. Player has appealed twice already on alts (#812, #944) "
+            . "with the same denial pattern.";
+        $longContext = "Long-time community member; checked context before the ban:\n\n"
+            . "- 6 years on the server, 0 prior bans\n"
+            . "- Active in our Discord, helps new players\n"
+            . "- Reportedly going through some personal stuff in voice channels last month\n\n"
+            . "**Recommendation**: reduce from perma to 14d cooldown + DM check-in when it lifts. "
+            . "If the toxic streak continues post-cooldown we revisit. Note added to player profile.";
+        $longCrossLink = "Cross-server intel from EU staff (`@modteam-eu`):\n\n"
+            . "Player is currently serving a 30d ban on the EU comp server for the same wallhack "
+            . "pattern (`STEAM_0:1:88421`). Confirmed via Discord DM with their head admin.\n\n"
+            . "**Action**: matching our ban length to theirs (30d), updating ureason to reflect the "
+            . "cross-server enforcement. Adding linked-accounts note for future moderators.";
         $bodies = [
             'Demo confirms aimbot — see frame 14:32.',
             'Player apologised in DMs, recommend leaving ban.',
@@ -809,6 +942,9 @@ final class Synthesizer
             "Discord screenshot shows them admitting to cheats.\nLeaving ban as is.",
             'Reduced to 24h — first offence.',
             "Long-time community member, out-of-character behaviour.\n7d cooldown then revisit.",
+            $longInvestigation,
+            $longContext,
+            $longCrossLink,
         ];
         for ($i = 0; $i < $count; $i++) {
             $bid     = $this->banBids[mt_rand(0, count($this->banBids) - 1)];
@@ -927,13 +1063,16 @@ final class Synthesizer
             'Reported by multiple sources but I cannot find evidence in demos.',
             "Notable for clutch plays.\nHistory of frustration tilts; not malicious.",
         ];
-        for ($i = 0; $i < $count; $i++) {
-            $player = $this->players[mt_rand(0, count($this->players) - 1)];
+        // Cohort gets ~2 notes apiece up front; remainder is uniform.
+        $targets = $this->scheduleTargets(2, $count);
+
+        foreach ($targets as $playerIdx) {
+            $player = $this->players[$playerIdx];
             $aid    = $this->randomAdminAid();
             $body   = $bodies[mt_rand(0, count($bodies) - 1)];
             $stmt->execute([$player['steam'], $aid, $body, $this->now - mt_rand(60, 60 * 60 * 24 * 90)]);
         }
-        return $count;
+        return count($targets);
     }
 
     private function insertAuditLog(): int

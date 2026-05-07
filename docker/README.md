@@ -92,6 +92,11 @@ Refusal guard: the seeder strictly refuses any `DB_NAME` other than
 is at `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`); the CLI
 driver is `web/tests/scripts/seed-dev-db.php`.
 
+Re-login required after each run — the seeder truncates `sb_login_tokens`
+along with the rest of the user-data tables, which invalidates any open
+browser session against the dev panel. Just hit `/index.php?p=login`
+again with `admin` / `admin`.
+
 ## Quality gates
 
 Five gates run in CI on every PR; each has a one-shot wrapper for local runs.
