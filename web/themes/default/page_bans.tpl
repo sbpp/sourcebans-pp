@@ -74,8 +74,17 @@
       {* #1230: aria-pressed mirrors whether inactive bans are
          currently being hidden ($hidetext == 'Show' means the
          session toggle is set, i.e. the list is filtered).
-         Pair: .btn--secondary[aria-pressed="true"] in theme.css. *}
+         Pair: .btn--secondary[aria-pressed="true"] in theme.css.
+
+         role="button" makes aria-pressed a valid attribute on the
+         <a> per WAI-ARIA (the toggle is functionally a button —
+         the href is the no-JS progressive-enhancement fallback,
+         not a navigation in the breadcrumb sense). Without this
+         role axe's aria-allowed-attr rule fires "ARIA attribute
+         is not allowed: aria-pressed" — see the same shape on
+         page_comms.tpl. *}
       <a class="btn btn--secondary btn--sm"
+         role="button"
          aria-pressed="{if $hidetext == 'Show'}true{else}false{/if}"
          href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}"
          data-testid="toggle-hide-inactive">{$hidetext} inactive</a>

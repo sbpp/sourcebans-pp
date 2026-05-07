@@ -39,8 +39,16 @@
             {* #1230: aria-pressed reflects whether inactive blocks
                are currently being hidden (binary state, not a
                one-shot action). Pair: .btn--secondary[aria-pressed="true"]
-               in theme.css. *}
+               in theme.css.
+
+               role="button" makes aria-pressed a valid attribute
+               on the <a> per WAI-ARIA (the toggle is functionally
+               a button — the href is the no-JS progressive-
+               enhancement fallback). Without this role axe's
+               aria-allowed-attr rule fires "ARIA attribute is not
+               allowed: aria-pressed". *}
             <a class="btn btn--secondary btn--sm"
+               role="button"
                aria-pressed="{if $hide_inactive}true{else}false{/if}"
                href="{$hide_inactive_toggle_url|escape}"
                data-testid="toggle-hide-inactive">
