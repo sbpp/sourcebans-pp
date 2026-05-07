@@ -15,11 +15,6 @@
         column; sname renders ip:port (or "Web Block" for sid=0) until
         a future ticket re-implements the LoadServerHost equivalent
         via sb.api.call.
-      * Fully-wired filter chips — `?type=` and `?state=` URL params
-        round-trip into the filter bar so the chips highlight, but the
-        SQL backend isn't filtered on them yet (legacy `advSearch`
-        still works). Active is derived from the existing
-        hideinactive session toggle.
 
     Testability hooks (`data-testid`) match the B4 spec: comm-row /
     filter-chip-* / row-action-* / page-prev / page-next / comms-search.
@@ -46,14 +41,22 @@
                a button — the href is the no-JS progressive-
                enhancement fallback). Without this role axe's
                aria-allowed-attr rule fires "ARIA attribute is not
-               allowed: aria-pressed". *}
+               allowed: aria-pressed".
+
+               #1274: $is_active_only is the union of the session
+               toggle and the chip strip's `?state=active` URL
+               surface, so the button's pressed/label state stays
+               consistent whether the user clicked the chip or
+               this toggle first. The toggle's URL clears both
+               surfaces in one shot when going OFF (see
+               `$hide_inactive_toggle_url` in page.commslist.php). *}
             <a class="btn btn--secondary btn--sm"
                role="button"
-               aria-pressed="{if $hide_inactive}true{else}false{/if}"
+               aria-pressed="{if $is_active_only}true{else}false{/if}"
                href="{$hide_inactive_toggle_url|escape}"
                data-testid="toggle-hide-inactive">
-                <i data-lucide="{if $hide_inactive}eye{else}eye-off{/if}"></i>
-                {if $hide_inactive}Show inactive{else}Hide inactive{/if}
+                <i data-lucide="{if $is_active_only}eye{else}eye-off{/if}"></i>
+                {if $is_active_only}Show inactive{else}Hide inactive{/if}
             </a>
             {if $can_add_comm}
             <a class="btn btn--primary btn--sm"
@@ -98,19 +101,32 @@
             </button>
         </div>
 
-        {* Filter chips. The active chip reflects URL state (?type= /
-           ?state=); active also lights up when the hideinactive
-           session toggle is set so the chip mirrors the toggle button
-           above. Each chip submits the form so the rest of the filter
-           state (search/server/time) is preserved. *}
+        {* Filter chips (#1274). Each chip submits the form so the
+           rest of the filter state (search/server/time) is preserved
+           — the URL gets `?type=mute&searchText=…` and the page
+           handler's WHERE builder ANDs them together with the legacy
+           ?advType / hideinactive paths. The chip-vs-SQL wiring lives
+           in page.commslist.php's $chipType / $chipStateActive block.
+
+             - All chip: pressed only when nothing is filtered (no
+               type chip + no active-only). Submits `name="type"
+               value=""` to drop the chip type; chip state drops
+               naturally because it's not a form input.
+             - Active chip: pressed when EITHER the chip's
+               `?state=active` URL surface OR the session-based
+               "Hide inactive" toggle is on. Both surfaces produce
+               the same SQL filter, single-sourced via
+               $is_active_only.
+             - Type chips (Mute / Gag / Silence): submit `name="type"
+               value=…`. Pressed when $filters.type matches. *}
         <div class="flex items-center gap-2 mt-2 scroll-x" role="group" aria-label="Quick filters">
             <button class="chip" type="submit" name="type" value=""
-                    aria-pressed="{if $filters.type == '' && $filters.state == ''}true{else}false{/if}"
+                    aria-pressed="{if $filters.type == '' && !$is_active_only}true{else}false{/if}"
                     data-testid="filter-chip-all">
                 All
             </button>
             <button class="chip" type="submit" name="state" value="active"
-                    aria-pressed="{if $hide_inactive || $filters.state == 'active'}true{else}false{/if}"
+                    aria-pressed="{if $is_active_only}true{else}false{/if}"
                     data-testid="filter-chip-active">
                 <span class="chip__dot" style="background:#f59e0b"></span> Active
             </button>
@@ -704,4 +720,4 @@
    these props, this manifest stops being necessary, and the View
    drops them. Until then, keep this block at EOF.
    ============================================================ *}
-{if false}{$ban_nav}{$canedit}{$cid}{$comment}{$commenttext}{$commenttype}{$ctype}{$hideadminname}{$hidetext}{$othercomments}{$page}{$view_bans}{$view_comments}{/if}
+{if false}{$ban_nav}{$canedit}{$cid}{$comment}{$commenttext}{$commenttype}{$ctype}{$hide_inactive}{$hideadminname}{$hidetext}{$othercomments}{$page}{$view_bans}{$view_comments}{/if}

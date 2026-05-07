@@ -27,6 +27,8 @@ import { promisify } from 'node:util';
 const execFileP = promisify(execFile);
 
 const SCRIPT_INSIDE_CONTAINER = '/var/www/html/web/tests/e2e/scripts/reset-e2e-db.php';
+const SEED_COMMS_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-comms-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -76,4 +78,68 @@ export async function resetE2eDb(): Promise<void> {
  */
 export async function truncateE2eDb(): Promise<void> {
     await runReset(['--truncate']);
+}
+
+/**
+ * Per-row shape consumed by `seedCommsRawE2e`. `type=silence` maps to
+ * `:prefix_comms.type=3` — the SourceComms-fork combined-block label
+ * the chip filter (#1274) recognises but `Actions.CommsAdd` doesn't
+ * directly emit. See `web/tests/e2e/scripts/seed-comms-e2e.php` for
+ * the full `state→length/ends/RemoveType` mapping.
+ */
+export interface CommsSeedRow {
+    steam: string;
+    nickname: string;
+    type: 'mute' | 'gag' | 'silence';
+    state: 'active' | 'unmuted' | 'expired' | 'permanent';
+    reason?: string;
+}
+
+/**
+ * Seed comm-block rows directly via the SQL layer (bypasses
+ * `Actions.CommsAdd`). Used by `comms-filter-chips.spec.ts` because
+ * the chip filter has to handle `type=3` (silence) rows that the
+ * normal API path never emits, plus mixed states (`unmuted`,
+ * `expired`, `permanent`) that would otherwise require driving
+ * separate API actions per row.
+ *
+ * Caller responsibility: invoke after `truncateE2eDb()` so the seeded
+ * rows are the only ones the spec sees.
+ */
+export async function seedCommsRawE2e(rows: CommsSeedRow[]): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_COMMS_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_COMMS_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        // Generous buffer matches runReset; the seeder prints a single
+        // confirmation line in the happy path but a noisy PHP stack
+        // trace on failure.
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify(rows));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `seed-comms-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
 }

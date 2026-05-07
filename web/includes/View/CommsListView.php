@@ -73,6 +73,17 @@ final class CommsListView extends View
         public readonly array $servers,
         public readonly array $pagination,
         public readonly bool $hide_inactive,
+        // #1274: union of the session "Hide inactive" flag AND the
+        // chip strip's `?state=active` URL surface. Both surfaces
+        // narrow the list to active-only rows; the template uses
+        // this single flag to drive the toggle button's pressed/
+        // label state and the Active chip's pressed state, so
+        // clicking either surface keeps the chrome consistent
+        // regardless of click order. `hide_inactive` (just the
+        // session flag) stays in the View for third-party themes
+        // that forked the v1.x default and only know about the
+        // session toggle.
+        public readonly bool $is_active_only,
         public readonly string $hide_inactive_toggle_url,
         public readonly bool $can_add_comm,
         public readonly bool $can_edit_comm,

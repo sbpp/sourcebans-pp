@@ -221,14 +221,58 @@ if (isset($_GET["hideinactive"]) && $_GET["hideinactive"] == "true") { // hide
     unset($_SESSION["hideinactive"]);
     //ShowBox('Show inactive bans', 'Inactive bans will be shown in the banlist.', 'green', 'index.php?p=banlist', true);
 }
-if (isset($_SESSION["hideinactive"])) {
+
+// #1274: filter chip URL state. The chip strip in page_comms.tpl
+// submits ?type=<mute|gag|silence> for type chips and ?state=active
+// for the Active chip; both have to compose with the legacy
+// ?searchText / ?advSearch / ?advType paths AND with the existing
+// session-based "hide inactive" toggle. The lifecycle:
+//
+//   1. Sanitise chip params here (validated against a small allowlist
+//      so a stray ?type=DROP TABLE never reaches the SQL layer).
+//   2. Treat `state=active` and the session-based hideinactive flag
+//      as the SAME effect — both narrow to "active rows only" via
+//      the predicate below. The chip's `aria-pressed` and the
+//      toggle button's `aria-pressed` both light up when EITHER
+//      surface is on (see page_comms.tpl).
+//   3. The Active predicate is single-sourced as the local
+//      $activePredicateCo / $activePredicateBare strings: identical
+//      semantics, only the column alias differs. After PruneComms()
+//      runs at the top of this file, every length-bounded expired
+//      row already has RemoveType='E', so the second clause is a
+//      belt-and-suspenders guard against a race window where the
+//      prune hasn't yet swept the latest expired row.
+$chipType  = (string)($_GET['type']  ?? '');
+$chipType  = in_array($chipType, ['mute', 'gag', 'silence'], true) ? $chipType : '';
+$chipStateActive = (((string)($_GET['state'] ?? '')) === 'active');
+
+$activePredicateCo   = '(CO.RemoveType IS NULL AND (CO.length = 0 OR CO.ends > UNIX_TIMESTAMP()))';
+$activePredicateBare = '(RemoveType IS NULL AND (length = 0 OR ends > UNIX_TIMESTAMP()))';
+
+$isActiveOnly = isset($_SESSION["hideinactive"]) || $chipStateActive;
+if ($isActiveOnly) {
     $hidetext      = "Show";
-    $hideinactive  = " AND RemoveType IS NULL";
-    $hideinactiven = " WHERE RemoveType IS NULL";
+    $hideinactive  = " AND " . $activePredicateCo;
+    $hideinactiven = " WHERE " . $activePredicateBare;
 } else {
     $hidetext      = "Hide";
     $hideinactive  = "";
     $hideinactiven = "";
+}
+
+// Chip TYPE filter — additional WHERE fragment + bind. `:prefix_comms.type`
+// is `1=mute, 2=gag, 3=silence` per the existing render logic at
+// ~line 750 (`$typeLabel` switch). `_Co` is for queries that alias
+// the table as CO; `_Bare` is for the count query that uses the
+// unaliased table name.
+$typeMap            = ['mute' => 1, 'gag' => 2, 'silence' => 3];
+$chipTypeWhereCo    = '';
+$chipTypeWhereBare  = '';
+$chipTypeBind       = [];
+if ($chipType !== '') {
+    $chipTypeWhereCo   = ' AND CO.type = ?';
+    $chipTypeWhereBare = ' AND type = ?';
+    $chipTypeBind      = [$typeMap[$chipType]];
 }
 
 if (isset($_GET['searchText'])) {
@@ -260,6 +304,14 @@ if (isset($_GET['searchText'])) {
         $authidParam  = $search;
     }
 
+    // #1274: wrap the OR-search clauses in parens before appending
+    // any AND-predicate (hideinactive, chip type). Without the parens
+    // SQL precedence makes `WHERE A OR B OR C AND D` parse as
+    // `WHERE A OR B OR (C AND D)` — the AND only restricts the last
+    // OR term, so a chip-type filter would silently let inactive or
+    // wrong-type rows leak through whenever they matched authid or
+    // name. The parens lock the AND-predicates onto the entire OR
+    // group.
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -270,23 +322,40 @@ if (isset($_GET['searchText'])) {
 		LEFT JOIN `:prefix_servers` AS SE ON SE.sid = CO.sid
 		LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
 		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
-      	WHERE " . $authidClause . " or CO.name LIKE ? or CO.reason LIKE ?" . $hideinactive . "
-   		ORDER BY CO.created DESC LIMIT ?,?")->resultset(array(
+      	WHERE (" . $authidClause . " or CO.name LIKE ? or CO.reason LIKE ?)" . $hideinactive . $chipTypeWhereCo . "
+   		ORDER BY CO.created DESC LIMIT ?,?")->resultset(array_merge([
         $authidParam,
         $search,
         $search,
+    ], $chipTypeBind, [
         intval($BansStart),
         intval($BansPerPage)
-    ));
+    ]));
 
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO WHERE " . $authidClause . " OR CO.name LIKE ? OR CO.reason LIKE ?" . $hideinactive)->resultset(array(
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO WHERE (" . $authidClause . " OR CO.name LIKE ? OR CO.reason LIKE ?)" . $hideinactive . $chipTypeWhereCo)->resultset(array_merge([
         $authidParam,
         $search,
-        $search
-    ));
+        $search,
+    ], $chipTypeBind));
     $searchlink = "&searchText=" . urlencode($_GET["searchText"]);
 } elseif (!isset($_GET['advSearch'])) {
+    // #1274: this branch has no upper-level WHERE; if hideinactive
+    // already opened one ($hideinactiven = " WHERE …") we append the
+    // chip type filter as " AND CO.type = ?", otherwise the chip
+    // opens the WHERE itself. Mirrors the $publicFilterAnd /
+    // $publicFilterWheren shape in page.banlist.php.
+    if ($hideinactiven !== '') {
+        $branchWhereSuffix = $hideinactiven . $chipTypeWhereCo;
+        $branchCountSuffix = $hideinactiven . $chipTypeWhereBare;
+    } elseif ($chipType !== '') {
+        $branchWhereSuffix = ' WHERE CO.type = ?';
+        $branchCountSuffix = ' WHERE type = ?';
+    } else {
+        $branchWhereSuffix = '';
+        $branchCountSuffix = '';
+    }
+
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 		SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 		CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -297,14 +366,14 @@ if (isset($_GET['searchText'])) {
 		LEFT JOIN `:prefix_servers` AS SE ON SE.sid = CO.sid
 		LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
 		LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
-		" . $hideinactiven . "
+		" . $branchWhereSuffix . "
 		ORDER BY created DESC
-		LIMIT ?,?")->resultset(array(
+		LIMIT ?,?")->resultset(array_merge($chipTypeBind, [
         intval($BansStart),
         intval($BansPerPage)
-    ));
+    ]));
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $hideinactiven)->resultset();
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $branchCountSuffix)->resultset($chipTypeBind);
     $searchlink = "";
 }
 
@@ -446,6 +515,20 @@ if (isset($_GET['advSearch'])) {
             break;
     }
 
+    // #1274: chip type composes onto the advSearch WHERE. If $where
+    // is empty (advType resolved to a no-op) AND hideinactive is on,
+    // promote $hideinactive to its WHERE form so the trailing chip
+    // predicate can append cleanly. Otherwise we may be left with
+    // " AND CO.type = ?" as the only WHERE clause, which is invalid
+    // SQL ("AND" with no leading WHERE). Mirrors the
+    // `if (empty($where) && hide_inactive) $hideinactive = $hideinactiven`
+    // shape page.banlist.php uses for the same composition.
+    if (empty($where) && $hideinactive === '' && $chipType !== '') {
+        $advChipType = ' WHERE CO.type = ?';
+    } else {
+        $advChipType = $chipTypeWhereCo;
+    }
+
     $res = $GLOBALS['PDO']->query("SELECT CO.bid ban_id, CO.type, CO.authid, CO.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, CO.ureason unban_reason, CO.aid, AD.gid AS gid, adminIp, CO.sid ban_server, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, MO.icon as mod_icon,
 			CAST(MID(CO.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(CO.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -457,15 +540,15 @@ if (isset($_GET['advSearch'])) {
 			LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
 			LEFT JOIN `:prefix_admins` AS AD ON CO.aid = AD.aid
   			" . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . "
-      " . $where . $hideinactive . "
+      " . $where . $hideinactive . $advChipType . "
    ORDER BY CO.created DESC
-   LIMIT ?,?")->resultset(array_merge($advcrit, array(
+   LIMIT ?,?")->resultset(array_merge($advcrit, $chipTypeBind, [
         intval($BansStart),
         intval($BansPerPage)
-    )));
+    ]));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO
-										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . " " . $where . $hideinactive)->resultset($advcrit);
+										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CM ON CO.bid = CM.bid" : "") . " " . $where . $hideinactive . $advChipType)->resultset(array_merge($advcrit, $chipTypeBind));
     $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']);
 }
 
@@ -935,6 +1018,17 @@ unset($_SESSION['CountryFetchHndl']);
 // reference in the original code path.
 $searchlink = $searchlink ?? '';
 
+// #1274: extend $searchlink with the chip TYPE (so toggle URL +
+// pagination preserve a Mute/Gag/Silence selection across navigations).
+// NOTE: chip STATE (`?state=active`) is intentionally NOT folded into
+// $searchlink — the toggle URL needs to be able to drop it cleanly
+// when the user clicks "Show inactive". $paginationLink below adds
+// state on top so paginated pages still preserve the active filter.
+if ($chipType !== '') {
+    $searchlink .= '&type=' . urlencode($chipType);
+}
+$paginationLink = $searchlink . ($chipStateActive ? '&state=active' : '');
+
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
 $theme->assign('active_bans', $BanCount);
@@ -963,8 +1057,8 @@ $filters = [
     'search' => isset($_GET['searchText']) ? (string) $_GET['searchText'] : '',
     'server' => isset($_GET['server']) ? (string) $_GET['server'] : '',
     'time'   => isset($_GET['time']) ? (string) $_GET['time'] : '',
-    'state'  => isset($_GET['state']) ? (string) $_GET['state'] : '',
-    'type'   => isset($_GET['type']) ? (string) $_GET['type'] : '',
+    'state'  => $chipStateActive ? 'active' : '',
+    'type'   => $chipType,
 ];
 
 $pagination = [
@@ -972,15 +1066,21 @@ $pagination = [
     'to'       => $BansEnd,
     'total'    => $BanCount,
     'prev_url' => $page > 1
-        ? 'index.php?p=commslist&page=' . ($page - 1) . $searchlink
+        ? 'index.php?p=commslist&page=' . ($page - 1) . $paginationLink
         : null,
     'next_url' => $BansEnd < $BanCount
-        ? 'index.php?p=commslist&page=' . ($page + 1) . $searchlink
+        ? 'index.php?p=commslist&page=' . ($page + 1) . $paginationLink
         : null,
 ];
 
-$hideInactive       = isset($_SESSION['hideinactive']);
-$hideInactiveToggle = 'index.php?p=commslist&hideinactive=' . ($hideInactive ? 'false' : 'true') . $searchlink;
+$hideInactive = isset($_SESSION['hideinactive']);
+// #1274: the toggle button is the single OFF-switch for active-only mode.
+// When the chip's `?state=active` is on the URL, the toggle's "Show
+// inactive" path must clear BOTH the session AND the URL state — else
+// clicking the toggle would clear the session but leave the chip
+// pressed, leaving us in a weird half-on state. $searchlink omits
+// `state=active` precisely so this URL composes cleanly.
+$hideInactiveToggle = 'index.php?p=commslist&hideinactive=' . ($isActiveOnly ? 'false' : 'true') . $searchlink;
 
 // #1207: filter-aware empty state. Any filter chip / search / time /
 // hide-inactive flips this; the template branches the empty-state
@@ -1016,6 +1116,7 @@ $can_delete_comm  = $perms['can_owner'] || $perms['can_delete_ban'];
     servers:                  $serversFilter,
     pagination:               $pagination,
     hide_inactive:            $hideInactive,
+    is_active_only:           $isActiveOnly,
     hide_inactive_toggle_url: $hideInactiveToggle,
     can_add_comm:             $can_add_comm,
     can_edit_comm:            $can_edit_comm,
