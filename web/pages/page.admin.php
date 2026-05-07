@@ -24,21 +24,54 @@ if (!defined("IN_SB")) {
 
 global $userbank, $theme;
 
-// Stat counts the legacy default-theme template renders in its
-// information rows. AdminHomeView keeps these fields declared during
-// the v2.0.0 theme rollout (#1123) so the default PHPStan leg's
-// SmartyTemplateRule parity check still passes; D1's hard cutover
-// drops both the legacy template and the legacy fields together.
-$counts = $GLOBALS['PDO']->query("SELECT
-                                 (SELECT COUNT(bid) FROM `:prefix_banlog`)                       AS blocks,
-                                 (SELECT COUNT(bid) FROM `:prefix_bans`)                         AS bans,
-                                 (SELECT COUNT(bid) FROM `:prefix_comms`)                        AS comms,
-                                 (SELECT COUNT(aid) FROM `:prefix_admins`  WHERE aid > 0)        AS admins,
-                                 (SELECT COUNT(subid) FROM `:prefix_submissions` WHERE archiv = '0') AS subs,
-                                 (SELECT COUNT(subid) FROM `:prefix_submissions` WHERE archiv > 0)   AS archiv_subs,
-                                 (SELECT COUNT(pid) FROM `:prefix_protests`    WHERE archiv = '0') AS protests,
-                                 (SELECT COUNT(pid) FROM `:prefix_protests`    WHERE archiv > 0)   AS archiv_protests,
-                                 (SELECT COUNT(sid) FROM `:prefix_servers`)                      AS servers")->single();
+// #1270: the legacy v1.x default-theme rendered the stat-counts row
+// + a getDirSize(SB_DEMOS) "demos on disk" badge on the admin
+// landing. The v2.0.0 redesign (#1146) replaced both with the
+// 8-card grid that doesn't reference any of these values; the
+// matching $demosize / $total_* / $archived_* fields on
+// AdminHomeView are kept assignable so theme forks of the
+// pre-v2.0.0 default keep rendering off the same DTO surface, and
+// the `{if false}` parity block in page_admin.tpl keeps
+// SmartyTemplateRule's "every assigned property is referenced
+// somewhere in the template tree" cross-check green.
+//
+// Computing the values for every request — a 9-subquery composite
+// COUNT over `:prefix_banlog` (worst case on production: every
+// block ever logged) plus a recursive glob() walk over
+// `web/demos/` — was the dominant cost of this page handler on
+// installs with months of demo retention. Sbpp\Theme gates it
+// behind `wantsLegacyAdminCounts()`: third-party forks opt back in
+// by defining `theme_legacy_admin_counts` in their `theme.conf.php`;
+// the shipped default doesn't, so the counts are placeholders and
+// the work is skipped. D1's hard cutover drops both the parity
+// block and the legacy fields together; this gate goes with them.
+if (\Sbpp\Theme::wantsLegacyAdminCounts()) {
+    \Sbpp\Theme::recordLegacyComputePass();
+
+    $counts = $GLOBALS['PDO']->query("SELECT
+                                     (SELECT COUNT(bid) FROM `:prefix_banlog`)                       AS blocks,
+                                     (SELECT COUNT(bid) FROM `:prefix_bans`)                         AS bans,
+                                     (SELECT COUNT(bid) FROM `:prefix_comms`)                        AS comms,
+                                     (SELECT COUNT(aid) FROM `:prefix_admins`  WHERE aid > 0)        AS admins,
+                                     (SELECT COUNT(subid) FROM `:prefix_submissions` WHERE archiv = '0') AS subs,
+                                     (SELECT COUNT(subid) FROM `:prefix_submissions` WHERE archiv > 0)   AS archiv_subs,
+                                     (SELECT COUNT(pid) FROM `:prefix_protests`    WHERE archiv = '0') AS protests,
+                                     (SELECT COUNT(pid) FROM `:prefix_protests`    WHERE archiv > 0)   AS archiv_protests,
+                                     (SELECT COUNT(sid) FROM `:prefix_servers`)                      AS servers")->single();
+    $demosize = getDirSize(SB_DEMOS);
+} else {
+    // Placeholders that satisfy AdminHomeView's typed properties.
+    // The default template references these fields only inside an
+    // unreachable `{if false}` parity block, so the values are
+    // never visible to the user; theme forks that opt back in (see
+    // above) get the real numbers.
+    $counts = [
+        'blocks' => 0, 'bans'             => 0, 'comms'    => 0, 'admins'   => 0,
+        'subs'   => 0, 'archiv_subs'      => 0, 'protests' => 0, 'archiv_protests' => 0,
+        'servers' => 0,
+    ];
+    $demosize = '0 B';
+}
 
 // AdminHomeView precomputes one composite `$can_<area>` boolean per
 // landing-grid card from Sbpp\View\Perms::for($userbank). Each composite
@@ -65,7 +98,7 @@ $perms = \Sbpp\View\Perms::for($userbank);
     access_groups:        $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS  | ADMIN_ADD_GROUP   | ADMIN_EDIT_GROUPS  | ADMIN_DELETE_GROUPS),
     access_settings:      $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS),
     access_mods:          $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS    | ADMIN_ADD_MODS    | ADMIN_EDIT_MODS    | ADMIN_DELETE_MODS),
-    demosize:             getDirSize(SB_DEMOS),
+    demosize:             $demosize,
     total_admins:         (int) $counts['admins'],
     total_bans:           (int) $counts['bans'],
     total_comms:          (int) $counts['comms'],

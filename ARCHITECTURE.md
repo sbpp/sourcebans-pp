@@ -421,6 +421,40 @@ settings, features, themes, logs), the audit log, the ban submission /
 protest forms, the login / your-account forms, the kickit / blockit
 side-modals, the updater, and the upload-icon dialog.
 
+#### Theme-fork compatibility predicates (`Sbpp\Theme`)
+
+A handful of page handlers carry legacy DTO fields that the shipped
+default theme stopped rendering at v2.0.0 (#1146) but third-party
+forks of the pre-v2.0.0 default may still bind to. The fields stay
+assignable — `SmartyTemplateRule` insists they keep matching the
+template's `{if false}` parity reference — but **computing** them is
+work whose only consumer might be a fork. `web/includes/Theme.php`
+(`Sbpp\Theme`) is the single home for the predicates page handlers
+ask before they pay that cost.
+
+The first user (#1270): `\Sbpp\Theme::wantsLegacyAdminCounts()` gates
+the 9-COUNT subquery + the recursive `getDirSize(SB_DEMOS)` walk in
+`web/pages/page.admin.php`. The shipped default theme returns `false`
+(the work is skipped, placeholder zeros / `'0 B'` flow into
+`AdminHomeView`'s legacy fields, the `{if false}` parity reference
+emits no visible output). A fork that still renders the legacy
+counts row opts back in by adding
+
+```php
+define('theme_legacy_admin_counts', true);
+```
+
+to its `theme.conf.php` — same file every theme already declares
+`theme_name` / `theme_author` / `theme_version` in. `Theme.php` also
+exposes a `recordLegacyComputePass()` / `legacyComputeCount()` /
+`resetLegacyComputeCount()` triple the regression test
+(`web/tests/integration/AdminHomePerformanceTest.php`) reads to
+assert default-theme installs really do skip the slow path.
+
+When new compute-paying-for-fork-only-output surfaces show up, add a
+sibling predicate to the same class (one method per legacy surface,
+named `wants<X>()`) so the gate convention stays single-source.
+
 ### Frontend JavaScript (`web/scripts/`)
 
 Vanilla JS, classic `<script>` tags, no bundler. The whole tree carries

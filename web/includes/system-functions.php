@@ -266,16 +266,41 @@ function PruneComms()
 }
 
 /**
+ * Human-readable size of every file under `$dir`, recursively.
+ *
+ * The actual byte-count traversal lives in {@see getDirSizeBytes()};
+ * this thin wrapper formats the total via {@see sizeFormat()}. Keeping
+ * the recursion in a typed-int helper avoids the legacy bug where the
+ * inner recursive call returned a `sizeFormat()` string and `+=`'d it
+ * back into `$size` (PHP 8 warned "non-numeric value encountered"
+ * and undercounted any tree with nested subdirectories — e.g. a
+ * `web/demos/<server>/<demo>.dem` layout would lose the per-server
+ * subtotals).
+ *
  * @param  string $dir
  * @return string
  */
 function getDirSize($dir)
 {
+    return sizeFormat(getDirSizeBytes($dir));
+}
+
+/**
+ * Recursive byte-count of every file under `$dir`. Returns a strict
+ * int so callers can `+=` it without tripping PHP 8's
+ * "non-numeric value encountered" warning. {@see getDirSize()} wraps
+ * this with {@see sizeFormat()} for the user-visible string.
+ *
+ * @param  string $dir
+ * @return int
+ */
+function getDirSizeBytes($dir)
+{
     $size = 0;
     foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $object) {
-        $size += is_file($object) ? filesize($object) : getDirSize($object);
+        $size += is_file($object) ? (int) filesize($object) : getDirSizeBytes($object);
     }
-    return sizeFormat((int)$size);
+    return $size;
 }
 
 /**
