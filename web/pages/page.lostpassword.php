@@ -65,17 +65,34 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
         PageDie();
     }
 
-    $password = Crypto::genSecret(MIN_PASS_LENGTH + 8);
+    // #1269: send the new password BEFORE mutating the DB row so a
+    // misconfigured mailer (e.g. an upgraded panel where the 1.x
+    // installer left `config.smtp.*` empty) doesn't silently lock the
+    // admin out. Pre-fix: the password was rolled to a random string,
+    // mail send was attempted, the result was assigned to $isEmailSent
+    // but never checked, and the user got "Your password has been
+    // reset and sent to your email" regardless. With mail broken that
+    // means the old password is gone, the new password was never
+    // delivered, and the validation token is consumed — no recovery
+    // path. Now: roll only after the mailer has accepted the message;
+    // surface the error otherwise so the user can retry once SMTP is
+    // configured.
+    $password    = Crypto::genSecret(MIN_PASS_LENGTH + 8);
+    $isEmailSent = Mail::send($email, EmailType::PasswordResetSuccess, [
+        '{password}' => $password,
+        '{name}'     => $result['user'],
+        '{home}'     => Host::complete(true)
+    ]);
+
+    if (!$isEmailSent) {
+        print "<script>ShowBox('Error', 'Could not send the new password by email. Your old password is still active. Please contact an administrator if this persists.', 'red');</script>";
+        PageDie();
+    }
+
     $GLOBALS['PDO']->query("UPDATE `:prefix_admins` SET `password` = :password, `validate` = NULL WHERE `aid` = :aid");
     $GLOBALS['PDO']->bind(':password', password_hash($password, PASSWORD_BCRYPT));
     $GLOBALS['PDO']->bind(':aid', $result['aid']);
     $GLOBALS['PDO']->execute();
-
-    $isEmailSent = Mail::send($email, EmailType::PasswordResetSuccess, [
-        '{password}' => $password,
-        '{name}' => $result['user'],
-        '{home}' => Host::complete(true)
-    ]);
 
     print "<script>ShowBox('Password Reset', 'Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.', 'blue');</script>";
     PageDie();
