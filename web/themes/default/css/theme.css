@@ -439,13 +439,16 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
    The active link reuses `.sidebar__link[aria-current="page"]` from
    the main shell so the dark-pill / brand-orange treatment is
    single-source. */
-.admin-sidebar { font-size: var(--fs-sm); margin-bottom: 1rem; }
-.admin-sidebar__details {
+.admin-sidebar,
+.page-toc { font-size: var(--fs-sm); margin-bottom: 1rem; }
+.admin-sidebar__details,
+.page-toc__details {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
 }
-.admin-sidebar__summary {
+.admin-sidebar__summary,
+.page-toc__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -456,21 +459,63 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
   list-style: none;
   user-select: none;
 }
-.admin-sidebar__summary::-webkit-details-marker { display: none; }
-.admin-sidebar__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
-.admin-sidebar__chevron {
+.admin-sidebar__summary::-webkit-details-marker,
+.page-toc__summary::-webkit-details-marker { display: none; }
+.admin-sidebar__summary-label,
+.page-toc__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
+.admin-sidebar__chevron,
+.page-toc__chevron {
   transition: transform .15s ease;
   color: var(--text-muted);
 }
-.admin-sidebar__details[open] .admin-sidebar__chevron { transform: rotate(180deg); }
-.admin-sidebar__nav {
+.admin-sidebar__details[open] .admin-sidebar__chevron,
+.page-toc__details[open] .page-toc__chevron { transform: rotate(180deg); }
+.admin-sidebar__nav,
+.page-toc__nav {
   padding: 0.5rem 0.5rem 0.625rem;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
 @media (prefers-reduced-motion: reduce) {
-  .admin-sidebar__chevron { transition: none; }
+  .admin-sidebar__chevron,
+  .page-toc__chevron { transition: none; }
+}
+
+/* Page-padding inset for the sidebar shell (#1266). Mirrors
+   `.page-toc-shell` / `.page-section` — 1.5rem all-around, 1400px
+   cap. Declared at the base level so the inset applies at every
+   viewport (including the <1024px accordion shape); the desktop
+   media-query block below adds `display: grid` etc. on top, both
+   sets of properties merge cleanly via the cascade.
+
+   Pre-#1266 only the desktop block existed, so the shell carried
+   no padding while the inner Pattern A content templates wrapped
+   their body in a `.p-6` (1.5rem). `align-items: start` aligns
+   grid cells, not visible content inside them — so the sidebar
+   floated 1.5rem above the content column's first paint. Lifting
+   the inset onto the shell (and dropping the inner `.p-6` from
+   each Pattern A content template in the same diff) makes both
+   columns share the same top y and matches the parallel fix
+   #1260 → #1263 landed on `.page-toc-shell`. */
+.admin-sidebar-shell {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
+/* Pattern A content templates that wrap their body in `.page-section`
+   (servers/mods/edit-mod) would otherwise double up the 1.5rem
+   inset — the shell now carries that inset (#1266), so suppress the
+   nested `.page-section`'s own padding + max-width-cap when it sits
+   inside `.admin-sidebar-content`. Each template's own inline-style
+   max-width (e.g. `style="max-width:900px"` on `page_admin_servers_add.tpl`)
+   still wins by inline-style specificity, so per-template content
+   clamps for narrow forms keep working. The `.page-section`
+   semantic at the outer use site is preserved — the suppression is
+   strictly contextual. */
+.admin-sidebar-content .page-section {
+  padding: 0;
+  max-width: none;
 }
 
 /* Desktop layout — vertical sidebar floats next to the content
@@ -479,7 +524,7 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
    scrolls through the active section. We force the <details>
    contents visible regardless of [open] so accidental "collapse"
    at desktop can't strand the user without navigation — same
-   contract as `.page-toc` (#1207 ADM-3 / #1239). */
+   contract as `.page-toc` (#1207 ADM-3 / #1239 / #1266). */
 @media (min-width: 1024px) {
   .admin-sidebar-shell {
     display: grid;
@@ -1272,7 +1317,7 @@ details.queue-row > summary > .row-actions {
 }
 
 /* ============================================================
-   #1207 ADM-3, #1239 — page-level table of contents (shared)
+   #1207 ADM-3, #1239, #1266 — page-level table of contents
    ============================================================
    Sticky anchor sidebar at >=1024px and an accordion ToC at <1024px,
    with each section anchored via `id="…"` + `scroll-margin-top` so
@@ -1282,26 +1327,47 @@ details.queue-row > summary > .row-actions {
    page-specific class names (`.admin-admins-*`); #1239 lifted the
    class names to a generic `page-toc-*` prefix so admin-bans and any
    future dense page can reuse the same shape via the parameterized
-   `page_toc.tpl` partial. data-testids stay scoped per page (e.g.
-   `admin-admins-toc`, `admin-bans-toc`) so E2E specs can target each
-   surface independently — see `page_toc.tpl` for the contract.
+   `page_toc.tpl` partial. #1266 unified the chrome with the Pattern
+   A `core/admin_sidebar.tpl` (same iconed pill rows + active-state
+   highlight via `aria-current="page"`); the partial now emits dual
+   class names (`admin-sidebar page-toc` / `admin-sidebar__details
+   page-toc__details` / …) so the bare CSS comes from the grouped
+   `.admin-sidebar*, .page-toc*` selectors above and `.page-toc*`
+   keeps matching for any third-party theme that targets them. Per-
+   link styling comes from `.sidebar__link.admin-sidebar__link`.
+
+   data-testids stay scoped per page (e.g. `admin-admins-toc`,
+   `admin-bans-toc`) so E2E specs can target each surface
+   independently — see `page_toc.tpl` for the contract.
+
+   This block carries only the rules that ARE page-toc-specific:
+   the cross-template content column's `<section>` anchors and per-
+   section heading style, plus the page-padding inset on the shell
+   (mirrors `.admin-sidebar-shell` from the Pattern A block above)
+   and the desktop grid layout. Everything else lives in the
+   `.admin-sidebar*, .page-toc*` grouped block.
 
    Markup contract (see page_toc.tpl + the page templates that
    include it — page_admin_admins_*.tpl, page_admin_bans_*.tpl):
      .page-toc-shell             outer wrapper (grid host on desktop)
-       .page-toc                 <aside> with the link list
-         .page-toc__details      <details open> on every viewport;
+       .admin-sidebar.page-toc   <aside> with the link list
+         .admin-sidebar__details.page-toc__details
+                                 <details open> on every viewport;
                                  the open/close toggle only does
                                  something at <1024px (mobile/
                                  narrow-tablet accordion). At
                                  >=1024px we force the contents
                                  visible regardless of [open]
                                  state — see the desktop block.
-         .page-toc__summary      mobile-only chrome (hidden on
+         .admin-sidebar__summary.page-toc__summary
+                                 mobile-only chrome (hidden on
                                  desktop)
-         .page-toc__nav          the link container
-         .page-toc__list         <ul>
-         .page-toc__link         each <a>
+         .admin-sidebar__nav.page-toc__nav
+                                 <nav> wrapping the links
+           .sidebar__link.admin-sidebar__link.page-toc__link
+                                 each <a> (iconed; active state
+                                 via the shared `.sidebar__link
+                                 [aria-current="page"]` rule)
        .page-toc-content         the cross-template content column
          .page-toc-section       the anchored <section>s
          .page-toc-section__heading  per-section <h2>
@@ -1314,60 +1380,6 @@ details.queue-row > summary > .row-actions {
   letter-spacing: 0.06em;
   color: var(--text-muted);
   margin: 0 0 0.75rem;
-}
-.page-toc {
-  font-size: var(--fs-sm);
-  margin-bottom: 1rem;
-}
-.page-toc__details {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-}
-.page-toc__summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.625rem 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-  user-select: none;
-}
-.page-toc__summary::-webkit-details-marker { display: none; }
-.page-toc__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
-.page-toc__chevron {
-  transition: transform .15s ease;
-  color: var(--text-muted);
-}
-.page-toc__details[open] .page-toc__chevron { transform: rotate(180deg); }
-.page-toc__nav { padding: 0 0.5rem 0.5rem; }
-.page-toc__list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-.page-toc__link {
-  display: block;
-  padding: 0.4375rem 0.625rem;
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  text-decoration: none;
-  transition: background-color .12s, color .12s;
-}
-.page-toc__link:hover,
-.page-toc__link:focus-visible {
-  background: var(--bg-muted);
-  color: var(--text);
-  outline: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .page-toc__chevron { transition: none; }
-  .page-toc__link    { transition: none; }
 }
 
 /* Page-padding inset for the cross-template ToC shell. Mirrors the
@@ -1389,7 +1401,8 @@ details.queue-row > summary > .row-actions {
    pinned beneath the topbar (top: 4rem) while the user scrolls
    through the sections. We force the <details> contents visible
    regardless of [open] so accidental "collapse" at desktop can't
-   strand the user without navigation. */
+   strand the user without navigation — same contract as
+   `.admin-sidebar-shell` (Pattern A). */
 @media (min-width: 1024px) {
   .page-toc-shell {
     display: grid;
@@ -1397,22 +1410,5 @@ details.queue-row > summary > .row-actions {
     gap: 1.5rem;
     align-items: start;
   }
-  .page-toc {
-    position: sticky;
-    top: 4rem;
-    align-self: start;
-    margin-bottom: 0;
-  }
-  .page-toc__details {
-    border: none;
-    background: transparent;
-  }
-  .page-toc__summary { display: none; }
-  /* Keep the link list visible whether the user has toggled the
-     <details> closed or not — at desktop the sidebar is a permanent
-     navigation surface, the accordion gesture only matters at mobile. */
-  .page-toc__details .page-toc__nav { display: block !important; }
-  .page-toc__nav { padding: 0; }
-  .page-toc__link { font-size: var(--fs-sm); }
   .page-toc-content { min-width: 0; }
 }

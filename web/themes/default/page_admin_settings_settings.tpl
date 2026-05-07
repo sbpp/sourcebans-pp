@@ -68,8 +68,19 @@
     Documented in AGENTS.md "Anti-patterns" + "Admin-authored display
     text". The help icon links to the CommonMark cheat-sheet so admins
     can discover the syntax without losing the safe-on-render contract.
+
+    #1266 — outer `.p-6` removed
+    ----------------------------
+    The page padding now lives on the `.admin-sidebar-shell` (the grid
+    host opened by AdminTabs.php), so this template no longer wraps
+    its body in `<div class="p-6">`. Without that change the sidebar's
+    first row floated 1.5rem above the page heading because
+    `align-items: start` aligned grid cells, not visible content
+    inside them. The `.mb-6` heading wrapper inside this template is
+    intentionally kept so the heading still gets its bottom gap to
+    the first card.
 *}
-<div class="p-6">
+<div>
     <div class="mb-6">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
         <p class="text-sm text-muted m-0 mt-2">Site-wide configuration. Changes apply immediately.</p>

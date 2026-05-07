@@ -15,7 +15,11 @@
 {if NOT $permission_addgroup}
     <div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>
 {else}
-<div class="p-6" style="max-width:48rem">
+{* #1266 — outer `.p-6` removed; the 1.5rem page inset now lives on
+   `.admin-sidebar-shell` (the AdminTabs grid host). The `max-width:
+   48rem` form clamp stays so the form column doesn't grow past a
+   readable line length on wide viewports. *}
+<div style="max-width:48rem">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Create a group</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick a name and a type. You can edit permission flags from the <strong>List groups</strong> tab once the group exists.</p>

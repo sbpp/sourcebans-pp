@@ -16,7 +16,12 @@
 {if NOT $permission_listgroups}
     <div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>
 {else}
-<div class="p-6 space-y-6" style="max-width:1400px">
+{* #1266 — outer `.p-6` removed; the 1.5rem page inset now lives on
+   `.admin-sidebar-shell` (the AdminTabs grid host). The `space-y-6`
+   stays so the per-section vertical rhythm holds; the `max-width`
+   cap is also unnecessary here because the outer shell already
+   clamps to 1400px. *}
+<div class="space-y-6">
 
     {* ------------------------------------------------------------ *}
     {* Master-detail: Web admin groups                              *}

@@ -50,13 +50,21 @@ $canImport       = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT);
 $groupBanEnabled = Config::getBool('config.enablegroupbanning');
 $canGroupBan     = $canAddBan && $groupBanEnabled;
 
-/** @var list<array{slug: string, label: string}> $tocEntries */
+/*
+ * #1266 — each ToC entry carries a Lucide `icon` so the rendered
+ * link gets the same iconed-pill visual weight as the Pattern A
+ * sidebar (`core/admin_sidebar.tpl`). Icons follow the Pattern A
+ * vocabulary (see admin.servers.php / admin.groups.php / etc):
+ * `plus` for create, `users` for multi-user, `flag` for reports,
+ * `clipboard-list` for queues, `upload` for file imports.
+ */
+/** @var list<array{slug: string, label: string, icon: string}> $tocEntries */
 $tocEntries = [];
-if ($canAddBan)      { $tocEntries[] = ['slug' => 'add-ban',     'label' => 'Add a ban']; }
-if ($canProtests)    { $tocEntries[] = ['slug' => 'protests',    'label' => 'Ban protests']; }
-if ($canSubmissions) { $tocEntries[] = ['slug' => 'submissions', 'label' => 'Ban submissions']; }
-if ($canImport)      { $tocEntries[] = ['slug' => 'import',      'label' => 'Import bans']; }
-if ($canGroupBan)    { $tocEntries[] = ['slug' => 'group-ban',   'label' => 'Group ban']; }
+if ($canAddBan)      { $tocEntries[] = ['slug' => 'add-ban',     'label' => 'Add a ban',       'icon' => 'plus']; }
+if ($canProtests)    { $tocEntries[] = ['slug' => 'protests',    'label' => 'Ban protests',    'icon' => 'flag']; }
+if ($canSubmissions) { $tocEntries[] = ['slug' => 'submissions', 'label' => 'Ban submissions', 'icon' => 'clipboard-list']; }
+if ($canImport)      { $tocEntries[] = ['slug' => 'import',      'label' => 'Import bans',     'icon' => 'upload']; }
+if ($canGroupBan)    { $tocEntries[] = ['slug' => 'group-ban',   'label' => 'Group ban',       'icon' => 'users']; }
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     // sb.message (sb.js) replaces the v1.x ShowBox helper.

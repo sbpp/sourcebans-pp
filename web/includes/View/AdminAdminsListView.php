@@ -34,11 +34,13 @@ final class AdminAdminsListView extends View
      *     fields (`user`, `name`, `aid`, `bancount`, `nodemocount`,
      *     `web_group`, `server_group`, `web_flag_string`,
      *     `server_flag_string`, `immunity`, `lastvisit`).
-     * @param list<array{slug: string, label: string}> $toc_entries
+     * @param list<array{slug: string, label: string, icon: string}> $toc_entries
      *     Permission-filtered list of ToC anchors. Each entry's `slug`
      *     matches the `id="…"` on the `<section>` it points at; the
      *     handler must omit entries the dispatcher wouldn't paint so a
-     *     ToC click never targets a non-existent anchor.
+     *     ToC click never targets a non-existent anchor. The `icon`
+     *     is a Lucide glyph name (e.g. "users", "shield"); #1266
+     *     unified the chrome with Pattern A's iconed pill rows.
      */
     public function __construct(
         public readonly bool $can_list_admins,

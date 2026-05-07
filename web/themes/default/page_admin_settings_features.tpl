@@ -33,8 +33,11 @@
           servers / mods / groups).
         - Each toggle row: data-testid="setting-row" + data-key="<key>".
         - Save button: data-testid="settings-save".
+
+    #1266 — outer `.p-6` removed; the page inset lives on
+    `.admin-sidebar-shell` so both grid columns share the same top y.
 *}
-<div class="p-6">
+<div>
     <div class="mb-6">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
         <p class="text-sm text-muted m-0 mt-2">Optional features and integrations.</p>

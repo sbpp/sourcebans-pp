@@ -405,16 +405,24 @@ $canAddAdmins    = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS);
 $canEditAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS);
 $canDeleteAdmins = $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS);
 
-/** @var list<array{slug: string, label: string}> $tocEntries */
+/*
+ * #1266 — each ToC entry carries a Lucide `icon` so the rendered
+ * link gets the same iconed-pill visual weight as the Pattern A
+ * sidebar (`core/admin_sidebar.tpl`). Icons follow the Pattern A
+ * vocabulary (see admin.servers.php / admin.groups.php / etc):
+ * `users` for the admin list, `user-plus` / `plus` for create,
+ * `shield` for permission overrides.
+ */
+/** @var list<array{slug: string, label: string, icon: string}> $tocEntries */
 $tocEntries = [];
 if ($canListAdmins) {
-    $tocEntries[] = ['slug' => 'search', 'label' => 'Search'];
-    $tocEntries[] = ['slug' => 'admins', 'label' => 'Admins list'];
+    $tocEntries[] = ['slug' => 'search', 'label' => 'Search',      'icon' => 'search'];
+    $tocEntries[] = ['slug' => 'admins', 'label' => 'Admins list', 'icon' => 'users'];
 }
 if ($canAddAdmins) {
-    $tocEntries[] = ['slug' => 'add-admin', 'label' => 'Add admin'];
-    $tocEntries[] = ['slug' => 'overrides', 'label' => 'Overrides'];
-    $tocEntries[] = ['slug' => 'add-override', 'label' => 'Add override'];
+    $tocEntries[] = ['slug' => 'add-admin',    'label' => 'Add admin',    'icon' => 'user-plus'];
+    $tocEntries[] = ['slug' => 'overrides',    'label' => 'Overrides',    'icon' => 'shield'];
+    $tocEntries[] = ['slug' => 'add-override', 'label' => 'Add override', 'icon' => 'plus'];
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsListView(

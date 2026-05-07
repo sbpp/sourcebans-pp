@@ -219,6 +219,12 @@ const ROUTES_SMOKE_ADMIN: RouteSpec[] = [
     { name: 'admin-bans',     path: '/index.php?p=admin&c=bans',      auth: true },
     { name: 'admin-admins',   path: '/index.php?p=admin&c=admins',    auth: true },
     { name: 'admin-groups',   path: '/index.php?p=admin&c=groups',    auth: true },
+    // #1266 — Pattern A routes (servers / mods / comms) join the
+    // gallery so the unified-chrome fix shows up on every adopter,
+    // not just the three already covered (groups / settings / bans).
+    { name: 'admin-servers',  path: '/index.php?p=admin&c=servers',   auth: true },
+    { name: 'admin-mods',     path: '/index.php?p=admin&c=mods',      auth: true },
+    { name: 'admin-comms',    path: '/index.php?p=admin&c=comms',     auth: true },
     { name: 'admin-settings', path: '/index.php?p=admin&c=settings',  auth: true },
     { name: 'admin-audit',    path: '/index.php?p=admin&c=audit',     auth: true },
     { name: 'myaccount',      path: '/index.php?p=account',           auth: true },
