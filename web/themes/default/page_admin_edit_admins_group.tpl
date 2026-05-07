@@ -14,7 +14,7 @@
     keeps the URL bar honest about which sub-page you're on; the
     data-testid hooks match the issue's edit-form-tabs contract.
 *}
-<div class="card-tab" id="Edit Admin Groups">
+<div class="card-tab page-section" id="Edit Admin Groups">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Edit admin · {$group_admin_name|escape}</h1>
         <p class="text-sm text-muted m-0 mt-2">Move <strong>{$group_admin_name|escape}</strong> between web and server admin groups.</p>

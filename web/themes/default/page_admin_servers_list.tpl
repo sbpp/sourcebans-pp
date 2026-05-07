@@ -19,7 +19,7 @@
     bottom; CSRF is auto-attached by sb.api.call from the
     meta[name=csrf-token] header (see web/scripts/api.js).
 *}
-<section class="page-section" data-testid="server-list-section" style="max-width:1400px">
+<section class="page-section" data-testid="server-list-section">
     {if NOT $permission_list}
         <div class="card" data-testid="server-list-denied">
             <div class="card__body">

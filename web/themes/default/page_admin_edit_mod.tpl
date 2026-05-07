@@ -36,6 +36,7 @@
     error-handling script targets them by id (legacy MooTools-style
     `$('name.msg')`).
 *}
+<div class="page-section">
 <form method="post"
       action=""
       enctype="multipart/form-data"
@@ -153,3 +154,4 @@
         </div>
     </div>
 </form>
+</div>

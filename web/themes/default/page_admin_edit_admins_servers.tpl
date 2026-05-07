@@ -19,7 +19,7 @@
     template renders the persisted hostname server-side from $server_list
     and pre-checks via Smarty {if} comparisons against $assigned_servers.
 *}
-<div class="card-tab" id="Edit Admin Server Access">
+<div class="card-tab page-section" id="Edit Admin Server Access">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Edit admin server access</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick the servers and server groups this admin can administer in-game.</p>

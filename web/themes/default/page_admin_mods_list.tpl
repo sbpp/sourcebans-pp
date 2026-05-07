@@ -27,6 +27,7 @@
           RemoveMod() so admin-controlled mod names can never escape
           out of an inline JS string literal (#1113-style hardening).
 *}
+<div class="page-section">
 {if NOT $permission_listmods}
     <div class="card">
         <div class="card__body">
@@ -107,3 +108,4 @@
         {/if}
     </div>
 {/if}
+</div>

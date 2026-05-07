@@ -29,6 +29,7 @@
     legacy ProcessMod() function — left intact to keep the wiring
     in this Phase B PR's scope).
 *}
+<div class="page-section">
 {if NOT $permission_add}
     <div class="card">
         <div class="card__body">
@@ -143,3 +144,4 @@
         </div>
     </form>
 {/if}
+</div>

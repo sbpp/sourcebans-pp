@@ -16,7 +16,7 @@
     property so this template stays compatible with the unmodified
     handler (which never assigned $aid).
 *}
-<div class="card-tab" id="Edit Admin Details">
+<div class="card-tab page-section" id="Edit Admin Details">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Edit admin · {$user|escape}</h1>
         <p class="text-sm text-muted m-0 mt-2">Update identity, login credentials, and the in-game admin password.</p>

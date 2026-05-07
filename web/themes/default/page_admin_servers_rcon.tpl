@@ -22,6 +22,7 @@
     helper that won't exist at runtime. CSRF is auto-attached by
     sb.api.call via the meta[name=csrf-token] header.
 *}-
+<div class="page-section">
 -{if NOT $permission_rcon}-
     <section class="card" data-testid="rcon-denied">
         <div class="card__body">
@@ -154,3 +155,4 @@ Type 'clr' to clear the console.
 })();
 </script>
 -{/if}-
+</div>

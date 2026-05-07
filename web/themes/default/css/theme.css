@@ -796,6 +796,18 @@ details.queue-row > summary > .row-actions {
 .tabular-nums { font-variant-numeric: tabular-nums; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .p-4 { padding: 1rem; } .p-5 { padding: 1.25rem; } .p-6 { padding: 1.5rem; }
+
+/* Canonical inset for top-level page content. Mirrors the .p-6 utility
+ * used directly by templates that pre-date this rule (page_dashboard /
+ * page_bans / page_comms / page_admin_settings_*). New templates should
+ * prefer .page-section so the wrapper class encodes intent ("this is
+ * the page's outermost content shell") rather than a raw spacing token.
+ */
+.page-section {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
 .m-0 { margin: 0; } .mt-2 { margin-top: 0.5rem; } .mt-4 { margin-top: 1rem; } .mt-6 { margin-top: 1.5rem; }
 .mb-2 { margin-bottom: 0.5rem; } .mb-4 { margin-bottom: 1rem; } .mb-6 { margin-bottom: 1.5rem; }
 .space-y-3 > * + * { margin-top: 0.75rem; } .space-y-4 > * + * { margin-top: 1rem; } .space-y-6 > * + * { margin-top: 1.5rem; }
