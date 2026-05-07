@@ -128,14 +128,22 @@
                         <div>
                             <div class="flex items-center justify-between gap-2 mb-2">
                                 <label class="label m-0">Permission flags</label>
-                                <span class="text-xs text-muted">{$selected_group.flags} bitmask</span>
+                                {* #1258: `data-testid="flag-bitmask"` lets the page-tail JS
+                                   below (and future E2E specs) anchor on the contract instead
+                                   of visible copy. SSR is the source of truth for the initial
+                                   paint; the listener re-folds the OR-sum on each `change`. *}
+                                <span class="text-xs text-muted" data-testid="flag-bitmask">{$selected_group.flags} bitmask</span>
                             </div>
+                            {* #1258: per-flag rows are bare `<label class="flex items-center
+                               gap-2">` — no inline border / background / radius — so the grid
+                               reads as a list of toggle rows inside the parent `<form
+                               class="card">`, matching the inline-checkbox shape from
+                               page_admin_settings_settings.tpl's "Enable debug mode" row. *}
                             <div class="grid gap-2 admin-groups-flag-grid"
                                  style="grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))"
                                  data-testid="flag-grid">
                                 {foreach from=$all_flags item="flag"}
-                                    <label class="flex items-center gap-2 p-2"
-                                           style="border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-surface)">
+                                    <label class="flex items-center gap-2">
                                         <input type="checkbox"
                                                name="flags[]"
                                                value="{$flag.value}"
@@ -373,6 +381,38 @@ function SbppServerGroupsDelete(gid, name, type) {
     sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: String(type) })
         .then(function (r) { applyApiResponse(r); });
 }
+
+// --- Live bitmask preview (#1258) ---
+// Re-fold the OR-sum of the grid's checked `data-flag-value`s on every
+// `change` and write it into `[data-testid="flag-bitmask"]`. SSR stays
+// the source of truth for the initial paint; the listener only mirrors
+// what `SbppGroupsSave` already does at submit time so the operator
+// sees the new value before saving (no Save + reload round-trip).
+//
+// No `// @ts-check` here because the file is rendered by Smarty;
+// ts-check only runs against `.js` sources in `web/scripts`. The
+// shape mirrors the inline handlers in `page_comms.tpl` /
+// `page_admin_bans_submissions.tpl`.
+(function () {
+    'use strict';
+
+    var grid = document.querySelector('[data-testid="flag-grid"]');
+    var preview = document.querySelector('[data-testid="flag-bitmask"]');
+    if (!grid || !preview) return;
+
+    grid.addEventListener('change', function (event) {
+        var target = /** @type {HTMLInputElement|null} */ (event.target);
+        if (!target || !target.matches || !target.matches('input[name="flags[]"]')) return;
+
+        var bitmask = 0;
+        var checks = grid.querySelectorAll('input[name="flags[]"]:checked');
+        for (var i = 0; i < checks.length; i++) {
+            var input = /** @type {HTMLInputElement} */ (checks[i]);
+            bitmask |= Number(input.dataset.flagValue || input.value);
+        }
+        preview.textContent = bitmask + ' bitmask';
+    });
+})();
 {/literal}
 </script>
 {/if}
