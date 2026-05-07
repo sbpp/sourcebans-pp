@@ -27,9 +27,8 @@ global $userbank, $theme;
  * Section routing (#1239 — Pattern A, settings-page shape).
  *
  * Mirrors `admin.servers.php`: read `?section=list|add`, render one
- * View per request, the AdminTabs strip is now anchor links instead
- * of the broken `<button onclick="openTab(...)">` chrome (sourcebans.js
- * was dropped at #1123 D1 and the click handler with it).
+ * View per request. #1259 unified the chrome on the Settings-style
+ * vertical sidebar (`core/admin_sidebar.tpl`).
  *
  * Note: legacy callers reach this page with `?gid=<n>` to focus the
  * master-detail editor on a specific group; that's a *list* concern,
@@ -38,19 +37,21 @@ global $userbank, $theme;
 $canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS);
 $canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP);
 
-/** @var list<array{slug: string, name: string, permission: int, url: string}> $sections */
+/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
 $sections = [
     [
         'slug'       => 'list',
         'name'       => 'List groups',
         'permission' => ADMIN_OWNER | ADMIN_LIST_GROUPS,
         'url'        => 'index.php?p=admin&c=groups&section=list',
+        'icon'       => 'users',
     ],
     [
         'slug'       => 'add',
         'name'       => 'Add a group',
         'permission' => ADMIN_OWNER | ADMIN_ADD_GROUP,
         'url'        => 'index.php?p=admin&c=groups&section=add',
+        'icon'       => 'plus',
     ],
 ];
 
@@ -66,12 +67,18 @@ if (!in_array($section, $validSlugs, true)) {
     }
 }
 
-new AdminTabs($sections, $userbank, $theme, $section);
+// AdminTabs opens the sidebar shell + emits the <aside> + opens the
+// content column. Closing tags live at the bottom of this file. The
+// PHP block here is followed by a `<script>` HTML island in the
+// default theme — the closing divs are emitted via PHP `echo` BEFORE
+// the file's closing PHP delimiter so the markup nests correctly.
+new AdminTabs($sections, $userbank, $theme, $section, 'Group sections');
 
 if ($section === 'add') {
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
         permission_addgroup: $canAdd,
     ));
+    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;
 }
 
@@ -252,6 +259,8 @@ if (!empty($web_group_list)) {
     all_flags:                $all_flags,
     selected_group:           $selected_group,
 ));
+
+echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
 ?>
 <script>
 // sb.accordion (sb.js) is the actual implementation, so call it directly.

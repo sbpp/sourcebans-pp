@@ -14,14 +14,19 @@ namespace Sbpp\View;
  * success the JSON envelope's `reload: true` flag triggers a full
  * page reload so the new chrome paints with the right CSS bundle.
  *
+ * #1259 dropped `$active_section` from this View. Section navigation
+ * (the Settings sidebar) lives in `core/admin_sidebar.tpl` driven by
+ * `web/includes/AdminTabs.php`; the active link is resolved from the
+ * partial's `$active_tab` variable, not from a per-View property the
+ * template re-reads. AGENTS.md "Sub-paged admin routes" carries the
+ * convention.
+ *
  * Variable shape:
  *
  *   - `$theme_list` is the structural variable. Each row carries
  *     `dir`, `name`, `author`, `version`, `link`, `screenshot`, and
  *     `active`; the card grid uses every field.
- *   - `$can_*`, `$active_section`, `$current_theme_dir` drive
- *     section navigation + per-card affordances on the redesigned
- *     template.
+ *   - `$can_*`, `$current_theme_dir` drive per-card affordances.
  *   - `$theme_name`, `$theme_author`, `$theme_version`, `$theme_link`,
  *     `$theme_screenshot` describe the currently-selected theme as
  *     standalone scalars. They are preserved here for any third-party
@@ -55,7 +60,6 @@ final class AdminThemesView extends View
         public readonly string $theme_screenshot,
         public readonly bool $can_web_settings,
         public readonly bool $can_owner,
-        public readonly string $active_section,
         public readonly string $current_theme_dir,
     ) {
     }

@@ -400,6 +400,112 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
   .admin-tabs__back { margin-left: 0; }
 }
 
+/* ---- Admin sidebar (Pattern A `?section=…` routes) ----
+   #1259 unified the chrome for sub-paged admin routes (servers / mods
+   / groups / settings) onto a single vertical sidebar partial
+   (`core/admin_sidebar.tpl` driven by `web/includes/AdminTabs.php`).
+   Pre-#1259 settings had its own inline sidebar markup with a
+   hardcoded `grid-template-columns:14rem 1fr` while servers/mods/
+   groups rendered the horizontal `core/admin_tabs.tpl` pill strip;
+   the layout below replaces both shapes.
+
+   Markup contract (see core/admin_sidebar.tpl + the page handlers
+   that call `new AdminTabs(...)` with a non-empty $sections):
+     .admin-sidebar-shell           outer wrapper (grid host on desktop,
+                                    single column at <1024px). Opened
+                                    by AdminTabs.php; closed by the
+                                    page handler after Renderer::render.
+       .admin-sidebar               <aside> with the link list
+         .admin-sidebar__details    <details open> on every viewport;
+                                    the open/close toggle only does
+                                    something at <1024px (mobile/
+                                    narrow-tablet accordion). At
+                                    >=1024px we force the contents
+                                    visible regardless of [open]
+                                    state so a stray click on the
+                                    summary can't strand the user
+                                    without navigation.
+         .admin-sidebar__summary    mobile-only chrome (hidden on
+                                    desktop)
+         .admin-sidebar__nav        <nav> wrapping the links
+         .admin-sidebar__link       per-link rule overlay on the
+                                    shared `.sidebar__link` from the
+                                    main app shell — keeps icon+label
+                                    spacing consistent with the
+                                    primary sidebar.
+       .admin-sidebar-content       the content column the sticky
+                                    sidebar pairs with at >=1024px
+
+   The active link reuses `.sidebar__link[aria-current="page"]` from
+   the main shell so the dark-pill / brand-orange treatment is
+   single-source. */
+.admin-sidebar { font-size: var(--fs-sm); margin-bottom: 1rem; }
+.admin-sidebar__details {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.admin-sidebar__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.admin-sidebar__summary::-webkit-details-marker { display: none; }
+.admin-sidebar__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
+.admin-sidebar__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+}
+.admin-sidebar__details[open] .admin-sidebar__chevron { transform: rotate(180deg); }
+.admin-sidebar__nav {
+  padding: 0.5rem 0.5rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar__chevron { transition: none; }
+}
+
+/* Desktop layout — vertical sidebar floats next to the content
+   column. The aside is `position: sticky`, scoped to the shell, so
+   it stays pinned beneath the topbar (top: 4rem) while the user
+   scrolls through the active section. We force the <details>
+   contents visible regardless of [open] so accidental "collapse"
+   at desktop can't strand the user without navigation — same
+   contract as `.page-toc` (#1207 ADM-3 / #1239). */
+@media (min-width: 1024px) {
+  .admin-sidebar-shell {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .admin-sidebar {
+    position: sticky;
+    top: 4rem;
+    align-self: start;
+    margin-bottom: 0;
+  }
+  .admin-sidebar__details {
+    border: none;
+    background: transparent;
+  }
+  .admin-sidebar__summary { display: none; }
+  /* Keep the link list visible whether the user has toggled the
+     <details> closed or not — at desktop the sidebar is a permanent
+     navigation surface, the accordion gesture only matters at mobile. */
+  .admin-sidebar__details .admin-sidebar__nav { display: flex !important; }
+  .admin-sidebar__nav { padding: 0; }
+  .admin-sidebar-content { min-width: 0; }
+}
+
 /* ---- Inputs ---- */
 .input, .select, .textarea {
   width: 100%; height: 2.25rem; padding: 0 0.75rem;

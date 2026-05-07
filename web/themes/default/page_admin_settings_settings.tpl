@@ -5,8 +5,20 @@
     Sbpp\View\AdminSettingsView + web/pages/admin.settings.php (which
     routes by ?section=settings|features|logs|themes and renders one
     View per request — no AdminTabs JS tab-switching, no .tabcontent
-    wrapper divs). The active section is reflected in the sub-nav at
-    the top of every settings template via aria-current="page".
+    wrapper divs).
+
+    #1259 — sidebar lifted into a shared partial
+    --------------------------------------------
+    Pre-#1259 every page_admin_settings_*.tpl carried its own inline
+    `<nav>` block declaring four `<a class="sidebar__link">` rows and
+    a hardcoded `grid-template-columns:14rem 1fr` layout. The chrome
+    is now driven by `core/admin_sidebar.tpl` (parameterized partial)
+    via `web/includes/AdminTabs.php`; the page handler
+    (admin.settings.php) opens the shell + sidebar + content column
+    BEFORE this template renders. This template's outer wrapper is
+    just the page-level padding + heading + form content — no grid,
+    no sidebar markup. See AGENTS.md "Sub-paged admin routes" for
+    the convention.
 
     Variable contract (kept in sync by SmartyTemplateRule):
         Permission gates:
@@ -16,7 +28,6 @@
             $can_owner — kept for parity with sibling settings views;
                 this template doesn't gate any UI on it directly but
                 the View constructor requires it for cross-tab parity.
-        Section nav: $active_section.
         Settings values: $config_title, $config_logo,
             $config_min_password, $config_dateformat,
             $config_dash_title, $config_dash_text, $auth_maxlife,
@@ -36,8 +47,11 @@
             $config_mail_from_email, $config_mail_from_name.
 
     Testability hooks:
-        - Sub-nav <a> elements: data-testid="settings-tab-<key>"
-          + aria-current="page" on the active tab.
+        - Sidebar <a> elements: data-testid="admin-tab-<slug>" (#1259
+          unified hook on `core/admin_sidebar.tpl`; the legacy
+          `settings-tab-<slug>` hook is gone — the chrome is now
+          shared with servers / mods / groups so the testid uses the
+          common `admin-tab-<slug>` shape).
         - Each <label>/<input> row: data-testid="setting-row" +
           data-key="<setting.key>" so end-to-end tests can target
           a setting by its persisted name (e.g. "template.title")
@@ -61,42 +75,13 @@
         <p class="text-sm text-muted m-0 mt-2">Site-wide configuration. Changes apply immediately.</p>
     </div>
 
-    <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
-        <nav aria-label="Settings sections" role="tablist">
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
-               role="tab"
-               data-testid="settings-tab-settings"
-               {if $active_section == 'settings'}aria-current="page"{/if}>
-                <i data-lucide="settings"></i> Main
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=features"
-               role="tab"
-               data-testid="settings-tab-features"
-               {if $active_section == 'features'}aria-current="page"{/if}>
-                <i data-lucide="toggle-right"></i> Features
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=logs"
-               role="tab"
-               data-testid="settings-tab-logs"
-               {if $active_section == 'logs'}aria-current="page"{/if}>
-                <i data-lucide="scroll-text"></i> System Log
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=themes"
-               role="tab"
-               data-testid="settings-tab-themes"
-               {if $active_section == 'themes'}aria-current="page"{/if}>
-                <i data-lucide="palette"></i> Themes
-            </a>
-        </nav>
-
-        <div>
-            {if NOT $can_web_settings}
-                <div class="card">
-                    <div class="card__body">
-                        <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
-                    </div>
-                </div>
-            {else}
+    {if NOT $can_web_settings}
+        <div class="card">
+            <div class="card__body">
+                <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
+            </div>
+        </div>
+    {else}
                 <form action="?p=admin&amp;c=settings&amp;section=settings" method="post" class="space-y-4" id="form-settings-main">
                     {csrf_field}
                     <input type="hidden" name="settingsGroup" value="mainsettings">
@@ -505,9 +490,7 @@
                         </button>
                     </div>
                 </form>
-            {/if}
-        </div>
-    </div>
+    {/if}
 </div>
 
 <script>

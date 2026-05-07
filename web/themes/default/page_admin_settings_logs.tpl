@@ -6,6 +6,13 @@
     routes by ?section= and renders one View per request — see
     sibling page_admin_settings_settings.tpl for the rationale).
 
+    #1259 — sidebar lifted into a shared partial: the inline
+    `<nav>` block + `grid-template-columns:14rem 1fr` shell that
+    used to wrap this template's content is now driven by
+    `core/admin_sidebar.tpl` via `web/includes/AdminTabs.php`. The
+    page handler (admin.settings.php) opens the shell BEFORE this
+    template renders. See AGENTS.md "Sub-paged admin routes".
+
     Variable contract (kept in sync by SmartyTemplateRule):
         Permission gates:
             $can_web_settings — required to see the table; mirrors
@@ -13,13 +20,13 @@
             $can_owner — required to truncate the log table; gates
                 the "Clear log" button. Mirrors legacy
                 CheckAccess(ADMIN_OWNER) before TRUNCATE.
-        Section nav: $active_section.
         Pagination: $page_numbers (server-built nav HTML emitted via
             nofilter; see annotation below).
         Rows: $log_items — list of legacy-shaped log dicts.
 
     Testability hooks:
-        - Sub-nav links: data-testid="settings-tab-<key>".
+        - Sidebar links: data-testid="admin-tab-<slug>" (#1259 unified
+          shape across servers / mods / groups / settings).
         - Each summary row: data-testid="log-row" + data-id (lid).
         - "Clear log" button: data-testid="logs-clear".
 *}
@@ -29,42 +36,13 @@
         <p class="text-sm text-muted m-0 mt-2">System log of admin actions and warnings.</p>
     </div>
 
-    <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
-        <nav aria-label="Settings sections" role="tablist">
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
-               role="tab"
-               data-testid="settings-tab-settings"
-               {if $active_section == 'settings'}aria-current="page"{/if}>
-                <i data-lucide="settings"></i> Main
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=features"
-               role="tab"
-               data-testid="settings-tab-features"
-               {if $active_section == 'features'}aria-current="page"{/if}>
-                <i data-lucide="toggle-right"></i> Features
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=logs"
-               role="tab"
-               data-testid="settings-tab-logs"
-               {if $active_section == 'logs'}aria-current="page"{/if}>
-                <i data-lucide="scroll-text"></i> System Log
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=themes"
-               role="tab"
-               data-testid="settings-tab-themes"
-               {if $active_section == 'themes'}aria-current="page"{/if}>
-                <i data-lucide="palette"></i> Themes
-            </a>
-        </nav>
-
-        <div>
-            {if NOT $can_web_settings}
-                <div class="card">
-                    <div class="card__body">
-                        <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
-                    </div>
-                </div>
-            {else}
+    {if NOT $can_web_settings}
+        <div class="card">
+            <div class="card__body">
+                <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
+            </div>
+        </div>
+    {else}
                 {* nofilter: $clear_logs is the legacy default-theme "( <a href='javascript:ClearLogs();'>Clear Log</a> )" link string built in admin.settings.php (static literal gated by ADMIN_OWNER, no user input). The sbpp2026 layout renders its own <button> below via $can_owner, so the legacy link string is captured-and-discarded — keeps the SmartyTemplateRule view↔template parity green without rendering the link twice. Drop this capture and the View property when D1 retires the default theme. *}
                 {capture name="legacy_clear_logs"}{$clear_logs nofilter}{/capture}
                 <div class="card">
@@ -139,9 +117,7 @@
                         {/if}
                     </div>
                 </div>
-            {/if}
-        </div>
-    </div>
+    {/if}
 </div>
 
 <script>

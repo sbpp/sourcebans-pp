@@ -577,7 +577,8 @@ exactly one View per request.
 
 Reference: `web/pages/admin.settings.php` is the long-standing
 canonical shape; #1239 brought servers / mods / groups / comms onto
-the same convention.
+the same convention; #1259 unified the chrome on the Settings-style
+vertical sidebar partial `core/admin_sidebar.tpl`.
 
 Page-handler shape:
 
@@ -585,10 +586,10 @@ Page-handler shape:
 $canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS);
 $canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER);
 
-/** @var list<array{slug: string, name: string, permission: int, url: string}> $sections */
+/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
 $sections = [
-    ['slug' => 'list', 'name' => 'List servers', 'permission' => …, 'url' => '?p=admin&c=servers&section=list'],
-    ['slug' => 'add',  'name' => 'Add new server', 'permission' => …, 'url' => '?p=admin&c=servers&section=add'],
+    ['slug' => 'list', 'name' => 'List servers',   'permission' => …, 'url' => '?p=admin&c=servers&section=list', 'icon' => 'server'],
+    ['slug' => 'add',  'name' => 'Add new server', 'permission' => …, 'url' => '?p=admin&c=servers&section=add',  'icon' => 'plus'],
 ];
 
 $validSlugs = ['list', 'add'];
@@ -597,31 +598,62 @@ if (!in_array($section, $validSlugs, true)) {
     $section = $canList ? 'list' : ($canAdd ? 'add' : 'list');
 }
 
-new AdminTabs($sections, $userbank, $theme, $section);
+// AdminTabs opens the sidebar shell + emits the <aside> + opens the
+// content column. The page handler is responsible for closing both
+// wrappers AFTER the View renders — see the docblock on AdminTabs.php.
+new AdminTabs($sections, $userbank, $theme, $section, 'Server sections');
 
 if ($section === 'add') {
     Renderer::render($theme, new AdminServersAddView(...));
+    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
     return;
 }
 Renderer::render($theme, new AdminServersListView(...));
+echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
 ```
 
 Conventions:
 
 - Default to the FIRST accessible section when `?section=` is
   missing or unknown — never render a blank body.
-- The `core/admin_tabs.tpl` strip is now anchor links
-  (`<a href="?p=admin&c=…&section=…" data-testid="admin-tab-<slug>"
-  aria-current="page">`), not buttons. Pre-#1239 the strip emitted
-  `<button onclick="openTab(...)">` which dispatched to a JS
-  function in `sourcebans.js` (deleted at #1123 D1) — clicks did
-  nothing and every pane stacked together. Don't reintroduce the
-  button shape.
-- Each section's tab `slug` matches `?section=<slug>` AND the
+- Chrome is the parameterized vertical sidebar `core/admin_sidebar.tpl`
+  (#1259). `AdminTabs.php` opens `<div class="admin-sidebar-shell">`,
+  emits the `<aside>` + link list, then opens
+  `<div class="admin-sidebar-content">` for the page View; the page
+  handler **must** close both wrappers (`echo '</div></div>'`) AFTER
+  the `Renderer::render(...)` call so each section nests correctly.
+  Mirror the `page-toc-shell` pairing from Pattern B (#1239).
+- Each link is an anchor (`<a href="?p=admin&c=…&section=…"
+  data-testid="admin-tab-<slug>" aria-current="page">`), not a button.
+  Pre-#1239 the strip emitted `<button onclick="openTab(...)">` which
+  dispatched to a JS function in `sourcebans.js` (deleted at #1123
+  D1) — clicks did nothing and every pane stacked together. Don't
+  reintroduce the button shape.
+- Each `$sections` entry carries an `icon` (Lucide name — `server`,
+  `plus`, `users`, `puzzle`, `globe`, `package`, `cog`, `image`,
+  `flag`, `clipboard-list`, …). When omitted, the partial renders a
+  generic `circle-dot` so every row has matching visual weight.
+  Pick icons that match the visual vocabulary already in the
+  Settings sidebar (`page_admin_settings_*.tpl`).
+- Each section's `slug` matches `?section=<slug>` AND the
   `data-testid="admin-tab-<slug>"` hook on the rendered link.
   E2E specs anchor on the testid + the active link's
   `aria-current="page"` attribute (see
-  `web/tests/e2e/specs/responsive/admin-tabs.spec.ts`).
+  `web/tests/e2e/specs/responsive/admin-tabs.spec.ts` for the
+  mobile accordion contract; the sidebar sits at the top of the
+  content column at `<1024px` and floats next to it as a sticky
+  14rem rail at `>=1024px`).
+- Pass an aria-label as the fifth `AdminTabs` argument
+  (`'Server sections'`, `'MOD sections'`, …); screen readers
+  announce the navigation by this label. Defaults to "Page
+  sections" when omitted.
+- The `core/admin_tabs.tpl` partial still exists but is now
+  exclusively the **back-link-only** shape for edit-* pages
+  (`admin.edit.ban.php`, `admin.rcon.php`, …) which call
+  `new AdminTabs([], $userbank, $theme)`. AdminTabs.php routes
+  empty `$tabs` to that partial and non-empty `$tabs` to
+  `core/admin_sidebar.tpl`. Don't reach for `core/admin_tabs.tpl`
+  directly from new code.
 - Use Pattern A (this section) when sub-tasks are unrelated and a
   small two-or-three-section split is enough. Use Pattern B
   (page-level ToC, above) when sub-tasks are *context for each
@@ -693,6 +725,22 @@ audit (#1207) locked in. New CTAs:
   / settings) or Pattern B (page-level ToC — admin-admins, admin-bans);
   see "Sub-paged admin routes" and "Page-level table of contents"
   conventions above.
+- The horizontal `core/admin_tabs.tpl` pill strip for Pattern A
+  routes → #1259 unified the chrome on the Settings-style vertical
+  sidebar (`core/admin_sidebar.tpl`). New Pattern A routes (or
+  changes to existing ones) build a `$sections` array with a
+  Lucide `icon` per entry, pass an aria-label as the fifth
+  `AdminTabs` argument, and close the sidebar shell + content
+  column with `echo '</div></div>'` AFTER `Renderer::render(...)`.
+  `core/admin_tabs.tpl` is now exclusively the back-link-only
+  partial for edit-* pages — don't reach for it from new code.
+- Inlining settings-style sidebar markup inside templates (the
+  pre-#1259 shape: `<div class="grid" style="grid-template-columns:14rem 1fr">`
+  followed by an inline `<nav><a class="sidebar__link">…</a></nav>`
+  block in every `page_admin_settings_*.tpl`) → the sidebar is
+  now single-source in `core/admin_sidebar.tpl` and mounted by
+  `AdminTabs.php`. Page templates render their content column
+  body and nothing else.
 - New `install/` flow → DB is seeded out-of-band in dev.
 - String literals for action names → `Actions.PascalName`.
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.
@@ -782,7 +830,9 @@ audit (#1207) locked in. New CTAs:
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
 | Add a sticky page-level ToC to a dense admin route (anchor sidebar at desktop, accordion at mobile) | `web/themes/default/page_toc.tpl` is the parameterized shared partial (toc_id / toc_label / toc_entries). `.page-toc-shell` / `.page-toc` / `.page-toc-content` / `.page-toc-section` rules in `web/themes/default/css/theme.css` carry the responsive layout. Two reference shapes: `admin-admins` (View-driven — `AdminAdminsListView` carries the toc payload, `page_admin_admins_list.tpl` opens the shell, `page_admin_overrides.tpl` closes it) and `admin-bans` (page-handler-driven — `web/pages/admin.bans.php` opens the shell + drives the partial via `$theme->display(...)`, emits `<section id="…">` wrappers in PHP echo around each `Renderer::render(...)`). See the Conventions section "Page-level table of contents (dense admin pages)" (#1207 ADM-3, #1239). |
-| Subdivide an admin route into `?section=<slug>` URLs (servers, mods, groups, comms, settings) | `web/pages/admin.settings.php` is the long-standing reference; #1239 brought servers / mods / groups / comms onto the same shape. Read `?section=…`, default to the first accessible section, render exactly one View per request. The chrome (`core/admin_tabs.tpl` + `web/includes/AdminTabs.php`) emits `<a href="?p=admin&c=<page>&section=<slug>" data-testid="admin-tab-<slug>">` anchor links — never `<button onclick="openTab(...)">` (the JS handler was deleted at #1123 D1; #1239 repaired the chrome). See "Sub-paged admin routes" in Conventions. |
+| Subdivide an admin route into `?section=<slug>` URLs (servers, mods, groups, comms, settings) | `web/pages/admin.settings.php` is the long-standing reference; #1239 brought servers / mods / groups / comms onto the same shape; #1259 unified the chrome on the Settings-style vertical sidebar. The shared partial is `web/themes/default/core/admin_sidebar.tpl` (parameterized on `tabs` / `active_tab` / `sidebar_id` / `sidebar_label`); `web/includes/AdminTabs.php` opens `<div class="admin-sidebar-shell">`, emits the `<aside>` + link list, opens `<div class="admin-sidebar-content">`, and the page handler closes both wrappers (`echo '</div></div>'`) AFTER `Renderer::render(...)`. Each `$sections` entry carries `slug` + `name` + `permission` + `url` + `icon` (Lucide name); the link emits `<a href="?p=admin&c=<page>&section=<slug>" data-testid="admin-tab-<slug>" aria-current="page">` — never `<button onclick="openTab(...)">` (the JS handler was deleted at #1123 D1). See "Sub-paged admin routes" in Conventions. |
+| Lay out a sub-paged admin route's chrome (the 14rem vertical sidebar at `>=1024px`, the `<details open>` accordion at `<1024px`) | `web/themes/default/core/admin_sidebar.tpl` (the partial) + the `.admin-sidebar-shell` / `.admin-sidebar` / `.admin-sidebar__details` / `.admin-sidebar__summary` / `.admin-sidebar__nav` / `.admin-sidebar__link` / `.admin-sidebar-content` rules in `web/themes/default/css/theme.css` (#1259). The active link reuses the shared `.sidebar__link[aria-current="page"]` rule from the main app shell so the dark-pill-in-light / brand-orange-in-dark treatment is single-source. |
+| Render the trailing "Back" link on edit-* admin pages (the only surface that calls `new AdminTabs([], …)`) | `web/themes/default/core/admin_tabs.tpl` is the back-link-only partial (it still has a defensive `{foreach}` for legacy themes, but `AdminTabs.php` only routes here when `$tabs === []`). Page handlers like `admin.edit.ban.php` / `admin.rcon.php` / `admin.email.php` call `new AdminTabs([], $userbank, $theme)` and the partial emits the right-aligned Back anchor (`.admin-tabs__back` in theme.css). |
 | Add or rename an admin-admins advanced-search filter | `web/pages/admin.admins.php` (filter-building loop + active-filter map for pagination) + `web/pages/admin.admins.search.php` (DTO population) + `web/includes/View/AdminAdminsSearchView.php` (`active_filter_*` properties) + `web/themes/default/box_admin_admins_search.tpl` (input + pre-fill). The form is single-submit AND-semantics with a backward-compat shim for legacy `advType=…&advSearch=…` URLs (#1207 ADM-4); cover new filters in `web/tests/integration/AdminAdminsSearchTest.php`. |
 | Add a shared "1 of these required" badge for an either/or input pair | `web/themes/default/page_submitban.tpl` (`data-required-group="…"` + the inline guard script — vanilla JS `// @ts-check`, blocks submit when both are empty) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
@@ -799,7 +849,7 @@ audit (#1207) locked in. New CTAs:
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
-| Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock, scrollable admin tab strip with chip-style active state) |
+| Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / settings) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |
 | Stop mobile browsers auto-linking SteamIDs / IPs as phone numbers | `web/themes/default/core/header.tpl` (`<meta name="format-detection" content="telephone=no…">` + `<meta name="x-apple-data-detectors">`) and the defensive `.drawer a[href^="tel:"]` reset in `theme.css` |
 | Lock page scroll while a modal-style chrome is open | `web/themes/default/css/theme.css` (`html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }` — pure-CSS, gates on the same `data-drawer-open` mirror theme.js sets, applies at every viewport so the drawer-open contract is symmetric desktop/mobile per the Linear/Vercel/Notion modal idiom) |
 | Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |

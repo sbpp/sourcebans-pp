@@ -1,12 +1,26 @@
 {*
     SourceBans++ 2026 — chrome / admin_tabs.tpl
 
-    Admin sub-section nav. Pair: includes/AdminTabs.php (assigns $tabs +
-    $active_tab). Rendered with the theme's button primitives —
-    inactive sections use `btn--ghost`; the section whose `slug`
-    matches `$active_tab` carries `aria-current="page"` and gets the
-    active treatment via `.admin-tabs > [aria-current="page"]` in
-    theme.css (#1186).
+    Trailing "Back" anchor strip for admin edit-* pages. Pair:
+    includes/AdminTabs.php (assigns $tabs + $active_tab; only routes
+    to this partial when $tabs === [], i.e. the edit-* shape that
+    only needs the Back affordance).
+
+    #1259 — sidebar split
+    --------------------
+    Pre-#1259 this partial drew BOTH the section-nav strip (when $tabs
+    was non-empty) AND the trailing Back link. Pattern A admin routes
+    (servers / mods / groups / settings) have since been moved onto
+    the parameterized `core/admin_sidebar.tpl` partial — see #1259's
+    notes in includes/AdminTabs.php — so this template's only job
+    today is the Back link emitted by edit-* pages that pass `$tabs
+    === []`.
+
+    The `{foreach}` branch below survives for defence in depth: any
+    third-party theme that calls `$theme->display('core/admin_tabs.tpl')`
+    with a populated `$tabs` array still gets a working horizontal
+    strip. AdminTabs.php's #1259 router never sends a populated array
+    here.
 
     #1239 — anchor links, no JS toggle
     ----------------------------------
@@ -14,33 +28,22 @@
     elements that called a JS function from the v1.x sourcebans.js
     bulk file (removed at #1123 D1, AGENTS.md "Anti-patterns"). The
     handler was silently dead, so every pane stacked together below
-    the strip with no way to switch. The chrome now emits anchor
-    `<a href="{$tab.url}">` links — each section is its own URL
-    (`?p=admin&c=<page>&section=<slug>`), linkable, back-button-
-    friendly, and works with JS off. The page handler is responsible
-    for building each tab's `url` + `slug` and for routing the
-    request to render exactly the matching section. See
-    `web/pages/admin.servers.php` / `admin.mods.php` /
-    `admin.groups.php` / `admin.comms.php` for the canonical Pattern A
-    shape, and `admin.settings.php` for the long-standing reference
-    that #1239 is aligning the rest of the admin family with.
+    the strip with no way to switch. Since #1259 the section-nav
+    surface lives in `core/admin_sidebar.tpl`; the foreach below is
+    the legacy fallback shape only.
 
-    "Back" is rendered outside the tab cluster (right-aligned via the
-    `.admin-tabs__back` rule) so it no longer reads as a peer tab
-    (#1186). Edit-* pages that pass an empty `$tabs` array still
-    render the Back link standalone — the right-aligned positioning
-    is harmless when no siblings precede it.
+    "Back" is right-aligned via the `.admin-tabs__back` rule
+    (#1186) so it visibly separates from the (now legacy-fallback)
+    tab cluster.
 
     A11y note (#1124 Slice 2): the wrapper used to declare
     role="tablist" with role="tab" children. The full ARIA tabs
     pattern is NOT implemented (the surface is now a plain anchor
     list — semantically a navigation toolbar, not a JS tab control),
     so the roles described an interaction model the DOM didn't
-    honour. axe-core's `aria-required-children` rule additionally
-    flags the trailing "Back" anchor as an unallowed [tabindex]
-    child of role="tablist". Both reasons argue for the same fix:
-    drop the partial ARIA roles, label the wrapper as a plain
-    "Admin sections" toolbar so SR users hear the links as links.
+    honour. Both reasons argue for the same fix: drop the partial
+    ARIA roles, label the wrapper as a plain "Admin sections"
+    toolbar so SR users hear the links as links.
 *}
 <div class="admin-tabs flex gap-2 mb-4 items-center" data-testid="admin-tabs" aria-label="Admin sections">
     {foreach from=$tabs item=tab}

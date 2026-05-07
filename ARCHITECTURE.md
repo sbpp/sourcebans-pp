@@ -83,7 +83,7 @@ web/
 │   ├── Log.php               Audit + error log (writes to sb_log)
 │   ├── Api.php / ApiError.php  JSON dispatcher + structured errors
 │   ├── CUserManager.php      Current admin + permission checks
-│   ├── AdminTabs.php         Render admin sub-tab bar
+│   ├── AdminTabs.php         Render Pattern A admin sub-section nav (vertical sidebar via core/admin_sidebar.tpl, or back-link strip via core/admin_tabs.tpl when $tabs is empty)
 │   ├── page-builder.php      route() + build() (the page router)
 │   ├── system-functions.php  Legacy helpers shared across pages
 │   ├── SmartyCustomFunctions.php  {help_icon} / {csrf_field} / {load_template}

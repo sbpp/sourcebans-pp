@@ -15,13 +15,13 @@ parameters:
 		-
 			message: '#^Call to method assign\(\) on an unknown class Smarty\.$#'
 			identifier: class.notFound
-			count: 2
+			count: 6
 			path: includes/AdminTabs.php
 
 		-
 			message: '#^Call to method display\(\) on an unknown class Smarty\.$#'
 			identifier: class.notFound
-			count: 1
+			count: 2
 			path: includes/AdminTabs.php
 
 		-

@@ -26,7 +26,6 @@ final class AdminLogsView extends View
         public readonly array $log_items,
         public readonly bool $can_web_settings,
         public readonly bool $can_owner,
-        public readonly string $active_section,
     ) {
     }
 }

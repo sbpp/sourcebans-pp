@@ -67,7 +67,6 @@ final class AdminSettingsView extends View
         public readonly array $bans_customreason,
         public readonly bool $can_web_settings,
         public readonly bool $can_owner,
-        public readonly string $active_section,
         public readonly bool $config_debug,
         public readonly bool $enable_submit,
         public readonly bool $enable_protest,

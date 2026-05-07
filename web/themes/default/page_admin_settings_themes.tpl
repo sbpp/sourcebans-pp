@@ -6,6 +6,13 @@
     routes by ?section= and renders one View per request — see
     sibling page_admin_settings_settings.tpl for the rationale).
 
+    #1259 — sidebar lifted into a shared partial: the inline
+    `<nav>` block + `grid-template-columns:14rem 1fr` shell that
+    used to wrap this template's content is now driven by
+    `core/admin_sidebar.tpl` via `web/includes/AdminTabs.php`. The
+    page handler (admin.settings.php) opens the shell BEFORE this
+    template renders. See AGENTS.md "Sub-paged admin routes".
+
     Variable contract (kept in sync by SmartyTemplateRule):
         Permission gates:
             $can_web_settings — required to enable the "Use this
@@ -13,7 +20,6 @@
                 way so admins without write access still get a
                 useful preview of what's installed.
             $can_owner — kept for parity with sibling settings views.
-        Section nav: $active_section.
         Active selection: $current_theme_dir (matches the running
             SB_THEME constant).
         Theme list: $theme_list — list of dicts with keys dir, name,
@@ -40,7 +46,8 @@
         tickets cannot touch web/api/handlers/.
 
     Testability hooks:
-        - Sub-nav links: data-testid="settings-tab-<key>".
+        - Sidebar links: data-testid="admin-tab-<slug>" (#1259 unified
+          shape across servers / mods / groups / settings).
         - Each card: data-testid="theme-card" + data-theme="<dir>".
         - Active card carries aria-current="true" (per the issue plan).
         - "Use this theme" button: data-testid="theme-apply".
@@ -50,36 +57,6 @@
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick the theme that paints the panel chrome for every visitor.</p>
     </div>
-
-    <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
-        <nav aria-label="Settings sections" role="tablist">
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
-               role="tab"
-               data-testid="settings-tab-settings"
-               {if $active_section == 'settings'}aria-current="page"{/if}>
-                <i data-lucide="settings"></i> Main
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=features"
-               role="tab"
-               data-testid="settings-tab-features"
-               {if $active_section == 'features'}aria-current="page"{/if}>
-                <i data-lucide="toggle-right"></i> Features
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=logs"
-               role="tab"
-               data-testid="settings-tab-logs"
-               {if $active_section == 'logs'}aria-current="page"{/if}>
-                <i data-lucide="scroll-text"></i> System Log
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=themes"
-               role="tab"
-               data-testid="settings-tab-themes"
-               {if $active_section == 'themes'}aria-current="page"{/if}>
-                <i data-lucide="palette"></i> Themes
-            </a>
-        </nav>
-
-        <div>
             <div class="card">
                 <div class="card__header">
                     <div>
@@ -152,8 +129,6 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
 </div>
 
 <script>

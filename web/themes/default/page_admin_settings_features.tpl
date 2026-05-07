@@ -6,12 +6,18 @@
     routes by ?section= and renders one View per request — see
     sibling page_admin_settings_settings.tpl for the rationale).
 
+    #1259 — sidebar lifted into a shared partial: the inline
+    `<nav>` block + `grid-template-columns:14rem 1fr` shell that
+    used to wrap this template's content is now driven by
+    `core/admin_sidebar.tpl` via `web/includes/AdminTabs.php`. The
+    page handler (admin.settings.php) opens the shell BEFORE this
+    template renders. See AGENTS.md "Sub-paged admin routes".
+
     Variable contract (kept in sync by SmartyTemplateRule):
         Permission gates:
             $can_web_settings — gates the entire body.
             $can_owner — currently unused in this section but kept
                 across all settings views for parity.
-        Section nav: $active_section.
         Toggles: $export_public, $enable_kickit,
             $enable_groupbanning, $enable_friendsbanning,
             $enable_adminrehashing, $enable_steamlogin,
@@ -21,7 +27,10 @@
             inputs the same way the legacy theme did).
 
     Testability hooks:
-        - Sub-nav links: data-testid="settings-tab-<key>".
+        - Sidebar links: data-testid="admin-tab-<slug>" (#1259 — the
+          legacy `settings-tab-<slug>` was renamed to the cross-page
+          `admin-tab-<slug>` shape now that the chrome is shared with
+          servers / mods / groups).
         - Each toggle row: data-testid="setting-row" + data-key="<key>".
         - Save button: data-testid="settings-save".
 *}
@@ -31,42 +40,13 @@
         <p class="text-sm text-muted m-0 mt-2">Optional features and integrations.</p>
     </div>
 
-    <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
-        <nav aria-label="Settings sections" role="tablist">
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
-               role="tab"
-               data-testid="settings-tab-settings"
-               {if $active_section == 'settings'}aria-current="page"{/if}>
-                <i data-lucide="settings"></i> Main
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=features"
-               role="tab"
-               data-testid="settings-tab-features"
-               {if $active_section == 'features'}aria-current="page"{/if}>
-                <i data-lucide="toggle-right"></i> Features
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=logs"
-               role="tab"
-               data-testid="settings-tab-logs"
-               {if $active_section == 'logs'}aria-current="page"{/if}>
-                <i data-lucide="scroll-text"></i> System Log
-            </a>
-            <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=themes"
-               role="tab"
-               data-testid="settings-tab-themes"
-               {if $active_section == 'themes'}aria-current="page"{/if}>
-                <i data-lucide="palette"></i> Themes
-            </a>
-        </nav>
-
-        <div>
-            {if NOT $can_web_settings}
-                <div class="card">
-                    <div class="card__body">
-                        <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
-                    </div>
-                </div>
-            {else}
+    {if NOT $can_web_settings}
+        <div class="card">
+            <div class="card__body">
+                <p class="text-muted">Access denied. <code>ADMIN_WEB_SETTINGS</code> required.</p>
+            </div>
+        </div>
+    {else}
                 <form action="?p=admin&amp;c=settings&amp;section=features" method="post" class="space-y-4">
                     {csrf_field}
                     <input type="hidden" name="settingsGroup" value="features">
@@ -162,7 +142,5 @@
                         </button>
                     </div>
                 </form>
-            {/if}
-        </div>
-    </div>
+    {/if}
 </div>
