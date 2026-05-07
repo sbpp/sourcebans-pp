@@ -1,10 +1,25 @@
 {*
     SourceBans++ 2026 — chrome / footer.tpl
 
-    Closes <main>, .main, .app, then mounts the drawer + palette
-    scaffolds and loads vendored Lucide + theme.js. Pair:
-    web/pages/core/footer.php (assigns $version, $git, $query — same
-    contract as web/themes/default/core/footer.tpl).
+    Closes <main> + the page footer + .main + .app, then mounts the
+    drawer + palette scaffolds and loads vendored Lucide + theme.js.
+    Pair: web/pages/core/footer.php (assigns $version, $git, $query —
+    same contract as web/themes/default/core/footer.tpl).
+
+    Layout note (#1271 — actual fix): `<footer class="app-footer">`
+    lives INSIDE `<div class="app">` (specifically as the last flex
+    item of `<div class="main">`, after `</main>`). `.sidebar` is
+    `position: sticky; top: 0; height: 100vh` and its sticky
+    containing block is `.app`; if the footer were a sibling of `.app`
+    (the pre-fix shape), `.app`'s height would fall short of the
+    document by `footerHeight` and the sticky sidebar would release at
+    the bottom — brand cut off, on barely-tall pages the entire
+    scroll range would be in the release phase and the sidebar would
+    appear to track the scroll. Keeping the footer inside `.app` makes
+    the sticky containing block extend through the whole document so
+    `.sidebar` stays pinned at viewport y=0 to the very bottom. See
+    `responsive/sidebar-sticky.spec.ts` for the regression guard +
+    AGENTS.md "Where to find what".
 
     The drawer + palette scaffolds use semantic <aside> + <dialog> with
     role/aria-label per the issue's "Testability hooks" rule that
@@ -15,6 +30,13 @@
     sb.api.call(Actions.BansSearch). The `data-palette-open`
     attribute mirrors the dialog's open/closed state for tests +
     CSS so selectors don't have to probe the `hidden` property.
+    Both are intentionally siblings of `.app` (not nested inside)
+    because they're floating overlays — the drawer is positioned via
+    `inset:0` against the viewport and `<dialog>` already promotes to
+    the top layer when `showModal()`-ed, so their containing block is
+    irrelevant to layout. Keeping them outside `.app` also avoids the
+    drawer's `position: fixed; height: 100vh` accidentally extending
+    `.app`'s flex cross-axis.
 
     Legacy hooks intentionally NOT carried over from
     web/themes/default/core/footer.tpl:
@@ -27,6 +49,38 @@
     Footer credits ($version + $git) are kept — pure display, no JS.
 *}
     </main>{* /.page *}
+
+{*
+    Footer (#1207 CC-5, CC-6, SET-2; #1271 layout fix — see file-level
+    comment above for why it lives here, inside `.main`/`.app`, instead
+    of as a body-level sibling of `.app`).
+
+    `data-version="{$version}"` mirrors the resolved SB_VERSION constant
+    (the user-visible string minus the `| Git: …` suffix). Telemetry,
+    bug reports, and E2E specs key off the attribute so they can
+    distinguish dev installs (`data-version="dev"` — the third-tier
+    fallback in init.php) from release tarball installs
+    (`data-version="2.1.0"` etc.) without parsing the visible text.
+
+    `data-testid="app-footer"` is the testability hook for SET-2's
+    save-button-doesn't-overlap-footer assertion at mobile width.
+
+    Footer link points at the sbpp/sourcebans-pp repo (CC-6) instead of
+    the marketing site so a self-hoster's first instinct ("show me the
+    code") lands them on the place that hosts both the issue tracker
+    and the install instructions. Link styling is muted by default
+    (matches the surrounding footer text colour) and only reveals the
+    accent colour + underline on `:hover` / `:focus-visible` so the
+    chrome's footer reads as a single line of text instead of having
+    a stranded blue underlined word in the middle of it. The
+    `.app-footer` class adds the SET-2 separator (top border + extra
+    margin/padding) so the "Save changes" row above no longer reads
+    as overlapping the credit on mobile.
+*}
+    <footer class="app-footer sbpp-footer" data-version="{$version}" data-testid="app-footer">
+        <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
+        {$version}{$git}
+    </footer>
   </div>{* /.main *}
 </div>{* /.app *}
 
@@ -79,36 +133,6 @@
          data-testid="palette-results"
          style="max-height:60vh;overflow-y:auto;padding:0.5rem"></div>
 </dialog>
-
-{*
-    Footer (#1207 CC-5, CC-6, SET-2).
-
-    `data-version="{$version}"` mirrors the resolved SB_VERSION constant
-    (the user-visible string minus the `| Git: …` suffix). Telemetry,
-    bug reports, and E2E specs key off the attribute so they can
-    distinguish dev installs (`data-version="dev"` — the third-tier
-    fallback in init.php) from release tarball installs
-    (`data-version="2.1.0"` etc.) without parsing the visible text.
-
-    `data-testid="app-footer"` is the testability hook for SET-2's
-    save-button-doesn't-overlap-footer assertion at mobile width.
-
-    Footer link points at the sbpp/sourcebans-pp repo (CC-6) instead of
-    the marketing site so a self-hoster's first instinct ("show me the
-    code") lands them on the place that hosts both the issue tracker
-    and the install instructions. Link styling is muted by default
-    (matches the surrounding footer text colour) and only reveals the
-    accent colour + underline on `:hover` / `:focus-visible` so the
-    chrome's footer reads as a single line of text instead of having
-    a stranded blue underlined word in the middle of it. The
-    `.app-footer` class adds the SET-2 separator (top border + extra
-    margin/padding) so the "Save changes" row above no longer reads
-    as overlapping the credit on mobile.
-*}
-<footer class="app-footer sbpp-footer" data-version="{$version}" data-testid="app-footer">
-    <a href="https://github.com/sbpp/sourcebans-pp" target="_blank" rel="noopener">SourceBans++</a>
-    {$version}{$git}
-</footer>
 
 <script src="{$theme_url}/js/lucide.min.js"></script>
 <script src="{$theme_url}/js/theme.js"></script>

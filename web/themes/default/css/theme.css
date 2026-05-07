@@ -109,19 +109,32 @@ a { color: inherit; text-decoration: none; }
 
 /* ---- App shell ---- */
 .app { min-height: 100vh; display: flex; }
-/* #1271 — `align-self: flex-start` opts the sticky sidebar OUT of
-   `.app`'s default `align-items: stretch`. The explicit `height: 100vh`
-   below already keeps the cross-size at the viewport on current
-   evergreen engines (stretch only operates on `auto` cross-sizes), so
-   this declaration is defensive parity with the Pattern A inner rail
-   (`.admin-sidebar` below uses `align-self: start` for the same
-   reason): a future refactor that drops the explicit height — or an
-   ancestor that turns the sticky containing block into a scroll
-   container — would otherwise reintroduce the bug where a flex-
-   stretched sticky element has no "room" inside its containing block
-   and ends up scrolling with the page. At <=1024px the sidebar swaps
-   to `position: fixed` (drawer mode in the Responsive block below),
-   so the cross-axis interaction is a desktop-only concern. */
+/* #1271 — the actual fix is structural and lives in
+   `core/footer.tpl`: `<footer class="app-footer">` is rendered INSIDE
+   `.app` (as the last flex item of `.main`), not as a body-level
+   sibling. `.sidebar`'s sticky containing block is `.app`, so for
+   sticky to stay pinned at viewport y=0 across the entire scroll
+   range (including the very bottom of the document), `.app`'s height
+   must match the document height. Pre-fix the footer lived outside
+   `.app`, leaving `.app` short by `footerHeight`; sticky correctly
+   released at the bottom and on barely-tall pages (e.g.
+   `?p=banlist` / `?p=admin&c=audit` on the bare e2e seed where
+   `docHeight - viewport ≤ footerHeight`) the entire scroll range was
+   in the release phase, which presented as "the sidebar scrolls with
+   the page". The original #1271 misdiagnosed this as a flex
+   `align-items: stretch` interaction (#1278 added the
+   `align-self: flex-start` below as defensive parity); on evergreen
+   browsers explicit cross-sizes already win over `stretch`, so
+   without the structural fix in this PR `align-self` was a no-op.
+   The `align-self` declaration is RETAINED below as belt-and-
+   suspenders parity with the Pattern A inner rail (`.admin-sidebar`,
+   which uses `align-self: start` for the same reason) — a future
+   refactor that drops the explicit height, or wraps `.app` in a
+   transformed / `overflow: hidden` ancestor that breaks the sticky
+   containing block, would otherwise regress the chrome silently.
+   At <=1024px the sidebar swaps to `position: fixed` (drawer mode
+   in the Responsive block below), so the desktop sticky contract
+   is the only thing this comment is asserting. */
 .sidebar {
   width: 15rem; flex-shrink: 0; height: 100vh; position: sticky; top: 0;
   align-self: flex-start;
@@ -1343,7 +1356,7 @@ details.queue-row > summary > .row-actions {
   .permissions-grid--web { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* ---- Footer (#1207 CC-6 + SET-2) ----
+/* ---- Footer (#1207 CC-6 + SET-2; #1271 layout fix) ----
    The page-bottom credit footer in core/footer.tpl. A subtle
    top border + a touch more vertical padding visually separates
    it from form action rows above so the "Save changes" button on
@@ -1352,11 +1365,27 @@ details.queue-row > summary > .row-actions {
    `.text-faint` (muted), but a raw <a> would inherit the
    browser-default underlined link colour and stand out as a
    stranded blue word; only reveal the affordance on hover/focus
-   so keyboard users still get a visible focus ring (CC-6). */
+   so keyboard users still get a visible focus ring (CC-6).
+
+   `margin-top: auto` (#1271): the footer is now the last flex
+   column item of `.main` (see core/footer.tpl for why it lives
+   inside `.app` instead of as a body-level sibling). On short
+   pages where `.main`'s flex column has unused vertical space,
+   `auto` pushes the footer to the bottom of `.main` — the
+   classic "sticky footer" pattern — so the page doesn't paint
+   the credit halfway up the viewport with a band of empty space
+   below it. On tall pages where the column overflows, `auto`
+   resolves to 0 and the footer abuts the page content; the
+   1.25rem `padding-top` + `border-top` keep the visual
+   separation that the SET-2 separator promises. The previous
+   `margin-top: 1rem` is dropped — `auto` subsumes it on short
+   pages, and on tall pages the padding alone is enough breathing
+   room (a fixed `1rem` would just sit alongside `auto` and add
+   16px to short-page layout, pulling the footer off the bottom). */
 .app-footer {
   text-align: center;
   padding: 1.25rem 1rem;
-  margin-top: 1rem;
+  margin-top: auto;
   border-top: 1px solid var(--border);
   font-size: var(--fs-xs);
   color: var(--text-faint);

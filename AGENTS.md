@@ -980,6 +980,32 @@ per spec, not the shared `sourcebans_e2e`. Wrapper:
   the sibling theme-toggle's chrome. The `.topbar__search-label` /
   `.topbar__search-kbd` spans stay in the DOM for SR users + the
   Mac glyph swap, but `display: none` everywhere — don't unhide them.
+- Moving `<footer class="app-footer">` back outside `<div class="app">`
+  (the body-level sibling shape from before #1271's structural fix) →
+  `.sidebar` is `position: sticky; top: 0; height: 100vh` and its
+  sticky containing block is `.app`. Pulling the footer out leaves
+  `.app` `footerHeight` short of the document, so on tall pages the
+  sidebar releases at the bottom (brand cuts off) and on barely-tall
+  pages where `docHeight - viewport ≤ footerHeight` (the bare-e2e
+  `?p=admin&c=audit` shape) the entire scroll range falls inside the
+  release phase and the sidebar appears to track the scroll — exactly
+  the symptom rumblefrog reported in #1271. The footer must stay as
+  the last flex column item of `<div class="main">`. The
+  `align-self: flex-start` on `.sidebar` (added by #1278) is
+  defensive parity with `.admin-sidebar`, NOT the load-bearing fix —
+  a future refactor that puts the footer back outside `.app` will
+  silently regress even with `align-self` in place. The regression
+  guard is `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts`'s
+  strict `top===0` assertion at scroll=`document.scrollHeight`.
+- Pinning `<aside id="drawer-root">` or `<dialog id="palette-root">`
+  inside `<div class="app">` "to be consistent with the footer" → the
+  drawer is `position: fixed; inset: 0` and `<dialog>` promotes itself
+  to the top layer when `showModal()`-ed; both are floating overlays
+  whose containing block is irrelevant to layout. Nesting the drawer
+  inside `.app` would extend `.app`'s flex cross-axis to the drawer's
+  `100vh` (and break the sticky containing-block math the same way
+  the pre-#1271 footer did, just from the opposite direction). Keep
+  them as direct children of `<body>`, after `</div>` closing `.app`.
 
 ## Where to find what
 
@@ -1026,6 +1052,7 @@ per spec, not the shared `sourcebans_e2e`. Wrapper:
 | Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / settings) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |
 | Stop mobile browsers auto-linking SteamIDs / IPs as phone numbers | `web/themes/default/core/header.tpl` (`<meta name="format-detection" content="telephone=no…">` + `<meta name="x-apple-data-detectors">`) and the defensive `.drawer a[href^="tel:"]` reset in `theme.css` |
 | Lock page scroll while a modal-style chrome is open | `web/themes/default/css/theme.css` (`html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }` — pure-CSS, gates on the same `data-drawer-open` mirror theme.js sets, applies at every viewport so the drawer-open contract is symmetric desktop/mobile per the Linear/Vercel/Notion modal idiom) |
+| Keep the main sidebar sticky-pinned across the full document scroll (`<aside class="sidebar">`) | The structural half of #1271 lives in `web/themes/default/core/footer.tpl`: `<footer class="app-footer">` is rendered as the LAST flex column item of `<div class="main">`, INSIDE `<div class="app">`. `.sidebar`'s sticky containing block is `.app`; if the footer were a body-level sibling of `.app` (the pre-fix shape), `.app`'s height would fall short of the document by `footerHeight` and the sidebar would release at the bottom — brand cut off, on barely-tall pages (`docHeight - viewport ≤ footerHeight`, e.g. `?p=admin&c=audit` on the bare e2e seed) the entire scroll range would be in the release phase and the sidebar would track the scroll. Keeping the footer inside `.app` makes the sticky CB extend to the full document. The CSS half (`.sidebar { align-self: flex-start; }` from #1278) is defensive parity with `.admin-sidebar` and is RETAINED but not load-bearing on its own. The footer's `margin-top: auto` (`.app-footer` rule in `theme.css`) is the classic "sticky footer" pattern — pushes the footer to the bottom of `.main`'s flex column on short pages so the credit doesn't float halfway up the viewport. Regression guard: `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts` asserts strict `top===0` at scroll=`document.scrollHeight` on `?p=admin&c=bans` (the canonical tall page) AND on `?p=admin&c=audit` (the barely-tall page that historically presented the bug most visibly). |
 | Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
