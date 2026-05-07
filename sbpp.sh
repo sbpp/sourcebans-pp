@@ -27,6 +27,12 @@ Run things inside containers:
   e2e [args...]   Run the Playwright E2E suite inside the web container.
                   Lazily npm-installs @playwright/test + chromium on first run;
                   forwards args to `npx playwright test` (e.g. `--grep @screenshot`).
+  upgrade-e2e [args...]
+                  Run the v1.x → v2.0 upgrade harness (web/tests/e2e/specs/upgrade/).
+                  Stages fixtures/upgrade/<version>.sql.gz into the web container,
+                  drives the upgrade flow against throwaway sourcebans_upgrade_*
+                  DBs, asserts schema/settings parity + idempotency. Forwards
+                  args to playwright; defaults to `--grep @upgrade`.
   exec <cmd...>   Run an arbitrary command in the web container.
   mysql           Open a mysql client connected to the dev DB.
 
@@ -209,6 +215,119 @@ case "$cmd" in
                 fi
                 exec npx playwright test "$@"
             ' -- "$@"
+        ;;
+    upgrade-e2e)
+        # v1.x -> v2.0 upgrade harness (#1269). Mirrors `e2e`'s
+        # auto-bring-up + lazy npm/chromium install, but:
+        #
+        #   - Stages `fixtures/upgrade/<v>.sql.gz` + `config.<v>.php`
+        #     into the web container's `/tmp/` so the in-container
+        #     `upgrade-db.php` helper can read them. The fixtures live
+        #     OUTSIDE `web/` (per #1268) so they don't ship in the
+        #     release tarball; the bind mount can't see them.
+        #   - Grants the panel user CREATE/DROP on `*.*` so the helper
+        #     can drop+recreate the throwaway `sourcebans_upgrade_*`
+        #     schemas. The same pattern the regular `e2e` command uses
+        #     for `sourcebans_e2e`.
+        #   - Targets only the upgrade specs by appending
+        #     `--grep '@upgrade'` to playwright args (or honouring the
+        #     caller's filter if they passed one).
+        #   - Stash + restore config.php exactly like `e2e` does, so
+        #     the dev panel keeps pointing at `sourcebans` after the
+        #     run — even if the spec aborts mid-flight.
+        if [ -z "$(dc ps -q web 2>/dev/null)" ]; then dc up -d; fi
+        dc exec -T db mariadb -uroot -proot -e "
+            GRANT ALL PRIVILEGES ON \`sourcebans_upgrade_170\`.* TO 'sourcebans'@'%';
+            GRANT CREATE, DROP ON *.* TO 'sourcebans'@'%';
+            FLUSH PRIVILEGES;" >/dev/null
+        # Stage the 1.7.0 fixture into the container. Idempotent — the
+        # spec re-copies via `copyFixture.ts` if a future per-spec
+        # destination is needed. Doing it once here keeps the host->
+        # container hop out of the test's hot path.
+        for v in 1.7.0; do
+            dc cp "fixtures/upgrade/${v}.sql.gz"     "web:/tmp/sbpp-upgrade-${v}.sql.gz"
+            dc cp "fixtures/upgrade/config.${v}.php" "web:/tmp/sbpp-upgrade-config-${v}.php"
+        done
+        # Snapshot config.php BEFORE we mutate it, then sed the
+        # panel's DB_NAME to `sourcebans_e2e` so playwright's
+        # `globalSetup` (which mints storage state by logging in)
+        # talks to the same DB the e2e fixture seeds. The upgrade
+        # spec opts out of that storage state (`test.use({
+        # storageState: { cookies: [], origins: [] } })`) and rewrites
+        # config.php again in its own `beforeAll` to point at the
+        # throwaway `sourcebans_upgrade_*` schema. The trap below
+        # puts the original `sourcebans` config.php back on exit so
+        # the dev panel keeps working for browser-side dev sessions.
+        upgrade_e2e_db="${UPGRADE_E2E_DB_NAME:-sourcebans_e2e}"
+        dc exec -T web bash -c "
+            set -e
+            cfg=/var/www/html/web/config.php
+            stash=/var/www/html/web/config.php.upgrade-e2e-stash
+            [ ! -f \$stash ] && cp \$cfg \$stash
+            sed -i \"s/define('DB_NAME', '[^']*');/define('DB_NAME', '${upgrade_e2e_db}');/\" \$cfg
+            # /updater/index.php wipes web/cache/ contents. If a previous
+            # aborted run left the dir at root:root 0755 (init.php's
+            # is_writable(SB_CACHE) check then fails and the panel
+            # 500s with 'Theme Error: cache MUST be writable' before
+            # globalSetup can find the login form), nudge it back to
+            # the entrypoint's intended state. Idempotent — a healthy
+            # cache dir already matches.
+            mkdir -p /var/www/html/web/cache /var/www/html/web/templates_c
+            chown -R www-data:www-data /var/www/html/web/cache /var/www/html/web/templates_c 2>/dev/null || true
+            chmod -R u+rwX,g+rwX,o+rwX /var/www/html/web/cache /var/www/html/web/templates_c 2>/dev/null || true
+        "
+        restore_panel_db() {
+            dc exec -T web bash -c '
+                cfg=/var/www/html/web/config.php
+                stash=/var/www/html/web/config.php.upgrade-e2e-stash
+                if [ -f $stash ]; then mv $stash $cfg; fi
+                # Also nuke the spec-level stash if a crash left it.
+                rm -f /var/www/html/web/config.php.upgrade-stash
+            ' 2>/dev/null || true
+        }
+        trap restore_panel_db EXIT INT TERM
+        # Honour an explicit --grep from the caller if present;
+        # otherwise default to `--grep @upgrade` so the wrapper
+        # doesn't drag in the regular suite. Pin to the desktop
+        # chromium project so the spec doesn't re-run on
+        # mobile-chromium — the upgrade harness mutates config.php
+        # serially and two parallel browsers (one per project)
+        # would race on the same panel state. The harness isn't a
+        # UI/responsive test; one project is sufficient.
+        upgrade_args=("$@")
+        has_grep=0
+        has_project=0
+        for a in "$@"; do
+            case "$a" in
+                --grep|--grep=*) has_grep=1 ;;
+                --project|--project=*) has_project=1 ;;
+            esac
+        done
+        if [ "$has_grep" -eq 0 ]; then
+            upgrade_args=("--grep" "@upgrade" "${upgrade_args[@]}")
+        fi
+        if [ "$has_project" -eq 0 ]; then
+            upgrade_args=("--project=chromium" "${upgrade_args[@]}")
+        fi
+        dc exec -T \
+            -e E2E_BASE_URL="${E2E_BASE_URL:-http://localhost}" \
+            -e E2E_IN_CONTAINER=1 \
+            -e CI="${CI:-}" \
+            -e DB_HOST=db -e DB_PORT=3306 \
+            -e DB_NAME="${upgrade_e2e_db}" \
+            -e DB_USER=sourcebans -e DB_PASS=sourcebans \
+            -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
+            web bash -lc '
+                set -e
+                cd /var/www/html/web/tests/e2e
+                if [ ! -d node_modules/@playwright/test ]; then
+                    npm install --silent --no-audit --no-fund --prefer-offline
+                fi
+                if [ ! -d "$HOME/.cache/ms-playwright" ] || [ -z "$(ls "$HOME/.cache/ms-playwright" 2>/dev/null)" ]; then
+                    npx playwright install --with-deps chromium
+                fi
+                exec npx playwright test "$@"
+            ' -- "${upgrade_args[@]}"
         ;;
     exec)
         dc exec web "$@"

@@ -124,6 +124,47 @@ and PHPUnit's `sourcebans_test` are both untouched). First run installs
 the cached install. Forwards args to `npx playwright test`, e.g.
 `./sbpp.sh e2e --grep @screenshot` for the per-PR screenshot gallery.
 
+## Upgrade harness (`./sbpp.sh upgrade-e2e`)
+
+The 1.x → 2.0 upgrade harness (#1269) is a separate Playwright entry
+point under `web/tests/e2e/specs/upgrade/`. It drives a real upgrade
+against the snapshot fixtures committed under
+[`fixtures/upgrade/`](../fixtures/upgrade/) (#1268) and asserts on
+schema parity, settings parity, idempotency of `web/updater/index.php`,
+and a post-upgrade login smoke flow.
+
+```sh
+./sbpp.sh upgrade-e2e             # run every spec under specs/upgrade/
+./sbpp.sh upgrade-e2e --grep 1.7  # narrow to the 1.7.0 spec
+```
+
+The wrapper is a separate command from `e2e` because the upgrade
+harness has a different DB lifecycle: it creates throwaway
+`sourcebans_upgrade_*` schemas per spec rather than sharing
+`sourcebans_e2e`. Mixing them would silently corrupt the regular
+suite's truncate-and-reseed contract. The wrapper:
+
+- `docker compose cp`s `fixtures/upgrade/<v>.sql.gz` and
+  `config.<v>.php` into the web container's `/tmp/` so the
+  in-container PHP helper can read them. The fixtures live OUTSIDE
+  `web/` (per #1268) so they don't ship in the release tarball; the
+  bind mount can't see them.
+- Grants the panel user `CREATE`/`DROP` on `*.*` so the helper can
+  create the throwaway schemas (mirrors the `sourcebans_e2e` grant
+  the regular `e2e` wrapper does).
+- Stashes `web/config.php` before the spec mutates it, restores it
+  on exit (including SIGINT) so the dev panel keeps pointing at
+  `sourcebans` for normal browser sessions.
+- Pins `--project=chromium` and defaults to `--grep @upgrade` so the
+  spec doesn't double-run on mobile-chromium and doesn't drag in the
+  rest of the suite.
+
+The upgrade spec auto-skips if the staging files aren't present, so
+`./sbpp.sh e2e --grep <broad>` accidentally pulling it in is
+harmless. See `web/tests/e2e/specs/upgrade/README.md` for the
+spec-level contract and the deferred follow-ups (second fixture,
+extra smoke flows, dedicated CI workflow).
+
 ## Static analysis with phpstan-dba
 
 `./sbpp.sh phpstan` runs PHPStan inside the web container with

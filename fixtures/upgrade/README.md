@@ -97,8 +97,41 @@ target an old schema, not the current one) and don't share plumbing.
 
 ## Reusing a snapshot for the upgrade dry-run
 
-The intended use is: load one of these snapshots into a DB the panel
-under test points at, then visit `web/updater/index.php` and observe.
+There are now **two** consumers of these snapshots:
+
+### 1. Automated harness (preferred — #1269)
+
+The Playwright spec under
+[`web/tests/e2e/specs/upgrade/`](../../web/tests/e2e/specs/upgrade/)
+drives the upgrade end-to-end and asserts on schema parity, settings
+parity, idempotency, and a post-upgrade login smoke flow:
+
+```sh
+./sbpp.sh upgrade-e2e            # all upgrade specs
+./sbpp.sh upgrade-e2e --grep 1.7 # narrow to the 1.7.0 spec
+```
+
+The wrapper handles fixture staging, DB grants, config stash/restore
+and pins playwright to `--project=chromium` so the harness can't
+race itself across browser projects. See
+[`web/tests/e2e/specs/upgrade/README.md`](../../web/tests/e2e/specs/upgrade/README.md)
+for the spec-level contract and the locked-drift policy that lets
+the harness stay green while individual migration fixes ship in
+their own PRs.
+
+The slice that landed alongside this README only ships the 1.7.0
+spec; 1.8.4 is a deferred follow-up tracked in the harness PR. The
+fixture inputs (this directory) are version-agnostic — a future
+slice plugs `1.8.4` in by mirroring `upgrade-1.7.0.spec.ts`.
+
+### 2. Manual walk (legacy — for one-off operator-grade investigations)
+
+Load one of the snapshots into a DB the panel under test points at,
+then visit `web/updater/index.php` and observe. This is what #1166
+originally proposed before #1269 superseded it with the harness;
+keep it around for one-shot investigations the spec doesn't cover
+(e.g. "what does the migrator output look like when the operator
+forgot to run composer install first?").
 
 ```sh
 # In the worktree of 2.0.0 code under test:

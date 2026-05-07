@@ -727,6 +727,14 @@ Five CI jobs run on every PR (`.github/workflows/`):
 | API contract   | `api-contract.yml`    | `./sbpp.sh composer api-contract` | Regenerates `scripts/api-contract.js` and fails on diff. |
 | Playwright E2E | `e2e.yml`             | `./sbpp.sh e2e`              | Browser-level smoke / flows / a11y against the dev stack (chromium + mobile-chromium). |
 
+A sixth gate is the **upgrade harness** (`./sbpp.sh upgrade-e2e`,
+#1269), which drives the v1.x → v2.0 upgrade against the snapshot
+fixtures from #1268 and asserts schema/settings parity + idempotency
++ post-upgrade login. **It is not yet wired into CI** (deferred
+follow-up — it ships locally first, gates per PR once it stabilises
+on both fixtures); see "Upgrade harness" under `web/tests/e2e/` for
+the contract.
+
 PHPStan is at level 5 (bumped from 4 in #1101); raise one step at a
 time, never jump 5→7. The baseline at `web/phpstan-baseline.neon`
 captures pre-existing violations; only regenerate it when a real fix
@@ -833,6 +841,74 @@ The accompanying `upload-screenshots.sh` pushes the gallery to the
 `screenshots-archive` orphan branch under `screenshots/pr-<N>/<slug>/`
 (unique per PR + slice, so the orphan branch never has merge
 conflicts) and prints a markdown table for `gh pr comment`.
+
+### Upgrade harness (`web/tests/e2e/specs/upgrade/`)
+
+A separate Playwright sub-suite (#1269) drives the v1.x → v2.0
+upgrade end-to-end against the snapshot fixtures from #1268
+([`fixtures/upgrade/`](fixtures/upgrade/)). It supersedes the
+"agent walks the upgrade path manually" scope of #1166 with
+mechanical, deterministic evidence.
+
+```
+web/tests/e2e/specs/upgrade/
+├── README.md                              # Spec-level contract + locked-drift policy
+├── upgrade-1.7.0.spec.ts                  # 1.7.0 → 2.0 happy-path spec (the slice)
+├── _helpers/
+│   ├── copyFixture.ts                     # stash/restore live web/config.php
+│   ├── upgradeDb.ts                       # TS bridge to upgrade-db.php (reset/install/dump/render-config)
+│   ├── upgradeFlow.ts                     # /upgrade.php + /updater/index.php drivers + log parser
+│   ├── parity.ts                          # pure-string schema/settings diff routines
+│   └── scripts/upgrade-db.php             # PHP CLI driver — refuses any DB not prefixed `sourcebans_upgrade_`
+└── __snapshots__/1.7.0/
+    ├── README.md                          # Locked-drift policy
+    └── schema.diff                        # Locked baseline; empty = full parity
+```
+
+The harness has a **different DB lifecycle** from the rest of the
+e2e suite — instead of sharing `sourcebans_e2e`, it creates
+throwaway `sourcebans_upgrade_<slug>` schemas per spec, loads the
+gz fixture into one and a fresh `struc.sql + data.sql` install into
+the other (the parity reference), drives the upgrade flow against
+the first, and diffs the two. Mixing this with the regular suite's
+truncate-and-reseed contract would silently corrupt it; the
+`upgrade-db.php` helper enforces the boundary by refusing any DB
+name that doesn't start with `sourcebans_upgrade_`.
+
+Each spec asserts on six dimensions (numbered to match the
+`test.step` headings in `upgrade-1.7.0.spec.ts`):
+
+1. **`/upgrade.php` SB_SECRET_KEY append + idempotency.** First
+   request appends the constant; second request short-circuits.
+2. **`/updater/index.php` migration walk.** The exact list of
+   migrations applied is locked (e.g. 1.7.0 walks
+   `705 → 801 → 802 → 803 → 804 → 805`); a future `store.json`
+   reshuffle silently widening the set fails the spec.
+3. **Idempotent re-run.** A second updater pass applies zero
+   migrations and lands on the "Installation up-to-date" marker.
+4. **Schema parity.** Post-upgrade schema diffed against a fresh
+   `struc.sql + data.sql` install, with the diff snapshotted under
+   `__snapshots__/<version>/schema.diff`. Empty file = full parity
+   (target state); non-empty = known drift documented in the PR's
+   deferred-followups list. New drift fails the spec.
+5. **Settings parity.** Every key in fresh `data.sql`'s
+   `:prefix_settings` exists post-upgrade. Values are deliberately
+   not compared (per-install random keys / `config.version`
+   legitimately differ).
+6. **Login smoke.** `admin / admin` logs into the upgraded panel
+   end-to-end.
+
+The wrapper `./sbpp.sh upgrade-e2e` is the only meaningful invocation
+path: it stages the fixtures into the container's `/tmp/`, grants
+the panel user `CREATE`/`DROP` on `*.*` (mirroring `e2e`'s
+`sourcebans_e2e` pattern), pins `--project=chromium` so two
+browser projects don't race on the panel's config.php, stashes +
+restores `web/config.php` around the run (trap-protected so a
+SIGINT doesn't leak the upgrade-DB pointer into the dev panel),
+and defaults to `--grep @upgrade` so it doesn't drag in the
+regular suite. The spec auto-skips if staging is absent so a
+casual `./sbpp.sh e2e --grep <broad>` accidentally pulling it in
+is harmless.
 
 ## Legacy patterns being phased out
 
