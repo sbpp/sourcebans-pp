@@ -109,8 +109,22 @@ a { color: inherit; text-decoration: none; }
 
 /* ---- App shell ---- */
 .app { min-height: 100vh; display: flex; }
+/* #1271 — `align-self: flex-start` opts the sticky sidebar OUT of
+   `.app`'s default `align-items: stretch`. The explicit `height: 100vh`
+   below already keeps the cross-size at the viewport on current
+   evergreen engines (stretch only operates on `auto` cross-sizes), so
+   this declaration is defensive parity with the Pattern A inner rail
+   (`.admin-sidebar` below uses `align-self: start` for the same
+   reason): a future refactor that drops the explicit height — or an
+   ancestor that turns the sticky containing block into a scroll
+   container — would otherwise reintroduce the bug where a flex-
+   stretched sticky element has no "room" inside its containing block
+   and ends up scrolling with the page. At <=1024px the sidebar swaps
+   to `position: fixed` (drawer mode in the Responsive block below),
+   so the cross-axis interaction is a desktop-only concern. */
 .sidebar {
   width: 15rem; flex-shrink: 0; height: 100vh; position: sticky; top: 0;
+  align-self: flex-start;
   background: var(--bg-surface); border-right: 1px solid var(--border);
   display: flex; flex-direction: column;
 }
