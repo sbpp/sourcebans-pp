@@ -69,15 +69,13 @@
         {/if}
     </nav>
 
-    <div style="border-top: 1px solid var(--border); padding: 0.5rem;">
+    <div style="border-top: 1px solid var(--border); padding: 0.5rem; display: flex; flex-direction: column; gap: 0.125rem;">
         {if $login}
             <a class="sidebar__link"
                href="index.php?p=account"
                data-testid="nav-account">
                 <i data-lucide="user"></i>
-                <div style="flex:1;min-width:0">
-                    <div class="font-semibold text-xs truncate">{$username}</div>
-                </div>
+                <div class="truncate" style="flex:1;min-width:0">{$username}</div>
             </a>
             <a class="sidebar__link"
                href="index.php?p=logout"
