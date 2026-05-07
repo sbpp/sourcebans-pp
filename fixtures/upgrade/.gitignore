@@ -1,4 +1,0 @@
-# Cache of downloaded release tarballs / extracted archives. Populated
-# by capture/capture.sh on first run; recreated whenever it is missing.
-# Never committed.
-capture/.cache/

@@ -67,10 +67,6 @@ Run from the repo root. All commands are idempotent.
 ./sbpp.sh ts-check                 # tsc --checkJs over web/scripts
 ./sbpp.sh composer api-contract    # regen scripts/api-contract.js
 ./sbpp.sh e2e [args]               # Playwright E2E suite (lazy npm install + chromium browser)
-./sbpp.sh upgrade-e2e [args]       # 1.x -> 2.0 upgrade harness (#1269) — separate
-                                   # DB lifecycle (sourcebans_upgrade_*); not yet in CI.
-                                   # Stages fixtures/upgrade/<v>.sql.gz; pins --project=chromium;
-                                   # restores web/config.php on EXIT/INT/TERM.
 
 # DB
 ./sbpp.sh db-dump [file]           # mysqldump to host
@@ -806,66 +802,6 @@ audit (#1207) locked in. New CTAs:
   snapshot) so a user without the relevant `ADMIN_*` flag sees the
   body copy without the link they couldn't follow.
 
-### Upgrade harness (`web/tests/e2e/specs/upgrade/`)
-
-Playwright sub-suite (#1269) that drives the v1.x → v2.0 upgrade
-end-to-end against the snapshot fixtures from #1268 and asserts
-schema parity, settings parity, idempotency of the updater, and a
-post-upgrade login smoke flow. Different DB lifecycle from the rest
-of the e2e suite — uses throwaway `sourcebans_upgrade_*` schemas
-per spec, not the shared `sourcebans_e2e`. Wrapper:
-`./sbpp.sh upgrade-e2e`.
-
-- The PHP CLI driver (`_helpers/scripts/upgrade-db.php`) refuses
-  any DB whose name doesn't start with `sourcebans_upgrade_` —
-  same shape as the dev synthesizer's "refuse anything but
-  `sourcebans`" guard. Don't reach around it; if you need a new
-  throwaway DB, name it `sourcebans_upgrade_<slug>`.
-- Each new fixture lives as a sibling spec
-  (`upgrade-1.7.0.spec.ts`, `upgrade-1.8.4.spec.ts`, …). They share
-  the helpers under `_helpers/` but each owns its own pair of
-  throwaway DBs (one for the upgrade walk, one as the fresh-install
-  reference for parity diffs) so a failure in one fixture's run
-  doesn't leak state into another. Tag every spec `@upgrade` so
-  the wrapper's default `--grep` pulls it in.
-- The schema diff snapshot at `__snapshots__/<version>/schema.diff`
-  is a **locked baseline**, not a "regenerate on every run"
-  artefact. Empty file = full parity (target state). Non-empty =
-  known drift documented in the harness PR's deferred follow-ups.
-  When you ship a fix that closes a drift line, **delete that
-  exact line in the same PR** — the spec asserts byte-equality so
-  the snapshot update is the reviewer's signal that the fix
-  landed correctly.
-- Settings parity asserts only on **key presence** (every key in
-  fresh `data.sql` exists post-upgrade). Values legitimately
-  differ — `config.version`, per-install random keys, install
-  timestamps. Don't tighten this without a concrete reason.
-- The wrapper stashes + restores `web/config.php` around the run
-  via a bash `trap`. The spec ALSO stashes a per-spec copy on
-  top so an aborted `expect` failure inside `beforeAll` still
-  recovers. Don't add extra config-mutation paths that bypass
-  these stashes.
-- Specs anchor on `data-testid` hooks where they exist (the v2.0
-  updater chrome carries `updater-progress`, `updater-cleanup`,
-  `updater-return`; the post-upgrade login goes through `login-*`).
-  The 1.x panel chrome is **not** driven by these specs — the
-  harness operates entirely against the v2.0 chrome served from
-  the worktree. If a future slice does drive the 1.x UI (e.g.
-  capturing pre-upgrade screenshots), anchor on stable id/name
-  attributes the 1.x templates emit and DOCUMENT each in the
-  spec.
-- The harness is dev-only and **not yet a CI gate**. Run locally
-  via `./sbpp.sh upgrade-e2e` before opening any PR that touches
-  `web/install/`, `web/updater/`, `web/upgrade.php`, or
-  `fixtures/upgrade/`. The standalone CI workflow
-  (`upgrade-e2e.yml`) ships in a follow-up once the harness
-  stabilises on both fixtures.
-- The harness consumes `fixtures/upgrade/<v>.sql.gz` directly via
-  `gunzip | mariadb`. Do NOT add a tarball-download / hash-check
-  / cache layer to it — that's a separate engineering surface
-  (deferred follow-up). Editing fixtures lives in
-  [`fixtures/upgrade/README.md`](fixtures/upgrade/README.md).
-
 ## Anti-patterns (do NOT reintroduce)
 
 - `xajax` / `sb-callback.php` → use the JSON API.
@@ -1014,8 +950,6 @@ per spec, not the shared `sourcebans_e2e`. Wrapper:
 | Schema                                 | `web/install/includes/sql/struc.sql`                     |
 | Seed `sb_settings` rows for fresh installs | `web/install/includes/sql/data.sql`                  |
 | Add a one-off DB upgrade for existing installs | `web/updater/data/<N>.php` + `web/updater/store.json` |
-| Pull a 1.x snapshot fixture for the v2.0.0 upgrade dry-run | `fixtures/upgrade/<version>.sql.gz` + `fixtures/upgrade/config.<version>.php` (matching pre-rendered config.php with redacted secrets) + `fixtures/upgrade/capture/capture.sh` (re-runnable orchestrator that pulls the release tarball, loads `install/includes/sql/struc.sql` + `data.sql`, seeds 5000 bans / 200 admins / 30 servers / 50 protests / 500 comms with 4-byte UTF-8 names per #1108 via `seed.php` in an ephemeral `php:8.2-cli` container, dumps + gzips). Snapshots live OUTSIDE `web/` so they never ship in the release tarball. See `fixtures/upgrade/README.md` for the operator-grade walkthrough (#1166). |
-| Drive the v1.x → v2.0 upgrade end-to-end with parity assertions | `web/tests/e2e/specs/upgrade/` (#1269). Wrapper: `./sbpp.sh upgrade-e2e [--grep …]`. Each fixture gets its own spec (`upgrade-1.7.0.spec.ts`, …) tagged `@upgrade`. Helpers under `_helpers/` (`upgradeFlow.ts` drives `/upgrade.php` + `/updater/index.php`; `upgradeDb.ts` bridges the PHP CLI driver `_helpers/scripts/upgrade-db.php`; `parity.ts` does pure-string schema/settings diffs; `copyFixture.ts` stashes `config.php`). Schema-parity baseline at `__snapshots__/<version>/schema.diff` (empty = full parity; non-empty = locked known drift, delete a line in the same PR as the migration fix that closes it). Throwaway DBs are `sourcebans_upgrade_*` (the PHP driver refuses any other name). NOT in CI yet — runs locally before any PR touching `web/install/`, `web/updater/`, `web/upgrade.php`, or `fixtures/upgrade/`. See "Upgrade harness" under Conventions. |
 | Test fixtures                          | `web/tests/Fixture.php`, `web/tests/ApiTestCase.php`     |
 | Populate the dev DB with realistic synthetic data (banlist > 1 page, drawer history, moderation queues, audit log) | `./sbpp.sh db-seed` → `web/tests/scripts/seed-dev-db.php` (CLI driver) → `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`). Dev-only: refuses any `DB_NAME` other than `sourcebans` (so `sourcebans_test` / `sourcebans_e2e` stay untouched). Idempotent; deterministic given a fixed `--seed` (default `Synthesizer::DEFAULT_SEED`). Does NOT share plumbing with `Fixture::truncateAndReseed` — the e2e hot path stays minimal. |
 | API wire-format snapshots              | `web/tests/api/__snapshots__/<topic>/<scenario>.json`    |

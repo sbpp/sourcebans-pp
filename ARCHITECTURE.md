@@ -32,8 +32,6 @@ plugins are stable and updated less often.
 ├── web/                  PHP web panel (panel + JSON API + tests)
 ├── game/addons/          SourceMod plugin sources (.sp / configs / translations)
 ├── docker/               Local dev stack (Dockerfile, db-init, php config)
-├── fixtures/upgrade/     Pre-2.0 install snapshots + capture scripts
-│                         for the v2.0.0 upgrade dry-run (issue #1166)
 ├── docker-compose.yml    web + db (MariaDB) + adminer + mailpit
 ├── sbpp.sh               Wrapper for the dev stack and quality gates
 ├── .github/workflows/    CI gates (phpstan, test, ts-check, api-contract, release)
@@ -658,50 +656,6 @@ above each `$this->dbs` call. See `802.php` (new `sb_settings` row) and
 `803.php` (the `config.mail.from_*` rows for #1109) for the canonical
 shape; `700.php` shows a multi-row insert and `801.php` shows DDL.
 
-### Upgrade-path fixtures (`fixtures/upgrade/`)
-
-A separate, top-level `fixtures/` directory holds the test bed for the
-v2.0.0 upgrade dry-run ([#1166](https://github.com/sbpp/sourcebans-pp/issues/1166)).
-It lives outside `web/` on purpose — these snapshots are several MB of
-production-shaped data, and the release packaging bundles `web/` only
-into the public tarball; an operator pulling
-`sourcebans-pp-X.Y.Z.webpanel-only.tar.gz` should not pay the bandwidth
-for a maintainer test bed.
-
-```
-fixtures/upgrade/
-├── README.md                 # Operator walkthrough — load snapshot, walk migrator.
-├── 1.7.0.sql.gz              # Fresh-install snapshot of 1.7.0 + scale data.
-├── 1.8.4.sql.gz              # Fresh-install snapshot of 1.8.4 + scale data.
-├── config.1.7.0.php          # Matching config.php, secrets redacted.
-├── config.1.8.4.php          # Matching config.php, secrets redacted.
-└── capture/
-    ├── capture.sh            # Re-runnable orchestrator (pulls release tarball,
-    │                         #   spins up an ephemeral mariadb:10.11, loads
-    │                         #   struc.sql + data.sql, seeds, mariadb-dumps).
-    └── seed.php              # Deterministic PHP seeder for the scale data
-                              #   (200 admins / 5 groups / 30 servers /
-                              #   5000 bans / 500 comms / 50 protests / etc.).
-```
-
-Snapshot shape: 200 admins across 5 web groups, 30 servers across 5
-mods, 5000 bans (mix of permanent / temporary / unbanned / appealed),
-500 comm blocks, 50 protests, 80 public submissions, 200 ban comments,
-1000 banlog rows. Player names cover ASCII, Latin-1 + combining
-diacritics, Cyrillic, Greek, BMP CJK, and 4-byte UTF-8 (emoji +
-extension B CJK) per the #1108 encoding regression — the upgrade
-dry-run validates that every migration round-trips supplementary-plane
-characters unchanged.
-
-Both snapshots converge on the same scale shape but exercise different
-points in the migration chain: the 1.7.0 snapshot starts at
-`config.version = 704` (long walk: migrations 705 → 801 → 802 → 803 →
-804 → 805); the 1.8.4 snapshot starts at `705` (short walk:
-801 → 802 → 803 → 804 → 805). The capture script generalises to new
-1.x patch releases via a small `case "$1" in 1.8.5) ... ;;` arm in
-`release_url()` / `release_archive_format()` / `release_top_dir()`.
-See `fixtures/upgrade/README.md` for the full procedure.
-
 ## SourceMod plugins (`game/addons/sourcemod/`)
 
 ```
@@ -760,14 +714,6 @@ Five CI jobs run on every PR (`.github/workflows/`):
 | ts-check       | `ts-check.yml`        | `./sbpp.sh ts-check`         | `tsc --checkJs` over `web/scripts/`.          |
 | API contract   | `api-contract.yml`    | `./sbpp.sh composer api-contract` | Regenerates `scripts/api-contract.js` and fails on diff. |
 | Playwright E2E | `e2e.yml`             | `./sbpp.sh e2e`              | Browser-level smoke / flows / a11y against the dev stack (chromium + mobile-chromium). |
-
-A sixth gate is the **upgrade harness** (`./sbpp.sh upgrade-e2e`,
-#1269), which drives the v1.x → v2.0 upgrade against the snapshot
-fixtures from #1268 and asserts schema/settings parity + idempotency
-+ post-upgrade login. **It is not yet wired into CI** (deferred
-follow-up — it ships locally first, gates per PR once it stabilises
-on both fixtures); see "Upgrade harness" under `web/tests/e2e/` for
-the contract.
 
 PHPStan is at level 5 (bumped from 4 in #1101); raise one step at a
 time, never jump 5→7. The baseline at `web/phpstan-baseline.neon`
@@ -885,74 +831,6 @@ The accompanying `upload-screenshots.sh` pushes the gallery to the
 `screenshots-archive` orphan branch under `screenshots/pr-<N>/<slug>/`
 (unique per PR + slice, so the orphan branch never has merge
 conflicts) and prints a markdown table for `gh pr comment`.
-
-### Upgrade harness (`web/tests/e2e/specs/upgrade/`)
-
-A separate Playwright sub-suite (#1269) drives the v1.x → v2.0
-upgrade end-to-end against the snapshot fixtures from #1268
-([`fixtures/upgrade/`](fixtures/upgrade/)). It supersedes the
-"agent walks the upgrade path manually" scope of #1166 with
-mechanical, deterministic evidence.
-
-```
-web/tests/e2e/specs/upgrade/
-├── README.md                              # Spec-level contract + locked-drift policy
-├── upgrade-1.7.0.spec.ts                  # 1.7.0 → 2.0 happy-path spec (the slice)
-├── _helpers/
-│   ├── copyFixture.ts                     # stash/restore live web/config.php
-│   ├── upgradeDb.ts                       # TS bridge to upgrade-db.php (reset/install/dump/render-config)
-│   ├── upgradeFlow.ts                     # /upgrade.php + /updater/index.php drivers + log parser
-│   ├── parity.ts                          # pure-string schema/settings diff routines
-│   └── scripts/upgrade-db.php             # PHP CLI driver — refuses any DB not prefixed `sourcebans_upgrade_`
-└── __snapshots__/1.7.0/
-    ├── README.md                          # Locked-drift policy
-    └── schema.diff                        # Locked baseline; empty = full parity
-```
-
-The harness has a **different DB lifecycle** from the rest of the
-e2e suite — instead of sharing `sourcebans_e2e`, it creates
-throwaway `sourcebans_upgrade_<slug>` schemas per spec, loads the
-gz fixture into one and a fresh `struc.sql + data.sql` install into
-the other (the parity reference), drives the upgrade flow against
-the first, and diffs the two. Mixing this with the regular suite's
-truncate-and-reseed contract would silently corrupt it; the
-`upgrade-db.php` helper enforces the boundary by refusing any DB
-name that doesn't start with `sourcebans_upgrade_`.
-
-Each spec asserts on six dimensions (numbered to match the
-`test.step` headings in `upgrade-1.7.0.spec.ts`):
-
-1. **`/upgrade.php` SB_SECRET_KEY append + idempotency.** First
-   request appends the constant; second request short-circuits.
-2. **`/updater/index.php` migration walk.** The exact list of
-   migrations applied is locked (e.g. 1.7.0 walks
-   `705 → 801 → 802 → 803 → 804 → 805`); a future `store.json`
-   reshuffle silently widening the set fails the spec.
-3. **Idempotent re-run.** A second updater pass applies zero
-   migrations and lands on the "Installation up-to-date" marker.
-4. **Schema parity.** Post-upgrade schema diffed against a fresh
-   `struc.sql + data.sql` install, with the diff snapshotted under
-   `__snapshots__/<version>/schema.diff`. Empty file = full parity
-   (target state); non-empty = known drift documented in the PR's
-   deferred-followups list. New drift fails the spec.
-5. **Settings parity.** Every key in fresh `data.sql`'s
-   `:prefix_settings` exists post-upgrade. Values are deliberately
-   not compared (per-install random keys / `config.version`
-   legitimately differ).
-6. **Login smoke.** `admin / admin` logs into the upgraded panel
-   end-to-end.
-
-The wrapper `./sbpp.sh upgrade-e2e` is the only meaningful invocation
-path: it stages the fixtures into the container's `/tmp/`, grants
-the panel user `CREATE`/`DROP` on `*.*` (mirroring `e2e`'s
-`sourcebans_e2e` pattern), pins `--project=chromium` so two
-browser projects don't race on the panel's config.php, stashes +
-restores `web/config.php` around the run (trap-protected so a
-SIGINT doesn't leak the upgrade-DB pointer into the dev panel),
-and defaults to `--grep @upgrade` so it doesn't drag in the
-regular suite. The spec auto-skips if staging is absent so a
-casual `./sbpp.sh e2e --grep <broad>` accidentally pulling it in
-is harmless.
 
 ## Legacy patterns being phased out
 
