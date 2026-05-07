@@ -66,8 +66,31 @@ don't leak onto the host filesystem.
 ./sbpp.sh db-dump backup.sql      # mysqldump to host file
 ./sbpp.sh db-load fixtures.sql    # pipe a SQL file into the DB
 ./sbpp.sh db-reset                # drop just the DB volume and re-seed
+./sbpp.sh db-seed                 # populate the dev DB with realistic synthetic data
 ./sbpp.sh rebuild                 # `--no-cache` rebuild of the web image
 ```
+
+`db-seed` lights up every data-driven panel surface — banlist + commslist
+beyond a single page, dashboard "Latest …" cards, the drawer's history /
+comments / notes panes, admin moderation queues (submissions and
+protests), admin audit log, multiple groups/admins/servers — without
+touching `data.sql` / `struc.sql` (the install path stays minimal).
+Idempotent: every run truncates the synthesizer-owned tables first and
+re-seeds. Deterministic given `--seed=<int>` so two devs see the same
+data; pinned default seed in code. Three scale tiers:
+
+```sh
+./sbpp.sh db-seed                 # default scale (~200 bans, ~100 comms)
+./sbpp.sh db-seed --scale=small   # ~30 bans, fast iteration
+./sbpp.sh db-seed --scale=large   # ~2000 bans, pagination / perf
+./sbpp.sh db-seed --seed=42       # alternate RNG seed
+```
+
+Refusal guard: the seeder strictly refuses any `DB_NAME` other than
+`sourcebans`, so the PHPUnit DB (`sourcebans_test`) and Playwright DB
+(`sourcebans_e2e`) cannot be wiped by accident. The Synthesizer source
+is at `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`); the CLI
+driver is `web/tests/scripts/seed-dev-db.php`.
 
 ## Quality gates
 

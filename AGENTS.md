@@ -72,6 +72,9 @@ Run from the repo root. All commands are idempotent.
 ./sbpp.sh db-dump [file]           # mysqldump to host
 ./sbpp.sh db-load <file>           # pipe a dump into the dev DB
 ./sbpp.sh db-reset                 # drop the DB volume + re-seed
+./sbpp.sh db-seed [args]           # populate dev DB with realistic synthetic data
+                                   # --scale=small|medium|large (default medium),
+                                   # --seed=<int> (default pinned in code, deterministic)
 ./sbpp.sh rebuild                  # --no-cache rebuild of the web image
 ```
 
@@ -274,6 +277,38 @@ Playwright E2E specifics:
   `Database::query()` rewrites the placeholder. Never inline the prefix.
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
+
+### Dev DB seeder (`./sbpp.sh db-seed`)
+
+`./sbpp.sh db-seed` populates the dev DB (`sourcebans`) with a deterministic,
+realistic synthetic dataset across bans, comms, servers, admins, groups,
+submissions, protests, comments, notes, banlog, and the audit log. Use it
+when you need the panel surfaces (banlist, dashboard, drawer, moderation
+queues, audit log) to render with real-looking data instead of empty
+states. Acceptance audits and screenshot work both depend on it.
+
+- Lives at `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`); CLI
+  driver at `web/tests/scripts/seed-dev-db.php`. Both are dev-only —
+  the synthesizer refuses any `DB_NAME` other than `sourcebans`, so
+  `sourcebans_test` / `sourcebans_e2e` stay untouched and the E2E
+  suite (which builds its own rows per spec) is unaffected.
+- Idempotent: every run truncates the synth-owned tables first
+  (preserving `sb_settings` / `sb_mods` from `data.sql`), re-seeds the
+  CONSOLE + `admin/admin` rows, then inserts the synthetic dataset.
+- Deterministic given a fixed `--seed` — `mt_srand($seed)` pins PHP's
+  RNG so two devs hit the same names/reasons/timestamps. Default seed
+  is `Synthesizer::DEFAULT_SEED` (pinned in code).
+- Three tiers: `--scale=small` (~30 bans, fast iteration), `medium`
+  (default, ~200 bans), `large` (~2000 bans for pagination / perf).
+- Do NOT reach for this from `Fixture::truncateAndReseed()` (the e2e
+  hot path) — those two diverge by design. The synthesizer is for
+  manual dev / screenshot work; the e2e fixture stays minimal so each
+  spec controls what rows it needs.
+- Anti-pattern: extending `data.sql` with synthetic rows (it's the
+  fresh-install seed and would force a paired updater migration for
+  every change) or shipping the seeder in a release tarball (the
+  refusal guard is the safety mechanism; see `seed-dev-db.php`'s
+  docblock for the full risk model).
 
 ### Updater migrations
 
@@ -660,6 +695,7 @@ audit (#1207) locked in. New CTAs:
 | Seed `sb_settings` rows for fresh installs | `web/install/includes/sql/data.sql`                  |
 | Add a one-off DB upgrade for existing installs | `web/updater/data/<N>.php` + `web/updater/store.json` |
 | Test fixtures                          | `web/tests/Fixture.php`, `web/tests/ApiTestCase.php`     |
+| Populate the dev DB with realistic synthetic data (banlist > 1 page, drawer history, moderation queues, audit log) | `./sbpp.sh db-seed` → `web/tests/scripts/seed-dev-db.php` (CLI driver) → `web/tests/Synthesizer.php` (`Sbpp\Tests\Synthesizer`). Dev-only: refuses any `DB_NAME` other than `sourcebans` (so `sourcebans_test` / `sourcebans_e2e` stay untouched). Idempotent; deterministic given a fixed `--seed` (default `Synthesizer::DEFAULT_SEED`). Does NOT share plumbing with `Fixture::truncateAndReseed` — the e2e hot path stays minimal. |
 | API wire-format snapshots              | `web/tests/api/__snapshots__/<topic>/<scenario>.json`    |
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |

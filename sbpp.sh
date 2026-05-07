@@ -34,6 +34,11 @@ Database:
   db-dump [file]  Dump the DB to file (default: dump-YYYYMMDD-HHMMSS.sql).
   db-load <file>  Load a SQL dump into the dev DB.
   db-reset        Drop the DB volume and re-seed (faster than full reset).
+  db-seed [args]  Populate the dev DB with realistic synthetic data.
+                  Accepts --scale=small|medium|large (default medium) and
+                  --seed=<int> (default pinned in code). Idempotent: every
+                  run truncates synth-owned tables first. Refuses to touch
+                  any DB other than `sourcebans`.
 
 URLs once "up":
   http://localhost:${SBPP_WEB_PORT:-8080}        SourceBans++ panel  (admin / admin)
@@ -224,6 +229,24 @@ case "$cmd" in
         dc rm -fsv db
         docker volume rm "$(basename "$PWD")_dbdata" 2>/dev/null || true
         dc up -d db
+        ;;
+    db-seed)
+        # Dev-only synthetic data populator (#1238). Mirrors `e2e`'s
+        # auto-bring-up shim so `./sbpp.sh db-seed` works from a fresh
+        # checkout. The CLI driver lives at
+        # `web/tests/scripts/seed-dev-db.php`; the synthesizer is
+        # `Sbpp\Tests\Synthesizer`. Always truncate+reseed by design;
+        # `--scale=small|medium|large` and `--seed=<int>` are the only
+        # accepted flags. DB_NAME is pinned to `sourcebans` (the dev
+        # panel's DB) — the driver refuses any other value, including
+        # `sourcebans_test` / `sourcebans_e2e`.
+        if [ -z "$(dc ps -q web 2>/dev/null)" ]; then dc up -d; fi
+        dc exec \
+            -e DB_HOST=db -e DB_PORT=3306 \
+            -e DB_NAME=sourcebans \
+            -e DB_USER=sourcebans -e DB_PASS=sourcebans \
+            -e DB_PREFIX=sb -e DB_CHARSET=utf8mb4 \
+            web php /var/www/html/web/tests/scripts/seed-dev-db.php "$@"
         ;;
     -h|--help|help|"")
         usage
