@@ -79,7 +79,7 @@
                 <span data-online-count>&middot; <span data-online-num>0</span> online</span>
             </p>
         </div>
-        {if $IN_SERVERS_PAGE && $access_bans}
+        {if $IN_SERVERS_PAGE && $access_bans && $server_list|@count > 0}
             <p class="text-xs text-muted m-0"
                role="note"
                data-testid="servers-rcon-hint"
