@@ -177,6 +177,94 @@ final class GroupsTest extends ApiTestCase
         $this->assertSame('name', $env['error']['field']);
     }
 
+    /**
+     * Issue #1272: high-bit web permission flags round-trip as POSITIVE
+     * integers through `groups.edit` → DB → page-handler read.
+     *
+     * `ADMIN_UNBAN_GROUP_BANS = 2^31` and `ALL_WEB = 4294966783` both
+     * sit at or above the signed Int32 boundary; the pre-fix schema
+     * (`flags INT(10)` SIGNED) silently stored them as negative
+     * bit-pattern equivalents, and the JS save path sent them as
+     * negatives because of `|=`'s ToInt32 coercion. With the JS fix
+     * (`>>> 0` in page_admin_groups_list.tpl) and the schema fix
+     * (`INT UNSIGNED` in struc.sql + the paired updater migration),
+     * the entire round-trip stays positive.
+     *
+     * The `(int)` cast in `api_groups_edit` is a no-op on 64-bit PHP
+     * for values up to 2^32 - 1; the column type widens the storage
+     * range so the bit pattern is preserved on read-back.
+     *
+     * @return iterable<string, array{0: int}>
+     */
+    public static function highBitFlagProvider(): iterable
+    {
+        yield 'ADMIN_UNBAN_GROUP_BANS (2^31)' => [2147483648];
+        yield 'ALL_WEB (every web flag)'      => [4294966783];
+        yield 'high+low mix (bit 31 + bit 0)' => [2147483648 + 1];
+    }
+
+    /**
+     * @dataProvider highBitFlagProvider
+     */
+    public function testEditRoundTripsHighBitFlagsAsPositiveIntegers(int $flags): void
+    {
+        $this->loginAsAdmin();
+        $this->api('groups.add', [
+            'name' => 'HighBit', 'type' => '1', 'bitmask' => 0, 'srvflags' => '',
+        ]);
+        $gid = (int) $this->row('groups', ['name' => 'HighBit'])['gid'];
+
+        $env = $this->api('groups.edit', [
+            'gid'       => $gid,
+            'web_flags' => $flags,
+            'srv_flags' => '',
+            'type'      => 'web',
+            'name'      => 'HighBit',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $row = $this->row('groups', ['gid' => $gid]);
+        $this->assertNotNull($row);
+        // The DB layer returns INT UNSIGNED columns as PHP ints on 64-bit
+        // PHP. Cast through `(int)` to normalise (PDO occasionally hands
+        // back strings depending on driver/server flags).
+        $stored = (int) $row['flags'];
+        $this->assertSame(
+            $flags,
+            $stored,
+            "high-bit flag must round-trip as a positive integer, got $stored"
+        );
+        $this->assertGreaterThanOrEqual(
+            0,
+            $stored,
+            'flags column must store the unsigned interpretation, not a negative bit-pattern'
+        );
+    }
+
+    /**
+     * Same round-trip via `groups.add` (the bitmask is stored on
+     * insert, not just on edit). Locks in that the schema widening
+     * also covers the create path — the JS bug surfaced both surfaces
+     * (the master-detail editor was the primary repro, but a third-
+     * party theme posting `groups.add` with an unsigned `bitmask` would
+     * hit the same negative-storage trap on the pre-fix schema).
+     */
+    public function testAddStoresHighBitFlagAsPositiveInteger(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('groups.add', [
+            'name'     => 'AllWeb',
+            'type'     => '1',
+            'bitmask'  => 4294966783,
+            'srvflags' => '',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $row = $this->row('groups', ['name' => 'AllWeb']);
+        $this->assertNotNull($row);
+        $this->assertSame(4294966783, (int) $row['flags']);
+    }
+
     public function testEditServerGroupOverridesInsertAndUpdate(): void
     {
         $this->loginAsAdmin();

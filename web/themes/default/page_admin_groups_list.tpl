@@ -355,16 +355,43 @@
 // Vanilla JS; binds to the form's submit + the per-row delete buttons.
 // All wire calls go through the existing `sb.api.call(Actions.Groups*)`
 // surface; no new API handlers are introduced for this redesign.
+
+/**
+ * OR-fold every checked `input[name="flags[]"]` under `root` and return
+ * the unsigned 32-bit interpretation of the result.
+ *
+ * JS bitwise operators (`|=`, `&`, `^`, `<<`, `>>`) coerce both operands
+ * to signed Int32 via `ToInt32` (ECMAScript), so the moment any flag
+ * value has bit 31 set (e.g. `ADMIN_UNBAN_GROUP_BANS = 2147483648`,
+ * `ALL_WEB = 4294966783` — see `web/configs/permissions/web.json`) the
+ * OR-fold result is interpreted as negative. The `>>> 0` (unsigned
+ * right-shift by zero) idiom converts that signed Int32 back to its
+ * unsigned 32-bit interpretation in one of the few JS-spec-blessed
+ * paths to a true uint32. Issue #1272.
+ *
+ * Both compute sites — `SbppGroupsSave` (the actual save path) AND the
+ * grid's `change` listener (the live preview) — go through this helper
+ * so they can never drift on the coercion rule.
+ *
+ * @param {Element} root
+ * @returns {number} Unsigned 32-bit OR-sum of the checked flags.
+ */
+function SbppFoldFlags(root) {
+    var bitmask = 0;
+    var checks = root.querySelectorAll('input[name="flags[]"]:checked');
+    for (var i = 0; i < checks.length; i++) {
+        var input = /** @type {HTMLInputElement} */ (checks[i]);
+        bitmask |= Number(input.dataset.flagValue || input.value);
+    }
+    return bitmask >>> 0;
+}
+
 function SbppGroupsSave(event) {
     event.preventDefault();
     var form = event.target;
     var gid = Number(form.querySelector('input[name="gid"]').value);
     var name = form.querySelector('input[name="name"]').value;
-    var bitmask = 0;
-    var checks = form.querySelectorAll('input[name="flags[]"]:checked');
-    for (var i = 0; i < checks.length; i++) {
-        bitmask |= Number(checks[i].value);
-    }
+    var bitmask = SbppFoldFlags(form);
     sb.api.call(Actions.GroupsEdit, {
         gid: gid,
         name: name,
@@ -409,13 +436,7 @@ function SbppServerGroupsDelete(gid, name, type) {
         var target = /** @type {HTMLInputElement|null} */ (event.target);
         if (!target || !target.matches || !target.matches('input[name="flags[]"]')) return;
 
-        var bitmask = 0;
-        var checks = grid.querySelectorAll('input[name="flags[]"]:checked');
-        for (var i = 0; i < checks.length; i++) {
-            var input = /** @type {HTMLInputElement} */ (checks[i]);
-            bitmask |= Number(input.dataset.flagValue || input.value);
-        }
-        preview.textContent = bitmask + ' bitmask';
+        preview.textContent = SbppFoldFlags(grid) + ' bitmask';
     });
 })();
 {/literal}

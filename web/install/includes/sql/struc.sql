@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_admins` (
   `gid` int(6) NOT NULL,
   `email` varchar(128) NOT NULL,
   `validate` varchar(128) NULL default NULL,
-  `extraflags` int(10) NOT NULL,
+  `extraflags` int(10) UNSIGNED NOT NULL,
   `immunity` int(10) NOT NULL default '0',
   `srv_group` varchar(128) default NULL,
   `srv_flags` varchar(64) default NULL,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS `{prefix}_groups` (
   `gid` int(6) NOT NULL auto_increment,
   `type` smallint(6) NOT NULL default '0',
   `name` varchar(128) character set {charset} NOT NULL default 'unnamed',
-  `flags` int(10) NOT NULL,
+  `flags` int(10) UNSIGNED NOT NULL,
   PRIMARY KEY  (`gid`)
 ) ENGINE=InnoDB DEFAULT CHARSET={charset};
 
