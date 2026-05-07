@@ -26,7 +26,11 @@ class SteamAuthHandler
     {
         $pattern = "/^https:\/\/steamcommunity\.com\/openid\/id\/(7[0-9]{15,25}+)$/";
 
-        if (!preg_match($pattern, $this->openid->data['openid_claimed_id']))
+        // Issue #1273: $this->openid->data is $_POST / $_GET (mixed), and
+        // PHPStan can't see that LightOpenID::validate() guarantees
+        // openid_claimed_id is set on a real Steam round-trip — cast at
+        // the call site to keep the bounded-diff strategy from openid.php.
+        if (!preg_match($pattern, (string) ($this->openid->data['openid_claimed_id'] ?? '')))
             return false;
 
         preg_match($pattern, $this->openid->identity, $match);
