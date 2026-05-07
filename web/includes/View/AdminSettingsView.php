@@ -50,6 +50,16 @@ final class AdminSettingsView extends View
         public readonly int $auth_maxlife,
         public readonly int $auth_maxlife_remember,
         public readonly int $auth_maxlife_steam,
+        // #1232: human-readable echoes for the three minute-typed
+        // auth lifetime fields. The wire format stays minutes (these
+        // are display-only spans next to each `<input type="number">`);
+        // the strings come from `Sbpp\Util\Duration::humanizeMinutes()`
+        // and are mirrored client-side by the page-tail JS so the echo
+        // updates as the operator types. First paint is server-rendered
+        // so the page works without JS.
+        public readonly string $auth_maxlife_human,
+        public readonly string $auth_maxlife_remember_human,
+        public readonly string $auth_maxlife_steam_human,
         public readonly int $config_bans_per_page,
         public readonly array $config_smtp,
         public readonly string $config_mail_from_email,

@@ -394,38 +394,56 @@ if ($section === 'themes') {
     ];
 
     $dashText = (string) Config::get('dash.intro.text');
+    /*
+     * #1232: server-rendered first paint for the per-input duration
+     * echo on the Authentication fieldset. The minute-typed integers
+     * stay as the wire-format source of truth (the SourceMod plugin
+     * reads `auth.maxlife*` in minutes too); these `_human` props are
+     * the operator-readable strings ("≈ 7 days" / "1 hour" / etc.)
+     * the template emits in muted spans next to each input. The
+     * page-tail JS re-implements the same formula so the echo stays
+     * live as the operator types — see the matching `humanizeMinutes`
+     * in `page_admin_settings_settings.tpl`.
+     */
+    $authMaxlife         = (int) Config::get('auth.maxlife');
+    $authMaxlifeRemember = (int) Config::get('auth.maxlife.remember');
+    $authMaxlifeSteam    = (int) Config::get('auth.maxlife.steam');
+
     Renderer::render($theme, new AdminSettingsView(
-        can_web_settings:          $perms['can_web_settings'],
-        can_owner:                 $perms['can_owner'],
-        active_section:            $section,
-        config_title:              (string) Config::get('template.title'),
-        config_logo:               (string) Config::get('template.logo'),
-        config_min_password:       (int) MIN_PASS_LENGTH,
-        config_dateformat:         (string) Config::get('config.dateformat'),
-        config_dash_title:         (string) Config::get('dash.intro.title'),
-        config_dash_text:          $dashText,
+        can_web_settings:            $perms['can_web_settings'],
+        can_owner:                   $perms['can_owner'],
+        active_section:              $section,
+        config_title:                (string) Config::get('template.title'),
+        config_logo:                 (string) Config::get('template.logo'),
+        config_min_password:         (int) MIN_PASS_LENGTH,
+        config_dateformat:           (string) Config::get('config.dateformat'),
+        config_dash_title:           (string) Config::get('dash.intro.title'),
+        config_dash_text:            $dashText,
         // #1207 SET-1: server-rendered first paint for the live preview.
         // JS-side updates call system.preview_intro_text on input.
-        config_dash_text_preview:  \Sbpp\Markup\IntroRenderer::renderIntroText($dashText),
-        auth_maxlife:              (int) Config::get('auth.maxlife'),
-        auth_maxlife_remember:     (int) Config::get('auth.maxlife.remember'),
-        auth_maxlife_steam:        (int) Config::get('auth.maxlife.steam'),
-        config_debug:              Config::getBool('config.debug'),
-        enable_submit:             Config::getBool('config.enablesubmit'),
-        enable_protest:            Config::getBool('config.enableprotest'),
-        enable_commslist:          Config::getBool('config.enablecomms'),
-        protest_emailonlyinvolved: Config::getBool('protest.emailonlyinvolved'),
-        dash_lognopopup:           Config::getBool('dash.lognopopup'),
-        config_default_page:       (int) Config::get('config.defaultpage'),
-        config_bans_per_page:      (int) SB_BANS_PER_PAGE,
-        banlist_hideadmname:       Config::getBool('banlist.hideadminname'),
-        banlist_nocountryfetch:    Config::getBool('banlist.nocountryfetch'),
-        banlist_hideplayerips:     Config::getBool('banlist.hideplayerips'),
-        bans_customreason:         $customReasons,
-        config_smtp:               $smtpTuple,
-        config_smtp_verify_peer:   Config::getBool('smtp.verify_peer'),
-        config_mail_from_email:    (string) Config::get('config.mail.from_email'),
-        config_mail_from_name:     (string) Config::get('config.mail.from_name'),
+        config_dash_text_preview:    \Sbpp\Markup\IntroRenderer::renderIntroText($dashText),
+        auth_maxlife:                $authMaxlife,
+        auth_maxlife_remember:       $authMaxlifeRemember,
+        auth_maxlife_steam:          $authMaxlifeSteam,
+        auth_maxlife_human:          \Sbpp\Util\Duration::humanizeMinutes($authMaxlife),
+        auth_maxlife_remember_human: \Sbpp\Util\Duration::humanizeMinutes($authMaxlifeRemember),
+        auth_maxlife_steam_human:    \Sbpp\Util\Duration::humanizeMinutes($authMaxlifeSteam),
+        config_debug:                Config::getBool('config.debug'),
+        enable_submit:               Config::getBool('config.enablesubmit'),
+        enable_protest:              Config::getBool('config.enableprotest'),
+        enable_commslist:            Config::getBool('config.enablecomms'),
+        protest_emailonlyinvolved:   Config::getBool('protest.emailonlyinvolved'),
+        dash_lognopopup:             Config::getBool('dash.lognopopup'),
+        config_default_page:         (int) Config::get('config.defaultpage'),
+        config_bans_per_page:        (int) SB_BANS_PER_PAGE,
+        banlist_hideadmname:         Config::getBool('banlist.hideadminname'),
+        banlist_nocountryfetch:      Config::getBool('banlist.nocountryfetch'),
+        banlist_hideplayerips:       Config::getBool('banlist.hideplayerips'),
+        bans_customreason:           $customReasons,
+        config_smtp:                 $smtpTuple,
+        config_smtp_verify_peer:     Config::getBool('smtp.verify_peer'),
+        config_mail_from_email:      (string) Config::get('config.mail.from_email'),
+        config_mail_from_name:       (string) Config::get('config.mail.from_name'),
     ));
 }
 

@@ -21,6 +21,11 @@
             $config_min_password, $config_dateformat,
             $config_dash_title, $config_dash_text, $auth_maxlife,
             $auth_maxlife_remember, $auth_maxlife_steam,
+            $auth_maxlife_human, $auth_maxlife_remember_human,
+            $auth_maxlife_steam_human (#1232 — server-rendered first
+            paint for the per-input duration echoes; the page-tail JS
+            mirrors `Sbpp\Util\Duration::humanizeMinutes()` so the
+            spans update live as the operator types),
             $config_debug, $enable_submit, $enable_protest,
             $enable_commslist, $protest_emailonlyinvolved,
             $dash_lognopopup, $config_default_page,
@@ -179,6 +184,37 @@
                                 <span class="settings-fieldset__hint">Session token lifetimes, measured in minutes. Set a value to <code>0</code> to disable a sign-in path.</span>
                             </legend>
                             <div class="settings-fieldset__body space-y-5">
+                                {*
+                                    #1232: per-input duration echo.
+
+                                    Each input gets a `data-duration-input`
+                                    marker attribute and an adjacent muted
+                                    span keyed by `data-duration-echo-for=
+                                    "<input-id>"`. The span carries
+                                    `aria-live="polite"` so screen-reader
+                                    users hear the conversion as they edit.
+
+                                    The span is server-rendered with the
+                                    `*_human` props from `AdminSettingsView`
+                                    (populated by
+                                    `Sbpp\Util\Duration::humanizeMinutes()`
+                                    in admin.settings.php) so the page works
+                                    without JS. The page-tail
+                                    `<script>` re-implements the same
+                                    formula and updates the span on every
+                                    `input` event — see the IIFE near the
+                                    bottom of this template.
+
+                                    The span sits between the input and the
+                                    `.settings-fieldset__help` paragraph.
+                                    On desktop the input is clamped at
+                                    18rem (`.settings-fieldset__input`)
+                                    so the inline span flows next to it
+                                    on the same line; on mobile (<=768px)
+                                    the input expands to 100% and the
+                                    span wraps below — both shapes are
+                                    fine because the span is short.
+                                *}
                                 <div data-testid="setting-row" data-key="auth.maxlife">
                                     <label class="label" for="auth_maxlife">Default sign-in</label>
                                     <input class="input settings-fieldset__input"
@@ -186,7 +222,11 @@
                                            id="auth_maxlife"
                                            name="auth_maxlife"
                                            value="{$auth_maxlife}"
+                                           data-duration-input
                                            aria-describedby="auth_maxlife_help">
+                                    <span class="text-muted text-xs"
+                                          data-duration-echo-for="auth_maxlife"
+                                          aria-live="polite">{$auth_maxlife_human}</span>
                                     <p class="settings-fieldset__help"
                                        id="auth_maxlife_help"
                                        data-testid="setting-help-auth.maxlife">
@@ -200,7 +240,11 @@
                                            id="auth_maxlife_remember"
                                            name="auth_maxlife_remember"
                                            value="{$auth_maxlife_remember}"
+                                           data-duration-input
                                            aria-describedby="auth_maxlife_remember_help">
+                                    <span class="text-muted text-xs"
+                                          data-duration-echo-for="auth_maxlife_remember"
+                                          aria-live="polite">{$auth_maxlife_remember_human}</span>
                                     <p class="settings-fieldset__help"
                                        id="auth_maxlife_remember_help"
                                        data-testid="setting-help-auth.maxlife.remember">
@@ -214,7 +258,11 @@
                                            id="auth_maxlife_steam"
                                            name="auth_maxlife_steam"
                                            value="{$auth_maxlife_steam}"
+                                           data-duration-input
                                            aria-describedby="auth_maxlife_steam_help">
+                                    <span class="text-muted text-xs"
+                                          data-duration-echo-for="auth_maxlife_steam"
+                                          aria-live="polite">{$auth_maxlife_steam_human}</span>
                                     <p class="settings-fieldset__help"
                                        id="auth_maxlife_steam_help"
                                        data-testid="setting-help-auth.maxlife.steam">
@@ -567,6 +615,70 @@
             }, 200);
         });
     }
+
+    /**
+     * #1232: live "minutes -> human" echo for the Authentication
+     * fieldset. Mirrors `Sbpp\Util\Duration::humanizeMinutes()` (PHP)
+     * so the muted span next to each `[data-duration-input]` updates
+     * as the operator types. The first paint is server-rendered (see
+     * `$auth_maxlife_human` etc. in the template), so this block only
+     * runs when the user actually edits a value.
+     *
+     * @param {number} minutes
+     * @returns {string}
+     */
+    function humanizeMinutes(minutes) {
+        if (!Number.isFinite(minutes) || minutes <= 0) return 'disabled';
+        var n = Math.floor(minutes);
+        if (n < 60) return n === 1 ? '1 minute' : n + ' minutes';
+        if (n < 1440) {
+            if (n % 60 === 0) {
+                var h = n / 60;
+                return h === 1 ? '1 hour' : h + ' hours';
+            }
+            var hStr = trimZero(n / 60);
+            return '\u2248 ' + hStr + ' ' + (hStr === '1' ? 'hour' : 'hours');
+        }
+        if (n % 1440 === 0) {
+            var d = n / 1440;
+            return d === 1 ? '1 day' : d + ' days';
+        }
+        var dStr = trimZero(n / 1440);
+        return '\u2248 ' + dStr + ' ' + (dStr === '1' ? 'day' : 'days');
+    }
+
+    /**
+     * Format a number to one decimal and drop a trailing `.0` so values
+     * that round to a whole number render without a redundant decimal.
+     * Mirrors the PHP helper's `trimZero()`.
+     *
+     * @param {number} value
+     * @returns {string}
+     */
+    function trimZero(value) {
+        var s = (Math.round(value * 10) / 10).toFixed(1);
+        return s.charAt(s.length - 1) === '0' && s.charAt(s.length - 2) === '.'
+            ? s.slice(0, -2)
+            : s;
+    }
+
+    var durationInputs = /** @type {NodeListOf<HTMLInputElement>} */ (
+        document.querySelectorAll('[data-duration-input]')
+    );
+    durationInputs.forEach(function (input) {
+        var echo = /** @type {HTMLElement|null} */ (
+            document.querySelector('[data-duration-echo-for="' + input.id + '"]')
+        );
+        if (!echo) return;
+        input.addEventListener('input', function () {
+            // Empty input -> treat as 0 (matches the "disabled" sentinel
+            // the PHP helper returns; the `<input type=number>` clears
+            // to "" rather than "0" on backspace).
+            var raw = input.value.trim();
+            var n = raw === '' ? 0 : parseInt(raw, 10);
+            echo.textContent = humanizeMinutes(Number.isNaN(n) ? 0 : n);
+        });
+    });
 })();
 {/literal}
 </script>
