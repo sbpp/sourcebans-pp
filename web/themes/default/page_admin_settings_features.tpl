@@ -26,11 +26,6 @@
         - Save button: data-testid="settings-save".
 *}
 <div class="p-6">
-    <div class="mb-6">
-        <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
-        <p class="text-sm text-muted m-0 mt-2">Optional features and integrations.</p>
-    </div>
-
     <div class="grid gap-4" style="grid-template-columns:14rem 1fr;align-items:start">
         <nav aria-label="Settings sections" role="tablist">
             <a class="sidebar__link" href="?p=admin&amp;c=settings&amp;section=settings"
@@ -60,6 +55,17 @@
         </nav>
 
         <div>
+            {*
+                #1261: page heading lives inside the right-column
+                <div> so the sidebar's first row sits flush with the
+                top of the section — see sibling
+                page_admin_settings_settings.tpl for the rationale.
+            *}
+            <div class="mb-6">
+                <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Settings</h1>
+                <p class="text-sm text-muted m-0 mt-2">Optional features and integrations.</p>
+            </div>
+
             {if NOT $can_web_settings}
                 <div class="card">
                     <div class="card__body">
