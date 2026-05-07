@@ -1264,6 +1264,20 @@ details.queue-row > summary > .row-actions {
   .page-toc__link    { transition: none; }
 }
 
+/* Page-padding inset for the cross-template ToC shell. Mirrors the
+   .page-section rule (1.5rem all-around, 1400px cap) so admin-admins
+   and admin-bans match the visual rhythm of every other admin page
+   #1240 wrapped — the sibling fix missed these two because they ride
+   `.page-toc-shell` instead of `.page-section`. Declared at the base
+   level (not inside the desktop @media below) so the inset applies
+   at every viewport, including the <1024px accordion shape. The
+   desktop media-query block adds `display: grid` etc. on top — both
+   sets of properties merge cleanly via the cascade. (#1260) */
+.page-toc-shell {
+  padding: 1.5rem;
+  max-width: 1400px;
+}
+
 /* Desktop layout — anchor sidebar floats next to the content column.
    The sidebar is `position: sticky`, scoped to the shell, so it stays
    pinned beneath the topbar (top: 4rem) while the user scrolls
