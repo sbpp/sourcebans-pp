@@ -86,6 +86,13 @@
                             <div class="queue-row__date">
                                 {$protest.datesubmitted|escape}
                             </div>
+                            {* #1229 — Remove drops the inline danger color and
+                               is gated behind a click-again-to-confirm step
+                               (see the inline JS below) so a single misfire
+                               no longer silently archives the protest. The
+                               protest is recoverable from the archived
+                               protests page if the operator wants to restore
+                               it. *}
                             <div class="row-actions">
                                 {if $permission_editban}
                                     <button type="button"
@@ -94,9 +101,8 @@
                                             data-action="protest-archive"
                                             data-pid="{$protest.pid}"
                                             data-key="{if $protest.authid != ''}{$protest.authid|escape}{else}{$protest.ip|escape}{/if}"
-                                            data-archiv="1"
-                                            style="color:var(--danger)">
-                                        Remove
+                                            data-archiv="1">
+                                        <span data-confirm-label>Remove</span>
                                     </button>
                                 {/if}
                                 <a class="btn btn--ghost btn--sm"
@@ -201,40 +207,121 @@
     </section>
 {/if}
 {* Inline action wiring — Remove dispatches Actions.ProtestsRemove with
-   archiv=1. Both protest templates listen for `protest-archive` so the
-   handler is shared; the archive-template adds a `protest-archive-toggle`
-   variant for restore/delete to keep the two click handlers independent. *}
+   archiv=1. Only this template listens for `protest-archive`; the
+   archived-protests template uses `protest-archive-toggle` for
+   restore (archiv=2) and delete (archiv=0).
+
+   #1229 — `protest-archive` is gated behind a click-again-to-confirm
+   step instead of `window.confirm()`. The first click arms the button
+   (label flips to "Click to confirm", `data-pending="true"` flag set,
+   3s revert timer); the second click within that window actually
+   archives. This replaces the browser-native dialog (which the audit
+   flagged as both intrusive and easily dismissed) without expanding
+   the toast API.
+
+   No `// @ts-check` here because the file is rendered by Smarty;
+   ts-check only runs against `.js` sources in `web/scripts`. The
+   shape mirrors `page_admin_bans_submissions.tpl`. *}
 {literal}
 <script>
 (function () {
     'use strict';
-    function api() { return (window.sb && window.sb.api) || null; }
-    function actions() { return window.Actions || null; }
+
+    /** How long a click-armed Remove button waits for the second click. */
+    var PENDING_TIMEOUT_MS = 3000;
+
+    /** @returns {{call: (a:string,p?:object)=>Promise<any>}|null} */
+    function api()     { return (window.sb && window.sb.api) || null; }
+    /** @returns {Record<string,string>|null} */
+    function actions() { return /** @type {any} */ (window).Actions || null; }
     function toast(kind, title, body) {
         if (window.sb && window.sb.message && window.sb.message[kind]) {
             window.sb.message[kind](title, body || '');
         }
     }
+
+    /** @type {WeakMap<HTMLElement, number>} */
+    var pendingTimers = new WeakMap();
+
+    /**
+     * Is this Remove button currently armed (one click landed; waiting
+     * for the second within PENDING_TIMEOUT_MS).
+     * @param {HTMLElement} btn
+     * @returns {boolean}
+     */
+    function isPending(btn) {
+        return btn.getAttribute('data-pending') === 'true';
+    }
+
+    /**
+     * Move the button into the "click again to confirm" state. Caches
+     * the original label on the inner `[data-confirm-label]` span so
+     * disarm() can restore it byte-for-byte; falls back to the button
+     * itself if the span isn't present (defensive — the template ships
+     * the span).
+     * @param {HTMLElement} btn
+     * @returns {void}
+     */
+    function arm(btn) {
+        var labelEl = /** @type {HTMLElement} */ (btn.querySelector('[data-confirm-label]') || btn);
+        if (labelEl.getAttribute('data-original-label') === null) {
+            labelEl.setAttribute('data-original-label', labelEl.textContent || '');
+        }
+        labelEl.textContent = 'Click to confirm';
+        btn.setAttribute('data-pending', 'true');
+        btn.setAttribute('aria-label', 'Click again within 3 seconds to confirm removal');
+        var prev = pendingTimers.get(btn);
+        if (prev) window.clearTimeout(prev);
+        var t = window.setTimeout(function () { disarm(btn); }, PENDING_TIMEOUT_MS);
+        pendingTimers.set(btn, t);
+    }
+
+    /**
+     * Restore the original label and clear the pending state + revert
+     * timer.
+     * @param {HTMLElement} btn
+     * @returns {void}
+     */
+    function disarm(btn) {
+        var labelEl = /** @type {HTMLElement} */ (btn.querySelector('[data-confirm-label]') || btn);
+        var orig = labelEl.getAttribute('data-original-label');
+        if (orig !== null) labelEl.textContent = orig;
+        btn.removeAttribute('data-pending');
+        btn.removeAttribute('aria-label');
+        var t = pendingTimers.get(btn);
+        if (t !== undefined) {
+            window.clearTimeout(t);
+            pendingTimers.delete(btn);
+        }
+    }
+
     document.addEventListener('click', function (e) {
-        var t = e.target;
+        var t = /** @type {Element|null} */ (e.target);
         if (!t || !t.closest) return;
-        var btn = t.closest('[data-action="protest-archive"]');
+        var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action="protest-archive"]'));
         if (!btn) return;
         e.preventDefault();
+        // First click on a non-armed button → arm it and bail. The
+        // archive call only fires on the second click within
+        // PENDING_TIMEOUT_MS; otherwise the revert timer disarms and
+        // the operator hasn't lost the protest.
+        if (!isPending(btn)) {
+            arm(btn);
+            return;
+        }
+        disarm(btn);
         var pid = Number(btn.dataset.pid);
-        var key = btn.dataset.key || ('protest #' + pid);
-        var archiv = btn.dataset.archiv || '1';
-        var msg;
-        if (archiv === '2') msg = 'Restore the ban protest for "' + key + '" from the archive?';
-        else if (archiv === '1') msg = 'Move the ban protest for "' + key + '" to the archive?';
-        else msg = 'Delete the ban protest for "' + key + '"?';
-        if (!window.confirm(msg)) return;
+        // This template only fires archiv=1 (archive a live protest).
+        // The archived-protests template uses a separate
+        // `protest-archive-toggle` action for restore (archiv=2) and
+        // delete (archiv=0), so the dead-code branches that handled
+        // those values here have been removed.
         var a = api(), A = actions();
         if (!a || !A || !Number.isFinite(pid)) return;
-        btn.disabled = true;
-        a.call(A.ProtestsRemove, { pid: pid, archiv: archiv }).then(function (r) {
+        /** @type {HTMLButtonElement} */ (btn).disabled = true;
+        a.call(A.ProtestsRemove, { pid: pid, archiv: '1' }).then(function (r) {
             if (!r || r.ok === false) {
-                btn.disabled = false;
+                /** @type {HTMLButtonElement} */ (btn).disabled = false;
                 toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;
             }
@@ -242,7 +329,7 @@
             if (node && node.parentNode) node.parentNode.removeChild(node);
             var counter = document.getElementById('protcount');
             if (counter) counter.textContent = String(Math.max(0, Number(counter.textContent) - 1));
-            toast('success', 'Done', 'Protest updated.');
+            toast('success', 'Protest archived', 'Restore from the archived protests page if needed.');
         });
     });
 })();
