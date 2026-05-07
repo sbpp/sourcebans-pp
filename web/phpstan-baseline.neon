@@ -529,12 +529,6 @@ parameters:
 			path: sb_debug_connection.php
 
 		-
-			message: '#^Parameter \#1 \$array of function array_pop is passed by reference, so it expects variables only\.$#'
-			identifier: argument.byRef
-			count: 1
-			path: updater/Updater.php
-
-		-
 			message: '#^Variable \$this might not be defined\.$#'
 			identifier: variable.undefined
 			count: 2
