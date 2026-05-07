@@ -30,7 +30,28 @@
         </div>
 
         {if $web_group_count == 0}
-            <div class="card"><div class="card__body"><p class="text-muted m-0">No web admin groups exist yet. Use the <strong>Add a group</strong> tab to create one.</p></div></div>
+            {* #1228 + empty-state unification: first-run state. The CTA
+               is gated on `permission_addgroup` (ADMIN_OWNER |
+               ADMIN_ADD_GROUP) — the same flag the dispatcher gates the
+               `Add a group` form on — so a user without that flag sees
+               the body copy without the link they couldn't follow. *}
+            <div class="empty-state" data-testid="admin-groups-empty-web" data-filtered="false">
+                <span class="empty-state__icon" aria-hidden="true">
+                    <i data-lucide="users-round" style="width:18px;height:18px"></i>
+                </span>
+                <h2 class="empty-state__title">No web admin groups yet</h2>
+                <p class="empty-state__body">Web admin groups bundle panel permissions for a set of admins. Create one to assign multiple admins the same flags at once.</p>
+                {if $permission_addgroup}
+                    <div class="empty-state__actions">
+                        <a class="btn btn--primary btn--sm"
+                           href="?p=admin&amp;c=groups#add-group"
+                           data-testid="admin-groups-empty-web-add">
+                            <i data-lucide="plus" style="width:13px;height:13px"></i>
+                            Add a web admin group
+                        </a>
+                    </div>
+                {/if}
+            </div>
         {else}
         <div class="grid gap-4 admin-groups-master-detail" style="grid-template-columns:minmax(16rem,1fr) 2fr">
             {* Left rail: clickable group list. The per-row member count
@@ -155,7 +176,27 @@
         </div>
 
         {if $server_admin_group_count == 0}
-            <div class="card"><div class="card__body"><p class="text-muted m-0">No server admin groups defined.</p></div></div>
+            {* #1228 + empty-state unification: first-run state. Same
+               `permission_addgroup` gate as the web-admin-groups empty
+               above — the dispatcher only allows `groups.add` for
+               admins with `ADMIN_OWNER | ADMIN_ADD_GROUP`. *}
+            <div class="empty-state" data-testid="admin-groups-empty-server-admin" data-filtered="false">
+                <span class="empty-state__icon" aria-hidden="true">
+                    <i data-lucide="shield-check" style="width:18px;height:18px"></i>
+                </span>
+                <h2 class="empty-state__title">No server admin groups yet</h2>
+                <p class="empty-state__body">Server admin groups carry SourceMod char-flags and immunity. Create one to grant in-game admin powers to a set of admins.</p>
+                {if $permission_addgroup}
+                    <div class="empty-state__actions">
+                        <a class="btn btn--primary btn--sm"
+                           href="?p=admin&amp;c=groups#add-group"
+                           data-testid="admin-groups-empty-server-admin-add">
+                            <i data-lucide="plus" style="width:13px;height:13px"></i>
+                            Add a server admin group
+                        </a>
+                    </div>
+                {/if}
+            </div>
         {else}
             <div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))">
                 {foreach from=$server_group_list item="group" name="server_admin_group"}
@@ -235,7 +276,25 @@
         </div>
 
         {if $server_group_count == 0}
-            <div class="card"><div class="card__body"><p class="text-muted m-0">No server groups defined.</p></div></div>
+            {* #1228 + empty-state unification: first-run state. Same
+               `permission_addgroup` gate as the two empties above. *}
+            <div class="empty-state" data-testid="admin-groups-empty-server" data-filtered="false">
+                <span class="empty-state__icon" aria-hidden="true">
+                    <i data-lucide="server-cog" style="width:18px;height:18px"></i>
+                </span>
+                <h2 class="empty-state__title">No server groups yet</h2>
+                <p class="empty-state__body">Server groups bundle game servers together so you can assign admins to many servers at once. Create one to start grouping your servers.</p>
+                {if $permission_addgroup}
+                    <div class="empty-state__actions">
+                        <a class="btn btn--primary btn--sm"
+                           href="?p=admin&amp;c=groups#add-group"
+                           data-testid="admin-groups-empty-server-add">
+                            <i data-lucide="plus" style="width:13px;height:13px"></i>
+                            Add a server group
+                        </a>
+                    </div>
+                {/if}
+            </div>
         {else}
             <div class="grid gap-3" style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))">
                 {foreach from=$server_list item="group" name="server_group"}

@@ -15,7 +15,12 @@
 {if NOT $permission_addgroup}
     <div class="card"><div class="card__body"><p class="text-muted m-0">Access denied.</p></div></div>
 {else}
-<div class="p-6" style="max-width:48rem">
+{* #1228: `id="add-group"` is the anchor target the empty-state CTAs in
+   page_admin_groups_list.tpl jump to (`?p=admin&c=groups#add-group`).
+   The page renders both `tabcontent` divs simultaneously since #1123 D1
+   dropped the `openTab()` JS, so the fragment scrolls the user to the
+   Add form regardless of which tab they came from. *}
+<div class="p-6" id="add-group" style="max-width:48rem">
     <div class="mb-4">
         <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Create a group</h1>
         <p class="text-sm text-muted m-0 mt-2">Pick a name and a type. You can edit permission flags from the <strong>List groups</strong> tab once the group exists.</p>

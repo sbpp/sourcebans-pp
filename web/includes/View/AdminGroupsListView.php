@@ -77,6 +77,7 @@ final class AdminGroupsListView extends View
         public readonly bool $permission_editgroup,
         public readonly bool $permission_deletegroup,
         public readonly bool $permission_editadmin,
+        public readonly bool $permission_addgroup,
         public readonly int $web_group_count,
         public readonly array $web_admins,
         public readonly array $web_admins_list,

@@ -193,6 +193,7 @@ echo '<div class="tabcontent" id="List groups">';
     permission_editgroup:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS),
     permission_deletegroup:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_GROUPS),
     permission_editadmin:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
+    permission_addgroup:      $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP),
     web_group_count:          $web_group_count,
     web_admins:               $web_admins,
     web_admins_list:          $web_admins_list,
