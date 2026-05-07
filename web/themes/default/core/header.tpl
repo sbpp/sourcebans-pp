@@ -38,7 +38,22 @@
     <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
     <meta name="x-apple-data-detectors" content="false">
     <title>{$title}</title>
-    <link rel="icon" href="{$theme_url}/images/favicon.ico">
+    {*
+        Favicon set (#1235): the SVG is the primary — Chrome/Firefox/Safari
+        prefer it and the @media (prefers-color-scheme: dark) rule baked
+        into the file lightens the orange to --brand-400 (#fb923c) when
+        the OS chrome is dark, matching the dark-theme accent. The .ico
+        is the legacy fallback. apple-touch-icon-180 covers iOS home
+        screens. The two theme-color metas paint the mobile chrome
+        bar: --brand-600 (#ea580c) by default, --zinc-950 (#09090b —
+        the value html.dark resolves --bg-page to in theme.css) when
+        the OS is dark.
+    *}
+    <link rel="icon" type="image/svg+xml" href="{$theme_url}/images/favicon.svg">
+    <link rel="alternate icon" type="image/x-icon" href="{$theme_url}/images/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="{$theme_url}/images/apple-touch-icon-180.png">
+    <meta name="theme-color" content="#ea580c">
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="{$theme_url}/css/theme.css">
     <script src="./scripts/api-contract.js"></script>
     <script src="./scripts/sb.js"></script>

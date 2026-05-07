@@ -31,6 +31,6 @@ define('theme_version', "2.0.0");
 define('theme_link', "https://github.com/sbpp/sourcebans-pp");
 
 // Set the screenshot filename for your theme (must be inside your theme folder)
-// Must be:  250px wide  X 170px High
+// Must be 250×170 ratio (e.g. 640×435 at 2x).
 define('theme_screenshot', "screenshot.jpg");
 ?>
