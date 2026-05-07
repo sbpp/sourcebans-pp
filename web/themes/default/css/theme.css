@@ -620,6 +620,30 @@ input[type="checkbox"]:checked::after {
   background-repeat: no-repeat;
   background-position: center;
 }
+/* Defensive paint for the indeterminate state (review nit on #1276):
+   `appearance: none` strips the OS-native paint, so a checkbox with
+   `el.indeterminate = true` would otherwise fall back to the
+   unchecked look. No panel surface sets `.indeterminate` today —
+   only the bundled tinymce skin references the keyword — but the
+   gap is real, so paint a centered horizontal-bar glyph (mirroring
+   the `:checked` SVG approach) at the brand colour so the state
+   reads like the OS-native indeterminate. `:indeterminate` wins
+   over `:checked` on the cascade because both selectors share
+   the same specificity and this rule comes later. */
+input[type="checkbox"]:indeterminate {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+}
+input[type="checkbox"]:indeterminate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'%3E%3Cline x1='3' y1='8' x2='13' y2='8'/%3E%3C/svg%3E");
+  background-size: 75% 75%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
 input[type="checkbox"]:disabled {
   opacity: 0.5;
   cursor: not-allowed;
