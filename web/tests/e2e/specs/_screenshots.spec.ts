@@ -226,6 +226,15 @@ const ROUTES_SMOKE_ADMIN: RouteSpec[] = [
     { name: 'admin-mods',     path: '/index.php?p=admin&c=mods',      auth: true },
     { name: 'admin-comms',    path: '/index.php?p=admin&c=comms',     auth: true },
     { name: 'admin-settings', path: '/index.php?p=admin&c=settings',  auth: true },
+    // #1256: lock the Features sub-tab now that its row anatomy
+    // is unified with Settings → Main. Re-baselining
+    // `admin-settings` in the same PR is intentional — the
+    // global `input[type="checkbox"]` paint reshapes its two
+    // existing checkboxes (`config.debug`, plus the auth/token
+    // section) and any flow spec that asserts on those rows
+    // continues to use the same `data-testid="setting-row"`
+    // hooks (only the visual changes).
+    { name: 'admin-features', path: '/index.php?p=admin&c=settings&section=features', auth: true },
     { name: 'admin-audit',    path: '/index.php?p=admin&c=audit',     auth: true },
     { name: 'myaccount',      path: '/index.php?p=account',           auth: true },
 ];

@@ -13,6 +13,29 @@
     page handler (admin.settings.php) opens the shell BEFORE this
     template renders. See AGENTS.md "Sub-paged admin routes".
 
+    #1256 — row anatomy aligned with Settings → Main
+    (page_admin_settings_settings.tpl). Each toggle row is now
+    `<div data-testid="setting-row" data-key="…"> <label
+    class="flex items-center gap-2"><input><span class="text-sm
+    font-medium"></span></label> <p
+    class="settings-fieldset__help" id="…_help"
+    data-testid="setting-help-…">…</p> </div>` — the label-pair
+    shape Settings → Main uses for its inline checkboxes (e.g.
+    `config.debug`), with the description copy promoted to a
+    sibling `<p>` paragraph wired via `aria-describedby` so screen
+    readers announce it as the input's description (the same wiring
+    Settings → Main's auth/token-lifetime block — #1207 ADM-7 —
+    uses for its number inputs). The pre-#1256 inline
+    `style="border:…;border-radius:…"` was dropped: the outer
+    `.card` is the only chrome now, and the per-row borders that
+    painted the card-in-card double-bordered look are gone. Card
+    body rhythm bumped from `space-y-3` to `space-y-4` to match
+    Settings → Main's card-body spacing now that the rows have a
+    sibling paragraph beneath the label-pair. The native checkbox
+    paint is unified panel-wide via the global
+    `input[type="checkbox"]` rule in
+    `web/themes/default/css/theme.css` (also #1256).
+
     Variable contract (kept in sync by SmartyTemplateRule):
         Permission gates:
             $can_web_settings — gates the entire body.
@@ -32,6 +55,7 @@
           `admin-tab-<slug>` shape now that the chrome is shared with
           servers / mods / groups).
         - Each toggle row: data-testid="setting-row" + data-key="<key>".
+        - Each help paragraph: data-testid="setting-help-<key>" (#1256).
         - Save button: data-testid="settings-save".
 
     #1266 — outer `.p-6` removed; the page inset lives on
@@ -56,86 +80,98 @@
 
                     <div class="card">
                         <div class="card__header"><div><h3>Bans</h3><p>Public exports, KickIt, group / friend banning.</p></div></div>
-                        <div class="card__body space-y-3">
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.exportpublic">
-                                <span class="text-sm">
-                                    <span class="font-medium">Public ban export</span>
-                                    <span class="block text-xs text-muted mt-2">Lets unauthenticated visitors download the full ban list.</span>
-                                </span>
-                                <input type="checkbox" name="export_public" id="export_public"{if $export_public} checked{/if}>
-                            </label>
+                        <div class="card__body space-y-4">
+                            <div data-testid="setting-row" data-key="config.exportpublic">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="export_public" name="export_public"{if $export_public} checked{/if} aria-describedby="export_public_help">
+                                    <span class="text-sm font-medium">Public ban export</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="export_public_help" data-testid="setting-help-config.exportpublic">
+                                    Lets unauthenticated visitors download the full ban list.
+                                </p>
+                            </div>
 
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablekickit">
-                                <span class="text-sm">
-                                    <span class="font-medium">KickIt</span>
-                                    <span class="block text-xs text-muted mt-2">Auto-kick a player when their ban lands.</span>
-                                </span>
-                                <input type="checkbox" name="enable_kickit" id="enable_kickit"{if $enable_kickit} checked{/if}>
-                            </label>
+                            <div data-testid="setting-row" data-key="config.enablekickit">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_kickit" name="enable_kickit"{if $enable_kickit} checked{/if} aria-describedby="enable_kickit_help">
+                                    <span class="text-sm font-medium">KickIt</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_kickit_help" data-testid="setting-help-config.enablekickit">
+                                    Auto-kick a player when their ban lands.
+                                </p>
+                            </div>
 
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablegroupbanning">
-                                <span class="text-sm">
-                                    <span class="font-medium">Steam group banning</span>
-                                    <span class="block text-xs text-muted mt-2">
-                                        Ban every member of a Steam community group.
-                                        {if NOT $steamapi}<br><span style="color:var(--warning)">Requires a Steam Web API key in <code>config.php</code>.</span>{/if}
-                                    </span>
-                                </span>
-                                <input type="checkbox" name="enable_groupbanning" id="enable_groupbanning"{if $enable_groupbanning} checked{/if}{if NOT $steamapi} disabled{/if}>
-                            </label>
+                            <div data-testid="setting-row" data-key="config.enablegroupbanning">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_groupbanning" name="enable_groupbanning"{if $enable_groupbanning} checked{/if}{if NOT $steamapi} disabled{/if} aria-describedby="enable_groupbanning_help">
+                                    <span class="text-sm font-medium">Steam group banning</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_groupbanning_help" data-testid="setting-help-config.enablegroupbanning">
+                                    Ban every member of a Steam community group.
+                                    {if NOT $steamapi}<br><span style="color:var(--warning)">Requires a Steam Web API key in <code>config.php</code>.</span>{/if}
+                                </p>
+                            </div>
 
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablefriendsbanning">
-                                <span class="text-sm">
-                                    <span class="font-medium">Steam friends banning</span>
-                                    <span class="block text-xs text-muted mt-2">
-                                        Ban every Steam friend of a player.
-                                        {if NOT $steamapi}<br><span style="color:var(--warning)">Requires a Steam Web API key in <code>config.php</code>.</span>{/if}
-                                    </span>
-                                </span>
-                                <input type="checkbox" name="enable_friendsbanning" id="enable_friendsbanning"{if $enable_friendsbanning} checked{/if}{if NOT $steamapi} disabled{/if}>
-                            </label>
+                            <div data-testid="setting-row" data-key="config.enablefriendsbanning">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_friendsbanning" name="enable_friendsbanning"{if $enable_friendsbanning} checked{/if}{if NOT $steamapi} disabled{/if} aria-describedby="enable_friendsbanning_help">
+                                    <span class="text-sm font-medium">Steam friends banning</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_friendsbanning_help" data-testid="setting-help-config.enablefriendsbanning">
+                                    Ban every Steam friend of a player.
+                                    {if NOT $steamapi}<br><span style="color:var(--warning)">Requires a Steam Web API key in <code>config.php</code>.</span>{/if}
+                                </p>
+                            </div>
 
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enableadminrehashing">
-                                <span class="text-sm">
-                                    <span class="font-medium">Auto admin rehash</span>
-                                    <span class="block text-xs text-muted mt-2">Push admin/group changes to servers immediately.</span>
-                                </span>
-                                <input type="checkbox" name="enable_adminrehashing" id="enable_adminrehashing"{if $enable_adminrehashing} checked{/if}>
-                            </label>
+                            <div data-testid="setting-row" data-key="config.enableadminrehashing">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_adminrehashing" name="enable_adminrehashing"{if $enable_adminrehashing} checked{/if} aria-describedby="enable_adminrehashing_help">
+                                    <span class="text-sm font-medium">Auto admin rehash</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_adminrehashing_help" data-testid="setting-help-config.enableadminrehashing">
+                                    Push admin/group changes to servers immediately.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card__header"><div><h3>Login</h3><p>Sign-in surfaces exposed to admins.</p></div></div>
-                        <div class="card__body space-y-3">
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablesteamlogin">
-                                <span class="text-sm">
-                                    <span class="font-medium">Steam OpenID login</span>
-                                    <span class="block text-xs text-muted mt-2">Show "Sign in through Steam" on the login page.</span>
-                                </span>
-                                <input type="checkbox" name="enable_steamlogin" id="enable_steamlogin"{if $enable_steamlogin} checked{/if}>
-                            </label>
+                        <div class="card__body space-y-4">
+                            <div data-testid="setting-row" data-key="config.enablesteamlogin">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_steamlogin" name="enable_steamlogin"{if $enable_steamlogin} checked{/if} aria-describedby="enable_steamlogin_help">
+                                    <span class="text-sm font-medium">Steam OpenID login</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_steamlogin_help" data-testid="setting-help-config.enablesteamlogin">
+                                    Show "Sign in through Steam" on the login page.
+                                </p>
+                            </div>
 
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablenormallogin">
-                                <span class="text-sm">
-                                    <span class="font-medium">Username/password login</span>
-                                    <span class="block text-xs text-muted mt-2">Disable to require Steam login for all admins.</span>
-                                </span>
-                                <input type="checkbox" name="enable_normallogin" id="enable_normallogin"{if $enable_normallogin} checked{/if}>
-                            </label>
+                            <div data-testid="setting-row" data-key="config.enablenormallogin">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_normallogin" name="enable_normallogin"{if $enable_normallogin} checked{/if} aria-describedby="enable_normallogin_help">
+                                    <span class="text-sm font-medium">Username/password login</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_normallogin_help" data-testid="setting-help-config.enablenormallogin">
+                                    Disable to require Steam login for all admins.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card__header"><div><h3>Comments</h3><p>Visibility of admin commentary on bans / submissions.</p></div></div>
-                        <div class="card__body space-y-3">
-                            <label class="flex items-center justify-between gap-3 p-3" style="border:1px solid var(--border);border-radius:var(--radius-md)" data-testid="setting-row" data-key="config.enablepubliccomments">
-                                <span class="text-sm">
-                                    <span class="font-medium">Public admin comments</span>
-                                    <span class="block text-xs text-muted mt-2">Show admin comments on a ban to anonymous visitors.</span>
-                                </span>
-                                <input type="checkbox" name="enable_publiccomments" id="enable_publiccomments"{if $enable_publiccomments} checked{/if}>
-                            </label>
+                        <div class="card__body space-y-4">
+                            <div data-testid="setting-row" data-key="config.enablepubliccomments">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="enable_publiccomments" name="enable_publiccomments"{if $enable_publiccomments} checked{/if} aria-describedby="enable_publiccomments_help">
+                                    <span class="text-sm font-medium">Public admin comments</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="enable_publiccomments_help" data-testid="setting-help-config.enablepubliccomments">
+                                    Show admin comments on a ban to anonymous visitors.
+                                </p>
+                            </div>
                         </div>
                     </div>
 

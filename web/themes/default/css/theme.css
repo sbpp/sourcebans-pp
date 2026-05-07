@@ -564,6 +564,67 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
 .textarea { height: auto; padding: 0.625rem 0.75rem; resize: vertical; min-height: 5rem; }
 .input--with-icon { padding-left: 2rem; }
 
+/* Global checkbox paint (#1256).
+
+   Style the native checkbox so it reads at the same scale as
+   `.text-sm` row labels (~14–16px). The browser default is ~13px
+   square in Chromium, which reads as undersized against the
+   1.5rem (24px) row padding on Settings → Features and the
+   `text-sm font-medium` label-pair on Settings → Main; on a
+   settings page where the checkbox IS the action, the
+   affordance disappears at the right edge of the row.
+
+   The native `<input type="checkbox">` is retained — only the
+   paint is custom. Keyboard semantics, screen-reader announcement
+   ("checked"/"unchecked"), and the label-pair click target are
+   unchanged. The rule is global on purpose: the same paint
+   applies to Settings → Main's existing checkboxes
+   (`config.debug`), the login form's "Remember me", and any
+   future check-style affordance, so the panel converges on one
+   visual treatment.
+
+   The check glyph is an inline SVG data URL (white stroke, brand
+   background when `:checked`) so we don't ship a separate asset
+   and the rule stays self-contained. The same glyph paints in
+   both themes; the brand colour token (`--brand-600`) is themed
+   via the root variables. */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: background-color .15s, border-color .15s;
+}
+input[type="checkbox"]:hover { border-color: var(--brand-600); }
+input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[type="checkbox"]:checked {
+  background: var(--brand-600);
+  border-color: var(--brand-600);
+}
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='3 8 7 12 13 4'/%3E%3C/svg%3E");
+  background-size: 75% 75%;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+input[type="checkbox"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* File-input wrapper (#1189). The native button is hidden via `hidden`
    on the <input>; the styled <label class="btn btn--secondary"> is the
    click target, and the sibling span mirrors the chosen filename. */
