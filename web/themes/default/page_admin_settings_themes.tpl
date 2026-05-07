@@ -126,21 +126,10 @@
                                                 </span>
                                             {/if}
                                         </div>
-                                        <p class="text-xs text-muted m-0 mt-2">by {$t.author} · v{$t.version}</p>
+                                        <p class="text-xs text-muted m-0 mt-2">by {$t.author} · v{$t.version}{if $t.link != ''} · <a href="{$t.link}" target="_blank" rel="noopener" class="text-muted" title="Open theme homepage"><i data-lucide="external-link" style="width:0.75rem;height:0.75rem;vertical-align:-1px"></i> homepage</a>{/if}</p>
                                         <p class="text-xs font-mono text-faint m-0 mt-2">{$t.dir}</p>
                                     </div>
-                                    <div class="flex items-center justify-between gap-2 mt-2" style="margin-top:auto">
-                                        {if $t.link != ''}
-                                            <a class="btn btn--ghost btn--sm"
-                                               href="{$t.link}"
-                                               target="_blank"
-                                               rel="noopener"
-                                               title="Open theme homepage">
-                                                <i data-lucide="external-link"></i> Homepage
-                                            </a>
-                                        {else}
-                                            <span></span>
-                                        {/if}
+                                    <div class="flex items-center justify-end gap-2 mt-2" style="margin-top:auto">
                                         {if $can_web_settings}
                                             {if $t.active}
                                                 <button type="button" class="btn btn--secondary btn--sm" disabled aria-pressed="true">
