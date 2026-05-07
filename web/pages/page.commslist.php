@@ -809,51 +809,62 @@ if (isset($_GET['advSearch'])) {
     $advSearchString = '';
 }
 
-if ($page > 1) {
-    if (isset($_GET['c']) && $_GET['c'] == "comms") {
-        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "javascript:void(0);", "", "_self", false, $prev);
-    } else {
-        $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=commslist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
-    }
+// #1225: when the result count is zero we short-circuit to an empty
+// string. Mirrors page.banlist.php — the legacy theme reads $ban_nav
+// inside its `{if !empty($ban_nav)}` guard, and the new theme reads
+// $pagination separately (page_comms.tpl gates that block on
+// `$pagination.total > 0`). With no rows AND no filter, the empty
+// state owns the surface alone instead of being shadowed by a
+// "displaying 0 - 0 of 0 results" pagination shell.
+if ($BanCount === 0) {
+    $ban_nav = '';
 } else {
-    $prev = "";
-}
-if ($BansEnd < $BanCount) {
-    if (isset($_GET['c']) && $_GET['c'] == "comms") {
-        if (!isset($nxt)) {
-            $nxt = "";
+    if ($page > 1) {
+        if (isset($_GET['c']) && $_GET['c'] == "comms") {
+            $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "javascript:void(0);", "", "_self", false, $prev);
+        } else {
+            $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=commslist&page=" . ($page - 1) . (isset($_GET['searchText']) > 0 ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
         }
-        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "javascript:void(0);", "", "_self", false, $nxt);
     } else {
-        $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=commslist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
+        $prev = "";
     }
-} else {
-    $next = "";
-}
-
-//=================[ Start Layout ]==================================
-$ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
-
-if (strlen($prev) > 0) {
-    $ban_nav .= ' | <b>' . $prev . '</b>';
-}
-if (strlen($next) > 0) {
-    $ban_nav .= ' | <b>' . $next . '</b>';
-}
-$pages = ceil($BanCount / $BansPerPage);
-if ($pages > 1) {
-    // Issue #1113: see page.banlist.php for the layered-escape rationale.
-    $advSearchJs = htmlspecialchars(addslashes((string)($_GET['advSearch'] ?? '')), ENT_QUOTES, 'UTF-8');
-    $advTypeJs   = htmlspecialchars(addslashes((string)($_GET['advType']   ?? '')), ENT_QUOTES, 'UTF-8');
-    $ban_nav .= '&nbsp;<select onchange="changePage(this,\'C\',\'' . $advSearchJs . '\',\'' . $advTypeJs . '\');">';
-    for ($i = 1; $i <= $pages; $i++) {
-        if (isset($_GET["page"]) && $i == $_GET["page"]) {
-            $ban_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
-            continue;
+    if ($BansEnd < $BanCount) {
+        if (isset($_GET['c']) && $_GET['c'] == "comms") {
+            if (!isset($nxt)) {
+                $nxt = "";
+            }
+            $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "javascript:void(0);", "", "_self", false, $nxt);
+        } else {
+            $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=commslist&page=" . ($page + 1) . (isset($_GET['searchText']) ? "&searchText=" . urlencode($_GET['searchText']) : '' . $advSearchString));
         }
-        $ban_nav .= '<option value="' . $i . '">' . $i . '</option>';
+    } else {
+        $next = "";
     }
-    $ban_nav .= '</select>';
+
+    //=================[ Start Layout ]==================================
+    $ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
+
+    if (strlen($prev) > 0) {
+        $ban_nav .= ' | <b>' . $prev . '</b>';
+    }
+    if (strlen($next) > 0) {
+        $ban_nav .= ' | <b>' . $next . '</b>';
+    }
+    $pages = ceil($BanCount / $BansPerPage);
+    if ($pages > 1) {
+        // Issue #1113: see page.banlist.php for the layered-escape rationale.
+        $advSearchJs = htmlspecialchars(addslashes((string)($_GET['advSearch'] ?? '')), ENT_QUOTES, 'UTF-8');
+        $advTypeJs   = htmlspecialchars(addslashes((string)($_GET['advType']   ?? '')), ENT_QUOTES, 'UTF-8');
+        $ban_nav .= '&nbsp;<select onchange="changePage(this,\'C\',\'' . $advSearchJs . '\',\'' . $advTypeJs . '\');">';
+        for ($i = 1; $i <= $pages; $i++) {
+            if (isset($_GET["page"]) && $i == $_GET["page"]) {
+                $ban_nav .= '<option value="' . $i . '" selected="selected">' . $i . '</option>';
+                continue;
+            }
+            $ban_nav .= '<option value="' . $i . '">' . $i . '</option>';
+        }
+        $ban_nav .= '</select>';
+    }
 }
 
 //COMMENT STUFF

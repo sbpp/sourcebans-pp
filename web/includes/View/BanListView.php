@@ -35,6 +35,8 @@ final class BanListView extends View
      * @param int|false                           $comment        Bid being commented on, or false when not in comment-edit mode.
      * @param int                                 $page           Active pagination page (or -1 when not paginated).
      * @param array<int, array<string,mixed>>|string $othercomments  Sibling comments shown beneath the editor; "None" string when the ban has no other comments.
+     * @param list<array{sid: int, name: string}> $server_list    Enabled servers for the public filter bar's `<select name="server">` (#1226).
+     * @param array{search: string, server: string, time: string} $filters Current filter state — drives the sticky filter bar's pre-fill + active selected `<option>` (#1226).
      */
     public function __construct(
         public readonly array $ban_list,
@@ -65,10 +67,19 @@ final class BanListView extends View
         // sees the body copy without the link). Splatted from
         // `Perms::for($userbank)` in `web/pages/page.banlist.php`.
         public readonly bool $can_add_ban,
-        // #1207: detects whether the current request applied any filter
-        // (search text / advSearch / hide-inactive). Drives the
-        // first-run-vs-filtered split in the empty-state shape.
+        // #1207 + #1226: detects whether the current request applied any
+        // filter (search text / advSearch / hide-inactive / server /
+        // time). Drives the first-run-vs-filtered split in the empty-
+        // state shape.
         public readonly bool $is_filtered,
+        // #1226: public filter parity with `CommsListView`. The
+        // server list mirrors `CommsListView::$servers`; it's named
+        // `server_list` here to match the existing
+        // `box_admin_bans_search.tpl` convention so a future
+        // consolidation between the inline filter bar and the
+        // advanced-search box doesn't have to rename the property.
+        public readonly array $server_list,
+        public readonly array $filters,
     ) {
     }
 }

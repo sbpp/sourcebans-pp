@@ -251,6 +251,30 @@ html.dark .theme-toggle__moon { display: inline-block; }
   --btn-border: var(--border);
   --btn-bg-hover: var(--bg-muted);
 }
+/* #1230: stateful pressed treatment for binary toggles rendered as
+   secondary buttons — currently the public banlist + commslist
+   "Hide / Show inactive" toggle. Without this rule the icon swap
+   (eye ↔ eye-off) is the only visual cue that the list is currently
+   filtered, which reads as a one-shot action rather than a
+   sticky state. The active fill mirrors the sidebar nav's
+   `aria-current="page"` treatment (dark pill on light, brand orange
+   on dark, see CC-4 above) so binary toggles read consistently
+   across the app. The selector intentionally lands on any
+   `.btn--secondary[aria-pressed="true"]` so future toggles
+   (e.g. group-by switches, density toggles) inherit the chrome
+   without re-styling. */
+.btn--secondary[aria-pressed="true"] {
+  --btn-bg: var(--zinc-900);
+  --btn-color: white;
+  --btn-border: var(--zinc-900);
+  --btn-bg-hover: var(--zinc-800);
+}
+html.dark .btn--secondary[aria-pressed="true"] {
+  --btn-bg: var(--brand-700);
+  --btn-color: var(--on-accent, #fff);
+  --btn-border: var(--brand-700);
+  --btn-bg-hover: var(--brand-600);
+}
 /* --btn-border self-reset keeps .btn--ghost transparent even when a
    sibling modifier (.btn--secondary, etc.) had set --btn-border earlier
    in the cascade — see #1183 (icon-only ghost should never show a

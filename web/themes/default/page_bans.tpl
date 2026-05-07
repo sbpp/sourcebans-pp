@@ -71,7 +71,14 @@
       <a class="btn btn--secondary btn--sm" href="exportbans.php?type=steam" title="Export permanent SteamID bans">Export Steam</a>
       <a class="btn btn--secondary btn--sm" href="exportbans.php?type=ip" title="Export permanent IP bans">Export IP</a>
       {/if}
-      <a class="btn btn--secondary btn--sm" href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}">{$hidetext} inactive</a>
+      {* #1230: aria-pressed mirrors whether inactive bans are
+         currently being hidden ($hidetext == 'Show' means the
+         session toggle is set, i.e. the list is filtered).
+         Pair: .btn--secondary[aria-pressed="true"] in theme.css. *}
+      <a class="btn btn--secondary btn--sm"
+         aria-pressed="{if $hidetext == 'Show'}true{else}false{/if}"
+         href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}"
+         data-testid="toggle-hide-inactive">{$hidetext} inactive</a>
       {has_access flag=$smarty.const.ADMIN_ADD_BAN}
       <a class="btn btn--primary btn--sm" href="index.php?p=admin&c=bans">Add ban</a>
       {/has_access}
@@ -83,16 +90,40 @@
        ids). The form's `method=get action=index.php` mirrors the
        legacy advanced search wiring, so a no-JS browser still gets a
        working server-rendered search; banlist.js layers chip-state
-       URL sync on top of it. *}
+       URL sync on top of it.
+
+       #1226: parity with the public commslist filter bar — server +
+       time selects + Apply button alongside the existing search
+       field. The server `<option value="<sid>">` round-trips into
+       page.banlist.php's $publicFilterClauses (BA.sid = ?) and
+       composes with both the search box and the legacy advSearch
+       URL shim. The time options map to "Last N days" via the
+       BA.created >= ? predicate (mirrors page.commslist.php's
+       intent; the legacy advType=date shim stays the kitchen-sink
+       power-user tool in box_admin_bans_search.tpl). *}
   <form method="get" action="index.php" id="banlist-filters" style="position:sticky;top:3.5rem;z-index:20;background:var(--bg-page);padding:0.75rem 0;border-bottom:1px solid var(--border)">
     <input type="hidden" name="p" value="banlist">
     <div class="flex gap-3" style="flex-wrap:wrap">
       <div style="flex:1;min-width:14rem;max-width:24rem;position:relative">
         <input class="input" type="search" name="searchText" data-testid="bans-search"
-          value="{if isset($smarty.get.searchText)}{$smarty.get.searchText|escape}{/if}"
+          value="{$filters.search|escape}"
           placeholder="Player, SteamID, or IP&hellip;" aria-label="Search bans">
       </div>
-      <button class="btn btn--secondary btn--sm" type="submit">Search</button>
+      <select class="select" name="server" style="width:auto;min-width:11rem" data-testid="bans-server-filter" aria-label="Filter by server">
+        <option value="">All servers</option>
+        {foreach $server_list as $s}
+          <option value="{$s.sid}" {if $filters.server == $s.sid}selected{/if}>{$s.name|escape}</option>
+        {/foreach}
+      </select>
+      <select class="select" name="time" style="width:auto" data-testid="bans-time-filter" aria-label="Filter by time range">
+        <option value="">All time</option>
+        <option value="1d"  {if $filters.time == '1d'}selected{/if}>Today</option>
+        <option value="7d"  {if $filters.time == '7d'}selected{/if}>Last 7 days</option>
+        <option value="30d" {if $filters.time == '30d'}selected{/if}>Last 30 days</option>
+      </select>
+      <button class="btn btn--secondary btn--sm" type="submit" data-testid="bans-filter-apply">
+        <i data-lucide="filter"></i> Apply
+      </button>
     </div>
 
     <div class="flex items-center gap-2 mt-2 scroll-x" role="group" aria-label="Filter by status">

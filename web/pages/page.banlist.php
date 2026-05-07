@@ -231,6 +231,46 @@ if (isset($_SESSION["hideinactive"])) {
     $hideinactiven = "";
 }
 
+// #1226: public ?server=<sid> + ?time=<1d|7d|30d> filter parity with
+// the commslist URL surface. Both are applied as additional AND
+// predicates on top of whichever upper branch (searchText / no
+// filter / advSearch) is active, so they compose with the existing
+// search box AND with the legacy ?advType=where_banned shim.
+//
+// Mirrors the $hideinactive / $hideinactiven pattern: build two
+// fragments — `$publicFilterAnd` (` AND a = ? AND b = ?`, appended
+// to a query that already opens a WHERE) and `$publicFilterWheren`
+// (` WHERE a = ? AND b = ?`, used when no other clause has opened
+// one yet).
+$serverFilter = isset($_GET['server']) ? trim((string) $_GET['server']) : '';
+$timeFilter   = isset($_GET['time'])   ? trim((string) $_GET['time'])   : '';
+$publicFilterTimeMap = [
+    '1d'  => 86400,
+    '7d'  => 7 * 86400,
+    '30d' => 30 * 86400,
+];
+
+$publicFilterClauses = [];
+$publicFilterArgs    = [];
+$publicFilterLink    = '';
+if ($serverFilter !== '' && ctype_digit($serverFilter)) {
+    $publicFilterClauses[] = 'BA.sid = ?';
+    $publicFilterArgs[]    = (int) $serverFilter;
+    $publicFilterLink     .= '&server=' . urlencode($serverFilter);
+}
+if ($timeFilter !== '' && isset($publicFilterTimeMap[$timeFilter])) {
+    $publicFilterClauses[] = 'BA.created >= ?';
+    $publicFilterArgs[]    = time() - $publicFilterTimeMap[$timeFilter];
+    $publicFilterLink     .= '&time=' . urlencode($timeFilter);
+}
+
+$publicFilterAnd     = '';
+$publicFilterWheren  = '';
+if ($publicFilterClauses) {
+    $joined             = implode(' AND ', $publicFilterClauses);
+    $publicFilterAnd    = ' AND ' . $joined;
+    $publicFilterWheren = ' WHERE ' . $joined;
+}
 
 if (isset($_GET['searchText'])) {
     $searchText = trim($_GET['searchText']);
@@ -280,24 +320,31 @@ if (isset($_GET['searchText'])) {
   LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
   LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
   LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
-      WHERE " . $search_ips . $authidClause . " or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive . "
+      WHERE " . $search_ips . $authidClause . " or BA.name LIKE ? or BA.reason LIKE ?" . $hideinactive . $publicFilterAnd . "
    ORDER BY BA.created DESC
-   LIMIT ?,?")->resultset(array_merge($search_array, [
-        $authidParam,
-        $search,
-        $search,
-        intval($BansStart),
-        intval($BansPerPage),
-    ]));
+   LIMIT ?,?")->resultset(array_merge(
+        $search_array,
+        [$authidParam, $search, $search],
+        $publicFilterArgs,
+        [intval($BansStart), intval($BansPerPage)]
+    ));
 
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA WHERE " . $search_ips . $authidClause . " OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive)->resultset(array_merge($search_array, [
-        $authidParam,
-        $search,
-        $search,
-    ]));
-    $searchlink = "&searchText=" . urlencode($_GET["searchText"]);
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA WHERE " . $search_ips . $authidClause . " OR BA.name LIKE ? OR BA.reason LIKE ?" . $hideinactive . $publicFilterAnd)->resultset(array_merge(
+        $search_array,
+        [$authidParam, $search, $search],
+        $publicFilterArgs
+    ));
+    $searchlink = "&searchText=" . urlencode($_GET["searchText"]) . $publicFilterLink;
 } elseif (!isset($_GET['advSearch'])) {
+    // #1226: branch 2 has no upper-level WHERE; if hideinactive opened
+    // one (`$hideinactiven` = " WHERE RemoveType IS NULL") we append
+    // the public filters as " AND …", otherwise the public filters
+    // open the WHERE themselves via `$publicFilterWheren`.
+    $branch2WhereSuffix = $hideinactiven !== ''
+        ? $hideinactiven . $publicFilterAnd
+        : $publicFilterWheren;
+
     $res = $GLOBALS['PDO']->query("SELECT bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -307,15 +354,15 @@ if (isset($_GET['searchText'])) {
   LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
   LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
   LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
-  " . $hideinactiven . "
+  " . $branch2WhereSuffix . "
    ORDER BY created DESC
-   LIMIT ?,?")->resultset([
-        intval($BansStart),
-        intval($BansPerPage),
-    ]);
+   LIMIT ?,?")->resultset(array_merge(
+        $publicFilterArgs,
+        [intval($BansStart), intval($BansPerPage)]
+    ));
 
-    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_bans`" . $hideinactiven)->resultset();
-    $searchlink = "";
+    $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_bans` AS BA" . $branch2WhereSuffix)->resultset($publicFilterArgs);
+    $searchlink = $publicFilterLink;
 }
 
 $advcrit = [];
@@ -482,6 +529,15 @@ if (isset($_GET['advSearch'])) {
         $hideinactive = $hideinactiven;
     }
 
+    // #1226: branch 3 may or may not have an upper-level WHERE. The
+    // existing $where is empty iff advType resolved to a no-op
+    // (default branch in the switch above) AND $hideinactive may
+    // have been promoted to $hideinactiven by the guard right above.
+    // Pick the right form of the public-filter SQL accordingly so
+    // the trailing WHERE-vs-AND boundary stays well-formed.
+    $branch3HasWhere     = ($where !== '') || (strpos($hideinactive, 'WHERE') !== false);
+    $publicFilterBranch3 = $branch3HasWhere ? $publicFilterAnd : $publicFilterWheren;
+
     $res = $GLOBALS['PDO']->query("SELECT BA.bid ban_id, BA.type, BA.ip ban_ip, BA.authid, BA.name player_name, created ban_created, ends ban_ends, length ban_length, reason ban_reason, BA.ureason unban_reason, BA.aid, AD.gid AS gid, adminIp, BA.sid ban_server, country ban_country, RemovedOn, RemovedBy, RemoveType row_type,
 			SE.ip server_ip, AD.user admin_name, AD.gid, MO.icon as mod_icon,
 			CAST(MID(BA.authid, 9, 1) AS UNSIGNED) + CAST('76561197960265728' AS UNSIGNED) + CAST(MID(BA.authid, 11, 10) * 2 AS UNSIGNED) AS community_id,
@@ -492,16 +548,17 @@ if (isset($_GET['advSearch'])) {
   LEFT JOIN `:prefix_mods` AS MO on SE.modid = MO.mid
   LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
   " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CO ON BA.bid = CO.bid" : "") . "
-      " . $where . $hideinactive . "
+      " . $where . $hideinactive . $publicFilterBranch3 . "
    ORDER BY BA.created DESC
-   LIMIT ?,?")->resultset(array_merge($advcrit, [
-        intval($BansStart),
-        intval($BansPerPage),
-    ]));
+   LIMIT ?,?")->resultset(array_merge(
+        $advcrit,
+        $publicFilterArgs,
+        [intval($BansStart), intval($BansPerPage)]
+    ));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA
-										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CO ON BA.bid = CO.bid" : "") . " " . $where . $hideinactive)->resultset($advcrit);
-    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']);
+										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CO ON BA.bid = CO.bid" : "") . " " . $where . $hideinactive . $publicFilterBranch3)->resultset(array_merge($advcrit, $publicFilterArgs));
+    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']) . $publicFilterLink;
 }
 
 $BanCount = isset($res_count[0]['cnt']) ? (int) $res_count[0]['cnt'] : 0;
@@ -862,49 +919,61 @@ if (isset($_GET['advSearch'])) {
 //      this guards the JS-string-inside-HTML-attribute injection vector.
 //   4. Plain "Prev" / "Next" + Unicode arrows; the v2.0.0 default
 //      theme ships Lucide instead of FontAwesome.
+//   5. #1225: when the result count is zero we short-circuit to an
+//      empty string. The template's `{if !empty($ban_nav)}` guard
+//      then collapses the pagination card so the empty state owns
+//      the surface alone — otherwise a "displaying 0 - 0 of 0
+//      results" shell renders below the empty state on every fresh
+//      install.
 // ---------------------------------------------------------------------
 
-$searchTextParam = isset($_GET['searchText']) ? '&searchText=' . urlencode((string) $_GET['searchText']) : '';
-$pageQuerySuffix = $searchTextParam . $advSearchString;
+if ($BanCount === 0) {
+    $ban_nav = '';
+} else {
+    $searchTextParam = isset($_GET['searchText']) ? '&searchText=' . urlencode((string) $_GET['searchText']) : '';
+    // #1226: append the public ?server / ?time filter params so
+    // pagination links keep the active filter when navigating.
+    $pageQuerySuffix = $searchTextParam . $advSearchString . $publicFilterLink;
 
-$prev = '';
-if ($page > 1) {
-    $prevUrl = 'index.php?p=banlist&page=' . ($page - 1) . $pageQuerySuffix;
-    $prev = '<a href="' . htmlspecialchars($prevUrl, ENT_QUOTES, 'UTF-8')
-        . '" data-testid="page-prev" rel="prev" aria-label="Previous page">&laquo; prev</a>';
-}
-
-$next = '';
-if ($BansEnd < $BanCount) {
-    $nextUrl = 'index.php?p=banlist&page=' . ($page + 1) . $pageQuerySuffix;
-    $next = '<a href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8')
-        . '" data-testid="page-next" rel="next" aria-label="Next page">next &raquo;</a>';
-}
-
-$ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
-
-if ($prev !== '') {
-    $ban_nav .= ' | <b>' . $prev . '</b>';
-}
-if ($next !== '') {
-    $ban_nav .= ' | <b>' . $next . '</b>';
-}
-
-$pages = (int) ceil($BanCount / $BansPerPage);
-if ($pages > 1) {
-    // Page-jump select: vanilla inline navigation, no JS dependency.
-    // The query-suffix template (`pageQuerySuffix`) is double-escaped
-    // for the JS-string-inside-HTML-attribute boundary: addslashes
-    // for the JS string layer, htmlspecialchars(ENT_QUOTES) for the
-    // HTML attribute layer. Same defence-in-depth pattern as #1113.
-    $pageQueryJs = htmlspecialchars(addslashes($pageQuerySuffix), ENT_QUOTES, 'UTF-8');
-    $jumpHandler = "if(this.value!=='0')window.location.href='index.php?p=banlist&page='+this.value+'" . $pageQueryJs . "';";
-    $ban_nav .= '&nbsp;<select aria-label="Jump to page" onchange="' . $jumpHandler . '">';
-    for ($i = 1; $i <= $pages; $i++) {
-        $selected = (isset($_GET['page']) && (int) $_GET['page'] === $i) ? ' selected="selected"' : '';
-        $ban_nav .= '<option value="' . $i . '"' . $selected . '>' . $i . '</option>';
+    $prev = '';
+    if ($page > 1) {
+        $prevUrl = 'index.php?p=banlist&page=' . ($page - 1) . $pageQuerySuffix;
+        $prev = '<a href="' . htmlspecialchars($prevUrl, ENT_QUOTES, 'UTF-8')
+            . '" data-testid="page-prev" rel="prev" aria-label="Previous page">&laquo; prev</a>';
     }
-    $ban_nav .= '</select>';
+
+    $next = '';
+    if ($BansEnd < $BanCount) {
+        $nextUrl = 'index.php?p=banlist&page=' . ($page + 1) . $pageQuerySuffix;
+        $next = '<a href="' . htmlspecialchars($nextUrl, ENT_QUOTES, 'UTF-8')
+            . '" data-testid="page-next" rel="next" aria-label="Next page">next &raquo;</a>';
+    }
+
+    $ban_nav = 'displaying&nbsp;' . $BansStart . '&nbsp;-&nbsp;' . $BansEnd . '&nbsp;of&nbsp;' . $BanCount . '&nbsp;results';
+
+    if ($prev !== '') {
+        $ban_nav .= ' | <b>' . $prev . '</b>';
+    }
+    if ($next !== '') {
+        $ban_nav .= ' | <b>' . $next . '</b>';
+    }
+
+    $pages = (int) ceil($BanCount / $BansPerPage);
+    if ($pages > 1) {
+        // Page-jump select: vanilla inline navigation, no JS dependency.
+        // The query-suffix template (`pageQuerySuffix`) is double-escaped
+        // for the JS-string-inside-HTML-attribute boundary: addslashes
+        // for the JS string layer, htmlspecialchars(ENT_QUOTES) for the
+        // HTML attribute layer. Same defence-in-depth pattern as #1113.
+        $pageQueryJs = htmlspecialchars(addslashes($pageQuerySuffix), ENT_QUOTES, 'UTF-8');
+        $jumpHandler = "if(this.value!=='0')window.location.href='index.php?p=banlist&page='+this.value+'" . $pageQueryJs . "';";
+        $ban_nav .= '&nbsp;<select aria-label="Jump to page" onchange="' . $jumpHandler . '">';
+        for ($i = 1; $i <= $pages; $i++) {
+            $selected = (isset($_GET['page']) && (int) $_GET['page'] === $i) ? ' selected="selected"' : '';
+            $ban_nav .= '<option value="' . $i . '"' . $selected . '>' . $i . '</option>';
+        }
+        $ban_nav .= '</select>';
+    }
 }
 
 //COMMENT STUFF
@@ -974,16 +1043,41 @@ if (isset($_GET["comment"])) {
 
 unset($_SESSION['CountryFetchHndl']);
 
-// #1207: detect whether the current request is filtered (search box,
-// advanced search, hide-inactive toggle). Drives the
-// first-run-vs-filtered split in the empty-state shape — when zero
+// #1207 + #1226: detect whether the current request is filtered (search
+// box, advanced search, hide-inactive toggle, ?server, ?time). Drives
+// the first-run-vs-filtered split in the empty-state shape — when zero
 // rows AND no filter, the empty state shows "no bans recorded yet"
 // with an "Add a ban" CTA gated on can_add_ban; with a filter
 // active, it stays "No bans match those filters" + "Clear filters".
 $banlistIsFiltered =
     (isset($_GET['searchText']) && (string) $_GET['searchText'] !== '')
     || (isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== '')
-    || isset($_SESSION['hideinactive']);
+    || isset($_SESSION['hideinactive'])
+    || $publicFilterClauses !== [];
+
+// #1226: server filter dropdown — public banlist parity with the
+// commslist URL surface. Mirrors the data shape page.commslist.php
+// builds in $serversFilter + the box_admin_bans_search.tpl pattern;
+// hostnames could be resolved asynchronously via
+// sb.api.call(Actions.ServersHostPlayers) in a follow-up. The
+// pre-resolution display is `ip:port`, which is what most public
+// visitors recognise the server by anyway.
+$serverRows = $GLOBALS['PDO']->query(
+    "SELECT sid, ip, port FROM `:prefix_servers` WHERE enabled = 1 ORDER BY ip"
+)->resultset();
+$banlistServerList = [];
+foreach ($serverRows as $sr) {
+    $banlistServerList[] = [
+        'sid'  => (int) $sr['sid'],
+        'name' => (string) $sr['ip'] . ':' . (int) $sr['port'],
+    ];
+}
+
+$banlistFilters = [
+    'search' => isset($_GET['searchText']) ? (string) $_GET['searchText'] : '',
+    'server' => $serverFilter,
+    'time'   => (isset($publicFilterTimeMap[$timeFilter]) ? $timeFilter : ''),
+];
 
 Renderer::render($theme, new BanListView(
     ban_list:        $bans,
@@ -1011,4 +1105,6 @@ Renderer::render($theme, new BanListView(
     admin_postkey:   $_SESSION['banlist_postkey'],
     can_add_ban:     (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
     is_filtered:     $banlistIsFiltered,
+    server_list:     $banlistServerList,
+    filters:         $banlistFilters,
 ));
