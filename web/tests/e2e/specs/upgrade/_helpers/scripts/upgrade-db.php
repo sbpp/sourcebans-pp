@@ -164,7 +164,11 @@ function cmdInstallFresh(string $db): void
 
 function cmdDumpSchema(string $db): void
 {
-    requireDbName($db);
+    // Reads only, but a typo (`dump-schema sourcebans`) would silently
+    // dump the dev DB and produce a misleading parity diff. The
+    // refusal guard mirrors the destructive commands' shape so any
+    // dump path is also `sourcebans_upgrade_*`-only.
+    requireUpgradeDb($db);
 
     $pdo = new PDO("mysql:host=db;port=3306;dbname=$db;charset=utf8mb4", 'root', 'root', [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -237,13 +241,25 @@ function cmdDumpSchema(string $db): void
 
 function cmdDumpSettings(string $db): void
 {
-    requireDbName($db);
+    // Same refusal-guard reasoning as cmdDumpSchema: a typo
+    // (`dump-settings sourcebans`) would silently read the dev DB
+    // and produce a misleading parity comparison.
+    requireUpgradeDb($db);
 
     $pdo = new PDO("mysql:host=db;port=3306;dbname=$db;charset=utf8mb4", 'root', 'root', [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
     ]);
 
+    // Hardcoded `sb_settings` (rather than threading {prefix} → sb
+    // through this command like cmdInstallFresh does for struc/data).
+    // All current upgrade fixtures — `fixtures/upgrade/1.7.0.sql.gz`,
+    // `1.8.4.sql.gz`, plus the dev seed — ship with `DB_PREFIX=sb`,
+    // and capture.sh hardcodes the same prefix when dumping. If a
+    // future fixture ever ships with a non-default `DB_PREFIX`, lift
+    // the literal to a `--prefix=` arg (or honour the env var the
+    // wrapper already passes through) and update cmdInstallFresh's
+    // `{prefix}` substitution to match.
     $rows = $pdo->query("SELECT setting, value FROM `sb_settings` ORDER BY setting")->fetchAll();
     $map = [];
     foreach ($rows as $r) {
@@ -300,6 +316,12 @@ function cmdRenderConfig(string $configPath, string $dbName): void
     // spec would only ever exercise the "config.php is read-only"
     // fallback branch — useful coverage, but not the dominant
     // operator path the issue calls out.
+    //
+    // Dev-container-only: this code path runs under `./sbpp.sh
+    // upgrade-e2e` against the throwaway bind-mounted config.php in
+    // the dev container; production never reaches this script (the
+    // refusal guard above gates the whole command on a
+    // `sourcebans_upgrade_*` DB name).
     @chmod($configPath, 0666);
 
     // KNOWN ISSUE (#1269 follow-up candidate): Smarty's default
