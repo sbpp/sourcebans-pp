@@ -999,13 +999,25 @@ per spec, not the shared `sourcebans_e2e`. Wrapper:
   strict `top===0` assertion at scroll=`document.scrollHeight`.
 - Pinning `<aside id="drawer-root">` or `<dialog id="palette-root">`
   inside `<div class="app">` "to be consistent with the footer" → the
-  drawer is `position: fixed; inset: 0` and `<dialog>` promotes itself
-  to the top layer when `showModal()`-ed; both are floating overlays
-  whose containing block is irrelevant to layout. Nesting the drawer
-  inside `.app` would extend `.app`'s flex cross-axis to the drawer's
-  `100vh` (and break the sticky containing-block math the same way
-  the pre-#1271 footer did, just from the opposite direction). Keep
-  them as direct children of `<body>`, after `</div>` closing `.app`.
+  drawer is `position: fixed; right: 0; top: 0; height: 100%`
+  (right-pinned panel, NOT full-bleed — `inset: 0` is on the
+  separate `.drawer-backdrop`); `<dialog>` promotes itself to the
+  top layer when `showModal()`-ed. Both are conceptually top-layer
+  overlays — they're not part of the app shell's layout, so they
+  belong outside `.app` for the same reason a Linear/Notion modal
+  isn't nested inside the page header. The defensiveness reason is
+  CSS containing-block scoping: a future refactor that declares
+  `transform`, `filter`, `perspective`, `contain: layout`, or
+  `will-change: transform` on `.app` (or any descendant in the
+  drawer's would-be ancestry) RE-ESTABLISHES THE CONTAINING BLOCK
+  for `position: fixed` descendants per CSS Position Module §3.2 —
+  the drawer would suddenly be positioned relative to that
+  ancestor instead of the viewport, painting at the wrong size /
+  in the wrong place. Keeping the drawer as a direct `<body>`
+  child sidesteps that landmine. The structural-fix concern that
+  motivated #1271 (sidebar's sticky CB short of the document)
+  doesn't apply — `position: fixed` removes the drawer from flow,
+  so it cannot grow `.app`'s height.
 
 ## Where to find what
 

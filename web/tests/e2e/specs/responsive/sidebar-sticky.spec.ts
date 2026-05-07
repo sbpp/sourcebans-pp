@@ -160,16 +160,17 @@ test.describe('responsive: sidebar sticky at desktop', () => {
             `sidebar must remain pinned at viewport y=0 at scroll=document.scrollHeight (got ${bottomTop})`,
         ).toBeLessThanOrEqual(1);
 
-        // Belt-and-suspenders: the brand area (`.sidebar__brand` —
-        // the "S SourceBans++" header at the top of the sidebar) is
-        // the user-visible canary for the pre-fix regression. If
-        // sticky drifts up by `footerHeight`, the brand is the first
-        // thing to scroll off the top. Assert the brand is in the
-        // viewport at scroll=BOTTOM. (`toBeInViewport()` requires
-        // ≥0% intersection — together with the strict `top` check
-        // above, this catches both "sidebar fully off-screen" and
-        // "sidebar pinned but brand cut off" failure modes.)
-        await expect(page.locator('.sidebar__brand')).toBeInViewport();
+        // Belt-and-suspenders: the brand area
+        // (`[data-testid="sidebar-brand"]` — the "S SourceBans++"
+        // header at the top of the sidebar) is the user-visible
+        // canary for the pre-fix regression. If sticky drifts up by
+        // `footerHeight`, the brand is the first thing to scroll off
+        // the top. Assert the brand is in the viewport at
+        // scroll=BOTTOM. (`toBeInViewport()` requires ≥0%
+        // intersection — together with the strict `top` check above,
+        // this catches both "sidebar fully off-screen" and "sidebar
+        // pinned but brand cut off" failure modes.)
+        await expect(page.locator('[data-testid="sidebar-brand"]')).toBeInViewport();
 
         // First nav link is `[data-testid="nav-home"]` (always
         // rendered for any logged-in user — the navbar's "Public"
@@ -190,24 +191,38 @@ test.describe('responsive: sidebar sticky at desktop', () => {
         // Post-fix, `.app`'s `min-height: 100vh` + the footer-as-
         // last-flex-item layout collapses `docHeight` to exactly
         // `viewport` on this seed (no scroll at all). The
-        // assertion below is the conjunctive guard:
-        //   1. If a future refactor shaves `min-height: 100vh` off
-        //      `.app` and `docHeight` shrinks below `viewport`,
-        //      the sticky behaviour is still intact (sticky
-        //      degenerates to `static` on a non-scrolling page,
-        //      sidebar still at top=0).
-        //   2. If a future refactor re-introduces a small
-        //      `docHeight - viewport` gap (e.g. the audit page
-        //      grows a hero banner that's outside `.app`), this
-        //      page becomes scrollable AND the sidebar must
-        //      remain at top=0 throughout — exactly the
-        //      pre-fix bug we shipped this PR to close.
+        // bottom-walk assertion is therefore CONDITIONAL: it only
+        // fires when the page is scrollable. This catches a narrow
+        // band of regressions:
+        //   - Future refactor moves the footer back outside `.app`
+        //     while leaving `min-height: 100vh` in place →
+        //     `docHeight = viewport + footerHeight`, scroll fires,
+        //     strict `top === 0` at bottom fails.
+        //   - Future refactor adds a hero banner / docked alert /
+        //     anything that lives outside `.app` and pushes
+        //     `docHeight` above `viewport` → same shape.
+        //
+        // It does NOT catch a regression where the footer goes back
+        // outside AND `min-height: 100vh` is also shaved off so
+        // `.app` collapses to its content height (which on the
+        // bare-seed audit page can fit in 720px). That joint
+        // regression presents as `docHeight === viewport` and the
+        // bottom-walk silently no-ops here. The admin-bans guard
+        // above is the load-bearing tall-page invariant — it fires
+        // regardless of footer placement, because admin-bans is
+        // structurally taller than the viewport on its own. Treat
+        // this audit-page test as the surface-level memorial of
+        // rumblefrog's original report, not as a complete
+        // regression suite. If a future contributor wants the
+        // joint-regression case covered, they should seed a row
+        // into `:prefix_log` from the e2e `Fixture` so the audit
+        // page is reliably scrollable.
         await page.goto('/index.php?p=admin&c=audit');
         // Brand visibility is the load anchor: the Audit Log page
         // chrome carries no testid we can wait on without coupling
         // to its content, but the navbar brand is rendered on every
         // logged-in route by `core/navbar.tpl`.
-        await expect(page.locator('.sidebar__brand')).toBeVisible();
+        await expect(page.locator('[data-testid="sidebar-brand"]')).toBeVisible();
 
         const { docHeight, viewport } = await page.evaluate(() => ({
             docHeight: document.documentElement.scrollHeight,
@@ -224,10 +239,6 @@ test.describe('responsive: sidebar sticky at desktop', () => {
         });
         expect(topAtZero, `sidebar must be at viewport y=0 at scroll=0 (got ${topAtZero})`).toBe(0);
 
-        // The conditional half: if the page IS scrollable, walk to
-        // the bottom and assert sticky still holds. The pre-fix bug
-        // tripped here whenever `0 < docHeight - viewport <=
-        // footerHeight`.
         if (docHeight > viewport) {
             await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
             await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(undefined))));
@@ -240,7 +251,7 @@ test.describe('responsive: sidebar sticky at desktop', () => {
                 `sidebar must remain pinned at viewport y=0 at scroll=document.scrollHeight on the audit page (docHeight=${docHeight}, viewport=${viewport}); pre-#1271 this scroll range was entirely in the sticky-release phase (got ${topAtBottom})`,
             ).toBeGreaterThanOrEqual(-1);
             expect(topAtBottom).toBeLessThanOrEqual(1);
-            await expect(page.locator('.sidebar__brand')).toBeInViewport();
+            await expect(page.locator('[data-testid="sidebar-brand"]')).toBeInViewport();
         }
     });
 });

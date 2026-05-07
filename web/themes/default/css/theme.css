@@ -122,16 +122,31 @@ a { color: inherit; text-decoration: none; }
    `docHeight - viewport ≤ footerHeight`) the entire scroll range was
    in the release phase, which presented as "the sidebar scrolls with
    the page". The original #1271 misdiagnosed this as a flex
-   `align-items: stretch` interaction (#1278 added the
-   `align-self: flex-start` below as defensive parity); on evergreen
-   browsers explicit cross-sizes already win over `stretch`, so
-   without the structural fix in this PR `align-self` was a no-op.
-   The `align-self` declaration is RETAINED below as belt-and-
-   suspenders parity with the Pattern A inner rail (`.admin-sidebar`,
-   which uses `align-self: start` for the same reason) — a future
-   refactor that drops the explicit height, or wraps `.app` in a
-   transformed / `overflow: hidden` ancestor that breaks the sticky
-   containing block, would otherwise regress the chrome silently.
+   `align-items: stretch` interaction; #1278 added the
+   `align-self: flex-start` below on that hypothesis. Per CSS
+   Flexbox §9.4 `stretch` only operates on `auto` cross-sizes — the
+   sidebar's explicit `height: 100vh` already wins, so `align-self`
+   was a no-op without the structural fix in this PR.
+
+   The `align-self` declaration is RETAINED below for a different
+   defensive reason than the comment originally framed: it is NOT
+   parity with the Pattern A inner rail in the mechanism sense.
+   `.admin-sidebar` (line ~562) lives in a CSS *grid*
+   (`.admin-sidebar-shell` is `display: grid; align-items: start`)
+   where `align-self: start` is load-bearing — without it the grid
+   item stretches to its cell height. `.sidebar` lives in a flex
+   row with an explicit `height: 100vh` where `align-self:
+   flex-start` is a no-op as long as the explicit height is in
+   place. The defensive job `align-self: flex-start` does here is
+   guard against a future refactor that DROPS `height: 100vh` from
+   `.sidebar` — at that point flex `align-items: stretch` would
+   stretch the sidebar to `.app`'s cross-axis (often >100vh on
+   tall pages), making it taller than the viewport and killing
+   sticky's "room to operate". The other defensive concern an
+   ancestor `transform` / `overflow: hidden` setting up a new
+   sticky containing block is independent and not addressed by
+   this declaration; it's just a known landmine to watch for.
+
    At <=1024px the sidebar swaps to `position: fixed` (drawer mode
    in the Responsive block below), so the desktop sticky contract
    is the only thing this comment is asserting. */
@@ -1375,13 +1390,17 @@ details.queue-row > summary > .row-actions {
    classic "sticky footer" pattern — so the page doesn't paint
    the credit halfway up the viewport with a band of empty space
    below it. On tall pages where the column overflows, `auto`
-   resolves to 0 and the footer abuts the page content; the
-   1.25rem `padding-top` + `border-top` keep the visual
-   separation that the SET-2 separator promises. The previous
-   `margin-top: 1rem` is dropped — `auto` subsumes it on short
-   pages, and on tall pages the padding alone is enough breathing
-   room (a fixed `1rem` would just sit alongside `auto` and add
-   16px to short-page layout, pulling the footer off the bottom). */
+   resolves to 0 and the footer abuts the page content above it;
+   the 1.25rem `padding-top` + `border-top` are intentionally the
+   ONLY breathing room on tall pages now — the previous
+   `margin-top: 1rem` is dropped because the sticky-footer pattern
+   needs `auto` exclusively on this property (a margin-top can't
+   be "1rem on tall pages, auto on short pages" in a single
+   declaration), and the existing 20px padding-top above the
+   border was already enough visual separation from the SET-2
+   action rows. The structural #1271 fix would also work with
+   `padding-top: 2rem` instead of `1.25rem` if a future audit
+   wants to restore the prior 36px-total breathing room. */
 .app-footer {
   text-align: center;
   padding: 1.25rem 1rem;

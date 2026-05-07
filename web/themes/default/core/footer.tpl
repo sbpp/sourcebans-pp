@@ -31,12 +31,21 @@
     attribute mirrors the dialog's open/closed state for tests +
     CSS so selectors don't have to probe the `hidden` property.
     Both are intentionally siblings of `.app` (not nested inside)
-    because they're floating overlays — the drawer is positioned via
-    `inset:0` against the viewport and `<dialog>` already promotes to
-    the top layer when `showModal()`-ed, so their containing block is
-    irrelevant to layout. Keeping them outside `.app` also avoids the
-    drawer's `position: fixed; height: 100vh` accidentally extending
-    `.app`'s flex cross-axis.
+    because they're conceptually top-layer overlays — the drawer is
+    `position: fixed; right: 0; top: 0; height: 100%` (right-pinned
+    panel, not full-bleed; `inset: 0` is on the separate
+    `.drawer-backdrop`) and `<dialog>` promotes to the top layer
+    when `showModal()`-ed. Keeping them outside `.app` is
+    defensiveness against the CSS containing-block scoping rules:
+    a future refactor that declares `transform` / `filter` /
+    `contain: layout` on `.app` (or any descendant in the drawer's
+    would-be ancestry) would re-establish the containing block for
+    `position: fixed` descendants, suddenly positioning the drawer
+    relative to that ancestor instead of the viewport. The
+    structural-fix concern that motivated #1271 (sidebar's sticky
+    CB short of the document) does NOT apply to the drawer —
+    `position: fixed` removes the element from flow, so the drawer
+    cannot grow `.app`'s height regardless of where it nests.
 
     Legacy hooks intentionally NOT carried over from
     web/themes/default/core/footer.tpl:

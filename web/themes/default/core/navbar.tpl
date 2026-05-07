@@ -18,7 +18,16 @@
     "nav-<endpoint>" and aria-current="page" when active.
 *}
 <aside class="sidebar" id="sidebar" data-mobile-open="false">
-    <div class="sidebar__brand">
+    {* #1271 — `data-testid="sidebar-brand"` is the canonical hook for
+       the user-visible canary in the sidebar-sticky regression test
+       (`web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts`). The
+       brand is the first element to scroll off the top if sticky
+       drifts up by `footerHeight`, so anchoring the spec on this
+       testid (rather than the `.sidebar__brand` class chain) keeps
+       the assertion compliant with AGENTS.md's "Selectors must use
+       testability hooks; never CSS class chains as the primary
+       selector" rule. *}
+    <div class="sidebar__brand" data-testid="sidebar-brand">
         <div class="sidebar__brand-mark">S</div>
         <div>
             <div class="font-semibold text-sm">SourceBans++</div>
