@@ -8,24 +8,48 @@ declare(strict_types=1);
  *
  * Mirrors the request shape `?p=admin` (no `c=`): bootstraps init.php,
  * forces an admin login, and times each suspected hot-spot in
- * `web/pages/page.admin.php` against the seeded dev DB. Runs the whole
- * sequence twice and reports the warm pass — the first hit pays Smarty
- * compile cost which is unrelated to the issue (per the agent prompt's
- * "When measuring, use a warm cache" guidance).
+ * `web/pages/page.admin.php` against the seeded dev DB.
  *
- * Reports four wall-clock measurements per pass, in milliseconds:
+ * The script runs **two** measurement modes:
  *
- *   - boot:        init.php + system-functions.php boot (per-include)
- *   - counts:      the 9-COUNT subquery in `page.admin.php`
- *   - getDirSize:  recursive walk over `web/demos/`
+ *   --mode=handler-only  Times just the `page.admin.php` include — the
+ *                        narrowest unit the gate (`Sbpp\Theme::wantsLegacyAdminCounts()`)
+ *                        actually controls. Useful for "what did the
+ *                        gate save us, exactly?".
+ *
+ *   --mode=end-to-end    Times the full `?p=admin` request the way
+ *                        `web/index.php` would dispatch it: route()
+ *                        (incl. CheckAdminAccess) + the chrome (header
+ *                        / navbar / title / page / footer) + the page
+ *                        handler itself. This is the number the
+ *                        acceptance criterion (`< 500ms` end-to-end)
+ *                        is measured against, so the PR body's
+ *                        `total` column should cite this — not the
+ *                        narrower handler-only number.
+ *
+ *   --mode=both          Default. Runs both modes back-to-back so the
+ *                        PR body table has both columns from one
+ *                        invocation.
+ *
+ * For each mode we report:
+ *
+ *   - boot:        init.php + system-functions.php boot (one-shot)
+ *   - counts:      the 9-COUNT subquery (isolated micro-measurement)
+ *   - getDirSize:  recursive walk over `web/demos/` (isolated)
  *   - render:      `Renderer::render($theme, new AdminHomeView(...))`
+ *                  (isolated)
+ *   - total.default.ms / total.fork.ms — the unit-of-work time for
+ *     the chosen mode, default-theme path vs the fork opt-in (`define('theme_legacy_admin_counts', true)`).
  *
- * Plus the wall-clock for two end-to-end include passes:
+ * Why `require` (not `require_once`) inside the end-to-end timer:
+ * production PHP-FPM serves each request from a fresh PHP context so
+ * `require_once` runs the file every time. The in-process loop here
+ * uses plain `require` so each pass re-executes the chrome + page,
+ * matching the per-request cost a real worker pays. Without this the
+ * second-pass measurement would be ~0ms (require_once short-circuit)
+ * and the warm-pass mean would be a meaningless underestimate.
  *
- *   - default theme (#1270 gate skips the compute)
- *   - forked theme (`theme_legacy_admin_counts` defined → compute runs)
- *
- * Output is plain key=value lines so the PR body table can copy/paste
+ * Output is plain `key = value` lines so the PR body table can copy/paste
  * the numbers without re-formatting.
  */
 
@@ -34,12 +58,18 @@ if (PHP_SAPI !== 'cli') {
     exit(1);
 }
 
-// Mirror web/index.php's request shape so init.php's "are you on
-// localhost?" guard (line 51) doesn't bail. The dev container always
-// runs on the localhost vhost — the production guard only matters for
-// real installs sitting behind a proxy.
-$_SERVER['HTTP_HOST'] = 'localhost';
-$_SERVER['REQUEST_URI'] = '/index.php?p=admin';
+$mode = 'both';
+foreach ($argv as $arg) {
+    if (preg_match('/^--mode=(handler-only|end-to-end|both)$/', $arg, $m)) {
+        $mode = $m[1];
+    } elseif ($arg === '--help' || $arg === '-h') {
+        fwrite(STDERR, "Usage: php profile-admin-home.php [--mode=handler-only|end-to-end|both]\n");
+        exit(0);
+    }
+}
+
+$_SERVER['HTTP_HOST']      = 'localhost';
+$_SERVER['REQUEST_URI']    = '/index.php?p=admin';
 $_SERVER['REQUEST_METHOD'] = 'GET';
 
 chdir(__DIR__ . '/../../');
@@ -50,10 +80,6 @@ require_once __DIR__ . '/../../includes/system-functions.php';
 require_once __DIR__ . '/../../includes/page-builder.php';
 $bootMs = (microtime(true) - $bootStart) * 1000;
 
-// Force-login as the seeded admin (aid=1 by data.sql) without going
-// through the JWT cookie path. CUserManager(null) → no admin; we mint
-// a token in-process the way ApiTestCase does, then build a fresh
-// CUserManager from it.
 $key    = \Lcobucci\JWT\Signer\Key\InMemory::plainText(str_repeat('x', 32));
 $config = \Lcobucci\JWT\Configuration::forSymmetricSigner(new \Lcobucci\JWT\Signer\Hmac\Sha256(), $key);
 $adminAid = (int) ($GLOBALS['PDO']->query("SELECT aid FROM `:prefix_admins` WHERE user = 'admin' LIMIT 1")->single()['aid'] ?? 1);
@@ -63,9 +89,14 @@ $GLOBALS['username'] = 'admin';
 
 function timeMs(callable $fn): array
 {
-    $t0 = microtime(true);
+    $t0  = microtime(true);
     $out = $fn();
     return [(microtime(true) - $t0) * 1000, $out];
+}
+
+function avg(array $samples): float
+{
+    return array_sum($samples) / count($samples);
 }
 
 function isolatedCounts(): array
@@ -114,7 +145,11 @@ function renderOnly(array $counts, string $demosize): void
     ));
 }
 
-function fullPageInclude(): float
+/**
+ * Handler-only mode: time just the `page.admin.php` include — the
+ * narrowest unit the gate actually controls.
+ */
+function handlerOnlyInclude(): float
 {
     ob_start();
     $t0 = microtime(true);
@@ -124,26 +159,49 @@ function fullPageInclude(): float
     return $ms;
 }
 
-// --- WARM PASS ---------------------------------------------------------
-// Discard the first call's output (Smarty compile + opcache prime) so
-// the numbers reflect steady-state. Average each measurement over 5
-// passes so a one-off GC pause doesn't dominate.
-ob_start();
-fullPageInclude();
-ob_end_clean();
-
-function avg(array $samples): float
+/**
+ * End-to-end mode: time the full `?p=admin` request the way
+ * `web/index.php` dispatches it — `route()` (auth check + page dispatch)
+ * + the chrome (header / navbar / title / page / footer) + the page
+ * handler itself. Mirrors `build()` in `web/includes/page-builder.php`
+ * but uses `require` (not `require_once`) so each warm pass actually
+ * re-executes the chrome the way a fresh PHP-FPM worker would.
+ */
+function endToEndRequest(): float
 {
-    return array_sum($samples) / count($samples);
+    $_GET['p'] = 'admin';
+    unset($_GET['c']);
+
+    ob_start();
+    $t0 = microtime(true);
+
+    [$title, $page] = route('home');
+
+    require TEMPLATES_PATH . '/core/header.php';
+    require TEMPLATES_PATH . '/core/navbar.php';
+    require TEMPLATES_PATH . '/core/title.php';
+    require TEMPLATES_PATH . $page;
+    require TEMPLATES_PATH . '/core/footer.php';
+
+    $ms = (microtime(true) - $t0) * 1000;
+    ob_end_clean();
+    return $ms;
 }
+
+// Discard the first call's output so the numbers reflect steady-state
+// (Smarty compile + opcache prime are unrelated to #1270 — see the
+// agent prompt's "warm cache" guidance). Warm both paths so neither
+// pays a one-shot Smarty compile inside its own measurement window.
+ob_start(); handlerOnlyInclude(); ob_end_clean();
+ob_start(); endToEndRequest();    ob_end_clean();
 
 $N = 5;
 
-$countsSamples = [];
+$countsSamples  = [];
 $dirSizeSamples = [];
-$renderSamples = [];
-$countsResult = null;
-$demoSizeStr  = '0 B';
+$renderSamples  = [];
+$countsResult   = null;
+$demoSizeStr    = '0 B';
 for ($i = 0; $i < $N; $i++) {
     [$ms, $countsResult] = timeMs('isolatedCounts');
     $countsSamples[] = $ms;
@@ -157,30 +215,83 @@ for ($i = 0; $i < $N; $i++) {
     $renderSamples[] = $ms;
 }
 
-$totalDefaultSamples = [];
-\Sbpp\Theme::resetLegacyComputeCount();
-for ($i = 0; $i < $N; $i++) {
-    $totalDefaultSamples[] = fullPageInclude();
+/**
+ * Run a unit-of-work N times, returning [avg_ms, gated_count]. Resets
+ * the legacy-compute counter at the start so the gated_count reflects
+ * just this batch.
+ */
+function measure(callable $unitOfWork, int $n): array
+{
+    \Sbpp\Theme::resetLegacyComputeCount();
+    $samples = [];
+    for ($i = 0; $i < $n; $i++) {
+        $samples[] = $unitOfWork();
+    }
+    return [avg($samples), \Sbpp\Theme::legacyComputeCount()];
 }
-$gatedTook = \Sbpp\Theme::legacyComputeCount();
 
-define(\Sbpp\Theme::LEGACY_ADMIN_COUNTS_CONSTANT, true);
-$totalForkSamples = [];
-\Sbpp\Theme::resetLegacyComputeCount();
-for ($i = 0; $i < $N; $i++) {
-    $totalForkSamples[] = fullPageInclude();
+// PHP `define()` is process-permanent — once we flip the per-theme
+// opt-in constant on, every subsequent pass takes the legacy compute
+// branch regardless of which mode is timing. So the script schedules
+// **all default-theme passes first**, then defines the constant once,
+// then runs **all fork passes**. This keeps the default-theme numbers
+// honest without needing a separate process per mode.
+
+$handlerDefault = $handlerE2eDefault = null;
+if ($mode === 'handler-only' || $mode === 'both') {
+    [$avg, $gated] = measure('handlerOnlyInclude', $N);
+    $handlerDefault = ['avg' => $avg, 'gated' => $gated];
 }
-$forkTook = \Sbpp\Theme::legacyComputeCount();
+if ($mode === 'end-to-end' || $mode === 'both') {
+    [$avg, $gated] = measure('endToEndRequest', $N);
+    $handlerE2eDefault = ['avg' => $avg, 'gated' => $gated];
+}
+
+// Flip the opt-in constant on. From here every gated path fires.
+if (!defined(\Sbpp\Theme::LEGACY_ADMIN_COUNTS_CONSTANT)) {
+    define(\Sbpp\Theme::LEGACY_ADMIN_COUNTS_CONSTANT, true);
+}
+
+$handlerFork = $handlerE2eFork = null;
+if ($mode === 'handler-only' || $mode === 'both') {
+    [$avg, $gated] = measure('handlerOnlyInclude', $N);
+    $handlerFork = ['avg' => $avg, 'gated' => $gated];
+}
+if ($mode === 'end-to-end' || $mode === 'both') {
+    [$avg, $gated] = measure('endToEndRequest', $N);
+    $handlerE2eFork = ['avg' => $avg, 'gated' => $gated];
+}
+
+$handlerStats  = ($handlerDefault    && $handlerFork)    ? ['default' => $handlerDefault['avg'],    'fork' => $handlerFork['avg'],    'gated_default' => $handlerDefault['gated'],    'gated_fork' => $handlerFork['gated']]    : null;
+$endToEndStats = ($handlerE2eDefault && $handlerE2eFork) ? ['default' => $handlerE2eDefault['avg'], 'fork' => $handlerE2eFork['avg'], 'gated_default' => $handlerE2eDefault['gated'], 'gated_fork' => $handlerE2eFork['gated']] : null;
 
 $demoFileCount = iterator_count(new RecursiveIteratorIterator(new RecursiveDirectoryIterator(SB_DEMOS, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::LEAVES_ONLY));
-$banCount     = (int) ($GLOBALS['PDO']->query("SELECT COUNT(bid) AS n FROM `:prefix_bans`")->single()['n'] ?? 0);
-$banlogCount  = (int) ($GLOBALS['PDO']->query("SELECT COUNT(bid) AS n FROM `:prefix_banlog`")->single()['n'] ?? 0);
+$banCount    = (int) ($GLOBALS['PDO']->query("SELECT COUNT(bid) AS n FROM `:prefix_bans`")->single()['n']    ?? 0);
+$banlogCount = (int) ($GLOBALS['PDO']->query("SELECT COUNT(bid) AS n FROM `:prefix_banlog`")->single()['n'] ?? 0);
 
-printf("=== #1270 profile, %d bans / %d banlog, demos=%d files, warm pass (N=%d) ===\n", $banCount, $banlogCount, $demoFileCount, $N);
-printf("boot.ms                = %7.2f   (one-shot)\n", $bootMs);
-printf("counts.ms              = %7.2f   avg of %d   (%s)\n", avg($countsSamples), $N, json_encode($countsResult));
-printf("getDirSize.ms          = %7.2f   avg of %d   (%s)\n", avg($dirSizeSamples), $N, $demoSizeStr);
-printf("render.ms              = %7.2f   avg of %d\n", avg($renderSamples), $N);
-printf("total.default.ms       = %7.2f   avg of %d   (gated branch fired %d times across all passes)\n", avg($totalDefaultSamples), $N, $gatedTook);
-printf("total.fork.ms          = %7.2f   avg of %d   (gated branch fired %d times across all passes)\n", avg($totalForkSamples), $N, $forkTook);
-printf("default-vs-fork.delta  = %7.2f ms (saved per request)\n", avg($totalForkSamples) - avg($totalDefaultSamples));
+printf("=== #1270 profile, %d bans / %d banlog, demos=%d files, mode=%s, warm pass (N=%d) ===\n",
+    $banCount, $banlogCount, $demoFileCount, $mode, $N);
+printf("boot.ms                       = %7.2f   (one-shot)\n", $bootMs);
+printf("counts.ms (isolated)          = %7.2f   avg of %d   (%s)\n", avg($countsSamples), $N, json_encode($countsResult));
+printf("getDirSize.ms (isolated)      = %7.2f   avg of %d   (%s)\n", avg($dirSizeSamples), $N, $demoSizeStr);
+printf("render.ms (isolated)          = %7.2f   avg of %d\n", avg($renderSamples), $N);
+
+if ($handlerStats !== null) {
+    printf("\n--- handler-only (page.admin.php include only) ---\n");
+    printf("total.handler.default.ms      = %7.2f   avg of %d   (gate fired %d / %d passes)\n",
+        $handlerStats['default'], $N, $handlerStats['gated_default'], $N);
+    printf("total.handler.fork.ms         = %7.2f   avg of %d   (gate fired %d / %d passes)\n",
+        $handlerStats['fork'], $N, $handlerStats['gated_fork'], $N);
+    printf("handler.delta.ms              = %7.2f   (saved per request, fork - default)\n",
+        $handlerStats['fork'] - $handlerStats['default']);
+}
+
+if ($endToEndStats !== null) {
+    printf("\n--- end-to-end (route + chrome + page + footer; the acceptance-criterion unit) ---\n");
+    printf("total.e2e.default.ms          = %7.2f   avg of %d   (gate fired %d / %d passes)\n",
+        $endToEndStats['default'], $N, $endToEndStats['gated_default'], $N);
+    printf("total.e2e.fork.ms             = %7.2f   avg of %d   (gate fired %d / %d passes)\n",
+        $endToEndStats['fork'], $N, $endToEndStats['gated_fork'], $N);
+    printf("e2e.delta.ms                  = %7.2f   (saved per request, fork - default)\n",
+        $endToEndStats['fork'] - $endToEndStats['default']);
+}
