@@ -32,6 +32,8 @@ plugins are stable and updated less often.
 ├── web/                  PHP web panel (panel + JSON API + tests)
 ├── game/addons/          SourceMod plugin sources (.sp / configs / translations)
 ├── docker/               Local dev stack (Dockerfile, db-init, php config)
+├── fixtures/upgrade/     Pre-2.0 install snapshots + capture scripts
+│                         for the v2.0.0 upgrade dry-run (issue #1166)
 ├── docker-compose.yml    web + db (MariaDB) + adminer + mailpit
 ├── sbpp.sh               Wrapper for the dev stack and quality gates
 ├── .github/workflows/    CI gates (phpstan, test, ts-check, api-contract, release)
@@ -621,6 +623,50 @@ suppresses the false positive with `// @phpstan-ignore variable.undefined`
 above each `$this->dbs` call. See `802.php` (new `sb_settings` row) and
 `803.php` (the `config.mail.from_*` rows for #1109) for the canonical
 shape; `700.php` shows a multi-row insert and `801.php` shows DDL.
+
+### Upgrade-path fixtures (`fixtures/upgrade/`)
+
+A separate, top-level `fixtures/` directory holds the test bed for the
+v2.0.0 upgrade dry-run ([#1166](https://github.com/sbpp/sourcebans-pp/issues/1166)).
+It lives outside `web/` on purpose — these snapshots are several MB of
+production-shaped data, and the release packaging bundles `web/` only
+into the public tarball; an operator pulling
+`sourcebans-pp-X.Y.Z.webpanel-only.tar.gz` should not pay the bandwidth
+for a maintainer test bed.
+
+```
+fixtures/upgrade/
+├── README.md                 # Operator walkthrough — load snapshot, walk migrator.
+├── 1.7.0.sql.gz              # Fresh-install snapshot of 1.7.0 + scale data.
+├── 1.8.4.sql.gz              # Fresh-install snapshot of 1.8.4 + scale data.
+├── config.1.7.0.php          # Matching config.php, secrets redacted.
+├── config.1.8.4.php          # Matching config.php, secrets redacted.
+└── capture/
+    ├── capture.sh            # Re-runnable orchestrator (pulls release tarball,
+    │                         #   spins up an ephemeral mariadb:10.11, loads
+    │                         #   struc.sql + data.sql, seeds, mariadb-dumps).
+    └── seed.php              # Deterministic PHP seeder for the scale data
+                              #   (200 admins / 5 groups / 30 servers /
+                              #   5000 bans / 500 comms / 50 protests / etc.).
+```
+
+Snapshot shape: 200 admins across 5 web groups, 30 servers across 5
+mods, 5000 bans (mix of permanent / temporary / unbanned / appealed),
+500 comm blocks, 50 protests, 80 public submissions, 200 ban comments,
+1000 banlog rows. Player names cover ASCII, Latin-1 + combining
+diacritics, Cyrillic, Greek, BMP CJK, and 4-byte UTF-8 (emoji +
+extension B CJK) per the #1108 encoding regression — the upgrade
+dry-run validates that every migration round-trips supplementary-plane
+characters unchanged.
+
+Both snapshots converge on the same scale shape but exercise different
+points in the migration chain: the 1.7.0 snapshot starts at
+`config.version = 704` (long walk: migrations 705 → 801 → 802 → 803 →
+804 → 805); the 1.8.4 snapshot starts at `705` (short walk:
+801 → 802 → 803 → 804 → 805). The capture script generalises to new
+1.x patch releases via a small `case "$1" in 1.8.5) ... ;;` arm in
+`release_url()` / `release_archive_format()` / `release_top_dir()`.
+See `fixtures/upgrade/README.md` for the full procedure.
 
 ## SourceMod plugins (`game/addons/sourcemod/`)
 
