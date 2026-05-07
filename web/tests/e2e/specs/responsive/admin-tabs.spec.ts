@@ -1,30 +1,44 @@
 /**
- * Responsive: admin sub-tab strip (#1207 ADM-8).
+ * Responsive: admin sub-section nav strip (#1207 ADM-8, #1239).
  *
- * iPhone-13 viewport contract:
- *   - The intra-page admin tab strip ("Add a ban · Ban protests ·
- *     Ban submissions · Import bans" on `?p=admin&c=bans`, plus
- *     the matching strip on `&c=admins` / `&c=mods` / `&c=groups`
- *     / `&c=settings`) renders on a SINGLE horizontally-scrollable
- *     line at <=768px instead of wrapping onto multiple lines —
- *     wrapping was the source of the audit's "active-tab orange
- *     underline sits under the wrapped second line" complaint.
- *   - The active tab gets a chip-style background (orange in light,
+ * iPhone-13 viewport contract for the Pattern A admin pages
+ * (servers / mods / groups / settings — every page that still
+ * subdivides its chrome via `?section=…` URLs and the
+ * `core/admin_tabs.tpl` strip):
+ *
+ *   - The intra-page admin tab strip ("List servers · Add new server"
+ *     on `?p=admin&c=servers`, the equivalent on `&c=mods` /
+ *     `&c=groups` / `&c=settings`) renders on a SINGLE
+ *     horizontally-scrollable line at <=768px instead of wrapping
+ *     onto multiple lines — wrapping was the source of the audit's
+ *     "active-tab orange underline sits under the wrapped second
+ *     line" complaint.
+ *   - The active link gets a chip-style background (orange in light,
  *     brand-500 in dark) so the active state is visible at a glance
  *     even while the underline is partly out of view.
- *   - Every tab is reachable via `scrollIntoViewIfNeeded` once the
+ *   - Every link is reachable via `scrollIntoViewIfNeeded` once the
  *     strip is the focused scrollable surface.
  *
  * Markup contract: `core/admin_tabs.tpl` renders
  *   <div class="admin-tabs flex gap-2 mb-4 items-center">
- *     <button data-testid="admin-tab-<name>" [aria-current="page" if active]>
- *       <name>
- *     </button>
+ *     <a href="?p=admin&c=…&section=…"
+ *        data-testid="admin-tab-<slug>"
+ *        [aria-current="page" if active]>…</a>
  *     …
  *     <a class="admin-tabs__back" data-testid="admin-tab-back">…</a>
  *   </div>
  * The CSS at theme.css's #1207 block flips `flex-wrap: nowrap` +
- * `overflow-x: auto` and gives the active button the chip background.
+ * `overflow-x: auto` and gives the active link the chip background.
+ *
+ * #1239 — admin-bans is Pattern B
+ * --------------------------------
+ * `?p=admin&c=bans` no longer renders this strip at all. Pre-#1239 it
+ * carried the broken `<button onclick="openTab(...)">` chrome that
+ * stacked every pane below the strip; #1239 repaired it by riding the
+ * sticky page-level ToC pattern (admin-admins family). The bans
+ * responsive contract is locked elsewhere (`responsive/admin-queue.spec.ts`
+ * for the moderation queue, the screenshot gallery for the ToC
+ * sidebar / accordion). Don't add bans assertions to this file.
  *
  * Project gating: mobile-chromium only.
  */
@@ -39,8 +53,12 @@ test.describe('responsive: admin tab strip', () => {
         );
     });
 
-    test('admin-bans tabs render on a single scrollable line at iPhone-13 width', async ({ page }) => {
-        await page.goto('/index.php?p=admin&c=bans');
+    test('admin-servers tabs render on a single scrollable line at iPhone-13 width', async ({ page }) => {
+        // `?p=admin&c=servers` is the canonical Pattern A page after
+        // #1239 — two sections ("List servers", "Add new server")
+        // wired through `?section=list|add`. Same chrome (`admin_tabs.tpl`),
+        // just anchor links instead of broken `<button onclick>`s.
+        await page.goto('/index.php?p=admin&c=servers');
 
         // `data-testid="admin-tabs"` is the primary hook on the
         // wrapper (#1123 contract); the `.first()` is defensive
@@ -50,21 +68,20 @@ test.describe('responsive: admin tab strip', () => {
         const strip = page.locator('[data-testid="admin-tabs"]').first();
         await expect(strip).toBeVisible();
 
-        // The tabs the audit's "Add a ban · Ban protests · Ban
-        // submissions · Import bans" call-out enumerates. `Group
-        // ban` is gated on `Config::getBool('config.enablegroupbanning')`
-        // and absent by default — we don't include it here so the
-        // assert lands on the same tabs the issue documents.
-        const tabIds = ['Add a ban', 'Ban protests', 'Ban submissions', 'Import bans'];
-        const firstTab = strip.locator(`[data-testid="admin-tab-${tabIds[0]}"]`);
+        // Sections rendered for an OWNER user (the seeded admin/admin
+        // holds OWNER, so every permission-gated section is visible).
+        // Bare `?p=admin&c=servers` defaults to the `list` section per
+        // admin.servers.php's "first accessible section" fallback.
+        const tabSlugs = ['list', 'add'];
+        const firstTab = strip.locator(`[data-testid="admin-tab-${tabSlugs[0]}"]`);
         const firstBox = await firstTab.boundingBox();
-        expect(firstBox, `${tabIds[0]} tab must render a bounding box`).not.toBeNull();
+        expect(firstBox, `${tabSlugs[0]} tab must render a bounding box`).not.toBeNull();
 
-        for (const id of tabIds.slice(1)) {
-            const tab = strip.locator(`[data-testid="admin-tab-${id}"]`);
+        for (const slug of tabSlugs.slice(1)) {
+            const tab = strip.locator(`[data-testid="admin-tab-${slug}"]`);
             await expect(tab).toBeAttached();
             const box = await tab.boundingBox();
-            expect(box, `${id} tab must render a bounding box`).not.toBeNull();
+            expect(box, `${slug} tab must render a bounding box`).not.toBeNull();
             // All tabs share the same y-axis position — i.e. on a
             // single line. The pre-fix shape wrapped after ~2 tabs
             // and the second line was 30+ px lower. Allow a 2px
@@ -81,19 +98,12 @@ test.describe('responsive: admin tab strip', () => {
         expect(stripBox!.x).toBeGreaterThanOrEqual(-1);
         expect(stripBox!.x + stripBox!.width).toBeLessThanOrEqual(vw + 1);
 
-        // The strip has horizontal scroll available — `scrollWidth`
-        // is greater than `clientWidth` by definition once the tabs
-        // exceed the viewport. The pre-fix shape had `scrollWidth ==
-        // clientWidth` because flex-wrap relayed onto multiple lines
-        // (no horizontal scroll).
-        const overflow = await strip.evaluate((el) => ({
-            scrollWidth: el.scrollWidth,
-            clientWidth: el.clientWidth,
-        }));
-        expect(overflow.scrollWidth).toBeGreaterThanOrEqual(overflow.clientWidth);
-
-        // Last tab is reachable after a horizontal scroll.
-        const lastTab = strip.locator(`[data-testid="admin-tab-${tabIds[tabIds.length - 1]}"]`);
+        // Every visible link is reachable inside the viewport. With
+        // only 2 sections the strip doesn't actually overflow at
+        // iPhone-13 width, but the call still verifies that the
+        // last tab paints fully on-screen — same invariant a future
+        // 3+ section page on this strip would exercise.
+        const lastTab = strip.locator(`[data-testid="admin-tab-${tabSlugs[tabSlugs.length - 1]}"]`);
         await lastTab.scrollIntoViewIfNeeded();
         const lastBox = await lastTab.boundingBox();
         expect(lastBox, 'last tab must render a bounding box once scrolled into view').not.toBeNull();
@@ -138,14 +148,15 @@ test.describe('responsive: admin tab strip', () => {
     }
 
     test('active tab carries the chip-style background at iPhone-13 width (light)', async ({ page }) => {
-        // First tab ("Add a ban") is the default-active one when
-        // the page lands on `?p=admin&c=bans` without a `&tab=…`
-        // qualifier (AdminTabs.php's "first accessible tab is
-        // active" fallback). It carries `aria-current="page"` per
+        // The first section ("List servers", slug "list") is the
+        // default-active one when the page lands on
+        // `?p=admin&c=servers` without an explicit `&section=…` —
+        // see admin.servers.php's "first accessible section is
+        // active" fallback. It carries `aria-current="page"` per
         // admin_tabs.tpl + AdminTabs.php's `$resolvedActive` path.
         // The chip-style background at <=768px maps to `var(--brand-600)`
         // in light theme — that's the orange CTA token (#ea580c).
-        await page.goto('/index.php?p=admin&c=bans');
+        await page.goto('/index.php?p=admin&c=servers');
         await assertActiveTabIsBrandOrange(page);
     });
 
@@ -161,7 +172,7 @@ test.describe('responsive: admin tab strip', () => {
         await page.addInitScript(() => {
             try { localStorage.setItem('sbpp-theme', 'dark'); } catch (e) { /* ignore */ }
         });
-        await page.goto('/index.php?p=admin&c=bans');
+        await page.goto('/index.php?p=admin&c=servers');
         await expect(page.locator('html')).toHaveClass(/(^|\s)dark(\s|$)/);
         await assertActiveTabIsBrandOrange(page);
     });

@@ -23,10 +23,57 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-new AdminTabs([
-    ['name' => 'List groups', 'permission' => ADMIN_OWNER|ADMIN_LIST_GROUPS],
-    ['name' => 'Add a group', 'permission' => ADMIN_OWNER|ADMIN_ADD_GROUP]
-], $userbank, $theme);
+/*
+ * Section routing (#1239 — Pattern A, settings-page shape).
+ *
+ * Mirrors `admin.servers.php`: read `?section=list|add`, render one
+ * View per request, the AdminTabs strip is now anchor links instead
+ * of the broken `<button onclick="openTab(...)">` chrome (sourcebans.js
+ * was dropped at #1123 D1 and the click handler with it).
+ *
+ * Note: legacy callers reach this page with `?gid=<n>` to focus the
+ * master-detail editor on a specific group; that's a *list* concern,
+ * so it always lands on the list section.
+ */
+$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS);
+$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP);
+
+/** @var list<array{slug: string, name: string, permission: int, url: string}> $sections */
+$sections = [
+    [
+        'slug'       => 'list',
+        'name'       => 'List groups',
+        'permission' => ADMIN_OWNER | ADMIN_LIST_GROUPS,
+        'url'        => 'index.php?p=admin&c=groups&section=list',
+    ],
+    [
+        'slug'       => 'add',
+        'name'       => 'Add a group',
+        'permission' => ADMIN_OWNER | ADMIN_ADD_GROUP,
+        'url'        => 'index.php?p=admin&c=groups&section=add',
+    ],
+];
+
+$validSlugs = ['list', 'add'];
+$section    = (string) ($_GET['section'] ?? '');
+if (!in_array($section, $validSlugs, true)) {
+    if ($canList) {
+        $section = 'list';
+    } elseif ($canAdd) {
+        $section = 'add';
+    } else {
+        $section = 'list';
+    }
+}
+
+new AdminTabs($sections, $userbank, $theme, $section);
+
+if ($section === 'add') {
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
+        permission_addgroup: $canAdd,
+    ));
+    return;
+}
 
 // ------------------------------------------------------------------
 // Web admin groups (`:prefix_groups` WHERE type != 3).
@@ -184,12 +231,8 @@ if (!empty($web_group_list)) {
     ];
 }
 
-echo '<div id="admin-page-content">';
-
-// List groups tab.
-echo '<div class="tabcontent" id="List groups">';
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsListView(
-    permission_listgroups:    $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS),
+    permission_listgroups:    $canList,
     permission_editgroup:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS),
     permission_deletegroup:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_GROUPS),
     permission_editadmin:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
@@ -209,14 +252,6 @@ echo '<div class="tabcontent" id="List groups">';
     all_flags:                $all_flags,
     selected_group:           $selected_group,
 ));
-echo '</div>';
-
-// Add a group tab.
-echo '<div class="tabcontent" id="Add a group">';
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsAddView(
-    permission_addgroup: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP),
-));
-echo '</div>';
 ?>
 <script>
 // sb.accordion (sb.js) is the actual implementation, so call it directly.
@@ -225,4 +260,3 @@ echo '</div>';
 // side effect.
 sb.ready(function () { sb.accordion('tr.opener', 'div.opener', 'mainwrapper', -1); });
 </script>
-</div>

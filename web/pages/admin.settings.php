@@ -38,11 +38,10 @@ use Sbpp\View\Renderer;
  * each template carries `aria-current="page"` on the active tab. CSRF
  * is enforced globally by `route()` in includes/page-builder.php.
  *
- * Any third-party theme that forked the pre-v2.0.0 default and still
- * renders the four sub-tabs inside `.tabcontent` divs (toggled by the
- * removed `AdminTabs` / `openTab()` JS) renders each section
- * standalone here; templates that need the legacy checkbox-restore
- * helper can include it themselves.
+ * #1239 brought the rest of the admin family onto this same shape —
+ * servers / mods / groups / comms now route via `?section=…` too.
+ * See AGENTS.md "Sub-paged admin routes" for the convention; this
+ * file remains the long-standing reference.
  */
 $validSections = ['settings', 'features', 'logs', 'themes'];
 $section = (string)($_GET['section'] ?? 'settings');

@@ -39,7 +39,7 @@
             </div>
             {if $permission_addserver}
                 <a class="btn btn--primary"
-                   href="#addserver"
+                   href="index.php?p=admin&amp;c=servers&amp;section=add"
                    data-testid="server-list-add">
                     Add server
                 </a>
@@ -50,7 +50,7 @@
             <div class="card" data-testid="server-list-empty">
                 <div class="card__body text-sm text-muted">
                     No servers configured yet.
-                    {if $permission_addserver}Use the form below to add one.{/if}
+                    {if $permission_addserver}<a href="index.php?p=admin&amp;c=servers&amp;section=add">Add one</a> to get started.{/if}
                 </div>
             </div>
         {else}

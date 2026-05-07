@@ -34,7 +34,11 @@
                is gated on `permission_addgroup` (ADMIN_OWNER |
                ADMIN_ADD_GROUP) — the same flag the dispatcher gates the
                `Add a group` form on — so a user without that flag sees
-               the body copy without the link they couldn't follow. *}
+               the body copy without the link they couldn't follow.
+
+               #1239 cross-PR fix: target `&section=add` (not the
+               `#add-group` anchor) — the add-group form is now its
+               own ?section= route. *}
             <div class="empty-state" data-testid="admin-groups-empty-web" data-filtered="false">
                 <span class="empty-state__icon" aria-hidden="true">
                     <i data-lucide="users-round" style="width:18px;height:18px"></i>
@@ -44,7 +48,7 @@
                 {if $permission_addgroup}
                     <div class="empty-state__actions">
                         <a class="btn btn--primary btn--sm"
-                           href="?p=admin&amp;c=groups#add-group"
+                           href="?p=admin&amp;c=groups&amp;section=add"
                            data-testid="admin-groups-empty-web-add">
                             <i data-lucide="plus" style="width:13px;height:13px"></i>
                             Add a web admin group
@@ -179,7 +183,11 @@
             {* #1228 + empty-state unification: first-run state. Same
                `permission_addgroup` gate as the web-admin-groups empty
                above — the dispatcher only allows `groups.add` for
-               admins with `ADMIN_OWNER | ADMIN_ADD_GROUP`. *}
+               admins with `ADMIN_OWNER | ADMIN_ADD_GROUP`.
+
+               #1239 cross-PR fix: target `&section=add` (not the
+               `#add-group` anchor) — the add-group form is now its
+               own ?section= route. *}
             <div class="empty-state" data-testid="admin-groups-empty-server-admin" data-filtered="false">
                 <span class="empty-state__icon" aria-hidden="true">
                     <i data-lucide="shield-check" style="width:18px;height:18px"></i>
@@ -189,7 +197,7 @@
                 {if $permission_addgroup}
                     <div class="empty-state__actions">
                         <a class="btn btn--primary btn--sm"
-                           href="?p=admin&amp;c=groups#add-group"
+                           href="?p=admin&amp;c=groups&amp;section=add"
                            data-testid="admin-groups-empty-server-admin-add">
                             <i data-lucide="plus" style="width:13px;height:13px"></i>
                             Add a server admin group
@@ -277,7 +285,11 @@
 
         {if $server_group_count == 0}
             {* #1228 + empty-state unification: first-run state. Same
-               `permission_addgroup` gate as the two empties above. *}
+               `permission_addgroup` gate as the two empties above.
+
+               #1239 cross-PR fix: target `&section=add` (not the
+               `#add-group` anchor) — the add-group form is now its
+               own ?section= route. *}
             <div class="empty-state" data-testid="admin-groups-empty-server" data-filtered="false">
                 <span class="empty-state__icon" aria-hidden="true">
                     <i data-lucide="server-cog" style="width:18px;height:18px"></i>
@@ -287,7 +299,7 @@
                 {if $permission_addgroup}
                     <div class="empty-state__actions">
                         <a class="btn btn--primary btn--sm"
-                           href="?p=admin&amp;c=groups#add-group"
+                           href="?p=admin&amp;c=groups&amp;section=add"
                            data-testid="admin-groups-empty-server-add">
                             <i data-lucide="plus" style="width:13px;height:13px"></i>
                             Add a server group

@@ -23,11 +23,15 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-new AdminTabs([
-    ['name' => 'List admins', 'permission' => ADMIN_OWNER|ADMIN_LIST_ADMINS],
-    ['name' => 'Add new admin', 'permission' => ADMIN_OWNER|ADMIN_ADD_ADMINS],
-    ['name' => 'Overrides', 'permission' => ADMIN_OWNER|ADMIN_ADD_ADMINS]
-], $userbank, $theme);
+/*
+ * #1207 ADM-3 introduced the page-level ToC for admin-admins; #1239
+ * dropped the trailing-edge `AdminTabs([...], $userbank, $theme)` call
+ * that still rendered the broken openTab() button strip above the ToC.
+ * Navigation on this page now flows entirely through the sticky ToC
+ * sidebar (anchor jumps to `#search`, `#admins`, `#add-admin`,
+ * `#overrides`, `#add-override`) — see `web/themes/default/page_toc.tpl`
+ * and the `.page-toc-*` rules in `theme.css`.
+ */
 
 $AdminsPerPage = SB_BANS_PER_PAGE;
 $page = 1;
@@ -389,6 +393,30 @@ if ($pages > 1) {
     $admin_nav .= '</select>';
 }
 
+// Permission-filtered ToC entries for the sticky page-level ToC. We
+// build this in the FIRST template's view (the list view) because the
+// ToC partial is included from page_admin_admins_list.tpl. Sections
+// gated on a permission only appear when the dispatcher would paint
+// them — a ToC entry pointing at a section that wouldn't render is a
+// dead link by definition (see the same rule in AGENTS.md "Page-level
+// table of contents").
+$canListAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS);
+$canAddAdmins    = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS);
+$canEditAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS);
+$canDeleteAdmins = $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS);
+
+/** @var list<array{slug: string, label: string}> $tocEntries */
+$tocEntries = [];
+if ($canListAdmins) {
+    $tocEntries[] = ['slug' => 'search', 'label' => 'Search'];
+    $tocEntries[] = ['slug' => 'admins', 'label' => 'Admins list'];
+}
+if ($canAddAdmins) {
+    $tocEntries[] = ['slug' => 'add-admin', 'label' => 'Add admin'];
+    $tocEntries[] = ['slug' => 'overrides', 'label' => 'Overrides'];
+    $tocEntries[] = ['slug' => 'add-override', 'label' => 'Add override'];
+}
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsListView(
     // We pass the can_* gates explicitly rather than splatting
     // ...Perms::for($userbank): the helper's @return array<string,bool>
@@ -397,13 +425,16 @@ if ($pages > 1) {
     // Listing them by hand keeps the page handler PHPStan-clean while
     // the View itself still follows the can_* convention from
     // Sbpp\View\View's class-level docblock.
-    can_list_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS),
-    can_add_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS),
-    can_edit_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
-    can_delete_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS),
+    can_list_admins: $canListAdmins,
+    can_add_admins: $canAddAdmins,
+    can_edit_admins: $canEditAdmins,
+    can_delete_admins: $canDeleteAdmins,
     admin_count: (int) $admin_count,
     admin_nav: (string) $admin_nav,
     admins: $admin_list,
+    toc_id: 'admin-admins',
+    toc_label: 'Admins page sections',
+    toc_entries: $tocEntries,
 ));
 
 // Add Page

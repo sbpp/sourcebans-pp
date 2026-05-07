@@ -23,9 +23,9 @@
     sections at once; the visual split is purely navigational.
 
     This template is the LAST one in the cross-template
-    `.admin-admins-shell` opened by page_admin_admins_list.tpl, so the
-    matching `</div></div>` closing the `.admin-admins-content` and
-    `.admin-admins-shell` lives at the bottom of this file. Keep the
+    `.page-toc-shell` opened by page_admin_admins_list.tpl, so the
+    matching `</div></div>` closing the `.page-toc-content` and
+    `.page-toc-shell` lives at the bottom of this file. Keep the
     open/close tags paired across edits.
 *}
 <div class="tabcontent">
@@ -56,7 +56,7 @@
     <form method="post" action="index.php?p=admin&amp;c=admins" data-testid="overrides-form">
         {csrf_field}
 
-        <section id="overrides" class="admin-admins-section" data-testid="admin-admins-section-overrides" aria-labelledby="overrides-heading">
+        <section id="overrides" class="page-toc-section" data-testid="admin-admins-section-overrides" aria-labelledby="overrides-heading">
         <div class="card mb-4">
             <div class="card__header">
                 <div>
@@ -114,7 +114,7 @@
         </div>
         </section>
 
-        <section id="add-override" class="admin-admins-section" data-testid="admin-admins-section-add-override" aria-labelledby="add-override-heading">
+        <section id="add-override" class="page-toc-section" data-testid="admin-admins-section-add-override" aria-labelledby="add-override-heading">
         <div class="card mb-4">
             <div class="card__header">
                 <div>
@@ -155,5 +155,5 @@
 {/if}
 </div>
 {* Close cross-template wrappers opened in page_admin_admins_list.tpl. *}
-</div>{* /.admin-admins-content *}
-</div>{* /.admin-admins-shell *}
+</div>{* /.page-toc-content *}
+</div>{* /.page-toc-shell *}

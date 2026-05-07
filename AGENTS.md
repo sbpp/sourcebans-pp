@@ -501,35 +501,55 @@ bearing assertion that the value is already safe HTML, so:
 
 ### Page-level table of contents (dense admin pages)
 
-Some admin routes (`admin-admins`, the audit pegged `admin-bans` and
+Some admin routes (`admin-admins`, `admin-bans`, the audit pegged
 `myaccount` for the same shape) cram several semi-related surfaces
-onto one long scroll. The pattern locked in by #1207 ADM-3 is a
-sticky page-level ToC: anchor sidebar at `>=1024px`, accordion
-(`<details open>`) at `<1024px`, with each section anchored via a
-unique `id="…"` + `scroll-margin-top: 4rem` so jumps clear the
-sticky topbar (3.5rem).
+onto one long scroll. The pattern locked in by #1207 ADM-3 (and
+generalised in #1239) is a sticky page-level ToC: anchor sidebar at
+`>=1024px`, accordion (`<details open>`) at `<1024px`, with each
+section anchored via a unique `id="…"` + `scroll-margin-top: 4rem`
+so jumps clear the sticky topbar (3.5rem).
 
-`admin-admins` is the reference shape (see `admin.admins.toc.tpl`,
-the `.admin-admins-shell` / `.admin-admins-toc` / `.admin-admins-section`
-rules in `theme.css`, and the `<section id="…" class="admin-admins-section"
-data-testid="admin-admins-section-…">` wrapping in
-`page_admin_admins_list.tpl` / `page_admin_admins_add.tpl` /
-`page_admin_overrides.tpl`):
+The ToC chrome lives in the parameterized partial
+`web/themes/default/page_toc.tpl`; both adopters (admin-admins and
+admin-bans) `{include file="page_toc.tpl"}` it after assigning
+`$toc_id`, `$toc_label`, and `$toc_entries`. Per-page CSS is shared
+under generic `.page-toc-*` class names in `theme.css` (`.page-toc-shell`
+/ `.page-toc` / `.page-toc-content` / `.page-toc-section`).
 
-- The ToC partial is included **once**, from the first template
-  rendered for the route (here `page_admin_admins_list.tpl`). The
-  outer `.admin-admins-shell` wrapper opens there and closes at the
-  bottom of the **last** template (`page_admin_overrides.tpl`).
-  Document the tag pairing with a Smarty comment at each end so
-  edits don't silently break the layout.
-- Each section gets `<section id="…" class="<page>-section"
+Reference shapes:
+
+- **admin-admins** (#1207 ADM-3) — three templates wrap the
+  cross-template `.page-toc-shell`. `page_admin_admins_list.tpl`
+  opens the shell + includes `page_toc.tpl` + opens
+  `.page-toc-content`; `page_admin_overrides.tpl` (the last template)
+  closes both. The ToC payload is carried by `AdminAdminsListView`
+  (the FIRST View rendered) — `toc_id`, `toc_label`, `toc_entries`.
+- **admin-bans** (#1239) — five sections live inside the ToC shell;
+  the page handler (`web/pages/admin.bans.php`) opens the shell +
+  drives `page_toc.tpl` directly via `$theme->display(...)` then
+  emits `<section id="…">` wrappers around each existing
+  `Renderer::render(...)` call. Closing tags live at the bottom of
+  the same handler. This shape is the right call when sections are
+  already structured as PHP echo chunks (e.g. when a section like
+  protests/submissions wraps multiple sibling Views with chip-row
+  navigation between them).
+
+Conventions for both shapes:
+
+- The ToC partial is included **once** per route. Document the
+  open/close pairing of `.page-toc-shell` / `.page-toc-content`
+  with a Smarty (or HTML in PHP echos) comment at each end so edits
+  don't silently break the layout.
+- Each section gets `<section id="…" class="page-toc-section"
   data-testid="<page>-section-…" aria-labelledby="…-heading">` plus
-  an `<h2 id="…-heading">` so screen-readers can navigate by
-  landmark name. Reuse the `*-section` class so all sections share
-  the `scroll-margin-top` rule.
+  an `<h2 id="…-heading" class="page-toc-section__heading">` so
+  screen-readers can navigate by landmark name. Reuse the
+  `page-toc-section` class so all sections share the
+  `scroll-margin-top` rule.
 - Permission gates on ToC entries mirror what the dispatcher would
-  render anyway (e.g. `$can_add_admins` in `admin-admins`); a ToC
-  entry for a section the dispatcher wouldn't paint is a dead link.
+  render anyway (e.g. `$can_add_admins` in `admin-admins`,
+  `$canImport` / `$canGroupBan` in `admin-bans`); a ToC entry for a
+  section the dispatcher wouldn't paint is a dead link.
 - Selectors for E2E specs are `[data-testid="<page>-toc"]` (outer
   aside), `[data-testid="<page>-toc-link-<slug>"]` (per anchor),
   and `[data-testid="<page>-section-<slug>"]` (per section). Never
@@ -539,9 +559,78 @@ data-testid="admin-admins-section-…">` wrapping in
   a fixed `boundingBox.y` because the **last** section can never
   reach the top of the viewport (no document below it).
 
-When the next dense page (admin-bans, myaccount) adopts this
-pattern, lift the ToC partial into a parameterized shared template
-rather than duplicating `admin.admins.toc.tpl`.
+When `myaccount` (or any other dense page) adopts this pattern,
+reuse `page_toc.tpl` directly — it already takes `toc_id`,
+`toc_label`, `toc_entries` parameters scoped per page. Add the new
+`data-testid="<page>-toc"` to the spec list above and follow either
+the View-driven (admin-admins) or page-handler-driven (admin-bans)
+shape depending on whether the page renders one View or many.
+
+### Sub-paged admin routes (`?section=…` routing)
+
+Admin routes that subdivide into a small fixed set of unrelated
+sub-tasks (servers / mods / groups / comms / settings) ride the
+**`?section=<slug>` URL pattern** instead of stacking all panes in
+one DOM. Each section is its own URL — linkable, back-button-friendly,
+server-rendered, works without JS — and the page handler renders
+exactly one View per request.
+
+Reference: `web/pages/admin.settings.php` is the long-standing
+canonical shape; #1239 brought servers / mods / groups / comms onto
+the same convention.
+
+Page-handler shape:
+
+```php
+$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS);
+$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER);
+
+/** @var list<array{slug: string, name: string, permission: int, url: string}> $sections */
+$sections = [
+    ['slug' => 'list', 'name' => 'List servers', 'permission' => …, 'url' => '?p=admin&c=servers&section=list'],
+    ['slug' => 'add',  'name' => 'Add new server', 'permission' => …, 'url' => '?p=admin&c=servers&section=add'],
+];
+
+$validSlugs = ['list', 'add'];
+$section = (string) ($_GET['section'] ?? '');
+if (!in_array($section, $validSlugs, true)) {
+    $section = $canList ? 'list' : ($canAdd ? 'add' : 'list');
+}
+
+new AdminTabs($sections, $userbank, $theme, $section);
+
+if ($section === 'add') {
+    Renderer::render($theme, new AdminServersAddView(...));
+    return;
+}
+Renderer::render($theme, new AdminServersListView(...));
+```
+
+Conventions:
+
+- Default to the FIRST accessible section when `?section=` is
+  missing or unknown — never render a blank body.
+- The `core/admin_tabs.tpl` strip is now anchor links
+  (`<a href="?p=admin&c=…&section=…" data-testid="admin-tab-<slug>"
+  aria-current="page">`), not buttons. Pre-#1239 the strip emitted
+  `<button onclick="openTab(...)">` which dispatched to a JS
+  function in `sourcebans.js` (deleted at #1123 D1) — clicks did
+  nothing and every pane stacked together. Don't reintroduce the
+  button shape.
+- Each section's tab `slug` matches `?section=<slug>` AND the
+  `data-testid="admin-tab-<slug>"` hook on the rendered link.
+  E2E specs anchor on the testid + the active link's
+  `aria-current="page"` attribute (see
+  `web/tests/e2e/specs/responsive/admin-tabs.spec.ts`).
+- Use Pattern A (this section) when sub-tasks are unrelated and a
+  small two-or-three-section split is enough. Use Pattern B
+  (page-level ToC, above) when sub-tasks are *context for each
+  other* and an admin needs to move between them in one session
+  (admin-admins, admin-bans).
+- Single-section "pages" that used to render a one-button AdminTabs
+  strip (e.g. admin.comms.php's "Add a block" surface) drop the
+  strip entirely — there's nothing to route to, so the surface is
+  reachable from the parent list's CTA + the sidebar.
 
 ### Empty states (`first-run` vs `filtered`)
 
@@ -596,6 +685,14 @@ audit (#1207) locked in. New CTAs:
   self-contained vanilla JS per page (see `web/pages/admin.edit.ban.php`
   / `admin.edit.comms.php` for canonical examples); toasts go through
   `window.SBPP.showToast` from the theme JS.
+- `openTab()` JS (and the matching `<button onclick="openTab(...)">`
+  chrome on `core/admin_tabs.tpl`) → the JS handler was dropped with
+  sourcebans.js at #1123 D1; the buttons did nothing and every pane
+  stacked together (#1239). Sub-paged admin routes ride either
+  Pattern A (`?section=…` routing — servers / mods / groups / comms
+  / settings) or Pattern B (page-level ToC — admin-admins, admin-bans);
+  see "Sub-paged admin routes" and "Page-level table of contents"
+  conventions above.
 - New `install/` flow → DB is seeded out-of-band in dev.
 - String literals for action names → `Actions.PascalName`.
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.
@@ -684,7 +781,8 @@ audit (#1207) locked in. New CTAs:
 | Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
-| Add a sticky page-level ToC to a dense admin route (anchor sidebar at desktop, accordion at mobile) | `web/themes/default/admin.admins.toc.tpl` is the reference partial; `.admin-admins-shell` / `.admin-admins-toc` / `.admin-admins-section` rules in `web/themes/default/css/theme.css` carry the responsive layout. See the Conventions section "Page-level table of contents (dense admin pages)" (#1207 ADM-3). |
+| Add a sticky page-level ToC to a dense admin route (anchor sidebar at desktop, accordion at mobile) | `web/themes/default/page_toc.tpl` is the parameterized shared partial (toc_id / toc_label / toc_entries). `.page-toc-shell` / `.page-toc` / `.page-toc-content` / `.page-toc-section` rules in `web/themes/default/css/theme.css` carry the responsive layout. Two reference shapes: `admin-admins` (View-driven — `AdminAdminsListView` carries the toc payload, `page_admin_admins_list.tpl` opens the shell, `page_admin_overrides.tpl` closes it) and `admin-bans` (page-handler-driven — `web/pages/admin.bans.php` opens the shell + drives the partial via `$theme->display(...)`, emits `<section id="…">` wrappers in PHP echo around each `Renderer::render(...)`). See the Conventions section "Page-level table of contents (dense admin pages)" (#1207 ADM-3, #1239). |
+| Subdivide an admin route into `?section=<slug>` URLs (servers, mods, groups, comms, settings) | `web/pages/admin.settings.php` is the long-standing reference; #1239 brought servers / mods / groups / comms onto the same shape. Read `?section=…`, default to the first accessible section, render exactly one View per request. The chrome (`core/admin_tabs.tpl` + `web/includes/AdminTabs.php`) emits `<a href="?p=admin&c=<page>&section=<slug>" data-testid="admin-tab-<slug>">` anchor links — never `<button onclick="openTab(...)">` (the JS handler was deleted at #1123 D1; #1239 repaired the chrome). See "Sub-paged admin routes" in Conventions. |
 | Add or rename an admin-admins advanced-search filter | `web/pages/admin.admins.php` (filter-building loop + active-filter map for pagination) + `web/pages/admin.admins.search.php` (DTO population) + `web/includes/View/AdminAdminsSearchView.php` (`active_filter_*` properties) + `web/themes/default/box_admin_admins_search.tpl` (input + pre-fill). The form is single-submit AND-semantics with a backward-compat shim for legacy `advType=…&advSearch=…` URLs (#1207 ADM-4); cover new filters in `web/tests/integration/AdminAdminsSearchTest.php`. |
 | Add a shared "1 of these required" badge for an either/or input pair | `web/themes/default/page_submitban.tpl` (`data-required-group="…"` + the inline guard script — vanilla JS `// @ts-check`, blocks submit when both are empty) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |

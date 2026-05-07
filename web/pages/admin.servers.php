@@ -5,10 +5,74 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-new AdminTabs([
-    ['name' => 'List servers', 'permission' => ADMIN_OWNER|ADMIN_LIST_SERVERS],
-    ['name' => 'Add new server', 'permission' => ADMIN_OWNER|ADMIN_ADD_SERVER]
-], $userbank, $theme);
+/*
+ * Section routing (#1239 — Pattern A, settings-page shape).
+ *
+ * Each section is its own page request keyed on `?section=list|add`;
+ * the sub-nav at the top carries `aria-current="page"` on the active
+ * link. Pre-#1239 the page emitted a broken `<button onclick="openTab(...)">`
+ * strip (the JS handler was deleted with sourcebans.js at #1123 D1)
+ * and rendered BOTH panes back-to-back below it, so the tab strip
+ * lied about being a tab control. The fix follows the long-standing
+ * `admin.settings.php` convention: read `?section=…`, render one View
+ * per request, list every section pill as an anchor link.
+ */
+$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS);
+$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER);
+
+/** @var list<array{slug: string, name: string, permission: int, url: string}> $sections */
+$sections = [
+    [
+        'slug'       => 'list',
+        'name'       => 'List servers',
+        'permission' => ADMIN_OWNER | ADMIN_LIST_SERVERS,
+        'url'        => 'index.php?p=admin&c=servers&section=list',
+    ],
+    [
+        'slug'       => 'add',
+        'name'       => 'Add new server',
+        'permission' => ADMIN_OWNER | ADMIN_ADD_SERVER,
+        'url'        => 'index.php?p=admin&c=servers&section=add',
+    ],
+];
+
+// Default to the first accessible section so the page doesn't render
+// a blank body when the URL omits ?section= or carries an unknown
+// value. List > Add for users who have both, falling back to whichever
+// permission they hold otherwise.
+$validSlugs = ['list', 'add'];
+$section    = (string) ($_GET['section'] ?? '');
+if (!in_array($section, $validSlugs, true)) {
+    if ($canList) {
+        $section = 'list';
+    } elseif ($canAdd) {
+        $section = 'add';
+    } else {
+        $section = 'list';
+    }
+}
+
+new AdminTabs($sections, $userbank, $theme, $section);
+
+if ($section === 'add') {
+    // List mods (drives the mod <select> in the add form).
+    $modlist = $GLOBALS['PDO']->query("SELECT mid, name FROM `:prefix_mods` WHERE `mid` > 0 AND `enabled` = 1 ORDER BY name ASC")->resultset();
+    // List groups (drives the server-group <select>).
+    $grouplist = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = 3 ORDER BY name ASC")->resultset();
+
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersAddView(
+        permission_addserver: $canAdd,
+        edit_server: false,
+        ip: '',
+        port: '',
+        rcon: '',
+        modid: '',
+        modlist: $modlist,
+        grouplist: $grouplist,
+        submit_text: 'Add Server',
+    ));
+    return;
+}
 
 // `mod_name` (mod display name) was added in #1123 B15 so the card
 // grid can render the mod label without a second per-card query.
@@ -45,28 +109,11 @@ foreach ($servers as &$server) {
     }
 }
 
-// List mods
-$modlist = $GLOBALS['PDO']->query("SELECT mid, name FROM `:prefix_mods` WHERE `mid` > 0 AND `enabled` = 1 ORDER BY name ASC")->resultset();
-// List groups
-$grouplist = $GLOBALS['PDO']->query("SELECT gid, name FROM `:prefix_groups` WHERE type = 3 ORDER BY name ASC")->resultset();
-
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersListView(
-    permission_list: $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS),
+    permission_list: $canList,
     permission_editserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_SERVERS),
     pemission_delserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_SERVERS),
-    permission_addserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER),
+    permission_addserver: $canAdd,
     server_count: (int) $server_count['cnt'],
     server_list: $servers,
-));
-
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersAddView(
-    permission_addserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER),
-    edit_server: false,
-    ip: '',
-    port: '',
-    rcon: '',
-    modid: '',
-    modlist: $modlist,
-    grouplist: $grouplist,
-    submit_text: 'Add Server',
 ));

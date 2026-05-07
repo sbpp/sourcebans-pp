@@ -28,9 +28,15 @@ if (!defined("IN_SB")) {
     die();
 }
 
-new AdminTabs([
-    ['name' => 'Add a block', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN]
-], $userbank, $theme);
+/*
+ * #1239 — single-section page; the legacy chrome rendered an
+ * `AdminTabs([...])` strip with one button ("Add a block") that
+ * called the now-removed `openTab()` JS handler. With only one
+ * destination there's nothing to route to, so we drop the strip
+ * entirely (the surface is reachable from the comms list's "Add a
+ * block" CTA + the sidebar). The `.tabcontent` wrapper is gone for
+ * the same reason.
+ */
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     // sb.message (sb.js) replaces the v1.x ShowBox helper.
@@ -59,8 +65,6 @@ if (isset($_GET["rebanid"])) {
     echo "<script type=\"text/javascript\">sb.ready(function(){sb.message.show('Loading..','<b>Loading...</b><br><i>Please Wait!</i>','blue','',true);sb.hide('dialog-control');sb.api.call(Actions.CommsPaste,{sid:" . (int) $_GET['sid'] . ",name:" . $pNameJs . ",type:0}).then(function(r){if(r&&r.ok&&r.data){if(typeof window.__sbppApplyBlockFields==='function')window.__sbppApplyBlockFields(r.data);sb.show('dialog-control');sb.hide('dialog-placement');}else if(r&&r.ok===false&&r.error){sb.message.error('Error',r.error.message);sb.show('dialog-control');}});});</script>";
 }
 
-echo '<div id="admin-page-content">';
-echo '<div class="tabcontent" id="Add a block">';
 // SourceComms reuses the bans permission set: there is no
 // ADMIN_ADD_COMM flag, so the gate uses ADMIN_OWNER|ADMIN_ADD_BAN.
 // Splatting Perms::for(...) into the View pulls `can_add_ban` (and
@@ -73,7 +77,6 @@ $perms = \Sbpp\View\Perms::for($userbank);
     permission_addban: $perms['can_add_ban'],
 ));
 ?>
-</div>
 <script type="text/javascript">
 function changeReason(szListValue)
 {
@@ -141,4 +144,3 @@ window.__sbppApplyBlockFields = function (d) {
     if (typeof window.swapTab === 'function') window.swapTab(0);
 };
 </script>
-</div>

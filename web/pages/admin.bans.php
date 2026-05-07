@@ -23,13 +23,40 @@ if (!defined("IN_SB")) {
     die();
 }
 
-new AdminTabs([
-    ['name' => 'Add a ban', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN],
-    ['name' => 'Ban protests', 'permission' => ADMIN_OWNER|ADMIN_BAN_PROTESTS],
-    ['name' => 'Ban submissions', 'permission' => ADMIN_OWNER|ADMIN_BAN_SUBMISSIONS],
-    ['name' => 'Import bans', 'permission' => ADMIN_OWNER|ADMIN_BAN_IMPORT],
-    ['name' => 'Group ban', 'permission' => ADMIN_OWNER|ADMIN_ADD_BAN, 'config' => Config::getBool('config.enablegroupbanning')]
-], $userbank, $theme);
+/*
+ * #1239 — Pattern B (sticky page-level ToC).
+ *
+ * Pre-#1239 the page emitted a broken `<button onclick="openTab(...)">`
+ * strip via `new AdminTabs([...])`; the JS handler was deleted with
+ * sourcebans.js at #1123 D1 and every pane (Add a ban / Ban protests /
+ * Ban submissions / Import bans / Group ban) stacked together below
+ * the strip, with no way to switch. Per the issue body, bans is the
+ * one admin route where the panes are *context for each other* (admins
+ * triage submissions ↔ protests ↔ live bans in one session), so we
+ * keep all panes in the DOM and ride the page-level ToC pattern that
+ * #1207 ADM-3 locked in for admin-admins. The `page_toc.tpl` partial
+ * is parameterized; this is its second consumer.
+ *
+ * Each section gets `<section id="…" class="page-toc-section">` plus
+ * an aria-labelled heading so screen readers can navigate by landmark
+ * name. ToC entries mirror what the dispatcher would render anyway —
+ * the rule is "a ToC link must point at a section that lands in the
+ * DOM" (AGENTS.md "Page-level table of contents (dense admin pages)").
+ */
+$canAddBan       = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN);
+$canProtests     = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS);
+$canSubmissions  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS);
+$canImport       = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT);
+$groupBanEnabled = Config::getBool('config.enablegroupbanning');
+$canGroupBan     = $canAddBan && $groupBanEnabled;
+
+/** @var list<array{slug: string, label: string}> $tocEntries */
+$tocEntries = [];
+if ($canAddBan)      { $tocEntries[] = ['slug' => 'add-ban',     'label' => 'Add a ban']; }
+if ($canProtests)    { $tocEntries[] = ['slug' => 'protests',    'label' => 'Ban protests']; }
+if ($canSubmissions) { $tocEntries[] = ['slug' => 'submissions', 'label' => 'Ban submissions']; }
+if ($canImport)      { $tocEntries[] = ['slug' => 'import',      'label' => 'Import bans']; }
+if ($canGroupBan)    { $tocEntries[] = ['slug' => 'group-ban',   'label' => 'Group ban']; }
 
 if (isset($_GET['mode']) && $_GET['mode'] == "delete") {
     // sb.message (sb.js) replaces the v1.x ShowBox helper.
@@ -118,21 +145,36 @@ if ((isset($_GET['action']) && $_GET['action'] == "pasteBan") && isset($_GET['pN
     echo "<script type=\"text/javascript\">sb.ready(function(){sb.message.show('Loading..','<b>Loading...</b><br><i>Please Wait!</i>','blue','',true);sb.hide('dialog-control');sb.api.call(Actions.BansPaste,{sid:" . (int) $_GET['sid'] . ",name:" . $pNameJs . ",type:0}).then(function(r){if(r&&r.ok&&r.data){if(typeof window.__sbppApplyBanFields==='function')window.__sbppApplyBanFields(r.data);sb.show('dialog-control');sb.hide('dialog-placement');}else if(r&&r.ok===false&&r.error){sb.message.error('Error',r.error.message);sb.show('dialog-control');}});});</script>";
 }
 
-echo '<div id="admin-page-content">';
+/*
+ * Open the cross-section shell + sticky ToC partial. The shell wraps
+ * EVERY rendered View on this page; closing tags live at the bottom
+ * of this file (search for "page-toc-shell"). Keep the open/close
+ * pair documented at each end so edits don't silently break the
+ * layout.
+ */
+echo '<div class="page-toc-shell" data-testid="admin-bans-shell">';
+$theme->assign('toc_id', 'admin-bans');
+$theme->assign('toc_label', 'Bans page sections');
+$theme->assign('toc_entries', $tocEntries);
+$theme->display('page_toc.tpl');
+echo '<div class="page-toc-content">';
+
 // Add Ban
-echo '<div class="tabcontent" id="Add a ban">';
+echo '<section id="add-ban" class="page-toc-section" data-testid="admin-bans-section-add-ban" aria-labelledby="add-ban-heading">';
+echo '<h2 id="add-ban-heading" class="page-toc-section__heading">Add a ban</h2>';
 $customReason = Config::getBool('bans.customreasons')
     ? unserialize((string) Config::get('bans.customreasons'))
     : false;
 /** @var false|list<string> $customReason */
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansAddView(
-    permission_addban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+    permission_addban: $canAddBan,
     customreason: $customReason,
 ));
-echo '</div>';
+echo '</section>';
 
 // Protests
-echo '<div class="tabcontent" id="Ban protests">';
+echo '<section id="protests" class="page-toc-section" data-testid="admin-bans-section-protests" aria-labelledby="protests-heading">';
+echo '<h2 id="protests-heading" class="page-toc-section__heading">Ban protests</h2>';
 // Current/Archive segmented control. v1.x emitted a <ul><li> styled by
 // the (now-removed) #tabsWrapper / .nonactive CSS pair (#1124, #1187);
 // the v2.0.0 sweep deleted those rules but kept the bullet markup, so
@@ -460,12 +502,13 @@ foreach ($protestsarchiv as $prot) {
     protest_count_archiv: (int) $page_count,
 ));
 echo '</div>';
-echo '</div>';
+echo '</section>';
 
 
 
 //Submissions page
-echo '<div class="tabcontent" id="Ban submissions">';
+echo '<section id="submissions" class="page-toc-section" data-testid="admin-bans-section-submissions" aria-labelledby="submissions-heading">';
+echo '<h2 id="submissions-heading" class="page-toc-section__heading">Ban submissions</h2>';
 // Same Current/Archive segmented control as the protests block above —
 // see the comment on the protests echo for the bullet-list backstory
 // (#1124, #1187). Aria/testid hooks are scoped with `submissions-` so
@@ -758,29 +801,45 @@ foreach ($submissionsarchiv as $sub) {
     submission_list_archiv: $submission_list_archiv,
 ));
 echo '</div>';
-echo '</div>';
+echo '</section>';
 
-echo '<div class="tabcontent" id="Import bans">';
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansImportView(
-    permission_import: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT),
-    extreq: ini_get('safe_mode') != 1,
-));
-echo '</div>';
+if ($canImport) {
+    echo '<section id="import" class="page-toc-section" data-testid="admin-bans-section-import" aria-labelledby="import-heading">';
+    echo '<h2 id="import-heading" class="page-toc-section__heading">Import bans</h2>';
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansImportView(
+        permission_import: true,
+        extreq: ini_get('safe_mode') != 1,
+    ));
+    echo '</section>';
+}
 
-echo '<div class="tabcontent" id="Group ban">';
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansGroupsView(
-    permission_addban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
-    groupbanning_enabled: Config::getBool('config.enablegroupbanning'),
-    list_steam_groups: isset($_GET['fid']) ? (string) $_GET['fid'] : false,
-    // `player_name` is rendered next to the steam-groups list when an
-    // admin reaches Group Ban via "Ban groups of player X" from the
-    // banlist (?fid=…). The pre-v2.0.0 template emitted `{$player_name}`
-    // unguarded but no caller ever assigned it; we pass an empty
-    // string so the SmartyTemplateRule contract holds and the
-    // template can render the placeholder when wired up.
-    player_name: '',
-));
-echo '</div>';
+/*
+ * "Group ban" is the one section we omit from the DOM entirely when
+ * the feature toggle is off — pre-#1239 the AdminTabs strip already
+ * gated the tab on `Config::getBool('config.enablegroupbanning')`, so
+ * preserving the same gate keeps the ToC contract clean: every entry
+ * points at a section that actually lands. The other admin-bans
+ * sections render unconditionally with their own access-denied stubs
+ * because they're permission-gated rather than feature-flag-gated, so
+ * the ToC entry is omitted via the `$canX` checks above.
+ */
+if ($canGroupBan) {
+    echo '<section id="group-ban" class="page-toc-section" data-testid="admin-bans-section-group-ban" aria-labelledby="group-ban-heading">';
+    echo '<h2 id="group-ban-heading" class="page-toc-section__heading">Group ban</h2>';
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansGroupsView(
+        permission_addban: $canAddBan,
+        groupbanning_enabled: $groupBanEnabled,
+        list_steam_groups: isset($_GET['fid']) ? (string) $_GET['fid'] : false,
+        // `player_name` is rendered next to the steam-groups list when an
+        // admin reaches Group Ban via "Ban groups of player X" from the
+        // banlist (?fid=…). The pre-v2.0.0 template emitted `{$player_name}`
+        // unguarded but no caller ever assigned it; we pass an empty
+        // string so the SmartyTemplateRule contract holds and the
+        // template can render the placeholder when wired up.
+        player_name: '',
+    ));
+    echo '</section>';
+}
 ?>
 
 
@@ -942,4 +1001,5 @@ window.__sbppApplyBanFields = function (d) {
     if (typeof window.swapTab === 'function') window.swapTab(0);
 };
 </script>
-</div>
+</div><!-- /.page-toc-content -->
+</div><!-- /.page-toc-shell — opened above before the Add Ban section -->

@@ -23,7 +23,7 @@
     The audit (#1207 ADM-3) called out admin-admins as ~7 stacked
     surfaces (search + admins list + add admin + overrides + add
     override) on one long scroll with no internal navigation. We open
-    a `.admin-admins-shell` wrapper here that spans all three templates
+    a `.page-toc-shell` wrapper here that spans all three templates
     (this one, page_admin_admins_add.tpl, page_admin_overrides.tpl) and
     paint a sticky anchor sidebar at >=1024px / accordion at <1024px
     inside it. The closing `</div>` lives at the bottom of
@@ -32,15 +32,18 @@
     Each section below is wrapped in a `<section id="…">` with
     `scroll-margin-top` so the sticky topbar (3.5rem) clears the
     heading after an anchor jump. The anchor IDs are referenced by the
-    ToC (rendered via {include file="admin.admins.toc.tpl"}) and by
-    other templates that link back into this page (e.g. the admin home
-    Overrides card already uses `#overrides`).
+    ToC (rendered via {include file="page_toc.tpl"} — #1239 lifted the
+    page-specific `admin.admins.toc.tpl` into a parameterized shared
+    partial; data-testids stay `admin-admins-*` so the existing E2E
+    selectors keep working) and by other templates that link back into
+    this page (e.g. the admin home Overrides card already uses
+    `#overrides`).
 *}
-<div class="admin-admins-shell" data-testid="admin-admins-shell">
+<div class="page-toc-shell" data-testid="admin-admins-shell">
 
-{include file="admin.admins.toc.tpl"}
+{include file="page_toc.tpl"}
 
-<div class="admin-admins-content">
+<div class="page-toc-content">
 <div class="card-tab" id="List admins">
     {if !$can_list_admins}
         <div class="card">
@@ -63,13 +66,13 @@
             {/if}
         </div>
 
-        <section id="search" class="admin-admins-section" data-testid="admin-admins-section-search" aria-labelledby="search-heading">
-            <h2 id="search-heading" class="admin-admins-section__heading">Search admins</h2>
+        <section id="search" class="page-toc-section" data-testid="admin-admins-section-search" aria-labelledby="search-heading">
+            <h2 id="search-heading" class="page-toc-section__heading">Search admins</h2>
             {load_template file="admin.admins.search"}
         </section>
 
-        <section id="admins" class="admin-admins-section" data-testid="admin-admins-section-admins" aria-labelledby="admins-heading">
-            <h2 id="admins-heading" class="admin-admins-section__heading">Admins list</h2>
+        <section id="admins" class="page-toc-section" data-testid="admin-admins-section-admins" aria-labelledby="admins-heading">
+            <h2 id="admins-heading" class="page-toc-section__heading">Admins list</h2>
 
             <div class="text-xs text-muted mb-2" data-testid="admin-nav">
                 {* nofilter: server-built pagination HTML — `<displaying N - M of K results>` (integers), prev/next `<a>` from `CreateLinkR(…)`, and a page-jump `<select onchange>`. After #1207 ADM-4 every populated filter flows through `http_build_query($activeFilters)`, which percent-encodes filter values (so single quotes / angle brackets can't break out of the single-quoted `href='…'` or `onchange="… '…'…"` attributes). The page-jump `<select>` additionally `htmlspecialchars()`-escapes the base URL with `ENT_QUOTES` before interpolation. Loop counters and pre-computed page numbers are integers. No raw user input reaches the rendered string. *}
@@ -165,4 +168,4 @@
         </section>
     {/if}
 </div>
-{* admin-admins-content + admin-admins-shell remain open; closed in page_admin_overrides.tpl *}
+{* page-toc-content + page-toc-shell remain open; closed in page_admin_overrides.tpl *}

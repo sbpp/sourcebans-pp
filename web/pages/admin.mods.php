@@ -23,30 +23,61 @@ if (!defined("IN_SB")) {
 }
 global $userbank, $theme;
 
-new AdminTabs([
-    ['name' => 'List MODs',    'permission' => ADMIN_OWNER|ADMIN_LIST_MODS],
-    ['name' => 'Add new MOD',  'permission' => ADMIN_OWNER|ADMIN_ADD_MODS],
-], $userbank, $theme);
+/*
+ * Section routing (#1239 — Pattern A, settings-page shape).
+ *
+ * Mirrors `admin.servers.php`: read `?section=list|add`, render one
+ * View per request, the AdminTabs strip is now anchor links instead
+ * of the broken `<button onclick="openTab(...)">` chrome (sourcebans.js
+ * was dropped at #1123 D1 and the click handler with it).
+ */
+$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS);
+$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_MODS);
+
+/** @var list<array{slug: string, name: string, permission: int, url: string}> $sections */
+$sections = [
+    [
+        'slug'       => 'list',
+        'name'       => 'List MODs',
+        'permission' => ADMIN_OWNER | ADMIN_LIST_MODS,
+        'url'        => 'index.php?p=admin&c=mods&section=list',
+    ],
+    [
+        'slug'       => 'add',
+        'name'       => 'Add new MOD',
+        'permission' => ADMIN_OWNER | ADMIN_ADD_MODS,
+        'url'        => 'index.php?p=admin&c=mods&section=add',
+    ],
+];
+
+$validSlugs = ['list', 'add'];
+$section    = (string) ($_GET['section'] ?? '');
+if (!in_array($section, $validSlugs, true)) {
+    if ($canList) {
+        $section = 'list';
+    } elseif ($canAdd) {
+        $section = 'add';
+    } else {
+        $section = 'list';
+    }
+}
+
+new AdminTabs($sections, $userbank, $theme, $section);
+
+if ($section === 'add') {
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsAddView(
+        permission_add: $canAdd,
+    ));
+    return;
+}
 
 $mod_list  = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE mid > 0 ORDER BY name ASC")->resultset();
 $mod_count = (int) $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefix_mods`")->single()['cnt'];
 
-echo '<div id="admin-page-content">';
-
-echo '<div class="tabcontent" id="List MODs">';
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsListView(
-    permission_listmods:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS),
+    permission_listmods:   $canList,
     permission_editmods:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS),
     permission_deletemods: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_MODS),
     mod_count:             $mod_count,
     mod_list:              $mod_list,
 ));
-echo '</div>';
-
-echo '<div class="tabcontent" id="Add new MOD">';
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsAddView(
-    permission_add: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_MODS),
-));
-echo '</div>';
-
-echo '</div>';

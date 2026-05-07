@@ -94,10 +94,13 @@ export async function anonymousSubmit(page: Page, fx: SubmissionFixture): Promis
 /**
  * Locate a pending submission row in the admin queue by SteamID.
  *
- * The admin bans page renders all sub-tabs as stacked `.tabcontent`
- * sections (no `swapTab` helper in sbpp2026 — sourcebans.js was
- * dropped at #1123 D1), so the queue is scrollable on the same
- * `?p=admin&c=bans` URL — no `&action=…` sub-query is needed.
+ * After #1239 the admin bans page renders all sections inside the
+ * page-level ToC shell (sticky sidebar at >=1024px / accordion
+ * <1024px; see `web/themes/default/page_toc.tpl`). Every section is
+ * present in the DOM at the same `?p=admin&c=bans` URL — the ToC
+ * scrolls between them via anchor `#…` jumps, so the queue is just
+ * one scroll away from the Add Ban form on every viewport. No
+ * `&action=…` sub-query is needed.
  *
  * We anchor the filter on `submission-row-steam` (a unique-per-row
  * cell that carries the visible SteamID) rather than on the row's
@@ -159,9 +162,10 @@ export async function adminApprove(
     // submission's name into #nickname after the BansSetupBan promise
     // resolves; that's the deterministic post-setup signal. The Add
     // Ban form lives ABOVE the submissions queue on the same admin
-    // page (each tab is rendered as a stacked `.tabcontent` div in
-    // sbpp2026 — see "no swapTab" comment above), so the input is
-    // already in the DOM when the click fires.
+    // page — every section sits inside the page-level ToC shell
+    // (#1239), so all five sub-sections (Add a ban / Ban protests /
+    // Ban submissions / Import bans / Group ban) render into the same
+    // DOM and the input is already present when the click fires.
     const nicknameInput = page.locator('[data-testid="addban-nickname"]');
     await expect(nicknameInput).toHaveValue(fx.playerName);
 

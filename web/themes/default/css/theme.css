@@ -1166,36 +1166,42 @@ details.queue-row > summary > .row-actions {
 }
 
 /* ============================================================
-   #1207 ADM-3 — admin-admins page-level table of contents
+   #1207 ADM-3, #1239 — page-level table of contents (shared)
    ============================================================
-   The audit flagged admin-admins as ~7 stacked surfaces (search +
-   admins list + add admin + overrides + add override) on one long
-   scroll. The fix wraps the page in a sticky anchor sidebar at
-   >=1024px and an accordion ToC at <1024px, with each section
-   anchored via `id="…"` + `scroll-margin-top` so jumps clear the
-   sticky topbar (3.5rem).
+   Sticky anchor sidebar at >=1024px and an accordion ToC at <1024px,
+   with each section anchored via `id="…"` + `scroll-margin-top` so
+   jumps clear the sticky topbar (3.5rem).
 
-   Markup contract (see admin.admins.toc.tpl + page_admin_admins_*.tpl):
-     .admin-admins-shell           outer wrapper (grid host on desktop)
-       .admin-admins-toc           <aside> with the link list
-         .admin-admins-toc__details      <details open> on every viewport;
-                                         the open/close toggle only does
-                                         something at <1024px (mobile/
-                                         narrow-tablet accordion). At
-                                         >=1024px we force the contents
-                                         visible regardless of [open]
-                                         state — see the desktop block.
-         .admin-admins-toc__summary      mobile-only chrome (hidden on
-                                         desktop)
-         .admin-admins-toc__nav          the link container
-         .admin-admins-toc__list         <ul>
-         .admin-admins-toc__link         each <a>
-       .admin-admins-content        the cross-template content column
-         .admin-admins-section      the anchored <section>s
-         .admin-admins-section__heading  per-section <h2>
+   #1207 ADM-3 introduced this pattern for admin-admins under
+   page-specific class names (`.admin-admins-*`); #1239 lifted the
+   class names to a generic `page-toc-*` prefix so admin-bans and any
+   future dense page can reuse the same shape via the parameterized
+   `page_toc.tpl` partial. data-testids stay scoped per page (e.g.
+   `admin-admins-toc`, `admin-bans-toc`) so E2E specs can target each
+   surface independently — see `page_toc.tpl` for the contract.
+
+   Markup contract (see page_toc.tpl + the page templates that
+   include it — page_admin_admins_*.tpl, page_admin_bans_*.tpl):
+     .page-toc-shell             outer wrapper (grid host on desktop)
+       .page-toc                 <aside> with the link list
+         .page-toc__details      <details open> on every viewport;
+                                 the open/close toggle only does
+                                 something at <1024px (mobile/
+                                 narrow-tablet accordion). At
+                                 >=1024px we force the contents
+                                 visible regardless of [open]
+                                 state — see the desktop block.
+         .page-toc__summary      mobile-only chrome (hidden on
+                                 desktop)
+         .page-toc__nav          the link container
+         .page-toc__list         <ul>
+         .page-toc__link         each <a>
+       .page-toc-content         the cross-template content column
+         .page-toc-section       the anchored <section>s
+         .page-toc-section__heading  per-section <h2>
 */
-.admin-admins-section { scroll-margin-top: 4rem; }
-.admin-admins-section__heading {
+.page-toc-section { scroll-margin-top: 4rem; }
+.page-toc-section__heading {
   font-size: var(--fs-base);
   font-weight: 600;
   text-transform: uppercase;
@@ -1203,16 +1209,16 @@ details.queue-row > summary > .row-actions {
   color: var(--text-muted);
   margin: 0 0 0.75rem;
 }
-.admin-admins-toc {
+.page-toc {
   font-size: var(--fs-sm);
   margin-bottom: 1rem;
 }
-.admin-admins-toc__details {
+.page-toc__details {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
 }
-.admin-admins-toc__summary {
+.page-toc__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1223,15 +1229,15 @@ details.queue-row > summary > .row-actions {
   list-style: none;
   user-select: none;
 }
-.admin-admins-toc__summary::-webkit-details-marker { display: none; }
-.admin-admins-toc__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
-.admin-admins-toc__chevron {
+.page-toc__summary::-webkit-details-marker { display: none; }
+.page-toc__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
+.page-toc__chevron {
   transition: transform .15s ease;
   color: var(--text-muted);
 }
-.admin-admins-toc__details[open] .admin-admins-toc__chevron { transform: rotate(180deg); }
-.admin-admins-toc__nav { padding: 0 0.5rem 0.5rem; }
-.admin-admins-toc__list {
+.page-toc__details[open] .page-toc__chevron { transform: rotate(180deg); }
+.page-toc__nav { padding: 0 0.5rem 0.5rem; }
+.page-toc__list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -1239,7 +1245,7 @@ details.queue-row > summary > .row-actions {
   flex-direction: column;
   gap: 0.125rem;
 }
-.admin-admins-toc__link {
+.page-toc__link {
   display: block;
   padding: 0.4375rem 0.625rem;
   border-radius: var(--radius-sm);
@@ -1247,15 +1253,15 @@ details.queue-row > summary > .row-actions {
   text-decoration: none;
   transition: background-color .12s, color .12s;
 }
-.admin-admins-toc__link:hover,
-.admin-admins-toc__link:focus-visible {
+.page-toc__link:hover,
+.page-toc__link:focus-visible {
   background: var(--bg-muted);
   color: var(--text);
   outline: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .admin-admins-toc__chevron { transition: none; }
-  .admin-admins-toc__link    { transition: none; }
+  .page-toc__chevron { transition: none; }
+  .page-toc__link    { transition: none; }
 }
 
 /* Desktop layout — anchor sidebar floats next to the content column.
@@ -1265,28 +1271,28 @@ details.queue-row > summary > .row-actions {
    regardless of [open] so accidental "collapse" at desktop can't
    strand the user without navigation. */
 @media (min-width: 1024px) {
-  .admin-admins-shell {
+  .page-toc-shell {
     display: grid;
     grid-template-columns: 14rem minmax(0, 1fr);
     gap: 1.5rem;
     align-items: start;
   }
-  .admin-admins-toc {
+  .page-toc {
     position: sticky;
     top: 4rem;
     align-self: start;
     margin-bottom: 0;
   }
-  .admin-admins-toc__details {
+  .page-toc__details {
     border: none;
     background: transparent;
   }
-  .admin-admins-toc__summary { display: none; }
+  .page-toc__summary { display: none; }
   /* Keep the link list visible whether the user has toggled the
      <details> closed or not — at desktop the sidebar is a permanent
      navigation surface, the accordion gesture only matters at mobile. */
-  .admin-admins-toc__details .admin-admins-toc__nav { display: block !important; }
-  .admin-admins-toc__nav { padding: 0; }
-  .admin-admins-toc__link { font-size: var(--fs-sm); }
-  .admin-admins-content { min-width: 0; }
+  .page-toc__details .page-toc__nav { display: block !important; }
+  .page-toc__nav { padding: 0; }
+  .page-toc__link { font-size: var(--fs-sm); }
+  .page-toc-content { min-width: 0; }
 }

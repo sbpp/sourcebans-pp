@@ -72,13 +72,20 @@ test.describe('flow: admin ban lifecycle', () => {
 
     test('add → list → edit → unban → confirm unbanned', async ({ page }) => {
         // ---- 1. Add ban ---------------------------------------------------
-        // The "Add a ban" form is the first tab on
-        // ?p=admin&c=bans (other tabs render in sibling .tabcontent
-        // divs that the v2.0.0 chrome leaves visible — no openTab JS
-        // since #1123 D1 dropped sourcebans.js). Form fields are
-        // anchored on `addban-*` testids; the submit button uses
-        // both `data-testid` and `data-action` because the inline
-        // handler delegates on `[data-action="addban-submit"]`.
+        // The "Add a ban" form is the first section on
+        // ?p=admin&c=bans. Pre-#1239 the page emitted a broken
+        // `<button onclick="openTab(...)">` strip and stacked every
+        // pane below it (the JS handler was dropped with
+        // sourcebans.js at #1123 D1); #1239 repaired the navigation
+        // by riding the page-level ToC pattern (admin-admins family).
+        // All five sections (Add a ban / Ban protests / Ban submissions
+        // / Import bans / Group ban) now sit inside `<section id="…"
+        // class="page-toc-section">` blocks under a sticky ToC sidebar
+        // at >=1024px (accordion at <1024px); the ToC links are anchor
+        // jumps to those `id`s. Form fields are anchored on `addban-*`
+        // testids; the submit button uses both `data-testid` and
+        // `data-action` because the inline handler delegates on
+        // `[data-action="addban-submit"]`.
         await page.goto(ADD_BAN_ROUTE);
         const form = page.locator('[data-testid="addban-form"]');
         await expect(form).toBeVisible();
