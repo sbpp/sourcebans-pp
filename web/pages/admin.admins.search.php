@@ -187,14 +187,23 @@ if (is_array($rawSrvFlag)) {
     srvgroup_list:             $srvgroups,
     admwebflag_list:           $webflag,
     admsrvflag_list:           $serverflag,
-    active_filter_name:        is_string($_GET['name']        ?? null) ? (string) $_GET['name']        : '',
-    active_filter_steamid:     is_string($_GET['steamid']     ?? null) ? (string) $_GET['steamid']     : '',
-    active_filter_steam_match: is_scalar($_GET['steam_match'] ?? null) ? (string) $_GET['steam_match'] : '0',
-    active_filter_admemail:    is_string($_GET['admemail']    ?? null) ? (string) $_GET['admemail']    : '',
-    active_filter_webgroup:    is_scalar($_GET['webgroup']    ?? null) ? (string) $_GET['webgroup']    : '',
-    active_filter_srvadmgroup: is_string($_GET['srvadmgroup'] ?? null) ? (string) $_GET['srvadmgroup'] : '',
-    active_filter_srvgroup:    is_scalar($_GET['srvgroup']    ?? null) ? (string) $_GET['srvgroup']    : '',
-    active_filter_server:      is_scalar($_GET['server']      ?? null) ? (string) $_GET['server']      : '',
-    active_filter_admwebflag:  $activeWebFlags,
-    active_filter_admsrvflag:  $activeSrvFlags,
+    // Match-mode defaults differ per filter (#1231):
+    //   - steam_match defaults to '0' (exact) — typical SteamID
+    //     queries are "find this one admin by their full ID".
+    //   - name_match / admemail_match default to '1' (partial) so
+    //     pre-#1231 URLs (`?name=alice`) keep their substring
+    //     behaviour. Adding the toggle widens the UI without
+    //     regressing the default.
+    active_filter_name:           is_string($_GET['name']           ?? null) ? (string) $_GET['name']           : '',
+    active_filter_name_match:     is_scalar($_GET['name_match']     ?? null) ? (string) $_GET['name_match']     : '1',
+    active_filter_steamid:        is_string($_GET['steamid']        ?? null) ? (string) $_GET['steamid']        : '',
+    active_filter_steam_match:    is_scalar($_GET['steam_match']    ?? null) ? (string) $_GET['steam_match']    : '0',
+    active_filter_admemail:       is_string($_GET['admemail']       ?? null) ? (string) $_GET['admemail']       : '',
+    active_filter_admemail_match: is_scalar($_GET['admemail_match'] ?? null) ? (string) $_GET['admemail_match'] : '1',
+    active_filter_webgroup:       is_scalar($_GET['webgroup']       ?? null) ? (string) $_GET['webgroup']       : '',
+    active_filter_srvadmgroup:    is_string($_GET['srvadmgroup']    ?? null) ? (string) $_GET['srvadmgroup']    : '',
+    active_filter_srvgroup:       is_scalar($_GET['srvgroup']       ?? null) ? (string) $_GET['srvgroup']       : '',
+    active_filter_server:         is_scalar($_GET['server']         ?? null) ? (string) $_GET['server']         : '',
+    active_filter_admwebflag:     $activeWebFlags,
+    active_filter_admsrvflag:     $activeSrvFlags,
 ));

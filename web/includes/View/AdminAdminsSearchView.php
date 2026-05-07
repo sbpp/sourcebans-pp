@@ -22,11 +22,16 @@ namespace Sbpp\View;
  * `{load_template file="admin.admins.search"}` Smarty plugin.
  *
  * The form submits as a plain `GET` to `?p=admin&c=admins` with one
- * parameter per populated filter (`name`, `steamid`, `steam_match`,
- * `admemail`, `webgroup`, `srvadmgroup`, `srvgroup`, `admwebflag[]`,
- * `admsrvflag[]`, `server`). admin.admins.php AND-combines every
- * non-empty filter — see #1207 ADM-4. No CSRF field — search is
- * read-only.
+ * parameter per populated filter (`name`, `name_match`, `steamid`,
+ * `steam_match`, `admemail`, `admemail_match`, `webgroup`,
+ * `srvadmgroup`, `srvgroup`, `admwebflag[]`, `admsrvflag[]`,
+ * `server`). admin.admins.php AND-combines every non-empty filter —
+ * see #1207 ADM-4. No CSRF field — search is read-only.
+ *
+ * `name_match` / `admemail_match` were added in #1231 so Login and
+ * E-mail can be flipped between exact / partial mode the way SteamID
+ * already could; defaults are partial ('1') to preserve pre-#1231
+ * substring behaviour for legacy URLs.
  *
  * `$active_filter_*` mirror the corresponding $_GET keys so the
  * template can pre-fill the form without splattering
@@ -80,9 +85,11 @@ final class AdminAdminsSearchView extends View
         public readonly array $admwebflag_list,
         public readonly array $admsrvflag_list,
         public readonly string $active_filter_name = '',
+        public readonly string $active_filter_name_match = '1',
         public readonly string $active_filter_steamid = '',
         public readonly string $active_filter_steam_match = '0',
         public readonly string $active_filter_admemail = '',
+        public readonly string $active_filter_admemail_match = '1',
         public readonly string $active_filter_webgroup = '',
         public readonly string $active_filter_srvadmgroup = '',
         public readonly string $active_filter_srvgroup = '',

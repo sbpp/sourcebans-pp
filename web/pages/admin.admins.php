@@ -98,11 +98,21 @@ if (isset($_GET['advType']) && isset($_GET['advSearch']) && $_GET['advSearch'] !
     }
 }
 
-// 1) Login name (substring against ADM.user).
+// 1) Login name (exact or partial against ADM.user).
+//    `name_match` was added in #1231; default is partial ('1') so
+//    pre-#1231 URLs (`?name=alice` with no name_match) keep their
+//    substring semantics. `0` flips to exact.
 if (!empty($_GET['name']) && is_string($_GET['name'])) {
-    $where                  .= " AND ADM.user LIKE ?";
-    $whereParams[]           = '%' . $_GET['name'] . '%';
-    $activeFilters['name']   = (string) $_GET['name'];
+    $partialName = !isset($_GET['name_match']) || (string) $_GET['name_match'] !== '0';
+    if ($partialName) {
+        $where        .= " AND ADM.user LIKE ?";
+        $whereParams[] = '%' . $_GET['name'] . '%';
+    } else {
+        $where        .= " AND ADM.user = ?";
+        $whereParams[] = $_GET['name'];
+    }
+    $activeFilters['name']       = (string) $_GET['name'];
+    $activeFilters['name_match'] = $partialName ? '1' : '0';
 }
 
 // 2) Steam ID (exact or partial against ADM.authid).
@@ -119,12 +129,21 @@ if (!empty($_GET['steamid']) && is_string($_GET['steamid'])) {
     $activeFilters['steam_match'] = $partial ? '1' : '0';
 }
 
-// 3) E-mail (substring, gated on the same flag the search box gates the
-// input field on so URL forgery can't bypass the visibility gate).
+// 3) E-mail (exact or partial; `admemail_match` was added in #1231,
+//    same default-partial shape as `name_match`). Gated on the same
+//    flag the search box gates the input field on so URL forgery
+//    can't bypass the visibility gate.
 if (!empty($_GET['admemail']) && is_string($_GET['admemail']) && $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    $where                       .= " AND ADM.email LIKE ?";
-    $whereParams[]                = '%' . $_GET['admemail'] . '%';
-    $activeFilters['admemail']    = (string) $_GET['admemail'];
+    $partialEmail = !isset($_GET['admemail_match']) || (string) $_GET['admemail_match'] !== '0';
+    if ($partialEmail) {
+        $where        .= " AND ADM.email LIKE ?";
+        $whereParams[] = '%' . $_GET['admemail'] . '%';
+    } else {
+        $where        .= " AND ADM.email = ?";
+        $whereParams[] = $_GET['admemail'];
+    }
+    $activeFilters['admemail']       = (string) $_GET['admemail'];
+    $activeFilters['admemail_match'] = $partialEmail ? '1' : '0';
 }
 
 // 4) Web group (`:prefix_groups.gid` -> `:prefix_admins.gid`).

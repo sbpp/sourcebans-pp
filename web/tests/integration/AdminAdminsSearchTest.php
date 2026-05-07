@@ -218,6 +218,88 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
+     * Login-name and E-mail exact / partial split (#1231).
+     *
+     * Pre-#1231, only SteamID shipped a `<select>` to flip between
+     * exact and partial; Login and E-mail silently substring-matched
+     * with no way to ask for "give me the row whose login is
+     * literally `admin`". The fix mirrors the steam_match shape onto
+     * both filters as `name_match` and `admemail_match`.
+     *
+     * Match-mode default is `'1'` (partial) for both — i.e. when the
+     * URL omits the new param, the filter behaves the way it always
+     * did. That preserves every legacy bookmark and the
+     * `?advType=name&advSearch=…` shim's contract; the new feature is
+     * purely opt-in via `…_match=0`.
+     */
+    public function testLoginAndEmailExactMatchSplit(): void
+    {
+        // Login name: 'ali' is a substring of 'alice' but not exact.
+        // Partial → 1 row (alice). Exact → 0 rows. Then 'alice' exact
+        // → 1 row (the literal alice), proving exact mode resolves
+        // the "find me the single admin" contract.
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'name'       => 'ali',
+            'name_match' => '1',
+        ];
+        $partialName = $this->renderAdminsPage();
+        $this->assertSame(1, $this->extractAdminCount($partialName), 'partial name=ali matches alice');
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'name'       => 'ali',
+            'name_match' => '0',
+        ];
+        $exactNameMiss = $this->renderAdminsPage();
+        $this->assertSame(0, $this->extractAdminCount($exactNameMiss), 'exact name=ali matches no admin (none is literally ali)');
+
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'name'       => 'alice',
+            'name_match' => '0',
+        ];
+        $exactNameHit = $this->renderAdminsPage();
+        $this->assertSame(1, $this->extractAdminCount($exactNameHit), 'exact name=alice matches alice');
+        $this->assertStringContainsString('>alice<', $exactNameHit);
+
+        // E-mail: every seeded row (admin, alice, bob, charlie) shares
+        // '@example.test', so partial 'example.test' returns 4 and
+        // exact 'example.test' returns 0; exact 'alice@example.test'
+        // narrows back to alice.
+        $_GET = [
+            'p'              => 'admin',
+            'c'              => 'admins',
+            'admemail'       => 'example.test',
+            'admemail_match' => '1',
+        ];
+        $partialEmail = $this->renderAdminsPage();
+        $this->assertSame(4, $this->extractAdminCount($partialEmail), 'partial admemail=example.test matches all 4 admins');
+
+        $_GET = [
+            'p'              => 'admin',
+            'c'              => 'admins',
+            'admemail'       => 'example.test',
+            'admemail_match' => '0',
+        ];
+        $exactEmailMiss = $this->renderAdminsPage();
+        $this->assertSame(0, $this->extractAdminCount($exactEmailMiss), 'exact admemail=example.test matches no admin (none is literally that)');
+
+        $_GET = [
+            'p'              => 'admin',
+            'c'              => 'admins',
+            'admemail'       => 'alice@example.test',
+            'admemail_match' => '0',
+        ];
+        $exactEmailHit = $this->renderAdminsPage();
+        $this->assertSame(1, $this->extractAdminCount($exactEmailHit), 'exact admemail=alice@example.test matches alice');
+        $this->assertStringContainsString('>alice<', $exactEmailHit);
+    }
+
+    /**
      * Multi-select web flag filter accepts the modern `[]` array
      * shape (`?admwebflag[]=ADMIN_OWNER&admwebflag[]=ADMIN_ADD_BAN`).
      * The seed admin and one of our test admins have ADMIN_OWNER —
