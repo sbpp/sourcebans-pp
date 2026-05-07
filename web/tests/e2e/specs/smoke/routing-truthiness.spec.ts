@@ -9,8 +9,8 @@
  *     href) and any other unrecognised `c=…` returns the 404 page slot
  *     with HTTP 404, instead of silently rendering the admin landing.
  *   - **ADM-1** (cont.) — clicking the admin-home Overrides card lands
- *     on `?p=admin&c=admins#overrides` and the overrides editor anchor
- *     is in the DOM.
+ *     on `?p=admin&c=admins&section=overrides` (Pattern A, post-#1275)
+ *     and the overrides editor body is in the DOM.
  *   - **ADM-2** — the audit-log card description no longer contains
  *     the misleading "(coming soon)" copy.
  *   - **AUTH-1** — the lostpassword page rendered to a logged-out
@@ -66,31 +66,40 @@ test.describe('#1207 routing + truthiness fixes', () => {
         });
     });
 
-    test.describe('ADM-1: Overrides card links to the editor', () => {
-        test('admin home Overrides card href anchors to ?c=admins#overrides', async ({ page }) => {
+    test.describe('ADM-1 / #1275: Overrides card links to the Pattern A overrides section', () => {
+        test('admin home Overrides card href routes to ?c=admins&section=overrides', async ({ page }) => {
             await page.goto('/index.php?p=admin');
 
             const card = page.locator('[data-testid="admin-card-overrides"]');
             await expect(card).toBeVisible();
-            await expect(card).toHaveAttribute('href', /index\.php\?p=admin&(?:amp;)?c=admins#overrides$/);
+            // #1275 — the card was previously `?c=admins#overrides`
+            // (Pattern B fragment anchor); admin-admins is now Pattern
+            // A (`?section=…` URL routing) so the in-app deep link
+            // moved with it. The integration test
+            // `web/tests/integration/AdminAdminsSearchTest.php` covers
+            // the dispatcher half (default-section + sidebar gating).
+            await expect(card).toHaveAttribute('href', /index\.php\?p=admin&(?:amp;)?c=admins&(?:amp;)?section=overrides$/);
         });
 
-        test('clicking the Overrides card lands on the admins page with the overrides editor in the DOM', async ({ page }) => {
+        test('clicking the Overrides card lands on the overrides section with its editor in the DOM', async ({ page }) => {
             await page.goto('/index.php?p=admin');
             await page.locator('[data-testid="admin-card-overrides"]').click();
 
-            // The editor lives at the bottom of admin.admins.php's
-            // c=admins route (admin.overrides.php is `require`d there).
-            // The hash anchors to `#overrides` — the wrapper div in
-            // page_admin_overrides.tpl. We assert the URL contains
-            // both the c=admins query and the #overrides fragment,
-            // and that the editor anchor is in the DOM.
-            await expect(page).toHaveURL(/\?p=admin&(?:amp;)?c=admins#overrides$/);
-            // The "Overrides" wrapper div is the editor anchor; the
-            // `overrides-form` testid is the form inside it (added
-            // for the CSRF discipline note in page_admin_overrides.tpl).
-            await expect(page.locator('#overrides')).toBeAttached();
+            // #1275 — the editor is now its own Pattern A render
+            // (`?p=admin&c=admins&section=overrides`). admin.admins.php
+            // requires admin.overrides.php for that branch, which keeps
+            // the existing POST handler path while emitting the editor
+            // inside the standard admin sidebar shell. The
+            // `admin-admins-section-overrides` wrapper testid + the
+            // `overrides-form` testid are the two stable anchors.
+            await expect(page).toHaveURL(/\?p=admin&(?:amp;)?c=admins&(?:amp;)?section=overrides/);
+            await expect(page.locator('[data-testid="admin-admins-section-overrides"]')).toBeVisible();
             await expect(page.locator('[data-testid="overrides-form"]')).toBeVisible();
+            // The Pattern A sidebar's overrides link must be marked
+            // active. The selector follows the standard
+            // `data-testid="admin-tab-<slug>"` shape used by every
+            // Pattern A route after #1259's chrome unification.
+            await expect(page.locator('[data-testid="admin-tab-overrides"]')).toHaveAttribute('aria-current', 'page');
         });
     });
 

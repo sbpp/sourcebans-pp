@@ -5,7 +5,8 @@
  *
  * Drives the intra-page section nav for Pattern A admin routes — the
  * routes that subdivide via `?section=<slug>` URLs (servers, mods,
- * groups, settings; see AGENTS.md "Sub-paged admin routes").
+ * groups, settings, comms, admins, bans; see AGENTS.md "Sub-paged
+ * admin routes").
  *
  * #1259 unified the chrome
  * ------------------------
@@ -38,7 +39,8 @@
  *      only the affordance to leave. This shape is unchanged by #1259.
  *
  * 2. `$tabs !== []` (Pattern A pages: admin.servers, admin.mods,
- *    admin.groups, admin.settings):
+ *    admin.groups, admin.settings, admin.comms, admin.admins,
+ *    admin.bans):
  *      Opens the sidebar shell (`<div class="admin-sidebar-shell">`),
  *      emits `core/admin_sidebar.tpl` (the <aside> + link list), then
  *      opens the content column (`<div class="admin-sidebar-content">`).
@@ -51,10 +53,9 @@
  *      echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
  *      ```
  *
- *      The two-end shape mirrors admin.bans.php's `page-toc-shell`
- *      handling (#1239 Pattern B): the wrapper opens before the View
- *      and closes after, so each `Renderer::render` call slots into
- *      the content column without per-View structural changes.
+ *      The wrapper opens before the View and closes after, so each
+ *      `Renderer::render` call slots into the content column without
+ *      per-View structural changes.
  *
  * Each tab in the `$tabs` array carries:
  *   - `name`        Display label rendered as the link text.

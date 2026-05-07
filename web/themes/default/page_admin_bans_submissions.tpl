@@ -95,13 +95,21 @@
                                below) — a single misfire no longer silently
                                archives the submission. *}
                             <div class="row-actions">
-                                <button type="button"
-                                        class="btn btn--primary btn--sm"
-                                        data-testid="row-action-ban"
-                                        data-action="submission-ban"
-                                        data-subid="{$sub.subid}">
+                                {* #1275 — Pattern A. Pre-#1275 Ban was a JS button
+                                   (data-action="submission-ban") that called
+                                   Actions.BansSetupBan and prefilled the Add Ban
+                                   form on the same page via __sbppApplyBanFields,
+                                   then swapTab(0) to scroll up. Pattern A puts
+                                   the Add Ban form on its own URL — the button
+                                   is now a normal anchor to
+                                   ?section=add-ban&fromsub=<subid>; the add-ban
+                                   handler calls BansSetupBan + __sbppApplyBanFields
+                                   after the form mounts. Same UX, real URL. *}
+                                <a class="btn btn--primary btn--sm"
+                                   data-testid="row-action-ban"
+                                   href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;fromsub={$sub.subid|escape:'url'}">
                                     Ban
-                                </button>
+                                </a>
                                 {if $permissions_editsub}
                                     <button type="button"
                                             class="btn btn--ghost btn--sm"
@@ -312,30 +320,10 @@
         var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action]'));
         if (!btn) return;
         var act = btn.getAttribute('data-action');
-        if (act === 'submission-ban') {
-            e.preventDefault();
-            var subid = Number(btn.dataset.subid);
-            var a = api(), A = actions();
-            if (!a || !A || !Number.isFinite(subid)) return;
-            a.call(A.BansSetupBan, { subid: subid }).then(function (r) {
-                if (!r || !r.ok || !r.data) return;
-                // sbpp2026 ships __sbppApplyBanFields (defined in
-                // admin.bans.php's tail script) as the replacement for
-                // sourcebans.js's legacy applyBanFields. Without this
-                // call the BansSetupBan response would arrive but the
-                // Add Ban form above the queue would stay empty —
-                // silently breaking the entire "Ban a submission" UX.
-                // We keep the legacy name as a fallback so a third-party
-                // theme that still loads sourcebans.js keeps working.
-                var w = /** @type {any} */ (window);
-                var fill = (typeof w.__sbppApplyBanFields === 'function')
-                    ? w.__sbppApplyBanFields
-                    : (typeof w.applyBanFields === 'function' ? w.applyBanFields : null);
-                if (fill) fill(r.data);
-                if (typeof w.swapTab === 'function') w.swapTab(0);
-            });
-            return;
-        }
+        // #1275 — the `submission-ban` data-action handler that called
+        // BansSetupBan + __sbppApplyBanFields + swapTab is gone; the Ban
+        // button is now an anchor to ?section=add-ban&fromsub=<subid>
+        // and the add-ban handler does the prefill on landing.
         if (act === 'submission-archive') {
             e.preventDefault();
             // First click on a non-armed button → arm it and bail.

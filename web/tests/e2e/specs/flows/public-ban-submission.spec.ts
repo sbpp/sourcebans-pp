@@ -158,7 +158,12 @@ test.describe('flow: public ban submission -> admin approve -> public list', () 
         // rows previous specs in this `playwright test` invocation
         // wrote (we don't truncate between tests — see file-level
         // "Why no truncateE2eDb()" comment).
-        await page.goto('/index.php?p=admin&c=bans');
+        //
+        // #1275 — submissions queue is its own Pattern A section
+        // (`?section=submissions`); the bare `?p=admin&c=bans` URL
+        // defaults to `add-ban`, so we navigate to the section URL
+        // explicitly.
+        await page.goto('/index.php?p=admin&c=bans&section=submissions');
         const queueRow = adminSubmissionRow(page, FIXTURE.steam);
         await expect(queueRow).toBeVisible();
         await expect(queueRow.locator('[data-testid="submission-row-name"]')).toContainText(

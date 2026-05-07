@@ -1,10 +1,11 @@
 /**
  * Responsive: admin sub-section sidebar (#1259, replacing the
- * horizontal strip contract from #1207 ADM-8 / #1239).
+ * horizontal strip contract from #1207 ADM-8 / #1239; #1275 brought
+ * admin-admins and admin-bans onto the same shape).
  *
- * iPhone-13 viewport contract for the Pattern A admin pages
- * (servers / mods / groups / settings — every page that subdivides
- * its chrome via `?section=…` URLs):
+ * iPhone-13 viewport contract for every Pattern A admin page
+ * (servers / mods / groups / settings / admins / bans — every page
+ * that subdivides its chrome via `?section=…` URLs):
  *
  *   - Pre-#1259 these routes rendered a horizontal `core/admin_tabs.tpl`
  *     pill strip (servers / mods / groups) AND a separate inline
@@ -12,9 +13,14 @@
  *     shape, completely different chrome. #1259 unifies them on the
  *     Settings-style vertical sidebar partial `core/admin_sidebar.tpl`,
  *     mounted by `AdminTabs.php` whenever `$tabs` is non-empty.
+ *   - Pre-#1275 admin-admins and admin-bans rode a parallel "Pattern B"
+ *     page-level ToC (`page_toc.tpl`) that emitted `#fragment` URLs
+ *     and scrolled within a single long-scroll DOM. #1275 collapsed
+ *     them onto the same `?section=…` shape so the URL is the
+ *     **only** sub-route nav contract on the panel.
  *   - At <=1024px the sidebar collapses to a `<details open>`
- *     accordion (matches `page_toc.tpl`'s mobile shape). The
- *     summary chrome carries a chevron that rotates 180° on toggle.
+ *     accordion. The summary chrome carries a chevron that rotates
+ *     180° on toggle.
  *   - At >=1024px the sidebar floats next to the content column as
  *     a sticky 14rem rail (`grid-template-columns: 14rem 1fr`).
  *     This file's project-gating is mobile-only — the desktop
@@ -51,14 +57,6 @@
  * The per-link `data-testid="admin-tab-<slug>"` matches the legacy
  * `core/admin_tabs.tpl` strip's hook so any spec that anchored on
  * `admin-tab-<slug>` keeps working.
- *
- * #1239 — admin-bans is Pattern B
- * --------------------------------
- * `?p=admin&c=bans` does not render this sidebar — it rides the
- * page-level ToC pattern (admin-admins family) per #1239. Don't add
- * bans assertions here; the bans responsive contract is locked in
- * `responsive/admin-queue.spec.ts` for the moderation queue and the
- * screenshot gallery for the sticky ToC sidebar / accordion.
  *
  * Project gating: mobile-chromium only.
  */
@@ -239,5 +237,99 @@ test.describe('responsive: admin sub-section sidebar', () => {
         await page.goto('/index.php?p=admin&c=servers');
         await expect(page.locator('html')).toHaveClass(/(^|\s)dark(\s|$)/);
         await assertActiveLinkIsHighlighted(page, 'dark');
+    });
+
+    /*
+     * #1275 — admin-admins and admin-bans now ride Pattern A. Cover
+     * each route's sidebar with the same accordion / link-list / active-
+     * link contract the canonical servers test asserts above. The
+     * tests are parametric so adding a new Pattern A admin route is a
+     * single-line entry, not a full spec copy.
+     *
+     * `slugs` lists the entries the AdminTabs sidebar exposes for an
+     * OWNER user against the seeded e2e DB (every permission the
+     * dispatcher will gate on is granted). Feature-flag-gated entries
+     * (e.g. admin-bans's `group-ban`, gated by
+     * `config.enablegroupbanning` which defaults to `'0'`) are NOT in
+     * this list — they're conditionally absent on the default install
+     * and a separate spec below covers the feature-gate contract.
+     */
+    /**
+     * @typedef {Object} PatternASpec
+     * @property {string} route   — ?p=admin&c=… URL slug
+     * @property {string[]} slugs — `?section=` slugs the sidebar should expose
+     * @property {string} active  — slug expected to carry `aria-current="page"`
+     *                              when the page lands without an explicit
+     *                              `&section=…` (the page-handler default)
+     */
+    /** @type {PatternASpec[]} */
+    const patternARoutes = [
+        { route: 'admins', slugs: ['admins', 'add-admin', 'overrides'], active: 'admins' },
+        { route: 'bans',   slugs: ['add-ban', 'protests', 'submissions', 'import'], active: 'add-ban' },
+    ];
+
+    for (const spec of patternARoutes) {
+        test(`admin-${spec.route} sidebar renders all sections at iPhone-13 width`, async ({ page }) => {
+            await page.goto(`/index.php?p=admin&c=${spec.route}`);
+
+            const sidebar = page.locator('[data-testid="admin-sidebar"]');
+            await expect(sidebar).toBeVisible();
+
+            for (const slug of spec.slugs) {
+                const tab = sidebar.locator(`[data-testid="admin-tab-${slug}"]`);
+                await expect(tab, `admin-${spec.route} sidebar must expose ?section=${slug}`).toBeAttached();
+                await expect(tab).toBeVisible();
+            }
+
+            // The default-active section carries `aria-current="page"`
+            // when the page lands without an explicit `&section=…`.
+            // Pre-#1275 admin-admins and admin-bans had no active
+            // signal at all — the page-level ToC scrolled to whatever
+            // the IntersectionObserver picked up first, which raced
+            // with the initial paint.
+            const activeTab = sidebar.locator(`[data-testid="admin-tab-${spec.active}"]`);
+            await expect(activeTab).toHaveAttribute('aria-current', 'page');
+        });
+
+        test(`admin-${spec.route} sidebar navigates between sections without scrolling`, async ({ page }) => {
+            // Pattern A's contract is "click → new URL → server-rendered
+            // page". Smoke that contract: navigate to a non-default
+            // section and assert the URL changes + the active link
+            // moves. Pre-#1275 admin-admins/admin-bans clicks landed
+            // on a `#fragment` URL and the page didn't reload — same
+            // chrome, completely different mental model.
+            await page.goto(`/index.php?p=admin&c=${spec.route}`);
+
+            // Pick the second non-default section (the first is the
+            // default landing — clicking it would be a no-op for this
+            // contract).
+            const targetSlug = spec.slugs.find((s) => s !== spec.active) ?? spec.slugs[1];
+            const sidebar = page.locator('[data-testid="admin-sidebar"]');
+            const link = sidebar.locator(`[data-testid="admin-tab-${targetSlug}"]`);
+            await expect(link).toBeVisible();
+            await link.click();
+
+            await expect(page).toHaveURL(new RegExp(`section=${targetSlug.replace(/-/g, '\\-')}`));
+            await expect(sidebar.locator(`[data-testid="admin-tab-${targetSlug}"]`))
+                .toHaveAttribute('aria-current', 'page');
+        });
+    }
+
+    test('admin-bans group-ban tab is omitted when config.enablegroupbanning is off', async ({ page }) => {
+        // The seeded e2e DB uses the fresh-install defaults from
+        // `web/install/includes/sql/data.sql`, where
+        // `config.enablegroupbanning` is '0'. AdminTabs filters out
+        // any tab whose `config` field is falsy — verify the
+        // group-ban link is not rendered (and consequently can't be
+        // clicked) until the feature flag is flipped on. Pre-#1275
+        // there was no per-section gate at all (the old toc just
+        // skipped the section's render block when the flag was off
+        // but kept a dead anchor in the rail).
+        await page.goto('/index.php?p=admin&c=bans');
+
+        const sidebar = page.locator('[data-testid="admin-sidebar"]');
+        await expect(sidebar).toBeVisible();
+        await expect(sidebar.locator('[data-testid="admin-tab-add-ban"]')).toBeVisible();
+        await expect(sidebar.locator('[data-testid="admin-tab-group-ban"]')).toHaveCount(0);
     });
 });

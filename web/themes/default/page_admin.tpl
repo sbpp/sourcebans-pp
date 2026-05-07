@@ -109,13 +109,14 @@
 
         {if $can_overrides}
             <li>
-                {* The overrides editor lives at the bottom of admin.admins.php's
-                   c=admins route (admin.overrides.php is `require`d there).
-                   The hash anchors to the `#overrides` block in
-                   page_admin_overrides.tpl so clicking the card lands on the
-                   intended editor instead of the admins list (#1207 ADM-1). *}
+                {* The overrides editor is the `?section=overrides` slice of
+                   admin.admins.php's c=admins route — admin.overrides.php
+                   is `require`d there. Pre-#1275 this used a `#overrides`
+                   fragment to anchor inside a long-scroll page; #1275
+                   unified admin-admins on Pattern A so the editor has its
+                   own URL. *}
                 <a class="admin-card"
-                   href="index.php?p=admin&amp;c=admins#overrides"
+                   href="index.php?p=admin&amp;c=admins&amp;section=overrides"
                    data-testid="admin-card-overrides">
                     <div class="admin-card__icon" aria-hidden="true"><i data-lucide="key-round"></i></div>
                     <div class="admin-card__title">Overrides</div>

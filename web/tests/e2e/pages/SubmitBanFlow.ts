@@ -94,13 +94,13 @@ export async function anonymousSubmit(page: Page, fx: SubmissionFixture): Promis
 /**
  * Locate a pending submission row in the admin queue by SteamID.
  *
- * After #1239 the admin bans page renders all sections inside the
- * page-level ToC shell (sticky sidebar at >=1024px / accordion
- * <1024px; see `web/themes/default/page_toc.tpl`). Every section is
- * present in the DOM at the same `?p=admin&c=bans` URL — the ToC
- * scrolls between them via anchor `#…` jumps, so the queue is just
- * one scroll away from the Add Ban form on every viewport. No
- * `&action=…` sub-query is needed.
+ * After #1275 the admin bans page is Pattern A — each section is its
+ * own URL. The submissions queue lives at
+ * `?p=admin&c=bans&section=submissions`; the bare `?p=admin&c=bans`
+ * URL defaults to `add-ban`. Specs that need to drive against the
+ * queue MUST navigate to the section URL explicitly (the locator
+ * itself is section-agnostic, but it returns nothing if the
+ * submissions section isn't currently rendered).
  *
  * We anchor the filter on `submission-row-steam` (a unique-per-row
  * cell that carries the visible SteamID) rather than on the row's
@@ -116,20 +116,26 @@ export function adminSubmissionRow(page: Page, steam: string): ReturnType<Page['
 /**
  * Approve a submission via the live UI flow:
  *
- *   1. Click `[data-testid="row-action-ban"]` on the row → fires
- *      `Actions.BansSetupBan` and pre-populates the Add Ban form via
- *      `__sbppApplyBanFields` (admin.bans.php tail script).
- *   2. Wait until the Add Ban nickname input reflects the
+ *   1. Navigate to the submissions queue at
+ *      `?p=admin&c=bans&section=submissions` — Pattern A means the
+ *      queue and the Add Ban form live on different URLs (post-#1275).
+ *   2. Click `[data-testid="row-action-ban"]` on the row. After
+ *      #1275 this is a normal anchor to
+ *      `?section=add-ban&fromsub=<subid>`; the page navigates and
+ *      the add-ban handler emits a `sb.api.call(Actions.BansSetupBan)`
+ *      tail script that pre-populates the form via
+ *      `__sbppApplyBanFields` once the response lands.
+ *   3. Wait until the Add Ban nickname input reflects the
  *      submission's player name — that's the deterministic terminal
- *      state for "Setup-ban succeeded; form is ready".
- *   3. Pick a reason from the static dropdown. Length defaults to
+ *      state for "navigation completed AND setup-ban prefill succeeded".
+ *   4. Pick a reason from the static dropdown. Length defaults to
  *      Permanent (0), already selected.
- *   4. Click `[data-testid="addban-submit"]` → fires `Actions.BansAdd`
+ *   5. Click `[data-testid="addban-submit"]` → fires `Actions.BansAdd`
  *      with `fromsub=<subid>`, which inserts the ban + flips the
  *      submission to `archiv=3` (the api_bans_add handler updates
  *      every submission with the matching SteamId, so the row leaves
  *      the queue).
- *   5. Wait for the success toast: theme.js's showToast emits a
+ *   6. Wait for the success toast: theme.js's showToast emits a
  *      `.toast[data-kind="success"]` element synchronously inside
  *      the BansAdd `.then()` handler. The visible title is "Ban added"
  *      (the kickit-disabled fallback string from
@@ -151,21 +157,22 @@ export async function adminApprove(
 ): Promise<void> {
     const reasonOption = opts.reasonOption ?? 'Inappropriate Language';
 
-    await page.goto('/index.php?p=admin&c=bans');
+    // #1275 — submissions queue is its own Pattern A section. The
+    // bare `?p=admin&c=bans` URL defaults to `add-ban`, so spec
+    // helpers MUST navigate to the section URL explicitly to find
+    // the submission rows.
+    await page.goto('/index.php?p=admin&c=bans&section=submissions');
 
     const row = adminSubmissionRow(page, fx.steam);
     await expect(row).toBeVisible();
 
+    // Clicking the Ban anchor navigates the page (`?section=add-ban
+    // &fromsub=<subid>`); the add-ban handler emits its own
+    // BansSetupBan tail script that fills the form via
+    // __sbppApplyBanFields. The nickname-input wait below is the
+    // terminal state for "navigation done AND prefill landed".
     await row.locator('[data-testid="row-action-ban"]').click();
 
-    // Terminal state for setup-ban: __sbppApplyBanFields writes the
-    // submission's name into #nickname after the BansSetupBan promise
-    // resolves; that's the deterministic post-setup signal. The Add
-    // Ban form lives ABOVE the submissions queue on the same admin
-    // page — every section sits inside the page-level ToC shell
-    // (#1239), so all five sub-sections (Add a ban / Ban protests /
-    // Ban submissions / Import bans / Group ban) render into the same
-    // DOM and the input is already present when the click fires.
     const nicknameInput = page.locator('[data-testid="addban-nickname"]');
     await expect(nicknameInput).toHaveValue(fx.playerName);
 

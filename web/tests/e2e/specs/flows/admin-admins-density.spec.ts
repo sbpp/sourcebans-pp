@@ -1,14 +1,18 @@
 /**
- * #1207 ADM-3 + ADM-4 — admin/admins page density rework.
+ * #1207 ADM-3 + ADM-4 — admin/admins page density rework, updated by
+ * #1275 to assert Pattern A `?section=…` routing.
  *
  * Two findings, one slice:
  *
- *   - **ADM-3** — the admin/admins route stacks search + admins list
- *     + add admin + overrides + add override on one long scroll. We
- *     paint a sticky page-level ToC at >=1024px (anchor sidebar) and
- *     an accordion ToC at <1024px so users can jump directly to
- *     "Add admin" or "Overrides" without paging past the search and
- *     listing.
+ *   - **ADM-3** — admin-admins used to stack search + admins list +
+ *     add admin + overrides + add override on one long scroll. The
+ *     pre-#1275 fix painted a sticky page-level ToC at >=1024px and
+ *     an accordion at <1024px so users could jump directly between
+ *     anchored sections. #1275 swapped that for Pattern A — each
+ *     section is its own URL (`?section=admins|add-admin|overrides`).
+ *     The chrome assertions stay (sidebar visible at desktop, link
+ *     list intact at mobile, every link navigable) but the contract
+ *     is now URL-driven instead of fragment-scroll-driven.
  *   - **ADM-4** — the advanced-search box used to ship 8 separate
  *     Search buttons, each submitting one filter at a time. The
  *     redesign collapses that to a single submit; admin.admins.php
@@ -21,23 +25,21 @@
  * Selector discipline
  * -------------------
  * Anchors are `data-testid` from the locked hooks in
- * page_admin_admins_list.tpl, admin.admins.toc.tpl,
+ * page_admin_admins_*.tpl, core/admin_sidebar.tpl,
  * box_admin_admins_search.tpl. Project-default storage state runs
- * the spec as the seeded admin/admin (owner). Where this spec asserts
- * an "in viewport after click" relationship we use Playwright's
- * `boundingBox()` against the layout viewport rather than CSS
- * intersection observer probes — works for both the desktop scroll
- * shell and the mobile root scroll.
+ * the spec as the seeded admin/admin (owner). The Pattern A
+ * navigation is asserted through URL changes + `aria-current="page"`
+ * — never visible-text or class chains.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
 import { AdminAdminsPage } from '../../pages/admin/AdminAdmins.ts';
 
-test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
+test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', () => {
 
-    // ----- ADM-3 — desktop sticky anchor sidebar ----------------------
+    // ----- ADM-3 (#1275) — sidebar navigates between sections ---------
 
-    test('ADM-3 desktop: sticky anchor sidebar visible and ToC links scroll to sections', async ({ page }, testInfo) => {
+    test('ADM-3 desktop: sidebar visible and links route between sections', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'chromium', 'Sticky-sidebar contract is desktop-only.');
 
         const p = new AdminAdminsPage(page);
@@ -46,45 +48,31 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
         await expect(p.shell).toBeVisible();
         await expect(p.toc).toBeVisible();
 
-        // Each ToC link must be present + anchored at the matching
-        // section. Tap each and assert: URL.hash flips + the section
-        // sits inside the layout viewport via boundingBox. We don't
-        // pin the section to the top because the *last* section
-        // (#add-override) can never reach the top — there isn't
-        // enough document below it to scroll it up. The contract is
-        // "scrolls to the right section", i.e. the section is now
-        // intersecting the viewport, not "section is at y=64".
-        for (const section of ['search', 'admins', 'add-admin', 'overrides', 'add-override'] as const) {
-            const link = p.tocLink(section);
+        // Each Pattern A link must land on its own URL with the
+        // matching section body in the DOM. Pre-#1275 every section
+        // sat in one scroll-shell; now each section is a distinct
+        // server render.
+        for (const slug of ['admins', 'add-admin', 'overrides'] as const) {
+            const link = p.tocLink(slug);
             await expect(link).toBeVisible();
             await link.click();
 
-            await expect(page).toHaveURL(new RegExp(`#${section}$`));
-
-            const target = p.section(section);
-            // Wait for the anchor scroll to settle. `prefers-reduced-motion`
-            // is set globally so this is essentially synchronous; we
-            // still poll because the click + hash + scroll trio is
-            // microtask-ordered and `boundingBox()` runs against the
-            // post-paint geometry.
-            await expect(target).toBeInViewport();
-
-            const targetBox = await target.boundingBox();
-            const viewport = page.viewportSize();
-            expect(targetBox).not.toBeNull();
-            expect(viewport).not.toBeNull();
-            if (targetBox && viewport) {
-                // The section's bounding box must overlap the viewport:
-                // top edge above the bottom AND bottom edge below the top.
-                expect(targetBox.y).toBeLessThan(viewport.height);
-                expect(targetBox.y + targetBox.height).toBeGreaterThan(0);
-            }
+            await expect(page).toHaveURL(new RegExp(`section=${slug.replace(/-/g, '\\-')}(?:&|$)`));
+            await expect(p.tocLink(slug)).toHaveAttribute('aria-current', 'page');
+            // The active section's body MUST be in the DOM. The
+            // `admins` section embeds the search box (under
+            // `admin-admins-section-search`) above the list (under
+            // `admin-admins-section-admins`) — assert on the latter
+            // since the search testid lives inside both surfaces in
+            // the rendered DOM.
+            const sectionTestid = slug === 'admins' ? 'admin-admins-section-admins' : `admin-admins-section-${slug}`;
+            await expect(page.locator(`[data-testid="${sectionTestid}"]`)).toBeVisible();
         }
     });
 
-    // ----- ADM-3 — mobile accordion ToC -------------------------------
+    // ----- ADM-3 (#1275) — mobile accordion sidebar -------------------
 
-    test('ADM-3 mobile: accordion ToC visible and tapping a row scrolls', async ({ page }, testInfo) => {
+    test('ADM-3 mobile: accordion sidebar visible and link routes correctly', async ({ page }, testInfo) => {
         test.skip(testInfo.project.name !== 'mobile-chromium', 'Accordion contract is mobile-only.');
 
         const p = new AdminAdminsPage(page);
@@ -93,18 +81,17 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
         await expect(p.toc).toBeVisible();
 
         // The mobile chrome is `<details open>` so the link list is
-        // visible without an extra tap. Pin the accordion summary
-        // *contains* the canonical "On this page" label so we don't
-        // tie the test to icon swaps. The summary itself must be
-        // tappable (not the desktop `display: none`).
+        // visible without an extra tap. The summary contains the
+        // configured sidebar label ("Admin sections" — assigned by
+        // admin.admins.php's `new AdminTabs(...)` call).
         const summary = p.toc.locator('summary');
         await expect(summary).toBeVisible();
-        await expect(summary).toContainText(/On this page/i);
 
-        // Tap "Add admin" — page must scroll the section into view.
+        // Tap "Add admin" — page navigates to its dedicated URL.
         await p.tocLink('add-admin').click();
-        await expect(page).toHaveURL(/#add-admin$/);
-        await expect(p.section('add-admin')).toBeInViewport();
+        await expect(page).toHaveURL(/section=add-admin(?:&|$)/);
+        await expect(p.tocLink('add-admin')).toHaveAttribute('aria-current', 'page');
+        await expect(page.locator('[data-testid="admin-admins-section-add-admin"]')).toBeVisible();
     });
 
     // ----- ADM-4 — single-submit search -------------------------------
@@ -152,6 +139,9 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
         const url = new URL(page.url());
         expect(url.searchParams.get('name')).toBe('zzznoadminmatchesthis');
         expect(url.searchParams.get('steam_match')).toBe('1');
+        // #1275 — the form carries `<input type="hidden" name="section" value="admins">`
+        // so the post-submit URL keeps the user on the admins section.
+        expect(url.searchParams.get('section')).toBe('admins');
         const submitNavs = requests.filter(
             (u) => u.includes('p=admin') && u.includes('c=admins') && u.includes('name=zzznoadminmatchesthis'),
         );
@@ -173,7 +163,7 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
         test.skip(testInfo.project.name !== 'chromium', 'Pre-fill contract is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
-        await page.goto('/index.php?p=admin&c=admins&name=admin&steamid=STEAM_0:0:0&steam_match=1');
+        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin&steamid=STEAM_0:0:0&steam_match=1');
         await expect(p.pageMounted).toBeVisible();
 
         // The form re-paints from `$active_filter_*` on the View
@@ -190,7 +180,7 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
         test.skip(testInfo.project.name !== 'chromium', 'Reset link is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
-        await page.goto('/index.php?p=admin&c=admins&name=admin');
+        await page.goto('/index.php?p=admin&c=admins&section=admins&name=admin');
         await expect(p.searchInput('name')).toHaveValue('admin');
 
         await p.searchReset.click();
@@ -198,20 +188,23 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4)', () => {
         await expect(p.searchInput('name')).toHaveValue('');
     });
 
-    // ----- ADM-3 — Add admin CTA in the page header anchors -----------
+    // ----- ADM-3 (#1275) — Add admin CTA navigates to its section -----
 
-    test('ADM-3: header "Add admin" CTA scrolls to the Add admin section', async ({ page }, testInfo) => {
-        test.skip(testInfo.project.name !== 'chromium', 'In-page anchor is project-agnostic; pinning to desktop for runtime.');
+    test('ADM-3: header "Add admin" CTA navigates to the add-admin section', async ({ page }, testInfo) => {
+        test.skip(testInfo.project.name !== 'chromium', 'In-page CTA is project-agnostic; pinning to desktop for runtime.');
 
         const p = new AdminAdminsPage(page);
         await p.goto();
 
         const cta = page.locator('[data-testid="admin-add-cta"]');
         await expect(cta).toBeVisible();
-        await expect(cta).toHaveAttribute('href', '#add-admin');
+        // Pre-#1275 this was `#add-admin` (anchor scroll within the
+        // long-scroll page); now it's a Pattern A URL.
+        await expect(cta).toHaveAttribute('href', /section=add-admin/);
         await cta.click();
 
-        await expect(page).toHaveURL(/#add-admin$/);
-        await expect(p.section('add-admin')).toBeInViewport();
+        await expect(page).toHaveURL(/section=add-admin/);
+        await expect(p.tocLink('add-admin')).toHaveAttribute('aria-current', 'page');
+        await expect(page.locator('[data-testid="admin-admins-section-add-admin"]')).toBeVisible();
     });
 });

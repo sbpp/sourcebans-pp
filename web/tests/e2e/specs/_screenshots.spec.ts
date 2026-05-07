@@ -458,7 +458,10 @@ test.describe('@screenshot flow-public-submission', () => {
             // this surface) so the row is in the DOM by the time
             // theme application is observable on <html>.
             await pinTheme(page, theme);
-            await page.goto('/index.php?p=admin&c=bans');
+            // #1275 — submissions queue lives at Pattern A's
+            // `?section=submissions`; bare `?p=admin&c=bans` defaults
+            // to `add-ban`.
+            await page.goto('/index.php?p=admin&c=bans&section=submissions');
             await expect(
                 page
                     .locator('[data-testid="submission-row"]')

@@ -9,7 +9,7 @@
             "title": "Submission Archived",
             "body": "The selected submission has been moved to the archive!",
             "kind": "green",
-            "redir": "index.php?p=admin&c=bans"
+            "redir": "index.php?p=admin&c=bans&section=submissions"
         }
     }
 }

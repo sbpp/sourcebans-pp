@@ -691,13 +691,25 @@ foreach ($res as $row) {
         $alrdybnd = $GLOBALS['PDO']->single();
     }
     if ($alrdybnd['count'] == 0) {
-        $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> Reban', "index.php?p=admin&c=bans" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+        // #1275 — admin-bans is Pattern A; the legacy `#^0` fragment
+        // anchored the old page-toc add-ban section. The page handler
+        // infers `add-ban` from `?rebanid=` directly (see the smarter-
+        // default block in admin.bans.php), so the section param is
+        // optional but explicit here for clarity + bookmark stability.
+        $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> Reban', "index.php?p=admin&c=bans&section=add-ban" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
     } else {
         $data['reban_link'] = false;
     }
-    $data['blockcomm_link']  = CreateLinkR('<i class="fas fa-ban fa-lg"></i> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+    // `#^0` was a page-toc anchor target for admin-comms's add form
+    // (no Pattern B equivalent; admin-comms is single-section Pattern
+    // A). Drop the dead fragment.
+    $data['blockcomm_link']  = CreateLinkR('<i class="fas fa-ban fa-lg"></i> Block Comms', "index.php?p=admin&c=comms" . $pagelink . "&blockfromban=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
     $data['details_link']    = CreateLinkR('click', 'getdemo.php?type=B&id=' . urlencode($row['ban_id']));
-    $data['groups_link']     = CreateLinkR('<i class="fas fa-users fa-lg"></i> Show Groups', "index.php?p=admin&c=bans&fid=" . urlencode($data['communityid']) . "#^4");
+    // `#^4` was the old page-toc anchor for admin-bans's group-ban
+    // section. Pattern A routes `?fid=…` to `?section=group-ban`
+    // automatically (see the smarter-default block in admin.bans.php),
+    // but we make it explicit + drop the dead fragment.
+    $data['groups_link']     = CreateLinkR('<i class="fas fa-users fa-lg"></i> Show Groups', "index.php?p=admin&c=bans&section=group-ban&fid=" . urlencode($data['communityid']));
     $data['friend_ban_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
     $data['edit_link']       = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 

@@ -25,6 +25,14 @@
  * `submission-row-steam`, `row-action-ban`, `row-action-remove`,
  * `row-action-contact`) — the testid contract is unchanged by the
  * card-layout fix; only the surrounding CSS class set moves.
+ *
+ * #1275 — Pattern A routing
+ * -------------------------
+ * Admin-bans is now Pattern A; the submissions queue lives at
+ * `?p=admin&c=bans&section=submissions` (the default landing for
+ * `?p=admin&c=bans` is `add-ban`, the first accessible section).
+ * The card-layout invariant moves with the section — these tests
+ * navigate to the submissions URL explicitly.
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
@@ -63,7 +71,9 @@ test.describe('responsive: admin moderation queue (#1207 PUB-2)', () => {
             await anonCtx.close();
         }
 
-        await page.goto('/index.php?p=admin&c=bans');
+        // #1275 — submissions is Pattern A's `?section=submissions`;
+        // the bare `?p=admin&c=bans` URL defaults to `add-ban`.
+        await page.goto('/index.php?p=admin&c=bans&section=submissions');
 
         const row = page
             .locator('[data-testid="submission-row"]')
@@ -129,7 +139,9 @@ test.describe('responsive: admin moderation queue (#1207 PUB-2)', () => {
             await anonCtx.close();
         }
 
-        await page.goto('/index.php?p=admin&c=bans');
+        // #1275 — submissions is Pattern A's `?section=submissions`;
+        // the bare `?p=admin&c=bans` URL defaults to `add-ban`.
+        await page.goto('/index.php?p=admin&c=bans&section=submissions');
 
         const row = page
             .locator('[data-testid="submission-row"]')

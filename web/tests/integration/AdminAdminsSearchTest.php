@@ -324,45 +324,59 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
-     * Structural invariant for #1207 ADM-3: every ToC link in the
-     * rendered HTML must point at an anchored `<section>` that's
-     * actually in the DOM. The slicing brief calls this out
-     * explicitly: "The ToC entries are gated on the same permissions
-     * the dispatcher uses (no dead links)." This case locks the
-     * happy path (owner sees every entry; every entry has its
-     * matching section); the next case locks the gated path (an
-     * admin without LIST_ADMINS doesn't see Search/Admins links).
+     * Structural invariant for #1275: the Pattern A sidebar must
+     * carry every section the current user can reach. The owner
+     * (seeded `admin/admin`) sees all three sections (`admins`,
+     * `add-admin`, `overrides`); the dead-link contract is that the
+     * sidebar is in lockstep with the dispatcher's permission gates,
+     * not that every section's body renders simultaneously (the
+     * page only ever renders ONE section per request).
+     *
+     * Pre-#1275 (Pattern B) every section's body stacked into the
+     * same DOM, so this test compared the ToC link list against the
+     * `<section>` count. Pattern A renders one body per request, so
+     * the assertion shape pivots: enumerate the sidebar links and
+     * confirm the union matches the owner's accessible set.
      */
-    public function testTocLinksMatchRenderedSectionsForOwner(): void
+    public function testSidebarCarriesEveryAccessibleSectionForOwner(): void
     {
         $_GET = ['p' => 'admin', 'c' => 'admins'];
 
         $html = $this->renderAdminsPage();
 
+        $sidebarLinks = $this->renderedSidebarLinkSlugs($html);
         $this->assertSame(
-            $this->renderedSectionSlugs($html),
-            $this->renderedTocLinkSlugs($html),
-            'every ToC link must have a matching <section> in the DOM (owner sees all five sections)'
+            ['add-admin', 'admins', 'overrides'],
+            $sidebarLinks,
+            'owner must see every Pattern A admin-admins section in the sidebar'
         );
-        // Belt-and-braces: confirm the seeded owner does in fact see
-        // all five entries — guards against a future refactor that
-        // accidentally elides every entry uniformly.
-        $this->assertSame(
-            ['add-admin', 'add-override', 'admins', 'overrides', 'search'],
-            $this->renderedTocLinkSlugs($html),
-            'owner sees the full ToC'
-        );
+
+        // The default render (no `?section=`) lands on the first
+        // accessible section — for the owner that's `admins`. The
+        // section's body MUST be in the DOM (this test belts the
+        // dispatcher's first-accessible default-section logic). The
+        // `admins` template embeds the search box above the table so
+        // both `admin-admins-section-search` and `…-section-admins`
+        // testids land — they're sibling `<div>`s inside the same
+        // section, not a separate page render.
+        $this->assertSame(['admins', 'search'], $this->renderedSectionSlugs($html));
     }
 
     /**
-     * #1207 ADM-3 dead-link guard: an admin who holds ADMIN_ADD_ADMINS
-     * but NOT ADMIN_LIST_ADMINS lands on this page through the "Add
-     * new admin" tab. The Search and Admins sections live inside the
-     * `{else}` arm of `{if !$can_list_admins}` in
-     * page_admin_admins_list.tpl, so they never reach the DOM for
-     * this user. The ToC must elide their links accordingly.
+     * #1275 dead-link guard: an admin who holds ADMIN_ADD_ADMINS but
+     * NOT ADMIN_LIST_ADMINS must NOT see the `admins` link in the
+     * sidebar — the dispatcher would render an access-denied stub if
+     * they followed it. Pattern A's contract is single-source: the
+     * sidebar's `permission` field on each `$sections` entry decides
+     * visibility; the dispatcher honours the same gate when picking
+     * the default section.
+     *
+     * Pre-#1275 (Pattern B) the equivalent test compared the ToC
+     * link list against the rendered `<section>` count in one DOM.
+     * Now we assert the sidebar's link slugs and that the default
+     * landing falls back to the first accessible section.
      */
-    public function testTocElidesSearchAndAdminsForAddOnlyAdmin(): void
+    public function testSidebarElidesAdminsForAddOnlyAdmin(): void
     {
         // Ad-hoc admin without OWNER, without LIST_ADMINS — only
         // ADMIN_ADD_ADMINS. extraflags carries the bit directly so
@@ -385,24 +399,19 @@ final class AdminAdminsSearchTest extends ApiTestCase
 
         $html = $this->renderAdminsPage();
 
-        $tocLinks = $this->renderedTocLinkSlugs($html);
-        $sections = $this->renderedSectionSlugs($html);
+        $sidebarLinks = $this->renderedSidebarLinkSlugs($html);
 
-        // The dead-link contract: the ToC must NEVER carry an entry
-        // that the dispatcher elided.
-        $this->assertSame(
-            $sections,
-            $tocLinks,
-            'ToC and rendered sections must stay in lockstep across permission combinations'
-        );
+        // ADMIN_ADD_ADMINS gates both `add-admin` and `overrides`
+        // (the two Pattern A sections that surface the SourceMod
+        // override editor + the Add admin form). `admins` is gated
+        // on ADMIN_LIST_ADMINS and must be elided.
+        $this->assertSame(['add-admin', 'overrides'], $sidebarLinks);
+        $this->assertStringNotContainsString('data-testid="admin-tab-admins"', $html);
 
-        // And the specific narrowing this test exercises: Search and
-        // Admins are out, Add admin / Overrides / Add override are
-        // in. The list is sorted (renderedTocLinkSlugs() sorts) so we
-        // can compare against a known-good ordering.
-        $this->assertSame(['add-admin', 'add-override', 'overrides'], $tocLinks);
-        $this->assertStringNotContainsString('admin-admins-toc-link-search', $html);
-        $this->assertStringNotContainsString('admin-admins-toc-link-admins"', $html);
+        // The dispatcher's first-accessible-section default kicks in
+        // here: with no `?section=`, the user lands on `add-admin`
+        // (the first entry whose permission they hold).
+        $this->assertSame(['add-admin'], $this->renderedSectionSlugs($html));
     }
 
     private function seedTestAdmins(): void
@@ -519,16 +528,16 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
-     * Extract every ToC link slug (`search`, `admins`, `add-admin`, …)
-     * from `[data-testid="admin-admins-toc-link-<slug>"]` attributes
-     * in the rendered HTML. Sorted so callers can compare against a
-     * fixed ordering without depending on emit order.
+     * Extract every Pattern A sidebar link slug (`admins`,
+     * `add-admin`, `overrides`) from `[data-testid="admin-tab-<slug>"]`
+     * attributes in the rendered HTML. Sorted so callers can compare
+     * against a fixed ordering without depending on emit order.
      *
      * @return list<string>
      */
-    private function renderedTocLinkSlugs(string $html): array
+    private function renderedSidebarLinkSlugs(string $html): array
     {
-        preg_match_all('/data-testid="admin-admins-toc-link-([a-z-]+)"/', $html, $m);
+        preg_match_all('/data-testid="admin-tab-([a-z-]+)"/', $html, $m);
         $slugs = $m[1];
         sort($slugs);
         return array_values(array_unique($slugs));
@@ -536,7 +545,9 @@ final class AdminAdminsSearchTest extends ApiTestCase
 
     /**
      * Extract every section slug from `[data-testid="admin-admins-section-<slug>"]`.
-     * Pair to {@see renderedTocLinkSlugs}.
+     * Under Pattern A only ONE section's body renders per request,
+     * so callers should expect a single-element list (or empty if
+     * the user lacks access to every gated section).
      *
      * @return list<string>
      */

@@ -225,11 +225,17 @@ function api_bans_add_comment(array $params): array
     $page  = (int)($params['page']  ?? -1);
 
     $pagelink = $page !== -1 ? '&page=' . $page : '';
+    // #1275 — admin-bans is Pattern A (`?section=…`); the legacy
+    // `#^2` / `#^1` fragment anchors that targeted the old page-toc
+    // chrome are no longer wired (the page handler renders ONE
+    // section per request now). Redirect callers back to the section
+    // they came from so adding a comment doesn't ricochet to the
+    // default add-ban surface.
     $redir = match ($ctype) {
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
-        'S' => '?p=admin&c=bans#^2',
-        'P' => '?p=admin&c=bans#^1',
+        'S' => '?p=admin&c=bans&section=submissions',
+        'P' => '?p=admin&c=bans&section=protests',
         default => null,
     };
     if ($redir === null) {
@@ -262,11 +268,13 @@ function api_bans_edit_comment(array $params): array
     $page  = (int)($params['page']  ?? -1);
 
     $pagelink = $page !== -1 ? '&page=' . $page : '';
+    // #1275 — see api_bans_add_comment for the rationale; submissions
+    // / protests redirect back into their own Pattern A sections.
     $redir = match ($ctype) {
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
-        'S' => '?p=admin&c=bans#^2',
-        'P' => '?p=admin&c=bans#^1',
+        'S' => '?p=admin&c=bans&section=submissions',
+        'P' => '?p=admin&c=bans&section=protests',
         default => null,
     };
     if ($redir === null) {
@@ -298,9 +306,14 @@ function api_bans_remove_comment(array $params): array
     $page  = (int)($params['page']  ?? -1);
 
     $pagelink = $page !== -1 ? '&page=' . $page : '';
+    // #1275 — match the section-aware redirect shape from
+    // api_bans_add_comment / api_bans_edit_comment so a deleted
+    // comment lands the admin back on the queue they were on.
     $redir = match ($ctype) {
         'B' => '?p=banlist' . $pagelink,
         'C' => '?p=commslist' . $pagelink,
+        'S' => '?p=admin&c=bans&section=submissions',
+        'P' => '?p=admin&c=bans&section=protests',
         default => '?p=admin&c=bans',
     };
 

@@ -266,7 +266,12 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                     '{server}' => $mailserver,
                     '{reason}' => $_POST['BanReason'],
                     '{home}' => Host::complete(true),
-                    '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans#%5E2'
+                    // #1275 — admin-bans is Pattern A; the legacy `#^2`
+                    // anchor that targeted the old page-toc chrome is no
+                    // longer wired. Link directly to the submissions
+                    // section so the email recipient lands on the queue
+                    // they're being asked to review.
+                    '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans&section=submissions'
                 ]);
             }
 

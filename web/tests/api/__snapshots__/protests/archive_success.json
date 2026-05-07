@@ -9,7 +9,7 @@
             "title": "Protest Archived",
             "body": "The selected protest has been moved to the archive.",
             "kind": "green",
-            "redir": "index.php?p=admin&c=bans"
+            "redir": "index.php?p=admin&c=bans&section=protests"
         }
     }
 }

@@ -11,11 +11,17 @@ import { BasePage } from '../_base.ts';
  * data-testid="admin-count">` lands unconditionally — that's the
  * stable terminal mark we wait on.
  *
- * #1207 ADM-3 / ADM-4 hooks
- * -------------------------
- * The page-level ToC and the rebuilt single-submit advanced search
- * box expose stable testids; pin them on the page object so flow
- * specs don't have to rebuild the selector tree.
+ * #1275 — Pattern A `?section=…` routing
+ * --------------------------------------
+ * Pre-#1275 the page rode the page-level ToC (#1207 ADM-3); each
+ * "section" was an anchor target in a single long-scroll DOM. #1275
+ * collapsed the page onto Pattern A: each section is its own URL
+ * (`?section=admins`, `?section=add-admin`, `?section=overrides`),
+ * so `tocLink()` / `section()` now both pivot on the standard
+ * Pattern A `data-testid="admin-tab-<slug>"` hook. The
+ * `data-testid="admin-admins-section-<slug>"` wrappers stay on the
+ * rendered section body so cross-section assertions (e.g. "the
+ * search form is inside the admins section") still work.
  */
 export class AdminAdminsPage extends BasePage {
     constructor(page: Page) {
@@ -28,22 +34,27 @@ export class AdminAdminsPage extends BasePage {
         return this.page.locator('[data-testid="admin-count"]');
     }
 
-    /** ADM-3 — outer page wrapper that hosts the sticky ToC sidebar. */
+    /** Pattern A — outer page wrapper (now the admin sidebar shell). */
     get shell(): Locator {
-        return this.page.locator('[data-testid="admin-admins-shell"]');
+        return this.page.locator('[data-testid="admin-sidebar-shell"]');
     }
 
-    /** ADM-3 — the page-level ToC (anchor sidebar / accordion). */
+    /** Pattern A — the vertical sidebar (replaces the page-level ToC). */
     get toc(): Locator {
-        return this.page.locator('[data-testid="admin-admins-toc"]');
+        return this.page.locator('[data-testid="admin-sidebar"]');
     }
 
-    /** ADM-3 — single ToC link by section key. */
-    tocLink(section: 'search' | 'admins' | 'add-admin' | 'overrides' | 'add-override'): Locator {
-        return this.page.locator(`[data-testid="admin-admins-toc-link-${section}"]`);
+    /** Pattern A — single sidebar link by section slug. */
+    tocLink(section: 'admins' | 'add-admin' | 'overrides'): Locator {
+        return this.page.locator(`[data-testid="admin-tab-${section}"]`);
     }
 
-    /** ADM-3 — anchored section by key (matches the link slugs above). */
+    /**
+     * The rendered section body. Each section is its own URL after
+     * #1275, so on most landings only one section's body is in the
+     * DOM — the locator returns whichever section's body is rendered
+     * (search lives inside `admins`).
+     */
     section(section: 'search' | 'admins' | 'add-admin' | 'overrides' | 'add-override'): Locator {
         return this.page.locator(`[data-testid="admin-admins-section-${section}"]`);
     }

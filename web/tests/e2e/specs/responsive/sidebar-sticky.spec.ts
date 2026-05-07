@@ -31,15 +31,23 @@
  * Choice of test pages: two surfaces exercise complementary parts of
  * the contract.
  *
- *   - **`?p=admin&c=bans`** (the canonical tall page) rides the
- *     multi-section page-level ToC layout (Add a ban form + Ban
- *     protests + Ban submissions + Import bans + Group ban) and is
- *     reliably taller than the 720px desktop viewport even on the
- *     bare e2e seed (the forms and section chrome are structural,
- *     not row-count-driven). On a tall page the strict assertion is
- *     "sidebar.top === 0 at scroll = document.scrollHeight" — the
- *     pre-fix bug presented here as the brand area shifting up by
- *     `footerHeight` (~75px) at the very bottom; the post-fix
+ *   - **`?p=admin&c=settings`** (the canonical tall page) defaults
+ *     to the `settings` Pattern A section. The settings template
+ *     (`page_admin_settings_settings.tpl`) is the panel's longest
+ *     single-pane form (~700 lines of fieldsets — site basics, mail,
+ *     banlist, comms, dashboard intro editor + preview, …) and is
+ *     reliably ≥1100px tall against the bare e2e seed regardless of
+ *     row counts in any moderation table. Pre-#1275 the test pointed
+ *     at `?p=admin&c=bans` because that page stacked all five sections
+ *     (Add a ban / Ban protests / Ban submissions / Import bans /
+ *     Group ban) into one long DOM via the page-level ToC; #1275
+ *     collapsed each into its own URL, so the bare add-ban form was
+ *     no longer guaranteed taller than the 720px viewport buffer this
+ *     test demands. Settings is a pure Pattern A page (#1239) that's
+ *     unaffected by the migration. On a tall page the strict
+ *     assertion is "sidebar.top === 0 at scroll = document.scrollHeight"
+ *     — the pre-fix bug presented here as the brand area shifting up
+ *     by `footerHeight` (~75px) at the very bottom; the post-fix
  *     contract is that sticky never releases.
  *   - **`?p=admin&c=audit`** with an empty audit log (the bare e2e
  *     seed) is the BARELY-tall surface where the pre-fix bug was
@@ -56,7 +64,7 @@
  *     keeping it under test means a future refactor that
  *     re-introduces a small `docHeight - viewport` gap (e.g.
  *     ships a tall hero banner that's outside `.app`) would fail
- *     here even though admin-bans would still pass.
+ *     here even though admin-settings would still pass.
  *
  * Project gating: this whole describe runs only on `chromium`
  * (Desktop Chrome at 1280x720). The `mobile-chromium` project
@@ -65,7 +73,6 @@
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
-import { AdminBansPage } from '../../pages/admin/AdminBans.ts';
 
 test.describe('responsive: sidebar sticky at desktop', () => {
     test.beforeEach(({}, testInfo) => {
@@ -75,10 +82,13 @@ test.describe('responsive: sidebar sticky at desktop', () => {
         );
     });
 
-    test('sidebar stays pinned at viewport y=0 across the entire scroll range of admin-bans', async ({ page }) => {
-        const p = new AdminBansPage(page);
-        await p.goto();
-        await expect(p.pageMounted).toBeVisible();
+    test('sidebar stays pinned at viewport y=0 across the entire scroll range of admin-settings', async ({ page }) => {
+        await page.goto('/index.php?p=admin&c=settings');
+        // The settings page mounts the AdminTabs sidebar shell + the
+        // settings View. Anchor on the sidebar shell as the
+        // "page mounted" signal — it's the wrapper AdminTabs opens
+        // before the page body renders.
+        await expect(page.locator('[data-testid="admin-sidebar-shell"]')).toBeVisible();
 
         // Sanity: the page has to be taller than the viewport for the
         // sticky test to be meaningful. If the page fits in the
@@ -90,7 +100,7 @@ test.describe('responsive: sidebar sticky at desktop', () => {
         }));
         expect(
             docHeight,
-            `admin-bans must be taller than the viewport (got docHeight=${docHeight}, viewport=${viewport})`,
+            `admin-settings must be taller than the viewport (got docHeight=${docHeight}, viewport=${viewport})`,
         ).toBeGreaterThan(viewport + 200);
 
         // The main sidebar's <nav> is uniquely identified by its ARIA
@@ -207,9 +217,9 @@ test.describe('responsive: sidebar sticky at desktop', () => {
         // `.app` collapses to its content height (which on the
         // bare-seed audit page can fit in 720px). That joint
         // regression presents as `docHeight === viewport` and the
-        // bottom-walk silently no-ops here. The admin-bans guard
+        // bottom-walk silently no-ops here. The admin-settings guard
         // above is the load-bearing tall-page invariant — it fires
-        // regardless of footer placement, because admin-bans is
+        // regardless of footer placement, because admin-settings is
         // structurally taller than the viewport on its own. Treat
         // this audit-page test as the surface-level memorial of
         // rumblefrog's original report, not as a complete

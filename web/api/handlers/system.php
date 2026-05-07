@@ -358,12 +358,20 @@ function api_system_send_mail(array $params): array
 
     Log::add('m', 'Email Sent', "$username send an email to $email. Subject: '[SourceBans++] $subject'; Message: $message");
 
+    // #1275 — admin-bans is Pattern A; the email-sending UI is reached
+    // from one of the two queues, so route the operator back to the
+    // queue they came from. `$type` is 's' (submission) or 'p'
+    // (protest) — guarded above, so the match is exhaustive.
+    $redir = $type === 's'
+        ? 'index.php?p=admin&c=bans&section=submissions'
+        : 'index.php?p=admin&c=bans&section=protests';
+
     return [
         'message' => [
             'title' => 'Email Sent',
             'body'  => 'The email has been sent to the user.',
             'kind'  => 'green',
-            'redir' => 'index.php?p=admin&c=bans',
+            'redir' => $redir,
         ],
     ];
 }

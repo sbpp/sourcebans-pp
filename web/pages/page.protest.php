@@ -166,7 +166,12 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
                 '{steamid}' => $_POST['SteamID'],
                 '{banadmin}' => $protadmin['user'],
                 '{message}' => $_POST['BanReason'],
-                '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans#%5E1',
+                // #1275 — admin-bans is Pattern A; the legacy `#^1`
+                // anchor that targeted the old page-toc chrome is no
+                // longer wired. Link directly to the protests section
+                // so the email recipient lands on the queue they're
+                // being asked to review.
+                '{link}' => Host::complete(true) . '/index.php?p=admin&c=bans&section=protests',
                 '{home}' => Host::complete(true)
             ]);
         }

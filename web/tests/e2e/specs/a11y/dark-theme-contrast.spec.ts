@@ -146,16 +146,18 @@ test.describe('#1207 dark-theme contrast', () => {
     });
 
     test('CC-4 admin/bans Current sub-tab paints --brand-700 in dark mode', async ({ page }) => {
-        await pinTheme(page, 'dark', '/index.php?p=admin&c=bans');
+        // #1275 — admin-bans is Pattern A; the protests queue lives at
+        // `?section=protests` (the chip row is part of THAT section's
+        // render). The bare `?p=admin&c=bans` URL defaults to `add-ban`,
+        // which has no chip row.
+        await pinTheme(page, 'dark', '/index.php?p=admin&c=bans&section=protests');
 
-        // The admin/bans page emits two `chip-row` segmented groups
-        // (`Ban protests` Current/Archive, `Ban submissions`
-        // Current/Archive) — see `web/pages/admin.bans.php`. The
-        // protests row's "Current" chip has the data-testid
-        // `filter-chip-protests-current` and lands `data-active="true"`
-        // on first paint. The submissions row mirrors it; we assert
-        // on protests-current as the canonical example since both
-        // share the same CSS rule.
+        // The admin/bans page renders ONE chip-row per section after
+        // #1275 — the protests section's `Current/Archive` chip-row
+        // is server-rendered (the active sub-view is picked via
+        // `?view=<slug>` in `web/pages/admin.bans.php`). The "Current"
+        // chip carries `data-testid="filter-chip-protests-current"`
+        // and lands `data-active="true"` on first paint.
         const active = page.locator('[data-testid="filter-chip-protests-current"]');
         await expect(active).toBeVisible();
         await expect(active).toHaveAttribute('data-active', 'true');

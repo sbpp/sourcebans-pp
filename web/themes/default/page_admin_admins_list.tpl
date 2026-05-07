@@ -1,9 +1,9 @@
 {*
     SourceBans++ 2026 — admin/admins list
 
-    Pair: web/pages/admin.admins.php (renders this + the add tab) and
-    web/includes/View/AdminAdminsListView.php (typed DTO that
-    SmartyTemplateRule keeps in lockstep with this file).
+    Pair: web/pages/admin.admins.php (renders this OR add OR overrides
+    based on ?section=) and web/includes/View/AdminAdminsListView.php
+    (typed DTO that SmartyTemplateRule keeps in lockstep with this file).
 
     Layout note: the embedded {load_template file="admin.admins.search"}
     runs admin.admins.search.php inline; that handler does its own
@@ -18,66 +18,52 @@
     buttons. Per-flag permission lists move to the edit-permissions
     page where they're actionable; the list page stays scannable.
 
-    #1207 ADM-3 — Page-level ToC + cross-template shell
-    ---------------------------------------------------
-    The audit (#1207 ADM-3) called out admin-admins as ~7 stacked
-    surfaces (search + admins list + add admin + overrides + add
-    override) on one long scroll with no internal navigation. We open
-    a `.page-toc-shell` wrapper here that spans all three templates
-    (this one, page_admin_admins_add.tpl, page_admin_overrides.tpl) and
-    paint a sticky anchor sidebar at >=1024px / accordion at <1024px
-    inside it. The closing `</div>` lives at the bottom of
-    page_admin_overrides.tpl — keep these tags paired across edits.
-
-    Each section below is wrapped in a `<section id="…">` with
-    `scroll-margin-top` so the sticky topbar (3.5rem) clears the
-    heading after an anchor jump. The anchor IDs are referenced by the
-    ToC (rendered via {include file="page_toc.tpl"} — #1239 lifted the
-    page-specific `admin.admins.toc.tpl` into a parameterized shared
-    partial; data-testids stay `admin-admins-*` so the existing E2E
-    selectors keep working) and by other templates that link back into
-    this page (e.g. the admin home Overrides card already uses
-    `#overrides`).
+    #1275 — Pattern A `?section=…` routing
+    --------------------------------------
+    Pre-#1275 this template opened a cross-template `.page-toc-shell`
+    that spanned page_admin_admins_add.tpl + page_admin_overrides.tpl
+    so all three sections stacked into one DOM and the page-level ToC
+    (page_toc.tpl) emitted #fragment anchor jumps between them. #1275
+    unifies on the same `?section=…` shape used by admin.servers.php /
+    admin.settings.php / admin.mods.php / admin.groups.php — each
+    section renders alone via AdminTabs. The shell wrappers are gone;
+    the admin sidebar lives in core/admin_sidebar.tpl, mounted by
+    AdminTabs.php. The search box stays embedded above the table
+    because filtering is the same UX surface as browsing the list (one
+    `<form>`, results re-render in place — splitting them across two
+    URLs would force the user to bounce between pages to iterate
+    filters). See the docblock on web/pages/admin.admins.php.
 *}
-<div class="page-toc-shell" data-testid="admin-admins-shell">
-
-{include file="page_toc.tpl"}
-
-<div class="page-toc-content">
-<div class="card-tab" id="List admins">
-    {if !$can_list_admins}
-        <div class="card">
-            <div class="card__body">
-                <p class="text-sm text-muted m-0">Access denied.</p>
-            </div>
+{if !$can_list_admins}
+    <div class="card">
+        <div class="card__body">
+            <p class="text-sm text-muted m-0">Access denied.</p>
         </div>
-    {else}
-        <div class="flex items-end justify-between gap-3 mb-4" style="flex-wrap:wrap">
-            <div>
-                <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Admins
-                    <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="admin-count">({$admin_count})</span>
-                </h1>
-                <p class="text-sm text-muted m-0 mt-2">Click an admin row's actions to edit details, permissions, or server access.</p>
-            </div>
-            {if $can_add_admins}
-                <a class="btn btn--primary btn--sm"
-                   href="#add-admin"
-                   data-testid="admin-add-cta"><i data-lucide="user-plus"></i> Add admin</a>
-            {/if}
+    </div>
+{else}
+    <div class="flex items-end justify-between gap-3 mb-4" style="flex-wrap:wrap">
+        <div>
+            <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Admins
+                <span class="text-faint" style="font-weight:400;margin-left:0.375rem" data-testid="admin-count">({$admin_count})</span>
+            </h1>
+            <p class="text-sm text-muted m-0 mt-2">Click an admin row's actions to edit details, permissions, or server access.</p>
         </div>
+        {if $can_add_admins}
+            <a class="btn btn--primary btn--sm"
+               href="index.php?p=admin&amp;c=admins&amp;section=add-admin"
+               data-testid="admin-add-cta"><i data-lucide="user-plus"></i> Add admin</a>
+        {/if}
+    </div>
 
-        <section id="search" class="page-toc-section" data-testid="admin-admins-section-search" aria-labelledby="search-heading">
-            <h2 id="search-heading" class="page-toc-section__heading">Search admins</h2>
-            {load_template file="admin.admins.search"}
-        </section>
+    <div data-testid="admin-admins-section-search">
+        {load_template file="admin.admins.search"}
+    </div>
 
-        <section id="admins" class="page-toc-section" data-testid="admin-admins-section-admins" aria-labelledby="admins-heading">
-            <h2 id="admins-heading" class="page-toc-section__heading">Admins list</h2>
-
-            <div class="text-xs text-muted mb-2" data-testid="admin-nav">
-                {* nofilter: server-built pagination HTML — `<displaying N - M of K results>` (integers), prev/next `<a>` from `CreateLinkR(…)`, and a page-jump `<select onchange>`. After #1207 ADM-4 every populated filter flows through `http_build_query($activeFilters)`, which percent-encodes filter values (so single quotes / angle brackets can't break out of the single-quoted `href='…'` or `onchange="… '…'…"` attributes). The page-jump `<select>` additionally `htmlspecialchars()`-escapes the base URL with `ENT_QUOTES` before interpolation. Loop counters and pre-computed page numbers are integers. No raw user input reaches the rendered string. *}
-                {$admin_nav nofilter}
-            </div>
+    <div data-testid="admin-admins-section-admins">
+        <div class="text-xs text-muted mb-2" data-testid="admin-nav">
+            {* nofilter: server-built pagination HTML — `<displaying N - M of K results>` (integers), prev/next `<a>` from `CreateLinkR(…)`, and a page-jump `<select onchange>`. After #1207 ADM-4 every populated filter flows through `http_build_query($activeFilters)`, which percent-encodes filter values (so single quotes / angle brackets can't break out of the single-quoted `href='…'` or `onchange="… '…'…"` attributes). The page-jump `<select>` additionally `htmlspecialchars()`-escapes the base URL with `ENT_QUOTES` before interpolation. Loop counters and pre-computed page numbers are integers. No raw user input reaches the rendered string. *}
+            {$admin_nav nofilter}
+        </div>
 
         <div class="card" style="overflow:hidden">
             <table class="table" role="table" aria-label="Admins">
@@ -165,7 +151,5 @@
                 </tbody>
             </table>
         </div>
-        </section>
-    {/if}
-</div>
-{* page-toc-content + page-toc-shell remain open; closed in page_admin_overrides.tpl *}
+    </div>
+{/if}

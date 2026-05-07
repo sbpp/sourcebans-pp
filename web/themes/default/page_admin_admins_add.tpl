@@ -1,7 +1,8 @@
 {*
     SourceBans++ 2026 — admin/admins add
 
-    Pair: web/pages/admin.admins.php (renders this + the list tab) and
+    Pair: web/pages/admin.admins.php (renders this OR the list OR the
+    overrides editor based on ?section=) and
     web/includes/View/AdminAdminsAddView.php.
 
     Form submission stays on the legacy ProcessAddAdmin() helper to keep
@@ -9,15 +10,17 @@
     protection comes from {csrf_field}; xajax/sb-callback are NOT
     reintroduced.
 
-    #1207 ADM-3 — section wrapper
-    -----------------------------
-    Renders inside the cross-template `.page-toc-shell` opened by
-    page_admin_admins_list.tpl. The `<section id="add-admin">` is the
-    anchor target for the "Add admin" entry in the page-level ToC; its
-    `scroll-margin-top` (set in the `.page-toc-section` rule in
-    theme.css) clears the sticky topbar after a hash-jump.
+    #1275 — Pattern A `?section=…` routing
+    --------------------------------------
+    Pre-#1275 this template was wrapped in `<section id="add-admin">`
+    (a `.page-toc-section` anchor target inside the cross-template
+    `.page-toc-shell`). #1275 unifies on Pattern A: this template now
+    renders by itself when the URL is `?section=add-admin`, so the
+    section becomes the whole page. The data-testid stays as
+    `admin-admins-section-add-admin` so existing E2E selectors keep
+    matching the surface.
 *}
-<div class="card-tab" id="Add new admin">
+<div data-testid="admin-admins-section-add-admin">
     {if !$can_add_admins}
         <div class="card">
             <div class="card__body">
@@ -25,9 +28,8 @@
             </div>
         </div>
     {else}
-        <section id="add-admin" class="page-toc-section" data-testid="admin-admins-section-add-admin" aria-labelledby="add-admin-heading">
         <div class="mb-4">
-            <h2 id="add-admin-heading" style="font-size:var(--fs-xl);font-weight:600;margin:0">Add new admin</h2>
+            <h1 style="font-size:var(--fs-xl);font-weight:600;margin:0">Add new admin</h1>
             <p class="text-sm text-muted m-0 mt-2">Hover the help icons for field-level guidance.</p>
         </div>
 
@@ -220,6 +222,5 @@
 
         {* nofilter: server-built `<script>LoadServerHost('SID', 'id', 'saSID');…</script>` from `:prefix_servers.sid` integer column, no user input — see admin.admins.php. *}
         {$server_script nofilter}
-        </section>
     {/if}
 </div>

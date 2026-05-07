@@ -278,7 +278,7 @@
     { icon: 'megaphone',        label: 'Appeals',       href: '?p=appeal' },
     { icon: 'server',           label: 'Servers',       href: '?p=servers' },
     { icon: 'shield',           label: 'Admin panel',   href: '?p=admin' },
-    { icon: 'plus-circle',      label: 'Add ban',       href: '?p=admin&c=bans&action=add' },
+    { icon: 'plus-circle',      label: 'Add ban',       href: '?p=admin&c=bans&section=add-ban' },
   ];
 
   /**

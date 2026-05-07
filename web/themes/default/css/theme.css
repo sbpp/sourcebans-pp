@@ -481,16 +481,18 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
    The active link reuses `.sidebar__link[aria-current="page"]` from
    the main shell so the dark-pill / brand-orange treatment is
    single-source. */
-.admin-sidebar,
-.page-toc { font-size: var(--fs-sm); margin-bottom: 1rem; }
-.admin-sidebar__details,
-.page-toc__details {
+/* #1275 — `.page-toc*` selectors removed alongside `page_toc.tpl`. The
+   page-level ToC pattern was the only consumer; admin-admins and
+   admin-bans now ride Pattern A (`?section=…`) like every other
+   sub-paged admin route, so the dual class names + dedicated CSS are
+   gone. Only `.admin-sidebar*` survives. */
+.admin-sidebar { font-size: var(--fs-sm); margin-bottom: 1rem; }
+.admin-sidebar__details {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-surface);
 }
-.admin-sidebar__summary,
-.page-toc__summary {
+.admin-sidebar__summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -501,35 +503,29 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
   list-style: none;
   user-select: none;
 }
-.admin-sidebar__summary::-webkit-details-marker,
-.page-toc__summary::-webkit-details-marker { display: none; }
-.admin-sidebar__summary-label,
-.page-toc__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
-.admin-sidebar__chevron,
-.page-toc__chevron {
+.admin-sidebar__summary::-webkit-details-marker { display: none; }
+.admin-sidebar__summary-label { display: inline-flex; align-items: center; gap: 0.5rem; }
+.admin-sidebar__chevron {
   transition: transform .15s ease;
   color: var(--text-muted);
 }
-.admin-sidebar__details[open] .admin-sidebar__chevron,
-.page-toc__details[open] .page-toc__chevron { transform: rotate(180deg); }
-.admin-sidebar__nav,
-.page-toc__nav {
+.admin-sidebar__details[open] .admin-sidebar__chevron { transform: rotate(180deg); }
+.admin-sidebar__nav {
   padding: 0.5rem 0.5rem 0.625rem;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
 @media (prefers-reduced-motion: reduce) {
-  .admin-sidebar__chevron,
-  .page-toc__chevron { transition: none; }
+  .admin-sidebar__chevron { transition: none; }
 }
 
 /* Page-padding inset for the sidebar shell (#1266). Mirrors
-   `.page-toc-shell` / `.page-section` — 1.5rem all-around, 1400px
-   cap. Declared at the base level so the inset applies at every
-   viewport (including the <1024px accordion shape); the desktop
-   media-query block below adds `display: grid` etc. on top, both
-   sets of properties merge cleanly via the cascade.
+   `.page-section` — 1.5rem all-around, 1400px cap. Declared at the
+   base level so the inset applies at every viewport (including the
+   <1024px accordion shape); the desktop media-query block below adds
+   `display: grid` etc. on top, both sets of properties merge cleanly
+   via the cascade.
 
    Pre-#1266 only the desktop block existed, so the shell carried
    no padding while the inner Pattern A content templates wrapped
@@ -538,8 +534,9 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
    floated 1.5rem above the content column's first paint. Lifting
    the inset onto the shell (and dropping the inner `.p-6` from
    each Pattern A content template in the same diff) makes both
-   columns share the same top y and matches the parallel fix
-   #1260 → #1263 landed on `.page-toc-shell`. */
+   columns share the same top y. (#1275 dropped the parallel
+   `.page-toc-shell` inset that #1260 → #1263 originally added —
+   the page-level ToC pattern is gone.) */
 .admin-sidebar-shell {
   padding: 1.5rem;
   max-width: 1400px;
@@ -565,8 +562,7 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
    it stays pinned beneath the topbar (top: 4rem) while the user
    scrolls through the active section. We force the <details>
    contents visible regardless of [open] so accidental "collapse"
-   at desktop can't strand the user without navigation — same
-   contract as `.page-toc` (#1207 ADM-3 / #1239 / #1266). */
+   at desktop can't strand the user without navigation. */
 @media (min-width: 1024px) {
   .admin-sidebar-shell {
     display: grid;
@@ -1463,99 +1459,10 @@ details.queue-row > summary > .row-actions {
   .dash-intro-preview { min-height: 8rem; }
 }
 
-/* ============================================================
-   #1207 ADM-3, #1239, #1266 — page-level table of contents
-   ============================================================
-   Sticky anchor sidebar at >=1024px and an accordion ToC at <1024px,
-   with each section anchored via `id="…"` + `scroll-margin-top` so
-   jumps clear the sticky topbar (3.5rem).
-
-   #1207 ADM-3 introduced this pattern for admin-admins under
-   page-specific class names (`.admin-admins-*`); #1239 lifted the
-   class names to a generic `page-toc-*` prefix so admin-bans and any
-   future dense page can reuse the same shape via the parameterized
-   `page_toc.tpl` partial. #1266 unified the chrome with the Pattern
-   A `core/admin_sidebar.tpl` (same iconed pill rows + active-state
-   highlight via `aria-current="page"`); the partial now emits dual
-   class names (`admin-sidebar page-toc` / `admin-sidebar__details
-   page-toc__details` / …) so the bare CSS comes from the grouped
-   `.admin-sidebar*, .page-toc*` selectors above and `.page-toc*`
-   keeps matching for any third-party theme that targets them. Per-
-   link styling comes from `.sidebar__link.admin-sidebar__link`.
-
-   data-testids stay scoped per page (e.g. `admin-admins-toc`,
-   `admin-bans-toc`) so E2E specs can target each surface
-   independently — see `page_toc.tpl` for the contract.
-
-   This block carries only the rules that ARE page-toc-specific:
-   the cross-template content column's `<section>` anchors and per-
-   section heading style, plus the page-padding inset on the shell
-   (mirrors `.admin-sidebar-shell` from the Pattern A block above)
-   and the desktop grid layout. Everything else lives in the
-   `.admin-sidebar*, .page-toc*` grouped block.
-
-   Markup contract (see page_toc.tpl + the page templates that
-   include it — page_admin_admins_*.tpl, page_admin_bans_*.tpl):
-     .page-toc-shell             outer wrapper (grid host on desktop)
-       .admin-sidebar.page-toc   <aside> with the link list
-         .admin-sidebar__details.page-toc__details
-                                 <details open> on every viewport;
-                                 the open/close toggle only does
-                                 something at <1024px (mobile/
-                                 narrow-tablet accordion). At
-                                 >=1024px we force the contents
-                                 visible regardless of [open]
-                                 state — see the desktop block.
-         .admin-sidebar__summary.page-toc__summary
-                                 mobile-only chrome (hidden on
-                                 desktop)
-         .admin-sidebar__nav.page-toc__nav
-                                 <nav> wrapping the links
-           .sidebar__link.admin-sidebar__link.page-toc__link
-                                 each <a> (iconed; active state
-                                 via the shared `.sidebar__link
-                                 [aria-current="page"]` rule)
-       .page-toc-content         the cross-template content column
-         .page-toc-section       the anchored <section>s
-         .page-toc-section__heading  per-section <h2>
-*/
-.page-toc-section { scroll-margin-top: 4rem; }
-.page-toc-section__heading {
-  font-size: var(--fs-base);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin: 0 0 0.75rem;
-}
-
-/* Page-padding inset for the cross-template ToC shell. Mirrors the
-   .page-section rule (1.5rem all-around, 1400px cap) so admin-admins
-   and admin-bans match the visual rhythm of every other admin page
-   #1240 wrapped — the sibling fix missed these two because they ride
-   `.page-toc-shell` instead of `.page-section`. Declared at the base
-   level (not inside the desktop @media below) so the inset applies
-   at every viewport, including the <1024px accordion shape. The
-   desktop media-query block adds `display: grid` etc. on top — both
-   sets of properties merge cleanly via the cascade. (#1260) */
-.page-toc-shell {
-  padding: 1.5rem;
-  max-width: 1400px;
-}
-
-/* Desktop layout — anchor sidebar floats next to the content column.
-   The sidebar is `position: sticky`, scoped to the shell, so it stays
-   pinned beneath the topbar (top: 4rem) while the user scrolls
-   through the sections. We force the <details> contents visible
-   regardless of [open] so accidental "collapse" at desktop can't
-   strand the user without navigation — same contract as
-   `.admin-sidebar-shell` (Pattern A). */
-@media (min-width: 1024px) {
-  .page-toc-shell {
-    display: grid;
-    grid-template-columns: 14rem minmax(0, 1fr);
-    gap: 1.5rem;
-    align-items: start;
-  }
-  .page-toc-content { min-width: 0; }
-}
+/* #1275 — page-level ToC pattern (#1207 ADM-3 / #1239 / #1266) is
+   gone. The two consumers (admin-admins, admin-bans) migrated to
+   Pattern A (`?section=…`), so the cross-template `.page-toc-shell`
+   / `.page-toc-content` / `.page-toc-section` / `.page-toc-section__heading`
+   rules + the desktop grid layout were deleted alongside `page_toc.tpl`.
+   The `.admin-sidebar*` rules above (themselves a sibling of
+   `.admin-sidebar-shell`) cover every remaining sub-paged admin route. */

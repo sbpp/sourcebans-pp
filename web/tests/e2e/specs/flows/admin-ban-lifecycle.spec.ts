@@ -72,20 +72,22 @@ test.describe('flow: admin ban lifecycle', () => {
 
     test('add → list → edit → unban → confirm unbanned', async ({ page }) => {
         // ---- 1. Add ban ---------------------------------------------------
-        // The "Add a ban" form is the first section on
-        // ?p=admin&c=bans. Pre-#1239 the page emitted a broken
-        // `<button onclick="openTab(...)">` strip and stacked every
-        // pane below it (the JS handler was dropped with
-        // sourcebans.js at #1123 D1); #1239 repaired the navigation
-        // by riding the page-level ToC pattern (admin-admins family).
-        // All five sections (Add a ban / Ban protests / Ban submissions
-        // / Import bans / Group ban) now sit inside `<section id="…"
-        // class="page-toc-section">` blocks under a sticky ToC sidebar
-        // at >=1024px (accordion at <1024px); the ToC links are anchor
-        // jumps to those `id`s. Form fields are anchored on `addban-*`
-        // testids; the submit button uses both `data-testid` and
-        // `data-action` because the inline handler delegates on
-        // `[data-action="addban-submit"]`.
+        // The "Add a ban" form is its own Pattern A section after
+        // #1275 (`?p=admin&c=bans&section=add-ban`). Pre-#1239 the
+        // page emitted a broken `<button onclick="openTab(...)">`
+        // strip and stacked every pane below it (the JS handler was
+        // dropped with sourcebans.js at #1123 D1); #1239 repaired
+        // the navigation by riding the page-level ToC pattern
+        // (admin-admins family); #1275 collapsed onto Pattern A so
+        // each pane (Add a ban / Ban protests / Ban submissions /
+        // Import bans / Group ban) is now its own URL with its own
+        // server render — no shared scroll DOM. The default landing
+        // (?p=admin&c=bans with no section) also routes to add-ban
+        // (it's the first accessible section), so this spec's
+        // ADD_BAN_ROUTE stays correct without a per-test rewrite.
+        // Form fields are anchored on `addban-*` testids; the submit
+        // button uses both `data-testid` and `data-action` because
+        // the inline handler delegates on `[data-action="addban-submit"]`.
         await page.goto(ADD_BAN_ROUTE);
         const form = page.locator('[data-testid="addban-form"]');
         await expect(form).toBeVisible();

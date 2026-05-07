@@ -2,7 +2,7 @@
 /*************************************************************************
 This file is part of SourceBans++
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+SourceBans++ (c) 2014-2026 by SourceBans++ Dev Team
 
 The SourceBans++ Web panel is licensed under a
 Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
@@ -24,15 +24,161 @@ if (!defined("IN_SB")) {
 global $userbank, $theme;
 
 /*
- * #1207 ADM-3 introduced the page-level ToC for admin-admins; #1239
- * dropped the trailing-edge `AdminTabs([...], $userbank, $theme)` call
- * that still rendered the broken openTab() button strip above the ToC.
- * Navigation on this page now flows entirely through the sticky ToC
- * sidebar (anchor jumps to `#search`, `#admins`, `#add-admin`,
- * `#overrides`, `#add-override`) — see `web/themes/default/page_toc.tpl`
- * and the `.page-toc-*` rules in `theme.css`.
+ * #1275 — Pattern A (`?section=…` URL routing).
+ *
+ * Pre-#1275 admin-admins rode the page-level ToC pattern (#1207 ADM-3)
+ * — every section (search / admins / add-admin / overrides /
+ * add-override) stacked into one DOM and the sidebar emitted
+ * `#fragment` anchor jumps. The chrome looked identical to the
+ * Pattern A admin sidebars (servers / mods / groups / settings) after
+ * #1266's visual unification but the routing semantics diverged
+ * (#fragment vs ?section=). #1275 unifies on Pattern A so back-button
+ * navigation, link sharing, and the per-section testid contract all
+ * match the rest of the admin family.
+ *
+ * Section split — judgment call (deviates from the issue body's
+ * 5-section starting suggestion):
+ *
+ *   - `admins` (default) — the admin list with the advanced-search
+ *     box embedded above it. The pre-#1275 ToC split this in two
+ *     (`search` ↔ `admins`) but those were anchor jumps within the
+ *     SAME `<form>`-driven surface — the search box submits filters
+ *     into the list. Splitting them across separate URLs would force
+ *     the user to jump between pages to iterate filters, which is
+ *     worse UX than the long-scroll the migration is supposed to
+ *     fix. Pattern A's contract is "small fixed set of UNRELATED
+ *     sub-tasks" (see AGENTS.md "Sub-paged admin routes"); search +
+ *     list are tightly related, so they share a section.
+ *   - `add-admin` — the create-admin form. Distinct surface from
+ *     the list, so it gets its own URL.
+ *   - `overrides` — the SourceMod command/group overrides editor.
+ *     The pre-#1275 ToC split this into `overrides` (table) ↔
+ *     `add-override` (add row) but both live inside the SAME `<form>`
+ *     with one Save button — the legacy split was a scroll anchor,
+ *     not a separate POST handler. Splitting them into two Pattern A
+ *     sections would require splitting the form. Single section.
+ *
+ * Legacy URL shim — there is no shim for `#fragment` deeplinks.
+ * Browsers don't send fragments to the server (fragments are
+ * client-side only), so the page handler can't observe them. Per
+ * the issue body's discussion, the cleanest fallback is to land on
+ * the default section and accept that bookmarks like
+ * `?p=admin&c=admins#add-admin` lose their anchor target. The
+ * cross-link from the admin home's Overrides card has been updated
+ * to `?p=admin&c=admins&section=overrides` in the same PR so the
+ * one in-app deep-link keeps working.
  */
 
+/** @var bool $canListAdmins */
+$canListAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS);
+/** @var bool $canAddAdmins */
+$canAddAdmins    = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS);
+/** @var bool $canEditAdmins */
+$canEditAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS);
+/** @var bool $canDeleteAdmins */
+$canDeleteAdmins = $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS);
+
+/*
+ * #1275 — `$sections` array drives the new vertical sidebar via
+ * AdminTabs. Each entry carries `slug` + `name` + `permission` +
+ * `url` + `icon` (Lucide). Icons follow the Pattern A vocabulary
+ * already in `admin.servers.php` / `admin.groups.php` / etc.
+ *
+ * `permission` filters happen inside AdminTabs (it skips entries
+ * the current user can't reach), so an admin without LIST_ADMINS
+ * sees the Add admin / Overrides sidebar links but not Admins.
+ */
+/** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
+$sections = [
+    [
+        'slug'       => 'admins',
+        'name'       => 'Admins',
+        'permission' => ADMIN_OWNER | ADMIN_LIST_ADMINS,
+        'url'        => 'index.php?p=admin&c=admins&section=admins',
+        'icon'       => 'users',
+    ],
+    [
+        'slug'       => 'add-admin',
+        'name'       => 'Add admin',
+        'permission' => ADMIN_OWNER | ADMIN_ADD_ADMINS,
+        'url'        => 'index.php?p=admin&c=admins&section=add-admin',
+        'icon'       => 'user-plus',
+    ],
+    [
+        'slug'       => 'overrides',
+        'name'       => 'Overrides',
+        'permission' => ADMIN_OWNER | ADMIN_ADD_ADMINS,
+        'url'        => 'index.php?p=admin&c=admins&section=overrides',
+        'icon'       => 'shield',
+    ],
+];
+
+// Default to the first accessible section so the page never renders
+// a blank body when `?section=` is missing or carries an unknown
+// value. Admins → Add admin → Overrides; an admin without ADD_ADMINS
+// can't reach Add admin or Overrides, so they always land on Admins
+// (or the access-denied stub the View renders if they also lack
+// LIST_ADMINS).
+$validSlugs = ['admins', 'add-admin', 'overrides'];
+$section    = (string) ($_GET['section'] ?? '');
+if (!in_array($section, $validSlugs, true)) {
+    if ($canListAdmins) {
+        $section = 'admins';
+    } elseif ($canAddAdmins) {
+        $section = 'add-admin';
+    } else {
+        $section = 'admins';
+    }
+}
+
+// AdminTabs opens the sidebar shell + emits the <aside> + opens the
+// content column. Closing tags live AFTER each render branch below —
+// document the pairing so future edits don't strand an open <div>.
+new AdminTabs($sections, $userbank, $theme, $section, 'Admin sections');
+
+// ---------------------------------------------------------------- add-admin
+if ($section === 'add-admin') {
+    $group_list              = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
+    $servers                 = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers`")->resultset();
+    $server_admin_group_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`")->resultset();
+    $server_group_list       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != 3")->resultset();
+    $server_list             = [];
+    $serverscript            = "<script type=\"text/javascript\">";
+    foreach ($servers as $server) {
+        $serverscript .= "LoadServerHost('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";
+        $info['sid']  = $server['sid'];
+        $info['ip']   = $server['ip'];
+        $info['port'] = $server['port'];
+        array_push($server_list, $info);
+    }
+    $serverscript .= "</script>";
+
+    \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsAddView(
+        // See AdminAdminsListView for why we don't splat Perms::for().
+        can_add_admins: $canAddAdmins,
+        group_list: $group_list,
+        server_list: $server_list,
+        server_admin_group_list: $server_admin_group_list,
+        server_group_list: $server_group_list,
+        server_script: $serverscript,
+    ));
+    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
+    return;
+}
+
+// ---------------------------------------------------------------- overrides
+if ($section === 'overrides') {
+    // Overrides — extracted into its own handler in #1123 B17. The
+    // require lands the AdminOverridesView for us (it does its own
+    // POST processing + Renderer::render). admin.overrides.php is
+    // unchanged; this require keeps the existing POST URL
+    // (`?p=admin&c=admins`) working for the form's submit.
+    require(TEMPLATES_PATH . "/admin.overrides.php");
+    echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
+    return;
+}
+
+// ---------------------------------------------------------------- admins (default)
 $AdminsPerPage = SB_BANS_PER_PAGE;
 $page = 1;
 if (isset($_GET['page']) && $_GET['page'] > 0) {
@@ -274,7 +420,10 @@ if ($joinServersGroups) {
 }
 
 // Pagination needs the active-filter snapshot baked into every "next"
-// page link so subsequent navigation preserves the search.
+// page link so subsequent navigation preserves the search. Pre-#1275
+// the section was implicit (`?p=admin&c=admins`); now the page links
+// must carry `&section=admins` too so back/forward stays on the
+// admins list rather than ricocheting to the default section.
 // `http_build_query` handles array values (`admwebflag[]=…&admwebflag[]=…`)
 // natively, so multi-select filters round-trip without manual joining.
 $advSearchString = empty($activeFilters) ? '' : '&' . http_build_query($activeFilters);
@@ -345,13 +494,15 @@ foreach ($admins as $admin) {
     array_push($admin_list, $admin);
 }
 
+// Page links carry &section=admins so prev/next/picker keep the user
+// on this section rather than ricocheting to the default landing.
 if ($page > 1) {
-    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=admins&page=" . ($page - 1) . $advSearchString);
+    $prev = CreateLinkR('<i class="fas fa-arrow-left fa-lg"></i> prev', "index.php?p=admin&c=admins&section=admins&page=" . ($page - 1) . $advSearchString);
 } else {
     $prev = "";
 }
 if ($AdminsEnd < $admin_count) {
-    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=admins&page=" . ($page + 1) . $advSearchString);
+    $next = CreateLinkR('next <i class="fas fa-arrow-right fa-lg"></i>', "index.php?p=admin&c=admins&section=admins&page=" . ($page + 1) . $advSearchString);
 } else {
     $next = "";
 }
@@ -379,7 +530,7 @@ if ($pages > 1) {
     // `htmlspecialchars` on the base URL is what stops the ADM-4
     // multi-filter `&admwebflag[]=…` from breaking out of the
     // attribute string.
-    $baseUrl    = 'index.php?p=admin&c=admins' . $advSearchString . '&page=';
+    $baseUrl    = 'index.php?p=admin&c=admins&section=admins' . $advSearchString . '&page=';
     $baseUrlAttr = htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8');
     $admin_nav .= '&nbsp;<select onchange="window.location.href=\'' . $baseUrlAttr . '\'+encodeURIComponent(this.value);"'
         . ' aria-label="Jump to page">';
@@ -391,38 +542,6 @@ if ($pages > 1) {
         $admin_nav .= '<option value="' . $i . '">' . $i . '</option>';
     }
     $admin_nav .= '</select>';
-}
-
-// Permission-filtered ToC entries for the sticky page-level ToC. We
-// build this in the FIRST template's view (the list view) because the
-// ToC partial is included from page_admin_admins_list.tpl. Sections
-// gated on a permission only appear when the dispatcher would paint
-// them — a ToC entry pointing at a section that wouldn't render is a
-// dead link by definition (see the same rule in AGENTS.md "Page-level
-// table of contents").
-$canListAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS);
-$canAddAdmins    = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS);
-$canEditAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS);
-$canDeleteAdmins = $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS);
-
-/*
- * #1266 — each ToC entry carries a Lucide `icon` so the rendered
- * link gets the same iconed-pill visual weight as the Pattern A
- * sidebar (`core/admin_sidebar.tpl`). Icons follow the Pattern A
- * vocabulary (see admin.servers.php / admin.groups.php / etc):
- * `users` for the admin list, `user-plus` / `plus` for create,
- * `shield` for permission overrides.
- */
-/** @var list<array{slug: string, label: string, icon: string}> $tocEntries */
-$tocEntries = [];
-if ($canListAdmins) {
-    $tocEntries[] = ['slug' => 'search', 'label' => 'Search',      'icon' => 'search'];
-    $tocEntries[] = ['slug' => 'admins', 'label' => 'Admins list', 'icon' => 'users'];
-}
-if ($canAddAdmins) {
-    $tocEntries[] = ['slug' => 'add-admin',    'label' => 'Add admin',    'icon' => 'user-plus'];
-    $tocEntries[] = ['slug' => 'overrides',    'label' => 'Overrides',    'icon' => 'shield'];
-    $tocEntries[] = ['slug' => 'add-override', 'label' => 'Add override', 'icon' => 'plus'];
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsListView(
@@ -440,39 +559,5 @@ if ($canAddAdmins) {
     admin_count: (int) $admin_count,
     admin_nav: (string) $admin_nav,
     admins: $admin_list,
-    toc_id: 'admin-admins',
-    toc_label: 'Admins page sections',
-    toc_entries: $tocEntries,
 ));
-
-// Add Page
-$group_list              = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
-$servers                 = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers`")->resultset();
-$server_admin_group_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`")->resultset();
-$server_group_list       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != 3")->resultset();
-$server_list             = [];
-$serverscript            = "<script type=\"text/javascript\">";
-foreach ($servers as $server) {
-    $serverscript .= "LoadServerHost('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";
-    $info['sid']  = $server['sid'];
-    $info['ip']   = $server['ip'];
-    $info['port'] = $server['port'];
-    array_push($server_list, $info);
-}
-$serverscript .= "</script>";
-
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsAddView(
-    // See AdminAdminsListView above for why we don't splat Perms::for().
-    can_add_admins: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS),
-    group_list: $group_list,
-    server_list: $server_list,
-    server_admin_group_list: $server_admin_group_list,
-    server_group_list: $server_group_list,
-    server_script: $serverscript,
-));
-
-// Overrides — extracted into its own handler in #1123 B17 so the
-// "single-template, single-View" pattern lines up with one .tpl per
-// theme and one Sbpp\View\AdminOverridesView. The require keeps the
-// existing AdminTabs ?p=admin&c=admins URL working unchanged.
-require(TEMPLATES_PATH . "/admin.overrides.php");
+echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';

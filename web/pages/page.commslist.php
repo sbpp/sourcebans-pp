@@ -672,12 +672,15 @@ foreach ($res as $row) {
     ]);
     $alrdybnd         = $GLOBALS['PDO']->single();
     if ($alrdybnd['count'] == 0) {
+        // #1275 — admin-comms is single-section Pattern A; the legacy
+        // `#^0` fragment targeted the old page-toc add-block anchor
+        // (long since dead). Drop it.
         switch ($data['type']) {
             case 1:
-                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReMute', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReMute', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
                 break;
             case 2:
-                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReGag', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey'] . "#^0");
+                $data['reban_link'] = CreateLinkR('<i class="fas fa-redo fa-lg"></i> ReGag', "index.php?p=admin&c=comms" . $pagelink . "&rebanid=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
                 break;
             default:
                 break;

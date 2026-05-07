@@ -40,7 +40,10 @@ function api_protests_remove(array $params): array
                 'title' => 'Protest Deleted',
                 'body'  => 'The selected protest has been deleted from the database',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — delete only fires from the archive view, so
+                // land back on the archive (not the default add-ban
+                // surface bare `?p=admin&c=bans` would route to).
+                'redir' => 'index.php?p=admin&c=bans&section=protests&view=archive',
             ],
         ];
     }
@@ -65,7 +68,10 @@ function api_protests_remove(array $params): array
                 'title' => 'Protest Archived',
                 'body'  => 'The selected protest has been moved to the archive.',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — admin-bans is Pattern A; the operator was on
+                // the protests queue, so land them back on the same
+                // section's current view.
+                'redir' => 'index.php?p=admin&c=bans&section=protests',
             ],
         ];
     }
@@ -89,7 +95,10 @@ function api_protests_remove(array $params): array
                 'title' => 'Protest Restored',
                 'body'  => 'The selected protest has been restored from the archive.',
                 'kind'  => 'green',
-                'redir' => 'index.php?p=admin&c=bans',
+                // #1275 — restore moves the row back into the live
+                // queue, so land the operator on the current view to
+                // confirm the row reappeared.
+                'redir' => 'index.php?p=admin&c=bans&section=protests',
             ],
         ];
     }

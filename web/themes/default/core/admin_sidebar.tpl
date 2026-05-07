@@ -17,7 +17,7 @@
     unifies them on the Settings-style vertical sidebar so dense routes
     with 3+ sections (mods/groups/admins) don't read as a chip cluster.
 
-    Caller contract (mirrors page_toc.tpl):
+    Caller contract:
 
       - Open `<div class="admin-sidebar-shell">` BEFORE this partial. The
         shell is the grid host at >=1024px (14rem + 1fr) and a single
@@ -74,10 +74,9 @@
     Mobile (<1024px) shape:
         The aside collapses to a `<details open>` accordion — the
         section name above the link list, chevron rotates 180° on
-        toggle. Identical pattern to page_toc.tpl so both surfaces
-        feel consistent. The link list paints inline at desktop;
-        the summary chrome is hidden via `.admin-sidebar__summary
-        { display: none }` in the desktop media query.
+        toggle. The link list paints inline at desktop; the summary
+        chrome is hidden via `.admin-sidebar__summary { display: none }`
+        in the desktop media query.
 *}
 <aside class="admin-sidebar"
        data-testid="{$sidebar_id}"

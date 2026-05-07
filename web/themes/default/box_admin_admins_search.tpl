@@ -82,6 +82,11 @@
       style="margin-top:1rem;margin-bottom:1rem">
     <input type="hidden" name="p" value="admin">
     <input type="hidden" name="c" value="admins">
+    {* #1275 — Pattern A. Carry the active section so the post-submit URL
+       matches the surface the user is on; otherwise the handler would
+       fall through to the default-section guard, which lands on the
+       same `admins` slug today but only by coincidence. *}
+    <input type="hidden" name="section" value="admins">
 
     <div class="card__header">
         <div>
@@ -271,7 +276,7 @@
 
         <div class="flex gap-2 justify-end" style="border-top:1px solid var(--border);padding-top:0.75rem">
             <a class="btn btn--ghost btn--sm"
-               href="?p=admin&amp;c=admins"
+               href="?p=admin&amp;c=admins&amp;section=admins"
                data-testid="search-admins-reset">Clear filters</a>
             <button type="submit"
                     class="btn btn--primary btn--sm"
