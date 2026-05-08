@@ -1,6 +1,6 @@
 <?php
 
-class SteamAuthHandler
+final class SteamAuthHandler
 {
     public function __construct(
         private \LightOpenID $openid,
@@ -16,13 +16,13 @@ class SteamAuthHandler
         }
     }
 
-    private function login()
+    private function login(): void
     {
         $this->openid->identity = 'https://steamcommunity.com/openid';
         header("Location: ".$this->openid->authUrl());
     }
 
-    private function validate()
+    private function validate(): string|false
     {
         $pattern = "/^https:\/\/steamcommunity\.com\/openid\/id\/(7[0-9]{15,25}+)$/";
 
@@ -38,7 +38,7 @@ class SteamAuthHandler
         return (!empty($match[1])) ? $match[1] : false;
     }
 
-    private function check(string $steamid)
+    private function check(string $steamid): void
     {
         $steamid = \SteamID\SteamID::toSteam2($steamid);
 

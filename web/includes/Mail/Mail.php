@@ -25,7 +25,7 @@ namespace Sbpp\Mail;
 use Log;
 use Throwable;
 
-class Mail
+final class Mail
 {
     public static function send(
         array|string $destinations,

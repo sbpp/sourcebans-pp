@@ -20,7 +20,7 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
  * Optional $field carries a form-field id so the client can scope the
  * error to a specific input (matching legacy xajax addAssign("field.msg")).
  */
-class ApiError extends \RuntimeException
+final class ApiError extends \RuntimeException
 {
     public function __construct(
         public readonly string $errorCode,

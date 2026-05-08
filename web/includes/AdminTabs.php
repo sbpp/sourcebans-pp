@@ -84,15 +84,13 @@
  *     config?: bool,
  * }
  */
-class AdminTabs
+final class AdminTabs
 {
     /** @var list<TabSpec> */
     private array $tabs = [];
 
     /**
      * @param list<TabSpec> $tabs
-     * @param CUserManager  $userbank
-     * @param Smarty        $theme
      * @param string|null   $activeSlug    Slug of the section to mark with
      *     `aria-current="page"`. When null, the first accessible tab's
      *     slug wins. When the value doesn't match any visible tab no
@@ -107,8 +105,8 @@ class AdminTabs
      */
     public function __construct(
         array $tabs,
-        $userbank,
-        $theme,
+        CUserManager $userbank,
+        \Smarty\Smarty $theme,
         ?string $activeSlug = null,
         ?string $sidebarLabel = null,
     ) {

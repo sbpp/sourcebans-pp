@@ -13,56 +13,14 @@ parameters:
 			path: exportbans.php
 
 		-
-			message: '#^Call to method assign\(\) on an unknown class Smarty\.$#'
-			identifier: class.notFound
-			count: 6
-			path: includes/AdminTabs.php
-
-		-
-			message: '#^Call to method display\(\) on an unknown class Smarty\.$#'
-			identifier: class.notFound
-			count: 2
-			path: includes/AdminTabs.php
-
-		-
-			message: '#^Parameter \$theme of method AdminTabs\:\:__construct\(\) has invalid type Smarty\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/AdminTabs.php
-
-		-
 			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
 			identifier: method.notFound
 			count: 1
 			path: includes/CUserManager.php
 
 		-
-			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: includes/CUserManager.php
-
-		-
-			message: '#^PHPDoc tag @return has invalid value \(mixed\.\)\: Unexpected token "\.", expected TOKEN_HORIZONTAL_WS at offset 172 on line 6$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: includes/CUserManager.php
-
-		-
-			message: '#^Unreachable statement \- code above always terminates\.$#'
-			identifier: deadCode.unreachable
-			count: 1
-			path: includes/CUserManager.php
-
-		-
 			message: '#^Offset int\<0, max\> on array\{function\: string, line\?\: int, file\?\: string, class\?\: class\-string, type\?\: ''\-\>''\|''\:\:'', args\?\: list\<mixed\>, object\?\: object\} in isset\(\) does not exist\.$#'
 			identifier: isset.offset
-			count: 1
-			path: includes/Log.php
-
-		-
-			message: '#^PHPDoc tag @param references unknown parameter\: \$search$#'
-			identifier: parameter.notFound
 			count: 1
 			path: includes/Log.php
 
@@ -189,12 +147,6 @@ parameters:
 		-
 			message: '#^Parameter \#1 \$contents of static method Lcobucci\\JWT\\Signer\\Key\\InMemory\:\:base64Encoded\(\) expects non\-empty\-string, '''' given\.$#'
 			identifier: argument.type
-			count: 1
-			path: includes/auth/JWT.php
-
-		-
-			message: '#^Unsafe call to private method JWT\:\:getConfig\(\) through static\:\:\.$#'
-			identifier: staticClassAccess.privateMethod
 			count: 1
 			path: includes/auth/JWT.php
 
@@ -335,6 +287,18 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: install/template/submenu.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: pages/admin.edit.admindetails.php
+
+		-
+			message: '#^Right side of \|\| is always true\.$#'
+			identifier: booleanOr.rightAlwaysTrue
+			count: 1
+			path: pages/admin.edit.admindetails.php
 
 		-
 			message: '#^Variable \$allservers might not be defined\.$#'

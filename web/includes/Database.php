@@ -3,7 +3,7 @@
 /**
  * Class Database
  */
-class Database
+final class Database
 {
     private readonly string $prefix;
 
@@ -11,17 +11,7 @@ class Database
 
     private ?PDOStatement $stmt = null;
 
-    /**
-     * Database constructor.
-     * @param string $host
-     * @param int $port
-     * @param string $dbname
-     * @param string $user
-     * @param string $password
-     * @param string $prefix
-     * @param string $charset
-     */
-    public function __construct($host, $port, $dbname, $user, $password, $prefix, $charset = 'utf8')
+    public function __construct(string $host, int $port, string $dbname, string $user, string $password, string $prefix, string $charset = 'utf8')
     {
         $this->prefix = $prefix;
         $dsn = 'mysql:host=' . $host . ';port=' . $port . ';dbname=' . $dbname . ';charset=' . $charset;
@@ -54,19 +44,12 @@ class Database
         unset($this->dbh);
     }
 
-    /**
-     * @return string
-     */
-    public function getPrefix()
+    public function getPrefix(): string
     {
         return $this->prefix;
     }
 
-    /**
-     * @param string $query
-     * @return string
-     */
-    private function setPrefix($query)
+    private function setPrefix(string $query): string
     {
         $query = str_replace(':prefix', $this->prefix, $query);
         return $query;
@@ -74,11 +57,8 @@ class Database
 
     /**
      * Contrary to the name, this prepares the query and doesn't actually run the query.
-     *
-     * @param string $query
-     * @return $this
      */
-    public function query($query)
+    public function query(string $query): self
     {
         $query = $this->setPrefix($query);
         $this->stmt = $this->dbh->prepare($query);
@@ -86,11 +66,9 @@ class Database
     }
 
     /**
-     * @param int|string $param
-     * @param int|bool|null|string $value
-     * @param int|null $type PDO param type.  Send null or leave blank for auto-detection
+     * @param int|null $type PDO param type. Send null or leave blank for auto-detection.
      */
-    public function bind($param, $value, $type = null)
+    public function bind(int|string $param, int|bool|null|string $value, ?int $type = null): void
     {
         if ($type === null) {
             $type = match (true) {
@@ -104,42 +82,25 @@ class Database
         $this->stmt->bindValue($param, $value, $type);
     }
 
-    /**
-     * @param array $params
-     */
-    public function bindMultiple($params = [])
+    public function bindMultiple(array $params = []): void
     {
         foreach ($params as $key => $value) {
             $this->bind($key, $value);
         }
     }
 
-    /**
-     * @param null|array $inputParams
-     * @return mixed
-     */
-    public function execute(?array $inputParams = null)
+    public function execute(?array $inputParams = null): bool
     {
         return $this->stmt->execute($inputParams);
     }
 
-    /**
-     * @param null|array $inputParams
-     * @param int $fetchType
-     * @return mixed
-     */
-    public function resultset(?array $inputParams = null, $fetchType = PDO::FETCH_ASSOC)
+    public function resultset(?array $inputParams = null, int $fetchType = PDO::FETCH_ASSOC): array
     {
         $this->execute($inputParams);
         return $this->stmt->fetchAll($fetchType);
     }
 
-    /**
-     * @param null|array $inputParams
-     * @param int $fetchType
-     * @return mixed
-     */
-    public function single(?array $inputParams = null, $fetchType = PDO::FETCH_ASSOC)
+    public function single(?array $inputParams = null, int $fetchType = PDO::FETCH_ASSOC): mixed
     {
         $this->execute($inputParams);
         return $this->stmt->fetch($fetchType);
@@ -157,50 +118,32 @@ class Database
         }
     }
 
-    /**
-     * @return int
-     */
-    public function rowCount()
+    public function rowCount(): int
     {
         return $this->stmt->rowCount();
     }
 
-    /**
-     * @return string
-     */
-    public function lastInsertId()
+    public function lastInsertId(): string
     {
         return $this->dbh->lastInsertId();
     }
 
-    /**
-     * @return bool
-     */
-    public function beginTransaction()
+    public function beginTransaction(): bool
     {
         return $this->dbh->beginTransaction();
     }
 
-    /**
-     * @return bool
-     */
-    public function endTransaction()
+    public function endTransaction(): bool
     {
         return $this->dbh->commit();
     }
 
-    /**
-     * @return bool
-     */
-    public function cancelTransaction()
+    public function cancelTransaction(): bool
     {
         return $this->dbh->rollBack();
     }
 
-    /**
-     * @return bool
-     */
-    public function debugDumpParams()
+    public function debugDumpParams(): ?bool
     {
         return $this->stmt->debugDumpParams();
     }

@@ -12,7 +12,7 @@ use Lcobucci\JWT\Validation\Constraint\PermittedFor;
 use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\ValidationData;
 
-class JWT
+final class JWT
 {
     public static function create(string $jti, int $maxLife, int $aid): Token\Plain
     {

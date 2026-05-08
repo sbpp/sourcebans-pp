@@ -3,20 +3,14 @@
 /**
  * Class Host
  */
-class Host
+final class Host
 {
-    /**
-     * @return string
-     */
     public static function domain(): string
     {
         $host = $_SERVER['HTTP_HOST'] ?? '';
         return preg_match('/^[A-Za-z0-9._:\[\]-]+$/', $host) ? $host : '';
     }
 
-    /**
-     * @return string
-     */
     public static function cookieDomain(): string {
         $domain = self::domain();
         if( ($p = strpos($domain, ':')) === false ) {
@@ -25,9 +19,6 @@ class Host
         return substr($domain, 0, $p);
     }
 
-    /**
-     * @return string
-     */
     public static function protocol(): string
     {
         return sprintf('http%s://',  self::isSecure() ? 's' : '');
@@ -43,8 +34,8 @@ class Host
     }
 
     /**
-     * @param bool $withoutRequest Don't return the rest of the link (part after the first slash)
-     * @return string
+     * Build the absolute URL for the current request. With `$withoutRequest`,
+     * the path component (everything after the first `/`) is omitted.
      */
     public static function complete(bool $withoutRequest = false): string
     {

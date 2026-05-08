@@ -28,7 +28,7 @@ use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
 
-class Mailer
+final class Mailer
 {
     /** Default From Name used when both `config.mail.from_name` and SB_EMAIL fallback yield no display name. */
     public const DEFAULT_FROM_NAME = 'SourceBans++';
@@ -47,10 +47,7 @@ class Mailer
 
     /**
      * @param string|string[] $destination
-     * @param string $subject
-     * @param string $body
-     * @param array|null $files
-     * @return bool
+     * @param array<int, string>|null $files
      * @throws TransportExceptionInterface
      */
     public function send(array|string $destination,
@@ -113,9 +110,6 @@ class Mailer
         return $this->from;
     }
 
-    /**
-     * @return ?Mailer
-     */
     public static function create(): ?Mailer
     {
         $config = Config::getMulti([

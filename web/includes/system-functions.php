@@ -25,17 +25,9 @@ if (!defined("IN_SB")) {
 }
 
 /**
- * Creates an anchor tag, and adds tooltip code if needed
- *
- * @param  string $title   The title of the tooltip/text to link
- * @param  string $url     The link
- * @param  string $tooltip The tooltip message
- * @param  string $target  The new links target
- * @param  bool   $wide
- * @param  string $onclick
- * @return string URL
+ * Creates an anchor tag, and adds tooltip code if needed.
  */
-function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $onclick="")
+function CreateLinkR(string $title, string $url, string $tooltip = "", string $target = "_self", bool $wide = false, string $onclick = ""): string
 {
     $class = ($wide) ? "perm" : "tip";
 
@@ -45,11 +37,7 @@ function CreateLinkR($title, $url, $tooltip="", $target="_self", $wide=false, $o
     return "<a href='{$url}' class='{$class}' title='{$tooltip}' target='{$target}'> {$title} </a>";
 }
 
-/**
- * @param  $mask
- * @return array|false
- */
-function BitToString($mask)
+function BitToString(int $mask): array|false
 {
     $perms = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);
 
@@ -68,11 +56,7 @@ function BitToString($mask)
     return isset($out) ? $out : false;
 }
 
-/**
- * @param  $flagstring
- * @return array|false
- */
-function SmFlagsToSb($flagstring)
+function SmFlagsToSb(string $flagstring): array|false
 {
     $flags = json_decode(file_get_contents(ROOT.'/configs/permissions/sourcemod.json'), true);
 
@@ -89,38 +73,24 @@ function SmFlagsToSb($flagstring)
     return isset($out) ? $out : false;
 }
 
-/**
- * @return int
- */
-function NextSid()
+function NextSid(): int
 {
     $sid = $GLOBALS['PDO']->query("SELECT MAX(sid) AS next_sid FROM `:prefix_servers`")->single();
     return ($sid['next_sid'] + 1);
 }
 
-/**
- * @return int
- */
-function NextAid()
+function NextAid(): int
 {
     $aid = $GLOBALS['PDO']->query("SELECT MAX(aid) AS next_aid FROM `:prefix_admins`")->single();
     return ($aid['next_aid'] + 1);
 }
 
-/**
- * @param  string $text
- * @param  int    $len
- * @return string
- */
-function trunc(string $text, int $len)
+function trunc(string $text, int $len): string
 {
     return (strlen($text) > $len) ? substr($text, 0, $len).'...' : $text;
 }
 
-/**
- * @param int $mask
- */
-function CheckAdminAccess($mask)
+function CheckAdminAccess(int $mask): void
 {
     global $userbank;
     if (!$userbank->HasAccess($mask)) {
@@ -129,12 +99,7 @@ function CheckAdminAccess($mask)
     }
 }
 
-/**
- * @param  int  $sec
- * @param  bool $textual
- * @return false|string
- */
-function SecondsToString($sec, $textual=true)
+function SecondsToString(int $sec, bool $textual = true): false|string
 {
     if ($sec < 0) {
         return 'Session';
@@ -160,11 +125,7 @@ function SecondsToString($sec, $textual=true)
     }
 }
 
-/**
- * @param  string $ip
- * @return mixed|string
- */
-function FetchIp($ip)
+function FetchIp(string $ip): mixed
 {
     try {
         $reader = new Reader(MMDB_PATH);
@@ -174,35 +135,26 @@ function FetchIp($ip)
     }
 }
 
-function PageDie()
+function PageDie(): never
 {
     include_once TEMPLATES_PATH.'/core/footer.php';
     die();
 }
 
-/**
- * @param  string $map
- * @return string
- */
-function GetMapImage($map)
+function GetMapImage(string $map): string
 {
     $map = (@file_exists(SB_MAP_LOCATION."/$map.jpg")) ? $map : 'nomap';
     return SB_MAP_LOCATION."/$map.jpg";
 }
 
-/**
- * @param  string $file
- * @param  array  $validExts
- * @return bool
- */
-function checkExtension($file, array $validExts)
+function checkExtension(string $file, array $validExts): bool
 {
     $file = pathinfo($file, PATHINFO_EXTENSION);
     return in_array(strtolower($file), $validExts);
 }
 
 
-function PruneBans()
+function PruneBans(): void
 {
     global $userbank;
     $adminId = $userbank->GetAid() < 0 ? 0 : $userbank->GetAid();
@@ -256,7 +208,7 @@ function PruneBans()
 }
 
 
-function PruneComms()
+function PruneComms(): void
 {
     $GLOBALS['PDO']->query(
         "UPDATE `:prefix_comms` SET `RemovedBy` = 0, `RemoveType` = 'E', `RemovedOn` = UNIX_TIMESTAMP()
@@ -276,11 +228,8 @@ function PruneComms()
  * and undercounted any tree with nested subdirectories — e.g. a
  * `web/demos/<server>/<demo>.dem` layout would lose the per-server
  * subtotals).
- *
- * @param  string $dir
- * @return string
  */
-function getDirSize($dir)
+function getDirSize(string $dir): string
 {
     return sizeFormat(getDirSizeBytes($dir));
 }
@@ -290,11 +239,8 @@ function getDirSize($dir)
  * int so callers can `+=` it without tripping PHP 8's
  * "non-numeric value encountered" warning. {@see getDirSize()} wraps
  * this with {@see sizeFormat()} for the user-visible string.
- *
- * @param  string $dir
- * @return int
  */
-function getDirSizeBytes($dir)
+function getDirSizeBytes(string $dir): int
 {
     $size = 0;
     foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $object) {
@@ -303,11 +249,7 @@ function getDirSizeBytes($dir)
     return $size;
 }
 
-/**
- * @param  int $bytes
- * @return string
- */
-function sizeFormat($bytes)
+function sizeFormat(int $bytes): string
 {
     if ($bytes <= 0) {
         return '0 B';
@@ -317,13 +259,13 @@ function sizeFormat($bytes)
 }
 
 /**
- * Check for multiple steamids on one server
+ * Check for multiple steamids on one server. The returned array is keyed by
+ * STEAM_ID and each row carries `name`, `steam`, `ip` (and historically
+ * `time`, `ping` — only the first three are populated by the rcon parser).
  *
- * @param  int   $sid
- * @param  array $steamids
  * @return array<string, array{name: string, steam: string, ip: string}> Keyed by Steam2 id, e.g. ['STEAM_0:0:1' => ['name' => …, 'steam' => …, 'ip' => …], …].
  */
-function checkMultiplePlayers(int $sid, array $steamids)
+function checkMultiplePlayers(int $sid, array $steamids): array
 {
     $ret = rcon('status', $sid);
 
@@ -347,23 +289,14 @@ function checkMultiplePlayers(int $sid, array $steamids)
     return $players;
 }
 
-/**
- * @param  string $steamid
- * @return mixed|string
- */
-function GetCommunityName($steamid)
+function GetCommunityName(string $steamid): mixed
 {
     $endpoint = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=".STEAMAPIKEY.'&steamids='.\SteamID\SteamID::toSteam64($steamid);
     $data = json_decode(file_get_contents($endpoint), true);
     return (isset($data['response']['players'][0]['personaname'])) ? $data['response']['players'][0]['personaname'] : '';
 }
 
-/**
- * @param  string $cmd
- * @param  int    $sid
- * @return false|string
- */
-function rcon(string $cmd, int $sid)
+function rcon(string $cmd, int $sid): false|string
 {
     $GLOBALS['PDO']->query("SELECT ip, port, rcon FROM `:prefix_servers` WHERE sid = :sid");
     $GLOBALS['PDO']->bind(':sid', $sid);
@@ -397,11 +330,7 @@ function rcon(string $cmd, int $sid)
     return $output;
 }
 
-/**
- * @param  string $status
- * @return array
- */
-function parseRconStatus(string $status)
+function parseRconStatus(string $status): array
 {
     $regex = '/#\s*(\d+)(?>\s|\d)*"(.*)"\s*(STEAM_[01]:[01]:\d+|\[U:1:\d+\])(?>\s|:|\d)*[a-zA-Z]*\s*\d*\s([0-9.]+)/';
     $players = [];
@@ -421,11 +350,7 @@ function parseRconStatus(string $status)
     return $players;
 }
 
-/**
- * @param  string $text
- * @return string
- */
-function encodePreservingBr($text) {
+function encodePreservingBr(string $text): string {
     // Split the text at <br> tags, preserving the tags in the result
     $parts = preg_split('/(<br\s*\/?>)/i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
     $result = '';

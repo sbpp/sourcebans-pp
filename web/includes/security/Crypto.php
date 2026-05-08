@@ -3,48 +3,29 @@
 /**
  * Class Crypto
  */
-class Crypto
+final class Crypto
 {
-    /**
-     * @param int $length
-     * @return string
-     */
-    public static function genJTI(int $length = 12)
+    public static function genJTI(int $length = 12): string
     {
         return self::base64RandomBytes($length);
     }
 
-    /**
-     * @param int $length
-     * @return string
-     */
-    public static function genSecret(int $length = 47)
+    public static function genSecret(int $length = 47): string
     {
         return self::base64RandomBytes($length);
     }
 
-    /**
-     * @param int $length
-     * @return string
-     */
-    public static function genPassword(int $length = 23)
+    public static function genPassword(int $length = 23): string
     {
         return self::base64RandomBytes($length);
     }
 
-    /**
-     * @return string
-     */
-    public static function recoveryHash()
+    public static function recoveryHash(): string
     {
         return hash('sha256', self::base64RandomBytes(12));
     }
 
-    /**
-     * @param int $length
-     * @return string
-     */
-    private static function base64RandomBytes(int $length)
+    private static function base64RandomBytes(int $length): string
     {
         return base64_encode(openssl_random_pseudo_bytes($length));
     }

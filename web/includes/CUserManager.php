@@ -19,7 +19,7 @@ Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-class CUserManager
+final class CUserManager
 {
     private readonly int $aid;
 
@@ -38,12 +38,9 @@ class CUserManager
 
     /**
      * Gets all user details from the database, saves them into
-     * the admin array 'cache', and then returns the array
-     *
-     * @param int $aid the ID of admin to get info for.
-     * @return array|false
+     * the admin array 'cache', and then returns the array.
      */
-    public function GetUserArray($aid = null)
+    public function GetUserArray(?int $aid = null): array|false
     {
         $aid ??= $this->aid;
         // Invalid aid
@@ -98,13 +95,11 @@ class CUserManager
 
 
     /**
-     * Will check to see if an admin has any of the flags given
+     * Will check to see if an admin has any of the flags given.
      *
-     * @param int $flags The flags to check for.
-     * @param int $aid The user to check flags for.
      * @return bool
      */
-    public function HasAccess($flags, $aid = null): bool
+    public function HasAccess(int|string $flags, ?int $aid = null): bool
     {
         $aid ??= $this->aid;
 
@@ -134,13 +129,9 @@ class CUserManager
 
 
     /**
-     * Gets a 'property' from the user array eg. 'authid'
-     *
-     * @param string $name
-     * @param int $aid the ID of admin to get info for.
-     * @return mixed.
+     * Gets a 'property' from the user array eg. 'authid'.
      */
-    public function GetProperty($name, $aid = null)
+    public function GetProperty(string $name, ?int $aid = null): mixed
     {
         $aid ??= $this->aid;
         if (empty($name) || $aid < 0) {
@@ -174,19 +165,13 @@ class CUserManager
     }
 
 
-    /**
-     * @return int|mixed
-     */
-    public function GetAid()
+    public function GetAid(): int
     {
         return $this->aid;
     }
 
 
-    /**
-     * @return array
-     */
-    public function GetAllAdmins()
+    public function GetAllAdmins(): array
     {
         $this->dbh->query('SELECT aid FROM `:prefix_admins`');
         $res = $this->dbh->resultset();
@@ -197,11 +182,7 @@ class CUserManager
     }
 
 
-    /**
-     * @param int|null $aid
-     * @return bool|mixed
-     */
-    public function GetAdmin($aid = null)
+    public function GetAdmin(?int $aid = null): array|false
     {
         $aid ??= $this->aid;
         if ($aid < 0) {
@@ -214,11 +195,7 @@ class CUserManager
         return $this->admins[$aid];
     }
 
-    /**
-     * @param string $name
-     * @return bool
-     */
-    public function isNameTaken($name)
+    public function isNameTaken(string $name): bool
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE user = :user");
         $this->dbh->bind(':user', $name);
@@ -227,11 +204,7 @@ class CUserManager
         return $data === 1;
     }
 
-    /**
-     * @param string $steamid
-     * @return bool
-     */
-    public function isSteamIDTaken($steamid)
+    public function isSteamIDTaken(string $steamid): bool
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE authid = :steamid");
         $this->dbh->bind(':steamid', $steamid);
@@ -240,11 +213,7 @@ class CUserManager
         return $data === 1;
     }
 
-    /**
-     * @param string $email
-     * @return bool
-     */
-    public function isEmailTaken($email)
+    public function isEmailTaken(string $email): bool
     {
         $this->dbh->query("SELECT 1 FROM `:prefix_admins` WHERE email = :email");
         $this->dbh->bind(':email', $email);
@@ -253,12 +222,7 @@ class CUserManager
         return $data === 1;
     }
 
-    /**
-     * @param int $aid
-     * @param string $pass
-     * @return bool
-     */
-    public function isCurrentPasswordValid($aid, $pass)
+    public function isCurrentPasswordValid(int $aid, string $pass): bool
     {
         $this->dbh->query("SELECT password FROM `:prefix_admins` WHERE aid = :aid");
         $this->dbh->bind(':aid', $aid);
@@ -266,20 +230,7 @@ class CUserManager
         return password_verify($pass, $hash['password']);
     }
 
-    /**
-     * @param string $name
-     * @param string $steam
-     * @param string $password
-     * @param string $email
-     * @param int $web_group
-     * @param int $web_flags
-     * @param string $srv_group
-     * @param string $srv_flags
-     * @param int $immunity
-     * @param string $srv_password
-     * @return int
-     */
-    public function AddAdmin($name, $steam, $password, $email, $web_group, $web_flags, $srv_group, $srv_flags, $immunity, $srv_password)
+    public function AddAdmin(string $name, string $steam, string $password, string $email, int $web_group, int $web_flags, string $srv_group, string $srv_flags, int $immunity, string $srv_password): int
     {
         if (!empty($password) && strlen((string) $password) < MIN_PASS_LENGTH) {
             throw new RuntimeException('Password must be at least ' . MIN_PASS_LENGTH . ' characters long.');

@@ -288,6 +288,26 @@ Playwright E2E specifics:
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
 
+### Native types over docblocks
+
+Every method signature in `web/includes/` that PHP can express
+natively uses native parameter and return types — `int $x`, `?array`,
+`mixed`, `int|false`, `: void`, `: never`. Docblocks (`@param` /
+`@return`) survive ONLY when carrying refinement PHP can't express
+(generic shape like `list<array{slug: string, name: string}>`,
+template variable hints for the SmartyTemplateRule).
+
+Use `?T` for nullable types, `T|U` for unions, `?T = null` for
+nullable optional parameters with a `null` default. Methods that
+return nothing get `: void`; methods that unconditionally exit
+(`header() + exit()`, `throw`, `die`) get `: never`.
+
+This was finished by issue #1290 phase A across the legacy classes
+(`CUserManager`, `Database`, `Log`, `Auth`, `JWT`, `CSRF`, `Crypto`,
+`Api`, `ApiError`, `AdminTabs`, `Theme`, `Mailer`, the auth
+handlers, `Config`, `Host`, `system-functions.php`). New code
+follows the same convention by default.
+
 ### Null-into-scalar discipline (PHP 8.5+)
 
 `web/composer.json` requires `php >= 8.5`, so PHP's
@@ -730,6 +750,17 @@ audit (#1207) locked in. New CTAs:
 
 ## Anti-patterns (do NOT reintroduce)
 
+- `@param int $x` / `@return string` docblocks where PHP can express
+  the type natively → use the native parameter / return type
+  declaration instead. The docblock stays only when the type carries
+  refinement PHP can't express (e.g. `list<array{slug: string, …}>`).
+  Removed wholesale across legacy classes by issue #1290 phase A.
+- Non-`final` classes in `web/includes/` that nothing extends → mark
+  `final class`. Same applies in `web/includes/auth/handler/` and
+  `web/includes/Mail/`. The only intentional non-final / abstract
+  class in `web/includes/` is `View` (subclassed by every concrete
+  view DTO). Marking final unblocks the JIT's monomorphic-call
+  optimization. Issue #1290 phase J.
 - `xajax` / `sb-callback.php` → use the JSON API.
 - ADOdb → use `Database` (PDO).
 - MooTools / React / a runtime bundler → vanilla JS in `web/scripts/`.

@@ -3,7 +3,7 @@
 /**
  * Class Config
  */
-class Config
+final class Config
 {
     private static array $config = [];
 
@@ -15,20 +15,12 @@ class Config
         self::$config = self::getAll();
     }
 
-    /**
-     * @param string $setting
-     * @return mixed|null
-     */
     public static function get(string $setting): mixed
     {
         return self::$config[$setting] ?? null;
     }
 
 
-    /**
-     * @param array $keys Settings to retrieve
-     * @return array
-     */
     public static function getMulti(array $keys): array
     {
         $values = [];
@@ -41,19 +33,11 @@ class Config
         return $values;
     }
 
-    /**
-     * @param string $setting
-     * @return bool
-     */
     public static function getBool(string $setting): bool
     {
         return (bool)self::get($setting);
     }
 
-    /**
-     * @param int $timestamp
-     * @return string
-     */
     public static function time(int $timestamp): string
     {
         $format = self::get('config.dateformat');
@@ -61,9 +45,6 @@ class Config
         return date($format, $timestamp);
     }
 
-    /**
-     * @return array
-     */
     private static function getAll(): array
     {
         $config = [];

@@ -28,7 +28,7 @@ require_once __DIR__ . '/ApiError.php';
  * Throw ApiError to surface a structured client-side message.
  * Return ['__redirect' => '...'] (or call Api::redirect()) to navigate.
  */
-class Api
+final class Api
 {
     /** @var array<string, array{fn: callable, perm: int|string, requireAdmin: bool, public: bool}> */
     private static array $registry = [];
@@ -104,8 +104,7 @@ class Api
     /**
      * Invoke a registered handler in-process (used by the test harness so
      * it can bypass the HTTP boundary). Throws ApiError on any failure.
-     *
-     * @return array Raw handler return value (envelope is built by dispatch()).
+     * Returns the raw handler return value; the envelope is built by dispatch().
      */
     public static function invoke(string $action, array $params): array
     {

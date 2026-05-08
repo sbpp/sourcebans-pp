@@ -3,28 +3,19 @@
 /**
  * Class Log
  */
-class Log
+final class Log
 {
     private static ?Database $dbs = null;
 
     private static ?CUserManager $user = null;
 
-    /**
-     * @param Database $dbs
-     * @param CUserManager $user
-     */
-    public static function init(Database $dbs, CUserManager $user)
+    public static function init(Database $dbs, CUserManager $user): void
     {
         self::$dbs = $dbs;
         self::$user = $user;
     }
 
-    /**
-     * @param string $type
-     * @param string $title
-     * @param string $message
-     */
-    public static function add($type, $title, $message): void
+    public static function add(string $type, string $title, string $message): void
     {
         $host = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP) ? $_SERVER['REMOTE_ADDR'] : '';
 
@@ -42,13 +33,7 @@ class Log
         self::$dbs->execute();
     }
 
-    /**
-     * @param int $start
-     * @param int $limit
-     * @param string $search Entire "WHERE" statement including the word WHERE
-     * @return mixed
-     */
-    public static function getAll($start, $limit): mixed
+    public static function getAll(int $start, int $limit): mixed
     {
         $where = null;
         $valueOther = null;
@@ -95,11 +80,7 @@ class Log
         return self::$dbs->resultset();
     }
 
-    /**
-     * @param string $search Entire "WHERE" statement including the word WHERE
-     * @return mixed
-     */
-    public static function getCount($search): mixed
+    public static function getCount(string $search): mixed
     {
         $value = $_GET['advSearch'] ?? null;
         $valueOther = null;
@@ -138,9 +119,6 @@ class Log
         return $log['count'];
     }
 
-    /**
-     * @return string
-     */
     private static function getCaller(): string
     {
         $functions = '';

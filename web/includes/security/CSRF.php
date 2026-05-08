@@ -4,7 +4,7 @@
  * Per-session CSRF token issued at session start and validated on every
  * state-changing request (POST forms and JSON API calls).
  */
-class CSRF
+final class CSRF
 {
     public const FIELD_NAME = 'csrf_token';
     public const HEADER_NAME = 'HTTP_X_CSRF_TOKEN';
@@ -29,7 +29,7 @@ class CSRF
         return is_string($_SESSION[self::SESSION_KEY] ?? null) ? $_SESSION[self::SESSION_KEY] : '';
     }
 
-    public static function validate($token): bool
+    public static function validate(mixed $token): bool
     {
         $expected = self::token();
         return $expected !== '' && is_string($token) && hash_equals($expected, $token);
