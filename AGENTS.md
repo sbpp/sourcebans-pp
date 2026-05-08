@@ -10,8 +10,17 @@ codebase; this file is the cheatsheet.
   `web/index.php` (pages) and `web/api.php` (JSON API).
 - `game/addons/sourcemod/` — SourceMod plugin sources (`.sp`).
 - `docker/` + `docker-compose.yml` + `sbpp.sh` — local dev stack.
-- `web/install/` — legacy installer wizard. **Don't extend it.** Dev
-  seeds the DB out of band; the wizard stays for production users.
+- `web/install/` — installer wizard self-hosters run on every fresh
+  install (the dev stack seeds the DB out of band via `docker/db-init/`,
+  so the wizard isn't exercised locally). Live code; modernize and
+  extend like anything else under `web/`.
+- `web/updater/` — upgrade runner self-hosters hit on every panel
+  upgrade. Wrapper code (`Updater.php`, `index.php`, `store.json`) and
+  the numbered migration scripts under `web/updater/data/<N>.php` are
+  both live and both modernization-friendly. The one practical wrinkle:
+  if you're changing what an already-shipped `<N>.php` *does* (different
+  SQL, different defaults), land it as a new `<N+1>.php` so fresh and
+  upgraded installs converge — see "Updater migrations" below.
 
 ## Keep the docs in sync
 
@@ -376,6 +385,15 @@ of the diff ship together or not at all.
   `$this->dbs` is in scope; PHPStan can't see this, so prefix each
   `$this->dbs` call with `// @phpstan-ignore variable.undefined`. See
   `web/updater/data/802.php` and `803.php` for the canonical shape.
+- Modernizing an already-shipped `<N>.php` is fine when the script's
+  *effect* doesn't change — typed signatures, `array()` → `[]`, swapping
+  helper calls, etc. The thing to watch for is **substantive behavior
+  changes** to a shipped script (different SQL, different defaults, new
+  side effects): a fresh install on `data.sql` never runs the updater
+  while an upgraded install already ran the old version, so the two
+  silently diverge. Land that kind of change as a new `<N+1>.php` that
+  converges the divergence forward. The wrapper (`Updater.php` /
+  `index.php` / `store.json`) carries no such constraint.
 
 ### JSON API
 
@@ -755,7 +773,14 @@ audit (#1207) locked in. New CTAs:
   now single-source in `core/admin_sidebar.tpl` and mounted by
   `AdminTabs.php`. Page templates render their content column
   body and nothing else.
-- New `install/` flow → DB is seeded out-of-band in dev.
+- Substantively changing what an already-shipped `web/updater/data/<N>.php`
+  *does* (different SQL, different defaults, new side effects) → fresh
+  installs (which never run the updater) silently diverge from upgraded
+  installs (which already ran the old version). Land the change as a
+  new `<N+1>.php` that converges the divergence forward. Pure
+  modernization (typed signatures, `array()` → `[]`, helper swaps) that
+  preserves the script's effect doesn't trip this — see "Updater
+  migrations" above for the per-script contract.
 - String literals for action names → `Actions.PascalName`.
 - Inlining the table prefix → use `:prefix_` and let `Database` rewrite.
 - `htmlspecialchars_decode` / `html_entity_decode` on JSON-API params
