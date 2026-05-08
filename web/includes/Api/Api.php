@@ -84,7 +84,16 @@ final class Api
         self::$bootstrapped = true;
     }
 
-    /** Sentinel a handler can return to issue a client-side redirect. */
+    /**
+     * Sentinel a handler can return to issue a client-side redirect.
+     *
+     * #[\NoDiscard]: the returned envelope IS the redirect signal — the
+     * dispatcher only honours it when the handler bubbles it back via
+     * `return Api::redirect(...)`. A bare `Api::redirect(...);` call (no
+     * `return`) silently no-ops the navigation while looking like it
+     * worked. Issue #1290 phase K.1.
+     */
+    #[\NoDiscard('Api::redirect() returns the redirect envelope; bubble it back with `return`.')]
     public static function redirect(string $url): array
     {
         return ['__redirect' => $url];

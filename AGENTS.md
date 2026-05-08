@@ -358,6 +358,57 @@ top-level `class Foo {}` in `web/includes/` (see "Anti-patterns").
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
 
+### PHP 8.5 idioms (post-#1289 floor bump)
+
+The codebase floor is PHP 8.5. Beyond native types and constructor
+promotion, four 8.4/8.5 features are documented here (#1290 phase K):
+two adopted today (`#[\NoDiscard]`, the pipe operator), two declined
+for now (property hooks, asymmetric visibility — neither has a paying
+candidate in the current codebase):
+
+- `#[\NoDiscard]` (PHP 8.5) on methods whose return value is the
+  meaningful signal: `Api::redirect()` (the redirect envelope is the
+  navigation; `Api::redirect(...);` without a `return` silently no-ops),
+  `CSRF::validate()` (running the check and ignoring the verdict is
+  the textbook bug shape this attribute exists to catch). New methods
+  whose return is the only meaningful output should carry the
+  attribute too. `Database::execute()` is a strong future candidate
+  but adopting it requires a paired sweep of every legacy
+  `$db->execute();` discard across `web/updater/data/*.php`,
+  `web/pages/*.php`, and `web/api/handlers/*.php` (≈40 runtime sites
+  the static gate can't see through `$GLOBALS['PDO']` / `$this->dbs`)
+  — tracked as a follow-up in issue #1294.
+- Property hooks (PHP 8.4) for computed / lazy / validated
+  accessors. None currently in use — the codebase's getter methods
+  (`UserManager::GetAid()`, `GetProperty()`, etc.) are simple
+  delegators where a property hook would add call overhead without
+  paying for itself. Reach for hooks when you have actual compute
+  inside the getter (lazy DB lookup, derived value caching, value
+  validation on set). For plain stored data, `public readonly` is
+  the right shape.
+- Asymmetric visibility (PHP 8.4): `public private(set) X $foo;`
+  for properties that need to be written more than once internally
+  but read-only externally. None currently in use —
+  `public private(set) readonly X $foo;` is indistinguishable from
+  plain `public readonly X $foo;` (the engine enforces single-write
+  in both shapes), so reach for `private(set)` only when there's a
+  concrete multi-write internal flow. For plain "single-write,
+  externally read-only", `public readonly` is the right shape.
+- Pipe operator `|>` (PHP 8.5) for multi-step value transformations
+  that read better left-to-right than as nested function calls. The
+  `IntroRenderer` chain is the canonical site:
+  `($raw ?? '') |> strval(...) |> IntroRenderer::renderIntroText(...)`.
+  Pipe is best when each step takes ONE argument and is named (no
+  ad-hoc `fn() => f($x, ...)` lambda noise); reach for it only when
+  the form is obviously clearer than the nested-call shape.
+
+  **Precedence pitfall**: `|>` binds tighter than `??`, `?:`, `=`,
+  and the boolean `&&` / `||` / `and` / `or`. When chaining a
+  coalesce, parenthesize the LHS: `($raw ?? '') |> strval(...)`,
+  NOT `$raw ?? '' |> strval(...)` (the latter parses as
+  `$raw ?? ('' |> strval(...))` and silently never coerces when
+  `$raw` is non-null).
+
 ### Native types over docblocks
 
 Every method signature in `web/includes/` that PHP can express
@@ -1083,6 +1134,14 @@ audit (#1207) locked in. New CTAs:
   runtime gate (for PHPStan-excluded files like `auth/openid.php`) is
   `Php82DeprecationsTest`. See "Null-into-scalar discipline" in
   Conventions for the per-shape idiom.
+- Discarded return values from `Api::redirect()` or `CSRF::validate()`
+  → these carry `#[\NoDiscard]` (PHP 8.5). The return is the
+  meaningful signal — `Api::redirect()`'s envelope IS the navigation
+  (callers must `return Api::redirect(...)` so the dispatcher honours
+  it), and `CSRF::validate()`'s bool IS the verdict (callers either
+  branch on it or use the higher-level `rejectIfInvalid()` helper).
+  PHPStan's `method.resultDiscarded` rule fails the build on a
+  discarded site. Issue #1290 phase K.1.
 - `setTimeout` / `waitForTimeout` waits in E2E specs → wait on
   terminal attributes (`[data-loading="false"]` settled, `[data-skeleton]`
   removed) per #1123's "Testability hooks" rule.

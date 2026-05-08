@@ -270,9 +270,14 @@ require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
 $homePerms = \Sbpp\View\Perms::for($userbank);
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\HomeDashboardView(
     dashboard_title: (string) (Config::get('dash.intro.title') ?? ''),
-    dashboard_text: \Sbpp\Markup\IntroRenderer::renderIntroText(
-        (string) (Config::get('dash.intro.text') ?? '')
-    ),
+    // #1290 phase K.4 — PHP 8.5 pipe operator. Reads left-to-right
+    // ("take the raw setting → coerce to string → render Markdown") vs
+    // the inside-out `IntroRenderer::renderIntroText((string)(Config::get(...) ?? ''))`
+    // shape. The IntroRenderer chain is the canonical pipe site
+    // called out in the issue body.
+    dashboard_text: (Config::get('dash.intro.text') ?? '')
+        |> strval(...)
+        |> \Sbpp\Markup\IntroRenderer::renderIntroText(...),
     dashboard_lognopopup: Config::getBool('dash.lognopopup'),
     players_blocked: $stopped,
     total_blocked: $totalstopped,

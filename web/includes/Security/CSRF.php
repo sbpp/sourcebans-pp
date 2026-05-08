@@ -31,6 +31,15 @@ final class CSRF
         return is_string($_SESSION[self::SESSION_KEY] ?? null) ? $_SESSION[self::SESSION_KEY] : '';
     }
 
+    /**
+     * #[\NoDiscard]: validating the CSRF token but discarding the result
+     * means you ran the check and ignored the answer — the textbook bug
+     * pattern this attribute exists to catch (the request would proceed
+     * regardless of whether the token matched). Callers either branch on
+     * the bool (`if (!CSRF::validate(...)) { ... }`) or use the
+     * higher-level `rejectIfInvalid()` helper. Issue #1290 phase K.1.
+     */
+    #[\NoDiscard('CSRF::validate() returns the verdict; branch on it or use rejectIfInvalid().')]
     public static function validate(mixed $token): bool
     {
         $expected = self::token();
