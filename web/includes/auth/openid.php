@@ -453,8 +453,12 @@ class LightOpenID
         $data = file_get_contents($url, false, $context);
         # This is a hack for providers who don't support HEAD requests.
         # It just creates the headers array for the last request in $this->headers.
-        if(isset($http_response_header)) {
-            $this->headers = $this->parse_header_array($http_response_header, $update_claimed_id);
+        # PHP 8.5 deprecated the magic local $http_response_header; the
+        # http_get_last_response_headers() helper (PHP 8.4+) returns the
+        # same array. SBPP requires PHP 8.5+ as of #1289.
+        $responseHeaders = http_get_last_response_headers();
+        if (is_array($responseHeaders)) {
+            $this->headers = $this->parse_header_array($responseHeaders, $update_claimed_id);
         }
 
         return $data;

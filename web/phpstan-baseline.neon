@@ -319,7 +319,7 @@ parameters:
 			path: install/template/page.2.php
 
 		-
-			message: '#^Loose comparison using \!\= between 1 and \-1 will always evaluate to true\.$#'
+			message: '#^Loose comparison using \!\= between 0\|1 and \-1 will always evaluate to true\.$#'
 			identifier: notEqual.alwaysTrue
 			count: 1
 			path: install/template/page.3.php

@@ -26,7 +26,7 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
 
 ```
 * Webserver
-  o PHP 8.2 or higher
+  o PHP 8.5 or higher
     * ini setting: memory_limit greater than or equal to 64M
     * GMP extension
   o MySQL 5.6 or MariaDB 10 and higher
@@ -57,7 +57,7 @@ After successfully installing all dependencies you can procede with the [quickst
 
 ### Local development with Docker
 
-A one-command Docker stack (PHP 8.2 + Apache, MariaDB, Adminer, Mailpit) is
+A one-command Docker stack (PHP 8.5 + Apache, MariaDB, Adminer, Mailpit) is
 included for rapid local iteration:
 
 ```sh
@@ -89,7 +89,6 @@ includes/vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon
 
 Configuration lives in `web/phpstan.neon`.
 
-### PHP 8.1 major changes
 ## Upgrade
 *If you ran the installer, this step is unnecessary.*
 

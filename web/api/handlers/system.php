@@ -134,12 +134,12 @@ function _api_system_release_fetch_upstream(): ?array
     }
 
     // `ignore_errors=true` makes file_get_contents return the body even on
-    // a non-2xx status, so reject anything outside 2xx explicitly. The
-    // response status line lives in the magic local $http_response_header
-    // array file_get_contents seeds; PHPStan knows it's always defined
-    // post-call so no `isset()` guard is needed.
-    /** @var list<string> $http_response_header */
-    if (isset($http_response_header[0]) && preg_match('~HTTP/\S+\s+(\d+)~', $http_response_header[0], $m)) {
+    // a non-2xx status, so reject anything outside 2xx explicitly. PHP 8.5
+    // deprecated the magic local $http_response_header in favour of
+    // http_get_last_response_headers() (introduced in 8.4); the panel's
+    // floor is 8.5 (#1289) so the function is always available.
+    $responseHeaders = http_get_last_response_headers();
+    if (is_array($responseHeaders) && isset($responseHeaders[0]) && preg_match('~HTTP/\S+\s+(\d+)~', $responseHeaders[0], $m)) {
         $status = (int) $m[1];
         if ($status < 200 || $status >= 300) {
             return null;

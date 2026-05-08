@@ -15,8 +15,19 @@ use Smarty\Smarty;
  * Issue #1273: PHP 8.1 deprecated implicit `null` -> scalar coercion for
  * internal functions (`strlen($null)`, `trim($null)`, `substr($null,...)`,
  * etc.). PHP 9 will turn the deprecation into a `TypeError`. Per
- * `web/composer.json`, the panel already requires `php >= 8.2`, so we're
- * firmly inside the deprecation window.
+ * `web/composer.json`, the panel requires `php >= 8.5`, so we're firmly
+ * inside the deprecation window.
+ *
+ * Naming note: the class + filename keep their `Php82` prefix because
+ * that's the panel's PHP floor at the time the gate was added (#1273).
+ * The actual surface this test validates is the null-into-scalar
+ * coercion that PHP 8.1 deprecated and PHP 9 will fatal on — the
+ * deprecation predates our floor and outlives any single floor bump
+ * (we landed `>=8.5` in #1289 and the gate is unchanged). Renaming to
+ * `NullIntoScalarDeprecationsTest` would be more descriptive but the
+ * `git mv` churn isn't worth it; the AGENTS.md "Where to find what"
+ * row at "Trap PHP 8.1 null-into-scalar deprecations at runtime"
+ * already describes what the test does, not when the floor was.
  *
  * The PHPStan deprecation-rules plugin (#1273) is the static gate that
  * blocks new offenders inside the analyzable codebase. This test is the

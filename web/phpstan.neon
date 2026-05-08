@@ -8,7 +8,7 @@ includes:
 
 parameters:
     level: 5
-    phpVersion: 80200
+    phpVersion: 80500
     bootstrapFiles:
         - includes/vendor/autoload.php
         - phpstan-bootstrap.php

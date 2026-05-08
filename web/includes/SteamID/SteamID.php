@@ -23,7 +23,7 @@ class SteamID
      * @param  Database|null $dbs
      * @throws Exception
      */
-    public static function init(Database $dbs = null)
+    public static function init(?Database $dbs = null)
     {
         self::$calcMethod = self::getCalcMethod();
 

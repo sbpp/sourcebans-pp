@@ -15,7 +15,7 @@ A tour of the codebase for new contributors (human or LLM). Pair this with
 SourceBans++ is a Source-engine admin/ban/comms management system. It has
 two halves that are deployed separately:
 
-- **Web panel** (`web/`) — a PHP 8.2 + MariaDB application that admins use
+- **Web panel** (`web/`) — a PHP 8.5 + MariaDB application that admins use
   in a browser to manage bans, server admins, groups, etc. It also serves
   the public ban list and a JSON API consumed by its own client-side JS.
 - **SourceMod plugins** (`game/addons/sourcemod/`) — `.sp` plugins that
@@ -47,7 +47,7 @@ plugins are stable and updated less often.
 
 ### Stack
 
-- **PHP 8.2** with `pdo`, `pdo_mysql`, `gmp`, `intl`, `mbstring`, `openssl`,
+- **PHP 8.5** with `pdo`, `pdo_mysql`, `gmp`, `intl`, `mbstring`, `openssl`,
   `sodium`. Composer manages dependencies into `web/includes/vendor/`
   (note the non-default `vendor-dir`, set in `composer.json`).
 - **MariaDB 10.11** in dev (MySQL 5.6+ supported in production).
@@ -683,11 +683,11 @@ Build with the standard SourceMod compiler — see the
 Spelt out fully in [`docker/README.md`](docker/README.md). Quick mental
 model:
 
-- **`docker-compose.yml`** brings up four services: `web` (PHP 8.2 +
+- **`docker-compose.yml`** brings up four services: `web` (PHP 8.5 +
   Apache, bind-mounting `./web`), `db` (MariaDB 10.11), `adminer`
   (DB UI), and `mailpit` (catch-all SMTP).
 - **`docker/Dockerfile`** layers the PHP extensions, OPcache config, and
-  Composer onto `php:8.2-apache`.
+  Composer onto `php:8.5-apache`.
 - **`docker/php/web-entrypoint.sh`** waits for MariaDB, renders
   `web/config.php` from env vars (only if absent), runs `composer install`
   if `vendor/` is empty, then `exec`s Apache.
@@ -725,7 +725,7 @@ strings against the schema. Set `PHPSTAN_DBA_DISABLE=1` to skip it; CI
 sets `DBA_REQUIRE=1` so credential drift fails loudly.
 
 `phpstan/phpstan-deprecation-rules` (#1273) is wired in via
-`phpstan.neon` with `phpVersion: 80200` so the analyser flags the
+`phpstan.neon` with `phpVersion: 80500` so the analyser flags the
 PHP 8.1 null-into-scalar deprecation surface (`strlen($null)`,
 `trim($null)`, `substr($null, ...)`, `preg_match($null, ...)`, …)
 before it bites us on the PHP 9 bump. `web/includes/auth/openid.php`

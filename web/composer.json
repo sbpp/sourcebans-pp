@@ -27,7 +27,7 @@
         "symfony/mailer": "^7.2",
         "ext-pdo": "*",
         "ext-openssl": "*",
-        "php": ">=8.2"
+        "php": ">=8.5"
     },
 
     "autoload": {

@@ -38,7 +38,7 @@ To stop:
 ## What's in the box
 
 ```
-Dockerfile               php:8.2-apache + pdo_mysql, gmp, intl, zip, mbstring, opcache, composer
+Dockerfile               php:8.5-apache + pdo_mysql, gmp, intl, zip, mbstring, opcache, composer
 docker-compose.yml       web, db, adminer, mailpit
 docker/php/
     web-entrypoint.sh    waits for DB, renders config.php, runs composer install, fixes cache perms

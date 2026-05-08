@@ -6,7 +6,7 @@ codebase; this file is the cheatsheet.
 
 ## Stack at a glance
 
-- `web/` — PHP 8.2 panel (Smarty 5, PDO/MariaDB, vanilla JS). Entry:
+- `web/` — PHP 8.5 panel (Smarty 5, PDO/MariaDB, vanilla JS). Entry:
   `web/index.php` (pages) and `web/api.php` (JSON API).
 - `game/addons/sourcemod/` — SourceMod plugin sources (`.sp`).
 - `docker/` + `docker-compose.yml` + `sbpp.sh` — local dev stack.
@@ -288,11 +288,12 @@ Playwright E2E specifics:
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
 
-### Null-into-scalar discipline (PHP 8.2+)
+### Null-into-scalar discipline (PHP 8.5+)
 
-`web/composer.json` requires `php >= 8.2`, so PHP's
+`web/composer.json` requires `php >= 8.5`, so PHP's
 "`Deprecated: <fn>(): Passing null to parameter #1 of type string`"
-surface is active. PHP 9 will turn it into a `TypeError`. Every
+surface (introduced in PHP 8.1) is active. PHP 9 will turn it into a
+`TypeError`. Every
 `strlen` / `trim` / `substr` / `preg_match` / `mb_strlen` / etc.
 call against a value that can be `null` at runtime needs one of
 two idiomatic shapes (#1273):
@@ -317,7 +318,7 @@ two idiomatic shapes (#1273):
 
 - Never `if (!is_null($x) && strlen($x) > 0)` — verbose and the
   conditional reads worse than the coalesce.
-- `phpstan/phpstan-deprecation-rules` + `phpVersion: 80200` is the
+- `phpstan/phpstan-deprecation-rules` + `phpVersion: 80500` is the
   static gate; `Php82DeprecationsTest` (PHPUnit) is the runtime gate
   for the bits PHPStan doesn't see (excluded paths like
   `includes/auth/openid.php`, runtime values that look non-null to
@@ -820,7 +821,7 @@ audit (#1207) locked in. New CTAs:
   (`strlen((string) $row['col'])`) when the value should always be a
   string. PHP 8.1 deprecated this implicit null-into-scalar coercion;
   PHP 9 makes it a `TypeError` (#1273). The static gate is
-  `phpstan/phpstan-deprecation-rules` + `phpVersion: 80200`; the
+  `phpstan/phpstan-deprecation-rules` + `phpVersion: 80500`; the
   runtime gate (for PHPStan-excluded files like `auth/openid.php`) is
   `Php82DeprecationsTest`. See "Null-into-scalar discipline" in
   Conventions for the per-shape idiom.
