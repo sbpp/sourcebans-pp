@@ -28,7 +28,7 @@ class SteamID
         self::$calcMethod = self::getCalcMethod();
 
         if (self::$calcMethod === 'SQL') {
-            if (is_null($dbs)) {
+            if ($dbs === null) {
                 throw new Exception('No suitable calculation Method found!');
             }
             calc\SQL::setDB($dbs);

@@ -143,7 +143,14 @@ function route($fallback)
         // numeric `$fallback` mode so each entry sets `$_GET['p']` to
         // the canonical slug downstream code (page-tail navbar, etc.)
         // would have seen for a direct request.
-        [$slug, $title, $template] = match ($fallback) {
+        //
+        // `$fallback` typically arrives from `Config::get('config.defaultpage')`,
+        // which reads `sb_settings.value` (a `text NOT NULL` column) and so
+        // returns a string like "1". `match` is strict (===), so we cast to
+        // int at the dispatch boundary; non-numeric strings (`"banana"`) cast
+        // to `0` and fall through to the Dashboard arm — matching the loose
+        // `==` `switch` this replaced (#1290).
+        [$slug, $title, $template] = match ((int) $fallback) {
             1       => ['banlist', 'Ban List',      '/page.banlist.php'],
             2       => ['servers', 'Server Info',   '/page.servers.php'],
             3       => ['submit',  'Submit a Ban',  '/page.submit.php'],

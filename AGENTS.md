@@ -824,8 +824,7 @@ audit (#1207) locked in. New CTAs:
 - `is_null($x)` → `$x === null`. Pure stylistic swap, but the prettier
   shape is `??=` whenever the surrounding code is
   `if (is_null($x)) { $x = $y; }` — becomes `$x ??= $y;`. Excluded:
-  `web/includes/auth/openid.php` and `web/includes/SteamID/SteamID.php`
-  are third-party. Issue #1290 phase G.
+  `web/includes/auth/openid.php` (third-party). Issue #1290 phase G.
 - `array(…)` literal constructor → `[…]` short-array syntax. PHP 5.4+
   shape; the only reason `array(…)` survived this long was nobody got
   around to it. Excluded: `web/includes/auth/openid.php` and

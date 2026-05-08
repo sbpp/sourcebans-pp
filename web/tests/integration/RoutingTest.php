@@ -178,4 +178,52 @@ final class RoutingTest extends ApiTestCase
         $this->assertSame('/page.admin.php', $file);
         $this->assertSame(200, http_response_code());
     }
+
+    /**
+     * #1290 regression guard: the fallback dispatch (`route($fallback)`
+     * when `?p=…` doesn't match any top-level slug) is fed by
+     * `Config::get('config.defaultpage')`, which reads `sb_settings.value`
+     * — a `text NOT NULL` column. The persisted value is therefore a
+     * STRING ("1", "2", …), not an int.
+     *
+     * The pre-#1290 code dispatched on a loose-`==` `switch`, so `'1'`
+     * matched `case 1`. The mechanical sweep replaced it with `match`,
+     * which is strict (`===`), and `'1' === 1` is false — every
+     * non-zero string default silently fell through to the Dashboard
+     * arm.
+     *
+     * The fix casts `$fallback` to int at the dispatch boundary; this
+     * test pins both the per-arm string-input behaviour AND the
+     * string-vs-int parity that `match` broke.
+     *
+     * The fallback path mutates `$_GET['p']` (so downstream code sees
+     * the canonical slug), so each case has to re-arm the unknown-slug
+     * sentinel before calling `route()` again — otherwise the second
+     * call resolves the now-canonical slug via the top-level `match`
+     * and never hits the fallback dispatch under test.
+     *
+     * @return iterable<string, array{0: int|string, 1: string, 2: string}>
+     */
+    public static function fallbackCases(): iterable
+    {
+        yield 'string "1" → Ban List'           => ['1',      'Ban List',      '/page.banlist.php'];
+        yield 'int 1 → Ban List (parity)'       => [1,        'Ban List',      '/page.banlist.php'];
+        yield 'string "2" → Server Info'        => ['2',      'Server Info',   '/page.servers.php'];
+        yield 'string "3" → Submit a Ban'       => ['3',      'Submit a Ban',  '/page.submit.php'];
+        yield 'string "4" → Protest a Ban'      => ['4',      'Protest a Ban', '/page.protest.php'];
+        yield 'string "0" → Dashboard'          => ['0',      'Dashboard',     '/page.home.php'];
+        yield 'int 0 → Dashboard'               => [0,        'Dashboard',     '/page.home.php'];
+        yield 'non-numeric "banana" → Dashboard' => ['banana', 'Dashboard',     '/page.home.php'];
+    }
+
+    #[DataProvider('fallbackCases')]
+    public function testRouteFallbackAcceptsStringIntegers(int|string $fallback, string $expectedTitle, string $expectedTemplate): void
+    {
+        $_GET['p'] = 'unknown-slug-that-falls-through';
+
+        [$title, $template] = route($fallback);
+
+        $this->assertSame($expectedTitle, $title);
+        $this->assertSame($expectedTemplate, $template);
+    }
 }

@@ -321,7 +321,7 @@ function sizeFormat($bytes)
  *
  * @param  int   $sid
  * @param  array $steamids
- * @return array array('STEAM_ID_1' => array('name' => $name, 'steam' => $steam, 'ip' => $ip, 'time' => $time, 'ping' => $ping), 'STEAM_ID_2' => []....)
+ * @return array<string, array{name: string, steam: string, ip: string}> Keyed by Steam2 id, e.g. ['STEAM_0:0:1' => ['name' => …, 'steam' => …, 'ip' => …], …].
  */
 function checkMultiplePlayers(int $sid, array $steamids)
 {

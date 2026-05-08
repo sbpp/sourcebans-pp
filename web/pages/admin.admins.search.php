@@ -148,7 +148,7 @@ $serverflag = [
  *
  * Multi-select filters accept either the legacy comma-joined string
  * (`?admwebflag=ADMIN_OWNER,ADMIN_LIST_ADMINS`, the pre-fix wire
- * shape) or the new repeated-key array (`?admwebflag[]=ADMIN_OWNER&…`).
+ * shape) or the new repeated-key array shape `?admwebflag[]=ADMIN_OWNER&…`.
  * Both are normalised to a list of validated constant names; the
  * template uses `in_array` to mark the matching option rows.
  */

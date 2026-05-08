@@ -24,7 +24,7 @@ require_once __DIR__ . '/ApiError.php';
  *             { "ok": false, "error": { "code", "message", "field"? } } on handled error
  *             { "ok": false, "redirect": "..." }                on auth/redirect
  *
- * Handlers are pure functions: array $params -> array (the data envelope).
+ * Handlers are pure functions: array $params -> array — the data envelope.
  * Throw ApiError to surface a structured client-side message.
  * Return ['__redirect' => '...'] (or call Api::redirect()) to navigate.
  */
