@@ -46,7 +46,7 @@ class SteamAuthHandler
         $this->dbs->bind(':authid', $steamid);
         $result = $this->dbs->single();
 
-        if (!empty($result['aid']) && !is_null($result['aid'])) {
+        if (!empty($result['aid'])) {
             $maxlife = Config::get('auth.maxlife.steam') * 60;
             Auth::login($result['aid'], $maxlife);
             header("Location: ".Host::complete());

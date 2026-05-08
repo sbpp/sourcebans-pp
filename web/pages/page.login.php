@@ -94,7 +94,7 @@ HTML;
 
         case 'locked':
             if (isset($_GET['time'])) {
-                $remainingTime = intval($_GET['time']);
+                $remainingTime = (int) $_GET['time'];
                 echo <<<HTML
                     <script>
                         if (typeof ShowBox === 'function') ShowBox(

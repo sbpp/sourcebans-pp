@@ -60,7 +60,7 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $GLOBALS['PDO']->bind(':validate', $validation);
     $result = $GLOBALS['PDO']->single();
 
-    if (empty($result['aid']) || is_null($result['aid'])) {
+    if (empty($result['aid'])) {
         print "<script>ShowBox('Error', 'The validation string does not match the email for this reset request.', 'red');</script>";
         PageDie();
     }

@@ -48,7 +48,7 @@ $pagelink = "";
 PruneBans();
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
-    $page     = intval($_GET['page']);
+    $page     = (int) $_GET['page'];
     $pagelink = "&page=" . $page;
 }
 if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
@@ -59,14 +59,12 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     if (isset($_GET['bulk'])) {
         $bids = explode(",", $_GET['id']);
     } else {
-        $bids = array(
-            $_GET['id']
-        );
+        $bids = [$_GET['id']];
     }
     $ucount = 0;
     $fail   = 0;
     foreach ($bids as $bid) {
-        $bid = intval($bid);
+        $bid = (int) $bid;
         $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_bans` b INNER JOIN `:prefix_admins` a ON a.aid = b.aid WHERE bid = :bid");
         $GLOBALS['PDO']->bind(':bid', $bid);
         $res = $GLOBALS['PDO']->single();
@@ -152,14 +150,12 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     if (isset($_GET['bulk'])) {
         $bids = explode(",", $_GET['id']);
     } else {
-        $bids = array(
-            $_GET['id']
-        );
+        $bids = [$_GET['id']];
     }
     $dcount = 0;
     $fail   = 0;
     foreach ($bids as $bid) {
-        $bid    = intval($bid);
+        $bid    = (int) $bid;
         $GLOBALS['PDO']->query("SELECT filename FROM `:prefix_demos` WHERE `demid` = :bid");
         $GLOBALS['PDO']->bind(':bid', $bid);
         $demres = $GLOBALS['PDO']->single();
@@ -210,8 +206,8 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     }
 }
 
-$BansStart = intval(($page - 1) * $BansPerPage);
-$BansEnd   = intval($BansStart + $BansPerPage);
+$BansStart = (int) (($page - 1) * $BansPerPage);
+$BansEnd   = (int) ($BansStart + $BansPerPage);
 
 // hide inactive bans feature
 if (isset($_GET["hideinactive"]) && $_GET["hideinactive"] == "true") { // hide
@@ -326,7 +322,7 @@ if (isset($_GET['searchText'])) {
         $search_array,
         [$authidParam, $search, $search],
         $publicFilterArgs,
-        [intval($BansStart), intval($BansPerPage)]
+        [(int) $BansStart, (int) $BansPerPage]
     ));
 
 
@@ -358,7 +354,7 @@ if (isset($_GET['searchText'])) {
    ORDER BY created DESC
    LIMIT ?,?")->resultset(array_merge(
         $publicFilterArgs,
-        [intval($BansStart), intval($BansPerPage)]
+        [(int) $BansStart, (int) $BansPerPage]
     ));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_bans` AS BA" . $branch2WhereSuffix)->resultset($publicFilterArgs);
@@ -384,15 +380,11 @@ if (isset($_GET['advSearch'])) {
     switch ($type) {
         case "name":
             $where   = "WHERE BA.name LIKE ?";
-            $advcrit = array(
-                "%$value%"
-            );
+            $advcrit = ["%$value%"];
             break;
         case "banid":
             $where   = "WHERE BA.bid = ?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "steamid":
             // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
@@ -403,17 +395,15 @@ if (isset($_GET['advSearch'])) {
             $authidPattern = SteamID::toSearchPattern($value);
             if ($authidPattern !== null) {
                 $where   = "WHERE BA.authid REGEXP ?";
-                $advcrit = array($authidPattern);
+                $advcrit = [$authidPattern];
             } else {
                 $where   = "WHERE BA.authid = ?";
-                $advcrit = array($value);
+                $advcrit = [$value];
             }
             break;
         case "steam":
             $where   = "WHERE BA.authid LIKE ?";
-            $advcrit = array(
-                "%$value%"
-            );
+            $advcrit = ["%$value%"];
             break;
         case "ip":
             // disable ip search if hiding player ips
@@ -422,26 +412,19 @@ if (isset($_GET['advSearch'])) {
                 $advcrit = [];
             } else {
                 $where   = "WHERE BA.ip LIKE ?";
-                $advcrit = array(
-                    "%$value%"
-                );
+                $advcrit = ["%$value%"];
             }
             break;
         case "reason":
             $where   = "WHERE BA.reason LIKE ?";
-            $advcrit = array(
-                "%$value%"
-            );
+            $advcrit = ["%$value%"];
             break;
         case "date":
             $date    = explode(",", $value);
             $time    = mktime(0, 0, 0, (int)$date[1], (int)$date[0], (int)$date[2]);
             $time2   = mktime(23, 59, 59, (int)$date[1], (int)$date[0], (int)$date[2]);
             $where   = "WHERE BA.created > ? AND BA.created < ?";
-            $advcrit = array(
-                $time,
-                $time2
-            );
+            $advcrit = [$time, $time2];
             break;
         case "length":
             $len         = explode(",", $value);
@@ -466,15 +449,11 @@ if (isset($_GET['advSearch'])) {
                     break;
             }
             $where .= " ?";
-            $advcrit = array(
-                $length
-            );
+            $advcrit = [$length];
             break;
         case "btype":
             $where   = "WHERE BA.type = ?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "admin":
             if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
@@ -482,35 +461,25 @@ if (isset($_GET['advSearch'])) {
                 $advcrit = [];
             } else {
                 $where   = "WHERE BA.aid=?";
-                $advcrit = array(
-                    $value
-                );
+                $advcrit = [$value];
             }
             break;
         case "where_banned":
             $where   = "WHERE BA.sid=?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "nodemo":
             $where   = "WHERE BA.aid = ? AND NOT EXISTS (SELECT DM.demid FROM " . DB_PREFIX . "_demos AS DM WHERE DM.demid = BA.bid)";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "bid":
             $where   = "WHERE BA.bid = ?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "comment":
             if ($userbank->is_admin()) {
                 $where   = "WHERE CO.type = 'B' AND CO.commenttxt LIKE ?";
-                $advcrit = array(
-                    "%$value%"
-                );
+                $advcrit = ["%$value%"];
             } else {
                 $where   = "";
                 $advcrit = [];
@@ -553,7 +522,7 @@ if (isset($_GET['advSearch'])) {
    LIMIT ?,?")->resultset(array_merge(
         $advcrit,
         $publicFilterArgs,
-        [intval($BansStart), intval($BansPerPage)]
+        [(int) $BansStart, (int) $BansPerPage]
     ));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA
@@ -632,7 +601,7 @@ foreach ($res as $row) {
         $data['admin'] = stripslashes($row['admin_name']);
     }
     $data['reason']     = stripslashes($row['ban_reason']);
-    $data['ban_length'] = $row['ban_length'] == 0 ? 'Permanent' : SecondsToString(intval($row['ban_length']));
+    $data['ban_length'] = $row['ban_length'] == 0 ? 'Permanent' : SecondsToString((int) $row['ban_length']);
 
     // Custom "listtable_1_banned" & "listtable_1_permanent" addition entries
     // Comment the 14 lines below out if they cause issues

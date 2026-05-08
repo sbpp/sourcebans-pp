@@ -38,7 +38,7 @@ $GLOBALS['PDO']->bind(':sid', (int) $_GET['id']);
 $srv_admins = $GLOBALS['PDO']->resultset();
 $i = 0;
 foreach ($srv_admins as $admin) {
-    if (!is_null($admin['authid'])) {
+    if ($admin['authid'] !== null) {
         $admsteam[] = $admin['authid'];
     }
 }

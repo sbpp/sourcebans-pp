@@ -64,7 +64,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
 
 $web_root  = $userbank->HasAccess(ADMIN_OWNER, $_GET['id']);
 $steam     = trim((string) $userbank->GetProperty("authid", $_GET['id']));
-$web_flags = intval($userbank->GetProperty("extraflags", $_GET['id']));
+$web_flags = (int) $userbank->GetProperty("extraflags", $_GET['id']);
 $name      = $userbank->GetProperty("user", $_GET['id'])?>
 <div id="admin-page-content">
 <div id="add-group">

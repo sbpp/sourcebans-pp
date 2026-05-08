@@ -453,13 +453,13 @@ if ($section === 'protests') {
         $ItemsPerPage = SB_BANS_PER_PAGE;
         $page         = 1;
         if (isset($_GET['ppage']) && $_GET['ppage'] > 0) {
-            $page = intval($_GET['ppage']);
+            $page = (int) $_GET['ppage'];
         }
-        $protests       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_protests` WHERE archiv = '0' ORDER BY pid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+        $protests       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_protests` WHERE archiv = '0' ORDER BY pid DESC LIMIT " . (int) (($page - 1) * $ItemsPerPage) . "," . (int) $ItemsPerPage)->resultset();
         $protests_count = $GLOBALS['PDO']->query("SELECT count(pid) AS count FROM `:prefix_protests` WHERE archiv = '0' ORDER BY pid DESC")->single();
         $page_count     = $protests_count['count'];
-        $PageStart      = intval(($page - 1) * $ItemsPerPage);
-        $PageEnd        = intval($PageStart + $ItemsPerPage);
+        $PageStart      = (int) (($page - 1) * $ItemsPerPage);
+        $PageEnd        = (int) ($PageStart + $ItemsPerPage);
         if ($PageEnd > $page_count) {
             $PageEnd = $page_count;
         }
@@ -547,13 +547,13 @@ if ($section === 'protests') {
         $ItemsPerPage = SB_BANS_PER_PAGE;
         $page         = 1;
         if (isset($_GET['papage']) && $_GET['papage'] > 0) {
-            $page = intval($_GET['papage']);
+            $page = (int) $_GET['papage'];
         }
-        $protestsarchiv       = $GLOBALS['PDO']->query("SELECT p.*, (SELECT user FROM `:prefix_admins` WHERE aid = p.archivedby) AS archivedby FROM `:prefix_protests` p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+        $protestsarchiv       = $GLOBALS['PDO']->query("SELECT p.*, (SELECT user FROM `:prefix_admins` WHERE aid = p.archivedby) AS archivedby FROM `:prefix_protests` p WHERE archiv > '0' ORDER BY pid DESC LIMIT " . (int) (($page - 1) * $ItemsPerPage) . "," . (int) $ItemsPerPage)->resultset();
         $protestsarchiv_count = $GLOBALS['PDO']->query("SELECT count(pid) AS count FROM `:prefix_protests` WHERE archiv > '0' ORDER BY pid DESC")->single();
         $page_count           = $protestsarchiv_count['count'];
-        $PageStart            = intval(($page - 1) * $ItemsPerPage);
-        $PageEnd              = intval($PageStart + $ItemsPerPage);
+        $PageStart            = (int) (($page - 1) * $ItemsPerPage);
+        $PageEnd              = (int) ($PageStart + $ItemsPerPage);
         if ($PageEnd > $page_count) {
             $PageEnd = $page_count;
         }
@@ -665,13 +665,13 @@ if ($section === 'submissions') {
         $ItemsPerPage = SB_BANS_PER_PAGE;
         $page         = 1;
         if (isset($_GET['spage']) && $_GET['spage'] > 0) {
-            $page = intval($_GET['spage']);
+            $page = (int) $_GET['spage'];
         }
-        $submissions       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_submissions` WHERE archiv = '0' ORDER BY subid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+        $submissions       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_submissions` WHERE archiv = '0' ORDER BY subid DESC LIMIT " . (int) (($page - 1) * $ItemsPerPage) . "," . (int) $ItemsPerPage)->resultset();
         $submissions_count = $GLOBALS['PDO']->query("SELECT count(subid) AS count FROM `:prefix_submissions` WHERE archiv = '0' ORDER BY subid DESC")->single();
         $page_count        = $submissions_count['count'];
-        $PageStart         = intval(($page - 1) * $ItemsPerPage);
-        $PageEnd           = intval($PageStart + $ItemsPerPage);
+        $PageStart         = (int) (($page - 1) * $ItemsPerPage);
+        $PageEnd           = (int) ($PageStart + $ItemsPerPage);
         if ($PageEnd > $page_count) {
             $PageEnd = $page_count;
         }
@@ -744,13 +744,13 @@ if ($section === 'submissions') {
         $ItemsPerPage = SB_BANS_PER_PAGE;
         $page         = 1;
         if (isset($_GET['sapage']) && $_GET['sapage'] > 0) {
-            $page = intval($_GET['sapage']);
+            $page = (int) $_GET['sapage'];
         }
-        $submissionsarchiv       = $GLOBALS['PDO']->query("SELECT s.*, (SELECT user FROM `:prefix_admins` WHERE aid = s.archivedby) AS archivedby FROM `:prefix_submissions` s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . intval(($page - 1) * $ItemsPerPage) . "," . intval($ItemsPerPage))->resultset();
+        $submissionsarchiv       = $GLOBALS['PDO']->query("SELECT s.*, (SELECT user FROM `:prefix_admins` WHERE aid = s.archivedby) AS archivedby FROM `:prefix_submissions` s WHERE archiv > '0' ORDER BY subid DESC LIMIT " . (int) (($page - 1) * $ItemsPerPage) . "," . (int) $ItemsPerPage)->resultset();
         $submissionsarchiv_count = $GLOBALS['PDO']->query("SELECT count(subid) AS count FROM `:prefix_submissions` WHERE archiv > '0' ORDER BY subid DESC")->single();
         $page_count              = $submissionsarchiv_count['count'];
-        $PageStart               = intval(($page - 1) * $ItemsPerPage);
-        $PageEnd                 = intval($PageStart + $ItemsPerPage);
+        $PageStart               = (int) (($page - 1) * $ItemsPerPage);
+        $PageEnd                 = (int) ($PageStart + $ItemsPerPage);
         if ($PageEnd > $page_count) {
             $PageEnd = $page_count;
         }

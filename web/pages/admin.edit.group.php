@@ -54,7 +54,7 @@ $GLOBALS['PDO']->query("SELECT flags, name, immunity FROM `:prefix_srvgroups` WH
 $GLOBALS['PDO']->bind(':id', $_GET['id']);
 $srv_group = $GLOBALS['PDO']->single();
 
-$web_flags = intval($web_group['flags'] ?? null);
+$web_flags = (int) ($web_group['flags'] ?? null);
 $srv_flags = $srv_group['flags'] ?? '';
 
 $name = $userbank->GetProperty("user", $_GET['id'])?>
@@ -220,28 +220,28 @@ $('p31').checked = <?=(($web_flags & ADMIN_DELETE_MODS) != 0) ? "true" : "false"
 } elseif ($_GET['type'] == "srv") {
 ?>
 $('groupname').value = "<?=$srv_group['name']?>";
-$('s14').checked = <?=strstr($srv_flags, SM_ROOT) ? "true" : "false"?>;
-$('s1').checked = <?=strstr($srv_flags, SM_RESERVED_SLOT) ? "true" : "false"?>;
-$('s23').checked = <?=strstr($srv_flags, SM_GENERIC) ? "true" : "false"?>;
-$('s2').checked = <?=strstr($srv_flags, SM_KICK) ? "true" : "false"?>;
-$('s3').checked = <?=strstr($srv_flags, SM_BAN) ? "true" : "false"?>;
-$('s4').checked = <?=strstr($srv_flags, SM_UNBAN) ? "true" : "false"?>;
-$('s5').checked = <?=strstr($srv_flags, SM_SLAY) ? "true" : "false"?>;
-$('s6').checked = <?=strstr($srv_flags, SM_MAP) ? "true" : "false"?>;
-$('s7').checked = <?=strstr($srv_flags, SM_CVAR) ? "true" : "false"?>;
-$('s8').checked = <?=strstr($srv_flags, SM_CONFIG) ? "true" : "false"?>;
-$('s9').checked = <?=strstr($srv_flags, SM_CHAT) ? "true" : "false"?>;
-$('s10').checked = <?=strstr($srv_flags, SM_VOTE) ? "true" : "false"?>;
-$('s11').checked = <?=strstr($srv_flags, SM_PASSWORD) ? "true" : "false"?>;
-$('s12').checked = <?=strstr($srv_flags, SM_RCON) ? "true" : "false"?>;
-$('s13').checked = <?=strstr($srv_flags, SM_CHEATS) ? "true" : "false"?>;
+$('s14').checked = <?=str_contains($srv_flags, SM_ROOT) ? "true" : "false"?>;
+$('s1').checked = <?=str_contains($srv_flags, SM_RESERVED_SLOT) ? "true" : "false"?>;
+$('s23').checked = <?=str_contains($srv_flags, SM_GENERIC) ? "true" : "false"?>;
+$('s2').checked = <?=str_contains($srv_flags, SM_KICK) ? "true" : "false"?>;
+$('s3').checked = <?=str_contains($srv_flags, SM_BAN) ? "true" : "false"?>;
+$('s4').checked = <?=str_contains($srv_flags, SM_UNBAN) ? "true" : "false"?>;
+$('s5').checked = <?=str_contains($srv_flags, SM_SLAY) ? "true" : "false"?>;
+$('s6').checked = <?=str_contains($srv_flags, SM_MAP) ? "true" : "false"?>;
+$('s7').checked = <?=str_contains($srv_flags, SM_CVAR) ? "true" : "false"?>;
+$('s8').checked = <?=str_contains($srv_flags, SM_CONFIG) ? "true" : "false"?>;
+$('s9').checked = <?=str_contains($srv_flags, SM_CHAT) ? "true" : "false"?>;
+$('s10').checked = <?=str_contains($srv_flags, SM_VOTE) ? "true" : "false"?>;
+$('s11').checked = <?=str_contains($srv_flags, SM_PASSWORD) ? "true" : "false"?>;
+$('s12').checked = <?=str_contains($srv_flags, SM_RCON) ? "true" : "false"?>;
+$('s13').checked = <?=str_contains($srv_flags, SM_CHEATS) ? "true" : "false"?>;
 
-$('s17').checked = <?=strstr($srv_flags, SM_CUSTOM1) ? "true" : "false"?>;
-$('s18').checked = <?=strstr($srv_flags, SM_CUSTOM2) ? "true" : "false"?>;
-$('s19').checked = <?=strstr($srv_flags, SM_CUSTOM3) ? "true" : "false"?>;
-$('s20').checked = <?=strstr($srv_flags, SM_CUSTOM4) ? "true" : "false"?>;
-$('s21').checked = <?=strstr($srv_flags, SM_CUSTOM5) ? "true" : "false"?>;
-$('s22').checked = <?=strstr($srv_flags, SM_CUSTOM6) ? "true" : "false"?>;
+$('s17').checked = <?=str_contains($srv_flags, SM_CUSTOM1) ? "true" : "false"?>;
+$('s18').checked = <?=str_contains($srv_flags, SM_CUSTOM2) ? "true" : "false"?>;
+$('s19').checked = <?=str_contains($srv_flags, SM_CUSTOM3) ? "true" : "false"?>;
+$('s20').checked = <?=str_contains($srv_flags, SM_CUSTOM4) ? "true" : "false"?>;
+$('s21').checked = <?=str_contains($srv_flags, SM_CUSTOM5) ? "true" : "false"?>;
+$('s22').checked = <?=str_contains($srv_flags, SM_CUSTOM6) ? "true" : "false"?>;
 
 $('immunity').value = <?=$srv_group['immunity'] ? (int) $srv_group['immunity'] : "0"?>;
 <?php

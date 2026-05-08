@@ -55,7 +55,7 @@ $pagelink = "";
 PruneComms();
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
-    $page     = intval($_GET['page']);
+    $page     = (int) $_GET['page'];
     $pagelink = "&page=" . $page;
 }
 
@@ -64,7 +64,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         die("Possible hacking attempt (URL Key mismatch)");
     }
     //we have a multiple unban asking
-    $bid = intval($_GET['id']);
+    $bid = (int) $_GET['id'];
     $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 2");
     $GLOBALS['PDO']->bind(':bid', $bid);
     $res = $GLOBALS['PDO']->single();
@@ -113,7 +113,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         die("Possible hacking attempt (URL Key mismatch)");
     }
     //we have a multiple unban asking
-    $bid = intval($_GET['id']);
+    $bid = (int) $_GET['id'];
     $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 1");
     $GLOBALS['PDO']->bind(':bid', $bid);
     $res = $GLOBALS['PDO']->single();
@@ -167,7 +167,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         PageDie();
     }
 
-    $bid = intval($_GET['id']);
+    $bid = (int) $_GET['id'];
 
     $GLOBALS['PDO']->query("SELECT name, authid, ends, length, RemoveType, type, UNIX_TIMESTAMP() AS now
 									FROM `:prefix_comms` WHERE bid = :bid");
@@ -210,8 +210,8 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 }
 
 // LIMIT для SQL запроса - по номеру страницы и числу банов на страницу
-$BansStart = intval(($page - 1) * $BansPerPage);
-$BansEnd   = intval($BansStart + $BansPerPage);
+$BansStart = (int) (($page - 1) * $BansPerPage);
+$BansEnd   = (int) ($BansStart + $BansPerPage);
 
 // hide inactive bans feature
 if (isset($_GET["hideinactive"]) && $_GET["hideinactive"] == "true") { // hide
@@ -328,8 +328,8 @@ if (isset($_GET['searchText'])) {
         $search,
         $search,
     ], $chipTypeBind, [
-        intval($BansStart),
-        intval($BansPerPage)
+        (int) $BansStart,
+        (int) $BansPerPage
     ]));
 
 
@@ -369,8 +369,8 @@ if (isset($_GET['searchText'])) {
 		" . $branchWhereSuffix . "
 		ORDER BY created DESC
 		LIMIT ?,?")->resultset(array_merge($chipTypeBind, [
-        intval($BansStart),
-        intval($BansPerPage)
+        (int) $BansStart,
+        (int) $BansPerPage
     ]));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_comms`" . $branchCountSuffix)->resultset($chipTypeBind);
@@ -396,15 +396,11 @@ if (isset($_GET['advSearch'])) {
     switch ($type) {
         case "name":
             $where   = "WHERE CO.name LIKE ?";
-            $advcrit = array(
-                "%$value%"
-            );
+            $advcrit = ["%$value%"];
             break;
         case "banid":
             $where   = "WHERE CO.bid = ?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "steamid":
             // #1130: match both STEAM_0:Y:Z and STEAM_1:Y:Z stored variants;
@@ -412,33 +408,26 @@ if (isset($_GET['advSearch'])) {
             $authidPattern = SteamID::toSearchPattern($value);
             if ($authidPattern !== null) {
                 $where   = "WHERE CO.authid REGEXP ?";
-                $advcrit = array($authidPattern);
+                $advcrit = [$authidPattern];
             } else {
                 $where   = "WHERE CO.authid = ?";
-                $advcrit = array($value);
+                $advcrit = [$value];
             }
             break;
         case "steam":
             $where   = "WHERE CO.authid LIKE ?";
-            $advcrit = array(
-                "%$value%"
-            );
+            $advcrit = ["%$value%"];
             break;
         case "reason":
             $where   = "WHERE CO.reason LIKE ?";
-            $advcrit = array(
-                "%$value%"
-            );
+            $advcrit = ["%$value%"];
             break;
         case "date":
             $date    = explode(",", $value);
             $time    = mktime(0, 0, 0, (int)$date[1], (int)$date[0], (int)$date[2]);
             $time2   = mktime(23, 59, 59, (int)$date[1], (int)$date[0], (int)$date[2]);
             $where   = "WHERE CO.created > ? AND CO.created < ?";
-            $advcrit = array(
-                $time,
-                $time2
-            );
+            $advcrit = [$time, $time2];
             break;
         case "length":
             $len         = explode(",", $value);
@@ -463,15 +452,11 @@ if (isset($_GET['advSearch'])) {
                     break;
             }
             $where .= " ?";
-            $advcrit = array(
-                $length
-            );
+            $advcrit = [$length];
             break;
         case "btype":
             $where   = "WHERE CO.type = ?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "admin":
             if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
@@ -479,29 +464,21 @@ if (isset($_GET['advSearch'])) {
                 $advcrit = [];
             } else {
                 $where   = "WHERE CO.aid=?";
-                $advcrit = array(
-                    $value
-                );
+                $advcrit = [$value];
             }
             break;
         case "where_banned":
             $where   = "WHERE CO.sid=?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "bid":
             $where   = "WHERE CO.bid = ?";
-            $advcrit = array(
-                $value
-            );
+            $advcrit = [$value];
             break;
         case "comment":
             if ($userbank->is_admin()) {
                 $where   = "WHERE CM.type ='C' AND CM.commenttxt LIKE ?";
-                $advcrit = array(
-                    "%$value%"
-                );
+                $advcrit = ["%$value%"];
             } else {
                 $where   = "";
                 $advcrit = [];
@@ -543,8 +520,8 @@ if (isset($_GET['advSearch'])) {
       " . $where . $hideinactive . $advChipType . "
    ORDER BY CO.created DESC
    LIMIT ?,?")->resultset(array_merge($advcrit, $chipTypeBind, [
-        intval($BansStart),
-        intval($BansPerPage)
+        (int) $BansStart,
+        (int) $BansPerPage
     ]));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(CO.bid) AS cnt FROM `:prefix_comms` AS CO
@@ -622,7 +599,7 @@ foreach ($res as $row) {
     $data['reason'] = stripslashes($row['ban_reason']);
 
     if ($row['ban_length'] > 0) {
-        $data['ban_length'] = SecondsToString(intval($row['ban_length']));
+        $data['ban_length'] = SecondsToString((int) $row['ban_length']);
         $data['expires']    = Config::time($row['ban_ends']);
     } else if ($row['ban_length'] == 0) {
         $data['ban_length'] = 'Permanent';
@@ -982,10 +959,10 @@ if (isset($_GET["comment"])) {
 											(SELECT user FROM `:prefix_admins` WHERE aid = C.aid) AS comname,
 											(SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editname
 											FROM `:prefix_comments` AS C
-											WHERE type = ? AND bid = ?" . $cotherdataedit . " ORDER BY added desc")->resultset(array(
+											WHERE type = ? AND bid = ?" . $cotherdataedit . " ORDER BY added desc")->resultset([
         $_GET["ctype"],
-        $_GET["comment"]
-    ));
+        $_GET["comment"],
+    ]);
 
     foreach ($cotherdata as $cdrow) {
         $coment               = [];

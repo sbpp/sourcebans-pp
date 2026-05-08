@@ -45,9 +45,7 @@ class CUserManager
      */
     public function GetUserArray($aid = null)
     {
-        if (is_null($aid)) {
-            $aid = $this->aid;
-        }
+        $aid ??= $this->aid;
         // Invalid aid
         if ($aid < 0 || empty($aid)) {
             return false;
@@ -81,12 +79,12 @@ class CUserManager
         $user['gid'] = $res['gid'];
         $user['email'] = $res['email'];
         $user['validate'] = $res['validate'];
-        $user['extraflags'] = (intval($res['extraflags']) | intval($res['wgflags']));
+        $user['extraflags'] = ((int) $res['extraflags'] | (int) $res['wgflags']);
 
-        $user['srv_immunity'] = intval($res['sgimmunity']);
+        $user['srv_immunity'] = (int) $res['sgimmunity'];
 
-        if (intval($res['admimmunity']) > intval($res['sgimmunity'])) {
-            $user['srv_immunity'] = intval($res['admimmunity']);
+        if ((int) $res['admimmunity'] > (int) $res['sgimmunity']) {
+            $user['srv_immunity'] = (int) $res['admimmunity'];
         }
 
         $user['srv_password'] = $res['srv_password'];
@@ -106,11 +104,9 @@ class CUserManager
      * @param int $aid The user to check flags for.
      * @return bool
      */
-    public function HasAccess($flags, $aid = null)
+    public function HasAccess($flags, $aid = null): bool
     {
-        if (is_null($aid)) {
-            $aid = $this->aid;
-        }
+        $aid ??= $this->aid;
 
         if (empty($flags) || $aid <= 0) {
             return false;
@@ -121,14 +117,14 @@ class CUserManager
         }
 
         if (is_numeric($flags)) {
-            return ((int)$this->admins[$aid]['extraflags'] & (int)$flags) != 0 ? true : false;
+            return ((int) $this->admins[$aid]['extraflags'] & (int) $flags) !== 0;
         }
 
         $srvFlags = (string) ($this->admins[$aid]['srv_flags'] ?? '');
         $flagsStr = (string) $flags;
         for ($i=0; $i < strlen($srvFlags); $i++) {
             for ($a=0; $a < strlen($flagsStr); $a++) {
-                if (strstr($srvFlags[$i], $flagsStr[$a])) {
+                if (str_contains($srvFlags[$i], $flagsStr[$a])) {
                     return true;
                 }
             }
@@ -146,9 +142,7 @@ class CUserManager
      */
     public function GetProperty($name, $aid = null)
     {
-        if (is_null($aid)) {
-            $aid = $this->aid;
-        }
+        $aid ??= $this->aid;
         if (empty($name) || $aid < 0) {
             return false;
         }
@@ -163,28 +157,20 @@ class CUserManager
     /**
      * @return bool
      */
-    public function is_logged_in()
+    public function is_logged_in(): bool
     {
-        if ($this->aid != -1) {
-            return true;
-        }
-        return false;
+        return $this->aid !== -1;
     }
 
     /**
-     * @param null $aid
+     * @param int|null $aid
      * @return bool
      */
-    public function is_admin($aid = null)
+    public function is_admin($aid = null): bool
     {
-        if (is_null($aid)) {
-            $aid = $this->aid;
-        }
+        $aid ??= $this->aid;
 
-        if ($this->HasAccess(ALL_WEB, $aid)) {
-            return true;
-        }
-        return false;
+        return $this->HasAccess(ALL_WEB, $aid);
     }
 
 
@@ -217,9 +203,7 @@ class CUserManager
      */
     public function GetAdmin($aid = null)
     {
-        if (is_null($aid)) {
-            $aid = $this->aid;
-        }
+        $aid ??= $this->aid;
         if ($aid < 0) {
             return false;
         }

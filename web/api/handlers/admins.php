@@ -21,7 +21,7 @@ function api_admins_remove(array $params): array
     $GLOBALS['PDO']->bind(':aid', $aid);
     $admin = $GLOBALS['PDO']->single();
 
-    if ($admin && (intval($admin['extraflags']) & ADMIN_OWNER) !== 0) {
+    if ($admin && ((int) $admin['extraflags'] & ADMIN_OWNER) !== 0) {
         throw new ApiError('cannot_delete_owner', 'Error: You cannot delete the owner.');
     }
 

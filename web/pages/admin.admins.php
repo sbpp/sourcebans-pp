@@ -182,7 +182,7 @@ if ($section === 'overrides') {
 $AdminsPerPage = SB_BANS_PER_PAGE;
 $page = 1;
 if (isset($_GET['page']) && $_GET['page'] > 0) {
-    $page = intval($_GET['page']);
+    $page = (int) $_GET['page'];
 }
 
 /*
@@ -427,7 +427,7 @@ if ($joinServersGroups) {
 // `http_build_query` handles array values (`admwebflag[]=…&admwebflag[]=…`)
 // natively, so multi-select filters round-trip without manual joining.
 $advSearchString = empty($activeFilters) ? '' : '&' . http_build_query($activeFilters);
-$admins = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . intval(($page-1) * $AdminsPerPage) . "," . intval($AdminsPerPage))->resultset($whereParams);
+$admins = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` AS ADM".$join." WHERE ADM.aid > 0".$where." ORDER BY user LIMIT " . (int) (($page-1) * $AdminsPerPage) . "," . (int) $AdminsPerPage)->resultset($whereParams);
 // The server filter joins through `:prefix_admins_servers_groups` and
 // `:prefix_servers_groups`, which can produce duplicate ADM.aid rows
 // when an admin reaches the same server via multiple paths. Dedupe
@@ -449,11 +449,11 @@ $query = $GLOBALS['PDO']->query("SELECT COUNT(ADM.aid) AS cnt FROM `:prefix_admi
 $admin_count = $query['cnt'];
 
 if (isset($_GET['page']) && $_GET['page'] > 0) {
-    $page = intval($_GET['page']);
+    $page = (int) $_GET['page'];
 }
 
-$AdminsStart = intval(($page - 1) * $AdminsPerPage);
-$AdminsEnd   = intval($AdminsStart + $AdminsPerPage);
+$AdminsStart = (int) (($page - 1) * $AdminsPerPage);
+$AdminsEnd   = (int) ($AdminsStart + $AdminsPerPage);
 if ($AdminsEnd > $admin_count) {
     $AdminsEnd = $admin_count;
 }

@@ -16,7 +16,7 @@ class NormalAuthHandler
         if (!$user || empty($password))
             return;
 
-        if (!empty($password) && (!empty($user['password']) || !is_null($user['password']))) {
+        if (!empty($password) && (!empty($user['password']) || $user['password'] !== null)) {
             if ($this->checkPassword($password, $user['password'])) {
                 $this->result = true;
                 Auth::login($user['aid'], $maxlife);

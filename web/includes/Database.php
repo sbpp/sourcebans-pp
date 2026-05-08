@@ -25,7 +25,7 @@ class Database
     {
         $this->prefix = $prefix;
         $dsn = 'mysql:host=' . $host . ';port=' . $port . ';dbname=' . $dbname . ';charset=' . $charset;
-        $options = array(
+        $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             // Native (non-emulated) prepares: PDOStatement::execute([...])
             // forwards values via MySQL's binary protocol with proper
@@ -40,7 +40,7 @@ class Database
             // detect PARAM_INT for ints, so this is purely additive on
             // the array-shortcut path.
             PDO::ATTR_EMULATE_PREPARES => false,
-        );
+        ];
 
         try {
             $this->dbh = new PDO($dsn, $user, $password, $options);
@@ -92,12 +92,12 @@ class Database
      */
     public function bind($param, $value, $type = null)
     {
-        if (is_null($type)) {
+        if ($type === null) {
             $type = match (true) {
-                is_int($value) => PDO::PARAM_INT,
-                is_bool($value) => PDO::PARAM_BOOL,
-                is_null($value) => PDO::PARAM_NULL,
-                default => PDO::PARAM_STR,
+                is_int($value)   => PDO::PARAM_INT,
+                is_bool($value)  => PDO::PARAM_BOOL,
+                $value === null  => PDO::PARAM_NULL,
+                default          => PDO::PARAM_STR,
             };
         }
 

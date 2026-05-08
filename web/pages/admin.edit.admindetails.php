@@ -80,7 +80,7 @@ if (isset($_POST['adminname'])) {
         $errorScript .= "$('adminname.msg').innerHTML = 'You must type a name for the admin.';";
         $errorScript .= "$('adminname.msg').setStyle('display', 'block');";
     } else {
-        if (strstr($a_name, "'")) {
+        if (str_contains($a_name, "'")) {
             $error++;
             $errorScript .= "$('adminname.msg').innerHTML = 'An admin name can not contain a \" \' \".';";
             $errorScript .= "$('adminname.msg').setStyle('display', 'block');";

@@ -81,7 +81,7 @@ function SmFlagsToSb($flagstring)
     }
 
     foreach ($flags as $flag) {
-        if (strstr($flagstring, $flag['value']) || strstr($flagstring, 'z')) {
+        if (str_contains($flagstring, $flag['value']) || str_contains($flagstring, 'z')) {
             $out[] = $flag['display'];
         }
     }
@@ -140,8 +140,8 @@ function SecondsToString($sec, $textual=true)
         return 'Session';
     }
     if ($textual) {
-        $div = array( 2592000, 604800, 86400, 3600, 60, 1 );
-        $desc = array('mo','wk','d','hr','min','sec');
+        $div = [2592000, 604800, 86400, 3600, 60, 1];
+        $desc = ['mo', 'wk', 'd', 'hr', 'min', 'sec'];
         $ret = null;
         foreach ($div as $index => $value) {
             $quotent = floor($sec / $value); //greatest whole integer

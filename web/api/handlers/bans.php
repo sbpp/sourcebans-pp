@@ -506,7 +506,7 @@ function api_bans_ban_friends(array $params): array
     $data = $raw ? json_decode($raw, true) : null;
     $friends = $data['friendslist']['friends'] ?? null;
 
-    if (is_null($friends)) {
+    if ($friends === null) {
         throw new ApiError('private_profile', 'There was an error retrieving the friend list.');
     }
 

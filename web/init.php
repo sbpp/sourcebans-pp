@@ -150,19 +150,24 @@ Log::init($GLOBALS['PDO'], $userbank);
 set_error_handler('sbError');
 function sbError($errno, $errstr, $errfile, $errline)
 {
-    switch ($errno) {
-        case E_USER_ERROR:
-            Log::add('e', 'PHP Error', "[$errno] $errstr\nFatal Error on line $errline in file $errfile");
-            return true;
-        case E_USER_WARNING:
-            Log::add('w', 'PHP Warning', "[$errno] $errstr\nError on line $errline in file $errfile");
-            return true;
-        case E_USER_NOTICE:
-            Log::add('m', 'PHP Notice', "[$errno] $errstr\nNotice on line $errline in file $errfile");
-            return true;
-        default:
-            return false;
+    // Map E_USER_* into a (log-level, log-title, error-word) triplet so the
+    // dispatch is one table read; a `default => null` arm preserves the
+    // legacy switch's "unknown errno → return false" fall-through. `match`
+    // arms can't host `Log::add(...) + return true` directly because the
+    // expression must yield a single value — the logging side effect runs
+    // outside the match below the lookup.
+    $entry = match ($errno) {
+        E_USER_ERROR   => ['e', 'PHP Error',   'Fatal Error'],
+        E_USER_WARNING => ['w', 'PHP Warning', 'Error'],
+        E_USER_NOTICE  => ['m', 'PHP Notice',  'Notice'],
+        default        => null,
+    };
+    if ($entry === null) {
+        return false;
     }
+    [$logLevel, $logTitle, $errorWord] = $entry;
+    Log::add($logLevel, $logTitle, "[$errno] $errstr\n$errorWord on line $errline in file $errfile");
+    return true;
 }
 
 $webflags = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);

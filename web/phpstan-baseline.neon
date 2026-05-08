@@ -37,12 +37,6 @@ parameters:
 			path: includes/CUserManager.php
 
 		-
-			message: '#^Call to function is_null\(\) with null will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: includes/CUserManager.php
-
-		-
 			message: '#^Call to function is_numeric\(\) with int\<min, \-1\>\|int\<1, max\> will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -237,12 +231,6 @@ parameters:
 		-
 			message: '#^Call to method validate\(\) on an unknown class LightOpenID\.$#'
 			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Negated boolean expression is always true\.$#'
-			identifier: booleanNot.alwaysTrue
 			count: 1
 			path: includes/auth/handler/SteamAuthHandler.php
 
@@ -497,12 +485,6 @@ parameters:
 			identifier: variable.undefined
 			count: 1
 			path: pages/page.commslist.php
-
-		-
-			message: '#^Right side of \|\| is always false\.$#'
-			identifier: booleanOr.rightAlwaysFalse
-			count: 1
-			path: pages/page.lostpassword.php
 
 		-
 			message: '#^Variable \$errors in empty\(\) always exists and is not falsy\.$#'

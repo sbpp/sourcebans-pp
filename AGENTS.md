@@ -815,6 +815,41 @@ audit (#1207) locked in. New CTAs:
   value is safe HTML; without a `{* nofilter: <why> *}` comment above
   it, future readers can't tell whether it's a real escape hatch or a
   copy-paste accident waiting to be exploited (#1113 audit).
+- `intval($x)` / `strval($x)` / `floatval($x)` → `(int) $x` / `(string) $x`
+  / `(float) $x`. Cast operators are PHP-native, faster, and don't have
+  the function-call overhead. Two pitfalls: when crossing a radix boundary
+  (`intval($x, 16)`) keep `intval` (cast doesn't take a radix); when
+  casting a binary expression, keep the parentheses: `(int) ($a + $b)`,
+  not `(int) $a + $b` (cast precedence binds tighter). Issue #1290 phase F.
+- `is_null($x)` → `$x === null`. Pure stylistic swap, but the prettier
+  shape is `??=` whenever the surrounding code is
+  `if (is_null($x)) { $x = $y; }` — becomes `$x ??= $y;`. Excluded:
+  `web/includes/auth/openid.php` and `web/includes/SteamID/SteamID.php`
+  are third-party. Issue #1290 phase G.
+- `array(…)` literal constructor → `[…]` short-array syntax. PHP 5.4+
+  shape; the only reason `array(…)` survived this long was nobody got
+  around to it. Excluded: `web/includes/auth/openid.php` and
+  `web/includes/tinymce/**` are third-party. Function signatures using
+  `array $x` as a TYPE HINT are unrelated and stay. Issue #1290 phase H.
+- `if (…) { return true; } return false;` → `return …;`. Three lines
+  collapse to one when the condition itself is the boolean. When
+  simplifying a method body this way, add the `: bool` native return
+  type in the same commit (phase A pairing per the issue body). Issue
+  #1290 phase I.
+- `strstr($haystack, $needle)` (when used in boolean context) →
+  `str_contains($haystack, $needle)`. PHP 8.0+ shape; `strstr` was
+  doing double duty as substring-finder + boolean-existence-checker, and
+  the latter is more clearly expressed by `str_contains`. The third-arg
+  "before-needle" form (`strstr($haystack, $needle, true)`) stays — that
+  one really is asking for the substring, not a bool. Issue #1290 phase E.
+- `switch ($x) { case A: return [a, b]; case B: return [c, d]; … }` →
+  `match ($x) { 'A' => [a, b], 'B' => [c, d], … }` for value-returning
+  switches. `match` is strict-equal (no implicit string→int coercion),
+  exhaustive (throws `\UnhandledMatchError` on a miss instead of
+  silently falling through), and reads better. Side-effect-only switch
+  arms (e.g. `header(); exit;`) stay as a small `if` ladder OUTSIDE
+  the match — don't try to cram them into match arms. Issue #1290
+  phase C.
 - `strlen($_POST['x'])` / `trim($_POST['x'])` / `substr($row['col'], …)`
   on values that can be `null` at runtime → coalesce
   (`strlen($_POST['x'] ?? '')`) when null is "absent", or cast

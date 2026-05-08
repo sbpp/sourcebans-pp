@@ -139,13 +139,13 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $requestUri = (string) ($_SERVER['REQUEST_URI'] ?? '');
         $requri    = substr($requestUri, 0, (int) strrpos($requestUri, ".php") + 4);
         if (Config::getBool('protest.emailonlyinvolved') && !empty($emailinfo['email'])) {
-            $admins = array(
-                array(
-                    'aid' => $emailinfo['aid'],
-                    'user' => $emailinfo['user'],
-                    'email' => $emailinfo['email']
-                )
-            );
+            $admins = [
+                [
+                    'aid'   => $emailinfo['aid'],
+                    'user'  => $emailinfo['user'],
+                    'email' => $emailinfo['email'],
+                ],
+            ];
         } else {
             $admins = $userbank->GetAllAdmins();
         }
