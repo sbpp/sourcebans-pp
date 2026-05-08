@@ -302,11 +302,13 @@ nullable optional parameters with a `null` default. Methods that
 return nothing get `: void`; methods that unconditionally exit
 (`header() + exit()`, `throw`, `die`) get `: never`.
 
-This was finished by issue #1290 phase A across the legacy classes
+Issue #1290 phase A finished this across the legacy core
 (`CUserManager`, `Database`, `Log`, `Auth`, `JWT`, `CSRF`, `Crypto`,
 `Api`, `ApiError`, `AdminTabs`, `Theme`, `Mailer`, the auth
-handlers, `Config`, `Host`, `system-functions.php`). New code
-follows the same convention by default.
+handlers, `Config`, `Host`, `system-functions.php`,
+`SmartyCustomFunctions.php`, `page-builder.php`). New code follows
+the same convention by default; the only legitimate `@param` /
+`@return` survivors carry refinements PHP can't express.
 
 ### Null-into-scalar discipline (PHP 8.5+)
 

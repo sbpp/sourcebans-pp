@@ -43,36 +43,6 @@ parameters:
 			path: includes/Mail/Mail.php
 
 		-
-			message: '#^PHPDoc tag @param has invalid value \(Smarty\)\: Unexpected token "\\n \* ", expected variable at offset 261 on line 10$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: includes/SmartyCustomFunctions.php
-
-		-
-			message: '#^PHPDoc tag @param has invalid value \(Smarty\)\: Unexpected token "\\n \* ", expected variable at offset 295 on line 10$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: includes/SmartyCustomFunctions.php
-
-		-
-			message: '#^PHPDoc tag @param has invalid value \(array\)\: Unexpected token "\\n \* ", expected variable at offset 244 on line 9$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: includes/SmartyCustomFunctions.php
-
-		-
-			message: '#^PHPDoc tag @param has invalid value \(array\)\: Unexpected token "\\n \* ", expected variable at offset 278 on line 9$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: includes/SmartyCustomFunctions.php
-
-		-
-			message: '#^PHPDoc tag @param references unknown parameter\: \$params$#'
-			identifier: parameter.notFound
-			count: 2
-			path: includes/SmartyCustomFunctions.php
-
-		-
 			message: '#^Parameter \#2 \$num2 of function bcdiv expects string, int given\.$#'
 			identifier: argument.type
 			count: 2
@@ -203,18 +173,6 @@ parameters:
 			identifier: class.notFound
 			count: 1
 			path: includes/page-builder.php
-
-		-
-			message: '#^PHPDoc tag @param for parameter \$title with type null is incompatible with native type string\.$#'
-			identifier: parameter.phpDocType
-			count: 1
-			path: includes/page-builder.php
-
-		-
-			message: '#^Function SecondsToString\(\) never returns false so it can be removed from the return type\.$#'
-			identifier: return.unusedType
-			count: 1
-			path: includes/system-functions.php
 
 		-
 			message: '#^Invalid array key type float\.$#'

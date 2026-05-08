@@ -33,7 +33,7 @@ final class Log
         self::$dbs->execute();
     }
 
-    public static function getAll(int $start, int $limit): mixed
+    public static function getAll(int $start, int $limit): array
     {
         $where = null;
         $valueOther = null;

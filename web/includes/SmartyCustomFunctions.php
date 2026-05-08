@@ -7,11 +7,8 @@
  * Purpose:  show help tip
  * @link http://www.sourcebans.net
  * @author  SourceBans Development Team
- * @param array
- * @param Smarty
- * @return string
  */
-function smarty_function_help_icon($params, ...$args)
+function smarty_function_help_icon(array $params, \Smarty\Template $template): string
 {
 	 return '<img border="0" align="absbottom" src="images/help.png" class="tip" title="' .  $params['title'] . ' :: ' .  $params['message'] . '">&nbsp;&nbsp;';
 }
@@ -24,11 +21,8 @@ function smarty_function_help_icon($params, ...$args)
  * Purpose:  show help tip
  * @link http://www.sourcebans.net
  * @author  SourceBans Development Team
- * @param array
- * @param Smarty
- * @return string
  */
-function smarty_function_sb_button($params) //$text, $click, $class, $id="", $submit=false
+function smarty_function_sb_button(array $params, \Smarty\Template $template): string //$text, $click, $class, $id="", $submit=false
 {
 	$text = $params['text'] ?? "";
 	$click = $params['onclick'] ?? "";
@@ -49,7 +43,6 @@ function smarty_function_sb_button($params) //$text, $click, $class, $id="", $su
  * Purpose:  Load template files
  * @link http://www.sourcebans.net
  * @author  SourceBans Development Team
- * @param array $params
  */
 function smarty_function_load_template(array $params): void
 {
@@ -64,11 +57,9 @@ function smarty_function_load_template(array $params): void
  * Purpose:  custom stripslashes function
  * @link https://github.com/lechuga16/sourcebans-pp/tree/smarty_stripslashes
  * @author  Lechuga
- * @param array $params
- * @return string
  * @version 1.0
  */
-function smarty_stripslashes($string)
+function smarty_stripslashes(string $string): string
 {
 	return stripslashes($string);
 }
@@ -81,16 +72,15 @@ function smarty_stripslashes($string)
  * Purpose:  custom htmlspecialchars function
  * @link https://github.com/lechuga16/sourcebans-pp/tree/smarty_stripslashes
  * @author  Lechuga
- * @param array $params
  */
-function smarty_htmlspecialchars($string, $flags = ENT_COMPAT | ENT_HTML401, $encoding = 'UTF-8', $double_encode = true) {
+function smarty_htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401, string $encoding = 'UTF-8', bool $double_encode = true): string {
     return htmlspecialchars($string, $flags, $encoding, $double_encode);
 }
 
 /**
  * Smarty {csrf_field} function plugin: renders the hidden CSRF token input.
  */
-function smarty_function_csrf_field()
+function smarty_function_csrf_field(): string
 {
     $token = htmlspecialchars(CSRF::token(), ENT_QUOTES, 'UTF-8');
     $name = htmlspecialchars(CSRF::FIELD_NAME, ENT_QUOTES, 'UTF-8');
@@ -147,11 +137,8 @@ function smarty_function_csrf_field()
  * matches via substring scan; the OR is skipped on that path.
  *
  * @param array{flag?: int|string} $params
- * @param string|null              $content
- * @param mixed                    $template
- * @param bool                     $repeat
  */
-function smarty_block_has_access(array $params, ?string $content, $template, &$repeat): string
+function smarty_block_has_access(array $params, ?string $content, \Smarty\Template $template, bool &$repeat): string
 {
     if ($content === null) {
         return '';

@@ -99,7 +99,7 @@ function CheckAdminAccess(int $mask): void
     }
 }
 
-function SecondsToString(int $sec, bool $textual = true): false|string
+function SecondsToString(int $sec, bool $textual = true): string
 {
     if ($sec < 0) {
         return 'Session';
@@ -289,7 +289,7 @@ function checkMultiplePlayers(int $sid, array $steamids): array
     return $players;
 }
 
-function GetCommunityName(string $steamid): mixed
+function GetCommunityName(string $steamid): string
 {
     $endpoint = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=".STEAMAPIKEY.'&steamids='.\SteamID\SteamID::toSteam64($steamid);
     $data = json_decode(file_get_contents($endpoint), true);

@@ -1,11 +1,9 @@
 <?php
 
 /**
- * @param $fallback
- * @return array
  * @throws ErrorException
  */
-function route($fallback)
+function route(int|string $fallback): array
 {
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         CSRF::rejectIfInvalid();
@@ -164,11 +162,7 @@ function route($fallback)
     return $resolved;
 }
 
-/**
- * @param null $title Unused
- * @param string $page
- */
-function build(string $title, string $page)
+function build(string $title, string $page): void
 {
     require_once(TEMPLATES_PATH.'/core/header.php');
     require_once(TEMPLATES_PATH.'/core/navbar.php');
