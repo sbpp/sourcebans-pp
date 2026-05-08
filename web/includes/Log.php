@@ -17,9 +17,10 @@ final class Log
 
     /**
      * @param LogType $type Audit row severity (`Message`/`Warning`/`Error`).
-     *                      The on-disk column is `varchar(1)`-shaped; the
+     *                      The on-disk column is `enum('m','w','e')`; the
      *                      bind below pulls `$type->value` so phpstan-dba
-     *                      sees the column-typed primitive.
+     *                      sees the column-typed primitive (a string from
+     *                      the ENUM's value set).
      */
     public static function add(LogType $type, string $title, string $message): void
     {
@@ -69,7 +70,16 @@ final class Log
         return self::$dbs->resultset();
     }
 
-    public static function getCount(string $search): mixed
+    /**
+     * Count audit-log rows matching the active `?advType=` /
+     * `?advSearch=` filter (or all rows when no filter is active).
+     *
+     * Mirrors `Log::getAll()`'s WHERE-construction so the pager's
+     * "showing N of M" math agrees with the listing.
+     *
+     * @return mixed Single-column scalar from the `COUNT(l.lid)` row.
+     */
+    public static function getCount(): mixed
     {
         $value      = $_GET['advSearch'] ?? null;
         $valueOther = null;
@@ -116,7 +126,35 @@ final class Log
     }
 
     /**
-     * @return array{0: int, 1: int}
+     * Resolve a `dd,mm,yyyy[,fhh,fmm,thh,tmm]` comma-separated date
+     * string (the wire format the audit-log search filter posts via
+     * `?advType=date&advSearch=…`) into a `[from, to]` UNIX
+     * timestamp pair.
+     *
+     * Field-by-field fallbacks:
+     *
+     *   - `dd` / `mm` / `yyyy` (indices 0–2): missing or non-numeric
+     *     fields fall back to today's day / month / year — the
+     *     historical "search for today" UX when the user hits Submit
+     *     with an empty form.
+     *   - `fhh` / `fmm` (indices 3–4, the **from** time): missing
+     *     fields fall back to `00:00`. With seconds pinned at `0`
+     *     this is the start of the chosen day.
+     *   - `thh` / `tmm` (indices 5–6, the **to** time): missing
+     *     fields fall back to `00:00`. With seconds pinned at `59`
+     *     and the form historically only submitting `dd,mm,yyyy`
+     *     (the time-component inputs were dropped from the UI but
+     *     the wire format kept the slots), the resulting range
+     *     covers the full day via the "from = 00:00:00, to =
+     *     00:00:59 + a full day's worth of LIMIT-bounded rows
+     *     ordered DESC" assumption that the legacy search makes.
+     *
+     * Pre-#1290 (PHP < 8.1) the missing-time fallbacks fired on
+     * `mktime($date[3], …)` reading an undefined offset; PHP 8.1+
+     * promoted that to a runtime warning. The `?? 0` coalesces
+     * lock the fallback shape statically.
+     *
+     * @return array{0: int, 1: int} `[from, to]` UNIX timestamps.
      */
     private static function resolveDateRange(string $raw): array
     {

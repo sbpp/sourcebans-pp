@@ -4,21 +4,39 @@
  * `web/configs/permissions/web.json` (and `define`d into the global
  * namespace as `ADMIN_*` constants by `init.php`).
  *
- * The on-disk representation (the `web_flags` integer column on
- * `:prefix_admins` and `:prefix_groups`) stays an `int`. This enum is
- * a PHP-side type-safe wrapper. At every SQL bind site, pass
- * `$enum->value` (the int) — the case itself is for in-PHP type
- * safety only.
+ * The on-disk representation (the `extraflags` / `flags` integer
+ * column on `:prefix_admins` and `:prefix_groups` — `int(10)
+ * UNSIGNED`) stays an `int`. This enum is a PHP-side type-safe
+ * wrapper. At every SQL bind site, pass `$enum->value` (the int) or
+ * `WebPermission::mask(...)` for a multi-flag bitmask — the case
+ * itself is for in-PHP type safety only.
+ *
+ * `HasAccess()` is **not** variadic — its second arg is `$aid`. Use:
+ *
+ *   - Single-flag check:
+ *     `HasAccess(WebPermission::Owner)`.
+ *   - Multi-flag check (any-of, OR-mask):
+ *     `HasAccess(WebPermission::mask(WebPermission::Owner,
+ *                                     WebPermission::AddBan))`.
  *
  * The legacy `define`d `ADMIN_*` constants in `init.php` are
  * preserved for procedural-code back-compat: `HasAccess(ADMIN_OWNER
- * | ADMIN_ADD_BAN)` (legacy) and `HasAccess(WebPermission::Owner,
- * WebPermission::AddBan)` (modern variadic) both resolve to the same
- * integer bitmask. Issue #1290 phase D.4.
+ * | ADMIN_ADD_BAN)` (legacy) and the `WebPermission::mask(...)` shape
+ * (modern) both resolve to the same integer bitmask. Issue #1290
+ * phase D.4.
  *
- * Cases are ordered to match `web/configs/permissions/web.json` so a
- * future test (or a human reader) can diff the two by eye; the int
- * value is the load-bearing contract, the case order isn't.
+ * Cases are listed numerically by bit position (1, 2, 4, 8, 16, …)
+ * so the bit-power progression is visible at a glance. The
+ * `web.json` grouping (Bans / Servers / Admins / Groups / Mods /
+ * Settings) doesn't reflect linearly here; consult
+ * `Sbpp\View\PermissionCatalog` for the category-grouped display
+ * layout.
+ *
+ * The pin between this enum and `web/configs/permissions/web.json`
+ * is locked by
+ * `Sbpp\Tests\Unit\WebPermissionTest::testWebPermissionEnumMatchesWebJson`
+ * — the regression guard that fails the build if a flag is added /
+ * renumbered without a matching case here (or vice versa).
  */
 enum WebPermission: int
 {

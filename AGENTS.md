@@ -464,7 +464,7 @@ varchar removal-type tag, the integer bitmask for web permissions),
 use a backed enum to wrap the on-disk type:
 
 - `LogType: string` — letter codes (`'m'`, `'w'`, `'e'`) — matches
-  `:prefix_log.type varchar(1)`.
+  `:prefix_log.type enum('m','w','e')`.
 - `LogSearchType: string` — `advType=` query param tags
   (`'admin'` / `'message'` / `'date'` / `'type'`); the enum carries
   the WHERE-fragment builder so `Log::getAll()` / `Log::getCount()`
@@ -484,8 +484,8 @@ use a backed enum to wrap the on-disk type:
 The on-disk schema is unchanged; the enum is purely a PHP-side
 wrapper. At every SQL bind site, always pass `$enum->value` (not the
 enum case itself) so the dba plugin and the underlying PDO see the
-column-typed primitive. `varchar(1)` / `varchar(3)` columns get
-`string` values; `int` columns get `int` values; this is the
+column-typed primitive. `enum('m','w','e')` / `varchar(3)` columns
+get `string` values; `int` columns get `int` values; this is the
 contract.
 
 For variadic permission masks,
@@ -820,7 +820,7 @@ audit (#1207) locked in. New CTAs:
   `Log::add(LogType::Message, …)` /
   `Log::add(LogType::Warning, …)` /
   `Log::add(LogType::Error, …)`. The letter still hits the disk
-  (the column stays `varchar(1)`); the enum is a PHP-side wrapper so
+  (the column stays `enum('m','w','e')`); the enum is a PHP-side wrapper so
   the call site reads as intent ("this is a message log entry")
   rather than as a magic char. Same shape for `BanType`,
   `BanRemoval`, `WebPermission`. The static gate is the

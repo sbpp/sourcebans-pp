@@ -367,7 +367,7 @@ if ($section === 'themes') {
         $searchlink = '';
     }
 
-    $logCount = (int) Log::getCount('');
+    $logCount = (int) Log::getCount();
     $log      = Log::getAll($listStart, SB_BANS_PER_PAGE);
 
     $prev = '';

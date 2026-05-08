@@ -621,14 +621,14 @@ magic primitives:
 
 | Enum                | On-disk column                                                  | Backing | Cases                                                              |
 | ------------------- | --------------------------------------------------------------- | ------- | ------------------------------------------------------------------ |
-| `LogType`           | `:prefix_log.type varchar(1)`                                   | string  | `Message='m'` / `Warning='w'` / `Error='e'`                        |
+| `LogType`           | `:prefix_log.type enum('m','w','e')`                            | string  | `Message='m'` / `Warning='w'` / `Error='e'`                        |
 | `LogSearchType`     | the audit-log `?advType=` query param tag (no DB column)        | string  | `Admin` / `Message` / `Date` / `Type` (also carries WHERE-builder) |
 | `BanType`           | `:prefix_bans.type tinyint`                                     | int     | `Steam=0` / `Ip=1`                                                 |
 | `BanRemoval`        | `:prefix_bans.RemoveType varchar(3)` / `:prefix_comms.RemoveType varchar(3)` | string  | `Deleted='D'` / `Unbanned='U'` / `Expired='E'`                     |
 | `WebPermission`     | `:prefix_admins.extraflags int` / `:prefix_groups.flags int` (bitmask) | int     | one case per `web/configs/permissions/web.json` flag (`Owner=16777216`, …) |
 
-The on-disk schema stays as `varchar(1)` / `varchar(3)` / `int` /
-`tinyint`. The enum is the PHP-side typed wrapper. At every SQL bind
+The on-disk schema stays as `enum('m','w','e')` / `varchar(3)` /
+`int` / `tinyint`. The enum is the PHP-side typed wrapper. At every SQL bind
 site, pass `$enum->value` (the column-typed primitive); the case
 itself is for in-PHP type-safety only. `phpstan/phpstan-dba` types the
 raw SQL against the live MariaDB schema, so a wrong-typed bind (e.g.
