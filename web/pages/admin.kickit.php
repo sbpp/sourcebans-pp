@@ -29,7 +29,7 @@ global $userbank, $theme;
 // what index.php-routed pages see. ROOT is defined by ../init.php.
 chdir(ROOT);
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan))) {
     echo "No Access";
     die();
 }

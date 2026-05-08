@@ -99,7 +99,7 @@ function api_notes_add(array $params): array
     )->execute([$steamId, $aid, $body, $now]);
 
     $nid = (int)$GLOBALS['PDO']->lastInsertId();
-    Log::add('m', 'Note Added', "$username added a note for $steamId");
+    Log::add(LogType::Message, 'Note Added', "$username added a note for $steamId");
 
     return [
         'nid'  => $nid,
@@ -140,7 +140,7 @@ function api_notes_delete(array $params): array
 
     $authorAid = (int)$row['aid'];
     $callerAid = $userbank->GetAid();
-    $canDelete = $authorAid === $callerAid || $userbank->HasAccess(ADMIN_OWNER);
+    $canDelete = $authorAid === $callerAid || $userbank->HasAccess(WebPermission::Owner);
 
     if (!$canDelete) {
         throw new ApiError('forbidden', 'You can only delete your own notes.', null, 403);
@@ -148,7 +148,7 @@ function api_notes_delete(array $params): array
 
     $GLOBALS['PDO']->query("DELETE FROM `:prefix_notes` WHERE nid = ?")->execute([$nid]);
 
-    Log::add('m', 'Note Deleted', "$username deleted note #$nid for {$row['steam_id']}");
+    Log::add(LogType::Message, 'Note Deleted', "$username deleted note #$nid for {$row['steam_id']}");
 
     return ['nid' => $nid];
 }

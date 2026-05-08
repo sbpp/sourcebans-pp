@@ -29,8 +29,8 @@ if (!isset($_GET['id'])) {
     echo '<script>ShowBox("Error", "No mod ID set. Only follow links", "red", "", true);</script>';
     PageDie();
 }
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit a mod, but doesnt have access.");
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditMods))) {
+    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit a mod, but doesnt have access.");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>

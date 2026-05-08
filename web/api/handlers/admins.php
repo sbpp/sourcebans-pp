@@ -56,7 +56,7 @@ function api_admins_remove(array $params): array
         throw new ApiError('delete_failed', 'There was an error removing the admin from the database, please check the logs');
     }
 
-    Log::add('m', 'Admin Deleted', "Admin ({$admin['user']}) has been deleted.");
+    Log::add(LogType::Message, 'Admin Deleted', "Admin ({$admin['user']}) has been deleted.");
 
     return [
         'remove'  => "aid_$aid",
@@ -242,7 +242,7 @@ function api_admins_add(array $params): array
         }
     }
 
-    Log::add('m', 'Admin added', "Admin ($name) has been added.");
+    Log::add(LogType::Message, 'Admin added', "Admin ($name) has been added.");
 
     return [
         'aid'     => $aid,
@@ -267,8 +267,8 @@ function api_admins_edit_perms(array $params): array
     if ($aid === 0) {
         throw new ApiError('bad_request', 'aid is required');
     }
-    if (!$userbank->HasAccess(ADMIN_OWNER) && ($webFlags & ADMIN_OWNER)) {
-        Log::add('w', 'Hacking Attempt',
+    if (!$userbank->HasAccess(WebPermission::Owner) && ($webFlags & ADMIN_OWNER)) {
+        Log::add(LogType::Warning, 'Hacking Attempt',
             $userbank->GetProperty('user') . ' tried to gain OWNER admin permissions, but doesnt have access.');
         return Api::redirect('index.php?p=login&m=no_access');
     }
@@ -310,7 +310,7 @@ function api_admins_edit_perms(array $params): array
     }
 
     $admin = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")->single([$aid]);
-    Log::add('m', 'Permissions Changed', "Permissions have been changed for ({$admin['user']})");
+    Log::add(LogType::Message, 'Permissions Changed', "Permissions have been changed for ({$admin['user']})");
 
     return [
         'reload'  => true,
@@ -358,7 +358,7 @@ function api_admins_update_perms(array $params): array
     return [
         'id'          => $id,
         'permissions' => $permissions,
-        'is_owner'    => $userbank->HasAccess(ADMIN_OWNER),
+        'is_owner'    => $userbank->HasAccess(WebPermission::Owner),
     ];
 }
 

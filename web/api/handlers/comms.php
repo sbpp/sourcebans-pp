@@ -82,7 +82,7 @@ function api_comms_add(array $params): array
         )->execute([$steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
     }
 
-    Log::add('m', 'Block Added', "Block against ($steam) has been added. Reason: $reason; Length: $length");
+    Log::add(LogType::Message, 'Block Added', "Block against ($steam) has been added. Reason: $reason; Length: $length");
 
     return [
         'reload' => true,
@@ -166,9 +166,9 @@ function api_comms_unblock(array $params): array
     $rowGid = (int)($row['gid'] ?? 0);
     $callerGid = (int)$userbank->GetProperty('gid');
     $allowed =
-        $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN)
-        || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS)   && $rowAid === $userbank->GetAid())
-        || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $rowGid === $callerGid);
+        $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban))
+        || ($userbank->HasAccess(WebPermission::UnbanOwnBans)   && $rowAid === $userbank->GetAid())
+        || ($userbank->HasAccess(WebPermission::UnbanGroupBans) && $rowGid === $callerGid);
     if (!$allowed) {
         throw new ApiError('forbidden', "You don't have access to this block.", null, 403);
     }
@@ -183,8 +183,8 @@ function api_comms_unblock(array $params): array
     }
 
     $GLOBALS['PDO']->query(
-        "UPDATE `:prefix_comms` SET `RemovedBy` = ?, `RemoveType` = 'U', `RemovedOn` = UNIX_TIMESTAMP(), `ureason` = ? WHERE `bid` = ?"
-    )->execute([$userbank->GetAid(), $ureason, $bid]);
+        "UPDATE `:prefix_comms` SET `RemovedBy` = ?, `RemoveType` = ?, `RemovedOn` = UNIX_TIMESTAMP(), `ureason` = ? WHERE `bid` = ?"
+    )->execute([$userbank->GetAid(), BanRemoval::Unbanned->value, $ureason, $bid]);
 
     $type = (int)$row['type'];
     $cmd  = $type === 1 ? 'sc_fw_unmute' : ($type === 2 ? 'sc_fw_ungag' : '');
@@ -196,7 +196,7 @@ function api_comms_unblock(array $params): array
     }
 
     $verb = $type === 1 ? 'UnMuted' : ($type === 2 ? 'UnGagged' : 'Unblocked');
-    Log::add('m', "Player $verb", "{$row['name']} ({$row['authid']}) has been " . strtolower($verb) . '.');
+    Log::add(LogType::Message, "Player $verb", "{$row['name']} ({$row['authid']}) has been " . strtolower($verb) . '.');
 
     return [
         'bid'   => $bid,
@@ -254,7 +254,7 @@ function api_comms_delete(array $params): array
         }
     }
 
-    Log::add('m', 'Block Deleted', "Block {$row['name']} ({$row['authid']}) has been deleted.");
+    Log::add(LogType::Message, 'Block Deleted', "Block {$row['name']} ({$row['authid']}) has been deleted.");
 
     return [
         'bid'     => $bid,
@@ -367,19 +367,15 @@ function api_comms_player_history(array $params): array
         $length  = (int)$r['length'];
         $ends    = (int)$r['ends'];
         $type    = (int)$r['type'];
-        $removeType = (string)($r['RemoveType'] ?? '');
+        $rowRemoval = BanRemoval::tryFrom((string) ($r['RemoveType'] ?? ''));
 
-        if ($removeType === 'U' || $removeType === 'D') {
-            $state = 'unblocked';
-        } elseif ($removeType === 'E') {
-            $state = 'expired';
-        } elseif ($length === 0) {
-            $state = 'permanent';
-        } elseif ($ends > 0 && $ends < time()) {
-            $state = 'expired';
-        } else {
-            $state = 'active';
-        }
+        $state = match (true) {
+            $rowRemoval === BanRemoval::Unbanned, $rowRemoval === BanRemoval::Deleted => 'unblocked',
+            $rowRemoval === BanRemoval::Expired => 'expired',
+            $length === 0                       => 'permanent',
+            $ends > 0 && $ends < time()         => 'expired',
+            default                             => 'active',
+        };
 
         $typeLabel = match ($type) {
             1 => 'Mute',

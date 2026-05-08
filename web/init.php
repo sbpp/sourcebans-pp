@@ -141,6 +141,11 @@ $userbank = new CUserManager(Auth::verify());
 // ---------------------------------------------------
 CSRF::init();
 
+require_once(INCLUDES_PATH.'/LogType.php');
+require_once(INCLUDES_PATH.'/LogSearchType.php');
+require_once(INCLUDES_PATH.'/BanType.php');
+require_once(INCLUDES_PATH.'/BanRemoval.php');
+require_once(INCLUDES_PATH.'/WebPermission.php');
 require_once(INCLUDES_PATH.'/Log.php');
 Log::init($GLOBALS['PDO'], $userbank);
 
@@ -157,9 +162,9 @@ function sbError($errno, $errstr, $errfile, $errline)
     // expression must yield a single value — the logging side effect runs
     // outside the match below the lookup.
     $entry = match ($errno) {
-        E_USER_ERROR   => ['e', 'PHP Error',   'Fatal Error'],
-        E_USER_WARNING => ['w', 'PHP Warning', 'Error'],
-        E_USER_NOTICE  => ['m', 'PHP Notice',  'Notice'],
+        E_USER_ERROR   => [LogType::Error,   'PHP Error',   'Fatal Error'],
+        E_USER_WARNING => [LogType::Warning, 'PHP Warning', 'Error'],
+        E_USER_NOTICE  => [LogType::Message, 'PHP Notice',  'Notice'],
         default        => null,
     };
     if ($entry === null) {

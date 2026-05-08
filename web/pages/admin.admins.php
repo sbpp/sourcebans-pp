@@ -70,13 +70,13 @@ global $userbank, $theme;
  */
 
 /** @var bool $canListAdmins */
-$canListAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_ADMINS);
+$canListAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListAdmins));
 /** @var bool $canAddAdmins */
-$canAddAdmins    = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS);
+$canAddAdmins    = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddAdmins));
 /** @var bool $canEditAdmins */
-$canEditAdmins   = $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS);
+$canEditAdmins   = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins));
 /** @var bool $canDeleteAdmins */
-$canDeleteAdmins = $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_ADMINS);
+$canDeleteAdmins = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteAdmins));
 
 /*
  * #1275 — `$sections` array drives the new vertical sidebar via
@@ -283,7 +283,7 @@ if (!empty($_GET['steamid']) && is_string($_GET['steamid'])) {
 //    same default-partial shape as `name_match`). Gated on the same
 //    flag the search box gates the input field on so URL forgery
 //    can't bypass the visibility gate.
-if (!empty($_GET['admemail']) && is_string($_GET['admemail']) && $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
+if (!empty($_GET['admemail']) && is_string($_GET['admemail']) && $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
     $partialEmail = !isset($_GET['admemail_match']) || (string) $_GET['admemail_match'] !== '0';
     if ($partialEmail) {
         $where        .= " AND ADM.email LIKE ?";

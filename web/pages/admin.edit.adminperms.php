@@ -41,7 +41,7 @@ $admin = $GLOBALS['PDO']->single();
 
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
+    Log::add(LogType::Error, "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -51,8 +51,8 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
     PageDie();
 }
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access.");
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
+    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access.");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -62,7 +62,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
     PageDie();
 }
 
-$web_root  = $userbank->HasAccess(ADMIN_OWNER, $_GET['id']);
+$web_root  = $userbank->HasAccess(WebPermission::Owner, $_GET['id']);
 $steam     = trim((string) $userbank->GetProperty("authid", $_GET['id']));
 $web_flags = (int) $userbank->GetProperty("extraflags", $_GET['id']);
 $name      = $userbank->GetProperty("user", $_GET['id'])?>
@@ -95,7 +95,7 @@ $name      = $userbank->GetProperty("user", $_GET['id'])?>
 
 <script>
 <?php
-if (!$userbank->HasAccess(ADMIN_OWNER)) {
+if (!$userbank->HasAccess(WebPermission::Owner)) {
 ?>
     if($("wrootcheckbox")) {
         $("wrootcheckbox").setStyle('display', 'none');
@@ -106,44 +106,44 @@ if (!$userbank->HasAccess(ADMIN_OWNER)) {
 <?php
 }
 ?>
-$('p2').checked = <?=$userbank->HasAccess(ADMIN_OWNER, $_GET['id']) ? "true" : "false"?>;
+$('p2').checked = <?=$userbank->HasAccess(WebPermission::Owner, $_GET['id']) ? "true" : "false"?>;
 
-$('p4').checked = <?=$userbank->HasAccess(ADMIN_LIST_ADMINS, $_GET['id']) ? "true" : "false"?>;
-$('p5').checked = <?=$userbank->HasAccess(ADMIN_ADD_ADMINS, $_GET['id']) ? "true" : "false"?>;
-$('p6').checked = <?=$userbank->HasAccess(ADMIN_EDIT_ADMINS, $_GET['id']) ? "true" : "false"?>;
-$('p7').checked = <?=$userbank->HasAccess(ADMIN_DELETE_ADMINS, $_GET['id']) ? "true" : "false"?>;
+$('p4').checked = <?=$userbank->HasAccess(WebPermission::ListAdmins, $_GET['id']) ? "true" : "false"?>;
+$('p5').checked = <?=$userbank->HasAccess(WebPermission::AddAdmins, $_GET['id']) ? "true" : "false"?>;
+$('p6').checked = <?=$userbank->HasAccess(WebPermission::EditAdmins, $_GET['id']) ? "true" : "false"?>;
+$('p7').checked = <?=$userbank->HasAccess(WebPermission::DeleteAdmins, $_GET['id']) ? "true" : "false"?>;
 
-$('p9').checked = <?=$userbank->HasAccess(ADMIN_LIST_SERVERS, $_GET['id']) ? "true" : "false"?>;
-$('p10').checked = <?=$userbank->HasAccess(ADMIN_ADD_SERVER, $_GET['id']) ? "true" : "false"?>;
-$('p11').checked = <?=$userbank->HasAccess(ADMIN_EDIT_SERVERS, $_GET['id']) ? "true" : "false"?>;
-$('p12').checked = <?=$userbank->HasAccess(ADMIN_DELETE_SERVERS, $_GET['id']) ? "true" : "false"?>;
+$('p9').checked = <?=$userbank->HasAccess(WebPermission::ListServers, $_GET['id']) ? "true" : "false"?>;
+$('p10').checked = <?=$userbank->HasAccess(WebPermission::AddServer, $_GET['id']) ? "true" : "false"?>;
+$('p11').checked = <?=$userbank->HasAccess(WebPermission::EditServers, $_GET['id']) ? "true" : "false"?>;
+$('p12').checked = <?=$userbank->HasAccess(WebPermission::DeleteServers, $_GET['id']) ? "true" : "false"?>;
 
-$('p14').checked = <?=$userbank->HasAccess(ADMIN_ADD_BAN, $_GET['id']) ? "true" : "false"?>;
-$('p16').checked = <?=$userbank->HasAccess(ADMIN_EDIT_OWN_BANS, $_GET['id']) ? "true" : "false"?>;
-$('p17').checked = <?=$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS, $_GET['id']) ? "true" : "false"?>;
-$('p18').checked = <?=$userbank->HasAccess(ADMIN_EDIT_ALL_BANS, $_GET['id']) ? "true" : "false"?>;
-$('p19').checked = <?=$userbank->HasAccess(ADMIN_BAN_PROTESTS, $_GET['id']) ? "true" : "false"?>;
-$('p20').checked = <?=$userbank->HasAccess(ADMIN_BAN_SUBMISSIONS, $_GET['id']) ? "true" : "false"?>;
-$('p33').checked = <?=$userbank->HasAccess(ADMIN_DELETE_BAN, $_GET['id']) ? "true" : "false"?>;
-$('p32').checked = <?=$userbank->HasAccess(ADMIN_UNBAN, $_GET['id']) ? "true" : "false"?>;
-$('p34').checked = <?=$userbank->HasAccess(ADMIN_BAN_IMPORT, $_GET['id']) ? "true" : "false"?>;
-$('p38').checked = <?=$userbank->HasAccess(ADMIN_UNBAN_OWN_BANS, $_GET['id']) ? "true" : "false"?>;
-$('p39').checked = <?=$userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS, $_GET['id']) ? "true" : "false"?>;
+$('p14').checked = <?=$userbank->HasAccess(WebPermission::AddBan, $_GET['id']) ? "true" : "false"?>;
+$('p16').checked = <?=$userbank->HasAccess(WebPermission::EditOwnBans, $_GET['id']) ? "true" : "false"?>;
+$('p17').checked = <?=$userbank->HasAccess(WebPermission::EditGroupBans, $_GET['id']) ? "true" : "false"?>;
+$('p18').checked = <?=$userbank->HasAccess(WebPermission::EditAllBans, $_GET['id']) ? "true" : "false"?>;
+$('p19').checked = <?=$userbank->HasAccess(WebPermission::BanProtests, $_GET['id']) ? "true" : "false"?>;
+$('p20').checked = <?=$userbank->HasAccess(WebPermission::BanSubmissions, $_GET['id']) ? "true" : "false"?>;
+$('p33').checked = <?=$userbank->HasAccess(WebPermission::DeleteBan, $_GET['id']) ? "true" : "false"?>;
+$('p32').checked = <?=$userbank->HasAccess(WebPermission::Unban, $_GET['id']) ? "true" : "false"?>;
+$('p34').checked = <?=$userbank->HasAccess(WebPermission::BanImport, $_GET['id']) ? "true" : "false"?>;
+$('p38').checked = <?=$userbank->HasAccess(WebPermission::UnbanOwnBans, $_GET['id']) ? "true" : "false"?>;
+$('p39').checked = <?=$userbank->HasAccess(WebPermission::UnbanGroupBans, $_GET['id']) ? "true" : "false"?>;
 
-$('p36').checked = <?=$userbank->HasAccess(ADMIN_NOTIFY_SUB, $_GET['id']) ? "true" : "false"?>;
-$('p37').checked = <?=$userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $_GET['id']) ? "true" : "false"?>;
+$('p36').checked = <?=$userbank->HasAccess(WebPermission::NotifySub, $_GET['id']) ? "true" : "false"?>;
+$('p37').checked = <?=$userbank->HasAccess(WebPermission::NotifyProtest, $_GET['id']) ? "true" : "false"?>;
 
-$('p22').checked = <?=$userbank->HasAccess(ADMIN_LIST_GROUPS, $_GET['id']) ? "true" : "false"?>;
-$('p23').checked = <?=$userbank->HasAccess(ADMIN_ADD_GROUP, $_GET['id']) ? "true" : "false"?>;
-$('p24').checked = <?=$userbank->HasAccess(ADMIN_EDIT_GROUPS, $_GET['id']) ? "true" : "false"?>;
-$('p25').checked = <?=$userbank->HasAccess(ADMIN_DELETE_GROUPS, $_GET['id']) ? "true" : "false"?>;
+$('p22').checked = <?=$userbank->HasAccess(WebPermission::ListGroups, $_GET['id']) ? "true" : "false"?>;
+$('p23').checked = <?=$userbank->HasAccess(WebPermission::AddGroup, $_GET['id']) ? "true" : "false"?>;
+$('p24').checked = <?=$userbank->HasAccess(WebPermission::EditGroups, $_GET['id']) ? "true" : "false"?>;
+$('p25').checked = <?=$userbank->HasAccess(WebPermission::DeleteGroups, $_GET['id']) ? "true" : "false"?>;
 
-$('p26').checked = <?=$userbank->HasAccess(ADMIN_WEB_SETTINGS, $_GET['id']) ? "true" : "false"?>;
+$('p26').checked = <?=$userbank->HasAccess(WebPermission::WebSettings, $_GET['id']) ? "true" : "false"?>;
 
-$('p28').checked = <?=$userbank->HasAccess(ADMIN_LIST_MODS, $_GET['id']) ? "true" : "false"?>;
-$('p29').checked = <?=$userbank->HasAccess(ADMIN_ADD_MODS, $_GET['id']) ? "true" : "false"?>;
-$('p30').checked = <?=$userbank->HasAccess(ADMIN_EDIT_MODS, $_GET['id']) ? "true" : "false"?>;
-$('p31').checked = <?=$userbank->HasAccess(ADMIN_DELETE_MODS, $_GET['id']) ? "true" : "false"?>;
+$('p28').checked = <?=$userbank->HasAccess(WebPermission::ListMods, $_GET['id']) ? "true" : "false"?>;
+$('p29').checked = <?=$userbank->HasAccess(WebPermission::AddMods, $_GET['id']) ? "true" : "false"?>;
+$('p30').checked = <?=$userbank->HasAccess(WebPermission::EditMods, $_GET['id']) ? "true" : "false"?>;
+$('p31').checked = <?=$userbank->HasAccess(WebPermission::DeleteMods, $_GET['id']) ? "true" : "false"?>;
 
 
 $('s14').checked = <?=$userbank->HasAccess(SM_ROOT, $_GET['id']) ? "true" : "false"?>;

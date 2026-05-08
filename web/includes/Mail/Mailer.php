@@ -24,6 +24,7 @@ namespace Sbpp\Mail;
 
 use Config;
 use Log;
+use LogType;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;
@@ -151,7 +152,7 @@ final class Mailer
                 if (!self::$sbEmailDeprecationLogged) {
                     self::$sbEmailDeprecationLogged = true;
                     Log::add(
-                        'w',
+                        LogType::Warning,
                         'Mail config deprecated',
                         'Falling back to the legacy SB_EMAIL constant for the From header. '
                         . 'Set config.mail.from_email in Admin → Settings; SB_EMAIL will be removed in a future release.'

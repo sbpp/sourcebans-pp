@@ -32,7 +32,7 @@ function api_protests_remove(array $params): array
             throw new ApiError('delete_failed', 'There was a problem deleting the protest from the database. Check the logs for more info');
         }
 
-        Log::add('m', 'Protest Deleted', "Protest ($pid) has been deleted.");
+        Log::add(LogType::Message, 'Protest Deleted', "Protest ($pid) has been deleted.");
         return [
             'remove'        => ["apid_$pid", "apid_{$pid}a"],
             'counter'       => ['protcountarchiv' => $cnt],
@@ -60,7 +60,7 @@ function api_protests_remove(array $params): array
             throw new ApiError('archive_failed', 'There was a problem moving the protest to the archive. Check the logs for more info');
         }
 
-        Log::add('m', 'Protest Archived', "Protest ($pid) has been moved to the archive.");
+        Log::add(LogType::Message, 'Protest Archived', "Protest ($pid) has been moved to the archive.");
         return [
             'remove'  => ["pid_$pid", "pid_{$pid}a"],
             'counter' => ['protcount' => $cnt],
@@ -87,7 +87,7 @@ function api_protests_remove(array $params): array
             throw new ApiError('restore_failed', 'There was a problem restoring the protest from the archive. Check the logs for more info');
         }
 
-        Log::add('m', 'Protest Deleted', "Protest ($pid) has been restored from the archive.");
+        Log::add(LogType::Message, 'Protest Deleted', "Protest ($pid) has been restored from the archive.");
         return [
             'remove'  => ["apid_$pid", "apid_{$pid}a"],
             'counter' => ['protcountarchiv' => $cnt],

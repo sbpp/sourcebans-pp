@@ -58,7 +58,7 @@ function api_groups_add(array $params): array
         )->execute([$next, $name]);
     }
 
-    Log::add('m', 'Group Created', "A new group was created ($name).");
+    Log::add(LogType::Message, 'Group Created', "A new group was created ($name).");
 
     return [
         'reload'  => true,
@@ -123,7 +123,7 @@ function api_groups_remove(array $params): array
         throw new ApiError('delete_failed', 'There was a problem deleting the group from the database. Check the logs for more info');
     }
 
-    Log::add('m', 'Group Deleted', "Group ($gid) has been deleted.");
+    Log::add(LogType::Message, 'Group Deleted', "Group ($gid) has been deleted.");
 
     return [
         'remove'  => "gid_$gid",
@@ -227,7 +227,7 @@ function api_groups_edit(array $params): array
         foreach ($rows as $r) $allservers[] = $r['sid'];
     }
 
-    Log::add('m', 'Group Updated', "Group ($name) has been updated.");
+    Log::add(LogType::Message, 'Group Updated', "Group ($name) has been updated.");
 
     return [
         'reload'  => true,
@@ -257,7 +257,7 @@ function api_groups_update_perms(array $params): array
 
     return [
         'permissions' => $permissions,
-        'is_owner'    => $userbank->HasAccess(ADMIN_OWNER),
+        'is_owner'    => $userbank->HasAccess(WebPermission::Owner),
     ];
 }
 

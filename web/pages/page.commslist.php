@@ -68,7 +68,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 2");
     $GLOBALS['PDO']->bind(':bid', $bid);
     $res = $GLOBALS['PDO']->single();
-    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'))) {
+    if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban)) && !($userbank->HasAccess(WebPermission::UnbanOwnBans) && $res['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(WebPermission::UnbanGroupBans) && $res['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
 
@@ -86,12 +86,13 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
     $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
 										`RemovedBy` = :removedby,
-										`RemoveType` = 'U',
+										`RemoveType` = :rtype,
 										`RemovedOn` = UNIX_TIMESTAMP(),
 										`ureason` = :ureason
 										WHERE `bid` = :bid");
     $GLOBALS['PDO']->bindMultiple([
         ':removedby' => $userbank->GetAid(),
+        ':rtype'     => BanRemoval::Unbanned->value,
         ':ureason'   => $unbanReason,
         ':bid'       => $bid,
     ]);
@@ -104,7 +105,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Player UnGagged', '" . $row['name'] . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add("m", "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
+        Log::add(LogType::Message, "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
     } else {
         echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
@@ -117,7 +118,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 1");
     $GLOBALS['PDO']->bind(':bid', $bid);
     $res = $GLOBALS['PDO']->single();
-    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) && !($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $res['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'))) {
+    if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban)) && !($userbank->HasAccess(WebPermission::UnbanOwnBans) && $res['aid'] == $userbank->GetAid()) && !($userbank->HasAccess(WebPermission::UnbanGroupBans) && $res['gid'] == $userbank->GetProperty('gid'))) {
         die("You don't have access to this");
     }
 
@@ -135,12 +136,13 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
     $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
 										`RemovedBy` = :removedby,
-										`RemoveType` = 'U',
+										`RemoveType` = :rtype,
 										`RemovedOn` = UNIX_TIMESTAMP(),
 										`ureason` = :ureason
 										WHERE `bid` = :bid");
     $GLOBALS['PDO']->bindMultiple([
         ':removedby' => $userbank->GetAid(),
+        ':rtype'     => BanRemoval::Unbanned->value,
         ':ureason'   => $unbanReason,
         ':bid'       => $bid,
     ]);
@@ -153,7 +155,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Player UnMuted', '" . $row['name'] . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add("m", "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
+        Log::add(LogType::Message, "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
     } else {
         echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
@@ -162,7 +164,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         die("Possible hacking attempt (URL Key mismatch)");
     }
 
-    if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN)) {
+    if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteBan))) {
         echo "<script>ShowBox('Error', 'You do not have access to this.', 'red', 'index.php?p=commslist$pagelink');</script>";
         PageDie();
     }
@@ -203,7 +205,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Block Deleted', 'The block for \'" . $steam['name'] . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add("m", "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
+        Log::add(LogType::Message, "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
         echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
     }
@@ -610,17 +612,16 @@ foreach ($res as $row) {
     }
 
     // Что за тип разбана - D? Я такой не видел, но оставлю так и быть.. for feature use...
-    if ($row['row_type'] == 'D' || $row['row_type'] == 'U' || $row['row_type'] == 'E' || ($row['ban_length'] && $row['ban_ends'] < $data['c_time'])) {
+    $rowRemoval = BanRemoval::tryFrom((string) ($row['row_type'] ?? ''));
+    if ($rowRemoval !== null || ($row['ban_length'] && $row['ban_ends'] < $data['c_time'])) {
         $data['unbanned'] = true;
         $data['class']    = "listtable_1_unbanned";
 
-        if ($row['row_type'] == "D") {
-            $data['ub_reason'] = "(Deleted)";
-        } elseif ($row['row_type'] == "U") {
-            $data['ub_reason'] = "(Unbanned)";
-        } else {
-            $data['ub_reason'] = "(Expired)";
-        }
+        $data['ub_reason'] = match ($rowRemoval) {
+            BanRemoval::Deleted  => "(Deleted)",
+            BanRemoval::Unbanned => "(Unbanned)",
+            default              => "(Expired)",
+        };
 
         if (isset($row['unban_reason']))
             $data['ureason'] = stripslashes($row['unban_reason']);
@@ -733,9 +734,9 @@ foreach ($res as $row) {
             foreach ($commentres as $crow) {
                 $cdata            = [];
                 $cdata['morecom'] = ($morecom == 1 ? true : false);
-                if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+                if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(WebPermission::Owner)) {
                     $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $crow['cid'] . $pagelink, 'Edit Comment');
-                    if ($userbank->HasAccess(ADMIN_OWNER)) {
+                    if ($userbank->HasAccess(WebPermission::Owner)) {
                         $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'C'," . (isset($_GET["page"]) ? $_GET["page"] : -1) . ");\"><i class='fas fa-trash fa-lg'></i></a>";
                     }
                 } else {
@@ -775,9 +776,9 @@ foreach ($res as $row) {
 
     $data['ub_reason']   = (isset($data['ub_reason']) ? $data['ub_reason'] : "");
     $data['banlength']   = $data['ban_length'] . " " . $data['ub_reason'];
-    $data['view_edit']   = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
-    $data['view_unban']  = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN) || ($userbank->HasAccess(ADMIN_UNBAN_OWN_BANS) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(ADMIN_UNBAN_GROUP_BANS) && $row['gid'] == $userbank->GetProperty('gid')));
-    $data['view_delete'] = ($userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
+    $data['view_edit']   = ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans)) || ($userbank->HasAccess(WebPermission::EditOwnBans) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(WebPermission::EditGroupBans) && $row['gid'] == $userbank->GetProperty('gid')));
+    $data['view_unban']  = ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban)) || ($userbank->HasAccess(WebPermission::UnbanOwnBans) && $row['aid'] == $userbank->GetAid()) || ($userbank->HasAccess(WebPermission::UnbanGroupBans) && $row['gid'] == $userbank->GetProperty('gid')));
+    $data['view_delete'] = ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteBan)));
 
     // === Row augmentation (#1123 B4) ======================================
     // Layer the keys the v2.0.0 template consumes ($comm.cid / .name /
@@ -788,19 +789,16 @@ foreach ($res as $row) {
     // original loop is what lets us read raw SQL columns (row_type,
     // ban_server, server_ip, ban_created) that don't survive into
     // $data otherwise.
-    $rowTypeStr   = isset($row['row_type']) ? (string) $row['row_type'] : '';
-    $banLengthInt = (int) $row['ban_length'];
-    $banEndsInt   = (int) $row['ban_ends'];
-    $cTimeInt     = (int) $row['c_time'];
-    if ($rowTypeStr === 'D' || $rowTypeStr === 'U') {
-        $stateLabel = 'unmuted';
-    } elseif ($rowTypeStr === 'E' || ($banLengthInt > 0 && $banEndsInt < $cTimeInt)) {
-        $stateLabel = 'expired';
-    } elseif ($banLengthInt === 0) {
-        $stateLabel = 'permanent';
-    } else {
-        $stateLabel = 'active';
-    }
+    $rowRemovalState = BanRemoval::tryFrom((string) ($row['row_type'] ?? ''));
+    $banLengthInt    = (int) $row['ban_length'];
+    $banEndsInt      = (int) $row['ban_ends'];
+    $cTimeInt        = (int) $row['c_time'];
+    $stateLabel = match (true) {
+        $rowRemovalState === BanRemoval::Deleted, $rowRemovalState === BanRemoval::Unbanned => 'unmuted',
+        $rowRemovalState === BanRemoval::Expired || ($banLengthInt > 0 && $banEndsInt < $cTimeInt) => 'expired',
+        $banLengthInt === 0                       => 'permanent',
+        default                                   => 'active',
+    };
 
     $typeInt = (int) $row['type'];
     switch ($typeInt) {
@@ -1012,11 +1010,11 @@ $paginationLink = $searchlink . ($chipStateActive ? '&state=active' : '');
 $theme->assign('admin_nick', $userbank->GetProperty("user"));
 $theme->assign('admin_postkey', $_SESSION['banlist_postkey']);
 $theme->assign('active_bans', $BanCount);
-$theme->assign('general_unban', $userbank->HasAccess(ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS));
-$theme->assign('can_delete', $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_BAN));
+$theme->assign('general_unban', $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban, WebPermission::UnbanOwnBans, WebPermission::UnbanGroupBans)));
+$theme->assign('can_delete', $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteBan)));
 
 $hideAdminName = Config::getBool('banlist.hideadminname') && !$userbank->is_admin();
-$viewBans      = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS | ADMIN_DELETE_BAN);
+$viewBans      = (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans, WebPermission::EditOwnBans, WebPermission::EditGroupBans, WebPermission::Unban, WebPermission::UnbanOwnBans, WebPermission::UnbanGroupBans, WebPermission::DeleteBan));
 
 // === View bag (#1123 B4) ==============================================
 // Server filter dropdown — small list (one row per enabled server). The

@@ -97,14 +97,14 @@ $sections = [
 ];
 
 if (isset($_GET['log_clear']) && $_GET['log_clear'] === 'true') {
-    if ($userbank->HasAccess(ADMIN_OWNER)) {
+    if ($userbank->HasAccess(WebPermission::Owner)) {
         $GLOBALS['PDO']->query("TRUNCATE TABLE `:prefix_log`")->execute();
     } else {
-        Log::add('w', 'Hacking Attempt', $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
+        Log::add(LogType::Warning, 'Hacking Attempt', $userbank->GetProperty('user') . " tried to clear the logs, but doesn't have access.");
     }
 }
 
-$canSettings = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_WEB_SETTINGS);
+$canSettings = (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::WebSettings));
 
 /*
  * Post-save flash, emitted at the bottom of this file.
@@ -209,7 +209,7 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
                     (string) ($_POST['auth_maxlife_steam'] ?? ''),
                     ...$smtpConfig,
                 ]);
-            Log::add('m', 'Settings updated', 'Main settings were updated.');
+            Log::add(LogType::Message, 'Settings updated', 'Main settings were updated.');
             $savedSection = 'settings';
         }
     }
@@ -233,7 +233,7 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
             (" . $publiccomments . ", 'config.enablepubliccomments'),
             (" . $steamloginopt  . ", 'config.enablesteamlogin'),
             (" . $normalloginopt . ", 'config.enablenormallogin')")->execute();
-        Log::add('m', 'Settings updated', 'Feature toggles were updated.');
+        Log::add(LogType::Message, 'Settings updated', 'Feature toggles were updated.');
         $savedSection = 'features';
     }
 
@@ -407,7 +407,7 @@ if ($section === 'themes') {
     Renderer::render($theme, new AdminLogsView(
         can_web_settings: $perms['can_web_settings'],
         can_owner:        $perms['can_owner'],
-        clear_logs:       $userbank->HasAccess(ADMIN_OWNER) ? "( <a href='javascript:ClearLogs();'>Clear Log</a> )" : '',
+        clear_logs:       $userbank->HasAccess(WebPermission::Owner) ? "( <a href='javascript:ClearLogs();'>Clear Log</a> )" : '',
         page_numbers:     $pageNumbers,
         log_items:        $logList,
     ));

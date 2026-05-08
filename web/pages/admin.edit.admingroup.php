@@ -36,8 +36,8 @@ if (!isset($_GET['id'])) {
 }
 
 $_GET['id'] = (int) $_GET['id'];
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s groups, but doesn't have access.");
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
+    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s groups, but doesn't have access.");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -48,7 +48,7 @@ if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
 }
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
+    Log::add(LogType::Error, "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -150,7 +150,7 @@ if (isset($_POST['wg']) || isset($_GET['wg']) || isset($_GET['sg'])) {
         $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
         $GLOBALS['PDO']->bind(':aid', (int) $_GET['id']);
         $admname = $GLOBALS['PDO']->single();
-        Log::add("m", "Admin's Groups Updated", "Admin ($admname[user]) groups has been updated.");
+        Log::add(LogType::Message, "Admin's Groups Updated", "Admin ($admname[user]) groups has been updated.");
     }
 }
 

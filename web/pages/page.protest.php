@@ -153,7 +153,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
         $destAdmins = [];
 
         foreach ($admins as $admin) {
-            if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS, $admin['aid']) && $userbank->HasAccess(ADMIN_NOTIFY_PROTEST, $admin['aid'])) {
+            if ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanProtests), $admin['aid']) && $userbank->HasAccess(WebPermission::NotifyProtest, $admin['aid'])) {
                 $destAdmins [] = $admin['email'];
             }
         }

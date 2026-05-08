@@ -30,7 +30,7 @@ function api_mods_add(array $params): array
         "INSERT INTO `:prefix_mods`(name,icon,modfolder,steam_universe,enabled) VALUES (?,?,?,?,?)"
     )->execute([$name, $icon, $folder, $steamUniverse, $enabled]);
 
-    Log::add('m', 'Mod Added', "Mod ($name) has been added.");
+    Log::add(LogType::Message, 'Mod Added', "Mod ($name) has been added.");
 
     return [
         'reload'  => true,
@@ -63,7 +63,7 @@ function api_mods_remove(array $params): array
         throw new ApiError('delete_failed', 'There was a problem deleting the MOD from the database. Check the logs for more info');
     }
 
-    Log::add('m', 'MOD Deleted', "MOD ({$row['name']}) has been deleted.");
+    Log::add(LogType::Message, 'MOD Deleted', "MOD ({$row['name']}) has been deleted.");
 
     return [
         'remove'  => "mid_$mid",

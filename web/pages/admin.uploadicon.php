@@ -24,8 +24,8 @@ global $theme, $userbank;
 // See admin.kickit.php for why this chdir() is needed.
 chdir(ROOT);
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS | ADMIN_ADD_MODS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a mod icon, but doesn't have access.");
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditMods, WebPermission::AddMods))) {
+    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a mod icon, but doesn't have access.");
     die("You don't have access to this!");
 }
 
@@ -39,7 +39,7 @@ if (isset($_POST['upload'])) {
         $jsFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES;
         $jsName = json_encode((string) $_FILES['icon_file']['name'], $jsFlags);
         $message = "<script>window.opener.icon($jsName);self.close()</script>";
-        Log::add("m", "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");
+        Log::add(LogType::Message, "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");
     } else {
         $message = "<b> File must be gif, jpg or png filetype.</b><br><br>";
     }

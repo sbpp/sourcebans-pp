@@ -25,8 +25,8 @@ global $theme, $userbank;
 // See admin.kickit.php for why this chdir() is needed.
 chdir(ROOT);
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN | ADMIN_EDIT_OWN_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_ALL_BANS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a demo, but doesn't have access.");
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan, WebPermission::EditOwnBans, WebPermission::EditGroupBans, WebPermission::EditAllBans))) {
+    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a demo, but doesn't have access.");
     die("You don't have access to this!");
 }
 
@@ -47,7 +47,7 @@ if (isset($_POST['upload'])) {
         $jsHash = json_encode($filename, $jsFlags);
         $jsName = json_encode((string) $_FILES['demo_file']['name'], $jsFlags);
         $message = "<script>window.opener.demo($jsHash,$jsName);self.close()</script>";
-        Log::add("m", "Demo Uploaded", "A new demo has been uploaded: $_FILES[demo_file][name]");
+        Log::add(LogType::Message, "Demo Uploaded", "A new demo has been uploaded: $_FILES[demo_file][name]");
     } else {
         $message = "<b> File must be dem, zip, rar, 7z, bz2 or gz filetype.</b><br><br>";
     }

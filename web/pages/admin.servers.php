@@ -22,8 +22,8 @@ global $userbank, $theme;
  * vocabulary mirrors `page_admin_settings_*.tpl` ("server" for the
  * list, "plus" for the add form).
  */
-$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_SERVERS);
-$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER);
+$canList = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListServers));
+$canAdd  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddServer));
 
 /** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
 $sections = [
@@ -122,8 +122,8 @@ foreach ($servers as &$server) {
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminServersListView(
     permission_list: $canList,
-    permission_editserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_SERVERS),
-    pemission_delserver: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_SERVERS),
+    permission_editserver: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditServers)),
+    pemission_delserver: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteServers)),
     permission_addserver: $canAdd,
     server_count: (int) $server_count['cnt'],
     server_list: $servers,

@@ -39,7 +39,9 @@ function api_bans_add(array $params): array
     // raw bytes and let the Smarty auto-escape layer (see #1087) turn
     // `<Msg>` into `&lt;Msg&gt;` at display time.
     $nickname = (string)($params['nickname'] ?? '');
-    $type     = (int)($params['type'] ?? 0);
+    $rawType  = (int)($params['type'] ?? 0);
+    $banType  = BanType::tryFrom($rawType) ?? BanType::Steam;
+    $type     = $banType->value;
     $steam    = SteamID::toSteam2(trim((string)($params['steam'] ?? '')));
     $ip       = preg_replace('#[^\d\.]#', '', (string)($params['ip'] ?? ''));
     $length   = (int)($params['length'] ?? 0);
@@ -48,16 +50,16 @@ function api_bans_add(array $params): array
     $reason   = (string)($params['reason'] ?? '');
     $fromsub  = (int)($params['fromsub'] ?? 0);
 
-    if (empty($steam) && $type === 0) {
+    if (empty($steam) && $banType === BanType::Steam) {
         throw new ApiError('validation', 'You must type a Steam ID or Community ID', 'steam');
     }
-    if ($type === 0 && !SteamID::isValidID($steam)) {
+    if ($banType === BanType::Steam && !SteamID::isValidID($steam)) {
         throw new ApiError('validation', 'Please enter a valid Steam ID or Community ID', 'steam');
     }
-    if (empty($ip) && $type === 1) {
+    if (empty($ip) && $banType === BanType::Ip) {
         throw new ApiError('validation', 'You must type an IP', 'ip');
     }
-    if ($type === 1 && !filter_var($ip, FILTER_VALIDATE_IP)) {
+    if ($banType === BanType::Ip && !filter_var($ip, FILTER_VALIDATE_IP)) {
         throw new ApiError('validation', 'You must type a valid IP', 'ip');
     }
     if ($length < 0) {
@@ -73,7 +75,7 @@ function api_bans_add(array $params): array
     $len = $length ? $length * 60 : 0;
 
     PruneBans();
-    if ($type === 0) {
+    if ($banType === BanType::Steam) {
         $chk = $GLOBALS['PDO']->query(
             "SELECT count(bid) AS count FROM `:prefix_bans`
             WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP())
@@ -89,7 +91,7 @@ function api_bans_add(array $params): array
             }
         }
     }
-    if ($type === 1) {
+    if ($banType === BanType::Ip) {
         $chk = $GLOBALS['PDO']->query(
             "SELECT count(bid) AS count FROM `:prefix_bans`
             WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP())
@@ -103,7 +105,7 @@ function api_bans_add(array $params): array
     $GLOBALS['PDO']->query(
         "INSERT INTO `:prefix_bans`(created,type,ip,authid,name,ends,length,reason,aid,adminIp ) VALUES
         (UNIX_TIMESTAMP(),?,?,?,?,(UNIX_TIMESTAMP() + ?),?,?,?,?)"
-    )->execute([$type, $ip, $steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
+    )->execute([$banType->value, $ip, $steam, $nickname, $length * 60, $len, $reason, $userbank->GetAid(), $_SERVER['REMOTE_ADDR'] ?? '']);
     $newId = (int)$GLOBALS['PDO']->lastInsertId();
 
     if ($dname && $dfile && preg_match('/^[a-z0-9]*$/i', $dfile)) {
@@ -128,12 +130,12 @@ function api_bans_add(array $params): array
         ->execute([$userbank->GetAid(), $steam]);
 
     $kickit = Config::getBool('config.enablekickit');
-    Log::add('m', 'Ban Added', "Ban against (" . ($type === 0 ? $steam : $ip) . ") has been added. Reason: $reason; Length: $length");
+    Log::add(LogType::Message, 'Ban Added', "Ban against (" . ($banType === BanType::Steam ? $steam : $ip) . ") has been added. Reason: $reason; Length: $length");
 
     return [
         'bid'    => $newId,
         'reload' => true,
-        'kickit' => $kickit ? ['check' => $type === 0 ? $steam : $ip, 'type' => $type] : null,
+        'kickit' => $kickit ? ['check' => $banType === BanType::Steam ? $steam : $ip, 'type' => $banType->value] : null,
         'message' => $kickit ? null : [
             'title' => 'Ban Added',
             'body'  => 'The ban has been successfully added',
@@ -155,13 +157,15 @@ function api_bans_setup_ban(array $params): array
     $GLOBALS['PDO']->bind(':subid', $subid);
     $demo = $GLOBALS['PDO']->single();
 
+    $inferredType = (trim($ban['SteamId'] ?? '') === '') ? BanType::Ip : BanType::Steam;
+
     return [
         'subid'    => $subid,
         'nickname' => $ban['name']    ?? '',
         'steam'    => $ban['SteamId'] ?? '',
         'ip'       => $ban['sip']     ?? '',
         'length'   => 0,
-        'type'     => (trim($ban['SteamId'] ?? '') === '') ? 1 : 0,
+        'type'     => $inferredType->value,
         'reason'   => $ban['reason']  ?? '',
         'demo'     => $demo ? ['filename' => $demo['filename'], 'origname' => $demo['origname']] : null,
     ];
@@ -175,13 +179,15 @@ function api_bans_prepare_reban(array $params): array
         ->single([$bid]);
     $demo = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_demos` WHERE demid = ? AND demtype = 'B';")->single([$bid]);
 
+    $banType = BanType::tryFrom((int)($ban['type'] ?? 0)) ?? BanType::Steam;
+
     return [
         'bid'      => $bid,
         'nickname' => $ban['name']   ?? '',
         'steam'    => $ban['authid'] ?? '',
         'ip'       => $ban['ip']     ?? '',
         'length'   => (int)($ban['length'] ?? 0),
-        'type'     => (int)($ban['type']   ?? 0),
+        'type'     => $banType->value,
         'reason'   => $ban['reason'] ?? '',
         'demo'     => $demo ? ['filename' => $demo['filename'], 'origname' => $demo['origname']] : null,
     ];
@@ -191,7 +197,6 @@ function api_bans_paste(array $params): array
 {
     $sid  = (int)($params['sid']  ?? 0);
     $name = (string)($params['name'] ?? '');
-    $type = (int)($params['type'] ?? 0);
 
     $ret = rcon('status', $sid);
     if (!$ret) {
@@ -208,7 +213,7 @@ function api_bans_paste(array $params): array
                 'nickname' => $player['name'],
                 'steam'    => SteamID::toSteam2($player['steamid']),
                 'ip'       => $player['ip'] ?? '',
-                'type'     => 0,
+                'type'     => BanType::Steam->value,
             ];
         }
     }
@@ -246,7 +251,7 @@ function api_bans_add_comment(array $params): array
         "INSERT INTO `:prefix_comments`(bid,type,aid,commenttxt,added) VALUES (?,?,?,?,UNIX_TIMESTAMP())"
     )->execute([$bid, $ctype, $userbank->GetAid(), $ctext]);
 
-    Log::add('m', 'Comment Added', "$username added a comment for ban #$bid");
+    Log::add(LogType::Message, 'Comment Added', "$username added a comment for ban #$bid");
 
     return [
         'reload'  => true,
@@ -285,7 +290,7 @@ function api_bans_edit_comment(array $params): array
         "UPDATE `:prefix_comments` SET commenttxt = ?, editaid = ?, edittime = UNIX_TIMESTAMP() WHERE cid = ?"
     )->execute([$ctext, $userbank->GetAid(), $cid]);
 
-    Log::add('m', 'Comment Edited', "$username edited comment #$cid");
+    Log::add(LogType::Message, 'Comment Edited', "$username edited comment #$cid");
 
     return [
         'reload'  => true,
@@ -318,7 +323,7 @@ function api_bans_remove_comment(array $params): array
     };
 
     $GLOBALS['PDO']->query("DELETE FROM `:prefix_comments` WHERE cid = ?")->execute([$cid]);
-    Log::add('m', 'Comment Deleted', "$username deleted comment #$cid");
+    Log::add(LogType::Message, 'Comment Deleted', "$username deleted comment #$cid");
 
     return [
         'message' => [
@@ -415,7 +420,7 @@ function api_bans_ban_member_of_group(array $params): array
             VALUES (UNIX_TIMESTAMP(), :type, :ip, :authid, :name, UNIX_TIMESTAMP(), :length, :reason, :aid, :adminIp)"
         );
         $GLOBALS['PDO']->bindMultiple([
-            ':type'    => 0,
+            ':type'    => BanType::Steam->value,
             ':ip'      => '',
             ':authid'  => SteamID::toSteam2($player['steamid']),
             ':name'    => $player['personaname'],
@@ -431,7 +436,7 @@ function api_bans_ban_member_of_group(array $params): array
         }
     }
 
-    Log::add('m', 'Group Banned',
+    Log::add(LogType::Message, 'Group Banned',
         "Banned " . ($amount['total'] - $amount['before'] - $amount['failed']) . "/{$amount['total']} players of group ($grpurl). {$amount['before']} were banned already. {$amount['failed']} failed.");
 
     return [
@@ -545,7 +550,7 @@ function api_bans_ban_friends(array $params): array
         throw new ApiError('no_friends', "There was an error retrieving the friend list. Check if the profile isn't private or if he hasn't got any friends!");
     }
 
-    Log::add('m', 'Friends Banned',
+    Log::add(LogType::Message, 'Friends Banned',
         'Banned ' . ($total - $before - $error) . "/$total friends of $name. $before were banned already. $error failed.");
 
     return [
@@ -586,7 +591,7 @@ function api_bans_kick_player(array $params): array
 
             if ($immune <= $userbank->GetProperty('srv_immunity')) {
                 rcon("sm_kick #{$player['id']} You have been kicked from this server", $sid);
-                Log::add('m', 'Player kicked', "$username kicked player {$player['name']} ({$player['steamid']})");
+                Log::add(LogType::Message, 'Player kicked', "$username kicked player {$player['name']} ({$player['steamid']})");
                 return [
                     'message' => [
                         'title' => 'Success',
@@ -632,7 +637,7 @@ function api_bans_send_message(array $params): array
         }
     }
 
-    Log::add('m', 'Message sent to player', "The following message was sent to $name on server (#$sid): $message");
+    Log::add(LogType::Message, 'Message sent to player', "The following message was sent to $name on server (#$sid): $message");
 
     return [
         'message' => [
@@ -739,7 +744,8 @@ function api_bans_detail(array $params): array
         throw new ApiError('not_found', 'Ban not found.', null, 404);
     }
 
-    $type      = (int)$row['type'];
+    $banType   = BanType::tryFrom((int)$row['type']) ?? BanType::Steam;
+    $type      = $banType->value;
     $authid    = (string)$row['authid'];
     $banIp     = (string)($row['ip'] ?? '');
     $created   = (int)$row['created'];
@@ -751,10 +757,10 @@ function api_bans_detail(array $params): array
     // RemoveType marks deleted/unbanned/expired explicitly; otherwise
     // an `ends` timestamp in the past collapses to "expired" even
     // without a row update (PruneBans() catches those eventually).
-    $removeType = (string)($row['RemoveType'] ?? '');
-    if ($removeType === 'U' || $removeType === 'D') {
+    $removal = BanRemoval::tryFrom((string)($row['RemoveType'] ?? ''));
+    if ($removal === BanRemoval::Unbanned || $removal === BanRemoval::Deleted) {
         $state = 'unbanned';
-    } elseif ($removeType === 'E') {
+    } elseif ($removal === BanRemoval::Expired) {
         $state = 'expired';
     } elseif ($length === 0) {
         $state = 'permanent';
@@ -978,21 +984,21 @@ function api_bans_player_history(array $params): array
         throw new ApiError('not_found', 'Ban not found.', null, 404);
     }
 
-    $type   = (int)$anchor['type'];
-    $authid = (string)$anchor['authid'];
-    $ip     = (string)($anchor['ip'] ?? '');
+    $anchorType = BanType::tryFrom((int)$anchor['type']) ?? BanType::Steam;
+    $authid     = (string)$anchor['authid'];
+    $ip         = (string)($anchor['ip'] ?? '');
 
     // No anchor identifier -> no siblings to match against. This also
     // shields the SQL from a `WHERE authid = ''` sweep on legacy rows
     // that have a blank authid + blank ip.
-    if (($type === 0 && $authid === '') || ($type === 1 && $ip === '')) {
+    if (($anchorType === BanType::Steam && $authid === '') || ($anchorType === BanType::Ip && $ip === '')) {
         return ['items' => [], 'total' => 0];
     }
 
-    $matchClause = $type === 1
+    $matchClause = $anchorType === BanType::Ip
         ? "BA.type = 1 AND BA.ip = ? AND BA.ip <> ''"
         : "BA.type = 0 AND BA.authid = ? AND BA.authid <> ''";
-    $matchParam  = $type === 1 ? $ip : $authid;
+    $matchParam  = $anchorType === BanType::Ip ? $ip : $authid;
 
     $rows = $GLOBALS['PDO']->query(
         "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
@@ -1012,11 +1018,11 @@ function api_bans_player_history(array $params): array
         $created = (int)$r['created'];
         $length  = (int)$r['length'];
         $ends    = (int)$r['ends'];
-        $removeType = (string)($r['RemoveType'] ?? '');
+        $rowRemoval = BanRemoval::tryFrom((string)($r['RemoveType'] ?? ''));
 
-        if ($removeType === 'U' || $removeType === 'D') {
+        if ($rowRemoval === BanRemoval::Unbanned || $rowRemoval === BanRemoval::Deleted) {
             $state = 'unbanned';
-        } elseif ($removeType === 'E') {
+        } elseif ($rowRemoval === BanRemoval::Expired) {
             $state = 'expired';
         } elseif ($length === 0) {
             $state = 'permanent';

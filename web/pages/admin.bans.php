@@ -77,10 +77,10 @@ if (!defined("IN_SB")) {
  * fragment).
  */
 
-$canAddBan       = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN);
-$canProtests     = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS);
-$canSubmissions  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS);
-$canImport       = $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_IMPORT);
+$canAddBan       = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan));
+$canProtests     = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanProtests));
+$canSubmissions  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanSubmissions));
+$canImport       = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanImport));
 $groupBanEnabled = Config::getBool('config.enablegroupbanning');
 $canGroupBan     = $canAddBan && $groupBanEnabled;
 
@@ -120,12 +120,13 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
 
                     $GLOBALS['PDO']->query(
                         "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `type`)
-                        VALUES (UNIX_TIMESTAMP(), '', :ip, 'Imported Ban', (UNIX_TIMESTAMP() + 0), 0, 'banned_ip.cfg import', :aid, :admip, 1)"
+                        VALUES (UNIX_TIMESTAMP(), '', :ip, 'Imported Ban', (UNIX_TIMESTAMP() + 0), 0, 'banned_ip.cfg import', :aid, :admip, :btype)"
                     );
                     $GLOBALS['PDO']->bindMultiple([
                         ':ip' => $line[2],
                         ':aid' => $userbank->GetAid(),
-                        ':admip' => $_SERVER['REMOTE_ADDR']
+                        ':admip' => $_SERVER['REMOTE_ADDR'],
+                        ':btype' => BanType::Ip->value,
                     ]);
                     $GLOBALS['PDO']->execute();
                 }
@@ -144,20 +145,21 @@ if (isset($_POST['action']) && $_POST['action'] == "importBans") {
                 $bancnt++;
                 $GLOBALS['PDO']->query(
                     "INSERT INTO `:prefix_bans` (`created`, `authid`, `ip`, `name`, `ends`, `length`, `reason`, `aid`, `adminIp`, `type`)
-                    VALUES (UNIX_TIMESTAMP(), :authid, '', :name, (UNIX_TIMESTAMP() + 0), 0, 'banned_user.cfg import', :aid, :ip, 0)"
+                    VALUES (UNIX_TIMESTAMP(), :authid, '', :name, (UNIX_TIMESTAMP() + 0), 0, 'banned_user.cfg import', :aid, :ip, :btype)"
                 );
                 $GLOBALS['PDO']->bindMultiple([
                     ':authid' => $steam,
                     ':name' => $name,
                     ':aid' => $userbank->GetAid(),
-                    ':ip' => $_SERVER['REMOTE_ADDR']
+                    ':ip' => $_SERVER['REMOTE_ADDR'],
+                    ':btype' => BanType::Steam->value,
                 ]);
                 $GLOBALS['PDO']->execute();
             }
         }
     }
     if ($bancnt > 0) {
-        Log::add("m", "Bans imported", "$bancnt Ban(s) imported");
+        Log::add(LogType::Message, "Bans imported", "$bancnt Ban(s) imported");
     }
     echo "<script>sb.message.show('Bans Import', '$bancnt ban" . ($bancnt != 1 ? "s have" : " has") . " been imported and posted.', 'green', '');</script>";
 }
@@ -536,8 +538,8 @@ if ($section === 'protests') {
         }
 
         \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansProtestsView(
-            permission_protests: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS),
-            permission_editban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+            permission_protests: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanProtests)),
+            permission_editban: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans, WebPermission::EditGroupBans, WebPermission::EditOwnBans)),
             protest_nav: $page_nav,
             protest_list: $protest_list,
             protest_count: (int) $page_count - (isset($cnt) ? $cnt : 0),
@@ -634,8 +636,8 @@ if ($section === 'protests') {
         }
 
         \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansProtestsArchivView(
-            permission_protests: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_PROTESTS),
-            permission_editban: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+            permission_protests: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanProtests)),
+            permission_editban: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans, WebPermission::EditGroupBans, WebPermission::EditOwnBans)),
             aprotest_nav: $page_nav,
             protest_list_archiv: $protest_list_archiv,
             protest_count_archiv: (int) $page_count,
@@ -733,8 +735,8 @@ if ($section === 'submissions') {
             array_push($submission_list, $sub);
         }
         \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansSubmissionsView(
-            permissions_submissions: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS),
-            permissions_editsub: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+            permissions_submissions: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanSubmissions)),
+            permissions_editsub: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans, WebPermission::EditGroupBans, WebPermission::EditOwnBans)),
             submission_count: (int) $page_count,
             submission_nav: $page_nav,
             submission_list: $submission_list,
@@ -819,8 +821,8 @@ if ($section === 'submissions') {
             array_push($submission_list_archiv, $sub);
         }
         \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansSubmissionsArchivView(
-            permissions_submissions: $userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS),
-            permissions_editsub: $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS | ADMIN_EDIT_GROUP_BANS | ADMIN_EDIT_OWN_BANS),
+            permissions_submissions: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanSubmissions)),
+            permissions_editsub: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans, WebPermission::EditGroupBans, WebPermission::EditOwnBans)),
             submission_count_archiv: (int) $page_count,
             asubmission_nav: $page_nav,
             submission_list_archiv: $submission_list_archiv,
@@ -940,9 +942,9 @@ function bansBuildComments(array $commentres, $userbank, int $rowId, string $typ
     foreach ($commentres as $crow) {
         $cdata            = [];
         $cdata['morecom'] = ($morecom == 1 ? true : false);
-        if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(ADMIN_OWNER)) {
+        if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(WebPermission::Owner)) {
             $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . $rowId . '&ctype=' . $type . '&cid=' . $crow['cid'], 'Edit Comment');
-            if ($userbank->HasAccess(ADMIN_OWNER)) {
+            if ($userbank->HasAccess(WebPermission::Owner)) {
                 $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'" . $type . "',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
             }
         } else {

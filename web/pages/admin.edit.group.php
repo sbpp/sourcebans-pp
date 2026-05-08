@@ -165,7 +165,7 @@ if ($_GET['type'] == "web" || $_GET['type'] == "server") {
     $('groupname').value = "<?=$web_group['name']?>";
 <?php
 }
-if (!$userbank->HasAccess(ADMIN_OWNER)) {
+if (!$userbank->HasAccess(WebPermission::Owner)) {
 ?>
     if($("wrootcheckbox")) {
         $("wrootcheckbox").setStyle('display', 'none');

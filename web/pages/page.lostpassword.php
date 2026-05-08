@@ -46,7 +46,7 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
 
     if (is_array($email) || is_array($validation)) {
         print "<script>ShowBox('Error', 'Invalid request.', 'red');</script>";
-        Log::add("w", "Hacking attempt", "Attempted SQL-Injection.");
+        Log::add(LogType::Warning, "Hacking attempt", "Attempted SQL-Injection.");
         PageDie();
     }
 

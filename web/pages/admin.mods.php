@@ -33,8 +33,8 @@ global $userbank, $theme;
  * glyph) and lets `AdminTabs.php` open the shell + render the
  * <aside> + open the content column.
  */
-$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_MODS);
-$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_MODS);
+$canList = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListMods));
+$canAdd  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddMods));
 
 /** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
 $sections = [
@@ -83,8 +83,8 @@ $mod_count = (int) $GLOBALS['PDO']->query("SELECT COUNT(mid) AS cnt FROM `:prefi
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminModsListView(
     permission_listmods:   $canList,
-    permission_editmods:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_MODS),
-    permission_deletemods: $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_MODS),
+    permission_editmods:   $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditMods)),
+    permission_deletemods: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteMods)),
     mod_count:             $mod_count,
     mod_list:              $mod_list,
 ));

@@ -356,7 +356,7 @@ function api_system_send_mail(array $params): array
         throw new ApiError('mail_failed', 'Failed to send the email to the user.');
     }
 
-    Log::add('m', 'Email Sent', "$username send an email to $email. Subject: '[SourceBans++] $subject'; Message: $message");
+    Log::add(LogType::Message, 'Email Sent', "$username send an email to $email. Subject: '[SourceBans++] $subject'; Message: $message");
 
     // #1275 — admin-bans is Pattern A; the email-sending UI is reached
     // from one of the two queues, so route the operator back to the

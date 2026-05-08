@@ -613,6 +613,44 @@ Reseeded in tests via `web/tests/Fixture.php`, which renders `struc.sql`
 + `data.sql` against a dedicated `sourcebans_test` database before every
 test method.
 
+### Column-typed PHP enums (issue #1290 phase D)
+
+Five `:prefix_*` columns carry a small fixed set of values; PHP wraps
+each with a backed enum so call sites read as intent rather than as
+magic primitives:
+
+| Enum                | On-disk column                                                  | Backing | Cases                                                              |
+| ------------------- | --------------------------------------------------------------- | ------- | ------------------------------------------------------------------ |
+| `LogType`           | `:prefix_log.type varchar(1)`                                   | string  | `Message='m'` / `Warning='w'` / `Error='e'`                        |
+| `LogSearchType`     | the audit-log `?advType=` query param tag (no DB column)        | string  | `Admin` / `Message` / `Date` / `Type` (also carries WHERE-builder) |
+| `BanType`           | `:prefix_bans.type tinyint`                                     | int     | `Steam=0` / `Ip=1`                                                 |
+| `BanRemoval`        | `:prefix_bans.RemoveType varchar(3)` / `:prefix_comms.RemoveType varchar(3)` | string  | `Deleted='D'` / `Unbanned='U'` / `Expired='E'`                     |
+| `WebPermission`     | `:prefix_admins.extraflags int` / `:prefix_groups.flags int` (bitmask) | int     | one case per `web/configs/permissions/web.json` flag (`Owner=16777216`, …) |
+
+The on-disk schema stays as `varchar(1)` / `varchar(3)` / `int` /
+`tinyint`. The enum is the PHP-side typed wrapper. At every SQL bind
+site, pass `$enum->value` (the column-typed primitive); the case
+itself is for in-PHP type-safety only. `phpstan/phpstan-dba` types the
+raw SQL against the live MariaDB schema, so a wrong-typed bind (e.g.
+binding a `BanType` enum case directly instead of `->value`) fails
+the gate.
+
+Files live in the global namespace under `web/includes/`
+(`LogType.php`, `LogSearchType.php`, `BanType.php`, `BanRemoval.php`,
+`WebPermission.php`); they're loaded by `require_once` in `init.php`
++ `tests/bootstrap.php` ahead of `Log.php` / `CUserManager.php` so
+the typed parameters compile.
+
+`WebPermission` adds a `mask(WebPermission ...$flags): int` helper
+for assembling multi-flag bitmasks; `HasAccess()` accepts
+`WebPermission|int|string` so the modern enum form
+(`HasAccess(WebPermission::Owner)`) and the legacy procedural form
+(`HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)`) coexist. The `ADMIN_*`
+`define`d constants in `init.php` stay as the back-compat surface
+for procedural code that pre-dates the enum; the JS-side
+`Perms.ADMIN_*` contract in `web/scripts/api-contract.js` is
+unchanged.
+
 ### Updater (`web/updater/`)
 
 The updater is how *existing* installs catch up to schema or data changes

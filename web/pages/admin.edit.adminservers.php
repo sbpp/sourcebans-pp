@@ -36,7 +36,7 @@ if (!isset($_GET['id'])) {
 }
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
+    Log::add(LogType::Error, "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -47,8 +47,8 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 }
 
 $aid = (int) $_GET['id'];
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS)) {
-    Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s server access, but doesnt have access.");
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
+    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s server access, but doesnt have access.");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -148,7 +148,7 @@ if (isset($_POST['editadminserver'])) {
     $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', (int) $aid);
     $admname = $GLOBALS['PDO']->single();
-    Log::add("m", "Admin Servers Updated", "Admin ($admname[user]) server access has been changed.");
+    Log::add(LogType::Message, "Admin Servers Updated", "Admin ($admname[user]) server access has been changed.");
 }
 
 

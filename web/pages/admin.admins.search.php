@@ -179,7 +179,7 @@ if (is_array($rawSrvFlag)) {
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsSearchView(
-    can_editadmin:             $userbank->HasAccess(ADMIN_EDIT_ADMINS | ADMIN_OWNER),
+    can_editadmin:             $userbank->HasAccess(WebPermission::mask(WebPermission::EditAdmins, WebPermission::Owner)),
     server_list:               $servers,
     server_script:             $serverscript,
     webgroup_list:             $webgroups,

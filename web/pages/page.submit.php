@@ -249,7 +249,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
             $mailDests = [];
 
             foreach ($admins as $admin) {
-                if ($userbank->HasAccess(ADMIN_OWNER | ADMIN_BAN_SUBMISSIONS, $admin['aid']) || $userbank->HasAccess(ADMIN_NOTIFY_SUB, $admin['aid'])) {
+                if ($userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::BanSubmissions), $admin['aid']) || $userbank->HasAccess(WebPermission::NotifySub, $admin['aid'])) {
                     $mailDests []= $admin['email'];
                 }
             }
@@ -286,7 +286,7 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 'Upload failed',
                 'There was an error uploading your demo to the server. Please try again later.'
             );
-            Log::add("e", "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
+            Log::add(LogType::Error, "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }
     }
 }

@@ -69,7 +69,8 @@ foreach ($rows as $row) {
     $info['ip']         = $row['ip'];
     $info['server']     = "block_" . $row['sid'] . "_$blcount";
 
-    if ($row['type'] == 1) {
+    $blockedBanType = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
+    if ($blockedBanType === BanType::Ip) {
         if ($userbank->is_admin())
             $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['ip']) . '&advType=ip&Submit';
         else
@@ -140,7 +141,8 @@ foreach ($rows as $row) {
     $info['icon']    = empty($row['icon']) ? 'web.png' : $row['icon'];
     $info['authid']  = $row['authid'];
     $info['ip']      = $row['ip'];
-    if ($row['type'] == 1) {
+    $rowBanType = BanType::tryFrom((int) $row['type']) ?? BanType::Steam;
+    if ($rowBanType === BanType::Ip) {
         if ($userbank->is_admin())
             $info['search_link'] = 'index.php?p=banlist&advSearch=' . urlencode($info['ip']) . '&advType=ip&Submit';
         else
@@ -151,12 +153,13 @@ foreach ($rows as $row) {
     $info['link_url']   = "window.location = '" . $info['search_link'] . "';";
     $info['short_name'] = trunc($cleaned_name, 40);
 
-    if ($row['RemoveType'] == 'D' || $row['RemoveType'] == 'U' || $row['RemoveType'] == 'E' || ($row['length'] && $row['ends'] < time())) {
+    $rowRemoval = BanRemoval::tryFrom((string) ($row['RemoveType'] ?? ''));
+    if ($rowRemoval !== null || ($row['length'] && $row['ends'] < time())) {
         $info['unbanned']  = true;
-        $info['ub_reason'] = match (true) {
-            $row['RemoveType'] === 'D' => 'D',
-            $row['RemoveType'] === 'U' => 'U',
-            default                    => 'E',
+        $info['ub_reason'] = match ($rowRemoval) {
+            BanRemoval::Deleted  => BanRemoval::Deleted->value,
+            BanRemoval::Unbanned => BanRemoval::Unbanned->value,
+            default              => BanRemoval::Expired->value,
         };
     } else {
         $info['unbanned'] = false;
@@ -176,7 +179,7 @@ foreach ($rows as $row) {
     // 'expired' (natural end) vs 'unbanned' (explicit D/U removal) so
     // .pill / .ban-row state classes can render them differently.
     if ($info['unbanned']) {
-        $info['state'] = $info['ub_reason'] === 'E' ? 'expired' : 'unbanned';
+        $info['state'] = $info['ub_reason'] === BanRemoval::Expired->value ? 'expired' : 'unbanned';
     } elseif ($info['perm']) {
         $info['state'] = 'permanent';
     } else {
@@ -226,12 +229,13 @@ foreach ($rows as $row) {
     $info['short_name']  = trunc($cleaned_name, 40);
     $info['type']        = $row['type'] == 2 ? "fas fa-comment-slash fa-lg" : "fas fa-microphone-slash fa-lg";
 
-    if ($row['RemoveType'] == 'D' || $row['RemoveType'] == 'U' || $row['RemoveType'] == 'E' || ($row['length'] && $row['ends'] < time())) {
+    $rowRemoval = BanRemoval::tryFrom((string) ($row['RemoveType'] ?? ''));
+    if ($rowRemoval !== null || ($row['length'] && $row['ends'] < time())) {
         $info['unbanned']  = true;
-        $info['ub_reason'] = match (true) {
-            $row['RemoveType'] === 'D' => 'D',
-            $row['RemoveType'] === 'U' => 'U',
-            default                    => 'E',
+        $info['ub_reason'] = match ($rowRemoval) {
+            BanRemoval::Deleted  => BanRemoval::Deleted->value,
+            BanRemoval::Unbanned => BanRemoval::Unbanned->value,
+            default              => BanRemoval::Expired->value,
         };
     } else {
         $info['unbanned'] = false;
@@ -247,7 +251,7 @@ foreach ($rows as $row) {
     // Lucide icon name. ba.type=2 is text-chat block, otherwise voice.
     $info['lucide_icon']  = $row['type'] == 2 ? 'message-square-off' : 'mic-off';
     if ($info['unbanned']) {
-        $info['state'] = $info['ub_reason'] === 'E' ? 'expired' : 'unbanned';
+        $info['state'] = $info['ub_reason'] === BanRemoval::Expired->value ? 'expired' : 'unbanned';
     } elseif ($info['perm']) {
         $info['state'] = 'permanent';
     } else {

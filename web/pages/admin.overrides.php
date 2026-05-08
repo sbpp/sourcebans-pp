@@ -120,7 +120,7 @@ foreach ($overrides_rows as $row) {
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminOverridesView(
-    permission_addadmin: $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_ADMINS),
+    permission_addadmin: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddAdmins)),
     overrides_error: $overrides_error,
     overrides_save_success: $overrides_save_success,
     overrides_list: $overrides_list,

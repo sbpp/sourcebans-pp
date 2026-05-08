@@ -43,7 +43,7 @@ $GLOBALS['PDO']->query("SELECT bid, ba.type, ba.authid, ba.name, created, ends, 
 $GLOBALS['PDO']->bind(':bid', $_GET['id']);
 $res = $GLOBALS['PDO']->single();
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS) && (!$userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] != $userbank->GetProperty('gid'))) {
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans)) && (!$userbank->HasAccess(WebPermission::EditOwnBans) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(WebPermission::EditGroupBans) && $res['gid'] != $userbank->GetProperty('gid'))) {
     echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=comms");</script>';
     PageDie();
 }
@@ -146,7 +146,7 @@ if (isset($_POST['name'])) {
         $GLOBALS['PDO']->execute();
 
         if ($_POST['banlength'] != $lengthrev['length']) {
-            Log::add("m", "Block edited", "Block for ({$lengthrev['authid']}) has been updated."
+            Log::add(LogType::Message, "Block edited", "Block for ({$lengthrev['authid']}) has been updated."
                 . " Before: length ({$lengthrev['length']}), type ({$lengthrev['type']});"
                 . " Now: length ({$_POST['banlength']}), type ({$_POST['type']}).");
         }

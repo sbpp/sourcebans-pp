@@ -37,7 +37,7 @@ if (!isset($_GET['id'])) {
 $_GET['id'] = (int) $_GET['id'];
 
 if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add("e", "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
+    Log::add(LogType::Error, "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -48,9 +48,9 @@ if (!$userbank->GetProperty("user", $_GET['id'])) {
 }
 
 // Skip all checks if root
-if (!$userbank->HasAccess(ADMIN_OWNER)) {
-    if (!$userbank->HasAccess(ADMIN_EDIT_ADMINS) || ($userbank->HasAccess(ADMIN_OWNER, $_GET['id']) && $_GET['id'] != $userbank->GetAid())) {
-        Log::add("w", "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s details, but doesnt have access.");
+if (!$userbank->HasAccess(WebPermission::Owner)) {
+    if (!$userbank->HasAccess(WebPermission::EditAdmins) || ($userbank->HasAccess(WebPermission::Owner, $_GET['id']) && $_GET['id'] != $userbank->GetAid())) {
+        Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s details, but doesnt have access.");
         echo '<div id="msg-red" >
 		<i class="fas fa-times fa-2x"></i>
 		<b>Error</b>
@@ -146,7 +146,7 @@ if (isset($_POST['adminname'])) {
     }
 
     // Only validate passwords, if admin has access to edit it at all
-    if ($userbank->HasAccess(ADMIN_OWNER) || $_GET['id'] == $userbank->GetAid()) {
+    if ($userbank->HasAccess(WebPermission::Owner) || $_GET['id'] == $userbank->GetAid()) {
         // Don't change the password, if not set
         if (!empty($_POST['password'])) {
             $pw_changed = true;
@@ -273,7 +273,7 @@ if (isset($_POST['adminname'])) {
         $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = :aid");
         $GLOBALS['PDO']->bind(':aid', (int) $_GET['id']);
         $admname = $GLOBALS['PDO']->single();
-        Log::add("m", "Admin Details Updated", "Admin ($admname[user]) details has been changed.");
+        Log::add(LogType::Message, "Admin Details Updated", "Admin ($admname[user]) details has been changed.");
         if ($ownpwchanged) {
             echo '<script>ShowBox("Admin details updated", "The admin details has been updated successfully", "green", "index.php?p=login");TabToReload();</script>';
         } elseif (isset($rehashing)) {
@@ -291,7 +291,7 @@ if (isset($_POST['adminname'])) {
     $a_serverpass = !empty($a_serverpass);
 }
 
-$theme->assign('change_pass', ($userbank->HasAccess(ADMIN_OWNER) || $userbank->HasAccess(ADMIN_EDIT_ADMINS)|| $_GET['id'] == $userbank->GetAid()));
+$theme->assign('change_pass', ($userbank->HasAccess(WebPermission::Owner) || $userbank->HasAccess(WebPermission::EditAdmins)|| $_GET['id'] == $userbank->GetAid()));
 $theme->assign('user', $a_name);
 $theme->assign('authid', $a_steam);
 $theme->assign('email', $a_email);

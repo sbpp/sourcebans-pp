@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace Sbpp\Mail;
 
 use Log;
+use LogType;
 use Throwable;
 
 final class Mail
@@ -43,7 +44,7 @@ final class Mail
             // dispatch below throw "Call to a member function send()
             // on null" which then gets caught as a generic mail
             // failure.
-            Log::add('e', 'Mail not configured', 'SMTP host / user / password are empty in sb_settings; configure them under Admin → Settings before sending mail.');
+            Log::add(LogType::Error, 'Mail not configured', 'SMTP host / user / password are empty in sb_settings; configure them under Admin → Settings before sending mail.');
             return false;
         }
 
@@ -61,7 +62,7 @@ final class Mail
             );
         } catch (Throwable $e)
         {
-            Log::add('e', 'Mail error', $e->getMessage());
+            Log::add(LogType::Error, 'Mail error', $e->getMessage());
             return false;
         }
 

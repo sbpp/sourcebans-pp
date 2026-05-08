@@ -313,16 +313,16 @@ function rcon(string $cmd, int $sid): false|string
         $rcon->setRconPassword($server['rcon']);
 
         $output = $rcon->Rcon($cmd);
-        Log::add("m", "RCON Sent", sprintf("RCON Command (%s) was sent to server (%s:%d)", $cmd, $server['ip'], $server['port']));
+        Log::add(LogType::Message, "RCON Sent", sprintf("RCON Command (%s) was sent to server (%s:%d)", $cmd, $server['ip'], $server['port']));
     } catch (\xPaw\SourceQuery\Exception\AuthenticationException $e) {
         $GLOBALS['PDO']->query("UPDATE `:prefix_servers` SET rcon = '' WHERE sid = :sid");
         $GLOBALS['PDO']->bind(':sid', $sid);
         $GLOBALS['PDO']->execute();
 
-        Log::add('e', "Rcon Password Error [ServerID: $sid]", $e->getMessage());
+        Log::add(LogType::Error, "Rcon Password Error [ServerID: $sid]", $e->getMessage());
         return false;
     } catch (Exception $e) {
-        Log::add('e', "Rcon Error [ServerID: $sid]", $e->getMessage());
+        Log::add(LogType::Error, "Rcon Error [ServerID: $sid]", $e->getMessage());
         return false;
     } finally {
         $rcon->Disconnect();

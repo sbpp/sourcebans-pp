@@ -25,18 +25,6 @@ parameters:
 			path: includes/Log.php
 
 		-
-			message: '#^Parameter \#1 \$hour of function mktime expects int, string given\.$#'
-			identifier: argument.type
-			count: 4
-			path: includes/Log.php
-
-		-
-			message: '#^Parameter \#2 \$minute of function mktime expects int\|null, string given\.$#'
-			identifier: argument.type
-			count: 4
-			path: includes/Log.php
-
-		-
 			message: '#^Constant SB_THEME not found\.$#'
 			identifier: constant.notFound
 			count: 2

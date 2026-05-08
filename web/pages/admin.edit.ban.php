@@ -98,9 +98,9 @@ if (!$res) {
     PageDie();
 }
 
-$canEditBan = (bool) $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ALL_BANS)
-    || ($userbank->HasAccess(ADMIN_EDIT_OWN_BANS) && $res['aid'] == $userbank->GetAid())
-    || ($userbank->HasAccess(ADMIN_EDIT_GROUP_BANS) && $res['gid'] == $userbank->GetProperty('gid'));
+$canEditBan = (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans))
+    || ($userbank->HasAccess(WebPermission::EditOwnBans) && $res['aid'] == $userbank->GetAid())
+    || ($userbank->HasAccess(WebPermission::EditGroupBans) && $res['gid'] == $userbank->GetProperty('gid'));
 
 if (!$canEditBan) {
     emitEditBanToastAndRedirect('red', 'Error', "You don't have access to this!", 'index.php?p=admin&c=bans');
@@ -126,21 +126,22 @@ $postSuccess = false;
 if (isset($_POST['name'])) {
     $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
     $_POST['type']  = (int) ($_POST['type'] ?? 0);
+    $postBanType    = BanType::tryFrom((int) $_POST['type']) ?? BanType::Steam;
 
     // Form Validation
     $error = 0;
     // If they didn't type a steamid
-    if (empty($_POST['steam']) && $_POST['type'] == 0) {
+    if (empty($_POST['steam']) && $postBanType === BanType::Steam) {
         $error++;
         $validationErrors['steam'] = 'You must type a Steam ID or Community ID';
-    } elseif ($_POST['type'] == 0 && !\SteamID\SteamID::isValidID($_POST['steam'])) {
+    } elseif ($postBanType === BanType::Steam && !\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
         $validationErrors['steam'] = 'Please enter a valid Steam ID or Community ID';
-    } elseif (empty($_POST['ip']) && $_POST['type'] == 1) {
+    } elseif (empty($_POST['ip']) && $postBanType === BanType::Ip) {
         // Didn't type an IP
         $error++;
         $validationErrors['ip'] = 'You must type an IP';
-    } elseif ($_POST['type'] == 1 && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
+    } elseif ($postBanType === BanType::Ip && !filter_var($_POST['ip'], FILTER_VALIDATE_IP)) {
         $error++;
         $validationErrors['ip'] = 'You must type a valid IP';
     }
@@ -156,7 +157,7 @@ if (isset($_POST['name'])) {
 
     if ($error == 0) {
         // Check if the new steamid is already banned
-        if ($_POST['type'] == 0) {
+        if ($postBanType === BanType::Steam) {
             $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != :bid");
             $GLOBALS['PDO']->bindMultiple([
                 ':authid' => $_POST['steam'],
@@ -178,7 +179,7 @@ if (isset($_POST['name'])) {
                     }
                 }
             }
-        } elseif ($_POST['type'] == 1) {
+        } elseif ($postBanType === BanType::Ip) {
             // Check if the ip is already banned
             $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != :bid");
             $GLOBALS['PDO']->bindMultiple([
@@ -228,7 +229,7 @@ if (isset($_POST['name'])) {
         );
         $GLOBALS['PDO']->bindMultiple([
             ':name'   => $_POST['name'],
-            ':type'   => $_POST['type'],
+            ':type'   => $postBanType->value,
             ':reason' => $reason,
             ':authid' => $_POST['steam'],
             ':length' => $_POST['banlength'],
@@ -270,7 +271,7 @@ if (isset($_POST['name'])) {
         }
 
         if ($_POST['banlength'] != $lengthrev['length']) {
-            Log::add("m", "Ban length edited", "Ban length for ({$lengthrev['authid']}) has been updated."
+            Log::add(LogType::Message, "Ban length edited", "Ban length for ({$lengthrev['authid']}) has been updated."
                 . " Before: {$lengthrev['length']}; Now: {$_POST['banlength']}.");
         }
         $postSuccess = true;

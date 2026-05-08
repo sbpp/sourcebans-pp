@@ -24,7 +24,7 @@ global $userbank, $theme;
 // See admin.kickit.php for why this chdir() is needed.
 chdir(ROOT);
 
-if (!$userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN)) {
+if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan))) {
     echo "No Access";
     die();
 }

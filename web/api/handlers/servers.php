@@ -98,7 +98,7 @@ function api_servers_add(array $params): array
         }
     }
 
-    Log::add('m', 'Server Added', "Server ($ip:$port) has been added.");
+    Log::add(LogType::Message, 'Server Added', "Server ($ip:$port) has been added.");
 
     return [
         'sid'     => $sid,
@@ -138,7 +138,7 @@ function api_servers_remove(array $params): array
         throw new ApiError('delete_failed', 'There was a problem deleting the server from the database. Check the logs for more info');
     }
 
-    Log::add('m', 'Server Deleted', "Server ({$info['ip']}:{$info['port']}) has been deleted.");
+    Log::add(LogType::Message, 'Server Deleted', "Server ({$info['ip']}:{$info['port']}) has been deleted.");
 
     return [
         'remove'  => "sid_$sid",
@@ -210,7 +210,7 @@ function api_servers_host_players(array $params): array
             'ip'      => $server['ip'],
             'port'    => $server['port'],
             'error'   => 'connect',
-            'is_owner' => $userbank->HasAccess(ADMIN_OWNER),
+            'is_owner' => $userbank->HasAccess(WebPermission::Owner),
         ];
     } finally {
         $query->Disconnect();
@@ -241,7 +241,7 @@ function api_servers_host_players(array $params): array
             'time'   => $p['Time'],
             'time_f' => $p['TimeF'],
         ], $players ?: []),
-        'can_ban' => $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_BAN),
+        'can_ban' => $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
     ];
 }
 
@@ -344,7 +344,7 @@ function api_servers_send_rcon(array $params): array
     // flag. Verify they are also mapped to this specific server, mirroring
     // the access check admin.rcon.php uses to render the page.
     if (!_api_servers_admin_can_rcon($userbank->GetAid(), $sid)) {
-        Log::add('w', 'Hacking Attempt',
+        Log::add(LogType::Warning, 'Hacking Attempt',
             $userbank->GetProperty('user') . " tried to RCON server $sid without per-server access.");
         throw new ApiError('forbidden', 'No access to that server', null, 403);
     }

@@ -34,8 +34,8 @@ global $userbank, $theme;
  * master-detail editor on a specific group; that's a *list* concern,
  * so it always lands on the list section.
  */
-$canList = $userbank->HasAccess(ADMIN_OWNER | ADMIN_LIST_GROUPS);
-$canAdd  = $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP);
+$canList = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::ListGroups));
+$canAdd  = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddGroup));
 
 /** @var list<array{slug: string, name: string, permission: int, url: string, icon: string}> $sections */
 $sections = [
@@ -240,10 +240,10 @@ if (!empty($web_group_list)) {
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminGroupsListView(
     permission_listgroups:    $canList,
-    permission_editgroup:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_GROUPS),
-    permission_deletegroup:   $userbank->HasAccess(ADMIN_OWNER | ADMIN_DELETE_GROUPS),
-    permission_editadmin:     $userbank->HasAccess(ADMIN_OWNER | ADMIN_EDIT_ADMINS),
-    permission_addgroup:      $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_GROUP),
+    permission_editgroup:     $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditGroups)),
+    permission_deletegroup:   $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteGroups)),
+    permission_editadmin:     $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins)),
+    permission_addgroup:      $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddGroup)),
     web_group_count:          $web_group_count,
     web_admins:               $web_admins,
     web_admins_list:          $web_admins_list,

@@ -15,7 +15,13 @@ final class Log
         self::$user = $user;
     }
 
-    public static function add(string $type, string $title, string $message): void
+    /**
+     * @param LogType $type Audit row severity (`Message`/`Warning`/`Error`).
+     *                      The on-disk column is `varchar(1)`-shaped; the
+     *                      bind below pulls `$type->value` so phpstan-dba
+     *                      sees the column-typed primitive.
+     */
+    public static function add(LogType $type, string $title, string $message): void
     {
         $host = filter_var($_SERVER['REMOTE_ADDR'], FILTER_VALIDATE_IP) ? $_SERVER['REMOTE_ADDR'] : '';
 
@@ -23,7 +29,7 @@ final class Log
             "INSERT INTO `:prefix_log` (`type`, `title`, `message`, `function`, `query`, `aid`, `host`, `created`)
             VALUES (:type, :title, :message, :function, :query, :aid, :host, UNIX_TIMESTAMP())"
         );
-        self::$dbs->bind(':type', $type);
+        self::$dbs->bind(':type', $type->value);
         self::$dbs->bind(':title', $title);
         self::$dbs->bind(':message', $message);
         self::$dbs->bind(':function', self::getCaller());
@@ -35,31 +41,14 @@ final class Log
 
     public static function getAll(int $start, int $limit): array
     {
-        $where = null;
+        $value      = $_GET['advSearch'] ?? null;
         $valueOther = null;
-        $value = $_GET['advSearch'] ?? null;
-        $type  = $_GET['advType'] ?? null;
+        $filter     = LogSearchType::tryFromGetParam($_GET['advType'] ?? null);
+        $where      = null;
 
-        switch ($type) {
-            case "admin":
-                $where = " l.aid = :value";
-                break;
-            case "message":
-                $value = "%$value%";
-                $where = " l.message LIKE :value OR l.title LIKE :value";
-                break;
-            case "date":
-                $date  = explode(",", $value);
-                $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
-                $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
-                $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
-                $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $where = " l.created > :value AND l.created < :valueOther";
-                break;
-            case "type":
-                $where = " l.type = :value";
-                break;
+        if ($filter !== null) {
+            [$value, $valueOther] = self::resolveSearchValues($filter, $value);
+            $where = $filter->whereClause();
         }
 
         $query = 'SELECT ad.user, l.* FROM `:prefix_log` AS l
@@ -82,30 +71,14 @@ final class Log
 
     public static function getCount(string $search): mixed
     {
-        $value = $_GET['advSearch'] ?? null;
+        $value      = $_GET['advSearch'] ?? null;
         $valueOther = null;
-        $type  = $_GET['advType'] ?? null;
-        $query = "SELECT COUNT(l.lid) AS count FROM `:prefix_log` AS l ";
-        switch ($type) {
-            case "admin":
-                $query .= "WHERE l.aid = :value";
-                break;
-            case "message":
-                $value = "%$value%";
-                $query .= "WHERE l.message LIKE :value OR l.title LIKE :value";
-                break;
-            case "date":
-                $date  = explode(",", $value);
-                $date[0] = (is_numeric($date[0])) ? $date[0] : date('d');
-                $date[1] = (is_numeric($date[1])) ? $date[1] : date('m');
-                $date[2] = (is_numeric($date[2])) ? $date[2] : date('Y');
-                $value  = mktime($date[3], $date[4], 0, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $valueOther = mktime($date[5], $date[6], 59, (int)$date[1], (int)$date[0], (int)$date[2]);
-                $query .= "WHERE l.created > :value AND l.created < :valueOther";
-                break;
-            case "type":
-                $query .= "WHERE l.type = :value";
-                break;
+        $filter     = LogSearchType::tryFromGetParam($_GET['advType'] ?? null);
+        $query      = "SELECT COUNT(l.lid) AS count FROM `:prefix_log` AS l ";
+
+        if ($filter !== null) {
+            [$value, $valueOther] = self::resolveSearchValues($filter, $value);
+            $query .= 'WHERE ' . $filter->whereClause();
         }
 
         self::$dbs->query($query);
@@ -117,6 +90,46 @@ final class Log
 
         $log = self::$dbs->single();
         return $log['count'];
+    }
+
+    /**
+     * Translate the raw `$_GET['advSearch']` into the
+     * `[primary, secondary]` bind pair each search filter expects:
+     *
+     *   - Admin: `[$value, null]` — the aid is bound as-is.
+     *   - Message: `["%$value%", null]` — wrapped for the LIKE clause.
+     *   - Type: `[$value, null]` — the type letter is bound as-is.
+     *   - Date: `[mktime(start), mktime(end)]` — the comma-separated
+     *     `<dd>,<mm>,<yyyy>,<fhh>,<fmm>,<thh>,<tmm>` tuple is split and
+     *     converted into a pair of UNIX timestamps. Missing fields fall
+     *     back to today's day/month/year.
+     *
+     * @return array{0: mixed, 1: mixed}
+     */
+    private static function resolveSearchValues(LogSearchType $filter, mixed $value): array
+    {
+        return match ($filter) {
+            LogSearchType::Admin, LogSearchType::Type => [$value, null],
+            LogSearchType::Message => ["%$value%", null],
+            LogSearchType::Date    => self::resolveDateRange((string) $value),
+        };
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private static function resolveDateRange(string $raw): array
+    {
+        $date = explode(',', $raw);
+        // explode() returns non-empty-list<string>, so $date[0] is
+        // structurally guaranteed; the is_numeric() check is the
+        // load-bearing fallback when the field is empty / non-numeric.
+        $day   = is_numeric($date[0]) ? (int) $date[0] : (int) date('d');
+        $month = (isset($date[1]) && is_numeric($date[1])) ? (int) $date[1] : (int) date('m');
+        $year  = (isset($date[2]) && is_numeric($date[2])) ? (int) $date[2] : (int) date('Y');
+        $start = mktime((int) ($date[3] ?? 0), (int) ($date[4] ?? 0), 0,  $month, $day, $year);
+        $end   = mktime((int) ($date[5] ?? 0), (int) ($date[6] ?? 0), 59, $month, $day, $year);
+        return [$start, $end];
     }
 
     private static function getCaller(): string

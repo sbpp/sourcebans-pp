@@ -40,7 +40,7 @@ $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers` WHERE sid = :sid");
 $GLOBALS['PDO']->bind(':sid', $_GET['id']);
 $server = $GLOBALS['PDO']->single();
 if (!$server) {
-    Log::add("e", "Getting server data failed", "Can't find data for server with id $_GET[id].");
+    Log::add(LogType::Error, "Getting server data failed", "Can't find data for server with id $_GET[id].");
     echo '<div id="msg-red" >
 	<i class="fas fa-times fa-2x"></i>
 	<b>Error</b>
@@ -182,7 +182,7 @@ $theme->assign('rcon', '+-#*_'); // Mh, some random string
 $theme->assign('modid', $server['modid']);
 
 
-$theme->assign('permission_addserver', $userbank->HasAccess(ADMIN_OWNER | ADMIN_ADD_SERVER));
+$theme->assign('permission_addserver', $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddServer)));
 $theme->assign('modlist', $modlist);
 $theme->assign('grouplist', $grouplist);
 

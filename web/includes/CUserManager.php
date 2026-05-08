@@ -97,11 +97,30 @@ final class CUserManager
     /**
      * Will check to see if an admin has any of the flags given.
      *
-     * @return bool
+     * Accepts three call shapes (issue #1290 phase D.4):
+     * - A single `WebPermission` enum case:
+     *   `HasAccess(WebPermission::Owner)`.
+     * - An int bitmask (legacy `ADMIN_OWNER | ADMIN_ADD_BAN` or
+     *   `WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)`).
+     * - A SourceMod-style char-flag string ("abc"): each char is
+     *   checked against the admin's `srv_flags` column.
+     *
+     * The `int|string` shapes are kept verbatim from the legacy
+     * pre-enum world; the enum form is the modern path. Both
+     * coexist intentionally — `init.php`'s `define`d `ADMIN_*`
+     * constants are still emitted, so procedural code keeps
+     * working. For a multi-flag check, prefer
+     * `HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan))`
+     * over the bare `int|` shape: the explicit `mask()` call documents
+     * intent at the call site without losing the legacy back-compat.
      */
-    public function HasAccess(int|string $flags, ?int $aid = null): bool
+    public function HasAccess(WebPermission|int|string $flags, ?int $aid = null): bool
     {
         $aid ??= $this->aid;
+
+        if ($flags instanceof WebPermission) {
+            $flags = $flags->value;
+        }
 
         if (empty($flags) || $aid <= 0) {
             return false;

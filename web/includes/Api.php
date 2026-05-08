@@ -157,7 +157,7 @@ final class Api
             ? (string)$userbank->GetProperty('user')
             : ($_SERVER['REMOTE_ADDR'] ?? 'anonymous');
         try {
-            Log::add('w', 'Hacking Attempt', "$who tried to call $action ($why).");
+            Log::add(LogType::Warning, 'Hacking Attempt', "$who tried to call $action ($why).");
         } catch (\Throwable $e) {
             // Logging must never block the auth response.
         }
