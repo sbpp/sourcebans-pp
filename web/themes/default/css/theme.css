@@ -382,7 +382,7 @@ html.dark .btn[data-testid="login-steam"] {
 }
 
 /* ---- Admin sub-tabs (intra-page section nav) ----
-   Pair: web/includes/AdminTabs.php +
+   Pair: web/includes/View/AdminTabs.php +
    web/themes/default/core/admin_tabs.tpl. The active tab carries
    aria-current="page" (set by the template when $tab.name ==
    $active_tab); the rule below underlines + bolds it so the strip
@@ -445,7 +445,7 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
 /* ---- Admin sidebar (Pattern A `?section=…` routes) ----
    #1259 unified the chrome for sub-paged admin routes (servers / mods
    / groups / settings) onto a single vertical sidebar partial
-   (`core/admin_sidebar.tpl` driven by `web/includes/AdminTabs.php`).
+   (`core/admin_sidebar.tpl` driven by `web/includes/View/AdminTabs.php`).
    Pre-#1259 settings had its own inline sidebar markup with a
    hardcoded `grid-template-columns:14rem 1fr` while servers/mods/
    groups rendered the horizontal `core/admin_tabs.tpl` pill strip;

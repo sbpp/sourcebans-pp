@@ -31,7 +31,7 @@ use Smarty\Smarty;
  *
  * The PHPStan deprecation-rules plugin (#1273) is the static gate that
  * blocks new offenders inside the analyzable codebase. This test is the
- * runtime gate — PHPStan can't see `web/includes/auth/openid.php` (it's
+ * runtime gate — PHPStan can't see `web/includes/Auth/openid.php` (it's
  * excluded), and a row whose runtime value is `null` despite the column
  * looking `NOT NULL` to the type system can still slip through. The
  * trap below promotes any `E_DEPRECATED` raised while a marquee page
@@ -243,7 +243,7 @@ final class Php82DeprecationsTest extends ApiTestCase
     }
 
     /**
-     * The OpenID 2.0 vendored library (`web/includes/auth/openid.php`)
+     * The OpenID 2.0 vendored library (`web/includes/Auth/openid.php`)
      * is excluded from PHPStan, so the per-call deprecation surface
      * is not statically gated. The fix at #1273 casts `$value` and
      * `$_SERVER['REQUEST_URI']` at the entry points; this test pins
@@ -262,7 +262,7 @@ final class Php82DeprecationsTest extends ApiTestCase
     #[PreserveGlobalState(false)]
     public function testOpenIdConstructionDoesNotEmitDeprecations(): void
     {
-        require_once ROOT . 'includes/auth/openid.php';
+        require_once ROOT . 'includes/Auth/openid.php';
 
         // Mirror the fields page.login.php's Steam branch sets — the
         // only thing the constructor actually needs is HTTP_HOST.

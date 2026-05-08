@@ -1,5 +1,7 @@
 <?php
 
+namespace Sbpp\View;
+
 /**
  * Class AdminTabs
  *
@@ -105,7 +107,7 @@ final class AdminTabs
      */
     public function __construct(
         array $tabs,
-        CUserManager $userbank,
+        \Sbpp\Auth\UserManager $userbank,
         \Smarty\Smarty $theme,
         ?string $activeSlug = null,
         ?string $sidebarLabel = null,
@@ -152,3 +154,8 @@ final class AdminTabs
         echo '<div class="admin-sidebar-content">';
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. The page handlers still
+// call `new AdminTabs(...)` directly; this alias keeps them working
+// until the call-site sweep PR.
+class_alias(\Sbpp\View\AdminTabs::class, 'AdminTabs');

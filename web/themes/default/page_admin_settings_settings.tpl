@@ -13,7 +13,7 @@
     `<nav>` block declaring four `<a class="sidebar__link">` rows and
     a hardcoded `grid-template-columns:14rem 1fr` layout. The chrome
     is now driven by `core/admin_sidebar.tpl` (parameterized partial)
-    via `web/includes/AdminTabs.php`; the page handler
+    via `web/includes/View/AdminTabs.php`; the page handler
     (admin.settings.php) opens the shell + sidebar + content column
     BEFORE this template renders. This template's outer wrapper is
     just the page-level padding + heading + form content — no grid,

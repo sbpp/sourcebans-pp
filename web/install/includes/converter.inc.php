@@ -27,7 +27,7 @@
 
 define('IN_SB', true);
 require_once("../config.php");
-require_once('../includes/Database.php');
+require_once('../includes/Db/Database.php');
 
 
 function convertAmxbans($oldDB, $newDB)

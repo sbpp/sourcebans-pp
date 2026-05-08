@@ -77,23 +77,29 @@ web/
 ├── api/handlers/         JSON API: one file per topic, _register.php wires them
 ├── pages/                Page handlers (procedural .php, included by build())
 │   └── core/             header / navbar / title / footer chrome
-├── includes/             Library code (PSR-4 Sbpp\ at this prefix)
-│   ├── Database.php          PDO wrapper + :prefix_ table-name substitution
-│   ├── Config.php            DB-backed settings key/value cache
-│   ├── Log.php               Audit + error log (writes to sb_log)
-│   ├── Api.php / ApiError.php  JSON dispatcher + structured errors
-│   ├── CUserManager.php      Current admin + permission checks
-│   ├── AdminTabs.php         Render Pattern A admin sub-section nav (vertical sidebar via core/admin_sidebar.tpl, or back-link strip via core/admin_tabs.tpl when $tabs is empty)
-│   ├── page-builder.php      route() + build() (the page router)
-│   ├── system-functions.php  Legacy helpers shared across pages
-│   ├── SmartyCustomFunctions.php  {help_icon} / {csrf_field} / {load_template}
-│   ├── View/                 Typed Smarty view-model DTOs
-│   ├── Markup/               Admin-authored Markdown -> safe HTML (IntroRenderer)
-│   ├── auth/                 JWT cookie auth + Steam OpenID + login handlers
-│   ├── security/             CSRF + Crypto helpers
-│   ├── Mail/                 Symfony Mailer wrapper + email templates
+├── includes/             Library code (PSR-4 Sbpp\ at this prefix; #1290 phase B)
+│   ├── Db/Database.php       Sbpp\Db\Database — PDO wrapper + :prefix_ substitution
+│   ├── Config.php            Sbpp\Config — DB-backed settings key/value cache
+│   ├── Log.php               Sbpp\Log — audit + error log (writes to sb_log)
+│   ├── Api/Api.php           Sbpp\Api\Api — JSON dispatcher
+│   ├── Api/ApiError.php      Sbpp\Api\ApiError — structured API error
+│   ├── Auth/UserManager.php  Sbpp\Auth\UserManager (was CUserManager) — current admin + perms
+│   ├── Auth/Auth.php         Sbpp\Auth\Auth — login flow / cookie issue
+│   ├── Auth/JWT.php          Sbpp\Auth\JWT — token encode/decode
+│   ├── Auth/Host.php         Sbpp\Auth\Host — hostname helper
+│   ├── Auth/Handler/         Sbpp\Auth\Handler\{Normal,Steam}AuthHandler — login handlers
+│   ├── Auth/openid.php       LightOpenID — third-party, intentionally global ns
+│   ├── Security/CSRF.php     Sbpp\Security\CSRF — token helpers
+│   ├── Security/Crypto.php   Sbpp\Security\Crypto — password / token crypto
+│   ├── View/AdminTabs.php    Sbpp\View\AdminTabs — Pattern A admin sub-section nav
+│   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
+│   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML
+│   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
-│   ├── PHPStan/              Custom PHPStan rules (Smarty + SQL prefix)
+│   ├── PHPStan/              Sbpp\PHPStan\* — custom PHPStan rules (Smarty + SQL prefix)
+│   ├── page-builder.php      route() + build() (the page router; procedural)
+│   ├── system-functions.php  Legacy helpers shared across pages (procedural)
+│   ├── SmartyCustomFunctions.php  {help_icon} / {csrf_field} / {load_template}
 │   └── vendor/               Composer artifacts (gitignored)
 ├── scripts/              Browser JS (// @ts-check + JSDoc, no bundler)
 │   ├── sb.js                 DOM helpers + sb namespace
@@ -137,8 +143,17 @@ Both scripts include `init.php` first, which performs identical bootstrap.
 2. Bails if `config.php` is missing or if the `install/` or `updater/`
    directories are present and the host isn't `localhost`.
 3. Loads Composer autoload (`includes/vendor/autoload.php`).
-4. Manually requires the auth + security + Database modules (they aren't
-   PSR-4 namespaced) and initialises them.
+4. Manually requires the auth + security + Database modules and
+   initialises them. The classes themselves ARE PSR-4 namespaced
+   (`Sbpp\Db\Database`, `Sbpp\Auth\UserManager`, `Sbpp\Security\CSRF`, …
+   — see `AGENTS.md` "Namespacing"), but the explicit `require_once`
+   chain stays in place so each file's `class_alias(\Sbpp\…\X::class,
+   'X')` runs eagerly. Without that, procedural call sites that say
+   `new Database()` would trigger an autoload lookup for global
+   `Database`, find nothing (the autoloader resolves the namespaced
+   name, not the alias), and die. The chain becomes optional only
+   after the follow-up #1290 PR burns every legacy global-name call
+   site.
 5. Resolves the panel version via `Sbpp\Version::resolve()` — three-tier
    fallback (release tarball's `configs/version.json` → `git describe`
    → the `'dev'` sentinel) and `define()`s `SB_VERSION` / `SB_GITREV`
@@ -158,8 +173,10 @@ Both scripts include `init.php` first, which performs identical bootstrap.
    them available.
 
 After `init.php` returns, callers may rely on these globals:
-`$GLOBALS['PDO']` (the `Database` wrapper), `$userbank` (`CUserManager`),
-`$theme` (`Smarty`), the permission constants, and `SB_VERSION`/`SB_GITREV`.
+`$GLOBALS['PDO']` (a `Sbpp\Db\Database` instance, also reachable as the
+`Database` alias), `$userbank` (`Sbpp\Auth\UserManager`, also `CUserManager`
+via alias), `$theme` (`Smarty`), the permission constants, and
+`SB_VERSION`/`SB_GITREV`.
 
 ### Page request lifecycle
 
@@ -260,21 +277,26 @@ drawer's admin-only Notes tab; `bans.player_history` and
 `comms.player_history` (live in their existing topic files) feed the
 drawer's History and Comms tabs.
 
-### Auth (`includes/auth/`)
+### Auth (`includes/Auth/` — `Sbpp\Auth\*`)
 
-- `Auth::login(aid, maxlife)` mints a JWT and stores it in the `sbpp_auth`
-  cookie (HttpOnly, SameSite=Lax). `Auth::verify()` returns the parsed
-  token (or `null`). `Auth::logout()` clears the cookie.
-- The token's only meaningful claim is `aid` (admin id). `CUserManager`
-  reads the row from `sb_admins` and exposes `is_logged_in()`,
-  `is_admin()`, `HasAccess(flags)`, and `GetProperty(name)`.
+- `Sbpp\Auth\Auth::login(aid, maxlife)` mints a JWT and stores it in
+  the `sbpp_auth` cookie (HttpOnly, SameSite=Lax). `Auth::verify()`
+  returns the parsed token (or `null`). `Auth::logout()` clears the
+  cookie.
+- The token's only meaningful claim is `aid` (admin id).
+  `Sbpp\Auth\UserManager` (legacy `CUserManager` alias) reads the row
+  from `sb_admins` and exposes `is_logged_in()`, `is_admin()`,
+  `HasAccess(flags)`, and `GetProperty(name)`.
 - Two login back-ends:
-  - `NormalAuthHandler` — username + bcrypt password, with attempt
-    counter and 10-minute lockout after 5 failures (#1081 hardening).
-  - `SteamAuthHandler` — OpenID via `includes/auth/openid.php` (legacy
-    LightOpenID).
-- `JWT::validate()` rejects expired or tampered tokens. `Auth::gc()`
-  garbage-collects `sb_login_tokens` rows older than 30 days.
+  - `Sbpp\Auth\Handler\NormalAuthHandler` — username + bcrypt password,
+    with attempt counter and 10-minute lockout after 5 failures (#1081
+    hardening).
+  - `Sbpp\Auth\Handler\SteamAuthHandler` — OpenID via the third-party
+    `includes/Auth/openid.php` (LightOpenID, intentionally kept in
+    the global namespace).
+- `Sbpp\Auth\JWT::validate()` rejects expired or tampered tokens.
+  `Auth::gc()` garbage-collects `sb_login_tokens` rows older than 30
+  days.
 
 ### Permissions
 
@@ -285,13 +307,14 @@ Two parallel permission systems:
   defined globally in `init.php` (`ADMIN_OWNER`, `ADMIN_ADD_BAN`, …).
   Mirrored to JS as `Perms.*` in the autogenerated `api-contract.js`.
 - **SourceMod flags** (`configs/permissions/sourcemod.json`) — character
-  string (e.g. `'mz'`). `CUserManager::HasAccess()` accepts either form;
-  `Api::register()` forwards whichever the registration declared.
+  string (e.g. `'mz'`). `Sbpp\Auth\UserManager::HasAccess()` accepts
+  either form; `Sbpp\Api\Api::register()` forwards whichever the
+  registration declared.
 
 `ADMIN_OWNER` (1<<24) is the implicit super-user bit; nearly every
 registration ORs it in. `ALL_WEB` is the union mask used for `is_admin()`.
 
-### CSRF (`includes/security/CSRF.php`)
+### CSRF (`includes/Security/CSRF.php` — `Sbpp\Security\CSRF`)
 
 - `CSRF::init()` (called from `init.php`) starts the session and lazily
   generates a 256-bit hex token bound to `$_SESSION['csrf_token']`.
@@ -302,7 +325,7 @@ registration ORs it in. `ALL_WEB` is the union mask used for `is_admin()`.
 - Page POST handlers call `CSRF::rejectIfInvalid()` (also invoked
   centrally by `route()`).
 
-### Database (`includes/Database.php`)
+### Database (`includes/Db/Database.php` — `Sbpp\Db\Database`)
 
 A thin PDO wrapper. Two things to know:
 
@@ -331,7 +354,7 @@ into `struc.sql`. The older `utf8` alias is a 3-byte subset and will
 reject supplementary-plane characters (emoji, some CJK), so do not
 downgrade the default.
 
-### Config (`includes/Config.php`)
+### Config (`includes/Config.php` — `Sbpp\Config`)
 
 - Settings live in `sb_settings` as a flat key/value table.
 - `Config::init($PDO)` loads them all into a static array on bootstrap.
@@ -766,7 +789,7 @@ sets `DBA_REQUIRE=1` so credential drift fails loudly.
 `phpstan.neon` with `phpVersion: 80500` so the analyser flags the
 PHP 8.1 null-into-scalar deprecation surface (`strlen($null)`,
 `trim($null)`, `substr($null, ...)`, `preg_match($null, ...)`, …)
-before it bites us on the PHP 9 bump. `web/includes/auth/openid.php`
+before it bites us on the PHP 9 bump. `web/includes/Auth/openid.php`
 is excluded from PHPStan, so the same surface there is gated by the
 runtime smoke test in `web/tests/integration/Php82DeprecationsTest.php`
 (per-process `set_error_handler` that promotes `E_DEPRECATED` to a

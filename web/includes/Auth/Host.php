@@ -1,5 +1,7 @@
 <?php
 
+namespace Sbpp\Auth;
+
 /**
  * Class Host
  */
@@ -56,3 +58,7 @@ final class Host
         return self::protocol().self::domain() . ($withoutRequest ? '' : "/$request");
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\Host` until the call-site sweep PR.
+class_alias(\Sbpp\Auth\Host::class, 'Host');

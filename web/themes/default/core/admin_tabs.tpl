@@ -2,7 +2,7 @@
     SourceBans++ 2026 — chrome / admin_tabs.tpl
 
     Trailing "Back" anchor strip for admin edit-* pages. Pair:
-    includes/AdminTabs.php (assigns $tabs + $active_tab; only routes
+    includes/View/AdminTabs.php (assigns $tabs + $active_tab; only routes
     to this partial when $tabs === [], i.e. the edit-* shape that
     only needs the Back affordance).
 
@@ -12,7 +12,7 @@
     was non-empty) AND the trailing Back link. Pattern A admin routes
     (servers / mods / groups / settings) have since been moved onto
     the parameterized `core/admin_sidebar.tpl` partial — see #1259's
-    notes in includes/AdminTabs.php — so this template's only job
+    notes in includes/View/AdminTabs.php — so this template's only job
     today is the Back link emitted by edit-* pages that pass `$tabs
     === []`.
 

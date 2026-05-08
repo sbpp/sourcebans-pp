@@ -1,5 +1,12 @@
 <?php
 
+namespace Sbpp\Db;
+
+use Generator;
+use PDO;
+use PDOException;
+use PDOStatement;
+
 /**
  * Class Database
  */
@@ -148,3 +155,9 @@ final class Database
         return $this->stmt->debugDumpParams();
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. The procedural code
+// in init.php / pages/*.php / api/handlers/*.php still references
+// `\Database`; this alias keeps those call sites working until the
+// call-site sweep PR replaces them with `Sbpp\Db\Database`.
+class_alias(\Sbpp\Db\Database::class, 'Database');

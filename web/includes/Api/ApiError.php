@@ -11,6 +11,10 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 *************************************************************************/
 
+namespace Sbpp\Api;
+
+use RuntimeException;
+
 /**
  * Throwable raised by API handlers to short-circuit dispatch with a
  * structured error envelope. The dispatcher serialises any ApiError as
@@ -20,7 +24,7 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
  * Optional $field carries a form-field id so the client can scope the
  * error to a specific input (matching legacy xajax addAssign("field.msg")).
  */
-final class ApiError extends \RuntimeException
+final class ApiError extends RuntimeException
 {
     public function __construct(
         public readonly string $errorCode,
@@ -31,3 +35,8 @@ final class ApiError extends \RuntimeException
         parent::__construct($message);
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. The api/handlers/*.php
+// files still throw `new ApiError(...)`; this alias keeps them working
+// until the call-site sweep PR.
+class_alias(\Sbpp\Api\ApiError::class, 'ApiError');

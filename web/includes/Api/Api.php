@@ -11,6 +11,14 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 *************************************************************************/
 
+namespace Sbpp\Api;
+
+use LogType;
+use Sbpp\Auth\UserManager;
+use Sbpp\Log;
+use Sbpp\Security\CSRF;
+use Throwable;
+
 require_once __DIR__ . '/ApiError.php';
 
 /**
@@ -72,7 +80,7 @@ final class Api
         if (self::$bootstrapped) {
             return;
         }
-        require_once __DIR__ . '/../api/handlers/_register.php';
+        require_once __DIR__ . '/../../api/handlers/_register.php';
         self::$bootstrapped = true;
     }
 
@@ -153,12 +161,12 @@ final class Api
         if (!class_exists('Log', false)) {
             return;
         }
-        $who = ($userbank instanceof CUserManager && $userbank->is_logged_in())
+        $who = ($userbank instanceof UserManager && $userbank->is_logged_in())
             ? (string)$userbank->GetProperty('user')
             : ($_SERVER['REMOTE_ADDR'] ?? 'anonymous');
         try {
             Log::add(LogType::Warning, 'Hacking Attempt', "$who tried to call $action ($why).");
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             // Logging must never block the auth response.
         }
     }
@@ -251,7 +259,7 @@ final class Api
                 $err['field'] = $e->field;
             }
             return [$e->httpStatus, ['ok' => false, 'error' => $err]];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $msg = (defined('DEBUG_MODE') && DEBUG_MODE)
                 ? $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()
                 : 'An unexpected error occurred. See server logs for details.';
@@ -260,3 +268,10 @@ final class Api
         }
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. The api/handlers/*.php
+// files still call `Api::register(...)`, `Api::actions(...)`,
+// `Api::invoke(...)`, `Api::dispatch()`, etc. — same for the test
+// harness in web/tests/api/. The alias keeps every site working until
+// the call-site sweep PR.
+class_alias(\Sbpp\Api\Api::class, 'Api');

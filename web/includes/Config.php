@@ -1,5 +1,9 @@
 <?php
 
+namespace Sbpp;
+
+use Sbpp\Db\Database;
+
 /**
  * Class Config
  */
@@ -7,7 +11,7 @@ final class Config
 {
     private static array $config = [];
 
-    private static ?\Database $dbh = null;
+    private static ?Database $dbh = null;
 
     public static function init(Database $dbh): void
     {
@@ -55,3 +59,8 @@ final class Config
         return $config;
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\Config::get(...)` / `\Config::init(...)` until the call-site
+// sweep PR.
+class_alias(\Sbpp\Config::class, 'Config');

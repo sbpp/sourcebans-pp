@@ -1,5 +1,13 @@
 <?php
 
+namespace Sbpp;
+
+use LogSearchType;
+use LogType;
+use PDO;
+use Sbpp\Auth\UserManager;
+use Sbpp\Db\Database;
+
 /**
  * Class Log
  */
@@ -7,9 +15,9 @@ final class Log
 {
     private static ?Database $dbs = null;
 
-    private static ?CUserManager $user = null;
+    private static ?UserManager $user = null;
 
-    public static function init(Database $dbs, CUserManager $user): void
+    public static function init(Database $dbs, UserManager $user): void
     {
         self::$dbs = $dbs;
         self::$user = $user;
@@ -179,3 +187,7 @@ final class Log
         return $functions;
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\Log::add(...)` / `\Log::init(...)` until the call-site sweep PR.
+class_alias(\Sbpp\Log::class, 'Log');

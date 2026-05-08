@@ -3,7 +3,7 @@ if (isset($_POST['postd'])) {
     if (empty($_POST['server']) ||empty($_POST['port']) ||empty($_POST['username']) ||empty($_POST['database']) ||empty($_POST['prefix'])) {
         echo "<script>ShowBox('Error', 'There is some missing data. All fields are required.', 'red', '', true);</script>";
     } else {
-        require_once(ROOT.'../includes/Database.php');
+        require_once(ROOT.'../includes/Db/Database.php');
         $db = new Database($_POST['server'], $_POST['port'], $_POST['database'], $_POST['username'], $_POST['password'], $_POST['prefix']);
         if (!$db) {
             echo "<script>ShowBox('Error', 'There was an error connecting to your database. <br />Recheck the details to make sure they are correct', 'red', '', true);</script>";

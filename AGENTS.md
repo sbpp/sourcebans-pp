@@ -8,6 +8,15 @@ codebase; this file is the cheatsheet.
 
 - `web/` — PHP 8.5 panel (Smarty 5, PDO/MariaDB, vanilla JS). Entry:
   `web/index.php` (pages) and `web/api.php` (JSON API).
+- All classes in `web/includes/` live under `Sbpp\…` namespaces (e.g.
+  `Sbpp\Db\Database`, `Sbpp\Auth\UserManager`, `Sbpp\Log`,
+  `Sbpp\Api\Api`, `Sbpp\View\AdminTabs`). The legacy global names
+  (`Database`, `CUserManager`, `Log`, `Api`, …) are preserved as
+  `class_alias` shims for procedural code that hasn't been migrated;
+  new code uses the namespaced names. The only remaining global-namespace
+  class in `web/includes/` is `LightOpenID` (third-party in
+  `Auth/openid.php`). See "Namespacing" under Conventions for the full
+  per-class table.
 - `game/addons/sourcemod/` — SourceMod plugin sources (`.sp`).
 - `docker/` + `docker-compose.yml` + `sbpp.sh` — local dev stack.
 - `web/install/` — installer wizard self-hosters run on every fresh
@@ -280,9 +289,70 @@ Playwright E2E specifics:
 
 ## Conventions
 
+### Namespacing
+
+Every class in `web/includes/` lives under a `Sbpp\…` namespace
+matching its directory. PSR-4 autoloads from `web/includes/` →
+`Sbpp\` (`web/composer.json` autoload-psr-4 mapping). The shape:
+
+| Class                                    | Role                                  |
+| ---------------------------------------- | ------------------------------------- |
+| `Sbpp\Db\Database`                       | DB access (PDO wrapper)               |
+| `Sbpp\Auth\UserManager`                  | session / user-state (was `CUserManager`) |
+| `Sbpp\Auth\Auth`                         | login flow                            |
+| `Sbpp\Auth\Host`                         | hostname helper                       |
+| `Sbpp\Auth\JWT`                          | token encode/decode                   |
+| `Sbpp\Auth\Handler\NormalAuthHandler`    | password login handler                |
+| `Sbpp\Auth\Handler\SteamAuthHandler`     | Steam OpenID login handler            |
+| `Sbpp\Security\CSRF`                     | CSRF token helpers                    |
+| `Sbpp\Security\Crypto`                   | password / token crypto               |
+| `Sbpp\Log`                               | audit log                             |
+| `Sbpp\Config`                            | settings cache                        |
+| `Sbpp\Api\Api`                           | JSON API dispatcher                   |
+| `Sbpp\Api\ApiError`                      | structured API error                  |
+| `Sbpp\View\AdminTabs`                    | admin sub-route sidebar mounter       |
+| `Sbpp\View\*`                            | view DTOs (page-level + partials)     |
+| `Sbpp\Markup\IntroRenderer`              | admin-authored Markdown renderer      |
+| `Sbpp\Mail\Mail` / `Sbpp\Mail\Mailer` / `Sbpp\Mail\EmailType` | `Mail::send(...)` entry point + Symfony Mailer SMTP wrapper + email-type enum |
+| `Sbpp\Theme`                             | theme registry + per-theme behavior gates (e.g. `wantsLegacyAdminCounts()`) |
+| `Sbpp\Version`                           | three-tier `SB_VERSION` resolver (tarball JSON → git → `'dev'`) |
+| `Sbpp\Util\Duration`                     | minute-count humanizer for `sb_settings` token-lifetime echoes |
+| `Sbpp\PHPStan\SmartyTemplateRule` (+ `Sbpp\PHPStan\SbppSyntaxErrorInQueryMethodRule` / `SbppPrefixAwareReflector` / `SbppNullReflector` under `web/phpstan/`) | bespoke PHPStan rules + DBA reflectors for the codebase |
+
+Legacy global names (`Database`, `CUserManager`, `Log`, `Api`, …) are
+preserved as `class_alias` shims for procedural code that hasn't been
+migrated yet. The aliases are registered eagerly via the
+`require_once` chain at the top of `web/init.php` (and
+`web/tests/bootstrap.php` / `web/phpstan-bootstrap.php` for the
+analyser-side surfaces) so the global name resolves before procedural
+code references it — `class_alias()` is a runtime call the autoloader
+can't trigger on a global-name lookup. New code uses the namespaced
+names directly:
+
+```php
+use Sbpp\Db\Database;
+use Sbpp\Auth\UserManager;
+```
+
+The only remaining global-namespace class in `web/includes/` is
+`LightOpenID` (`Auth/openid.php` — documented third-party exception
+also excluded from PHPStan via `phpstan.neon`'s `excludePaths`). The
+backed enums (`LogType`, `LogSearchType`, `BanType`, `BanRemoval`,
+`WebPermission`) also stay in the global namespace by design — they're
+typed wrappers around `:prefix_*` column letter codes / bitmasks
+rather than subsystem entry points, and their call sites read more
+naturally without a `use` chain (see "Backed enums for column-typed
+fields" below).
+
+Issue #1290 phase B. A follow-up PR will burn the `class_alias` shims
+as call sites adopt the namespaced names; until then, NEVER add a new
+top-level `class Foo {}` in `web/includes/` (see "Anti-patterns").
+
 ### Database
 
-- Access goes through `web/includes/Database.php` (PDO).
+- Access goes through `Sbpp\Db\Database` (`web/includes/Db/Database.php`,
+  PDO wrapper). The legacy global `Database` alias keeps existing call
+  sites working.
 - Tables use `:prefix_` literals (`SELECT … FROM \`:prefix_admins\``);
   `Database::query()` rewrites the placeholder. Never inline the prefix.
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
@@ -343,9 +413,9 @@ two idiomatic shapes (#1273):
 - `phpstan/phpstan-deprecation-rules` + `phpVersion: 80500` is the
   static gate; `Php82DeprecationsTest` (PHPUnit) is the runtime gate
   for the bits PHPStan doesn't see (excluded paths like
-  `includes/auth/openid.php`, runtime values that look non-null to
+  `includes/Auth/openid.php`, runtime values that look non-null to
   the type system but actually aren't).
-- `web/includes/auth/openid.php` is excluded from PHPStan and is
+- `web/includes/Auth/openid.php` is excluded from PHPStan and is
   third-party-shaped: cast at function inputs (entry points) so the
   diff stays bounded; never sprinkle `(string)` at every internal
   call.
@@ -804,13 +874,43 @@ audit (#1207) locked in. New CTAs:
 
 ## Anti-patterns (do NOT reintroduce)
 
+- Top-level `class Foo {}` (global namespace) in `web/includes/`
+  → all classes there live under `Sbpp\…` (see "Namespacing" in
+  Conventions for the per-class table). The only intentional
+  exception is `LightOpenID` in `Auth/openid.php` (third-party,
+  also excluded from PHPStan). Issue #1290 phase B. The legacy
+  global names (`Database`, `CUserManager`, `Log`, …) still resolve
+  because each namespaced file emits a `class_alias(\Sbpp\…\X::class,
+  'X')` below the class declaration; a follow-up PR will burn those
+  shims as call sites adopt the namespaced names. New code consumes
+  the namespaced names directly via `use Sbpp\Db\Database;` etc.
+- Removing the eager `require_once` chain at the top of `web/init.php`
+  / `web/tests/bootstrap.php` / `web/phpstan-bootstrap.php` "now that
+  PSR-4 autoloading exists" → the autoloader fires on the
+  **namespaced** name (`Sbpp\Db\Database`); the `class_alias` shim that
+  registers the legacy global name (`Database`) is a runtime call
+  inside the file. Without the explicit `require_once`, procedural
+  code that says `new Database()` triggers an autoload lookup for
+  global `Database`, finds nothing (the autoloader resolves the
+  namespaced name, not the alias), and dies. The `require_once`
+  chain is the bridge that runs the `class_alias` calls eagerly so
+  both names resolve from request entry. Drop them only when the
+  follow-up PR has burned every legacy global-name call site in the
+  codebase. (init.php, phpstan-bootstrap.php, and tests/bootstrap.php
+  each load all 14 namespaced legacy classes — Crypto, CSRF, JWT,
+  NormalAuthHandler, SteamAuthHandler, Auth, Host, UserManager,
+  AdminTabs, Database, Config, Log, ApiError, Api — keep the three
+  lists in sync. Asymmetry is the latent regression: a class loaded
+  by phpstan-bootstrap.php but not init.php would pass static
+  analysis and die at runtime in any code path the autoload hadn't
+  already triggered.)
 - `@param int $x` / `@return string` docblocks where PHP can express
   the type natively → use the native parameter / return type
   declaration instead. The docblock stays only when the type carries
   refinement PHP can't express (e.g. `list<array{slug: string, …}>`).
   Removed wholesale across legacy classes by issue #1290 phase A.
 - Non-`final` classes in `web/includes/` that nothing extends → mark
-  `final class`. Same applies in `web/includes/auth/handler/` and
+  `final class`. Same applies in `web/includes/Auth/Handler/` and
   `web/includes/Mail/`. The only intentional non-final / abstract
   class in `web/includes/` is `View` (subclassed by every concrete
   view DTO). Marking final unblocks the JIT's monomorphic-call
@@ -854,7 +954,8 @@ audit (#1207) locked in. New CTAs:
   PHP-side branches go through the enum; bare SQL predicates can
   keep `WHERE type = '0'`. Issue #1290 phase D.2.
 - `xajax` / `sb-callback.php` → use the JSON API.
-- ADOdb → use `Database` (PDO).
+- ADOdb → use `Sbpp\Db\Database` (PDO; legacy `Database` alias still
+  resolves via `class_alias`).
 - MooTools / React / a runtime bundler → vanilla JS in `web/scripts/`.
 - `web/scripts/sourcebans.js` (the v1.x ~1.7k-line bulk file shipping
   `ShowBox`, `DoLogin`, `LoadServerHost`, `selectLengthTypeReason`, …)
@@ -947,10 +1048,10 @@ audit (#1207) locked in. New CTAs:
 - `is_null($x)` → `$x === null`. Pure stylistic swap, but the prettier
   shape is `??=` whenever the surrounding code is
   `if (is_null($x)) { $x = $y; }` — becomes `$x ??= $y;`. Excluded:
-  `web/includes/auth/openid.php` (third-party). Issue #1290 phase G.
+  `web/includes/Auth/openid.php` (third-party). Issue #1290 phase G.
 - `array(…)` literal constructor → `[…]` short-array syntax. PHP 5.4+
   shape; the only reason `array(…)` survived this long was nobody got
-  around to it. Excluded: `web/includes/auth/openid.php` and
+  around to it. Excluded: `web/includes/Auth/openid.php` and
   `web/includes/tinymce/**` are third-party. Function signatures using
   `array $x` as a TYPE HINT are unrelated and stay. Issue #1290 phase H.
 - `if (…) { return true; } return false;` → `return …;`. Three lines
@@ -1075,17 +1176,17 @@ audit (#1207) locked in. New CTAs:
 | Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
-| Subdivide an admin route into `?section=<slug>` URLs (servers, mods, groups, comms, settings, **admins**, **bans**) | `web/pages/admin.settings.php` is the long-standing reference; #1239 brought servers / mods / groups / comms onto the same shape; #1259 unified the chrome on the Settings-style vertical sidebar; #1275 brought admins (`admins` / `add-admin` / `overrides`) and bans (`add-ban` / `protests` / `submissions` / `import` / `group-ban`) onto the same shape, deleting the page-level ToC (`page_toc.tpl`) along the way so `?section=` is now the **only** sub-route nav contract. The shared partial is `web/themes/default/core/admin_sidebar.tpl` (parameterized on `tabs` / `active_tab` / `sidebar_id` / `sidebar_label`); `web/includes/AdminTabs.php` opens `<div class="admin-sidebar-shell">`, emits the `<aside>` + link list, opens `<div class="admin-sidebar-content">`, and the page handler closes both wrappers (`echo '</div></div>'`) AFTER `Renderer::render(...)`. Each `$sections` entry carries `slug` + `name` + `permission` + `url` + `icon` (Lucide name); the link emits `<a href="?p=admin&c=<page>&section=<slug>" data-testid="admin-tab-<slug>" aria-current="page">` — never `<button onclick="openTab(...)">` (the JS handler was deleted at #1123 D1). See "Sub-paged admin routes" in Conventions. |
+| Subdivide an admin route into `?section=<slug>` URLs (servers, mods, groups, comms, settings, **admins**, **bans**) | `web/pages/admin.settings.php` is the long-standing reference; #1239 brought servers / mods / groups / comms onto the same shape; #1259 unified the chrome on the Settings-style vertical sidebar; #1275 brought admins (`admins` / `add-admin` / `overrides`) and bans (`add-ban` / `protests` / `submissions` / `import` / `group-ban`) onto the same shape, deleting the page-level ToC (`page_toc.tpl`) along the way so `?section=` is now the **only** sub-route nav contract. The shared partial is `web/themes/default/core/admin_sidebar.tpl` (parameterized on `tabs` / `active_tab` / `sidebar_id` / `sidebar_label`); `web/includes/View/AdminTabs.php` (`Sbpp\View\AdminTabs`) opens `<div class="admin-sidebar-shell">`, emits the `<aside>` + link list, opens `<div class="admin-sidebar-content">`, and the page handler closes both wrappers (`echo '</div></div>'`) AFTER `Renderer::render(...)`. Each `$sections` entry carries `slug` + `name` + `permission` + `url` + `icon` (Lucide name); the link emits `<a href="?p=admin&c=<page>&section=<slug>" data-testid="admin-tab-<slug>" aria-current="page">` — never `<button onclick="openTab(...)">` (the JS handler was deleted at #1123 D1). See "Sub-paged admin routes" in Conventions. |
 | Render sub-views inside a Pattern A section (e.g. protests / submissions current-vs-archive) | `?view=<slug>` query param + a server-rendered `.chip-row` of real anchors (each carries `data-active="true|false"` + `aria-selected`). Reference: the protests / submissions chip rows in `web/pages/admin.bans.php` (`?section=protests&view=archive` / `?section=submissions&view=archive`). Pre-#1275 the chips called `Swap2ndPane()` — a `web/scripts/sourcebans.js` helper deleted at #1123 D1, leaving them dead — and the page rendered both views simultaneously. The new shape only renders the active view's data path; back/forward and link sharing both work. |
 | Lay out a sub-paged admin route's chrome (the 14rem vertical sidebar at `>=1024px`, the `<details open>` accordion at `<1024px`) | `web/themes/default/core/admin_sidebar.tpl` (the partial) + the `.admin-sidebar-shell` / `.admin-sidebar` / `.admin-sidebar__details` / `.admin-sidebar__summary` / `.admin-sidebar__nav` / `.admin-sidebar__link` / `.admin-sidebar-content` rules in `web/themes/default/css/theme.css` (#1259). The active link reuses the shared `.sidebar__link[aria-current="page"]` rule from the main app shell so the dark-pill-in-light / brand-orange-in-dark treatment is single-source. |
-| Render the trailing "Back" link on edit-* admin pages (the only surface that calls `new AdminTabs([], …)`) | `web/themes/default/core/admin_tabs.tpl` is the back-link-only partial (it still has a defensive `{foreach}` for legacy themes, but `AdminTabs.php` only routes here when `$tabs === []`). Page handlers like `admin.edit.ban.php` / `admin.rcon.php` / `admin.email.php` call `new AdminTabs([], $userbank, $theme)` and the partial emits the right-aligned Back anchor (`.admin-tabs__back` in theme.css). |
+| Render the trailing "Back" link on edit-* admin pages (the only surface that calls `new AdminTabs([], …)`) | `web/themes/default/core/admin_tabs.tpl` is the back-link-only partial (it still has a defensive `{foreach}` for legacy themes, but `web/includes/View/AdminTabs.php` only routes here when `$tabs === []`). Page handlers like `admin.edit.ban.php` / `admin.rcon.php` / `admin.email.php` call `new AdminTabs([], $userbank, $theme)` and the partial emits the right-aligned Back anchor (`.admin-tabs__back` in theme.css). |
 | Add or rename an admin-admins advanced-search filter | `web/pages/admin.admins.php` (filter-building loop + active-filter map for pagination) + `web/pages/admin.admins.search.php` (DTO population) + `web/includes/View/AdminAdminsSearchView.php` (`active_filter_*` properties) + `web/themes/default/box_admin_admins_search.tpl` (input + pre-fill). The form is single-submit AND-semantics with a backward-compat shim for legacy `advType=…&advSearch=…` URLs (#1207 ADM-4); cover new filters in `web/tests/integration/AdminAdminsSearchTest.php`. |
 | Add a shared "1 of these required" badge for an either/or input pair | `web/themes/default/page_submitban.tpl` (`data-required-group="…"` + the inline guard script — vanilla JS `// @ts-check`, blocks submit when both are empty) |
 | Bootstrap (paths, autoload, theme)     | `web/init.php`                                           |
 | Routing (`?p=…&c=…&o=…`)               | `web/includes/page-builder.php` — unrecognised admin `c=…` returns the 404 page slot via `web/pages/page.404.php` + `Sbpp\View\NotFoundView` (#1207 ADM-1) |
 | Resolve the panel version (`SB_VERSION`, `data-version="…"` footer hook) | `web/includes/Version.php` (`Sbpp\Version::resolve()`) — three-tier fallback: `configs/version.json` → `git describe` → the `'dev'` sentinel (#1207 CC-5) |
-| Auth / JWT cookie                      | `web/includes/auth/`                                     |
-| CSRF                                   | `web/includes/security/CSRF.php`                         |
+| Auth / JWT cookie                      | `web/includes/Auth/` (`Sbpp\Auth\*` — `Auth.php`, `JWT.php`, `UserManager.php`, `Host.php`, `Handler/{Normal,Steam}AuthHandler.php`; `openid.php` is third-party LightOpenID and stays in the global namespace) |
+| CSRF                                   | `web/includes/Security/CSRF.php` (`Sbpp\Security\CSRF`)  |
 | Schema                                 | `web/install/includes/sql/struc.sql`                     |
 | Wrap a `:prefix_*` column with a backed PHP enum (log letter codes, ban types, removal-type tags, web permissions) | `web/includes/LogType.php` / `LogSearchType.php` / `BanType.php` / `BanRemoval.php` / `WebPermission.php` (global namespace; loaded by `init.php` + `tests/bootstrap.php`). Pass `$enum->value` at every SQL bind site so the dba plugin sees the column-typed primitive; use `WebPermission::mask(…)` to assemble multi-flag bitmasks for `HasAccess()`. Issue #1290 phase D. |
 | Seed `sb_settings` rows for fresh installs | `web/install/includes/sql/data.sql`                  |

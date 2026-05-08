@@ -9,7 +9,7 @@
     #1259 — sidebar lifted into a shared partial: the inline
     `<nav>` block + `grid-template-columns:14rem 1fr` shell that
     used to wrap this template's content is now driven by
-    `core/admin_sidebar.tpl` via `web/includes/AdminTabs.php`. The
+    `core/admin_sidebar.tpl` via `web/includes/View/AdminTabs.php`. The
     page handler (admin.settings.php) opens the shell BEFORE this
     template renders. See AGENTS.md "Sub-paged admin routes".
 

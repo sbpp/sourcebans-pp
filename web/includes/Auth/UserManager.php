@@ -1,6 +1,12 @@
 <?php
 
+namespace Sbpp\Auth;
+
 use Lcobucci\JWT\Token;
+use PDO;
+use RuntimeException;
+use Sbpp\Db\Database;
+use WebPermission;
 
 /*************************************************************************
 This file is part of SourceBans++
@@ -19,7 +25,7 @@ Copyright © 2007-2014 SourceBans Team - Part of GameConnect
 Licensed under CC-BY-NC-SA 3.0
 Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
 *************************************************************************/
-final class CUserManager
+final class UserManager
 {
     private readonly int $aid;
 
@@ -273,3 +279,10 @@ final class CUserManager
         return ($this->dbh->execute()) ? (int)$this->dbh->lastInsertId() : -1;
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. The class was also
+// renamed (CUserManager → UserManager) to drop the hungarian "C" prefix
+// per the issue body; the alias preserves both halves of the change for
+// procedural code that hasn't been migrated yet (page handlers, API
+// handlers, init.php's `new CUserManager(...)`).
+class_alias(\Sbpp\Auth\UserManager::class, 'CUserManager');

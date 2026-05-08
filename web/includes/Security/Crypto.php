@@ -1,5 +1,7 @@
 <?php
 
+namespace Sbpp\Security;
+
 /**
  * Class Crypto
  */
@@ -30,3 +32,7 @@ final class Crypto
         return base64_encode(openssl_random_pseudo_bytes($length));
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\Crypto::*` until the call-site sweep PR.
+class_alias(\Sbpp\Security\Crypto::class, 'Crypto');

@@ -1,6 +1,11 @@
 <?php
 
+namespace Sbpp\Auth;
+
 use Lcobucci\JWT\Token;
+use PDO;
+use Sbpp\Db\Database;
+use Sbpp\Security\Crypto;
 
 /**
  * Class Auth
@@ -9,7 +14,7 @@ final class Auth
 {
     private static ?Database $dbs = null;
 
-    public static function init(\Database $dbs): void
+    public static function init(Database $dbs): void
     {
         self::$dbs = $dbs;
     }
@@ -140,3 +145,7 @@ final class Auth
         return is_string($_COOKIE['sbpp_auth'] ?? null) ? $_COOKIE['sbpp_auth'] : '';
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\Auth` until the call-site sweep PR.
+class_alias(\Sbpp\Auth\Auth::class, 'Auth');

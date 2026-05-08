@@ -16,7 +16,7 @@ namespace Sbpp\View;
  *
  * #1259 dropped `$active_section` from this View. Section navigation
  * (the Settings sidebar) lives in `core/admin_sidebar.tpl` driven by
- * `web/includes/AdminTabs.php`; the active link is resolved from the
+ * `web/includes/View/AdminTabs.php`; the active link is resolved from the
  * partial's `$active_tab` variable, not from a per-View property the
  * template re-reads. AGENTS.md "Sub-paged admin routes" carries the
  * convention.

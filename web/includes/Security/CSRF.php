@@ -1,5 +1,7 @@
 <?php
 
+namespace Sbpp\Security;
+
 /**
  * Per-session CSRF token issued at session start and validated on every
  * state-changing request (POST forms and JSON API calls).
@@ -70,3 +72,8 @@ final class CSRF
         }
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code (page
+// POST handlers, the API dispatcher, smarty {csrf_field}) keeps using
+// `\CSRF` until the call-site sweep PR.
+class_alias(\Sbpp\Security\CSRF::class, 'CSRF');

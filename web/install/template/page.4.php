@@ -2,7 +2,7 @@
 $errors = 0;
 $warnings = 0;
 
-require_once(ROOT.'../includes/Database.php');
+require_once(ROOT.'../includes/Db/Database.php');
 $db = new Database($_POST['server'], $_POST['port'], $_POST['database'], $_POST['username'], $_POST['password'], $_POST['prefix']);
 
 $db->query('SELECT VERSION() AS version');

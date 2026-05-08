@@ -65,19 +65,27 @@ require_once(INCLUDES_PATH.'/vendor/autoload.php');
 // ---------------------------------------------------
 //  Initial setup
 // ---------------------------------------------------
-require_once(INCLUDES_PATH.'/security/Crypto.php');
-require_once(INCLUDES_PATH.'/security/CSRF.php');
+// All classes below now live under Sbpp\… namespaces (issue #1290 phase B)
+// and are PSR-4 autoloaded from web/includes/. The require_once chain is
+// retained so each file's class_alias() shim runs eagerly — the legacy
+// global names (`Database`, `CUserManager`, `Auth`, `Log`, `CSRF`, …) need
+// to be registered before procedural code references them, and the
+// autoloader can't trigger those aliases on a global-name lookup. New
+// code can reference the namespaced symbols (e.g. `Sbpp\Db\Database`)
+// directly without any explicit require.
+require_once(INCLUDES_PATH.'/Security/Crypto.php');
+require_once(INCLUDES_PATH.'/Security/CSRF.php');
 
-require_once(INCLUDES_PATH.'/auth/JWT.php');
+require_once(INCLUDES_PATH.'/Auth/JWT.php');
 
-require_once(INCLUDES_PATH.'/auth/handler/NormalAuthHandler.php');
-require_once(INCLUDES_PATH.'/auth/handler/SteamAuthHandler.php');
+require_once(INCLUDES_PATH.'/Auth/Handler/NormalAuthHandler.php');
+require_once(INCLUDES_PATH.'/Auth/Handler/SteamAuthHandler.php');
 
-require_once(INCLUDES_PATH.'/auth/Auth.php');
-require_once(INCLUDES_PATH.'/auth/Host.php');
+require_once(INCLUDES_PATH.'/Auth/Auth.php');
+require_once(INCLUDES_PATH.'/Auth/Host.php');
 
-require_once(INCLUDES_PATH.'/CUserManager.php');
-require_once(INCLUDES_PATH.'/AdminTabs.php');
+require_once(INCLUDES_PATH.'/Auth/UserManager.php');
+require_once(INCLUDES_PATH.'/View/AdminTabs.php');
 
 // Three-tier version resolution (#1207 CC-5): tarball JSON, git describe,
 // then the literal 'dev' sentinel. See \Sbpp\Version::resolve() for the
@@ -110,7 +118,7 @@ if (!defined('SB_EMAIL')) {
     define('SB_EMAIL', '');
 }
 
-require_once(INCLUDES_PATH.'/Database.php');
+require_once(INCLUDES_PATH.'/Db/Database.php');
 $GLOBALS['PDO'] = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
@@ -148,6 +156,18 @@ require_once(INCLUDES_PATH.'/BanRemoval.php');
 require_once(INCLUDES_PATH.'/WebPermission.php');
 require_once(INCLUDES_PATH.'/Log.php');
 Log::init($GLOBALS['PDO'], $userbank);
+
+// Api / ApiError are loaded here (rather than at the top of the require
+// chain) because Sbpp\Api\Api `use Sbpp\Log;` and the legacy alias for
+// Log only exists once Log.php has been required above. ApiError must
+// come first: Sbpp\Api\Api references it internally (Api::error() etc.).
+// Without these requires the legacy global aliases (`Api`, `ApiError`)
+// would only resolve when web/api.php's own require_once fires — page
+// handlers that call `Api::redirect()` outside the JSON dispatcher
+// would die at runtime even though phpstan-bootstrap.php loads them
+// eagerly and the analyser would be happy.
+require_once(INCLUDES_PATH.'/Api/ApiError.php');
+require_once(INCLUDES_PATH.'/Api/Api.php');
 
 // ---------------------------------------------------
 //  Setup our custom error handler

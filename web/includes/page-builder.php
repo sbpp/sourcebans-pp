@@ -38,7 +38,7 @@ function route(int|string $fallback): array
     };
 
     if ($resolved === '__steam_login__') {
-        require_once 'includes/auth/openid.php';
+        require_once 'includes/Auth/openid.php';
         new SteamAuthHandler(new LightOpenID(Host::complete()), $GLOBALS['PDO']);
         exit();
     }

@@ -57,16 +57,21 @@ define('SB_BANS_PER_PAGE', 50);
 define('MIN_PASS_LENGTH',  6);
 
 require_once INCLUDES_PATH . '/vendor/autoload.php';
-require_once INCLUDES_PATH . '/security/Crypto.php';
-require_once INCLUDES_PATH . '/security/CSRF.php';
-require_once INCLUDES_PATH . '/auth/JWT.php';
-require_once INCLUDES_PATH . '/auth/handler/NormalAuthHandler.php';
-require_once INCLUDES_PATH . '/auth/handler/SteamAuthHandler.php';
-require_once INCLUDES_PATH . '/auth/Auth.php';
-require_once INCLUDES_PATH . '/auth/Host.php';
-require_once INCLUDES_PATH . '/CUserManager.php';
-require_once INCLUDES_PATH . '/AdminTabs.php';
-require_once INCLUDES_PATH . '/Database.php';
+// Issue #1290 phase B: classes below live under Sbpp\… namespaces and
+// are PSR-4 autoloaded; the explicit require_once chain stays so each
+// file's `class_alias()` shim runs eagerly. Keeping this list in sync
+// with init.php and phpstan-bootstrap.php is load-bearing — any class
+// loaded here but not in init.php would only resolve under PHPUnit.
+require_once INCLUDES_PATH . '/Security/Crypto.php';
+require_once INCLUDES_PATH . '/Security/CSRF.php';
+require_once INCLUDES_PATH . '/Auth/JWT.php';
+require_once INCLUDES_PATH . '/Auth/Handler/NormalAuthHandler.php';
+require_once INCLUDES_PATH . '/Auth/Handler/SteamAuthHandler.php';
+require_once INCLUDES_PATH . '/Auth/Auth.php';
+require_once INCLUDES_PATH . '/Auth/Host.php';
+require_once INCLUDES_PATH . '/Auth/UserManager.php';
+require_once INCLUDES_PATH . '/View/AdminTabs.php';
+require_once INCLUDES_PATH . '/Db/Database.php';
 require_once INCLUDES_PATH . '/SteamID/bootstrap.php';
 require_once INCLUDES_PATH . '/Config.php';
 require_once INCLUDES_PATH . '/LogType.php';
@@ -76,8 +81,8 @@ require_once INCLUDES_PATH . '/BanRemoval.php';
 require_once INCLUDES_PATH . '/WebPermission.php';
 require_once INCLUDES_PATH . '/Log.php';
 require_once INCLUDES_PATH . '/system-functions.php';
-require_once INCLUDES_PATH . '/Api.php';
-require_once INCLUDES_PATH . '/ApiError.php';
+require_once INCLUDES_PATH . '/Api/ApiError.php';
+require_once INCLUDES_PATH . '/Api/Api.php';
 
 // Permissions constants used by handlers.
 foreach (json_decode((string)file_get_contents(ROOT . 'configs/permissions/web.json'), true) ?? [] as $flag => $perm) {

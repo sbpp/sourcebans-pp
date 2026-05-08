@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace Sbpp\Mail;
 
-use Log;
 use LogType;
+use Sbpp\Log;
 use Throwable;
 
 final class Mail

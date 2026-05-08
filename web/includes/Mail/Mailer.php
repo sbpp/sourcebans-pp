@@ -22,9 +22,9 @@ declare(strict_types=1);
 
 namespace Sbpp\Mail;
 
-use Config;
-use Log;
 use LogType;
+use Sbpp\Config;
+use Sbpp\Log;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\Mailer\Transport;
 use Symfony\Component\Mime\Email;

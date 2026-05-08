@@ -1,10 +1,18 @@
 <?php
 
+namespace Sbpp\Auth\Handler;
+
+use LightOpenID;
+use Sbpp\Auth\Auth;
+use Sbpp\Auth\Host;
+use Sbpp\Config;
+use Sbpp\Db\Database;
+
 final class SteamAuthHandler
 {
     public function __construct(
-        private \LightOpenID $openid,
-        private \Database $dbs
+        private LightOpenID $openid,
+        private Database $dbs
     ) {
         if ($this->openid->validate()) {
             $steamid = $this->validate();
@@ -56,3 +64,7 @@ final class SteamAuthHandler
         header("Location: ".Host::complete()."/index.php?p=login&m=steam_failed");
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\SteamAuthHandler` until the call-site sweep PR.
+class_alias(\Sbpp\Auth\Handler\SteamAuthHandler::class, 'SteamAuthHandler');

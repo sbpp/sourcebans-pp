@@ -1,5 +1,8 @@
 <?php
 
+namespace Sbpp\Auth;
+
+use DateTimeImmutable;
 use Lcobucci\JWT\Builder;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Signer\Hmac\Sha256;
@@ -56,3 +59,7 @@ final class JWT
         return Configuration::forSymmetricSigner(new Sha256(), InMemory::base64Encoded(SB_SECRET_KEY));
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\JWT` until the call-site sweep PR.
+class_alias(\Sbpp\Auth\JWT::class, 'JWT');

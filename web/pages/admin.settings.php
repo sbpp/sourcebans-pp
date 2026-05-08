@@ -42,7 +42,7 @@ use Sbpp\View\Renderer;
  * #1239 brought the rest of the admin family onto this same shape —
  * servers / mods / groups now route via `?section=…` too.
  * #1259 unified the chrome on the Settings-style vertical sidebar
- * (`core/admin_sidebar.tpl` driven by `web/includes/AdminTabs.php`),
+ * (`core/admin_sidebar.tpl` driven by `web/includes/View/AdminTabs.php`),
  * replacing the Settings-only inline `<nav>` block that lived in
  * every page_admin_settings_*.tpl. See AGENTS.md "Sub-paged admin
  * routes" for the convention; this file remains the long-standing

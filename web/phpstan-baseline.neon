@@ -16,7 +16,91 @@ parameters:
 			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: includes/CUserManager.php
+			path: includes/Auth/Auth.php
+
+		-
+			message: '#^Static method Sbpp\\Auth\\Auth\:\:getTokenSecret\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: includes/Auth/Auth.php
+
+		-
+			message: '#^Static method Sbpp\\Auth\\Auth\:\:insertNewToken\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: includes/Auth/Auth.php
+
+		-
+			message: '#^Variable \$password in empty\(\) always exists and is not falsy\.$#'
+			identifier: empty.variable
+			count: 1
+			path: includes/Auth/Handler/NormalAuthHandler.php
+
+		-
+			message: '#^Access to property \$data on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Access to property \$identity on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 3
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Access to property \$mode on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Call to method authUrl\(\) on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Call to method validate\(\) on an unknown class LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Parameter \$openid of method Sbpp\\Auth\\Handler\\SteamAuthHandler\:\:__construct\(\) has invalid type LightOpenID\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Property Sbpp\\Auth\\Handler\\SteamAuthHandler\:\:\$openid has unknown class LightOpenID as its type\.$#'
+			identifier: class.notFound
+			count: 1
+			path: includes/Auth/Handler/SteamAuthHandler.php
+
+		-
+			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/Auth/JWT.php
+
+		-
+			message: '#^Method Sbpp\\Auth\\JWT\:\:create\(\) should return Lcobucci\\JWT\\Token\\Plain but returns Lcobucci\\JWT\\UnencryptedToken\.$#'
+			identifier: return.type
+			count: 1
+			path: includes/Auth/JWT.php
+
+		-
+			message: '#^Parameter \#1 \$contents of static method Lcobucci\\JWT\\Signer\\Key\\InMemory\:\:base64Encoded\(\) expects non\-empty\-string, '''' given\.$#'
+			identifier: argument.type
+			count: 1
+			path: includes/Auth/JWT.php
+
+		-
+			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: includes/Auth/UserManager.php
 
 		-
 			message: '#^Offset int\<0, max\> on array\{function\: string, line\?\: int, file\?\: string, class\?\: class\-string, type\?\: ''\-\>''\|''\:\:'', args\?\: list\<mixed\>, object\?\: object\} in isset\(\) does not exist\.$#'
@@ -73,90 +157,6 @@ parameters:
 			path: includes/View/HomeDashboardView.php
 
 		-
-			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: includes/auth/Auth.php
-
-		-
-			message: '#^Static method Auth\:\:getTokenSecret\(\) is unused\.$#'
-			identifier: method.unused
-			count: 1
-			path: includes/auth/Auth.php
-
-		-
-			message: '#^Static method Auth\:\:insertNewToken\(\) is unused\.$#'
-			identifier: method.unused
-			count: 1
-			path: includes/auth/Auth.php
-
-		-
-			message: '#^Call to an undefined method Lcobucci\\JWT\\Token\:\:claims\(\)\.$#'
-			identifier: method.notFound
-			count: 1
-			path: includes/auth/JWT.php
-
-		-
-			message: '#^Method JWT\:\:create\(\) should return Lcobucci\\JWT\\Token\\Plain but returns Lcobucci\\JWT\\UnencryptedToken\.$#'
-			identifier: return.type
-			count: 1
-			path: includes/auth/JWT.php
-
-		-
-			message: '#^Parameter \#1 \$contents of static method Lcobucci\\JWT\\Signer\\Key\\InMemory\:\:base64Encoded\(\) expects non\-empty\-string, '''' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: includes/auth/JWT.php
-
-		-
-			message: '#^Variable \$password in empty\(\) always exists and is not falsy\.$#'
-			identifier: empty.variable
-			count: 1
-			path: includes/auth/handler/NormalAuthHandler.php
-
-		-
-			message: '#^Access to property \$data on an unknown class LightOpenID\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Access to property \$identity on an unknown class LightOpenID\.$#'
-			identifier: class.notFound
-			count: 3
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Access to property \$mode on an unknown class LightOpenID\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Call to method authUrl\(\) on an unknown class LightOpenID\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Call to method validate\(\) on an unknown class LightOpenID\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Parameter \$openid of method SteamAuthHandler\:\:__construct\(\) has invalid type LightOpenID\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
-			message: '#^Property SteamAuthHandler\:\:\$openid has unknown class LightOpenID as its type\.$#'
-			identifier: class.notFound
-			count: 1
-			path: includes/auth/handler/SteamAuthHandler.php
-
-		-
 			message: '#^Instantiated class LightOpenID not found\.$#'
 			identifier: class.notFound
 			count: 1
@@ -187,7 +187,7 @@ parameters:
 			path: install/includes/converter.inc.php
 
 		-
-			message: '#^Path in require_once\(\) "\.\./includes/Database\.php" is not a file or it does not exist\.$#'
+			message: '#^Path in require_once\(\) "\.\./includes/Db/Database\.php" is not a file or it does not exist\.$#'
 			identifier: requireOnce.fileNotFound
 			count: 1
 			path: install/includes/converter.inc.php

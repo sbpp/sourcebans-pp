@@ -17,7 +17,7 @@ parameters:
         - .
     excludePaths:
         - includes/vendor/*
-        - includes/auth/openid.php
+        - includes/Auth/openid.php
         - includes/tinymce/*
         - cache/*
         - templates_c/*
@@ -34,10 +34,15 @@ services:
         tags:
             - phpstan.rules.rule
     -
-        class: Sbpp\PhpStan\SbppSyntaxErrorInQueryMethodRule
+        class: Sbpp\PHPStan\SbppSyntaxErrorInQueryMethodRule
         tags: [phpstan.rules.rule]
         arguments:
             classMethods:
+                # The legacy `Database::query` is preserved as a class_alias
+                # shim (#1290 phase B); calls inside the codebase still
+                # resolve to it via PHPStan's reflection. New code should
+                # call `Sbpp\Db\Database::query` directly.
+                - 'Sbpp\Db\Database::query#0'
                 - 'Database::query#0'
             # Hard-coded to match Database::__construct's dev/CI default
             # (see docker-compose.yml DB_PREFIX=sb, .github/workflows/* and

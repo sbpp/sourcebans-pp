@@ -1,5 +1,11 @@
 <?php
 
+namespace Sbpp\Auth\Handler;
+
+use Sbpp\Auth\Auth;
+use Sbpp\Config;
+use Sbpp\Db\Database;
+
 final class NormalAuthHandler
 {
     private bool $result = false;
@@ -63,3 +69,7 @@ final class NormalAuthHandler
         return $this->dbs->single();
     }
 }
+
+// Issue #1290 phase B: legacy global-name shim. Procedural code keeps
+// using `\NormalAuthHandler` until the call-site sweep PR.
+class_alias(\Sbpp\Auth\Handler\NormalAuthHandler::class, 'NormalAuthHandler');
