@@ -357,6 +357,26 @@ top-level `class Foo {}` in `web/includes/` (see "Anti-patterns").
   `Database::query()` rewrites the placeholder. Never inline the prefix.
 - Pattern: `query` → `bind` → `execute` / `single` / `resultset`.
 - ADOdb was fully removed (commit `b9c812b2`). **Do not reintroduce it.**
+- Each named placeholder (`:name`) inside one query needs as many
+  `bind()` calls as occurrences. The panel runs PDO with
+  `PDO::ATTR_EMULATE_PREPARES => false` (`Sbpp\Db\Database::__construct`
+  — set at #1124 / motivated by #1167 so `LIMIT '0','30'` stops
+  tripping MariaDB strict mode). Under native prepares the MySQL
+  driver expands every `:name` occurrence into its own positional
+  `?` slot in the prepared statement, so reusing `:sid` twice and
+  `bind(':sid', …)` once leaves the second slot unbound and
+  `execute()` raises `SQLSTATE[HY093] Invalid parameter number`
+  (#1314). Pre-#1124 emulated prepares masked this by client-side
+  string substitution at every occurrence. Either rename each
+  occurrence (`:sid` + `:sid_inner`) and `bind()` each, or pass the
+  values via the `resultset(['sid' => …, 'sid_inner' => …])` array
+  shortcut — both shapes are equivalent. The `:prefix_` literal is
+  not a real PDO placeholder; it's a substring that
+  `Database::setPrefix()` replaces before `prepare()`, so reuse
+  there is harmless. Regression guard:
+  `web/tests/integration/SrvAdminsPdoParamTest.php` pins both the
+  contract (single-bind on a reused name throws `HY093`) and the
+  page-level fix (`admin.srvadmins.php` renders without raising).
 
 ### PHP 8.5 idioms (post-#1289 floor bump)
 
@@ -1097,6 +1117,24 @@ audit (#1207) locked in. New CTAs:
 - `utf8` (3-byte alias) for `DB_CHARSET` → always `utf8mb4`. 4-byte
   sequences (emoji, some CJK) otherwise trip `Incorrect string value`
   from the plugin's insert path (#1108, #765).
+- Reusing the same `:name` PDO placeholder more than once inside a
+  query while calling `bind(':name', …)` only ONCE → the panel runs
+  PDO with `EMULATE_PREPARES => false` (default since #1124 / #1167's
+  `LIMIT '0','30'` MariaDB regression), so the MySQL driver expands
+  every `:name` occurrence into its own positional `?` slot in the
+  prepared statement. A single `bind()` leaves the others unbound
+  and `execute()` raises `SQLSTATE[HY093] Invalid parameter number`
+  (#1314 — `admin.srvadmins.php`'s `:sid` / `:sid` / `bind(':sid', …)`
+  shape, which Just Worked under emulated prepares pre-#1124 and
+  fataled on every page load post-#1124). Either rename each
+  occurrence (`:sid` + `:sid_inner`) and `bind()` each, or pass the
+  values via `resultset(['sid' => …, 'sid_inner' => …])`. The
+  `:prefix_` literal is rewritten by `Database::setPrefix()` before
+  `prepare()`, so reuse there is harmless and stays out of this
+  rule. Re-flipping `EMULATE_PREPARES` back to `true` to mask the
+  bug is a sibling anti-pattern — it would silently reintroduce the
+  `LIMIT '0','30'` trap (`page.banlist.php` / `page.commslist.php`
+  rejected by MariaDB strict mode). See "Database" under Conventions.
 - Editing `install/includes/sql/data.sql` (or `struc.sql`) without a paired
   `web/updater/data/<N>.php` → upgraded installs silently miss the change.
 - WYSIWYG / "rich HTML" editors (TinyMCE, CKEditor, …) for fields stored
@@ -1287,6 +1325,7 @@ audit (#1207) locked in. New CTAs:
 | API wire-format snapshots              | `web/tests/api/__snapshots__/<topic>/<scenario>.json`    |
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
 | Trap PHP 8.1 null-into-scalar deprecations at runtime (the bits PHPStan can't see) | `web/tests/integration/Php82DeprecationsTest.php` (#1273) — process-isolated render harness with a stub Smarty + `set_error_handler` that promotes `E_DEPRECATED` / `E_USER_DEPRECATED` to `\ErrorException`. Mirrors the LostPasswordChromeTest stub-Smarty pattern; each test method runs in a separate process because the page handlers declare top-level helpers (`setPostKey()` etc.) that PHP can't redeclare in one process. Add a marquee route here whenever a new high-traffic page handler ships, especially if it reads nullable `:prefix_*` columns or `$_POST` / `$_GET` lookups. |
+| Pin the "every `:name` PDO placeholder needs as many `bind()` calls as occurrences" contract under native prepares | `web/tests/integration/SrvAdminsPdoParamTest.php` (#1314) — two methods. `testReusedNamedPlaceholderUnderNativePreparesIsRejected` issues a tiny `SELECT 1 ... WHERE aid = :sid OR aid = :sid` against `Sbpp\Db\Database` with one `bind()` and asserts it throws `HY093`; this is the contract pin (also a regression guard if anyone re-flips `EMULATE_PREPARES` back to `true`). `testAdminSrvadminsPageRendersWithoutPdoException` is the page-level regression guard for the actual #1314 fatal — process-isolated `require` of `pages/admin.srvadmins.php` with `?id=0` asserting no `PDOException` escapes. Mirrors the Php82DeprecationsTest stub-Smarty + process-isolation shape. |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
 | Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / comms / settings / admins / bans) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |

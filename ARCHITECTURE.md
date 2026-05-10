@@ -341,6 +341,25 @@ A thin PDO wrapper. Two things to know:
   $row = $GLOBALS['PDO']->single();   // or ->resultset() / ->execute()
   ```
 
+- The constructor sets `PDO::ATTR_EMULATE_PREPARES => false` (added at
+  #1124 / motivated by #1167's `LIMIT '0','30'` MariaDB strict-mode
+  regression). Two practical consequences for callers: numeric values
+  go through MySQL's binary protocol with proper type metadata
+  (`LIMIT ?,?` works as expected), AND every named placeholder
+  occurrence is expanded into its own positional `?` slot in the
+  prepared statement — so a query that mentions `:sid` twice needs
+  TWO `bind(':sid', …)` calls (or distinct names like `:sid` +
+  `:sid_inner`), otherwise `execute()` raises `SQLSTATE[HY093]
+  Invalid parameter number`. Pre-#1124 emulated prepares masked
+  the duplicate-name pattern by client-side string substitution at
+  every occurrence. The contract is pinned by
+  `web/tests/integration/SrvAdminsPdoParamTest.php` (the regression
+  guard for #1314, where `pages/admin.srvadmins.php` reused `:sid`
+  twice and bound once — page-load-blocking fatal for every admin
+  with `ADMIN_LIST_SERVERS` after upgrading to v2.0). The `:prefix_`
+  placeholder is rewritten by `setPrefix()` BEFORE `prepare()`, so
+  `:prefix_admins` reuse is harmless and stays out of this rule.
+
 The legacy ADOdb layer was fully removed in commit `b9c812b2`; do not
 reintroduce it. PHPStan + `staabm/phpstan-dba` introspect the live
 schema (rendered from `install/includes/sql/struc.sql`) and type-check

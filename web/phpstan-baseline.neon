@@ -313,12 +313,6 @@ parameters:
 			path: pages/admin.settings.php
 
 		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/admin.srvadmins.php
-
-		-
 			message: '#^Variable \$title might not be defined\.$#'
 			identifier: variable.undefined
 			count: 1
