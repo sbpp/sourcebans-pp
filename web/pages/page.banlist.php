@@ -1072,6 +1072,17 @@ $banlistFilters = [
     'time'   => (isset($publicFilterTimeMap[$timeFilter]) ? $timeFilter : ''),
 ];
 
+// #1315: auto-open the advanced-search disclosure on a post-submit
+// paint. Bare `?p=banlist` and simple-bar filters
+// (`?searchText=` / `?server=` / `?time=`) leave it closed so the
+// unfiltered list reaches above the fold. The legacy ?advSearch shim
+// is the only surface that re-opens it, mirroring v1.x behaviour
+// where the form was always-open below the row table — the v2.0
+// disclosure is the post-#1303 collapsed shape with the same
+// post-submit affordance the admin-admins page uses.
+$banlistAdvancedOpen =
+    isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== '';
+
 Renderer::render($theme, new BanListView(
     ban_list:        $bans,
     ban_nav:         $ban_nav,
@@ -1097,7 +1108,8 @@ Renderer::render($theme, new BanListView(
     can_export:      (bool) $userbank->HasAccess(WebPermission::Owner) || Config::getBool('config.exportpublic'),
     admin_postkey:   $_SESSION['banlist_postkey'],
     can_add_ban:     (bool) $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
-    is_filtered:     $banlistIsFiltered,
-    server_list:     $banlistServerList,
-    filters:         $banlistFilters,
+    is_filtered:             $banlistIsFiltered,
+    server_list:             $banlistServerList,
+    filters:                 $banlistFilters,
+    is_advanced_search_open: $banlistAdvancedOpen,
 ));

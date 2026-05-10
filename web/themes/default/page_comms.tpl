@@ -148,6 +148,38 @@
         </div>
     </form>
 
+    {* -- #1315: advanced-search disclosure ----------------------------
+         Mirrors the banlist disclosure shape — same `.filters-details`
+         class from #1303, same default-collapsed UX, same
+         post-submit auto-open driven by `$is_advanced_search_open`.
+         Higher priority on commslist than on banlist because
+         commslist doesn't have a drawer to fall back to (no
+         `data-drawer-href` on comm rows), so the legacy v1.x
+         multi-criterion form is the only way to reach a
+         length-comparator / btype / admin / server filter without
+         url-spelunking. *}
+    <details class="card filters-details"
+             data-testid="commslist-advsearch-disclosure"
+             {if $is_advanced_search_open}open{/if}>
+        <summary class="filters-details__summary"
+                 data-testid="commslist-advsearch-toggle"
+                 aria-controls="commslist-advsearch-body">
+            <span class="filters-details__summary-label">
+                <i data-lucide="filter" style="width:14px;height:14px"></i>
+                <span>Advanced search</span>
+                {if $is_advanced_search_open}
+                    <span class="filters-details__count" data-testid="commslist-advsearch-active">
+                        &middot; 1 active
+                    </span>
+                {/if}
+            </span>
+            <i data-lucide="chevron-down" class="filters-details__chevron" style="width:14px;height:14px"></i>
+        </summary>
+        <div id="commslist-advsearch-body" class="filters-details__body">
+            {load_template file="admin.comms.search"}
+        </div>
+    </details>
+
     {* -- Desktop table ------------------------------------------------ *}
     <div class="card" style="overflow:hidden">
         <table class="table" data-testid="comms-table">
@@ -184,11 +216,27 @@
                                       style="width:28px;height:28px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:10px">
                                     {$comm.name|truncate:2:'':true|upper|escape}
                                 </span>
-                                {if $comm.name}
-                                    <span class="font-medium truncate">{$comm.name|escape}</span>
-                                {else}
-                                    <span class="text-faint">no nickname</span>
-                                {/if}
+                                <div style="min-width:0">
+                                    {if $comm.name}
+                                        <span class="font-medium truncate">{$comm.name|escape}</span>
+                                    {else}
+                                        <span class="text-faint">no nickname</span>
+                                    {/if}
+                                    {* #1315: surface unban-reason / removed-by line below the
+                                       player nickname when the row was lifted by an admin
+                                       (state == 'unmuted'). Higher-priority than the banlist
+                                       equivalent because the commslist has no drawer to fall
+                                       back to (no `data-drawer-href` on `<tr data-testid="comm-row">`).
+                                       Gated on $hideadminname so anonymous viewers under a
+                                       hidden-admins config don't get the admin name leaked
+                                       here either. *}
+                                    {if $comm.state == 'unmuted' && !$hideadminname && (!empty($comm.ureason) || !empty($comm.removedby))}
+                                        <div class="text-xs text-faint mt-1" data-testid="comm-unban-meta">
+                                            {if !empty($comm.removedby)}Lifted by <span class="font-medium">{$comm.removedby|escape}</span>{if !empty($comm.ureason)}: {/if}{/if}
+                                            {if !empty($comm.ureason)}<span data-testid="comm-unban-reason">{$comm.ureason|escape}</span>{/if}
+                                        </div>
+                                    {/if}
+                                </div>
                             </div>
                         </td>
                         <td class="font-mono text-xs text-muted">{$comm.steam|escape}</td>
@@ -362,6 +410,17 @@
                                 {if $comm.sname} · {$comm.sname|escape}{/if}
                             </div>
                             <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem">{$comm.steam|escape}</div>
+                            {* #1315: mobile mirror of the desktop `comm-unban-meta`
+                               line — surface lifted-by + ureason on rows the admin
+                               unmuted so players don't have to hunt for the lift
+                               context (no drawer fallback exists on the commslist).
+                               Gated on $hideadminname for parity with the desktop branch. *}
+                            {if $comm.state == 'unmuted' && !$hideadminname && (!empty($comm.ureason) || !empty($comm.removedby))}
+                                <div class="text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="comm-unban-meta-mobile">
+                                    {if !empty($comm.removedby)}Lifted by {$comm.removedby|escape}{if !empty($comm.ureason)}: {/if}{/if}
+                                    {if !empty($comm.ureason)}{$comm.ureason|escape}{/if}
+                                </div>
+                            {/if}
                         </div>
                         <i data-lucide="chevron-right"></i>
                     </a>

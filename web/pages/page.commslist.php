@@ -1086,6 +1086,17 @@ $commsIsFiltered =
     || $filters['type']   !== ''
     || $hideInactive;
 
+// #1315: auto-open the advanced-search disclosure on a post-submit
+// paint. Bare `?p=commslist` and simple-bar filters
+// (`?searchText=` / `?server=` / `?time=` / `?type=` / `?state=`)
+// leave it closed so the unfiltered list reaches above the fold. The
+// legacy ?advSearch shim is the only surface that re-opens it,
+// mirroring v1.x behaviour where the form was always-open below the
+// row table — the v2.0 disclosure is the post-#1303 collapsed shape
+// with the same post-submit affordance the admin-admins page uses.
+$commsAdvancedOpen =
+    isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== '';
+
 // Aggregate permission flags. Each precomputed via Perms::for($userbank)
 // so the template's {if $can_*} reads stay opinion-free about the bit
 // math — see the AGENTS.md "Permissions" section + Perms::for() docblock.
@@ -1129,4 +1140,5 @@ $can_delete_comm  = $perms['can_owner'] || $perms['can_delete_ban'];
     hideadminname:            $hideAdminName,
     view_comments:            (bool) $view_comments,
     view_bans:                $viewBans,
+    is_advanced_search_open:  $commsAdvancedOpen,
 ));

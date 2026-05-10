@@ -80,6 +80,19 @@ final class BanListView extends View
         // advanced-search box doesn't have to rename the property.
         public readonly array $server_list,
         public readonly array $filters,
+        // #1315: drives the `<details class="filters-details">`
+        // disclosure that wraps the advanced-search box at the top
+        // of `page_bans.tpl`. True iff the request URL carries the
+        // `?advSearch=&advType=` legacy-shim pair (the v1.x power-
+        // user surface re-exposed as a default-collapsed disclosure
+        // — see "Sub-paged advanced search" notes in the issue body).
+        // Bare `?p=banlist` / simple-bar filters (`?searchText=` /
+        // `?server=` / `?time=`) intentionally leave the disclosure
+        // closed so the unfiltered list reaches above the fold —
+        // those filters are visible on the inline sticky bar and
+        // don't need the larger card open. Mirrors the post-submit
+        // auto-open contract #1303 introduced for admin-admins.
+        public readonly bool $is_advanced_search_open,
     ) {
     }
 }

@@ -788,6 +788,84 @@ input[type="checkbox"]:disabled {
 .card__header p { margin: 0.25rem 0 0; font-size: var(--fs-xs); color: var(--text-muted); }
 .card__body { padding: 1.25rem; }
 
+/* ---- Collapsible filter disclosure (#1303 + #1315) ----
+   Reusable `<details class="card filters-details">` shape that wraps a
+   filter form (or a `{load_template}`-emitted form-card). The disclosure
+   defaults to collapsed so the unfiltered list reaches above the fold;
+   `<details open>` is set on a post-submit paint so the filter chrome
+   (and the Clear-filters affordance) stays visible while the user
+   iterates. The chevron rotates 180° on `[open]`; `prefers-reduced-motion: reduce`
+   collapses the rotation transition to ~0ms via the global
+   `animation-duration` / `transition-duration` reset higher up in this
+   file (`@media (prefers-reduced-motion: reduce) { *, *::before, … {
+   transition-duration: 0.01ms !important; } }`), but we keep an explicit
+   per-rule override below as defensive parity.
+
+   Two consumer shapes:
+     1. A flat <form> child (admin-admins #1303 — `<form class="filters-details__form">`
+        uses `display: contents` so the form's children inherit the
+        disclosure's grid/spacing as if the form weren't there).
+     2. A `{load_template}`-emitted `<form class="card">` child wrapped
+        in `<div class="filters-details__body">` (banlist / commslist
+        #1315 — the inner form's `card` framing collapses inside the
+        body so the outer disclosure provides the only visual frame). */
+.filters-details { padding: 0; }
+.filters-details > .filters-details__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  border-radius: inherit;
+}
+.filters-details[open] > .filters-details__summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.filters-details__summary::-webkit-details-marker { display: none; }
+.filters-details__summary:hover { background: var(--bg-muted); }
+.filters-details__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+  border-color: var(--brand-500);
+}
+.filters-details__summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.filters-details__count {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.filters-details__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.filters-details[open] .filters-details__chevron { transform: rotate(180deg); }
+.filters-details__form { display: contents; }
+.filters-details__header { border-bottom: none; padding-top: 0.5rem; }
+/* When the disclosure body wraps a `{load_template}`-emitted
+   `<form class="card">` (banlist / commslist), the inner card's frame
+   would double-up with the outer disclosure's. Suppress the inner
+   frame so the disclosure provides the only visual border, and round
+   the bottom of the inner form to match the disclosure. */
+.filters-details__body { display: block; }
+.filters-details__body > form.card {
+  margin: 0;
+  border: none;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+}
+@media (prefers-reduced-motion: reduce) {
+  .filters-details__chevron { transition: none; }
+}
+
 /* ---- Status pill ---- */
 .pill { display: inline-flex; align-items: center; gap: 0.25rem; padding: 0 0.5rem; height: 1.25rem; border-radius: var(--radius-full); font-size: 0.6875rem; font-weight: 500; box-shadow: inset 0 0 0 1px currentColor; }
 .pill--permanent { background: var(--danger-bg); color: #b91c1c; }

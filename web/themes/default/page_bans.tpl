@@ -152,6 +152,45 @@
     </div>
   </form>
 
+  {* -- #1315: advanced-search disclosure -------------------------------
+       v1.x always-rendered the multi-criterion advanced-search form
+       (nickname / banid / SteamID / IP / reason / date range / length
+       op / ban type / admin / server / comment) above the row table.
+       The v2.0 redesign dropped the include and left the simple sticky
+       filter bar as the only UI surface — power users discovered the
+       legacy `?advSearch=…&advType=…` URL shim by url-spelunking, not
+       by having a form to submit. This disclosure restores the form
+       as a default-collapsed `<details>` so the unfiltered list still
+       reaches above the fold; on a post-submit paint
+       (`$is_advanced_search_open`) it auto-opens so the form chrome
+       and the Clear-filters affordance stay visible while the user
+       iterates. Reuses the `.filters-details` shape #1303 introduced
+       on `box_admin_admins_search.tpl`. The included partial is
+       paired with `Sbpp\View\AdminBansSearchView`; the page handler
+       (`web/pages/admin.bans.search.php`) populates its props
+       independently of `BanListView`. *}
+  <details class="card filters-details"
+           data-testid="banlist-advsearch-disclosure"
+           {if $is_advanced_search_open}open{/if}>
+    <summary class="filters-details__summary"
+             data-testid="banlist-advsearch-toggle"
+             aria-controls="banlist-advsearch-body">
+      <span class="filters-details__summary-label">
+        <i data-lucide="filter" style="width:14px;height:14px"></i>
+        <span>Advanced search</span>
+        {if $is_advanced_search_open}
+          <span class="filters-details__count" data-testid="banlist-advsearch-active">
+            &middot; 1 active
+          </span>
+        {/if}
+      </span>
+      <i data-lucide="chevron-down" class="filters-details__chevron" style="width:14px;height:14px"></i>
+    </summary>
+    <div id="banlist-advsearch-body" class="filters-details__body">
+      {load_template file="admin.bans.search"}
+    </div>
+  </details>
+
   {* -- Desktop table (>=769px). Below that, .table is hidden by
        theme.css and .ban-cards takes over.
 
@@ -230,7 +269,27 @@
             {/if}
           </td>
           {/if}
-          <td class="text-muted truncate" style="max-width:18rem">{if empty($ban.reason)}<i class="text-faint">no reason</i>{else}{$ban.reason|escape}{/if}</td>
+          <td class="text-muted truncate" style="max-width:18rem">
+            {if empty($ban.reason)}<i class="text-faint">no reason</i>{else}{$ban.reason|escape}{/if}
+            {* #1315: surface the unban-reason / removed-by line below the
+               truncated reason cell when the row was lifted by an admin
+               (state == 'unbanned' — natural-expiry rows have no admin
+               involvement). Mirrors the v1.x sliding-panel surface so
+               admins / players don't have to open the drawer to see
+               *who* lifted it and *why*. Gated on $hideadminname so
+               anonymous viewers under a hidden-admins config don't get
+               the admin name leaked here either. *}
+            {if $ban.state == 'unbanned' && !$hideadminname && (!empty($ban.ureason) || !empty($ban.removedby))}
+              <div class="text-xs text-faint mt-1" data-testid="ban-unban-meta">
+                {if !empty($ban.removedby)}
+                  Unbanned by <span class="font-medium">{$ban.removedby|escape}</span>{if !empty($ban.ureason)}: {/if}
+                {/if}
+                {if !empty($ban.ureason)}
+                  <span data-testid="ban-unban-reason">{$ban.ureason|escape}</span>
+                {/if}
+              </div>
+            {/if}
+          </td>
           <td class="text-muted truncate" style="max-width:12rem">{$ban.sname|escape}</td>
           {if !$hideadminname}
           <td class="col-admin text-muted">
@@ -281,6 +340,21 @@
                         data-name="{$ban.name|escape}"
                         data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
                         title="Unban">&#10003;</button>
+                {/if}
+                {* #1315: Re-apply affordance for expired / unbanned rows.
+                   Mirrors the commslist row's existing Re-apply anchor
+                   (`page_comms.tpl` lines 244-249 desktop, 389-396
+                   mobile). Routes to the admin add-ban form's
+                   `?rebanid=` smart-default block, which
+                   `web/api/handlers/bans.php::api_bans_prepare_reban`
+                   pre-populates with the original ban's parameters.
+                   Gated on $can_add_ban so the affordance only renders
+                   for admins who can act on it. *}
+                {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned')}
+                <a class="btn btn--ghost btn--sm btn--icon" data-testid="row-action-reapply"
+                   title="Re-apply this ban with the same parameters"
+                   href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}"
+                   onclick="event.stopPropagation()">&#8634;</a>
                 {/if}
               {/if}
               {if !empty($ban.steam)}
@@ -383,6 +457,17 @@
              `banlist.hideplayerips` get the same suppression contract. *}
           {if !$hideplayerips && $ban.ban_ip_raw != ''}
           <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-ip-mobile">{$ban.ban_ip_raw|escape}</div>
+          {/if}
+          {* #1315: mobile mirror of the desktop `ban-unban-meta` line —
+             surface unban-by + ureason on rows the admin lifted so
+             players don't have to open the drawer to see who unbanned
+             them and why. Gated on $hideadminname for parity with the
+             desktop branch. *}
+          {if $ban.state == 'unbanned' && !$hideadminname && (!empty($ban.ureason) || !empty($ban.removedby))}
+            <div class="text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-unban-meta-mobile">
+              {if !empty($ban.removedby)}Unbanned by {$ban.removedby|escape}{if !empty($ban.ureason)}: {/if}{/if}
+              {if !empty($ban.ureason)}{$ban.ureason|escape}{/if}
+            </div>
           {/if}
         </div>
         <span class="text-faint" aria-hidden="true">&rsaquo;</span>

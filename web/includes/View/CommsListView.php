@@ -115,6 +115,18 @@ final class CommsListView extends View
         public readonly bool $hideadminname,
         public readonly bool $view_comments,
         public readonly bool $view_bans,
+        // #1315: drives the `<details class="filters-details">`
+        // disclosure that wraps the advanced-search box at the top
+        // of `page_comms.tpl`. True iff the request URL carries the
+        // `?advSearch=&advType=` legacy-shim pair (the v1.x power-
+        // user surface re-exposed as a default-collapsed disclosure).
+        // Bare `?p=commslist` / simple-bar filters (`?searchText=` /
+        // `?server=` / `?time=` / `?type=` / `?state=`) intentionally
+        // leave the disclosure closed — those filters are visible on
+        // the inline sticky bar and don't need the larger card open.
+        // Mirrors the post-submit auto-open contract #1303 introduced
+        // for admin-admins.
+        public readonly bool $is_advanced_search_open,
     ) {
     }
 }
