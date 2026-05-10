@@ -142,14 +142,12 @@ test.describe('flow: admin groups bitmask round-trip (#1272)', () => {
         // The Save button posts `Actions.GroupsEdit` with
         // `web_flags: <SbppFoldFlags result>`. We wait on the
         // network response (the deterministic terminal state for
-        // "save succeeded") rather than a UI toast — the inline
-        // success-toast wiring on this template is a separate concern
-        // outside #1272's scope (`SbppGroupsSave` calls a now-
-        // undefined `applyApiResponse`, a pre-existing dangling
-        // reference from the sourcebans.js removal at #1123 D1; the
-        // server-side save still completes, just without UI
-        // confirmation). The wire-level signal is what locks in the
-        // round-trip contract.
+        // "save succeeded") rather than a UI toast — the toast
+        // contract is locked in separately by
+        // `admin-groups-delete.spec.ts` (#1310 — replacement for the
+        // pre-#1310 dangling `applyApiResponse` reference); this
+        // spec stays focused on the wire-level round-trip that
+        // #1272 fixes.
         const saveButton = detail.locator('[data-testid="group-save"]');
         await expect(saveButton).toBeVisible();
 

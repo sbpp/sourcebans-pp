@@ -386,6 +386,58 @@ function SbppFoldFlags(root) {
     return bitmask >>> 0;
 }
 
+/**
+ * Inline replacement for the legacy `applyApiResponse` global from
+ * `web/scripts/sourcebans.js` (deleted at #1123 D1, see AGENTS.md
+ * "Anti-patterns"). Mirrors the shape from `page_admin_groups_add.tpl`'s
+ * `SbppGroupsAdd` callback (#1310): error toast on `r.ok === false`,
+ * success toast from `r.data.message`, auto-reload on `r.data.reload`,
+ * and — for handlers whose envelope only carries `message.redir` (e.g.
+ * `groups.remove`, which does NOT set `data.reload`) — navigate there
+ * after the toast so the master-detail editor stops pointing at the
+ * row that just got deleted.
+ *
+ * `sb.api.call` already honours `r.redirect` (top-level navigation
+ * envelope) by setting `window.location.href` itself, so we just bail
+ * if the envelope had it set.
+ *
+ * @param {object|null|undefined} r The envelope from `sb.api.call`.
+ * @param {{defaultTitle?: string}} [opts]
+ */
+function SbppGroupsApplyResponse(r, opts) {
+    if (!r) return;
+    if (r.redirect) return;
+
+    var fallback = (opts && opts.defaultTitle) || 'Done';
+
+    if (r.ok === false) {
+        var em = (r.error && r.error.message) || 'Unknown error';
+        if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+            window.SBPP.showToast({ kind: 'error', title: 'Error', body: em });
+        } else if (window.sb && window.sb.message) {
+            window.sb.message.error('Error', em);
+        }
+        return;
+    }
+
+    var data = r.data || {};
+    var msg = data.message || {};
+    var title = msg.title || fallback;
+    var body = msg.body || '';
+
+    if (window.SBPP && typeof window.SBPP.showToast === 'function') {
+        window.SBPP.showToast({ kind: 'success', title: title, body: body });
+    } else if (window.sb && window.sb.message) {
+        window.sb.message.success(title, body, msg.redir || '');
+    }
+
+    if (data.reload) {
+        setTimeout(function () { window.location.reload(); }, 1500);
+    } else if (msg.redir) {
+        setTimeout(function () { window.location.href = msg.redir; }, 1500);
+    }
+}
+
 function SbppGroupsSave(event) {
     event.preventDefault();
     var form = event.target;
@@ -398,20 +450,20 @@ function SbppGroupsSave(event) {
         web_flags: bitmask,
         srv_flags: '',
         type: 'web'
-    }).then(function (r) { applyApiResponse(r); });
+    }).then(function (r) { SbppGroupsApplyResponse(r, { defaultTitle: 'Group updated' }); });
     return false;
 }
 
 function SbppGroupsDelete(gid, name) {
     if (!confirm('Delete group "' + name + '"?')) return;
     sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: 'web' })
-        .then(function (r) { applyApiResponse(r); });
+        .then(function (r) { SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' }); });
 }
 
 function SbppServerGroupsDelete(gid, name, type) {
     if (!confirm('Delete group "' + name + '"?')) return;
     sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: String(type) })
-        .then(function (r) { applyApiResponse(r); });
+        .then(function (r) { SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' }); });
 }
 
 // --- Live bitmask preview (#1258) ---
