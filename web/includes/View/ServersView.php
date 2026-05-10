@@ -29,10 +29,11 @@ namespace Sbpp\View;
  *                    by the dashboard `?p=servers&s={index}` deep links
  *                    (matches `opened_server` semantics).
  *   - evOnClick string Inline JS navigating to ?p=servers&s={index};
- *                    only set when `IN_SERVERS_PAGE` is false (i.e.
- *                    the dashboard is rendering this row). Preserved
- *                    for any third-party theme that forked the
- *                    pre-v2.0.0 default and expects the legacy hook.
+ *                    only set when `IN_HOME` is defined (i.e. the
+ *                    dashboard is rendering this row via the
+ *                    `require` of `page.servers.php`). Preserved for
+ *                    any third-party theme that forked the pre-v2.0.0
+ *                    default and expects the legacy hook.
  */
 final class ServersView extends View
 {
