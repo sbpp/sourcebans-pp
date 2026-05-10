@@ -70,6 +70,22 @@ final class BanListIpColumnTest extends ApiTestCase
      */
     public function testIpColumnRendersWhenHideplayeripsIsFalse(): void
     {
+        // #1315: page_bans.tpl's advanced-search disclosure now
+        // `{load_template file="admin.bans.search"}`s a partial whose
+        // backing `admin.bans.search.php` re-derives `hideplayerips`
+        // from `Config::getBool('banlist.hideplayerips') && !$userbank->is_admin()`
+        // and `Renderer::render`s the result into Smarty, overwriting
+        // the parent BanListView's value. In production both halves
+        // compute the same formula so the assignment is a no-op; the
+        // test fixture hand-crafts `BanListView::$hideplayerips` so we
+        // have to make the partial's compute reduce to the same value
+        // — `loginAsAdmin` flips `is_admin()` to true so the formula
+        // collapses to `(…) && false = false`, matching the View's
+        // `hideplayerips: false`. The suppressed-state test below stays
+        // anonymous so the formula reduces to `Config && true` which
+        // is true under data.sql's `banlist.hideplayerips=1` default.
+        $this->loginAsAdmin();
+
         $html = $this->renderBanList(hideplayerips: false);
 
         // Desktop column header. Anchor on the `col-ip` class +
@@ -153,6 +169,16 @@ final class BanListIpColumnTest extends ApiTestCase
      */
     public function testEmptyStateColspanCovers10Columns(): void
     {
+        // Same loginAsAdmin reason as the hideplayerips=false test
+        // above: the disclosure's `{load_template}` re-runs
+        // `admin.bans.search.php` and that handler reassigns
+        // `hideplayerips`, so we need the partial's formula to
+        // collapse to `false` to match the View's hand-crafted input.
+        // The empty-state colspan="10" invariant is asserted for the
+        // maximum render (IP + Admin both visible), so it's the
+        // logged-in-admin path that exercises the right edge.
+        $this->loginAsAdmin();
+
         $html = $this->renderBanList(hideplayerips: false, banList: []);
 
         $this->assertStringContainsString(
