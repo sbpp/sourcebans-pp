@@ -256,3 +256,15 @@ $theme->assign('theme_url', 'themes/' . $theme_name);
 if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
     $theme->setForceCompile(true);
 }
+
+// Anonymous opt-out daily telemetry (#1126). Registered last so the
+// settings cache, version constants, theme name, and DB are all warm
+// — Telemetry::tickIfDue() reads each of them. Both index.php and
+// api.php require_once init.php, so registering once here covers
+// the panel + JSON API surfaces. tickIfDue() wraps its own body in
+// try/catch(\Throwable), so a misbehaving collector or a flapping
+// endpoint never leaks an exception out of the shutdown function.
+// On FPM, Telemetry calls fastcgi_finish_request() before the cURL
+// POST so the user's TCP socket closes first; non-FPM SAPIs fall
+// back to ob_end_flush + flush.
+register_shutdown_function([\Sbpp\Telemetry\Telemetry::class, 'tickIfDue']);

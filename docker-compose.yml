@@ -34,6 +34,14 @@ services:
       STEAMAPIKEY: ""
     volumes:
       - ./web:/var/www/html/web
+      # README.md is mounted alongside web/ so the
+      # `TelemetryReadmeParityTest` integration test (#1126) can read
+      # it from `web/../README.md`. CI hits this naturally because
+      # `actions/checkout@v4` lays the whole repo under
+      # `$GITHUB_WORKSPACE`; the local stack only mounts `./web` so
+      # we need this paired bind to keep the test parity surface
+      # working without splitting the test set.
+      - ./README.md:/var/www/html/README.md:ro
       # Keep generated/cached content off the host bind mount so composer
       # install and Smarty compile output don't fight with the host.
       - vendor:/var/www/html/web/includes/vendor

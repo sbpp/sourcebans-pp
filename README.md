@@ -89,6 +89,153 @@ includes/vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon
 
 Configuration lives in `web/phpstan.neon`.
 
+## Privacy & telemetry
+
+SourceBans++ 2.0.0 ships with anonymous opt-out telemetry (#1126). Once
+per day per install, the panel sends a small JSON payload to a Cloudflare
+Worker so maintainers can see what versions, environments, and feature
+toggles are actually in use. The data drives roadmap decisions
+("can we drop PHP 8.5?", "is anyone still using `enablefriendsbanning`?"
+"is the legacy theme path worth keeping alive?") that would otherwise
+be made blind.
+
+The contract this section locks down:
+
+- **Default-on, opt-out.** Opt-in telemetry returns ~1% of installs and
+  is statistically useless. The toggle is loud, the docs (this section
+  + [`UPGRADING.md`](UPGRADING.md) + the `## Privacy` heading in the
+  2.0.0 [`CHANGELOG.md`](CHANGELOG.md)) make the data flow obvious so
+  opting out is a real choice, not a buried surprise.
+- **Opt-out path.** Admin → Settings → Features → Telemetry. The toggle
+  flips `telemetry.enabled` to `0`, **and** clears
+  `telemetry.instance_id` so a re-enable mints a fresh per-install ID
+  the Worker can't link to the previous one. Enable / disable
+  transitions are audit-logged once (`Log::add(LogType::Message,
+  'Telemetry', 'Telemetry enabled|disabled by <admin>')`); pings
+  themselves are never logged.
+- **Anonymous by design.** The payload contains a random
+  `instance_id` (`bin2hex(random_bytes(16))`, persisted in
+  `:prefix_settings.telemetry.instance_id`) plus the categorical /
+  count fields below. The panel **never** sends hostnames, IPs,
+  install paths, admin names, ban reasons, dashboard text, SteamIDs,
+  server hostnames, server IPs, MOTDs, SMTP credentials, or the Steam
+  API key value.
+- **Scheduling.** Each request runs a tiny tick at shutdown
+  (`register_shutdown_function`); on FPM, `fastcgi_finish_request()`
+  closes the user's socket BEFORE the cURL POST so telemetry never
+  delays a panel response. The cooldown is 24h ± 1h jitter and the
+  `last_ping` slot is reserved atomically (`UPDATE … WHERE
+  CAST(value AS UNSIGNED) <= :threshold` with rowCount==1) so two
+  concurrent requests can't both fire. cURL has 3s connect / 5s
+  total timeouts and any non-2xx is silent — a flapping endpoint
+  costs one ping/day, not one ping/request.
+- **Self-hosted collector.** The endpoint URL lives in
+  `:prefix_settings.telemetry.endpoint` (default
+  `https://cf-analytics-telemetry.sbpp.workers.dev/v1/ping`). Operators
+  who want to redirect telemetry to their own collector can update that
+  row directly (no UI for it on purpose — it's a debug / escape-hatch
+  knob); setting it to `''` disables network calls without flipping
+  the user-facing toggle. The Worker source lives at
+  [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics).
+
+### Field list (schema 1)
+
+The complete payload, sourced from the vendored
+`web/includes/telemetry/schema-1.lock.json`. The
+`TelemetryReadmeParityTest` PHPUnit test deep-equals this list against
+`Sbpp\Telemetry\Schema1::payloadFieldNames()`, so the docs and the wire
+format can never silently drift.
+
+<!-- TELEMETRY-FIELDS-START -->
+- `schema` — wire-format version (always `1` for this lock file).
+- `instance_id` — random 32-char hex per install. Cleared on opt-out.
+- `panel.version` — `SB_VERSION` (release tag, `git describe`, or `'dev'`).
+- `panel.git` — short git SHA when available, else empty.
+- `panel.dev` — true iff `panel.version` is the `'dev'` sentinel.
+- `panel.theme` — `default` for the shipped theme; `custom` for any fork (the fork's actual name is never reported).
+- `env.php` — PHP `major.minor` only (e.g. `8.5`). Patch elided.
+- `env.db_engine` — `mariadb` or `mysql`, derived from `SELECT VERSION()`.
+- `env.db_version` — DB `major.minor` only (e.g. `10.11`).
+- `env.web_server` — substring match against `$_SERVER['SERVER_SOFTWARE']`: `apache`, `nginx`, `litespeed`, `iis`, `caddy`, or `other`.
+- `env.os_family` — lowercased `PHP_OS_FAMILY`: `linux`, `windows`, `mac`, `bsd`, or `other`.
+- `scale.admins` — `SELECT COUNT(*) FROM :prefix_admins` (includes the seeded `CONSOLE` row).
+- `scale.servers_enabled` — `SELECT COUNT(*) FROM :prefix_servers WHERE enabled = 1`.
+- `scale.bans_active` — `SELECT COUNT(*) FROM :prefix_bans WHERE (ends > UNIX_TIMESTAMP() OR length = 0) AND RemoveType IS NULL`. Mirrors `page.banlist.php`'s active-ban definition.
+- `scale.bans_total` — `SELECT COUNT(*) FROM :prefix_bans` (every row, active + expired + removed).
+- `scale.comms_active` — `SELECT COUNT(*) FROM :prefix_comms WHERE (ends > UNIX_TIMESTAMP() OR length = 0) AND RemoveType IS NULL`.
+- `scale.comms_total` — `SELECT COUNT(*) FROM :prefix_comms`.
+- `scale.submissions_30d` — `SELECT COUNT(*) FROM :prefix_submissions WHERE submitted >= UNIX_TIMESTAMP() - 2592000`.
+- `scale.protests_30d` — `SELECT COUNT(*) FROM :prefix_protests WHERE datesubmitted >= UNIX_TIMESTAMP() - 2592000`.
+- `features.submit` — `Config::getBool('config.enablesubmit')`.
+- `features.protest` — `Config::getBool('config.enableprotest')`.
+- `features.comms` — `Config::getBool('config.enablecomms')`.
+- `features.kickit` — `Config::getBool('config.enablekickit')`.
+- `features.exportpublic` — `Config::getBool('config.exportpublic')`.
+- `features.publiccomments` — `Config::getBool('config.enablepubliccomments')`.
+- `features.steamlogin` — `Config::getBool('config.enablesteamlogin')`.
+- `features.normallogin` — `Config::getBool('config.enablenormallogin')`.
+- `features.groupbanning` — `Config::getBool('config.enablegroupbanning')`.
+- `features.friendsbanning` — `Config::getBool('config.enablefriendsbanning')`.
+- `features.adminrehashing` — `Config::getBool('config.enableadminrehashing')`.
+- `features.smtp_configured` — true iff `:prefix_settings.smtp.host` is non-empty (the host string itself is never reported).
+- `features.steam_api_key_set` — true iff `STEAMAPIKEY` is `define()`d to a non-empty value (the key value is never reported).
+- `features.geoip_present` — true iff the Maxmind `data/GeoLite2-Country.mmdb` exists and is readable.
+<!-- TELEMETRY-FIELDS-END -->
+
+### On raw `scale.*` counts (privacy trade-off)
+
+Schema 1 ships raw integer counts (e.g. `bans_active: 2847`) rather than
+bucketed strings (`"1k-9.9k"`). Raw counts combined with `panel.theme`,
+`panel.git`, and `env.*` produce a higher-resolution per-install
+fingerprint than buckets would.
+
+The trade-off is acceptable for v2.0.0 because:
+
+1. The data lives only in the Worker's Cloudflare Analytics Engine
+   dataset — never in logs, extracts, or row-granularity exports.
+2. The Worker strips `CF-Connecting-IP` / `X-Forwarded-For` before any
+   logging, so the per-install fingerprint can't be tied back to a
+   public IP.
+3. Access to the dataset is roadmap-decision-only — there is no public
+   stats dashboard, no anonymous extract, no row-level API.
+
+**Any future change that exposes row-level data** (a public stats page,
+downloadable extracts, etc.) **reopens this decision and requires a
+privacy review before shipping.**
+
+### Schema evolution
+
+There is no auto-update for self-hosted SourceBans++ installs — old
+panels keep sending old payloads forever. The Worker is built to handle
+that: schema-1 validators are kept indefinitely on the Worker side.
+Panel-side rules:
+
+1. **Additive — new optional field within `schema: 1`.** Add the
+   extractor to `Telemetry::collect()` once
+   `web/includes/telemetry/schema-1.lock.json` lists the field.
+2. **Subtractive / repurposing — rare; bumps the schema number.** The
+   panel sends `schema: 2`; a sibling `Sbpp\Telemetry\Schema2` helper
+   covers the new shape. The existing `Schema1` helper stays around
+   indefinitely for the long tail of un-upgraded installs.
+
+Only `schema` and `instance_id` are required. Every other field is
+optional both in `Telemetry::collect()`'s output and in the Worker's
+validator.
+
+### Manual schema sync
+
+`web/includes/telemetry/schema-1.lock.json` is vendored byte-for-byte
+from the cf-analytics companion repo. Sync with:
+
+```sh
+make sync-telemetry-schema
+```
+
+The two parity tests (`TelemetrySchemaParityTest`,
+`TelemetryReadmeParityTest`) gate the result — adding a typed slot in
+cf-analytics → next sync → the panel build fails until a matching
+extractor + README bullet are added.
+
 ## Upgrade
 *If you ran the installer, this step is unnecessary.*
 

@@ -63,7 +63,11 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('smtp.user', ''),
 ('smtp.verify_peer', ''),
 ('config.mail.from_email', ''),
-('config.mail.from_name', 'SourceBans++');
+('config.mail.from_name', 'SourceBans++'),
+('telemetry.enabled', '1'),
+('telemetry.last_ping', '0'),
+('telemetry.instance_id', ''),
+('telemetry.endpoint', 'https://cf-analytics-telemetry.sbpp.workers.dev/v1/ping');
 
 INSERT INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
 (0 , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);

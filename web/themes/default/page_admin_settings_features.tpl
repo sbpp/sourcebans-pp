@@ -175,6 +175,52 @@
                         </div>
                     </div>
 
+                    {*
+                        #1126 — anonymous opt-out telemetry. Default-on; the
+                        help paragraph below is the only in-panel disclosure
+                        surface (no first-login modal — see issue body), so
+                        the copy summarises every payload category and links
+                        to README.md's `## Privacy & telemetry` section for
+                        the field-by-field breakdown. Tone is matter-of-fact;
+                        no marketing, no apology copy.
+
+                        On opt-out (toggle 1 → 0), admin.settings.php's POST
+                        handler clears `telemetry.instance_id` so a re-enable
+                        mints a fresh ID and the Worker can't link the two
+                        states. Enable / disable transitions are also audit-
+                        logged once via `Log::add(LogType::Message, ...)`.
+                    *}
+                    <div class="card">
+                        <div class="card__header"><div><h3>Privacy</h3><p>Anonymous telemetry that helps us prioritise releases.</p></div></div>
+                        <div class="card__body space-y-4">
+                            <div data-testid="setting-row" data-key="telemetry.enabled">
+                                <label class="flex items-center gap-2">
+                                    <input type="checkbox" id="telemetry_enabled" name="telemetry_enabled"{if $telemetry_enabled} checked{/if} aria-describedby="telemetry_enabled_help">
+                                    <span class="text-sm font-medium">Anonymous telemetry</span>
+                                </label>
+                                <p class="settings-fieldset__help" id="telemetry_enabled_help" data-testid="setting-help-telemetry.enabled">
+                                    Sends one anonymous ping per day to a SourceBans++ collector
+                                    so maintainers can see what versions, environments, and feature
+                                    toggles are in real-world use. The payload covers four categories:
+                                    panel (version, git SHA, dev flag, theme — <code>default</code> or
+                                    <code>custom</code>); environment (PHP <code>major.minor</code>,
+                                    DB engine + <code>major.minor</code>, web server family, OS family);
+                                    scale (counts of admins, enabled servers, active and total bans /
+                                    comms, and 30-day submissions / protests); and feature toggles
+                                    (every checkbox above plus SMTP-configured / Steam-API-key-set /
+                                    GeoIP-present yes/no). A random per-install ID is included so
+                                    pings can be deduplicated; <strong>no</strong> hostnames, IPs,
+                                    admin names, SteamIDs, or ban reasons are ever sent.
+                                    <a href="https://github.com/sbpp/sourcebans-pp/blob/main/README.md#privacy--telemetry" target="_blank" rel="noopener noreferrer">
+                                        Read the full field list and SQL behind each count
+                                    </a>.
+                                    Disabling clears the random ID, so re-enabling later issues
+                                    a fresh one.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex items-center justify-end gap-2">
                         <button type="submit" class="btn btn--primary" data-testid="settings-save">
                             <i data-lucide="save"></i> Save changes

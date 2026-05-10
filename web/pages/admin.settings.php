@@ -223,6 +223,27 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
         $steamloginopt  = (isset($_POST['enable_steamlogin'])     && $_POST['enable_steamlogin']     === 'on') ? 1 : 0;
         $normalloginopt = (isset($_POST['enable_normallogin'])    && $_POST['enable_normallogin']    === 'on') ? 1 : 0;
         $publiccomments = (isset($_POST['enable_publiccomments']) && $_POST['enable_publiccomments'] === 'on') ? 1 : 0;
+        $telemetryNew   = (isset($_POST['telemetry_enabled'])     && $_POST['telemetry_enabled']     === 'on') ? 1 : 0;
+
+        // Telemetry enable/disable transitions are audit-logged once
+        // here (not on every ping — that would flood sb_log). On
+        // opt-out we also clear telemetry.instance_id so a re-enable
+        // mints a fresh ID and the Worker can't link the two states
+        // (#1126).
+        $telemetryOld = Config::getBool('telemetry.enabled') ? 1 : 0;
+        if ($telemetryOld !== $telemetryNew) {
+            $verb = $telemetryNew === 1 ? 'enabled' : 'disabled';
+            Log::add(
+                LogType::Message,
+                'Telemetry',
+                'Telemetry ' . $verb . ' by ' . (string) $userbank->GetProperty('user')
+            );
+            if ($telemetryNew === 0) {
+                $GLOBALS['PDO']->query(
+                    "UPDATE `:prefix_settings` SET `value` = '' WHERE `setting` = 'telemetry.instance_id'"
+                )->execute();
+            }
+        }
 
         $GLOBALS['PDO']->query("REPLACE INTO `:prefix_settings` (`value`, `setting`) VALUES
             (" . $exportpub      . ", 'config.exportpublic'),
@@ -232,7 +253,8 @@ if ($canSettings && isset($_POST['settingsGroup'])) {
             (" . $adminrehash    . ", 'config.enableadminrehashing'),
             (" . $publiccomments . ", 'config.enablepubliccomments'),
             (" . $steamloginopt  . ", 'config.enablesteamlogin'),
-            (" . $normalloginopt . ", 'config.enablenormallogin')")->execute();
+            (" . $normalloginopt . ", 'config.enablenormallogin'),
+            (" . $telemetryNew   . ", 'telemetry.enabled')")->execute();
         Log::add(LogType::Message, 'Settings updated', 'Feature toggles were updated.');
         $savedSection = 'features';
     }
@@ -424,6 +446,7 @@ if ($section === 'themes') {
         enable_steamlogin:     Config::getBool('config.enablesteamlogin'),
         enable_normallogin:    Config::getBool('config.enablenormallogin'),
         enable_publiccomments: Config::getBool('config.enablepubliccomments'),
+        telemetry_enabled:     Config::getBool('telemetry.enabled'),
     ));
 } else {
     $rawCustomReasons = Config::getBool('bans.customreasons')

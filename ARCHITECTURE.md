@@ -95,6 +95,7 @@ web/
 │   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
 │   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
+│   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
 │   ├── PHPStan/              Sbpp\PHPStan\* — custom PHPStan rules (Smarty + SQL prefix)
 │   ├── page-builder.php      route() + build() (the page router; procedural)
@@ -604,6 +605,87 @@ companion changes:
 current admin's id, IP, and a severity char (`m` info, `w` warning,
 `e` error). The dispatcher's "Hacking Attempt" warnings and the
 `set_error_handler` shim in `init.php` both go through here.
+
+### Telemetry (`includes/Telemetry/`)
+
+`Sbpp\Telemetry\Telemetry::tickIfDue()` is registered as a
+`register_shutdown_function` at the tail of `init.php`, so every panel
++ JSON API request runs the tick after the response has been built.
+The tick is the issue #1126 contract:
+
+1. **Opt-out gate.** `Config::getBool('telemetry.enabled')` is the
+   first read; a `false` returns immediately, so the disabled path
+   does no DB work past the cached settings hit `init.php` already
+   paid for.
+2. **Cooldown check.** `now - last_ping < 24h ± 1h jitter` returns
+   early. Jitter prevents panels behind the same NAT from
+   synchronising and DDoS-ing the Worker on the hour boundary.
+3. **Atomic slot reservation.** A single
+   `UPDATE :prefix_settings SET value = :now WHERE setting =
+   'telemetry.last_ping' AND CAST(value AS UNSIGNED) <= :threshold`
+   either matches one row (we win the race) or zero (someone else
+   already claimed this 24h window). `rowCount() === 1` is the gate
+   — equivalent technique to `Mailer::resolveFrom()`'s warn-once
+   lazy lock. The slot is reserved at the START of the attempt,
+   not after success, so a flapping endpoint costs one ping/day,
+   not one ping/request.
+4. **Response handoff.** `fastcgi_finish_request()` closes the
+   user's TCP socket before the network call when the SAPI is FPM;
+   non-FPM falls back to `ob_end_flush + flush`.
+5. **POST payload.** cURL with 3s connect / 5s total timeouts,
+   `User-Agent: SourceBans++/<version> (telemetry)`, no redirects,
+   any non-2xx silent. The endpoint comes from
+   `:prefix_settings.telemetry.endpoint` so operators can repoint
+   to a self-hosted collector or set it to `''` to disable network
+   calls without flipping the user-facing toggle.
+
+The whole `tickIfDue` body is wrapped in `try { … } catch (\Throwable)`
+so telemetry can NEVER hard-fail the request. Pings are never
+audit-logged either — a flapping endpoint would otherwise generate
+`sb_log` noise that scares admins. Only the enable/disable
+**transitions** are audit-logged (in
+`web/pages/admin.settings.php`'s features POST handler).
+
+`Telemetry::collect()` is the side-effect-free payload builder. The
+exact wire format is captured in
+`web/includes/telemetry/schema-1.lock.json` — a Draft-7 JSON Schema
+vendored byte-for-byte from the [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics)
+companion repo. `Sbpp\Telemetry\Schema1::payloadFieldNames()` reads
+the lock file at request time and returns the recursively-flattened
+leaf field set; this is the single source of truth that gates two
+parity tests:
+
+- `TelemetrySchemaParityTest` — `Telemetry::collect()`'s output
+  field set deep-equals `Schema1::payloadFieldNames()` in BOTH
+  directions. Adding a typed slot in cf-analytics → next sync → the
+  panel build fails until a matching extractor lands.
+- `TelemetryReadmeParityTest` — `README.md`'s `## Privacy &
+  telemetry` field list (between the
+  `<!-- TELEMETRY-FIELDS-START -->` / `<!-- TELEMETRY-FIELDS-END -->`
+  markers) deep-equals `Schema1::payloadFieldNames()`. Cheap doc-drift
+  gate.
+
+The schema-lock-file vendoring + parity-test pair is the convention
+for this codebase — when another subsystem grows a similar cross-repo
+JSON contract, mirror this shape.
+
+The `instance_id` is `bin2hex(random_bytes(16))`, lazily generated
+on the first call to `collect()` and persisted in
+`:prefix_settings.telemetry.instance_id`. The Settings UI's Features
+section wipes the row to `''` on opt-out (so a re-enable mints a
+fresh ID and the Worker can't link the two states) — the panel never
+re-uses an `instance_id` once the toggle has flipped to disabled and
+back. `panel.theme` is reported as `default` only when the active
+theme exists under `web/themes/` (currently only `default` ships);
+custom forks report `custom` so a community theme name like
+`gridiron-clan-2025` never leaves the panel.
+
+Manual schema sync: `make sync-telemetry-schema` pulls the latest
+lock file from
+`https://raw.githubusercontent.com/sbpp/cf-analytics/main/schema/1.lock.json`
+and overwrites the vendored copy. No scheduled auto-PR workflow in
+v1 — the parity tests gate the result and the maintainer invokes
+the make target when picking up cf-analytics changes.
 
 ## Database schema
 

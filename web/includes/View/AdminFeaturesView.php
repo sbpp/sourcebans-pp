@@ -32,6 +32,7 @@ final class AdminFeaturesView extends View
         public readonly bool $enable_steamlogin,
         public readonly bool $enable_normallogin,
         public readonly bool $enable_publiccomments,
+        public readonly bool $telemetry_enabled,
     ) {
     }
 }

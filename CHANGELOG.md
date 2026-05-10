@@ -94,6 +94,23 @@ Legend:
         `README.md`
 ```
 
+### Privacy
+
+This release ships **default-on anonymous telemetry** (#1126). Once per
+day per install, the panel sends a small JSON payload to a SourceBans++
+Cloudflare Worker so maintainers can see what versions, environments,
+and feature toggles are actually in use. The payload is random
+per-install ID + categorical / count fields only — **no** hostnames,
+IPs, admin names, SteamIDs, ban reasons, or any other PII. The toggle
+lives at **Admin → Settings → Features → Privacy → Anonymous telemetry**;
+disabling it clears the per-install ID so re-enabling later issues a
+fresh one. Full field list, SQL behind each count, and the
+self-hosted-collector escape hatch live in
+[`README.md` → `## Privacy & telemetry`](README.md#privacy--telemetry);
+the upgrade-time disclosure lives in
+[`UPGRADING.md`](UPGRADING.md#telemetry-1126-v200). Companion Worker
+repo: [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics).
+
 (10/11/24): Version 1.8.1 (**Run updater required**)
 -----------------------
 > [!IMPORTANT]

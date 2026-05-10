@@ -730,6 +730,36 @@ bearing assertion that the value is already safe HTML, so:
   (CommonMark, `html_input: 'escape'`, `allow_unsafe_links: false`); see
   the `IntroRenderer` row in "Where to find what".
 
+### Cross-repo JSON contracts (`web/includes/telemetry/schema-1.lock.json`)
+
+When the panel sends or receives a structured payload that's
+**defined in a sibling repo** (currently only the telemetry contract
+with [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics)), the
+canonical schema is **vendored** as a byte-identical lock file
+under `web/includes/<subsystem>/` and consumed via a thin reader
+class (e.g. `Sbpp\Telemetry\Schema1`). The reader exposes a
+`payloadFieldNames(): list<string>` static — the recursively-flattened
+leaf field set — and is the single source of truth for two paired
+PHPUnit tests:
+
+- An **extractor parity test** that asserts the panel's payload
+  builder (`Telemetry::collect()`) and the schema agree on the
+  field set in BOTH directions (`assertSame` after sort). Drift
+  in either direction (extractor without schema slot, or schema
+  slot without extractor) fails the build.
+- A **doc parity test** that asserts the README's documented field
+  list (wrapped in `<!-- TELEMETRY-FIELDS-START -->` /
+  `<!-- TELEMETRY-FIELDS-END -->` HTML comments) deep-equals the
+  schema's field set. Cheap doc-drift gate.
+
+Manual sync only — a `make sync-<subsystem>-schema` target pulls
+the upstream lock file via curl and overwrites the vendored copy;
+no scheduled auto-PR workflow. The parity tests gate the result.
+
+When a future subsystem grows a similar cross-repo JSON contract,
+follow this shape: vendored Draft-7 JSON Schema lock file + reader
+class + extractor parity + doc parity + manual `make sync-…` target.
+
 ### Admin-authored display text (`Sbpp\Markup\IntroRenderer`)
 
 - Anything an admin types in the panel that we render to other users
@@ -1232,6 +1262,8 @@ audit (#1207) locked in. New CTAs:
 | Edit the command palette (icon-only trigger, ⌘K binding, result rows, kbd hints, Ctrl+Enter copy) | `web/themes/default/js/theme.js` (`openPalette` / `closePalette` / `renderPaletteResults` / `applyPlatformHints` / `handlePaletteCopyShortcut`) + `core/title.tpl` (the `.topbar__search` icon button) + the `.palette__row*` rules in `web/themes/default/css/theme.css`. Player rows carry `data-drawer-bid="<bid>"` (bare Enter / click → `loadDrawer`, palette closes itself) + `data-steamid="<steam>"` (`Ctrl/Cmd+Enter` → `navigator.clipboard.writeText` + `showToast`). The kbd glyphs are server-rendered in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` swaps `[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ on Mac/iOS at boot and after every render (#1184, #1207 DET-2). |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
+| Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the parity tests) + `web/includes/telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. Help-icon copy in `page_admin_settings_features.tpl` + `README.md`'s `## Privacy & telemetry` section + `UPGRADING.md` are the in-panel + upgrade-time disclosure surfaces (no first-login modal). |
+| Add a cross-repo JSON contract (vendored schema lock + reader + parity tests) | `web/includes/Telemetry/Schema1.php` is the reference shape (`payloadFieldNames(): list<string>` over a Draft-7 JSON Schema lock file). Pair with two PHPUnit tests: an extractor parity test (collect() vs. lock file in both directions) and a doc parity test (README `<!-- …-START -->` / `<!-- …-END -->` block vs. lock file). Sync via a manual `make sync-<subsystem>-schema` target — no scheduled auto-PR. See "Cross-repo JSON contracts" under Conventions. |
 | Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |
