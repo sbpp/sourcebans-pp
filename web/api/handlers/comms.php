@@ -129,9 +129,14 @@ function api_comms_prepare_reblock(array $params): array
  * inside the handler, since the dispatcher can't see which row the
  * caller wants to act on.
  *
+ * #1301: `ureason` is **required**. v1.x prompted via sourcebans.js's
+ * UnMute()/UnGag() helpers and required a non-empty reason; v2.0
+ * silently accepted '', so the audit log lost the *why*. Both this
+ * handler and the legacy GET fallback now bounce empty reasons.
+ *
  * Inputs:
- *   - `bid`     (int, required) — the comm-block id.
- *   - `ureason` (string, optional) — admin-supplied unblock reason; we
+ *   - `bid`     (int, required)    — the comm-block id.
+ *   - `ureason` (string, required) — admin-supplied unblock reason; we
  *     trim and store as-is. Stored raw in `ureason` (per the
  *     "store raw, escape on display" anti-pattern); the column lives
  *     behind the same Smarty auto-escape pipeline as `reason`.
