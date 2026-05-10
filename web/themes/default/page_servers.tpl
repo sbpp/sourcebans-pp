@@ -220,6 +220,27 @@
                  data-testid="server-players-panel"
                  hidden
                  style="border-top:1px solid var(--border);padding:0.75rem 1.25rem">
+                {*
+                    Map preview thumbnail. The legacy v1.x server card carried
+                    an inline `<img id="mapimg_{$server.sid}">` here; the
+                    #1123 D1 redesign dropped it but the API handler still
+                    returns `mapimg` (web/api/handlers/servers.php →
+                    api_servers_host_players → GetMapImage). The inline
+                    initializer below patches `src` from the live response
+                    and unhides the element on `load`; on `error` (file
+                    missing or 404 / nomap.jpg also missing) the element
+                    stays `hidden` so we never paint a broken-image icon.
+                    `alt=""` is intentional: the map name is already
+                    rendered as text in the `[data-testid="server-map"]`
+                    row above, so the image is decorative confirmation
+                    rather than independent content (#1312).
+                *}
+                <img src=""
+                     alt=""
+                     data-testid="server-map-img"
+                     class="server-tile__mapimg"
+                     hidden
+                     style="display:block;width:100%;max-height:140px;object-fit:cover;border-radius:var(--radius-sm);margin-bottom:0.5rem;background:var(--bg-muted)">
                 <p class="text-xs text-muted m-0" data-empty-message>No players currently connected.</p>
                 <ul class="m-0" data-player-list style="list-style:none;padding:0;display:none"></ul>
             </div>
@@ -295,7 +316,7 @@
 
     /**
      * @param {HTMLElement} tile
-     * @param {{hostname?: string, players?: number, maxplayers?: number, map?: string, player_list?: Array<{name: string, frags: number, time_f: string}>, error?: string}} d
+     * @param {{hostname?: string, players?: number, maxplayers?: number, map?: string, mapimg?: string, player_list?: Array<{name: string, frags: number, time_f: string}>, error?: string}} d
      */
     function applyData(tile, d) {
         if (d.error === 'connect') {
@@ -319,6 +340,25 @@
 
         var mapEl = tile.querySelector('[data-testid="server-map"]');
         if (mapEl) mapEl.textContent = d.map || '';
+
+        // Map preview thumbnail (#1312). The handler returns
+        // `images/maps/<map>.jpg` (or `images/maps/nomap.jpg` if the
+        // file is missing). Show the <img> only after the network
+        // round-trip succeeds — `nomap.jpg` itself can be missing on
+        // forks / bare deployments, so we treat any load error as a
+        // signal to keep the slot hidden rather than painting a
+        // broken-image icon.
+        var mapImg = tile.querySelector('[data-testid="server-map-img"]');
+        if (mapImg instanceof HTMLImageElement) {
+            if (d.mapimg) {
+                mapImg.onload = function () { mapImg.removeAttribute('hidden'); };
+                mapImg.onerror = function () { mapImg.setAttribute('hidden', ''); };
+                mapImg.src = String(d.mapimg);
+            } else {
+                mapImg.setAttribute('hidden', '');
+                mapImg.removeAttribute('src');
+            }
+        }
 
         var players = Number(d.players || 0);
         var maxp = Number(d.maxplayers || 0);
