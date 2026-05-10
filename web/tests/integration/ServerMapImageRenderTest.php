@@ -16,9 +16,16 @@ use PHPUnit\Framework\TestCase;
  *
  * The fix restores the thumbnail in the EXPANDED panel (so it rides
  * the same `data-expanded="true"` toggle that surfaces the player
- * list) with a `hidden`-by-default `<img>` slot the inline initializer
+ * list) with a `hidden`-by-default `<img>` slot the hydration helper
  * patches from `r.data.mapimg`. `onload` unhides the element; `onerror`
  * keeps it hidden so missing files never paint a broken-image icon.
+ *
+ * #1313 extracted the per-tile hydration code from the inline
+ * `<script>` block at the bottom of `page_servers.tpl` into a
+ * shared helper at `web/scripts/server-tile-hydrate.js` so the
+ * admin Server Management list could reuse the wiring. The mapimg
+ * patch moved with the rest of `applyData()`; the template still
+ * ships the `<img>` slot and now `<script src>`s the helper.
  *
  * This suite is the hermetic regression guard for that contract:
  *
@@ -27,8 +34,9 @@ use PHPUnit\Framework\TestCase;
  *      surfaces, the v1.x reference render, plus this template).
  *   2. The template ships the `<img data-testid="server-map-img">`
  *      slot inside the players panel.
- *   3. The inline initializer wires `r.data.mapimg` into the slot's
- *      `src` and toggles `hidden` on `load` / `error`.
+ *   3. The hydration helper wires `r.data.mapimg` into the slot's
+ *      `src` and toggles `hidden` on `load` / `error`, AND the
+ *      template <script src>s the helper.
  *   4. `GetMapImage()` still falls back to `nomap` when the file
  *      can't be found, and the bundled `nomap.jpg` placeholder still
  *      ships (so the fallback path renders something instead of a
@@ -48,6 +56,7 @@ final class ServerMapImageRenderTest extends TestCase
 {
     private string $template;
     private string $handler;
+    private string $hydrate;
 
     protected function setUp(): void
     {
@@ -55,14 +64,23 @@ final class ServerMapImageRenderTest extends TestCase
 
         $tplPath = ROOT . 'themes/default/page_servers.tpl';
         $hdlPath = ROOT . 'api/handlers/servers.php';
+        // #1313 extracted the per-tile hydration into a shared helper
+        // so the admin Server Management list could reuse the wiring
+        // without copy-pasting ~200 lines of JS. The mapimg patch
+        // moved with it; the template still ships the `<img>` slot,
+        // the helper holds the `applyData()` site that patches `src`
+        // + toggles `hidden`.
+        $jsPath  = ROOT . 'scripts/server-tile-hydrate.js';
 
         $tpl = file_get_contents($tplPath);
         $hdl = file_get_contents($hdlPath);
-        if ($tpl === false || $hdl === false) {
-            self::fail("setUp could not read template or handler ({$tplPath} / {$hdlPath})");
+        $js  = file_get_contents($jsPath);
+        if ($tpl === false || $hdl === false || $js === false) {
+            self::fail("setUp could not read template / handler / hydrate helper ({$tplPath} / {$hdlPath} / {$jsPath})");
         }
         $this->template = $tpl;
         $this->handler  = $hdl;
+        $this->hydrate  = $js;
     }
 
     /**
@@ -144,40 +162,59 @@ final class ServerMapImageRenderTest extends TestCase
     }
 
     /**
-     * The inline initializer must wire `d.mapimg` into the slot's
+     * The hydration helper must wire `d.mapimg` into the slot's
      * `src` and the `onload` / `onerror` pair into the `hidden`
      * toggle — without this wiring the slot stays empty + hidden
      * forever and the thumbnail never paints.
+     *
+     * Pre-#1313 the wiring lived inline at the bottom of
+     * `page_servers.tpl`; the issue extracted it into
+     * `web/scripts/server-tile-hydrate.js` so the admin Server
+     * Management list could reuse it. The template still ships the
+     * `<img>` slot (see `testTemplateShipsMapImgSlot()`), but the
+     * `src` / `onload` / `onerror` patch site moved with the rest of
+     * `applyData()`.
+     *
+     * The template must also still <script src> the helper —
+     * without that include the `<img>` is just inert markup.
      */
-    public function testInlineInitializerWiresMapImg(): void
+    public function testHydrationHelperWiresMapImg(): void
     {
         $this->assertStringContainsString(
-            "tile.querySelector('[data-testid=\"server-map-img\"]')",
+            'src="./scripts/server-tile-hydrate.js"',
             $this->template,
-            "The inline initializer must locate the `<img>` slot via its testid hook "
+            "page_servers.tpl must <script src> web/scripts/server-tile-hydrate.js — "
+            . "without the include the helper never boots and the `<img>` slot stays "
+            . "empty + hidden forever (#1312, #1313).",
+        );
+
+        $this->assertStringContainsString(
+            "tile.querySelector('[data-testid=\"server-map-img\"]')",
+            $this->hydrate,
+            "server-tile-hydrate.js must locate the `<img>` slot via its testid hook "
             . "so it can patch the `src` from r.data.mapimg (#1312).",
         );
 
         $this->assertStringContainsString(
             'mapImg.src = String(d.mapimg)',
-            $this->template,
-            "The inline initializer must assign d.mapimg to the slot's `src` — "
+            $this->hydrate,
+            "server-tile-hydrate.js must assign d.mapimg to the slot's `src` — "
             . "without this assignment the empty `src=\"\"` placeholder never gets "
             . "the live value the API returns (#1312).",
         );
 
         $this->assertMatchesRegularExpression(
             '/mapImg\.onload\s*=\s*function\s*\([^)]*\)\s*\{[^}]*removeAttribute\([\'\"]hidden[\'\"]\)/s',
-            $this->template,
-            "The inline initializer must unhide the slot on `load` so the thumbnail "
+            $this->hydrate,
+            "server-tile-hydrate.js must unhide the slot on `load` so the thumbnail "
             . "becomes visible only after the file actually downloads — pre-load the "
             . "slot stays `hidden` (#1312).",
         );
 
         $this->assertMatchesRegularExpression(
             '/mapImg\.onerror\s*=\s*function\s*\([^)]*\)\s*\{[^}]*setAttribute\([\'\"]hidden[\'\"],\s*[\'\"][\'\"]\)/s',
-            $this->template,
-            "The inline initializer must KEEP the slot hidden on `error` so a missing "
+            $this->hydrate,
+            "server-tile-hydrate.js must KEEP the slot hidden on `error` so a missing "
             . "file (or a missing `nomap.jpg`) never paints a broken-image icon (#1312).",
         );
     }

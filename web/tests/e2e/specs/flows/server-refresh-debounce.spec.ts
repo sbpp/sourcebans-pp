@@ -40,8 +40,9 @@ const SERVERS_ROUTE = '/index.php?p=servers';
 
 test.describe('flow: public servers — Re-query button debounce (#1311)', () => {
     // Skip on mobile-chromium: the contract is browser-shape-agnostic
-    // (the JS lives in `page_servers.tpl` and runs identically on both
-    // form factors) and the second project's worker doubles the
+    // (the JS lives in `web/scripts/server-tile-hydrate.js` — extracted
+    // out of the template at #1313 — and runs identically on both form
+    // factors) and the second project's worker doubles the
     // truncate-and-reseed traffic against `sourcebans_e2e`. CI runs
     // `workers: 1` so the truncates would still serialize, but the
     // local default is `workers: undefined` (cpu count) and a

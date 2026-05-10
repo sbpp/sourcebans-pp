@@ -171,6 +171,32 @@ interface Window {
     swapTab?: (tabNo: number | string) => void;
     Swap2ndPane?: (n: number | string, type: string) => void;
     demo?: (filename: string, origname: string) => void;
+    /**
+     * SourceBans++ shared theme namespace — assembled across
+     * `web/themes/default/js/theme.js` (showToast / openDrawer / …) and
+     * `web/scripts/server-tile-hydrate.js` (hydrateServerTiles, #1313).
+     * All members are optional because pages that omit the relevant
+     * `<script>` tag drop the surface entirely; call sites should
+     * narrow with `if (window.SBPP && window.SBPP.foo) …`.
+     */
+    SBPP?: {
+        showToast?: (msg: string, kind?: string) => void;
+        openDrawer?: (bid: number | string) => void;
+        /**
+         * Hydrate every `[data-testid="server-tile"]` inside a
+         * container with the live A2S response. Defined in
+         * `web/scripts/server-tile-hydrate.js`; consumed by
+         * `page_servers.tpl` and `page_admin_servers_list.tpl`.
+         * Pass `{ container }` to scope a hydration to one
+         * surface; omit to walk every `[data-server-hydrate]`
+         * container in the document.
+         */
+        hydrateServerTiles?: (opts?: {
+            container?: ParentNode;
+            openedIndex?: number;
+            trunchostname?: number;
+        }) => void;
+    };
 }
 
 /** Per-page accordion handle from InitAccordion(). */

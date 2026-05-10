@@ -51,10 +51,15 @@
     sourcebans.js is dropped at #1123 D1, so we can't use the legacy
     `LoadServerHost()` / `InitAccordion()` helpers; they'd be undefined
     here. The card markup carries `data-sid` / `data-index` /
-    `data-status` and the inline `<script>` walks
-    `[data-testid="server-tile"]` directly. `sb.api.call` and the
-    `Actions.*` constants come from the chrome's
-    api.js + api-contract.js (loaded by core/header.tpl).
+    `data-status` and the shared hydration helper
+    (`web/scripts/server-tile-hydrate.js`) walks
+    `[data-testid="server-tile"]` inside the `[data-server-hydrate]`
+    wrapper. `sb.api.call` and the `Actions.*` constants come from
+    the chrome's api.js + api-contract.js (loaded by core/header.tpl).
+    The helper auto-runs on first paint, so the page-level body needs
+    no inline `<script>` block of its own — it just renders the markup
+    contract the helper reads. The same helper also drives the admin
+    Server Management list (#1313) so both surfaces share the contract.
 
     Testability hooks (per #1123 issue + B5 brief)
     ----------------------------------------------
@@ -127,9 +132,19 @@
             </div>
         </div>
     {else}
+    {*
+        data-server-hydrate="auto" tells web/scripts/server-tile-hydrate.js
+        to walk every `[data-testid="server-tile"]` inside this container
+        and fire `Actions.ServersHostPlayers` per tile after first paint.
+        data-opened-index threads through the deep-link auto-expand contract
+        from page.servers.php's `?p=servers&s=<n>` handler — the helper
+        flips the matching tile open once its hydration response lands.
+    *}
     <div class="grid gap-4"
          data-testid="servers-list"
+         data-server-hydrate="auto"
          data-opened-index="{$opened_server}"
+         data-trunchostname="70"
          style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))">
         {foreach $server_list as $server}
         <article class="card"
@@ -234,11 +249,15 @@
                     an inline `<img id="mapimg_{$server.sid}">` here; the
                     #1123 D1 redesign dropped it but the API handler still
                     returns `mapimg` (web/api/handlers/servers.php →
-                    api_servers_host_players → GetMapImage). The inline
-                    initializer below patches `src` from the live response
-                    and unhides the element on `load`; on `error` (file
-                    missing or 404 / nomap.jpg also missing) the element
-                    stays `hidden` so we never paint a broken-image icon.
+                    api_servers_host_players → GetMapImage). The shared
+                    hydration helper at web/scripts/server-tile-hydrate.js
+                    (#1313) patches `src` from the live response via
+                    `applyData()`'s `[data-testid="server-map-img"]` lookup,
+                    unhides the element on `load`, and KEEPS it hidden on
+                    `error` (file missing or 404 / nomap.jpg also missing)
+                    so we never paint a broken-image icon. The helper is
+                    feature-detected, so the admin Server Management list
+                    (which does NOT ship this slot) silently no-ops.
                     `alt=""` is intentional: the map name is already
                     rendered as text in the `[data-testid="server-map"]`
                     row above, so the image is decorative confirmation
@@ -260,270 +279,14 @@
 </div>
 
 {*
-    Inline initializer — finds every server tile, fires one
-    sb.api.call per card, and patches the DOM in place. No external
-    deps beyond the chrome's api.js + sb.js. We avoid touching
-    web/scripts/* per the Phase B "NEVER touch" list, so the wiring
-    lives in the template that owns it.
-
-    Variables interpolated by Smarty are restricted to numeric
-    `opened_server` (cast to int by the View) and the `Actions`
-    JS-side namespace from api-contract.js — no user input flows
-    through this <script>. Wrapped in {literal} so Smarty doesn't try
-    to parse the JS object literals.
+    Per-tile hydration is driven by web/scripts/server-tile-hydrate.js
+    (#1313). The helper auto-runs on first paint for every container
+    marked `data-server-hydrate="auto"` (see the `<div class="grid …">`
+    above), walks `[data-testid="server-tile"]` children, fires one
+    `Actions.ServersHostPlayers` call per tile and patches the live
+    cells (status pill, map, players, host, players bar). The script
+    file lives under web/scripts/ rather than inline so the admin
+    Server Management list (page_admin_servers_list.tpl, #1313) can
+    pull the same helper without copy-pasting ~200 lines of JS.
 *}
-<script>
-{literal}
-(function () {
-    'use strict';
-    if (typeof sb === 'undefined' || !sb || !sb.api || typeof Actions === 'undefined') {
-        return;
-    }
-
-    /** @type {NodeListOf<HTMLElement>} */
-    var tiles = document.querySelectorAll('[data-testid="server-tile"]');
-    if (tiles.length === 0) return;
-
-    var listEl = document.querySelector('[data-testid="servers-list"]');
-    var summary = document.querySelector('[data-testid="servers-summary"]');
-    var openedIndex = listEl ? Number(listEl.getAttribute('data-opened-index')) : -1;
-    var onlineCount = 0;
-
-    function updateOnlineCount(delta) {
-        onlineCount += delta;
-        if (summary) {
-            var num = summary.querySelector('[data-online-num]');
-            if (num) num.textContent = String(onlineCount);
-        }
-    }
-
-    /**
-     * @param {HTMLElement} tile
-     * @param {string} status loading|online|offline
-     * @param {string} label
-     */
-    function setStatus(tile, status, label) {
-        var prev = tile.getAttribute('data-status');
-        tile.setAttribute('data-status', status);
-        var pill = tile.querySelector('[data-testid="server-status"]');
-        if (pill) {
-            pill.classList.remove('pill--online', 'pill--offline');
-            pill.classList.add(status === 'online' ? 'pill--online' : 'pill--offline');
-            var lbl = pill.querySelector('[data-status-label]');
-            if (lbl) lbl.textContent = label;
-            var icon = pill.querySelector('i');
-            if (icon) {
-                icon.setAttribute('data-lucide',
-                    status === 'online' ? 'check-circle-2'
-                    : status === 'offline' ? 'x-circle'
-                    : 'loader');
-            }
-        }
-        if (prev !== 'online' && status === 'online') updateOnlineCount(+1);
-        if (prev === 'online' && status !== 'online') updateOnlineCount(-1);
-    }
-
-    /**
-     * @param {HTMLElement} tile
-     * @param {{hostname?: string, players?: number, maxplayers?: number, map?: string, mapimg?: string, player_list?: Array<{name: string, frags: number, time_f: string}>, error?: string}} d
-     */
-    function applyData(tile, d) {
-        if (d.error === 'connect') {
-            setStatus(tile, 'offline', 'Offline');
-            var hostFb = tile.querySelector('[data-testid="server-host"]');
-            if (hostFb) hostFb.textContent = (hostFb.getAttribute('data-fallback') || '');
-            var toggleOff = tile.querySelector('[data-testid="server-toggle"]');
-            if (toggleOff instanceof HTMLButtonElement) toggleOff.disabled = true;
-            // Re-enable the per-tile Re-query button so the operator can
-            // try again — the server-side cache (#1311) absorbs back-to-
-            // back probes inside its window, and we still want a visible
-            // affordance to retry once the window expires.
-            var refreshOff = tile.querySelector('[data-testid="server-refresh"]');
-            if (refreshOff instanceof HTMLButtonElement) refreshOff.disabled = false;
-            return;
-        }
-
-        setStatus(tile, 'online', 'Online');
-
-        var host = tile.querySelector('[data-testid="server-host"]');
-        if (host && d.hostname) {
-            // d.hostname is htmlspecialchars()'d server-side
-            // (web/api/handlers/servers.php → api_servers_host_players),
-            // so setHTML mirrors the legacy LoadServerHost() behaviour.
-            sb.setHTML(host.id || (host.id = 'server-host-' + tile.getAttribute('data-id')), d.hostname);
-        }
-
-        var mapEl = tile.querySelector('[data-testid="server-map"]');
-        if (mapEl) mapEl.textContent = d.map || '';
-
-        // Map preview thumbnail (#1312). The handler returns
-        // `images/maps/<map>.jpg` (or `images/maps/nomap.jpg` if the
-        // file is missing). Show the <img> only after the network
-        // round-trip succeeds — `nomap.jpg` itself can be missing on
-        // forks / bare deployments, so we treat any load error as a
-        // signal to keep the slot hidden rather than painting a
-        // broken-image icon.
-        var mapImg = tile.querySelector('[data-testid="server-map-img"]');
-        if (mapImg instanceof HTMLImageElement) {
-            if (d.mapimg) {
-                mapImg.onload = function () { mapImg.removeAttribute('hidden'); };
-                mapImg.onerror = function () { mapImg.setAttribute('hidden', ''); };
-                mapImg.src = String(d.mapimg);
-            } else {
-                mapImg.setAttribute('hidden', '');
-                mapImg.removeAttribute('src');
-            }
-        }
-
-        var players = Number(d.players || 0);
-        var maxp = Number(d.maxplayers || 0);
-        var pl = tile.querySelector('[data-testid="server-players"]');
-        if (pl) pl.textContent = players + '/' + maxp;
-        var bar = tile.querySelector('[data-players-bar]');
-        if (bar instanceof HTMLElement && maxp > 0) {
-            var pct = Math.min(100, Math.max(0, (players / maxp) * 100));
-            bar.style.width = pct + '%';
-        }
-
-        var toggle = tile.querySelector('[data-testid="server-toggle"]');
-        if (toggle instanceof HTMLButtonElement) toggle.disabled = false;
-        // Re-enable the Re-query button now that the in-flight probe
-        // landed (#1311). Mirrors the toggle gate above.
-        var refresh = tile.querySelector('[data-testid="server-refresh"]');
-        if (refresh instanceof HTMLButtonElement) refresh.disabled = false;
-
-        // Cache the player list on the tile for cheap re-render on toggle.
-        if (Array.isArray(d.player_list)) {
-            tile.__sbppPlayers = d.player_list;
-            renderPlayers(tile);
-        }
-    }
-
-    /**
-     * @param {HTMLElement} tile
-     */
-    function renderPlayers(tile) {
-        var panel = tile.querySelector('[data-testid="server-players-panel"]');
-        if (!panel) return;
-        var ul = panel.querySelector('[data-player-list]');
-        var empty = panel.querySelector('[data-empty-message]');
-        var list = (tile.__sbppPlayers || []);
-        if (!ul) return;
-        if (!list.length) {
-            ul.style.display = 'none';
-            if (empty instanceof HTMLElement) empty.style.display = '';
-            return;
-        }
-        if (empty instanceof HTMLElement) empty.style.display = 'none';
-        ul.style.display = '';
-        ul.innerHTML = '';
-        list.forEach(function (p) {
-            var li = document.createElement('li');
-            li.style.display = 'flex';
-            li.style.alignItems = 'center';
-            li.style.justifyContent = 'space-between';
-            li.style.gap = '0.5rem';
-            li.style.padding = '0.25rem 0';
-            li.style.borderBottom = '1px solid var(--border)';
-            li.setAttribute('data-testid', 'server-player');
-
-            var name = document.createElement('span');
-            name.className = 'truncate text-sm';
-            name.textContent = String(p.name || '');
-            li.appendChild(name);
-
-            var meta = document.createElement('span');
-            meta.className = 'text-xs text-muted font-mono tabular-nums';
-            meta.textContent = (p.frags != null ? String(p.frags) : '0') + ' \u00B7 ' + String(p.time_f || '');
-            li.appendChild(meta);
-
-            ul.appendChild(li);
-        });
-    }
-
-    /**
-     * @param {HTMLElement} tile
-     * @param {boolean} open
-     */
-    function setExpanded(tile, open) {
-        tile.setAttribute('data-expanded', open ? 'true' : 'false');
-        var toggle = tile.querySelector('[data-testid="server-toggle"]');
-        if (toggle) toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-        var panel = tile.querySelector('[data-testid="server-players-panel"]');
-        if (panel instanceof HTMLElement) {
-            if (open) panel.removeAttribute('hidden'); else panel.setAttribute('hidden', '');
-        }
-    }
-
-    /**
-     * @param {HTMLElement} tile
-     */
-    function loadTile(tile) {
-        var sid = Number(tile.getAttribute('data-id'));
-        if (!sid) return;
-        // Coalesce back-to-back invocations (#1311). Without this, the
-        // hand-mash of the per-tile Re-query button or the auto-fire on
-        // page load + a stray click translated each click into a fresh
-        // `Actions.ServersHostPlayers` POST — the server-side cache
-        // absorbs the bulk of that traffic, but the redundant XHRs are
-        // still wasted bandwidth and a needless UX vector. We mirror
-        // the toggle button's "disabled while loading" gate on the
-        // refresh button below; this in-JS guard handles the case
-        // where the click handler fires faster than the disabled
-        // attribute settles in the DOM.
-        if (tile.__sbppLoading) return;
-        tile.__sbppLoading = true;
-
-        setStatus(tile, 'loading', 'Loading');
-        var refresh = tile.querySelector('[data-testid="server-refresh"]');
-        if (refresh instanceof HTMLButtonElement) refresh.disabled = true;
-
-        sb.api.call(Actions.ServersHostPlayers, { sid: sid, trunchostname: 70 }).then(function (r) {
-            tile.__sbppLoading = false;
-            if (!r || !r.ok || !r.data) {
-                setStatus(tile, 'offline', 'Offline');
-                if (refresh instanceof HTMLButtonElement) refresh.disabled = false;
-                return;
-            }
-            applyData(tile, r.data);
-            var idx = Number(tile.getAttribute('data-index'));
-            if (openedIndex >= 0 && openedIndex === idx && tile.getAttribute('data-status') === 'online') {
-                setExpanded(tile, true);
-            }
-        }, function () {
-            tile.__sbppLoading = false;
-            setStatus(tile, 'offline', 'Offline');
-            if (refresh instanceof HTMLButtonElement) refresh.disabled = false;
-        });
-    }
-
-    Array.prototype.forEach.call(tiles, function (tile) {
-        loadTile(tile);
-
-        var toggle = tile.querySelector('[data-testid="server-toggle"]');
-        if (toggle) {
-            toggle.addEventListener('click', function (ev) {
-                ev.preventDefault();
-                if (toggle instanceof HTMLButtonElement && toggle.disabled) return;
-                var open = tile.getAttribute('data-expanded') !== 'true';
-                setExpanded(tile, open);
-            });
-        }
-
-        var refresh = tile.querySelector('[data-testid="server-refresh"]');
-        if (refresh) {
-            refresh.addEventListener('click', function (ev) {
-                ev.preventDefault();
-                if (refresh instanceof HTMLButtonElement && refresh.disabled) return;
-                loadTile(tile);
-            });
-        }
-    });
-
-    // Re-render Lucide icons we just swapped via setAttribute('data-lucide').
-    if (typeof window.lucide !== 'undefined' && typeof window.lucide.createIcons === 'function') {
-        window.lucide.createIcons();
-    }
-})();
-{/literal}
-</script>
+<script src="./scripts/server-tile-hydrate.js" defer></script>

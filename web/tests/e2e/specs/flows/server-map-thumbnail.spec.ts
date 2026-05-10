@@ -9,7 +9,10 @@
  * `<img>` slot — the `mapimg` URL still flowed through the JSON
  * envelope but had no DOM target. The fix restores the slot
  * (`<img data-testid="server-map-img" hidden>`) inside the players
- * panel and wires the inline initializer to:
+ * panel and wires the shared hydration helper
+ * (`web/scripts/server-tile-hydrate.js` — #1313 extracted the
+ * inline initializer into this helper so the admin Server
+ * Management list could reuse the wiring) to:
  *
  *   - Patch `src` from `r.data.mapimg`.
  *   - Unhide the slot on `load` (so the empty `src=""` placeholder
@@ -25,8 +28,9 @@
  * rendered) against the `data-testid="server-map-img"` hook.
  *
  * The PHPUnit guard at `web/tests/integration/ServerMapImageRenderTest.php`
- * pins the static contract (the slot ships in the template, the JS
- * still wires `d.mapimg`); this spec pins the runtime contract.
+ * pins the static contract (the slot ships in the template, the
+ * shared helper still wires `d.mapimg`); this spec pins the runtime
+ * contract.
  *
  * No `setTimeout` waits — every assertion anchors on a terminal
  * attribute or visibility change Playwright auto-waits on, per the
@@ -45,7 +49,7 @@ interface SeededServer {
 interface ServerHostPlayersStub {
     /** Map name surfaced in the data row + alt-text-eligible payload. */
     map: string;
-    /** Relative URL the inline initializer patches into the slot's `src`. */
+    /** Relative URL the hydration helper patches into the slot's `src`. */
     mapimg: string;
     /** Force `error: 'connect'` if true (mirrors the offline UDP path). */
     connectError?: boolean;
@@ -115,9 +119,9 @@ async function seedServerViaApi(page: import('@playwright/test').Page): Promise<
  * The dispatcher endpoint is `./api.php` (per `web/scripts/api.js`),
  * resolved against the page's base URL. Other actions on the page
  * are not intercepted — the public servers page only fires
- * `servers.host_players` from its inline initializer, so the body
- * inspection below safely passes through anything else (the chrome's
- * version check etc.) untouched.
+ * `servers.host_players` from the shared hydration helper, so the
+ * body inspection below safely passes through anything else (the
+ * chrome's version check etc.) untouched.
  */
 async function stubHostPlayers(
     page: import('@playwright/test').Page,
@@ -148,11 +152,11 @@ async function stubHostPlayers(
         }
 
         // The dispatcher (web/api.php) wraps every successful handler
-        // return in `{ ok: true, data: <handler-return> }` and the page
-        // initializer above guards on `r.ok && r.data`. Match the
-        // envelope shape exactly so the mock looks identical to a
-        // real API response on the wire — the inline script doesn't
-        // know it's talking to a stub.
+        // return in `{ ok: true, data: <handler-return> }` and the
+        // helper above guards on `r.ok && r.data`. Match the envelope
+        // shape exactly so the mock looks identical to a real API
+        // response on the wire — the hydration helper doesn't know
+        // it's talking to a stub.
         if (stub.connectError) {
             await route.fulfill({
                 status: 200,
@@ -208,8 +212,7 @@ test.describe('flow: expanded server card map thumbnail (#1312)', () => {
 
         // de_dust2.jpg ships in web/images/maps/ out of the box, so
         // the browser will resolve the URL to a real 200 + image
-        // payload and the inline initializer's `onload` branch
-        // unhides the slot.
+        // payload and the helper's `onload` branch unhides the slot.
         await stubHostPlayers(page, seeded, {
             map:    'de_dust2',
             mapimg: 'images/maps/de_dust2.jpg',
@@ -218,7 +221,7 @@ test.describe('flow: expanded server card map thumbnail (#1312)', () => {
         await page.goto(`/index.php?p=servers&s=0`);
 
         const tile = page.locator('[data-testid="server-tile"]').first();
-        // Anchor on the terminal attribute the inline initializer
+        // Anchor on the terminal attribute the hydration helper
         // sets — Playwright auto-waits, no setTimeout needed.
         await expect(tile).toHaveAttribute('data-status', 'online');
         // `?p=servers&s=0` requests auto-expansion of index 0; the
@@ -234,7 +237,7 @@ test.describe('flow: expanded server card map thumbnail (#1312)', () => {
         const seeded = await seedServerViaApi(page);
 
         // Point at a path that will return 404 (no such file ships).
-        // The inline `onerror` handler must `setAttribute('hidden', '')`
+        // The helper's `onerror` handler must `setAttribute('hidden', '')`
         // so the slot stays invisible — pre-fix the broken-image
         // glyph would paint instead.
         await stubHostPlayers(page, seeded, {

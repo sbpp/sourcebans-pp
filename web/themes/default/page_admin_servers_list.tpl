@@ -8,12 +8,23 @@
     (always present from admin.servers.php) plus mod_name (added in B15
     so the card can render the mod label without a second query).
 
-    Live host / players / map are left as JS hydration targets — the
-    sbpp2026 chrome doesn't load the legacy LoadServerHost helper from
-    sourcebans.js, so until a Phase C JS lands, cards display the
-    canonical IP:port and a neutral status pill. data-id="{$server.sid}"
-    is the deterministic hook that hydration will key off (see the
-    "Testability hooks" rule in the B15 plan).
+    Live host / players / map are hydrated client-side by
+    web/scripts/server-tile-hydrate.js (#1313). The helper walks
+    every server-tile inside the data-server-hydrate="auto" grid and
+    fires Actions.ServersHostPlayers per tile, patching the same
+    data-testid cells the public page uses (server-status,
+    server-map, server-players, server-host, plus data-players-bar).
+    Tiles for disabled servers carry data-server-skip="1" so the helper
+    leaves them at the server-rendered placeholder — there's no point
+    poking a UDP socket for a server the panel just told you is offline
+    by config.
+
+    Pre-#1313 the cells carried inert data-hydrate="map" /
+    data-hydrate="players" placeholders with no script behind them and
+    the values stayed at the em-dash forever; the testid rename plus
+    the script include is the load-bearing fix. The deterministic hook
+    the hydration helper keys off is data-id="..." (see the "Testability
+    hooks" rule in #1123).
 
     Remove flow uses Actions.ServersRemove via the inline script at the
     bottom; CSRF is auto-attached by sb.api.call from the
@@ -54,13 +65,25 @@
                 </div>
             </div>
         {else}
+            {*
+                data-server-hydrate="auto" opts the grid into the shared
+                hydration helper (web/scripts/server-tile-hydrate.js).
+                The helper auto-runs on first paint, walks every
+                [data-testid="server-tile"] child, and patches the
+                live cells (status pill / map / players / hostname /
+                players bar) per the response from
+                Actions.ServersHostPlayers.
+            *}
             <div class="grid gap-4"
                  style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))"
-                 data-testid="server-grid">
+                 data-testid="server-grid"
+                 data-server-hydrate="auto"
+                 data-trunchostname="70">
                 {foreach from=$server_list item=server}
                     <article class="card{if !$server.enabled} card--disabled{/if}"
                              data-testid="server-tile"
                              data-id="{$server.sid}"
+                             {if !$server.enabled}data-server-skip="1"{else}data-status="loading"{/if}
                              id="sid_{$server.sid}"
                              style="{if !$server.enabled}opacity:0.65;{/if}display:flex;flex-direction:column;gap:0.75rem;padding:1rem">
                         <header class="flex items-start gap-3">
@@ -78,14 +101,43 @@
                                 {/if}
                             </span>
                             <div style="flex:1;min-width:0">
-                                <div class="font-semibold truncate" data-testid="server-tile-name">
-                                    Server #{$server.sid}
+                                {*
+                                    server-tile-name carries the live hostname once
+                                    the A2S probe lands. server-tile-hydrate.js
+                                    patches the inner [data-testid="server-host"]
+                                    via sb.setHTML; the JSON action
+                                    htmlspecialchars()'s the value server-side
+                                    (web/api/handlers/servers.php), so setHTML is
+                                    safe. The fallback text + data-fallback attr
+                                    is the canonical IP:port — restored when the
+                                    UDP probe fails so the card stays readable.
+                                *}
+                                <div class="font-semibold truncate"
+                                     data-testid="server-tile-name">
+                                    <span data-testid="server-host"
+                                          data-fallback="{$server.ip|escape}:{$server.port}">{$server.ip|escape}:{$server.port}</span>
                                 </div>
                                 <div class="font-mono text-xs text-muted truncate" data-testid="server-tile-host">
                                     {$server.ip|escape}:{$server.port}
                                 </div>
                             </div>
-                            {if !$server.enabled}
+                            {if $server.enabled}
+                                {*
+                                    Status pill mirrors the public servers-list
+                                    contract: starts at "Loading" with a loader
+                                    icon, flips to online (check-circle-2) /
+                                    offline (x-circle) once
+                                    server-tile-hydrate.js gets a response. The
+                                    pill is also the deterministic anchor the e2e
+                                    spec keys off (no hover-only chrome).
+                                *}
+                                <span class="pill pill--offline"
+                                      data-testid="server-status"
+                                      aria-live="polite">
+                                    <i data-lucide="loader" style="width:10px;height:10px"></i>
+                                    <span data-status-label>Loading</span>
+                                </span>
+                            {else}
                                 <span class="pill pill--offline" title="Disabled — hidden from public lists">Disabled</span>
                             {/if}
                         </header>
@@ -94,9 +146,9 @@
                             <dt style="font-weight:500;color:var(--text)">Mod</dt>
                             <dd style="margin:0">{if isset($server.mod_name)}{$server.mod_name|escape}{else}<span class="text-faint">unknown</span>{/if}</dd>
                             <dt style="font-weight:500;color:var(--text)">Players</dt>
-                            <dd style="margin:0" data-hydrate="players">—</dd>
+                            <dd style="margin:0" data-testid="server-players">—</dd>
                             <dt style="font-weight:500;color:var(--text)">Map</dt>
-                            <dd style="margin:0" data-hydrate="map">—</dd>
+                            <dd style="margin:0" data-testid="server-map">—</dd>
                         </dl>
 
                         <footer class="flex gap-1" style="border-top:1px solid var(--border);padding-top:0.75rem;flex-wrap:wrap">
@@ -118,6 +170,28 @@
                                    href="index.php?p=admin&c=servers&o=edit&id={$server.sid|escape:'url'}">
                                     Edit
                                 </a>
+                            {/if}
+                            {if $server.enabled}
+                                {*
+                                    Refresh button is wired by
+                                    web/scripts/server-tile-hydrate.js — clicking it
+                                    re-fires Actions.ServersHostPlayers for this
+                                    tile. Hidden on disabled servers (the helper
+                                    skips them anyway). Starts `disabled` so a
+                                    click before the helper boots is a no-op
+                                    and the bootstrap probe (#1311) can re-enable
+                                    on settle — same gate the public servers list
+                                    uses.
+                                *}
+                                <button type="button"
+                                        class="btn btn--ghost btn--sm"
+                                        data-testid="server-refresh"
+                                        data-action="refresh"
+                                        title="Re-query this server"
+                                        aria-label="Refresh server status"
+                                        disabled>
+                                    <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
+                                </button>
                             {/if}
                             {if $pemission_delserver}
                                 <button type="button"
@@ -145,6 +219,16 @@
         {/if}
     {/if}
 </section>
+{*
+    Per-tile A2S hydration (#1313): the shared helper in
+    web/scripts/server-tile-hydrate.js auto-runs on first paint for
+    the [data-server-hydrate="auto"] grid above and patches the
+    live cells (status pill / map / players / hostname / refresh).
+    The defer attribute lets the rest of the page paint before the
+    helper boots; auto-run still fires once it does (the helper
+    branches on document.readyState).
+*}
+<script src="./scripts/server-tile-hydrate.js" defer></script>
 {* Smarty default delimiters are { and }; the object literals below
    would otherwise be parsed as template tags. {literal}…{/literal}
    keeps the entire script body verbatim. *}
