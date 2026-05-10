@@ -47,6 +47,12 @@ The [quickstart](https://sbpp.github.io/docs/quickstart/) guide gives you a deta
 The master branch doesn't include the required dependencies or compiled plugins you need to run SourceBans++.
 Here is a quick summary of getting the master branch code up and running.
 
+> **Upgrading from 1.x?** v2.0.0 introduces new PHP dependencies and
+> resets `config.theme` to `default`. Read [`UPGRADING.md`](UPGRADING.md)
+> **before** you `git pull` or unzip a release tarball over an existing
+> install — the `composer install` step is required for git-based
+> upgrades and is not optional.
+
 ### Installing webpanel dependencies
 - Follow the [quickstart](https://sbpp.github.io/docs/quickstart/) guide and upload the webpanel files to your web server
 - Install [composer](https://getcomposer.org/) - [Installation Guide](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-macos)
