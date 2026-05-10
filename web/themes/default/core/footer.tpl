@@ -143,6 +143,34 @@
          style="max-height:60vh;overflow-y:auto;padding:0.5rem"></div>
 </dialog>
 
+{*
+    Issue #1304: server-render the palette's "Navigate" entries as a
+    JSON blob theme.js reads at boot. Pre-fix the entry list lived as
+    a hardcoded `NAV_ITEMS` array in `web/themes/default/js/theme.js`
+    with no permission check, leaking admin entries (`Admin panel`,
+    `Add ban`) to logged-out + partial-permission users (clicking either
+    landed them on the "you must be logged in" / 403 surface).
+
+    The blob is built by `Sbpp\View\PaletteActions::for($userbank)` in
+    `web/pages/core/footer.php` and assigned as `$palette_actions_json`.
+    The encoder uses JSON_HEX_TAG / _AMP / _APOS / _QUOT so the content
+    can never break out of the surrounding `<script>` element regardless
+    of what a future label / href adds (`</script>` would otherwise let
+    the blob escape its container — defense-in-depth on top of the
+    catalog being all-ASCII today).
+
+    `<script type="application/json">` is the standards-blessed shape
+    for embedded data: browsers don't execute the body, JSON.parse
+    consumes it as text content. theme.js falls back to an empty list
+    (palette renders only the player-search half) when the blob is
+    absent, so a chrome-only render in test contexts doesn't crash.
+
+    `data-testid="palette-actions"` is the testability hook the e2e
+    spec anchors on instead of probing the script element by tag.
+*}
+{* nofilter: server-encoded JSON from PaletteActions::for($userbank) using JSON_HEX_TAG|_AMP|_APOS|_QUOT — every potentially-dangerous char (<>&'") is escaped as a \uXXXX sequence, so the blob can't break out of its <script> wrapper or carry HTML entities that would corrupt JSON.parse. *}
+<script type="application/json" id="palette-actions" data-testid="palette-actions">{$palette_actions_json nofilter}</script>
+
 <script src="{$theme_url}/js/lucide.min.js"></script>
 <script src="{$theme_url}/js/theme.js"></script>
 

@@ -269,17 +269,53 @@
 
   /** @typedef {{icon: string, label: string, href: string}} NavItem */
 
+  /**
+   * Parse the server-rendered, permission-filtered palette nav set
+   * out of `<script type="application/json" id="palette-actions">`.
+   *
+   * Pre-#1304 this list was a hardcoded `NAV_ITEMS` array right here
+   * in JS, so every visitor (logged-out, partial-permission admins)
+   * saw the admin-only entries (`Admin panel`, `Add ban`) alongside
+   * the public ones, then got bounced off the "you must be logged
+   * in" / 403 surface when they clicked one. The blob is now built
+   * by `Sbpp\View\PaletteActions::for($userbank)` server-side
+   * (see `web/pages/core/footer.php` + `core/footer.tpl`); this
+   * function is just the consumer.
+   *
+   * Falls back to an empty list when:
+   *   - the script tag is missing (chrome-only render in test
+   *     contexts where the chrome was injected without a page
+   *     handler having run footer.php — defensive, the palette
+   *     just renders the player-search half),
+   *   - the JSON is malformed (a broken catalog entry would
+   *     otherwise silently nuke the palette; surfacing as empty
+   *     keeps the player-search half working).
+   *
+   * @returns {NavItem[]}
+   */
+  function loadNavItems() {
+    const blob = document.getElementById('palette-actions');
+    if (!blob) return [];
+    try {
+      const parsed = JSON.parse(blob.textContent || '[]');
+      if (!Array.isArray(parsed)) return [];
+      // Defensive shape filter — drop entries missing any of the
+      // three keys theme.js renders. Server-side PaletteActions
+      // always emits the full triple, but the wire format is the
+      // contract and a future PR can't accidentally trim a key
+      // without breaking the tests too.
+      return parsed.filter((n) =>
+        n && typeof n.icon === 'string'
+          && typeof n.label === 'string'
+          && typeof n.href === 'string'
+      );
+    } catch (_e) {
+      return [];
+    }
+  }
+
   /** @type {NavItem[]} */
-  const NAV_ITEMS = [
-    { icon: 'layout-dashboard', label: 'Dashboard',     href: '?' },
-    { icon: 'ban',              label: 'Ban list',      href: '?p=banlist' },
-    { icon: 'mic-off',          label: 'Comm blocks',   href: '?p=commslist' },
-    { icon: 'flag',             label: 'Submit a ban',  href: '?p=submit' },
-    { icon: 'megaphone',        label: 'Appeals',       href: '?p=appeal' },
-    { icon: 'server',           label: 'Servers',       href: '?p=servers' },
-    { icon: 'shield',           label: 'Admin panel',   href: '?p=admin' },
-    { icon: 'plus-circle',      label: 'Add ban',       href: '?p=admin&c=bans&section=add-ban' },
-  ];
+  const NAV_ITEMS = loadNavItems();
 
   /**
    * Render filtered navigation + player search results into the palette.

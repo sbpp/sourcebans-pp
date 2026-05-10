@@ -392,6 +392,24 @@ in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` rewrites
 boot and after every render so glyph swaps don't require re-fetching
 results (#1184, #1207 DET-2).
 
+The palette's "Navigate" entries are server-rendered + permission
+filtered (#1304). `Sbpp\View\PaletteActions::for($userbank)` builds
+the entry catalog the way `web/pages/core/navbar.php` builds the
+sidebar: each entry carries a `permission` (int bitmask checked via
+`HasAccess` with `ADMIN_OWNER` OR'd in, or `true` for public) and an
+optional `config` key (a `sb_settings` boolean — same `config.enable*`
+toggles the sidebar already honours). `web/pages/core/footer.php`
+encodes the filtered list (with `JSON_HEX_TAG | JSON_HEX_AMP |
+JSON_HEX_APOS | JSON_HEX_QUOT` so the content can never break out of
+its `<script>` wrapper) and assigns it as `$palette_actions_json`;
+`core/footer.tpl` emits it inside `<script type="application/json"
+id="palette-actions" data-testid="palette-actions">`. `theme.js`'s
+`loadNavItems()` reads + `JSON.parse`s the blob at boot and uses it
+in place of the pre-#1304 hardcoded `NAV_ITEMS` array (which leaked
+admin links — `Admin panel`, `Add ban` — to logged-out and
+partial-permission users). The player-search half (`bans.search`)
+stays public; the leak was strictly the navigation entries.
+
 The preferred way to render is via typed view-model DTOs:
 
 ```php

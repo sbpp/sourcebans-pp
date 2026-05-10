@@ -705,6 +705,53 @@ different surfaces — don't conflate them. `Perms::for` is what page
 Views consume to gate `{if $can_add_ban}`; `PermissionCatalog` is
 what the rare display-the-user's-flags-back-to-them surfaces consume.
 
+### Filtered chrome navigation surfaces (sidebar + palette)
+
+Two chrome surfaces ship the user a list of "where you can go from
+here" entries:
+
+- The sidebar (`web/pages/core/navbar.php` → `core/navbar.tpl`) — the
+ vertical nav on the left of every page.
+- The command palette (`web/includes/View/PaletteActions.php` →
+ `<script id="palette-actions">` in `core/footer.tpl` →
+ `theme.js`'s `loadNavItems()`) — the Ctrl/Cmd-K dialog's "Navigate"
+ section (#1304).
+
+Both **must filter against the same per-(user, permission) gates**.
+Anything else leaks admin entries to logged-out / partial-permission
+users; clicking such an entry lands them on the "you must be logged
+in" / 403 surface and the chrome reads as broken (#1304 is the
+audit issue).
+
+The contract for either surface:
+
+- Public entries (Dashboard, Banlist, Servers) are always shown.
+- Public entries that ride a `config.enable*` toggle (Comm blocks /
+ Submit / Appeals) are dropped on installs that disabled the
+ surface — both surfaces honour the same toggle.
+- Admin entries are gated via `HasAccess($mask | ADMIN_OWNER)` so
+ owners see everything and per-flag holders see only what they
+ can actually use.
+- A `null` userbank (CSRF reject path / unhandled-error path
+ reaches the chrome before auth) is treated identically to
+ logged-out — fail closed.
+
+When adding a new entry to either surface, add the matching entry
+to the other in the same PR. The catalog files live next to each
+other (`web/pages/core/navbar.php` for the sidebar,
+`web/includes/View/PaletteActions.php` for the palette) for exactly
+this reason; the two regression suites
+(`web/tests/integration/PaletteActionsTest.php` and the existing
+navbar coverage in `web/tests/integration/LostPasswordChromeTest.php`)
+are the gates.
+
+`web/includes/View/PaletteActions.php` is the only PaletteActions
+catalog — never reintroduce the pre-#1304 hardcoded `NAV_ITEMS`
+array in `theme.js`. The wire format from the server to the JS
+client is the JSON blob's `{icon, label, href}` triple — never
+expose the raw `permission` mask to the client (the gate is
+server-side, full stop).
+
 ### `nofilter` discipline
 
 Smarty auto-escape is on globally (`$theme->setEscapeHtml(true)` in
@@ -1172,6 +1219,19 @@ audit (#1207) locked in. New CTAs:
   branch on it or use the higher-level `rejectIfInvalid()` helper).
   PHPStan's `method.resultDiscarded` rule fails the build on a
   discarded site. Issue #1290 phase K.1.
+- Hardcoded chrome-navigation lists in `theme.js` (the pre-#1304
+  `NAV_ITEMS` array shape) → the command palette's "Navigate" entries
+  are server-rendered + permission-filtered via
+  `Sbpp\View\PaletteActions::for($userbank)` and emitted as a JSON
+  blob inside `<script type="application/json" id="palette-actions">`
+  in `core/footer.tpl`. theme.js consumes the blob via `loadNavItems()`
+  with a fail-empty fallback. The pre-fix array showed `Admin panel`
+  and `Add ban` to logged-out / partial-permission users, who got
+  bounced off the "you must be logged in" / 403 surface when they
+  clicked through (#1304). New chrome-navigation entries land in
+  `PaletteActions::entries()` next to the existing rows; never inline
+  a parallel hardcoded list client-side. See "Filtered chrome
+  navigation surfaces" in Conventions for the per-surface contract.
 - `setTimeout` / `waitForTimeout` waits in E2E specs → wait on
   terminal attributes (`[data-loading="false"]` settled, `[data-skeleton]`
   removed) per #1123's "Testability hooks" rule.
@@ -1260,6 +1320,7 @@ audit (#1207) locked in. New CTAs:
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. |
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
 | Edit the command palette (icon-only trigger, ⌘K binding, result rows, kbd hints, Ctrl+Enter copy) | `web/themes/default/js/theme.js` (`openPalette` / `closePalette` / `renderPaletteResults` / `applyPlatformHints` / `handlePaletteCopyShortcut`) + `core/title.tpl` (the `.topbar__search` icon button) + the `.palette__row*` rules in `web/themes/default/css/theme.css`. Player rows carry `data-drawer-bid="<bid>"` (bare Enter / click → `loadDrawer`, palette closes itself) + `data-steamid="<steam>"` (`Ctrl/Cmd+Enter` → `navigator.clipboard.writeText` + `showToast`). The kbd glyphs are server-rendered in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` swaps `[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ on Mac/iOS at boot and after every render (#1184, #1207 DET-2). |
+| Add or edit a palette "Navigate" entry (the icon-label-href rows the palette renders alongside player results) | `web/includes/View/PaletteActions.php` (`Sbpp\View\PaletteActions::for($userbank)` — catalog + filter). The catalog's `entries()` method declares each entry as `{icon, label, href, permission, config?}`; `for()` drops entries the user can't reach (admin entries gated via `HasAccess` with `ADMIN_OWNER` OR'd in; public entries optionally gated on a `config.enable*` toggle) and emits the public `{icon, label, href}` triple. The filtered list is JSON-encoded by `web/pages/core/footer.php` (with `JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT` so the content can never escape its `<script>` wrapper) and emitted by `core/footer.tpl` inside `<script type="application/json" id="palette-actions" data-testid="palette-actions">`. `theme.js`'s `loadNavItems()` reads + `JSON.parse`s the blob at boot. Pre-#1304 the entry list was a hardcoded `NAV_ITEMS` array in `theme.js` with no permission check, leaking admin entries to logged-out + partial-permission users; the regression guard is `web/tests/integration/PaletteActionsTest.php` (server-side filter) plus `web/tests/e2e/specs/flows/ui/command-palette-permissions.spec.ts` (end-to-end blob → DOM contract). |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the parity tests) + `web/includes/Telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. Help-icon copy in `page_admin_settings_features.tpl` + `README.md`'s `## Privacy & telemetry` section + `UPGRADING.md` are the in-panel + upgrade-time disclosure surfaces (no first-login modal). |
