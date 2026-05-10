@@ -102,9 +102,11 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         const p = new AdminAdminsPage(page);
         await p.goto();
 
-        // Exactly one Search submit + one reset link, sitting at the
-        // bottom of the form (collapsing 8 per-row buttons was the
-        // headline of ADM-4).
+        // Exactly one Search submit + one reset link in the rendered
+        // DOM (collapsing 8 per-row buttons was the headline of
+        // ADM-4). Count assertion works whether the #1303 disclosure
+        // is open or closed — browsers parse <details> children
+        // either way.
         await expect(p.searchSubmit).toHaveCount(1);
         await expect(p.searchReset).toHaveCount(1);
 
@@ -114,6 +116,12 @@ test.describe('flow: admin/admins density rework (#1207 ADM-3, ADM-4 / #1275)', 
         await expect(p.adminCount).toContainText(/^\(\d+\)$/);
         const baselineCount = await p.adminRows.count();
         expect(baselineCount).toBeGreaterThanOrEqual(1);
+
+        // #1303 — the form ships inside a default-collapsed
+        // `<details>` disclosure, so open it before driving the
+        // inputs. Native `<details>` makes `[open]` flip
+        // synchronously on click; no animation-driven sentinel.
+        await p.searchToggle.click();
 
         // Two filters at once: a deliberately not-matching login
         // ("zzznoadminmatchesthis") + a steam_match=1 (partial). The

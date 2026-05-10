@@ -39,6 +39,18 @@ namespace Sbpp\View;
  * (admin.admins.search.php) is the only place that knows whether a
  * given $_GET shape came from a modern submit, a legacy
  * `advType=…&advSearch=…` URL, or nothing at all.
+ *
+ * #1303 — collapsible disclosure
+ * ------------------------------
+ * The form is wrapped in a `<details class="card filters-details">`
+ * default-collapsed disclosure so the unfiltered admin list paints
+ * above the fold. `$has_active_filters` (derived from the nine
+ * `active_filter_*` value slots — match-mode toggles don't count
+ * because they always carry a default) drives the `[open]` attribute,
+ * so any post-submit page paints with the form expanded. The chrome
+ * mirrors `core/admin_sidebar.tpl`'s mobile `<details open>` pattern
+ * (chevron + label + `prefers-reduced-motion: reduce` override). The
+ * count badge ("Filters · N active") rides `$active_filter_count`.
  */
 final class AdminAdminsSearchView extends View
 {
@@ -74,6 +86,16 @@ final class AdminAdminsSearchView extends View
      *     to mark the matching `<option selected>` rows.
      * @param list<string> $active_filter_admsrvflag Pre-filled
      *     `admsrvflag[]` values.
+     * @param int $active_filter_count Number of non-empty filter
+     *     value slots — drives the `<summary>` count badge ("Filters
+     *     · N active") and `$has_active_filters`. Match-mode toggles
+     *     (`name_match` / `steam_match` / `admemail_match`) are NOT
+     *     counted: they always carry a default ('0' or '1') and only
+     *     refine the matching filter, they don't filter on their own.
+     * @param bool $has_active_filters Convenience boolean derived from
+     *     `$active_filter_count > 0`. The template uses it to decide
+     *     whether the disclosure paints `<details open>` (post-submit
+     *     paint) vs default-collapsed (first-paint).
      */
     public function __construct(
         public readonly bool $can_editadmin,
@@ -96,6 +118,8 @@ final class AdminAdminsSearchView extends View
         public readonly string $active_filter_server = '',
         public readonly array $active_filter_admwebflag = [],
         public readonly array $active_filter_admsrvflag = [],
+        public readonly int $active_filter_count = 0,
+        public readonly bool $has_active_filters = false,
     ) {
     }
 }
