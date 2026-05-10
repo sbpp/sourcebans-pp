@@ -179,9 +179,11 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
         await expect(unmuteBtn).toContainText(/ungag|unmute|lift/i);
         await expect(deleteBtn).toContainText(/remove/i);
 
-        // ---- ADM-6: click Unmute → in-place state flip + toast -----------
-        // The inline page-tail JS in `page_comms.tpl` intercepts
-        // the click, calls `Actions.CommsUnblock`, and on success:
+        // ---- ADM-6: click Unmute → confirm modal → in-place flip + toast -
+        // #1301: the Unmute button now opens
+        // `#comms-unblock-dialog` and requires a non-empty reason
+        // before firing `Actions.CommsUnblock`. The submit handler
+        // resolves on success, then in-place:
         //   - flips `data-state` and `ban-row--*` class to `unmuted`
         //   - rewrites the status pill text to "Unmuted"
         //   - replaces the Unmute button with a Re-apply anchor
@@ -191,6 +193,13 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
         // resolves the await inside the handler synchronously
         // relative to the toast/DOM update.
         await unmuteBtn.click();
+
+        const unblockDialog = page.locator('[data-testid="comms-unblock-dialog"]');
+        await expect(unblockDialog).toBeVisible();
+        await unblockDialog
+            .locator('[data-testid="comms-unblock-reason"]')
+            .fill('e2e: lifting the gag');
+        await unblockDialog.locator('[data-testid="comms-unblock-submit"]').click();
 
         await expect(row).toHaveAttribute('data-state', 'unmuted');
         // The status pill is the *last* `.pill` inside the row
@@ -262,6 +271,14 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
         await expect(card.locator('[data-testid="comm-card-link"]')).toBeVisible();
 
         await unmuteBtn.click();
+
+        // #1301: same confirm-modal contract as the desktop spec.
+        const unblockDialog = page.locator('[data-testid="comms-unblock-dialog"]');
+        await expect(unblockDialog).toBeVisible();
+        await unblockDialog
+            .locator('[data-testid="comms-unblock-reason"]')
+            .fill('e2e: lifting the gag (mobile)');
+        await unblockDialog.locator('[data-testid="comms-unblock-submit"]').click();
 
         await expect(card).toHaveAttribute('data-state', 'unmuted');
         await expect(card.locator('[data-testid="row-action-unmute-mobile"]')).toHaveCount(0);

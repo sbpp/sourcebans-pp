@@ -514,7 +514,56 @@
 </div>
 
 {* ============================================================
-   #1207 ADM-5/ADM-6 — comms row-action wiring (inline page-tail JS).
+   #1301 — comms unblock confirm + reason modal scaffold.
+
+   v1.x had two safeguards before lifting a comm block: a confirm
+   modal and a non-empty unblock-reason prompt. Both lived in the
+   deleted `web/scripts/sourcebans.js` (UnMuteBan / UnGagBan), and
+   the v2.0 cutover left the row's affordance as a single click that
+   silently sent an empty `ureason`. This `<dialog>` is the v2.0-shape
+   replacement, wired by the inline IIFE below. The dialog stays
+   `hidden` on first paint so a JS failure leaves the unmute
+   affordance reachable only via the no-JS GET fallback (which itself
+   now requires a non-empty reason, see #1301 guard in
+   page.commslist.php).
+   ============================================================ *}
+<dialog id="comms-unblock-dialog"
+        class="palette"
+        aria-labelledby="comms-unblock-dialog-title"
+        data-testid="comms-unblock-dialog"
+        hidden
+        style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+  <form method="dialog" data-testid="comms-unblock-form">
+    <h2 id="comms-unblock-dialog-title" data-testid="comms-unblock-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Lift block</h2>
+    <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+      Why are you lifting the block on <strong data-testid="comms-unblock-target">this player</strong>? This reason is recorded against the block and surfaced in the audit log.
+    </p>
+    <label class="label" for="comms-unblock-reason">Reason <span aria-hidden="true" style="color:var(--danger)">*</span></label>
+    {* aria-required (not the native `required`) so assistive tech announces
+       the field as required while the JS submit handler owns the empty-reason
+       branch — `required` would let the browser block the form submit before
+       our handler runs, swallowing the inline error UX (#1301). *}
+    <textarea class="textarea"
+              id="comms-unblock-reason"
+              data-testid="comms-unblock-reason"
+              rows="3"
+              aria-required="true"
+              maxlength="255"
+              autocomplete="off"
+              placeholder="Mistaken block, appeal accepted, sentence served, &hellip;"></textarea>
+    <p class="text-xs" data-testid="comms-unblock-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+    <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+      <button type="button" class="btn btn--secondary" data-testid="comms-unblock-cancel" value="cancel">Cancel</button>
+      <button type="submit" class="btn btn--primary" data-testid="comms-unblock-submit" value="confirm">
+        <i data-lucide="check" style="width:13px;height:13px"></i> Confirm
+      </button>
+    </div>
+  </form>
+</dialog>
+
+{* ============================================================
+   #1207 ADM-5/ADM-6 + #1301 — comms row-action wiring (inline
+   page-tail JS).
 
    Click delegation per anti-pattern: every action button in the rows
    above (desktop table + mobile cards) carries `data-action="comms-*"`
@@ -525,7 +574,17 @@
    href is followed as a navigation when the JSON dispatcher is
    missing entirely (e.g. third-party theme with stripped api.js) —
    that's the legacy GET URL the `?p=commslist&a=…` handler in
-   page.commslist.php still serves.
+   page.commslist.php still serves (and which now also requires a
+   non-empty `ureason` per #1301 — empty-reason hand-edits get
+   bounced server-side too).
+
+   `comms-unblock` flow (#1301): instead of firing the API call
+   immediately, opens the `#comms-unblock-dialog` <dialog> for a
+   confirm + reason prompt. The dialog's submit handler validates
+   the trimmed reason locally (so we don't bother the server with
+   the obvious empty-reason case) and forwards it as `ureason` to
+   `Actions.CommsUnblock`. Server-side validation in
+   `api_comms_unblock` is the load-bearing gate.
 
    No `// @ts-check` here because the file is rendered by Smarty;
    ts-check only runs against `.js` sources in `web/scripts`. The
@@ -640,9 +699,97 @@
         el.textContent = (n - 1).toLocaleString();
     }
 
+    /** @returns {HTMLDialogElement|null} */
+    function dialog() {
+        return /** @type {HTMLDialogElement|null} */ (document.getElementById('comms-unblock-dialog'));
+    }
+    /** @returns {HTMLTextAreaElement|null} */
+    function reasonInput() {
+        return /** @type {HTMLTextAreaElement|null} */ (document.getElementById('comms-unblock-reason'));
+    }
+    /** @returns {HTMLElement|null} */
+    function errorEl() {
+        var d = dialog();
+        return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="comms-unblock-error"]')) : null;
+    }
+    /** @param {string} msg */
+    function showError(msg) { var e = errorEl(); if (!e) return; e.textContent = msg; e.hidden = false; }
+    function clearError() { var e = errorEl(); if (!e) return; e.textContent = ''; e.hidden = true; }
+
+    /** @type {{bid: string, name: string, fallback: string, type: string}|null} */
+    var pending = null;
+
+    /**
+     * @param {string} type
+     * @returns {{title: string, verb: string}}
+     */
+    function copyForType(type) {
+        if (type === 'mute')    return { title: 'Unmute player',     verb: 'unmute' };
+        if (type === 'gag')     return { title: 'Ungag player',      verb: 'ungag' };
+        if (type === 'silence') return { title: 'Lift silence',      verb: 'lift the silence on' };
+        return                          { title: 'Lift block',       verb: 'lift the block on' };
+    }
+
+    /** @param {{bid: string, name: string, fallback: string, type: string}} ctx */
+    function openUnblockDialog(ctx) {
+        pending = ctx;
+        var d = dialog();
+        if (!d) {
+            // Dialog markup missing — fall back to the legacy GET path
+            // so the action still works (it now also requires
+            // ureason= in the URL per #1301; without one the page
+            // handler bounces with an inline error).
+            if (ctx.fallback) window.location.href = ctx.fallback;
+            return;
+        }
+        var copy = copyForType(ctx.type);
+        var title = d.querySelector('[data-testid="comms-unblock-dialog-title"]');
+        if (title) title.textContent = copy.title;
+        var prompt = d.querySelector('[data-testid="comms-unblock-target"]');
+        if (prompt) prompt.textContent = ctx.name || ('block #' + ctx.bid);
+        // Update the surrounding sentence's verb in place. The
+        // <strong> nested-target child carries the player's name, so we
+        // rewrite the parent paragraph's first text node to swap "lifting
+        // the block on" for the type-specific verb without losing the
+        // bold name span.
+        var p = d.querySelector('p.text-sm.text-muted');
+        if (p && p.firstChild && p.firstChild.nodeType === 3) {
+            p.firstChild.textContent = 'Why are you ' + copy.verb + ' ';
+        }
+        var input = reasonInput();
+        if (input) input.value = '';
+        clearError();
+        d.removeAttribute('hidden');
+        try { d.showModal(); }
+        catch (_e) { d.setAttribute('open', ''); }
+        if (input) { try { input.focus(); } catch (_e) { /* focus may throw */ } }
+    }
+
+    function closeUnblockDialog() {
+        var d = dialog();
+        if (!d) return;
+        try { d.close(); } catch (_e) { /* not opened modally */ }
+        d.setAttribute('hidden', '');
+        // Re-enable any unblock buttons we disabled before showing the
+        // dialog so a Cancel click leaves the row clickable again.
+        Array.prototype.forEach.call(
+            document.querySelectorAll('[data-action="comms-unblock"][disabled]'),
+            function (btn) { /** @type {HTMLButtonElement} */ (btn).disabled = false; }
+        );
+        pending = null;
+    }
+
     document.addEventListener('click', function (e) {
         var t = /** @type {Element|null} */ (e.target);
         if (!t || !t.closest) return;
+
+        // Cancel button inside the dialog.
+        if (t.closest('[data-testid="comms-unblock-cancel"]')) {
+            e.preventDefault();
+            closeUnblockDialog();
+            return;
+        }
+
         var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action]'));
         if (!btn) return;
         var act = btn.getAttribute('data-action');
@@ -656,7 +803,8 @@
         if (!a || !A || !bid) {
             // No JSON dispatcher available (e.g. third-party theme that
             // stripped api.js). Fall back to the legacy GET URL — same
-            // outcome, full page reload.
+            // outcome, full page reload (page handler bounces empty
+            // ureason per #1301).
             if (fallback) window.location.href = fallback;
             return;
         }
@@ -678,22 +826,70 @@
             return;
         }
 
-        // comms-unblock — lift an active block. We don't prompt for an
-        // unblock reason here; the legacy GET path didn't either (only
-        // sourcebans.js's UnGag()/UnMute() confirm prompts did, and
-        // those went away with #1123 D1). Admins who need a recorded
-        // reason can use the edit form instead.
-        /** @type {HTMLButtonElement} */ (btn).disabled = true;
-        a.call(A.CommsUnblock, { bid: Number(bid), ureason: '' }).then(function (r) {
+        // #1301 — comms-unblock now opens the confirm + reason modal
+        // instead of firing the API call immediately. The legacy v2.0
+        // shape silently posted `ureason: ''`; v1.x prompted via
+        // sourcebans.js's UnMute()/UnGag() helpers. The modal is the
+        // v2.0-shape replacement.
+        var typeAttr = '';
+        var rowEl = /** @type {Element|null} */ (btn.closest('[data-type]'));
+        if (rowEl) typeAttr = rowEl.getAttribute('data-type') || '';
+        openUnblockDialog({ bid: bid, name: name, fallback: fallback, type: typeAttr });
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = /** @type {Element|null} */ (e.target);
+        if (!form || !(/** @type {Element} */ (form)).closest) return;
+        if (!form.matches('[data-testid="comms-unblock-form"]')) return;
+        e.preventDefault();
+        if (!pending) return;
+
+        var input = reasonInput();
+        var reason = input ? input.value.trim() : '';
+        if (reason === '') {
+            // Mirror the v1.x guard: surface an inline error rather
+            // than submitting an empty reason that the server would
+            // bounce. The server still re-validates as the
+            // load-bearing gate (api_comms_unblock).
+            showError('Please leave a comment.');
+            if (input) try { input.focus(); } catch (_e) { /* focus may throw */ }
+            return;
+        }
+        clearError();
+
+        var ctx = pending;
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="comms-unblock-submit"]'));
+        if (submitBtn) submitBtn.disabled = true;
+
+        var a = api(), A = actions();
+        if (!a || !A) {
+            if (submitBtn) submitBtn.disabled = false;
+            if (ctx.fallback) {
+                var sep = ctx.fallback.indexOf('?') === -1 ? '?' : '&';
+                window.location.href = ctx.fallback + sep + 'ureason=' + encodeURIComponent(reason);
+            }
+            return;
+        }
+
+        a.call(A.CommsUnblock, { bid: Number(ctx.bid), ureason: reason }).then(function (r) {
+            if (submitBtn) submitBtn.disabled = false;
             if (!r || r.ok === false) {
-                /** @type {HTMLButtonElement} */ (btn).disabled = false;
                 var msg = (r && r.error && r.error.message) || 'Unknown error';
+                showError(msg);
                 toast('error', 'Unblock failed', msg);
                 return;
             }
-            rowsForBid(bid).forEach(flipRowToUnmuted);
-            toast('success', 'Block lifted', name + ' has been unblocked.');
+            rowsForBid(ctx.bid).forEach(flipRowToUnmuted);
+            closeUnblockDialog();
+            toast('success', 'Block lifted', ctx.name + ' has been unblocked.');
         });
+    });
+
+    document.addEventListener('cancel', function (e) {
+        var t = /** @type {Element|null} */ (e.target);
+        if (!t || t.id !== 'comms-unblock-dialog') return;
+        pending = null;
+        clearError();
     });
 })();
 </script>

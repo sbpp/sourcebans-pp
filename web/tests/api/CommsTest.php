@@ -183,8 +183,73 @@ final class CommsTest extends ApiTestCase
     public function testUnblockNotFoundForUnknownBid(): void
     {
         $this->loginAsAdmin();
-        $env = $this->api('comms.unblock', ['bid' => 99999]);
+        // #1301 — ureason is now required; supply a non-empty value so
+        // the validation gate doesn't short-circuit the row lookup.
+        $env = $this->api('comms.unblock', ['bid' => 99999, 'ureason' => 'test']);
         $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    /**
+     * #1301: a non-empty `ureason` is mandatory. v1.x prompted via
+     * sourcebans.js's UnMute/UnGag helpers and required a reason; v2.0
+     * silently accepted '', so the audit log lost the *why*.
+     */
+    public function testUnblockRejectsEmptyUreason(): void
+    {
+        $this->loginAsAdmin();
+        $this->api('comms.add', [
+            'nickname' => 'NoReason',
+            'type'     => 1,
+            'steam'    => 'STEAM_0:0:1301',
+            'length'   => 60,
+            'reason'   => 'spam',
+        ]);
+        $row = $this->row('comms', ['authid' => 'STEAM_0:0:1301']);
+        $bid = (int)$row['bid'];
+
+        // Missing entirely.
+        $env = $this->api('comms.unblock', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ureason', $env['error']['field']);
+
+        // Whitespace-only counts as empty after trim().
+        $env = $this->api('comms.unblock', ['bid' => $bid, 'ureason' => "   \n\t"]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ureason', $env['error']['field']);
+
+        // Confirms the row was NOT touched on rejection.
+        $after = $this->row('comms', ['bid' => $bid]);
+        $this->assertNull($after['RemoveType']);
+        $this->assertNull($after['RemovedBy']);
+    }
+
+    /**
+     * #1301: the audit log carries the unblock reason verbatim.
+     */
+    public function testUnblockRecordsReasonInAuditLog(): void
+    {
+        $this->loginAsAdmin();
+        $this->api('comms.add', [
+            'nickname' => 'Audited',
+            'type'     => 2, // gag — drives the "UnGagged" verb in the log
+            'steam'    => 'STEAM_0:0:1302',
+            'length'   => 60,
+            'reason'   => 'spam',
+        ]);
+        $row = $this->row('comms', ['authid' => 'STEAM_0:0:1302']);
+        $bid = (int)$row['bid'];
+
+        $env = $this->api('comms.unblock', [
+            'bid'     => $bid,
+            'ureason' => 'appeal accepted',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $logs = $this->rows('log', ['title' => 'Player UnGagged']);
+        $this->assertNotEmpty($logs, 'audit log row was created');
+        $latest = end($logs);
+        $this->assertStringContainsString('appeal accepted', (string) $latest['message']);
+        $this->assertStringContainsString('STEAM_0:0:1302', (string) $latest['message']);
     }
 
     public function testUnblockLiftsActiveGagAndPersistsState(): void
@@ -229,11 +294,12 @@ final class CommsTest extends ApiTestCase
         $row = $this->row('comms', ['authid' => 'STEAM_0:0:445']);
         $bid = (int)$row['bid'];
 
-        $first = $this->api('comms.unblock', ['bid' => $bid]);
+        // #1301: ureason is now required on every unblock attempt.
+        $first = $this->api('comms.unblock', ['bid' => $bid, 'ureason' => 'lift it']);
         $this->assertTrue($first['ok']);
 
         // Second call against the same already-lifted row should refuse.
-        $env = $this->api('comms.unblock', ['bid' => $bid]);
+        $env = $this->api('comms.unblock', ['bid' => $bid, 'ureason' => 'try again']);
         $this->assertEnvelopeError($env, 'not_active');
     }
 

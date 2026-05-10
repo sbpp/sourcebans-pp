@@ -146,7 +146,19 @@ function api_comms_unblock(array $params): array
     if ($bid <= 0) {
         throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
     }
+    // #1301: v1.x prompted via sourcebans.js's UnMute()/UnGag() helpers
+    // and required a non-empty reason; v2.0 silently accepted '', so the
+    // audit log lost the *why*. Both the new modal in page_comms.tpl and
+    // the legacy GET handler in page.commslist.php now bounce on empty
+    // — this server-side check is the load-bearing gate.
     $ureason = trim((string)($params['ureason'] ?? ''));
+    if ($ureason === '') {
+        throw new ApiError(
+            'validation',
+            'You must supply a reason when lifting a block.',
+            'ureason'
+        );
+    }
 
     $row = $GLOBALS['PDO']->query(
         "SELECT C.bid, C.authid, C.name, C.type, C.length, C.ends, C.RemoveType, C.aid, A.gid AS gid
@@ -196,7 +208,19 @@ function api_comms_unblock(array $params): array
     }
 
     $verb = $type === 1 ? 'UnMuted' : ($type === 2 ? 'UnGagged' : 'Unblocked');
-    Log::add(LogType::Message, "Player $verb", "{$row['name']} ({$row['authid']}) has been " . strtolower($verb) . '.');
+    // #1301: trail the unblock reason in the audit log entry so admins
+    // reading the log later can see *why* the block was lifted.
+    Log::add(
+        LogType::Message,
+        "Player $verb",
+        sprintf(
+            '%s (%s) has been %s. Reason: %s',
+            (string) $row['name'],
+            (string) $row['authid'],
+            strtolower($verb),
+            $ureason
+        )
+    );
 
     return [
         'bid'   => $bid,

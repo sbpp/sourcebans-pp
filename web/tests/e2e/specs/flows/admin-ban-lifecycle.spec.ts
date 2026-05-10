@@ -231,40 +231,71 @@ test.describe('flow: admin ban lifecycle', () => {
         await expect(editedRow).toContainText(FIXTURE.editedReason);
         await expect(editedRow).not.toContainText(FIXTURE.initialReason);
 
-        // ---- 6. Unban: click the row's unban anchor -----------------------
-        // The unban testid is a server-rendered <a> pointing at
-        // `?p=banlist&a=unban&id=<bid>&key=<postkey>`. Per
-        // page.banlist.php, GET to that URL flips the row's
-        // `RemoveType` to 'U' and renders the same banlist page —
-        // so the row's `data-state` switches to "unbanned" on the
-        // post-unban render. There is no client-side modal in the
-        // current chrome (the legacy `UnbanBan('…')` confirm() lived
-        // in sourcebans.js, gone since v2.0.0); the click is a
-        // direct GET.
-        const unbanAnchor = editedRow.locator('[data-testid="row-action-unban"]');
-        await expect(unbanAnchor).toBeVisible();
-        await Promise.all([
-            page.waitForURL(/[?&]a=unban\b/),
-            unbanAnchor.click(),
-        ]);
+        // ---- 6. Unban: open confirm modal, supply reason, submit ----------
+        // #1301: the row's unban affordance is a `<button>` (not an
+        // anchor) that opens `#bans-unban-dialog` — a native <dialog>
+        // with a required reason textarea. Both the JSON action
+        // (`bans.unban`) and the legacy GET fallback now reject an
+        // empty `ureason`, restoring v1.x parity (the v1.x JS prompt
+        // was lost when sourcebans.js was deleted at #1123 D1; v2.0
+        // silently accepted '' until this fix).
+        //
+        // The submit handler calls `sb.api.call(Actions.BansUnban,
+        // {bid, ureason})` and on success flips the row's
+        // `data-state` to "unbanned" in place (no full page nav), so
+        // we wait on the deterministic attribute change rather than
+        // a URL transition.
+        const unbanButton = editedRow.locator('[data-testid="row-action-unban"]');
+        await expect(unbanButton).toBeVisible();
+        await unbanButton.click();
 
-        // ---- 7. Confirm unbanned state in admin + public views ------------
-        // The post-unban page is the same `?p=banlist` rendered with
-        // the row's new state. The pill text is `Unbanned` (capital-
-        // ised from the lowercase state string by the |capitalize
-        // modifier in the tpl), and the row's `data-state` attribute
-        // is the deterministic equivalent we assert on.
+        const unbanDialog = page.locator('[data-testid="bans-unban-dialog"]');
+        await expect(unbanDialog).toBeVisible();
+        // The dialog mirrors the row's player name into the prompt
+        // copy via `[data-testid="bans-unban-target"]`. Locking it in
+        // catches a regression where the openUnbanDialog() helper
+        // would forget to populate the target span.
+        await expect(unbanDialog.locator('[data-testid="bans-unban-target"]'))
+            .toHaveText(FIXTURE.nickname);
+
+        // Empty-reason guard: clicking submit with the textarea blank
+        // surfaces the inline error and does NOT navigate. This mirrors
+        // the v1.x JS prompt's "please leave a comment" rejection
+        // (#1301).
+        await unbanDialog.locator('[data-testid="bans-unban-submit"]').click();
+        await expect(unbanDialog.locator('[data-testid="bans-unban-error"]'))
+            .toBeVisible();
+        await expect(editedRow).toHaveAttribute('data-state', 'permanent');
+
+        // Now supply a reason and confirm. The handler resolves the
+        // sb.api.call promise, then flips the row in place and shows
+        // a success toast.
+        await unbanDialog
+            .locator('[data-testid="bans-unban-reason"]')
+            .fill('e2e: appeal accepted');
+        await unbanDialog.locator('[data-testid="bans-unban-submit"]').click();
+
+        const unbanToast = page
+            .locator('.toast[data-kind="success"]')
+            .filter({ hasText: /unbanned/i });
+        await expect(unbanToast).toBeVisible();
+
+        // ---- 7. Confirm unbanned state in admin view ----------------------
+        // The row updates in place via flipRowToUnbanned() — the
+        // `data-state` attribute switches to "unbanned", the pill
+        // text becomes "Unbanned", and the unban button is removed
+        // from the DOM. No URL change.
         const unbannedRow = page
             .locator(`[data-testid="ban-row"][data-id="${bid}"]`);
         await expect(unbannedRow).toBeVisible();
         await expect(unbannedRow).toHaveAttribute('data-state', 'unbanned');
         await expect(unbannedRow.locator('.pill')).toHaveText(/unbanned/i);
 
-        // The unban-action affordance disappears after the row is
-        // unbanned (the tpl gates `row-action-unban` on
-        // `state != 'unbanned' && state != 'expired'`); locking that
-        // in catches a regression where a re-unban would silently
-        // double-write the RemoveType column.
+        // The unban-action button is removed after the row is
+        // unbanned (flipRowToUnbanned() prunes every
+        // `[data-action="bans-unban"]` inside the row). Catches a
+        // regression where a re-unban would silently double-write
+        // the RemoveType column.
         await expect(unbannedRow.locator('[data-testid="row-action-unban"]'))
             .toHaveCount(0);
 

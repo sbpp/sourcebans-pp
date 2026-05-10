@@ -1188,6 +1188,31 @@ audit (#1207) locked in. New CTAs:
   every keyboard / screen-reader user. New surfaces add visible
   buttons in the same shape as `.queue-row` (admin moderation
   queue) or the comms-list desktop table (`web/themes/default/page_comms.tpl`).
+- Reason-less, no-confirm unban / unmute / ungag (or any other
+  irreversible state-flip on a row) → the JSON action AND the
+  legacy GET fallback both must require a non-empty `ureason`,
+  and the row's affordance must open a confirm modal that prompts
+  for it. v1.x had both safeguards via sourcebans.js's
+  `UnbanBan()` / `UnMuteBan()` / `UnGagBan()` helpers; v2.0
+  silently accepted `ureason=''` for ~18 months and the audit
+  log lost the *why* behind every block lift (#1301). The
+  reference shape is `#bans-unban-dialog` / `#comms-unblock-dialog`
+  in `page_bans.tpl` / `page_comms.tpl` (see "Add a confirm +
+  reason modal …" in "Where to find what"). `Log::add(LogType::Message,
+  "Player Unbanned", "$name … Reason: $ureason")` is the
+  audit-trail shape — drop the reason in the message, never the
+  bare "Player X has been unbanned." that v2.0 shipped.
+- Native `required` on the textarea inside a confirm + reason
+  `<dialog>` form → use `aria-required="true"` only. The native
+  `required` constraint fires the browser's own validation
+  popover BEFORE the form's `submit` event reaches our handler,
+  swallowing the inline-error UX (the testid we surface for
+  empty-reason inline errors stays `hidden` because our
+  `e.preventDefault(); showError('Please leave a comment.')`
+  path never runs). `aria-required` keeps assistive tech in the
+  loop without arming the native gate; the JS submit handler is
+  the client-side error display, and the server is the
+  load-bearing gate.
 - Removing `<meta name="format-detection" content="telephone=no…">`
   from `core/header.tpl` (or the defensive `.drawer a[href^="tel:"]`
   reset in `theme.css`) → mobile Safari + some Android Chromes
@@ -1258,6 +1283,7 @@ audit (#1207) locked in. New CTAs:
 | Edit a template                        | `web/themes/default/*.tpl`                               |
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. |
+| Add a confirm + reason modal for an irreversible row-level action (unban, lift comm block, …) | `web/themes/default/page_bans.tpl` (`#bans-unban-dialog`, `Actions.BansUnban`) and `web/themes/default/page_comms.tpl` (`#comms-unblock-dialog`, `Actions.CommsUnblock`) are the canonical reference (#1301). Shape: a `<dialog hidden>` with a `<form method="dialog">` carrying a `<textarea aria-required="true">` (NOT the native `required` — that lets the browser block the form submit before our handler runs, swallowing the inline-error UX), a Cancel button, and a Confirm submit button. The page-tail JS opens the dialog via `showModal()` on `[data-action]` clicks, validates the trimmed reason on submit (load-bearing gate is server-side), forwards `ureason` to the JSON action, and on success flips the row in place via the same `flipRowToUnbanned`/`flipRowToUnmuted` helper the legacy single-click flow used. The legacy GET fallback (`?p=banlist&a=unban&id=…&key=…&ureason=…` / `?p=commslist&a=ungag…&ureason=…`) is the no-JS / hand-edited-URL path; both halves now reject empty `ureason` server-side so the audit log carries the *why*. **Do not** put `onclick="event.stopPropagation()"` on the trigger button — `document.addEventListener('click')` is how the dialog opener picks the click up, and stopPropagation would silently swallow it (the action button isn't inside any `[data-drawer-href]` ancestor anyway, so the defensiveness was a copy-paste from the row-name anchor that doesn't apply here). |
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
 | Edit the command palette (icon-only trigger, ⌘K binding, result rows, kbd hints, Ctrl+Enter copy) | `web/themes/default/js/theme.js` (`openPalette` / `closePalette` / `renderPaletteResults` / `applyPlatformHints` / `handlePaletteCopyShortcut`) + `core/title.tpl` (the `.topbar__search` icon button) + the `.palette__row*` rules in `web/themes/default/css/theme.css`. Player rows carry `data-drawer-bid="<bid>"` (bare Enter / click → `loadDrawer`, palette closes itself) + `data-steamid="<steam>"` (`Ctrl/Cmd+Enter` → `navigator.clipboard.writeText` + `showToast`). The kbd glyphs are server-rendered in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` swaps `[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ on Mac/iOS at boot and after every render (#1184, #1207 DET-2). |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |

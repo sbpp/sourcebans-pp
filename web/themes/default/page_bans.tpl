@@ -237,10 +237,34 @@
                    onclick="event.stopPropagation()">&#9998;</a>
                 {/if}
                 {if $ban.can_unban && $ban.state != 'unbanned' && $ban.state != 'expired'}
-                <a class="btn btn--ghost btn--sm btn--icon" data-testid="row-action-unban"
-                   title="Unban"
-                   href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
-                   onclick="event.stopPropagation()">&#10003;</a>
+                {* #1301: button + data-action wires to the inline page-tail
+                   JS below, which prompts for an unban reason via the
+                   `#bans-unban-dialog` <dialog> and calls
+                   Actions.BansUnban with the trimmed reason. The
+                   data-fallback-href is the legacy GET URL the no-JS
+                   path lands on; the page handler now also rejects an
+                   empty `ureason` there so a hand-crafted URL can't
+                   slip through the back door either. *}
+                {* No onclick="event.stopPropagation()" here even though
+                   the sibling Edit anchor has one (defensive copy from
+                   the legacy theme): the column-action button is
+                   inside `<td class="col-actions">`, which is a sibling
+                   of the player-name `<a data-drawer-href>` cell, so
+                   the drawer-click delegate never sees the bubbled
+                   event regardless. The page-tail JS for the unban
+                   modal listens on `document` though — adding
+                   stopPropagation here would silently swallow the
+                   click before it reached the dialog opener (the
+                   dispatcher's no-op for `[data-action]` lookups
+                   filters anything that isn't an unban button). *}
+                <button type="button"
+                        class="btn btn--ghost btn--sm btn--icon"
+                        data-testid="row-action-unban"
+                        data-action="bans-unban"
+                        data-bid="{$ban.bid}"
+                        data-name="{$ban.name|escape}"
+                        data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+                        title="Unban">&#10003;</button>
                 {/if}
               {/if}
               {if !empty($ban.steam)}
@@ -403,6 +427,53 @@
 </div>
 {/if}
 
+{* ============================================================
+   #1301 — unban confirm + reason modal scaffold.
+
+   v1.x had two safeguards before unbanning a player: a confirm modal
+   and a non-empty unban-reason input. Both lived in the deleted
+   `web/scripts/sourcebans.js` (UnbanBan()), and the v2.0 cutover
+   left the row's affordance as a bare GET that silently accepted an
+   empty `ureason`. This `<dialog>` is the v2.0-shape replacement,
+   wired by the inline IIFE below. The dialog stays `hidden` on
+   first paint so a JS failure leaves the unban affordance reachable
+   only via the no-JS GET fallback (which itself now requires a
+   non-empty reason, so the back door is closed too).
+   ============================================================ *}
+<dialog id="bans-unban-dialog"
+        class="palette"
+        aria-labelledby="bans-unban-dialog-title"
+        data-testid="bans-unban-dialog"
+        hidden
+        style="max-width:32rem;width:90vw;padding:1.25rem;border-radius:0.75rem;border:1px solid var(--border)">
+  <form method="dialog" data-testid="bans-unban-form">
+    <h2 id="bans-unban-dialog-title" style="font-size:var(--fs-lg);font-weight:600;margin:0 0 0.25rem">Unban player</h2>
+    <p class="text-sm text-muted m-0" style="margin-bottom:0.75rem">
+      Why are you unbanning <strong data-testid="bans-unban-target">this player</strong>? This reason is recorded against the ban and surfaced in the audit log.
+    </p>
+    <label class="label" for="bans-unban-reason">Unban reason <span aria-hidden="true" style="color:var(--danger)">*</span></label>
+    {* aria-required (not the native `required`) so assistive tech announces
+       the field as required while the JS submit handler owns the empty-reason
+       branch — `required` would let the browser block the form submit before
+       our handler runs, swallowing the inline error UX (#1301). *}
+    <textarea class="textarea"
+              id="bans-unban-reason"
+              data-testid="bans-unban-reason"
+              rows="3"
+              aria-required="true"
+              maxlength="255"
+              autocomplete="off"
+              placeholder="Mistaken ban, appeal accepted, sentence served, &hellip;"></textarea>
+    <p class="text-xs" data-testid="bans-unban-error" role="alert" hidden style="color:var(--danger);margin:0.25rem 0 0"></p>
+    <div class="flex gap-2 mt-4" style="justify-content:flex-end">
+      <button type="button" class="btn btn--secondary" data-testid="bans-unban-cancel" value="cancel">Cancel</button>
+      <button type="submit" class="btn btn--primary" data-testid="bans-unban-submit" value="confirm">
+        <i data-lucide="check" style="width:13px;height:13px"></i> Unban
+      </button>
+    </div>
+  </form>
+</dialog>
+
 {* banlist.js wires both branches: the chip filter / copy buttons /
    skeleton hook on the listing branch, and the `#banlist-comment-form`
    submit -> sb.api.call(BansAddComment / BansEditComment) on the
@@ -411,6 +482,260 @@
    the listing branch silently broke comment save (no submit handler
    attached, native form submission to action-less URL no-ops). *}
 <script src="./scripts/banlist.js" defer></script>
+
+{* ============================================================
+   #1301 — banlist row-action wiring (inline page-tail JS).
+
+   Click delegation per anti-pattern: every Unban button in the rows
+   above carries `data-action="bans-unban"` plus `data-bid` /
+   `data-name` / `data-fallback-href`. The handler intercepts those
+   clicks, opens the `#bans-unban-dialog` <dialog>, validates the
+   reason on submit, calls `sb.api.call(Actions.BansUnban, …)`, and
+   updates the row in-place on success (state pill flips to
+   "unbanned", the unban button is removed, `window.SBPP.showToast`
+   confirms). The fallback href is followed as a navigation when the
+   JSON dispatcher is missing entirely (e.g. third-party theme with
+   stripped api.js) — that's the legacy GET URL the
+   `?p=banlist&a=unban` handler in page.banlist.php still serves
+   (and which now also requires a non-empty `ureason`, see #1301
+   guard there).
+
+   No `// @ts-check` here because the file is rendered by Smarty;
+   ts-check only runs against `.js` sources in `web/scripts`. The
+   shape mirrors the inline handler in page_comms.tpl (#1207
+   ADM-5/ADM-6 reference, extended in #1301 for the same modal).
+   ============================================================ *}
+{literal}
+<script>
+(function () {
+    'use strict';
+
+    /** @returns {{call: (a:string,p?:object)=>Promise<any>}|null} */
+    function api()     { return (window.sb && window.sb.api) || null; }
+    /** @returns {Record<string,string>|null} */
+    function actions() { return /** @type {any} */ (window).Actions || null; }
+    function toast(kind, title, body) {
+        var sbpp = /** @type {any} */ (window).SBPP;
+        if (sbpp && typeof sbpp.showToast === 'function') {
+            sbpp.showToast({ kind: kind, title: title, body: body || '' });
+        }
+    }
+
+    /**
+     * Find every DOM node that mirrors the same ban id. The desktop
+     * `<tr data-testid="ban-row">` and the mobile `<a class="ban-row">`
+     * both render the same row, and theme.css's
+     * `@media (max-width: 768px)` block hides the `<table>` via
+     * `display: none` rather than removing the DOM.
+     * @param {string} bid
+     * @returns {Element[]}
+     */
+    function rowsForBid(bid) {
+        var sel = '[data-testid="ban-row"][data-id="' + bid + '"], '
+                + '.ban-row[data-id="' + bid + '"]';
+        return Array.prototype.slice.call(document.querySelectorAll(sel));
+    }
+
+    /**
+     * Update both copies of the row from `permanent|active` -> `unbanned`:
+     *  - data-state on the wrapper.
+     *  - ban-row--<state> class on the wrapper.
+     *  - The status pill has its `pill--<state>` class swapped AND its
+     *    visible label rewritten to "Unbanned".
+     *  - The Unban button is removed (the tpl gates it on
+     *    `state != 'unbanned' && state != 'expired'` so the post-render
+     *    matches what the next page load would emit).
+     * @param {Element} row
+     * @returns {void}
+     */
+    function flipRowToUnbanned(row) {
+        row.setAttribute('data-state', 'unbanned');
+        row.classList.remove('ban-row--active', 'ban-row--permanent', 'ban-row--expired');
+        row.classList.add('ban-row--unbanned');
+        Array.prototype.forEach.call(row.querySelectorAll('.pill'), function (pill) {
+            pill.classList.remove('pill--active', 'pill--permanent', 'pill--expired');
+            pill.classList.add('pill--unbanned');
+            // Walk children backwards to find the trailing text node so
+            // we don't clobber any leading <i> icons.
+            var lastText = null;
+            for (var i = pill.childNodes.length - 1; i >= 0; i--) {
+                var n = pill.childNodes[i];
+                if (n.nodeType === 3) { lastText = n; break; }
+            }
+            var txt = (pill.textContent || '').trim();
+            if (txt === 'Active' || txt === 'Permanent' || txt === 'Expired') {
+                if (lastText) lastText.textContent = 'Unbanned';
+                else pill.textContent = 'Unbanned';
+            }
+        });
+        Array.prototype.forEach.call(
+            row.querySelectorAll('[data-action="bans-unban"]'),
+            function (btn) { if (btn.parentNode) btn.parentNode.removeChild(btn); }
+        );
+    }
+
+    /** @returns {HTMLDialogElement|null} */
+    function dialog() {
+        return /** @type {HTMLDialogElement|null} */ (document.getElementById('bans-unban-dialog'));
+    }
+    /** @returns {HTMLTextAreaElement|null} */
+    function reasonInput() {
+        return /** @type {HTMLTextAreaElement|null} */ (document.getElementById('bans-unban-reason'));
+    }
+    /** @returns {HTMLElement|null} */
+    function errorEl() {
+        var d = dialog();
+        return d ? /** @type {HTMLElement|null} */ (d.querySelector('[data-testid="bans-unban-error"]')) : null;
+    }
+
+    /** @param {string} msg */
+    function showError(msg) {
+        var e = errorEl();
+        if (!e) return;
+        e.textContent = msg;
+        e.hidden = false;
+    }
+    function clearError() {
+        var e = errorEl();
+        if (!e) return;
+        e.textContent = '';
+        e.hidden = true;
+    }
+
+    /** @type {{bid: string, name: string, fallback: string}|null} */
+    var pending = null;
+
+    /**
+     * Open the unban dialog for the supplied row data. We use the
+     * native <dialog>.showModal() so the browser handles focus trapping
+     * + ESC dismissal + the top-layer overlay for free.
+     * @param {{bid: string, name: string, fallback: string}} ctx
+     */
+    function openUnbanDialog(ctx) {
+        pending = ctx;
+        var d = dialog();
+        if (!d) {
+            // The dialog markup is in the template above; if it's
+            // missing the page is in an inconsistent state. Fall back
+            // to the legacy GET path so the action still works (it
+            // now also requires `ureason=` per #1301 — empty-reason
+            // hand-edits get bounced server-side too).
+            if (ctx.fallback) window.location.href = ctx.fallback;
+            return;
+        }
+        var target = d.querySelector('[data-testid="bans-unban-target"]');
+        if (target) target.textContent = ctx.name || ('ban #' + ctx.bid);
+        var input = reasonInput();
+        if (input) input.value = '';
+        clearError();
+        d.removeAttribute('hidden');
+        try { d.showModal(); }
+        catch (_e) { d.setAttribute('open', ''); }
+        if (input) {
+            try { input.focus(); } catch (_e) { /* focus may throw if hidden */ }
+        }
+    }
+
+    function closeUnbanDialog() {
+        var d = dialog();
+        if (!d) return;
+        try { d.close(); } catch (_e) { /* not opened modally */ }
+        d.setAttribute('hidden', '');
+        pending = null;
+    }
+
+    document.addEventListener('click', function (e) {
+        var t = /** @type {Element|null} */ (e.target);
+        if (!t || !t.closest) return;
+
+        // Cancel button inside the dialog.
+        if (t.closest('[data-testid="bans-unban-cancel"]')) {
+            e.preventDefault();
+            closeUnbanDialog();
+            return;
+        }
+
+        var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action="bans-unban"]'));
+        if (!btn) return;
+        e.preventDefault();
+
+        var bid = btn.getAttribute('data-bid') || '';
+        var name = btn.getAttribute('data-name') || ('ban #' + bid);
+        var fallback = btn.getAttribute('data-fallback-href') || '';
+        var a = api(), A = actions();
+        if (!a || !A || !bid) {
+            // No JSON dispatcher available (e.g. third-party theme that
+            // stripped api.js). Fall back to the legacy GET URL — the
+            // server-side handler now also rejects empty `ureason` so
+            // a hand-edited URL won't slip through (#1301).
+            if (fallback) window.location.href = fallback;
+            return;
+        }
+        openUnbanDialog({ bid: bid, name: name, fallback: fallback });
+    });
+
+    document.addEventListener('submit', function (e) {
+        var form = /** @type {Element|null} */ (e.target);
+        if (!form || !(/** @type {Element} */ (form)).closest) return;
+        if (!form.matches('[data-testid="bans-unban-form"]')) return;
+        e.preventDefault();
+        if (!pending) return;
+
+        var input = reasonInput();
+        var reason = input ? input.value.trim() : '';
+        if (reason === '') {
+            // Mirror the v1.x JS guard: surface an inline error rather
+            // than submitting an empty reason that the server would
+            // bounce. The server still re-validates as the load-bearing
+            // gate.
+            showError('Please leave a comment.');
+            if (input) try { input.focus(); } catch (_e) { /* focus may throw */ }
+            return;
+        }
+        clearError();
+
+        var ctx = pending;
+        var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="bans-unban-submit"]'));
+        if (submitBtn) submitBtn.disabled = true;
+
+        var a = api(), A = actions();
+        if (!a || !A) {
+            if (submitBtn) submitBtn.disabled = false;
+            if (ctx.fallback) {
+                // Encode the reason into the legacy GET URL so the no-JS
+                // path lands with the typed reason populated.
+                var sep = ctx.fallback.indexOf('?') === -1 ? '?' : '&';
+                window.location.href = ctx.fallback + sep + 'ureason=' + encodeURIComponent(reason);
+            }
+            return;
+        }
+
+        a.call(A.BansUnban, { bid: Number(ctx.bid), ureason: reason }).then(function (r) {
+            if (submitBtn) submitBtn.disabled = false;
+            if (!r || r.ok === false) {
+                var msg = (r && r.error && r.error.message) || 'Unknown error';
+                showError(msg);
+                toast('error', 'Unban failed', msg);
+                return;
+            }
+            rowsForBid(ctx.bid).forEach(flipRowToUnbanned);
+            closeUnbanDialog();
+            toast('success', 'Player unbanned', ctx.name + ' has been unbanned.');
+        });
+    });
+
+    // Native <dialog> fires `cancel` on ESC; clear the pending context
+    // so a subsequent click reopens cleanly with the next row's data.
+    document.addEventListener('cancel', function (e) {
+        var t = /** @type {Element|null} */ (e.target);
+        if (!t || t.id !== 'bans-unban-dialog') return;
+        // Let the native close fire too; we just reset our state.
+        pending = null;
+        clearError();
+    });
+})();
+</script>
+{/literal}
 
 {* ============================================================
    Manifest of properties only consumed by themes/default/page_bans.tpl.
