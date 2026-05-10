@@ -170,6 +170,13 @@
         <tr>
           <th scope="col">Player</th>
           <th scope="col">SteamID</th>
+          {* #1302: IP column gated on `banlist.hideplayerips` + admin
+             status (`hideplayerips` is `Config::getBool('banlist.hideplayerips')
+             && !$userbank->is_admin()` — admins always see IPs, non-admins
+             see them only when the setting is off). Mirrors the existing
+             `{if !$hideadminname}` admin-name guard above; v1.x had this
+             column gated on `is_admin()`, the v2.0 redesign dropped it. *}
+          {if !$hideplayerips}<th scope="col" class="col-ip">IP</th>{/if}
           <th scope="col">Reason</th>
           <th scope="col">Server</th>
           {if !$hideadminname}<th scope="col" class="col-admin">Admin</th>{/if}
@@ -214,6 +221,15 @@
               {$ban.steam|escape}
             {/if}
           </td>
+          {if !$hideplayerips}
+          <td class="col-ip font-mono text-xs text-muted" data-testid="ban-ip">
+            {if $ban.ban_ip_raw == ''}
+              <i class="text-faint">none</i>
+            {else}
+              {$ban.ban_ip_raw|escape}
+            {/if}
+          </td>
+          {/if}
           <td class="text-muted truncate" style="max-width:18rem">{if empty($ban.reason)}<i class="text-faint">no reason</i>{else}{$ban.reason|escape}{/if}</td>
           <td class="text-muted truncate" style="max-width:12rem">{$ban.sname|escape}</td>
           {if !$hideadminname}
@@ -262,7 +278,13 @@
            "Clear filters" and `data-filtered="true"` so tests can
            disambiguate. *}
         <tr>
-          <td colspan="9" style="padding:0">
+          {* colspan accounts for the maximum render: Player, SteamID, IP
+             (gated on `!$hideplayerips`), Reason, Server, Admin (gated on
+             `!$hideadminname`), Length, Banned, Status, Actions = 10. The
+             empty-state cell stretches across whichever subset of columns
+             is currently visible — the wider colspan is harmless when
+             columns are conditionally hidden. *}
+          <td colspan="10" style="padding:0">
             {if $is_filtered}
             <div class="empty-state" data-testid="banlist-empty" data-filtered="true">
               <span class="empty-state__icon" aria-hidden="true">
@@ -322,6 +344,13 @@
           </div>
           <div class="text-xs text-muted truncate" style="margin-top:0.125rem">{if empty($ban.reason)}no reason{else}{$ban.reason|escape}{/if} &middot; {if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</div>
           <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem">{if empty($ban.steam)}&mdash;{else}{$ban.steam|escape}{/if}</div>
+          {* #1302: IP line on the mobile card mirrors the desktop IP
+             column above. Same `{if !$hideplayerips}` gate so an
+             admin sees IPs at-a-glance on phone too; non-admins under
+             `banlist.hideplayerips` get the same suppression contract. *}
+          {if !$hideplayerips && $ban.ban_ip_raw != ''}
+          <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-ip-mobile">{$ban.ban_ip_raw|escape}</div>
+          {/if}
         </div>
         <span class="text-faint" aria-hidden="true">&rsaquo;</span>
       </a>
@@ -428,4 +457,4 @@
    these props, this manifest stops being necessary, and the View
    drops them. Until then, keep this block at EOF.
    ============================================================ *}
-{if false}{$ban_nav}{$ctype}{$cid}{$page}{$canedit}{$othercomments}{$commenttype}{$commenttext}{$comment}{$friendsban}{$groupban}{$can_delete}{$general_unban}{$hidetext}{$searchlink}{$can_export}{$admin_postkey}{$view_comments}{$view_bans}{$hideadminname}{$hideplayerips}{$total_bans}{/if}
+{if false}{$ban_nav}{$ctype}{$cid}{$page}{$canedit}{$othercomments}{$commenttype}{$commenttext}{$comment}{$friendsban}{$groupban}{$can_delete}{$general_unban}{$hidetext}{$searchlink}{$can_export}{$admin_postkey}{$view_comments}{$view_bans}{$hideadminname}{$total_bans}{/if}

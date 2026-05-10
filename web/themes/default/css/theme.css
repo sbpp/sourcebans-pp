@@ -797,6 +797,7 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table .col-length,
 .table .col-banned,
 .table .col-admin,
+.table .col-ip,
 .table .col-status,
 .table .col-actions { white-space: nowrap; }
 .table .col-status { width: 1%; }
