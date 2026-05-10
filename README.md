@@ -35,31 +35,40 @@ or read how to report issues effectively [here](https://coenjacobs.me/2013/12/06
   o SourceMod: Greater Than or Equal To 1.11
 ```
 
-## How to install a SourceBans++ release version
+## Install
 
-The easiest way of installing SourceBans++ is to use a [release version](https://github.com/sbpp/sourcebans-pp/releases), since 
-those come bundled with all requiered code dependencies and pre-compiled sourcemod plugins.
+The release zip is everything you need — no command line, no Composer,
+no SourceMod compile step. Works on any host with PHP 8.5+ and MySQL /
+MariaDB, including shared hosting (cPanel, DirectAdmin, Plesk).
 
-The [quickstart](https://sbpp.github.io/docs/quickstart/) guide gives you a detailed walktrough of the installation process.
+1. **Create the database.** Use phpMyAdmin (or your host's "MySQL
+   Databases" tool) to create an empty database and a user with full
+   privileges on it. Note the database name, username, password,
+   hostname, and port — you'll paste them into the wizard.
+2. **Download the release zip** from
+   [Releases](https://github.com/sbpp/sourcebans-pp/releases). Pick
+   `sourcebans-pp-X.Y.Z.webpanel-only.zip` for the panel and
+   `sourcebans-pp-X.Y.Z.plugin-only.tar.gz` if you want the SourceMod
+   plugins too.
+3. **Unzip + upload.** Extract the panel zip and upload the contents
+   to your web root (`public_html/`, `htdocs/`, `www/`, …) via your
+   host's File Manager or any FTP/SFTP client. The plugin tarball
+   goes onto your game server under `addons/sourcemod/`.
+4. **Run the installer.** Visit `https://your-panel-url/install/` in
+   a browser and follow the wizard — license, database details,
+   environment check, schema install, admin account, done.
+5. **Lock down.** Once the wizard reports success, delete the
+   `install/` directory (the panel refuses to load until you do).
 
-## How to install the current master branch version
-
-The master branch doesn't include the required dependencies or compiled plugins you need to run SourceBans++.
-Here is a quick summary of getting the master branch code up and running.
+The [SourceBans++ Docs](https://sbpp.github.io/docs/) cover the
+SourceMod-side configuration that ties the panel to a game server
+(databases.cfg + plugin install).
 
 > **Upgrading from 1.x?** v2.0.0 introduces new PHP dependencies and
 > resets `config.theme` to `default`. Read [`UPGRADING.md`](UPGRADING.md)
-> **before** you `git pull` or unzip a release tarball over an existing
-> install — the `composer install` step is required for git-based
-> upgrades and is not optional.
+> **before** you upload the new files over an existing install.
 
-### Installing webpanel dependencies
-- Follow the [quickstart](https://sbpp.github.io/docs/quickstart/) guide and upload the webpanel files to your web server
-- Install [composer](https://getcomposer.org/) - [Installation Guide](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-macos)
-- Go to the root of your SourceBans++ installation (where index.php is located)
-- run ```composer install```
-
-After successfully installing all dependencies you can procede with the [quickstart](https://sbpp.github.io/docs/quickstart/) guide.
+## For developers / contributors
 
 ### Local development with Docker
 
@@ -75,6 +84,22 @@ included for rapid local iteration:
 
 The DB schema and a default admin are seeded automatically on first boot —
 no installer wizard required. Full guide in [`docker/README.md`](docker/README.md).
+
+### Running from a git checkout
+
+A git checkout (master branch or otherwise) doesn't ship the bundled
+PHP dependencies or compiled SourceMod plugins — release artifacts do
+that work for you. To run a checkout against a real web server (i.e.
+not the Docker stack above):
+
+- Install [composer](https://getcomposer.org/) — [installation
+  guide](https://getcomposer.org/doc/00-intro.md#installation-linux-unix-macos).
+- From the panel root (`web/`), run `composer install` to populate
+  `web/includes/vendor/`.
+- Compile the SourceMod plugins yourself if you need them — see
+  [Compiling SourceMod Plugins](https://wiki.alliedmods.net/Compiling_SourceMod_Plugins).
+- The wizard at `/install/` then runs the same as it does for a
+  release zip.
 
 ### Static analysis (PHPStan)
 
