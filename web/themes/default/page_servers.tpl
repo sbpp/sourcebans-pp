@@ -79,15 +79,23 @@
                 <span data-online-count>&middot; <span data-online-num>0</span> online</span>
             </p>
         </div>
-        {if $IN_SERVERS_PAGE && $access_bans && $server_list|@count > 0}
-            <p class="text-xs text-muted m-0"
-               role="note"
-               data-testid="servers-rcon-hint"
-               style="max-width:24rem;text-align:right">
-                <i data-lucide="info" style="width:12px;height:12px;vertical-align:-2px"></i>
-                Right-click a player on an expanded card to kick, ban, or message them.
-            </p>
-        {/if}
+        {*
+            #1306 — the pre-#1306 hint copy here promised a right-click
+            kick/ban/message context menu on player rows that no longer
+            ships. The supporting JS (web/scripts/sourcebans.js's
+            `LoadServerHost` -> `AddContextMenu` chain) was deleted at
+            #1123 D1 and the new `renderPlayers(tile)` below never
+            re-registered it, so the help text described a feature that
+            never landed in v2.0.0. Restoring the menu would need a
+            paired RCON `status` round-trip per server (SteamIDs aren't
+            in the SourceQuery `GetPlayers` UDP response) which doubles
+            the per-card latency and only works for admins mapped to
+            servers with rcon — out of scope for this surface. The
+            kick/ban/mute UX is reachable from `?p=admin&c=kickit`,
+            `?p=admin&c=blockit`, and the row affordances on the public
+            ban / comm lists. Don't reintroduce the hint without also
+            shipping the menu.
+        *}
     </header>
 
     {if $server_list|@count == 0}

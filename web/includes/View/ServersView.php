@@ -42,9 +42,7 @@ final class ServersView extends View
      * @param list<array<string,mixed>> $server_list
      */
     public function __construct(
-        public readonly bool $access_bans,
         public readonly array $server_list,
-        public readonly bool $IN_SERVERS_PAGE,
         public readonly int $opened_server,
         // #1207 PUB-3: gates the "Add a server" CTA in the empty
         // state (and is harmless when servers exist; the template
