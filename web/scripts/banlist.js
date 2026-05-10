@@ -11,12 +11,18 @@
      1. Status-filter chips   — toggle row visibility client-side,
         sync the active state into the URL hash so deep links
         survive a refresh.
-     2. SteamID copy buttons  — the {has_access}-gated copy is
-        already inert without JS; this just wires
-        navigator.clipboard + the toast helper from theme.js.
-     3. Comment edit form     — POSTs through sb.api.call()
+     2. Comment edit form     — POSTs through sb.api.call()
         instead of a `<form action="">` round-trip so the page
         doesn't need to navigate away.
+
+   The SteamID copy buttons in the row-actions cell are wired by
+   theme.js's document-level `[data-copy]` click delegate (single
+   source for every copy affordance on the panel — banlist row,
+   drawer identity rows, future surfaces). Pre-#1308 this file's
+   docblock claimed it owned that wiring; it never did, and the
+   inline `onclick="event.stopPropagation()"` on the button
+   silently killed the document delegate on the bubble phase.
+   Both halves are fixed in #1308 — the wiring stays in theme.js.
 
    Each interaction is wrapped in a feature-detect (`if (foo)`)
    so a missing element on the comment-only branch doesn't throw.

@@ -244,10 +244,19 @@
                 {/if}
               {/if}
               {if !empty($ban.steam)}
+              {* #1308: NO `onclick="event.stopPropagation()"` here. The
+                 sibling row-action <a> tags carry it as defensive copy-paste,
+                 but they survive on native href navigation regardless. This
+                 <button>'s ONLY wiring is the document-level [data-copy]
+                 click delegate in theme.js — stopPropagation kills it
+                 silently (no toast, no clipboard write, no console error).
+                 The desktop row's drawer trigger is the player-name anchor
+                 in column 1 (data-drawer-href), not a row-level delegate,
+                 so a bubbling click here has nothing to confuse. *}
               <button class="btn btn--ghost btn--sm btn--icon" type="button"
                       data-copy="{$ban.steam|escape}"
-                      title="Copy SteamID"
-                      onclick="event.stopPropagation()">&#128203;</button>
+                      data-testid="row-action-copy-steam"
+                      title="Copy SteamID">&#128203;</button>
               {/if}
             </div>
           </td>

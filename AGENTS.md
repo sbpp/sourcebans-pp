@@ -1248,6 +1248,33 @@ audit (#1207) locked in. New CTAs:
   every keyboard / screen-reader user. New surfaces add visible
   buttons in the same shape as `.queue-row` (admin moderation
   queue) or the comms-list desktop table (`web/themes/default/page_comms.tpl`).
+- `onclick="event.stopPropagation()"` on a `[data-copy]` button →
+  the document-level COPY BUTTONS delegate in `theme.js` listens on
+  the bubble phase, so an element-level `stopPropagation` silently
+  kills it (no toast, no clipboard write, no console error — exactly
+  the symptom in #1308 Defect A). The desktop banlist row's drawer
+  trigger is the player-name anchor, NOT a row-level delegate, so a
+  bubbling click from a sibling button has nothing to confuse. If a
+  future row-level click handler is genuinely needed, switch the
+  delegate to capture phase (`addEventListener('click', …, true)`)
+  rather than re-adding stopPropagation; capture fires top-down
+  before any element-level stop can intervene.
+- `if (navigator.clipboard) navigator.clipboard.writeText(value);
+  showToast({kind:'success', title:'Copied'});` — the unconditional
+  success toast lies on plain HTTP / non-secure contexts where
+  `navigator.clipboard` is `undefined` (typical self-hoster behind a
+  TLS-terminating reverse proxy where the panel sees plain HTTP).
+  Same shape, different wreckage: `writeText()`'s Promise can reject
+  (permission denied, focus stolen) and the success toast still
+  fires. Copy affordances must (1) feature-detect both
+  `navigator.clipboard` AND `window.isSecureContext`, (2) chain
+  `.then(success, fallback)` on the Promise so a rejection drops
+  to a fallback, (3) reach for the `copyFallback()` hidden-textarea
+  + `document.execCommand('copy')` shape on either failure path. The
+  COPY BUTTONS delegate in `theme.js` is the single source for every
+  `[data-copy]` surface; mirror its shape (and `handlePaletteCopyShortcut`
+  for the Ctrl/Cmd+Enter palette path) when adding new copy hooks
+  outside the document delegate (#1308 Defect B).
 - Removing `<meta name="format-detection" content="telephone=no…">`
   from `core/header.tpl` (or the defensive `.drawer a[href^="tel:"]`
   reset in `theme.css`) → mobile Safari + some Android Chromes
@@ -1321,6 +1348,7 @@ audit (#1207) locked in. New CTAs:
 | Edit the player-detail drawer (open trigger, tabs, panes, lazy loaders) | `web/themes/default/js/theme.js` (`renderDrawerBody` / `loadPaneIfNeeded`) |
 | Edit the command palette (icon-only trigger, ⌘K binding, result rows, kbd hints, Ctrl+Enter copy) | `web/themes/default/js/theme.js` (`openPalette` / `closePalette` / `renderPaletteResults` / `applyPlatformHints` / `handlePaletteCopyShortcut`) + `core/title.tpl` (the `.topbar__search` icon button) + the `.palette__row*` rules in `web/themes/default/css/theme.css`. Player rows carry `data-drawer-bid="<bid>"` (bare Enter / click → `loadDrawer`, palette closes itself) + `data-steamid="<steam>"` (`Ctrl/Cmd+Enter` → `navigator.clipboard.writeText` + `showToast`). The kbd glyphs are server-rendered in non-Mac form (`Enter`, `Ctrl`); `applyPlatformHints` swaps `[data-enterkey]` → ⏎ and `[data-modkey]` → ⌘ on Mac/iOS at boot and after every render (#1184, #1207 DET-2). |
 | Add or edit a palette "Navigate" entry (the icon-label-href rows the palette renders alongside player results) | `web/includes/View/PaletteActions.php` (`Sbpp\View\PaletteActions::for($userbank)` — catalog + filter). The catalog's `entries()` method declares each entry as `{icon, label, href, permission, config?}`; `for()` drops entries the user can't reach (admin entries gated via `HasAccess` with `ADMIN_OWNER` OR'd in; public entries optionally gated on a `config.enable*` toggle) and emits the public `{icon, label, href}` triple. The filtered list is JSON-encoded by `web/pages/core/footer.php` (with `JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT` so the content can never escape its `<script>` wrapper) and emitted by `core/footer.tpl` inside `<script type="application/json" id="palette-actions" data-testid="palette-actions">`. `theme.js`'s `loadNavItems()` reads + `JSON.parse`s the blob at boot. Pre-#1304 the entry list was a hardcoded `NAV_ITEMS` array in `theme.js` with no permission check, leaking admin entries to logged-out + partial-permission users; the regression guard is `web/tests/integration/PaletteActionsTest.php` (server-side filter) plus `web/tests/e2e/specs/flows/ui/command-palette-permissions.spec.ts` (end-to-end blob → DOM contract). |
+| Add a "copy this value" affordance to a panel surface (single-source clipboard wiring) | Mark the trigger with `data-copy="<value>"` (`<button type="button">` is the canonical shape; the drawer uses `<button>` inside a `<dd>`, the banlist row uses `<button>` inside `.row-actions`). The document-level COPY BUTTONS delegate in `web/themes/default/js/theme.js` handles every `[data-copy]` site: secure-context callers go through `navigator.clipboard.writeText` with a `.then(success, fallback)` chain, non-secure callers (plain HTTP behind a TLS-terminating proxy) drop to `copyFallback()` — a hidden-textarea + `document.execCommand('copy')` that's the only portable option outside HTTPS (#1308). NEVER add an inline `onclick="event.stopPropagation()"` to a `[data-copy]` button — the bubble-phase stop kills the document delegate (Defect A, #1308). NEVER assume `navigator.clipboard` exists or that `writeText()` resolves — both fall through to the same execCommand fallback (Defect B, #1308). |
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the parity tests) + `web/includes/Telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. Help-icon copy in `page_admin_settings_features.tpl` + `README.md`'s `## Privacy & telemetry` section + `UPGRADING.md` are the in-panel + upgrade-time disclosure surfaces (no first-login modal). |

@@ -1122,15 +1122,77 @@
   }
 
   // ---- COPY BUTTONS ----------------------------------------
+  // #1308: every panel surface that exposes a "copy this id/value" affordance
+  // (banlist row's SteamID button, drawer's identity rows, future
+  // history-list copy hooks, …) wires through this single document-level
+  // delegate. Two failure modes the pre-#1308 implementation hid:
+  //
+  //   1. `navigator.clipboard` is undefined on non-secure contexts (plain
+  //      HTTP, non-localhost — i.e. the typical self-hoster behind a TLS-
+  //      terminating reverse proxy where the panel sees plain HTTP). The
+  //      old code silently no-op'd the writeText call but fired the success
+  //      toast unconditionally, so the user got "Copied to clipboard" with
+  //      an empty clipboard. Fix: feature-detect `window.isSecureContext`
+  //      AND `navigator.clipboard`, fall back to the hidden-textarea +
+  //      `document.execCommand('copy')` pattern when either is missing.
+  //   2. Even on a secure context, `writeText()` returns a Promise that can
+  //      reject (permission denied, focus stolen, …). The old code dropped
+  //      the Promise on the floor and toasted success regardless. Fix:
+  //      `.then(success, fallback)` so a rejection drops to the same
+  //      execCommand path and the toast reflects the actual outcome.
+  //
+  // Mirrors the shape of `handlePaletteCopyShortcut` (Ctrl/Cmd+Enter on a
+  // palette row), which gets this right.
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {
     const target = /** @type {Element | null} */ (e.target);
     const c = /** @type {HTMLElement | null} */ (target && target.closest('[data-copy]'));
     if (!c) return;
     e.preventDefault();
     const value = c.dataset.copy || '';
-    if (navigator.clipboard) navigator.clipboard.writeText(value);
-    showToast({ kind: 'success', title: 'Copied to clipboard' });
+    if (!value) return;
+    if (navigator.clipboard && window.isSecureContext) {
+      void navigator.clipboard.writeText(value).then(
+        () => showToast({ kind: 'success', title: 'Copied to clipboard' }),
+        () => copyFallback(value),
+      );
+      return;
+    }
+    copyFallback(value);
   });
+
+  /**
+   * Hidden-textarea + `document.execCommand('copy')` fallback for non-
+   * secure contexts (plain HTTP, non-localhost) where `navigator.clipboard`
+   * is undefined, AND for secure-context callsites whose `writeText()`
+   * Promise rejects (permission denied, transient focus issue). The
+   * `execCommand` API is officially deprecated but every shipping browser
+   * still implements it for this exact fallback path — there is no other
+   * portable copy-to-clipboard option outside HTTPS.
+   *
+   * @param {string} value
+   * @returns {void}
+   */
+  function copyFallback(value) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = value;
+      ta.setAttribute('readonly', '');
+      ta.style.position = 'fixed';
+      ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand && document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast(ok
+        ? { kind: 'success', title: 'Copied to clipboard' }
+        : { kind: 'error', title: 'Couldn\u2019t copy', body: 'Clipboard unavailable in this browser context.' });
+    } catch (_e) {
+      showToast({ kind: 'error', title: 'Couldn\u2019t copy' });
+    }
+  }
 
   // ---- FILE INPUTS -----------------------------------------
   // Native <input type="file"> ships an unstyleable user-agent button
