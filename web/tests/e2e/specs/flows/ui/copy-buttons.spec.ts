@@ -266,11 +266,34 @@ test.describe('copy buttons', () => {
         // secure-context branch is bypassed. Use defineProperty
         // because `navigator.clipboard` is a getter on a read-only
         // descriptor — direct assignment silently fails on chromium.
+        //
+        // ALSO install a `document.execCommand` spy that records the
+        // commands invoked on it. The original bug shape WAS the
+        // unconditional success toast, so asserting the toast alone
+        // doesn't distinguish the fix from the regression — the
+        // pre-#1308 delegate also fires the success toast on this
+        // exact path (clipboard undefined, no fallback). The spy
+        // makes the assertion sharp: a 'copy' command must have been
+        // dispatched against `document` for the test to count as a
+        // pass, and that is the unique signal of the fix's fallback
+        // branch firing. (A future delegate that drops the fallback
+        // and just toasts would resurrect Defect B and this assertion
+        // would catch it; the toast assertion below is now belt-and-
+        // suspenders rather than the load-bearing check.)
         await page.evaluate(() => {
             Object.defineProperty(navigator, 'clipboard', {
                 value: undefined,
                 configurable: true,
             });
+            const w = window as unknown as { __execCommandCalls: string[] };
+            w.__execCommandCalls = [];
+            const orig = document.execCommand.bind(document);
+            // Cast to any so the spy can substitute for the legacy
+            // variadic signature that the e2e tsconfig doesn't model.
+            (document as { execCommand: (cmd: string) => boolean }).execCommand = function (cmd: string): boolean {
+                w.__execCommandCalls.push(cmd);
+                return orig(cmd);
+            };
         });
 
         const row = page.locator('[data-testid="ban-row"]', { hasText: seed.nick }).first();
@@ -280,16 +303,26 @@ test.describe('copy buttons', () => {
 
         await copyBtn.click();
 
-        // Fallback path still toasts on success. The execCommand call
-        // is a synchronous, user-gesture-scoped copy that chromium's
-        // headless runner honours, so the toast still reads "Copied
-        // to clipboard". The point of the fix is that the toast
-        // reflects the actual outcome — if the fallback fails, the
-        // toast says "Couldn't copy" with an explanatory body. We
-        // assert the success branch here because chromium implements
-        // execCommand; the explicit error-branch wording is locked in
-        // the source comment so a future regression that drops the
-        // honest toast falls out at code review.
+        // Load-bearing assertion: the fallback path was actually taken.
+        // The spy records every `document.execCommand(cmd, …)` call;
+        // the fix dispatches `'copy'` against the hidden textarea, so
+        // the spy must have captured at least one `'copy'` invocation.
+        // Pre-#1308 (clipboard undefined branch silently no-ops then
+        // toasts success) the spy stays empty and this assertion fails.
+        const execCalls = await page.evaluate(
+            () => (window as unknown as { __execCommandCalls: string[] }).__execCommandCalls,
+        );
+        expect(execCalls).toContain('copy');
+
+        // Belt-and-suspenders: the fallback toast still fires on
+        // success. The execCommand call is a synchronous, user-
+        // gesture-scoped copy that chromium's headless runner honours,
+        // so the toast still reads "Copied to clipboard". A future
+        // regression that drops the honest "Couldn't copy" error
+        // toast on the fallback's failure branch is locked in the
+        // source comment for code-review catch; we don't simulate
+        // execCommand failure here because chromium's headless runner
+        // always succeeds on a focused selected textarea.
         const toast = page.locator('.toast').filter({ hasText: 'Copied to clipboard' });
         await expect(toast).toBeVisible();
     });
