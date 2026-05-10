@@ -22,7 +22,11 @@ codebase; this file is the cheatsheet.
 - `web/install/` — installer wizard self-hosters run on every fresh
   install (the dev stack seeds the DB out of band via `docker/db-init/`,
   so the wizard isn't exercised locally). Live code; modernize and
-  extend like anything else under `web/`.
+  extend like anything else under `web/`. As of #1332 the wizard
+  rides the panel's V2.0 chrome (typed `Sbpp\View\Install\*View`
+  DTOs + Smarty templates under `web/themes/default/install/`) and
+  carries a vendor/-missing recovery surface (`web/install/recovery.php`)
+  for git-checkout / partial-upload installs.
 - `web/updater/` — upgrade runner self-hosters hit on every panel
   upgrade. Wrapper code (`Updater.php`, `index.php`, `store.json`) and
   the numbered migration scripts under `web/updater/data/<N>.php` are
@@ -695,6 +699,79 @@ enum.
   #1123 B20 rewrote it in standard `{ }` delimiters; do NOT regress
   it back to `-{ … }-` without a paired edit here.
 
+### Install wizard (`web/install/`)
+
+Self-hoster install surface; runs BEFORE the panel's
+`web/init.php` bootstrap. Lifecycle (#1332):
+
+1. `web/install/index.php` — entry. Requires `init.php`
+   (paths-only), checks `vendor/autoload.php` for the recovery
+   short-circuit, then requires `bootstrap.php` (Composer +
+   Smarty) and dispatches via `includes/routing.php`.
+2. `web/install/init.php` — paths-only bootstrap. NEVER
+   touches `vendor/`. Defines `IN_INSTALL`, `PANEL_ROOT`,
+   `PANEL_INCLUDES_PATH`, etc. The recovery surface relies on
+   this being load-bearing-free of Composer dependencies.
+3. `web/install/recovery.php` — pure inline HTML + CSS surface
+   served when `vendor/` is missing. Serves `503` + the
+   "download a release zip OR run `composer install`"
+   instructions. Self-contained; never extend it with code
+   that needs Composer (the whole point is that it works
+   without it).
+4. `web/install/bootstrap.php` — Composer autoload + the
+   subset of the panel's eager-load chain the wizard needs
+   (`Sbpp\Db\Database` only) + a Smarty instance configured
+   with the panel's default theme dir.
+5. `web/install/pages/page.<N>.php` — per-step page handlers.
+   Each builds a `Sbpp\View\Install\Install*View` DTO and
+   calls `Sbpp\View\Renderer::render($theme, $view)` against
+   the install Smarty instance. Step → handler mapping lives
+   in `web/install/includes/routing.php`.
+
+Conventions for new wizard work:
+
+- New step → new `web/install/pages/page.<N>.php`, new
+  `Sbpp\View\Install\Install<Step>View`, new
+  `web/themes/default/install/page_<step>.tpl`. Wire it into
+  the dispatcher's `match` and bump `step_count` on every
+  view's constructor (the progress stepper reads it).
+- The wizard reuses the panel's `theme.css` design tokens
+  (button / input / card / typography) but ships its own
+  install-only inline CSS in `_chrome.tpl` (`.install-shell`,
+  `.install-alert`, `.install-pill`, `.install-grid`,
+  `.install-table`, …). Don't grow `theme.css` for
+  installer-only chrome — the panel runtime never renders
+  these.
+- Forms POST natively (`<form method="post" action="?step=N">`).
+  No JS-driven navigation. Vanilla JS is allowed only as a
+  page-tail script for client-side validation hints — and the
+  form's native `required` / `pattern` attributes must be the
+  load-bearing gate, with JS as the UX polish.
+- The wizard runs OUTSIDE the panel's `core/header.tpl` chrome
+  because it has no logged-in user, no DB on step 1, no
+  `Config::get`, and no `$userbank` — anything that depends on
+  the panel's chrome JS (theme.js, palette, lucide.min.js,
+  drawer) is unavailable.
+- Carry state between steps as **hidden POST fields**, never
+  `$_SESSION`. The wizard runs against an unconfigured panel —
+  there's no DB to anchor a session against until step 4
+  applies the schema, and the operator may abandon the install
+  half-way (so a session would silently leak credentials into
+  the host's tmp dir).
+- Successful POST validation followed by data-forwarding to
+  the next step uses the canonical handoff template
+  (`page_handoff.tpl` + `InstallDatabaseHandoffView`): a
+  noscript-friendly auto-submit form that re-POSTs the
+  validated data to `?step=<next>` (302 can't carry POST).
+- CSRF is **off** for the wizard. The panel's `Sbpp\Security\CSRF`
+  reads from session + DB-loaded settings; both are unavailable
+  pre-install. The pre-install attack surface is intrinsically
+  limited (anyone who can reach `/install/` can also overwrite
+  files via the same upload channel they used to deploy the
+  panel) and the install/-folder-still-exists guard in
+  `web/init.php` blocks the panel from booting if the operator
+  doesn't delete `/install/` after the wizard completes.
+
 ### Permission display surfaces
 
 When a page surfaces the user's **own** permission flags back to them
@@ -1133,6 +1210,25 @@ audit (#1207) locked in. New CTAs:
   frags / time only, so the menu would also need a paired RCON
   `status` round-trip per server). Don't reintroduce the help text
   without the wiring.
+- `web/install/scripts/sourcebans.js` + `web/install/template/*.php`
+  procedural-PHP-template wizard (the v1.x install surface that
+  rendered through `header.php` + `page.<N>.php` + `footer.php`,
+  pulling MooTools and a wizard-local `sourcebans.js` for `ShowBox()`
+  / `$E()` / `$('id')` helpers) → removed at #1332. Every script
+  reference was already broken at #1123 D1 (the sister files in
+  `web/scripts/` were deleted), so popups / Enter-to-submit shortcuts
+  / keyboard nav hints had been silently dead for two minor versions.
+  The new wizard renders through typed `Sbpp\View\Install\Install*View`
+  DTOs + Smarty templates under `web/themes/default/install/`,
+  reuses the panel's `theme.css` design tokens, and uses vanilla JS
+  only where strictly necessary (the licence-accept checkbox guard
+  on step 1 + the auto-submit handoff form between step 2 and 3).
+  Re-introducing a separate JS bundle for the wizard is an
+  anti-pattern: the wizard has no logged-in user, no DB on step 1,
+  no `Config::get`, and no `$userbank` — it cannot use the panel's
+  chrome JS (`theme.js` / palette / command-K), and a parallel
+  bundle would diverge from the design-system tokens the wizard
+  visually shares with the panel.
 - `openTab()` JS (and the matching `<button onclick="openTab(...)">`
   chrome on `core/admin_tabs.tpl`) → the JS handler was dropped with
   sourcebans.js at #1123 D1; the buttons did nothing and every pane
@@ -1490,5 +1586,7 @@ audit (#1207) locked in. New CTAs:
 | Keep the main sidebar sticky-pinned across the full document scroll (`<aside class="sidebar">`) | The structural half of #1271 lives in `web/themes/default/core/footer.tpl`: `<footer class="app-footer">` is rendered as the LAST flex column item of `<div class="main">`, INSIDE `<div class="app">`. `.sidebar`'s sticky containing block is `.app`; if the footer were a body-level sibling of `.app` (the pre-fix shape), `.app`'s height would fall short of the document by `footerHeight` and the sidebar would release at the bottom — brand cut off, on barely-tall pages (`docHeight - viewport ≤ footerHeight`, e.g. `?p=admin&c=audit` on the bare e2e seed) the entire scroll range would be in the release phase and the sidebar would track the scroll. Keeping the footer inside `.app` makes the sticky CB extend to the full document. The CSS half (`.sidebar { align-self: flex-start; }` from #1278) is defensive parity with `.admin-sidebar` and is RETAINED but not load-bearing on its own. The footer's `margin-top: auto` (`.app-footer` rule in `theme.css`) is the classic "sticky footer" pattern — pushes the footer to the bottom of `.main`'s flex column on short pages so the credit doesn't float halfway up the viewport. Regression guard: `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts` asserts strict `top===0` at scroll=`document.scrollHeight` on `?p=admin&c=bans` (the canonical tall page) AND on `?p=admin&c=audit` (the barely-tall page that historically presented the bug most visibly). |
 | Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |
 | Tell the browser to paint native UA surfaces (`<select>` dropdown panels, native scrollbars, `<input type="date|time|color">` pickers, autofill highlighting) in the matching scheme | `web/themes/default/css/theme.css` — the two `color-scheme` declarations on `:root` (`light`) and `html.dark` (`dark`) (#1309). Without these the chrome's dark tokens swap correctly for DOM-rendered surfaces, but anything painted in the browser's top-layer system UI ignores `html.dark` and renders light — most jarring on mobile where the native `<select>` picker full-screens. Regression guard: `web/tests/e2e/specs/a11y/color-scheme.spec.ts`. |
+| Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=licence, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Step 1 is the only one with a per-page tail script (vanilla JS validating the licence-accept checkbox); navigation is plain HTML `<form action="?step=N">` everywhere else. Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
+| Recover from a missing `web/includes/vendor/` at install time | `web/install/recovery.php` is the self-contained "vendor/ missing" surface — pure inline HTML + CSS, NO Composer / Smarty / `Sbpp\…` dependency (#1332 C3). `web/install/index.php`'s lifecycle is paths-init (`init.php`) → vendor/-check (short-circuit to `recovery.php` if missing) → composer + Smarty bootstrap (`bootstrap.php`) → step dispatch (`includes/routing.php` → `pages/page.<N>.php`). The recovery surface is gated by `file_exists(PANEL_INCLUDES_PATH . '/vendor/autoload.php')` BEFORE any namespaced class is referenced. The release artifact (post-#1332 Workstream A) bundles `vendor/` so this surface is the safety net for git checkouts and partial uploads, never the happy path. |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |

@@ -169,70 +169,10 @@ parameters:
 			path: includes/system-functions.php
 
 		-
-			message: '#^Function build invoked with 2 parameters, 3 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: index.php
-
-		-
 			message: '#^Path in include_once\(\) "config\.php" is not a file or it does not exist\.$#'
 			identifier: includeOnce.fileNotFound
 			count: 1
 			path: index.php
-
-		-
-			message: '#^Path in require_once\(\) "\.\./config\.php" is not a file or it does not exist\.$#'
-			identifier: requireOnce.fileNotFound
-			count: 1
-			path: install/includes/converter.inc.php
-
-		-
-			message: '#^Path in require_once\(\) "\.\./includes/Db/Database\.php" is not a file or it does not exist\.$#'
-			identifier: requireOnce.fileNotFound
-			count: 1
-			path: install/includes/converter.inc.php
-
-		-
-			message: '#^Variable \$title might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: install/template/content.header.php
-
-		-
-			message: '#^Negated boolean expression is always false\.$#'
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: install/template/page.2.php
-
-		-
-			message: '#^Loose comparison using \!\= between 0\|1 and \-1 will always evaluate to true\.$#'
-			identifier: notEqual.alwaysTrue
-			count: 1
-			path: install/template/page.3.php
-
-		-
-			message: '#^Variable \$sql_version might not be defined\.$#'
-			identifier: variable.undefined
-			count: 4
-			path: install/template/page.3.php
-
-		-
-			message: '#^Negated boolean expression is always false\.$#'
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: install/template/page.5.php
-
-		-
-			message: '#^Variable \$errors might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: install/template/page.5.php
-
-		-
-			message: '#^Variable \$step might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: install/template/submenu.php
 
 		-
 			message: '#^Result of \|\| is always true\.$#'

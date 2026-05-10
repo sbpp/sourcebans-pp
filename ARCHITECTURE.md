@@ -93,6 +93,7 @@ web/
 │   ├── Security/Crypto.php   Sbpp\Security\Crypto — password / token crypto
 │   ├── View/AdminTabs.php    Sbpp\View\AdminTabs — Pattern A admin sub-section nav
 │   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
+│   ├── View/Install/         Sbpp\View\Install\* — install-wizard step DTOs (#1332)
 │   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML
 │   ├── Servers/              Sbpp\Servers\SourceQueryCache — per-(ip, port) cache around the xPaw A2S probe (#1311)
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
@@ -114,7 +115,13 @@ web/
 ├── configs/permissions/  web.json + sourcemod.json — bitmask flag definitions
 ├── tests/                PHPUnit (api/ for handlers, integration/ for flows)
 ├── bin/                  CLI tools (currently just generate-api-contract.php)
-├── install/              Legacy installer wizard (skipped in dev)
+├── install/              Install wizard self-hosters run on a fresh setup (#1332)
+│   ├── index.php             Entry point — paths-init → vendor/-check (recovery short-circuit) → bootstrap → dispatch
+│   ├── init.php              Paths-only bootstrap (NEVER touches vendor/)
+│   ├── bootstrap.php         Composer + Smarty bootstrap (loaded only when vendor/ is present)
+│   ├── recovery.php          Self-contained "vendor/ missing" surface (pure inline HTML + CSS)
+│   ├── pages/page.<N>.php    Per-step page handlers (1=licence, …, 6=optional AMXBans import)
+│   ├── includes/routing.php  Step → page-handler dispatch
 │   └── includes/sql/         struc.sql + data.sql — the schema source of truth
 ├── updater/              Per-version migrations existing installs run after upgrade
 ├── phpstan.neon          PHPStan level 5 + custom rules + dba bootstrap
@@ -1062,7 +1069,8 @@ but don't bulk-rewrite legacy code without justification.
 | `web/scripts/sourcebans.js` (`ShowBox`, `DoLogin`, `LoadServerHost`, …) | Removed at v2.0.0 (#1123 D1); inline self-contained helpers per page; `window.SBPP.showToast` for toasts |
 | Ad-hoc `$theme->assign()` chains           | `Sbpp\View\*` DTO + `Renderer::render`                   |
 | String literals for action names           | `Actions.PascalName` (from `api-contract.js`)            |
-| `install/` flow as a runtime concern       | DB seeded out-of-band; installer left for production users |
+| `install/` flow as a runtime concern       | DB seeded out-of-band; installer left for production users (modernized in #1332 — typed `Sbpp\View\Install\*View` DTOs + Smarty templates, no MooTools / wizard-local sourcebans.js) |
+| `web/install/template/*.php` procedural templates + `web/install/scripts/sourcebans.js` (MooTools-dependent `ShowBox`/`$E`/`$()` helpers, broken since #1123 D1) | Removed at #1332. Wizard pages live as `web/install/pages/page.<N>.php` handlers + `web/themes/default/install/page_<step>.tpl` Smarty templates + `Sbpp\View\Install\Install*View` DTOs |
 | `htmlspecialchars_decode` on JSON params   | Store raw UTF-8; Smarty auto-escape handles display (#1108) |
 | `DB_CHARSET = 'utf8'` (3-byte alias)       | `utf8mb4` end-to-end (panel PDO + plugin `SET NAMES`) (#1108)|
 | TinyMCE WYSIWYG for `dash.intro.text`      | Plain `<textarea>` + `Sbpp\Markup\IntroRenderer` (CommonMark, escape unsafe HTML) (#1113) |
