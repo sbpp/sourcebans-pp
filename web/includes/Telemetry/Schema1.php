@@ -7,7 +7,7 @@ use RuntimeException;
 
 /**
  * Reads the vendored Draft-7 JSON Schema at
- * `web/includes/telemetry/schema-1.lock.json` and exposes its
+ * `web/includes/Telemetry/schema-1.lock.json` and exposes its
  * recursively-flattened leaf field set.
  *
  * The lock file is the canonical wire-format contract for the

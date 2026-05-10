@@ -7,7 +7,7 @@
 
 # Where the cf-analytics repo publishes the canonical schema-1 lock
 # file. The panel vendors a byte-identical copy at
-# `web/includes/telemetry/schema-1.lock.json`; the parity tests
+# `web/includes/Telemetry/schema-1.lock.json`; the parity tests
 # (TelemetrySchemaParityTest, TelemetryReadmeParityTest) gate the
 # result so a sync that adds a typed slot fails the build until the
 # matching extractor + README bullet land.

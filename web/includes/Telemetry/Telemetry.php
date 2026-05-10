@@ -20,7 +20,7 @@ use Throwable;
  * volume.
  *
  * What gets sent is locked in
- * `web/includes/telemetry/schema-1.lock.json` (the JSON Schema
+ * `web/includes/Telemetry/schema-1.lock.json` (the JSON Schema
  * vendored from the cf-analytics companion repo). Two parity tests
  * gate the contract:
  *

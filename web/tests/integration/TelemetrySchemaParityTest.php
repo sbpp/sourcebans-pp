@@ -13,7 +13,7 @@ use Sbpp\Tests\ApiTestCase;
  * schema's leaf field set in BOTH directions.
  *
  *   - Lock file → extractors: every typed slot in
- *     `web/includes/telemetry/schema-1.lock.json` has a
+ *     `web/includes/Telemetry/schema-1.lock.json` has a
  *     corresponding key in `Telemetry::collect()`'s output. Adding
  *     a slot in cf-analytics → next sync → this test fails until
  *     an extractor is added.

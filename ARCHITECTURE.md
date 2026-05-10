@@ -648,7 +648,7 @@ audit-logged either — a flapping endpoint would otherwise generate
 
 `Telemetry::collect()` is the side-effect-free payload builder. The
 exact wire format is captured in
-`web/includes/telemetry/schema-1.lock.json` — a Draft-7 JSON Schema
+`web/includes/Telemetry/schema-1.lock.json` — a Draft-7 JSON Schema
 vendored byte-for-byte from the [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics)
 companion repo. `Sbpp\Telemetry\Schema1::payloadFieldNames()` reads
 the lock file at request time and returns the recursively-flattened

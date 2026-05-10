@@ -141,7 +141,7 @@ The contract this section locks down:
 ### Field list (schema 1)
 
 The complete payload, sourced from the vendored
-`web/includes/telemetry/schema-1.lock.json`. The
+`web/includes/Telemetry/schema-1.lock.json`. The
 `TelemetryReadmeParityTest` PHPUnit test deep-equals this list against
 `Sbpp\Telemetry\Schema1::payloadFieldNames()`, so the docs and the wire
 format can never silently drift.
@@ -212,7 +212,7 @@ Panel-side rules:
 
 1. **Additive — new optional field within `schema: 1`.** Add the
    extractor to `Telemetry::collect()` once
-   `web/includes/telemetry/schema-1.lock.json` lists the field.
+   `web/includes/Telemetry/schema-1.lock.json` lists the field.
 2. **Subtractive / repurposing — rare; bumps the schema number.** The
    panel sends `schema: 2`; a sibling `Sbpp\Telemetry\Schema2` helper
    covers the new shape. The existing `Schema1` helper stays around
@@ -224,7 +224,7 @@ validator.
 
 ### Manual schema sync
 
-`web/includes/telemetry/schema-1.lock.json` is vendored byte-for-byte
+`web/includes/Telemetry/schema-1.lock.json` is vendored byte-for-byte
 from the cf-analytics companion repo. Sync with:
 
 ```sh
