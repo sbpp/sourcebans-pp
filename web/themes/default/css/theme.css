@@ -33,6 +33,16 @@
 
 /* ---- Tokens ---- */
 :root {
+  /* #1309 — pair the active palette with a CSS color-scheme so the
+     browser paints native UA surfaces (the open <select> dropdown
+     panel, native scrollbars, <input type="date|time|color"> pickers,
+     and form autofill highlighting) in the matching scheme. Without
+     this hook, html.dark only swaps tokens for DOM-rendered surfaces;
+     anything painted in the browser's top-layer system UI ignores it
+     and renders light, producing a jarring white panel slide-in over
+     a dark page on mobile <select>s. */
+  color-scheme: light;
+
   /* Brand */
   --brand-50:  #fff7ed; --brand-100: #ffedd5; --brand-200: #fed7aa;
   --brand-300: #fdba74; --brand-400: #fb923c; --brand-500: #f97316;
@@ -76,6 +86,7 @@
 }
 
 html.dark {
+  color-scheme: dark;
   --bg-page: var(--zinc-950);
   --bg-surface: var(--zinc-900);
   --bg-muted: var(--zinc-800);
