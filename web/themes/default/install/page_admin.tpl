@@ -111,14 +111,13 @@
 
     <div class="install-actions">
         <a class="btn btn--ghost" href="?step=4" data-testid="install-admin-back">
-            <i data-lucide="arrow-left" aria-hidden="true"></i>
             Back
         </a>
         <button class="btn btn--primary"
                 type="submit"
                 data-testid="install-admin-continue">
             Create admin
-            <i data-lucide="arrow-right" aria-hidden="true"></i>
+
         </button>
     </div>
 </form>

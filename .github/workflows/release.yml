@@ -94,21 +94,22 @@ jobs:
               --prefer-dist
           (cd /tmp && zip -rq "${GITHUB_WORKSPACE}/${pkg}.zip" "${pkg}")
 
-      # Smoke-check the staged tree before zipping. Two anchor files:
+      # Smoke-check the actual zip (not the staged tree) so a future
+      # change that makes `zip` silently drop vendor/ — a stray
+      # .zipignore, an exclusion flag, etc. — fails the build loudly
+      # instead of shipping a broken artifact. Two anchor files:
       #   - includes/vendor/autoload.php — the file init.php gates on.
       #   - includes/vendor/smarty/smarty/libs/Smarty.php — the highest-
       #     value transitive dep (templates won't render without it).
-      # If either is missing the artifact silently regresses to the
-      # pre-#1332 broken shape; fail the build loudly instead.
-      - name: Verify vendor/ is bundled
+      - name: Verify vendor/ is bundled in the zip
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
           missing=0
           for f in \
-              "/tmp/${pkg}/includes/vendor/autoload.php" \
-              "/tmp/${pkg}/includes/vendor/smarty/smarty/libs/Smarty.php"; do
-              if [ ! -f "$f" ]; then
-                  echo "::error::Missing required artifact file: $f"
+              "${pkg}/includes/vendor/autoload.php" \
+              "${pkg}/includes/vendor/smarty/smarty/libs/Smarty.php"; do
+              if ! unzip -l "${pkg}.zip" "${f}" >/dev/null 2>&1; then
+                  echo "::error::Missing required artifact file in ${pkg}.zip: ${f}"
                   missing=1
               fi
           done

@@ -97,9 +97,7 @@ Renderer::render($theme, new InstallImportView(
  *
  * Replaces the legacy converter.inc.php (which `echo`-ed progress
  * and called `die()`) with a structured pure-render that returns
- * a status string the template surfaces in an alert. Same SQL
- * shape as the legacy converter — see web/install/includes/converter.inc.php
- * for the original.
+ * a status string the template surfaces in an alert.
  *
  * Returns an HTML snippet that the page renders inside an
  * install-alert--ok block (the snippet only contains controlled

@@ -120,7 +120,6 @@
 
     <div class="install-actions">
         <a class="btn btn--ghost" href="?step=5" data-testid="install-import-back">
-            <i data-lucide="arrow-left" aria-hidden="true"></i>
             Back
         </a>
         <a class="btn btn--ghost" href="../" data-testid="install-import-skip">
@@ -130,7 +129,7 @@
                 type="submit"
                 data-testid="install-import-run">
             Import bans
-            <i data-lucide="arrow-right" aria-hidden="true"></i>
+
         </button>
     </div>
 </form>

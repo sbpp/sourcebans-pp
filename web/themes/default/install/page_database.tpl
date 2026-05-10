@@ -148,14 +148,12 @@
 
     <div class="install-actions">
         <a class="btn btn--ghost" href="?step=1" data-testid="install-database-back">
-            <i data-lucide="arrow-left" aria-hidden="true"></i>
             Back
         </a>
         <button class="btn btn--primary"
                 type="submit"
                 data-testid="install-database-continue">
             Continue
-            <i data-lucide="arrow-right" aria-hidden="true"></i>
         </button>
     </div>
 </form>

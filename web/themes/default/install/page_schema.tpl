@@ -47,7 +47,6 @@
 
     <div class="install-actions">
         <a class="btn btn--ghost" href="?step=2" data-testid="install-schema-back">
-            <i data-lucide="arrow-left" aria-hidden="true"></i>
             Back to database
         </a>
         {if $success}
@@ -55,7 +54,6 @@
                     type="submit"
                     data-testid="install-schema-continue">
                 Continue
-                <i data-lucide="arrow-right" aria-hidden="true"></i>
             </button>
         {else}
             <button class="btn btn--primary"

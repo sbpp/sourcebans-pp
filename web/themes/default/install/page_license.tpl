@@ -50,7 +50,6 @@
                 type="submit"
                 data-testid="install-license-continue">
             Continue
-            <i data-lucide="arrow-right" aria-hidden="true"></i>
         </button>
     </div>
 </form>

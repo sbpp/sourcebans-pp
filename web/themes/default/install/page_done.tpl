@@ -95,7 +95,6 @@
        href="../"
        data-testid="install-done-finish">
         Open the panel
-        <i data-lucide="arrow-right" aria-hidden="true"></i>
     </a>
 </div>
 

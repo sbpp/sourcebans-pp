@@ -55,6 +55,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Add a new permission flag                                   | `web/configs/permissions/web.json`, regen API contract; doc only if the **role** of the flag affects conventions |
 | Change the local dev stack (Docker, db-init, env vars)      | `docker/README.md` first, link from `ARCHITECTURE.md` if it changes the dev mental model |
 | Edit user-facing install/quickstart                         | `README.md`                                           |
+| Add or change a wizard step (page handler / View / template / shared helper) | `AGENTS.md` (Install wizard convention block) + the "Edit a step of the install wizard" row in "Where to find what" |
 
 Quick rules:
 
@@ -763,14 +764,20 @@ Conventions for new wizard work:
   (`page_handoff.tpl` + `InstallDatabaseHandoffView`): a
   noscript-friendly auto-submit form that re-POSTs the
   validated data to `?step=<next>` (302 can't carry POST).
-- CSRF is **off** for the wizard. The panel's `Sbpp\Security\CSRF`
-  reads from session + DB-loaded settings; both are unavailable
-  pre-install. The pre-install attack surface is intrinsically
-  limited (anyone who can reach `/install/` can also overwrite
-  files via the same upload channel they used to deploy the
-  panel) and the install/-folder-still-exists guard in
-  `web/init.php` blocks the panel from booting if the operator
-  doesn't delete `/install/` after the wizard completes.
+- CSRF is **off** for the wizard. There's no logged-in user yet —
+  CSRF tokens have nothing to bind to in the multi-user sense, and
+  the pre-install attack surface is intrinsically limited (anyone
+  who can reach `/install/` can also overwrite files via the same
+  upload channel they used to deploy the panel). The
+  install/-folder-still-exists guard in `web/init.php` blocks the
+  panel from booting if the operator doesn't delete `/install/`
+  after the wizard completes, so the window for this surface is
+  the install itself. Steps 3-6 instead defend against direct-POST
+  bypass of step 2's input validation by re-running the same
+  validation at the top of every handler — `sbpp_install_validate_prefix`
+  on `prefix` (and step 6's `amx_prefix`) is the single source of
+  truth, called eagerly so a forged hidden-field POST short-circuits
+  to `?step=2` BEFORE any SQL runs (#1332 review).
 
 ### Permission display surfaces
 
@@ -1586,7 +1593,7 @@ audit (#1207) locked in. New CTAs:
 | Keep the main sidebar sticky-pinned across the full document scroll (`<aside class="sidebar">`) | The structural half of #1271 lives in `web/themes/default/core/footer.tpl`: `<footer class="app-footer">` is rendered as the LAST flex column item of `<div class="main">`, INSIDE `<div class="app">`. `.sidebar`'s sticky containing block is `.app`; if the footer were a body-level sibling of `.app` (the pre-fix shape), `.app`'s height would fall short of the document by `footerHeight` and the sidebar would release at the bottom — brand cut off, on barely-tall pages (`docHeight - viewport ≤ footerHeight`, e.g. `?p=admin&c=audit` on the bare e2e seed) the entire scroll range would be in the release phase and the sidebar would track the scroll. Keeping the footer inside `.app` makes the sticky CB extend to the full document. The CSS half (`.sidebar { align-self: flex-start; }` from #1278) is defensive parity with `.admin-sidebar` and is RETAINED but not load-bearing on its own. The footer's `margin-top: auto` (`.app-footer` rule in `theme.css`) is the classic "sticky footer" pattern — pushes the footer to the bottom of `.main`'s flex column on short pages so the credit doesn't float halfway up the viewport. Regression guard: `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts` asserts strict `top===0` at scroll=`document.scrollHeight` on `?p=admin&c=bans` (the canonical tall page) AND on `?p=admin&c=audit` (the barely-tall page that historically presented the bug most visibly). |
 | Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |
 | Tell the browser to paint native UA surfaces (`<select>` dropdown panels, native scrollbars, `<input type="date|time|color">` pickers, autofill highlighting) in the matching scheme | `web/themes/default/css/theme.css` — the two `color-scheme` declarations on `:root` (`light`) and `html.dark` (`dark`) (#1309). Without these the chrome's dark tokens swap correctly for DOM-rendered surfaces, but anything painted in the browser's top-layer system UI ignores `html.dark` and renders light — most jarring on mobile where the native `<select>` picker full-screens. Regression guard: `web/tests/e2e/specs/a11y/color-scheme.spec.ts`. |
-| Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=licence, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Step 1 is the only one with a per-page tail script (vanilla JS validating the licence-accept checkbox); navigation is plain HTML `<form action="?step=N">` everywhere else. Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
+| Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=licence, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. Shared step-handler helpers (prefix validation, raw-PDO probe before instantiating `\Database`, KeyValues quoting) live in `web/install/includes/helpers.php` (`sbpp_install_validate_prefix` / `sbpp_install_open_db` / `sbpp_install_kv_escape`) — required eagerly from `web/install/bootstrap.php` so every step page has them in scope without its own require. Every step (3-6) re-runs `sbpp_install_validate_prefix` at the top of its handler before any SQL substitution; step 6 also validates `amx_prefix` (operator input on that page itself). The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Step 1 is the only one with a per-page tail script (vanilla JS validating the licence-accept checkbox); the handoff template carries an inline auto-submit script. Navigation is plain HTML `<form action="?step=N">` everywhere else. Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
 | Recover from a missing `web/includes/vendor/` at install time | `web/install/recovery.php` is the self-contained "vendor/ missing" surface — pure inline HTML + CSS, NO Composer / Smarty / `Sbpp\…` dependency (#1332 C3). `web/install/index.php`'s lifecycle is paths-init (`init.php`) → vendor/-check (short-circuit to `recovery.php` if missing) → composer + Smarty bootstrap (`bootstrap.php`) → step dispatch (`includes/routing.php` → `pages/page.<N>.php`). The recovery surface is gated by `file_exists(PANEL_INCLUDES_PATH . '/vendor/autoload.php')` BEFORE any namespaced class is referenced. The release artifact (post-#1332 Workstream A) bundles `vendor/` so this surface is the safety net for git checkouts and partial uploads, never the happy path. |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |

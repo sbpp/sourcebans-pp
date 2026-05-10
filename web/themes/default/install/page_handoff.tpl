@@ -36,13 +36,10 @@
                     type="submit"
                     data-testid="install-handoff-continue">
                 Continue
-                <i data-lucide="arrow-right" aria-hidden="true"></i>
             </button>
         </form>
     </div>
 </div>
-
-{include file="install/_chrome_close.tpl"}
 
 <script>
 (function () {
@@ -55,3 +52,5 @@
     }
 })();
 </script>
+
+{include file="install/_chrome_close.tpl"}
