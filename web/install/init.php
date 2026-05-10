@@ -42,16 +42,16 @@ if (!defined('SB_VERSION')) {
 ini_set('display_errors', '1');
 error_reporting(E_ALL);
 
-// Pre-create an empty config.php so `is_writable('../config.php')` on
-// the requirements page returns a meaningful answer. Done idempotently
-// — never overwrites an existing config (the installer's job is to
-// write the config in step 5, not to clobber a pre-existing one).
-if (!file_exists(PANEL_ROOT . 'config.php') && is_writable(PANEL_ROOT)) {
-    $h = @fopen(PANEL_ROOT . 'config.php', 'w');
-    if ($h !== false) {
-        fclose($h);
-    }
-}
+// We deliberately do NOT pre-create config.php to make the requirements
+// check happy. Page 3's check is `is_writable($configPath) ||
+// is_writable(PANEL_ROOT)` — the second clause already covers the
+// "file doesn't exist but the directory does, so it'll be writable"
+// case. Pre-creating an empty config.php has a sharp edge: if the
+// operator deletes install/ mid-wizard, web/init.php's gate at
+// `if (!file_exists(ROOT.'/config.php')) die('not installed')` sees
+// the empty file as "installed", require()s zero bytes, and the next
+// `DB_HOST` reference dies with `Undefined constant` (#1332 review:
+// major 4).
 
 // Forgive a missing trailing slash on `/install` (cPanel / nginx
 // configs sometimes pass the URL through without it; the wizard's

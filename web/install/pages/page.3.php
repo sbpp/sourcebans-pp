@@ -35,6 +35,17 @@ if ($server === '' || $username === '' || $database === '' || $prefix === '') {
     exit;
 }
 
+// Re-validate the prefix on every step (#1332 review: critical).
+// Step 2 validates on first submit, but a direct request to
+// /install/?step=3 with a crafted hidden POST bypasses that gate.
+// The {prefix} substitution in struc.sql / data.sql is plain
+// str_replace (not parameterised), so an unvalidated prefix
+// injects arbitrary DDL/DML — defence-in-depth at every step.
+if (!sbpp_install_validate_prefix($prefix)) {
+    header('Location: ?step=2');
+    exit;
+}
+
 $errors   = 0;
 $warnings = 0;
 
@@ -98,7 +109,7 @@ if ($sendmail === '') {
 $dbRows = [];
 $sqlVersion = '';
 try {
-    $db = new Database($server, $port, $database, $username, $password, $prefix);
+    $db = sbpp_install_open_db($server, $port, $database, $username, $password, $prefix);
     $db->query('SELECT VERSION() AS version');
     $row = $db->single();
     $sqlVersion = (string) ($row['version'] ?? '');

@@ -46,6 +46,16 @@ if ($server === '' || $username === '' || $database === '' || $prefix === '') {
     exit;
 }
 
+// Re-validate the prefix on every step (#1332 review: critical).
+// {prefix} substitution in data.sql + the :prefix replacement in
+// the admin INSERT both flow through plain str_replace, not
+// parameterised binds — an unvalidated prefix carries arbitrary
+// DDL/DML straight into the seed pass.
+if (!sbpp_install_validate_prefix($prefix)) {
+    header('Location: ?step=2');
+    exit;
+}
+
 if ($posted) {
     $error = '';
 
@@ -63,7 +73,7 @@ if ($posted) {
 
     if ($error === '') {
         try {
-            $db = new Database($server, $port, $database, $username, $password, $prefix);
+            $db = sbpp_install_open_db($server, $port, $database, $username, $password, $prefix);
 
             // 1) Insert the admin row. Authid normalised STEAM_1 →
             //    STEAM_0 to match the legacy installer's behaviour;
@@ -235,6 +245,13 @@ function sbpp_install_render_config(
  *
  * Indented by one tab so it slots into a parent
  * `"Databases" { ... }` block without reformatting.
+ *
+ * String values run through sbpp_install_kv_escape() so embedded `"`
+ * and `\` characters are properly escaped per SourceMod KeyValues
+ * quoting rules (#1332 review: major). Without escaping, a password
+ * like `p"a"ss` rendered as `"pass"     "p"a"ss"` — five unescaped
+ * quotes — and the gameserver's KeyValues parser silently
+ * mis-loads the file (or rejects it outright).
  */
 function sbpp_install_render_databases_cfg(
     string $server,
@@ -246,10 +263,10 @@ function sbpp_install_render_databases_cfg(
     return "\t\"sourcebans\"\n"
         . "\t{\n"
         . "\t\t\"driver\"   \"default\"\n"
-        . "\t\t\"host\"     \"" . $server   . "\"\n"
-        . "\t\t\"database\" \"" . $database . "\"\n"
-        . "\t\t\"user\"     \"" . $username . "\"\n"
-        . "\t\t\"pass\"     \"" . $password . "\"\n"
+        . "\t\t\"host\"     \"" . sbpp_install_kv_escape($server)   . "\"\n"
+        . "\t\t\"database\" \"" . sbpp_install_kv_escape($database) . "\"\n"
+        . "\t\t\"user\"     \"" . sbpp_install_kv_escape($username) . "\"\n"
+        . "\t\t\"pass\"     \"" . sbpp_install_kv_escape($password) . "\"\n"
         . "\t\t\"port\"     \"" . $port     . "\"\n"
         . "\t}\n";
 }

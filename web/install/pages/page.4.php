@@ -29,13 +29,22 @@ if ($server === '' || $username === '' || $database === '' || $prefix === '') {
     exit;
 }
 
+// Re-validate the prefix on every step (#1332 review: critical).
+// {prefix} substitution in struc.sql is plain str_replace, not
+// parameterised — an unvalidated prefix carries arbitrary DDL/DML
+// straight into the schema-install pass.
+if (!sbpp_install_validate_prefix($prefix)) {
+    header('Location: ?step=2');
+    exit;
+}
+
 $success = false;
 $errorsText = '';
 $tablesCreated = 0;
 $charset = 'utf8mb4';
 
 try {
-    $db = new Database($server, $port, $database, $username, $password, $prefix);
+    $db = sbpp_install_open_db($server, $port, $database, $username, $password, $prefix);
 
     $db->query('SELECT VERSION() AS version');
     $row = $db->single();

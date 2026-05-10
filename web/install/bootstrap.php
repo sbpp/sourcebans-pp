@@ -38,6 +38,12 @@ require_once PANEL_INCLUDES_PATH . '/vendor/autoload.php';
 //     2 onward instantiates one against the operator-supplied creds.
 require_once PANEL_INCLUDES_PATH . '/Db/Database.php';
 
+// Shared step-handler helpers (prefix validation, DB-open with raw
+// PDO probe, KeyValues escaping). Required after Database.php so
+// sbpp_install_open_db() can reference \Database. See helpers.php
+// for the per-helper rationale.
+require_once INCLUDES_PATH . '/helpers.php';
+
 // Smarty for the View DTO render path. Same defaults as
 // `web/init.php` (escape HTML on, caching off, force-compile on).
 //

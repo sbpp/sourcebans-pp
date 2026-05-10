@@ -1,6 +1,11 @@
 SET SESSION sql_mode='NO_AUTO_VALUE_ON_ZERO';
 
-INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe`) VALUES
+-- INSERT IGNORE on every seed below so a second pass over data.sql
+-- (e.g. the operator hits Back from the wizard's success page and
+-- re-submits step 5) is a no-op instead of failing on the first
+-- duplicate-key error and leaving :prefix_settings half-populated
+-- (#1332 review: major 3).
+INSERT IGNORE INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe`) VALUES
 (0, 'Web', 'web.png', 'NULL', '0'),
 (1, 'Half-Life 2 Deathmatch', 'hl2dm.png', 'hl2mp', '0'),
 (2, 'Counter-Strike: Source', 'csource.png', 'cstrike', '0'),
@@ -25,7 +30,7 @@ INSERT INTO `{prefix}_mods` (`mid`, `name`, `icon`, `modfolder`, `steam_universe
 (21, "Counter-Strike: Global Offensive", 'csgo.png', 'csgo', '1'),
 (22, 'Synergy', 'synergy.png', 'synergy', '0');
 
-INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
+INSERT IGNORE INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('dash.intro.text', '# Your new SourceBans install\n\nSourceBans++ successfully installed!'),
 ('dash.intro.title', 'Your SourceBans++ install'),
 ('dash.lognopopup', '0'),
@@ -69,5 +74,5 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('telemetry.instance_id', ''),
 ('telemetry.endpoint', 'https://cf-analytics-telemetry.sbpp.workers.dev/v1/ping');
 
-INSERT INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
+INSERT IGNORE INTO `{prefix}_admins` (`aid` ,	`user` , `authid` ,	`password` , `gid` , `email` ,	`validate` , `extraflags`, `immunity`) VALUES
 (0 , 'CONSOLE', 'STEAM_ID_SERVER', '', '0', '', NULL, '0', 0);

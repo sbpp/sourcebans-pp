@@ -35,10 +35,8 @@ if ($posted) {
         $error = 'Please fill in the hostname, username, database name, and table prefix.';
     } elseif ($port < 1 || $port > 65535) {
         $error = 'Port must be between 1 and 65535.';
-    } elseif (strlen($prefix) > 9) {
-        $error = 'Table prefix must be 9 characters or fewer.';
-    } elseif (preg_match('/^[A-Za-z0-9_]+$/', $prefix) !== 1) {
-        $error = 'Table prefix can only contain letters, digits, and underscores.';
+    } elseif (!sbpp_install_validate_prefix($prefix)) {
+        $error = 'Table prefix must be 1-9 letters, digits, or underscores.';
     } else {
         try {
             $dsn = 'mysql:host=' . $server . ';port=' . $port . ';dbname=' . $database . ';charset=utf8mb4';

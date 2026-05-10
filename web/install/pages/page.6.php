@@ -35,6 +35,14 @@ if ($server === '' || $username === '' || $database === '' || $prefix === '') {
     exit;
 }
 
+// Re-validate the SourceBans++ prefix on every step (#1332 review:
+// critical). The :prefix replacement in the INSERT INTO :prefix_bans
+// statement flows through plain str_replace, not parameterised binds.
+if (!sbpp_install_validate_prefix($prefix)) {
+    header('Location: ?step=2');
+    exit;
+}
+
 $posted = (string) ($_POST['postd'] ?? '') === '1';
 $error      = '';
 $resultText = '';
@@ -42,6 +50,14 @@ $resultText = '';
 if ($posted) {
     if ($amxServer === '' || $amxUsername === '' || $amxDatabase === '' || $amxPrefix === '') {
         $error = 'Please fill in the AMXBans hostname, username, database, and prefix.';
+    } elseif (!sbpp_install_validate_prefix($amxPrefix)) {
+        // The amx_prefix field is operator input on this page,
+        // not a forwarded value. The :prefix replacement in the
+        // SELECT against :prefix_bans on the SOURCE database is
+        // also plain str_replace — an unvalidated amx_prefix
+        // exfiltrates / mutates rows from any table the source
+        // DB user can reach (#1332 review: critical 3).
+        $error = 'AMXBans prefix must be 1-9 letters, digits, or underscores.';
     } else {
         try {
             $resultText = sbpp_install_amxbans_import(
@@ -96,8 +112,8 @@ function sbpp_install_amxbans_import(
 ): string {
     @set_time_limit(0);
 
-    $oldDb = new Database($amxServer, $amxPort, $amxDatabase, $amxUsername, $amxPassword, $amxPrefix);
-    $newDb = new Database($newServer, $newPort, $newDatabase, $newUsername, $newPassword, $newPrefix);
+    $oldDb = sbpp_install_open_db($amxServer, $amxPort, $amxDatabase, $amxUsername, $amxPassword, $amxPrefix);
+    $newDb = sbpp_install_open_db($newServer, $newPort, $newDatabase, $newUsername, $newPassword, $newPrefix);
 
     // staabm/phpstan-dba checks SQL against the live SourceBans++
     // schema; the AMXBans schema (read-only source DB on a different
