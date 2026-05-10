@@ -74,6 +74,21 @@ export class AdminAdminsPage extends BasePage {
         return this.page.locator('[data-testid="search-admins-reset"]');
     }
 
+    /** #1303 — the `<details>` disclosure wrapping the search form. */
+    get searchDisclosure(): Locator {
+        return this.page.locator('[data-testid="search-admins-disclosure"]');
+    }
+
+    /** #1303 — the `<summary>` toggle that opens / closes the disclosure. */
+    get searchToggle(): Locator {
+        return this.page.locator('[data-testid="search-admins-toggle"]');
+    }
+
+    /** #1303 — the "N active" badge (only present when count > 0). */
+    get searchActiveCount(): Locator {
+        return this.page.locator('[data-testid="search-admins-active-count"]');
+    }
+
     /** ADM-4 — pre-filled inputs by name. */
     searchInput(field: 'name' | 'steamid' | 'admemail' | 'webgroup' | 'srvadmgroup' | 'srvgroup' | 'admwebflag' | 'admsrvflag' | 'server'): Locator {
         return this.page.locator(`[data-testid="search-admins-${field}"]`);

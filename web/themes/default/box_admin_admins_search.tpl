@@ -59,6 +59,9 @@
     per option — same pattern B5 established in page_servers.tpl.
 
     Testability hooks (per #1123 issue body, "search-<scope>-<…>"):
+        data-testid="search-admins-disclosure"     <details> outer wrapper (#1303)
+        data-testid="search-admins-toggle"         <summary> click target  (#1303)
+        data-testid="search-admins-active-count"   "N active" badge        (#1303; only when count > 0)
         data-testid="search-admins-form"           outer form
         data-testid="search-admins-name"           login <input>
         data-testid="search-admins-name-match"     login exact / partial match (#1231)
@@ -74,12 +77,47 @@
         data-testid="search-admins-server"         server <select>
         data-testid="search-admins-submit"         the (one) submit button
         data-testid="search-admins-reset"          reset / clear-filters link
+
+    #1303 — collapsible disclosure
+    ------------------------------
+    The form sits inside a `<details class="card filters-details">`
+    default-collapsed wrapper so the unfiltered admin list paints
+    above the fold. The disclosure auto-opens on a post-submit paint
+    when `$has_active_filters` is true so the filter chrome (and the
+    Clear-filters affordance) stays visible while the user is iterating.
+    The `<summary>` mirrors the visual vocabulary `core/admin_sidebar.tpl`
+    uses for its mobile accordion (label + chevron + 180° rotation
+    on `[open]`, `prefers-reduced-motion: reduce` collapses the
+    transition). The count badge ("Filters · N active") rides
+    `$active_filter_count` from the View — only emitted when N > 0.
 *}
+<details class="card filters-details"
+         data-testid="search-admins-disclosure"
+         data-active-filter-count="{$active_filter_count}"
+         {if $has_active_filters}open{/if}
+         style="margin-top:1rem;margin-bottom:1rem">
+    <summary class="filters-details__summary"
+             data-testid="search-admins-toggle"
+             aria-controls="search-admins-form-body">
+        <span class="filters-details__summary-label">
+            <i data-lucide="filter" style="width:14px;height:14px"></i>
+            <span>Advanced search</span>
+            {if $active_filter_count > 0}
+                <span class="filters-details__count"
+                      data-testid="search-admins-active-count"
+                      aria-label="{$active_filter_count} active filter{if $active_filter_count != 1}s{/if}">
+                    &middot; {$active_filter_count} active
+                </span>
+            {/if}
+        </span>
+        <i data-lucide="chevron-down" class="filters-details__chevron" style="width:14px;height:14px"></i>
+    </summary>
+
 <form method="get"
       action="index.php"
       data-testid="search-admins-form"
-      class="card"
-      style="margin-top:1rem;margin-bottom:1rem">
+      id="search-admins-form-body"
+      class="filters-details__form">
     <input type="hidden" name="p" value="admin">
     <input type="hidden" name="c" value="admins">
     {* #1275 — Pattern A. Carry the active section so the post-submit URL
@@ -88,9 +126,18 @@
        same `admins` slug today but only by coincidence. *}
     <input type="hidden" name="section" value="admins">
 
-    <div class="card__header">
+    {*
+        #1303 — drop the redundant `<h3>Advanced search</h3>` that the
+        pre-disclosure `card__header` carried; the `<summary>` above
+        already paints the title (+ chevron + count badge), so emitting
+        it again here would stack two identical headings the moment a
+        user opens the disclosure. Keep the explanatory paragraph that
+        documents the AND-semantics contract — that's the load-bearing
+        copy the audit (#1207 ADM-4) called out, and it has no analog
+        in the summary.
+    *}
+    <div class="card__header filters-details__header">
         <div>
-            <h3>Advanced search</h3>
             <p>Combine any of the filters below — the server narrows the admin list to rows matching <strong>every</strong> populated filter (AND semantics).</p>
         </div>
     </div>
@@ -286,6 +333,7 @@
         </div>
     </div>
 </form>
+</details>
 
 {*
     LoadServerHost replacement (vanilla, post-#1123 D1).

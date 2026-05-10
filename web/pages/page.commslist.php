@@ -63,6 +63,15 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
     }
+    // #1301: see page.banlist.php for the full rationale. Both the
+    // legacy GET path and the JSON twin (api_comms_unblock) now
+    // require a non-empty `ureason` so the audit log carries the
+    // *why* behind every block lift, restoring v1.x parity.
+    $unbanReasonRaw = trim((string) ($_GET['ureason'] ?? ''));
+    if ($unbanReasonRaw === '') {
+        echo "<script>ShowBox('Unblock Reason Required', 'You must supply a reason when ungagging a player.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        PageDie();
+    }
     //we have a multiple unban asking
     $bid = (int) $_GET['id'];
     $GLOBALS['PDO']->query("SELECT a.aid, a.gid FROM `:prefix_comms` c INNER JOIN `:prefix_admins` a ON a.aid = c.aid WHERE bid = :bid AND c.type = 2");
@@ -83,7 +92,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         PageDie();
     }
 
-    $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
+    $unbanReason = htmlspecialchars($unbanReasonRaw);
     $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
 										`RemovedBy` = :removedby,
 										`RemoveType` = :rtype,
@@ -105,13 +114,19 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Player UnGagged', '" . $row['name'] . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add(LogType::Message, "Player UnGagged", "$row[name] ($row[authid]) has been ungagged.");
+        Log::add(LogType::Message, "Player UnGagged", "$row[name] ($row[authid]) has been ungagged. Reason: $unbanReason");
     } else {
         echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "unmute" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
+    }
+    // #1301: see ungag branch above for rationale.
+    $unbanReasonRaw = trim((string) ($_GET['ureason'] ?? ''));
+    if ($unbanReasonRaw === '') {
+        echo "<script>ShowBox('Unblock Reason Required', 'You must supply a reason when unmuting a player.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        PageDie();
     }
     //we have a multiple unban asking
     $bid = (int) $_GET['id'];
@@ -133,7 +148,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         PageDie();
     }
 
-    $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
+    $unbanReason = htmlspecialchars($unbanReasonRaw);
     $GLOBALS['PDO']->query("UPDATE `:prefix_comms` SET
 										`RemovedBy` = :removedby,
 										`RemoveType` = :rtype,
@@ -155,7 +170,7 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
 
     if ($res) {
         echo "<script>ShowBox('Player UnMuted', '" . $row['name'] . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
-        Log::add(LogType::Message, "Player UnMuted", "$row[name] ($row[authid]) has been unmuted.");
+        Log::add(LogType::Message, "Player UnMuted", "$row[name] ($row[authid]) has been unmuted. Reason: $unbanReason");
     } else {
         echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
     }

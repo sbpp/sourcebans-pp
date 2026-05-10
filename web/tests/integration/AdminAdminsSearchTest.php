@@ -324,6 +324,160 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
+     * #1303 — default render is collapsed.
+     *
+     * On a bare `?p=admin&c=admins` (no filter populated) the
+     * advanced-search disclosure must paint *closed* so the unfiltered
+     * admin list reaches above the fold. The contract is
+     * `<details data-testid="search-admins-disclosure">` WITHOUT the
+     * `open` attribute. We anchor on the testid + the absence of the
+     * `[open]` attribute on that exact element rather than scanning
+     * for the substring "open" anywhere in the document (every
+     * `<details open>` in unrelated chrome would false-positive).
+     */
+    public function testDisclosureClosedByDefault(): void
+    {
+        $_GET = ['p' => 'admin', 'c' => 'admins'];
+
+        $html = $this->renderAdminsPage();
+
+        $disclosure = $this->extractDisclosureTag($html);
+        $this->assertStringNotContainsString(' open', $disclosure, 'default render must be collapsed');
+
+        // The "N active" badge must NOT render when no filter is
+        // populated — verifies the `{if $active_filter_count > 0}`
+        // gate in the template.
+        $this->assertStringNotContainsString('search-admins-active-count', $html);
+
+        // The active-filter count attribute reads zero on the
+        // disclosure root (drives the auto-open + the badge).
+        $this->assertStringContainsString('data-active-filter-count="0"', $disclosure);
+    }
+
+    /**
+     * #1303 — disclosure auto-expands when ANY filter is populated.
+     *
+     * Post-submit (or anyone landing on a deep-linked URL) the form
+     * paints `<details open>` so the filter chrome AND the
+     * Clear-filters link stay visible — without this, the user can't
+     * tell what narrowed the list and the only escape hatch (Clear)
+     * is hidden behind another click.
+     */
+    public function testDisclosureAutoExpandsWithActiveFilter(): void
+    {
+        $_GET = ['p' => 'admin', 'c' => 'admins', 'name' => 'alice'];
+
+        $html = $this->renderAdminsPage();
+
+        $disclosure = $this->extractDisclosureTag($html);
+        $this->assertStringContainsString(' open', $disclosure, 'disclosure must auto-open when a filter is active');
+        $this->assertStringContainsString('data-active-filter-count="1"', $disclosure);
+
+        // Count badge present, with the right value baked into the
+        // aria-label.
+        $this->assertStringContainsString('search-admins-active-count', $html);
+        $this->assertStringContainsString('aria-label="1 active filter"', $html);
+        $this->assertStringContainsString('1 active', $html);
+    }
+
+    /**
+     * #1303 — multi-filter URLs lift the active count to N. Locks the
+     * counter's behaviour against the headline ADM-4 contract: every
+     * populated value slot counts ONCE, match-mode toggles do NOT.
+     *
+     * Two text filters (`name`, `steamid`) + one select (`webgroup`) +
+     * one multi-select (`admwebflag[]`) → 4 active. The presence of
+     * `name_match=0` (a refinement on the `name` filter) must NOT
+     * lift the count to 5; same for `steam_match=1` on `steamid`.
+     */
+    public function testDisclosureCountMatchesPopulatedFilterSlots(): void
+    {
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'name'       => 'alice',
+            'name_match' => '0',
+            'steamid'    => 'STEAM_0:0:1001',
+            'steam_match' => '1',
+            'webgroup'   => (string) $this->powerGid,
+            'admwebflag' => ['ADMIN_OWNER'],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $disclosure = $this->extractDisclosureTag($html);
+        $this->assertStringContainsString(' open', $disclosure);
+        $this->assertStringContainsString('data-active-filter-count="4"', $disclosure);
+        $this->assertStringContainsString('aria-label="4 active filters"', $html);
+    }
+
+    /**
+     * #1303 — empty multi-select arrays must NOT lift the count. The
+     * `admwebflag[]=` shape produces an empty array in `$_GET` when
+     * the user submits without picking any flag (some browsers / form
+     * libraries do this); the count's job is to surface populated
+     * filters, so an empty multi-select counts as zero.
+     *
+     * Bare URL with an empty `admwebflag` array → 0 active.
+     */
+    public function testDisclosureIgnoresEmptyMultiSelectArrays(): void
+    {
+        $_GET = [
+            'p'          => 'admin',
+            'c'          => 'admins',
+            'admwebflag' => [],
+            'admsrvflag' => [],
+        ];
+
+        $html = $this->renderAdminsPage();
+
+        $disclosure = $this->extractDisclosureTag($html);
+        $this->assertStringNotContainsString(' open', $disclosure, 'empty multi-select arrays must not auto-open the disclosure');
+        $this->assertStringContainsString('data-active-filter-count="0"', $disclosure);
+        $this->assertStringNotContainsString('search-admins-active-count', $html);
+    }
+
+    /**
+     * #1303 — the `admemail` slot is permission-gated. The page handler
+     * (`admin.admins.php`) ignores `?admemail=…` from a user who lacks
+     * `EditAdmins | Owner`, AND the search box hides the e-mail input
+     * for the same gate. The active-filter count must mirror both —
+     * otherwise URL forgery (or a stale tab from a permission downgrade)
+     * would paint "1 active" on the disclosure summary while every
+     * visible filter row reads empty, and the disclosure would auto-open
+     * exposing nothing actionable.
+     *
+     * Setup: log in as a user with `ADMIN_LIST_ADMINS` only — they can
+     * reach the admin/admins list but the e-mail filter is invisible
+     * to them. A forged `?admemail=alice` then must NOT lift the count.
+     */
+    public function testDisclosureCountIgnoresPermissionGatedEmailSlot(): void
+    {
+        $listOnlyAid = $this->insertAdmin(
+            'enid',
+            'STEAM_0:0:9101',
+            'enid@example.test',
+            -1,
+            ADMIN_LIST_ADMINS,
+        );
+        $this->loginAs($listOnlyAid);
+
+        $_GET = ['p' => 'admin', 'c' => 'admins', 'admemail' => 'alice'];
+
+        $html = $this->renderAdminsPage();
+
+        $disclosure = $this->extractDisclosureTag($html);
+        $this->assertStringNotContainsString(' open', $disclosure, 'forged admemail must not auto-open the disclosure for a user without EditAdmins | Owner');
+        $this->assertStringContainsString('data-active-filter-count="0"', $disclosure);
+        $this->assertStringNotContainsString('search-admins-active-count', $html);
+
+        // Sanity: the e-mail input row itself is hidden for this user
+        // (the `{if $can_editadmin}` gate in the template), so the
+        // count's silence is consistent with the visible form chrome.
+        $this->assertStringNotContainsString('data-testid="search-admins-admemail"', $html);
+    }
+
+    /**
      * Structural invariant for #1275: the Pattern A sidebar must
      * carry every section the current user can reach. The owner
      * (seeded `admin/admin`) sees all three sections (`admins`,
@@ -520,6 +674,22 @@ final class AdminAdminsSearchTest extends ApiTestCase
             return (int) $m[1];
         }
         $this->fail('admin-count testid not found in rendered HTML');
+    }
+
+    /**
+     * Extract the `<details data-testid="search-admins-disclosure" …>`
+     * opening tag from the rendered HTML. Asserting against this slice
+     * (rather than the whole document) keeps the `[open]` /
+     * `data-active-filter-count` checks scoped to the disclosure root
+     * even when sibling chrome (`<details open>` accordions, etc.)
+     * coexists in the same render.
+     */
+    private function extractDisclosureTag(string $html): string
+    {
+        if (preg_match('/<details[^>]*data-testid="search-admins-disclosure"[^>]*>/', $html, $m)) {
+            return $m[0];
+        }
+        $this->fail('search-admins-disclosure testid not found in rendered HTML');
     }
 
     private function countAdminRows(string $html): int

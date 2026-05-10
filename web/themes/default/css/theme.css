@@ -595,6 +595,76 @@ html.dark .admin-tabs > [aria-current="page"] { border-bottom-color: var(--brand
   .admin-sidebar-content { min-width: 0; }
 }
 
+/* ---- Collapsible filter card (#1303) ----
+
+   Wraps a filter `<form class="card">` in a `<details>` disclosure so
+   the unfiltered list paints above the fold. Default-collapsed; the
+   page handler emits `<details open>` when any filter slot is
+   populated so a post-submit paint shows the filter chrome (and the
+   Clear-filters affordance) without forcing the user to click again.
+
+   First user (#1303): `box_admin_admins_search.tpl`. The shape is
+   designed to be reusable on the public banlist / commslist filter
+   bars (`page_bans.tpl` / `page_comms.tpl`) when those follow per
+   the issue body's "Notes" section.
+
+   Visual vocabulary mirrors `.admin-sidebar__details` /
+   `.admin-sidebar__chevron` so the disclosure feels native to the
+   admin chrome. The chevron rotates 180° on `[open]`; the
+   `prefers-reduced-motion: reduce` global rule (later in this file)
+   already collapses the transition to ~0ms, so no per-rule override
+   needed here. */
+.filters-details { padding: 0; }
+.filters-details > .filters-details__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border-radius: inherit;
+}
+.filters-details[open] > .filters-details__summary {
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.filters-details__summary::-webkit-details-marker { display: none; }
+.filters-details__summary:hover { background: var(--bg-muted); }
+.filters-details__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+  border-color: var(--brand-500);
+}
+.filters-details__summary-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.filters-details__count {
+  font-weight: 500;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.filters-details__chevron {
+  transition: transform .15s ease;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.filters-details[open] .filters-details__chevron { transform: rotate(180deg); }
+.filters-details__form { display: contents; }
+/* The form inside the disclosure paints `display: contents` so the
+   `.card__header` + `.card__body` children inherit the card's grid /
+   spacing as if the form weren't there. The header drops its bottom
+   border because the summary already paints one when [open]. */
+.filters-details__header { border-bottom: none; padding-top: 0.5rem; }
+@media (prefers-reduced-motion: reduce) {
+  .filters-details__chevron { transition: none; }
+}
+
 /* ---- Inputs ---- */
 .input, .select, .textarea {
   width: 100%; height: 2.25rem; padding: 0 0.75rem;

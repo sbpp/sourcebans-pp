@@ -88,6 +88,15 @@ final class PermissionMatrixTest extends TestCase
             'bans.send_message'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.view_community'         => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'bans.search'                 => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            // bans.unban drives the visible row action on the public ban
+            // list (#1301). Dispatcher gate is "any unban-ish flag"; the
+            // handler then enforces the per-row own/group precision check
+            // that the legacy `?p=banlist&a=unban` GET path uses (and
+            // requires a non-empty `ureason` so the audit log carries it).
+            'bans.unban'                  => [
+                'perm' => ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS,
+                'requireAdmin' => false, 'public' => false,
+            ],
 
             // -- blockit.
             'blockit.load_servers'        => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],

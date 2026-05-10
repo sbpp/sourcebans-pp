@@ -1068,3 +1068,157 @@ function api_bans_player_history(array $params): array
 
     return ['items' => $items, 'total' => count($items)];
 }
+
+/**
+ * Lift an active ban (#1301).
+ *
+ * Modern JSON twin of the legacy `?p=banlist&a=unban&id=…&key=…` GET
+ * handler in `page.banlist.php`. The legacy GET path stays put (no-JS
+ * fallback for the icon-only theme leg + third-party themes that still
+ * ship the v1.x action links), but the banlist's visible-action
+ * affordance now wires through this action so the row can update
+ * in-place + show a toast without a full page reload.
+ *
+ * Permission gate mirrors the legacy GET handler exactly:
+ *
+ *   ADMIN_OWNER | ADMIN_UNBAN     — unconditional, lift any row.
+ *   ADMIN_UNBAN_OWN_BANS          — only the row's own admin (`aid`).
+ *   ADMIN_UNBAN_GROUP_BANS        — only rows where the issuing
+ *                                   admin's `gid` matches the
+ *                                   caller's `gid`.
+ *
+ * The dispatcher gate is `ADMIN_OWNER | ADMIN_UNBAN |
+ * ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS` — the broadest "any
+ * unban-ish flag" match — and the per-row precision check happens
+ * inside the handler, since the dispatcher can't see which row the
+ * caller wants to act on.
+ *
+ * #1301: `ureason` is **required**. v1.x prompted via sourcebans.js's
+ * UnbanBan() helper and required a non-empty reason; v2.0 silently
+ * accepted '', so the audit log lost the *why*. Both this handler and
+ * the legacy GET fallback now bounce empty reasons.
+ *
+ * Inputs:
+ *   - `bid`     (int, required)    — the ban id.
+ *   - `ureason` (string, required) — admin-supplied unban reason; we
+ *     trim and store as-is. Stored raw in `ureason` (per the
+ *     "store raw, escape on display" anti-pattern); the column lives
+ *     behind the same Smarty auto-escape pipeline as `reason`.
+ *
+ * @return array{ bid: int, state: string }
+ */
+function api_bans_unban(array $params): array
+{
+    global $userbank;
+
+    $bid = (int)($params['bid'] ?? 0);
+    if ($bid <= 0) {
+        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
+    }
+    $ureason = trim((string)($params['ureason'] ?? ''));
+    if ($ureason === '') {
+        throw new ApiError(
+            'validation',
+            'You must supply a reason when unbanning a player.',
+            'ureason'
+        );
+    }
+
+    $row = $GLOBALS['PDO']->query(
+        "SELECT B.bid, B.ip, B.authid, B.name, B.created, B.sid, B.type,
+                B.length, B.ends, B.RemoveType, B.aid,
+                A.gid AS gid,
+                M.steam_universe,
+                UNIX_TIMESTAMP() AS now
+           FROM `:prefix_bans` AS B
+      LEFT JOIN `:prefix_servers` AS S ON S.sid = B.sid
+      LEFT JOIN `:prefix_mods`    AS M ON M.mid = S.modid
+      LEFT JOIN `:prefix_admins`  AS A ON A.aid = B.aid
+          WHERE B.bid = ?"
+    )->single([$bid]);
+
+    if (!$row) {
+        throw new ApiError('not_found', 'Ban not found.', null, 404);
+    }
+
+    $rowAid = (int)($row['aid'] ?? 0);
+    $rowGid = (int)($row['gid'] ?? 0);
+    $callerGid = (int)$userbank->GetProperty('gid');
+    $allowed =
+        $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::Unban))
+        || ($userbank->HasAccess(WebPermission::UnbanOwnBans)   && $rowAid === $userbank->GetAid())
+        || ($userbank->HasAccess(WebPermission::UnbanGroupBans) && $rowGid === $callerGid);
+    if (!$allowed) {
+        throw new ApiError('forbidden', "You don't have access to this ban.", null, 403);
+    }
+
+    if (!empty($row['RemoveType'])) {
+        throw new ApiError('not_active', 'Ban has already been lifted.', null, 409);
+    }
+    $length = (int)$row['length'];
+    $ends   = (int)$row['ends'];
+    if ($length > 0 && $ends <= time()) {
+        throw new ApiError('not_active', 'Ban has already expired.', null, 409);
+    }
+
+    $GLOBALS['PDO']->query(
+        "UPDATE `:prefix_bans`
+            SET `RemovedBy`  = ?,
+                `RemoveType` = ?,
+                `RemovedOn`  = UNIX_TIMESTAMP(),
+                `ureason`    = ?
+          WHERE `bid` = ?"
+    )->execute([$userbank->GetAid(), BanRemoval::Unbanned->value, $ureason, $bid]);
+
+    // Mirror the legacy GET handler: archive any open protests for this
+    // ban so they don't keep showing up in the moderation queue.
+    $GLOBALS['PDO']->query("UPDATE `:prefix_protests` SET archiv = '4' WHERE bid = ?")
+        ->execute([$bid]);
+
+    // Mirror the legacy GET handler's RCON-based in-game cleanup: any
+    // server the player was banned on within the last 5 minutes (per the
+    // banlog) gets a `removeid` / `removeip` so the in-game state
+    // matches the panel state immediately. Same lookback (300s) as
+    // page.banlist.php.
+    $blocked = $GLOBALS['PDO']->query(
+        "SELECT s.sid, m.steam_universe
+           FROM `:prefix_banlog` AS bl
+     INNER JOIN `:prefix_servers` AS s ON s.sid = bl.sid
+     INNER JOIN `:prefix_mods`    AS m ON m.mid = s.modid
+          WHERE bl.bid = ?
+            AND (UNIX_TIMESTAMP() - bl.time <= 300)"
+    )->resultset([$bid]);
+
+    $rowBanType = BanType::tryFrom((int)$row['type']) ?? BanType::Steam;
+    $type       = $rowBanType === BanType::Steam ? (string)$row['authid'] : (string)$row['ip'];
+
+    foreach ($blocked as $tempban) {
+        if ($rowBanType === BanType::Steam) {
+            rcon('removeid STEAM_' . (string)$tempban['steam_universe'] . substr((string)$row['authid'], 7), (int)$tempban['sid']);
+        } else {
+            rcon('removeip ' . (string)$row['ip'], (int)$tempban['sid']);
+        }
+    }
+    $blockedSids = array_map(static fn(array $b): int => (int)$b['sid'], $blocked);
+    $createdAt   = (int)$row['created'];
+    $now         = (int)$row['now'];
+    $banSid      = (int)$row['sid'];
+    if (($now - $createdAt) <= 300 && $banSid !== 0 && !in_array($banSid, $blockedSids, true)) {
+        if ($rowBanType === BanType::Steam) {
+            rcon('removeid STEAM_' . (string)$row['steam_universe'] . substr((string)$row['authid'], 7), $banSid);
+        } else {
+            rcon('removeip ' . (string)$row['ip'], $banSid);
+        }
+    }
+
+    Log::add(
+        LogType::Message,
+        'Player Unbanned',
+        sprintf('%s (%s) has been unbanned. Reason: %s', (string)$row['name'], $type, $ureason)
+    );
+
+    return [
+        'bid'   => $bid,
+        'state' => 'unbanned',
+    ];
+}

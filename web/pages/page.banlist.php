@@ -55,6 +55,19 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
         die("Possible hacking attempt (URL Key mismatch)");
     }
+    // #1301: legacy GET path for unban no longer accepts an empty
+    // `ureason`. v1.x prompted via sourcebans.js's UnbanBan() helper
+    // and required a non-empty reason; v2.0 silently accepted '', so
+    // the audit log lost the *why*. The new modal in page_bans.tpl
+    // wires through the JSON `bans.unban` action (which has the same
+    // guard); this branch is now the no-JS / hand-edited-URL fallback,
+    // and we bounce empty reasons here too so the audit log is
+    // consistent across both entry points.
+    $unbanReasonRaw = trim((string) ($_GET['ureason'] ?? ''));
+    if ($unbanReasonRaw === '') {
+        echo "<script>ShowBox('Unban Reason Required', 'You must supply a reason when unbanning a player.', 'red', 'index.php?p=banlist$pagelink');</script>";
+        PageDie();
+    }
     //we have a multiple unban asking
     if (isset($_GET['bulk'])) {
         $bids = explode(",", $_GET['id']);
@@ -92,7 +105,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             }
             continue;
         }
-        $unbanReason = htmlspecialchars(trim((string) ($_GET['ureason'] ?? '')));
+        $unbanReason = htmlspecialchars($unbanReasonRaw);
         $GLOBALS['PDO']->query("UPDATE `:prefix_bans` SET
 										`RemovedBy` = :removedby,
 										`RemoveType` = :rtype,
@@ -127,7 +140,7 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             if (!isset($_GET['bulk'])) {
                 echo "<script>ShowBox('Player Unbanned', '" . $row['name'] . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
             }
-            Log::add(LogType::Message, "Player Unbanned", "$row[name] ($type) has been unbanned.");
+            Log::add(LogType::Message, "Player Unbanned", "$row[name] ($type) has been unbanned. Reason: $unbanReason");
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {

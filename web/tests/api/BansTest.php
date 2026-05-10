@@ -562,4 +562,108 @@ final class BansTest extends ApiTestCase
         // bid is an autoincrement; redact so the snapshot only locks shape.
         $this->assertSnapshot('bans/search_success', $env, ['data.bans.0.bid']);
     }
+
+    // -- bans.unban (#1301) ------------------------------------------------
+
+    public function testUnbanRejectsAnonymous(): void
+    {
+        $env = $this->api('bans.unban', ['bid' => 1, 'ureason' => 'whatever']);
+        $this->assertEnvelopeError($env, 'forbidden');
+    }
+
+    public function testUnbanBadRequestOnMissingBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('bans.unban', ['ureason' => 'no bid here']);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+    }
+
+    /**
+     * #1301: a non-empty `ureason` is mandatory. v1.x prompted via
+     * sourcebans.js's UnbanBan helper and required a reason; v2.0
+     * silently accepted '', so the audit log lost the *why*.
+     */
+    public function testUnbanRejectsEmptyUreason(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1301', 'cheating');
+
+        // Missing entirely.
+        $env = $this->api('bans.unban', ['bid' => $bid]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ureason', $env['error']['field']);
+
+        // Whitespace-only counts as empty after trim().
+        $env = $this->api('bans.unban', ['bid' => $bid, 'ureason' => "  \n\t  "]);
+        $this->assertEnvelopeError($env, 'validation');
+        $this->assertSame('ureason', $env['error']['field']);
+
+        // Confirms the row was NOT touched on rejection.
+        $row = $this->row('bans', ['bid' => $bid]);
+        $this->assertNull($row['RemoveType']);
+        $this->assertNull($row['RemovedBy']);
+    }
+
+    public function testUnbanNotFoundForUnknownBid(): void
+    {
+        $this->loginAsAdmin();
+        $env = $this->api('bans.unban', ['bid' => 99999, 'ureason' => 'test']);
+        $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    public function testUnbanLiftsActiveBanAndPersistsState(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1302', 'cheating');
+
+        $env = $this->api('bans.unban', [
+            'bid'     => $bid,
+            'ureason' => 'mistaken ban',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('unbanned', $env['data']['state']);
+        $this->assertSame($bid,       (int)$env['data']['bid']);
+
+        // Persisted: RemoveType='U', RemovedBy=admin aid, ureason stored.
+        $after = $this->row('bans', ['bid' => $bid]);
+        $this->assertSame('U',                 $after['RemoveType']);
+        $this->assertSame(Fixture::adminAid(), (int)$after['RemovedBy']);
+        $this->assertSame('mistaken ban',      $after['ureason']);
+    }
+
+    public function testUnbanRejectsAlreadyLiftedRow(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1303', 'cheating');
+
+        $first = $this->api('bans.unban', ['bid' => $bid, 'ureason' => 'lift it']);
+        $this->assertTrue($first['ok'], json_encode($first));
+
+        // Second call against the same already-lifted row should refuse.
+        $env = $this->api('bans.unban', ['bid' => $bid, 'ureason' => 'try again']);
+        $this->assertEnvelopeError($env, 'not_active');
+    }
+
+    /**
+     * #1301: the audit log carries the unban reason verbatim so admins
+     * reading the log later can see *why* the ban was lifted.
+     */
+    public function testUnbanRecordsReasonInAuditLog(): void
+    {
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:1304', 'cheating');
+
+        $env = $this->api('bans.unban', [
+            'bid'     => $bid,
+            'ureason' => 'appeal accepted',
+        ]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $logs = $this->rows('log', ['title' => 'Player Unbanned']);
+        $this->assertNotEmpty($logs, 'audit log row was created');
+        $latest = end($logs);
+        $this->assertStringContainsString('appeal accepted', (string) $latest['message']);
+        $this->assertStringContainsString('STEAM_0:1:1304', (string) $latest['message']);
+    }
 }

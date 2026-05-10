@@ -76,6 +76,12 @@ Api::register('bans.kick_player',         'api_bans_kick_player',          ADMIN
 Api::register('bans.send_message',        'api_bans_send_message',         0, true);
 Api::register('bans.view_community',      'api_bans_view_community',       0, true);
 Api::register('bans.search',              'api_bans_search',               0, true);
+// bans.unban dispatcher gate matches the legacy GET handler: any of the
+// four "unban-ish" flags lets the request through; the handler then
+// does the precise per-row check (own/group bans). #1301 — restored
+// the v1.x "confirm + reason required" UX (modal in page_bans.tpl;
+// `ureason` is non-empty-validated here).
+Api::register('bans.unban', 'api_bans_unban', ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS);
 
 // ---- blockit (single-page admin.blockit.php iframe) -------------------
 Api::register('blockit.load_servers', 'api_blockit_load_servers', ADMIN_OWNER | ADMIN_ADD_BAN);

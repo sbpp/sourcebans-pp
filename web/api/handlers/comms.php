@@ -129,9 +129,14 @@ function api_comms_prepare_reblock(array $params): array
  * inside the handler, since the dispatcher can't see which row the
  * caller wants to act on.
  *
+ * #1301: `ureason` is **required**. v1.x prompted via sourcebans.js's
+ * UnMute()/UnGag() helpers and required a non-empty reason; v2.0
+ * silently accepted '', so the audit log lost the *why*. Both this
+ * handler and the legacy GET fallback now bounce empty reasons.
+ *
  * Inputs:
- *   - `bid`     (int, required) — the comm-block id.
- *   - `ureason` (string, optional) — admin-supplied unblock reason; we
+ *   - `bid`     (int, required)    — the comm-block id.
+ *   - `ureason` (string, required) — admin-supplied unblock reason; we
  *     trim and store as-is. Stored raw in `ureason` (per the
  *     "store raw, escape on display" anti-pattern); the column lives
  *     behind the same Smarty auto-escape pipeline as `reason`.
@@ -146,7 +151,19 @@ function api_comms_unblock(array $params): array
     if ($bid <= 0) {
         throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
     }
+    // #1301: v1.x prompted via sourcebans.js's UnMute()/UnGag() helpers
+    // and required a non-empty reason; v2.0 silently accepted '', so the
+    // audit log lost the *why*. Both the new modal in page_comms.tpl and
+    // the legacy GET handler in page.commslist.php now bounce on empty
+    // — this server-side check is the load-bearing gate.
     $ureason = trim((string)($params['ureason'] ?? ''));
+    if ($ureason === '') {
+        throw new ApiError(
+            'validation',
+            'You must supply a reason when lifting a block.',
+            'ureason'
+        );
+    }
 
     $row = $GLOBALS['PDO']->query(
         "SELECT C.bid, C.authid, C.name, C.type, C.length, C.ends, C.RemoveType, C.aid, A.gid AS gid
@@ -196,7 +213,19 @@ function api_comms_unblock(array $params): array
     }
 
     $verb = $type === 1 ? 'UnMuted' : ($type === 2 ? 'UnGagged' : 'Unblocked');
-    Log::add(LogType::Message, "Player $verb", "{$row['name']} ({$row['authid']}) has been " . strtolower($verb) . '.');
+    // #1301: trail the unblock reason in the audit log entry so admins
+    // reading the log later can see *why* the block was lifted.
+    Log::add(
+        LogType::Message,
+        "Player $verb",
+        sprintf(
+            '%s (%s) has been %s. Reason: %s',
+            (string) $row['name'],
+            (string) $row['authid'],
+            strtolower($verb),
+            $ureason
+        )
+    );
 
     return [
         'bid'   => $bid,

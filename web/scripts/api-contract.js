@@ -158,6 +158,33 @@
  * @typedef {Object} ApiBansSetupBanResponse
  */
 /**
+ * Lift an active ban (#1301).  Modern JSON twin of the legacy
+ * `?p=banlist&a=unban&id=…&key=…` GET handler in `page.banlist.php`. The
+ * legacy GET path stays put (no-JS fallback for the icon-only theme leg +
+ * third-party themes that still ship the v1.x action links), but the banlist's
+ * visible-action affordance now wires through this action so the row can
+ * update in-place + show a toast without a full page reload.  Permission gate
+ * mirrors the legacy GET handler exactly:  ADMIN_OWNER | ADMIN_UNBAN     —
+ * unconditional, lift any row. ADMIN_UNBAN_OWN_BANS          — only the
+ * row's own admin (`aid`). ADMIN_UNBAN_GROUP_BANS        — only rows where
+ * the issuing admin's `gid` matches the caller's `gid`.  The dispatcher gate
+ * is `ADMIN_OWNER | ADMIN_UNBAN | ADMIN_UNBAN_OWN_BANS |
+ * ADMIN_UNBAN_GROUP_BANS` — the broadest "any unban-ish flag" match — and
+ * the per-row precision check happens inside the handler, since the dispatcher
+ * can't see which row the caller wants to act on.  #1301: `ureason` is
+ * **required**. v1.x prompted via sourcebans.js's UnbanBan() helper and
+ * required a non-empty reason; v2.0 silently accepted '', so the audit log
+ * lost the *why*. Both this handler and the legacy GET fallback now bounce
+ * empty reasons.  Inputs: - `bid`     (int, required)    — the ban id. -
+ * `ureason` (string, required) — admin-supplied unban reason; we trim and
+ * store as-is. Stored raw in `ureason` (per the "store raw, escape on display"
+ * anti-pattern); the column lives behind the same Smarty auto-escape pipeline
+ * as `reason`.
+ *
+ * @typedef {Object} ApiBansUnbanRequest
+ * @typedef {{ bid: number, state: string }} ApiBansUnbanResponse
+ */
+/**
  * @typedef {Object} ApiBansViewCommunityRequest
  * @typedef {Object} ApiBansViewCommunityResponse
  */
@@ -226,11 +253,14 @@
  * ADMIN_UNBAN_OWN_BANS | ADMIN_UNBAN_GROUP_BANS` — the broadest "any
  * unban-ish flag" match — and the per-row precision check happens inside the
  * handler, since the dispatcher can't see which row the caller wants to act
- * on.  Inputs: - `bid`     (int, required) — the comm-block id. - `ureason`
- * (string, optional) — admin-supplied unblock reason; we trim and store
- * as-is. Stored raw in `ureason` (per the "store raw, escape on display"
- * anti-pattern); the column lives behind the same Smarty auto-escape pipeline
- * as `reason`.
+ * on.  #1301: `ureason` is **required**. v1.x prompted via sourcebans.js's
+ * UnMute()/UnGag() helpers and required a non-empty reason; v2.0 silently
+ * accepted '', so the audit log lost the *why*. Both this handler and the
+ * legacy GET fallback now bounce empty reasons.  Inputs: - `bid`     (int,
+ * required)    — the comm-block id. - `ureason` (string, required) —
+ * admin-supplied unblock reason; we trim and store as-is. Stored raw in
+ * `ureason` (per the "store raw, escape on display" anti-pattern); the column
+ * lives behind the same Smarty auto-escape pipeline as `reason`.
  *
  * @typedef {Object} ApiCommsUnblockRequest
  * @typedef {{ bid: number, state: string, type: number }} ApiCommsUnblockResponse
@@ -433,6 +463,7 @@ var Actions = Object.freeze({
     BansSearch: 'bans.search',
     BansSendMessage: 'bans.send_message',
     BansSetupBan: 'bans.setup_ban',
+    BansUnban: 'bans.unban',
     BansViewCommunity: 'bans.view_community',
     BlockitBlockPlayer: 'blockit.block_player',
     BlockitLoadServers: 'blockit.load_servers',

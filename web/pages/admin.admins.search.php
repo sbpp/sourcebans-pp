@@ -178,8 +178,54 @@ if (is_array($rawSrvFlag)) {
     }
 }
 
+// Match-mode defaults differ per filter (#1231):
+//   - steam_match defaults to '0' (exact) — typical SteamID
+//     queries are "find this one admin by their full ID".
+//   - name_match / admemail_match default to '1' (partial) so
+//     pre-#1231 URLs (`?name=alice`) keep their substring
+//     behaviour. Adding the toggle widens the UI without
+//     regressing the default.
+$activeFilterName        = is_string($_GET['name']        ?? null) ? (string) $_GET['name']        : '';
+$activeFilterSteamid     = is_string($_GET['steamid']     ?? null) ? (string) $_GET['steamid']     : '';
+$activeFilterAdmemail    = is_string($_GET['admemail']    ?? null) ? (string) $_GET['admemail']    : '';
+$activeFilterWebgroup    = is_scalar($_GET['webgroup']    ?? null) ? (string) $_GET['webgroup']    : '';
+$activeFilterSrvadmgroup = is_string($_GET['srvadmgroup'] ?? null) ? (string) $_GET['srvadmgroup'] : '';
+$activeFilterSrvgroup    = is_scalar($_GET['srvgroup']    ?? null) ? (string) $_GET['srvgroup']    : '';
+$activeFilterServer      = is_scalar($_GET['server']      ?? null) ? (string) $_GET['server']      : '';
+
+// #1303 — the `admemail` filter is permission-gated by
+// `$can_editadmin` in both the rendering template AND the page
+// handler (`admin.admins.php` ignores `?admemail=` from a user without
+// `EditAdmins | Owner`). For URL-forgery cases where a non-admin
+// passes `?admemail=foo`, the input is hidden in the form and the
+// server narrows nothing; the count must mirror that — otherwise the
+// "N active" badge would say "1 active" while every visible filter
+// row reads empty. Mirror the gate locally so the count stays an
+// honest summary of what the visible form actually filters on.
+$canFilterByEmail = $userbank->HasAccess(WebPermission::mask(WebPermission::EditAdmins, WebPermission::Owner));
+
+// #1303 — count populated filter slots so the disclosure can paint a
+// "Filters · N active" badge on the <summary> and auto-expand on
+// post-submit. Match-mode selects (`name_match` / `steam_match` /
+// `admemail_match`) deliberately don't count: they always carry a
+// default ('0' or '1') and only refine the matching filter, they
+// don't filter on their own. Empty multi-select arrays count as zero
+// even though the array itself "exists" — the user hasn't picked a
+// permission. The `admemail` slot only counts when the user can
+// actually filter by it (see `$canFilterByEmail` above).
+$activeFilterCount =
+      ($activeFilterName        !== '' ? 1 : 0)
+    + ($activeFilterSteamid     !== '' ? 1 : 0)
+    + ($canFilterByEmail && $activeFilterAdmemail !== '' ? 1 : 0)
+    + ($activeFilterWebgroup    !== '' ? 1 : 0)
+    + ($activeFilterSrvadmgroup !== '' ? 1 : 0)
+    + ($activeFilterSrvgroup    !== '' ? 1 : 0)
+    + ($activeFilterServer      !== '' ? 1 : 0)
+    + (count($activeWebFlags) > 0 ? 1 : 0)
+    + (count($activeSrvFlags) > 0 ? 1 : 0);
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsSearchView(
-    can_editadmin:             $userbank->HasAccess(WebPermission::mask(WebPermission::EditAdmins, WebPermission::Owner)),
+    can_editadmin:             $canFilterByEmail,
     server_list:               $servers,
     server_script:             $serverscript,
     webgroup_list:             $webgroups,
@@ -187,23 +233,18 @@ if (is_array($rawSrvFlag)) {
     srvgroup_list:             $srvgroups,
     admwebflag_list:           $webflag,
     admsrvflag_list:           $serverflag,
-    // Match-mode defaults differ per filter (#1231):
-    //   - steam_match defaults to '0' (exact) — typical SteamID
-    //     queries are "find this one admin by their full ID".
-    //   - name_match / admemail_match default to '1' (partial) so
-    //     pre-#1231 URLs (`?name=alice`) keep their substring
-    //     behaviour. Adding the toggle widens the UI without
-    //     regressing the default.
-    active_filter_name:           is_string($_GET['name']           ?? null) ? (string) $_GET['name']           : '',
+    active_filter_name:           $activeFilterName,
     active_filter_name_match:     is_scalar($_GET['name_match']     ?? null) ? (string) $_GET['name_match']     : '1',
-    active_filter_steamid:        is_string($_GET['steamid']        ?? null) ? (string) $_GET['steamid']        : '',
+    active_filter_steamid:        $activeFilterSteamid,
     active_filter_steam_match:    is_scalar($_GET['steam_match']    ?? null) ? (string) $_GET['steam_match']    : '0',
-    active_filter_admemail:       is_string($_GET['admemail']       ?? null) ? (string) $_GET['admemail']       : '',
+    active_filter_admemail:       $activeFilterAdmemail,
     active_filter_admemail_match: is_scalar($_GET['admemail_match'] ?? null) ? (string) $_GET['admemail_match'] : '1',
-    active_filter_webgroup:       is_scalar($_GET['webgroup']       ?? null) ? (string) $_GET['webgroup']       : '',
-    active_filter_srvadmgroup:    is_string($_GET['srvadmgroup']    ?? null) ? (string) $_GET['srvadmgroup']    : '',
-    active_filter_srvgroup:       is_scalar($_GET['srvgroup']       ?? null) ? (string) $_GET['srvgroup']       : '',
-    active_filter_server:         is_scalar($_GET['server']         ?? null) ? (string) $_GET['server']         : '',
+    active_filter_webgroup:       $activeFilterWebgroup,
+    active_filter_srvadmgroup:    $activeFilterSrvadmgroup,
+    active_filter_srvgroup:       $activeFilterSrvgroup,
+    active_filter_server:         $activeFilterServer,
     active_filter_admwebflag:     $activeWebFlags,
     active_filter_admsrvflag:     $activeSrvFlags,
+    active_filter_count:          $activeFilterCount,
+    has_active_filters:           $activeFilterCount > 0,
 ));
