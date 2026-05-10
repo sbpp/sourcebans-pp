@@ -106,7 +106,12 @@
                             </div>
                             <div data-testid="setting-row" data-key="template.logo">
                                 <label class="label" for="template_logo">Logo path</label>
-                                <input class="input" type="text" id="template_logo" name="template_logo" value="{$config_logo}">
+                                <input class="input" type="text" id="template_logo" name="template_logo" value="{$config_logo}" aria-describedby="template_logo_help">
+                                <p class="settings-fieldset__help"
+                                   id="template_logo_help"
+                                   data-testid="setting-help-template.logo">
+                                    Path to the brand mark image rendered in the sidebar and sign-in card, resolved relative to the active theme directory (<code class="font-mono">themes/&lt;theme&gt;/</code>). Default: <code class="font-mono">images/favicon.svg</code> &mdash; the SourceBans++ shield from the favicon set. Any theme-relative SVG / PNG works.
+                                </p>
                             </div>
                             <div data-testid="setting-row" data-key="config.password.minlength">
                                 <label class="label" for="config_password_minlength">Minimum password length</label>

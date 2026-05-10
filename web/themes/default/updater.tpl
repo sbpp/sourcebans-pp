@@ -29,7 +29,17 @@
 <div class="p-6 space-y-6" style="max-width:48rem;margin:2.5rem auto;width:100%">
 
     <header class="flex items-center gap-3" data-testid="updater-header">
-        <div class="sidebar__brand-mark">SB</div>
+        {* #1235 — the updater renders in its own bootstrap context
+           (web/updater/index.php) which doesn't load core/header.php,
+           so the operator-configurable `template.logo` setting and
+           the `$theme_url` Smarty global aren't in scope here. The
+           favicon path is therefore hardcoded — the updater is an
+           internal one-off page that runs once per upgrade, never
+           through the regular page-builder lifecycle, so threading
+           the setting through `UpdaterView` would be plumbing for a
+           single admin-facing screen that doesn't need theming.
+           Path is relative to /web/updater/ where the script runs. *}
+        <img class="sidebar__brand-mark" src="../themes/default/images/favicon.svg" alt="">
         <div>
             <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">SourceBans++ updater</h1>
             <p class="text-sm text-muted m-0 mt-2">Database migration log.</p>
