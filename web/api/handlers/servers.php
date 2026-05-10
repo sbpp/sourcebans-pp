@@ -11,7 +11,7 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 *************************************************************************/
 
-use xPaw\SourceQuery\SourceQuery;
+use Sbpp\Servers\SourceQueryCache;
 
 /**
  * Mirrors the access loop in web/pages/admin.rcon.php so the API enforces
@@ -183,6 +183,14 @@ function api_servers_refresh(array $params): array
 /**
  * Returns server info + player list for the requested server. Pure data —
  * the client decides how to render it.
+ *
+ * The A2S `GetInfo + GetPlayers` round-trip is delegated to
+ * `Sbpp\Servers\SourceQueryCache` so back-to-back calls (a hand-mashed
+ * Re-query button, a `for` loop hitting `?p=servers`) coalesce into ONE
+ * UDP probe per `(ip, port)` per ~30s window. The handler still maps
+ * the cached payload through the per-caller permission check
+ * (`is_owner` / `can_ban`) and the per-call hostname truncation, so the
+ * cache stays user-agnostic. See #1311 for the threat model.
  */
 function api_servers_host_players(array $params): array
 {
@@ -190,57 +198,48 @@ function api_servers_host_players(array $params): array
     $sid           = (int)($params['sid'] ?? 0);
     $trunchostname = (int)($params['trunchostname'] ?? 48);
 
-    $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
-    $GLOBALS['PDO']->bind(':sid', $sid, PDO::PARAM_INT);
-    $server = $GLOBALS['PDO']->single();
+    $server = _api_servers_lookup_address($sid);
 
-    if (empty($server['ip']) || empty($server['port'])) {
-        throw new ApiError('not_found', 'Server not found');
-    }
-
-    $query = new SourceQuery();
-    try {
-        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-        $info = $query->GetInfo();
-        $info['HostName'] = preg_replace('/[\x00-\x1f]/', '', htmlspecialchars($info['HostName']));
-        $players = $query->GetPlayers();
-    } catch (\Throwable $e) {
+    $cached = SourceQueryCache::fetch((string) $server['ip'], (int) $server['port']);
+    if ($cached === null) {
         return [
-            'sid'     => $sid,
-            'ip'      => $server['ip'],
-            'port'    => $server['port'],
-            'error'   => 'connect',
+            'sid'      => $sid,
+            'ip'       => $server['ip'],
+            'port'     => $server['port'],
+            'error'    => 'connect',
             'is_owner' => $userbank->HasAccess(WebPermission::Owner),
         ];
-    } finally {
-        $query->Disconnect();
     }
 
-    $os = match ($info['Os']) {
+    $info    = $cached['info'];
+    $players = $cached['players'];
+    $info['HostName'] = (string) preg_replace('/[\x00-\x1f]/', '', htmlspecialchars((string) ($info['HostName'] ?? '')));
+
+    $os = match ($info['Os'] ?? '') {
         'w'     => 'fab fa-windows',
         'l'     => 'fab fa-linux',
         default => 'fas fa-server',
     };
 
     return [
-        'sid'      => $sid,
-        'ip'       => $server['ip'],
-        'port'     => $server['port'],
-        'hostname' => trunc($info['HostName'], $trunchostname),
-        'players'  => (int)$info['Players'],
-        'maxplayers' => (int)$info['MaxPlayers'],
-        'map'      => basename($info['Map']),
-        'mapfull'  => $info['Map'],
-        'mapimg'   => GetMapImage($info['Map']),
-        'os_class' => $os,
-        'secure'   => (bool)$info['Secure'],
+        'sid'        => $sid,
+        'ip'         => $server['ip'],
+        'port'       => $server['port'],
+        'hostname'   => trunc($info['HostName'], $trunchostname),
+        'players'    => (int) ($info['Players']    ?? 0),
+        'maxplayers' => (int) ($info['MaxPlayers'] ?? 0),
+        'map'        => basename((string) ($info['Map'] ?? '')),
+        'mapfull'    => (string) ($info['Map'] ?? ''),
+        'mapimg'     => GetMapImage((string) ($info['Map'] ?? '')),
+        'os_class'   => $os,
+        'secure'     => (bool) ($info['Secure'] ?? false),
         'player_list' => array_map(fn($p) => [
-            'id'     => $p['Id'],
-            'name'   => $p['Name'],
-            'frags'  => (int)$p['Frags'],
-            'time'   => $p['Time'],
-            'time_f' => $p['TimeF'],
-        ], $players ?: []),
+            'id'     => $p['Id']    ?? null,
+            'name'   => $p['Name']  ?? '',
+            'frags'  => (int) ($p['Frags'] ?? 0),
+            'time'   => $p['Time']  ?? 0,
+            'time_f' => $p['TimeF'] ?? '',
+        ], $players),
         'can_ban' => $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
     ];
 }
@@ -250,25 +249,19 @@ function api_servers_host_property(array $params): array
     $sid           = (int)($params['sid'] ?? 0);
     $trunchostname = (int)($params['trunchostname'] ?? 48);
 
-    $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
-    $GLOBALS['PDO']->bind(':sid', $sid, PDO::PARAM_INT);
-    $server = $GLOBALS['PDO']->single();
-    if (empty($server['ip']) || empty($server['port'])) {
-        throw new ApiError('not_found', 'Server not found');
-    }
+    $server = _api_servers_lookup_address($sid);
 
-    $query = new SourceQuery();
-    try {
-        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-        $info = $query->GetInfo();
-        $info['HostName'] = preg_replace('/[\x00-\x1f]/', '', htmlspecialchars($info['HostName']));
-    } catch (\Throwable $e) {
+    $cached = SourceQueryCache::fetch((string) $server['ip'], (int) $server['port']);
+    if ($cached === null) {
         return ['ip' => $server['ip'], 'port' => $server['port'], 'error' => 'connect'];
-    } finally {
-        $query->Disconnect();
     }
 
-    return ['hostname' => trunc($info['HostName'] ?: '', $trunchostname), 'ip' => $server['ip'], 'port' => $server['port']];
+    $hostname = (string) preg_replace('/[\x00-\x1f]/', '', htmlspecialchars((string) ($cached['info']['HostName'] ?? '')));
+    return [
+        'hostname' => trunc($hostname, $trunchostname),
+        'ip'       => $server['ip'],
+        'port'     => $server['port'],
+    ];
 }
 
 function api_servers_host_players_list(array $params): array
@@ -287,17 +280,13 @@ function api_servers_host_players_list(array $params): array
         if (empty($server['ip']) || empty($server['port'])) {
             continue;
         }
-        $query = new SourceQuery();
-        try {
-            $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-            $info = $query->GetInfo();
-            $info['HostName'] = preg_replace('/[\x00-\x1f]/', '', htmlspecialchars($info['HostName']));
-            $lines[] = trunc($info['HostName'] ?: '', 48);
-        } catch (\Throwable $e) {
+        $cached = SourceQueryCache::fetch((string) $server['ip'], (int) $server['port']);
+        if ($cached === null) {
             $lines[] = "ERROR " . $server['ip'] . ':' . $server['port'];
-        } finally {
-            $query->Disconnect();
+            continue;
         }
+        $hostname = (string) preg_replace('/[\x00-\x1f]/', '', htmlspecialchars((string) ($cached['info']['HostName'] ?? '')));
+        $lines[]  = trunc($hostname, 48);
     }
     return ['lines' => $lines];
 }
@@ -313,24 +302,40 @@ function api_servers_players(array $params): array
         return ['sid' => $sid, 'players' => []];
     }
 
-    $query = new SourceQuery();
-    try {
-        $query->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-        $players = $query->GetPlayers();
-    } catch (\Throwable $e) {
+    $cached = SourceQueryCache::fetch((string) $server['ip'], (int) $server['port']);
+    if ($cached === null) {
         return ['sid' => $sid, 'players' => []];
-    } finally {
-        $query->Disconnect();
     }
 
     return [
         'sid' => $sid,
         'players' => array_map(fn($p) => [
-            'name'  => $p['Name'],
-            'frags' => (int)$p['Frags'],
-            'time'  => $p['Time'],
-        ], $players ?: []),
+            'name'  => $p['Name']  ?? '',
+            'frags' => (int) ($p['Frags'] ?? 0),
+            'time'  => $p['Time']  ?? 0,
+        ], $cached['players']),
     ];
+}
+
+/**
+ * Lookup the `(ip, port)` for a `sid`, throwing the same `not_found`
+ * envelope every public server-query handler used to throw inline.
+ * Extracted so the cache-fronted handlers don't repeat the SELECT and
+ * the empty-row guard.
+ *
+ * @return array{ip: string, port: int}
+ */
+function _api_servers_lookup_address(int $sid): array
+{
+    $GLOBALS['PDO']->query("SELECT ip, port FROM `:prefix_servers` WHERE sid = :sid");
+    $GLOBALS['PDO']->bind(':sid', $sid, PDO::PARAM_INT);
+    $server = $GLOBALS['PDO']->single();
+
+    if (empty($server['ip']) || empty($server['port'])) {
+        throw new ApiError('not_found', 'Server not found');
+    }
+
+    return ['ip' => (string) $server['ip'], 'port' => (int) $server['port']];
 }
 
 function api_servers_send_rcon(array $params): array

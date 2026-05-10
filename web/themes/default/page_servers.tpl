@@ -209,7 +209,8 @@
                             data-testid="server-refresh"
                             data-action="refresh"
                             title="Re-query this server"
-                            aria-label="Refresh server status">
+                            aria-label="Refresh server status"
+                            disabled>
                         <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
                     </button>
                 </div>
@@ -304,6 +305,12 @@
             if (hostFb) hostFb.textContent = (hostFb.getAttribute('data-fallback') || '');
             var toggleOff = tile.querySelector('[data-testid="server-toggle"]');
             if (toggleOff instanceof HTMLButtonElement) toggleOff.disabled = true;
+            // Re-enable the per-tile Re-query button so the operator can
+            // try again — the server-side cache (#1311) absorbs back-to-
+            // back probes inside its window, and we still want a visible
+            // affordance to retry once the window expires.
+            var refreshOff = tile.querySelector('[data-testid="server-refresh"]');
+            if (refreshOff instanceof HTMLButtonElement) refreshOff.disabled = false;
             return;
         }
 
@@ -332,6 +339,10 @@
 
         var toggle = tile.querySelector('[data-testid="server-toggle"]');
         if (toggle instanceof HTMLButtonElement) toggle.disabled = false;
+        // Re-enable the Re-query button now that the in-flight probe
+        // landed (#1311). Mirrors the toggle gate above.
+        var refresh = tile.querySelector('[data-testid="server-refresh"]');
+        if (refresh instanceof HTMLButtonElement) refresh.disabled = false;
 
         // Cache the player list on the tile for cheap re-render on toggle.
         if (Array.isArray(d.player_list)) {
@@ -402,10 +413,28 @@
     function loadTile(tile) {
         var sid = Number(tile.getAttribute('data-id'));
         if (!sid) return;
+        // Coalesce back-to-back invocations (#1311). Without this, the
+        // hand-mash of the per-tile Re-query button or the auto-fire on
+        // page load + a stray click translated each click into a fresh
+        // `Actions.ServersHostPlayers` POST — the server-side cache
+        // absorbs the bulk of that traffic, but the redundant XHRs are
+        // still wasted bandwidth and a needless UX vector. We mirror
+        // the toggle button's "disabled while loading" gate on the
+        // refresh button below; this in-JS guard handles the case
+        // where the click handler fires faster than the disabled
+        // attribute settles in the DOM.
+        if (tile.__sbppLoading) return;
+        tile.__sbppLoading = true;
+
         setStatus(tile, 'loading', 'Loading');
+        var refresh = tile.querySelector('[data-testid="server-refresh"]');
+        if (refresh instanceof HTMLButtonElement) refresh.disabled = true;
+
         sb.api.call(Actions.ServersHostPlayers, { sid: sid, trunchostname: 70 }).then(function (r) {
+            tile.__sbppLoading = false;
             if (!r || !r.ok || !r.data) {
                 setStatus(tile, 'offline', 'Offline');
+                if (refresh instanceof HTMLButtonElement) refresh.disabled = false;
                 return;
             }
             applyData(tile, r.data);
@@ -414,7 +443,9 @@
                 setExpanded(tile, true);
             }
         }, function () {
+            tile.__sbppLoading = false;
             setStatus(tile, 'offline', 'Offline');
+            if (refresh instanceof HTMLButtonElement) refresh.disabled = false;
         });
     }
 
@@ -435,6 +466,7 @@
         if (refresh) {
             refresh.addEventListener('click', function (ev) {
                 ev.preventDefault();
+                if (refresh instanceof HTMLButtonElement && refresh.disabled) return;
                 loadTile(tile);
             });
         }

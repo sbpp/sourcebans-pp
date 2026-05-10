@@ -94,6 +94,7 @@ web/
 │   ├── View/AdminTabs.php    Sbpp\View\AdminTabs — Pattern A admin sub-section nav
 │   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
 │   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML
+│   ├── Servers/              Sbpp\Servers\SourceQueryCache — per-(ip, port) cache around the xPaw A2S probe (#1311)
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
 │   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
@@ -598,6 +599,41 @@ companion changes:
   with a Markdown cheat-sheet link; the static `web/includes/tinymce/`
   bundle is no longer referenced and its directory is a follow-up
   cleanup.
+
+### Server query cache (`includes/Servers/`)
+
+`Sbpp\Servers\SourceQueryCache::fetch($ip, $port, $ttl=30)` is a thin
+on-disk cache around `xPaw\SourceQuery\SourceQuery` — the UDP A2S
+probe used by the public servers page (`?p=servers`) and any
+third-party theme that still emits the legacy `__sbppLoadServerHost`
+helper from `page.servers.php`. Returns either the cached
+`{info, players}` payload or `null` when the underlying probe failed;
+both states are persisted under `SB_CACHE/srvquery/<sha1(ip:port)>.json`
+so an unreachable server costs ONE A2S probe per ~30s window instead
+of one per request.
+
+Keyed by `(ip, port)` rather than by `sid` — multiple
+`:prefix_servers` rows pointing at the same game server share a slot,
+and the cache stays user-agnostic. Per-caller fields (`is_owner`,
+`can_ban`, the per-call `trunchostname` truncation) are stamped on
+top by the handler after the fetch returns. Atomic writes use the
+same tempfile + `rename()` shape as `_api_system_release_save_cache`
+in `system.php` so two concurrent FPM workers never read a
+half-written entry.
+
+Issue #1311 is the audit that introduced this: every public servers
+page hit, plus every per-tile Re-query button click (anonymous-callable
+through `servers.host_players` / `servers.host_property` /
+`servers.host_players_list` / `servers.players`, `public=true` in
+`_register.php`), used to fan out one fresh `xPaw\SourceQuery::Connect`
++ `GetInfo` + `GetPlayers` UDP round-trip per configured server. A
+hand-mash of the refresh button or `for i in $(seq 1 100); do curl
+?p=servers; done` translated 1:1 to A2S queries leaving the panel
+host. The handlers now go through `SourceQueryCache::fetch(...)` so
+back-to-back panel hits coalesce at the cache boundary; the matching
+client-side debounce on the public servers page (`page_servers.tpl`'s
+`loadTile()` flips `tile.__sbppLoading` + the Re-query button's
+`disabled` attr while a probe is in flight) closes the UX vector.
 
 ### Logging (`includes/Log.php`)
 

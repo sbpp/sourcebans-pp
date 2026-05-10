@@ -312,7 +312,13 @@
  */
 /**
  * Returns server info + player list for the requested server. Pure data —
- * the client decides how to render it.
+ * the client decides how to render it.  The A2S `GetInfo + GetPlayers`
+ * round-trip is delegated to `Sbpp\Servers\SourceQueryCache` so back-to-back
+ * calls (a hand-mashed Re-query button, a `for` loop hitting `?p=servers`)
+ * coalesce into ONE UDP probe per `(ip, port)` per ~30s window. The handler
+ * still maps the cached payload through the per-caller permission check
+ * (`is_owner` / `can_ban`) and the per-call hostname truncation, so the cache
+ * stays user-agnostic. See #1311 for the threat model.
  *
  * @typedef {Object} ApiServersHostPlayersRequest
  * @typedef {Object} ApiServersHostPlayersResponse

@@ -122,6 +122,20 @@ Api::register('protests.remove', 'api_protests_remove', ADMIN_OWNER | ADMIN_BAN_
 Api::register('servers.add',                 'api_servers_add',                 ADMIN_OWNER | ADMIN_ADD_SERVER);
 Api::register('servers.remove',              'api_servers_remove',              ADMIN_OWNER | ADMIN_DELETE_SERVERS);
 Api::register('servers.setup_edit',          'api_servers_setup_edit',          ADMIN_OWNER | ADMIN_EDIT_SERVERS);
+// servers.refresh + the server-query family below mirror the public
+// servers page's reach: every visitor of `?p=servers` (and any
+// third-party theme that still emits the legacy `__sbppLoadServerHost`
+// helper from `page.servers.php`) needs the live A2S `GetInfo` /
+// `GetPlayers` data, so the actions are anonymous-callable. The A2S
+// amplification this used to enable (#1311) is contained inside the
+// handlers via `Sbpp\Servers\SourceQueryCache` (per-`(ip, port)`
+// on-disk cache, ~30s window, negative caching for unreachable
+// servers) — without that cache, a hand-mash of the per-tile Re-query
+// button or `for i in $(seq 1 100); do curl ?p=servers; done` would
+// translate 1:1 to UDP queries leaving the panel host. Don't widen
+// the perm gate or drop the public reach without re-evaluating the
+// cache contract; don't drop the cache without re-introducing some
+// other rate limit at the dispatcher.
 Api::register('servers.refresh',             'api_servers_refresh',             0, false, true);
 Api::register('servers.host_players',        'api_servers_host_players',        0, false, true);
 Api::register('servers.host_property',       'api_servers_host_property',       0, false, true);

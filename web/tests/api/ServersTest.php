@@ -2,6 +2,7 @@
 
 namespace Sbpp\Tests\Api;
 
+use Sbpp\Servers\SourceQueryCache;
 use Sbpp\Tests\ApiTestCase;
 use Sbpp\Tests\Fixture;
 
@@ -14,6 +15,32 @@ use Sbpp\Tests\Fixture;
  */
 final class ServersTest extends ApiTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Reset the per-(ip, port) UDP query cache between tests so the
+        // negative-cache entry from one test doesn't bleed into another
+        // (#1311 — `Sbpp\Servers\SourceQueryCache` writes both success
+        // and failure results to the on-disk cache).
+        $cacheDir = SB_CACHE . 'srvquery/';
+        if (is_dir($cacheDir)) {
+            foreach (scandir($cacheDir) ?: [] as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                @unlink($cacheDir . $entry);
+            }
+        }
+        SourceQueryCache::resetSocketAttemptCount();
+        SourceQueryCache::setProbeOverrideForTesting(null);
+    }
+
+    protected function tearDown(): void
+    {
+        SourceQueryCache::setProbeOverrideForTesting(null);
+        parent::tearDown();
+    }
+
     private function seedServer(int $sid = 1, string $rcon = ''): int
     {
         $pdo = Fixture::rawPdo();
@@ -186,6 +213,73 @@ final class ServersTest extends ApiTestCase
         $env = $this->api('servers.host_property', ['sid' => 44]);
         $this->assertTrue($env['ok']);
         $this->assertSame('connect', $env['data']['error']);
+    }
+
+    /**
+     * #1311 regression — back-to-back `host_players` calls against the
+     * same `:prefix_servers` row must coalesce into a single A2S probe.
+     * The probe override stands in for the live UDP path so the
+     * assertion is deterministic; the matching cache-shape coverage
+     * lives in `web/tests/integration/SourceQueryCacheTest.php`.
+     */
+    public function testHostPlayersCoalescesRapidRepeatCallsViaCache(): void
+    {
+        SourceQueryCache::setProbeOverrideForTesting(static function (): array {
+            return [
+                'info' => [
+                    'HostName'   => 'Cached HL',
+                    'Players'    => 7,
+                    'MaxPlayers' => 24,
+                    'Map'        => 'cp_dustbowl',
+                    'Os'         => 'l',
+                    'Secure'     => true,
+                ],
+                'players' => [
+                    ['Id' => 0, 'Name' => 'foo', 'Frags' => 9, 'Time' => 600, 'TimeF' => '10:00'],
+                ],
+            ];
+        });
+
+        $sid = $this->seedServer(101);
+
+        for ($i = 0; $i < 5; $i++) {
+            $env = $this->api('servers.host_players', ['sid' => $sid]);
+            $this->assertTrue($env['ok'], "iteration $i envelope: " . json_encode($env));
+            $this->assertSame('Cached HL',   $env['data']['hostname']);
+            $this->assertSame(7,             $env['data']['players']);
+            $this->assertSame('cp_dustbowl', $env['data']['map']);
+        }
+
+        $this->assertSame(
+            1,
+            SourceQueryCache::socketAttemptCount(),
+            '5 rapid host_players calls must hit the cache after the first; #1311 amplifier reopened otherwise',
+        );
+    }
+
+    /**
+     * #1311 regression — a `host_players` call against an unreachable
+     * server must NOT keep hammering the socket. Negative caching
+     * stamps the failed probe into the same `(ip, port)` slot so the
+     * second call returns the structured `connect` envelope without
+     * touching UDP again.
+     */
+    public function testHostPlayersNegativeCachesUnreachableServers(): void
+    {
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): ?array => null);
+        $sid = $this->seedServer(102);
+
+        for ($i = 0; $i < 5; $i++) {
+            $env = $this->api('servers.host_players', ['sid' => $sid]);
+            $this->assertTrue($env['ok']);
+            $this->assertSame('connect', $env['data']['error']);
+        }
+
+        $this->assertSame(
+            1,
+            SourceQueryCache::socketAttemptCount(),
+            'unreachable servers must be negative-cached so an attacker mashing the refresh button costs ONE probe per window',
+        );
     }
 
     public function testHostPlayersListReturnsEmptyForNoIds(): void
