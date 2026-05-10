@@ -1091,6 +1091,27 @@ audit (#1207) locked in. New CTAs:
   self-contained vanilla JS per page (see `web/pages/admin.edit.ban.php`
   / `admin.edit.comms.php` for canonical examples); toasts go through
   `window.SBPP.showToast` from the theme JS.
+- `web/scripts/contextMenoo.js` / `sb.contextMenu` / global
+  `AddContextMenu` → removed at #1306. The vanilla shims were
+  back-compat scaffolding for the MooTools-era right-click menu the
+  legacy `LoadServerHost` helper wired onto each player row on the
+  public Servers page (`page_servers.tpl`). `LoadServerHost` was
+  deleted with `sourcebans.js` at #1123 D1 and the v2.0.0
+  `page_servers.tpl` rewrite never re-registered the menu, leaving
+  the helpers as dead code. The "Right-click a player on an expanded
+  card to kick, ban, or message them" hint copy that promised the
+  missing menu was also dropped — the kick/ban/mute UX is reachable
+  from `?p=admin&c=kickit`, `?p=admin&c=blockit`, and the row
+  affordances on the public ban / comm lists. If a future feature
+  wants a right-click menu, build it from scratch against the
+  current event-delegate pattern (a single
+  `document.addEventListener('contextmenu', …)` filtered by
+  `closest('[data-context-menu]')`) AND extend
+  `api_servers_host_players` with the SteamIDs the menu would need
+  (currently absent — `SourceQuery::GetPlayers()` returns name /
+  frags / time only, so the menu would also need a paired RCON
+  `status` round-trip per server). Don't reintroduce the help text
+  without the wiring.
 - `openTab()` JS (and the matching `<button onclick="openTab(...)">`
   chrome on `core/admin_tabs.tpl`) → the JS handler was dropped with
   sourcebans.js at #1123 D1; the buttons did nothing and every pane

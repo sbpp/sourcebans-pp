@@ -39,19 +39,27 @@
     <meta name="x-apple-data-detectors" content="false">
     <title>{$title}</title>
     {*
-        Favicon set (#1235): the SVG is the primary — Chrome/Firefox/Safari
-        prefer it and the @media (prefers-color-scheme: dark) rule baked
-        into the file lightens the orange to --brand-400 (#fb923c) when
-        the OS chrome is dark, matching the dark-theme accent. The .ico
-        is the legacy fallback. apple-touch-icon-180 covers iOS home
-        screens. The two theme-color metas paint the mobile chrome
-        bar: --brand-600 (#ea580c) by default, --zinc-950 (#09090b —
-        the value html.dark resolves --bg-page to in theme.css) when
-        the OS is dark.
+        Favicon set (#1235): the icon artwork ships byte-faithful
+        from the favicon.zip rumblefrog attached to #1235 — orange shield
+        (`#ea580c`) with a black "+" centred and a small white "++" tucked
+        in the bottom-right (the "++" in SourceBans++). The SVG is the
+        primary — Chrome/Firefox/Safari prefer it; the .ico (3-icon:
+        48x48 + 32x32 + 16x16) is the legacy fallback; favicon-96x96
+        covers higher-DPI tab strips that pick a 96px source over the
+        SVG; apple-touch-icon-180 covers iOS home screens. The web app
+        manifest wires up the install-as-PWA path on Edge/Chrome with
+        maskable 192x192 + 512x512 sources. The two theme-color metas
+        paint the in-browser chrome bar: --brand-600 (`#ea580c`) by
+        default, --zinc-950 (`#09090b` — the value html.dark resolves
+        --bg-page to in theme.css) when the OS is dark; HTML metas
+        win over the manifest's static theme_color for the in-browser
+        case.
     *}
     <link rel="icon" type="image/svg+xml" href="{$theme_url}/images/favicon.svg">
+    <link rel="icon" type="image/png" sizes="96x96" href="{$theme_url}/images/favicon-96x96.png">
     <link rel="alternate icon" type="image/x-icon" href="{$theme_url}/images/favicon.ico">
     <link rel="apple-touch-icon" sizes="180x180" href="{$theme_url}/images/apple-touch-icon-180.png">
+    <link rel="manifest" href="{$theme_url}/images/site.webmanifest">
     <meta name="theme-color" content="#ea580c">
     <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
     <link rel="stylesheet" href="{$theme_url}/css/theme.css">

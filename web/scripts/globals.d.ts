@@ -1,11 +1,11 @@
 // Ambient declarations for the SourceBans++ vanilla-JS panel.
 //
-// The runtime files (sb.js, api.js, contextMenoo.js) ship as classic
-// <script> tags rather than ESM modules and stash their public surface
-// on `window` from inside an IIFE. tsc --checkJs cannot see those
-// assignments without help, so we restate the public contract here.
-// Keep this in sync with sb.js / api.js / api-contract.js when the
-// runtime contract changes.
+// The runtime files (sb.js, api.js) ship as classic <script> tags
+// rather than ESM modules and stash their public surface on `window`
+// from inside an IIFE. tsc --checkJs cannot see those assignments
+// without help, so we restate the public contract here. Keep this in
+// sync with sb.js / api.js / api-contract.js when the runtime
+// contract changes.
 
 /** Element id, raw element, or null (the latter passes through every helper). */
 type SbElLike = string | HTMLElement | null;
@@ -68,14 +68,6 @@ interface SbWrappedElement extends HTMLElement {
     removeEvent(type: string, fn: EventListener): SbWrappedElement;
     adopt(child: Node): SbWrappedElement;
     getCoordinates(): { left: number; top: number; right: number; bottom: number; width: number; height: number };
-}
-
-/** Contract subset accepted by sb.contextMenu / AddContextMenu. */
-interface SbContextMenuItem {
-    name?: string;
-    callback?: () => void;
-    disabled?: boolean;
-    separator?: boolean;
 }
 
 /** Generic JSON envelope returned by /api.php. */
@@ -148,7 +140,6 @@ interface SbNamespace {
     tooltip(selector: string, opts?: { className?: string }): void;
     tabs: SbTabsNamespace;
     accordion(togglerSel: string, elementSel: string, container?: SbElLike, openIndex?: number): SbAccordionController | null;
-    contextMenu(selector: string, opts?: { items?: SbContextMenuItem[]; menuItems?: SbContextMenuItem[]; className?: string; headline?: string }): void;
     api: SbApiNamespace;
 }
 
@@ -159,24 +150,6 @@ declare var $: (idOrEl: string | HTMLElement | null) => SbWrappedElement | null;
 // `composer api-contract`). tsc picks up the literal types from the
 // Object.freeze({...}) initialiser there, so we don't need to redeclare
 // them — and doing so loosely here would conflict (TS2403).
-
-/** Vanilla replacement for the legacy contextMenoo MooTools class. */
-declare var contextMenoo: (opts: {
-    selector?: string;
-    className?: string;
-    pageOffset?: number;
-    fade?: boolean;
-    headline?: string;
-    menuItems?: SbContextMenuItem[];
-}) => void;
-
-declare var AddContextMenu: (
-    select: string,
-    classNames: string | undefined,
-    fader: boolean | undefined,
-    headl: string | undefined,
-    oLinks: SbContextMenuItem[]
-) => void;
 
 /**
  * Per-page hooks defined ad-hoc in inline templates (account.php, etc.)

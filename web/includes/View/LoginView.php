@@ -33,6 +33,15 @@ namespace Sbpp\View;
  *     the actual login wiring posts via
  *     `sb.api.call(Actions.AuthLogin, …)` with a hardcoded
  *     `redirect: ''` (post-login destination is the dashboard).
+ *   - `$brand_logo_url`   — Pre-resolved URL for the brand mark image
+ *     in the sign-in card header (`<img src="-{$brand_logo_url}-">`).
+ *     The page handler joins `$theme_url` (`themes/<theme>`, set by
+ *     init.php) with `Config::get('template.logo')` (the v1.x setting
+ *     resurrected by #1235 — default `images/favicon.svg`, the new
+ *     SourceBans++ shield mark; admins can repoint at any
+ *     theme-relative path). Pre-resolving here keeps `theme_url` and
+ *     `logo` out of the View property surface (`core/header.tpl`'s
+ *     globally-assigned `$theme_url` doesn't bleed into page Views).
  */
 final class LoginView extends View
 {
@@ -56,6 +65,7 @@ final class LoginView extends View
         public readonly bool $normallogin_show,
         public readonly bool $steamlogin_show,
         public readonly string $redir,
+        public readonly string $brand_logo_url,
     ) {
     }
 

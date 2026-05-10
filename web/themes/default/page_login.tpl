@@ -73,7 +73,12 @@
     <div class="card login-shell__card">
         <div class="card__body">
             <div class="flex items-center gap-3 mb-6">
-                <div class="sidebar__brand-mark" aria-hidden="true">S</div>
+                -{* #1235 — brand mark is the operator-configurable
+                   `template.logo` setting, theme-resolved in the page
+                   handler (page.login.php) and passed in as
+                   `$brand_logo_url`. Default ships as the SourceBans++
+                   shield from the favicon set. *}-
+                <img class="sidebar__brand-mark" src="-{$brand_logo_url}-" alt="" aria-hidden="true">
                 <div>
                     <div class="font-semibold text-sm">SourceBans++</div>
                     <div class="text-xs text-muted">Admin panel</div>

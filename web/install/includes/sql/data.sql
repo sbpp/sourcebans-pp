@@ -36,7 +36,7 @@ INSERT INTO `{prefix}_settings` (`setting`, `value`) VALUES
 ('bans.customreasons', ''),
 ('config.password.minlength', '7'),
 ('config.debug', '0'),
-('template.logo', 'logos/sb-large.png'),
+('template.logo', 'images/favicon.svg'),
 ('template.title', 'SourceBans++'),
 ('config.enableprotest', '1'),
 ('config.enablecomms', '1'),

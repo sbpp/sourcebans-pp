@@ -26,9 +26,23 @@
        testid (rather than the `.sidebar__brand` class chain) keeps
        the assertion compliant with AGENTS.md's "Selectors must use
        testability hooks; never CSS class chains as the primary
-       selector" rule. *}
+       selector" rule.
+
+       #1235 — the brand mark renders the operator-configurable
+       `template.logo` setting (Admin → Settings → General → Logo
+       path), resolved relative to the active theme's directory.
+       `$logo` is assigned by `core/header.php` (which runs before
+       this template per page-builder.php's lifecycle:
+       header → navbar → title → page → footer), so it's always in
+       scope here. Default ships as `images/favicon.svg` — the
+       canonical SourceBans++ shield-with-cross mark from the
+       favicon set; admins can repoint at any theme-relative path
+       (PNG / SVG / etc). The setting was vestigial in v2.0 until
+       this PR wired it back in; sees `web/updater/data/809.php`
+       for the upgrade-path migration that converts the v1.x
+       `logos/sb-large.png` default forward. *}
     <div class="sidebar__brand" data-testid="sidebar-brand">
-        <div class="sidebar__brand-mark">S</div>
+        <img class="sidebar__brand-mark" src="{$theme_url}/{$logo}" alt="">
         <div>
             <div class="font-semibold text-sm">SourceBans++</div>
         </div>

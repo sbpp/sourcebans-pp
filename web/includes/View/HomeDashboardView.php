@@ -7,11 +7,21 @@ namespace Sbpp\View;
  * Home dashboard page — binds to `page_dashboard.tpl`. Renders inline
  * server tiles + a stats card grid (`active_bans`, `total_servers`).
  *
- * `access_bans`, `IN_SERVERS_PAGE`, and `opened_server` are preserved
- * on this View so the transitively included `page_servers.tpl`
- * keeps type-checking and any third-party theme that forked the
- * pre-v2.0.0 default keeps rendering. They are unused by the shipped
- * v2.0.0 dashboard template.
+ * `access_bans` is consumed by the shipped `page_dashboard.tpl` to
+ * gate the "Open the servers page to manage players in real time."
+ * admin hint above the server tiles.
+ *
+ * `IN_SERVERS_PAGE` is preserved as a parity reference (the dashboard
+ * template carries an unreachable `{if $IN_SERVERS_PAGE}` block that
+ * keeps SmartyTemplateRule's "unused property" check green); always
+ * `false` on the dashboard. The pre-#1306 rationale ("the transitively
+ * included `page_servers.tpl` keeps type-checking") no longer applies
+ * because #1306 dropped `IN_SERVERS_PAGE` from `page_servers.tpl`
+ * along with the right-click hint it gated.
+ *
+ * `opened_server` is unused by the shipped dashboard template and
+ * sits in the PHPStan baseline as such; preserved for any third-party
+ * theme that forked the pre-v2.0.0 default and expects the legacy hook.
  */
 final class HomeDashboardView extends View
 {

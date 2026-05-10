@@ -89,9 +89,7 @@ foreach ($rows as $row) {
 // pattern).
 $serversPerms = \Sbpp\View\Perms::for($userbank);
 $serversView = new \Sbpp\View\ServersView(
-    access_bans: $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
     server_list: $servers,
-    IN_SERVERS_PAGE: !defined('IN_HOME'),
     opened_server: $number,
     can_add_server: $serversPerms['can_add_server'],
 );

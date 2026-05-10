@@ -309,13 +309,16 @@
     </div>
 
     {*
-        $IN_SERVERS_PAGE is declared on HomeDashboardView for the
-        legacy theme's transitive include of page_servers.tpl
-        (see the View's docblock). Always false on the dashboard, so
-        this block intentionally never renders; the reference is kept
-        here so SmartyTemplateRule's "unused property" check stays
-        green for the sbpp2026 PHPStan leg without us having to
-        carry a bespoke baseline entry.
+        $IN_SERVERS_PAGE is declared on HomeDashboardView; always
+        false on the dashboard, so this block intentionally never
+        renders. The reference is kept here so SmartyTemplateRule's
+        "unused property" check stays green without us having to
+        carry a bespoke baseline entry. The pre-#1306 rationale
+        ("for the transitively included page_servers.tpl") no longer
+        applies — #1306 burned $IN_SERVERS_PAGE on ServersView along
+        with the misleading right-click hint it gated; the prop
+        survives on HomeDashboardView purely as parity scaffolding
+        for any third-party theme fork that still wires it.
     *}
     {if $IN_SERVERS_PAGE}{* unreachable on dashboard *}{/if}
 
