@@ -201,8 +201,12 @@ final class ServerMapImageRenderTest extends TestCase
             . "so it can patch the `src` from r.data.mapimg (#1312).",
         );
 
-        $this->assertStringContainsString(
-            'mapImg.src = String(d.mapimg)',
+        // Match against any local binding name (the helper currently
+        // pins `imgEl = mapImg` to satisfy tsc's closure-narrowing
+        // rules — a future refactor might shuffle the name again).
+        // The semantic contract is `<binding>.src = String(d.mapimg)`.
+        $this->assertMatchesRegularExpression(
+            '/\w+\.src\s*=\s*String\(d\.mapimg\)/',
             $this->hydrate,
             "server-tile-hydrate.js must assign d.mapimg to the slot's `src` — "
             . "without this assignment the empty `src=\"\"` placeholder never gets "
@@ -210,7 +214,7 @@ final class ServerMapImageRenderTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/mapImg\.onload\s*=\s*function\s*\([^)]*\)\s*\{[^}]*removeAttribute\([\'\"]hidden[\'\"]\)/s',
+            '/\w+\.onload\s*=\s*function\s*\([^)]*\)\s*\{[^}]*removeAttribute\([\'\"]hidden[\'\"]\)/s',
             $this->hydrate,
             "server-tile-hydrate.js must unhide the slot on `load` so the thumbnail "
             . "becomes visible only after the file actually downloads — pre-load the "
@@ -218,7 +222,7 @@ final class ServerMapImageRenderTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/mapImg\.onerror\s*=\s*function\s*\([^)]*\)\s*\{[^}]*setAttribute\([\'\"]hidden[\'\"],\s*[\'\"][\'\"]\)/s',
+            '/\w+\.onerror\s*=\s*function\s*\([^)]*\)\s*\{[^}]*setAttribute\([\'\"]hidden[\'\"],\s*[\'\"][\'\"]\)/s',
             $this->hydrate,
             "server-tile-hydrate.js must KEEP the slot hidden on `error` so a missing "
             . "file (or a missing `nomap.jpg`) never paints a broken-image icon (#1312).",
