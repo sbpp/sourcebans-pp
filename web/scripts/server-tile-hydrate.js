@@ -281,13 +281,19 @@
         // icon.
         var mapImg = tile.querySelector('[data-testid="server-map-img"]');
         if (mapImg instanceof HTMLImageElement) {
+            // Pin the narrowed binding for the onload/onerror closures —
+            // tsc loses the `instanceof` narrowing across closure
+            // boundaries (the parent scope's `mapImg` could in principle
+            // be reassigned before the closure fires), so we capture a
+            // local non-null reference here.
+            var imgEl = mapImg;
             if (d.mapimg) {
-                mapImg.onload = function () { mapImg.removeAttribute('hidden'); };
-                mapImg.onerror = function () { mapImg.setAttribute('hidden', ''); };
-                mapImg.src = String(d.mapimg);
+                imgEl.onload = function () { imgEl.removeAttribute('hidden'); };
+                imgEl.onerror = function () { imgEl.setAttribute('hidden', ''); };
+                imgEl.src = String(d.mapimg);
             } else {
-                mapImg.setAttribute('hidden', '');
-                mapImg.removeAttribute('src');
+                imgEl.setAttribute('hidden', '');
+                imgEl.removeAttribute('src');
             }
         }
 

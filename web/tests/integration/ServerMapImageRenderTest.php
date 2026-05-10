@@ -92,8 +92,14 @@ final class ServerMapImageRenderTest extends TestCase
      */
     public function testHandlerStillEmitsMapimgField(): void
     {
-        $this->assertStringContainsString(
-            "'mapimg'   => GetMapImage(",
+        // Match the array-literal entry regardless of the surrounding
+        // whitespace shape — the column alignment of the `=>` arrows
+        // in the handler's response builder has shifted across
+        // refactors (e.g. #1311's SourceQueryCache split) without the
+        // contract changing. We care that `mapimg` is sourced from
+        // `GetMapImage()`, not how many spaces sit before the arrow.
+        $this->assertMatchesRegularExpression(
+            "/'mapimg'\\s*=>\\s*GetMapImage\\s*\\(/",
             $this->handler,
             "api_servers_host_players must keep emitting `mapimg` so page_servers.tpl's "
             . "`<img data-testid=\"server-map-img\">` slot can render — see #1312 for the "
