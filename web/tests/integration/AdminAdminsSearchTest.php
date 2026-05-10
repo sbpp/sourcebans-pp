@@ -438,6 +438,46 @@ final class AdminAdminsSearchTest extends ApiTestCase
     }
 
     /**
+     * #1303 — the `admemail` slot is permission-gated. The page handler
+     * (`admin.admins.php`) ignores `?admemail=…` from a user who lacks
+     * `EditAdmins | Owner`, AND the search box hides the e-mail input
+     * for the same gate. The active-filter count must mirror both —
+     * otherwise URL forgery (or a stale tab from a permission downgrade)
+     * would paint "1 active" on the disclosure summary while every
+     * visible filter row reads empty, and the disclosure would auto-open
+     * exposing nothing actionable.
+     *
+     * Setup: log in as a user with `ADMIN_LIST_ADMINS` only — they can
+     * reach the admin/admins list but the e-mail filter is invisible
+     * to them. A forged `?admemail=alice` then must NOT lift the count.
+     */
+    public function testDisclosureCountIgnoresPermissionGatedEmailSlot(): void
+    {
+        $listOnlyAid = $this->insertAdmin(
+            'enid',
+            'STEAM_0:0:9101',
+            'enid@example.test',
+            -1,
+            ADMIN_LIST_ADMINS,
+        );
+        $this->loginAs($listOnlyAid);
+
+        $_GET = ['p' => 'admin', 'c' => 'admins', 'admemail' => 'alice'];
+
+        $html = $this->renderAdminsPage();
+
+        $disclosure = $this->extractDisclosureTag($html);
+        $this->assertStringNotContainsString(' open', $disclosure, 'forged admemail must not auto-open the disclosure for a user without EditAdmins | Owner');
+        $this->assertStringContainsString('data-active-filter-count="0"', $disclosure);
+        $this->assertStringNotContainsString('search-admins-active-count', $html);
+
+        // Sanity: the e-mail input row itself is hidden for this user
+        // (the `{if $can_editadmin}` gate in the template), so the
+        // count's silence is consistent with the visible form chrome.
+        $this->assertStringNotContainsString('data-testid="search-admins-admemail"', $html);
+    }
+
+    /**
      * Structural invariant for #1275: the Pattern A sidebar must
      * carry every section the current user can reach. The owner
      * (seeded `admin/admin`) sees all three sections (`admins`,

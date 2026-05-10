@@ -126,9 +126,18 @@
        same `admins` slug today but only by coincidence. *}
     <input type="hidden" name="section" value="admins">
 
+    {*
+        #1303 — drop the redundant `<h3>Advanced search</h3>` that the
+        pre-disclosure `card__header` carried; the `<summary>` above
+        already paints the title (+ chevron + count badge), so emitting
+        it again here would stack two identical headings the moment a
+        user opens the disclosure. Keep the explanatory paragraph that
+        documents the AND-semantics contract — that's the load-bearing
+        copy the audit (#1207 ADM-4) called out, and it has no analog
+        in the summary.
+    *}
     <div class="card__header filters-details__header">
         <div>
-            <h3>Advanced search</h3>
             <p>Combine any of the filters below — the server narrows the admin list to rows matching <strong>every</strong> populated filter (AND semantics).</p>
         </div>
     </div>

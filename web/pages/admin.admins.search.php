@@ -193,6 +193,17 @@ $activeFilterSrvadmgroup = is_string($_GET['srvadmgroup'] ?? null) ? (string) $_
 $activeFilterSrvgroup    = is_scalar($_GET['srvgroup']    ?? null) ? (string) $_GET['srvgroup']    : '';
 $activeFilterServer      = is_scalar($_GET['server']      ?? null) ? (string) $_GET['server']      : '';
 
+// #1303 — the `admemail` filter is permission-gated by
+// `$can_editadmin` in both the rendering template AND the page
+// handler (`admin.admins.php` ignores `?admemail=` from a user without
+// `EditAdmins | Owner`). For URL-forgery cases where a non-admin
+// passes `?admemail=foo`, the input is hidden in the form and the
+// server narrows nothing; the count must mirror that — otherwise the
+// "N active" badge would say "1 active" while every visible filter
+// row reads empty. Mirror the gate locally so the count stays an
+// honest summary of what the visible form actually filters on.
+$canFilterByEmail = $userbank->HasAccess(WebPermission::mask(WebPermission::EditAdmins, WebPermission::Owner));
+
 // #1303 — count populated filter slots so the disclosure can paint a
 // "Filters · N active" badge on the <summary> and auto-expand on
 // post-submit. Match-mode selects (`name_match` / `steam_match` /
@@ -200,11 +211,12 @@ $activeFilterServer      = is_scalar($_GET['server']      ?? null) ? (string) $_
 // default ('0' or '1') and only refine the matching filter, they
 // don't filter on their own. Empty multi-select arrays count as zero
 // even though the array itself "exists" — the user hasn't picked a
-// permission.
+// permission. The `admemail` slot only counts when the user can
+// actually filter by it (see `$canFilterByEmail` above).
 $activeFilterCount =
       ($activeFilterName        !== '' ? 1 : 0)
     + ($activeFilterSteamid     !== '' ? 1 : 0)
-    + ($activeFilterAdmemail    !== '' ? 1 : 0)
+    + ($canFilterByEmail && $activeFilterAdmemail !== '' ? 1 : 0)
     + ($activeFilterWebgroup    !== '' ? 1 : 0)
     + ($activeFilterSrvadmgroup !== '' ? 1 : 0)
     + ($activeFilterSrvgroup    !== '' ? 1 : 0)
@@ -213,7 +225,7 @@ $activeFilterCount =
     + (count($activeSrvFlags) > 0 ? 1 : 0);
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsSearchView(
-    can_editadmin:             $userbank->HasAccess(WebPermission::mask(WebPermission::EditAdmins, WebPermission::Owner)),
+    can_editadmin:             $canFilterByEmail,
     server_list:               $servers,
     server_script:             $serverscript,
     webgroup_list:             $webgroups,
