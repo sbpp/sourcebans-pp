@@ -59,6 +59,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Composer is run against the staged tree (NOT the source checkout)
+      # so the source checkout stays clean and the resulting vendor/
+      # tree carries production-only deps with the optimized autoloader
+      # the release zip ships. See issue #1332 — pre-fix the release zip
+      # omitted vendor/ entirely (it's gitignored), so unzipping a
+      # tarball + visiting /install/ hard-failed on init.php's
+      # autoload check ("Compose autoload not found! Run `composer
+      # install`"). README.md + UPGRADING.md both promise vendor/ is
+      # bundled; this step honours that promise.
+      - name: Setup PHP + Composer
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer
+          coverage: none
+
       - name: Create webpanel package
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
@@ -70,7 +86,36 @@ jobs:
               "dev": false
           }
           EOF
+          composer install \
+              --working-dir="/tmp/${pkg}" \
+              --no-dev \
+              --optimize-autoloader \
+              --no-interaction \
+              --prefer-dist
           (cd /tmp && zip -rq "${GITHUB_WORKSPACE}/${pkg}.zip" "${pkg}")
+
+      # Smoke-check the staged tree before zipping. Two anchor files:
+      #   - includes/vendor/autoload.php — the file init.php gates on.
+      #   - includes/vendor/smarty/smarty/libs/Smarty.php — the highest-
+      #     value transitive dep (templates won't render without it).
+      # If either is missing the artifact silently regresses to the
+      # pre-#1332 broken shape; fail the build loudly instead.
+      - name: Verify vendor/ is bundled
+        run: |
+          pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
+          missing=0
+          for f in \
+              "/tmp/${pkg}/includes/vendor/autoload.php" \
+              "/tmp/${pkg}/includes/vendor/smarty/smarty/libs/Smarty.php"; do
+              if [ ! -f "$f" ]; then
+                  echo "::error::Missing required artifact file: $f"
+                  missing=1
+              fi
+          done
+          if [ "$missing" -ne 0 ]; then
+              echo "::error::Webpanel zip is missing bundled composer dependencies; release would ship broken to self-hosters."
+              exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
