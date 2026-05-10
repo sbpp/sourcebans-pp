@@ -165,7 +165,15 @@ Both scripts include `init.php` first, which performs identical bootstrap.
    parsing the user-visible string (#1207 CC-5). Dev-checkout panels
    are identified by `SB_VERSION === Version::DEV_SENTINEL`; the
    footer's "| Git: <sha>" suffix gates on `SB_GITREV` directly so a
-   separate boolean isn't needed (#1214).
+   separate boolean isn't needed (#1214). Tier-1 input is gated by
+   `Version::MIN_TIER1_MAJOR` (currently `2`) so a stale v1.x
+   `version.json` preserved through a botched v1→v2 upgrade overlay
+   falls through to tier-2/tier-3 instead of poisoning the footer
+   with phantom v1.x copy (#1305 — the v1.x repo carried the file as
+   a checked-in, hand-edited literal until #1070 deleted it; an
+   upgrade overlay tool that preserves existing files keeps the v1.x
+   contents on disk, and pre-#1305 the resolver returned them
+   verbatim because tier-1 was unconditional).
 6. Reads `configs/permissions/web.json` + `sourcemod.json` and `define()`s
    each flag as a global PHP constant (`ADMIN_OWNER`, `ADMIN_ADD_BAN`, …).
 7. Constructs the global `$theme` (Smarty) with the configured theme dir,

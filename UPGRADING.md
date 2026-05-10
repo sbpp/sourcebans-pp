@@ -8,6 +8,42 @@ land on the [`CHANGELOG.md`](CHANGELOG.md) instead.
 Future entries will land here as the project ships major upgrades; this
 section currently covers the v2.0.0 upgrade path.
 
+## Replace `web/configs/version.json` (#1305, v2.0.0)
+
+**Overlay your v2.0.0 tarball over an existing v1.x install with a
+tool that overwrites every file.** v1.x repos shipped a checked-in,
+hand-edited `web/configs/version.json` (`{"version": "1.8.1", "git":
+"1434"}`); v2.0.0 ships a fresh `version.json` written by the release
+pipeline at build time. The two files live at the same path, so an
+overlay tool that PRESERVES existing files (FTP "skip if exists",
+`rsync` without `--delete`, a manual directory-by-directory copy that
+treats `configs/` as user data alongside `configs/permissions/*.json`)
+keeps the stale v1.x file on disk.
+
+If that happens on v2.0.0 the panel footer reads
+`SourceBans++ 1.8.1 | Git: 1434` instead of the actual installed
+version. v2.0.0 ships a structural guard in `Sbpp\Version::resolve()`
+(#1305) that REJECTS a tier-1 `version.json` whose major component is
+below v2.0.0, so the failure mode is now "footer reads `dev` or the
+live `git describe` string" instead of "footer reads phantom v1.x
+copy". You still want the file to be the v2.0.0 release pipeline's
+fresh write so the footer reads `2.0.0` exactly.
+
+**The fix on an already-upgraded install**: re-extract the v2.0.0
+tarball over your install with a tool that overwrites every file
+(`unzip -o` instead of `unzip`, `rsync -av --delete` instead of plain
+`rsync -av`, a manual `cp` that overwrites). `web/configs/version.json`
+is the file at issue; `web/configs/permissions/web.json` and
+`web/configs/permissions/sourcemod.json` are the only files in
+`web/configs/` that an operator might have hand-edited and want to
+preserve, so back those up first if you've customised them.
+
+This file is owned by the release pipeline, not by the operator;
+v2.0.0+ tarballs always carry it and v2.0.0+ dev clones gitignore it
+(the runtime falls through to `git describe`). There is no in-panel
+toggle for the resolved version — it's read once per request from
+`web/configs/version.json` (and the two fallback tiers).
+
 ## Telemetry (#1126, v2.0.0)
 
 **SourceBans++ 2.0.0 ships with default-on anonymous telemetry.**
