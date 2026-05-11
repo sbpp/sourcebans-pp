@@ -5,7 +5,7 @@
 # Cadence: only on push to main with a docs/** path filter. PRs use
 # docs-build.yml to validate; this workflow is the production trigger.
 #
-# Required repo configuration BEFORE this workflow can succeed (one-time
+# Required repo configuration BEFORE this workflow does anything (one-time
 # cutover steps documented in #1333 cutover steps 1-2):
 #
 #   - Create the `sbpp-docs-deploy` GitHub App (org-owned), scope
@@ -14,9 +14,15 @@
 #   - Repo VARIABLE  `DOCS_DEPLOY_APP_ID`   = the App's numeric ID.
 #   - Repo SECRET    `DOCS_DEPLOY_APP_KEY`  = the App's PEM private key.
 #
-# Until those land, this workflow will fail on the first run with an
-# auth error. That's expected; the deploy shell in sbpp.github.io
-# also has a workflow_dispatch trigger as a manual fallback.
+# Until `vars.DOCS_DEPLOY_APP_ID` is set, the `trigger` job below is
+# skipped via the job-level `if:` guard — every push to `docs/**` shows
+# up as a "Skipped" run in the Actions tab (grey icon) instead of a
+# red-failing run. This stops the original anti-pattern (#1339-followup):
+# the App-token action errors out with `Input required and not supplied:
+# app-id`, the workflow goes red, and an operator who hasn't done the
+# cutover steps yet sees a stream of confusing failures.
+# The deploy shell in sbpp.github.io also has a `workflow_dispatch`
+# trigger as a manual fallback while the App credentials are pending.
 
 name: docs-deploy-trigger
 
@@ -42,6 +48,12 @@ jobs:
     name: Dispatch docs-changed event
     runs-on: ubuntu-24.04
     permissions: {}
+    # Skip the job entirely when the GitHub App isn't registered yet
+    # (cutover step 2 in #1333). Unset repo variables resolve to empty
+    # string in expressions, so this is the canonical "feature-flag a
+    # job" shape. Once `DOCS_DEPLOY_APP_ID` is set, the guard becomes
+    # transparent and the job runs every push.
+    if: vars.DOCS_DEPLOY_APP_ID != ''
 
     steps:
       - name: Mint installation token via GitHub App
