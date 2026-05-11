@@ -87,7 +87,7 @@ Four workflows under `.github/workflows/` cover the docs site:
 | Workflow | Trigger | What it does |
 | -------- | ------- | ------------ |
 | `docs-build.yml` | PRs + main pushes touching `docs/**` | Runs `npm run build`. Uploads the built `dist/` as an artifact. |
-| `docs-deploy-trigger.yml` | main pushes touching `docs/**` | Fires a `repository_dispatch` (event_type=`docs-changed`) into `sbpp/sbpp.github.io`, which kicks the actual GitHub Pages deploy. Requires the `DOCS_DEPLOY_APP_ID` repo variable + `DOCS_DEPLOY_APP_KEY` repo secret to be configured (one-time cutover step). |
+| `docs-deploy-trigger.yml` | main pushes touching `docs/**` | Fires a `repository_dispatch` (event_type=`docs-changed`) into `sbpp/sbpp.github.io`, which kicks the actual GitHub Pages deploy. Requires the `DOCS_DEPLOY_PAT` repo secret (fine-grained PAT, `Actions: write` on `sbpp.github.io` only) + the `DOCS_DEPLOY_ENABLED` repo variable as the opt-in flag. Until both are set, the job is skipped (grey badge in the Actions tab); the deploy shell in `sbpp.github.io` still has a `workflow_dispatch` button as a manual fallback. |
 | `docs-screenshots-build.yml` | PRs touching `docs/scripts/capture.mjs` or `docs/package*.json` | Sandboxed verification: `npm ci` + `node --check scripts/capture.mjs`. No secrets, no write permissions; runs the standard `pull_request` token. Catches "did the capture script still parse" on every PR. |
 | `docs-screenshots-capture.yml` | PRs labelled `safe-to-screenshot` (same-repo only) + `workflow_dispatch` | Boots the dev stack, seeds the DB, runs `npm run capture` from a TRUSTED-FROM-MAIN checkout, commits PNG deltas back to the PR branch. |
 
