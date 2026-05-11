@@ -102,6 +102,54 @@ function sbpp_install_kv_escape(string $value): string
 }
 
 /**
+ * Describe a filesystem-requirement row's detail cell for step 3.
+ *
+ * Pure function over `(path, is_dir, is_writable)` so the message
+ * shape is unit-testable without a real filesystem layout. Returns
+ * the string the template renders into `{$row.detail}`.
+ *
+ * Three cases, three remediations (#1335 M2 review):
+ *
+ *  - **Missing** (`!$exists`): the release tarball ships a
+ *    placeholder for every required folder (`web/demos/.gitkeep`,
+ *    `web/cache/`, the bundled `web/images/games/*.png` and
+ *    `web/images/maps/*` files), so a `Missing:` status indicates
+ *    a partial / broken upload — chmod can't fix something that
+ *    isn't there. The hint points at re-uploading from the zip
+ *    or creating the directory in the host's File Manager.
+ *  - **Not writable** (`$exists && !$writable`): the operator
+ *    needs to chmod 0775 (or 0777 on shared hosting where they
+ *    don't control the PHP user). Pre-fix this string was just
+ *    `'Not writable: <path>'` with no remediation; the chmod hint
+ *    pairs with the README's m7 signpost so the two surfaces stay
+ *    in sync.
+ *  - **OK** (`$exists && $writable`): just the literal `Writable`.
+ *
+ * Plain text (no inline HTML) — the template renders the value
+ * via Smarty's default auto-escape on. Wider hint formatting
+ * (paragraph breaks, code styling) belongs in the template, not
+ * here.
+ */
+function sbpp_install_describe_filesystem_check(
+    string $path,
+    bool $exists,
+    bool $writable,
+): string {
+    if (!$exists) {
+        return 'Missing: ' . $path
+            . ' — re-upload this folder from the release zip,'
+            . ' or create it via your hosting File Manager.';
+    }
+    if (!$writable) {
+        return 'Not writable: ' . $path
+            . ' — set permissions to 0775 (or 0777 on shared hosting'
+            . ' where you don\'t control the PHP user) via your hosting'
+            . ' File Manager, FTP client, or chmod.';
+    }
+    return 'Writable';
+}
+
+/**
  * Translate a PDOException into a human-readable error message for
  * the wizard's step 2 connect form (#1335 m4).
  *

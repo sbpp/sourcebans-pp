@@ -45,6 +45,12 @@ use PHPUnit\Framework\TestCase;
  *      step-2 PDOException translator emits human-readable messages
  *      for the common connect-error codes (1045, 2002, 1049, 1044)
  *      and falls back to the raw message for unrecognised codes.
+ *   6. {@see testFilesystemCheckEmitsDistinctRemediations} — M2
+ *      review: the step-3 filesystem-check helper pairs each
+ *      failure shape (missing vs not-writable) with the right
+ *      remediation. Pre-fix the same chmod hint was glued onto
+ *      both branches, even though chmod can't fix a directory
+ *      that doesn't exist.
  *
  * No DB needed — these tests are purely about the guard verdicts,
  * not the rendered HTML or live panel boot. Extending TestCase
@@ -342,5 +348,57 @@ final class InstallGuardTest extends TestCase
         );
         $this->assertStringContainsString('Could not connect to the database', $msgOther);
         $this->assertStringContainsString('completely novel error', $msgOther);
+    }
+
+    /**
+     * Issue #1335 M2 review: pre-review the same writable hint
+     * (`set permissions to 0775 ... via chmod`) was appended to
+     * BOTH the `Missing:` and `Not writable:` branches in
+     * `web/install/pages/page.3.php`. For a missing directory
+     * the operator can't chmod something that doesn't exist —
+     * they need to re-upload from the release zip or `mkdir`.
+     * The release tarball ships a placeholder for every required
+     * folder (`web/demos/.gitkeep`, `web/cache/`, the bundled
+     * `web/images/games/*.png` and `web/images/maps/*` files), so
+     * a `Missing:` status indicates a partial / broken upload,
+     * not a permission problem.
+     *
+     * Post-review: `sbpp_install_describe_filesystem_check()`
+     * pairs each failure shape with the right remediation. This
+     * test pins:
+     *   - missing → re-upload / mkdir hint (no chmod mention)
+     *   - not-writable → chmod 0775 hint (no re-upload mention)
+     *   - exists + writable → bare 'Writable' (no hint)
+     */
+    public function testFilesystemCheckEmitsDistinctRemediations(): void
+    {
+        $this->loadInstallHelpers();
+
+        $missing = sbpp_install_describe_filesystem_check(
+            '/some/panel/demos', false, false
+        );
+        $this->assertStringContainsString('Missing: /some/panel/demos', $missing);
+        $this->assertStringContainsStringIgnoringCase('re-upload', $missing);
+        $this->assertStringNotContainsStringIgnoringCase('chmod', $missing,
+            'M2 regression: the missing-folder hint must NOT mention chmod — ' .
+            'the operator cannot chmod a directory that does not exist. Pre-review ' .
+            'both branches glued the same chmod hint on; the fix splits the two ' .
+            'cases so each gets the actionable remediation.');
+
+        $notWritable = sbpp_install_describe_filesystem_check(
+            '/some/panel/demos', true, false
+        );
+        $this->assertStringContainsString('Not writable: /some/panel/demos', $notWritable);
+        $this->assertStringContainsStringIgnoringCase('chmod', $notWritable);
+        $this->assertStringNotContainsStringIgnoringCase('re-upload', $notWritable,
+            'The not-writable branch must NOT suggest re-uploading; the directory ' .
+            'is on disk, the operator just needs to fix permissions.');
+
+        $ok = sbpp_install_describe_filesystem_check(
+            '/some/panel/demos', true, true
+        );
+        $this->assertSame('Writable', $ok,
+            'The OK branch must emit the bare "Writable" string with no hint — ' .
+            'the row already shows a green check, no remediation needed.');
     }
 }
