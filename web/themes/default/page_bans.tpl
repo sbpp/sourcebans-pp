@@ -248,10 +248,65 @@
                  `?id=N` href instead). The mobile `.ban-cards` branch
                  below already follows this no-stopPropagation shape. *}
               <a class="font-medium truncate" href="?p=banlist&amp;id={$ban.bid}" data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}" data-testid="drawer-trigger">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</a>
-              {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
-              <span class="text-xs text-muted" title="{$ban.commentdata|@count} comment(s)">[{$ban.commentdata|@count}]</span>
-              {/if}
             </div>
+            {* #BANLIST-COMMENTS: inline <details> disclosure restoring
+               the per-row comment visibility v1.x shipped (the
+               mooaccordion sliding-panel surface that was deleted with
+               sourcebans.js at #1123 D1). The v2.0 redesign moved the
+               comments off the page and into the right-side drawer
+               (Overview pane → "Comments" section), but the page-level
+               affordance was a silent <span>[N]</span> with no click
+               handler, so users reading the row had no on-page way to
+               see *what* the comments said and no visual cue that the
+               drawer was their new home. The disclosure restores
+               on-page comment text via native <details> semantics: the
+               <summary> is the clickable count badge, the body lists
+               each comment inline so readers don't have to leave the
+               row. The drawer's comments section in `theme.js`
+               `renderOverviewPane` continues to render the SAME data
+               via `api_bans_detail` for users who open the player
+               drawer (clicking the player-name anchor above) — the two
+               surfaces share the gating contract
+               (`Config::getBool('config.enablepubliccomments') ||
+               $userbank->is_admin()`).
+
+               The disclosure stays default-collapsed so a banlist with
+               comment-heavy rows doesn't blow out the table height on
+               first paint; the count is visible inside the summary so
+               admins can scan the list at a glance. *}
+            {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
+            <details class="ban-comments-inline"
+                     data-testid="ban-comments-inline"
+                     data-bid="{$ban.bid}">
+              <summary class="ban-comments-inline__summary"
+                       data-testid="ban-comments-toggle"
+                       title="{$ban.commentdata|@count} comment{if $ban.commentdata|@count != 1}s{/if} on this ban">
+                <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
+                <span class="tabular-nums">{$ban.commentdata|@count}</span>
+                <span class="ban-comments-inline__label">comment{if $ban.commentdata|@count != 1}s{/if}</span>
+              </summary>
+              <ul class="ban-comments-inline__list" data-testid="ban-comments-list">
+                {foreach from=$ban.commentdata item=com}
+                <li class="ban-comments-inline__item" data-testid="ban-comment-item">
+                  <div class="ban-comments-inline__meta">
+                    {if !empty($com.comname)}
+                      <strong>{$com.comname|escape}</strong>
+                    {else}
+                      <i class="text-faint">deleted admin</i>
+                    {/if}
+                    <span class="text-faint">&middot;</span>
+                    <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                  </div>
+                  {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.banlist.php $commentres loop. Same provenance + safety as the existing comment-edit-mode block at the top of this template. *}
+                  <div class="ban-comments-inline__text" data-testid="ban-comment-text">{$com.commenttxt nofilter}</div>
+                  {if !empty($com.edittime)}
+                  <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
+                  {/if}
+                </li>
+                {/foreach}
+              </ul>
+            </details>
+            {/if}
           </td>
           <td class="font-mono text-xs text-muted">
             {if empty($ban.steam)}
@@ -468,6 +523,23 @@
               {if !empty($ban.removedby)}Unbanned by {$ban.removedby|escape}{if !empty($ban.ureason)}: {/if}{/if}
               {if !empty($ban.ureason)}{$ban.ureason|escape}{/if}
             </div>
+          {/if}
+          {* #BANLIST-COMMENTS mobile mirror — at-a-glance count indicator
+             only (NOT a clickable disclosure). The mobile card wraps
+             everything in a single `<a data-testid="drawer-trigger">`
+             so a nested <details> would be invalid HTML (interactive
+             content can't contain interactive content). The drawer is
+             the canonical mobile detail view per the existing comms-
+             list pattern (see AGENTS.md "Reapply" mobile-deferred
+             note); tapping the card opens the drawer which renders the
+             same comments under the Overview pane. The count + icon
+             here gives users the same at-a-glance signal desktop has. *}
+          {if $view_comments && $ban.commentdata != "None" && $ban.commentdata|@count > 0}
+          <div class="text-xs text-faint truncate" style="margin-top:0.125rem;display:flex;align-items:center;gap:0.25rem" data-testid="ban-comments-count-mobile">
+            <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
+            <span class="tabular-nums">{$ban.commentdata|@count}</span>
+            <span>comment{if $ban.commentdata|@count != 1}s{/if}</span>
+          </div>
           {/if}
         </div>
         <span class="text-faint" aria-hidden="true">&rsaquo;</span>

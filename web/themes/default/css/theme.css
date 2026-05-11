@@ -886,6 +886,96 @@ html.dark .pill--online    { color: #6ee7b7; }
 .ban-row--expired   { border-left-color: var(--zinc-300); }
 .ban-row--unbanned  { border-left-color: #10b981; }
 
+/* ---- Inline per-row comments disclosure ----
+   Restores v1.x's per-row comment surface (the deleted `mooaccordion`
+   sliding panel from `web/scripts/sourcebans.js`) as a native
+   <details> disclosure inside the player cell. The drawer's Overview
+   pane continues to render the same data via api_bans_detail; the
+   inline disclosure makes the comments visible WITHOUT requiring the
+   user to leave the row. See `page_bans.tpl` `data-testid="ban-comments-inline"`
+   for the markup and AGENTS.md "Per-ban comments visibility"
+   for the cross-surface contract.
+
+   The summary is laid out inline-flex so it sits as a chip-shaped
+   badge to the right of the player name (mirrors the visual weight
+   of the pre-fix `<span>[N]</span>` so the table column geometry
+   stays the same when the disclosure is collapsed). When opened the
+   <ul> body block-flows below the summary inside the same <td>; the
+   row grows to accommodate. No row-spanning trickery / no extra
+   <tr> / no width gymnastics — native <details> handles the toggle. */
+.ban-comments-inline { display: inline-block; margin-top: 0.125rem; }
+.ban-comments-inline__summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: var(--radius-full);
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  line-height: 1.4;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  border: 1px solid transparent;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+.ban-comments-inline__summary::-webkit-details-marker { display: none; }
+.ban-comments-inline__summary:hover {
+  background: var(--bg-surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.ban-comments-inline__summary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(234 88 12 / 0.15);
+  border-color: var(--brand-500);
+}
+.ban-comments-inline[open] > .ban-comments-inline__summary {
+  background: var(--bg-surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.ban-comments-inline__label { color: inherit; }
+.ban-comments-inline__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  /* Cap the inline panel so a 30-comment ban doesn't push the row to
+     screen height; users with that many comments can still scroll
+     inside the panel or open the drawer for the unified Overview. */
+  max-height: 18rem;
+  overflow-y: auto;
+}
+.ban-comments-inline__item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.625rem;
+  background: var(--bg-surface);
+}
+.ban-comments-inline__meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  margin-bottom: 0.25rem;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.ban-comments-inline__text {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+.ban-comments-inline__text a { color: var(--brand-600); text-decoration: underline; }
+html.dark .ban-comments-inline__text a { color: var(--brand-400); }
+.ban-comments-inline__edit { margin-top: 0.25rem; }
+
 /* ---- Filter chip ---- */
 .chip {
   display: inline-flex; align-items: center; gap: 0.375rem; padding: 0 0.625rem;

@@ -236,6 +236,46 @@
                                             {if !empty($comm.ureason)}<span data-testid="comm-unban-reason">{$comm.ureason|escape}</span>{/if}
                                         </div>
                                     {/if}
+                                    {* #BANLIST-COMMENTS sister-fix for commslist: this surface
+                                       has the SAME regression as the banlist (page handler
+                                       builds `commentdata` per row but the v2.0 rewrite of
+                                       this template never re-rendered it — see the
+                                       `commslist`-side rationale in AGENTS.md "Per-ban
+                                       comments visibility"). The commslist regression is
+                                       worse than the banlist's because there's no drawer
+                                       fallback (no `data-drawer-href` on `<tr data-testid="comm-row">`),
+                                       so the disclosure here is the ONLY on-page way for
+                                       admins to see the comment text. Same structure +
+                                       gating contract as the banlist disclosure. *}
+                                    {if $view_comments && $comm.commentdata != "None" && isset($comm.commentdata) && $comm.commentdata|@count > 0}
+                                    <details class="ban-comments-inline mt-1"
+                                             data-testid="comm-comments-inline"
+                                             data-cid="{$comm.cid}">
+                                      <summary class="ban-comments-inline__summary"
+                                               data-testid="comm-comments-toggle"
+                                               title="{$comm.commentdata|@count} comment{if $comm.commentdata|@count != 1}s{/if} on this comm-block">
+                                        <i data-lucide="message-square-text" style="width:11px;height:11px" aria-hidden="true"></i>
+                                        <span class="tabular-nums">{$comm.commentdata|@count}</span>
+                                        <span class="ban-comments-inline__label">comment{if $comm.commentdata|@count != 1}s{/if}</span>
+                                      </summary>
+                                      <ul class="ban-comments-inline__list" data-testid="comm-comments-list">
+                                        {foreach from=$comm.commentdata item=com}
+                                        <li class="ban-comments-inline__item" data-testid="comm-comment-item">
+                                          <div class="ban-comments-inline__meta">
+                                            {if !empty($com.comname)}<strong>{$com.comname|escape}</strong>{else}<i class="text-faint">deleted admin</i>{/if}
+                                            <span class="text-faint">&middot;</span>
+                                            <span class="text-xs text-faint tabular-nums">{$com.added}</span>
+                                          </div>
+                                          {* nofilter: $com.commenttxt is server-built HTML produced by encodePreservingBr (htmlspecialchars per text segment, only `<br/>` survives) plus a URL-wrap regex that wraps already-escaped URLs in `<a>` tags — see page.commslist.php $commentres loop. Same provenance + safety as the banlist disclosure (template comment up-thread). *}
+                                          <div class="ban-comments-inline__text" data-testid="comm-comment-text">{$com.commenttxt nofilter}</div>
+                                          {if !empty($com.edittime)}
+                                          <div class="ban-comments-inline__edit text-xs text-faint">last edit {$com.edittime} by {if !empty($com.editname)}{$com.editname|escape}{else}<i>deleted admin</i>{/if}</div>
+                                          {/if}
+                                        </li>
+                                        {/foreach}
+                                      </ul>
+                                    </details>
+                                    {/if}
                                 </div>
                             </div>
                         </td>

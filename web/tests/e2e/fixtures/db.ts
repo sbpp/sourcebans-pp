@@ -29,6 +29,8 @@ const execFileP = promisify(execFile);
 const SCRIPT_INSIDE_CONTAINER = '/var/www/html/web/tests/e2e/scripts/reset-e2e-db.php';
 const SEED_COMMS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-comms-e2e.php';
+const SEED_COMMENTS_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-comments-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -138,6 +140,67 @@ export async function seedCommsRawE2e(rows: CommsSeedRow[]): Promise<void> {
             }
             reject(new Error(
                 `seed-comms-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+}
+
+/**
+ * Per-row shape consumed by `seedCommentsRawE2e`. `type='B'` attaches
+ * the comment to a ban row (the bid is the bans table primary key);
+ * `type='C'` attaches to a comm-block row (the bid here is the
+ * comms table cid — the column was reused from v1.x without a rename).
+ *
+ * Used by the banlist-comments-visibility spec because there is no
+ * JSON action for adding admin-authored per-row comments — the
+ * production write path is the legacy `?p=banlist&comment=N` POST
+ * handler. Driving an HTML POST through Playwright would couple the
+ * spec to the comment-edit chrome and CSRF handshake, which is
+ * unrelated to what we're verifying (the disclosure renders, the
+ * drawer paints the same data).
+ */
+export interface CommentSeedRow {
+    type: 'B' | 'C';
+    bid: number;
+    text: string;
+}
+
+/**
+ * Seed `:prefix_comments` rows directly via the SQL layer. Caller
+ * responsibility: the parent ban / comm row must already exist
+ * (`seedBanViaApi` / `seedCommsRawE2e`); the e2e DB must already be
+ * truncated.
+ */
+export async function seedCommentsRawE2e(rows: CommentSeedRow[]): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_COMMENTS_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_COMMENTS_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify(rows));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `seed-comments-e2e.php exited ${code}\n`
                 + `stdout:\n${stdout}\nstderr:\n${stderr}`,
             ));
         });
