@@ -16,12 +16,21 @@
 #   - Repo SECRET `DOCS_DEPLOY_PAT` = the token value.
 #
 # Until `DOCS_DEPLOY_PAT` is set, the dispatch step below is skipped via
-# its `if: secrets.DOCS_DEPLOY_PAT != ''` guard — every push to `docs/**`
-# shows up as a green run with the dispatch step marked "Skipped",
-# instead of red-failing on a missing credential. This stops the
-# original anti-pattern (#1339-followup) where the dispatch hard-erred
-# and an operator who hasn't done the cutover yet sees a stream of
-# confusing failures.
+# a precheck step that reads the secret into `env:` (where `secrets.*` IS
+# allowed), tests for presence in shell, and emits a step output the
+# dispatch step gates on. Every push to `docs/**` shows up as a green
+# run with the dispatch step marked "Skipped", instead of red-failing on
+# a missing credential. This stops the original anti-pattern
+# (#1339-followup) where the dispatch hard-erred and an operator who
+# hasn't done the cutover yet sees a stream of confusing failures.
+#
+# The naive shape (`if: secrets.DOCS_DEPLOY_PAT != ''` on the dispatch
+# step itself) does NOT work: `secrets.*` is unavailable in `if:` at
+# every scope (workflow / job / step) per the GitHub Actions context
+# table, and the parser rejects the workflow file with
+# "Unrecognized named-value: 'secrets'" before any job runs — the run
+# fails red on every push including dependabot branches, defeating the
+# whole point of the guard.
 #
 # The deploy shell in sbpp.github.io also has a `workflow_dispatch`
 # trigger as a manual fallback while the PAT is pending.
@@ -52,19 +61,33 @@ jobs:
     permissions: {}
 
     steps:
+      # `secrets.*` isn't available in `if:` at any scope, so we can't
+      # gate the dispatch step directly on the PAT being configured.
+      # Read the secret into the precheck step's `env:` (where
+      # `secrets.*` IS allowed), test for presence in shell, and emit
+      # a `configured=true|false` step output. The dispatch step then
+      # gates on `steps.pat.outputs.configured == 'true'` — `steps.*`
+      # IS available in `if:`, so the gate works and the dispatch step
+      # cleanly shows as "Skipped" until the secret is set.
+      - name: Check whether DOCS_DEPLOY_PAT is configured
+        id: pat
+        env:
+          DOCS_DEPLOY_PAT: ${{ secrets.DOCS_DEPLOY_PAT }}
+        run: |
+          if [ -n "$DOCS_DEPLOY_PAT" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=docs-deploy-trigger::DOCS_DEPLOY_PAT is unset; skipping repository_dispatch into sbpp.github.io. Configure the secret to enable automatic Pages deploys (the deploy shell still has a manual workflow_dispatch trigger as a fallback)."
+          fi
+
       # The dispatched workflow in sbpp.github.io listens for
       # `event_type: docs-changed`. The client_payload carries the
       # commit SHA and ref so the deploy job can pin its sourcebans-pp
       # checkout to the exact commit that fired the dispatch (race
       # guard for back-to-back pushes).
-      #
-      # Step-level `if:` evaluates against `secrets.*` (job-level `if:`
-      # does not), so we gate the dispatch directly on the PAT being
-      # configured — no separate feature-flag variable needed. When
-      # `DOCS_DEPLOY_PAT` is unset, the step is skipped and the run is
-      # green-with-skipped instead of red-failing.
       - name: Dispatch repository_dispatch into sbpp.github.io
-        if: secrets.DOCS_DEPLOY_PAT != ''
+        if: steps.pat.outputs.configured == 'true'
         env:
           GH_TOKEN: ${{ secrets.DOCS_DEPLOY_PAT }}
         run: |
