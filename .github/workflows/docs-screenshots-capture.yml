@@ -143,7 +143,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Astro 6 requires Node >=22.12; mirrors the bump in
+          # docs-build.yml that landed with the docs astro+starlight
+          # group bump (#1346).
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: trusted/docs/package-lock.json
 

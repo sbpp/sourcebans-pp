@@ -35,7 +35,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Astro 6 requires Node >=22.12; 20 trips an EBADENGINE on `npm
+          # ci` and a hard "Node.js v20 is not supported by Astro!" on
+          # `astro build`. Bumped together with the docs astro+starlight
+          # group bump (#1346).
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: docs/package-lock.json
 
