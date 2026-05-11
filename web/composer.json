@@ -24,7 +24,7 @@
         "maxmind-db/reader": "~1.0",
         "smarty/smarty": "^v5.4",
         "xpaw/php-source-query-class": "^6.0.0",
-        "symfony/mailer": "^7.2",
+        "symfony/mailer": "^8.0",
         "ext-pdo": "*",
         "ext-openssl": "*",
         "php": ">=8.5"
