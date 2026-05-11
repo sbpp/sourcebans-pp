@@ -8,9 +8,16 @@
  *     every chip renders inside the viewport without horizontal
  *     scroll; banlist.spec.ts covers the wrap geometry, this file
  *     focuses on interaction.
- *   - Each click pins `aria-pressed="true"` on the chosen chip and
- *     stamps `?state=<name>` onto the URL (banlist.js
- *     `applyStateFilter`).
+ *   - Each click navigates to `?state=<name>` server-side. The active
+ *     chip carries `aria-current="true"` + `data-active="true"` after
+ *     the page renders the new URL. NOTE: post-#1358 the chips are
+ *     `<a>` anchors (real navigation, server-side filter), not
+ *     `<button>`s; `aria-current` (NOT `aria-pressed`) is the
+ *     canonical ARIA attribute for "active link" on anchor elements
+ *     — axe flags `aria-pressed` on anchors as `aria-allowed-attr`.
+ *     The "Hide inactive" button on the same surface still uses
+ *     `aria-pressed` because it remains a `<button role="button">`;
+ *     the chip strip's anchor shape is the divergence.
  *
  * Project gating: mobile-chromium only.
  *
@@ -39,25 +46,34 @@ test.describe('responsive: filter bar', () => {
 
         for (const id of CHIPS) {
             const chip = page.locator(`[data-testid="filter-chip-${id}"]`);
-            await expect(chip).toHaveAttribute('aria-pressed', 'false');
+            await expect(chip).toHaveAttribute('aria-current', 'false');
 
             // After #1181 the row wraps onto multiple lines at
             // <=768px, so every chip renders within the viewport.
             // `.click()` works directly — no horizontal auto-scroll
-            // and no `force: true` needed.
+            // and no `force: true` needed. Post-#1358 the click is
+            // a real navigation (anchor href), so `waitForURL`
+            // synchronises with the server-rendered next paint.
             await chip.click();
+            await page.waitForURL(new RegExp(`[?&]state=${id}(?:&|$)`));
 
-            await expect(chip).toHaveAttribute('aria-pressed', 'true');
-            await expect(page).toHaveURL(new RegExp(`[?&]state=${id}(?:&|$)`));
+            // The newly-active chip locator has to be re-resolved
+            // after the navigation since the previous DOM was torn
+            // down — otherwise we'd be asserting against a stale
+            // element handle that detached on page change.
+            const active = page.locator(`[data-testid="filter-chip-${id}"]`);
+            await expect(active).toHaveAttribute('aria-current', 'true');
 
-            // Only one chip is "pressed" at a time — applyStateFilter
-            // (banlist.js L45) loops every chip on each click. This
-            // spec also locks that invariant for the mobile bar.
+            // Only one chip is "active" at a time — the page handler
+            // sets `$active_state` from `$_GET['state']` and the
+            // template renders `aria-current` per-chip from it
+            // (page_bans.tpl chip strip). Lock that invariant for
+            // the mobile bar too.
             for (const other of CHIPS) {
                 if (other === id) continue;
                 await expect(
                     page.locator(`[data-testid="filter-chip-${other}"]`),
-                ).toHaveAttribute('aria-pressed', 'false');
+                ).toHaveAttribute('aria-current', 'false');
             }
         }
     });
