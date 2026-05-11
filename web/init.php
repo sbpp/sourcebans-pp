@@ -40,25 +40,73 @@ define("MMDB_PATH", ROOT . 'data/GeoLite2-Country.mmdb');
 define('IN_SB', true);
 
 // ---------------------------------------------------
-//  Are we installed?
+//  Are we installed? (Issue #1335 M1 + C1)
 // ---------------------------------------------------
+// Pre-#1335 these guards were three bare `die('text')` calls. The
+// CTA on the wizard's done page sends the operator straight here
+// before they delete `install/` or paste in the manual config
+// snippet, so the bare-text 200 response read like a server crash.
+// The recovery surface is loaded eagerly so each branch can call
+// `sbpp_render_install_blocked_page()` (a `: never` HTML render)
+// without each guard re-implementing inline HTML.
+//
+// `web/init-recovery.php` lives outside `web/install/` because the
+// `'install'` scenario fires precisely when `install/` exists and
+// the operator hasn't deleted it yet — we don't want that surface
+// to depend on files inside the directory it's nudging the operator
+// to remove. The file has zero `Sbpp\…` / Composer / Smarty
+// dependencies (mirror of `web/install/recovery.php`'s contract);
+// the panel runtime hits it BEFORE the `vendor/autoload.php`
+// require below.
+require_once(ROOT.'/init-recovery.php');
+
 #DB Config
 if (!file_exists(ROOT.'/config.php')) {
-    die('SourceBans++ is not installed.');
+    // M1 bonus: redirect to /install/ instead of a bare-text die.
+    // The wizard is the actionable next step for a panel without
+    // config.php, so dropping the operator there is strictly more
+    // helpful than a stark `die()`. `install/` may have been
+    // deleted post-install (the desired state once config.php
+    // exists), so this redirect only fires on a genuine "no
+    // panel here yet" first hit.
+    header('Location: install/');
+    exit;
 }
 require_once(ROOT.'/config.php');
 
-if ($_SERVER['HTTP_HOST'] != "localhost" && !defined("IS_UPDATE")) {
-    if (file_exists(ROOT."/install")) {
-        die('Please delete the install directory before you use SourceBans++.');
-    } else if (file_exists(ROOT."/updater")) {
-        die('Please delete the updater directory before using SourceBans++.');
-    }
+// Issue #1335 C1: pre-fix this guard exempted `HTTP_HOST ==
+// "localhost"`, which was a panel-takeover path on any panel
+// reachable via a `localhost` Host header (port-forward, SSH
+// tunnel, ngrok, Cloudflare Tunnel) and on any local-development
+// workflow where the operator never saw the warning they'd need to
+// act on once they deployed. The exemption is gone — the install /
+// updater directories are post-install / post-upgrade artefacts
+// that MUST be deleted on production panels.
+//
+// `SBPP_DEV_KEEP_INSTALL` is the explicit dev-only escape hatch:
+// the project's `docker/php/dev-prepend.php` defines it on every
+// request inside the dev container so the bind-mounted worktree
+// (which carries `install/` + `updater/` from git) doesn't fail
+// the guard. Production panels MUST NOT define this constant —
+// see `sbpp_check_install_guard()`'s docblock for the contract.
+// PHPStan sees `dev-prepend.php`'s `define(SBPP_DEV_KEEP_INSTALL,
+// true)` and would otherwise flag any `=== true` check here as
+// `identical.alwaysTrue`. The function takes a bool either way, so
+// the `defined()` check IS the gate — there's no path that defines
+// the constant to anything other than the literal `true`, and the
+// loud name makes accidental production-side defines visibly wrong.
+$blocked = sbpp_check_install_guard(
+    ROOT,
+    defined('IS_UPDATE'),
+    defined('SBPP_DEV_KEEP_INSTALL'),
+);
+if ($blocked !== null) {
+    sbpp_render_install_blocked_page($blocked);
 }
 
 #Composer autoload
 if (!file_exists(INCLUDES_PATH.'/vendor/autoload.php')) {
-    die('Compose autoload not found! Run `composer install` in the root directory of your SourceBans++ installation.');
+    sbpp_render_install_blocked_page('autoload');
 }
 require_once(INCLUDES_PATH.'/vendor/autoload.php');
 

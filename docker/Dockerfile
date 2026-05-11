@@ -41,9 +41,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 # Sensible PHP defaults for development: errors on, generous limits, opcache
 # revalidates on every request so file edits are picked up immediately.
-# auto_prepend_file normalizes HTTP_HOST so init.php's "delete install/"
-# check (which only matches a bare "localhost") doesn't trip when serving on
-# localhost:8080.
+# auto_prepend_file defines `SBPP_DEV_KEEP_INSTALL` (issue #1335 C1) so
+# init.php's install/ + updater/ presence guard skips during dev — the
+# bind-mounted worktree carries both directories from git.
 COPY docker/php/dev-prepend.php /usr/local/etc/php/dev-prepend.php
 RUN { \
         echo 'memory_limit=256M'; \
