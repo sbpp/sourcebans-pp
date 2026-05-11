@@ -706,24 +706,38 @@ Self-hoster install surface; runs BEFORE the panel's
 `web/init.php` bootstrap. Lifecycle (#1332):
 
 1. `web/install/index.php` — entry. Requires `init.php`
-   (paths-only), checks `vendor/autoload.php` for the recovery
-   short-circuit, then requires `bootstrap.php` (Composer +
-   Smarty) and dispatches via `includes/routing.php`.
+   (paths-only), runs the "panel already installed?" guard
+   (`already-installed.php`, #1335 C2), checks `vendor/autoload.php`
+   for the recovery short-circuit, then requires `bootstrap.php`
+   (Composer + Smarty) and dispatches via `includes/routing.php`.
 2. `web/install/init.php` — paths-only bootstrap. NEVER
    touches `vendor/`. Defines `IN_INSTALL`, `PANEL_ROOT`,
    `PANEL_INCLUDES_PATH`, etc. The recovery surface relies on
    this being load-bearing-free of Composer dependencies.
-3. `web/install/recovery.php` — pure inline HTML + CSS surface
+3. `web/install/already-installed.php` — pure inline HTML + CSS
+   "panel-takeover prevention" guard (#1335 C2). Loaded after
+   `init.php` (so `PANEL_ROOT` is in scope) but BEFORE the
+   vendor/-autoload check, so the surface is independent of
+   Composer for the same defensiveness reason as `recovery.php`.
+   `sbpp_install_is_already_installed(PANEL_ROOT)` returns true
+   when `config.php` exists; the rendering helper emits a 409 +
+   inline HTML page that links the operator back to `/` (already-
+   installed panels boot from there) and explains how to
+   reinstall (delete `config.php` first). Same shape as
+   `recovery.php` (no `Sbpp\…`, no Smarty, no `vendor/`); the
+   sister-guard on the panel runtime side is in `web/init.php`.
+4. `web/install/recovery.php` — pure inline HTML + CSS surface
    served when `vendor/` is missing. Serves `503` + the
    "download a release zip OR run `composer install`"
    instructions. Self-contained; never extend it with code
    that needs Composer (the whole point is that it works
-   without it).
-4. `web/install/bootstrap.php` — Composer autoload + the
+   without it). Direct visits with vendor present 302 to
+   `/install/` (#1335 m1).
+5. `web/install/bootstrap.php` — Composer autoload + the
    subset of the panel's eager-load chain the wizard needs
    (`Sbpp\Db\Database` only) + a Smarty instance configured
    with the panel's default theme dir.
-5. `web/install/pages/page.<N>.php` — per-step page handlers.
+6. `web/install/pages/page.<N>.php` — per-step page handlers.
    Each builds a `Sbpp\View\Install\Install*View` DTO and
    calls `Sbpp\View\Renderer::render($theme, $view)` against
    the install Smarty instance. Step → handler mapping lives
@@ -768,16 +782,44 @@ Conventions for new wizard work:
   CSRF tokens have nothing to bind to in the multi-user sense, and
   the pre-install attack surface is intrinsically limited (anyone
   who can reach `/install/` can also overwrite files via the same
-  upload channel they used to deploy the panel). The
-  install/-folder-still-exists guard in `web/init.php` blocks the
-  panel from booting if the operator doesn't delete `/install/`
-  after the wizard completes, so the window for this surface is
-  the install itself. Steps 3-6 instead defend against direct-POST
+  upload channel they used to deploy the panel). The window for
+  this surface is the install itself: two paired guards close
+  the loop on either side once the wizard finishes:
+   - **Panel runtime side** (`web/init.php`): the install/ +
+     updater/-presence guard refuses to boot if either directory is
+     on disk. Pre-#1335 this guard exempted `HTTP_HOST == "localhost"`,
+     which was a panel-takeover path on any panel reachable via a
+     `localhost` Host header (port-forward, SSH tunnel, ngrok,
+     Cloudflare Tunnel) — that exemption is gone (#1335 C1). The
+     replacement escape hatch is the explicit `SBPP_DEV_KEEP_INSTALL`
+     constant; see "Dev-only escape hatch" below.
+   - **Wizard side** (`web/install/index.php`): the
+     "panel already installed?" guard refuses to start the wizard
+     when `config.php` exists. Pre-#1335 the wizard had no such
+     gate — combined with C1 (or any operator who simply forgot to
+     delete `install/`), this was a complete panel-takeover path
+     (#1335 C2). The guard surface lives in
+     `web/install/already-installed.php` (pure inline HTML + CSS,
+     same shape as `recovery.php`).
+  Steps 3-6 instead defend against direct-POST
   bypass of step 2's input validation by re-running the same
   validation at the top of every handler — `sbpp_install_validate_prefix`
   on `prefix` (and step 6's `amx_prefix`) is the single source of
   truth, called eagerly so a forged hidden-field POST short-circuits
   to `?step=2` BEFORE any SQL runs (#1332 review).
+- **Dev-only escape hatch** (`SBPP_DEV_KEEP_INSTALL`): the docker
+  dev stack bind-mounts the worktree (which carries `install/` +
+  `updater/` from git) into the panel's web root, so the post-#1335
+  guard would refuse to boot the dev panel. The constant is the
+  explicit opt-in: defining it tells `sbpp_check_install_guard()`
+  to skip the presence check (the same way `IS_UPDATE` does for
+  the updater itself). The constant is loud-named so a
+  production-side define is visibly wrong; the panel's release
+  tarball has no path to set it; only `docker/php/dev-prepend.php`
+  (auto-prepended on every request inside the dev container via
+  `auto_prepend_file`) actually defines it. Production panels MUST
+  NOT define this constant. Reaching for `HTTP_HOST` magic on
+  either side of the guard is an anti-pattern (see Anti-patterns).
 
 ### Permission display surfaces
 
@@ -1228,14 +1270,74 @@ audit (#1207) locked in. New CTAs:
   The new wizard renders through typed `Sbpp\View\Install\Install*View`
   DTOs + Smarty templates under `web/themes/default/install/`,
   reuses the panel's `theme.css` design tokens, and uses vanilla JS
-  only where strictly necessary (the licence-accept checkbox guard
-  on step 1 + the auto-submit handoff form between step 2 and 3).
-  Re-introducing a separate JS bundle for the wizard is an
-  anti-pattern: the wizard has no logged-in user, no DB on step 1,
-  no `Config::get`, and no `$userbank` — it cannot use the panel's
-  chrome JS (`theme.js` / palette / command-K), and a parallel
+  only where strictly necessary (the license-accept checkbox guard
+  on step 1, the admin form's password-match + SteamID + email
+  shape checks on step 5, and the auto-submit handoff form between
+  step 2 and 3). Re-introducing a separate JS bundle for the wizard
+  is an anti-pattern: the wizard has no logged-in user, no DB on
+  step 1, no `Config::get`, and no `$userbank` — it cannot use the
+  panel's chrome JS (`theme.js` / palette / command-K), and a parallel
   bundle would diverge from the design-system tokens the wizard
   visually shares with the panel.
+- `$_SERVER['HTTP_HOST'] != "localhost"` exemption on the panel
+  runtime's install/ + updater/-presence guard → removed at #1335 C1.
+  Pre-fix `web/init.php` exempted any panel reachable via a
+  `localhost` Host header (port-forward, SSH tunnel, ngrok,
+  Cloudflare Tunnel) from the post-install / post-upgrade safety
+  check, which was a complete panel-takeover path — anyone hitting
+  the panel with a forged Host could re-run the wizard over the
+  live install (combined with #1335 C2's missing wizard-side gate)
+  and silently bypass the README's "delete `install/` directory"
+  step. The guard is now unconditional; the docker dev stack rides
+  the explicit `SBPP_DEV_KEEP_INSTALL` constant instead (defined
+  by `docker/php/dev-prepend.php` via `auto_prepend_file`). Don't
+  reach for `HTTP_HOST` magic on either side of the guard. Don't
+  add a `$_SERVER`-driven exemption ("trusted reverse proxy
+  network" etc.) — the guard's job is to refuse to boot when the
+  install/ + updater/ directories are still on disk; the only
+  legitimate dev workflow is the loud-named explicit-define
+  escape hatch. Regression guard:
+  `web/tests/integration/InstallGuardTest.php`.
+- Allowing the wizard to start over a panel where `config.php`
+  exists → removed at #1335 C2. Pre-fix anyone reaching `/install/`
+  after a successful wizard run could walk the entire flow again,
+  overwriting `config.php` (when writable), creating a new admin
+  account, and re-pointing the panel at a different DB —
+  panel-takeover. The wizard now refuses to start when
+  `config.php` exists in the panel root, surfacing the
+  `web/install/already-installed.php` page (pure inline HTML + CSS,
+  mirror of `recovery.php`'s contract) with a link to `/` and
+  instructions for the rare "I really do want to reinstall" path
+  (delete `config.php` first). Don't introduce a confirm-dialog
+  bypass (`?confirm-reinstall=1`, etc.) — the explicit
+  delete-`config.php` step is the only safe path because it
+  forces the operator to acknowledge the impact before the
+  wizard touches any state. Regression guard:
+  `web/tests/integration/InstallGuardTest.php`.
+- Bare-text `die('SourceBans++ is not installed')` /
+  `die('Please delete the install directory')` /
+  `die('Compose autoload not found')` in `web/init.php` →
+  removed at #1335 M1. The CTA on the wizard's done page sends
+  the operator straight to `/`, and these die paths emit a stark
+  white 200-response with no chrome / no link to docs / no
+  explanation — read like a server crash to a non-technical
+  self-hoster. The replacements live in `web/init-recovery.php`
+  (`sbpp_render_install_blocked_page()`); the missing-config
+  case redirects to `/install/` instead of dying. Anti-pattern:
+  reintroducing bare-text `die()` for any pre-bootstrap error
+  path in `web/init.php` — every such surface is an operator
+  failure mode that deserves chrome.
+- Surfacing the raw `PDOException` message on the wizard's
+  database step → removed at #1335 m4. Pre-fix the wizard
+  emitted `SQLSTATE[HY000] [1045] Access denied for user
+  'sourcebans'@'192.168.96.5' (using password: YES)` verbatim
+  — gibberish to non-DBAs, plus the IP is the panel-as-seen-by-DB
+  internal address (minor information disclosure). The
+  `sbpp_install_translate_pdo_error()` helper translates the
+  four common error codes (1045 / 2002 / 1049 / 1044) and falls
+  back to the raw message for unrecognised codes so debugging
+  stays possible. Anti-pattern: surfacing `$e->getMessage()`
+  directly to operator-facing error banners.
 - `openTab()` JS (and the matching `<button onclick="openTab(...)">`
   chrome on `core/admin_tabs.tpl`) → the JS handler was dropped with
   sourcebans.js at #1123 D1; the buttons did nothing and every pane
@@ -1593,7 +1695,10 @@ audit (#1207) locked in. New CTAs:
 | Keep the main sidebar sticky-pinned across the full document scroll (`<aside class="sidebar">`) | The structural half of #1271 lives in `web/themes/default/core/footer.tpl`: `<footer class="app-footer">` is rendered as the LAST flex column item of `<div class="main">`, INSIDE `<div class="app">`. `.sidebar`'s sticky containing block is `.app`; if the footer were a body-level sibling of `.app` (the pre-fix shape), `.app`'s height would fall short of the document by `footerHeight` and the sidebar would release at the bottom — brand cut off, on barely-tall pages (`docHeight - viewport ≤ footerHeight`, e.g. `?p=admin&c=audit` on the bare e2e seed) the entire scroll range would be in the release phase and the sidebar would track the scroll. Keeping the footer inside `.app` makes the sticky CB extend to the full document. The CSS half (`.sidebar { align-self: flex-start; }` from #1278) is defensive parity with `.admin-sidebar` and is RETAINED but not load-bearing on its own. The footer's `margin-top: auto` (`.app-footer` rule in `theme.css`) is the classic "sticky footer" pattern — pushes the footer to the bottom of `.main`'s flex column on short pages so the credit doesn't float halfway up the viewport. Regression guard: `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts` asserts strict `top===0` at scroll=`document.scrollHeight` on `?p=admin&c=bans` (the canonical tall page) AND on `?p=admin&c=audit` (the barely-tall page that historically presented the bug most visibly). |
 | Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |
 | Tell the browser to paint native UA surfaces (`<select>` dropdown panels, native scrollbars, `<input type="date|time|color">` pickers, autofill highlighting) in the matching scheme | `web/themes/default/css/theme.css` — the two `color-scheme` declarations on `:root` (`light`) and `html.dark` (`dark`) (#1309). Without these the chrome's dark tokens swap correctly for DOM-rendered surfaces, but anything painted in the browser's top-layer system UI ignores `html.dark` and renders light — most jarring on mobile where the native `<select>` picker full-screens. Regression guard: `web/tests/e2e/specs/a11y/color-scheme.spec.ts`. |
-| Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=licence, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. Shared step-handler helpers (prefix validation, raw-PDO probe before instantiating `\Database`, KeyValues quoting) live in `web/install/includes/helpers.php` (`sbpp_install_validate_prefix` / `sbpp_install_open_db` / `sbpp_install_kv_escape`) — required eagerly from `web/install/bootstrap.php` so every step page has them in scope without its own require. Every step (3-6) re-runs `sbpp_install_validate_prefix` at the top of its handler before any SQL substitution; step 6 also validates `amx_prefix` (operator input on that page itself). The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Step 1 is the only one with a per-page tail script (vanilla JS validating the licence-accept checkbox); the handoff template carries an inline auto-submit script. Navigation is plain HTML `<form action="?step=N">` everywhere else. Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
-| Recover from a missing `web/includes/vendor/` at install time | `web/install/recovery.php` is the self-contained "vendor/ missing" surface — pure inline HTML + CSS, NO Composer / Smarty / `Sbpp\…` dependency (#1332 C3). `web/install/index.php`'s lifecycle is paths-init (`init.php`) → vendor/-check (short-circuit to `recovery.php` if missing) → composer + Smarty bootstrap (`bootstrap.php`) → step dispatch (`includes/routing.php` → `pages/page.<N>.php`). The recovery surface is gated by `file_exists(PANEL_INCLUDES_PATH . '/vendor/autoload.php')` BEFORE any namespaced class is referenced. The release artifact (post-#1332 Workstream A) bundles `vendor/` so this surface is the safety net for git checkouts and partial uploads, never the happy path. |
+| Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=license, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. Shared step-handler helpers (prefix validation, raw-PDO probe before instantiating `\Database`, KeyValues quoting, friendly PDO error translation) live in `web/install/includes/helpers.php` (`sbpp_install_validate_prefix` / `sbpp_install_open_db` / `sbpp_install_kv_escape` / `sbpp_install_translate_pdo_error`) — required eagerly from `web/install/bootstrap.php` so every step page has them in scope without its own require. Every step (3-6) re-runs `sbpp_install_validate_prefix` at the top of its handler before any SQL substitution; step 6 also validates `amx_prefix` (operator input on that page itself). The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Steps with per-page tail scripts: step 1 (vanilla JS validating the license-accept checkbox), step 5 (#1335 M3: client-side validation for SteamID format + email shape + password match — saves the round-trip-with-wiped-passwords path on the common form-error case); the handoff template carries an inline auto-submit script. Navigation is plain HTML `<form action="?step=N">` everywhere else. Test-IDs follow `install-<step>-<field>` consistently (#1335 m3 standardised step 2's `install-db-*` shape onto the wider `install-database-*` pattern). Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
+| Recover from a missing `web/includes/vendor/` at install time | `web/install/recovery.php` is the self-contained "vendor/ missing" surface — pure inline HTML + CSS, NO Composer / Smarty / `Sbpp\…` dependency (#1332 C3). `web/install/index.php`'s lifecycle is paths-init (`init.php`) → C2 already-installed guard (`already-installed.php`, #1335) → vendor/-check (short-circuit to `recovery.php` if missing) → composer + Smarty bootstrap (`bootstrap.php`) → step dispatch (`includes/routing.php` → `pages/page.<N>.php`). The recovery surface is gated by `file_exists(PANEL_INCLUDES_PATH . '/vendor/autoload.php')` BEFORE any namespaced class is referenced. Direct visits with vendor present 302 to `/install/` instead of always emitting the 503 page (#1335 m1). The release artifact (post-#1332 Workstream A) bundles `vendor/` so this surface is the safety net for git checkouts and partial uploads, never the happy path. |
+| Display a friendly error page when the panel boots with `install/` still present, `updater/` still present, or `vendor/` missing | `web/init-recovery.php` (`sbpp_check_install_guard()` + `sbpp_render_install_blocked_page()`, #1335 M1). Pure inline HTML + CSS like `recovery.php`, runs upstream of Composer / Smarty. `web/init.php` calls the helper for all three scenarios; the missing-`config.php` case redirects to `/install/` instead of dying. Pre-#1335 these were three bare `die('plain text')` calls that read like a server crash to a non-technical operator who clicked the wizard's "Open the panel" CTA before completing post-install cleanup. Regression test: `web/tests/integration/InstallGuardTest.php`. |
+| Refuse to start the wizard over an already-installed panel (panel-takeover prevention) | `web/install/already-installed.php` (`sbpp_install_is_already_installed()` + `sbpp_install_render_already_installed_page()`, #1335 C2). Pure inline HTML + CSS, same shape as `recovery.php`. Loaded BEFORE the vendor/-autoload check from `install/index.php` so the guard is independent of Composer. Sister-guard to the runtime-side `web/init-recovery.php`; both key off `config.php` so the contract is symmetric. Regression test: `web/tests/integration/InstallGuardTest.php`. |
+| Translate raw `PDOException` connect errors into operator-friendly messages on the wizard's database step | `sbpp_install_translate_pdo_error()` in `web/install/includes/helpers.php` (#1335 m4). Pattern-matches the four error codes a non-technical operator is most likely to hit — 1045 (access denied), 2002 (host unreachable), 1049 (unknown database), 1044 (denied for user on database) — and emits a friendlier translation; falls back to the raw message for unrecognised codes so debugging stays possible. Pre-fix the wizard surfaced `SQLSTATE[HY000] [1045] Access denied for user 'sourcebans'@'192.168.96.5' (using password: YES)` verbatim, which is gibberish to non-DBAs and includes the panel-as-seen-by-DB internal IP (minor information disclosure). Regression test: `web/tests/integration/InstallGuardTest.php::testPdoErrorTranslationCoversCommonCodes`. |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |

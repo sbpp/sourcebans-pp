@@ -115,13 +115,16 @@ web/
 ├── configs/permissions/  web.json + sourcemod.json — bitmask flag definitions
 ├── tests/                PHPUnit (api/ for handlers, integration/ for flows)
 ├── bin/                  CLI tools (currently just generate-api-contract.php)
+├── init-recovery.php     Panel-runtime guard helpers + friendly error pages (#1335 C1 + M1)
 ├── install/              Install wizard self-hosters run on a fresh setup (#1332)
-│   ├── index.php             Entry point — paths-init → vendor/-check (recovery short-circuit) → bootstrap → dispatch
+│   ├── index.php             Entry point — paths-init → already-installed gate (#1335 C2) → vendor/-check (recovery short-circuit) → bootstrap → dispatch
 │   ├── init.php              Paths-only bootstrap (NEVER touches vendor/)
 │   ├── bootstrap.php         Composer + Smarty bootstrap (loaded only when vendor/ is present)
 │   ├── recovery.php          Self-contained "vendor/ missing" surface (pure inline HTML + CSS)
-│   ├── pages/page.<N>.php    Per-step page handlers (1=licence, …, 6=optional AMXBans import)
+│   ├── already-installed.php Self-contained "panel already installed" guard (#1335 C2 — pure inline HTML + CSS)
+│   ├── pages/page.<N>.php    Per-step page handlers (1=license, …, 6=optional AMXBans import)
 │   ├── includes/routing.php  Step → page-handler dispatch
+│   ├── includes/helpers.php  Shared step-handler helpers (prefix validation, raw-PDO probe, KV escape, PDO error translation)
 │   └── includes/sql/         struc.sql + data.sql — the schema source of truth
 ├── updater/              Per-version migrations existing installs run after upgrade
 ├── phpstan.neon          PHPStan level 5 + custom rules + dba bootstrap
@@ -148,8 +151,15 @@ Both scripts include `init.php` first, which performs identical bootstrap.
 
 1. Defines path constants (`ROOT`, `INCLUDES_PATH`, `TEMPLATES_PATH`, …)
    and the `IN_SB` sentinel that page files check.
-2. Bails if `config.php` is missing or if the `install/` or `updater/`
-   directories are present and the host isn't `localhost`.
+2. Redirects to `/install/` if `config.php` is missing (the
+   wizard is the canonical fresh-install path; #1335 M1 replaced
+   the bare-text `die()`). If `install/` or `updater/` are still
+   on disk after a successful install/upgrade, refuses to boot via
+   `web/init-recovery.php`'s `sbpp_check_install_guard()` —
+   unconditional in production, with a single explicit
+   `SBPP_DEV_KEEP_INSTALL` opt-in for the docker dev stack
+   (#1335 C1; the loopback / `HTTP_HOST` exemption was a
+   panel-takeover path and is gone).
 3. Loads Composer autoload (`includes/vendor/autoload.php`).
 4. Manually requires the auth + security + Database modules and
    initialises them. The classes themselves ARE PSR-4 namespaced
@@ -914,17 +924,23 @@ model:
 - **`docker/php/web-entrypoint.sh`** waits for MariaDB, renders
   `web/config.php` from env vars (only if absent), runs `composer install`
   if `vendor/` is empty, then `exec`s Apache.
-- **`docker/php/dev-prepend.php`** rewrites `HTTP_HOST` to `localhost`
-  for any loopback request so `init.php`'s install-folder guard accepts
-  the forwarded `:8080` port.
+- **`docker/php/dev-prepend.php`** defines `SBPP_DEV_KEEP_INSTALL`
+  on every request so `web/init-recovery.php`'s
+  `sbpp_check_install_guard()` skips the install/ + updater/-presence
+  refusal — the dev stack ships those directories on the bind mount
+  by design (the wizard isn't exercised locally; `docker/db-init/`
+  seeds the schema out of band). Pre-#1335 this file rewrote
+  `HTTP_HOST` to `localhost` to ride a `init.php` exemption that
+  was a panel-takeover path in production; the explicit
+  loud-named-define escape hatch replaced it.
 - **`docker/db-init/00-render-schema.sh`** runs once on first DB boot:
   substitutes `{prefix}` / `{charset}` in `struc.sql` + `data.sql`,
   loads them, and seeds an `admin` row with bcrypt of `admin`.
 - **`sbpp.sh`** is a thin wrapper around `docker compose` plus the
   quality gates and DB tasks. Run `./sbpp.sh -h` for the full menu.
 
-The seeded admin password and the `HTTP_HOST` shim are dev-only and
-documented as such in `docker-compose.yml`.
+The seeded admin password and the `SBPP_DEV_KEEP_INSTALL` constant are
+dev-only and documented as such in `docker-compose.yml`.
 
 ## Quality gates
 
@@ -1074,3 +1090,6 @@ but don't bulk-rewrite legacy code without justification.
 | `htmlspecialchars_decode` on JSON params   | Store raw UTF-8; Smarty auto-escape handles display (#1108) |
 | `DB_CHARSET = 'utf8'` (3-byte alias)       | `utf8mb4` end-to-end (panel PDO + plugin `SET NAMES`) (#1108)|
 | TinyMCE WYSIWYG for `dash.intro.text`      | Plain `<textarea>` + `Sbpp\Markup\IntroRenderer` (CommonMark, escape unsafe HTML) (#1113) |
+| `init.php`'s `HTTP_HOST != 'localhost'` exemption on the install/ + updater/-presence guard | Unconditional guard via `web/init-recovery.php`'s `sbpp_check_install_guard()`; docker dev rides explicit `SBPP_DEV_KEEP_INSTALL` constant (#1335 C1) |
+| Bare-text `die()` in `init.php` for missing-config / install-still-present / autoload-missing paths | Self-contained chrome via `web/init-recovery.php`'s `sbpp_render_install_blocked_page()` (mirror of `recovery.php`'s pure-inline-HTML contract) (#1335 M1) |
+| `/install/` walkable on a panel where `config.php` already exists | Wizard refuses to start via `web/install/already-installed.php`'s 409 surface (#1335 C2) |

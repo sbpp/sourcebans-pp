@@ -54,6 +54,13 @@ MariaDB, including shared hosting (cPanel, DirectAdmin, Plesk).
    to your web root (`public_html/`, `htdocs/`, `www/`, …) via your
    host's File Manager or any FTP/SFTP client. The plugin tarball
    goes onto your game server under `addons/sourcemod/`.
+
+   If the wizard's environment check (next step) flags any folder
+   as "Not writable", set permissions to `0775` (or `0777` on shared
+   hosts where you don't control the PHP user) on `web/demos/`,
+   `web/cache/`, `web/images/games/`, and `web/images/maps/`. Most
+   hosts let you do this through File Manager → Properties; over
+   SSH it's `chmod -R 0775 web/{demos,cache,images}`.
 4. **Run the installer.** Visit `https://your-panel-url/install/` in
    a browser and follow the wizard — license, database details,
    environment check, schema install, admin account, done.
