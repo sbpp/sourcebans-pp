@@ -100,15 +100,19 @@ jobs:
       # .zipignore, an exclusion flag, etc. — fails the build loudly
       # instead of shipping a broken artifact. Two anchor files:
       #   - includes/vendor/autoload.php — the file init.php gates on.
-      #   - includes/vendor/smarty/smarty/libs/Smarty.php — the highest-
+      #   - includes/vendor/smarty/smarty/src/Smarty.php — the highest-
       #     value transitive dep (templates won't render without it).
+      #     This is the file that backs `use Smarty\Smarty;` in
+      #     web/init.php via Smarty 5.x's PSR-4 autoload (`Smarty\` =>
+      #     `src/`); the legacy libs/Smarty.class.php is only a back-
+      #     compat shim for non-composer callers, which the panel isn't.
       - name: Verify vendor/ is bundled in the zip
         run: |
           pkg="sourcebans-pp-${GITHUB_REF_NAME}.webpanel-only"
           missing=0
           for f in \
               "${pkg}/includes/vendor/autoload.php" \
-              "${pkg}/includes/vendor/smarty/smarty/libs/Smarty.php"; do
+              "${pkg}/includes/vendor/smarty/smarty/src/Smarty.php"; do
               if ! unzip -l "${pkg}.zip" "${f}" >/dev/null 2>&1; then
                   echo "::error::Missing required artifact file in ${pkg}.zip: ${f}"
                   missing=1
