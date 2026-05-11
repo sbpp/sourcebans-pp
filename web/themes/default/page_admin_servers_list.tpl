@@ -73,9 +73,17 @@
                 live cells (status pill / map / players / hostname /
                 players bar) per the response from
                 Actions.ServersHostPlayers.
+
+                `.servers-grid` (theme.css, #1316) is shared with
+                `page_servers.tpl` so the public + admin Server
+                Management surfaces look consistent and a theme fork
+                can override the column min-width in one place. The
+                class supersedes the pre-#1316 inline
+                `grid-template-columns` style; see the theme.css
+                comment above the `.servers-grid` rule for the
+                breakpoint reasoning.
             *}
-            <div class="grid gap-4"
-                 style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))"
+            <div class="servers-grid"
                  data-testid="server-grid"
                  data-server-hydrate="auto"
                  data-trunchostname="70">

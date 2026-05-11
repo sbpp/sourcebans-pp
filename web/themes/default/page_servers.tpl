@@ -139,13 +139,19 @@
         data-opened-index threads through the deep-link auto-expand contract
         from page.servers.php's `?p=servers&s=<n>` handler — the helper
         flips the matching tile open once its hydration response lands.
+
+        `.servers-grid` (theme.css, #1316) is shared with
+        `page_admin_servers_list.tpl` so both surfaces look consistent
+        and a theme fork can override the column min-width in one
+        place. The class supersedes the pre-#1316 inline
+        `grid-template-columns` style; see the theme.css comment above
+        the `.servers-grid` rule for the breakpoint reasoning.
     *}
-    <div class="grid gap-4"
+    <div class="servers-grid"
          data-testid="servers-list"
          data-server-hydrate="auto"
          data-opened-index="{$opened_server}"
-         data-trunchostname="70"
-         style="grid-template-columns:repeat(auto-fill,minmax(20rem,1fr))">
+         data-trunchostname="70">
         {foreach $server_list as $server}
         <article class="card"
                  data-testid="server-tile"

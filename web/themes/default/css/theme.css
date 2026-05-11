@@ -1221,6 +1221,85 @@ details.queue-row > summary > .row-actions {
   }
 }
 
+/* ---- Server card grid (#1316 — public + admin Server Management) ----
+   Shared `grid-template-columns` for the two surfaces that render
+   `:prefix_servers` rows as A2S-hydrated cards:
+
+     - public servers list (page_servers.tpl)
+     - admin Server Management list (page_admin_servers_list.tpl)
+
+   The pre-#1316 inline `style="grid-template-columns:repeat(auto-fill,
+   minmax(20rem,1fr))"` packed cards into a 20rem (320px) minimum
+   column. Both pages cap the page wrapper at 1400px (the public
+   page via the inline `max-width:1400px` on its outer div, the
+   admin page via `.page-section`'s `max-width: 1400px`), so on EVERY
+   viewport >= 1400px the available content area was identical:
+   ~1352px after the 1.5rem padding. With a 320px min the auto-fill
+   packed 4 columns at ~338px each — same width as a phone, hostname
+   truncated, and the "31" 4K monitor" reporter saw zero benefit
+   from their wide display.
+
+   28rem (448px) min, with the 1rem grid gap factored into the
+   auto-fill packing math (N tracks fit when
+   `N * 448 + (N-1) * 16 <= content_area`, then each track expands
+   to `1fr`):
+     - 1280px laptop (~992px content area):      2 cols  ~488px each
+     - 1400px+ at the page cap (~1352px):        2 cols  ~668px each
+     - <=768px mobile drops to 1 col by the
+       sibling rule below                         single full-width card
+
+   That gives the hostname column ~348px (1280 laptop) up to ~528px
+   (1400+ desktop) after the 36px mod-icon / 80px status pill / 24px
+   gaps, comfortably fitting a 40-70 char hostname (e.g. "Skial |
+   2Fort | Vanilla | New York #5" or "Trade Plaza | 24/7 | No Random
+   Crits | 100 Player Slots | EU FAST") at the shared 14px font size.
+   Very long hostnames (>70 chars) still need the `truncate` class'
+   ellipsis + the `title=` tooltip the templates already carry —
+   that contract is unchanged by the bump.
+
+   The outer page-section cap at 1400px is intentionally NOT lifted
+   here: lifting it would make the cards "fill the screen" on a 31"
+   4K monitor (~3500px wide → 7 cols at ~500px each), but that's a
+   broader UX call that affects every Pattern A admin route and the
+   public banlist / commslist. The reported symptom (truncated
+   hostname) is fully addressed by the column-min bump alone; the
+   cap-lift is a follow-up if users want the cards to scale BEYOND
+   1400px content width.
+
+   Theme forks that want a different min-width can override the rule
+   wholesale — the class is named so a fork's CSS doesn't have to
+   match-the-inline-style-attribute-string. */
+.servers-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(28rem, 1fr));
+}
+@media (max-width: 768px) {
+  /* On mobile, force a single full-width card so the auto-fill
+     doesn't drop one card to the right of the viewport when the
+     content area happens to be 28-29rem wide (e.g. a tablet-portrait
+     between 768px and the column-min). The page-cap doesn't kick
+     in below 1400px, so the available width is whatever the
+     viewport gives us minus padding + sidebar — this guarantees
+     a phone-portrait viewer still sees ONE card per row.
+
+     `minmax(0, 1fr)`, NOT bare `1fr`. Bare `1fr` is shorthand for
+     `minmax(auto, 1fr)`, where the `auto` minimum resolves to the
+     grid item's min-content size. The server card's hostname /
+     IP:port descendants both carry `truncate` (`white-space:
+     nowrap`), so the card's min-content is the rendered width of
+     the longest single line — typically wider than a phone
+     viewport. Bare `1fr` would inflate the track to that
+     min-content size and the card would silently overflow the
+     viewport (~110px right-edge spill on a 390px iPhone-13
+     viewport with a `203.0.113.10:27015`-shape IP:port fallback).
+     `minmax(0, 1fr)` overrides the auto-minimum to 0 so the track
+     resolves to exactly 100% of the grid container, the
+     `truncate`-CSS handles the overflow per its existing
+     ellipsis contract, and the page never horizontally scrolls. */
+  .servers-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ---- Comms mobile card actions ----
    #1207 ADM-5: the comms list's mobile card is split into two siblings
    — a clickable `.ban-card__summary` anchor that filters by SteamID,
