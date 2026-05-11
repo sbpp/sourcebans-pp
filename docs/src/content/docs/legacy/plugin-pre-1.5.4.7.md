@@ -1,6 +1,10 @@
 ---
 title: Plugin — upgrading from version <= 1.5.4.7
 description: One-off cleanup steps when upgrading the SourceMod plugin half from a pre-1.6 SourceBans++ install.
+# Astro 5 strips dots from filename-derived slugs (the canonical path
+# would otherwise be `/legacy/plugin-pre-1547/`, which loses the
+# version intent). Pin the slug explicitly so the URL reads naturally.
+slug: legacy/plugin-pre-1.5.4.7
 sidebar:
   order: 2
 ---
