@@ -152,13 +152,26 @@ $fsTargets = [
     'mod icon folder'      => $panelRoot . 'images/games',
     'map image folder'     => $panelRoot . 'images/maps',
 ];
+// Issue #1335 M2: pre-fix the detail string for a non-writable
+// folder was just `'Not writable: <path>'` with no remediation hint
+// — combined with the README never mentioning the writable-folder
+// requirement (#1335 m7), a non-technical operator on shared
+// hosting could stall here with no actionable next step. The
+// remediation hint mirrors the README's signpost line so the two
+// surfaces stay in sync. Plain text (no inline HTML) because the
+// template renders `{$row.detail}` with Smarty's default
+// auto-escape on — the wider hint formatting lives in the
+// page_requirements.tpl per-row body.
+$writableHint = ' — set permissions to 0775 (or 0777 on shared'
+    . ' hosting where you don\'t control the PHP user) via your'
+    . ' hosting File Manager, FTP client, or chmod.';
 foreach ($fsTargets as $label => $path) {
     $writable = is_writable($path);
     $exists   = is_dir($path);
     $status   = $exists && $writable ? 'ok' : 'err';
     $detail   = !$exists
-        ? 'Missing: ' . $path
-        : ($writable ? 'Writable' : 'Not writable: ' . $path);
+        ? 'Missing: ' . $path . $writableHint
+        : ($writable ? 'Writable' : 'Not writable: ' . $path . $writableHint);
     $fsRows[] = [
         'label'    => ucfirst($label),
         'required' => 'Writable',

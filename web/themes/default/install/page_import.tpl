@@ -11,6 +11,22 @@
     install to import from.
 </p>
 
+{*
+    Issue #1335 m6: pre-fix this form had no field-level helper
+    text — same fields as page 2's database form but without the
+    "default for MySQL is 3306" / "usually localhost" hints. The
+    AMXBans-specific top-of-form hint points operators at
+    `addons/amxmodx/configs/sql.cfg` (the canonical source for
+    these values on a SourceMod gameserver running AMXBans).
+*}
+<div class="install-alert install-alert--info"
+     role="status"
+     data-testid="install-import-source-hint"
+     style="margin-bottom:1.25rem">
+    Look in <code>addons/amxmodx/configs/sql.cfg</code> on your
+    AMXBans gameserver for the source values to paste below.
+</div>
+
 {if $error !== ''}
     <div class="install-alert install-alert--error"
          role="alert"
@@ -57,6 +73,7 @@
                        placeholder="localhost"
                        data-testid="install-amx-server"
                        required>
+                <p class="text-xs text-muted">Usually <code>localhost</code> on shared hosting.</p>
             </div>
 
             <div>
@@ -70,6 +87,7 @@
                        value="{$val_amx_port}"
                        data-testid="install-amx-port"
                        required>
+                <p class="text-xs text-muted">Default for MySQL / MariaDB is <code>3306</code>.</p>
             </div>
 
             <div>
@@ -82,6 +100,7 @@
                        autocomplete="username"
                        data-testid="install-amx-username"
                        required>
+                <p class="text-xs text-muted">The DB user that owns the AMXBans tables (read access is enough).</p>
             </div>
 
             <div>
@@ -92,6 +111,7 @@
                        type="password"
                        autocomplete="new-password"
                        data-testid="install-amx-password">
+                <p class="text-xs text-muted">Leave blank if your AMXBans DB user has no password set.</p>
             </div>
 
             <div>
@@ -103,6 +123,7 @@
                        value="{$val_amx_database}"
                        data-testid="install-amx-database"
                        required>
+                <p class="text-xs text-muted">The AMXBans schema you want to import bans from.</p>
             </div>
 
             <div>
@@ -112,8 +133,11 @@
                        name="amx_prefix"
                        type="text"
                        value="{$val_amx_prefix}"
+                       maxlength="9"
+                       pattern="[A-Za-z0-9_]+"
                        data-testid="install-amx-prefix"
                        required>
+                <p class="text-xs text-muted">Up to 9 letters / digits / underscores. AMXBans default: <code>amx</code>.</p>
             </div>
         </div>
     </div>

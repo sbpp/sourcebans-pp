@@ -100,3 +100,67 @@ function sbpp_install_kv_escape(string $value): string
 {
     return str_replace(['\\', '"'], ['\\\\', '\\"'], $value);
 }
+
+/**
+ * Translate a PDOException into a human-readable error message for
+ * the wizard's step 2 connect form (#1335 m4).
+ *
+ * Pre-fix the wizard surfaced the raw PDO message verbatim:
+ *
+ *   Could not connect to the database: SQLSTATE[HY000] [1045] Access
+ *   denied for user 'sourcebans'@'192.168.96.5' (using password: YES)
+ *
+ * `SQLSTATE[HY000] [1045]` is gibberish to non-DBAs, and the IP
+ * address is the panel-as-seen-by-DB internal address — minor
+ * information disclosure. The helper pattern-matches the four
+ * error codes a non-technical operator is most likely to hit
+ * (1045 access denied, 2002 host unreachable, 1049 unknown DB,
+ * 1044 denied for user on database) and emits a friendlier
+ * translation.
+ *
+ * Unrecognised codes fall through to the raw message so
+ * debugging stays possible — the wizard loses nothing by
+ * printing the original on the cases the helper doesn't know
+ * how to translate.
+ *
+ * The MySQL driver-specific error code lives in the second slot
+ * of `$e->errorInfo` (see https://www.php.net/manual/en/pdo.errorinfo.php
+ * — element 1 is the driver-specific code; element 0 is the
+ * SQLSTATE letter code).
+ */
+function sbpp_install_translate_pdo_error(
+    \PDOException $e,
+    string $server,
+    string $username,
+    string $database,
+): string {
+    // PDO sometimes leaves errorInfo NULL on driver-level connect
+    // failures (the driver never got far enough to populate it);
+    // fall back to parsing the message string in those cases.
+    $code = is_array($e->errorInfo ?? null) ? (int) ($e->errorInfo[1] ?? 0) : 0;
+    if ($code === 0) {
+        // Pull the bracketed driver code out of the message:
+        // `SQLSTATE[HY000] [1045] Access denied …` -> 1045.
+        if (preg_match('/\[(\d{3,5})\]/', $e->getMessage(), $m) === 1) {
+            $code = (int) $m[1];
+        }
+    }
+
+    return match ($code) {
+        1045 => 'Could not connect: the database username or password is wrong. '
+            . 'Double-check the values you entered above match the credentials '
+            . 'you set when you created the database.',
+        2002 => 'Could not reach the database server at "' . $server . '". '
+            . 'Verify the hostname and port — most shared hosts use '
+            . '"localhost" with port 3306. If your host gave you a different '
+            . 'value, paste it exactly as printed.',
+        1049 => 'Connected, but the database "' . $database . '" doesn\'t exist. '
+            . 'Create it via your hosting control panel (phpMyAdmin / cPanel '
+            . '"MySQL Databases" / DirectAdmin / Plesk) before continuing.',
+        1044 => 'Connected, but the user "' . $username . '" doesn\'t have '
+            . 'permission to use the database "' . $database . '". '
+            . 'Grant the user full privileges on that database via your '
+            . 'hosting control panel.',
+        default => 'Could not connect to the database: ' . $e->getMessage(),
+    };
+}

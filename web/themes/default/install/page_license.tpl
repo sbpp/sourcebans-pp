@@ -6,9 +6,9 @@
 {include file="install/_chrome.tpl"}
 
 <p class="lead">
-    To use this web panel you have to read and accept the licence
+    To use this web panel you have to read and accept the license
     below. If you don't agree, you can't install the panel.
-    A plain-language explanation of the licence lives at
+    A plain-language explanation of the license lives at
     <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/"
        target="_blank" rel="noopener">creativecommons.org</a>.
 </p>
@@ -22,10 +22,19 @@
         </div>
     </div>
     <div class="card__body">
-        <textarea class="input"
+        {*
+            Issue #1335 m5: pre-fix this used `class="input"` +
+            `rows="20"`, but theme.css's `.input` rule pins
+            `height: 2.25rem` and the rows attribute is ignored —
+            the textarea rendered at ~5 lines instead of the ~20
+            the form intends. Switch to `class="textarea"` (which
+            sets `height: auto`) and force the visible height with
+            `min-height` inline so the surface matches the
+            content's volume.
+        *}
+        <textarea class="textarea"
                   readonly
-                  rows="20"
-                  style="width:100%;font-family:var(--font-mono,monospace);font-size:0.8rem;line-height:1.5"
+                  style="width:100%;min-height:24rem;font-family:var(--font-mono,monospace);font-size:0.8rem;line-height:1.5"
                   data-testid="install-license-text">{$license_text}</textarea>
     </div>
 </div>
@@ -42,7 +51,7 @@
                value="1"
                data-testid="install-license-accept"
                required>
-        <span>I have read and accept the licence above.</span>
+        <span>I have read and accept the license above.</span>
     </label>
 
     <div class="install-actions">

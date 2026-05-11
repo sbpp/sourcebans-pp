@@ -32,78 +32,78 @@
         <h2>Database connection</h2>
         <div class="install-grid">
             <div>
-                <label class="label" for="install-db-server">Hostname</label>
+                <label class="label" for="install-database-server">Hostname</label>
                 <input class="input"
-                       id="install-db-server"
+                       id="install-database-server"
                        name="server"
                        type="text"
                        value="{$val_server}"
                        placeholder="localhost"
-                       data-testid="install-db-server"
+                       data-testid="install-database-server"
                        required>
                 <p class="text-xs text-muted">Usually <code>localhost</code> on shared hosting.</p>
             </div>
 
             <div>
-                <label class="label" for="install-db-port">Port</label>
+                <label class="label" for="install-database-port">Port</label>
                 <input class="input"
-                       id="install-db-port"
+                       id="install-database-port"
                        name="port"
                        type="number"
                        min="1"
                        max="65535"
                        value="{$val_port}"
-                       data-testid="install-db-port"
+                       data-testid="install-database-port"
                        required>
                 <p class="text-xs text-muted">Default for MySQL / MariaDB is <code>3306</code>.</p>
             </div>
 
             <div>
-                <label class="label" for="install-db-username">Username</label>
+                <label class="label" for="install-database-username">Username</label>
                 <input class="input"
-                       id="install-db-username"
+                       id="install-database-username"
                        name="username"
                        type="text"
                        value="{$val_username}"
                        autocomplete="username"
-                       data-testid="install-db-username"
+                       data-testid="install-database-username"
                        required>
             </div>
 
             <div>
-                <label class="label" for="install-db-password">Password</label>
+                <label class="label" for="install-database-password">Password</label>
                 <input class="input"
-                       id="install-db-password"
+                       id="install-database-password"
                        name="password"
                        type="password"
                        value="{$val_password}"
                        autocomplete="new-password"
-                       data-testid="install-db-password">
+                       data-testid="install-database-password">
                 <p class="text-xs text-muted">Leave blank if your DB user has no password set.</p>
             </div>
 
             <div>
-                <label class="label" for="install-db-database">Database name</label>
+                <label class="label" for="install-database-database">Database name</label>
                 <input class="input"
-                       id="install-db-database"
+                       id="install-database-database"
                        name="database"
                        type="text"
                        value="{$val_database}"
-                       data-testid="install-db-database"
+                       data-testid="install-database-database"
                        required>
                 <p class="text-xs text-muted">Must already exist &mdash; the wizard fills it.</p>
             </div>
 
             <div>
-                <label class="label" for="install-db-prefix">Table prefix</label>
+                <label class="label" for="install-database-prefix">Table prefix</label>
                 <input class="input"
-                       id="install-db-prefix"
+                       id="install-database-prefix"
                        name="prefix"
                        type="text"
                        value="{$val_prefix}"
                        maxlength="9"
                        pattern="[A-Za-z0-9_]+"
-                       data-testid="install-db-prefix"
+                       data-testid="install-database-prefix"
                        required>
                 <p class="text-xs text-muted">Up to 9 letters / digits / underscores. Default: <code>sb</code>.</p>
             </div>
@@ -114,13 +114,13 @@
         <h2>Optional &mdash; Steam &amp; admin email</h2>
         <div class="install-grid">
             <div>
-                <label class="label" for="install-db-apikey">Steam API key</label>
+                <label class="label" for="install-database-apikey">Steam API key</label>
                 <input class="input"
-                       id="install-db-apikey"
+                       id="install-database-apikey"
                        name="apikey"
                        type="text"
                        value="{$val_apikey}"
-                       data-testid="install-db-apikey">
+                       data-testid="install-database-apikey">
                 <p class="text-xs text-muted">
                     Powers profile lookups + the Steam OpenID login.
                     Get one from
@@ -131,13 +131,13 @@
             </div>
 
             <div>
-                <label class="label" for="install-db-email">SourceBans email</label>
+                <label class="label" for="install-database-email">SourceBans email</label>
                 <input class="input"
-                       id="install-db-email"
+                       id="install-database-email"
                        name="sb-email"
                        type="email"
                        value="{$val_email}"
-                       data-testid="install-db-email">
+                       data-testid="install-database-email">
                 <p class="text-xs text-muted">
                     Sender address for password resets and ban
                     notifications. Can be configured later.

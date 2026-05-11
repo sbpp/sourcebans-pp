@@ -21,6 +21,27 @@ declare(strict_types=1);
 // `/index.php` or `/api.php` request hits without vendor/. This file
 // only handles the `/install/` entry; init.php's surface is upstream
 // of every other panel route.
+//
+// Issue #1335 m1: when this file is hit directly (curious user,
+// bookmarked URL, link share) on a panel where vendor/ IS present,
+// the legacy contract was "always emit the 503 missing-vendor page"
+// — the dispatcher in `index.php` only `require_once`'s us in the
+// missing-vendor case, but a direct `/install/recovery.php` hit
+// bypasses that. Self-check vendor/ here so a stray bookmark
+// resolves to the wizard instead of a misleading 503.
+//
+// `PANEL_INCLUDES_PATH` is defined by `install/init.php` when this
+// file is required from `install/index.php`. On a direct hit
+// `init.php` hasn't run, so we compute the path ourselves and skip
+// the constant-define entirely (the request resolves with a 302
+// before any wizard code runs).
+$sbppPanelIncludes = defined('PANEL_INCLUDES_PATH')
+    ? PANEL_INCLUDES_PATH
+    : dirname(__DIR__) . '/includes';
+if (file_exists($sbppPanelIncludes . '/vendor/autoload.php')) {
+    header('Location: /install/');
+    exit;
+}
 
 http_response_code(503);
 header('Content-Type: text/html; charset=utf-8');

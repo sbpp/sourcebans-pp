@@ -65,7 +65,15 @@ if ($posted) {
             ));
             return;
         } catch (\PDOException $e) {
-            $error = 'Could not connect to the database: ' . $e->getMessage();
+            // Issue #1335 m4: pre-fix this surfaced the raw PDO
+            // message — `SQLSTATE[HY000] [1045] Access denied for
+            // user 'sourcebans'@'192.168.96.5' (using password:
+            // YES)` — which is gibberish to non-DBAs and the IP is
+            // the panel-as-seen-by-DB internal address (minor
+            // information disclosure). Translate the common error
+            // codes; fall back to the raw message for
+            // unrecognised codes so debugging stays possible.
+            $error = sbpp_install_translate_pdo_error($e, $server, $username, $database);
         }
     }
 }
