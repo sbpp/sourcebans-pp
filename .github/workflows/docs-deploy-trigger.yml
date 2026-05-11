@@ -13,22 +13,18 @@
 #     PATs work too, but the fine-grained variant is strictly narrower
 #     and the right default.) Max expiry is one year — set a calendar
 #     reminder to rotate.
-#   - Repo SECRET   `DOCS_DEPLOY_PAT`     = the token value.
-#   - Repo VARIABLE `DOCS_DEPLOY_ENABLED` = any non-empty value (e.g.
-#     `true`). This is the feature-flag the job-level `if:` guard
-#     below checks. We can't reference `secrets.*` directly in a
-#     job-level `if:` (GitHub Actions context-availability rule), so
-#     the operator opts in by setting the paired VARIABLE explicitly.
+#   - Repo SECRET `DOCS_DEPLOY_PAT` = the token value.
 #
-# Until `vars.DOCS_DEPLOY_ENABLED` is set, the `trigger` job below is
-# skipped via the job-level `if:` guard — every push to `docs/**` shows
-# up as a "Skipped" run in the Actions tab (grey icon) instead of a
-# red-failing run. This stops the original anti-pattern (#1339-followup):
-# the dispatch action errors out on missing credentials, the workflow
-# goes red, and an operator who hasn't done the cutover yet sees a
-# stream of confusing failures. The deploy shell in sbpp.github.io also
-# has a `workflow_dispatch` trigger as a manual fallback while the PAT
-# is pending.
+# Until `DOCS_DEPLOY_PAT` is set, the dispatch step below is skipped via
+# its `if: secrets.DOCS_DEPLOY_PAT != ''` guard — every push to `docs/**`
+# shows up as a green run with the dispatch step marked "Skipped",
+# instead of red-failing on a missing credential. This stops the
+# original anti-pattern (#1339-followup) where the dispatch hard-erred
+# and an operator who hasn't done the cutover yet sees a stream of
+# confusing failures.
+#
+# The deploy shell in sbpp.github.io also has a `workflow_dispatch`
+# trigger as a manual fallback while the PAT is pending.
 
 name: docs-deploy-trigger
 
@@ -54,20 +50,6 @@ jobs:
     name: Dispatch docs-changed event
     runs-on: ubuntu-24.04
     permissions: {}
-    # Skip the job entirely when the PAT isn't configured yet. Unset
-    # repo variables resolve to empty string in expressions, so this is
-    # the canonical "feature-flag a job" shape. Once
-    # `vars.DOCS_DEPLOY_ENABLED` is set, the guard becomes transparent
-    # and the job runs every push.
-    #
-    # Why a paired VARIABLE rather than checking the SECRET directly:
-    # GitHub Actions doesn't expose the `secrets` context in job-level
-    # `if:` conditions (only `github`, `inputs`, `needs`, `vars` are
-    # available there). Step-level `if:` does see `secrets`, but
-    # putting the guard at the step level means the job still spins up
-    # a runner just to skip every step inside it — wasteful and noisy.
-    # The variable IS the operator's "I've done the cutover" signal.
-    if: vars.DOCS_DEPLOY_ENABLED != ''
 
     steps:
       # The dispatched workflow in sbpp.github.io listens for
@@ -75,7 +57,14 @@ jobs:
       # commit SHA and ref so the deploy job can pin its sourcebans-pp
       # checkout to the exact commit that fired the dispatch (race
       # guard for back-to-back pushes).
+      #
+      # Step-level `if:` evaluates against `secrets.*` (job-level `if:`
+      # does not), so we gate the dispatch directly on the PAT being
+      # configured — no separate feature-flag variable needed. When
+      # `DOCS_DEPLOY_PAT` is unset, the step is skipped and the run is
+      # green-with-skipped instead of red-failing.
       - name: Dispatch repository_dispatch into sbpp.github.io
+        if: secrets.DOCS_DEPLOY_PAT != ''
         env:
           GH_TOKEN: ${{ secrets.DOCS_DEPLOY_PAT }}
         run: |
