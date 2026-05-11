@@ -49,8 +49,16 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_DOCS = dirname(__dirname);
-const OUT_INSTALL = join(REPO_DOCS, 'src', 'assets', 'auto', 'install');
-const OUT_PANEL = join(REPO_DOCS, 'src', 'assets', 'auto', 'panel');
+// Default output target is this checkout's docs/src/assets/auto/. CI uses
+// CAPTURE_OUT_OVERRIDE to redirect into the PR-head working tree while
+// running the trusted capture script from main (security split, see
+// .github/workflows/docs-screenshots-capture.yml). When set, the value is
+// the directory that REPLACES `<docs>/src/assets/auto/` — install/ and
+// panel/ subdirectories are appended.
+const OUT_BASE =
+  process.env.CAPTURE_OUT_OVERRIDE ?? join(REPO_DOCS, 'src', 'assets', 'auto');
+const OUT_INSTALL = join(OUT_BASE, 'install');
+const OUT_PANEL = join(OUT_BASE, 'panel');
 
 const PANEL_URL = process.env.PANEL_URL ?? 'http://localhost:8080';
 const STEAM_API_KEY =
@@ -93,26 +101,27 @@ const PANEL_ROUTES = [
     name: 'panel-04-servers',
     url: '/index.php?p=servers',
     waitFor: 'main',
-    todo:
-      'Re-snap once the public servers list shows seeded entries (the bare e2e DB has no servers; ./sbpp.sh db-seed populates them).',
   },
   {
     name: 'panel-05-admin-dashboard',
     url: '/index.php?p=admin',
     waitFor: 'main',
-    todo:
-      'Requires a logged-in admin session — adjust the routing below to log in BEFORE this route.',
   },
 ];
 
+// Install routes pruned to the URLs the URL-only approach actually reaches
+// cold. Steps 3-6 of the wizard are POST-handoff-gated (each step
+// re-validates the prior step's prefix input and bounces back to step 2 if
+// the operator deep-links in), so they need a script that drives the form
+// chain end-to-end. Tracked as a follow-up to issue #1333; until that
+// lands, the install gallery is just the licence + DB-details + admin-
+// create paint (the three step-1 reachable surfaces).
 /** @type {CaptureRoute[]} */
 const INSTALL_ROUTES = [
   {
     name: 'install-01-licence',
     url: '/install/?step=1',
     waitFor: 'form',
-    todo:
-      "Wizard's licence-accept checkbox must be ticked before the next-step button enables.",
   },
   {
     name: 'install-02-database-details',
@@ -120,32 +129,11 @@ const INSTALL_ROUTES = [
     waitFor: 'form',
   },
   {
-    name: 'install-03-requirements',
-    url: '/install/?step=3',
-    waitFor: 'main',
-    todo:
-      "Step 3 re-validates the prefix from step 2 — if accessed cold it bounces to step 2. Drive via the wizard's POST handoff.",
-  },
-  {
-    name: 'install-04-schema-apply',
-    url: '/install/?step=4',
-    waitFor: 'main',
-    todo:
-      'Same handoff caveat as step 3; only reachable once steps 1-3 have committed their inputs.',
-  },
-  {
     name: 'install-05-admin-create',
     url: '/install/?step=5',
     waitFor: 'form',
     todo:
-      'Form pre-populates with whatever step 4 wrote to config.php.',
-  },
-  {
-    name: 'install-06-amxbans-import',
-    url: '/install/?step=6',
-    waitFor: 'main',
-    todo:
-      'Optional step — the wizard normally finishes at step 5 unless the operator opts into AMXBans import.',
+      'Form pre-populates with whatever step 4 wrote to config.php; deep-link works once steps 2-4 have committed.',
   },
 ];
 

@@ -1,0 +1,223 @@
+# docs-screenshots-capture — boot the dev stack, capture installer +
+# panel screenshots, and commit the diff back to the PR branch.
+#
+# SECURITY MODEL — read this before changing the workflow.
+#
+# `pull_request_target` runs with the upstream repo's GITHUB_TOKEN
+# regardless of where the PR comes from. A naive checkout of the PR
+# head followed by `npm ci` would let any contributor exfil that token
+# through a postinstall script or a tweaked capture.mjs. The defenses
+# below — split-checkout, label gate, fork rejection, label-strip on
+# push — are load-bearing; do not relax them without a paired threat
+# model in the PR description.
+#
+#   1. The trusted code surface (the capture script itself, its
+#      package-lock.json, and the Playwright dep tree) is checked out
+#      from the PR's BASE branch (effectively `main`) into `trusted/`.
+#      `npm ci` runs there — postinstall scripts come from main, never
+#      from the PR diff.
+#
+#   2. The PR head is checked out into a separate `pr-head/` directory.
+#      We use it for two and only two things: (a) `docker compose up`
+#      so the panel under test reflects the PR's UI changes, and (b)
+#      as the destination for the captured PNG diff (the auto-commit
+#      action pushes from there). NO node code from this checkout is
+#      executed on the runner.
+#
+#   3. The capture script reads `CAPTURE_OUT_OVERRIDE` and writes its
+#      PNG outputs into `pr-head/docs/src/assets/auto/`. The auto-
+#      commit action then pushes from that working directory. Because
+#      the *script* is the trusted-from-main copy, a malicious PR
+#      can't redirect the writes elsewhere or run a different binary.
+#
+#   4. The `safe-to-screenshot` label is the maintainer ack. The
+#      `unlabel-on-synchronize` job below removes it on every new
+#      push so a maintainer must re-apply after reviewing each new
+#      commit. Bare opens (no label) and fork PRs short-circuit out.
+#
+#   5. Fork PRs are rejected via the
+#      `head.repo.full_name == github.repository` check. Auto-commit
+#      back into a fork PR via `pull_request_target` is the canonical
+#      "compromise the upstream maintainer's token" shape; if the
+#      contribution genuinely needs screenshot regeneration, push the
+#      branch into the upstream repo first and the workflow will run.
+#
+# Required repo configuration BEFORE this workflow can succeed:
+#
+#   - The `safe-to-screenshot` label must exist (one-time setup).
+#     Maintainers apply it after reviewing the PR diff; the
+#     `unlabel-on-synchronize` job auto-removes it on every push so
+#     re-application is explicit per commit set.
+#
+# Pair with: .github/workflows/docs-screenshots-build.yml (the
+# untrusted-side parse / install verification that runs on every PR).
+
+name: docs-screenshots-capture
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize, reopened]
+  workflow_dispatch:
+
+# Serialize per-PR so two pushes in quick succession don't race on the
+# same set of PNGs.
+concurrency:
+  group: docs-screenshots-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  # Strip the `safe-to-screenshot` label whenever a new commit lands so
+  # a maintainer must re-apply after reviewing the new code. Without
+  # this, a contributor could land a benign-looking PR, get the label
+  # applied, and then push a malicious follow-up commit that runs with
+  # the originally-granted ack.
+  unlabel-on-synchronize:
+    name: Strip safe-to-screenshot on push
+    if: github.event_name == 'pull_request_target' && github.event.action == 'synchronize'
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove safe-to-screenshot label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X DELETE \
+            "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/labels/safe-to-screenshot" \
+            || echo "label was not present; nothing to remove"
+
+  capture:
+    name: Capture installer + panel screenshots
+    # Three gates, all required:
+    #   1. The PR carries `safe-to-screenshot` (maintainer ack), OR
+    #      the workflow was triggered manually via workflow_dispatch.
+    #   2. The PR is from the same repo (no forks — see security note
+    #      above).
+    #   3. (Implicit) The unlabel-on-synchronize job ran first when
+    #      this is a `synchronize` event; the label gate then catches
+    #      the now-stripped state.
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request_target' &&
+       contains(github.event.pull_request.labels.*.name, 'safe-to-screenshot') &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      # TRUSTED checkout — the capture script + lockfile come from the
+      # PR's base branch (effectively `main`). All `npm ci` postinstall
+      # hooks run against this tree, NEVER against the PR head.
+      - name: Checkout trusted code from base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha || github.sha }}
+          path: trusted
+          # We run scripts from this tree but never push from it; no
+          # need to persist the checkout token.
+          persist-credentials: false
+
+      # PR HEAD checkout — we need this for `docker compose up` (the
+      # panel under test) and as the destination for captured PNGs
+      # (the auto-commit action pushes from here). No JS/PHP code from
+      # this tree is executed on the runner; the PHP runs inside the
+      # docker `web` container.
+      #
+      # Canonical fork-PR checkout shape (per the auto-commit action's
+      # docs): explicit `repository` + `ref: head_ref` + persist creds.
+      # The `if` gate above already rejects fork PRs, so in practice
+      # `head.repo.full_name == github.repository`, but keeping the
+      # canonical shape means a future change to the gate (e.g. opt-in
+      # fork support) doesn't silently break the push.
+      - name: Checkout PR head (docker stack + screenshot output dir)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.head_ref || github.ref_name }}
+          path: pr-head
+          persist-credentials: true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: trusted/docs/package-lock.json
+
+      # Install deps + the chromium browser from the TRUSTED tree.
+      # Postinstall scripts in any package come from the trusted
+      # lockfile — no PR-side override possible.
+      - name: Install docs deps + Playwright chromium (trusted tree)
+        working-directory: trusted/docs
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps chromium
+
+      # Boot the stack from the PR head — docker-compose / Dockerfile
+      # changes need to flow through here. The runner's privileged
+      # token is NOT mounted into the container; the PHP code runs
+      # sandboxed by docker.
+      - name: Bring up the dev stack (PR-head docker-compose)
+        working-directory: pr-head
+        run: docker compose up -d --wait
+
+      - name: Wait for the panel
+        run: |
+          for i in {1..30}; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/index.php?p=login || true)
+            if [[ "$code" == "200" ]]; then
+              echo "panel ready after attempt $i"
+              exit 0
+            fi
+            echo "attempt $i: HTTP $code, retrying"
+            sleep 3
+          done
+          echo "panel never came up" >&2
+          (cd pr-head && docker compose logs --tail=200 web db)
+          exit 1
+
+      # Populate the dev DB with realistic synthetic data so the
+      # post-install panel routes (Servers, Banlist, Dashboard)
+      # screenshot the populated state, not first-run empty
+      # placeholders. The seeder runs INSIDE the docker `web`
+      # container (sbpp.sh shells in via `docker compose exec`),
+      # so it's sandboxed from the runner's filesystem.
+      - name: Seed dev DB
+        working-directory: pr-head
+        run: ./sbpp.sh db-seed
+
+      # Run the TRUSTED capture script. Outputs land in the PR head's
+      # docs/src/assets/auto/ via CAPTURE_OUT_OVERRIDE so the auto-
+      # commit step picks them up below.
+      - name: Capture screenshots
+        working-directory: trusted/docs
+        env:
+          STEAM_API_KEY: '00000000000000000000000000000000'
+          PANEL_URL: 'http://localhost:8080'
+          CAPTURE_OUT_OVERRIDE: ${{ github.workspace }}/pr-head/docs/src/assets/auto
+        run: npm run capture
+
+      - name: Tear down stack
+        if: always()
+        working-directory: pr-head
+        run: docker compose down -v
+
+      # Commit the captured PNG diff back to the PR branch from the
+      # PR-head working directory. The action no-ops when nothing
+      # changed under the file_pattern.
+      - name: Commit captured screenshots back to PR branch
+        if: github.event_name != 'workflow_dispatch'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          repository: pr-head
+          commit_message: |
+            docs: refresh auto-captured screenshots (#1333)
+
+            Generated by .github/workflows/docs-screenshots-capture.yml
+            after a maintainer applied the `safe-to-screenshot` label.
+          file_pattern: 'docs/src/assets/auto/**'
+          commit_user_name: 'sbpp-docs-bot'
+          commit_user_email: 'sbpp-docs-bot@users.noreply.github.com'

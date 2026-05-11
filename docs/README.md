@@ -80,26 +80,50 @@ PANEL_URL=http://localhost:8189 npm run capture
 
 ## CI
 
-Three workflows under `.github/workflows/` cover the docs site:
+Four workflows under `.github/workflows/` cover the docs site:
 
 | Workflow | Trigger | What it does |
 | -------- | ------- | ------------ |
 | `docs-build.yml` | PRs + main pushes touching `docs/**` | Runs `npm run build`. Uploads the built `dist/` as an artifact. |
 | `docs-deploy-trigger.yml` | main pushes touching `docs/**` | Fires a `repository_dispatch` (event_type=`docs-changed`) into `sbpp/sbpp.github.io`, which kicks the actual GitHub Pages deploy. Requires the `DOCS_DEPLOY_APP_ID` repo variable + `DOCS_DEPLOY_APP_KEY` repo secret to be configured (one-time cutover step). |
-| `docs-screenshots.yml` | PRs labelled `affects-ui` + `workflow_dispatch` | Boots the dev stack, runs `npm run capture`, commits any PNG deltas back to the PR branch via `stefanzweifel/git-auto-commit-action`. |
+| `docs-screenshots-build.yml` | PRs touching `docs/scripts/capture.mjs` or `docs/package*.json` | Sandboxed verification: `npm ci` + `node --check scripts/capture.mjs`. No secrets, no write permissions; runs the standard `pull_request` token. Catches "did the capture script still parse" on every PR. |
+| `docs-screenshots-capture.yml` | PRs labelled `safe-to-screenshot` (same-repo only) + `workflow_dispatch` | Boots the dev stack, seeds the DB, runs `npm run capture` from a TRUSTED-FROM-MAIN checkout, commits PNG deltas back to the PR branch. |
 
-### The `affects-ui` label
+### Screenshot capture security model
 
-When a PR changes UI under `web/install/` or the panel chrome that's
-screenshotted in docs, **apply the `affects-ui` label** so
-`docs-screenshots.yml` regenerates the captures and commits them
-back to your branch. Alternatively, run `npm run capture` locally and
-commit the diff yourself.
+`docs-screenshots-capture.yml` runs `pull_request_target` with
+`contents: write` so it can write the regenerated PNGs back to the PR
+branch. To keep that token out of contributor reach, the workflow:
+
+1. **Splits the checkout.** The trusted code surface (the capture
+   script + its package-lock.json) is checked out from the PR's base
+   branch (effectively `main`). The PR head is checked out into a
+   separate directory that's used only for `docker compose up` and as
+   the screenshot output destination — no JS/PHP code from the PR
+   head runs on the runner.
+2. **Gates on the `safe-to-screenshot` label.** A maintainer applies
+   the label after reviewing the PR's docker / install / panel
+   changes; the workflow's `if:` guard short-circuits without it.
+3. **Auto-strips the label on every push.** A
+   `unlabel-on-synchronize` job removes `safe-to-screenshot` whenever
+   a new commit lands so the maintainer must re-apply after reviewing
+   the new code. A label applied to a benign-looking opening commit
+   doesn't grant blanket consent for a follow-up commit.
+4. **Refuses fork PRs.** The `head.repo.full_name == github.repository`
+   check rejects fork-originated PRs at the workflow level — pushing
+   the branch into the upstream repo first is the supported path for
+   contributions that need screenshot regeneration.
+
+Maintainers: when you apply `safe-to-screenshot`, eyeball the PR's
+diff under `docker/`, `web/install/`, the `web/themes/default/`
+templates, and `docs/scripts/capture.mjs` first. Anything that could
+exfil environment data or escape the docker sandbox is the threat
+model; everything else is fine.
 
 The label needs to exist in the repo first — until that happens (one-
 time repo setup), the workflow runs but its `if:` gate silently
 returns false. Create the label via the repo's Issues → Labels page
-(or `gh label create affects-ui --description "Triggers docs-screenshots.yml" --color 'EA580C'`).
+(or `gh label create safe-to-screenshot --description "Maintainer ack to run docs-screenshots-capture.yml" --color 'D73A4A'`).
 
 ## Authoring conventions
 

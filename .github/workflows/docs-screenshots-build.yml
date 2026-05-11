@@ -1,0 +1,58 @@
+# docs-screenshots-build — sandboxed verification job for the screenshot
+# capture script.
+#
+# Cadence: every PR that touches the capture script, its package.json
+# manifest, or this workflow.
+#
+# Why split: the matching capture workflow (docs-screenshots-capture.yml)
+# runs `pull_request_target` with `contents: write` so it can boot the
+# dev stack and commit screenshots back to the PR branch. That workflow
+# is gated behind a maintainer-applied `safe-to-screenshot` label and
+# refuses fork PRs because anything else would let a contributor exfil
+# the GITHUB_TOKEN through a postinstall hook or a tweaked capture.mjs.
+# This job covers the routine "does the script still parse / install"
+# loop on every PR, in the standard `pull_request` sandbox (no secrets,
+# no write permissions, no privileged token).
+#
+# Pair with: .github/workflows/docs-screenshots-capture.yml.
+
+name: docs-screenshots-build
+
+on:
+  pull_request:
+    paths:
+      - 'docs/scripts/capture.mjs'
+      - 'docs/package.json'
+      - 'docs/package-lock.json'
+      - '.github/workflows/docs-screenshots-build.yml'
+      - '.github/workflows/docs-screenshots-capture.yml'
+
+jobs:
+  build:
+    name: Verify capture script
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: docs
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: docs/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # `node --check` parses the script without executing it. The
+      # capture script imports @playwright/test at module scope, which
+      # is installed by `npm ci` above, so the parse + import-resolution
+      # walk is the cheap end-to-end gate.
+      - name: Parse capture script
+        run: node --check scripts/capture.mjs

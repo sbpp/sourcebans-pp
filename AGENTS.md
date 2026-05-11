@@ -59,7 +59,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
 | Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus `UPGRADING.md` if it's a breaking change between releases |
 | Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
-| Touch any UI under `web/install/` or the panel chrome that's screenshotted in docs | Apply the `affects-ui` label to your PR so `docs-screenshots.yml` regenerates the captures, OR run `npm run capture` in `docs/` locally and commit the PNG diff |
+| Touch any UI under `web/install/` or the panel chrome that's screenshotted in docs | Run `npm run capture` in `docs/` locally and commit the PNG diff. Maintainers can alternatively apply the `safe-to-screenshot` label after reviewing the PR diff so `docs-screenshots-capture.yml` regenerates the captures (see `docs/README.md` for the security model + label-strip-on-push contract) |
 | Change panel theme tokens — palette, geometry, semantic colors — in `web/themes/default/css/theme.css` (the `:root` block or `html.dark` overrides) | Mirror the change in `docs/src/styles/sbpp.css` so the docs site stays visually consistent with the panel. Same PR. (Fonts intentionally not mirrored — see #1333 §2.) |
 
 Quick rules:
@@ -76,9 +76,12 @@ Quick rules:
 - If your change affects a self-hoster — what they install, how they
   upgrade, what they configure, what error message they see — the docs
   change ships in the same PR. The docs are part of the codebase now;
-  treat them like code. Screenshots are auto-captured (UI-affecting PRs
-  get the `affects-ui` label), and panel theme-token changes mirror into
-  `docs/src/styles/sbpp.css` so the two surfaces stay visually aligned.
+  treat them like code. Run `npm run capture` in `docs/` locally to
+  regenerate screenshots when the install / panel chrome moved (or wait
+  for a maintainer to apply the `safe-to-screenshot` label and let
+  `docs-screenshots-capture.yml` do it from CI), and panel theme-token
+  changes mirror into `docs/src/styles/sbpp.css` so the two surfaces
+  stay visually aligned.
 
 ## Dev commands (`./sbpp.sh`)
 
