@@ -1,0 +1,27 @@
+{
+  "name": "sourcebans-pp-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SourceBans++ documentation site (Astro + Starlight). Source of truth for sbpp.github.io.",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "check": "astro check",
+    "capture": "node scripts/capture.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.30.0",
+    "astro": "^5.0.0",
+    "astro-mermaid": "^1.0.4",
+    "sharp": "^0.33.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.0",
+    "@playwright/test": "^1.47.0",
+    "typescript": "^5.5.0"
+  }
+}

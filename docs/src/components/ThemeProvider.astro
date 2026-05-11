@@ -1,0 +1,44 @@
+---
+// Override of Starlight's default ThemeProvider.
+//
+// Starlight's stock provider falls back to `prefers-color-scheme: dark`
+// when localStorage has no `starlight-theme` entry, which leaves users
+// arriving from a dark-mode OS on the docs site one paint behind the
+// panel — the panel boots LIGHT regardless of system preference and the
+// user opts into dark via the topbar toggle. Mirror that here so the two
+// surfaces feel like one product on first paint (#1333 §2).
+//
+// The script below is inlined into <head> with `is:inline` so it runs
+// before paint. It only touches behavior when the user has not already
+// opted into a theme; once `starlight-theme` is set in localStorage,
+// the user's choice wins forever.
+---
+
+<script is:inline>
+  (function () {
+    try {
+      var key = 'starlight-theme';
+      var stored = localStorage.getItem(key);
+      var theme;
+      if (stored === 'light' || stored === 'dark' || stored === 'auto') {
+        theme = stored;
+      } else {
+        // Default to light to match the panel's first-paint behavior.
+        // The user can still toggle to dark — that lands as a 'dark'
+        // string in localStorage and this branch never fires again.
+        theme = 'light';
+      }
+      var resolved =
+        theme === 'auto'
+          ? matchMedia('(prefers-color-scheme: dark)').matches
+            ? 'dark'
+            : 'light'
+          : theme;
+      document.documentElement.dataset.theme = resolved;
+    } catch (_) {
+      // localStorage unavailable (private mode in older Safari, etc.).
+      // Fall through to Starlight's later runtime — the page will paint
+      // in whatever Starlight's defaults pick.
+    }
+  })();
+</script>
