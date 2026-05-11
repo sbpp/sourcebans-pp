@@ -20,12 +20,31 @@
     </div>
 {/if}
 
+{*
+    Issue #1335 M3 review: pre-review the form carried `novalidate`,
+    which switched off the browser's pre-submit checks for
+    `required` / `minlength` / `pattern` / `type="email"` and
+    shifted the load to the page-tail JS. That violated AGENTS.md's
+    install-wizard rule that "the form's native `required` /
+    `pattern` attributes must be the load-bearing gate, with JS as
+    the UX polish" — and the JS only covered SteamID + email +
+    password-match, so empty fields and short passwords still
+    bounced server-side and wiped both passwords on re-render.
+
+    Post-review: native attrs are load-bearing again. The browser
+    surfaces popovers for empty / short / pattern-mismatch / type-
+    mismatch cases before our submit handler runs; the handler
+    only covers cross-field password matching (the one validation
+    native HTML can't express). Server-side stays the load-bearing
+    gate for JS-disabled clients, but the round-trip-with-wiped-
+    passwords path is now off the happy path for every input
+    failure.
+*}
 <form method="post"
       action="?step=5"
       id="install-admin-form"
       data-testid="install-admin-form"
-      autocomplete="off"
-      novalidate>
+      autocomplete="off">
     <input type="hidden" name="postd"    value="1">
     <input type="hidden" name="server"   value="{$val_server}">
     <input type="hidden" name="port"     value="{$val_port}">
@@ -127,77 +146,43 @@
 <script>
 (function () {
     'use strict';
-    // Issue #1335 M3: pre-fix, every server-side validation failure
-    // (bad SteamID format, bad email, mismatched passwords, short
-    // password) wiped both password fields on the re-render. The
-    // password values can't be echoed back into the template
-    // (`autocomplete="new-password"` blocks browser autofill, and
+    // Issue #1335 M3 (post-review): the form is now native-validated
+    // (no `novalidate`), so the browser handles empty / short /
+    // pattern-mismatch / type-mismatch cases before this handler
+    // runs. The one validation native HTML can't express on its
+    // own is cross-field password matching (`pass1.value ===
+    // pass2.value`), so that's all this handler covers.
+    //
+    // The reason this still matters: pre-fix, every server-side
+    // validation failure wiped both password fields on the
+    // re-render (the values can't be echoed back into the template
+    // — `autocomplete="new-password"` blocks browser autofill, and
     // bouncing them through a hidden input would leak them through
-    // any rendered HTML the operator's browser caches). Shifting the
-    // common validations client-side keeps the round-trip-with-
-    // wiped-passwords path off the happy path. Server-side validation
-    // (page.5.php) stays as the load-bearing gate for the cases
-    // where JS is disabled.
+    // any rendered HTML the operator's browser caches). Catching
+    // the mismatch client-side keeps that round-trip off the
+    // happy path. Server-side `page.5.php` stays the load-bearing
+    // gate for JS-disabled clients.
     var form  = document.getElementById('install-admin-form');
     var pass1 = document.getElementById('install-admin-pass1');
     var pass2 = document.getElementById('install-admin-pass2');
-    var steam = document.getElementById('install-admin-steam');
-    var email = document.getElementById('install-admin-email');
-    if (!form || !pass1 || !pass2 || !steam || !email) return;
-
-    var STEAM_RE = /^STEAM_[01]:[01]:[0-9]+$/;
+    if (!form || !pass1 || !pass2) return;
 
     form.addEventListener('submit', function (e) {
-        var failed = false;
-
-        // Mismatched passwords — pin the original v2.0 client-side
-        // contract. setCustomValidity + reportValidity surfaces the
-        // browser's native validation popover anchored to the input.
+        // Native validation has already cleared every other field
+        // (required filled, minlength met, pattern matches, type
+        // shape valid). If we land here, the only remaining failure
+        // mode is the password-match check.
         if (pass1.value !== pass2.value) {
             pass2.setCustomValidity('Passwords do not match.');
             pass2.reportValidity();
-            failed = true;
+            e.preventDefault();
         } else {
             pass2.setCustomValidity('');
         }
-
-        // SteamID shape — server-side check on page.5.php is the
-        // backstop, but failing it client-side avoids the wiped-
-        // passwords re-render. Allow STEAM_0:X:NNNNNNN and
-        // STEAM_1:X:NNNNNNN (the page handler normalises STEAM_1
-        // to STEAM_0 before insert).
-        if (!failed && !STEAM_RE.test(steam.value)) {
-            steam.setCustomValidity('Steam ID must be in STEAM_0:X:NNNNNNN format.');
-            steam.reportValidity();
-            failed = true;
-        } else {
-            steam.setCustomValidity('');
-        }
-
-        // Email shape — `<input type="email">` already gates this
-        // before submit, but call out explicitly so the JS contract
-        // doesn't depend on the browser implementing the type. The
-        // `validity.typeMismatch` check is the standard way to ask
-        // the browser "is this a syntactically valid email?".
-        if (!failed && email.validity.typeMismatch) {
-            email.setCustomValidity('Email address is invalid.');
-            email.reportValidity();
-            failed = true;
-        } else {
-            email.setCustomValidity('');
-        }
-
-        if (failed) {
-            e.preventDefault();
-        }
     });
 
-    // Clear the custom validity on input so a corrected value
-    // doesn't keep firing the popover. Each field gets its own
-    // listener so cross-field clears (e.g. fixing the SteamID
-    // doesn't reset the password validity) stay independent.
+    // Clear the custom validity on input so a corrected pass2
+    // doesn't keep firing the popover after the user fixes it.
     pass2.addEventListener('input', function () { pass2.setCustomValidity(''); });
-    steam.addEventListener('input', function () { steam.setCustomValidity(''); });
-    email.addEventListener('input', function () { email.setCustomValidity(''); });
 })();
 </script>
