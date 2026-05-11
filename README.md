@@ -268,19 +268,13 @@ cf-analytics → next sync → the panel build fails until a matching
 extractor + README bullet are added.
 
 ## Upgrade
-*If you ran the installer, this step is unnecessary.*
 
-Upgrading from 1.6/1.7, requires a new [configuration value](/blob/php81/web/config.php.template#L43) to be set. To do this, please run the `upgrade.php` script.
-Once done, delete it, as it may output sensitive information.
+For upgrade guidance at each major version boundary, see
+[`UPGRADING.md`](UPGRADING.md).
 
 #### Smarty
-#### Updated Smarty version dropped support for the `{php}` tag. 
-Custom themes must use the new [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/php81/web/includes/SmartyCustomFunctions.php#L54) tag.
-
-#### JWT Update
-*If you ran the installer or upgrade file, this step is unecessary.* \
-JWT secrets are no longer stored in the database as they are generated using a secret key. 
-
+Updated Smarty version dropped support for the `{php}` tag.
+Custom themes must use the new [`{load_template}`](web/includes/SmartyCustomFunctions.php) tag.
 
 ### Compiling SourceMod plugins
 Follow the Guide '[Compiling SourceMod Plugins](https://wiki.alliedmods.net/Compiling_SourceMod_Plugins)' from the official SourceMod Wiki

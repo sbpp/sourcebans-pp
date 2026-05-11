@@ -72,7 +72,6 @@ web/
 ├── config.php.template   Template the installer + dev entrypoint render
 ├── exportbans.php        Public ban-list export (CSV/XML)
 ├── getdemo.php           Demo file download
-├── upgrade.php           Manual schema-upgrade tool
 │
 ├── api/handlers/         JSON API: one file per topic, _register.php wires them
 ├── pages/                Page handlers (procedural .php, included by build())

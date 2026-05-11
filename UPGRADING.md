@@ -170,3 +170,39 @@ PHP-FPM, `fastcgi_finish_request()` closes the user's TCP socket
 remains N ms regardless of telemetry. cURL has 3-second connect /
 5-second total timeouts and a flapping endpoint is silent — telemetry
 can never hard-fail a panel page or a JSON API request.
+
+## JWT secret on pre-1.7 installs (#903, v2.0.0)
+
+Versions prior to 1.7 didn't carry an `SB_SECRET_KEY` define in
+`config.php` — the JWT signing secret moved out of the database into
+`config.php` in 1.7. v1.7's standalone `web/upgrade.php` script
+generated the secret and appended it to `config.php`; that script
+was removed at #903 because it wrote the `define(...)` line outside
+of `<?php ?>` whenever the operator's `config.php` ended with a
+closing `?>`, leaking the raw define text to anyone hitting the
+panel root. 1.7 is over three years old at v2.0.0, so the carrying
+cost of the buggy script outweighed fixing it in place.
+
+If you're upgrading from a **pre-1.7** install (no `SB_SECRET_KEY`
+define in `config.php`), set one manually before running the v2.0
+updater:
+
+1. Generate a random base64 secret on the host:
+
+   ```sh
+   openssl rand -base64 47 | tr -d '\n'
+   ```
+
+2. Add a line to `web/config.php` (before any closing `?>` your file
+   may carry):
+
+   ```php
+   define('SB_SECRET_KEY', '<paste the secret here>');
+   ```
+
+3. Visit `web/updater/index.php` to apply the v2.0 schema deltas.
+
+Installs that already ran the original `upgrade.php` against a
+1.6/1.7 panel have the secret set and need no action here. Fresh
+installs have it written for them by the installer wizard at
+`web/install/pages/page.5.php`.
