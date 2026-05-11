@@ -1,0 +1,107 @@
+---
+// Override of Starlight's default Footer component.
+//
+// The legacy section (`docs/src/content/docs/legacy/`) is intentionally
+// excluded from the main sidebar (#1333 §5: "Legacy section is excluded
+// from the main sidebar but reachable from a footer link and from the
+// live `Updating` page"). Without this override, there would be no
+// chrome-level affordance to discover legacy content — the only path
+// in would be the inline link from the Updating page.
+//
+// This file re-renders Starlight's stock per-page footer (EditLink +
+// LastUpdated + Pagination + the optional Built-with-Starlight kudos)
+// and appends a small "Legacy docs" affordance below it. We pull the
+// stock sub-components straight from Starlight's `virtual:` namespace
+// rather than re-implementing them so a Starlight upgrade that adds
+// new footer affordances picks them up automatically.
+
+import type { Props } from '@astrojs/starlight/props';
+
+import EditLink from 'virtual:starlight/components/EditLink';
+import LastUpdated from 'virtual:starlight/components/LastUpdated';
+import Pagination from 'virtual:starlight/components/Pagination';
+import config from 'virtual:starlight/user-config';
+import { Icon } from '@astrojs/starlight/components';
+---
+
+<footer class="sl-flex">
+	<div class="meta sl-flex">
+		<EditLink {...Astro.props} />
+		<LastUpdated {...Astro.props} />
+	</div>
+	<Pagination {...Astro.props} />
+
+	<div class="sbpp-footer-extra sl-flex">
+		<a class="sbpp-legacy-link sl-flex" href="/legacy/">
+			<Icon name="information" size="1em" />
+			<span>Legacy docs (older SourceBans++ upgrade paths)</span>
+		</a>
+	</div>
+
+	{
+		config.credits && (
+			<a class="kudos sl-flex" href="https://starlight.astro.build">
+				<Icon name="starlight" /> {Astro.locals.t('builtWithStarlight.label')}
+			</a>
+		)
+	}
+</footer>
+
+<style>
+	footer {
+		flex-direction: column;
+		gap: 1.5rem;
+	}
+	.meta {
+		gap: 0.75rem 3rem;
+		justify-content: space-between;
+		flex-wrap: wrap;
+		margin-top: 3rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.meta > :global(p:only-child) {
+		margin-inline-start: auto;
+	}
+
+	.kudos {
+		align-items: center;
+		gap: 0.5em;
+		margin: 1.5rem auto;
+		font-size: var(--sl-text-xs);
+		text-decoration: none;
+		color: var(--sl-color-gray-3);
+	}
+	.kudos :global(svg) {
+		color: var(--sl-color-orange);
+	}
+	.kudos:hover {
+		color: var(--sl-color-white);
+	}
+
+	/* The "Legacy docs" affordance lives below the per-page footer
+	   chrome on every page. Subdued styling — it's a discovery hook,
+	   not a primary CTA — but always visible so users on the very last
+	   page in a section can still get to /legacy/ without scrolling
+	   back to the sidebar. */
+	.sbpp-footer-extra {
+		justify-content: center;
+		margin-top: 1.25rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--sl-color-hairline);
+	}
+	.sbpp-legacy-link {
+		align-items: center;
+		gap: 0.45em;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		text-decoration: none;
+	}
+	.sbpp-legacy-link:hover,
+	.sbpp-legacy-link:focus-visible {
+		color: var(--sl-color-text-accent);
+	}
+	.sbpp-legacy-link :global(svg) {
+		color: var(--sl-color-gray-4);
+	}
+</style>

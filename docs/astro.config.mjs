@@ -41,11 +41,16 @@ export default defineConfig({
       // a visitor lands. The panel boots light; matching first-paint
       // experience is the whole point of the override (#1333 §2).
       customCss: ['./src/styles/sbpp.css'],
-      // Override the Starlight `ThemeProvider` so the implicit default
-      // is 'light' (Starlight ships dark-leaning). Self-hosters see the
-      // same first paint as the panel; the toggle still works.
+      // Component overrides:
+      //   - ThemeProvider: matches the panel's "default to system, paint
+      //     light when JS isn't available" first-paint contract.
+      //   - Footer: appends a "Legacy docs" affordance below Starlight's
+      //     stock per-page footer chrome. The legacy section is
+      //     intentionally excluded from the main sidebar (#1333 §5);
+      //     the footer link is the chrome-level discovery hook.
       components: {
         ThemeProvider: './src/components/ThemeProvider.astro',
+        Footer: './src/components/Footer.astro',
       },
       head: [
         {
@@ -132,11 +137,10 @@ export default defineConfig({
             { label: 'Common inquiries', slug: 'faq/inquiries' },
           ],
         },
-        {
-          label: 'Legacy',
-          collapsed: true,
-          items: [{ label: 'About legacy docs', slug: 'legacy' }],
-        },
+        // Legacy section deliberately omitted from the main sidebar per
+        // #1333 §5 — content is unmaintained and discovery happens via
+        // the Footer override (src/components/Footer.astro) plus the
+        // inline link from the Updating page.
       ],
     }),
   ],

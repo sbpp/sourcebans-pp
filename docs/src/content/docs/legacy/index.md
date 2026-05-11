@@ -6,9 +6,8 @@ sidebar:
 ---
 
 :::caution
-These pages cover legacy SourceBans++ versions that are no longer
-actively maintained. **Use these only if you cannot upgrade to the
-current major.** They will be pruned in a future cleanup pass.
+Documentation in this section refers to versions that are no longer
+maintained. The information may be inaccurate or out of date.
 :::
 
 ## What lives here
@@ -40,12 +39,13 @@ For the **current** install / upgrade / troubleshooting flow:
 
 ## Pages
 
-The legacy section is empty for now. Future material will land here
-as upgrade pathways for very old versions are documented or
-re-discovered.
+- [Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/) — the
+  one-off cleanup pass when migrating the SourceMod plugin half off a
+  pre-1.6 install (delete the old `sourcebans.smx` / `sourcecomms.smx`
+  / etc., let the new `sbpp_*.smx` consolidated plugins take over).
 
 If you're trying to upgrade an install older than 1.6.x and nothing
-in [Updating](/updating/) covers your starting point, drop into our
-[Discord](https://discord.gg/4Bhj6NU) `#help-support` channel — we'll
-walk you through it and add a page here if your situation is likely
-to recur.
+in [Updating](/updating/) or the page above covers your starting
+point, drop into our [Discord](https://discord.gg/4Bhj6NU)
+`#help-support` channel — we'll walk you through it and add a page
+here if your situation is likely to recur.

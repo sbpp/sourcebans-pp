@@ -85,25 +85,11 @@ sidebar lights up, the upgrade landed.
 
 ## Plugin — upgrading from version <= 1.5.4.7
 
-The pre-1.6 plugin shipped multiple separate `.smx` files; current
-releases consolidate them under the `sbpp_*` prefix. Clean those up
-during the upgrade:
-
-1. Upload and overwrite all contents in `game` to your root game
-   directory.
-
-2. Reconfigure the config files in
-   `addons/sourcemod/configs/sourcebans/`.
-
-3. **Delete the legacy plugins**:
-   - `sourcebans.smx`
-   - `sourcecomms.smx`
-   - `sbchecker.smx`
-   - `sb_admcfg.smx`
-   - `SourceSleuth.smx`
-
-4. Restart the server and verify the new `sbpp_*.smx` plugins are
-   loaded via `sm plugins list`.
+Pre-1.6 plugin installs need a one-off cleanup pass to remove the
+legacy `sourcebans.smx` / `sourcecomms.smx` / `sbchecker.smx` /
+`sb_admcfg.smx` / `SourceSleuth.smx` files before the new
+`sbpp_*.smx` consolidated plugins take over. The full step-by-step
+lives in [Legacy → Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/).
 
 If you're upgrading across multiple major versions, the
 [Legacy](/legacy/) section catalogs the older one-off upgrade quirks.
