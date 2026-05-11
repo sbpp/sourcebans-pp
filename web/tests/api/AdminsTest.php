@@ -135,6 +135,110 @@ final class AdminsTest extends ApiTestCase
         $this->assertSnapshot('admins/remove_owner_blocked', $env);
     }
 
+    /**
+     * #1352 — `ureason` is appended to the audit-log entry when supplied.
+     *
+     * The reason is OPTIONAL on this surface (vs required for `bans.unban`
+     * / `comms.unblock`) — admin deletion is a lifecycle action, not a
+     * moderation flip. The handler just trims and conditionally appends
+     * the canonical "Reason: …" suffix; the previous test
+     * (`testRemoveDeletesRow`) covers the no-reason path so the audit
+     * body stays bare.
+     */
+    public function testRemoveAppendsReasonToAuditLog(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'ReasonTarget',
+            'steam' => 'STEAM_0:0:9988',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int)$add['data']['aid'];
+
+        $env = $this->api('admins.remove', ['aid' => $aid, 'ureason' => 'left the team']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertNull($this->row('admins', ['aid' => $aid]));
+
+        $message = $this->latestLogMessage('Admin Deleted');
+        $this->assertSame(
+            'Admin (ReasonTarget) has been deleted. Reason: left the team',
+            $message
+        );
+    }
+
+    /**
+     * #1352 — empty / whitespace `ureason` falls through to the bare audit
+     * body. Keeps the audit log readable on the no-JS path (where the
+     * dialog wouldn't run) and on the dispatcher-missing fallback (where
+     * the JS would skip the param entirely).
+     */
+    public function testRemoveOmitsReasonSuffixWhenEmpty(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'EmptyReason',
+            'steam' => 'STEAM_0:0:9989',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int)$add['data']['aid'];
+
+        // Whitespace-only reason: the trim path strips it back to '' and
+        // the audit suffix is omitted.
+        $env = $this->api('admins.remove', ['aid' => $aid, 'ureason' => "   \n\t   "]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $message = $this->latestLogMessage('Admin Deleted');
+        $this->assertSame(
+            'Admin (EmptyReason) has been deleted.',
+            $message
+        );
+    }
+
+    /**
+     * #1352 — omitted `ureason` (no key in the params bag) is treated the
+     * same as empty. Pins the back-compat for the snapshot regression
+     * (`remove_success.json`) and the `data-fallback-href` no-JS path
+     * which doesn't surface the reason field at all.
+     */
+    public function testRemoveAcceptsMissingReasonParam(): void
+    {
+        $this->loginAsAdmin();
+        $add = $this->api('admins.add', $this->adminParams([
+            'name'  => 'NoParam',
+            'steam' => 'STEAM_0:0:9990',
+        ]));
+        $this->assertTrue($add['ok'], json_encode($add));
+        $aid = (int)$add['data']['aid'];
+
+        $env = $this->api('admins.remove', ['aid' => $aid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+
+        $message = $this->latestLogMessage('Admin Deleted');
+        $this->assertSame(
+            'Admin (NoParam) has been deleted.',
+            $message
+        );
+    }
+
+    /**
+     * Pull the most recent audit-log message for a given title, ordered
+     * by lid (auto-increment, monotonic). The {@see ApiTestCase::row()}
+     * helper has no ORDER BY surface — adding an `ORDER BY` arg there
+     * would touch every existing caller — so the lookup is inlined.
+     */
+    private function latestLogMessage(string $title): string
+    {
+        $pdo  = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'SELECT message FROM `%s_log` WHERE `title` = ? ORDER BY lid DESC LIMIT 1',
+            DB_PREFIX
+        ));
+        $stmt->execute([$title]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $this->assertIsArray($row, 'Expected an audit-log entry titled "' . $title . '"');
+        return (string) $row['message'];
+    }
+
     public function testEditPermsRequiresAid(): void
     {
         $this->loginAsAdmin();

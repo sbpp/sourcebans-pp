@@ -44,8 +44,23 @@
  * @typedef {Object} ApiAdminsGeneratePasswordResponse
  */
 /**
+ * Delete an admin row + their server group memberships (#1352).  Modern JSON
+ * twin of the v1.x sourcebans.js `RemoveAdmin()` helper (deleted at #1123 D1)
+ * — `page_admin_admins_list.tpl` wires the trash-can button through
+ * `Actions.AdminsRemove` via the `#admins-delete-dialog` confirm + reason
+ * modal. There is no legacy GET fallback for `o=remove` (the v1.x JS helper
+ * went straight to xajax then to this handler), so this is the single delete
+ * path; the modal's no-JS / no-dispatcher fallback just lands the operator
+ * back on the admins list.  Inputs: - `aid`     (int, required)    — the
+ * admin id to remove. The handler refuses to delete a row that holds
+ * `ADMIN_OWNER`. - `ureason` (string, optional) — admin-supplied reason. We
+ * trim it and append `Reason: …` to the audit-log entry when non-empty.
+ * Empty / omitted is allowed (the modal carries `aria-required="false"`);
+ * admin deletion is a lifecycle action, not a moderation flip, so we don't
+ * gate the call on it the way `bans.unban` / `comms.unblock` do.
+ *
  * @typedef {Object} ApiAdminsRemoveRequest
- * @typedef {Object} ApiAdminsRemoveResponse
+ * @typedef {{ remove: string, counter: { admincount: number }, rehash: string|null, message: { title: string, body: string, kind: string, redir: string } }} ApiAdminsRemoveResponse
  */
 /**
  * @typedef {Object} ApiAdminsUpdatePermsRequest

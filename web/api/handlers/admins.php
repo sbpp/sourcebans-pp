@@ -13,9 +13,42 @@ work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 
 use SteamID\SteamID;
 
+/**
+ * Delete an admin row + their server group memberships (#1352).
+ *
+ * Modern JSON twin of the v1.x sourcebans.js `RemoveAdmin()` helper
+ * (deleted at #1123 D1) — `page_admin_admins_list.tpl` wires the
+ * trash-can button through `Actions.AdminsRemove` via the
+ * `#admins-delete-dialog` confirm + reason modal. There is no
+ * legacy GET fallback for `o=remove` (the v1.x JS helper went
+ * straight to xajax then to this handler), so this is the single
+ * delete path; the modal's no-JS / no-dispatcher fallback just
+ * lands the operator back on the admins list.
+ *
+ * Inputs:
+ *   - `aid`     (int, required)    — the admin id to remove. The
+ *     handler refuses to delete a row that holds `ADMIN_OWNER`.
+ *   - `ureason` (string, optional) — admin-supplied reason. We trim
+ *     it and append `Reason: …` to the audit-log entry when
+ *     non-empty. Empty / omitted is allowed (the modal carries
+ *     `aria-required="false"`); admin deletion is a lifecycle
+ *     action, not a moderation flip, so we don't gate the call on
+ *     it the way `bans.unban` / `comms.unblock` do.
+ *
+ * @param array{ aid?: int|string, ureason?: string } $params
+ * @return array{
+ *     remove: string,
+ *     counter: array{ admincount: int },
+ *     rehash: string|null,
+ *     message: array{ title: string, body: string, kind: string, redir: string }
+ * }
+ */
 function api_admins_remove(array $params): array
 {
     $aid = (int)($params['aid'] ?? 0);
+    // Trim whitespace so a textarea that contains only spaces produces an
+    // empty reason (audit-log suffix omitted) rather than `Reason:    `.
+    $ureason = trim((string)($params['ureason'] ?? ''));
 
     $admin = $GLOBALS['PDO']->query("SELECT gid, authid, extraflags, user FROM `:prefix_admins` WHERE aid = :aid");
     $GLOBALS['PDO']->bind(':aid', $aid);
@@ -56,7 +89,16 @@ function api_admins_remove(array $params): array
         throw new ApiError('delete_failed', 'There was an error removing the admin from the database, please check the logs');
     }
 
-    Log::add(LogType::Message, 'Admin Deleted', "Admin ({$admin['user']}) has been deleted.");
+    // #1352: trail the optional admin-supplied reason in the audit-log
+    // entry so admins reading the log later can see *why* the admin was
+    // removed. Mirrors the canonical "Reason: $ureason" suffix shape
+    // from `api_bans_unban` / `api_comms_unblock` — the suffix is
+    // omitted when the operator left the field blank.
+    $logBody = "Admin ({$admin['user']}) has been deleted.";
+    if ($ureason !== '') {
+        $logBody .= " Reason: {$ureason}";
+    }
+    Log::add(LogType::Message, 'Admin Deleted', $logBody);
 
     return [
         'remove'  => "aid_$aid",

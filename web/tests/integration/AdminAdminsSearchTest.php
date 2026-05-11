@@ -692,9 +692,18 @@ final class AdminAdminsSearchTest extends ApiTestCase
         $this->fail('search-admins-disclosure testid not found in rendered HTML');
     }
 
+    /**
+     * Count actual `<tr data-testid="admin-row">` opening tags in the
+     * rendered HTML — the inline page-tail JS in
+     * `page_admin_admins_list.tpl` (#1352) literally contains the
+     * `[data-testid="admin-row"][data-id="…"]` selector string in its
+     * `rowForAid()` helper, so a naive substring match would over-count
+     * by one. Anchoring on the `<tr` opening tag keeps the test
+     * counting only the actual table rows it intends to.
+     */
     private function countAdminRows(string $html): int
     {
-        return preg_match_all('/data-testid="admin-row"/', $html);
+        return preg_match_all('/<tr[^>]*data-testid="admin-row"/', $html);
     }
 
     /**
