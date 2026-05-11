@@ -12,20 +12,20 @@
 
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
-import mermaid from 'astro-mermaid';
+
+// `astro-mermaid` was scaffolded into the initial migration commit but
+// no docs page actually uses a fenced ```mermaid block yet. The
+// integration adds ~36KB of integration code + ~600KB of Mermaid
+// runtime as a Vite chunk family + Dependabot churn for a feature
+// nothing pays for today (#1333 review M3). When a diagram surface
+// genuinely needs to land — likeliest place is the upgrader / install
+// flow — re-add the integration in the same PR as the first
+// `mermaid` codeblock so the bundle weight has a paying customer.
 
 export default defineConfig({
   site: 'https://sbpp.github.io/',
   base: '/',
-  // mermaid integration must come BEFORE starlight so its remark plugin
-  // sees fenced ```mermaid blocks in Markdown processed by Starlight.
-  // The integration is lightweight client-side (no puppeteer); diagrams
-  // hydrate per-page when a `mermaid` codeblock is present.
   integrations: [
-    mermaid({
-      theme: 'default',
-      autoTheme: true,
-    }),
     starlight({
       title: 'SourceBans++',
       description:
