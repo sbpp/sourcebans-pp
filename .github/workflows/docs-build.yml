@@ -39,19 +39,12 @@ jobs:
           cache: 'npm'
           cache-dependency-path: docs/package-lock.json
 
-      # `npm ci` requires a committed lockfile. The first PR that lands
-      # docs/ ships package.json without a lockfile; subsequent PRs
-      # commit the lockfile and this falls into the fast deterministic
-      # path. Until then, fall back to `npm install` so the gate
-      # exists from day one.
+      # docs/package-lock.json is committed; npm ci is the deterministic
+      # path and will fail loudly if anyone lands a package.json bump
+      # without regenerating the lockfile (which is exactly the gate
+      # we want).
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            echo "::warning::No package-lock.json yet; falling back to npm install"
-            npm install --no-audit --no-fund
-          fi
+        run: npm ci --no-audit --no-fund
 
       - name: Build site
         run: npm run build

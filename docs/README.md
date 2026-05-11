@@ -11,6 +11,7 @@ shell — all authoring happens here).
 | Path | What it is |
 | ---- | ---------- |
 | `astro.config.mjs` | Site config, sidebar tree, social links, custom CSS wiring. |
+| `src/content.config.ts` | Astro content-collection schema. Re-exports Starlight's `docsLoader` + `docsSchema` so the `src/content/docs/` collection is wired with the right loader and front-matter validation. Edit when adding a new collection (none currently). |
 | `src/content/docs/` | All page content, organised by sidebar group (`getting-started/`, `setup/`, `troubleshooting/`, …). `.md` for plain pages, `.mdx` for pages that use Starlight components (Tabs, LinkCard, Card, etc.). |
 | `src/styles/sbpp.css` | Panel-parity overrides — brand orange, zinc neutrals, semantic asides, geometry, focus ring. Mirrors `web/themes/default/css/theme.css` token-for-token. **When the panel's `:root` / `html.dark` blocks change, mirror the change here in the same PR** (AGENTS.md "Keep the docs in sync"). |
 | `src/components/ThemeProvider.astro` | Override of Starlight's stock dark-leaning theme provider. Defaults the unset preference to `'auto'` (resolves via `prefers-color-scheme`) to match the panel's `'system'` first-paint default, AND ships a `<noscript><style>` block that re-applies the LIGHT-mode tokens onto `:root[data-theme='dark']` so JS-disabled visitors see light (Starlight 0.30 hardcodes `data-theme="dark"` SSR'd; the panel paints light without JS, so this guard restores parity). The user toggle still wins on subsequent visits via `localStorage['starlight-theme']`. |
