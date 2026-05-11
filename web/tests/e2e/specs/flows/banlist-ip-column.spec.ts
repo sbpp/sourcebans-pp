@@ -88,6 +88,17 @@ test.describe('flow: banlist IP column visible to admin (#1302)', () => {
         isMobile,
     }) => {
         await seedBanWithIp(page);
+        // #1359 bumped tier-3 (IP / Length / Banned) to hide at
+        // <=1280px. The Playwright `Desktop Chrome` device defaults
+        // to 1280x720 which sits ON the breakpoint, hiding the IP
+        // column the desktop arm of this test asserts on. Resize to
+        // a viewport that surfaces tier-3 (any width > 1280 works;
+        // 1440 is the canonical "laptop with tier-3 visible"
+        // reference). Mobile arm is unaffected — the `isMobile`
+        // branch below renders `.ban-cards` regardless.
+        if (!isMobile) {
+            await page.setViewportSize({ width: 1440, height: 720 });
+        }
         await page.goto('/index.php?p=banlist');
 
         if (isMobile) {

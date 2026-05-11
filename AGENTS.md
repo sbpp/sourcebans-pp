@@ -1571,6 +1571,35 @@ audit (#1207) locked in. New CTAs:
   every keyboard / screen-reader user. New surfaces add visible
   buttons in the same shape as `.queue-row` (admin moderation
   queue) or the comms-list desktop table (`web/themes/default/page_comms.tpl`).
+- Non-wrapping `display: flex` on `.table .row-actions` (the
+  pre-#1359 shape: `display: flex; gap: 0.25rem; justify-content:
+  flex-end` with NO `flex-wrap: wrap`) → with 3+ buttons carrying
+  text labels (Edit / Unban / Re-apply / Copy / Remove on the
+  banlist; Edit / Unmute / Re-apply / Remove on the commslist) the
+  cell's natural width is ~340-440px on a single line; combined
+  with the rest of a 9-10-column list at the default desktop
+  viewport (1280px → main ~1000px usable after the sidebar) the
+  table's natural width pushes well past the panel even after
+  tier-2 / tier-3 columns hide. `.table-scroll`'s `overflow-x: auto`
+  then triggers an in-card horizontal scrollbar and the rightmost
+  Remove button silently sits off the visible card edge until the
+  user discovers the scroll (#1359 — the user-reported regression
+  on the banlist after #1354's row-action parity sweep added the
+  text labels, but the same shape lurks on commslist too). The
+  contract is `flex-wrap: wrap` on the desktop table's
+  `.row-actions` so buttons stack onto a second line when there's
+  no horizontal room — same shape the mobile `.ban-card__actions`
+  (line ~1446) and the mobile `details.queue-row > summary >
+  .row-actions` (line ~1351) already use. The cell still carries
+  `white-space: nowrap` so each individual button's content stays
+  on one line; only the BETWEEN-button gap wraps. Regression
+  guard: `web/tests/e2e/specs/flows/banlist-table-columns.spec.ts`'s
+  "Remove button is reachable without horizontal scroll on a
+  realistic row" assertion. Don't reach for a different fix shape
+  (icon-only buttons, viewport-keyed display: none on individual
+  actions, overflow menus) without first asking whether the
+  established `flex-wrap` pattern is enough — every existing
+  row-action surface in the panel already converges on it.
 - Surfacing per-row admin-authored comments behind a silent count
   badge (`<span class="text-xs text-muted">[N]</span>`) without an
   affordance → that's the v2.0 RC regression that wiped per-ban

@@ -1023,8 +1023,32 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
    and the audit's blocker for the comms list specifically). The
    queue-row pattern (#1207 PUB-2) already drops the hover gate on
    `<details>`-rendered queues; matching the table here means every
-   list surface in the panel exposes its actions the same way. */
-.table .row-actions { display: flex; gap: 0.25rem; justify-content: flex-end; }
+   list surface in the panel exposes its actions the same way.
+
+   `flex-wrap: wrap` so buttons stack onto a second line when the row
+   doesn't have horizontal room for all of them. Before this guard the
+   banlist's row-actions cell carried up to 5 buttons with text labels
+   (Edit / Unban / Re-apply / Copy / Remove, #1354's parity sweep with
+   the commslist's already-wider Edit / Unmute / Re-apply / Remove
+   chain) on a single `<a class="btn btn--sm">` row, which pushed the
+   table's natural width well past the panel even after tier-2 / tier-3
+   columns hid — the table-scroll fallback then triggered an
+   in-card horizontal scrollbar with the rightmost Remove button
+   silently off-screen until the user noticed and scrolled. The two
+   sibling row-action surfaces (the mobile `.ban-card__actions` at
+   line ~1446 and the mobile `details.queue-row > summary > .row-actions`
+   at line ~1351) already use `flex-wrap: wrap`; this rule brings the
+   desktop table into line so every list in the panel handles the
+   "too many actions to fit" case identically. The matching cells
+   still carry `white-space: nowrap` (each button's content stays on
+   one line); only the BETWEEN-button gap is allowed to wrap. */
+.table .row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+  column-gap: 0.25rem;
+  justify-content: flex-end;
+}
 
 /* PUB-1 (#1207): banlist column widths + horizontal-scroll fallback.
    With realistic per-row content the auto-layout previously
@@ -1058,15 +1082,23 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table .col-status { width: 1%; }
 
 /* Responsive column-tier hiding (issue: "scroll table at the bottom of a
-   banlist, making the user experience not fluid").
+   banlist, making the user experience not fluid"; #1359 expanded the
+   breakpoints after the #1354 row-action parity sweep pushed the
+   table well past the panel at common laptop viewports).
    ----------------------------------------------------------------------
-   The banlist / commslist desktop tables carry 9-10 columns. At
-   769–1100px (after the main `.sidebar` collapses at <=1024px and
-   before the panel reaches its 1400px max-width) the natural sum of
-   column widths exceeds the panel and the `.table-scroll` wrapper
-   above falls back to horizontal scroll inside the card. Horizontal
-   scroll on a list view is the canonical "broken UX" smell on a
-   touch viewport (no scrollbar; users have to swipe inside a nested
+   The banlist / commslist desktop tables carry 9-10 columns. The
+   sidebar collapses at <=1023px, so above that it eats 15rem (240px)
+   of horizontal real estate before the table even sees any pixels;
+   add the p-6 page padding (48px) and a 1280px laptop viewport
+   leaves the card with ~975px to paint a row that wants ~1247px
+   when every column is visible. The `.table-scroll` wrapper would
+   then fall back to horizontal scroll inside the card and the
+   rightmost row-action button silently sits off the visible edge
+   (#1359 was the user-reported regression: the Remove button hidden
+   behind in-card scroll after #1354 added the text-labelled Edit /
+   Unban / Re-apply / Copy / Remove chain). Horizontal scroll on a
+   list view is also the canonical "broken UX" smell on a touch
+   viewport (no scrollbar; users have to swipe inside a nested
    scroll container).
 
    Two-tier responsive hide: every column carries a tier class on
@@ -1077,12 +1109,27 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
      - Tier-1 (always visible): Player, SteamID, Reason (banlist) /
        Type+Player (commslist), Status, Actions. The minimum row
        still answers "who, why, what state, what can I do".
-     - Tier-2 (`.col-tier-2`): hidden at <=1100px. Server, Admin —
+     - Tier-2 (`.col-tier-2`): hidden at <=1535px. Server, Admin —
        useful but not essential for moderation triage; both surface
-       on the player drawer / card detail anyway.
-     - Tier-3 (`.col-tier-3`): hidden at <=900px. IP / Length /
+       on the player drawer / card detail anyway. The breakpoint
+       covers every common laptop / small-desktop viewport
+       (1280 / 1366 / 1440 / 1536-with-sidebar) where main = vw -
+       240 (sidebar) - 48 (padding) falls short of the natural
+       table width with these columns visible. At 1536px viewport
+       exactly the sidebar leaves ~1248px — the table without
+       tier-2 fits in ~1097px and with tier-2 in ~1246px, so
+       <=1535 is the precise edge.
+     - Tier-3 (`.col-tier-3`): hidden at <=1280px. IP / Length /
        Banned / Started — historical metadata that's nice to glance
-       but cheap to drop on a narrow viewport.
+       but cheap to drop on a narrow viewport. The breakpoint
+       matches the smaller "tight" laptop range where even
+       hiding tier-2 leaves the table ~120px wider than the card;
+       dropping tier-3 there brings the visible row down to the
+       five tier-1 columns (Player + SteamID + Reason + Status +
+       Actions ≈ 808px) which fits comfortably with room to spare.
+       Pre-#1359 the breakpoints were <=1100 / <=900 — calibrated
+       for the pre-sidebar / pre-row-action-labels world that no
+       longer matches the chrome's actual horizontal budget.
 
    The mobile card layout (`.ban-cards`) takes over completely at
    <=768px (theme.css `.table { display: none }`), so the tier
@@ -1092,11 +1139,13 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
    `.table-scroll` stays wrapped around the table as a defensive
    safety net — if a row's content (long player name + long reason)
    still exceeds the panel after tier-3 hiding, it scrolls instead
-   of clipping. */
-@media (max-width: 1100px) {
+   of clipping. The `flex-wrap: wrap` on `.table .row-actions`
+   above is the sister-guard that keeps the row-action cell itself
+   from being the single column that blows the budget. */
+@media (max-width: 1535px) {
   .table .col-tier-2 { display: none; }
 }
-@media (max-width: 900px) {
+@media (max-width: 1280px) {
   .table .col-tier-3 { display: none; }
 }
 

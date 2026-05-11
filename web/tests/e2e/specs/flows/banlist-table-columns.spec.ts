@@ -39,6 +39,13 @@ test.describe('flow: banlist desktop column geometry (#1207 PUB-1)', () => {
     });
 
     test('STATUS header reads in full and the BANNED cell is one line', async ({ page }) => {
+        // #1359 bumped tier-3 (IP / Length / Banned) to hide at
+        // <=1280px. The Playwright `Desktop Chrome` device defaults to
+        // 1280x720 which sits ON the breakpoint, hiding the BANNED
+        // column we want to measure. Resize to a viewport that
+        // surfaces tier-3 (any width > 1280 works; 1440 is the
+        // canonical "laptop with tier-3 visible" reference).
+        await page.setViewportSize({ width: 1440, height: 720 });
         await page.goto('/index.php?p=banlist');
 
         const table = page.locator('#banlist-root .table');
@@ -147,5 +154,71 @@ test.describe('flow: banlist desktop column geometry (#1207 PUB-1)', () => {
         // back to the default `visible`, which would re-clip the
         // overflow case the audit found.
         expect(['auto', 'scroll']).toContain(isOverflowAuto);
+    });
+
+    test('Remove button is reachable without horizontal scroll on a realistic row', async ({ page }) => {
+        // Regression for the "Remove button you have to scroll right
+        // to see" report against the post-#1354 banlist. The row-
+        // actions cell carries up to 5 buttons with text labels
+        // (Edit / Unban / Re-apply / Copy / Remove); on a single
+        // non-wrapping flex line that pushed the table's natural
+        // width well past the panel at the default desktop viewport
+        // (1280px → sidebar 240px → main ~1000px usable), even after
+        // tier-2 columns hid. The `.table-scroll` fallback then
+        // triggered an in-card horizontal scrollbar with Remove
+        // silently off-screen until the user discovered the scroll.
+        //
+        // Fix: `flex-wrap: wrap` on `.table .row-actions` (theme.css)
+        // so buttons stack onto a second line when there's no
+        // horizontal room. Same shape `.ban-card__actions` and the
+        // queue-row already use on mobile.
+        //
+        // The contract this test pins: with a realistic seeded ban,
+        // the Remove button on the desktop table renders within the
+        // card's painted box at the default Playwright viewport. A
+        // regression that drops `flex-wrap: wrap` (or pushes the
+        // actions cell back to a non-shrinkable single-line layout)
+        // will paint Remove past the card's right edge and fail this
+        // assertion. We anchor on the card's bounding box (not the
+        // table-scroll wrapper) because the card has
+        // `overflow: hidden` — its right edge is the visual right
+        // edge a user sees; a button living past it can only be
+        // reached via the in-card horizontal scrollbar.
+        await page.goto('/index.php?p=banlist');
+
+        const seededRow = page
+            .locator('[data-testid="ban-row"]')
+            .filter({ hasText: 'STEAM_0:1:1207001' });
+        await expect(seededRow).toBeVisible();
+
+        const removeBtn = seededRow.locator('[data-testid="row-action-delete"]');
+        await expect(removeBtn).toBeVisible();
+
+        // Sample three breakpoints across the desktop range to pin
+        // the contract end-to-end:
+        //   - 1280px: tier-2 + tier-3 both hidden (only tier-1 visible).
+        //   - 1440px: tier-2 still hidden, tier-3 surfaces (IP / Length
+        //     / Banned join Player / SteamID / Reason / Status /
+        //     Actions).
+        //   - 1920px: every column visible (page max-width 1400 caps
+        //     the surface; sidebar + padding still leaves comfortable
+        //     room).
+        // A regression that drops `flex-wrap: wrap` OR drops the
+        // tier-2 / tier-3 breakpoint bumps will paint Remove past
+        // the card's right edge at at least one of these viewports.
+        for (const vw of [1280, 1440, 1920]) {
+            await page.setViewportSize({ width: vw, height: 720 });
+
+            await expect(removeBtn).toBeVisible();
+            const card = page.locator('#banlist-root .card').first();
+            const cardBox = await card.boundingBox();
+            const removeBox = await removeBtn.boundingBox();
+            expect(cardBox, `banlist card renders a bounding box at ${vw}px`).not.toBeNull();
+            expect(removeBox, `Remove button renders a bounding box at ${vw}px`).not.toBeNull();
+            expect(
+                removeBox!.x + removeBox!.width,
+                `Remove button must fit within the card's right edge at viewport ${vw}px (got button right ${removeBox!.x + removeBox!.width}px vs card right ${cardBox!.x + cardBox!.width}px)`,
+            ).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+        }
     });
 });
