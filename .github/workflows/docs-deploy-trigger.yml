@@ -1,0 +1,69 @@
+# docs-deploy-trigger — fire a repository_dispatch into sbpp.github.io
+# whenever main moves under docs/, kicking the Pages deploy in the
+# sibling repo.
+#
+# Cadence: only on push to main with a docs/** path filter. PRs use
+# docs-build.yml to validate; this workflow is the production trigger.
+#
+# Required repo configuration BEFORE this workflow can succeed (one-time
+# cutover steps documented in #1333 cutover steps 1-2):
+#
+#   - Create the `sbpp-docs-deploy` GitHub App (org-owned), scope
+#     `Actions: write` on `sbpp.github.io` only, install on
+#     `sbpp/sbpp.github.io`.
+#   - Repo VARIABLE  `DOCS_DEPLOY_APP_ID`   = the App's numeric ID.
+#   - Repo SECRET    `DOCS_DEPLOY_APP_KEY`  = the App's PEM private key.
+#
+# Until those land, this workflow will fail on the first run with an
+# auth error. That's expected; the deploy shell in sbpp.github.io
+# also has a workflow_dispatch trigger as a manual fallback.
+
+name: docs-deploy-trigger
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - '.github/workflows/docs-deploy-trigger.yml'
+
+# Allow at most one in-flight trigger at a time; if a second push lands
+# while the first is still running, queue the second and skip any
+# intermediate runs. The dispatched workflow in sbpp.github.io is
+# itself idempotent (it always builds from sourcebans-pp@main), so
+# coalescing here is safe.
+concurrency:
+  group: docs-deploy-trigger
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    name: Dispatch docs-changed event
+    runs-on: ubuntu-24.04
+    permissions: {}
+
+    steps:
+      - name: Mint installation token via GitHub App
+        id: mint-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.DOCS_DEPLOY_APP_ID }}
+          private-key: ${{ secrets.DOCS_DEPLOY_APP_KEY }}
+          owner: sbpp
+          repositories: sbpp.github.io
+
+      # The dispatched workflow in sbpp.github.io listens for
+      # `event_type: docs-changed`. The client_payload carries the
+      # commit SHA and ref so the deploy job can stamp it into the
+      # site footer / build manifest if it wants.
+      - name: Dispatch repository_dispatch into sbpp.github.io
+        env:
+          GH_TOKEN: ${{ steps.mint-token.outputs.token }}
+        run: |
+          gh api repos/sbpp/sbpp.github.io/dispatches \
+            --method POST \
+            --field event_type=docs-changed \
+            --field 'client_payload[source_repo]=${{ github.repository }}' \
+            --field 'client_payload[source_sha]=${{ github.sha }}' \
+            --field 'client_payload[source_ref]=${{ github.ref }}'
