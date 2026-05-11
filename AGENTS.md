@@ -54,10 +54,10 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change auth, CSRF, or permissions semantics                 | `ARCHITECTURE.md` (the relevant subsystem) + `AGENTS.md` (Conventions) if the rule changes |
 | Add a new permission flag                                   | `web/configs/permissions/web.json`, regen API contract; doc only if the **role** of the flag affects conventions |
 | Change the local dev stack (Docker, db-init, env vars)      | `docker/README.md` first, link from `ARCHITECTURE.md` if it changes the dev mental model |
-| Edit user-facing install/quickstart                         | `README.md`                                           |
+| Edit user-facing install/quickstart                         | `docs/src/content/docs/getting-started/quickstart.mdx` (the README is a tiny landing page that links to docs — don't grow it back into a manual) |
 | Add or change a wizard step (page handler / View / template / shared helper) | `AGENTS.md` (Install wizard convention block) + the "Edit a step of the install wizard" row in "Where to find what" |
 | Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
-| Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus `UPGRADING.md` if it's a breaking change between releases |
+| Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus the matching `docs/src/content/docs/updating/*.mdx` page if it's a breaking change between releases |
 | Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
 | Touch any UI under `web/install/` or the panel chrome that's screenshotted in docs | Run `npm run capture` in `docs/` locally and commit the PNG diff. Maintainers can alternatively apply the `safe-to-screenshot` label after reviewing the PR diff so `docs-screenshots-capture.yml` regenerates the captures (see `docs/README.md` for the security model + label-strip-on-push contract) |
 | Change panel theme tokens — palette, geometry, semantic colors — in `web/themes/default/css/theme.css` (the `:root` block or `html.dark` overrides) | Mirror the change in `docs/src/styles/sbpp.css` so the docs site stays visually consistent with the panel. Same PR. (Fonts intentionally not mirrored — see #2.) |
@@ -961,26 +961,28 @@ canonical schema is **vendored** as a byte-identical lock file
 under `web/includes/<subsystem>/` and consumed via a thin reader
 class (e.g. `Sbpp\Telemetry\Schema1`). The reader exposes a
 `payloadFieldNames(): list<string>` static — the recursively-flattened
-leaf field set — and is the single source of truth for two paired
-PHPUnit tests:
+leaf field set — and is the single source of truth for the
+**extractor parity test** that asserts the panel's payload builder
+(`Telemetry::collect()`) and the schema agree on the field set in
+BOTH directions (`assertSame` after sort). Drift in either direction
+(extractor without schema slot, or schema slot without extractor)
+fails the build.
 
-- An **extractor parity test** that asserts the panel's payload
-  builder (`Telemetry::collect()`) and the schema agree on the
-  field set in BOTH directions (`assertSame` after sort). Drift
-  in either direction (extractor without schema slot, or schema
-  slot without extractor) fails the build.
-- A **doc parity test** that asserts the README's documented field
-  list (wrapped in `<!-- TELEMETRY-FIELDS-START -->` /
-  `<!-- TELEMETRY-FIELDS-END -->` HTML comments) deep-equals the
-  schema's field set. Cheap doc-drift gate.
+The field list is NOT mirrored into any human-readable doc — the
+schema lock file is the source of truth, and anyone who wants the
+field-by-field breakdown reads it. Don't reintroduce a markdown
+mirror (the old `TELEMETRY-FIELDS-START` / `TELEMETRY-FIELDS-END`
+README block + paired `TelemetryReadmeParityTest`) — it was pure
+duplication of the schema with a parity test paying for the drift
+risk it created.
 
 Manual sync only — a `make sync-<subsystem>-schema` target pulls
 the upstream lock file via curl and overwrites the vendored copy;
-no scheduled auto-PR workflow. The parity tests gate the result.
+no scheduled auto-PR workflow. The parity test gates the result.
 
 When a future subsystem grows a similar cross-repo JSON contract,
 follow this shape: vendored Draft-7 JSON Schema lock file + reader
-class + extractor parity + doc parity + manual `make sync-…` target.
+class + extractor parity + manual `make sync-…` target.
 
 ### Admin-authored display text (`Sbpp\Markup\IntroRenderer`)
 
@@ -1696,8 +1698,8 @@ audit (#1207) locked in. New CTAs:
 | Add admin-only per-player notes | `web/api/handlers/notes.php` (CRUD) — Notes tab is gated by `bans.detail`'s `notes_visible` flag |
 | Cache an A2S `GetInfo + GetPlayers` round-trip / add another public server-query handler | `web/includes/Servers/SourceQueryCache.php` (`Sbpp\Servers\SourceQueryCache::fetch($ip, $port, $ttl=30)` — per-`(ip, port)` on-disk cache under `SB_CACHE/srvquery/`, atomic tempfile + `rename()` writes mirroring `system.check_version`'s release cache; both success and failure cache so an unreachable server costs ONE A2S probe per ~30s window). Every public handler under `web/api/handlers/servers.php` (`api_servers_host_players` / `host_property` / `host_players_list` / `players`) goes through this — never call `new SourceQuery()` directly from a handler. The cache stamps user-agnostic data only; the handler stamps per-caller fields (`is_owner`, `can_ban`, the per-call `trunchostname`) on top. Per-tile JS debounce on the public servers page lives in `web/themes/default/page_servers.tpl` (`loadTile()` flips `tile.__sbppLoading` + the Re-query button's `disabled` attr while a probe is in flight, releases both in the success / error tails). The matching JS gate on the toggle button has been the precedent since v2.0.0; #1311 brought the refresh button onto the same shape. Tests: `web/tests/integration/SourceQueryCacheTest.php` (cache shape + coalescing + TTL + invalidation, drives `setProbeOverrideForTesting()` so the assertion is deterministic without UDP) + `testHostPlayersCoalescesRapidRepeatCallsViaCache` / `testHostPlayersNegativeCachesUnreachableServers` in `web/tests/api/ServersTest.php` (handler-shape coverage). E2E: `web/tests/e2e/specs/flows/server-refresh-debounce.spec.ts`. |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
-| Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the parity tests) + `web/includes/Telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. Help-icon copy in `page_admin_settings_features.tpl` + `README.md`'s `## Privacy & telemetry` section + `UPGRADING.md` are the in-panel + upgrade-time disclosure surfaces (no first-login modal). |
-| Add a cross-repo JSON contract (vendored schema lock + reader + parity tests) | `web/includes/Telemetry/Schema1.php` is the reference shape (`payloadFieldNames(): list<string>` over a Draft-7 JSON Schema lock file). Pair with two PHPUnit tests: an extractor parity test (collect() vs. lock file in both directions) and a doc parity test (README `<!-- …-START -->` / `<!-- …-END -->` block vs. lock file). Sync via a manual `make sync-<subsystem>-schema` target — no scheduled auto-PR. See "Cross-repo JSON contracts" under Conventions. |
+| Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the extractor parity test) + `web/includes/Telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. The in-panel disclosure surface is the help-icon copy in `page_admin_settings_features.tpl`; the upgrade-time disclosure lives in `docs/src/content/docs/updating/1.8-to-2.0.mdx` (no first-login modal). |
+| Add a cross-repo JSON contract (vendored schema lock + reader + extractor parity test) | `web/includes/Telemetry/Schema1.php` is the reference shape (`payloadFieldNames(): list<string>` over a Draft-7 JSON Schema lock file). Pair with one PHPUnit extractor parity test (collect() vs. lock file in both directions). The schema lock file is the single source of truth — don't mirror the field list into a markdown doc paired with a separate parity test, that pattern was tried for telemetry and removed because the duplication paid for the drift risk it created. Sync via a manual `make sync-<subsystem>-schema` target — no scheduled auto-PR. See "Cross-repo JSON contracts" under Conventions. |
 | Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |
 | Build an empty-state surface (first-run vs filtered, primary/secondary CTAs) | `.empty-state` rules in `web/themes/default/css/theme.css` + reference shapes in `page_servers.tpl`, `page_dashboard.tpl`, `page_bans.tpl`, `page_comms.tpl`, `page_admin_audit.tpl`, `page_admin_bans_protests.tpl`, `page_admin_bans_submissions.tpl` |

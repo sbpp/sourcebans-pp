@@ -66,8 +66,9 @@ jobs:
       # omitted vendor/ entirely (it's gitignored), so unzipping a
       # tarball + visiting /install/ hard-failed on init.php's
       # autoload check ("Compose autoload not found! Run `composer
-      # install`"). README.md + UPGRADING.md both promise vendor/ is
-      # bundled; this step honours that promise.
+      # install`"). The docs site (Quickstart + the per-version upgrade
+      # pages under updating/) promises vendor/ ships in the release
+      # tarball; this step honours that promise.
       - name: Setup PHP + Composer
         uses: shivammathur/setup-php@v2
         with:

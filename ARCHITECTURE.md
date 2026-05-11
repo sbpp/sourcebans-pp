@@ -35,11 +35,11 @@ plugins are stable and updated less often.
 ├── docker-compose.yml    web + db (MariaDB) + adminer + mailpit
 ├── sbpp.sh               Wrapper for the dev stack and quality gates
 ├── .github/workflows/    CI gates (phpstan, test, ts-check, api-contract, release)
-├── README.md             User-facing install + quickstart
+├── README.md             Landing page — short, links to docs / AGENTS / ARCHITECTURE
 ├── ARCHITECTURE.md       This file — codebase overview
 ├── AGENTS.md             Conventions for AI agents / contributors
 ├── CHANGELOG.md          Release notes
-├── SECURITY.md           Security disclosure policy
+├── docs/                 Starlight docs site (install / upgrade / configure)
 └── LICENSE.md
 ```
 
@@ -741,22 +741,23 @@ exact wire format is captured in
 vendored byte-for-byte from the [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics)
 companion repo. `Sbpp\Telemetry\Schema1::payloadFieldNames()` reads
 the lock file at request time and returns the recursively-flattened
-leaf field set; this is the single source of truth that gates two
-parity tests:
+leaf field set; this is the single source of truth that gates the
+extractor parity test:
 
 - `TelemetrySchemaParityTest` — `Telemetry::collect()`'s output
   field set deep-equals `Schema1::payloadFieldNames()` in BOTH
   directions. Adding a typed slot in cf-analytics → next sync → the
   panel build fails until a matching extractor lands.
-- `TelemetryReadmeParityTest` — `README.md`'s `## Privacy &
-  telemetry` field list (between the
-  `<!-- TELEMETRY-FIELDS-START -->` / `<!-- TELEMETRY-FIELDS-END -->`
-  markers) deep-equals `Schema1::payloadFieldNames()`. Cheap doc-drift
-  gate.
 
-The schema-lock-file vendoring + parity-test pair is the convention
-for this codebase — when another subsystem grows a similar cross-repo
-JSON contract, mirror this shape.
+The schema lock file is also the single source of truth for anyone
+who wants the field-by-field breakdown — it is NOT mirrored into any
+human-readable doc, and the previous README mirror + paired
+`TelemetryReadmeParityTest` was removed because the duplication paid
+for the drift risk it created.
+
+The schema-lock-file vendoring + extractor-parity pair is the
+convention for this codebase — when another subsystem grows a
+similar cross-repo JSON contract, mirror this shape.
 
 The `instance_id` is `bin2hex(random_bytes(16))`, lazily generated
 on the first call to `collect()` and persisted in

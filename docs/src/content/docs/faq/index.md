@@ -17,7 +17,7 @@ We'd love to! But first, please read through the
 [Troubleshooting](/troubleshooting/database-errors/) section.
 
 If you're still stuck after that, ask in the relevant help channel of
-our [Discord](https://discord.gg/4Bhj6NU).
+our [Discord](https://discord.gg/tzqYqmAtF5).
 
 ## Can I use SourceBans++ without the WebPanel?
 

@@ -91,7 +91,8 @@ Legend:
         keep rendering off the same View DTOs
 35. ? Documentation overhaul: `ARCHITECTURE.md` (codebase tour) +
         `AGENTS.md` (workflow / conventions) live alongside
-        `README.md`
+        `README.md`; user-facing install / upgrade / configure
+        guides moved to the Starlight site at sbpp.github.io
 ```
 
 ### Privacy
@@ -104,12 +105,12 @@ per-install ID + categorical / count fields only — **no** hostnames,
 IPs, admin names, SteamIDs, ban reasons, or any other PII. The toggle
 lives at **Admin → Settings → Features → Privacy → Anonymous telemetry**;
 disabling it clears the per-install ID so re-enabling later issues a
-fresh one. Full field list, SQL behind each count, and the
-self-hosted-collector escape hatch live in
-[`README.md` → `## Privacy & telemetry`](README.md#privacy--telemetry);
-the upgrade-time disclosure lives in
-[`UPGRADING.md`](UPGRADING.md#telemetry-1126-v200). Companion Worker
-repo: [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics).
+fresh one. The complete field list lives in the code at
+[`web/includes/Telemetry/schema-1.lock.json`](web/includes/Telemetry/schema-1.lock.json);
+the upgrade-time disclosure (and self-hosted-collector escape hatch)
+lives on the docs site at
+[Upgrading from 1.8.x to 2.0.x](https://sbpp.github.io/updating/1.8-to-2.0/#telemetry).
+Companion Worker repo: [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics).
 
 (10/11/24): Version 1.8.1 (**Run updater required**)
 -----------------------

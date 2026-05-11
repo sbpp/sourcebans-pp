@@ -21,14 +21,16 @@ use Throwable;
  *
  * What gets sent is locked in
  * `web/includes/Telemetry/schema-1.lock.json` (the JSON Schema
- * vendored from the cf-analytics companion repo). Two parity tests
- * gate the contract:
+ * vendored from the cf-analytics companion repo). The extractor
+ * parity test gates the contract:
  *
  *   - `TelemetrySchemaParityTest` — every leaf field in the lock
  *     file has a corresponding extractor in `collect()`, and vice
  *     versa.
- *   - `TelemetryReadmeParityTest` — README's `## Privacy &
- *     telemetry` field list deep-equals the same set.
+ *
+ * The lock file is also the single source of truth for anyone who
+ * wants the field-by-field breakdown — no human-readable mirror is
+ * kept anywhere in the repo.
  *
  * What's NOT sent: hostnames, IPs, install paths, admin names,
  * ban reasons, dashboard text, SteamIDs, server hostnames, server

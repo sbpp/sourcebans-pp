@@ -10,6 +10,13 @@ database** before starting — the updater scripts are idempotent, but a
 failed upload halfway through is much easier to recover from when you
 have a snapshot to roll back to.
 
+:::tip
+Upgrading from **1.8.x to 2.0.x**? Read
+[Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/) first — v2.0
+introduces new PHP dependencies, resets the theme, and ships default-on
+anonymous telemetry.
+:::
+
 ## Downloading
 
 Grab the latest release zip from the

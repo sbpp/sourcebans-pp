@@ -1,0 +1,161 @@
+---
+title: Upgrading from 1.8.x to 2.0.x
+description: What changes between SourceBans++ 1.8.4 and 2.0.0, and how to prepare your install for the upgrade.
+sidebar:
+  order: 2
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+SourceBans++ 2.0.0 is a major version bump. This page covers the
+behaviours that change between 1.8.4 and 2.0.0 and the steps an admin
+should take **before** they run the panel updater. The general upgrade
+flow (back up, upload, visit `/updater/`) is in
+[Updating SourceBans++](/updating/).
+
+<Aside type="caution" title="Back up your database first">
+The updater scripts are idempotent, but a half-completed upload is
+much easier to recover from when you have a snapshot to roll back to.
+Always take a DB dump before you start.
+</Aside>
+
+## PHP dependencies
+
+v2.0.0 raises the PHP floor and introduces new PHP dependencies. A
+1.8.x install with a `vendor/` directory left over from a prior
+`composer install` will pass `web/init.php`'s autoload check but
+fatal at runtime the first time v2.0 code references a class the old
+`vendor/` doesn't ship — usually mid-way through a page render, with
+the actual `Class "…" not found` line buried in your PHP error log.
+
+The new / bumped dependencies:
+
+- `php >= 8.5` — raised from 1.8.4's `>= 8.2`. **Upgrade your host's
+  PHP before uploading the v2.0 files.** A panel on PHP 8.4 or
+  earlier won't boot.
+- `symfony/mailer ^7.2` — replaced 1.8.x's `PHPMailer`.
+- `league/commonmark ^2.5` — added so admin-authored Markdown on the
+  dashboard intro text renders safely.
+- `lcobucci/jwt ^5.0` — major-bumped from 1.8.x's `^4`.
+- `smarty/smarty ^v5.4` — major-bumped from 1.8.x's `^v3`.
+
+### Tarball install
+
+Release **tarballs** ship a fresh `web/includes/vendor/`, so tarball
+upgrades work out of the box. Upload + visit `/updater/` and you're
+done.
+
+### Git checkout
+
+A git checkout (`git pull`, `git checkout`, or dropping a checkout
+over an existing tree) inherits the old `vendor/`. Run
+`composer install` from the panel root **before** you visit
+`/updater/`:
+
+```sh
+cd /path/to/sourcebans/web
+composer install --no-dev --optimize-autoloader
+```
+
+A panel that fatals after you ran the updater isn't permanently broken
+— `composer install` from the panel root will get you back to a
+working state. The panel renders 500s in the meantime, so it's worth
+running the install step first.
+
+## Theme compatibility
+
+v2.0.0 ships a complete chrome rewrite — new typed View DTOs, new
+admin sidebar partial, every template signature changed, MooTools /
+xajax removed, the `openTab()` JS helper deleted. A fork theme
+inherited from a 1.8.x install does not contain the templates v2.0
+expects to render — best case you get `Smarty: Unable to load template …`
+fatals, worst case Smarty falls through to a half-rendered page where
+every template variable is undefined.
+
+To keep the panel actually loadable after the upgrade, the v2.0
+updater **resets `config.theme` to `default`** automatically. No
+operator action is required.
+
+If you maintain a fork theme:
+
+1. The panel will be on `default` immediately after the upgrade.
+
+2. Port your fork against the v2.0 default theme as your reference —
+   diff `web/themes/default/` between the 1.8.x and 2.0 trees to see
+   the surface area. The new conventions live in
+   [`AGENTS.md`](https://github.com/sbpp/sourcebans-pp/blob/main/AGENTS.md)
+   (typed View DTOs, the `?section=…` admin sub-route pattern, the
+   `core/admin_sidebar.tpl` partial, the empty-state shapes in
+   `theme.css`).
+
+3. Once your fork ships v2.0-shaped templates, re-select it from
+   **Admin → Settings → Themes**. The DB-side reset is a one-shot at
+   upgrade time; the panel won't switch back to `default` again on
+   its own.
+
+Your fork directory under `web/themes/<fork>/` is left in place — only
+the `:prefix_settings.config.theme` row is rewritten. So your work
+isn't lost; the panel just stops trying to render against templates
+that don't exist.
+
+## Telemetry
+
+SourceBans++ 2.0.0 ships with **default-on anonymous telemetry**. This
+is new behaviour for installs upgrading from 1.x.
+
+Once per day per install, the panel sends an anonymous JSON payload to
+a SourceBans++ Cloudflare Worker. The payload covers four categories:
+
+- **panel** — version, short git SHA, dev flag, theme name (`default`
+  or `custom` only — fork theme names are never reported).
+- **env** — PHP `major.minor`, DB engine + `major.minor`, web server
+  family, OS family.
+- **scale** — counts of admins, enabled servers, active and total
+  bans / comms, and 30-day submissions / protests.
+- **features** — every checkbox under Admin → Settings → Features,
+  plus three derived booleans: SMTP-configured, Steam API key set,
+  GeoIP DB present.
+
+A random 32-char hex `instance_id` is included so pings can be
+deduplicated. **No** hostnames, IPs, install paths, admin names,
+SteamIDs, ban reasons, dashboard text, server hostnames, server IPs,
+MOTDs, SMTP credentials, or the Steam API key value are ever sent.
+The complete field list lives in the code at
+[`web/includes/Telemetry/schema-1.lock.json`](https://github.com/sbpp/sourcebans-pp/blob/main/web/includes/Telemetry/schema-1.lock.json).
+
+### How to opt out
+
+1. Sign in as an admin with `ADMIN_OWNER` or `ADMIN_WEB_SETTINGS`.
+2. Navigate to **Admin → Settings → Features**.
+3. Uncheck **Anonymous telemetry** under the **Privacy** card.
+4. Click **Save changes**.
+
+Opt-out also clears the per-install random ID. Re-enabling later
+issues a fresh ID so the collector can never link the two states.
+
+### Self-hosted collector
+
+The endpoint URL lives in `:prefix_settings.telemetry.endpoint`
+(default `https://cf-analytics-telemetry.sbpp.workers.dev/v1/ping`).
+To point the panel at your own collector:
+
+```sql
+UPDATE sb_settings
+SET value = 'https://your-collector.example.com/v1/ping'
+WHERE setting = 'telemetry.endpoint';
+```
+
+Setting the value to the empty string disables network calls without
+flipping the user-facing toggle. There is no UI for this knob; it's a
+debug / escape-hatch surface. The Worker source lives at
+[sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) for
+operators who want to inspect or fork the collector.
+
+### Performance impact
+
+The telemetry tick runs in a `register_shutdown_function` callback. On
+PHP-FPM, `fastcgi_finish_request()` closes the user's TCP socket
+**before** the cURL POST runs, so a panel response time of N ms
+remains N ms regardless of telemetry. cURL has 3-second connect /
+5-second total timeouts and a flapping endpoint is silent — telemetry
+can never hard-fail a panel page or a JSON API request.

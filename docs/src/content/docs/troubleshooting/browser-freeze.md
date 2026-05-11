@@ -36,7 +36,7 @@ With the performance recorder open:
 3. End the recording after ~10 seconds.
 4. Export the trace.
 
-Then drop into our [Discord](https://discord.gg/4Bhj6NU) `#help-support`
+Then drop into our [Discord](https://discord.gg/tzqYqmAtF5) `#help-support`
 channel and post the exported file. The trace will tell us whether the
 hang is in the panel's JS, an upstream library, or your own browser
 extension.

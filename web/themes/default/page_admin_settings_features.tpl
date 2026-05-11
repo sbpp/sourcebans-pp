@@ -180,9 +180,11 @@
                         help paragraph below is the only in-panel disclosure
                         surface (no first-login modal — see issue body), so
                         the copy summarises every payload category and links
-                        to README.md's `## Privacy & telemetry` section for
-                        the field-by-field breakdown. Tone is matter-of-fact;
-                        no marketing, no apology copy.
+                        to the docs site's upgrade page for the operator-
+                        facing field-by-field walkthrough. The wire-format
+                        source of truth is the vendored schema lock file
+                        (`web/includes/Telemetry/schema-1.lock.json`). Tone
+                        is matter-of-fact; no marketing, no apology copy.
 
                         On opt-out (toggle 1 → 0), admin.settings.php's POST
                         handler clears `telemetry.instance_id` so a re-enable
@@ -211,8 +213,8 @@
                                     GeoIP-present yes/no). A random per-install ID is included so
                                     pings can be deduplicated; <strong>no</strong> hostnames, IPs,
                                     admin names, SteamIDs, or ban reasons are ever sent.
-                                    <a href="https://github.com/sbpp/sourcebans-pp/blob/main/README.md#privacy--telemetry" target="_blank" rel="noopener noreferrer">
-                                        Read the full field list and SQL behind each count
+                                    <a href="https://sbpp.github.io/updating/1.8-to-2.0/#telemetry" target="_blank" rel="noopener noreferrer">
+                                        Read more on the docs site
                                     </a>.
                                     Disabling clears the random ID, so re-enabling later issues
                                     a fresh one.

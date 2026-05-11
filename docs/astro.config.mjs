@@ -66,7 +66,7 @@ export default defineConfig({
       // dependency floor moves.
       social: {
         github: 'https://github.com/sbpp/sourcebans-pp',
-        discord: 'https://discord.gg/4Bhj6NU',
+        discord: 'https://discord.gg/tzqYqmAtF5',
       },
       editLink: {
         // Source of truth lives in sourcebans-pp; the deploy shell is
@@ -94,7 +94,10 @@ export default defineConfig({
         },
         {
           label: 'Updating',
-          items: [{ label: 'Updating SourceBans++', slug: 'updating' }],
+          items: [
+            { label: 'Updating SourceBans++', slug: 'updating' },
+            { label: 'Upgrading from 1.8.x to 2.0.x', slug: 'updating/1-8-to-2-0' },
+          ],
         },
         {
           label: 'Troubleshooting',

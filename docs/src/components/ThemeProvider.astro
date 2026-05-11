@@ -1,106 +1,105 @@
 ---
 // Override of Starlight's default ThemeProvider.
 //
-// Two behaviors layered over the stock provider, both keyed on the
-// panel's `web/themes/default/js/theme.js` first-paint contract so a
-// self-hoster moving between docs and a freshly-installed panel reads
-// it as one product:
+// Layered over the stock provider for ONE reason: the JS-disabled
+// first-paint guard at the bottom. Starlight 0.30 SSRs
+// `<html data-theme="dark">` and relies on its inline boot script to
+// re-resolve the attribute on first paint; without JS the attribute
+// is stuck at "dark", so a no-JS visitor lands on dark even though
+// the panel paints light without JS. The `<noscript><style>` block
+// below repaints the panel's LIGHT-mode color tokens onto
+// `:root[data-theme='dark']` so the cascade lands on light when JS
+// is unavailable. Mirrors the LIGHT block in `src/styles/sbpp.css`;
+// keep the two in sync when adjusting the panel-parity palette.
 //
-//   1. (M1) Default unset preference is `'auto'`, NOT Starlight's
-//      stock dark default. The panel reads
-//      `localStorage.getItem('sbpp-theme') || 'system'` and resolves
-//      'system' via `prefers-color-scheme`. Mirroring that here means
-//      a dark-OS user sees both surfaces dark on first paint and a
-//      light-OS user sees both light. The user toggle still wins
-//      forever once it lands as a 'light' or 'dark' string.
-//
-//   2. (M7) JS-disabled visitors get a CSS-only first-paint guard.
-//      Starlight 0.30 hardcodes `<html data-theme="dark">` SSR'd
-//      (see node_modules/@astrojs/starlight/components/Page.astro
-//      around line 39); without JS, the script below never fires to
-//      reset the attribute, so a no-JS visitor lands on dark. The
-//      panel's `web/themes/default/js/theme.js` paints LIGHT for
-//      no-JS visitors (no `prefers-color-scheme` media query in
-//      `theme.css` to flip tokens server-side), so the cross-product
-//      mismatch is concrete. The `<noscript><style>` block below
-//      re-applies the LIGHT-mode color tokens to
-//      `:root[data-theme='dark']` so the cascade lands on light
-//      when JS isn't available — chrome paints light, parity
-//      restored.
-//
-// Both halves are inlined into <head> so they run before paint:
-// the script with `is:inline` (synchronous, blocks paint), the
-// noscript block by being part of the document head HTML.
+// Everything ELSE in this file is reproduced verbatim from Starlight's
+// stock ThemeProvider — the `window.StarlightThemeProvider` global,
+// the `updatePickers` method, and the `<template id="theme-icons">`
+// element. The ThemeSelect dropdown's `onThemeChange` (see
+// `ThemeSelect.astro` upstream) calls
+// `StarlightThemeProvider.updatePickers(theme)` BEFORE it sets
+// `data-theme`; if the global is missing the call throws and the
+// `data-theme` write never runs — the dropdown becomes a no-op and
+// theme switching silently breaks (the bug this file used to ship).
+// When bumping `@astrojs/starlight` past 0.30, diff this file against
+// the upstream `ThemeProvider.astro` and re-sync the script + template
+// halves so the dropdown stays alive.
+
+import { Icon } from '@astrojs/starlight/components';
 ---
 
 <script is:inline>
-  (function () {
-    try {
-      var key = 'starlight-theme';
-      var stored = localStorage.getItem(key);
-      var theme;
-      if (stored === 'light' || stored === 'dark' || stored === 'auto') {
-        theme = stored;
-      } else {
-        // Default to 'auto' (resolve via prefers-color-scheme) so the
-        // first paint matches the panel's `'system'` default. The
-        // user toggle still wins on subsequent visits via the
-        // `starlight-theme` localStorage key.
-        theme = 'auto';
-      }
-      var resolved =
-        theme === 'auto'
-          ? matchMedia('(prefers-color-scheme: dark)').matches
-            ? 'dark'
-            : 'light'
-          : theme;
-      document.documentElement.dataset.theme = resolved;
-    } catch (_) {
-      // localStorage unavailable (private mode in older Safari, etc.).
-      // Fall through to Starlight's later runtime — the page will paint
-      // in whatever Starlight's defaults pick.
-    }
-  })();
+	window.StarlightThemeProvider = (() => {
+		const storedTheme =
+			typeof localStorage !== 'undefined' && localStorage.getItem('starlight-theme');
+		const theme =
+			storedTheme ||
+			(window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+		document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
+		return {
+			updatePickers(theme = storedTheme || 'auto') {
+				document.querySelectorAll('starlight-theme-select').forEach((picker) => {
+					const select = picker.querySelector('select');
+					if (select) select.value = theme;
+					/** @type {HTMLTemplateElement | null} */
+					const tmpl = document.querySelector(`#theme-icons`);
+					const newIcon = tmpl && tmpl.content.querySelector('.' + theme);
+					if (newIcon) {
+						const oldIcon = picker.querySelector('svg.label-icon');
+						if (oldIcon) {
+							oldIcon.replaceChildren(...newIcon.cloneNode(true).childNodes);
+						}
+					}
+				});
+			},
+		};
+	})();
 </script>
 
+<template id="theme-icons">
+	<Icon name="sun" class="light" />
+	<Icon name="moon" class="dark" />
+	<Icon name="laptop" class="auto" />
+</template>
+
 <noscript>
-  <style>
-    /* No-JS first-paint guard. Repaint the panel's LIGHT tokens onto
-       `:root[data-theme='dark']` (Starlight's hardcoded SSR default)
-       so the cascade lands on light when the script above never
-       runs. Mirrors the LIGHT block in src/styles/sbpp.css; keep
-       the two in sync when adjusting the panel-parity palette. */
-    :root[data-theme='dark'] {
-      color-scheme: light;
+	<style>
+		/* No-JS first-paint guard. Repaint the panel's LIGHT tokens onto
+		   `:root[data-theme='dark']` (Starlight's hardcoded SSR default)
+		   so the cascade lands on light when the script above never
+		   runs. Mirrors the LIGHT block in src/styles/sbpp.css; keep
+		   the two in sync when adjusting the panel-parity palette. */
+		:root[data-theme='dark'] {
+			color-scheme: light;
 
-      --sl-color-accent-low: var(--sbpp-brand-50);
-      --sl-color-accent: var(--sbpp-brand-600);
-      --sl-color-accent-high: var(--sbpp-brand-700);
-      --sl-color-text-accent: var(--sbpp-brand-700);
+			--sl-color-accent-low: var(--sbpp-brand-50);
+			--sl-color-accent: var(--sbpp-brand-600);
+			--sl-color-accent-high: var(--sbpp-brand-700);
+			--sl-color-text-accent: var(--sbpp-brand-700);
 
-      --sl-color-white: var(--sbpp-zinc-900);
-      --sl-color-gray-1: var(--sbpp-zinc-800);
-      --sl-color-gray-2: var(--sbpp-zinc-700);
-      --sl-color-gray-3: var(--sbpp-zinc-500);
-      --sl-color-gray-4: var(--sbpp-zinc-400);
-      --sl-color-gray-5: var(--sbpp-zinc-300);
-      --sl-color-gray-6: var(--sbpp-zinc-200);
-      --sl-color-gray-7: var(--sbpp-zinc-100);
-      --sl-color-black: #ffffff;
+			--sl-color-white: var(--sbpp-zinc-900);
+			--sl-color-gray-1: var(--sbpp-zinc-800);
+			--sl-color-gray-2: var(--sbpp-zinc-700);
+			--sl-color-gray-3: var(--sbpp-zinc-500);
+			--sl-color-gray-4: var(--sbpp-zinc-400);
+			--sl-color-gray-5: var(--sbpp-zinc-300);
+			--sl-color-gray-6: var(--sbpp-zinc-200);
+			--sl-color-gray-7: var(--sbpp-zinc-100);
+			--sl-color-black: #ffffff;
 
-      --sl-color-bg: var(--sbpp-zinc-50);
-      --sl-color-bg-nav: #ffffff;
-      --sl-color-bg-sidebar: var(--sbpp-zinc-50);
-      --sl-color-bg-inline-code: var(--sbpp-zinc-100);
+			--sl-color-bg: var(--sbpp-zinc-50);
+			--sl-color-bg-nav: #ffffff;
+			--sl-color-bg-sidebar: var(--sbpp-zinc-50);
+			--sl-color-bg-inline-code: var(--sbpp-zinc-100);
 
-      --sl-color-text: var(--sbpp-zinc-900);
-      --sl-color-text-invert: var(--sbpp-zinc-50);
+			--sl-color-text: var(--sbpp-zinc-900);
+			--sl-color-text-invert: var(--sbpp-zinc-50);
 
-      --sl-color-hairline: var(--sbpp-zinc-200);
-      --sl-color-hairline-light: var(--sbpp-zinc-100);
-      --sl-color-hairline-shade: var(--sbpp-zinc-300);
+			--sl-color-hairline: var(--sbpp-zinc-200);
+			--sl-color-hairline-light: var(--sbpp-zinc-100);
+			--sl-color-hairline-shade: var(--sbpp-zinc-300);
 
-      --sl-color-asides-text-accent: var(--sbpp-brand-700);
-    }
-  </style>
+			--sl-color-asides-text-accent: var(--sbpp-brand-700);
+		}
+	</style>
 </noscript>

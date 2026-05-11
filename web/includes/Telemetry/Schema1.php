@@ -13,18 +13,18 @@ use RuntimeException;
  * The lock file is the canonical wire-format contract for the
  * panel's daily anonymous telemetry ping (#1126). It's vendored
  * byte-for-byte from the cf-analytics companion repo via
- * `make sync-telemetry-schema`. Two parity tests gate it:
+ * `make sync-telemetry-schema`. The extractor parity test gates it:
  *
  *   - `TelemetrySchemaParityTest` deep-equals the lock file's leaf
  *     field set against the recursively-flattened output of
  *     `Telemetry::collect()`. Adding a typed slot in cf-analytics →
  *     next sync → panel parity test fails until an extractor lands.
  *
- *   - `TelemetryReadmeParityTest` deep-equals the same set against
- *     the field list bracketed by `<!-- TELEMETRY-FIELDS-START -->`
- *     / `<!-- TELEMETRY-FIELDS-END -->` in `README.md`'s
- *     `## Privacy & telemetry` section, so docs can't drift from
- *     the actual payload.
+ * The lock file is also the single source of truth for anyone who
+ * wants the field-by-field breakdown — no human-readable mirror is
+ * kept anywhere in the repo. A previous README mirror + paired
+ * `TelemetryReadmeParityTest` was removed because the duplication
+ * paid for the drift risk it created.
  *
  * `payloadFieldNames()` returns dot-paths in the natural order the
  * payload tree declares them (top-level `schema` first, then

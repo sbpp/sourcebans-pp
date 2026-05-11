@@ -52,13 +52,6 @@ The web container mounts `./web` from the host, with two named-volume
 overlays (`vendor/` and `cache/`) so Composer artifacts and Smarty cache
 don't leak onto the host filesystem.
 
-`README.md` is also bind-mounted as a read-only sibling at
-`/var/www/html/README.md` so the `TelemetryReadmeParityTest` integration
-test (#1126) can reach it from `web/../README.md`. CI gets this for free
-via `actions/checkout@v4`; the local stack mounts only `./web`, so the
-bind exists to keep the parity surface working without splitting the
-test set.
-
 ## Common tasks
 
 ```sh

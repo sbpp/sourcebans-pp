@@ -530,7 +530,7 @@ if (!$sock) {
             
             <h3 style="margin-top: 20px;">Need More Help?</h3>
             <p>Join the SourceBans++ Discord community for additional support:</p>
-            <a href="https://discord.gg/4Bhj6NU" target="_blank" class="discord-button">Join Discord</a>
+            <a href="https://discord.gg/tzqYqmAtF5" target="_blank" class="discord-button">Join Discord</a>
         </div>
 
         <div class="sdr-warning">

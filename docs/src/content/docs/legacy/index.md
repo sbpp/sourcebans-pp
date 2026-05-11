@@ -46,6 +46,6 @@ For the **current** install / upgrade / troubleshooting flow:
 
 If you're trying to upgrade an install older than 1.6.x and nothing
 in [Updating](/updating/) or the page above covers your starting
-point, drop into our [Discord](https://discord.gg/4Bhj6NU)
+point, drop into our [Discord](https://discord.gg/tzqYqmAtF5)
 `#help-support` channel — we'll walk you through it and add a page
 here if your situation is likely to recur.
