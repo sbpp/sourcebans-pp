@@ -183,6 +183,85 @@ final class Php82DeprecationsTest extends ApiTestCase
     }
 
     /**
+     * Regression for the deleted-admin scenario on the public ban
+     * list. The page handler does:
+     *
+     *     LEFT JOIN `:prefix_admins` AS AD ON BA.aid = AD.aid
+     *     ...
+     *     $data['admin'] = stripslashes($row['admin_name']);   // line 773 pre-fix
+     *
+     * When a ban was issued by an admin whose row has since been
+     * deleted (or, more rarely, when a ban was imported with an aid
+     * that never matched a real admin), `AD.user admin_name` IS NULL
+     * for that row and `stripslashes(null)` raises the PHP 8.1
+     * deprecation. The fixture's `data.sql` re-seeds a CONSOLE row at
+     * `aid = 0`, so the existing `testBanlistRendersWithoutDeprecationsForNullIpRow`
+     * coverage (which seeds `aid = 0`) does NOT exercise this branch
+     * — that row resolves to CONSOLE. We need an aid that NO admin
+     * row owns to land in the NULL branch.
+     *
+     * phpstan-dba can't see this either (the column is
+     * `varchar(64) NOT NULL` per `struc.sql`; the LEFT JOIN
+     * nullability is invisible to the typer), so PHPStan is silent
+     * on the site and this runtime gate is the only catch.
+     *
+     * Same JOIN shape lives on the public comm list — covered by
+     * the analogous test below.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistRendersWithoutDeprecationsForBanByDeletedAdmin(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedBanWithOrphanedAid();
+        $this->bootRenderHarness();
+
+        $_SESSION = [];
+        $_GET     = [];
+
+        self::trapDeprecations();
+        ob_start();
+        try {
+            require ROOT . 'pages/page.banlist.php';
+        } finally {
+            ob_end_clean();
+            restore_error_handler();
+        }
+
+        $this->assertTrue(true, 'page.banlist.php rendered without raising any deprecation notice for a ban whose admin has been deleted.');
+    }
+
+    /**
+     * commslist mirror of `testBanlistRendersWithoutDeprecationsForBanByDeletedAdmin`.
+     * `page.commslist.php` carries the same `LEFT JOIN
+     * :prefix_admins ... stripslashes($row['admin_name'])` shape
+     * (pre-fix line 614), with the same NULL-on-deleted-admin
+     * exposure.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommsListRendersWithoutDeprecationsForCommByDeletedAdmin(): void
+    {
+        $this->loginAsAdmin();
+        $this->seedCommsWithOrphanedAid();
+        $this->bootRenderHarness();
+
+        $_SESSION = [];
+        $_GET     = [];
+
+        self::trapDeprecations();
+        ob_start();
+        try {
+            require ROOT . 'pages/page.commslist.php';
+        } finally {
+            ob_end_clean();
+            restore_error_handler();
+        }
+
+        $this->assertTrue(true, 'page.commslist.php rendered without raising any deprecation notice for a comm whose admin has been deleted.');
+    }
+
+    /**
      * admin.bans.php has the worst per-file count (8 sites in #1273's
      * `rg -c` table), all on the `$prev`/`$next` pagination shape
      * across four nested sections (current protests / archive /
@@ -308,6 +387,58 @@ final class Php82DeprecationsTest extends ApiTestCase
             'STEAM_0:0:1',
             'NullIpPlayer',
             'no-ip ban (deprecation regression fixture for #1273)',
+            '127.0.0.1',
+        ]);
+    }
+
+    /**
+     * Insert one ban whose `aid` doesn't match any row in
+     * `:prefix_admins`. Simulates the production scenario where the
+     * admin who issued the ban has since been deleted from the
+     * panel, but their old bans are still on file. The
+     * `LEFT JOIN :prefix_admins ON BA.aid = AD.aid` then yields
+     * `admin_name = NULL` for this row.
+     *
+     * Picks an aid (`999999`) high enough that it's certain to be
+     * above `AUTO_INCREMENT` for any test run — the only admins
+     * inserted via `Fixture::seedAdmin` are the `admin/admin` row
+     * (aid 1) and the `data.sql`-seeded CONSOLE (aid 0).
+     */
+    private function seedBanWithOrphanedAid(): void
+    {
+        $pdo  = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans`
+                (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country, type)
+             VALUES (NULL, ?, ?, UNIX_TIMESTAMP(), 0, 0, ?, 999999, ?, 0, NULL, 0)',
+            DB_PREFIX
+        ));
+        $stmt->execute([
+            'STEAM_0:0:2',
+            'DeletedAdminTarget',
+            'ban whose issuing admin has been deleted (deprecation regression fixture)',
+            '127.0.0.1',
+        ]);
+    }
+
+    /**
+     * commslist sibling of `seedBanWithOrphanedAid`. Same shape on
+     * `:prefix_comms` (no `country` column, otherwise identical NOT
+     * NULL set per `struc.sql`).
+     */
+    private function seedCommsWithOrphanedAid(): void
+    {
+        $pdo  = Fixture::rawPdo();
+        $stmt = $pdo->prepare(sprintf(
+            'INSERT INTO `%s_comms`
+                (authid, name, created, ends, length, reason, aid, adminIp, sid, type)
+             VALUES (?, ?, UNIX_TIMESTAMP(), 0, 0, ?, 999999, ?, 0, 1)',
+            DB_PREFIX
+        ));
+        $stmt->execute([
+            'STEAM_0:0:3',
+            'DeletedAdminCommTarget',
+            'comm whose issuing admin has been deleted (deprecation regression fixture)',
             '127.0.0.1',
         ]);
     }

@@ -770,7 +770,15 @@ foreach ($res as $row) {
     if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
-        $data['admin'] = stripslashes($row['admin_name']);
+        // `AD.user admin_name` is nullable via the LEFT JOIN on
+        // `:prefix_admins`: bans whose issuing admin row was deleted
+        // (and any imported ban with an aid that never matched a real
+        // admin) leave `admin_name` IS NULL. The schema column itself
+        // is NOT NULL — phpstan-dba can't see through LEFT JOIN — so
+        // the static gate misses this site (#1273 null-into-scalar
+        // discipline: cast at the call site when the value should
+        // always be a string but the type system can't see it).
+        $data['admin'] = stripslashes((string) $row['admin_name']);
     }
     $data['reason']     = stripslashes($row['ban_reason']);
     $data['ban_length'] = $row['ban_length'] == 0 ? 'Permanent' : SecondsToString((int) $row['ban_length']);

@@ -611,7 +611,10 @@ foreach ($res as $row) {
     if (Config::getBool('banlist.hideadminname') && !$userbank->is_admin()) {
         $data['admin'] = false;
     } else {
-        $data['admin'] = stripslashes($row['admin_name']);
+        // Same LEFT JOIN nullability as page.banlist.php:773 — see
+        // the matching comment there for the rationale (deleted-
+        // admin scenario, #1273 null-into-scalar discipline).
+        $data['admin'] = stripslashes((string) $row['admin_name']);
     }
     $data['reason'] = stripslashes($row['ban_reason']);
 
