@@ -2,6 +2,7 @@
 
 namespace Sbpp\Tests\Api;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use Sbpp\Tests\ApiTestCase;
 use Sbpp\Tests\Fixture;
 
@@ -203,9 +204,7 @@ final class GroupsTest extends ApiTestCase
         yield 'high+low mix (bit 31 + bit 0)' => [2147483648 + 1];
     }
 
-    /**
-     * @dataProvider highBitFlagProvider
-     */
+    #[DataProvider('highBitFlagProvider')]
     public function testEditRoundTripsHighBitFlagsAsPositiveIntegers(int $flags): void
     {
         $this->loginAsAdmin();
