@@ -75,10 +75,24 @@ shared hosting it's usually your FTP user.
     # The chmod commands below use 644 / 774 — adjust if your host
     # requires different bits. The intent is "writable by the
     # webserver user".
+
+    # config.php must be writable by the webserver — the install
+    # wizard appends DB credentials and SB_SECRET_KEY to it.
     sudo chmod 644 config.php
+
+    # demos/ holds player-uploaded ban-evidence demos (.dem files).
     sudo chmod -R 644 demos
+
+    # themes_c/ is Smarty's compiled-template cache — the panel
+    # writes here on every theme paint.
     sudo chmod -R 774 themes_c
+
+    # images/games/ stores the per-game icons admins can upload from
+    # Admin → Mods.
     sudo chmod -R 644 images/games
+
+    # images/maps/ stores the per-map thumbnails surfaced on the
+    # public Servers list.
     sudo chmod -R 644 images/maps
     ```
 
