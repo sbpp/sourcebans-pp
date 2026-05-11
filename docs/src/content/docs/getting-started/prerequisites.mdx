@@ -7,6 +7,14 @@ sidebar:
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
+:::note
+This page is **new content authored for the docs migration** (#1333) —
+the legacy `sbpp.github.io` site folded prerequisites into the
+Quickstart instead of breaking them out. The version / extension list
+below is sourced from the live install wizard
+(`web/install/pages/page.3.php`) and `web/composer.json`.
+:::
+
 A standalone version of the requirements list that ships at the top of
 the [Quickstart](/getting-started/quickstart/) — useful as a single-page
 reference when you're checking a host before committing.
@@ -42,21 +50,25 @@ names with emoji or 4-byte CJK characters otherwise fail to insert.
 
 ### PHP
 
-- **PHP >= 8.5**
-- `memory_limit` >= 64M
-- Required extensions:
+- **PHP >= 8.5** (enforced by `web/composer.json` and re-checked in
+  the install wizard's "System check" step)
+- `memory_limit` >= 64M (a sensible recommendation; not enforced by
+  the wizard, but the panel will hit OOM on large ban-list paginations
+  below this)
+- Required extensions (all five checked by the install wizard):
   - `gmp`
-  - `pdo` + `pdo_mysql`
+  - `pdo_mysql`
   - `openssl`
   - `xml`
+  - `mbstring`
 
 A quick check:
 
 ```sh
-php -m | grep -E '^(gmp|pdo_mysql|openssl|xml)$'
+php -m | grep -E '^(gmp|pdo_mysql|openssl|xml|mbstring)$'
 ```
 
-You should see all four printed back. If `pdo_mysql` is missing, see
+You should see all five printed back. If `pdo_mysql` is missing, see
 [Could not find driver](/troubleshooting/could-not-find-driver/).
 
 ### Composer (only when installing from `main`)
@@ -69,9 +81,12 @@ directly (development install), pull deps with:
 cd web && composer install
 ```
 
-The installer wizard's recovery surface will tell you if `vendor/`
-is missing — but the cleaner story is "use a release tarball unless
-you're hacking on the panel itself".
+The install wizard ships a recovery surface (`web/install/recovery.php`)
+that detects a missing `vendor/` and prints recovery instructions —
+useful when an FTP upload silently skipped the directory or when
+you're running off a fresh git clone. The cleaner story for a
+production install is "use a release tarball unless you're hacking on
+the panel itself".
 
 ## Game
 

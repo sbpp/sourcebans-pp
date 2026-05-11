@@ -5,6 +5,15 @@ sidebar:
   order: 2
 ---
 
+:::note
+This page is **new content authored for the docs migration** (#1333) —
+the legacy `sbpp.github.io` site never had a dedicated plugin-setup
+page. The configs and plugin list below are sourced from the live
+`game/addons/sourcemod/scripting/` tree and should be verifiable
+against your release zip; if you spot a divergence, please open a PR
+or drop a note in `#help-support` on Discord.
+:::
+
 The plugin half of SourceBans++ is what actually applies bans /
 mutes / gags in-game and reports new admin actions back to the panel.
 This page covers the two config files the plugin needs and the
@@ -50,7 +59,8 @@ plugin re-reads the config.
 
 ## Common companion plugins
 
-These ship in the same release as the core plugin; load only what
+These ship in the same release as the core plugin (one `.sp` source
+per plugin under `game/addons/sourcemod/scripting/`); load only what
 you need.
 
 - **`sbpp_main.smx`** — the core plugin. Required.
@@ -60,6 +70,9 @@ you need.
   offline).
 - **`sbpp_report.smx`** — in-game `!report` command.
 - **`sbpp_sleuth.smx`** — alt-account detection helper.
+- **`sbpp_admcfg.smx`** — admin-config loader. Reads admin / group /
+  override files from the panel into SourceMod (replaces SourceMod's
+  stock `admin-flatfile.smx` + `sb_admcfg.smx` from older builds).
 
 Plus the standalone Discord forwarder shipped from
 [`sbpp/discord-forward`](https://github.com/sbpp/discord-forward) —
