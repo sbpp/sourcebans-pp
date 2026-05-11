@@ -56,6 +56,11 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change the local dev stack (Docker, db-init, env vars)      | `docker/README.md` first, link from `ARCHITECTURE.md` if it changes the dev mental model |
 | Edit user-facing install/quickstart                         | `README.md`                                           |
 | Add or change a wizard step (page handler / View / template / shared helper) | `AGENTS.md` (Install wizard convention block) + the "Edit a step of the install wizard" row in "Where to find what" |
+| Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
+| Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus `UPGRADING.md` if it's a breaking change between releases |
+| Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
+| Touch any UI under `web/install/` or the panel chrome that's screenshotted in docs | Apply the `affects-ui` label to your PR so `docs-screenshots.yml` regenerates the captures, OR run `npm run capture` in `docs/` locally and commit the PNG diff |
+| Change panel theme tokens — palette, geometry, semantic colors — in `web/themes/default/css/theme.css` (the `:root` block or `html.dark` overrides) | Mirror the change in `docs/src/styles/sbpp.css` so the docs site stays visually consistent with the panel. Same PR. (Fonts intentionally not mirrored — see #1333 §2.) |
 
 Quick rules:
 
@@ -68,6 +73,12 @@ Quick rules:
   one-liner goes here; the explanation goes there.
 - The "Where to find what" table at the bottom is the cheap index — add
   a row whenever you create a new file an agent might need to locate.
+- If your change affects a self-hoster — what they install, how they
+  upgrade, what they configure, what error message they see — the docs
+  change ships in the same PR. The docs are part of the codebase now;
+  treat them like code. Screenshots are auto-captured (UI-affecting PRs
+  get the `affects-ui` label), and panel theme-token changes mirror into
+  `docs/src/styles/sbpp.css` so the two surfaces stay visually aligned.
 
 ## Dev commands (`./sbpp.sh`)
 
@@ -1538,6 +1549,8 @@ audit (#1207) locked in. New CTAs:
 | Need to …                              | Look at                                                  |
 | -------------------------------------- | -------------------------------------------------------- |
 | Understand request lifecycle           | `ARCHITECTURE.md` ("Page request lifecycle" / "JSON API request lifecycle") |
+| Edit a docs page or add a new one (the Astro + Starlight site published at sbpp.github.io) | `docs/src/content/docs/<group>/<slug>.md` (or `.mdx` when the page uses tabs / cards / asides — e.g. `getting-started/quickstart.mdx`, `setup/mariadb.mdx`). New pages also need a sidebar entry in `docs/astro.config.mjs` (the `sidebar:` array). Site config + theme tokens live in `docs/astro.config.mjs` + `docs/src/styles/sbpp.css`. The Starlight chrome ships from `@astrojs/starlight`; layout overrides land under `docs/src/components/` (see `ThemeProvider.astro` for the canonical override shape). Local dev: `cd docs && npm install && npm run dev`. CI gates: `.github/workflows/docs-build.yml` (per-PR build), `docs-deploy-trigger.yml` (main → repository_dispatch into sbpp.github.io), `docs-screenshots.yml` (gated on the `affects-ui` label, runs `docs/scripts/capture.mjs`). Source of truth is here; sbpp.github.io is the deploy shell only (#1333). |
+| Refresh installer / panel screenshots used in docs pages | `docs/scripts/capture.mjs` (Playwright; `npm run capture` in `docs/`). Output lands under `docs/src/assets/auto/{install,panel}/<stable-slug>.png` so docs pages keep referencing the same path across runs. CI does this automatically on PRs labelled `affects-ui`; locally run after `./sbpp.sh up`. STEAM_API_KEY is the all-zero dummy `00000000000000000000000000000000`. |
 | Add a JSON action                      | `web/api/handlers/_register.php` + `web/api/handlers/<topic>.php` |
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
