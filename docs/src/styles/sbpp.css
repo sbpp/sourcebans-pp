@@ -190,7 +190,13 @@
    Targets the public Starlight selector (`.starlight-aside`); both
    Markdown :::note syntax and the <Aside> component land in this DOM. */
 .starlight-aside {
-  border-left: 0.25rem solid var(--sl-color-asides-border);
+  /* Logical (writing-direction-aware) property — stock Starlight uses
+     border-inline-start so RTL locales (Arabic, Hebrew) get the accent
+     stripe on the visually-leading edge. The migration spec mentions
+     LLM-driven translation in "Future automation goals", so RTL
+     content WILL land here eventually — keep the logical property
+     (#1333 review M6). */
+  border-inline-start: 0.25rem solid var(--sl-color-asides-border);
   border-radius: var(--sbpp-radius-md);
 }
 
