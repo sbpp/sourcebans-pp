@@ -86,6 +86,15 @@ function SbppGroupsAddTypeChanged(sel) {
     srvBlock.style.display = (sel.value === '2') ? 'block' : 'none';
 }
 
+// Local wrapper around window.SBPP.setBusy with a `disabled`-only fallback
+// so a third-party theme that strips theme.js still gates against double-clicks.
+function SbppGroupsAddSetBusy(btn, busy) {
+    if (!btn) return;
+    var S = window.SBPP;
+    if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+    else btn.disabled = busy === undefined ? true : !!busy;
+}
+
 function SbppGroupsAdd(event) {
     event.preventDefault();
     var form = event.target;
@@ -93,6 +102,8 @@ function SbppGroupsAdd(event) {
     var type = form.querySelector('select[name="type"]').value;
     var srvflagsEl = form.querySelector('input[name="srvflags"]');
     var srvflags = srvflagsEl ? srvflagsEl.value : '';
+    var submitBtn = form.querySelector('[data-testid="add-group-submit"]');
+    SbppGroupsAddSetBusy(submitBtn, true);
     sb.api.call(Actions.GroupsAdd, {
         name: name,
         type: type,
@@ -105,8 +116,9 @@ function SbppGroupsAdd(event) {
         // sb.message is the legacy fallback (no-ops under sbpp2026 since #dialog-* is
         // legacy-default-only, but kept so a third-party theme that never wired SBPP
         // still gets some signal).
-        if (!r) return;
+        if (!r) { SbppGroupsAddSetBusy(submitBtn, false); return; }
         if (r.redirect) return;
+        SbppGroupsAddSetBusy(submitBtn, false);
         if (r.ok === false) {
             var em = (r.error && r.error.message) || 'Unknown error';
             if (window.SBPP && typeof window.SBPP.showToast === 'function') {
@@ -125,6 +137,9 @@ function SbppGroupsAdd(event) {
             sb.message.success(title, body, data.message ? data.message.redir : '');
         }
         if (data.reload) {
+            // Re-arm before the reload so a stale render briefly shows the
+            // disabled state, then leaves the form re-enabled if reload fails.
+            SbppGroupsAddSetBusy(submitBtn, true);
             setTimeout(function () { window.location.reload(); }, 2000);
         }
     });

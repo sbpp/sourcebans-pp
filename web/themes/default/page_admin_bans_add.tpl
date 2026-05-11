@@ -251,6 +251,18 @@
             window.sb.message[kind](title, body || '');
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
     function validate(type) {
         var err = 0;
         var reason = '';
@@ -307,7 +319,7 @@
         if (reason === null) return;
         var a = api(), A = actions();
         if (!a || !A) return;
-        btn.disabled = true;
+        setBusy(btn, true);
         a.call(A.BansAdd, {
             nickname: $id('nickname').value,
             type: type,
@@ -319,7 +331,7 @@
             reason: reason,
             fromsub: Number(($id('fromsub') && $id('fromsub').value) || 0)
         }).then(function (r) {
-            btn.disabled = false;
+            setBusy(btn, false);
             if (!r || r.ok === false) {
                 toast('error', 'Add ban failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;

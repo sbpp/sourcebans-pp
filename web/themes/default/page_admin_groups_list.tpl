@@ -111,7 +111,7 @@
                             <button type="button"
                                     class="btn btn--ghost btn--sm"
                                     data-testid="group-delete"
-                                    onclick="SbppGroupsDelete({$selected_group.gid}, '{$selected_group.name|escape:'javascript'}');">Delete group</button>
+                                    onclick="SbppGroupsDelete({$selected_group.gid}, '{$selected_group.name|escape:'javascript'}', this);">Delete group</button>
                         {/if}
                     </div>
                     <div class="card__body space-y-4">
@@ -232,7 +232,7 @@
                                     <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=groups&o=edit&type=srv&id={$group.id|escape:'url'}">Edit</a>
                                 {/if}
                                 {if $permission_deletegroup}
-                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.id}, '{$group.name|escape:'javascript'}', 'srv');">Delete</button>
+                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.id}, '{$group.name|escape:'javascript'}', 'srv', this);">Delete</button>
                                 {/if}
                             </div>
                         </div>
@@ -334,7 +334,7 @@
                                     <a class="btn btn--ghost btn--sm" href="index.php?p=admin&c=groups&o=edit&type=server&id={$group.gid|escape:'url'}">Edit</a>
                                 {/if}
                                 {if $permission_deletegroup}
-                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.gid}, '{$group.name|escape:'javascript'}', 'server');">Delete</button>
+                                    <button type="button" class="btn btn--ghost btn--sm" onclick="SbppServerGroupsDelete({$group.gid}, '{$group.name|escape:'javascript'}', 'server', this);">Delete</button>
                                 {/if}
                             </div>
                         </div>
@@ -438,32 +438,65 @@ function SbppGroupsApplyResponse(r, opts) {
     }
 }
 
+// Local wrapper around window.SBPP.setBusy that falls back to `disabled`
+// so a stripped-down theme still gates against double-clicks.
+function SbppGroupsSetBusy(btn, busy) {
+    if (!btn) return;
+    var S = window.SBPP;
+    if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+    else btn.disabled = busy === undefined ? true : !!busy;
+}
+
 function SbppGroupsSave(event) {
     event.preventDefault();
     var form = event.target;
     var gid = Number(form.querySelector('input[name="gid"]').value);
     var name = form.querySelector('input[name="name"]').value;
     var bitmask = SbppFoldFlags(form);
+    var submitBtn = form.querySelector('[data-testid="group-save"]');
+    SbppGroupsSetBusy(submitBtn, true);
     sb.api.call(Actions.GroupsEdit, {
         gid: gid,
         name: name,
         web_flags: bitmask,
         srv_flags: '',
         type: 'web'
-    }).then(function (r) { SbppGroupsApplyResponse(r, { defaultTitle: 'Group updated' }); });
+    }).then(function (r) {
+        SbppGroupsSetBusy(submitBtn, false);
+        SbppGroupsApplyResponse(r, { defaultTitle: 'Group updated' });
+    });
     return false;
 }
 
-function SbppGroupsDelete(gid, name) {
+function SbppGroupsDelete(gid, name, btn) {
     if (!confirm('Delete group "' + name + '"?')) return;
+    SbppGroupsSetBusy(btn, true);
     sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: 'web' })
-        .then(function (r) { SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' }); });
+        .then(function (r) {
+            // Leave the button busy on success — the apply handler reloads /
+            // navigates within 1.5s and re-enabling it would let the operator
+            // queue a second delete on the now-stale row.
+            if (r && r.ok && (r.data && (r.data.reload || (r.data.message && r.data.message.redir)))) {
+                SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
+                return;
+            }
+            SbppGroupsSetBusy(btn, false);
+            SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
+        });
 }
 
-function SbppServerGroupsDelete(gid, name, type) {
+function SbppServerGroupsDelete(gid, name, type, btn) {
     if (!confirm('Delete group "' + name + '"?')) return;
+    SbppGroupsSetBusy(btn, true);
     sb.api.call(Actions.GroupsRemove, { gid: Number(gid), type: String(type) })
-        .then(function (r) { SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' }); });
+        .then(function (r) {
+            if (r && r.ok && (r.data && (r.data.reload || (r.data.message && r.data.message.redir)))) {
+                SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
+                return;
+            }
+            SbppGroupsSetBusy(btn, false);
+            SbppGroupsApplyResponse(r, { defaultTitle: 'Group deleted' });
+        });
 }
 
 // --- Live bitmask preview (#1258) ---

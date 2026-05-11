@@ -72,13 +72,26 @@
         return;
       }
 
+      // Surface the busy state on the submit button while the comment
+      // POST is in flight. The success branch navigates to the banlist
+      // (`window.location.href = …`), so the disabled state hangs around
+      // until the new page paints; the catch branch releases it.
+      const SBPP = /** @type {any} */ (window).SBPP;
+      const submitBtn = /** @type {HTMLButtonElement | null} */ (cform.querySelector('button[type="submit"]'));
+      const setBusy = (/** @type {boolean} */ on) => {
+        if (!submitBtn) return;
+        if (SBPP && typeof SBPP.setBusy === 'function') SBPP.setBusy(submitBtn, on);
+        else submitBtn.disabled = on;
+      };
+      setBusy(true);
+
       const action = cid > 0 ? Actions.BansEditComment : Actions.BansAddComment;
       sb.api.call(action, { bid: bid, cid: cid, ctype: ctype, ctext: value, page: page })
         .then(() => {
           window.location.href = 'index.php?p=banlist' + (page > 0 ? '&page=' + page : '');
         })
         .catch((/** @type {Error} */ err) => {
-          const SBPP = /** @type {any} */ (window).SBPP;
+          setBusy(false);
           if (SBPP && SBPP.showToast) {
             SBPP.showToast({ kind: 'error', title: 'Failed to save comment', body: err.message });
           } else {

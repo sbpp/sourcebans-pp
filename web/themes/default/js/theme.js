@@ -591,6 +591,15 @@
      * `[hidden]` UA rule (`display:none`) and every panel would render
      * stacked on top of the active one. `activateDrawerTab` flips both
      * attributes together when a tab is activated.
+     *
+     * Pre-fix the placeholder was a single muted `Loading…` text node.
+     * That worked but read as static text — the user never saw "the
+     * panel is doing something" beyond the eight-character label.
+     * `renderPaneSkeleton()` (below) wraps the same `[data-pane-empty]`
+     * + `aria-busy` testability contract around two `.skel` shimmer
+     * rows so History / Comms / Notes all share the visual vocabulary
+     * the drawer header uses for its own loading state.
+     *
      * @param {string} id
      * @returns {string}
      */
@@ -603,7 +612,7 @@
       + ' tabindex="0"'
       + ' hidden'
       + ' style="padding:1rem 1.25rem;display:none;flex-direction:column;gap:0.75rem;overflow-y:auto;flex:1">'
-      +   '<div data-pane-empty class="text-sm text-muted">Loading\u2026</div>'
+      +   renderPaneSkeleton()
       + '</div>';
 
     let panelsHtml = overviewHtml + lazyPanel('history') + lazyPanel('comms');
@@ -691,6 +700,41 @@
     }
 
     return idHtml + banHtml + commentsHtml;
+  }
+
+  /**
+   * Build the lazy-pane loading placeholder. Mirrors the drawer
+   * header's `renderDrawerLoading()` shape with `.skel` shimmer rows
+   * so a user opening History / Comms / Notes sees the same
+   * "something's loading" vocabulary as the initial drawer open.
+   *
+   * The `data-pane-empty` attribute is the existing contract for the
+   * unloaded placeholder (the `refreshNotesPane` reset path keys off
+   * it implicitly when it overwrites innerHTML); `aria-busy="true"`
+   * announces the busy state to AT users.
+   *
+   * Why NO `data-skeleton` here
+   * ---------------------------
+   * The page-level waiter in `web/tests/e2e/pages/_base.ts` blocks
+   * until `'[data-loading="true"], [data-skeleton]:not([hidden])'`
+   * returns no nodes. The lazy panels start with `hidden` on the
+   * tabpanel *parent*, but `:not([hidden])` only checks the matched
+   * element's own attribute — a `data-skeleton` block nested inside
+   * a `hidden` tabpanel would still match and stall every page-load
+   * wait that runs after the drawer opens. Confine `[data-skeleton]`
+   * to surfaces where the marker itself (or its direct container)
+   * carries the visibility toggle (the drawer header skeleton lives
+   * under `#drawer-root[data-loading="true"]`, which IS a terminal
+   * marker, so it's safe there).
+   *
+   * @returns {string}
+   */
+  function renderPaneSkeleton() {
+    return '<div data-pane-empty aria-busy="true" aria-label="Loading\u2026" style="display:flex;flex-direction:column;gap:0.625rem">'
+      +   '<div class="skel" style="height:0.875rem;width:40%"></div>'
+      +   '<div class="skel" style="height:0.875rem"></div>'
+      +   '<div class="skel" style="height:0.875rem;width:70%"></div>'
+      + '</div>';
   }
 
   /**
@@ -890,7 +934,9 @@
 
   /**
    * Reload the Notes pane after an add/delete mutation. Forces the
-   * lazy loader to re-run by clearing `data-loaded`.
+   * lazy loader to re-run by clearing `data-loaded` and dropping the
+   * same `renderPaneSkeleton()` placeholder back in so the operator
+   * gets the same shimmer treatment they got on first activation.
    * @returns {Promise<void>}
    */
   async function refreshNotesPane() {
@@ -898,25 +944,43 @@
     const panel = /** @type {HTMLElement | null} */ (drawerRoot.querySelector('[role="tabpanel"][data-drawer-panel="notes"]'));
     if (!panel) return;
     delete panel.dataset.loaded;
-    panel.innerHTML = '<div data-pane-empty class="text-sm text-muted">Loading\u2026</div>';
+    panel.innerHTML = renderPaneSkeleton();
     await loadPaneIfNeeded('notes');
   }
 
   /**
-   * Render the placeholder skeleton shown during the in-flight fetch.
+   * Render the placeholder skeleton shown during the in-flight `bans.detail`
+   * fetch. The blocks use the `.skel` class (defined in `theme.css` —
+   * `linear-gradient` + `shimmer` keyframe + dark-mode override; the
+   * global `prefers-reduced-motion: reduce` rule pins
+   * `animation-duration` to ~0ms so reduced-motion users see the
+   * static placeholder colour, not the shimmer).
+   *
+   * Pre-fix the function emitted `class="skeleton"` (singular, no CSS
+   * rule defined), so the skeleton blocks rendered as transparent
+   * zero-background divs and the drawer read as "just blank" between
+   * click and bans.detail response — exactly the symptom the user
+   * reported. The CSS rule the markup was meant to ride has always
+   * been `.skel`, not `.skeleton`; rename the markup to match.
+   *
+   * `[data-testid="drawer-loading"]` is the E2E hook; `aria-busy="true"`
+   * + `aria-label="Loading player details"` carry the screen-reader
+   * announcement without needing a `.sr-only` CSS rule (none exists
+   * in the theme).
+   *
    * @returns {string}
    */
   function renderDrawerLoading() {
-    return '<header class="drawer__header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
-      + '<div class="skeleton" style="width:8rem;height:1.25rem"></div>'
+    return '<header class="drawer__header" data-testid="drawer-loading" aria-busy="true" aria-label="Loading player details" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
+      + '<div class="skel" data-skeleton style="width:8rem;height:1.25rem"></div>'
       + '<button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
       + '<i data-lucide="x"></i>'
       + '</button>'
       + '</header>'
       + '<div class="drawer__body" style="padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem">'
-      +   '<div class="skeleton" style="height:0.875rem"></div>'
-      +   '<div class="skeleton" style="height:0.875rem;width:60%"></div>'
-      +   '<div class="skeleton" style="height:0.875rem;width:80%"></div>'
+      +   '<div class="skel" data-skeleton style="height:0.875rem"></div>'
+      +   '<div class="skel" data-skeleton style="height:0.875rem;width:60%"></div>'
+      +   '<div class="skel" data-skeleton style="height:0.875rem;width:80%"></div>'
       + '</div>';
   }
 
@@ -1023,7 +1087,7 @@
       const nid = parseInt(delBtn.dataset.notesDelete || '0', 10);
       if (nid > 0) {
         e.preventDefault();
-        void deleteNote(nid);
+        void deleteNote(nid, delBtn);
         return;
       }
     }
@@ -1094,30 +1158,48 @@
       return;
     }
 
-    const env = await sb.api.call(Actions.NotesAdd, { steam_id: steamId, body: body });
-    if (env && env.ok) {
-      if (textarea) textarea.value = '';
-      await refreshNotesPane();
-      showToast({ kind: 'success', title: 'Note added' });
-    } else {
-      const msg = (env && env.error && env.error.message) || 'Couldn\u2019t add note.';
-      showToast({ kind: 'error', title: 'Note not saved', body: msg });
+    // Surface the busy state on the form's submit button so the operator
+    // sees that the click registered while notes.add is in flight.
+    const submitBtn = /** @type {HTMLButtonElement | null} */ (form.querySelector('button[type="submit"]'));
+    setBusy(submitBtn, true);
+    try {
+      const env = await sb.api.call(Actions.NotesAdd, { steam_id: steamId, body: body });
+      if (env && env.ok) {
+        if (textarea) textarea.value = '';
+        await refreshNotesPane();
+        showToast({ kind: 'success', title: 'Note added' });
+      } else {
+        const msg = (env && env.error && env.error.message) || 'Couldn\u2019t add note.';
+        showToast({ kind: 'error', title: 'Note not saved', body: msg });
+      }
+    } finally {
+      // The pane re-renders on success which replaces the form node, so
+      // `submitBtn` may already be detached — `setBusy` no-ops when the
+      // ref is missing, but the explicit release guards the failure path
+      // (and any future early-return) without leaving the button busy.
+      setBusy(submitBtn, false);
     }
   }
 
   /**
    * POST `notes.delete` and refresh the Notes pane.
    * @param {number} nid
+   * @param {HTMLElement | null} [triggerBtn]
    * @returns {Promise<void>}
    */
-  async function deleteNote(nid) {
-    const env = await sb.api.call(Actions.NotesDelete, { nid: nid });
-    if (env && env.ok) {
-      await refreshNotesPane();
-      showToast({ kind: 'success', title: 'Note deleted' });
-    } else {
-      const msg = (env && env.error && env.error.message) || 'Couldn\u2019t delete note.';
-      showToast({ kind: 'error', title: 'Note not deleted', body: msg });
+  async function deleteNote(nid, triggerBtn) {
+    setBusy(triggerBtn || null, true);
+    try {
+      const env = await sb.api.call(Actions.NotesDelete, { nid: nid });
+      if (env && env.ok) {
+        await refreshNotesPane();
+        showToast({ kind: 'success', title: 'Note deleted' });
+      } else {
+        const msg = (env && env.error && env.error.message) || 'Couldn\u2019t delete note.';
+        showToast({ kind: 'error', title: 'Note not deleted', body: msg });
+      }
+    } finally {
+      setBusy(triggerBtn || null, false);
     }
   }
 
@@ -1268,7 +1350,46 @@
     }
   });
 
-  /** @type {any} */ (window).SBPP = { showToast: showToast, openDrawer: openDrawer, closeDrawer: closeDrawer };
+  // ---- ACTION-BUTTON BUSY STATE ----------------------------
+  // Inline page-tail scripts that fire `sb.api.call(…)` from a click
+  // handler call this on submit and again from the .then tail to
+  // release. Without it every Confirm modal looked frozen between
+  // the click and the API response — `btn.disabled = true` is a
+  // load-bearing gate against double-clicks but invisible on its
+  // own; the paired `.btn[data-loading="true"]` CSS rule in
+  // theme.css owns the visual spinner.
+  //
+  // Idempotent in both directions: calling with `busy=true` twice
+  // leaves the button in its busy state; calling with `busy=false`
+  // when it isn't busy is a no-op.
+  //
+  // The `disabled` flip stays even on third-party themes that
+  // strip the CSS rule, so the gate against double-clicks is
+  // preserved regardless of whether the spinner ever paints.
+  // Per-file fallback helpers (`setBusy(btn, busy)` in each
+  // inline IIFE) further fall back to bare `btn.disabled = busy`
+  // when `window.SBPP` itself isn't defined.
+  /**
+   * @param {HTMLElement | null} btn
+   * @param {boolean} [busy] defaults to true
+   * @returns {void}
+   */
+  function setBusy(btn, busy) {
+    if (!btn) return;
+    const isBusy = busy === undefined ? true : !!busy;
+    const b = /** @type {HTMLButtonElement} */ (btn);
+    if (isBusy) {
+      btn.setAttribute('data-loading', 'true');
+      btn.setAttribute('aria-busy', 'true');
+      b.disabled = true;
+    } else {
+      btn.removeAttribute('data-loading');
+      btn.removeAttribute('aria-busy');
+      b.disabled = false;
+    }
+  }
+
+  /** @type {any} */ (window).SBPP = { showToast: showToast, openDrawer: openDrawer, closeDrawer: closeDrawer, setBusy: setBusy };
 
   // ---- HELPERS ---------------------------------------------
   /**

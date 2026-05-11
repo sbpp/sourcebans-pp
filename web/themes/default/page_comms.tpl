@@ -720,6 +720,20 @@
             sbpp.showToast({ kind: kind, title: title, body: body || '' });
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     * @param {Element|null} btn
+     * @param {boolean} [busy] defaults to true
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = /** @type {any} */ (window).SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else /** @type {HTMLButtonElement} */ (btn).disabled = busy === undefined ? true : !!busy;
+    }
 
     /**
      * Find every DOM node that mirrors the same comm-block id — the
@@ -886,9 +900,13 @@
         d.setAttribute('hidden', '');
         // Re-enable any unblock buttons we disabled before showing the
         // dialog so a Cancel click leaves the row clickable again.
+        // Includes the `data-loading="true"` selector branch so a
+        // SetBusy-flipped trigger releases too (the row-action button
+        // never gets flipped through this code path today, but the
+        // pairing keeps the contract symmetric).
         Array.prototype.forEach.call(
-            document.querySelectorAll('[data-action="comms-unblock"][disabled]'),
-            function (btn) { /** @type {HTMLButtonElement} */ (btn).disabled = false; }
+            document.querySelectorAll('[data-action="comms-unblock"][disabled], [data-action="comms-unblock"][data-loading="true"]'),
+            function (btn) { setBusy(btn, false); }
         );
         pending = null;
     }
@@ -925,10 +943,10 @@
 
         if (act === 'comms-delete') {
             if (!window.confirm('Delete the block for "' + name + '"?')) return;
-            /** @type {HTMLButtonElement} */ (btn).disabled = true;
+            setBusy(btn, true);
             a.call(A.CommsDelete, { bid: Number(bid) }).then(function (r) {
                 if (!r || r.ok === false) {
-                    /** @type {HTMLButtonElement} */ (btn).disabled = false;
+                    setBusy(btn, false);
                     var msg = (r && r.error && r.error.message) || 'Unknown error';
                     toast('error', 'Delete failed', msg);
                     return;
@@ -973,11 +991,11 @@
 
         var ctx = pending;
         var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="comms-unblock-submit"]'));
-        if (submitBtn) submitBtn.disabled = true;
+        setBusy(submitBtn, true);
 
         var a = api(), A = actions();
         if (!a || !A) {
-            if (submitBtn) submitBtn.disabled = false;
+            setBusy(submitBtn, false);
             if (ctx.fallback) {
                 var sep = ctx.fallback.indexOf('?') === -1 ? '?' : '&';
                 window.location.href = ctx.fallback + sep + 'ureason=' + encodeURIComponent(reason);
@@ -986,7 +1004,7 @@
         }
 
         a.call(A.CommsUnblock, { bid: Number(ctx.bid), ureason: reason }).then(function (r) {
-            if (submitBtn) submitBtn.disabled = false;
+            setBusy(submitBtn, false);
             if (!r || r.ok === false) {
                 var msg = (r && r.error && r.error.message) || 'Unknown error';
                 showError(msg);

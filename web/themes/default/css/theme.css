@@ -360,6 +360,77 @@ html.dark .btn--secondary[aria-pressed="true"] {
    so width/padding stay locked to the square shape. */
 .btn--xs { height: 1.5rem; width: 1.5rem; min-width: 1.5rem; }
 
+/* ---- In-flight action buttons (`window.SBPP.setBusy(btn, true)`) ----
+   Paired with the `setBusy` helper in `theme.js`. Inline page-tail
+   scripts that fire `sb.api.call(…)` from a click handler (the
+   `#bans-unban-dialog` / `#comms-unblock-dialog` / `#admins-delete-dialog`
+   Confirm buttons, server-delete / protests-archive / submissions-archive
+   row buttons, the addban / account / lostpassword / login forms,
+   etc.) flip the trigger to `data-loading="true"` on submit so the
+   user gets immediate visual feedback that the click was received
+   and the API call is in flight. Without this every Confirm modal
+   looked frozen between the click and the API response (it took 100s
+   of milliseconds on a typical install) and users instinctively
+   double-clicked to "make it work", queuing duplicate requests until
+   the disabled flag landed.
+
+   How the visual works
+   --------------------
+   The button's existing content (icon + label) is hidden via the
+   visibility-hidden / color-transparent combo (the icon is a child
+   element so `visibility: hidden` covers it; labels are direct text
+   nodes so `color: transparent !important` is the only way to hide
+   them in CSS), and a `::after` donut takes its place at the button's
+   center. The button's width stays locked because the original
+   content still occupies its layout space — no layout shift between
+   the busy and idle states. `pointer-events: none` is the visual
+   contract; the load-bearing gate against double-clicks is `disabled`
+   on the underlying `<button>` (theme.js sets both together).
+
+   `--btn-color` instead of `currentColor`
+   ---------------------------------------
+   `color: transparent !important` sets the rendered color of the
+   button to transparent; `currentColor` inside the pseudo-element
+   resolves to the inherited color, which would be transparent too
+   (an invisible spinner). Every `.btn--*` modifier sets `--btn-color`
+   to its semantic foreground colour, so the spinner can pull that
+   variable directly. The `currentColor` fallback covers third-party
+   button shapes that ride the loading class without going through
+   `.btn--primary` / `.btn--secondary` / etc. — they'll still get a
+   visible spinner, just in the inherited color.
+
+   Reduced motion
+   --------------
+   The global `prefers-reduced-motion: reduce` block (later in this
+   file) already pins `animation-duration` to 0.001ms on every
+   `::after`, so the spinner sits still for reduced-motion users.
+   They still see the donut shape + `cursor: progress` + the
+   disabled button state, which is enough to convey "in flight"
+   without the rotation. Don't add a per-rule override that
+   pre-empts the global reset — that's the anti-pattern called out
+   in the matching `@keyframes slide-in` block. */
+.btn[data-loading="true"] {
+  position: relative;
+  cursor: progress;
+  pointer-events: none;
+  color: transparent !important;
+  text-shadow: none !important;
+}
+.btn[data-loading="true"] > * { visibility: hidden; }
+.btn[data-loading="true"]::after {
+  content: "";
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 1em; height: 1em;
+  margin: -0.5em 0 0 -0.5em;
+  border-radius: 50%;
+  border: 2px solid var(--btn-color, currentColor);
+  border-right-color: transparent;
+  border-top-color: transparent;
+  animation: sbpp-btn-spin 0.6s linear infinite;
+}
+@keyframes sbpp-btn-spin { to { transform: rotate(360deg); } }
+
 /* #1207 AUTH-2 — "Continue with Steam" contrast in dark theme. The
    button is rendered as `.btn--secondary` (page_login.tpl), which in
    dark mode resolves to `--bg-surface` (zinc-900) on `--bg-page`

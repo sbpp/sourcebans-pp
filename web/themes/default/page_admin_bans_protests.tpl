@@ -239,6 +239,20 @@
             window.sb.message[kind](title, body || '');
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     * @param {Element|null} btn
+     * @param {boolean} [busy] defaults to true
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = /** @type {any} */ (window).SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else /** @type {HTMLButtonElement} */ (btn).disabled = busy === undefined ? true : !!busy;
+    }
 
     /** @type {WeakMap<HTMLElement, number>} */
     var pendingTimers = new WeakMap();
@@ -318,10 +332,10 @@
         // those values here have been removed.
         var a = api(), A = actions();
         if (!a || !A || !Number.isFinite(pid)) return;
-        /** @type {HTMLButtonElement} */ (btn).disabled = true;
+        setBusy(btn, true);
         a.call(A.ProtestsRemove, { pid: pid, archiv: '1' }).then(function (r) {
             if (!r || r.ok === false) {
-                /** @type {HTMLButtonElement} */ (btn).disabled = false;
+                setBusy(btn, false);
                 toast('error', 'Action failed', (r && r.error && r.error.message) || 'Unknown error');
                 return;
             }

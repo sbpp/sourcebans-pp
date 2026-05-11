@@ -209,6 +209,19 @@
 (function () {
     'use strict';
 
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
+
     // ----- form submit -> sb.api.call(Actions.AuthLogin, ...) ---------
     // `redirect` is the post-login destination passed to the JSON API
     // (`web/api/handlers/auth.php` → `Api::redirect('?' . <redir-param>)`).
@@ -223,11 +236,30 @@
             var u = document.getElementById('loginUsername');
             var p = document.getElementById('loginPassword');
             var r = document.getElementById('loginRememberMe');
+            // Flip the Sign in button into the busy state immediately —
+            // sb.api.call honours the `redirect` envelope automatically
+            // (window.location.href = …) on success, so we don't need
+            // to release on the success path; on failure the server's
+            // redirect envelope (back to ?p=login&m=…) navigates away
+            // too. The setBusy is purely the in-flight cue between
+            // click and navigation, which is otherwise invisible on a
+            // slow network (#XXXX).
+            var submitBtn = form.querySelector('[data-testid="login-submit"]');
+            setBusy(submitBtn, true);
             sb.api.call(Actions.AuthLogin, {
                 username: u ? u.value : '',
                 password: p ? p.value : '',
                 remember: !!(r && r.checked),
                 redirect: ''
+            }).then(function (res) {
+                // Defensive release: if the dispatcher returned a non-
+                // redirect envelope (e.g. an unexpected error shape that
+                // didn't navigate), restore the button so the user can
+                // retry without a hard reload. The success / standard-
+                // failure paths navigate before this fires.
+                if (!res || !res.redirect) setBusy(submitBtn, false);
+            }, function () {
+                setBusy(submitBtn, false);
             });
         });
     }

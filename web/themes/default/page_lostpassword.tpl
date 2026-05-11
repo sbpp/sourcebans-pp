@@ -84,6 +84,18 @@
             window.SBPP.showToast({ kind: kind, title: title, body: body || '' });
         }
     }
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
 
     function mapKind(k) {
         if (k === 'red') return 'error';
@@ -98,9 +110,9 @@
             toast('warn', 'Email required', 'Please enter your email address.');
             return;
         }
-        submitEl.disabled = true;
+        setBusy(submitEl, true);
         sb.api.call(Actions.AuthLostPassword, { email: emailEl.value }).then(function (res) {
-            submitEl.disabled = false;
+            setBusy(submitEl, false);
             if (!res || res.redirect) return;
             if (res.ok === false) {
                 var emsg = (res.error && res.error.message) || 'Unknown error';

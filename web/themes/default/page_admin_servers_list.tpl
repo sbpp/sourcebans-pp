@@ -244,6 +244,18 @@
 <script>
 (function () {
     'use strict';
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
     document.addEventListener('click', function (e) {
         var t = e.target;
         if (!t || !t.closest) return;
@@ -258,10 +270,10 @@
         }
         var api = window.sb && window.sb.api;
         if (!api || !window.Actions) return;
-        btn.disabled = true;
+        setBusy(btn, true);
         api.call(window.Actions.ServersRemove, { sid: sid }).then(function (r) {
             if (!r || r.ok === false) {
-                btn.disabled = false;
+                setBusy(btn, false);
                 if (r && r.error && window.SBPP && window.SBPP.showToast) {
                     window.SBPP.showToast({ kind: 'error', title: 'Delete failed', body: r.error.message || 'Unknown error' });
                 }

@@ -391,6 +391,19 @@
         showToast('error', 'Error', msg);
     }
 
+    /**
+     * Flip the busy / loading state on a triggered action button. Calls
+     * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+     * contract) and falls back to plain `disabled` so third-party themes
+     * that strip theme.js still gate against double-clicks.
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
+    }
+
     // -- Change password ------------------------------------------------
     var pwForm = document.getElementById('account-password-form');
     if (pwForm) {
@@ -419,6 +432,8 @@
             }
             if (bad) return;
 
+            var pwBtn = pwForm.querySelector('[data-testid="account-save"]');
+            setBusy(pwBtn, true);
             sb.api.call(Actions.AccountChangePassword, {
                 aid: aid,
                 old_password: current,
@@ -428,8 +443,11 @@
                 // api.js translates into `window.location.href = …`. The
                 // .then still fires before navigation; bail before the
                 // failure path mistakes the redirect envelope for an error.
+                // Release the busy state on every non-navigating branch so
+                // the operator can retry without a hard reload.
                 if (env && env.ok) return;
                 if (env && env.redirect) return;
+                setBusy(pwBtn, false);
                 if (showFieldError('account-', env && env.error, { current: 'current-password' })) return;
                 flashFailure(env);
             });
@@ -452,11 +470,15 @@
             var removeEl = document.getElementById('account-remove-srv-password');
             var remove   = !!(removeEl && 'checked' in removeEl && removeEl.checked);
 
+            var srvBtn = srvForm.querySelector('[data-testid="account-srv-save"]');
+
             if (remove) {
+                setBusy(srvBtn, true);
                 sb.api.call(Actions.AccountChangeSrvPassword, {
                     aid: aid,
                     srv_password: 'NULL'
                 }).then(function (env) {
+                    setBusy(srvBtn, false);
                     if (env && env.ok) { flashSuccess(env); return; }
                     if (env && env.redirect) return;
                     flashFailure(env);
@@ -484,22 +506,26 @@
                     aid: aid,
                     srv_password: next
                 }).then(function (env) {
+                    setBusy(srvBtn, false);
                     if (env && env.ok) { flashSuccess(env); return; }
                     if (env && env.redirect) return;
                     flashFailure(env);
                 });
             }
 
+            setBusy(srvBtn, true);
             if (hasExisting) {
                 sb.api.call(Actions.AccountCheckSrvPassword, {
                     aid: aid,
                     password: current
                 }).then(function (env) {
                     if (!env || !env.ok || !env.data) {
+                        setBusy(srvBtn, false);
                         flashFailure(env);
                         return;
                     }
                     if (!env.data.matches) {
+                        setBusy(srvBtn, false);
                         setMsg('account-current-srv-password-msg', 'Incorrect server password.');
                         return;
                     }
@@ -542,11 +568,14 @@
             }
             if (bad) return;
 
+            var emailBtn = emailForm.querySelector('[data-testid="account-email-save"]');
+            setBusy(emailBtn, true);
             sb.api.call(Actions.AccountChangeEmail, {
                 aid: aid,
                 email: email,
                 password: pw
             }).then(function (env) {
+                setBusy(emailBtn, false);
                 if (env && env.ok) { flashSuccess(env); return; }
                 if (env && env.redirect) return;
                 if (showFieldError(

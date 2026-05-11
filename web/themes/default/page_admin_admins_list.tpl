@@ -265,6 +265,20 @@
                 sbpp.showToast({ kind: kind, title: title, body: body || '' });
             }
         }
+        /**
+         * Flip the busy / loading state on a triggered action button. Calls
+         * window.SBPP.setBusy when present (theme.js owns the spinner CSS
+         * contract) and falls back to plain `disabled` so third-party themes
+         * that strip theme.js still gate against double-clicks.
+         * @param {Element|null} btn
+         * @param {boolean} [busy] defaults to true
+         */
+        function setBusy(btn, busy) {
+            if (!btn) return;
+            var S = /** @type {any} */ (window).SBPP;
+            if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+            else /** @type {HTMLButtonElement} */ (btn).disabled = busy === undefined ? true : !!busy;
+        }
 
         /**
          * @param {string} aid
@@ -386,11 +400,11 @@
 
             var ctx = pending;
             var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admins-delete-submit"]'));
-            if (submitBtn) submitBtn.disabled = true;
+            setBusy(submitBtn, true);
 
             var a = api(), A = actions();
             if (!a || !A) {
-                if (submitBtn) submitBtn.disabled = false;
+                setBusy(submitBtn, false);
                 if (ctx.fallback) window.location.href = ctx.fallback;
                 return;
             }
@@ -400,7 +414,7 @@
             if (reason !== '') params.ureason = reason;
 
             a.call(A.AdminsRemove, params).then(function (r) {
-                if (submitBtn) submitBtn.disabled = false;
+                setBusy(submitBtn, false);
                 if (!r || r.ok === false) {
                     var msg = (r && r.error && r.error.message) || 'Unknown error';
                     showError(msg);

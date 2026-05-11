@@ -673,15 +673,146 @@ enum.
 
 - Vanilla JS only — `// @ts-check` + JSDoc on every file.
 - DOM helpers and the `sb` namespace live in `sb.js`. Use
-  `sb.$idRequired(id)` when a missing element is a programmer error;
-  `sb.$id(id)` returns `HTMLElement | null` and must be narrowed.
+ `sb.$idRequired(id)` when a missing element is a programmer error;
+ `sb.$id(id)` returns `HTMLElement | null` and must be narrowed.
 - For new code, prefer typed selectors
-  (`document.querySelector<HTMLInputElement>(...)`) over `SbAnyEl`.
-  `SbAnyEl` is intentionally permissive for legacy form-element access.
+ (`document.querySelector<HTMLInputElement>(...)`) over `SbAnyEl`.
+ `SbAnyEl` is intentionally permissive for legacy form-element access.
 - API calls go through `sb.api.call(Actions.PascalName, params)` — never
-  string literals.
+ string literals.
 - **Do not** reintroduce MooTools, React, or a runtime bundler.
-  Self-hosters install by unzipping the release tarball.
+ Self-hosters install by unzipping the release tarball.
+
+### Loading state on action buttons (`window.SBPP.setBusy`)
+
+Every action button that fires `sb.api.call(...)` from a click handler
+without an immediate page navigation MUST flip to a busy state for the
+duration of the in-flight call. Pre-fix the confirm modals
+(`#bans-unban-dialog`, `#comms-unblock-dialog`, `#admins-delete-dialog`)
+read as frozen for 100-1000ms between the click and the response —
+users instinctively double-clicked "to make it work" and queued
+duplicate requests until the post-response `disabled` flag landed.
+
+The contract:
+
+- `window.SBPP.setBusy(btn, true)` runs BEFORE the `sb.api.call(...)`
+ leaves the page (so the disabled flag lands on the first paint of
+ the click).
+- `setBusy(btn, false)` runs on every non-navigating response branch
+ (success that flips state in-place, error toast, validation reject)
+ so retries are possible. The success-then-navigate path can leave
+ the button busy because the new paint resets the DOM.
+- The helper (defined inside `web/themes/default/js/theme.js`'s IIFE
+ and re-exposed via `window.SBPP.setBusy`) sets three things on the
+ button: `data-loading="true"` (drives the CSS spinner), `aria-busy="true"`
+ (announces to AT users), and the native `disabled` flag (the
+ load-bearing gate against double-clicks). All three are the
+ contract; do NOT split them.
+- The visual spinner lives in `theme.css` under the
+ `.btn[data-loading="true"]` rule and its `::after` donut + the
+ `sbpp-btn-spin` keyframe. The CSS hides the button's content
+ (`color: transparent !important` for text, `visibility: hidden`
+ for icon children) but keeps the layout width locked so there's
+ no shift between idle and busy. `cursor: progress` and
+ `pointer-events: none` are the visual gate; `disabled` is the
+ load-bearing one.
+- Inline page-tail scripts inside `.tpl` files define a local
+ `setBusy(btn, busy)` wrapper that delegates to `window.SBPP.setBusy`
+ when present and falls back to `btn.disabled = busy` otherwise. The
+ fallback keeps the double-click gate working on third-party themes
+ that strip `theme.js`; the spinner naturally disappears with the
+ missing CSS, which is the right degradation (no fake spinner on a
+ theme that hasn't opted in).
+- `prefers-reduced-motion: reduce` is handled by the global
+ reset in `theme.css` (pins every `animation-duration` to ~0ms).
+ The spinner sits still for reduced-motion users; they still see
+ the donut shape + `cursor: progress` + the disabled state.
+
+Adding a new action button that fires `sb.api.call`:
+
+1. Define the button with `class="btn btn--*"` so it picks up
+ `--btn-color` (the spinner's border colour).
+2. In the inline `<script>` (or in a `web/scripts/*.js` page-tail
+ file), add the local `setBusy(btn, busy)` wrapper.
+3. Call `setBusy(submitBtn, true)` immediately before the
+ `sb.api.call(...)` line.
+4. Call `setBusy(submitBtn, false)` in every non-navigating branch
+ of the `.then`. The simplest shape is the canonical
+ `page_comms.tpl` / `page_bans.tpl` confirm-dialog flow.
+5. For drawer surfaces (Notes pane add/delete in `theme.js`),
+ reach for the module-scope `setBusy(...)` directly — same
+ helper, no wrapper needed.
+
+The regression guard is `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts`:
+it stalls the `Actions.CommsUnblock` route via `page.route`, asserts
+`data-loading="true"` + `aria-busy="true"` + `disabled` on the submit
+button during the in-flight window, releases the route, and confirms
+the row flips in-place. The second test in the file proves the
+disabled gate blocks a double-click by counting the number of
+`Comms.Unblock` requests that reach the stall (exactly one).
+
+### Loading state on drawers + lazy panes (`.skel` shimmer)
+
+Two drawer surfaces fire a JSON action between user-click and
+content-paint and need a visible loading indicator over that window
+(otherwise the chrome reads as blank for the 100-1000ms the request
+takes to resolve):
+
+- **Initial drawer open** — `loadDrawer(bid)` in
+  `web/themes/default/js/theme.js` fires `Actions.BansDetail`. Until
+  the envelope returns, the drawer paints `renderDrawerLoading()`:
+  a `[data-testid="drawer-loading"]` header with `aria-busy="true"`
+  + `aria-label="Loading player details"` wrapping `.skel` shimmer
+  rows tagged with `[data-skeleton]`. The `#drawer-root` element
+  also carries `data-loading="true"` so the `_base.ts` page-load
+  waiter (and the existing `responsive/drawer.spec.ts` /
+  `flows/ui/player-drawer.spec.ts` assertions) gate on the same
+  terminal marker.
+- **Lazy pane activation** — clicking History / Comms / Notes for
+  the first time fires `bans.player_history` / `comms.player_history`
+  / `notes.list`. The panel placeholder is `renderPaneSkeleton()`:
+  the same `.skel` shimmer rows wrapped in
+  `[data-pane-empty][aria-busy="true"]`. The panel itself carries
+  `data-loading="true"` for the duration of `loadPaneIfNeeded(tabId)`.
+
+The contract:
+
+- The `.skel` CSS rule lives in `theme.css` (linear-gradient + the
+  `shimmer` keyframe + dark-mode override). The class name is
+  `.skel` (singular) — NOT `.skeleton`. Pre-fix
+  `renderDrawerLoading()` used `class="skeleton"`, which had no
+  matching rule, so the shimmer divs rendered with zero background
+  and the drawer read as "just blank" for the entire `bans.detail`
+  window.
+- `prefers-reduced-motion: reduce` is handled by the global reset
+  in `theme.css` (pins every `animation-duration` to ~0ms). The
+  shimmer freezes for reduced-motion users; they still see the
+  static gradient colour as a "something's loading" affordance.
+- The drawer header skeleton blocks carry `[data-skeleton]`
+  (terminal marker for the page-level waiter — they live under
+  `#drawer-root[data-loading="true"]`, so they cycle in/out
+  cleanly when `bans.detail` resolves). The lazy-pane skeleton
+  blocks do NOT carry `[data-skeleton]`: the panel parent starts
+  with the `hidden` attribute, but `[data-skeleton]:not([hidden])`
+  only checks the matched element's own attribute. A nested
+  `[data-skeleton]` block inside a hidden tabpanel would still
+  match the selector and stall every page-load wait that runs
+  AFTER the drawer opens.
+- Use `[data-pane-empty]` as the testability hook for the
+  lazy-pane skeleton; the `refreshNotesPane` reset path already
+  resets the panel innerHTML with the same helper so the visual
+  contract is symmetric across initial-activation and
+  post-mutation refreshes.
+
+The regression guard is `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts`:
+it stalls `bans.detail` via `page.route`, asserts the skeleton
+header is visible, the `.skel` block paints a `linear-gradient`
+background (the computed-style probe is the regression catch for
+the `class="skeleton"` typo — the missing rule leaves
+`background-image: none`), releases the route, and confirms the
+drawer flips to `renderDrawerBody`. The second test stalls
+`bans.player_history` and asserts the History pane's
+`renderPaneSkeleton()` paints the same shimmer rows.
 
 ### Templates + View DTOs
 
@@ -1179,6 +1310,55 @@ audit (#1207) locked in. New CTAs:
 
 ## Anti-patterns (do NOT reintroduce)
 
+- `btn.disabled = true` (or any other manual `disabled` flip) inside
+ a confirm-modal submit handler or any other action button that
+ fires `sb.api.call(...)` from a click handler without an immediate
+ page navigation → use `window.SBPP.setBusy(btn, true)` (theme.js)
+ with the inline-script local fallback shim. The `disabled` flag is
+ the load-bearing gate but it ships without the visual spinner +
+ ARIA + reduced-motion contract; users see no feedback during the
+ 100-1000ms in-flight window and double-click "to make it work",
+ queuing duplicate requests until the post-response setter fires.
+ See "Loading state on action buttons" in Conventions for the
+ contract and the canonical reference shapes
+ (`page_comms.tpl` / `page_bans.tpl` / `page_admin_admins_list.tpl`
+ confirm dialogs; `page_admin_groups_list.tpl` / `page_admin_groups_add.tpl`
+ form submits; `theme.js`'s drawer Notes paths). Regression guard:
+ `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts`
+ (stalls `Actions.CommsUnblock` via `page.route` and asserts the
+ three-attribute busy contract on the submit button + the
+ double-click rejection).
+- Splitting the `data-loading` + `aria-busy` + `disabled` triple
+ (the three attributes `window.SBPP.setBusy` writes) into separate
+ setters → reach for `window.SBPP.setBusy` (or the inline-script
+ local wrapper that delegates to it). Hand-rolling one of the three
+ silently drops one of: the spinner visual, the AT announcement, or
+ the double-click gate. The contract is single-source for a reason.
+- `class="skeleton"` (singular `.skeleton`) on a drawer / lazy-pane
+ placeholder block → the CSS rule has always been `.skel`. Pre-fix
+ `renderDrawerLoading()` in `theme.js` emitted `class="skeleton"`,
+ which had no matching rule, so the drawer header skeleton rows
+ rendered transparent and the drawer read as "just blank" for the
+ entire `bans.detail` in-flight window. The fix is single-character:
+ `class="skel"`. Regression guard:
+ `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts`'s
+ `getComputedStyle(el).backgroundImage` probe (asserts
+ `linear-gradient(...)`; the missing rule leaves it at the UA
+ default `none`). Same shape applies to any new skeleton surface:
+ reuse the `.skel` class from `theme.css`; don't roll a new
+ `.skeleton-*` rule.
+- `[data-skeleton]` on a placeholder block nested inside a `hidden`
+ ancestor (lazy tabpanels, off-screen drawers, collapsed
+ `<details>`) → the `_base.ts` page-load waiter blocks until
+ `'[data-loading="true"], [data-skeleton]:not([hidden])'` returns
+ no nodes. `:not([hidden])` only checks the matched element's own
+ attribute, not its ancestors, so a `[data-skeleton]` block inside
+ a hidden tabpanel still matches the selector and stalls every
+ page-load wait that runs AFTER the drawer opens (silent 30s
+ timeout in CI). Keep `[data-skeleton]` reserved for surfaces
+ where the marker itself (or its direct container) carries the
+ visibility toggle. The lazy-pane skeletons use `[data-pane-empty]`
+ + `aria-busy="true"` as the testability hooks instead.
 - Top-level `class Foo {}` (global namespace) in `web/includes/`
   → all classes there live under `Sbpp\…` (see "Namespacing" in
   Conventions for the per-class table). The only intentional
@@ -1743,7 +1923,9 @@ audit (#1207) locked in. New CTAs:
 | Edit a template                        | `web/themes/default/*.tpl`                               |
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. The public banlist (`web/themes/default/page_bans.tpl`) follows the same shape — same chrome (Lucide icon + visible text label inside `.btn--ghost` / `.btn--secondary btn--sm`), same `.ban-card__actions` mobile row, same `data-action` / `data-fallback-href` wiring (`bans-unban` / `bans-delete`). The Remove affordance points at the legacy GET handler (`?p=banlist&a=delete&id=…&key=…` at the top of `page.banlist.php`) because no JSON `bans.delete` action exists yet — the inline JS `confirm()`-prompts then navigates, mirroring commslist's flow without adding a new handler / snapshot / permission-matrix entry. |
-| Add a confirm + reason modal for an irreversible row-level action (unban, lift comm block, delete admin, …) | `web/themes/default/page_bans.tpl` (`#bans-unban-dialog`, `Actions.BansUnban`) and `web/themes/default/page_comms.tpl` (`#comms-unblock-dialog`, `Actions.CommsUnblock`) are the canonical reference (#1301), with `web/themes/default/page_admin_admins_list.tpl` (`#admins-delete-dialog`, `Actions.AdminsRemove`, #1352) as the third reference for the optional-reason variant. Shape: a `<dialog hidden>` with a `<form method="dialog">` carrying a `<textarea aria-required="true">` (or `aria-required="false"` for the optional-reason variant — see admins-delete) (NOT the native `required` — that lets the browser block the form submit before our handler runs, swallowing the inline-error UX), a Cancel button, and a Confirm submit button. The page-tail JS opens the dialog via `showModal()` on `[data-action]` clicks, validates the trimmed reason on submit (load-bearing gate is server-side), forwards `ureason` to the JSON action, and on success flips the row in place via the same `flipRowToUnbanned`/`flipRowToUnmuted` helper the legacy single-click flow used (or removes the row outright + decrements the count badge for the admins-delete variant where there's no "now-unbanned" state to render). The legacy GET fallback (`?p=banlist&a=unban&id=…&key=…&ureason=…` / `?p=commslist&a=ungag…&ureason=…`) is the no-JS / hand-edited-URL path; both halves now reject empty `ureason` server-side so the audit log carries the *why*. The admins-delete variant has no legacy GET handler — `RemoveAdmin()` always went through the JSON dispatcher pre-#1123 D1 — so its `data-fallback-href` lands the operator back at the admins list as a graceful no-op when the JSON dispatcher is missing entirely (third-party theme stripping `api.js`); the audit-log "Reason: …" suffix is only emitted when `ureason` is non-empty (vs always-emitted on the bans / comms variants where reason is required). **Do not** put `onclick="event.stopPropagation()"` on the trigger button — `document.addEventListener('click')` is how the dialog opener picks the click up, and stopPropagation would silently swallow it (the action button isn't inside any `[data-drawer-href]` ancestor anyway, so the defensiveness was a copy-paste from the row-name anchor that doesn't apply here). |
+| Add a confirm + reason modal for an irreversible row-level action (unban, lift comm block, delete admin, …) | `web/themes/default/page_bans.tpl` (`#bans-unban-dialog`, `Actions.BansUnban`) and `web/themes/default/page_comms.tpl` (`#comms-unblock-dialog`, `Actions.CommsUnblock`) are the canonical reference (#1301), with `web/themes/default/page_admin_admins_list.tpl` (`#admins-delete-dialog`, `Actions.AdminsRemove`, #1352) as the third reference for the optional-reason variant. Shape: a `<dialog hidden>` with a `<form method="dialog">` carrying a `<textarea aria-required="true">` (or `aria-required="false"` for the optional-reason variant — see admins-delete) (NOT the native `required` — that lets the browser block the form submit before our handler runs, swallowing the inline-error UX), a Cancel button, and a Confirm submit button. The page-tail JS opens the dialog via `showModal()` on `[data-action]` clicks, validates the trimmed reason on submit (load-bearing gate is server-side), forwards `ureason` to the JSON action, and on success flips the row in place via the same `flipRowToUnbanned`/`flipRowToUnmuted` helper the legacy single-click flow used (or removes the row outright + decrements the count badge for the admins-delete variant where there's no "now-unbanned" state to render). The legacy GET fallback (`?p=banlist&a=unban&id=…&key=…&ureason=…` / `?p=commslist&a=ungag…&ureason=…`) is the no-JS / hand-edited-URL path; both halves now reject empty `ureason` server-side so the audit log carries the *why*. The admins-delete variant has no legacy GET handler — `RemoveAdmin()` always went through the JSON dispatcher pre-#1123 D1 — so its `data-fallback-href` lands the operator back at the admins list as a graceful no-op when the JSON dispatcher is missing entirely (third-party theme stripping `api.js`); the audit-log "Reason: …" suffix is only emitted when `ureason` is non-empty (vs always-emitted on the bans / comms variants where reason is required). **Do not** put `onclick="event.stopPropagation()"` on the trigger button — `document.addEventListener('click')` is how the dialog opener picks the click up, and stopPropagation would silently swallow it (the action button isn't inside any `[data-drawer-href]` ancestor anyway, so the defensiveness was a copy-paste from the row-name anchor that doesn't apply here). The submit button MUST flip through `setBusy(submitBtn, true)` BEFORE `sb.api.call(...)` leaves the page and clear via `setBusy(submitBtn, false)` on every non-navigating response branch — see "Loading state on action buttons" in Conventions for the contract, the inline-script local wrapper shape, and the regression guard. |
+| Add a loading indicator to an action button that fires `sb.api.call(...)` without a page refresh | `window.SBPP.setBusy(btn, busy)` (`web/themes/default/js/theme.js`) writes the `data-loading="true"` + `aria-busy="true"` + `disabled` triple atomically; the CSS spinner lives in `web/themes/default/css/theme.css` under `.btn[data-loading="true"]` + the `sbpp-btn-spin` keyframe. Inline page-tail scripts inside `.tpl` files define a local `setBusy(btn, busy)` wrapper that delegates to `window.SBPP.setBusy` when present and falls back to `btn.disabled = busy` so third-party themes that strip `theme.js` still gate against double-clicks. Canonical reference shapes: the three confirm-dialog flows (`page_comms.tpl` / `page_bans.tpl` / `page_admin_admins_list.tpl`), the form-submit flows (`page_admin_groups_list.tpl` / `page_admin_groups_add.tpl` / `page_admin_bans_add.tpl` / `page_admin_bans_email.tpl` / `page_youraccount.tpl` / `page_lostpassword.tpl` / `page_login.tpl`), the row-action flows (`page_admin_servers_list.tpl` / `page_admin_bans_protests.tpl` / `page_admin_bans_protests_archiv.tpl` / `page_admin_bans_submissions.tpl` / `page_admin_bans_submissions_archiv.tpl`), and the drawer Notes paths (`theme.js`'s `submitNoteForm` / `deleteNote`). Comment edit on the banlist (`web/scripts/banlist.js`) carries the same pattern for the `sb.api.call(BansEditComment)` round-trip. Regression guard: `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts` (stalls `Actions.CommsUnblock` via `page.route`, asserts the busy-attribute triple on the submit button while in flight, releases the route, and confirms the row flips in-place; the second test counts requests to prove the disabled gate blocks a double-click). |
+| Add a loading indicator to the player drawer or one of its lazy panes (so the chrome doesn't read as blank while the JSON action is in flight) | `renderDrawerLoading()` (header skeleton for the in-flight `bans.detail`) and `renderPaneSkeleton()` (placeholder for History / Comms / Notes activation) in `web/themes/default/js/theme.js`. Both lean on the `.skel` CSS rule in `theme.css` (linear-gradient + `shimmer` keyframe + dark-mode override; `prefers-reduced-motion: reduce` freezes the shimmer via the global reset). The header skeleton carries `[data-testid="drawer-loading"]` + `aria-busy="true"` + per-block `[data-skeleton]` (terminal markers under `#drawer-root[data-loading="true"]`); the lazy-pane skeleton carries `[data-pane-empty]` + `aria-busy="true"` and deliberately omits `[data-skeleton]` because the panel parent's `hidden` attribute doesn't compose into `[data-skeleton]:not([hidden])` and a nested marker would stall every page-load waiter that runs after the drawer opens. Class name is `.skel` (singular) — NOT `.skeleton`; the pre-fix `class="skeleton"` typo had no matching rule and the shimmer rows rendered as transparent zero-background divs (the user-visible "drawer is blank" regression). Regression guard: `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts` (stalls `bans.detail` then `bans.player_history` via `page.route`, asserts the skeleton header is visible + the `.skel` block paints a `linear-gradient` background via `getComputedStyle(el).backgroundImage`, releases the routes, and confirms the drawer flips to `renderDrawerBody` / the pane fills with content). |
 | Surface unban-reason / removed-by inline on a public-list row (admin-lifted bans / comms — banlist-ureason or commslist-ureason inline) | `web/themes/default/page_bans.tpl` + `web/themes/default/page_comms.tpl` (#1315). Reason cell on the desktop table emits a `<div class="text-xs text-faint mt-1" data-testid="ban-unban-meta">` (or `comm-unban-meta` for comms) with "Unbanned by `<admin>`: `<reason>`" when `$ban.state == 'unbanned'` (or `$comm.state == 'unmuted'`); mobile cards mirror with the `-mobile` testid suffix. Always gated on `!$hideadminname` so anonymous viewers under a hidden-admins config don't get the admin name leaked. The `ureason` / `removedby` row fields come from the page handler's existing data path (`page.banlist.php` lines 635-643, `page.commslist.php` lines 626-635) — read-only render, no write-side overlap with #1301 / #1323's unban-reason flow. The commslist surface is higher-priority than the banlist (no drawer fallback on `<tr data-testid="comm-row">`); banlist users have the drawer as the canonical detail view. |
 | Re-apply (Reban) affordance on the public banlist for expired / unbanned rows | `web/themes/default/page_bans.tpl`. The desktop row-actions cell emits `<a class="btn btn--secondary btn--sm" data-testid="row-action-reapply" href="index.php?p=admin&c=bans&section=add-ban&rebanid={$ban.bid}&key={$admin_postkey}">…<i data-lucide="rotate-ccw">…Re-apply</a>` when `$can_add_ban && ($ban.state == 'expired' \|\| $ban.state == 'unbanned')`. The smart-default block on `admin.bans.php`'s `add-ban` section detects `?rebanid=…` and pre-populates the form via `BansPrepareReban`. Mobile parity (this PR) — the mobile card was restructured from a single wrapping `<a>` to the `page_comms.tpl` shape (`<div data-testid="ban-card">` wrapping `<a class="ban-card__summary" data-testid="drawer-trigger">` + a sibling `<div class="row-actions ban-card__actions">`), so the same Re-apply button surfaces under `data-testid="row-action-reapply-mobile"`. The drawer trigger stays the inner anchor's `data-drawer-href` + `data-testid="drawer-trigger"` so the existing responsive spec selector keeps working. |
 | Wrap a public-list legacy advanced-search form (banlist / commslist) in a default-collapsed `<details class="filters-details">` disclosure | `web/themes/default/page_bans.tpl` + `web/themes/default/page_comms.tpl` (#1315). The same `.filters-details` rules in `web/themes/default/css/theme.css` cover the chrome (summary chevron, `[open]` state, hover bg, focus ring, count badge); the public-list usage adds a `.filters-details__body > form.card` rule that suppresses the inner card framing because the disclosure body wraps a `{load_template file="admin.bans.search"}` (or `…comms.search`) — i.e. a sibling page-render that emits its own `<form class="card">`. The View DTO (`Sbpp\View\BanListView` / `Sbpp\View\CommsListView`) carries a `bool $is_advanced_search_open` set by the page handler from `isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== ''` so the legacy `?advSearch=…&advType=…` URL shim auto-opens the disclosure. Bare `?p=banlist` / `?p=commslist` and simple-bar filters (`?searchText=` / `?server=` / `?time=`) leave it closed so the unfiltered list reaches above the fold. Selectors anchor on `[data-testid="banlist-advsearch-disclosure"]` / `[data-testid="commslist-advsearch-disclosure"]` (the `<details>`) + the `…-toggle` (the `<summary>`) + the `…-active` count badge. The same `.filters-details` chrome was introduced for admin-admins by #1303 — both surfaces share the CSS so a future tweak is single-source. |

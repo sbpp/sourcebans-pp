@@ -82,6 +82,15 @@ function changeReason(szListValue)
 {
     $('dreason').style.display = (szListValue == "other" ? "block" : "none");
 }
+// Local wrapper around window.SBPP.setBusy with a `disabled`-only fallback
+// so a third-party theme that strips theme.js still gates against double-clicks.
+function __sbppSetBusy(btn, busy) {
+    if (!btn) return;
+    var S = window.SBPP;
+    if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+    else btn.disabled = busy === undefined ? true : !!busy;
+}
+
 function ProcessBan()
 {
     var reason = $('listReason')[$('listReason').selectedIndex].value;
@@ -89,6 +98,8 @@ function ProcessBan()
     if (reason == "other") {
         reason = $('txtReason').value;
     }
+    var submitBtn = document.getElementById('addcomm-submit');
+    __sbppSetBusy(submitBtn, true);
     sb.api.call(Actions.CommsAdd, {
         nickname: $('nickname').value,
         type:     Number($('type').value),
@@ -102,6 +113,9 @@ function ProcessBan()
         // fires `sc_fw_block` via rcon for each one. Without it the DB row exists but no live
         // server learns about the gag/mute, matching the bans/kickit shape one branch above.
         if (r && r.ok && r.data && r.data.block) {
+            // Success — the message dialog covers the form and the page reloads
+            // shortly after; leave the button busy so the operator can't queue a
+            // second submit while the iframe fires rcon at every server.
             var b = r.data.block;
             sb.message.show(
                 'Block Added',
@@ -114,6 +128,7 @@ function ProcessBan()
             if (r.data.reload) setTimeout(function () { window.location.href = window.location.href.replace(/#\^.*$/, ''); }, 2000);
             return;
         }
+        __sbppSetBusy(submitBtn, false);
         if (!r) return;
         if (r.redirect) return;
         if (r.ok === false) {
