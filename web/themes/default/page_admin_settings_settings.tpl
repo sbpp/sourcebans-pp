@@ -110,7 +110,7 @@
                                 <p class="settings-fieldset__help"
                                    id="template_logo_help"
                                    data-testid="setting-help-template.logo">
-                                    Path to the brand mark image rendered in the sidebar and sign-in card, resolved relative to the active theme directory (<code class="font-mono">themes/&lt;theme&gt;/</code>). Default: <code class="font-mono">images/favicon.svg</code> &mdash; the SourceBans++ shield from the favicon set. Any theme-relative SVG / PNG works.
+                                    Path to the brand mark image rendered in the sidebar and sign-in card, resolved relative to the active theme directory (<code class="font-mono">themes/&lt;theme&gt;/</code>). Default: <code class="font-mono">images/favicon.svg</code> &mdash; the SourceBans++ shield from the favicon set. Any theme-relative SVG / PNG works; if you need a raster fallback (legacy email clients, screenshot editors, print) the default theme also ships <code class="font-mono">logos/sbpp_logo.png</code> &mdash; the same shield rendered at 512&times;512.
                                 </p>
                             </div>
                             <div data-testid="setting-row" data-key="config.password.minlength">
