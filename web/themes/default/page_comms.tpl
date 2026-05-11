@@ -180,7 +180,13 @@
         </div>
     </details>
 
-    {* -- Desktop table ------------------------------------------------ *}
+    {* -- Desktop table ------------------------------------------------
+         Column tier classes (`.col-tier-2` / `.col-tier-3`) are paired
+         rules in `theme.css` next to `.table-scroll`. Tier-2 (Server,
+         Admin) hides at <=1100px; tier-3 (Length, Started) at <=900px.
+         Tier-1 (Type, Player, SteamID, Status, Actions) always renders
+         so the row stays useful without horizontal scroll. Mirror of
+         the banlist treatment for visual + responsive consistency. *}
     <div class="card" style="overflow:hidden">
         <table class="table" data-testid="comms-table">
             <thead>
@@ -188,10 +194,10 @@
                     <th>Type</th>
                     <th>Player</th>
                     <th>SteamID</th>
-                    <th>Length</th>
-                    <th>Server</th>
-                    <th>Admin</th>
-                    <th>Started</th>
+                    <th class="col-tier-3">Length</th>
+                    <th class="col-tier-2">Server</th>
+                    <th class="col-tier-2">Admin</th>
+                    <th class="col-tier-3">Started</th>
                     <th>Status</th>
                     <th aria-label="Actions"></th>
                 </tr>
@@ -233,7 +239,11 @@
                                     {if $comm.state == 'unmuted' && !$hideadminname && (!empty($comm.ureason) || !empty($comm.removedby))}
                                         <div class="text-xs text-faint mt-1" data-testid="comm-unban-meta">
                                             {if !empty($comm.removedby)}Lifted by <span class="font-medium">{$comm.removedby|escape}</span>{if !empty($comm.ureason)}: {/if}{/if}
-                                            {if !empty($comm.ureason)}<span data-testid="comm-unban-reason">{$comm.ureason|escape}</span>{/if}
+                                            {* `title=` carries the full lift-reason so a long
+                                               reason that was cropped on the desktop table reads
+                                               in full on hover. Same shape as banlist's
+                                               ban-unban-reason span (issue 5). *}
+                                            {if !empty($comm.ureason)}<span data-testid="comm-unban-reason" title="{$comm.ureason|escape}">{$comm.ureason|escape}</span>{/if}
                                         </div>
                                     {/if}
                                     {* #BANLIST-COMMENTS sister-fix for commslist: this surface
@@ -280,16 +290,16 @@
                             </div>
                         </td>
                         <td class="font-mono text-xs text-muted">{$comm.steam|escape}</td>
-                        <td class="tabular-nums text-muted">{$comm.length_human|escape}</td>
-                        <td class="text-muted">{$comm.sname|escape}</td>
-                        <td class="text-muted">
+                        <td class="col-tier-3 tabular-nums text-muted">{$comm.length_human|escape}</td>
+                        <td class="col-tier-2 text-muted">{$comm.sname|escape}</td>
+                        <td class="col-tier-2 text-muted">
                             {if $comm.admin}
                                 {$comm.admin|escape}
                             {else}
                                 <span class="text-faint">—</span>
                             {/if}
                         </td>
-                        <td class="text-muted text-xs">
+                        <td class="col-tier-3 text-muted text-xs">
                             <time datetime="{$comm.started_iso|escape}">{$comm.started_human|escape}</time>
                         </td>
                         <td>
@@ -456,7 +466,12 @@
                                context (no drawer fallback exists on the commslist).
                                Gated on $hideadminname for parity with the desktop branch. *}
                             {if $comm.state == 'unmuted' && !$hideadminname && (!empty($comm.ureason) || !empty($comm.removedby))}
-                                <div class="text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="comm-unban-meta-mobile">
+                                {* `title=` carries the full lift-by + ureason so a long
+                                   reason that was truncated to one line by the parent
+                                   .truncate utility reads in full on long-press / hover
+                                   (issue 5). *}
+                                <div class="text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="comm-unban-meta-mobile"
+                                     title="{if !empty($comm.removedby)}Lifted by {$comm.removedby|escape}{if !empty($comm.ureason)}: {/if}{/if}{if !empty($comm.ureason)}{$comm.ureason|escape}{/if}">
                                     {if !empty($comm.removedby)}Lifted by {$comm.removedby|escape}{if !empty($comm.ureason)}: {/if}{/if}
                                     {if !empty($comm.ureason)}{$comm.ureason|escape}{/if}
                                 </div>

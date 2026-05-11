@@ -206,6 +206,12 @@
     <div class="table-scroll">
     <table class="table">
       <thead>
+        {* Column tier classes (`.col-tier-2` / `.col-tier-3`) are paired
+           rules in `theme.css` next to `.table-scroll`. Tier-2 (Server,
+           Admin) hides at <=1100px; tier-3 (IP, Length, Banned) at
+           <=900px. Tier-1 (Player, SteamID, Reason, Status, Actions)
+           always renders so the row stays useful at every desktop
+           viewport without horizontal scroll inside `.table-scroll`. *}
         <tr>
           <th scope="col">Player</th>
           <th scope="col">SteamID</th>
@@ -215,12 +221,12 @@
              see them only when the setting is off). Mirrors the existing
              `{if !$hideadminname}` admin-name guard above; v1.x had this
              column gated on `is_admin()`, the v2.0 redesign dropped it. *}
-          {if !$hideplayerips}<th scope="col" class="col-ip">IP</th>{/if}
+          {if !$hideplayerips}<th scope="col" class="col-ip col-tier-3">IP</th>{/if}
           <th scope="col">Reason</th>
-          <th scope="col">Server</th>
-          {if !$hideadminname}<th scope="col" class="col-admin">Admin</th>{/if}
-          <th scope="col" class="col-length">Length</th>
-          <th scope="col" class="col-banned">Banned</th>
+          <th scope="col" class="col-tier-2">Server</th>
+          {if !$hideadminname}<th scope="col" class="col-admin col-tier-2">Admin</th>{/if}
+          <th scope="col" class="col-length col-tier-3">Length</th>
+          <th scope="col" class="col-banned col-tier-3">Banned</th>
           <th scope="col" class="col-status">Status</th>
           <th scope="col" class="col-actions" aria-label="Row actions"></th>
         </tr>
@@ -316,7 +322,7 @@
             {/if}
           </td>
           {if !$hideplayerips}
-          <td class="col-ip font-mono text-xs text-muted" data-testid="ban-ip">
+          <td class="col-ip col-tier-3 font-mono text-xs text-muted" data-testid="ban-ip">
             {if $ban.ban_ip_raw == ''}
               <i class="text-faint">none</i>
             {else}
@@ -324,7 +330,15 @@
             {/if}
           </td>
           {/if}
-          <td class="text-muted truncate" style="max-width:18rem">
+          {* `title=` carries the full reason text so a hover / long-press
+             surfaces it in the browser's native tooltip — the cell
+             itself is `truncate`'d at `max-width:18rem` so the row
+             stays one line tall (issue 5: "Unban/Ban reason are
+             truncated"). The conditional is just to avoid emitting
+             `title=""` for empty-reason rows; the visible body still
+             reads "no reason" via the existing branch. *}
+          <td class="text-muted truncate" style="max-width:18rem"
+              {if !empty($ban.reason)}title="{$ban.reason|escape}"{/if}>
             {if empty($ban.reason)}<i class="text-faint">no reason</i>{else}{$ban.reason|escape}{/if}
             {* #1315: surface the unban-reason / removed-by line below the
                truncated reason cell when the row was lifted by an admin
@@ -340,31 +354,44 @@
                   Unbanned by <span class="font-medium">{$ban.removedby|escape}</span>{if !empty($ban.ureason)}: {/if}
                 {/if}
                 {if !empty($ban.ureason)}
-                  <span data-testid="ban-unban-reason">{$ban.ureason|escape}</span>
+                  <span data-testid="ban-unban-reason" title="{$ban.ureason|escape}">{$ban.ureason|escape}</span>
                 {/if}
               </div>
             {/if}
           </td>
-          <td class="text-muted truncate" style="max-width:12rem">{$ban.sname|escape}</td>
+          <td class="col-tier-2 text-muted truncate" style="max-width:12rem" title="{$ban.sname|escape}">{$ban.sname|escape}</td>
           {if !$hideadminname}
-          <td class="col-admin text-muted">
+          <td class="col-admin col-tier-2 text-muted">
             {if empty($ban.aname)}<i class="text-faint">deleted</i>{else}{$ban.aname|escape}{/if}
           </td>
           {/if}
-          <td class="col-length tabular-nums text-muted">{if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</td>
-          <td class="col-banned text-muted text-xs"><time datetime="{$ban.banned_iso}">{$ban.banned_human|escape}</time></td>
+          <td class="col-length col-tier-3 tabular-nums text-muted">{if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</td>
+          <td class="col-banned col-tier-3 text-muted text-xs"><time datetime="{$ban.banned_iso}">{$ban.banned_human|escape}</time></td>
           <td class="col-status">
             {assign var=_pill_label value=$ban.state|capitalize}
             <span class="pill pill--{$ban.state}">{$_pill_label|escape}</span>
           </td>
           <td class="col-actions">
+            {* #1207 ADM-5 + (this PR): banlist row affordances now mirror
+               the commslist row chrome — Lucide icon + visible text label
+               inside `.btn--ghost` / `.btn--secondary btn--sm` pills
+               (`page_comms.tpl` lines 258-311 is the canonical reference).
+               The bare HTML-entity glyphs the v2.0 cutover shipped
+               (`&#9998;` ✎ / `&#10003;` ✓ / `&#8634;` ↺ / `&#128203;` 📋)
+               are gone — they read as broken icons / a different app
+               next to commslist's affordance set, and the icon-only
+               buttons gave no SR / hover affordance. Edit / Unban / Re-apply
+               / Copy / Remove are gated identically to the v2.0 shape;
+               only the chrome moved. *}
             <div class="row-actions">
               {if $view_bans}
                 {if $ban.can_edit_ban && $ban.state != 'unbanned'}
-                <a class="btn btn--ghost btn--sm btn--icon" data-testid="row-action-edit"
-                   title="Edit"
+                <a class="btn btn--ghost btn--sm" data-testid="row-action-edit"
                    href="index.php?p=admin&amp;c=bans&amp;o=edit&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
-                   onclick="event.stopPropagation()">&#9998;</a>
+                   onclick="event.stopPropagation()">
+                    <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                    Edit
+                </a>
                 {/if}
                 {if $ban.can_unban && $ban.state != 'unbanned' && $ban.state != 'expired'}
                 {* #1301: button + data-action wires to the inline page-tail
@@ -374,31 +401,31 @@
                    data-fallback-href is the legacy GET URL the no-JS
                    path lands on; the page handler now also rejects an
                    empty `ureason` there so a hand-crafted URL can't
-                   slip through the back door either. *}
-                {* No onclick="event.stopPropagation()" here even though
-                   the sibling Edit anchor has one (defensive copy from
-                   the legacy theme): the column-action button is
-                   inside `<td class="col-actions">`, which is a sibling
-                   of the player-name `<a data-drawer-href>` cell, so
-                   the drawer-click delegate never sees the bubbled
-                   event regardless. The page-tail JS for the unban
-                   modal listens on `document` though — adding
-                   stopPropagation here would silently swallow the
-                   click before it reached the dialog opener (the
-                   dispatcher's no-op for `[data-action]` lookups
-                   filters anything that isn't an unban button). *}
+                   slip through the back door either.
+
+                   No `onclick="event.stopPropagation()"` here: the
+                   page-tail JS opens the dialog via a
+                   `document.addEventListener('click', …)` delegate
+                   listening on the bubble phase. A bubble-stop here
+                   silently swallows the click. The drawer trigger is
+                   the player-name `<a data-drawer-href>` in column 1,
+                   a sibling of `<td class="col-actions">`, so the
+                   bubbled click has nothing to confuse on the drawer
+                   side. *}
                 <button type="button"
-                        class="btn btn--ghost btn--sm btn--icon"
+                        class="btn btn--secondary btn--sm"
                         data-testid="row-action-unban"
                         data-action="bans-unban"
                         data-bid="{$ban.bid}"
                         data-name="{$ban.name|escape}"
-                        data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
-                        title="Unban">&#10003;</button>
+                        data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}">
+                    <i data-lucide="check" style="width:13px;height:13px"></i>
+                    Unban
+                </button>
                 {/if}
                 {* #1315: Re-apply affordance for expired / unbanned rows.
                    Mirrors the commslist row's existing Re-apply anchor
-                   (`page_comms.tpl` lines 244-249 desktop, 389-396
+                   (`page_comms.tpl` lines 286-298 desktop, 448-454
                    mobile). Routes to the admin add-ban form's
                    `?rebanid=` smart-default block, which
                    `web/api/handlers/bans.php::api_bans_prepare_reban`
@@ -406,10 +433,12 @@
                    Gated on $can_add_ban so the affordance only renders
                    for admins who can act on it. *}
                 {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned')}
-                <a class="btn btn--ghost btn--sm btn--icon" data-testid="row-action-reapply"
-                   title="Re-apply this ban with the same parameters"
+                <a class="btn btn--secondary btn--sm" data-testid="row-action-reapply"
                    href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}"
-                   onclick="event.stopPropagation()">&#8634;</a>
+                   onclick="event.stopPropagation()">
+                    <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
+                    Re-apply
+                </a>
                 {/if}
               {/if}
               {if !empty($ban.steam)}
@@ -422,10 +451,38 @@
                  The desktop row's drawer trigger is the player-name anchor
                  in column 1 (data-drawer-href), not a row-level delegate,
                  so a bubbling click here has nothing to confuse. *}
-              <button class="btn btn--ghost btn--sm btn--icon" type="button"
+              <button class="btn btn--ghost btn--sm" type="button"
                       data-copy="{$ban.steam|escape}"
                       data-testid="row-action-copy-steam"
-                      title="Copy SteamID">&#128203;</button>
+                      aria-label="Copy SteamID"
+                      title="Copy SteamID">
+                  <i data-lucide="copy" style="width:13px;height:13px"></i>
+                  Copy
+              </button>
+              {/if}
+              {if $ban.can_delete_ban}
+              {* Hard-delete affordance. No JSON `bans.delete` action
+                 exists yet — the canonical write path is the legacy
+                 GET handler `?p=banlist&a=delete&id=…&key=…` at the
+                 top of page.banlist.php (DeleteBan-gated, RCON
+                 cleanup + DELETE FROM :prefix_bans). The `data-action`
+                 hook routes through the inline page-tail JS's
+                 `bans-delete` branch, which `confirm()`-prompts and
+                 then navigates to `data-fallback-href`. Mirror of
+                 commslist's Remove button (page_comms.tpl line 299,
+                 `comms-delete` data-action) for visual + interaction
+                 parity. *}
+              <button type="button"
+                      class="btn btn--ghost btn--sm"
+                      data-testid="row-action-delete"
+                      data-action="bans-delete"
+                      data-bid="{$ban.bid}"
+                      data-name="{$ban.name|escape}"
+                      data-fallback-href="index.php?p=banlist&amp;a=delete&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+                      style="color:var(--danger)">
+                  <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+                  Remove
+              </button>
               {/if}
             </div>
           </td>
@@ -485,44 +542,120 @@
     </table>
     </div>
 
-    {* -- Mobile card list (<769px). Single anchor per row so a tap
-         opens the detail view; data-drawer-href layers the C1 drawer
-         on top once that lands. *}
+    {* -- Mobile card list (<769px). Two-sibling shape mirroring
+         `page_comms.tpl` (#1207 ADM-5): a clickable
+         `.ban-card__summary` anchor that opens the player detail
+         drawer (`data-drawer-href`) and a sibling
+         `.ban-card__actions` row of buttons (Edit / Unban / Re-apply
+         / Copy / Remove) so every desktop affordance is reachable
+         on phone too. The previous shape wrapped the whole card in
+         a single `<a>`, which (a) had nowhere to put `<button>`
+         actions without producing nested-interactive HTML and (b)
+         hid Edit / Unban / Re-apply / Copy / Remove on mobile
+         entirely. The summary anchor keeps `data-testid="drawer-trigger"`
+         so the existing responsive spec
+         (`web/tests/e2e/specs/responsive/banlist.spec.ts`) still
+         finds the seeded card via the testid contract. *}
     <div class="ban-cards">
       {foreach from=$ban_list item=ban}
-      <a class="ban-row ban-row--{$ban.state} flex items-center gap-3 p-4"
-         style="border-bottom:1px solid var(--border)"
-         href="?p=banlist&amp;id={$ban.bid}"
-         data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}"
-         data-state="{$ban.state}"
-         data-id="{$ban.bid}"
-         data-testid="drawer-trigger">
-        <span class="avatar" style="width:36px;height:36px;background:hsl({$ban.avatar_hue} 55% 45%);font-size:13px" aria-hidden="true">{$ban.avatar_initials|escape}</span>
-        <div style="flex:1;min-width:0">
-          <div class="flex items-center gap-2">
-            <span class="font-medium text-sm truncate">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</span>
-            {assign var=_m_pill_label value=$ban.state|capitalize}
-            <span class="pill pill--{$ban.state}">{$_m_pill_label|escape}</span>
-          </div>
-          <div class="text-xs text-muted truncate" style="margin-top:0.125rem">{if empty($ban.reason)}no reason{else}{$ban.reason|escape}{/if} &middot; {if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</div>
-          <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem">{if empty($ban.steam)}&mdash;{else}{$ban.steam|escape}{/if}</div>
-          {* #1302: IP line on the mobile card mirrors the desktop IP
-             column above. Same `{if !$hideplayerips}` gate so an
-             admin sees IPs at-a-glance on phone too; non-admins under
-             `banlist.hideplayerips` get the same suppression contract. *}
-          {if !$hideplayerips && $ban.ban_ip_raw != ''}
-          <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-ip-mobile">{$ban.ban_ip_raw|escape}</div>
-          {/if}
-          {* #1315: mobile mirror of the desktop `ban-unban-meta` line —
-             surface unban-by + ureason on rows the admin lifted so
-             players don't have to open the drawer to see who unbanned
-             them and why. Gated on $hideadminname for parity with the
-             desktop branch. *}
-          {if $ban.state == 'unbanned' && !$hideadminname && (!empty($ban.ureason) || !empty($ban.removedby))}
-            <div class="text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-unban-meta-mobile">
-              {if !empty($ban.removedby)}Unbanned by {$ban.removedby|escape}{if !empty($ban.ureason)}: {/if}{/if}
-              {if !empty($ban.ureason)}{$ban.ureason|escape}{/if}
+      <div class="ban-row ban-row--{$ban.state} ban-card"
+           style="border-bottom:1px solid var(--border)"
+           data-testid="ban-card"
+           data-id="{$ban.bid}"
+           data-state="{$ban.state}">
+        <a class="ban-card__summary flex items-center gap-3 p-4"
+           style="text-decoration:none;color:var(--text)"
+           href="?p=banlist&amp;id={$ban.bid}"
+           data-drawer-href="?p=banlist&amp;c=details&amp;id={$ban.bid}"
+           data-testid="drawer-trigger">
+          <span class="avatar" style="width:36px;height:36px;background:hsl({$ban.avatar_hue} 55% 45%);font-size:13px" aria-hidden="true">{$ban.avatar_initials|escape}</span>
+          <div style="flex:1;min-width:0">
+            <div class="flex items-center gap-2">
+              <span class="font-medium text-sm truncate">{if empty($ban.name)}<i class="text-faint">no nickname</i>{else}{$ban.name|escape}{/if}</span>
+              {assign var=_m_pill_label value=$ban.state|capitalize}
+              <span class="pill pill--{$ban.state}">{$_m_pill_label|escape}</span>
             </div>
+            {* `title=` carries the full (un-truncated) reason +
+               length so a long-press / hover surfaces the full
+               text — the inline copy is .truncate'd to one line so
+               the summary row stays a fixed height (issue 5). *}
+            <div class="text-xs text-muted truncate" style="margin-top:0.125rem"
+                 title="{if empty($ban.reason)}no reason{else}{$ban.reason|escape}{/if} &middot; {if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}">{if empty($ban.reason)}no reason{else}{$ban.reason|escape}{/if} &middot; {if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</div>
+            <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem">{if empty($ban.steam)}&mdash;{else}{$ban.steam|escape}{/if}</div>
+            {* #1302: IP line on the mobile card mirrors the desktop IP
+               column above. Same `{if !$hideplayerips}` gate so an
+               admin sees IPs at-a-glance on phone too; non-admins under
+               `banlist.hideplayerips` get the same suppression contract. *}
+            {if !$hideplayerips && $ban.ban_ip_raw != ''}
+            <div class="font-mono text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-ip-mobile">{$ban.ban_ip_raw|escape}</div>
+            {/if}
+            {* #1315: mobile mirror of the desktop `ban-unban-meta` line —
+               surface unban-by + ureason on rows the admin lifted so
+               players don't have to open the drawer to see who unbanned
+               them and why. Gated on $hideadminname for parity with the
+               desktop branch. *}
+            {if $ban.state == 'unbanned' && !$hideadminname && (!empty($ban.ureason) || !empty($ban.removedby))}
+              <div class="text-xs text-faint truncate" style="margin-top:0.125rem" data-testid="ban-unban-meta-mobile"
+                   title="{if !empty($ban.removedby)}Unbanned by {$ban.removedby|escape}{if !empty($ban.ureason)}: {/if}{/if}{if !empty($ban.ureason)}{$ban.ureason|escape}{/if}">
+                {if !empty($ban.removedby)}Unbanned by {$ban.removedby|escape}{if !empty($ban.ureason)}: {/if}{/if}
+                {if !empty($ban.ureason)}{$ban.ureason|escape}{/if}
+              </div>
+            {/if}
+          </div>
+          <span class="text-faint" aria-hidden="true">&rsaquo;</span>
+        </a>
+        {if $view_bans || !empty($ban.steam) || $ban.can_delete_ban}
+        <div class="row-actions ban-card__actions">
+          {if $view_bans}
+            {if $ban.can_edit_ban && $ban.state != 'unbanned'}
+            <a class="btn btn--ghost btn--sm" data-testid="row-action-edit-mobile"
+               href="index.php?p=admin&amp;c=bans&amp;o=edit&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}">
+                <i data-lucide="pencil" style="width:13px;height:13px"></i>
+                Edit
+            </a>
+            {/if}
+            {if $ban.can_unban && $ban.state != 'unbanned' && $ban.state != 'expired'}
+            <button type="button"
+                    class="btn btn--secondary btn--sm"
+                    data-testid="row-action-unban-mobile"
+                    data-action="bans-unban"
+                    data-bid="{$ban.bid}"
+                    data-name="{$ban.name|escape}"
+                    data-fallback-href="index.php?p=banlist&amp;a=unban&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}">
+                <i data-lucide="check" style="width:13px;height:13px"></i>
+                Unban
+            </button>
+            {/if}
+            {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned')}
+            <a class="btn btn--secondary btn--sm" data-testid="row-action-reapply-mobile"
+               href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}">
+                <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>
+                Re-apply
+            </a>
+            {/if}
+          {/if}
+          {if !empty($ban.steam)}
+          <button class="btn btn--ghost btn--sm" type="button"
+                  data-copy="{$ban.steam|escape}"
+                  data-testid="row-action-copy-steam-mobile"
+                  aria-label="Copy SteamID"
+                  title="Copy SteamID">
+              <i data-lucide="copy" style="width:13px;height:13px"></i>
+              Copy
+          </button>
+          {/if}
+          {if $ban.can_delete_ban}
+          <button type="button"
+                  class="btn btn--ghost btn--sm"
+                  data-testid="row-action-delete-mobile"
+                  data-action="bans-delete"
+                  data-bid="{$ban.bid}"
+                  data-name="{$ban.name|escape}"
+                  data-fallback-href="index.php?p=banlist&amp;a=delete&amp;id={$ban.bid}&amp;key={$admin_postkey|escape}"
+                  style="color:var(--danger)">
+              <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+              Remove
+          </button>
           {/if}
           {* #BANLIST-COMMENTS mobile mirror — at-a-glance count indicator
              only (NOT a clickable disclosure). The mobile card wraps
@@ -542,8 +675,8 @@
           </div>
           {/if}
         </div>
-        <span class="text-faint" aria-hidden="true">&rsaquo;</span>
-      </a>
+        {/if}
+      </div>
       {foreachelse}
       {* Mobile mirror of the desktop empty above (first-run vs filtered). *}
       {if $is_filtered}
@@ -850,13 +983,32 @@
             return;
         }
 
-        var btn = /** @type {HTMLElement|null} */ (t.closest('[data-action="bans-unban"]'));
-        if (!btn) return;
+        var actionBtn = /** @type {HTMLElement|null} */ (t.closest('[data-action]'));
+        if (!actionBtn) return;
+        var act = actionBtn.getAttribute('data-action');
+        if (act !== 'bans-unban' && act !== 'bans-delete') return;
         e.preventDefault();
 
-        var bid = btn.getAttribute('data-bid') || '';
-        var name = btn.getAttribute('data-name') || ('ban #' + bid);
-        var fallback = btn.getAttribute('data-fallback-href') || '';
+        var bid = actionBtn.getAttribute('data-bid') || '';
+        var name = actionBtn.getAttribute('data-name') || ('ban #' + bid);
+        var fallback = actionBtn.getAttribute('data-fallback-href') || '';
+
+        if (act === 'bans-delete') {
+            // No JSON `bans.delete` action exists yet — the canonical
+            // write path is the legacy GET handler at the top of
+            // page.banlist.php (DeleteBan-gated, RCON cleanup +
+            // hard-delete from :prefix_bans). Confirm + navigate is
+            // the simplest mirror of commslist's Remove flow without
+            // adding a new handler / snapshot / permission-matrix
+            // entry — the in-place row removal lands on the next
+            // page load.
+            if (!fallback) return;
+            if (!window.confirm('Permanently delete the ban for "' + name + '"? This cannot be undone.')) return;
+            window.location.href = fallback;
+            return;
+        }
+
+        // bans-unban: existing #1301 confirm + reason modal flow.
         var a = api(), A = actions();
         if (!a || !A || !bid) {
             // No JSON dispatcher available (e.g. third-party theme that

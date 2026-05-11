@@ -1057,6 +1057,49 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table .col-actions { white-space: nowrap; }
 .table .col-status { width: 1%; }
 
+/* Responsive column-tier hiding (issue: "scroll table at the bottom of a
+   banlist, making the user experience not fluid").
+   ----------------------------------------------------------------------
+   The banlist / commslist desktop tables carry 9-10 columns. At
+   769–1100px (after the main `.sidebar` collapses at <=1024px and
+   before the panel reaches its 1400px max-width) the natural sum of
+   column widths exceeds the panel and the `.table-scroll` wrapper
+   above falls back to horizontal scroll inside the card. Horizontal
+   scroll on a list view is the canonical "broken UX" smell on a
+   touch viewport (no scrollbar; users have to swipe inside a nested
+   scroll container).
+
+   Two-tier responsive hide: every column carries a tier class on
+   BOTH the `<th>` AND the matching `<td>` so the column hides as a
+   unit and the column count stays consistent (otherwise rows go
+   out of alignment).
+
+     - Tier-1 (always visible): Player, SteamID, Reason (banlist) /
+       Type+Player (commslist), Status, Actions. The minimum row
+       still answers "who, why, what state, what can I do".
+     - Tier-2 (`.col-tier-2`): hidden at <=1100px. Server, Admin —
+       useful but not essential for moderation triage; both surface
+       on the player drawer / card detail anyway.
+     - Tier-3 (`.col-tier-3`): hidden at <=900px. IP / Length /
+       Banned / Started — historical metadata that's nice to glance
+       but cheap to drop on a narrow viewport.
+
+   The mobile card layout (`.ban-cards`) takes over completely at
+   <=768px (theme.css `.table { display: none }`), so the tier
+   classes are never the visible chrome at mobile widths. They only
+   collapse the desktop table at intermediate viewports.
+
+   `.table-scroll` stays wrapped around the table as a defensive
+   safety net — if a row's content (long player name + long reason)
+   still exceeds the panel after tier-3 hiding, it scrolls instead
+   of clipping. */
+@media (max-width: 1100px) {
+  .table .col-tier-2 { display: none; }
+}
+@media (max-width: 900px) {
+  .table .col-tier-3 { display: none; }
+}
+
 /* ---- Avatar ---- */
 .avatar { display: inline-grid; place-items: center; border-radius: 50%; color: white; font-weight: 600; flex-shrink: 0; }
 

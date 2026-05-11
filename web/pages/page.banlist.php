@@ -868,10 +868,11 @@ foreach ($res as $row) {
     } else {
         $data['sname'] = (string) $row['server_ip'];
     }
-    $data['aname']        = is_string($data['admin']) ? $data['admin'] : '';
-    $data['state']        = $state;
-    $data['can_edit_ban'] = (bool) $data['view_edit'];
-    $data['can_unban']    = (bool) $data['view_unban'];
+    $data['aname']          = is_string($data['admin']) ? $data['admin'] : '';
+    $data['state']          = $state;
+    $data['can_edit_ban']   = (bool) $data['view_edit'];
+    $data['can_unban']      = (bool) $data['view_unban'];
+    $data['can_delete_ban'] = (bool) $data['view_delete'];
 
     // Avatar metadata precomputed server-side so the template doesn't
     // have to lean on Smarty's `%` arithmetic operator (parses

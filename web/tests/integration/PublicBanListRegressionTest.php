@@ -171,28 +171,128 @@ final class PublicBanListRegressionTest extends ApiTestCase
             $html,
             'desktop row-actions cell must include a Re-apply anchor for expired/unbanned rows',
         );
-        // Two seeded rows are eligible (expired + unbanned); both
-        // emit the anchor exactly once, so the testid count is
-        // at least two.
-        $reapplyMatchCount = substr_count($html, 'data-testid="row-action-reapply"');
+        // Two seeded rows are eligible (expired + unbanned). Each
+        // eligible row now emits the anchor on BOTH the desktop
+        // table AND the mobile card (`row-action-reapply` plus
+        // `row-action-reapply-mobile`), so the desktop-only count
+        // is exactly 2.
+        $desktopReapplyCount = substr_count($html, 'data-testid="row-action-reapply"');
         $this->assertGreaterThanOrEqual(
             2,
-            $reapplyMatchCount,
-            'one Re-apply anchor per eligible row (expired + unbanned)',
+            $desktopReapplyCount,
+            'one Re-apply anchor per eligible row on the desktop branch (expired + unbanned)',
         );
         // Active rows must NOT carry the anchor — gated to the
         // expired/unbanned branches only. Three seeded rows total;
         // only two are eligible.
         $this->assertLessThan(
             3,
-            $reapplyMatchCount,
+            $desktopReapplyCount,
             'Re-apply anchor must NOT render on the active row (we seeded 1 active + 1 expired + 1 unbanned)',
+        );
+        // Mobile mirror — the public banlist's mobile card now exposes
+        // the same row-actions row as the desktop table (see
+        // page_bans.tpl `.ban-card__actions`). Asserts the mobile
+        // testid hook is present so the mobile card's parity with the
+        // desktop chrome stays locked.
+        $this->assertStringContainsString(
+            'data-testid="row-action-reapply-mobile"',
+            $html,
+            'mobile-card branch must mirror the desktop Re-apply anchor (.ban-card__actions row)',
         );
         // Anchor must point at the smart-default reban URL.
         $this->assertMatchesRegularExpression(
             '#href="index\.php\?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid=\d+#',
             $html,
             'Re-apply anchor must deep-link the admin add-ban form with the original bid',
+        );
+    }
+
+    /**
+     * Issue 2/3/4 (this PR): the v2.0 banlist row-actions cell shipped
+     * bare HTML-entity glyphs (`&#9998;` ✎ / `&#10003;` ✓ / `&#8634;` ↺ /
+     * `&#128203;` 📋) that read as broken icons next to the commslist's
+     * Lucide-icon affordance set. This test pins the new chrome:
+     *
+     *  - Edit / Unban / Re-apply / Copy / Remove buttons each carry a
+     *    `<i data-lucide="…">` icon (no entity glyphs).
+     *  - The four entity glyphs the v2.0 shape used must NOT appear
+     *    inside any rendered row-actions button — the `<i>`/Lucide
+     *    swap is total.
+     *
+     * Re-apply gating is verified separately above; this test is the
+     * chrome-shape regression guard.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistRowActionsUseLucideIconsNotEntityGlyphs(): void
+    {
+        $_GET = ['p' => 'banlist'];
+
+        $html = $this->renderBanlistPage();
+
+        // Each affordance ships an `<i data-lucide="<name>">` icon.
+        // Anchor on the testid + icon-name pair so a future renaming
+        // sweep that changes one half still trips the assertion.
+        $iconExpectations = [
+            'row-action-edit'       => 'pencil',
+            'row-action-reapply'    => 'rotate-ccw',
+            'row-action-copy-steam' => 'copy',
+        ];
+        foreach ($iconExpectations as $testid => $iconName) {
+            $this->assertMatchesRegularExpression(
+                '#data-testid="' . preg_quote($testid, '#') . '"[^>]*>\s*<i data-lucide="' . preg_quote($iconName, '#') . '"#',
+                $html,
+                $testid . ' must render with a `<i data-lucide="' . $iconName . '">` icon (no bare entity glyph).',
+            );
+        }
+
+        // The four bare entity glyphs the v2.0 shape used as
+        // affordance icons. None of them should appear inside the
+        // rendered row-actions cell — the swap to Lucide is total.
+        // The `&#9998;` is also the Smarty/HTML pencil entity used
+        // nowhere else in the surface, so the bare-substring check
+        // is precise enough.
+        $bannedGlyphs = ['&#9998;', '&#10003;', '&#8634;', '&#128203;'];
+        foreach ($bannedGlyphs as $glyph) {
+            $this->assertStringNotContainsString(
+                $glyph,
+                $html,
+                'Bare HTML-entity glyph "' . $glyph . '" must not survive in the rendered row-actions chrome (use Lucide icons).',
+            );
+        }
+    }
+
+    /**
+     * Issue 5 (this PR): the desktop reason column truncates at
+     * `max-width:18rem` with `.truncate`; long reasons used to clip
+     * with no way to surface the full text. The fix adds a `title=`
+     * attribute on the `<td>` so the browser's native tooltip
+     * surfaces the un-truncated reason on hover / long-press.
+     *
+     * Pinned: the seeded 'wallhack' reason from the unbanned row
+     * appears in a `title="…"` attribute on a Reason `<td>`. Empty
+     * reasons emit no `title=""`; the conditional in the template
+     * gates on `!empty($ban.reason)` so absent reasons don't get a
+     * useless empty tooltip.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistReasonCellCarriesHoverTooltip(): void
+    {
+        $_GET = ['p' => 'banlist'];
+
+        $html = $this->renderBanlistPage();
+
+        // The seeded 'wallhack' reason on `CheaterBeta` (unbanned
+        // row) appears at LEAST in the body text (existing visible
+        // copy) AND in a `title="…"` attribute on the same row's
+        // reason `<td>`. The regex tolerates other attributes
+        // between `<td` and `title="wallhack"`.
+        $this->assertMatchesRegularExpression(
+            '#<td[^>]*\bclass="text-muted truncate"[^>]*\btitle="wallhack"#',
+            $html,
+            'desktop Reason cell must carry the seeded reason in a title= attribute so hover surfaces the full text (issue 5).',
         );
     }
 

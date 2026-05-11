@@ -91,9 +91,12 @@ final class BanListIpColumnTest extends ApiTestCase
         // Desktop column header. Anchor on the `col-ip` class +
         // visible "IP" copy together so a future refactor that
         // accidentally reuses the class for a different column
-        // still trips this assertion.
-        $this->assertStringContainsString(
-            '<th scope="col" class="col-ip">IP</th>',
+        // still trips this assertion. The class attribute may carry
+        // additional tier hooks (e.g. `col-ip col-tier-3` for the
+        // <=900px viewport hide) — the regex matches as long as
+        // `col-ip` is present and the visible text reads "IP".
+        $this->assertMatchesRegularExpression(
+            '#<th scope="col" class="col-ip(?:\s[^"]*)?">IP</th>#',
             $html,
             'IP <th> must render in the desktop <thead> when $hideplayerips is false (#1302).',
         );
@@ -136,8 +139,8 @@ final class BanListIpColumnTest extends ApiTestCase
     {
         $html = $this->renderBanList(hideplayerips: true);
 
-        $this->assertStringNotContainsString(
-            '<th scope="col" class="col-ip">IP</th>',
+        $this->assertDoesNotMatchRegularExpression(
+            '#<th scope="col" class="col-ip(?:\s[^"]*)?">IP</th>#',
             $html,
             'IP <th> must NOT render when $hideplayerips is true — banlist.hideplayerips is the gate, mirroring the public-side IP suppression contract (#1302).',
         );
@@ -272,6 +275,11 @@ final class BanListIpColumnTest extends ApiTestCase
             'ban_ip_raw'      => '1.2.3.4',
             'can_edit_ban'    => false,
             'can_unban'       => false,
+            // Mirrors the per-row gate `page.banlist.php` derives from
+            // the per-call `view_delete` (DeleteBan / Owner). Held at
+            // false for this fixture so the Remove affordance stays
+            // hidden — the IP column tests don't exercise that branch.
+            'can_delete_ban'  => false,
             'mod_icon'        => 'web.png',
             'country'         => '',
             'demo_available'  => false,
