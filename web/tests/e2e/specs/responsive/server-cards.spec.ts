@@ -255,12 +255,18 @@ test.describe('responsive: server card grid (#1316)', () => {
     });
 
     test('grid collapses to a single column at narrow (iPhone-13-like) viewport', async ({ page }) => {
-        // The mobile rule is `.servers-grid { grid-template-columns: 1fr }`
-        // at <=768px in `theme.css`. Without the override, a 28rem
-        // (448px) min on a 390px iPhone-13 viewport would force the
-        // first card to overflow the right of the page (auto-fill
-        // can't shrink the min below the declared value). Verify
-        // the fallback is in effect.
+        // The mobile rule is `.servers-grid { grid-template-columns:
+        // minmax(0, 1fr); }` at <=768px in `theme.css`. Without the
+        // override, a 28rem (448px) min on a 390px iPhone-13
+        // viewport would force the first card to overflow the right
+        // of the page (auto-fill can't shrink the min below the
+        // declared value). Bare `1fr` would also overflow because
+        // it's shorthand for `minmax(auto, 1fr)` — the `auto`
+        // minimum resolves to the card's min-content size, which
+        // includes the `truncate` IP:port descendants and inflates
+        // back past the 390px viewport. `minmax(0, 1fr)` is the
+        // only shape that lets the track shrink to the container.
+        // Verify the fallback is in effect.
         //
         // We resize the chromium project's viewport to 390x844 (the
         // iPhone-13 logical viewport) instead of running this test
