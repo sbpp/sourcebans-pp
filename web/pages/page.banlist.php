@@ -369,7 +369,30 @@ if ($stateFilter !== '') {
     $stateFragment = match ($stateFilter) {
         'permanent' => '(BA.RemoveType IS NULL AND BA.RemovedOn IS NULL AND BA.length = 0)',
         'active'    => '(BA.RemoveType IS NULL AND BA.RemovedOn IS NULL AND (BA.length = 0 OR BA.ends > UNIX_TIMESTAMP()))',
-        'expired'   => "(BA.RemoveType = 'E' OR (BA.RemoveType IS NULL AND BA.length > 0 AND BA.ends < UNIX_TIMESTAMP() AND BA.RemovedOn IS NULL))",
+        // `expired` carries TWO defensive OR arms (parallel to
+        // `unbanned`'s shape) so pre-2.0 natural-expiry rows AND
+        // pre-2.0 PruneBans-shape rows both surface on un-migrated
+        // installs:
+        //   - Arm 1: `RemoveType = 'E'` — the post-migration shape
+        //     (and the v2.0 PruneBans write).
+        //   - Arm 2: `RemoveType IS NULL AND RemovedOn IS NULL AND
+        //     length > 0 AND ends < now` — a v1.x row PruneBans
+        //     never touched (no `RemovedOn` ever written), the
+        //     panel infers expiry from the timestamps. The
+        //     `RemovedOn IS NULL` here is what distinguishes this
+        //     from arm 3.
+        //   - Arm 3: `RemoveType IS NULL AND RemovedOn IS NOT NULL
+        //     AND (RemovedBy IS NULL OR RemovedBy = 0)` — a v1.x
+        //     row where the prune writer set `RemovedOn` but not
+        //     `RemoveType` (the fork-divergence shape `810.php`
+        //     pass 2 backfills to `'E'`). The `RemovedBy IS NULL
+        //     OR = 0` distinguishes from `unbanned`'s arm 2 (which
+        //     requires `RemovedBy > 0`).
+        // Post-migration arms 2 + 3 become no-ops (the rows now
+        // carry `RemoveType = 'E'` and hit arm 1 instead).
+        'expired'   => "(BA.RemoveType = 'E'"
+                       . " OR (BA.RemoveType IS NULL AND BA.length > 0 AND BA.ends < UNIX_TIMESTAMP() AND BA.RemovedOn IS NULL)"
+                       . " OR (BA.RemoveType IS NULL AND BA.RemovedOn IS NOT NULL AND BA.length > 0 AND (BA.RemovedBy IS NULL OR BA.RemovedBy = 0)))",
         'unbanned'  => "(BA.RemoveType IN ('D', 'U') OR (BA.RemovedOn IS NOT NULL AND BA.RemoveType IS NULL AND BA.RemovedBy IS NOT NULL AND BA.RemovedBy > 0))",
     };
     $stateFilterAnd    = ' AND ' . $stateFragment;

@@ -56,8 +56,11 @@ final class BanListStateFilterTest extends ApiTestCase
     /** @var int bid: expired ban (RemoveType='E', PruneBans-shape). */
     private int $expiredEBid = 0;
 
-    /** @var int bid: pre-2.0 natural-expiry (RemoveType IS NULL, RemovedBy=0, ends<now). */
+    /** @var int bid: pre-2.0 natural-expiry — `length > 0`, `ends < now`, `RemoveType IS NULL`, `RemovedOn IS NULL` (PruneBans never wrote the row). */
     private int $expiredPre2Bid = 0;
+
+    /** @var int bid: pre-2.0 PruneBans-shape — `RemoveType IS NULL`, `RemovedOn IS NOT NULL`, `RemovedBy = 0`, `length > 0`. The prune writer set `RemovedOn` but the fork it ran on didn't set `RemoveType`. */
+    private int $expiredPre2PrunedBid = 0;
 
     /** @var int bid: admin-deleted ban (RemoveType='D'). */
     private int $deletedBid = 0;
@@ -114,6 +117,11 @@ final class BanListStateFilterTest extends ApiTestCase
             'state=unbanned must NOT include pre-2.0 natural-expiry rows '
             . '(RemoveType IS NULL but RemovedBy IS NULL — the OR-clause guard '
             . 'must distinguish lifts from natural expiry)');
+        $this->assertNotContains($this->expiredPre2PrunedBid, $bids,
+            'state=unbanned must NOT include pre-2.0 PruneBans-shape rows '
+            . '(RemoveType IS NULL, RemovedOn IS NOT NULL, RemovedBy = 0) — '
+            . 'the OR-clause guard requires `RemovedBy > 0`, distinguishing '
+            . 'lifts from PruneBans natural expiry');
     }
 
     #[RunInSeparateProcess]
@@ -125,19 +133,28 @@ final class BanListStateFilterTest extends ApiTestCase
         $html = $this->renderBanlistPage();
         $bids = $this->extractRowBids($html);
 
+        // Arm 1: post-migration shape (RemoveType='E').
         $this->assertContains($this->expiredEBid, $bids,
             'state=expired must include RemoveType=\'E\' rows (PruneBans shape)');
-        // Pre-2.0 natural-expiry: RemoveType IS NULL, RemovedBy IS NULL,
-        // length > 0, ends < now. The defensive OR clause picks these up.
-        // Note: the defensive clause requires `RemovedOn IS NULL` to avoid
-        // pulling pre-2.0 natural-expiry rows (which have RemovedOn set,
-        // RemovedBy = 0) into the bucket twice — but THAT row should
-        // still appear because `RemoveType = 'E'` would have been written
-        // by PruneBans. For our seeded shape we have a true pre-475 row
-        // with NULL RemovedOn + length>0 + ends<now → expired branch.
+        // Arm 2: pre-2.0 natural-expiry where the prune writer never
+        // touched the row — RemoveType IS NULL, RemovedOn IS NULL,
+        // length > 0, ends < now. The defensive OR's second arm
+        // catches these via `length>0 AND ends<now AND
+        // RemovedOn IS NULL`.
         $this->assertContains($this->expiredPre2Bid, $bids,
             'state=expired must include pre-2.0 natural-expiry rows '
-            . '(RemoveType IS NULL, length>0, ends<now)');
+            . '(RemoveType IS NULL, RemovedOn IS NULL, length>0, ends<now)');
+        // Arm 3: pre-2.0 PruneBans-shape — RemoveType IS NULL,
+        // RemovedOn IS NOT NULL, RemovedBy = 0, length > 0. Without
+        // arm 3 these rows would NEITHER match expired (because
+        // arm 2 requires `RemovedOn IS NULL`) NOR unbanned (because
+        // arm 2 requires `RemovedBy > 0`) — they'd silently fall
+        // through the cracks until the migration runs. Symmetric
+        // with the unbanned filter's defensive OR shape.
+        $this->assertContains($this->expiredPre2PrunedBid, $bids,
+            'state=expired must include pre-2.0 PruneBans-shape rows '
+            . '(RemoveType IS NULL, RemovedOn IS NOT NULL, RemovedBy = 0, length>0) '
+            . 'via arm 3 of the defensive OR — symmetric with unbanned\'s arm 2');
 
         // Unbanned / active rows must NOT be here.
         $this->assertNotContains($this->unbannedBid, $bids,
@@ -168,6 +185,10 @@ final class BanListStateFilterTest extends ApiTestCase
             'state=active must NOT include RemoveType=\'E\' rows');
         $this->assertNotContains($this->expiredPre2Bid, $bids,
             'state=active must NOT include pre-2.0 natural-expiry rows');
+        $this->assertNotContains($this->expiredPre2PrunedBid, $bids,
+            'state=active must NOT include pre-2.0 PruneBans-shape rows '
+            . '(the `RemovedOn IS NULL` guard on the active predicate '
+            . 'drops them out of the live-row bucket)');
         $this->assertNotContains($this->unbannedBid, $bids,
             'state=active must NOT include RemoveType=\'U\' rows');
         $this->assertNotContains($this->deletedBid, $bids,
@@ -213,6 +234,7 @@ final class BanListStateFilterTest extends ApiTestCase
         $this->assertContains($this->activeTimedBid, $bids);
         $this->assertContains($this->expiredEBid, $bids);
         $this->assertContains($this->expiredPre2Bid, $bids);
+        $this->assertContains($this->expiredPre2PrunedBid, $bids);
         $this->assertContains($this->unbannedBid, $bids);
         $this->assertContains($this->deletedBid, $bids);
         $this->assertContains($this->unbannedPre2Bid, $bids,
@@ -447,18 +469,37 @@ final class BanListStateFilterTest extends ApiTestCase
         ]);
         $this->expiredEBid = (int) $pdo->lastInsertId();
 
-        // 4) Pre-2.0 natural-expiry (RemoveType IS NULL, RemovedBy IS
-        //    NULL, length>0, ends<now). Pre-475 installs that didn't
-        //    have the column never wrote it; pre-2.0 PruneBans had
-        //    different code paths that may also have left it NULL.
-        //    The defensive OR clause in the `expired` SQL fragment
-        //    catches these via `length>0 AND ends<now`.
+        // 4) Pre-2.0 natural-expiry — RemoveType IS NULL, RemovedBy
+        //    IS NULL, RemovedOn IS NULL, length>0, ends<now. Pre-475
+        //    installs that didn't have the column never wrote it; the
+        //    panel infers expiry from the timestamps. The `expired`
+        //    SQL fragment's arm 2 catches this via
+        //    `length>0 AND ends<now AND RemovedOn IS NULL`.
         $insert->execute([
             0, 'STEAM_0:1:90004', 'ExpiredPre2',
             $now - 30 * 24 * $hour, $now - 24 * $hour, 29 * 24 * $hour,
             'old ban', null, $aid, null, null, null,
         ]);
         $this->expiredPre2Bid = (int) $pdo->lastInsertId();
+
+        // 4b) Pre-2.0 PruneBans-shape natural-expiry — RemoveType IS
+        //     NULL, RemovedOn IS NOT NULL, RemovedBy = 0, length>0.
+        //     The prune writer on the fork set `RemovedOn` but didn't
+        //     populate `RemoveType` (the fork-divergence shape
+        //     `web/updater/data/810.php` pass 2 backfills to 'E').
+        //     The `expired` SQL fragment's arm 3 catches this via
+        //     `RemoveType IS NULL AND RemovedOn IS NOT NULL AND
+        //     length>0 AND (RemovedBy IS NULL OR RemovedBy = 0)`,
+        //     and the arm CRITICALLY requires `RemovedBy IS NULL OR
+        //     = 0` so the row never lands in `?state=unbanned` (which
+        //     requires `RemovedBy > 0`).
+        $insert->execute([
+            0, 'STEAM_0:1:90014', 'ExpiredPre2Pruned',
+            $now - 30 * 24 * $hour, $now - 24 * $hour, 29 * 24 * $hour,
+            'old ban (prune wrote RemovedOn)', null, $aid,
+            0, $now - 12 * $hour, null,
+        ]);
+        $this->expiredPre2PrunedBid = (int) $pdo->lastInsertId();
 
         // 5) Admin-deleted (RemoveType='D').
         $insert->execute([
