@@ -8,12 +8,23 @@
    ?searchText= query, copy buttons no-op, comment-edit is a
    normal POST round-trip), so this file only adds:
 
-     1. Status-filter chips   — toggle row visibility client-side,
-        sync the active state into the URL hash so deep links
-        survive a refresh.
-     2. Comment edit form     — POSTs through sb.api.call()
+     1. Comment edit form     — POSTs through sb.api.call()
         instead of a `<form action="">` round-trip so the page
         doesn't need to navigate away.
+
+   The status-filter chips are server-rendered anchors (#1352).
+   Pre-#1352 this file owned a `applyStateFilter` row-hide layer
+   (chip click → loop `.ban-row[data-state]`, flip
+   `display:none` on rows whose `data-state` didn't match) that
+   only operated on the rowset the server already returned —
+   so a 10k-ban install where 50 rows were unbanned would still
+   render 30 invisible rows on page 1 of `?state=unbanned` and
+   the chip read as broken. The new chip strip in `page_bans.tpl`
+   is real anchors that navigate to `?p=banlist&state=<slug>`,
+   the page handler narrows the SQL rowset, and pagination /
+   no-JS browsers / shared deep links all behave correctly.
+   See "Server-side state filter" in `page.banlist.php` for the
+   full predicate set.
 
    The SteamID copy buttons in the row-actions cell are wired by
    theme.js's document-level `[data-copy]` click delegate (single
@@ -32,40 +43,6 @@
 
   /** @type {HTMLElement | null} */
   const root = /** @type {HTMLElement | null} */ (document.getElementById('banlist-root'));
-
-  // ---- STATUS FILTER CHIPS ---------------------------------
-  /** @type {NodeListOf<HTMLButtonElement>} */
-  const chips = document.querySelectorAll('[data-state-filter]');
-  /** @type {NodeListOf<HTMLElement>} */
-  const rows = document.querySelectorAll('.ban-row[data-state]');
-
-  /**
-   * @param {string} state '' to show all, otherwise one of permanent|active|expired|unbanned.
-   * @returns {void}
-   */
-  function applyStateFilter(state) {
-    rows.forEach((r) => {
-      const match = !state || r.dataset.state === state;
-      r.style.display = match ? '' : 'none';
-    });
-    chips.forEach((c) => {
-      c.setAttribute('aria-pressed', c.dataset.stateFilter === state ? 'true' : 'false');
-    });
-    try {
-      const url = new URL(window.location.href);
-      if (state) url.searchParams.set('state', state); else url.searchParams.delete('state');
-      window.history.replaceState({}, '', url.toString());
-    } catch (e) { /* URL unsupported in some old browsers; chip filter still works */ }
-  }
-
-  chips.forEach((c) => {
-    c.addEventListener('click', () => applyStateFilter(c.dataset.stateFilter || ''));
-  });
-
-  try {
-    const initial = new URL(window.location.href).searchParams.get('state') || '';
-    if (initial) applyStateFilter(initial);
-  } catch (e) { /* ignore — default "All" is already applied server-side */ }
 
   // ---- COMMENT EDIT FORM ----------------------------------
   // The form has no `action`, so submit hits this handler and goes
@@ -112,11 +89,11 @@
   }
 
   // ---- LOADING SKELETON HOOK -------------------------------
-  // The chip filter resolves entirely client-side so we never
-  // flip [data-loading] for it; the hook is reserved for future
-  // C-phase async fetches (e.g. the drawer detail load). Kept
-  // as a no-op API on the root so the marquee testability
-  // contract is satisfied.
+  // The chip filter is now a server-rendered anchor (#1352) so
+  // there's no client-side row-hide work for the skeleton hook
+  // to gate. Reserved for future C-phase async fetches (e.g.
+  // the drawer detail load). Kept as a no-op API on the root so
+  // the marquee testability contract is satisfied.
   if (root) {
     /** @type {any} */ (root).sbpp_setLoading = (/** @type {boolean} */ flag) => {
       root.dataset.loading = flag ? 'true' : 'false';

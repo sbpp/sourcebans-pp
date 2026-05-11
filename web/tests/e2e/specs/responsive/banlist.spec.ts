@@ -14,6 +14,14 @@
  *   - Page-level `documentElement.scrollWidth <= clientWidth` is now
  *     asserted too — #1180 dropped the topbar's `min-width: 16rem`
  *     at <=1024px, so the chrome no longer overflows iPhone-13.
+ *   - Chip click navigates rather than `history.replaceState`'ing
+ *     (#1352): the chip is now a real `<a href="?p=banlist&state=…">`
+ *     and the rowset is narrowed server-side BEFORE pagination, so
+ *     pre-2.0 unbanned rows surface even on installs with thousands
+ *     of bans. The `aria-pressed="true"` flip is server-rendered
+ *     on the post-navigation paint; Playwright's lazy locators
+ *     re-query against the new DOM, so the existing assertion shape
+ *     still holds.
  *
  * Project gating: mobile-chromium only (see sidebar.spec.ts header
  * for the rationale on `beforeEach` skip vs. `describe.configure`).
@@ -135,10 +143,20 @@ test.describe('responsive: ban list', () => {
         // Every chip is reachable on mobile: with wrap in place the
         // rightmost chip renders within the viewport (possibly on a
         // second row), so `.click()` succeeds without horizontal
-        // auto-scroll and toggles state.
+        // auto-scroll and toggles state. Post-#1352 the click triggers
+        // a server-side navigation (the chip is now an anchor); the
+        // lazy locator re-queries against the new DOM so the
+        // active-state assertion still holds, and the URL contract
+        // (`?…&state=unbanned`) is now what the SQL filter actually
+        // narrowed on (vs. pre-#1352's history.replaceState that the
+        // server ignored). The active marker switched from
+        // `aria-pressed="true"` (only valid on role=button) to
+        // `aria-current="true"` (canonical ARIA for "active item in
+        // a navigation set" on `<a>`) — see the AGENTS.md row on
+        // the banlist state filter for the rationale.
         const last = page.locator('[data-testid="filter-chip-unbanned"]');
         await last.click();
-        await expect(last).toHaveAttribute('aria-pressed', 'true');
-        await expect(page).toHaveURL(/[?&]state=unbanned(?:&|$)/);
+        await page.waitForURL(/[?&]state=unbanned(?:&|$)/);
+        await expect(last).toHaveAttribute('aria-current', 'true');
     });
 });

@@ -233,8 +233,10 @@ final class BanListIpColumnTest extends ApiTestCase
             can_add_ban:     false,
             is_filtered:     false,
             server_list:     [],
-            filters:         ['search' => '', 'server' => '', 'time' => ''],
+            filters:         ['search' => '', 'server' => '', 'time' => '', 'state' => ''],
             is_advanced_search_open: false,
+            active_state:    '',
+            chip_base_link:  '',
         );
 
         ob_start();

@@ -36,7 +36,7 @@ final class BanListView extends View
      * @param int                                 $page           Active pagination page (or -1 when not paginated).
      * @param array<int, array<string,mixed>>|string $othercomments  Sibling comments shown beneath the editor; "None" string when the ban has no other comments.
      * @param list<array{sid: int, name: string}> $server_list    Enabled servers for the public filter bar's `<select name="server">` (#1226).
-     * @param array{search: string, server: string, time: string} $filters Current filter state — drives the sticky filter bar's pre-fill + active selected `<option>` (#1226).
+     * @param array{search: string, server: string, time: string, state: string} $filters Current filter state — drives the sticky filter bar's pre-fill + active selected `<option>` (#1226 + #1352).
      */
     public function __construct(
         public readonly array $ban_list,
@@ -93,6 +93,29 @@ final class BanListView extends View
         // don't need the larger card open. Mirrors the post-submit
         // auto-open contract #1303 introduced for admin-admins.
         public readonly bool $is_advanced_search_open,
+        // #1352: server-side state filter — `?state=permanent|active|
+        // expired|unbanned`. Empty string means "All". Pre-#1352 the
+        // chip strip was a vanilla-JS row-hide layer; the v1.x install-
+        // upgrade path left some unbanned rows with `RemoveType IS NULL`
+        // (see `web/updater/data/810.php`'s backfill migration), and
+        // the JS-side filter only saw the rowset the server returned,
+        // so paginated installs with thousands of rows could never
+        // surface old unbans no matter which chip was clicked. The
+        // server-side filter narrows the rowset BEFORE pagination so
+        // page 1 of `?state=unbanned` is the first 30 unbanned rows.
+        // Drives the chip strip's `aria-pressed` / `data-active` flag
+        // server-side and the suppressed "Hide inactive" toggle when
+        // a state filter is explicit.
+        public readonly string $active_state,
+        // #1352: URL fragment — every other active filter (search,
+        // server, time, advSearch+advType) but NOT `&state=`. Each
+        // chip's anchor is built as
+        // `index.php?p=banlist{$chip_base_link}&state={$slug}`
+        // ("All" omits the trailing `&state=`). Server-rendered so
+        // chip clicks survive a no-JS browser and so the active chip
+        // gets `aria-pressed="true"` on first paint without a JS
+        // round-trip.
+        public readonly string $chip_base_link,
     ) {
     }
 }

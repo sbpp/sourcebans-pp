@@ -757,11 +757,25 @@ function api_bans_detail(array $params): array
     // RemoveType marks deleted/unbanned/expired explicitly; otherwise
     // an `ends` timestamp in the past collapses to "expired" even
     // without a row update (PruneBans() catches those eventually).
-    $removal = BanRemoval::tryFrom((string)($row['RemoveType'] ?? ''));
+    //
+    // #1352: pre-2.0 admin-lifted rows whose `RemoveType IS NULL` (the
+    // v1.x admin-unban write path didn't always populate the column —
+    // see `web/updater/data/810.php`'s backfill migration) get tagged
+    // `unbanned` via the `RemovedOn IS NOT NULL && RemovedBy > 0`
+    // disjunction, mirroring the same arm in `page.banlist.php`'s
+    // post-loop state computation. Without this branch the API would
+    // return `state: 'active'` for rows the page-side `?state=unbanned`
+    // SQL filter just pulled in — visibly broken on the drawer's
+    // detail surface.
+    $removal      = BanRemoval::tryFrom((string)($row['RemoveType'] ?? ''));
+    $removedByInt = $row['RemovedBy'] !== null ? (int)$row['RemovedBy'] : 0;
+    $isPre2AdminLift = $removal === null && $removedOn !== null && $removedByInt > 0;
     if ($removal === BanRemoval::Unbanned || $removal === BanRemoval::Deleted) {
         $state = 'unbanned';
     } elseif ($removal === BanRemoval::Expired) {
         $state = 'expired';
+    } elseif ($isPre2AdminLift) {
+        $state = 'unbanned';
     } elseif ($length === 0) {
         $state = 'permanent';
     } elseif ($ends > 0 && $ends < time()) {
@@ -1020,10 +1034,21 @@ function api_bans_player_history(array $params): array
         $ends    = (int)$r['ends'];
         $rowRemoval = BanRemoval::tryFrom((string)($r['RemoveType'] ?? ''));
 
+        // #1352: same pre-2.0 admin-lift fallback as `api_bans_detail`
+        // above — rows where v1.x left `RemoveType IS NULL` despite
+        // `RemovedOn` + `RemovedBy` being set. The drawer's history
+        // pane is a primary surface for this case (it's where players
+        // see their full ban arc), so the parity matters.
+        $removedOn       = $r['RemovedOn'] !== null ? (int)$r['RemovedOn'] : null;
+        $rowRemovedBy    = $r['RemovedBy'] !== null ? (int)$r['RemovedBy'] : 0;
+        $rowIsPre2Lift   = $rowRemoval === null && $removedOn !== null && $rowRemovedBy > 0;
+
         if ($rowRemoval === BanRemoval::Unbanned || $rowRemoval === BanRemoval::Deleted) {
             $state = 'unbanned';
         } elseif ($rowRemoval === BanRemoval::Expired) {
             $state = 'expired';
+        } elseif ($rowIsPre2Lift) {
+            $state = 'unbanned';
         } elseif ($length === 0) {
             $state = 'permanent';
         } elseif ($ends > 0 && $ends < time()) {
@@ -1031,8 +1056,6 @@ function api_bans_player_history(array $params): array
         } else {
             $state = 'active';
         }
-
-        $removedOn = $r['RemovedOn'] !== null ? (int)$r['RemovedOn'] : null;
         $removedByName = null;
         if ($r['RemovedBy'] !== null && (int)$r['RemovedBy'] > 0 && !$hideAdmin) {
             $removedRow = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")

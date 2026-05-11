@@ -284,6 +284,139 @@ if ($publicFilterClauses) {
     $publicFilterWheren = ' WHERE ' . $joined;
 }
 
+// #1352: server-side state filter — `?p=banlist&state=<permanent|
+// active|expired|unbanned>`. Pre-#1352 the chip strip was a
+// vanilla-JS row-hide layer (`web/scripts/banlist.js` flipped
+// `display: none` on rows whose `data-state` didn't match) +
+// `history.replaceState` for a sharable URL, with the server
+// returning the same paginated rowset regardless of `?state=`.
+// That broke two ways the v1.x list didn't:
+//
+//   1. Pre-2.0 admin-lifted bans whose `RemoveType IS NULL` (the
+//      v1.x admin-unban write path didn't always populate the
+//      column — `web/updater/data/810.php` is the paired backfill
+//      migration) were mis-classified as "active" / "expired" by
+//      the post-loop state computation, so the chip never matched
+//      them — even on the page they happened to land on. The new
+//      `unbanned` SQL fragment includes a defensive
+//      `OR (RemovedOn IS NOT NULL AND RemoveType IS NULL AND
+//       RemovedBy IS NOT NULL AND RemovedBy > 0)` clause to catch
+//      those rows on un-migrated installs (the migration converges
+//      them to `RemoveType = 'U'` so the OR clause becomes a no-op
+//      afterwards). The `RemovedBy > 0` distinction keeps natural-
+//      expiry rows (`RemovedBy = 0` from `PruneBans()`, or NULL on
+//      truly ancient installs) out of the unbanned bucket — the
+//      `expired` predicate picks them up via the symmetric
+//      `OR (RemoveType IS NULL AND length > 0 AND ends < now)`
+//      clause.
+//
+//   2. Server-side pagination + client-side filter: with 10k bans
+//      of which 50 are unbanned, the unbanned rows might land on
+//      page 50; the user clicked the chip on page 1, watched 30
+//      rows disappear, and the chip read as broken. The server-
+//      side filter narrows the rowset BEFORE the LIMIT clause so
+//      page 1 of `?state=unbanned` is the first 30 unbanned rows.
+//
+// State filter composes ON TOP of `$searchText` / `$server` /
+// `$time` / `?advSearch` like the `$publicFilterAnd` /
+// `$publicFilterWheren` predicates above. When a state filter is
+// explicit, it OVERRIDES the session-based "Hide inactive" toggle
+// — `state=unbanned` and "Hide inactive" (which is
+// `RemoveType IS NULL`) are mutually exclusive, so the chip (the
+// explicit user gesture) wins. The toggle button on the page
+// chrome is hidden when a state filter is active so the two
+// surfaces don't visually compete.
+//
+// The four state predicates are written as bare SQL (no bound
+// parameters) because each one is a static fragment — no user
+// input flows in unescaped. UNIX_TIMESTAMP() is computed server-
+// side per row, and the literal letter codes are bound at the
+// disk layer (`varchar(3)`). Keeping these as bare SQL avoids a
+// placeholder shape mismatch with the existing `$publicFilterArgs`
+// / `$advcrit` / `$search_array` ordering — each query branch
+// passes positional `?` placeholders, and adding state-bound `?`s
+// would force a re-shuffle in every `array_merge` call.
+$stateAllowlist = ['permanent', 'active', 'expired', 'unbanned'];
+$stateFilter    = isset($_GET['state']) ? trim((string) $_GET['state']) : '';
+if (!in_array($stateFilter, $stateAllowlist, true)) {
+    $stateFilter = '';
+}
+
+$stateFilterAnd    = '';
+$stateFilterWheren = '';
+$stateFilterLink   = '';
+if ($stateFilter !== '') {
+    // Per-state SQL predicates. Two invariants the four arms share:
+    //
+    //   - `permanent` / `active` BOTH carry `RemovedOn IS NULL` so a
+    //     row that's been ANY flavour of removed (admin-lifted via
+    //     'U' / 'D', natural-expiry via 'E', or pre-2.0 lifted with
+    //     `RemoveType IS NULL`) drops out of the live-row buckets.
+    //     Without the `RemovedOn IS NULL` guard a pre-2.0 admin-lifted
+    //     row (RemoveType IS NULL, RemovedBy > 0, ends > now) would
+    //     match BOTH `active` AND `unbanned` — same row in two
+    //     buckets, which is exactly the symmetry bug the per-row
+    //     state classifier (the `match (true)` block ~lines 970-985)
+    //     also has to defend against.
+    //
+    //   - `expired` / `unbanned` carry their own defensive OR
+    //     clauses for pre-2.0 rows that the `web/updater/data/810.php`
+    //     migration backfills to `RemoveType = 'E'` / `'U'`. The
+    //     migration re-running on a converged install matches zero
+    //     rows; the OR clauses re-running against migrated rows
+    //     match the same rows the post-migration `RemoveType` arm
+    //     already does (idempotent).
+    $stateFragment = match ($stateFilter) {
+        'permanent' => '(BA.RemoveType IS NULL AND BA.RemovedOn IS NULL AND BA.length = 0)',
+        'active'    => '(BA.RemoveType IS NULL AND BA.RemovedOn IS NULL AND (BA.length = 0 OR BA.ends > UNIX_TIMESTAMP()))',
+        'expired'   => "(BA.RemoveType = 'E' OR (BA.RemoveType IS NULL AND BA.length > 0 AND BA.ends < UNIX_TIMESTAMP() AND BA.RemovedOn IS NULL))",
+        'unbanned'  => "(BA.RemoveType IN ('D', 'U') OR (BA.RemovedOn IS NOT NULL AND BA.RemoveType IS NULL AND BA.RemovedBy IS NOT NULL AND BA.RemovedBy > 0))",
+    };
+    $stateFilterAnd    = ' AND ' . $stateFragment;
+    $stateFilterWheren = ' WHERE ' . $stateFragment;
+    $stateFilterLink   = '&state=' . urlencode($stateFilter);
+}
+
+// #1352: when an explicit state filter is set, the session-based
+// "Hide inactive" predicate (`RemoveType IS NULL`) is either
+// redundant (state=permanent / state=active already pin
+// `RemoveType IS NULL`) or contradictory (state=expired /
+// state=unbanned ask for the OPPOSITE rowset). Either way, the
+// explicit chip is the user's intent — drop hideinactive when
+// state is set so the two surfaces never collide. The toggle
+// button on the page chrome is also hidden while state is set
+// so the surfaces don't visually compete.
+if ($stateFilter !== '') {
+    $hidetext      = "Hide";
+    $hideinactive  = "";
+    $hideinactiven = "";
+}
+
+// #1352: extend the public-filter strings with the state fragment.
+// The query branches below already consume `$publicFilterAnd` /
+// `$publicFilterWheren` plus `$publicFilterArgs`; folding state
+// into the existing strings (rather than adding a new pair of
+// variables to every branch) keeps the per-branch SQL diff
+// minimal. State adds no bound args, so `$publicFilterArgs` is
+// untouched.
+//
+// `$publicFilterLink` (the URL fragment used by the "Hide inactive"
+// toggle, the pagination prev/next, and the search-form `$searchlink`)
+// is intentionally NOT mutated here — the chip strip's per-chip
+// anchor needs a "preserve other filters but swap state" base URL,
+// which is exactly `$publicFilterLink` MINUS the state. The pagination
+// URL and the toggle URL get state via the separate `$stateFilterLink`
+// fragment composed below.
+if ($stateFilter !== '') {
+    if ($publicFilterAnd === '') {
+        $publicFilterAnd    = $stateFilterAnd;
+        $publicFilterWheren = $stateFilterWheren;
+    } else {
+        $publicFilterAnd    .= $stateFilterAnd;
+        $publicFilterWheren .= $stateFilterAnd;
+    }
+}
+
 if (isset($_GET['searchText'])) {
     $searchText = trim((string) $_GET['searchText']);
 
@@ -347,7 +480,7 @@ if (isset($_GET['searchText'])) {
         [$authidParam, $search, $search],
         $publicFilterArgs
     ));
-    $searchlink = "&searchText=" . urlencode($_GET["searchText"]) . $publicFilterLink;
+    $searchlink = "&searchText=" . urlencode($_GET["searchText"]) . $publicFilterLink . $stateFilterLink;
 } elseif (!isset($_GET['advSearch'])) {
     // #1226: branch 2 has no upper-level WHERE; if hideinactive opened
     // one (`$hideinactiven` = " WHERE RemoveType IS NULL") we append
@@ -374,7 +507,7 @@ if (isset($_GET['searchText'])) {
     ));
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(bid) AS cnt FROM `:prefix_bans` AS BA" . $branch2WhereSuffix)->resultset($publicFilterArgs);
-    $searchlink = $publicFilterLink;
+    $searchlink = $publicFilterLink . $stateFilterLink;
 }
 
 $advcrit = [];
@@ -543,7 +676,7 @@ if (isset($_GET['advSearch'])) {
 
     $res_count  = $GLOBALS['PDO']->query("SELECT count(BA.bid) AS cnt FROM `:prefix_bans` AS BA
 										  " . ($type == "comment" && $userbank->is_admin() ? "LEFT JOIN `:prefix_comments` AS CO ON BA.bid = CO.bid" : "") . " " . $where . $hideinactive . $publicFilterBranch3)->resultset(array_merge($advcrit, $publicFilterArgs));
-    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']) . $publicFilterLink;
+    $searchlink = "&advSearch=" . urlencode($_GET['advSearch']) . "&advType=" . urlencode($_GET['advType']) . $publicFilterLink . $stateFilterLink;
 }
 
 $BanCount = isset($res_count[0]['cnt']) ? (int) $res_count[0]['cnt'] : 0;
@@ -843,12 +976,29 @@ foreach ($res as $row) {
     //     unbanned  → RemoveType set (D/U/E rows that aren't natural expiry)
     // Natural expiry (length>0 && ends<now && RemoveType IS NULL) is
     // surfaced as `expired` separately from admin-driven `unbanned`.
-    $banLengthInt = (int) $row['ban_length'];
-    $banEndsInt   = (int) $row['ban_ends'];
-    $stateRemoval = BanRemoval::tryFrom((string) ($row['row_type'] ?? ''));
+    //
+    // #1352: the `removed_admin_lift` arm catches pre-2.0 admin-lifted
+    // bans whose `RemoveType IS NULL` but `RemovedOn IS NOT NULL` and
+    // `RemovedBy > 0` (some v1.x panels left the column NULL — see
+    // `web/updater/data/810.php`'s backfill migration). Without this
+    // arm the row would fall through to the default 'active' branch,
+    // and a row the SQL `?state=unbanned` filter pulled in would
+    // render with an "Active" pill — visibly broken. The arm must
+    // sit between the explicit-RemoveType arms and the length /
+    // ends inferences so an explicit `'D'` / `'U'` / `'E'` tag still
+    // wins (those are the post-migration shape).
+    $banLengthInt    = (int) $row['ban_length'];
+    $banEndsInt      = (int) $row['ban_ends'];
+    $stateRemoval    = BanRemoval::tryFrom((string) ($row['row_type'] ?? ''));
+    $rowRemovedOn    = $row['RemovedOn'] !== null ? (int) $row['RemovedOn'] : 0;
+    $rowRemovedBy    = $row['RemovedBy'] !== null ? (int) $row['RemovedBy'] : 0;
+    $isPre2AdminLift = $stateRemoval === null
+        && $rowRemovedOn > 0
+        && $rowRemovedBy > 0;
     $state = match (true) {
         $stateRemoval === BanRemoval::Deleted, $stateRemoval === BanRemoval::Unbanned => 'unbanned',
         $stateRemoval === BanRemoval::Expired   => 'expired',
+        $isPre2AdminLift                        => 'unbanned',
         $banLengthInt === 0                     => 'permanent',
         $banEndsInt < time()                    => 'expired',
         default                                 => 'active',
@@ -926,7 +1076,9 @@ if ($BanCount === 0) {
     $searchTextParam = isset($_GET['searchText']) ? '&searchText=' . urlencode((string) $_GET['searchText']) : '';
     // #1226: append the public ?server / ?time filter params so
     // pagination links keep the active filter when navigating.
-    $pageQuerySuffix = $searchTextParam . $advSearchString . $publicFilterLink;
+    // #1352: also include `&state=` so paginating across an active
+    // chip filter doesn't silently drop the chip on prev/next/jump.
+    $pageQuerySuffix = $searchTextParam . $advSearchString . $publicFilterLink . $stateFilterLink;
 
     $prev = '';
     if ($page > 1) {
@@ -1036,17 +1188,19 @@ if (isset($_GET["comment"])) {
 
 unset($_SESSION['CountryFetchHndl']);
 
-// #1207 + #1226: detect whether the current request is filtered (search
-// box, advanced search, hide-inactive toggle, ?server, ?time). Drives
-// the first-run-vs-filtered split in the empty-state shape — when zero
-// rows AND no filter, the empty state shows "no bans recorded yet"
-// with an "Add a ban" CTA gated on can_add_ban; with a filter
-// active, it stays "No bans match those filters" + "Clear filters".
+// #1207 + #1226 + #1352: detect whether the current request is
+// filtered (search box, advanced search, hide-inactive toggle,
+// ?server, ?time, ?state chip). Drives the first-run-vs-filtered
+// split in the empty-state shape — when zero rows AND no filter,
+// the empty state shows "no bans recorded yet" with an "Add a ban"
+// CTA gated on can_add_ban; with a filter active, it stays "No
+// bans match those filters" + "Clear filters".
 $banlistIsFiltered =
     (isset($_GET['searchText']) && (string) $_GET['searchText'] !== '')
     || (isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== '')
     || isset($_SESSION['hideinactive'])
-    || $publicFilterClauses !== [];
+    || $publicFilterClauses !== []
+    || $stateFilter !== '';
 
 // #1226: server filter dropdown — public banlist parity with the
 // commslist URL surface. Mirrors the data shape page.commslist.php
@@ -1070,7 +1224,28 @@ $banlistFilters = [
     'search' => isset($_GET['searchText']) ? (string) $_GET['searchText'] : '',
     'server' => $serverFilter,
     'time'   => (isset($publicFilterTimeMap[$timeFilter]) ? $timeFilter : ''),
+    'state'  => $stateFilter,
 ];
+
+// #1352: chip-strip base URL — every other active filter (search,
+// server, time, advSearch+advType) preserved, but `&state=` stripped
+// so each chip's anchor can append its own state value (or omit it
+// entirely for the "All" chip). Computed here so the template stays
+// presentation-only.
+//
+// `$advSearchString` is built later in this file (the `if (isset(
+// $_GET['advSearch']))` block ~lines 1003-1007); it's safe to
+// reference here because the if-branch falls through when the
+// param is absent. We compute the same shape inline so the chip
+// link renders correctly even on a `?advSearch=` URL — the user
+// can swap state without losing the advanced-search context.
+$banlistChipBaseLink =
+    (isset($_GET['searchText']) && (string) $_GET['searchText'] !== ''
+        ? '&searchText=' . urlencode((string) $_GET['searchText']) : '')
+    . (isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== ''
+        ? '&advSearch=' . urlencode((string) $_GET['advSearch'])
+            . '&advType=' . urlencode((string) ($_GET['advType'] ?? '')) : '')
+    . $publicFilterLink;
 
 // #1315: auto-open the advanced-search disclosure on a post-submit
 // paint. Bare `?p=banlist` and simple-bar filters
@@ -1112,4 +1287,6 @@ Renderer::render($theme, new BanListView(
     server_list:             $banlistServerList,
     filters:                 $banlistFilters,
     is_advanced_search_open: $banlistAdvancedOpen,
+    active_state:            $stateFilter,
+    chip_base_link:          $banlistChipBaseLink,
 ));

@@ -130,16 +130,21 @@ test.describe('#1207 dark-theme contrast', () => {
         await expect(active).toHaveCSS('color', WHITE_RGB);
     });
 
-    test('CC-4 banlist filter chip "All" paints --brand-700 when pressed', async ({ page }) => {
+    test('CC-4 banlist filter chip "All" paints --brand-700 when active', async ({ page }) => {
         await pinTheme(page, 'dark', '/index.php?p=banlist');
 
         // The "All" chip is the default-selected filter in
-        // page_bans.tpl: `<button class="chip" type="button"
-        // data-state-filter="" aria-pressed="true">All</button>`.
-        // banlist.js may toggle the pressed state based on URL
-        // params, so we filter on `aria-pressed="true"` rather than
-        // assuming the first chip is the active one.
-        const active = page.locator('.chip[aria-pressed="true"]').first();
+        // page_bans.tpl: `<a class="chip" data-state-filter=""
+        // data-active="true" aria-current="true">All</a>`. #1352
+        // converted the chip strip from `<button>` to `<a>` so a
+        // no-JS browser can navigate; the active marker switched
+        // from `aria-pressed="true"` (only valid on role=button —
+        // axe rejected it as `aria-allowed-attr` on `<a>`) to the
+        // canonical `aria-current="true"`. Filter on
+        // `data-active="true"` (the #1123 testability hook the
+        // CSS rule also keys on) rather than the ARIA attribute
+        // so a future role refactor doesn't break this test.
+        const active = page.locator('.chip[data-active="true"]').first();
         await expect(active).toBeVisible();
         await expect(active).toHaveCSS('background-color', BRAND_700_RGB);
         await expect(active).toHaveCSS('color', WHITE_RGB);
@@ -211,7 +216,14 @@ test.describe('#1207 dark-theme contrast', () => {
     test('CC-4 light theme active chip stays zinc-900 (regression guard)', async ({ page }) => {
         await pinTheme(page, 'light', '/index.php?p=banlist');
 
-        const active = page.locator('.chip[aria-pressed="true"]').first();
+        // Filter on `data-active="true"` rather than the legacy
+        // `aria-pressed="true"` selector — #1352 converted the
+        // banlist chip strip from `<button>` to `<a>` so a no-JS
+        // browser can navigate, and switched the active-marker ARIA
+        // attribute to the canonical `aria-current="true"`. The
+        // CSS rule keys on `data-active="true"` so the test stays
+        // resilient against either ARIA shape.
+        const active = page.locator('.chip[data-active="true"]').first();
         await expect(active).toBeVisible();
         await expect(active).toHaveCSS('background-color', ZINC_900_RGB);
         await expect(active).toHaveCSS('color', WHITE_RGB);

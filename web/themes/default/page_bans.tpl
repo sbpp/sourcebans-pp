@@ -82,12 +82,24 @@
          not a navigation in the breadcrumb sense). Without this
          role axe's aria-allowed-attr rule fires "ARIA attribute
          is not allowed: aria-pressed" — see the same shape on
-         page_comms.tpl. *}
+         page_comms.tpl.
+
+         #1352: the toggle is hidden when an explicit `?state=` chip
+         is active. The session-based "Hide inactive" predicate
+         (`RemoveType IS NULL`) is either redundant
+         (state=permanent / state=active already pin
+         `RemoveType IS NULL`) or contradictory (state=expired /
+         state=unbanned ask for the OPPOSITE rowset). The page
+         handler already drops the predicate when state is set;
+         hiding the toggle keeps the two surfaces from visually
+         competing too. *}
+      {if $active_state == ''}
       <a class="btn btn--secondary btn--sm"
          role="button"
          aria-pressed="{if $hidetext == 'Show'}true{else}false{/if}"
          href="index.php?p=banlist&hideinactive={if $hidetext == 'Hide'}true{else}false{/if}{$searchlink}"
          data-testid="toggle-hide-inactive">{$hidetext} inactive</a>
+      {/if}
       {has_access flag=$smarty.const.ADMIN_ADD_BAN}
       <a class="btn btn--primary btn--sm" href="index.php?p=admin&c=bans">Add ban</a>
       {/has_access}
@@ -135,20 +147,73 @@
       </button>
     </div>
 
+    {* #1352: chip strip is now server-side. Each chip is a real
+       anchor (not a `<button type="button">` with JS row-hiding)
+       so the click navigates to `?p=banlist&state=<slug>`, the
+       page handler narrows the SQL rowset, and pagination /
+       no-JS browsers / shared deep links all behave correctly.
+       Pre-#1352 this strip was a vanilla-JS row-hide layer
+       (`web/scripts/banlist.js applyStateFilter`) that flipped
+       `display: none` on rows whose `data-state` didn't match —
+       which only worked on the rowset the server already
+       returned. With 10k bans of which 50 were unbanned, page
+       1 of `?state=unbanned` rendered 30 invisible rows; the
+       chip read as broken. The new shape is server-side parity
+       with the commslist `?state=active` chip (#1274).
+
+       Each chip preserves the OTHER active filters via
+       `$chip_base_link` (search, server, time, advSearch+advType
+       — but NOT state, since the new chip's state is what we're
+       swapping in). The active chip gets `aria-current="true"`
+       AND `data-active="true"` server-rendered so testids anchor
+       on the contract and screen-readers announce the active state
+       without a JS round-trip. NOTE: `aria-current` (not
+       `aria-pressed`) is the canonical ARIA attribute for "active
+       item in a navigation set" on `<a>` elements; axe rejects
+       `aria-pressed` on anchors as `aria-allowed-attr` because
+       only role=button supports the toggle semantics it implies.
+       The sibling commslist chip strip uses `<button>` so it can
+       keep `aria-pressed`; the banlist's anchor shape exists so
+       no-JS browsers can navigate. *}
     <div class="flex items-center gap-2 mt-2 scroll-x" role="group" aria-label="Filter by status">
-      <button class="chip" type="button" data-state-filter="" aria-pressed="true">All</button>
-      <button class="chip" type="button" data-state-filter="permanent" aria-pressed="false" data-testid="filter-chip-permanent">
+      <a class="chip"
+         href="index.php?p=banlist{$chip_base_link}"
+         data-state-filter=""
+         data-testid="filter-chip-all"
+         data-active="{if $active_state == ''}true{else}false{/if}"
+         aria-current="{if $active_state == ''}true{else}false{/if}">All</a>
+      <a class="chip"
+         href="index.php?p=banlist{$chip_base_link}&state=permanent"
+         data-state-filter="permanent"
+         data-testid="filter-chip-permanent"
+         data-active="{if $active_state == 'permanent'}true{else}false{/if}"
+         aria-current="{if $active_state == 'permanent'}true{else}false{/if}">
         <span class="chip__dot" style="background:#ef4444"></span>Permanent
-      </button>
-      <button class="chip" type="button" data-state-filter="active" aria-pressed="false" data-testid="filter-chip-active">
+      </a>
+      <a class="chip"
+         href="index.php?p=banlist{$chip_base_link}&state=active"
+         data-state-filter="active"
+         data-testid="filter-chip-active"
+         data-active="{if $active_state == 'active'}true{else}false{/if}"
+         aria-current="{if $active_state == 'active'}true{else}false{/if}">
         <span class="chip__dot" style="background:#f59e0b"></span>Active
-      </button>
-      <button class="chip" type="button" data-state-filter="expired" aria-pressed="false" data-testid="filter-chip-expired">
+      </a>
+      <a class="chip"
+         href="index.php?p=banlist{$chip_base_link}&state=expired"
+         data-state-filter="expired"
+         data-testid="filter-chip-expired"
+         data-active="{if $active_state == 'expired'}true{else}false{/if}"
+         aria-current="{if $active_state == 'expired'}true{else}false{/if}">
         <span class="chip__dot" style="background:var(--zinc-300)"></span>Expired
-      </button>
-      <button class="chip" type="button" data-state-filter="unbanned" aria-pressed="false" data-testid="filter-chip-unbanned">
+      </a>
+      <a class="chip"
+         href="index.php?p=banlist{$chip_base_link}&state=unbanned"
+         data-state-filter="unbanned"
+         data-testid="filter-chip-unbanned"
+         data-active="{if $active_state == 'unbanned'}true{else}false{/if}"
+         aria-current="{if $active_state == 'unbanned'}true{else}false{/if}">
         <span class="chip__dot" style="background:#10b981"></span>Unbanned
-      </button>
+      </a>
     </div>
   </form>
 

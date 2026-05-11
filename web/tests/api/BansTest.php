@@ -286,6 +286,45 @@ final class BansTest extends ApiTestCase
         ]);
     }
 
+    public function testDetailReportsUnbannedForPre2AdminLiftWithRemoveTypeNull(): void
+    {
+        // #1352: pre-2.0 admin-lifted bans whose `RemoveType IS NULL`
+        // (some v1.x panels left the column NULL even when admin lifted
+        // the ban — see web/updater/data/810.php's backfill migration)
+        // must surface as `state: 'unbanned'` from the JSON detail
+        // endpoint. Pre-fix the handler hit the default `'active'`
+        // branch since `length > 0 && ends > now`, leaving the drawer's
+        // detail surface visibly contradicting the page-side
+        // `?state=unbanned` SQL filter that pulled the row in.
+        $pdo = Fixture::rawPdo();
+        $now = time();
+        $aid = Fixture::adminAid();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_bans` (created, type, ip, authid, name, ends, length, reason, ureason, aid, adminIp, RemovedBy, RemovedOn, RemoveType)
+             VALUES (?, 0, "", ?, ?, ?, ?, ?, ?, ?, "127.0.0.1", ?, ?, NULL)',
+            DB_PREFIX,
+        ))->execute([
+            $now - 7 * 86400,
+            'STEAM_0:1:54321',
+            'Pre2Lifted',
+            $now + 7 * 86400,
+            14 * 86400,
+            'wallhack v1',
+            'pre-2.0 unban',
+            $aid,
+            $aid,
+            $now - 86400,
+        ]);
+        $bid = (int) $pdo->lastInsertId();
+
+        $env = $this->api('bans.detail', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('unbanned', $env['data']['ban']['state'],
+            'pre-2.0 admin-lifted row (RemoveType IS NULL but RemovedBy > 0) '
+            . 'must surface as state=unbanned via the defensive fallback in '
+            . 'api_bans_detail (parity with the page handler\'s SQL filter)');
+    }
+
     public function testAddCommentInsertsRow(): void
     {
         $this->loginAsAdmin();
