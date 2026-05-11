@@ -1,0 +1,96 @@
+---
+title: Prerequisites
+description: What you need on the web and game side before installing SourceBans++.
+sidebar:
+  order: 2
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+A standalone version of the requirements list that ships at the top of
+the [Quickstart](/getting-started/quickstart/) — useful as a single-page
+reference when you're checking a host before committing.
+
+## Web
+
+### Database
+
+Either MySQL or MariaDB is fine; SB++ uses standard SQL plus a couple
+of MySQL-flavoured idioms that both engines support.
+
+<Tabs syncKey="db">
+  <TabItem label="MariaDB" icon="seti:db">
+    **>= 10.0** (the [MariaDB setup
+    guide](/setup/mariadb/) targets the current Ubuntu LTS series and
+    installs MariaDB 10.11).
+
+    Recommended for new installs — it's the engine the dev stack and
+    CI use.
+  </TabItem>
+
+  <TabItem label="MySQL" icon="seti:db">
+    **>= 5.6** (8.0 is supported and recommended). Note that the
+    `GRANT ... IDENTIFIED BY ...` shorthand was removed in MySQL 8;
+    create the user first and grant privileges in a second
+    statement. See the [MariaDB granting section](/setup/mariadb/#granting-permission)
+    for the canonical syntax — it works identically on MySQL 8.
+  </TabItem>
+</Tabs>
+
+The `utf8mb4` charset is required (not the 3-byte `utf8` alias). Player
+names with emoji or 4-byte CJK characters otherwise fail to insert.
+
+### PHP
+
+- **PHP >= 8.5**
+- `memory_limit` >= 64M
+- Required extensions:
+  - `gmp`
+  - `pdo` + `pdo_mysql`
+  - `openssl`
+  - `xml`
+
+A quick check:
+
+```sh
+php -m | grep -E '^(gmp|pdo_mysql|openssl|xml)$'
+```
+
+You should see all four printed back. If `pdo_mysql` is missing, see
+[Could not find driver](/troubleshooting/could-not-find-driver/).
+
+### Composer (only when installing from `main`)
+
+Release archives bundle the `vendor/` directory, so a fresh tarball
+needs no Composer step. If you're checking out the `main` branch
+directly (development install), pull deps with:
+
+```sh
+cd web && composer install
+```
+
+The installer wizard's recovery surface will tell you if `vendor/`
+is missing — but the cleaner story is "use a release tarball unless
+you're hacking on the panel itself".
+
+## Game
+
+- **SourceMod >= 1.11** (1.12 stable recommended)
+- **Metamod: Source**
+
+The game-side plugin needs SourceMod's `dbi.mysql` extension as well —
+on Linux this is usually pulled in automatically with SourceMod, but
+see [Could not find driver](/troubleshooting/could-not-find-driver/)
+if the plugin reports it can't connect.
+
+## Networking
+
+The panel reaches out to your game servers over UDP (server query) and
+TCP (RCON). See [Ports](/setup/ports/) for the firewall list and
+[Debugging connection](/troubleshooting/debugging-connection/) if
+something doesn't show up.
+
+## When you're ready
+
+Head to the [Quickstart](/getting-started/quickstart/) and walk through
+the install in order.

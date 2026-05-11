@@ -1,0 +1,148 @@
+---
+title: MariaDB
+description: Setting up a MariaDB (or MySQL) server for SourceBans++ on Ubuntu LTS.
+sidebar:
+  order: 4
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+SourceBans++ requires **MariaDB >= 10.0** or **MySQL >= 5.6**. The
+instructions below target current Ubuntu LTS releases (22.04 / 24.04)
+and install the **MariaDB 10.11 LTS** series.
+
+If you're already comfortable installing MariaDB or MySQL on your own
+distro, skip to [Granting permission](#granting-permission) — the
+`CREATE USER` / `GRANT` syntax is the only SB++-specific bit.
+
+## Install
+
+<Tabs syncKey="db">
+  <TabItem label="MariaDB (Ubuntu repo)" icon="seti:db">
+    The simplest path on a recent Ubuntu LTS — the distro repo carries
+    a recent enough MariaDB:
+
+    ```sh
+    sudo apt update
+    sudo apt install mariadb-server
+    ```
+  </TabItem>
+
+  <TabItem label="MariaDB (official repo)" icon="seti:db">
+    Use this if you want a newer release than your distro provides.
+    The legacy `apt-key adv` approach is deprecated; use `signed-by`
+    instead.
+
+    ```sh
+    sudo apt install curl gnupg ca-certificates apt-transport-https
+    sudo curl -o /etc/apt/keyrings/mariadb-keyring.pgp \
+      'https://mariadb.org/mariadb_release_signing_key.pgp'
+    echo "deb [signed-by=/etc/apt/keyrings/mariadb-keyring.pgp] \
+      https://deb.mariadb.org/10.11/ubuntu $(lsb_release -cs) main" \
+      | sudo tee /etc/apt/sources.list.d/mariadb.list
+    sudo apt update
+    sudo apt install mariadb-server
+    ```
+
+    The official
+    [MariaDB Repository Configuration Tool](https://mariadb.org/download/?t=repo-config)
+    can generate the equivalent snippet for any distro / version.
+  </TabItem>
+
+  <TabItem label="MySQL (Ubuntu repo)" icon="seti:db">
+    Ubuntu also ships a usable MySQL:
+
+    ```sh
+    sudo apt update
+    sudo apt install mysql-server
+    ```
+
+    Note the [Granting permission](#granting-permission) syntax differs
+    slightly between MariaDB and MySQL 8 — see the tabs in that
+    section.
+  </TabItem>
+</Tabs>
+
+## Setup
+
+Run the secure-install wizard once after install — it sets the root
+password, removes anonymous users, and disallows remote root login:
+
+```sh
+sudo mysql_secure_installation
+```
+
+## Configuring
+
+Skip this section if your web panel and game servers connect to the
+database from the **same host** (`localhost`).
+
+1. Open your MariaDB / MySQL config — for MariaDB on Ubuntu this is
+   typically `/etc/mysql/mariadb.conf.d/50-server.cnf`.
+
+2. Either comment out `bind-address` (prefix with `#`), or set it to
+   `0.0.0.0` (IPv4) or `::` (IPv4 + IPv6) to listen on all interfaces.
+
+3. Restart the service:
+
+   ```sh
+   sudo systemctl restart mariadb
+   # or, for MySQL:
+   sudo systemctl restart mysql
+   ```
+
+:::caution
+Listening on all interfaces opens the DB to anything that can reach
+the host on port 3306. Pair this with a firewall rule that only
+allows your panel + game server hosts in (or use a private network /
+VPN), and make sure your DB user is locked to specific source hosts
+in the [grant statement](#granting-permission) below.
+:::
+
+## Granting permission
+
+Sign into the DB shell — `sudo mariadb -u root -p` for MariaDB,
+`sudo mysql -u root -p` for MySQL — and enter the root password.
+
+The grant has three placeholders:
+
+- `USERNAME` — the user you wish to create.
+- `HOST` — the host you wish to whitelist (`localhost`, an IP, or `%`
+  for any host).
+- `PASSWORD` — the password to use for the new user.
+
+<Tabs syncKey="db">
+  <TabItem label="MariaDB / MySQL 8+" icon="seti:db">
+    The combined `GRANT ... IDENTIFIED BY ...` syntax was removed in
+    MariaDB 10.4+ and MySQL 8+, so create the user first and grant
+    privileges in a second statement. Granting on a specific
+    database (rather than `*.*`) keeps the principle of least
+    privilege.
+
+    ```sql
+    CREATE USER 'USERNAME'@'HOST' IDENTIFIED BY 'PASSWORD';
+    GRANT ALL PRIVILEGES ON `DATABASENAME`.* TO 'USERNAME'@'HOST';
+    FLUSH PRIVILEGES;
+    ```
+  </TabItem>
+
+  <TabItem label="MySQL 5.x (legacy)" icon="seti:db">
+    Older MySQL still accepts the combined form. If you're on a
+    legacy install:
+
+    ```sql
+    GRANT ALL PRIVILEGES ON `DATABASENAME`.* TO 'USERNAME'@'HOST'
+      IDENTIFIED BY 'PASSWORD';
+    FLUSH PRIVILEGES;
+    ```
+
+    Migrate to the two-statement form when you upgrade to MySQL 8.
+  </TabItem>
+</Tabs>
+
+## Done
+
+You're ready to point the SourceBans++ install wizard at this DB.
+Hop back to the [Quickstart](/getting-started/quickstart/#web-installation)
+and fill in the install form with the user / database / host you set
+up here.

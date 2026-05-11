@@ -1,0 +1,57 @@
+---
+title: SourceBans++
+description: Self-hostable ban management for Source-engine game servers — install, upgrade, operate.
+template: splash
+hero:
+  tagline: |
+    Self-hostable ban management for Source-engine game servers.
+    Install in minutes, upgrade safely, troubleshoot fast.
+  image:
+    file: ../../assets/logo.svg
+  actions:
+    - text: Quickstart
+      link: /getting-started/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/sbpp/sourcebans-pp
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Where to start
+
+<CardGrid stagger>
+  <Card title="Get up and running" icon="rocket">
+    Walk through a fresh install — DB setup, web upload, plugin
+    config — in the [Quickstart](/getting-started/quickstart/).
+  </Card>
+
+  <Card title="Hook up your servers" icon="setting">
+    Once the panel is live, [add your game servers](/setup/adding-server/)
+    and wire the SourceMod plugin's `ServerID`.
+  </Card>
+
+  <Card title="Common errors" icon="warning">
+    Database error, missing PDO driver, blank page? The
+    [Troubleshooting](/troubleshooting/database-errors/) section
+    catalogs the usual suspects.
+  </Card>
+
+  <Card title="Stay current" icon="approve-check">
+    Already running an older release? See
+    [Updating](/updating/) for the safe upgrade path.
+  </Card>
+</CardGrid>
+
+## Source of truth
+
+These docs live in [`sbpp/sourcebans-pp` under `docs/`](https://github.com/sbpp/sourcebans-pp/tree/main/docs).
+The site at <https://sbpp.github.io/> is published from there by CI
+on every merge to `main`.
+
+If you spot something wrong — outdated screenshot, broken link, missing
+step — open a PR against `sourcebans-pp/docs/`. The `Edit page` link in
+the right rail of every doc page jumps you straight to the right file.
