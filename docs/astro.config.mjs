@@ -58,16 +58,23 @@ export default defineConfig({
           attrs: { name: 'theme-color', content: '#ea580c' },
         },
       ],
-      // Starlight 0.30 takes `social` as a record keyed by platform
-      // name (the schema is `Record<KnownPlatform, url>` in
-      // node_modules/@astrojs/starlight/schemas/social.ts). Newer
-      // Starlight (>= 0.32-ish) expanded this to the
-      // `[{icon, label, href}]` array shape; bump this when the
-      // dependency floor moves.
-      social: {
-        github: 'https://github.com/sbpp/sourcebans-pp',
-        discord: 'https://discord.gg/tzqYqmAtF5',
-      },
+      // Starlight 0.33 changed `social` from a `Record<KnownPlatform, url>`
+      // map to a `[{icon, label, href}]` array (see the changelog at
+      // https://github.com/withastro/starlight/blob/main/packages/starlight/CHANGELOG.md#0330).
+      // Migrated alongside the @astrojs/starlight ^0.30 → ^0.39 bump
+      // in this PR.
+      social: [
+        {
+          icon: 'github',
+          label: 'GitHub',
+          href: 'https://github.com/sbpp/sourcebans-pp',
+        },
+        {
+          icon: 'discord',
+          label: 'Discord',
+          href: 'https://discord.gg/tzqYqmAtF5',
+        },
+      ],
       editLink: {
         // Source of truth lives in sourcebans-pp; the deploy shell is
         // sbpp.github.io. Edit links point back here.
