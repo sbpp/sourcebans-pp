@@ -105,14 +105,29 @@ need that value generated before they can log in.
 2. Follow the regular [web panel upgrade steps](#upgrade-the-web-panel)
    above.
 
-3. Visit `https://example.com/upgrade.php` in your browser. The
-   script appends `SB_SECRET_KEY` to `config.php` and prints
-   **`config.php updated correctly.`**
+3. **Set the JWT signing secret by hand.** SourceBans++ 1.7 moved the
+   panel's session-signing key into `config.php` as `SB_SECRET_KEY`.
+   Older releases shipped an `upgrade.php` helper that wrote it for
+   you, but it was removed in 2.0
+   ([#903](https://github.com/sbpp/sourcebans-pp/issues/903)) because
+   of a security issue — set the value manually instead.
 
-4. **Delete `upgrade.php` from your server when done** — it can leak
-   sensitive info if left exposed.
+   Skip the rest of this step if your existing `config.php` already
+   contains a `define('SB_SECRET_KEY', '…')` line (anyone who ran
+   `upgrade.php` on a previous upgrade already has one). Otherwise,
+   generate a random base64 secret on the host:
 
-5. If you use a custom theme, note that **Smarty 5 (which 1.7.0+
+   ```sh
+   openssl rand -base64 47 | tr -d '\n'
+   ```
+
+   And add the result to `web/config.php`, before any closing `?>`:
+
+   ```php
+   define('SB_SECRET_KEY', '<paste the secret here>');
+   ```
+
+4. If you use a custom theme, note that **Smarty 5 (which 1.7.0+
    uses) dropped the `{php}` tag**. Custom themes that relied on
    `{php}` need to switch to the
    [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/main/web/includes/SmartyCustomFunctions.php)
