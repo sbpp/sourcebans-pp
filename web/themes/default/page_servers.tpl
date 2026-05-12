@@ -100,7 +100,19 @@
             data-attribute contract.
         *}
         {if $can_use_context_menu}
-            <p class="text-xs text-muted m-0"
+            {* Hint copy describes a right-click gesture, so we hide it
+               on touch-only devices (`pointer: coarse` AND `hover: none`)
+               via `.servers-rcon-hint` in theme.css. The menu itself is
+               desktop-only on mobile Safari / most Android browsers (no
+               `contextmenu` event from a long-press); users with a
+               Bluetooth mouse on a tablet still see it because their
+               primary pointer reports `hover: hover`. Keeping the
+               element in the DOM rather than gating server-side keeps
+               the visibility responsive to a paired mouse/keyboard
+               that connects mid-session (some Android tablets fire a
+               `pointer: fine` change event when a Bluetooth mouse
+               attaches). *}
+            <p class="text-xs text-muted m-0 servers-rcon-hint"
                data-testid="servers-rcon-hint"
                style="max-width:24rem;text-align:right">
                 Right-click a player on an expanded card to view their

@@ -2101,6 +2101,18 @@ details.queue-row > summary > .row-actions {
    slide-in. No per-rule override here (cf. `.btn[data-loading="true"]::after`
    and `.skel` above for the documented exceptions). */
 .context-menu-target { cursor: context-menu; }
+/* Hide the "Right-click a player" hint copy on touch-only devices.
+   Both `pointer: coarse` (the primary pointer is a finger, not a
+   mouse) AND `hover: none` (no precise hover state) — the
+   conjunction matches phone-portrait / tablet-without-mouse and
+   leaves desktop hybrids (Surface, tablet with Bluetooth mouse,
+   touchscreen laptops) showing the hint because their primary
+   pointer reports `pointer: fine` / `hover: hover`. The menu itself
+   stays functional wherever the browser fires `contextmenu` (it's
+   gated server-side via $can_use_context_menu — see page_servers.tpl). */
+@media (pointer: coarse) and (hover: none) {
+    .servers-rcon-hint { display: none; }
+}
 .context-menu {
     position: fixed;
     z-index: 90;
