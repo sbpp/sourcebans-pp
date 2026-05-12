@@ -14,6 +14,17 @@
  *     `bans.detail` fetch settles. Both come from #1123's
  *     "Async loads expose a stable terminal state" rule.
  *
+ * Comms parity surface (#COMMS-DRAWER): the mobile-card summary
+ * anchor on `page_comms.tpl` carries `data-drawer-cid` + the same
+ * `[data-testid="drawer-trigger"]` hook. `loadDrawer({kind: 'comm'})`
+ * fires `comms.detail` instead of `bans.detail` and the drawer
+ * paints "Comm #N" in the header chip; the rest of the chrome
+ * (full-viewport width, scroll lock, Esc to close) is shared with
+ * the bans-focal path. The desktop-only suite under
+ * `flows/ui/comms-drawer.spec.ts` covers the rest of the drawer
+ * lifecycle; this file's job is the mobile-card-click → drawer-open
+ * regression catch.
+ *
  * Project gating: mobile-chromium only.
  */
 
@@ -22,6 +33,9 @@ import { expect, test } from '../../fixtures/auth.ts';
 
 const SEED_STEAM = 'STEAM_0:0:72000007';
 const SEED_NICK = 'e2e-resp-drawer';
+
+const COMM_SEED_STEAM = 'STEAM_0:0:72050007';
+const COMM_SEED_NICK = 'e2e-resp-drawer-comm';
 
 /**
  * See `specs/responsive/banlist.spec.ts` for why `already_banned`
@@ -45,6 +59,32 @@ async function seedBan(page: Page, steam: string, nickname: string): Promise<voi
     );
     if (env && env.ok === false && env.error?.code !== 'already_banned') {
         throw new Error(`bans.add seed failed: ${JSON.stringify(env)}`);
+    }
+}
+
+/**
+ * Same `already_*` tolerance shape as `seedBan` above — the dev DB
+ * isn't reset between invocations and the seeded row IS the row we
+ * want either way. `already_blocked` is the comms-side equivalent of
+ * `already_banned` (`web/api/handlers/comms.php` raises it for an
+ * authid that already has an active block of the requested type).
+ */
+async function seedComm(page: Page, steam: string, nickname: string): Promise<void> {
+    const env = await page.evaluate(
+        async ({ steam: s, nickname: n }) => {
+            const w = /** @type {any} */ (window);
+            return await w.sb.api.call(w.Actions.CommsAdd, {
+                nickname: n,
+                steam: s,
+                type: 1, // mute
+                length: 60,
+                reason: 'e2e/responsive drawer comm seed',
+            });
+        },
+        { steam, nickname },
+    );
+    if (env && env.ok === false && env.error?.code !== 'already_blocked') {
+        throw new Error(`comms.add seed failed: ${JSON.stringify(env)}`);
     }
 }
 
@@ -219,6 +259,64 @@ test.describe('responsive: drawer', () => {
             getComputedStyle(document.documentElement).overflow,
         );
         expect(htmlOverflowAfter).not.toBe('hidden');
+    });
+
+    test('mobile comm-card opens the comm-focal drawer (#COMMS-DRAWER)', async ({ page }) => {
+        // Comms-list mobile parity: the `.ban-cards` block on
+        // `page_comms.tpl` ships the same `[data-testid="drawer-trigger"]`
+        // + `data-drawer-cid` hook the desktop player-name anchor uses.
+        // Clicking the mobile card must open the drawer with
+        // `Comm #N` in the header (NOT `Ban #N`) — the regression
+        // catch is the kind-aware `renderDrawerBody` branch.
+        await page.goto('/');
+        await seedComm(page, COMM_SEED_STEAM, COMM_SEED_NICK);
+
+        await page.goto('/index.php?p=commslist');
+
+        // Locate the seeded card by its rendered nickname (the
+        // `.ban-cards [data-testid="drawer-trigger"]` selector lands
+        // on the mobile-card summary anchor — desktop `<table>` rows
+        // are `display:none` at iPhone-13 width).
+        const trigger = page
+            .locator('.ban-cards [data-testid="drawer-trigger"]')
+            .filter({ hasText: COMM_SEED_NICK });
+        await expect(trigger).toHaveCount(1);
+
+        // Pull the cid off the row's `data-id` (the mobile card uses
+        // `[data-testid="comm-card"][data-id="..."]`) so the header
+        // chip assertion below has a concrete number to look for.
+        const cardWrapper = page
+            .locator('[data-testid="comm-card"]')
+            .filter({ hasText: COMM_SEED_NICK });
+        await expect(cardWrapper).toHaveCount(1);
+        const cidAttr = await cardWrapper.getAttribute('data-id');
+        expect(cidAttr).toMatch(/^\d+$/);
+        const cid = parseInt(cidAttr ?? '0', 10);
+
+        await trigger.click();
+
+        const drawerRoot = page.locator('#drawer-root');
+        await expect(drawerRoot).toHaveAttribute('data-drawer-open', 'true');
+        await expect(drawerRoot).not.toHaveAttribute('data-loading', 'true');
+
+        // Header chip is the marquee comm-focal regression catch —
+        // pre-fix, theme.js's `stateLabel()` had no `'unmuted'` arm
+        // and the drawer rendered "Unknown" for any lifted block;
+        // here we're asserting the structural label of the focal
+        // record itself ("Comm #N", which only paints when the
+        // drawerKind === 'comm' branch fires correctly).
+        const header = drawerRoot.locator('.drawer__header');
+        await expect(header).toContainText(`Comm #${cid}`);
+        await expect(header).toContainText(COMM_SEED_NICK);
+
+        // Overview pane carries `[data-testid="drawer-block"]` (NOT
+        // `drawer-ban`) for the focal-record `<dl>`; the Type row
+        // is comm-focal-only.
+        const overview = drawerRoot.locator('[data-testid="drawer-panel-overview"]');
+        await expect(overview).toBeVisible();
+        const blockGrid = overview.locator('[data-testid="drawer-block"]');
+        await expect(blockGrid).toBeVisible();
+        await expect(blockGrid.locator('dt', { hasText: 'Type' })).toBeVisible();
     });
 
     test('Steam3 value renders as plain text without an auto-link (DET-1)', async ({ page }) => {

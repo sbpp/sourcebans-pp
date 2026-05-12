@@ -341,4 +341,224 @@ final class CommsTest extends ApiTestCase
         $this->assertNull($this->row('comms', ['bid' => $bid]));
         $this->assertSnapshot('comms/delete_success', $env, ['data.bid']);
     }
+
+    // -- comms.detail (#COMMS-DRAWER) --------------------------------------
+
+    /** Drop a single comm row directly so detail tests don't depend on comms.add. */
+    private function seedComm(string $steam = 'STEAM_0:0:7700', string $reason = 'spam', int $type = 1, int $lengthSeconds = 3600): int
+    {
+        $pdo = Fixture::rawPdo();
+        $now = time();
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_comms` (created, type, authid, name, ends, length, reason, aid, adminIp)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, "127.0.0.1")',
+            DB_PREFIX
+        ))->execute([
+            $now,
+            $type,
+            $steam,
+            'Mouthy',
+            $now + $lengthSeconds,
+            $lengthSeconds,
+            $reason,
+            Fixture::adminAid(),
+        ]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    public function testDetailRejectsMissingCid(): void
+    {
+        // comms.detail is public; the dispatcher lets the call through and
+        // the handler validates `cid` itself. cid=0 surfaces as a
+        // 'bad_request' validation error, mirroring bans.detail's contract.
+        $env = $this->api('comms.detail', ['cid' => 0]);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('cid', $env['error']['field']);
+    }
+
+    public function testDetailReturns404ForUnknownCid(): void
+    {
+        $env = $this->api('comms.detail', ['cid' => 999999]);
+        $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    public function testDetailPublicViewHidesAdminFields(): void
+    {
+        // Public caller (not logged in). Mirrors bans.detail's contract:
+        // `banlist.hideadminname` suppresses the admin name and
+        // `config.enablepubliccomments` gates the comment list. The
+        // hideplayerips check doesn't apply (`:prefix_comms` has no IP
+        // column — `player.ip` is always null on this surface).
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '0')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $cid = $this->seedComm('STEAM_0:0:1010', 'public-view');
+
+        $env = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame($cid,             (int)$env['data']['cid']);
+        $this->assertSame('STEAM_0:0:1010', $env['data']['player']['steam_id']);
+        $this->assertNull($env['data']['player']['ip'], 'comm-block player.ip is always null (no IP column on :prefix_comms)');
+        $this->assertNull($env['data']['admin']['name'], 'admin should be hidden for public + hideadminname');
+        $this->assertFalse($env['data']['comments_visible'], 'comments should be hidden when public + flag off');
+        $this->assertSame([], $env['data']['comments']);
+        $this->assertFalse($env['data']['notes_visible'], 'notes_visible should be false for public callers');
+        $this->assertSame('Mute', $env['data']['block']['type_label']);
+        $this->assertSame('active', $env['data']['block']['state']);
+    }
+
+    public function testDetailAdminViewExposesEverything(): void
+    {
+        // Admins ignore the hide-* flags and always see comments.
+        Fixture::rawPdo()->prepare(sprintf(
+            "REPLACE INTO `%s_settings` (`setting`, `value`) VALUES
+                ('banlist.hideadminname', '1'),
+                ('config.enablepubliccomments', '0')",
+            DB_PREFIX
+        ))->execute();
+        \Config::init($GLOBALS['PDO']);
+
+        $this->loginAsAdmin();
+        $cid = $this->seedComm('STEAM_0:0:2020', 'admin-view', 2);
+
+        // Drop a comment row directly via PDO (no public comms.add_comment
+        // action mirror — the comments table carries `type='C'` for comm
+        // rows, keyed by the comm's bid column. Same provenance the
+        // page.commslist.php loader and api_comms_detail itself read.
+        Fixture::rawPdo()->prepare(sprintf(
+            "INSERT INTO `%s_comments` (`bid`, `type`, `aid`, `commenttxt`, `added`)
+             VALUES (?, 'C', ?, ?, UNIX_TIMESTAMP())",
+            DB_PREFIX
+        ))->execute([$cid, Fixture::adminAid(), 'note for the comm-block drawer']);
+
+        $env = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame('STEAM_0:0:2020', $env['data']['player']['steam_id']);
+        $this->assertNotNull($env['data']['admin']['name']);
+        $this->assertTrue($env['data']['comments_visible']);
+        $this->assertTrue($env['data']['notes_visible'], 'notes_visible should be true for admin callers');
+        $this->assertCount(1, $env['data']['comments']);
+        $this->assertSame('note for the comm-block drawer', $env['data']['comments'][0]['text']);
+        $this->assertSame('Gag', $env['data']['block']['type_label']);
+    }
+
+    public function testDetailReportsUnmutedForLiftedBlock(): void
+    {
+        // After comms.unblock the block's state must be 'unmuted' (the
+        // commslist vocab — bans use 'unbanned'). The drawer JS branches
+        // on focal kind so the right state label paints under the
+        // Overview pane.
+        $this->loginAsAdmin();
+        $cid = $this->seedComm('STEAM_0:0:3030', 'lift-then-detail');
+        $env = $this->api('comms.unblock', ['bid' => $cid, 'ureason' => 'lifted by detail-test']);
+        $this->assertTrue($env['ok']);
+
+        $detail = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($detail['ok'], json_encode($detail));
+        $this->assertSame('unmuted', $detail['data']['block']['state']);
+        $this->assertSame('lifted by detail-test', $detail['data']['block']['unblock_reason']);
+        $this->assertNotNull($detail['data']['block']['removed_at']);
+    }
+
+    public function testDetailReportsPermanentForZeroLength(): void
+    {
+        $this->loginAsAdmin();
+        $cid = $this->seedComm('STEAM_0:0:4040', 'forever', 1, 0);
+        $env = $this->api('comms.detail', ['cid' => $cid]);
+        $this->assertTrue($env['ok']);
+        $this->assertSame('permanent', $env['data']['block']['state']);
+        $this->assertNull($env['data']['block']['expires_at']);
+        $this->assertSame('Permanent', $env['data']['block']['length_human']);
+    }
+
+    // -- comms.player_history with `authid` parameter (#COMMS-DRAWER) ------
+
+    public function testPlayerHistoryAcceptsAuthidWithoutBid(): void
+    {
+        // Drawer parity: the comm-focal drawer JS sends
+        // `{authid: <steamid>}` to comms.player_history because there's no
+        // anchor `bid` in :prefix_bans (the focal record is on
+        // :prefix_comms). The handler must accept the authid path and
+        // skip the bid lookup.
+        $this->loginAsAdmin();
+        $this->seedComm('STEAM_0:0:5050', 'first');
+        $this->seedComm('STEAM_0:0:5050', 'second', 2);
+
+        $env = $this->api('comms.player_history', ['authid' => 'STEAM_0:0:5050']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(2, (int)$env['data']['total']);
+        $this->assertCount(2, $env['data']['items']);
+    }
+
+    public function testPlayerHistoryRejectsCallWithoutBidOrAuthid(): void
+    {
+        // Pre-#COMMS-DRAWER the handler validated only `bid`; now any of
+        // {cid, bid, authid} is accepted, but a call with none is still
+        // a bad_request to preserve the legacy contract.
+        $env = $this->api('comms.player_history', []);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('cid', $env['error']['field']);
+    }
+
+    public function testPlayerHistoryAuthidPathReturnsEmptyForUnknownPlayer(): void
+    {
+        // No comm rows for this authid -> empty feed (NOT 404). The
+        // handler's empty-feed branch lets the drawer render the
+        // "No prior comm-blocks on file" empty state cleanly.
+        $env = $this->api('comms.player_history', ['authid' => 'STEAM_0:0:9999999']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int)$env['data']['total']);
+        $this->assertSame([], $env['data']['items']);
+    }
+
+    public function testPlayerHistoryCidPathExcludesFocalRecord(): void
+    {
+        // Comm-focal drawer's Comms tab passes the focal cid; the
+        // handler resolves it to authid and excludes that focal cid
+        // via `C.bid <> ?` so the Overview pane (which already shows
+        // the focal) and the Comms tab don't render the same record
+        // twice. Sister contract to bans.player_history's `bid <> ?`
+        // exclusion on the legacy bans-focal path.
+        $this->loginAsAdmin();
+        $focalCid   = $this->seedComm('STEAM_0:0:6060', 'focal-comm', 2);
+        $siblingCid = $this->seedComm('STEAM_0:0:6060', 'sibling-comm', 1);
+
+        $env = $this->api('comms.player_history', ['cid' => $focalCid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(1, (int)$env['data']['total']);
+        $this->assertCount(1, $env['data']['items']);
+        $this->assertSame($siblingCid, (int)$env['data']['items'][0]['bid']);
+    }
+
+    public function testPlayerHistoryCidPathReturns404ForUnknownCid(): void
+    {
+        // The cid path resolves the focal row to look up authid; an
+        // unknown cid yields 404 rather than an empty feed (matches
+        // the bid path's `Ban not found.` shape on bans.player_history).
+        $env = $this->api('comms.player_history', ['cid' => 999999]);
+        $this->assertEnvelopeError($env, 'not_found');
+    }
+
+    public function testPlayerHistoryCidPathReturnsEmptyWhenOnlyFocalExists(): void
+    {
+        // First-block-on-file path: the handler must return an empty
+        // feed when the focal is the player's only block, so the
+        // drawer's Comms pane renders its "No prior comm-blocks on
+        // file" empty state cleanly. Regression catch for a future
+        // tweak that loosens `C.bid <> ?` into a tautology (the
+        // exclusion test above would still pass — only-focal-included
+        // is harder to silently break only in one direction).
+        $this->loginAsAdmin();
+        $cid = $this->seedComm('STEAM_0:0:6061', 'lone-comm', 1);
+
+        $env = $this->api('comms.player_history', ['cid' => $cid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int)$env['data']['total']);
+        $this->assertSame([], $env['data']['items']);
+    }
 }

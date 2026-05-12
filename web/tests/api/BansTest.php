@@ -705,4 +705,83 @@ final class BansTest extends ApiTestCase
         $this->assertStringContainsString('appeal accepted', (string) $latest['message']);
         $this->assertStringContainsString('STEAM_0:1:1304', (string) $latest['message']);
     }
+
+    // -- bans.player_history with `authid` parameter (#COMMS-DRAWER) -------
+
+    public function testPlayerHistoryAcceptsAuthidWithoutBid(): void
+    {
+        // Drawer parity: the comm-focal drawer JS sends
+        // `{authid: <steamid>}` to bans.player_history because there's
+        // no anchor `bid` in :prefix_bans (the focal record is on
+        // :prefix_comms). The handler must accept the authid path,
+        // skip the bid lookup, and skip the focal-ban exclusion clause
+        // (no focal bid to exclude — every matching row is "other").
+        $this->loginAsAdmin();
+        $this->seedBan('STEAM_0:1:6060', 'first');
+        $this->seedBan('STEAM_0:1:6060', 'second');
+
+        $env = $this->api('bans.player_history', ['authid' => 'STEAM_0:1:6060']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(2, (int)$env['data']['total']);
+        $this->assertCount(2, $env['data']['items']);
+    }
+
+    public function testPlayerHistoryRejectsCallWithoutBidOrAuthid(): void
+    {
+        // Pre-#COMMS-DRAWER the handler validated only `bid`; now either
+        // shape is accepted, but a call with neither is still a
+        // bad_request to preserve the legacy contract.
+        $env = $this->api('bans.player_history', []);
+        $this->assertEnvelopeError($env, 'bad_request');
+        $this->assertSame('bid', $env['error']['field']);
+    }
+
+    public function testPlayerHistoryAuthidPathReturnsEmptyForUnknownPlayer(): void
+    {
+        // No ban rows for this authid -> empty feed (NOT 404). The
+        // handler's empty-feed branch lets the drawer render the
+        // "No prior bans on file" empty state cleanly.
+        $env = $this->api('bans.player_history', ['authid' => 'STEAM_0:1:9999999']);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int)$env['data']['total']);
+        $this->assertSame([], $env['data']['items']);
+    }
+
+    public function testPlayerHistoryBidPathExcludesFocalBan(): void
+    {
+        // Bans-focal drawer contract: the History tab calls
+        // `bans.player_history({bid: <focal>})` and the handler's
+        // `BA.bid <> ?` clause excludes the focal record so the
+        // Overview pane and the History pane never render the same
+        // row twice. Sister regression to
+        // `testPlayerHistoryCidPathExcludesFocalRecord` on
+        // CommsTest — both paths share the focal-exclusion contract.
+        $this->loginAsAdmin();
+        $focalBid    = $this->seedBan('STEAM_0:1:6065', 'focal ban');
+        $siblingBid  = $this->seedBan('STEAM_0:1:6065', 'sibling ban');
+
+        $env = $this->api('bans.player_history', ['bid' => $focalBid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(1, (int)$env['data']['total']);
+        $this->assertCount(1, $env['data']['items']);
+        $this->assertSame($siblingBid, (int)$env['data']['items'][0]['bid']);
+    }
+
+    public function testPlayerHistoryBidPathReturnsEmptyWhenOnlyFocalExists(): void
+    {
+        // Lone-ban / first-ban-on-file path: the handler must return
+        // an empty feed (NOT a 404, NOT the focal itself) so the
+        // drawer's History pane renders its "No prior bans on file"
+        // empty state cleanly. A regression that flipped `BA.bid <> ?`
+        // to a tautology (or reused the bid as authid) would silently
+        // pass the focal-exclusion test above (still excluded) but
+        // fail here (sibling=focal would slip through).
+        $this->loginAsAdmin();
+        $bid = $this->seedBan('STEAM_0:1:6066', 'lone ban');
+
+        $env = $this->api('bans.player_history', ['bid' => $bid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertSame(0, (int)$env['data']['total']);
+        $this->assertSame([], $env['data']['items']);
+    }
 }

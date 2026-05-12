@@ -107,6 +107,11 @@ final class PermissionMatrixTest extends TestCase
             'comms.prepare_reblock'           => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'comms.paste'                     => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],
             'comms.prepare_block_from_ban'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
+            // comms.detail is intentionally public for the same reason
+            // bans.detail is — same reach as the public commslist page,
+            // hide-* gating enforced inside the handler. Powers the
+            // player drawer when opened from a comms-list row.
+            'comms.detail'                    => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
             // comms.player_history follows bans.player_history (#1165).
             'comms.player_history'            => ['perm' => 0, 'requireAdmin' => false, 'public' => true],
             // comms.unblock + comms.delete drive the visible row actions

@@ -261,14 +261,15 @@ test.describe('flow: comms list affordances (#1207 ADM-5/ADM-6)', () => {
         await expect(unmuteBtn).toBeVisible();
         await expect(deleteBtn).toBeVisible();
 
-        // The summary anchor (filter-by-SteamID navigation) and
-        // the action buttons are siblings inside `comm-card` —
-        // pre-fix the entire card was a single `<a>` so action
-        // buttons couldn't live inside it without producing
-        // invalid nested-interactive HTML. The summary anchor's
-        // dedicated testid lets us assert it still works as a
-        // standalone navigation affordance.
-        await expect(card.locator('[data-testid="comm-card-link"]')).toBeVisible();
+        // The summary anchor (drawer trigger / filter-by-SteamID
+        // fallback) and the action buttons are siblings inside
+        // `comm-card` — pre-fix the entire card was a single `<a>`
+        // so action buttons couldn't live inside it without
+        // producing invalid nested-interactive HTML. The summary
+        // anchor's `drawer-trigger` testid (#COMMS-DRAWER, parity
+        // with the banlist mobile card) lets us assert it still
+        // works as a standalone navigation affordance.
+        await expect(card.locator('[data-testid="drawer-trigger"]')).toBeVisible();
 
         await unmuteBtn.click();
 

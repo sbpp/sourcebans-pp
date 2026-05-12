@@ -429,12 +429,16 @@
 
   // ---- DRAWER ----------------------------------------------
   // Click target convention: any element with `[data-drawer-bid="N"]`
-  // (or, for backwards-compat with the handoff template, an `id=N` query
-  // param inside `[data-drawer-href]`) opens the drawer for ban N.
-  // The state attribute `data-drawer-open="true"` on the container is the
-  // testability hook — CI can observe deterministic open/close without
-  // chasing CSS visibility heuristics. `data-loading="true"` is set
-  // while the fetch is in flight so an integration test can wait on the
+  // opens the drawer for ban N (focal kind = 'ban'); any element with
+  // `[data-drawer-cid="N"]` opens it for comm-block N (focal kind =
+  // 'comm'). For backwards-compat with the handoff template, the
+  // legacy `[data-drawer-href]` attribute is also honoured — its
+  // `id=N` query param is read as a bid when the URL says `p=banlist`
+  // and as a cid when the URL says `p=commslist`. The state attribute
+  // `data-drawer-open="true"` on the container is the testability hook —
+  // CI can observe deterministic open/close without chasing CSS
+  // visibility heuristics. `data-loading="true"` is set while the
+  // fetch is in flight so an integration test can wait on the
   // post-load shape without a sleep.
   const drawerRoot = /** @type {HTMLElement | null} */ (document.getElementById('drawer-root'));
 
@@ -462,6 +466,7 @@
     delete drawerRoot.dataset.loading;
     drawerRoot.innerHTML = '';
     drawerDetail = null;
+    drawerKind = null;
   }
 
   /**
@@ -472,20 +477,44 @@
   function openDrawer(html) { showDrawer(html); }
 
   /**
-   * Resolve a click target into a numeric ban id, returning null when
-   * the trigger doesn't carry one. Accepts:
-   *   - `data-drawer-bid="123"`           (preferred new form)
-   *   - `data-drawer-href="?p=banlist&id=123"`  (handoff template form)
-   * @param {Element} el
-   * @returns {number | null}
+   * @typedef {{kind: 'ban', id: number} | {kind: 'comm', id: number}} DrawerKey
    */
-  function bidFromTrigger(el) {
-    const fromAttr = /** @type {HTMLElement} */ (el).dataset.drawerBid;
-    if (fromAttr && /^\d+$/.test(fromAttr)) return parseInt(fromAttr, 10);
-    const href = /** @type {HTMLElement} */ (el).dataset.drawerHref;
+
+  /**
+   * Resolve a click target into a focal key (kind + id), returning null
+   * when the trigger doesn't carry one. Accepts:
+   *   - `data-drawer-bid="123"`               (ban focal — preferred form)
+   *   - `data-drawer-cid="123"`               (comm focal — preferred form)
+   *   - `data-drawer-href="?p=banlist&id=123"`   (handoff template, ban)
+   *   - `data-drawer-href="?p=commslist&id=123"` (handoff template, comm)
+   * Mixed `bid` + `cid` attributes are not allowed; the bid wins to
+   * preserve the historical contract for legacy templates.
+   * @param {Element} el
+   * @returns {DrawerKey | null}
+   */
+  function keyFromTrigger(el) {
+    const dataset = /** @type {HTMLElement} */ (el).dataset;
+    const bidAttr = dataset.drawerBid;
+    if (bidAttr && /^\d+$/.test(bidAttr)) {
+      return { kind: 'ban', id: parseInt(bidAttr, 10) };
+    }
+    const cidAttr = dataset.drawerCid;
+    if (cidAttr && /^\d+$/.test(cidAttr)) {
+      return { kind: 'comm', id: parseInt(cidAttr, 10) };
+    }
+    const href = dataset.drawerHref;
     if (typeof href === 'string') {
-      const m = href.match(/[?&]id=(\d+)/);
-      if (m) return parseInt(m[1], 10);
+      const idMatch = href.match(/[?&]id=(\d+)/);
+      if (idMatch) {
+        const id = parseInt(idMatch[1], 10);
+        // Disambiguate ban vs. comm focal by the `p=` segment of the
+        // legacy handoff URL. Default to ban when the URL is malformed
+        // so old links keep working.
+        const pageMatch = href.match(/[?&]p=([a-z]+)/i);
+        const page = pageMatch ? pageMatch[1].toLowerCase() : 'banlist';
+        if (page === 'commslist') return { kind: 'comm', id };
+        return { kind: 'ban', id };
+      }
     }
     return null;
   }
@@ -500,26 +529,45 @@
       case 'active':    return 'Active';
       case 'expired':   return 'Expired';
       case 'unbanned':  return 'Unbanned';
+      case 'unmuted':   return 'Unmuted';
       default:          return 'Unknown';
     }
   }
 
   /**
-   * Cached `bans.detail` payload for the currently-open drawer. Pane
-   * builders (`renderHistoryPane`, `renderCommsPane`, `renderNotesPane`)
-   * read this for context (the bid to fetch, the steam_id to look up
-   * notes against). Cleared on `closeDrawer()`.
+   * Cached `bans.detail` or `comms.detail` payload for the currently-
+   * open drawer. Pane builders (`renderHistoryPane`, `renderCommsPane`,
+   * `renderNotesPane`) read this for context (the player's steam_id to
+   * look up history / comms / notes against). Cleared on
+   * `closeDrawer()`.
    * @type {Object | null}
    */
   let drawerDetail = null;
 
   /**
-   * Build the rendered drawer HTML for a successful bans.detail
-   * envelope. The drawer is a four-tab UI per #1165:
-   *   Overview — id grid + ban grid + comments (the legacy single body)
-   *   History  — sibling bans for the same player (lazy)
-   *   Comms    — gags/mutes for the same player  (lazy)
-   *   Notes    — admin-only scratchpad           (lazy, gated by data.notes_visible)
+   * Focal kind for the open drawer ('ban' | 'comm'). Drives the header
+   * label ("Ban #N" vs "Comm #N") and the Overview row builder; the
+   * History / Comms tabs are SHARED — both fetch via the player's
+   * authid (steam_id), not the focal record id, so a player whose comm
+   * was opened still sees their full ban history under the History
+   * tab. Cleared on `closeDrawer()`.
+   * @type {'ban' | 'comm' | null}
+   */
+  let drawerKind = null;
+
+  /**
+   * Build the rendered drawer HTML for a successful bans.detail OR
+   * comms.detail envelope. The drawer is a four-tab UI per #1165:
+   *   Overview — id grid + (ban|block) grid + comments
+   *   History  — sibling bans for the same player    (lazy, by authid)
+   *   Comms    — gags/mutes for the same player       (lazy, by authid)
+   *   Notes    — admin-only scratchpad               (lazy, gated by data.notes_visible)
+   *
+   * Focal kind is read from the module-scope `drawerKind` (set by
+   * `loadDrawer`) and drives the header chip ("Ban #N" vs "Comm #N")
+   * + the Overview row builder. The History / Comms tabs are SHARED
+   * across both focal kinds because both lazy fetches now key on the
+   * player's authid, not the focal record id.
    *
    * Every value that ends up in innerHTML is funnelled through
    * escapeHtml(); the only literal HTML is the static layout we author
@@ -532,11 +580,14 @@
   function renderDrawerBody(data) {
     const player = (data && data.player) || {};
     const notesVisible = !!(data && data.notes_visible);
+    const isComm = drawerKind === 'comm';
+    const focalLabel = isComm ? 'Comm' : 'Ban';
+    const focalId = isComm ? data.cid : data.bid;
 
     const headerHtml =
       '<header class="drawer__header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
       +   '<div>'
-      +     '<div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em">Ban #' + escapeHtml(String(data.bid)) + '</div>'
+      +     '<div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em">' + focalLabel + ' #' + escapeHtml(String(focalId)) + '</div>'
       +     '<h2 class="font-semibold" style="margin:0.125rem 0 0;font-size:1.125rem">' + escapeHtml(player.name || '(unknown)') + '</h2>'
       +   '</div>'
       +   '<button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
@@ -622,20 +673,28 @@
   }
 
   /**
-   * Render the Overview pane content (id grid + ban grid + comments).
-   * Extracted from the pre-#1165 single-body drawer so the new tabbed
-   * UI can drop it into the Overview panel verbatim — no behaviour
-   * change for the data the pane displays.
+   * Render the Overview pane content (id grid + focal-record grid +
+   * comments). Extracted from the pre-#1165 single-body drawer so the
+   * new tabbed UI can drop it into the Overview panel; the focal-record
+   * grid is now kind-aware so a comm-focal drawer renders the
+   * comm-block fields under `[data-testid="drawer-block"]` instead of
+   * the ban fields under `[data-testid="drawer-ban"]`. Both shapes
+   * carry the same field vocabulary (state / reason / length / when)
+   * so the visual treatment is consistent across the two focal kinds.
+   *
    * @param {Object} data
    * @returns {string}
    */
   function renderOverviewPane(data) {
     const player = (data && data.player) || {};
-    const ban    = (data && data.ban)    || {};
     const admin  = (data && data.admin)  || {};
     const server = (data && data.server) || {};
     const comments = Array.isArray(data && data.comments) ? data.comments : [];
     const commentsVisible = !!(data && data.comments_visible);
+    const isComm = drawerKind === 'comm';
+    const focal  = isComm
+      ? ((data && data.block) || {})
+      : ((data && data.ban) || {});
 
     /** @type {Array<[string, string]>} */
     const idRows = [];
@@ -658,22 +717,29 @@
       + '</dl>';
 
     /** @type {Array<[string, string]>} */
-    const banRows = [
-      ['State',   stateLabel(/** @type {string} */ (ban.state))],
-      ['Reason',  String(ban.reason || '(none)')],
-      ['Length',  String(ban.length_human || '')],
-      ['Banned',  String(ban.banned_at_human || '')],
-    ];
-    if (ban.expires_at_human) banRows.push(['Expires', String(ban.expires_at_human)]);
-    if (ban.removed_at_human) banRows.push(['Removed', String(ban.removed_at_human)]);
-    if (ban.removed_by)       banRows.push(['Removed by', String(ban.removed_by)]);
-    if (ban.unban_reason)     banRows.push(['Unban reason', String(ban.unban_reason)]);
-    if (admin.name)           banRows.push(['Admin', String(admin.name)]);
-    if (server.name)          banRows.push(['Server', String(server.name)]);
+    const focalRows = [];
+    if (isComm && focal.type_label) focalRows.push(['Type', String(focal.type_label)]);
+    focalRows.push(['State', stateLabel(/** @type {string} */ (focal.state))]);
+    focalRows.push(['Reason', String(focal.reason || '(none)')]);
+    focalRows.push(['Length', String(focal.length_human || '')]);
+    if (isComm) {
+      focalRows.push(['Started', String(focal.started_at_human || '')]);
+    } else {
+      focalRows.push(['Banned',  String(focal.banned_at_human || '')]);
+    }
+    if (focal.expires_at_human) focalRows.push(['Expires', String(focal.expires_at_human)]);
+    if (focal.removed_at_human) focalRows.push(['Removed', String(focal.removed_at_human)]);
+    if (focal.removed_by)       focalRows.push(['Removed by', String(focal.removed_by)]);
+    const unbanReasonField = isComm ? focal.unblock_reason : focal.unban_reason;
+    if (unbanReasonField) focalRows.push([isComm ? 'Unblock reason' : 'Unban reason', String(unbanReasonField)]);
+    if (admin.name)  focalRows.push(['Admin', String(admin.name)]);
+    if (server.name) focalRows.push(['Server', String(server.name)]);
 
-    const banHtml =
-      '<dl class="drawer__ban" data-testid="drawer-ban" style="display:grid;grid-template-columns:6rem 1fr;gap:0.25rem 0.75rem;margin:0;font-size:0.8125rem">'
-      + banRows.map((row) =>
+    const focalTestid = isComm ? 'drawer-block' : 'drawer-ban';
+    const focalClass  = isComm ? 'drawer__block' : 'drawer__ban';
+    const focalHtml =
+      '<dl class="' + focalClass + '" data-testid="' + focalTestid + '" style="display:grid;grid-template-columns:6rem 1fr;gap:0.25rem 0.75rem;margin:0;font-size:0.8125rem">'
+      + focalRows.map((row) =>
           '<dt class="text-faint">' + escapeHtml(row[0]) + '</dt>'
           + '<dd style="margin:0">' + escapeHtml(row[1]) + '</dd>'
         ).join('')
@@ -699,7 +765,7 @@
         + '</section>';
     }
 
-    return idHtml + banHtml + commentsHtml;
+    return idHtml + focalHtml + commentsHtml;
   }
 
   /**
@@ -897,7 +963,6 @@
     if (panel.dataset.loaded === 'true' || panel.dataset.loading === 'true') return;
     panel.dataset.loading = 'true';
 
-    const bid = drawerDetail.bid;
     const steamId = (drawerDetail.player && drawerDetail.player.steam_id) || '';
     let html = '';
     /** @type {SbApiEnvelope | null} */
@@ -905,11 +970,42 @@
 
     try {
       if (tabId === 'history') {
-        env = await sb.api.call(Actions.BansPlayerHistory, { bid: bid });
+        // History pane = OTHER bans on file for this player. Two
+        // call-shapes per drawer kind:
+        //
+        //   - bans-focal: pass the focal `bid`. The handler resolves
+        //     it to `(type, authid, ip)` and queries siblings, with
+        //     `BA.bid <> ?` excluding the focal record (the user is
+        //     already looking at it in Overview).
+        //   - comm-focal: there is no focal bid, so we pass the
+        //     player's `authid` instead. The handler skips the focal
+        //     exclusion clause — there's nothing to exclude — and
+        //     matches Steam bans only (IP-only sibling matching needs
+        //     an anchor IP that the comm row doesn't carry).
+        //
+        // Mirroring the focal across both kinds matters for the UX
+        // contract: with a single ban on file, bans-focal History
+        // reads "No prior bans on file." (the empty state), and
+        // comm-focal History reads "Other bans on file" listing
+        // that one ban. Either shape gives the player's history at
+        // a glance without rendering the focal twice on bans-focal.
+        const bansParams = drawerKind === 'comm'
+          ? { authid: steamId }
+          : { bid: (drawerDetail && /** @type {any} */ (drawerDetail).bid) || 0 };
+        env = await sb.api.call(Actions.BansPlayerHistory, bansParams);
         const items = (env && env.ok && env.data && Array.isArray(env.data.items)) ? env.data.items : [];
         html = renderHistoryPane(items);
       } else if (tabId === 'comms') {
-        env = await sb.api.call(Actions.CommsPlayerHistory, { bid: bid });
+        // Comms pane = comm-blocks on file for this player. Same
+        // dual-shape contract as History above: bans-focal passes
+        // the focal `bid` (handler resolves to authid, no comm to
+        // exclude — comm and bans IDs live in different tables);
+        // comm-focal passes the focal `cid` so the handler excludes
+        // it from the sibling list.
+        const commsParams = drawerKind === 'comm'
+          ? { cid: (drawerDetail && /** @type {any} */ (drawerDetail).cid) || 0 }
+          : { bid: (drawerDetail && /** @type {any} */ (drawerDetail).bid) || 0 };
+        env = await sb.api.call(Actions.CommsPlayerHistory, commsParams);
         const items = (env && env.ok && env.data && Array.isArray(env.data.items)) ? env.data.items : [];
         html = renderCommsPane(items);
       } else if (tabId === 'notes') {
@@ -986,13 +1082,16 @@
 
   /**
    * Render the error state (server returned an error envelope or the
-   * fetch itself failed).
+   * fetch itself failed). Headline is kind-aware so a comm-focal
+   * drawer doesn't read "Couldn't load ban" on a transient error.
    * @param {string} message
+   * @param {'ban' | 'comm'} kind
    * @returns {string}
    */
-  function renderDrawerError(message) {
+  function renderDrawerError(message, kind) {
+    const headline = kind === 'comm' ? 'Couldn\u2019t load comm-block' : 'Couldn\u2019t load ban';
     return '<header class="drawer__header" style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border)">'
-      +   '<h2 class="font-semibold" style="margin:0;font-size:1rem">Couldn\u2019t load ban</h2>'
+      +   '<h2 class="font-semibold" style="margin:0;font-size:1rem">' + headline + '</h2>'
       +   '<button class="btn btn--ghost btn--icon" type="button" data-drawer-close aria-label="Close">'
       +     '<i data-lucide="x"></i>'
       +   '</button>'
@@ -1003,18 +1102,27 @@
   }
 
   /**
-   * Fetch and render the player-detail drawer for a ban.
-   * @param {number} bid
+   * Fetch and render the player-detail drawer for a focal record.
+   * Dispatches on the focal kind to either `bans.detail` (ban focal)
+   * or `comms.detail` (comm focal); both envelopes share the same
+   * `player` / `admin` / `server` / `comments` shape, so the
+   * downstream renderers branch only on `drawerKind` (set here before
+   * `renderDrawerBody` runs).
+   * @param {DrawerKey} key
    * @returns {Promise<void>}
    */
-  async function loadDrawer(bid) {
+  async function loadDrawer(key) {
     if (!drawerRoot) return;
+    drawerKind = key.kind;
     showDrawer(renderDrawerLoading());
     drawerRoot.dataset.loading = 'true';
 
+    const action = key.kind === 'comm' ? Actions.CommsDetail : Actions.BansDetail;
+    const params = key.kind === 'comm' ? { cid: key.id } : { bid: key.id };
+
     /** @type {{ ok: boolean, data?: any, error?: { code: string, message: string } }} */
     const env = window.sb && window.sb.api
-      ? await window.sb.api.call(Actions.BansDetail, { bid: bid })
+      ? await window.sb.api.call(action, params)
       : { ok: false, error: { code: 'no_client', message: 'sb.api unavailable' } };
 
     delete drawerRoot.dataset.loading;
@@ -1024,13 +1132,13 @@
     } else {
       drawerDetail = null;
       const msg = (env && env.error && env.error.message) || 'Unknown error.';
-      showDrawer(renderDrawerError(msg));
+      showDrawer(renderDrawerError(msg, key.kind));
     }
   }
 
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {
     const target = /** @type {Element | null} */ (e.target);
-    const trigger = target && target.closest('[data-drawer-bid], [data-drawer-href]');
+    const trigger = target && target.closest('[data-drawer-bid], [data-drawer-cid], [data-drawer-href]');
     if (trigger) {
       // #1207 DET-2 follow-up (review finding 1): graceful-degradation
       // guard for modifier-clicks. Without this, Cmd/Ctrl/Shift+left-click
@@ -1041,18 +1149,20 @@
       // every browser ships. Middle-click already worked because browsers
       // fire `auxclick` (not `click`) for non-primary buttons; this guard
       // restores the same graceful-degradation for the keyboard-modifier
-      // chords. The href on every [data-drawer-bid] / [data-drawer-href]
-      // anchor IS the fallback path:
+      // chords. The href on every [data-drawer-bid] / [data-drawer-cid] /
+      // [data-drawer-href] anchor IS the fallback path:
       //   - palette rows: `?p=banlist&advType=name&advSearch=<name>`
       //     opens a name-filtered banlist in a new tab,
       //   - banlist rows: `?p=banlist&id=<bid>` opens the banlist URL
-      //     in a new tab (the panel-history shape).
+      //     in a new tab (the panel-history shape),
+      //   - commslist rows: `?p=commslist&id=<cid>` opens the commslist
+      //     URL in a new tab (the panel-history shape).
       // `e.button !== 0` belt-and-suspenders for any future synthetic
       // dispatch with a non-primary button (legitimate middle/right
       // clicks reach `auxclick`, not this listener, but be defensive).
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
-      const bid = bidFromTrigger(trigger);
-      if (bid !== null) {
+      const key = keyFromTrigger(trigger);
+      if (key !== null) {
         e.preventDefault();
         // #1207 DET-2: when the drawer is opened from a palette result
         // row (bare Enter on a focused row fires a synthetic click that
@@ -1063,7 +1173,7 @@
         // behaviour — the palette is only closed when it was the source
         // of the navigation.
         if (target && target.closest('.palette')) closePalette();
-        loadDrawer(bid);
+        loadDrawer(key);
         return;
       }
     }

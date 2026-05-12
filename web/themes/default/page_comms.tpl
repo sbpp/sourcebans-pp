@@ -230,11 +230,22 @@
                                     {$comm.name|truncate:2:'':true|upper|escape}
                                 </span>
                                 <div style="min-width:0">
-                                    {if $comm.name}
-                                        <span class="font-medium truncate">{$comm.name|escape}</span>
-                                    {else}
-                                        <span class="text-faint">no nickname</span>
-                                    {/if}
+                                    {* Drawer parity with the banlist desktop row (#COMMS-DRAWER):
+                                       wrap the player nickname in an anchor whose `data-drawer-cid`
+                                       opens the player-detail drawer (theme.js click delegate). The
+                                       `href` is the JS-off fallback: navigates back to the unfiltered
+                                       commslist (Smarty already preserves the `?p=commslist&id=…`
+                                       shape on the URL bar but the page handler doesn't focus the
+                                       row — same documented degradation as the banlist's
+                                       `?p=banlist&id=…` fallback). NO `onclick="event.stopPropagation()"`:
+                                       the drawer click delegate listens on bubble, so stopping
+                                       propagation would silently fall through to native href
+                                       navigation and bypass the drawer entirely (#1124 Slice 6
+                                       found this on the banlist; same shape applies here). *}
+                                    <a class="font-medium truncate"
+                                       href="?p=commslist&amp;id={$comm.cid}"
+                                       data-drawer-cid="{$comm.cid}"
+                                       data-testid="drawer-trigger">{if $comm.name}{$comm.name|escape}{else}<i class="text-faint">no nickname</i>{/if}</a>
                                     {* #1315: surface unban-reason / removed-by line below the
                                        player nickname when the row was lifted by an admin
                                        (state == 'unmuted'). Higher-priority than the banlist
@@ -430,16 +441,21 @@
         </div>{* /.table-scroll *}
 
         {* -- Mobile cards --------------------------------------------- *}
-        {* #1207 ADM-5: each card is now a `<div>` wrapping (a) a
-           clickable summary anchor that filters the list by the row's
-           SteamID and (b) a row-actions footer with the same
+        {* #1207 ADM-5: each card is a `<div>` wrapping (a) a clickable
+           summary anchor and (b) a row-actions footer with the same
            Edit / Unmute / Remove / Re-apply set the desktop table
            exposes. The previous shape wrapped the whole card in a
            single `<a>` so there was no place to put `<button>` actions
-           without producing invalid nested-interactive HTML. The
-           data-testid stays `comm-card`; the anchor's `comm-card-link`
-           sub-hook lets specs assert the navigate-to-search affordance
-           independently from the action row. *}
+           without producing invalid nested-interactive HTML.
+
+           #COMMS-DRAWER: the summary anchor doubles as the drawer
+           trigger via `data-drawer-cid` + `data-testid="drawer-trigger"`
+           (the same hook the banlist mobile card carries). The `href`
+           is the JS-off fallback — navigates to a steam-filtered list
+           so users without JS still get a useful affordance. The
+           legacy `comm-card-link` testid was retired with this PR;
+           specs that needed the navigate-to-search assertion now key
+           off `drawer-trigger` (see comms-affordances.spec.ts). *}
         <div class="ban-cards">
             {foreach $ban_list as $comm}
                 <div class="ban-row ban-row--{$comm.state} ban-card"
@@ -451,7 +467,8 @@
                     <a class="ban-card__summary flex items-center gap-3 p-4"
                        style="text-decoration:none;color:var(--text)"
                        href="?p=commslist&amp;searchText={$comm.steam|escape:'url'}"
-                       data-testid="comm-card-link">
+                       data-drawer-cid="{$comm.cid}"
+                       data-testid="drawer-trigger">
                         <span class="avatar"
                               style="width:36px;height:36px;background:hsl({$comm.avatar_hue} 55% 45%);font-size:12px">
                             {$comm.name|truncate:2:'':true|upper|escape}

@@ -959,7 +959,14 @@ function api_bans_search(array $params): array
  * same `banlist.hideplayerips` / admin gate `bans.detail` enforces, and
  * admin names follow `banlist.hideadminname`.
  *
- * Inputs: `bid` (int, the drawer's current ban id).
+ * Inputs: `bid` (int, the drawer's current ban id) — OR `authid`
+ * (string, SteamID), supplied directly. The `authid` path lets the
+ * drawer call this handler when the focal record is a comm
+ * (`api_comms_detail`) and there's no anchor `bid` in `:prefix_bans`
+ * to do the type/authid/ip lookup against. When `authid` is provided,
+ * the handler matches Steam bans only (`BA.type = 0 AND BA.authid = ?`)
+ * because IP matching needs an IP from the focal record and the comm
+ * focal has none. When neither is provided, returns `bad_request`.
  *
  * @return array{
  *   items: list<array{
@@ -978,29 +985,45 @@ function api_bans_player_history(array $params): array
 {
     global $userbank;
 
-    $bid = (int)($params['bid'] ?? 0);
-    if ($bid <= 0) {
-        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
-    }
-
     $isAdmin = $userbank->is_admin();
     $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
 
-    // Look up the anchor ban so we can match siblings by the same
-    // authid (type=0) or the same IP (type=1). Both columns are
-    // forwarded as plain string params; `:prefix_bans` is the same
-    // table the dispatcher's existing handlers read so phpstan-dba
-    // type-checks the SQL.
-    $anchor = $GLOBALS['PDO']->query(
-        "SELECT type, authid, ip FROM `:prefix_bans` WHERE bid = ?"
-    )->single([$bid]);
-    if (!$anchor) {
-        throw new ApiError('not_found', 'Ban not found.', null, 404);
-    }
+    // Two-shape input: either a `bid` (existing bans-focal drawer path,
+    // looks up the anchor ban so we can match siblings by the same
+    // authid for type=0 or the same IP for type=1) OR an `authid`
+    // (new comm-focal drawer path — there's no anchor bid because the
+    // drawer was opened from a comm row, and the player may have no
+    // bans on file at all). When `authid` is supplied, we match Steam
+    // bans only — IP matching needs an IP from the anchor and the comm
+    // focal record has none.
+    $authidParam = trim((string)($params['authid'] ?? ''));
+    if ($authidParam !== '') {
+        $anchorType = BanType::Steam;
+        $authid     = $authidParam;
+        $ip         = '';
+        $bid        = 0;
+    } else {
+        $bid = (int)($params['bid'] ?? 0);
+        if ($bid <= 0) {
+            throw new ApiError('bad_request', 'bid or authid is required', 'bid');
+        }
 
-    $anchorType = BanType::tryFrom((int)$anchor['type']) ?? BanType::Steam;
-    $authid     = (string)$anchor['authid'];
-    $ip         = (string)($anchor['ip'] ?? '');
+        // Look up the anchor ban so we can match siblings by the same
+        // authid (type=0) or the same IP (type=1). Both columns are
+        // forwarded as plain string params; `:prefix_bans` is the same
+        // table the dispatcher's existing handlers read so phpstan-dba
+        // type-checks the SQL.
+        $anchor = $GLOBALS['PDO']->query(
+            "SELECT type, authid, ip FROM `:prefix_bans` WHERE bid = ?"
+        )->single([$bid]);
+        if (!$anchor) {
+            throw new ApiError('not_found', 'Ban not found.', null, 404);
+        }
+
+        $anchorType = BanType::tryFrom((int)$anchor['type']) ?? BanType::Steam;
+        $authid     = (string)$anchor['authid'];
+        $ip         = (string)($anchor['ip'] ?? '');
+    }
 
     // No anchor identifier -> no siblings to match against. This also
     // shields the SQL from a `WHERE authid = ''` sweep on legacy rows
@@ -1014,18 +1037,40 @@ function api_bans_player_history(array $params): array
         : "BA.type = 0 AND BA.authid = ? AND BA.authid <> ''";
     $matchParam  = $anchorType === BanType::Ip ? $ip : $authid;
 
-    $rows = $GLOBALS['PDO']->query(
-        "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
-                BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
-                AD.user AS admin_name,
-                SE.ip AS server_ip, SE.port AS server_port
-           FROM `:prefix_bans` AS BA
-      LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
-      LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
-          WHERE " . $matchClause . " AND BA.bid <> ?
-       ORDER BY BA.created DESC, BA.bid DESC
-          LIMIT 100"
-    )->resultset([$matchParam, $bid]);
+    // The bid-keyed path needs `BA.bid <> ?` to exclude the focal ban
+    // from the list of "other bans"; the authid-keyed path has no
+    // focal ban to exclude (the drawer's focal is a comm), so we drop
+    // the `<> ?` clause when bid is 0. Adding a `BA.bid <> 0` clause
+    // would be a no-op (auto_increment guarantees no row has bid=0)
+    // but keeping the SQL identical between paths makes the explain
+    // plan clearer.
+    if ($bid > 0) {
+        $rows = $GLOBALS['PDO']->query(
+            "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
+                    BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
+                    AD.user AS admin_name,
+                    SE.ip AS server_ip, SE.port AS server_port
+               FROM `:prefix_bans` AS BA
+          LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
+          LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
+              WHERE " . $matchClause . " AND BA.bid <> ?
+           ORDER BY BA.created DESC, BA.bid DESC
+              LIMIT 100"
+        )->resultset([$matchParam, $bid]);
+    } else {
+        $rows = $GLOBALS['PDO']->query(
+            "SELECT BA.bid, BA.type, BA.created, BA.ends, BA.length, BA.reason,
+                    BA.RemovedOn, BA.RemovedBy, BA.RemoveType,
+                    AD.user AS admin_name,
+                    SE.ip AS server_ip, SE.port AS server_port
+               FROM `:prefix_bans` AS BA
+          LEFT JOIN `:prefix_servers` AS SE ON SE.sid = BA.sid
+          LEFT JOIN `:prefix_admins`  AS AD ON BA.aid = AD.aid
+              WHERE " . $matchClause . "
+           ORDER BY BA.created DESC, BA.bid DESC
+              LIMIT 100"
+        )->resultset([$matchParam]);
+    }
 
     $items = [];
     foreach ($rows as $r) {

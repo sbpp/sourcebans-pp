@@ -974,11 +974,13 @@ input[type="checkbox"]:disabled {
 .pill--active    { background: var(--warning-bg); color: #b45309; }
 .pill--expired   { background: var(--bg-muted); color: var(--text-muted); }
 .pill--unbanned  { background: var(--success-bg); color: #047857; }
+.pill--unmuted   { background: var(--success-bg); color: #047857; }
 .pill--online    { background: rgb(16 185 129 / 0.15); color: #047857; }
 .pill--offline   { background: var(--bg-muted); color: var(--text-muted); }
 html.dark .pill--permanent { color: #fca5a5; }
 html.dark .pill--active    { color: #fcd34d; }
 html.dark .pill--unbanned  { color: #6ee7b7; }
+html.dark .pill--unmuted   { color: #6ee7b7; }
 html.dark .pill--online    { color: #6ee7b7; }
 
 /* ---- Ban row state border ---- */

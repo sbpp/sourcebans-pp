@@ -43,8 +43,18 @@ Api::register('bans.detail',        'api_bans_detail',        0, false, true);
 // and Comms tabs (#1165). Same public reach as `bans.detail` so the
 // drawer's tab chrome behaves identically for anonymous and admin
 // callers; `banlist.hideadminname` is honoured inside each handler.
+// Both handlers also accept an `authid` param as an alternative to
+// `bid` so the comm-focal drawer (opened from `?p=commslist` rows)
+// can populate the History / Comms tabs without an anchor bid.
 Api::register('bans.player_history',  'api_bans_player_history',  0, false, true);
 Api::register('comms.player_history', 'api_comms_player_history', 0, false, true);
+// comms.detail: sister of bans.detail for the public comms-list
+// drawer (this PR). Same public reach + per-field hide-* gating as
+// bans.detail; the focal record is a `:prefix_comms` row instead of
+// a `:prefix_bans` row, so the envelope keys it under `block` instead
+// of `ban` and the state vocab uses `'unmuted'` instead of `'unbanned'`.
+// See api_comms_detail() docblock.
+Api::register('comms.detail',         'api_comms_detail',         0, false, true);
 
 // ---- account: dispatcher enforces login; handler enforces aid match ---
 Api::register('account.check_password',     'api_account_check_password');

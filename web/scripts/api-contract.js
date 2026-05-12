@@ -134,7 +134,13 @@
  * the drawer's tab chrome behaves identically for anonymous and admin callers
  * — IP exposure follows the same `banlist.hideplayerips` / admin gate
  * `bans.detail` enforces, and admin names follow `banlist.hideadminname`. 
- * Inputs: `bid` (int, the drawer's current ban id).
+ * Inputs: `bid` (int, the drawer's current ban id) — OR `authid` (string,
+ * SteamID), supplied directly. The `authid` path lets the drawer call this
+ * handler when the focal record is a comm (`api_comms_detail`) and there's no
+ * anchor `bid` in `:prefix_bans` to do the type/authid/ip lookup against. When
+ * `authid` is provided, the handler matches Steam bans only (`BA.type = 0 AND
+ * BA.authid = ?`) because IP matching needs an IP from the focal record and
+ * the comm focal has none. When neither is provided, returns `bad_request`.
  *
  * @typedef {Object} ApiBansPlayerHistoryRequest
  * @typedef {{ items: Array<{ bid: number, type: number, banned_at: number, banned_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, reason: string, admin_name: string|null, removed_by: string|null, removed_at: number|null, removed_at_human: string|null, server_name: string|null }>, total: number }} ApiBansPlayerHistoryResponse
@@ -229,18 +235,73 @@
  * @typedef {{ bid: number, deleted: boolean }} ApiCommsDeleteResponse
  */
 /**
+ * Player-detail drawer envelope for a comm-block focal record.  Sister handler
+ * to `api_bans_detail` — same envelope shape, same field-by-field hide-*
+ * gating, but the focal record is a comm-block (`:prefix_comms` row) instead
+ * of a ban. Powers the player drawer when it's opened from a row in the public
+ * comms list (the `data-drawer-cid` trigger added in the same change), giving
+ * comms the parity-with-banlist UX users expect: click a name, see player id +
+ * the focal block + comments, hop into the History / Comms / Notes tabs
+ * without leaving the page.  Mirroring `api_bans_detail` (rather than rolling
+ * a leaner shape): - `player`, `admin`, `server`, `comments`,
+ * `comments_visible`, `notes_visible` keep the SAME keys so the drawer JS can
+ * render either focal kind through the shared `renderOverviewPane` branches
+ * without per-shape forks. - The focal record itself lives under `block` (vs
+ * `ban`) with comm-flavoured fields: `type` / `type_label` for mute/gag,
+ * `started_at*` (vs `banned_at*`), `unblock_reason` (vs `unban_reason`), and
+ * the `state` vocab swaps `'unbanned'` for `'unmuted'` to match the comm
+ * column conventions (`api_comms_unblock`'s return shape). Same vocab the
+ * existing mobile card chrome uses (`pill--unmuted`). - `cid` echoes the focal
+ * id (vs `bid`). `bid` is intentionally omitted from the envelope so a future
+ * caller can't accidentally bind the comm's own id into a `bans.*` action by
+ * mistake — the drawer's lazy panes consume `player.steam_id` directly per
+ * the `authid` extension on `bans.player_history` / `comms.player_history`. -
+ * Fields `bans.detail` carries that don't apply to a comm-block (`demo_count`,
+ * `history_count`) are dropped — the comms table has no demo column and the
+ * History tab doesn't read `history_count` off the envelope (the lazy fetch's
+ * items count is the source of truth there).  Public action: matches the
+ * public reach of `?p=commslist`. Field- level hide-gating
+ * (`banlist.hideplayerips` / `banlist.hideadminname` /
+ * `config.enablepubliccomments`) is enforced INSIDE the handler so an
+ * anonymous caller sees the same data the public commslist page would show
+ * them. Comm rows don't store an IP (`:prefix_comms` has no `ip` column —
+ * see the schema dump in `web/install/includes/sql/struc.sql` vs
+ * `:prefix_bans`), so `player.ip` is always `null` here regardless of
+ * `banlist.hideplayerips`. Carrying the field anyway keeps the envelope shape
+ * symmetric with `bans.detail` so `renderOverviewPane` doesn't have to branch
+ * on missing keys.  Comments are pulled from `:prefix_comments WHERE C.type =
+ * 'C' AND C.bid = ?` — the same shape `page.commslist.php`'s comment loader
+ * reads, just rebound to the comm focal row's id (the column is named `bid` on
+ * `:prefix_comments` even when it points at a comm row id; the disambiguator
+ * is the `type` letter `'B'`/`'C'`/`'P'`).  Inputs: `cid` (int, the focal
+ * comm-block id — matches the `data-drawer-cid` attribute the comms-list
+ * template emits).
+ *
+ * @typedef {Object} ApiCommsDetailRequest
+ * @typedef {{ cid: number, player: { name: string, steam_id: string, steam_id_3: string, community_id: string, ip: null, country: string|null }, block: { type: number, type_label: string, reason: string, started_at: number, started_at_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, unblock_reason: string, removed_at: number|null, removed_at_human: string|null, removed_by: string|null }, admin: {name: string|null}, server: {sid: number, name: string|null, mod_icon: string|null}, comments_visible: boolean, notes_visible: boolean, comments: Array<{cid: number, added: number, added_human: string, author: string|null, text: string, edited_at: number|null, edited_by: string|null}> }} ApiCommsDetailResponse
+ */
+/**
  * @typedef {Object} ApiCommsPasteRequest
  * @typedef {Object} ApiCommsPasteResponse
  */
 /**
- * Comm-block feed for the player-detail drawer's Comms tab (#1165).  Looks up
- * the player's Steam ID from `:prefix_bans` for the supplied `bid` and returns
- * every gag/mute on file for the same Steam ID. Action is registered public to
- * match `bans.detail` / `bans.player_history` — comms-list is a public
- * surface (`?p=commslist`) so the drawer's Comms tab follows the same reach.
- * Admin-name exposure is gated by `banlist.hideadminname` for non-admin
- * callers, mirroring how `bans.detail` handles it.  Inputs: `bid` (int, the
- * drawer's current ban id).
+ * Comm-block feed for the player-detail drawer's Comms tab (#1165).  Returns
+ * every gag/mute on file for the player anchored by the supplied identifier.
+ * Action is registered public to match `bans.detail` / `bans.player_history`
+ * — comms-list is a public surface (`?p=commslist`) so the drawer's Comms
+ * tab follows the same reach. Admin-name exposure is gated by
+ * `banlist.hideadminname` for non-admin callers, mirroring how `bans.detail`
+ * handles it.  Inputs (resolved in priority order): 1. `cid` (int) —
+ * comm-focal drawer path (#COMMS-DRAWER). Resolves to authid via
+ * `:prefix_comms`, EXCLUDES that focal cid from the result (`C.bid <> ?`) so
+ * the Overview pane and the Comms tab don't render the same record twice. 2.
+ * `bid` (int) — legacy bans-focal drawer path. Resolves to authid via
+ * `:prefix_bans`. No comm exclusion (cid and bid live in different tables, so
+ * the focal bid never appears in the comm feed anyway). 3. `authid` (string)
+ * — caller-supplied steam id. Useful for paths that already know the
+ * player's authid; no exclusion (the caller must filter the focal record on
+ * their side if needed).  `bad_request` (field=`cid`) when none of the three
+ * is provided — preserves the legacy "must supply *something*" contract.
  *
  * @typedef {Object} ApiCommsPlayerHistoryRequest
  * @typedef {{ items: Array<{ bid: number, type: number, type_label: string, created: number, created_human: string, length_seconds: number, length_human: string, expires_at: number|null, expires_at_human: string|null, state: string, reason: string, admin_name: string|null, removed_by: string|null, removed_at: number|null, removed_at_human: string|null }>, total: number }} ApiCommsPlayerHistoryResponse
@@ -490,6 +551,7 @@ var Actions = Object.freeze({
     BlockitLoadServers: 'blockit.load_servers',
     CommsAdd: 'comms.add',
     CommsDelete: 'comms.delete',
+    CommsDetail: 'comms.detail',
     CommsPaste: 'comms.paste',
     CommsPlayerHistory: 'comms.player_history',
     CommsPrepareBlockFromBan: 'comms.prepare_block_from_ban',

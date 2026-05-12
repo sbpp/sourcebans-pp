@@ -327,17 +327,272 @@ function api_comms_prepare_block_from_ban(array $params): array
 }
 
 /**
+ * Player-detail drawer envelope for a comm-block focal record.
+ *
+ * Sister handler to `api_bans_detail` — same envelope shape, same
+ * field-by-field hide-* gating, but the focal record is a comm-block
+ * (`:prefix_comms` row) instead of a ban. Powers the player drawer
+ * when it's opened from a row in the public comms list (the
+ * `data-drawer-cid` trigger added in the same change), giving comms
+ * the parity-with-banlist UX users expect: click a name, see player
+ * id + the focal block + comments, hop into the History / Comms /
+ * Notes tabs without leaving the page.
+ *
+ * Mirroring `api_bans_detail` (rather than rolling a leaner shape):
+ *   - `player`, `admin`, `server`, `comments`, `comments_visible`,
+ *     `notes_visible` keep the SAME keys so the drawer JS can render
+ *     either focal kind through the shared `renderOverviewPane`
+ *     branches without per-shape forks.
+ *   - The focal record itself lives under `block` (vs `ban`) with
+ *     comm-flavoured fields: `type` / `type_label` for mute/gag,
+ *     `started_at*` (vs `banned_at*`), `unblock_reason` (vs
+ *     `unban_reason`), and the `state` vocab swaps `'unbanned'` for
+ *     `'unmuted'` to match the comm column conventions
+ *     (`api_comms_unblock`'s return shape). Same vocab the existing
+ *     mobile card chrome uses (`pill--unmuted`).
+ *   - `cid` echoes the focal id (vs `bid`). `bid` is intentionally
+ *     omitted from the envelope so a future caller can't accidentally
+ *     bind the comm's own id into a `bans.*` action by mistake — the
+ *     drawer's lazy panes consume `player.steam_id` directly per the
+ *     `authid` extension on `bans.player_history` /
+ *     `comms.player_history`.
+ *   - Fields `bans.detail` carries that don't apply to a comm-block
+ *     (`demo_count`, `history_count`) are dropped — the comms table
+ *     has no demo column and the History tab doesn't read
+ *     `history_count` off the envelope (the lazy fetch's items count
+ *     is the source of truth there).
+ *
+ * Public action: matches the public reach of `?p=commslist`. Field-
+ * level hide-gating (`banlist.hideplayerips` / `banlist.hideadminname`
+ * / `config.enablepubliccomments`) is enforced INSIDE the handler so
+ * an anonymous caller sees the same data the public commslist page
+ * would show them. Comm rows don't store an IP (`:prefix_comms` has
+ * no `ip` column — see the schema dump in `web/install/includes/sql/struc.sql`
+ * vs `:prefix_bans`), so `player.ip` is always `null` here regardless
+ * of `banlist.hideplayerips`. Carrying the field anyway keeps the
+ * envelope shape symmetric with `bans.detail` so `renderOverviewPane`
+ * doesn't have to branch on missing keys.
+ *
+ * Comments are pulled from `:prefix_comments WHERE C.type = 'C' AND
+ * C.bid = ?` — the same shape `page.commslist.php`'s comment loader
+ * reads, just rebound to the comm focal row's id (the column is
+ * named `bid` on `:prefix_comments` even when it points at a comm
+ * row id; the disambiguator is the `type` letter `'B'`/`'C'`/`'P'`).
+ *
+ * Inputs: `cid` (int, the focal comm-block id — matches the
+ * `data-drawer-cid` attribute the comms-list template emits).
+ *
+ * @return array{
+ *   cid: int,
+ *   player: array{
+ *     name: string, steam_id: string, steam_id_3: string,
+ *     community_id: string, ip: null, country: string|null
+ *   },
+ *   block: array{
+ *     type: int, type_label: string, reason: string,
+ *     started_at: int, started_at_human: string,
+ *     length_seconds: int, length_human: string,
+ *     expires_at: int|null, expires_at_human: string|null,
+ *     state: string, unblock_reason: string,
+ *     removed_at: int|null, removed_at_human: string|null,
+ *     removed_by: string|null
+ *   },
+ *   admin: array{name: string|null},
+ *   server: array{sid: int, name: string|null, mod_icon: string|null},
+ *   comments_visible: bool,
+ *   notes_visible: bool,
+ *   comments: list<array{cid: int, added: int, added_human: string,
+ *     author: string|null, text: string,
+ *     edited_at: int|null, edited_by: string|null}>,
+ * }
+ */
+function api_comms_detail(array $params): array
+{
+    global $userbank;
+    $cid = (int)($params['cid'] ?? 0);
+    if ($cid <= 0) {
+        throw new ApiError('bad_request', 'cid must be a positive integer', 'cid');
+    }
+
+    // Mirror page.commslist.php: an admin sees admin-name and comments
+    // unconditionally; public visitors get them suppressed when the
+    // corresponding hide-* settings are on. `is_admin()` is the same
+    // gate the page uses, so the JSON surface stays consistent with
+    // what the HTML page would have shown the same caller.
+    $isAdmin   = $userbank->is_admin();
+    $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
+
+    $row = $GLOBALS['PDO']->query(
+        "SELECT C.bid AS cid, C.type, C.authid, C.name, C.created, C.ends, C.length,
+                C.reason, C.aid, C.sid, C.RemovedOn, C.RemovedBy, C.RemoveType, C.ureason,
+                AD.user AS admin_name,
+                SE.ip AS server_ip, SE.port AS server_port,
+                MO.icon AS mod_icon, MO.name AS mod_name,
+                CAST(MID(C.authid, 9, 1) AS UNSIGNED)
+                  + CAST('76561197960265728' AS UNSIGNED)
+                  + CAST(MID(C.authid, 11, 10) * 2 AS UNSIGNED) AS community_id
+           FROM `:prefix_comms` AS C
+      LEFT JOIN `:prefix_servers` AS SE ON SE.sid = C.sid
+      LEFT JOIN `:prefix_mods`    AS MO ON MO.mid = SE.modid
+      LEFT JOIN `:prefix_admins`  AS AD ON C.aid = AD.aid
+          WHERE C.bid = ?"
+    )->single([$cid]);
+    if (!$row) {
+        throw new ApiError('not_found', 'Block not found.', null, 404);
+    }
+
+    $type      = (int)$row['type'];
+    $typeLabel = match ($type) {
+        1       => 'Mute',
+        2       => 'Gag',
+        default => 'Block',
+    };
+    $authid    = (string)$row['authid'];
+    $created   = (int)$row['created'];
+    $length    = (int)$row['length'];
+    $ends      = (int)$row['ends'];
+    $removedOn = $row['RemovedOn'] !== null ? (int)$row['RemovedOn'] : null;
+
+    // State machine mirrors page.commslist.php's per-row classifier:
+    // `RemoveType` marks deleted/unbanned/expired explicitly; otherwise
+    // an `ends` timestamp in the past collapses to "expired". Vocab
+    // matches the comm column conventions (`api_comms_unblock` returns
+    // `state: 'unmuted'`); `api_bans_detail` uses `'unbanned'` because
+    // bans use that vocab. The drawer JS branches on focal kind to
+    // show the right state label.
+    $removal = BanRemoval::tryFrom((string)($row['RemoveType'] ?? ''));
+    if ($removal === BanRemoval::Unbanned || $removal === BanRemoval::Deleted) {
+        $state = 'unmuted';
+    } elseif ($removal === BanRemoval::Expired) {
+        $state = 'expired';
+    } elseif ($length === 0) {
+        $state = 'permanent';
+    } elseif ($ends > 0 && $ends < time()) {
+        $state = 'expired';
+    } else {
+        $state = 'active';
+    }
+
+    $steam2 = $authid !== '' && SteamID::isValidID($authid) ? $authid : '';
+    $steam3 = $steam2 !== '' ? (string)SteamID::toSteam3($steam2) : '';
+
+    $removedByName = null;
+    if ($row['RemovedBy'] !== null && (int)$row['RemovedBy'] > 0 && !$hideAdmin) {
+        $removedRow = $GLOBALS['PDO']->query("SELECT user FROM `:prefix_admins` WHERE aid = ?")
+            ->single([(int)$row['RemovedBy']]);
+        if ($removedRow && !empty($removedRow['user'])) {
+            $removedByName = (string)$removedRow['user'];
+        }
+    }
+
+    $serverName = null;
+    if (!empty($row['server_ip'])) {
+        $serverName = $row['server_ip'] . (!empty($row['server_port']) ? ':' . $row['server_port'] : '');
+    }
+
+    $comments = [];
+    $commentsVisible = Config::getBool('config.enablepubliccomments') || $isAdmin;
+    if ($commentsVisible) {
+        // Comm comments live on `:prefix_comments` with `type = 'C'`,
+        // keyed by the comm row's `bid` column (despite our public
+        // surface naming it `cid` — the column is shared between the
+        // bans/comms/protests trio via the `type` letter).
+        $commentRows = $GLOBALS['PDO']->query(
+            "SELECT C.cid, C.commenttxt, C.added, C.edittime,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.aid)     AS author,
+                    (SELECT user FROM `:prefix_admins` WHERE aid = C.editaid) AS editor
+               FROM `:prefix_comments` AS C
+              WHERE C.type = 'C' AND C.bid = ?
+           ORDER BY C.added DESC"
+        )->resultset([$cid]);
+        foreach ($commentRows as $crow) {
+            $editTime = $crow['edittime'] !== null ? (int)$crow['edittime'] : null;
+            $comments[] = [
+                'cid'        => (int)$crow['cid'],
+                'added'      => (int)$crow['added'],
+                'added_human'=> Config::time((int)$crow['added']),
+                'author'     => $crow['author'] !== null ? (string)$crow['author'] : null,
+                'text'       => (string)$crow['commenttxt'],
+                'edited_at'  => $editTime,
+                'edited_by'  => $crow['editor'] !== null ? (string)$crow['editor'] : null,
+            ];
+        }
+    }
+
+    return [
+        'cid' => $cid,
+        'player' => [
+            'name'         => (string)$row['name'],
+            'steam_id'     => $steam2,
+            'steam_id_3'   => $steam3,
+            'community_id' => (string)$row['community_id'],
+            // Comm rows don't store an IP — `:prefix_comms` has no `ip`
+            // column. Always null; the field is only here so the
+            // drawer's `renderOverviewPane` can read `player.ip`
+            // without a per-kind branch.
+            'ip'           => null,
+            'country'      => null,
+        ],
+        'block' => [
+            'type'             => $type,
+            'type_label'       => $typeLabel,
+            'reason'           => (string)$row['reason'],
+            'started_at'       => $created,
+            'started_at_human' => Config::time($created),
+            'length_seconds'   => $length,
+            'length_human'     => $length === 0 ? 'Permanent' : SecondsToString($length),
+            'expires_at'       => $length === 0 ? null : $ends,
+            'expires_at_human' => $length === 0 ? null : Config::time($ends),
+            'state'            => $state,
+            'unblock_reason'   => (string)($row['ureason'] ?? ''),
+            'removed_at'       => $removedOn,
+            'removed_at_human' => $removedOn !== null ? Config::time($removedOn) : null,
+            'removed_by'       => $removedByName,
+        ],
+        'admin' => [
+            'name' => $hideAdmin ? null : ($row['admin_name'] !== null ? (string)$row['admin_name'] : null),
+        ],
+        'server' => [
+            'sid'      => (int)$row['sid'],
+            'name'     => $serverName,
+            'mod_icon' => !empty($row['mod_icon']) ? (string)$row['mod_icon'] : null,
+        ],
+        'comments_visible' => $commentsVisible,
+        // Mirrors `api_bans_detail`: the drawer's Notes tab is
+        // admin-only, gated on this flag. The dispatcher gate on
+        // `notes.list` is the load-bearing one; this signal lets the
+        // JS hide the tab chrome entirely for public callers so they
+        // don't see a tab they can't reach.
+        'notes_visible'    => $isAdmin,
+        'comments'         => $comments,
+    ];
+}
+
+/**
  * Comm-block feed for the player-detail drawer's Comms tab (#1165).
  *
- * Looks up the player's Steam ID from `:prefix_bans` for the supplied
- * `bid` and returns every gag/mute on file for the same Steam ID. Action
- * is registered public to match `bans.detail` / `bans.player_history` —
- * comms-list is a public surface (`?p=commslist`) so the drawer's Comms
- * tab follows the same reach. Admin-name exposure is gated by
- * `banlist.hideadminname` for non-admin callers, mirroring how
- * `bans.detail` handles it.
+ * Returns every gag/mute on file for the player anchored by the
+ * supplied identifier. Action is registered public to match
+ * `bans.detail` / `bans.player_history` — comms-list is a public
+ * surface (`?p=commslist`) so the drawer's Comms tab follows the same
+ * reach. Admin-name exposure is gated by `banlist.hideadminname` for
+ * non-admin callers, mirroring how `bans.detail` handles it.
  *
- * Inputs: `bid` (int, the drawer's current ban id).
+ * Inputs (resolved in priority order):
+ *   1. `cid` (int) — comm-focal drawer path (#COMMS-DRAWER). Resolves
+ *      to authid via `:prefix_comms`, EXCLUDES that focal cid from
+ *      the result (`C.bid <> ?`) so the Overview pane and the Comms
+ *      tab don't render the same record twice.
+ *   2. `bid` (int) — legacy bans-focal drawer path. Resolves to authid
+ *      via `:prefix_bans`. No comm exclusion (cid and bid live in
+ *      different tables, so the focal bid never appears in the comm
+ *      feed anyway).
+ *   3. `authid` (string) — caller-supplied steam id. Useful for paths
+ *      that already know the player's authid; no exclusion (the
+ *      caller must filter the focal record on their side if needed).
+ *
+ * `bad_request` (field=`cid`) when none of the three is provided —
+ * preserves the legacy "must supply *something*" contract.
  *
  * @return array{
  *   items: list<array{
@@ -356,39 +611,101 @@ function api_comms_player_history(array $params): array
 {
     global $userbank;
 
-    $bid = (int)($params['bid'] ?? 0);
-    if ($bid <= 0) {
-        throw new ApiError('bad_request', 'bid must be a positive integer', 'bid');
-    }
-
     $isAdmin   = $userbank->is_admin();
     $hideAdmin = Config::getBool('banlist.hideadminname') && !$isAdmin;
 
-    $anchor = $GLOBALS['PDO']->query("SELECT authid FROM `:prefix_bans` WHERE bid = ?")
-        ->single([$bid]);
-    if (!$anchor) {
-        throw new ApiError('not_found', 'Ban not found.', null, 404);
+    // Three-shape input, resolved in priority order so the most-specific
+    // anchor wins:
+    //
+    //   1. `cid` — comm-focal drawer path (this PR). Resolves the focal
+    //      `:prefix_comms` row to `authid` and excludes that focal cid
+    //      from the sibling feed via `C.bid <> ?` — same focal-exclusion
+    //      semantics `bans.player_history` carries for its `bid` path
+    //      so the Overview pane and the Comms pane don't render the same
+    //      record twice.
+    //   2. `bid` — legacy bans-focal drawer path. Resolves the focal
+    //      `:prefix_bans` row to `authid`. No comm exclusion (cid and
+    //      bid live in different tables, so the focal bid never appears
+    //      in the comm feed).
+    //   3. `authid` — explicit caller-supplied authid (currently no
+    //      production callsite, kept for symmetry with `bans.player_history`
+    //      so future paths that already know the steam id can skip the
+    //      look-up).
+    //
+    // The drawer JS picks the shape based on `drawerKind` —
+    // `loadPaneIfNeeded`'s docblock has the full per-kind matrix.
+    /** @var int $excludeCid focal cid to exclude (0 = no exclusion). */
+    $excludeCid  = 0;
+    $cidParam    = (int)($params['cid'] ?? 0);
+    $authidParam = trim((string)($params['authid'] ?? ''));
+    if ($cidParam > 0) {
+        $anchor = $GLOBALS['PDO']->query("SELECT authid FROM `:prefix_comms` WHERE bid = ?")
+            ->single([$cidParam]);
+        if (!$anchor) {
+            throw new ApiError('not_found', 'Block not found.', null, 404);
+        }
+        $authid     = (string)($anchor['authid'] ?? '');
+        $excludeCid = $cidParam;
+    } elseif ($authidParam !== '') {
+        $authid = $authidParam;
+    } else {
+        $bid = (int)($params['bid'] ?? 0);
+        if ($bid <= 0) {
+            // `field: 'cid'` (NOT 'bid') because cid is the priority-1
+            // input under the new comm-focal contract; surfacing 'cid'
+            // gives a forms-style UI a sensible field to highlight on
+            // the new shape, and the message body covers all three
+            // valid inputs for explicit callers.
+            throw new ApiError('bad_request', 'cid, bid, or authid is required', 'cid');
+        }
+
+        // Bans-focal-drawer legacy path: the focal record lives on
+        // `:prefix_bans`, so we resolve the authid from there before
+        // querying `:prefix_comms` for the player's comm-block feed.
+        // Reading a bans table from a comms-named handler is the
+        // documented cross-table join the drawer's kind-aware
+        // dispatch needs (see the docblock above for the full
+        // priority order).
+        $anchor = $GLOBALS['PDO']->query("SELECT authid FROM `:prefix_bans` WHERE bid = ?")
+            ->single([$bid]);
+        if (!$anchor) {
+            throw new ApiError('not_found', 'Ban not found.', null, 404);
+        }
+        $authid = (string)($anchor['authid'] ?? '');
     }
 
-    $authid = (string)($anchor['authid'] ?? '');
     if ($authid === '') {
-        // The anchor was an IP-only ban. Comm-blocks are keyed off
-        // authid (no IP column on `:prefix_comms`), so there's nothing
-        // we can match against — return an empty feed cleanly rather
-        // than 404'ing on what is a legitimate state.
+        // The anchor was an IP-only ban (or the supplied authid was
+        // an empty string). Comm-blocks are keyed off authid (no IP
+        // column on `:prefix_comms`), so there's nothing we can match
+        // against — return an empty feed cleanly rather than 404'ing
+        // on what is a legitimate state.
         return ['items' => [], 'total' => 0];
     }
 
-    $rows = $GLOBALS['PDO']->query(
-        "SELECT C.bid, C.type, C.created, C.ends, C.length, C.reason,
-                C.RemovedOn, C.RemovedBy, C.RemoveType,
-                AD.user AS admin_name
-           FROM `:prefix_comms` AS C
-      LEFT JOIN `:prefix_admins` AS AD ON C.aid = AD.aid
-          WHERE C.authid = ?
-       ORDER BY C.created DESC, C.bid DESC
-          LIMIT 100"
-    )->resultset([$authid]);
+    if ($excludeCid > 0) {
+        $rows = $GLOBALS['PDO']->query(
+            "SELECT C.bid, C.type, C.created, C.ends, C.length, C.reason,
+                    C.RemovedOn, C.RemovedBy, C.RemoveType,
+                    AD.user AS admin_name
+               FROM `:prefix_comms` AS C
+          LEFT JOIN `:prefix_admins` AS AD ON C.aid = AD.aid
+              WHERE C.authid = ? AND C.bid <> ?
+           ORDER BY C.created DESC, C.bid DESC
+              LIMIT 100"
+        )->resultset([$authid, $excludeCid]);
+    } else {
+        $rows = $GLOBALS['PDO']->query(
+            "SELECT C.bid, C.type, C.created, C.ends, C.length, C.reason,
+                    C.RemovedOn, C.RemovedBy, C.RemoveType,
+                    AD.user AS admin_name
+               FROM `:prefix_comms` AS C
+          LEFT JOIN `:prefix_admins` AS AD ON C.aid = AD.aid
+              WHERE C.authid = ?
+           ORDER BY C.created DESC, C.bid DESC
+              LIMIT 100"
+        )->resultset([$authid]);
+    }
 
     $items = [];
     foreach ($rows as $r) {
@@ -399,7 +716,7 @@ function api_comms_player_history(array $params): array
         $rowRemoval = BanRemoval::tryFrom((string) ($r['RemoveType'] ?? ''));
 
         $state = match (true) {
-            $rowRemoval === BanRemoval::Unbanned, $rowRemoval === BanRemoval::Deleted => 'unblocked',
+            $rowRemoval === BanRemoval::Unbanned, $rowRemoval === BanRemoval::Deleted => 'unmuted',
             $rowRemoval === BanRemoval::Expired => 'expired',
             $length === 0                       => 'permanent',
             $ends > 0 && $ends < time()         => 'expired',

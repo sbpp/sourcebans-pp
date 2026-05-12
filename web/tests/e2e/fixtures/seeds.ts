@@ -104,3 +104,84 @@ export async function seedBanViaApi(page: Page, seed: SeedBanArgs): Promise<Seed
     }
     return { bid: env.data.bid, nickname: seed.nickname, steam: seed.steam };
 }
+
+export interface SeededComm {
+    nickname: string;
+    steam: string;
+}
+
+export interface SeedCommArgs {
+    /** Player nickname stored on the comm row. */
+    nickname: string;
+    /** Steam2 id (`STEAM_0:0:N` style). The handler normalises via SteamID::toSteam2. */
+    steam: string;
+    /** Free-text reason; defaults to `'e2e comm seed'`. */
+    reason?: string;
+    /**
+     * Block type the panel uses on `:prefix_comms.type`:
+     *   1 = Mute, 2 = Gag, 3 = Both (the handler inserts two rows for
+     *   type=3 — for drawer parity tests we always want a single row,
+     *   so the default is 1).
+     */
+    type?: 1 | 2;
+    /** Length in MINUTES. `0` (default) is a permanent block. */
+    length?: number;
+}
+
+/**
+ * Seed a comm-block via the `comms.add` JSON action. Mirrors the
+ * `seedGagViaApi` helper inside `comms-affordances.spec.ts`, exposed
+ * here so the drawer-parity spec (and any future comm-list parity
+ * coverage) can share the same seed shape.
+ *
+ * Note: `comms.add` returns `{reload: true, block: {steam, type,
+ * length}}` — it does NOT include the new row's cid. Specs that need
+ * the cid look it up off the rendered row's `data-id` attribute
+ * (`[data-testid="comm-row"][data-id]` on desktop /
+ * `[data-testid="comm-card"][data-id]` on mobile) after navigating
+ * to the commslist page; both surfaces preserve the cid as a stable
+ * test hook.
+ */
+export async function seedCommViaApi(page: Page, seed: SeedCommArgs): Promise<SeededComm> {
+    const reason = seed.reason ?? 'e2e comm seed';
+    const length = seed.length ?? 0;
+    const type   = seed.type ?? 1;
+
+    await page.goto('/');
+
+    const envelope = await page.evaluate(
+        async (args) => {
+            const w = window as unknown as {
+                sb: {
+                    api: {
+                        call: (
+                            action: string,
+                            params: Record<string, unknown>,
+                        ) => Promise<{
+                            ok: boolean;
+                            data?: unknown;
+                            error?: { code: string; message: string };
+                        }>;
+                    };
+                };
+                Actions: Record<string, string>;
+            };
+            return await w.sb.api.call(w.Actions.CommsAdd, {
+                nickname: args.nickname,
+                steam: args.steam,
+                type: args.type,
+                length: args.length,
+                reason: args.reason,
+            });
+        },
+        { nickname: seed.nickname, steam: seed.steam, reason, length, type },
+    );
+
+    const env = envelope as { ok: boolean; error?: { code: string; message: string } };
+    if (!env.ok) {
+        throw new Error(
+            `seedCommViaApi: comms.add failed (ok=${env.ok}) — ${JSON.stringify(env)}`,
+        );
+    }
+    return { nickname: seed.nickname, steam: seed.steam };
+}
