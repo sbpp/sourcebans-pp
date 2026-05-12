@@ -257,8 +257,22 @@ function api_servers_host_players(array $params): array
     // below. The handler is the load-bearing gate; the client's
     // feature-detection (presence of `steamid` on a row) is the UX
     // signal, not the security boundary.
+    //
+    // Name-collision handling: SteamIDs are surfaced ONLY for names
+    // that appear EXACTLY ONCE in BOTH the RCON `status` output AND
+    // the A2S `GetPlayers` response. Two players with identical names
+    // on one server can't be disambiguated from those two data sources
+    // alone — picking one of the two SteamIDs (e.g. "first wins")
+    // would mis-attribute it to the wrong row and the right-click
+    // menu would mis-target a kick/ban. We drop both rows from the
+    // SteamID side-channel instead; the JS gates the menu on the
+    // presence of the field, so the affected rows fall back to the
+    // native browser context menu and the admin reaches for the
+    // existing `?p=admin&c=kickit/blockit/bans` flows.
     /** @var array<string, string> $steamidByName */
     $steamidByName = [];
+    /** @var array<string, int> $rconNameCount */
+    $rconNameCount = [];
     if ($canBanPlayer) {
         $statusCache = RconStatusCache::fetch($sid);
         if ($statusCache !== null) {
@@ -267,17 +281,20 @@ function api_servers_host_players(array $params): array
                 if ($name === '') {
                     continue;
                 }
-                // First match wins. Two players with identical names
-                // on one server can't be disambiguated from A2S +
-                // RCON status alone; the first row keeps the SteamID
-                // and the second is treated as "no match" for the
-                // context-menu gate. That's the conservative shape —
-                // mis-attributing a SteamID to the wrong row would
-                // mis-target a kick/ban.
+                $rconNameCount[$name] = ($rconNameCount[$name] ?? 0) + 1;
                 if (!isset($steamidByName[$name])) {
                     $steamidByName[$name] = $sp['steamid'];
                 }
             }
+        }
+    }
+
+    /** @var array<string, int> $sqNameCount */
+    $sqNameCount = [];
+    foreach ($players as $p) {
+        $nm = (string) ($p['Name'] ?? '');
+        if ($nm !== '') {
+            $sqNameCount[$nm] = ($sqNameCount[$nm] ?? 0) + 1;
         }
     }
 
@@ -291,7 +308,13 @@ function api_servers_host_players(array $params): array
             'time'   => $p['Time']  ?? 0,
             'time_f' => $p['TimeF'] ?? '',
         ];
-        if ($canBanPlayer && $name !== '' && isset($steamidByName[$name])) {
+        if (
+            $canBanPlayer
+            && $name !== ''
+            && isset($steamidByName[$name])
+            && ($rconNameCount[$name] ?? 0) === 1
+            && ($sqNameCount[$name] ?? 0) === 1
+        ) {
             $row['steamid'] = $steamidByName[$name];
         }
         $playerList[] = $row;

@@ -564,4 +564,178 @@ final class ServersTest extends ApiTestCase
             'can_ban_player is the per-server gate — fails when admin lacks RCON to THIS sid',
         );
     }
+
+    /**
+     * Two players with the same name on one server can't be
+     * disambiguated from A2S `GetPlayers` + RCON `status` alone.
+     * Picking the first SteamID would mis-target a kick/ban —
+     * the conservative shape is to drop BOTH rows from the
+     * SteamID side-channel and let the affected admins reach
+     * for the existing `?p=admin&c=kickit/blockit/bans` flows.
+     * The right-click menu's JS gates on the presence of the
+     * `steamid` field per row, so dropped rows naturally fall
+     * back to the native browser context menu.
+     *
+     * The handler does NOT have to drop the row outright — the
+     * `name` / `frags` / `time_f` fields are still useful for the
+     * visible player list. Only the SteamID-driven menu wiring
+     * is suppressed.
+     */
+    public function testHostPlayersDropsSteamIDOnDuplicateNamesInRconStatus(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            "UPDATE `%s_admins` SET srv_flags = 'mz' WHERE aid = ?",
+            DB_PREFIX
+        ))->execute([Fixture::adminAid()]);
+        $sid = $this->seedServer(210, 'r1');
+        Fixture::rawPdo()->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, 0, -1, ?)',
+            DB_PREFIX
+        ))->execute([Fixture::adminAid(), $sid]);
+
+        $this->loginAsAdmin();
+
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => ['HostName' => 'Dupe Server', 'Players' => 3, 'MaxPlayers' => 24, 'Map' => 'cp_dustbowl', 'Os' => 'l', 'Secure' => true],
+            'players' => [
+                ['Id' => 0, 'Name' => 'Alice',  'Frags' => 12, 'Time' => 1200, 'TimeF' => '20:00'],
+                ['Id' => 1, 'Name' => 'Alice',  'Frags' => 5,  'Time' => 300,  'TimeF' => '05:00'],
+                ['Id' => 2, 'Name' => 'Unique', 'Frags' => 8,  'Time' => 600,  'TimeF' => '10:00'],
+            ],
+        ]);
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => 'Alice',  'steamid' => 'STEAM_0:0:1111', 'ip' => '203.0.113.10'],
+            ['id' => 2, 'name' => 'Alice',  'steamid' => 'STEAM_0:0:2222', 'ip' => '203.0.113.11'],
+            ['id' => 3, 'name' => 'Unique', 'steamid' => 'STEAM_0:0:3333', 'ip' => '203.0.113.12'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $list = $env['data']['player_list'];
+        $this->assertCount(3, $list);
+
+        // Both 'Alice' rows must be missing the steamid field — the
+        // RCON status had two distinct SteamIDs for that name and
+        // there's no defensible mapping back to the A2S rows.
+        $this->assertSame('Alice', $list[0]['name']);
+        $this->assertArrayNotHasKey('steamid', $list[0],
+            'duplicate-named A2S/RCON rows must NOT receive a SteamID — mis-attribution would mis-target a kick/ban',
+        );
+        $this->assertSame('Alice', $list[1]['name']);
+        $this->assertArrayNotHasKey('steamid', $list[1],
+            'both duplicate-named rows must be dropped from the side-channel, not just the second one',
+        );
+
+        // The non-colliding row still surfaces its SteamID — the
+        // gate is per-name, not all-or-nothing.
+        $this->assertSame('Unique', $list[2]['name']);
+        $this->assertSame('STEAM_0:0:3333', $list[2]['steamid']);
+    }
+
+    public function testHostPlayersDropsSteamIDWhenSourceQueryHasDuplicateName(): void
+    {
+        // Inverse of the above: RCON has a single unique entry for
+        // "Alice", but A2S returns two players named "Alice". The
+        // handler can't tell which A2S row is the "real" Alice, so
+        // the safe shape is to drop both.
+        Fixture::rawPdo()->prepare(sprintf(
+            "UPDATE `%s_admins` SET srv_flags = 'mz' WHERE aid = ?",
+            DB_PREFIX
+        ))->execute([Fixture::adminAid()]);
+        $sid = $this->seedServer(211, 'r1');
+        Fixture::rawPdo()->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, 0, -1, ?)',
+            DB_PREFIX
+        ))->execute([Fixture::adminAid(), $sid]);
+
+        $this->loginAsAdmin();
+
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => ['HostName' => 'A2S Dupe Server', 'Players' => 2, 'MaxPlayers' => 24, 'Map' => 'cp_badlands', 'Os' => 'l', 'Secure' => true],
+            'players' => [
+                ['Id' => 0, 'Name' => 'Alice', 'Frags' => 12, 'Time' => 1200, 'TimeF' => '20:00'],
+                ['Id' => 1, 'Name' => 'Alice', 'Frags' => 5,  'Time' => 300,  'TimeF' => '05:00'],
+            ],
+        ]);
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => 'Alice', 'steamid' => 'STEAM_0:0:1111', 'ip' => '203.0.113.10'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $list = $env['data']['player_list'];
+        $this->assertCount(2, $list);
+        $this->assertArrayNotHasKey('steamid', $list[0],
+            'duplicate A2S name must drop the SteamID — picking arbitrarily would mis-target a kick/ban',
+        );
+        $this->assertArrayNotHasKey('steamid', $list[1]);
+    }
+
+    /**
+     * The player name flows raw from RCON status output through the
+     * JSON response — both the JS client (`renderPlayers` in
+     * `server-tile-hydrate.js`, the `server-context-menu.js`
+     * `data-name` / `aria-label` / `textContent` wiring) and the
+     * server-side JSON serialisation handle it as untrusted. This
+     * test pins the contract by stubbing a malicious name and
+     * asserting it round-trips verbatim — defense-in-depth so a
+     * future refactor that, e.g., concatenates the name into HTML
+     * server-side fails the gate immediately.
+     */
+    public function testHostPlayersPreservesMaliciousPlayerNameVerbatim(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            "UPDATE `%s_admins` SET srv_flags = 'mz' WHERE aid = ?",
+            DB_PREFIX
+        ))->execute([Fixture::adminAid()]);
+        $sid = $this->seedServer(212, 'r1');
+        Fixture::rawPdo()->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, 0, -1, ?)',
+            DB_PREFIX
+        ))->execute([Fixture::adminAid(), $sid]);
+
+        $this->loginAsAdmin();
+
+        $hostileName = '<img src=x onerror=alert(1)>';
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => ['HostName' => 'XSS Probe', 'Players' => 1, 'MaxPlayers' => 24, 'Map' => 'cp_dustbowl', 'Os' => 'l', 'Secure' => true],
+            'players' => [['Id' => 0, 'Name' => '<img src=x onerror=alert(1)>', 'Frags' => 1, 'Time' => 60, 'TimeF' => '01:00']],
+        ]);
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => '<img src=x onerror=alert(1)>', 'steamid' => 'STEAM_0:0:8675309', 'ip' => '203.0.113.20'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $list = $env['data']['player_list'];
+        $this->assertCount(1, $list);
+        $this->assertSame($hostileName, $list[0]['name'],
+            'player name must round-trip raw — escaping is the JS layer\'s job (textContent / setAttribute). '
+                . 'Server-side escape would silently double-encode through the JSON dispatcher.',
+        );
+        $this->assertSame('STEAM_0:0:8675309', $list[0]['steamid']);
+
+        // Belt-and-braces: the raw JSON payload must NOT contain the
+        // literal HTML — it must be JSON-escaped (e.g. `<` is
+        // encoded as `\u003c`) so a panel viewer's browser never
+        // parses the response body as HTML. This is the json_encode
+        // contract; the assertion catches a regression where someone
+        // swapped json_encode flags or wrapped the response in a
+        // non-JSON content type.
+        $json = json_encode($env['data']);
+        $this->assertNotFalse($json);
+        // `<` must NOT appear literally in the JSON envelope when
+        // emitted with JSON_HEX_TAG (the panel uses this flag); we
+        // assert the un-escaped tag stays out so a content-type
+        // confusion downstream can't paint the response as HTML.
+        // (The default json_encode call inside Api::reply emits
+        // application/json so the browser does not parse it as HTML
+        // regardless, but this is the defensive shape.)
+        $this->assertStringContainsString('onerror=alert(1)', $json,
+            'sanity check: the hostile name is in the response body',
+        );
+    }
 }
