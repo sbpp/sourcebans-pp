@@ -69,6 +69,11 @@ export default defineConfig({
           label: 'Discord',
           href: 'https://discord.gg/tzqYqmAtF5',
         },
+        {
+          icon: 'heart',
+          label: 'Sponsor rumblefrog on GitHub',
+          href: 'https://github.com/sponsors/rumblefrog',
+        },
       ],
       editLink: {
         // Source of truth lives in sourcebans-pp; the deploy shell is
