@@ -44,8 +44,16 @@ export default defineConfig({
       // Component overrides:
       //   - ThemeProvider: matches the panel's "default to system, paint
       //     light when JS isn't available" first-paint contract.
+      //   - Footer: appends a "Support SourceBans++ on GitHub Sponsors"
+      //     affordance below Starlight's stock per-page footer (edit
+      //     link + last updated + pagination). The stock sub-components
+      //     are pulled from Starlight's `virtual:` namespace so a future
+      //     Starlight upgrade that adds new footer chrome picks it up
+      //     automatically. See ./src/components/Footer.astro for the
+      //     full rationale.
       components: {
         ThemeProvider: './src/components/ThemeProvider.astro',
+        Footer: './src/components/Footer.astro',
       },
       head: [
         {
