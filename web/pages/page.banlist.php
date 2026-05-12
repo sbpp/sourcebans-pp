@@ -839,7 +839,19 @@ foreach ($res as $row) {
         $GLOBALS['PDO']->bind(':ip', $row['ban_ip']);
         $alrdybnd = $GLOBALS['PDO']->single();
     }
-    if ($alrdybnd['count'] == 0) {
+    // `has_active_sibling` is the v2.0 template's hook for hiding the
+    // Re-apply affordance when the player is already actively banned by
+    // another row (which the duplicate-check in `bans.add` would
+    // reject). The legacy `$data['reban_link']` keys off the same flag
+    // for third-party theme back-compat — the template (`page_bans.tpl`)
+    // gates Re-apply on `!$ban.has_active_sibling`. Re-apply candidates
+    // are the row's OWN state filter (expired / unbanned); for those
+    // states the row itself never matches the active-check predicate
+    // (`(length=0 OR ends > now) AND RemovedBy IS NULL`), so this
+    // count is "siblings only" without an explicit `bid !=` exclusion.
+    $hasActiveSibling = (int) $alrdybnd['count'] > 0;
+    $data['has_active_sibling'] = $hasActiveSibling;
+    if (!$hasActiveSibling) {
         // #1275 — admin-bans is Pattern A; the legacy `#^0` fragment
         // anchored the old page-toc add-ban section. The page handler
         // infers `add-ban` from `?rebanid=` directly (see the smarter-

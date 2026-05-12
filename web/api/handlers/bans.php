@@ -75,14 +75,30 @@ function api_bans_add(array $params): array
     $len = $length ? $length * 60 : 0;
 
     PruneBans();
+    // Surface the conflicting bid in the error envelope so a Re-apply
+    // attempt against an unbanned/expired row gives the admin enough
+    // context to investigate the OTHER active row that's blocking the
+    // re-add (the row visibly says unbanned/expired but a sibling
+    // active ban for the same identity makes the duplicate-check fire
+    // — without the bid the admin sees "already banned" with no way
+    // to tell which row, and the Re-apply UX reads as broken). The
+    // production-realistic case (one ban, lifted, re-applied) was
+    // never affected because the unbanned row's `RemovedBy IS NOT NULL`
+    // already excludes it from the check; the bid call-out is for the
+    // multi-ban shape (legacy data, race, or admin adding a second
+    // ban while the first is still active). `LIMIT 1 ORDER BY bid DESC`
+    // picks the most recent active row, which is the one the admin
+    // most likely wants to look at.
     if ($banType === BanType::Steam) {
         $chk = $GLOBALS['PDO']->query(
-            "SELECT count(bid) AS count FROM `:prefix_bans`
+            "SELECT bid FROM `:prefix_bans`
             WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP())
-            AND RemovedBy IS NULL AND type = '0'"
+            AND RemovedBy IS NULL AND type = '0'
+            ORDER BY bid DESC LIMIT 1"
         )->single([$steam]);
-        if ((int)$chk['count'] > 0) {
-            throw new ApiError('already_banned', "SteamID: $steam is already banned.");
+        if ($chk) {
+            $existingBid = (int)$chk['bid'];
+            throw new ApiError('already_banned', "SteamID: $steam is already banned by ban #$existingBid.");
         }
 
         foreach ($userbank->GetAllAdmins() as $admin) {
@@ -93,12 +109,14 @@ function api_bans_add(array $params): array
     }
     if ($banType === BanType::Ip) {
         $chk = $GLOBALS['PDO']->query(
-            "SELECT count(bid) AS count FROM `:prefix_bans`
+            "SELECT bid FROM `:prefix_bans`
             WHERE ip = ? AND (length = 0 OR ends > UNIX_TIMESTAMP())
-            AND RemovedBy IS NULL AND type = '1'"
+            AND RemovedBy IS NULL AND type = '1'
+            ORDER BY bid DESC LIMIT 1"
         )->single([$ip]);
-        if ((int)$chk['count'] > 0) {
-            throw new ApiError('already_banned', "IP: $ip is already banned.");
+        if ($chk) {
+            $existingBid = (int)$chk['bid'];
+            throw new ApiError('already_banned', "IP: $ip is already banned by ban #$existingBid.");
         }
     }
 

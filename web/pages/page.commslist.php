@@ -660,14 +660,21 @@ foreach ($res as $row) {
     }
 
     $data['layer_id'] = 'layer_' . $row['ban_id'];
-    // Запрос текущего статуса игрока для рисования ссылки на мьют или гаг
+    // Запрос текущего статуса игрока для рисования ссылки на мьют или гаг.
+    // Mirror of the banlist's `has_active_sibling` shape — see
+    // `web/pages/page.banlist.php` for the rationale. The Re-mute /
+    // Re-gag affordance must hide when the player already has an
+    // active block of the same type (the duplicate-check in
+    // `comms.add` would 4xx as `already_blocked`).
     $GLOBALS['PDO']->query("SELECT count(bid) as count FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND (length = 0 OR ends > UNIX_TIMESTAMP())");
     $GLOBALS['PDO']->bindMultiple([
         ':authid' => $data['steamid'],
         ':type'   => $data['type'],
     ]);
     $alrdybnd         = $GLOBALS['PDO']->single();
-    if ($alrdybnd['count'] == 0) {
+    $hasActiveSibling = (int) $alrdybnd['count'] > 0;
+    $data['has_active_sibling'] = $hasActiveSibling;
+    if (!$hasActiveSibling) {
         // #1275 — admin-comms is single-section Pattern A; the legacy
         // `#^0` fragment targeted the old page-toc add-block anchor
         // (long since dead). Drop it.

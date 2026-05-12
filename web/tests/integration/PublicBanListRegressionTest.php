@@ -62,11 +62,28 @@ final class PublicBanListRegressionTest extends ApiTestCase
     /** @var int bid of the seeded expired ban (length elapsed; RemoveType NULL). */
     private int $expiredBid = 0;
 
+    /** @var int bid: an unbanned ban for a player who ALSO has an active ban
+     *               on the same authid. Used to pin the has_active_sibling gate
+     *               that hides the Re-apply affordance to avoid the misleading
+     *               "already banned" duplicate-check error on click. */
+    private int $unbannedWithActiveSiblingBid = 0;
+
+    /** @var int bid: the active sibling of $unbannedWithActiveSiblingBid (same authid). */
+    private int $activeSiblingBid = 0;
+
     /** @var int cid of the seeded permanent active mute. */
     private int $activeCid = 0;
 
     /** @var int cid of the seeded admin-unmuted block (RemoveType='U'). */
     private int $unmutedCid = 0;
+
+    /** @var int cid: an unmuted block for a player who ALSO has an active mute
+     *               on the same authid+type. Mirrors the bans-side has_active_sibling
+     *               regression for commslist. */
+    private int $unmutedWithActiveSiblingCid = 0;
+
+    /** @var int cid: the active sibling of $unmutedWithActiveSiblingCid (same authid+type). */
+    private int $activeSiblingCid = 0;
 
     protected function setUp(): void
     {
@@ -183,12 +200,19 @@ final class PublicBanListRegressionTest extends ApiTestCase
             'one Re-apply anchor per eligible row on the desktop branch (expired + unbanned)',
         );
         // Active rows must NOT carry the anchor — gated to the
-        // expired/unbanned branches only. Three seeded rows total;
-        // only two are eligible.
+        // expired/unbanned branches only. We seeded five rows:
+        //   1) active permanent — no anchor (state == 'active')
+        //   2) admin-unbanned standalone — anchor (state == 'unbanned', no sibling)
+        //   3) expired natural — anchor (state == 'expired', no sibling)
+        //   4) admin-unbanned WITH active sibling — no anchor (sibling gate)
+        //   5) the active sibling — no anchor (state == 'active')
+        // → exactly 2 desktop anchors expected.
         $this->assertLessThan(
             3,
             $desktopReapplyCount,
-            'Re-apply anchor must NOT render on the active row (we seeded 1 active + 1 expired + 1 unbanned)',
+            'Re-apply anchor must NOT render on the active row, '
+            . 'NOR on the unbanned-with-active-sibling row '
+            . '(we seeded 2 active + 1 expired + 1 unbanned-standalone + 1 unbanned-with-active-sibling)',
         );
         // Mobile mirror — the public banlist's mobile card now exposes
         // the same row-actions row as the desktop table (see
@@ -293,6 +317,132 @@ final class PublicBanListRegressionTest extends ApiTestCase
             '#<td[^>]*\bclass="text-muted truncate"[^>]*\btitle="wallhack"#',
             $html,
             'desktop Reason cell must carry the seeded reason in a title= attribute so hover surfaces the full text (issue 5).',
+        );
+    }
+
+    /**
+     * Regression for the user-reported bug "When trying to reapply
+     * ban on an unbanned player, it says SteamID: STEAM_0:0:1000119
+     * is already banned." The unbanned row legitimately renders with
+     * `state=='unbanned'` (RemoveType='U'), but a SECOND row on the
+     * same authid is currently active, so any Re-apply attempt would
+     * 4xx on `bans.add`'s duplicate-active check against the active
+     * sibling — surfacing as a confusing "already banned" toast on a
+     * row that visibly says Unbanned.
+     *
+     * The page handler computes `has_active_sibling` from the same
+     * "is this player currently banned?" predicate `bans.add` uses
+     * server-side. The template gates the Re-apply anchor on
+     * `!$ban.has_active_sibling`, so the affordance is hidden on the
+     * row whose Re-apply would silently fail. The drawer / detail
+     * view still shows the unbanned row's history; only the action
+     * affordance is removed.
+     *
+     * This test pins both halves: the unbanned-with-sibling row IS
+     * still rendered (so the user can see the historical entry),
+     * but its row-actions cell does NOT carry the Re-apply anchor.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistHidesReapplyOnUnbannedRowWithActiveSibling(): void
+    {
+        $_GET = ['p' => 'banlist'];
+
+        $html = $this->renderBanlistPage();
+
+        $bid = $this->unbannedWithActiveSiblingBid;
+
+        // The row IS rendered — we don't hide the row, only the
+        // action. The `<tr>` carries `data-id="<bid>"`.
+        $this->assertMatchesRegularExpression(
+            '/<tr[^>]*\bdata-id="' . $bid . '"/s',
+            $html,
+            'unbanned-with-sibling row must still render — only the Re-apply action is gated, '
+            . 'not the row itself',
+        );
+
+        // Slice the HTML for that single `<tr>...</tr>` and assert
+        // it contains NO Re-apply anchor. This is the load-bearing
+        // assertion for the bug fix: pre-fix the desktop row carried
+        // `data-testid="row-action-reapply"` on the unbanned row even
+        // though the click would 4xx on `bans.add`'s duplicate check.
+        $rowSlice = $this->extractRowSliceForBid($html, $bid);
+        $this->assertNotSame('', $rowSlice, 'failed to slice the row HTML for bid=' . $bid);
+        $this->assertStringNotContainsString(
+            'data-testid="row-action-reapply"',
+            $rowSlice,
+            'unbanned-with-active-sibling row must NOT carry the desktop Re-apply anchor — '
+            . 'the click would 4xx on the active sibling and the bug surfaces as "already banned"',
+        );
+        $this->assertStringNotContainsString(
+            'data-testid="row-action-reapply-mobile"',
+            $rowSlice,
+            'unbanned-with-active-sibling row must NOT carry the mobile Re-apply anchor either',
+        );
+    }
+
+    /**
+     * Mirror for the commslist surface — same bug shape, same fix.
+     * The commslist regression is HIGHER priority than the banlist's
+     * because there is no drawer fallback on a comm row, so the
+     * Re-apply chip is the only on-page action. Pre-fix clicking it
+     * lands on the admin add-comm form which 4xx's against the
+     * active sibling on `comms.add`.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testCommslistHidesReapplyOnUnmutedRowWithActiveSibling(): void
+    {
+        $_GET = ['p' => 'commslist'];
+
+        $html = $this->renderCommslistPage();
+
+        $cid = $this->unmutedWithActiveSiblingCid;
+
+        $this->assertMatchesRegularExpression(
+            '/<tr[^>]*\bdata-id="' . $cid . '"/s',
+            $html,
+            'unmuted-with-sibling comm row must still render — only the Re-apply action is gated',
+        );
+
+        $rowSlice = $this->extractCommRowSliceForCid($html, $cid);
+        $this->assertNotSame('', $rowSlice, 'failed to slice the comm row HTML for cid=' . $cid);
+        $this->assertStringNotContainsString(
+            'data-testid="row-action-reapply"',
+            $rowSlice,
+            'unmuted-with-active-sibling comm row must NOT carry the desktop Re-apply anchor',
+        );
+        $this->assertStringNotContainsString(
+            'data-testid="row-action-reapply-mobile"',
+            $rowSlice,
+            'unmuted-with-active-sibling comm row must NOT carry the mobile Re-apply anchor',
+        );
+    }
+
+    /**
+     * Pre-#REBAN-FIX the templates also rendered the legacy comments-modal
+     * launcher on every row. Whether or not that block is present, the
+     * Re-apply gate must not regress — the count assertion above pins
+     * the exact-2 contract on bare `?p=banlist` with the seeded data.
+     * This test confirms the standalone-unbanned row (CheaterBeta)
+     * STILL gets a Re-apply anchor, so the gate isn't accidentally
+     * over-broad and hiding it on every unbanned row.
+     */
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testBanlistKeepsReapplyOnStandaloneUnbannedRow(): void
+    {
+        $_GET = ['p' => 'banlist'];
+
+        $html = $this->renderBanlistPage();
+
+        $rowSlice = $this->extractRowSliceForBid($html, $this->unbannedBid);
+        $this->assertNotSame('', $rowSlice);
+        $this->assertStringContainsString(
+            'data-testid="row-action-reapply"',
+            $rowSlice,
+            'standalone unbanned row (no active sibling) MUST still emit the desktop Re-apply anchor — '
+            . 'the gate fires only when the same authid carries an active sibling',
         );
     }
 
@@ -425,6 +575,50 @@ final class PublicBanListRegressionTest extends ApiTestCase
         ]);
         $this->expiredBid = (int) $pdo->lastInsertId();
 
+        // Seed a player (STEAM_0:1:50004) with TWO bans on the same
+        // authid: one admin-unbanned (RemoveType='U') and one ACTIVE
+        // permanent. This pair pins the `has_active_sibling` gate
+        // that hides the Re-apply affordance — clicking Re-apply on
+        // the unbanned row would land at `?p=admin&c=bans&section=add-ban&rebanid=…`
+        // which then fails the duplicate-active check on the ACTIVE
+        // sibling, surfacing as "is already banned by ban #X." This
+        // is the regression flagged by the user (`STEAM_0:0:1000119`):
+        // the row visibly read "Unbanned" but Re-apply silently
+        // fails because of the active sibling. Hide Re-apply when
+        // a sibling is active so the operator never reaches the
+        // confusing error path.
+        $insert->execute([
+            0,
+            'STEAM_0:1:50004',
+            'CheaterDelta',
+            $now - 14 * 24 * $hour,
+            $now - 7 * 24 * $hour,
+            7 * 24 * $hour,
+            'old offence',
+            'forgiven for the old offence',
+            $aid,
+            $aid,
+            $now - 6 * 24 * $hour,
+            'U',
+        ]);
+        $this->unbannedWithActiveSiblingBid = (int) $pdo->lastInsertId();
+
+        $insert->execute([
+            0,
+            'STEAM_0:1:50004',
+            'CheaterDelta',
+            $now - $hour,
+            0,
+            0,
+            'fresh offence',
+            null,
+            $aid,
+            null,
+            null,
+            null,
+        ]);
+        $this->activeSiblingBid = (int) $pdo->lastInsertId();
+
         // Seed two comm rows: one active, one admin-unmuted.
         $insertComm = $pdo->prepare(sprintf(
             'INSERT INTO `%s_comms` (type, authid, name, created, ends, length, reason, ureason, aid, RemovedBy, RemovedOn, RemoveType)
@@ -463,6 +657,47 @@ final class PublicBanListRegressionTest extends ApiTestCase
             'U',
         ]);
         $this->unmutedCid = (int) $pdo->lastInsertId();
+
+        // Mirror of the bans-side has_active_sibling pair on commslist:
+        // one player (STEAM_0:1:60003) with type=1 (mute) carries an
+        // unmuted block AND an active permanent mute on the same
+        // authid+type. Pins the commslist's has_active_sibling gate —
+        // pre-fix the Re-apply chip surfaced on the unmuted row even
+        // though the click would 4xx on `comms.add` against the active
+        // sibling. The gate is per-(authid, type), so a player can
+        // legitimately carry an unmuted-mute + active-gag without
+        // tripping it; we only seed the same-type pair here.
+        $insertComm->execute([
+            1,
+            'STEAM_0:1:60003',
+            'SpammerGamma',
+            $now - 14 * 24 * $hour,
+            $now - 7 * 24 * $hour,
+            7 * 24 * $hour,
+            'spam (old)',
+            'mute lifted on appeal',
+            $aid,
+            $aid,
+            $now - 6 * 24 * $hour,
+            'U',
+        ]);
+        $this->unmutedWithActiveSiblingCid = (int) $pdo->lastInsertId();
+
+        $insertComm->execute([
+            1,
+            'STEAM_0:1:60003',
+            'SpammerGamma',
+            $now - $hour,
+            0,
+            0,
+            'spam (fresh)',
+            null,
+            $aid,
+            null,
+            null,
+            null,
+        ]);
+        $this->activeSiblingCid = (int) $pdo->lastInsertId();
     }
 
     private function bootstrapSmartyTheme(): void
@@ -529,5 +764,84 @@ final class PublicBanListRegressionTest extends ApiTestCase
             $html = (string) ob_get_clean();
         }
         return $html;
+    }
+
+    /**
+     * Extract the rendered HTML for a single banlist `<tr>` keyed by
+     * its `data-id="<bid>"` attribute, plus the immediately-following
+     * mobile-card block (`<div data-testid="ban-card" data-id="<bid>">`).
+     * Returns the empty string when neither shape matches. The slice
+     * lets the assertion test row-scoped substrings without
+     * accidentally matching siblings.
+     */
+    private function extractRowSliceForBid(string $html, int $bid): string
+    {
+        $combined = '';
+
+        // Desktop `<tr>` — non-greedy slice from the matching opener to
+        // the next `</tr>`. Anchored on `data-id="<bid>"` plus the
+        // canonical `data-testid="ban-row"` to avoid colliding with
+        // any other `<tr>` that might appear in the layout chrome.
+        if (
+            preg_match(
+                '#<tr\b(?=[^>]*\bdata-testid="ban-row")(?=[^>]*\bdata-id="' . $bid . '")[^>]*>(.*?)</tr>#s',
+                $html,
+                $tr,
+            )
+        ) {
+            $combined .= $tr[0];
+        }
+
+        // Mobile card — the public banlist's mobile branch wraps the
+        // row in `<div class="ban-card" ... data-testid="ban-card" data-id="<bid>">`,
+        // closing at the matching `</div>` that ends the card. The
+        // template emits enough nested `<div>`s that we slice on the
+        // testid pair plus a defensive `</a>\s*</div>` (the card
+        // ends with the row-actions row inside an anchor wrapper).
+        // Cheap heuristic — the assertion only cares about whether
+        // the `row-action-reapply-mobile` testid is in the slice.
+        if (
+            preg_match(
+                '#<div\b(?=[^>]*\bdata-testid="ban-card")(?=[^>]*\bdata-id="' . $bid . '")[^>]*>.*?(?=<div\b[^>]*\bdata-testid="ban-card"|<table\b|\Z)#s',
+                $html,
+                $card,
+            )
+        ) {
+            $combined .= $card[0];
+        }
+
+        return $combined;
+    }
+
+    /**
+     * Mirror of extractRowSliceForBid for the commslist's rows. The
+     * commslist uses `data-testid="comm-row"` on the desktop `<tr>`
+     * and `data-testid="comm-card"` on the mobile card.
+     */
+    private function extractCommRowSliceForCid(string $html, int $cid): string
+    {
+        $combined = '';
+
+        if (
+            preg_match(
+                '#<tr\b(?=[^>]*\bdata-testid="comm-row")(?=[^>]*\bdata-id="' . $cid . '")[^>]*>(.*?)</tr>#s',
+                $html,
+                $tr,
+            )
+        ) {
+            $combined .= $tr[0];
+        }
+
+        if (
+            preg_match(
+                '#<div\b(?=[^>]*\bdata-testid="comm-card")(?=[^>]*\bdata-id="' . $cid . '")[^>]*>.*?(?=<div\b[^>]*\bdata-testid="comm-card"|<table\b|\Z)#s',
+                $html,
+                $card,
+            )
+        ) {
+            $combined .= $card[0];
+        }
+
+        return $combined;
     }
 }

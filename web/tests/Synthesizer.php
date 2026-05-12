@@ -729,6 +729,23 @@ final class Synthesizer
         // remaining slots fall back to uniform random selection.
         $targets = $this->scheduleTargets(3, $count);
 
+        // Track identities (authid for type=0, ip for type=1) that
+        // already carry an ACTIVE ban so subsequent rolls for the same
+        // identity don't seed multiple-active-bans-per-player. The
+        // duplicate-check in `api_bans_add` rejects a second active row
+        // for the same identity, so this scenario is impossible to
+        // reach in production through the panel — letting the
+        // synthesizer create it confuses the Re-apply UX (clicking
+        // Re-apply on a visibly-unbanned row hits "already banned"
+        // because of the OTHER active row, even though the row's
+        // state pill says unbanned) and seeds a contradiction the
+        // duplicate-check exists to prevent. Players can still carry
+        // multiple bans across their history (the realistic shape is
+        // "many old + one current"); the invariant is that AT MOST ONE
+        // is currently active per identity.
+        /** @var array<string, true> $activeIdentities */
+        $activeIdentities = [];
+
         foreach ($targets as $playerIdx) {
             $player  = $this->players[$playerIdx];
             $isIpOnly = mt_rand(0, 9) === 0; // ~10% IP-only bans
@@ -739,20 +756,28 @@ final class Synthesizer
             $length = mt_rand(0, 3) === 0 ? 0 : mt_rand(60 * 60 * 24, 60 * 60 * 24 * 180);
             $ends   = $length === 0 ? 0 : $created + $length;
 
+            $identityKey   = $isIpOnly ? 'ip:' . $player['ip'] : 'auth:' . $player['steam'];
+            $alreadyActive = isset($activeIdentities[$identityKey]);
+
             // State distribution: 60% active (incl. permanent), 25% expired,
             // 15% admin-removed (RemoveType U/D + RemovedBy + ureason).
+            // Subsequent active rolls for an already-banned identity
+            // collapse into the expired branch (forced timed + ends < now)
+            // so the player accumulates a realistic "lifted-then-rebanned"
+            // history without violating the at-most-one-active invariant.
             $roll       = mt_rand(0, 99);
             $removeType = null;
             $removedBy  = null;
             $removedOn  = null;
             $ureason    = '';
-            if ($roll < 60) {
+            if ($roll < 60 && !$alreadyActive) {
                 // Active. Force ends > now if timed.
                 if ($length !== 0 && $ends < $this->now) {
                     $created = $this->now - mt_rand(0, $length - 60 * 60 * 24);
                     $ends    = $created + $length;
                 }
-            } elseif ($roll < 85) {
+                $activeIdentities[$identityKey] = true;
+            } elseif ($roll < 85 || $alreadyActive) {
                 // Expired (timed, ends < now). Skip permanent rows here.
                 if ($length === 0) {
                     $length = 60 * 60 * 24 * mt_rand(1, 30);
@@ -837,23 +862,40 @@ final class Synthesizer
         // Cohort gets ~2 comms apiece up front; remainder is uniform.
         $targets = $this->scheduleTargets(2, $count);
 
+        // Same shape as `insertBans`: track (authid, type) tuples that
+        // already carry an active row so subsequent active rolls for
+        // the same key collapse into the expired branch. Comms rows
+        // are keyed on (authid, type) — a player can have one active
+        // mute (type=1) AND one active gag (type=2) simultaneously,
+        // which is the realistic shape, but two active mutes for the
+        // same authid is the duplicate-check-impossible scenario the
+        // synthesizer should not seed (Re-mute / Re-gag UX hits
+        // "already blocked" against an unrelated active row).
+        /** @var array<string, true> $activeIdentities */
+        $activeIdentities = [];
+
         foreach ($targets as $playerIdx) {
             $player  = $this->players[$playerIdx];
             $created = $this->now - mt_rand(0, 60 * 60 * 24 * 60);
             $length  = mt_rand(0, 3) === 0 ? 0 : mt_rand(60 * 30, 60 * 60 * 24 * 14);
             $ends    = $length === 0 ? 0 : $created + $length;
 
+            $commType      = mt_rand(1, 2); // 1 = mute, 2 = gag
+            $identityKey   = 'auth:' . $player['steam'] . ':type:' . $commType;
+            $alreadyActive = isset($activeIdentities[$identityKey]);
+
             $roll       = mt_rand(0, 99);
             $removeType = null;
             $removedBy  = null;
             $removedOn  = null;
             $ureason    = null;
-            if ($roll < 60) {
+            if ($roll < 60 && !$alreadyActive) {
                 if ($length !== 0 && $ends < $this->now) {
                     $created = $this->now - mt_rand(0, max(60, $length - 60 * 60));
                     $ends    = $created + $length;
                 }
-            } elseif ($roll < 85) {
+                $activeIdentities[$identityKey] = true;
+            } elseif ($roll < 85 || $alreadyActive) {
                 if ($length === 0) {
                     $length = 60 * 60 * mt_rand(1, 24);
                     $ends   = $created + $length;
@@ -885,7 +927,7 @@ final class Synthesizer
                 $removedBy,
                 $removeType,
                 $removedOn,
-                mt_rand(1, 2), // 1 = mute, 2 = gag
+                $commType,
                 $ureason,
             ]);
         }

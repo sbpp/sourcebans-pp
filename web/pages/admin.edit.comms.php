@@ -80,17 +80,21 @@ if (isset($_POST['name'])) {
     PruneComms();
 
     if ($error == 0) {
-        // Check if the new steamid is already banned
-        $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND bid != :bid AND (length = 0 OR ends > UNIX_TIMESTAMP())");
+        // Check if the new steamid is already blocked. Surface the
+        // conflicting bid so the admin can investigate the OTHER
+        // active row that's blocking this edit (mirror of the JSON
+        // `comms.add` action — see `web/api/handlers/comms.php`).
+        $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_comms` WHERE authid = :authid AND RemovedBy IS NULL AND type = :type AND bid != :bid AND (length = 0 OR ends > UNIX_TIMESTAMP()) ORDER BY bid DESC LIMIT 1");
         $GLOBALS['PDO']->bindMultiple([
             ':authid' => $_POST['steam'],
             ':type'   => (int) $_POST['type'],
             ':bid'    => (int) $_GET['id'],
         ]);
         $chk = $GLOBALS['PDO']->single();
-        if ((int) $chk['count'] > 0) {
+        if ($chk) {
             $error++;
-            $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already blocked';";
+            $existingBid = (int) $chk['bid'];
+            $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already blocked by block #" . $existingBid . "';";
             $errorScript .= "$('steam.msg').setStyle('display', 'block');";
         } else {
             // Check if player is immune

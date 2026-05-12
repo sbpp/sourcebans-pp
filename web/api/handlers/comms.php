@@ -55,12 +55,18 @@ function api_comms_add(array $params): array
         3 => "(type = 1 OR type = 2)",
     };
 
+    // Surface the conflicting bid (most recent active row) so the
+    // admin can investigate the OTHER active block that's blocking
+    // a Re-mute / Re-gag — same shape as `api_bans_add`. Without the
+    // bid the operator sees "already blocked" with no path to the
+    // row that's holding the gate.
     $chk = $GLOBALS['PDO']->query(
-        "SELECT count(bid) AS count FROM `:prefix_comms` WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND " . $typeW
+        "SELECT bid FROM `:prefix_comms` WHERE authid = ? AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND " . $typeW . " ORDER BY bid DESC LIMIT 1"
     )->single([$steam]);
 
-    if ((int)$chk['count'] > 0) {
-        throw new ApiError('already_blocked', "SteamID: $steam is already blocked.");
+    if ($chk) {
+        $existingBid = (int)$chk['bid'];
+        throw new ApiError('already_blocked', "SteamID: $steam is already blocked by block #$existingBid.");
     }
 
     foreach ($userbank->GetAllAdmins() as $admin) {

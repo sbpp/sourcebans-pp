@@ -502,8 +502,16 @@
                    `web/api/handlers/bans.php::api_bans_prepare_reban`
                    pre-populates with the original ban's parameters.
                    Gated on $can_add_ban so the affordance only renders
-                   for admins who can act on it. *}
-                {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned')}
+                   for admins who can act on it. Also gated on
+                   `!$ban.has_active_sibling` so we don't surface a
+                   button that would 4xx as `already_banned` —
+                   `page.banlist.php` flags the row when the same
+                   identity (authid for type=0, ip for type=1) has
+                   another currently-active ban. The v1.x template
+                   honoured the same gate via `$data['reban_link']`;
+                   the v2.0 rewrite (#1315) dropped it, which is the
+                   regression this restores. *}
+                {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned') && !$ban.has_active_sibling}
                 <a class="btn btn--secondary btn--sm" data-testid="row-action-reapply"
                    href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}"
                    onclick="event.stopPropagation()">
@@ -697,7 +705,9 @@
                 Unban
             </button>
             {/if}
-            {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned')}
+            {* #1315 + this PR: same `has_active_sibling` gate as the
+               desktop variant — see the rationale block above. *}
+            {if $can_add_ban && ($ban.state == 'expired' || $ban.state == 'unbanned') && !$ban.has_active_sibling}
             <a class="btn btn--secondary btn--sm" data-testid="row-action-reapply-mobile"
                href="index.php?p=admin&amp;c=bans&amp;section=add-ban&amp;rebanid={$ban.bid}&amp;key={$admin_postkey|escape}">
                 <i data-lucide="rotate-ccw" style="width:13px;height:13px"></i>

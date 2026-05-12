@@ -156,18 +156,22 @@ if (isset($_POST['name'])) {
     PruneBans();
 
     if ($error == 0) {
-        // Check if the new steamid is already banned
+        // Check if the new steamid is already banned. Surface the
+        // conflicting bid so the admin can investigate the OTHER
+        // active row that's blocking this edit (mirrors the same
+        // wording the JSON `bans.add` action emits — see
+        // `web/api/handlers/bans.php::api_bans_add`).
         if ($postBanType === BanType::Steam) {
-            $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != :bid");
+            $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_bans` WHERE authid = :authid AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '0' AND bid != :bid ORDER BY bid DESC LIMIT 1");
             $GLOBALS['PDO']->bindMultiple([
                 ':authid' => $_POST['steam'],
                 ':bid'    => (int) $_GET['id'],
             ]);
             $chk = $GLOBALS['PDO']->single();
 
-            if ((int) $chk['count'] > 0) {
+            if ($chk) {
                 $error++;
-                $validationErrors['steam'] = 'This SteamID is already banned';
+                $validationErrors['steam'] = 'This SteamID is already banned by ban #' . (int) $chk['bid'];
             } else {
                 // Check if player is immune
                 $admchk = $userbank->GetAllAdmins();
@@ -181,16 +185,16 @@ if (isset($_POST['name'])) {
             }
         } elseif ($postBanType === BanType::Ip) {
             // Check if the ip is already banned
-            $GLOBALS['PDO']->query("SELECT count(bid) AS count FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != :bid");
+            $GLOBALS['PDO']->query("SELECT bid FROM `:prefix_bans` WHERE ip = :ip AND (length = 0 OR ends > UNIX_TIMESTAMP()) AND RemovedBy IS NULL AND type = '1' AND bid != :bid ORDER BY bid DESC LIMIT 1");
             $GLOBALS['PDO']->bindMultiple([
                 ':ip'  => $_POST['ip'],
                 ':bid' => (int) $_GET['id'],
             ]);
             $chk = $GLOBALS['PDO']->single();
 
-            if ((int) $chk['count'] > 0) {
+            if ($chk) {
                 $error++;
-                $validationErrors['ip'] = 'This IP is already banned';
+                $validationErrors['ip'] = 'This IP is already banned by ban #' . (int) $chk['bid'];
             }
         }
     }

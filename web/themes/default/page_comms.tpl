@@ -341,12 +341,18 @@
                                         <i data-lucide="check" style="width:13px;height:13px"></i>
                                         {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
                                     </button>
-                                {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')}
+                                {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired') && !$comm.has_active_sibling}
                                     {* #1207 ADM-6: when a row is no longer active, swap the
                                        lift action for Re-apply. Anchor goes through the
                                        admin-comms add form's `rebanid` flow (which calls
                                        comms.prepare_reblock to hydrate every field) so we
-                                       don't need a separate "re-block" handler. *}
+                                       don't need a separate "re-block" handler. The
+                                       `!has_active_sibling` clause hides the affordance
+                                       when the player already has an active block of the
+                                       same type — `comms.add` would 4xx as
+                                       `already_blocked` against the OTHER row, even
+                                       though this row visibly says unmuted/expired (same
+                                       shape as the banlist's `has_active_sibling` gate). *}
                                     <a class="btn btn--secondary btn--sm"
                                        href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
                                        data-testid="row-action-reapply">
@@ -509,7 +515,9 @@
                                 <i data-lucide="check" style="width:13px;height:13px"></i>
                                 {if $comm.type == 'mute'}Unmute{elseif $comm.type == 'gag'}Ungag{else}Lift block{/if}
                             </button>
-                        {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired')}
+                        {elseif $can_add_comm && ($comm.state == 'unmuted' || $comm.state == 'expired') && !$comm.has_active_sibling}
+                            {* Same `has_active_sibling` gate as the desktop
+                               variant — see the rationale block above. *}
                             <a class="btn btn--secondary btn--sm"
                                href="index.php?p=admin&amp;c=comms&amp;rebanid={$comm.cid}"
                                data-testid="row-action-reapply-mobile">

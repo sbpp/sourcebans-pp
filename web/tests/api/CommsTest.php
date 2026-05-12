@@ -78,6 +78,50 @@ final class CommsTest extends ApiTestCase
         $this->assertSnapshot('comms/add_already_blocked', $env);
     }
 
+    public function testAddDuplicateBlockErrorIncludesConflictingBid(): void
+    {
+        // Mirror of BansTest::testAddDuplicateErrorIncludesConflictingBid:
+        // pre-seed two unrelated blocks so the conflicting bid isn't `#1`,
+        // then assert the message substitutes the captured bid. Pins the
+        // contract that the value is actually substituted (not that it
+        // happens to render `#1` because of test ordering).
+        $this->loginAsAdmin();
+        $this->api('comms.add', [
+            'nickname' => 'Noise1', 'type' => 1, 'steam' => 'STEAM_0:0:101',
+            'length'   => 60, 'reason' => 'noise',
+        ]);
+        $this->api('comms.add', [
+            'nickname' => 'Noise2', 'type' => 1, 'steam' => 'STEAM_0:0:102',
+            'length'   => 60, 'reason' => 'noise',
+        ]);
+        $first = $this->api('comms.add', [
+            'nickname' => 'Mouthy', 'type' => 1, 'steam' => 'STEAM_0:0:9999',
+            'length'   => 60, 'reason' => 'active-original',
+        ]);
+        $this->assertTrue($first['ok']);
+
+        $pdo = Fixture::rawPdo();
+        $stmt = $pdo->query(sprintf(
+            'SELECT bid FROM `%s_comms` WHERE authid = "STEAM_0:0:9999" AND type = 1',
+            DB_PREFIX
+        ));
+        $this->assertNotFalse($stmt);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $this->assertIsArray($row);
+        $conflictBid = (int) $row['bid'];
+        $this->assertGreaterThan(1, $conflictBid, 'pre-seeded blocks should have pushed bid past #1');
+
+        $env = $this->api('comms.add', [
+            'nickname' => 'Mouthy', 'type' => 1, 'steam' => 'STEAM_0:0:9999',
+            'length'   => 60, 'reason' => 'reblock-attempt',
+        ]);
+        $this->assertEnvelopeError($env, 'already_blocked');
+        $this->assertSame(
+            'SteamID: STEAM_0:0:9999 is already blocked by block #' . $conflictBid . '.',
+            $env['error']['message']
+        );
+    }
+
     public function testAddValidatesSteamIdRequired(): void
     {
         $this->loginAsAdmin();

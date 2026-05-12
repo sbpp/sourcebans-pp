@@ -170,6 +170,33 @@ final class BansTest extends ApiTestCase
         $this->assertSnapshot('bans/add_already_banned', $second);
     }
 
+    public function testAddDuplicateErrorIncludesConflictingBid(): void
+    {
+        // Pre-seed a non-#1 ban so this asserts the bid is actually
+        // substituted into the error message rather than always rendering
+        // `#1` because the duplicate is the second row in the table.
+        // The reported regression (#STEAM_0:0:1000119) confused operators
+        // because the bare "is already banned" string gave them no anchor
+        // to look up the conflicting row — they saw an unbanned row in
+        // the UI and reasonably concluded the panel was lying. The fix
+        // surfaces the conflicting bid; this test pins that contract.
+        $this->seedBan('STEAM_0:1:7000', 'first-noise');
+        $this->seedBan('STEAM_0:1:7001', 'second-noise');
+        $conflictBid = $this->seedBan('STEAM_0:1:9999', 'active-original');
+
+        $this->loginAsAdmin();
+        $env = $this->api('bans.add', [
+            'nickname' => 'Reban', 'type' => 0, 'steam' => 'STEAM_0:1:9999',
+            'ip' => '', 'length' => 0, 'dfile' => '', 'dname' => '',
+            'reason' => 'reban-attempt', 'fromsub' => 0,
+        ]);
+        $this->assertEnvelopeError($env, 'already_banned');
+        $this->assertSame(
+            'SteamID: STEAM_0:1:9999 is already banned by ban #' . $conflictBid . '.',
+            $env['error']['message']
+        );
+    }
+
     public function testSetupBanReturnsSubmissionData(): void
     {
         $this->loginAsAdmin();
