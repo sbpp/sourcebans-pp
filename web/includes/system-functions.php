@@ -296,7 +296,31 @@ function GetCommunityName(string $steamid): string
     return (isset($data['response']['players'][0]['personaname'])) ? $data['response']['players'][0]['personaname'] : '';
 }
 
-function rcon(string $cmd, int $sid): false|string
+/**
+ * Run a single RCON command against the server identified by `$sid`.
+ *
+ * `$silent` controls whether the helper writes a `:prefix_log` audit
+ * row on every successful invocation. Defaults to `false` — every
+ * admin-initiated path (the `admin.rcon.php` console, the
+ * `api_servers_send_rcon` JSON dispatcher, the unban / kick code
+ * paths in `bans.php` / `comms.php` / `kickit.php` / `blockit.php`,
+ * the `page.banlist.php` row-removal flow) keeps the default so the
+ * audit log carries one row per admin-driven RCON.
+ *
+ * Background side effects pass `$silent = true` so they don't spam
+ * the audit log. Currently the only such caller is
+ * {@see \Sbpp\Servers\RconStatusCache::probe()} — its cache-fill
+ * `status` probes fire on every public-servers-list view for an
+ * admin with rcon access (used to surface SteamIDs on player rows
+ * for the right-click context menu, restored after #1306). Without
+ * `$silent`, each viewer would generate `N_servers` audit-log rows
+ * per ~30s cache window per page load, drowning out real RCON
+ * activity. The auth-failure / generic-Exception log entries below
+ * are NOT silenced — those are real operator-visible problems
+ * (stale rcon password, network error) that should always surface
+ * regardless of which caller produced them.
+ */
+function rcon(string $cmd, int $sid, bool $silent = false): false|string
 {
     $GLOBALS['PDO']->query("SELECT ip, port, rcon FROM `:prefix_servers` WHERE sid = :sid");
     $GLOBALS['PDO']->bind(':sid', $sid);
@@ -313,7 +337,9 @@ function rcon(string $cmd, int $sid): false|string
         $rcon->setRconPassword($server['rcon']);
 
         $output = $rcon->Rcon($cmd);
-        Log::add(LogType::Message, "RCON Sent", sprintf("RCON Command (%s) was sent to server (%s:%d)", $cmd, $server['ip'], $server['port']));
+        if (!$silent) {
+            Log::add(LogType::Message, "RCON Sent", sprintf("RCON Command (%s) was sent to server (%s:%d)", $cmd, $server['ip'], $server['port']));
+        }
     } catch (\xPaw\SourceQuery\Exception\AuthenticationException $e) {
         $GLOBALS['PDO']->query("UPDATE `:prefix_servers` SET rcon = '' WHERE sid = :sid");
         $GLOBALS['PDO']->bind(':sid', $sid);
