@@ -672,11 +672,17 @@ public Action Timer_ReconnectDB(Handle timer)
 
 void CheckDBConnection(const char[] error)
 {
-	if (g_DB != null && (StrContains(error, "Lost connection", false) != -1 || StrContains(error, "gone away", false) != -1))
+	if (StrContains(error, "Lost connection", false) != -1 || StrContains(error, "gone away", false) != -1)
 	{
-		LogError("SourceChecker: Lost connection to DB. Reconnect after delay.");
-		delete g_DB;
-		g_DB = null;
-		CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
+		if (g_DB != null)
+		{
+			delete g_DB;
+			g_DB = null;
+			CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
+		}
+	}
+	else
+	{
+		LogError("SourceChecker: Database query error: %s", error);
 	}
 }

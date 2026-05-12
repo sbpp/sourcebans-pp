@@ -172,7 +172,14 @@ public void OnClientPostAdminCheck(int client)
 			datapack.WriteString(IP);
 			datapack.Reset();
 
-			hDatabase.Query(SQL_CheckHim, query, datapack);
+			if (hDatabase != null)
+			{
+				hDatabase.Query(SQL_CheckHim, query, datapack);
+			}
+			else
+			{
+				delete datapack;
+			}
 		}
 	}
 }
@@ -297,11 +304,17 @@ public Action Timer_ReconnectDB(Handle timer)
 
 void CheckDBConnection(const char[] error)
 {
-	if (hDatabase != null && (StrContains(error, "Lost connection", false) != -1 || StrContains(error, "gone away", false) != -1))
+	if (StrContains(error, "Lost connection", false) != -1 || StrContains(error, "gone away", false) != -1)
 	{
-		LogError("SourceSleuth: Lost connection to DB. Reconnect after delay.");
-		delete hDatabase;
-		hDatabase = null;
-		CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
+		if (hDatabase != null)
+		{
+			delete hDatabase;
+			hDatabase = null;
+			CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
+		}
+	}
+	else
+	{
+		LogError("SourceSleuth: Database query error: %s", error);
 	}
 }
