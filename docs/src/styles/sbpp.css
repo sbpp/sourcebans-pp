@@ -244,6 +244,24 @@
   letter-spacing: -0.02em;
 }
 
+/* ---- Topbar sponsor heart ----
+   The heart icon in the topbar social row (added via
+   `social: [{ icon: 'heart', href: 'https://github.com/sponsors/rumblefrog', ... }]`
+   in astro.config.mjs) lights up brand orange instead of the default
+   neutral, matching the heart inside Footer.astro's
+   `.sbpp-sponsor-link`. The two surfaces read as a unified sponsor
+   pair across the chrome.
+
+   The href-attribute selector keeps the rule surgical — GitHub +
+   Discord icons keep Starlight's default neutral hover colours. */
+.social-icons a[href*="sponsors/rumblefrog"] {
+  color: var(--sl-color-orange);
+}
+.social-icons a[href*="sponsors/rumblefrog"]:hover,
+.social-icons a[href*="sponsors/rumblefrog"]:focus-visible {
+  color: var(--sl-color-orange-high);
+}
+
 /* ---- Selection ---- */
 ::selection {
   background-color: var(--sbpp-brand-200);
