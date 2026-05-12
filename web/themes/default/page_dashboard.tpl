@@ -13,13 +13,33 @@
       * Team coverage — no on-duty / response-time tracking yet.
     Both stay open for a follow-up once the underlying data exists.
 
-    Live server status (player counts, hostname, online/offline) is the
-    other intentional omission. The legacy theme's sb-callback /
-    LoadServerHostProperty UDP probe was deleted with sourcebans.js in
-    A1's footer rewrite; re-implementing it needs a new JSON action
-    under web/api/handlers/, which Phase B is forbidden from touching.
-    The Servers card therefore renders configured-server metadata only
-    (mod icon + ip:port + sid) and links out to ?p=servers.
+    Servers card hydration (#1375)
+    ------------------------------
+    Each `<a data-testid="server-tile">` row carries the shared
+    hostname slot (`[data-testid="server-host"]` with a
+    `data-fallback="<ip>:<port>"` IP:port that the helper re-paints
+    on probe failure) plus an IP:port subtitle. The outer wrapper is
+    `data-server-hydrate="auto"`, so the same
+    `web/scripts/server-tile-hydrate.js` helper that drives the
+    public servers list (`page_servers.tpl`) and the admin Server
+    Management list (`page_admin_servers_list.tpl`) auto-runs on
+    first paint and fires `Actions.ServersHostPlayers` per tile. The
+    dashboard widget skips the heavier per-tile chrome (no status
+    pill, no map / players cells, no players bar, no Connect / Players
+    / Refresh action row) — the helper feature-detects every optional
+    `[data-testid]` cell, so a tile that only ships the hostname slot
+    silently hydrates that one cell. SourceQueryCache on the server
+    side coalesces back-to-back probes per (ip, port) for ~30s, so the
+    dashboard's extra round-trips are absorbed cheaply.
+
+    Pre-#1375 the row showed `IP:port` as the primary label and `sid N`
+    as the subtitle. The `sid` is an internal :prefix_servers PK that
+    means nothing at-a-glance to operators — the issue reporter
+    described it as "not meaningful". The new shape mirrors the
+    public list's "hostname (primary) + IP:port (mono subtitle)"
+    convention, with the IP:port standing in for the hostname slot
+    until the probe lands so the no-JS fallback (and the in-flight
+    window before hydration completes) stays informative.
 *}
 <div class="p-6 space-y-6" style="max-width:1400px;margin:0 auto;width:100%">
 
@@ -157,7 +177,33 @@
                 Open the servers page to manage players in real time.
             </div>
             {/if}
-            <div style="padding:0.5rem">
+            {*
+                #1375: `data-server-hydrate="auto"` opts the row list into
+                the shared per-tile hydration helper (the same one that
+                drives `page_servers.tpl` + `page_admin_servers_list.tpl`).
+                The helper auto-runs on first paint, fires
+                `Actions.ServersHostPlayers` per `[data-testid="server-tile"]`
+                child, and patches the live hostname into the inner
+                `[data-testid="server-host"]` slot via `sb.setHTML`. The
+                dashboard widget feature-uses only the hostname cell; every
+                other testid hook (status pill / map / players / map-img /
+                players-bar) is intentionally omitted, and the helper's
+                feature-detection branches no-op for the missing ones.
+
+                `data-trunchostname="40"` keeps the live hostname short
+                enough to fit on a single line of the cramped dashboard
+                widget (the public list runs at 70, but it has the full
+                card width to spend; here the column is shared with the
+                Latest Bans card and `truncate` would silently chop a
+                70-char hostname). The number forwards to
+                `api_servers_host_players` as the SourceQuery truncation
+                hint — server-side cheaper than a JS-side trim because the
+                handler also htmlspecialchars()s the truncated string for
+                `sb.setHTML`.
+            *}
+            <div style="padding:0.5rem"
+                 data-server-hydrate="auto"
+                 data-trunchostname="40">
                 {foreach $server_list as $server}
                 <a class="flex items-center gap-3"
                    style="padding:0.625rem;border-radius:var(--radius-md);text-decoration:none;color:var(--text)"
@@ -167,8 +213,29 @@
                         <img src="images/games/{$server.icon}" alt="" width="16" height="16">
                     </span>
                     <div class="flex-1" style="min-width:0">
-                        <div class="font-medium text-sm font-mono truncate">{$server.ip}:{$server.port}</div>
-                        <div class="text-xs text-faint">sid {$server.sid}</div>
+                        {*
+                            Primary label: live hostname once
+                            server-tile-hydrate.js' applyData() lands. The
+                            inner-text fallback (and the matching
+                            data-fallback attribute) is the IP:port — the
+                            same one shown in the subtitle below — so the
+                            no-JS path stays informative without the
+                            internal `sid N` clutter that the legacy
+                            shape carried. On probe failure the helper
+                            re-paints the IP:port from data-fallback so the
+                            row never goes blank.
+
+                            The hostname is htmlspecialchars()'d
+                            server-side (api_servers_host_players), so
+                            `sb.setHTML` mirrors the legacy
+                            LoadServerHostProperty() behaviour and keeps
+                            the contract symmetric with the public servers
+                            list (which also patches via `sb.setHTML`).
+                        *}
+                        <div class="font-medium text-sm truncate"
+                             data-testid="server-host"
+                             data-fallback="{$server.ip}:{$server.port}">{$server.ip}:{$server.port}</div>
+                        <div class="text-xs text-faint font-mono truncate">{$server.ip}:{$server.port}</div>
                     </div>
                     <i data-lucide="external-link" style="width:14px;height:14px;color:var(--text-faint)"></i>
                 </a>
@@ -323,3 +390,24 @@
     {if $IN_SERVERS_PAGE}{* unreachable on dashboard *}{/if}
 
 </div>
+
+{*
+    #1375: per-tile A2S hydration for the Servers card's row list.
+    The shared helper auto-runs on first paint for every
+    `[data-server-hydrate="auto"]` container (see the wrapper around
+    the `<a data-testid="server-tile">` row foreach above), fires
+    `Actions.ServersHostPlayers` per tile, and patches the live
+    hostname into each row's `[data-testid="server-host"]` slot. The
+    dashboard widget only consumes the hostname cell — the rest of
+    the helper's hydration surface (status pill / map / players bar /
+    map-img / refresh / toggle / players panel) is feature-detected
+    and silently no-ops on tiles that don't ship those testid hooks.
+
+    `defer` lets the rest of the page paint before the helper boots
+    (parity with page_servers.tpl + page_admin_servers_list.tpl);
+    auto-run still fires once it does (the helper branches on
+    document.readyState). The script ships under web/scripts/ so all
+    three surfaces share one helper file — never copy-paste the
+    hydration code into a new template.
+*}
+<script src="./scripts/server-tile-hydrate.js" defer></script>

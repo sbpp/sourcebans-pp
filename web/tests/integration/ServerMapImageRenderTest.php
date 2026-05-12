@@ -230,6 +230,97 @@ final class ServerMapImageRenderTest extends TestCase
     }
 
     /**
+     * Issue #1375: pre-fix the `<img data-testid="server-map-img">`
+     * slot was sized `width:100%;max-height:140px;object-fit:cover` —
+     * but the bundled map thumbnails under `web/images/maps/` are
+     * mostly 340×255 (4:3 landscape), so on a 28rem-grid card
+     * (~448px painted minus padding) the computed box resolved to
+     * ~400×140 (~2.86:1). `object-fit:cover` then cropped the middle
+     * horizontal band of a 4:3 source and the visible strip read as
+     * a horizontally-stretched fragment of the map (de_dust2's
+     * windows visibly squashed in the issue's screenshot).
+     *
+     * The fix is `max-width: 340px` (the natural source width — no
+     * upscaling blur on smaller maps) + `height: auto` (default for
+     * `<img>`, made explicit) so the rendered box matches the source
+     * aspect ratio exactly. We assert both halves: the `max-width`
+     * cap AND the absence of `max-height` (which would otherwise
+     * silently reintroduce the squash).
+     *
+     * `object-fit:cover` becomes a no-op once `height: auto` matches
+     * the source aspect — keeping it would be dead code without
+     * affecting the visible result. We assert it's gone too so the
+     * inline style stays tidy.
+     */
+    public function testMapImgSlotPreservesNaturalAspectRatio(): void
+    {
+        // Pull the `<img data-testid="server-map-img" …>` element's
+        // attribute-list as a single string so the substring / regex
+        // assertions below all key off the same chunk.
+        if (preg_match('/<img\b[^>]*\bdata-testid="server-map-img"[^>]*>/', $this->template, $m) !== 1) {
+            self::fail('Could not locate the `<img data-testid="server-map-img">` tag in page_servers.tpl.');
+        }
+        $tag = $m[0];
+
+        // The fix: `max-width: 340px` caps the rendered width at the
+        // natural source width so the box width never exceeds the
+        // intrinsic 340px. Combined with `height: auto`, this yields
+        // a box that matches the source aspect ratio without any
+        // crop / stretch.
+        $this->assertMatchesRegularExpression(
+            '/max-width\s*:\s*340px/',
+            $tag,
+            'page_servers.tpl must cap the map preview at `max-width: 340px` (the natural width '
+            . 'of the bundled `web/images/maps/*.jpg` thumbnails) so the rendered box never '
+            . 'exceeds the source dimensions and `object-fit:cover` cropping is never triggered (#1375).'
+        );
+
+        // The fix's other half: `height: auto` makes the box's
+        // aspect ratio derive from the source image. The default
+        // value, declared explicitly so a future refactor doesn't
+        // silently re-introduce a fixed height.
+        $this->assertMatchesRegularExpression(
+            '/\bheight\s*:\s*auto\b/',
+            $tag,
+            'page_servers.tpl must declare `height: auto` on the map preview so the rendered '
+            . 'box matches the source image\'s natural aspect ratio — without this declaration '
+            . 'and with `max-width: 340px` in place, an inherited `height` rule from a future '
+            . 'theme.css change could silently reintroduce the #1375 squash.'
+        );
+
+        // The pre-#1375 squash: `max-height: 140px` clamped the box
+        // height regardless of the source's natural aspect, so a
+        // 4:3 (340×255) map drawn into a 400×140 box was cropped
+        // top + bottom by `object-fit:cover` to fit. Anti-regression:
+        // assert the property is gone.
+        $this->assertDoesNotMatchRegularExpression(
+            '/\bmax-height\s*:/',
+            $tag,
+            'page_servers.tpl must NOT carry `max-height: …` on the map preview — that was the '
+            . '#1375 squash trigger (combined with width:100% the box became wider than the '
+            . 'source aspect, and `object-fit:cover` cropped a thin horizontal slice that the '
+            . 'reporter perceived as "stretched"). Cap the WIDTH via `max-width: 340px` instead '
+            . 'and let `height: auto` derive the proportional height.'
+        );
+
+        // `object-fit: cover` is dead code once `height: auto`
+        // yields a box that matches the source aspect — keeping it
+        // would suggest a crop expectation that no longer applies.
+        // Anti-regression: assert it doesn't sneak back in (a copy-
+        // paste from `page_admin_servers_list.tpl`'s mod-icon
+        // sibling style, say, would silently reintroduce the
+        // expectation).
+        $this->assertDoesNotMatchRegularExpression(
+            '/\bobject-fit\s*:/',
+            $tag,
+            'page_servers.tpl should not carry `object-fit: …` on the map preview — once '
+            . '`height: auto` matches the source aspect ratio, object-fit becomes a no-op and '
+            . 'its presence misleadingly suggests a crop expectation that the slot no longer '
+            . 'has (#1375).'
+        );
+    }
+
+    /**
      * `GetMapImage()` is the helper the API handler calls to derive
      * the URL the template will eventually patch in. Its fallback to
      * `nomap.jpg` is what keeps unknown maps from producing a 404 —
