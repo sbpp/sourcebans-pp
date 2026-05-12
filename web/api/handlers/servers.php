@@ -11,6 +11,7 @@ You should have received a copy of the license along with this
 work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
 *************************************************************************/
 
+use Sbpp\Servers\RconStatusCache;
 use Sbpp\Servers\SourceQueryCache;
 
 /**
@@ -191,6 +192,27 @@ function api_servers_refresh(array $params): array
  * the cached payload through the per-caller permission check
  * (`is_owner` / `can_ban`) and the per-call hostname truncation, so the
  * cache stays user-agnostic. See #1311 for the threat model.
+ *
+ * Per-player SteamID surfacing (restoring the pre-v2.0.0 right-click
+ * context menu on the public servers list — see
+ * `web/scripts/server-context-menu.js`): the A2S `GetPlayers` UDP
+ * response does NOT carry SteamIDs. To surface them we issue a paired
+ * RCON `status` round-trip per server via
+ * `Sbpp\Servers\RconStatusCache::fetch` (sid-keyed, ~30s cache,
+ * negative caches failures) and match by exact player name.
+ *
+ * The SteamID surfacing is the side-channel that's permission-gated,
+ * NOT the action registration: `servers.host_players` stays public so
+ * anonymous viewers continue to see hostname / map / online-count.
+ * SteamIDs are attached ONLY when the caller holds
+ * `WebPermission::Owner | WebPermission::AddBan` AND has per-server
+ * RCON access via `_api_servers_admin_can_rcon`. The handler itself
+ * is the load-bearing gate; the client feature-detects the `steamid`
+ * field on each row and skips rows that don't carry it (bots, players
+ * without a name match between the A2S and RCON responses). The new
+ * `can_ban_player` boolean signals to the client whether to render
+ * the kick/ban/block menu items at all — separate from the existing
+ * `can_ban` flag which the legacy ban-row affordance already uses.
  */
 function api_servers_host_players(array $params): array
 {
@@ -221,6 +243,60 @@ function api_servers_host_players(array $params): array
         default => 'fas fa-server',
     };
 
+    $canBan       = $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan));
+    $canBanPlayer = $canBan && _api_servers_admin_can_rcon($userbank->GetAid(), $sid);
+
+    // Build the per-player SteamID lookup if the caller is allowed to
+    // see SteamIDs. The RCON probe is fronted by RconStatusCache so a
+    // panel hit costs ONE TCP round-trip per (sid, ~30s window), and
+    // failure (no rcon password / RCON connect failure / unparseable
+    // status output) is negative-cached the same way.
+    //
+    // Anonymous and partial-permission callers never reach this branch
+    // — they fall through to the no-SteamID `player_list[]` shape
+    // below. The handler is the load-bearing gate; the client's
+    // feature-detection (presence of `steamid` on a row) is the UX
+    // signal, not the security boundary.
+    /** @var array<string, string> $steamidByName */
+    $steamidByName = [];
+    if ($canBanPlayer) {
+        $statusCache = RconStatusCache::fetch($sid);
+        if ($statusCache !== null) {
+            foreach ($statusCache['players'] as $sp) {
+                $name = $sp['name'];
+                if ($name === '') {
+                    continue;
+                }
+                // First match wins. Two players with identical names
+                // on one server can't be disambiguated from A2S +
+                // RCON status alone; the first row keeps the SteamID
+                // and the second is treated as "no match" for the
+                // context-menu gate. That's the conservative shape —
+                // mis-attributing a SteamID to the wrong row would
+                // mis-target a kick/ban.
+                if (!isset($steamidByName[$name])) {
+                    $steamidByName[$name] = $sp['steamid'];
+                }
+            }
+        }
+    }
+
+    $playerList = [];
+    foreach ($players as $p) {
+        $name = (string) ($p['Name'] ?? '');
+        $row  = [
+            'id'     => $p['Id']    ?? null,
+            'name'   => $name,
+            'frags'  => (int) ($p['Frags'] ?? 0),
+            'time'   => $p['Time']  ?? 0,
+            'time_f' => $p['TimeF'] ?? '',
+        ];
+        if ($canBanPlayer && $name !== '' && isset($steamidByName[$name])) {
+            $row['steamid'] = $steamidByName[$name];
+        }
+        $playerList[] = $row;
+    }
+
     return [
         'sid'        => $sid,
         'ip'         => $server['ip'],
@@ -233,14 +309,9 @@ function api_servers_host_players(array $params): array
         'mapimg'     => GetMapImage((string) ($info['Map'] ?? '')),
         'os_class'   => $os,
         'secure'     => (bool) ($info['Secure'] ?? false),
-        'player_list' => array_map(fn($p) => [
-            'id'     => $p['Id']    ?? null,
-            'name'   => $p['Name']  ?? '',
-            'frags'  => (int) ($p['Frags'] ?? 0),
-            'time'   => $p['Time']  ?? 0,
-            'time_f' => $p['TimeF'] ?? '',
-        ], $players),
-        'can_ban' => $userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::AddBan)),
+        'player_list'    => $playerList,
+        'can_ban'        => $canBan,
+        'can_ban_player' => $canBanPlayer,
     ];
 }
 

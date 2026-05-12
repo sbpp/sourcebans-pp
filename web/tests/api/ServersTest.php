@@ -2,6 +2,7 @@
 
 namespace Sbpp\Tests\Api;
 
+use Sbpp\Servers\RconStatusCache;
 use Sbpp\Servers\SourceQueryCache;
 use Sbpp\Tests\ApiTestCase;
 use Sbpp\Tests\Fixture;
@@ -33,11 +34,28 @@ final class ServersTest extends ApiTestCase
         }
         SourceQueryCache::resetSocketAttemptCount();
         SourceQueryCache::setProbeOverrideForTesting(null);
+
+        // Mirror the SourceQueryCache reset for the sibling
+        // RconStatusCache (the SteamID side-channel of
+        // `api_servers_host_players` reads off it; the negative-cache
+        // entry from one test would otherwise bleed into the next).
+        $rconCacheDir = SB_CACHE . 'srvstatus/';
+        if (is_dir($rconCacheDir)) {
+            foreach (scandir($rconCacheDir) ?: [] as $entry) {
+                if ($entry === '.' || $entry === '..') {
+                    continue;
+                }
+                @unlink($rconCacheDir . $entry);
+            }
+        }
+        RconStatusCache::resetSocketAttemptCount();
+        RconStatusCache::setProbeOverrideForTesting(null);
     }
 
     protected function tearDown(): void
     {
         SourceQueryCache::setProbeOverrideForTesting(null);
+        RconStatusCache::setProbeOverrideForTesting(null);
         parent::tearDown();
     }
 
@@ -395,5 +413,155 @@ final class ServersTest extends ApiTestCase
         $env = $this->api('servers.send_rcon', ['sid' => $sid, 'command' => 'clr']);
         $this->assertTrue($env['ok']);
         $this->assertSame('clear', $env['data']['kind']);
+    }
+
+    /**
+     * Player-context-menu restoration — admins with
+     * `ADMIN_OWNER | ADMIN_ADD_BAN` AND per-server RCON access must
+     * receive per-player SteamIDs in the `player_list` response. The
+     * SteamID side-channel is the load-bearing data the right-click
+     * menu reads off; the JS feature-detects the `steamid` field on
+     * each row and skips the menu wiring on rows that don't carry it.
+     *
+     * Setup mirrors the existing per-server RCON tests (admin flag
+     * `'mz'` + an `admins_servers_groups` row pinning the admin to
+     * the seeded server). Both the SourceQuery and RCON probes are
+     * driven by their test-only overrides so the assertion never
+     * touches a real socket.
+     */
+    public function testHostPlayersIncludesSteamIDsForAdminWithRconAccess(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            "UPDATE `%s_admins` SET srv_flags = 'mz' WHERE aid = ?",
+            DB_PREFIX
+        ))->execute([Fixture::adminAid()]);
+        $sid = $this->seedServer(200, 'r1');
+        Fixture::rawPdo()->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, 0, -1, ?)',
+            DB_PREFIX
+        ))->execute([Fixture::adminAid(), $sid]);
+
+        $this->loginAsAdmin();
+
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info' => [
+                'HostName'   => 'Alpha Server',
+                'Players'    => 2,
+                'MaxPlayers' => 24,
+                'Map'        => 'cp_dustbowl',
+                'Os'         => 'l',
+                'Secure'     => true,
+            ],
+            'players' => [
+                ['Id' => 0, 'Name' => 'Alice', 'Frags' => 12, 'Time' => 1200, 'TimeF' => '20:00'],
+                ['Id' => 1, 'Name' => 'Bob',   'Frags' => 7,  'Time' => 400,  'TimeF' => '06:40'],
+            ],
+        ]);
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => 'Alice', 'steamid' => 'STEAM_0:0:1234', 'ip' => '203.0.113.10'],
+            ['id' => 2, 'name' => 'Bob',   'steamid' => '[U:1:2468]',    'ip' => '203.0.113.11'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertTrue($env['data']['can_ban_player'], 'admin with per-server RCON access must get can_ban_player=true');
+        $list = $env['data']['player_list'];
+        $this->assertCount(2, $list);
+        $this->assertSame('STEAM_0:0:1234', $list[0]['steamid']);
+        $this->assertSame('[U:1:2468]',     $list[1]['steamid']);
+    }
+
+    public function testHostPlayersOmitsSteamIDsForAnonymousCaller(): void
+    {
+        // Anonymous caller — Fixture::reset() in setUp leaves
+        // $userbank unauthenticated.
+        $sid = $this->seedServer(201, 'r1');
+
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => ['HostName' => 'Anon Server', 'Players' => 1, 'MaxPlayers' => 24, 'Map' => 'pl_upward', 'Os' => 'l', 'Secure' => false],
+            'players' => [['Id' => 0, 'Name' => 'Charlie', 'Frags' => 0, 'Time' => 60, 'TimeF' => '01:00']],
+        ]);
+        // Probe override is set even though the handler should never
+        // reach the RCON cache — if the gate is broken and the probe
+        // DOES fire we want to fail loudly via the socketAttemptCount
+        // assertion below, not silently fall through to a real RCON.
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => 'Charlie', 'steamid' => 'STEAM_0:0:99', 'ip' => '198.51.100.20'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $this->assertFalse($env['data']['can_ban_player'], 'anonymous caller must not get can_ban_player=true');
+        $list = $env['data']['player_list'];
+        $this->assertCount(1, $list);
+        $this->assertArrayNotHasKey('steamid', $list[0],
+            'anonymous caller must NOT receive per-player SteamIDs — that is the load-bearing gate for the context menu',
+        );
+        $this->assertSame(0, RconStatusCache::socketAttemptCount(),
+            'the RCON cache probe must not even fire for anonymous callers — the gate is upstream of the cache',
+        );
+    }
+
+    public function testHostPlayersOmitsSteamIDsWhenAdminLacksRconAccessToThisServer(): void
+    {
+        // Logged-in admin holds ADMIN_OWNER | ADMIN_ADD_BAN (the
+        // base seeded admin row carries `extraflags=16777216` which
+        // is ADMIN_OWNER), but has NO per-server mapping for the
+        // seeded `sid` (no row in `_admins_servers_groups`). The
+        // SteamID surfacing must skip them — the kick/ban URLs the
+        // menu points at would 403 on the per-server RCON check
+        // anyway.
+        $this->loginAsAdmin();
+        $sid = $this->seedServer(202, 'r1');
+
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => ['HostName' => 'No-Rcon Server', 'Players' => 1, 'MaxPlayers' => 24, 'Map' => 'cp_badlands', 'Os' => 'l', 'Secure' => true],
+            'players' => [['Id' => 0, 'Name' => 'Dave', 'Frags' => 3, 'Time' => 100, 'TimeF' => '01:40']],
+        ]);
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => 'Dave', 'steamid' => 'STEAM_0:0:42', 'ip' => '203.0.113.42'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $this->assertFalse($env['data']['can_ban_player'],
+            'admin without per-server RCON access must not get can_ban_player=true',
+        );
+        $list = $env['data']['player_list'];
+        $this->assertArrayNotHasKey('steamid', $list[0],
+            'admin without per-server RCON access must NOT receive SteamIDs — the gate is the per-server check, not the global flag',
+        );
+        $this->assertSame(0, RconStatusCache::socketAttemptCount(),
+            'the RCON cache must not be probed when the per-server gate fails',
+        );
+    }
+
+    public function testHostPlayersCanBanFlagStaysTrueEvenWithoutPerServerRcon(): void
+    {
+        // Sanity check that the pre-restoration `can_ban` flag —
+        // which the ban-row affordance on the public list reads —
+        // is NOT affected by the new per-server RCON gate. `can_ban`
+        // is the global "this admin can add a ban somewhere" check;
+        // `can_ban_player` is the new "this admin can ban THIS
+        // player on THIS server" check. They diverge for admins
+        // with the global flag but no per-server RCON access.
+        $this->loginAsAdmin();
+        $sid = $this->seedServer(203, 'r1');
+        // No admins_servers_groups row -> no per-server RCON.
+
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => ['HostName' => 'Split-Gate Server', 'Players' => 0, 'MaxPlayers' => 24, 'Map' => 'pl_badwater', 'Os' => 'l', 'Secure' => true],
+            'players' => [],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $this->assertTrue($env['data']['can_ban'],
+            'can_ban is the global flag-based gate — admins with ADMIN_ADD_BAN keep it regardless of per-server RCON',
+        );
+        $this->assertFalse($env['data']['can_ban_player'],
+            'can_ban_player is the per-server gate — fails when admin lacks RCON to THIS sid',
+        );
     }
 }

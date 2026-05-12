@@ -363,7 +363,24 @@
  * coalesce into ONE UDP probe per `(ip, port)` per ~30s window. The handler
  * still maps the cached payload through the per-caller permission check
  * (`is_owner` / `can_ban`) and the per-call hostname truncation, so the cache
- * stays user-agnostic. See #1311 for the threat model.
+ * stays user-agnostic. See #1311 for the threat model.  Per-player SteamID
+ * surfacing (restoring the pre-v2.0.0 right-click context menu on the public
+ * servers list — see `web/scripts/server-context-menu.js`): the A2S
+ * `GetPlayers` UDP response does NOT carry SteamIDs. To surface them we issue
+ * a paired RCON `status` round-trip per server via
+ * `Sbpp\Servers\RconStatusCache::fetch` (sid-keyed, ~30s cache, negative
+ * caches failures) and match by exact player name.  The SteamID surfacing is
+ * the side-channel that's permission-gated, NOT the action registration:
+ * `servers.host_players` stays public so anonymous viewers continue to see
+ * hostname / map / online-count. SteamIDs are attached ONLY when the caller
+ * holds `WebPermission::Owner | WebPermission::AddBan` AND has per-server RCON
+ * access via `_api_servers_admin_can_rcon`. The handler itself is the
+ * load-bearing gate; the client feature-detects the `steamid` field on each
+ * row and skips rows that don't carry it (bots, players without a name match
+ * between the A2S and RCON responses). The new `can_ban_player` boolean
+ * signals to the client whether to render the kick/ban/block menu items at all
+ * — separate from the existing `can_ban` flag which the legacy ban-row
+ * affordance already uses.
  *
  * @typedef {Object} ApiServersHostPlayersRequest
  * @typedef {Object} ApiServersHostPlayersResponse
