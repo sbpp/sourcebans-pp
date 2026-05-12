@@ -39,13 +39,16 @@ test.describe('flow: banlist desktop column geometry (#1207 PUB-1)', () => {
     });
 
     test('STATUS header reads in full and the BANNED cell is one line', async ({ page }) => {
-        // #1359 bumped tier-3 (IP / Length / Banned) to hide at
-        // <=1280px. The Playwright `Desktop Chrome` device defaults to
-        // 1280x720 which sits ON the breakpoint, hiding the BANNED
-        // column we want to measure. Resize to a viewport that
-        // surfaces tier-3 (any width > 1280 works; 1440 is the
-        // canonical "laptop with tier-3 visible" reference).
-        await page.setViewportSize({ width: 1440, height: 720 });
+        // #1363 migrated tier-3 hiding from viewport-based @media
+        // queries to container queries on `.table-scroll`. Tier-3
+        // (IP / Length / Banned) now hides whenever the card is
+        // <=1500px, which on the bans-list root's max-width:1700px
+        // wrapper means tier-3 is visible only at viewport >=
+        // ~1788px (card width = viewport - sidebar 240 - padding 48).
+        // 1920 is the canonical "wide desktop with tier-3 visible"
+        // reference; the previous 1440 target now hides tier-3
+        // because the card paints at 1152 (< 1500).
+        await page.setViewportSize({ width: 1920, height: 720 });
         await page.goto('/index.php?p=banlist');
 
         const table = page.locator('#banlist-root .table');
@@ -195,17 +198,19 @@ test.describe('flow: banlist desktop column geometry (#1207 PUB-1)', () => {
         await expect(removeBtn).toBeVisible();
 
         // Sample three breakpoints across the desktop range to pin
-        // the contract end-to-end:
-        //   - 1280px: tier-2 + tier-3 both hidden (only tier-1 visible).
-        //   - 1440px: tier-2 still hidden, tier-3 surfaces (IP / Length
-        //     / Banned join Player / SteamID / Reason / Status /
-        //     Actions).
-        //   - 1920px: every column visible (page max-width 1400 caps
-        //     the surface; sidebar + padding still leaves comfortable
-        //     room).
-        // A regression that drops `flex-wrap: wrap` OR drops the
-        // tier-2 / tier-3 breakpoint bumps will paint Remove past
-        // the card's right edge at at least one of these viewports.
+        // the contract end-to-end (post-#1363, container-query era):
+        //   - 1280px: card ~975px → both tiers hidden. Only Player /
+        //     SteamID / Reason / Status / Actions render.
+        //   - 1440px: card ~1135px → both tiers hidden (1135 < 1500
+        //     trips tier-3, < 1200 trips tier-2). Same 5-column shape
+        //     as 1280.
+        //   - 1920px: card ~1615px (page-cap 1700 → 1652px max,
+        //     viewport-cap 1920-288=1632px wins) → both tiers
+        //     visible (1615 > 1500 / > 1200). Every column renders.
+        // A regression that drops `flex-wrap: wrap`, drops the
+        // container-query breakpoints, or fails to wrap the table
+        // in `.table-scroll` will paint Remove past the card's right
+        // edge at at least one of these viewports.
         for (const vw of [1280, 1440, 1920]) {
             await page.setViewportSize({ width: vw, height: 720 });
 

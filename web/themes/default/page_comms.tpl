@@ -19,7 +19,7 @@
     Testability hooks (`data-testid`) match the B4 spec: comm-row /
     filter-chip-* / row-action-* / page-prev / page-next / comms-search.
 *}
-<div class="p-6 space-y-4" style="max-width:1400px;margin:0 auto;width:100%">
+<div class="p-6 space-y-4" style="max-width:1700px;margin:0 auto;width:100%">
 
     {* -- Page header --------------------------------------------------- *}
     <header class="flex items-center justify-between gap-4" style="flex-wrap:wrap" data-testid="comms-header">
@@ -182,24 +182,31 @@
 
     {* -- Desktop table ------------------------------------------------
          Column tier classes (`.col-tier-2` / `.col-tier-3`) are paired
-         rules in `theme.css` next to `.table-scroll`. Tier-2 (Server,
-         Admin) hides at <=1100px; tier-3 (Length, Started) at <=900px.
-         Tier-1 (Type, Player, SteamID, Status, Actions) always renders
-         so the row stays useful without horizontal scroll. Mirror of
-         the banlist treatment for visual + responsive consistency. *}
+         with the `.table-scroll` container queries in `theme.css`.
+         Tier-3 (Length, Started) hides first when the card is
+         <=1500px; tier-2 (Server, Admin) hides at <=1200px. Tier-1
+         (Type, Player, SteamID, Status, Actions) always renders so
+         the row stays useful without horizontal scroll. The
+         `.table-scroll` wrapper carries `container-type: inline-size`
+         (theme.css) so the breakpoints react to the painted card
+         width — needed because the page-section cap at 1400px makes
+         every viewport >= 1688px paint an identical 1352px card,
+         which the previous viewport-based @media queries couldn't
+         see (#1363). Same chrome shape as `page_bans.tpl`. *}
     <div class="card" style="overflow:hidden">
+        <div class="table-scroll">
         <table class="table" data-testid="comms-table">
             <thead>
                 <tr>
                     <th>Type</th>
                     <th>Player</th>
                     <th>SteamID</th>
-                    <th class="col-tier-3">Length</th>
+                    <th class="col-length col-tier-3">Length</th>
                     <th class="col-tier-2">Server</th>
-                    <th class="col-tier-2">Admin</th>
+                    <th class="col-admin col-tier-2">Admin</th>
                     <th class="col-tier-3">Started</th>
-                    <th>Status</th>
-                    <th aria-label="Actions"></th>
+                    <th class="col-status">Status</th>
+                    <th class="col-actions" aria-label="Actions"></th>
                 </tr>
             </thead>
             <tbody>
@@ -290,9 +297,10 @@
                             </div>
                         </td>
                         <td class="font-mono text-xs text-muted">{$comm.steam|escape}</td>
-                        <td class="col-tier-3 tabular-nums text-muted">{$comm.length_human|escape}</td>
+                        <td class="col-length col-tier-3 tabular-nums text-muted"
+                            {if !empty($comm.length_human)}title="{$comm.length_human|escape}"{/if}>{$comm.length_human|escape}</td>
                         <td class="col-tier-2 text-muted">{$comm.sname|escape}</td>
-                        <td class="col-tier-2 text-muted">
+                        <td class="col-admin col-tier-2 text-muted">
                             {if $comm.admin}
                                 {$comm.admin|escape}
                             {else}
@@ -302,7 +310,7 @@
                         <td class="col-tier-3 text-muted text-xs">
                             <time datetime="{$comm.started_iso|escape}">{$comm.started_human|escape}</time>
                         </td>
-                        <td>
+                        <td class="col-status">
                             <span class="pill pill--{$comm.state}" style="text-transform:capitalize">{$comm.state|escape}</span>
                         </td>
                         <td class="col-actions">
@@ -419,6 +427,7 @@
                 {/foreach}
             </tbody>
         </table>
+        </div>{* /.table-scroll *}
 
         {* -- Mobile cards --------------------------------------------- *}
         {* #1207 ADM-5: each card is now a `<div>` wrapping (a) a

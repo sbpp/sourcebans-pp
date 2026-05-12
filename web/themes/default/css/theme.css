@@ -1136,14 +1136,32 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
       ends up exactly as wide as the natural content of "Status"
       (header) / its pill, freeing the rest of the row for the
       truncate-able Player / Reason / Server columns.
-   2. Wrap the `<table>` in `.table-scroll` (page_bans.tpl) so when
-      the parent is narrower than the natural sum of column widths
-      (1024-1100px viewport zone after the sidebar collapses, plus
-      any unusually long player / reason combos) the table scrolls
-      horizontally instead of clipping the rightmost column. The
-      card's rounded corners stay intact because the card itself
-      keeps its own `overflow: hidden`. */
-.table-scroll { overflow-x: auto; }
+   2. Wrap the `<table>` in `.table-scroll` (page_bans.tpl AND
+      page_comms.tpl post-#1363) so when the parent is narrower than
+      the natural sum of column widths (1024-1100px viewport zone
+      after the sidebar collapses, plus any unusually long player /
+      reason combos) the table scrolls horizontally instead of
+      clipping the rightmost column. The card's rounded corners stay
+      intact because the card itself keeps its own `overflow: hidden`.
+
+   3. (#1363) Promote `.table-scroll` to a CSS container via
+      `container-type: inline-size` so the responsive column-tier
+      hiding below can react to the ACTUAL card width, not just the
+      viewport. Most page-section / list-page wrappers cap at 1400px
+      max-width (1352px usable card after 1.5rem padding); the bans
+      and comms lists specifically lift their cap to 1700px (#1363)
+      so wide-monitor users actually see tier-3 columns. Pre-#1363
+      the tier breakpoints were keyed off the viewport
+      (`@media (max-width: 1535px)` etc.) and missed both caps — a
+      1920px monitor saw the same scroll-required layout as a 1535px
+      laptop because both fell into the "all tiers visible" arm even
+      though the painted card was identical (1352px on the
+      pre-#1363 1400px-capped pages). */
+.table-scroll {
+  overflow-x: auto;
+  container-type: inline-size;
+  container-name: tablescroll;
+}
 .table .col-length,
 .table .col-banned,
 .table .col-admin,
@@ -1151,11 +1169,34 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
 .table .col-status,
 .table .col-actions { white-space: nowrap; }
 .table .col-status { width: 1%; }
+/* #1363: cap the Length column. SecondsToString builds strings like
+   "1 mo, 2 wk, 4 d, 8 hr, 19 min, 33 sec" — six units of granularity
+   for one row of a list view, which pushed the column to ~280px on
+   the seeded medium-scale dataset and was the single biggest
+   contributor to the bans-list min-content blowing past the card
+   width. Pin to ~10rem (160px) and truncate; the title= attribute
+   on the cell carries the full string for hover / long-press, so no
+   information is lost — only the per-row real estate it eats. The
+   Length cell paints the truncated text + ellipsis directly via
+   `text-overflow: ellipsis` (no inner span needed). The col-banned
+   column does NOT get the same treatment: its content is a fixed-
+   width "YYYY-MM-DD HH:MM:SS" timestamp that doesn't vary per row
+   the way Length does, so capping it would just emit ellipsis on
+   every row without trimming anything meaningful. */
+.table .col-length {
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Responsive column-tier hiding (issue: "scroll table at the bottom of a
    banlist, making the user experience not fluid"; #1359 expanded the
    breakpoints after the #1354 row-action parity sweep pushed the
-   table well past the panel at common laptop viewports).
+   table well past the panel at common laptop viewports; #1363
+   migrated to container queries on `.table-scroll` to fix the
+   1440 / 1920 viewport regression where the page-section cap left
+   ~1352px of usable card on EVERY viewport >= 1688px while the
+   media-query-based breakpoints kept tier-2 / tier-3 visible there).
    ----------------------------------------------------------------------
    The banlist / commslist desktop tables carry 9-10 columns. The
    sidebar collapses at <=1023px, so above that it eats 15rem (240px)
@@ -1167,10 +1208,12 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
    rightmost row-action button silently sits off the visible edge
    (#1359 was the user-reported regression: the Remove button hidden
    behind in-card scroll after #1354 added the text-labelled Edit /
-   Unban / Re-apply / Copy / Remove chain). Horizontal scroll on a
-   list view is also the canonical "broken UX" smell on a touch
-   viewport (no scrollbar; users have to swipe inside a nested
-   scroll container).
+   Unban / Re-apply / Copy / Remove chain; #1363 was the recurrence
+   on 1440 / 1920 viewports the #1359 viewport-based fix didn't
+   reach because the page-cap created a 1352px card ceiling there
+   too). Horizontal scroll on a list view is the canonical "broken
+   UX" smell on a touch viewport (no scrollbar; users have to swipe
+   inside a nested scroll container).
 
    Two-tier responsive hide: every column carries a tier class on
    BOTH the `<th>` AND the matching `<td>` so the column hides as a
@@ -1180,44 +1223,61 @@ html.dark .table thead tr { background: rgb(255 255 255 / 0.02); }
      - Tier-1 (always visible): Player, SteamID, Reason (banlist) /
        Type+Player (commslist), Status, Actions. The minimum row
        still answers "who, why, what state, what can I do".
-     - Tier-2 (`.col-tier-2`): hidden at <=1535px. Server, Admin —
-       useful but not essential for moderation triage; both surface
-       on the player drawer / card detail anyway. The breakpoint
-       covers every common laptop / small-desktop viewport
-       (1280 / 1366 / 1440 / 1536-with-sidebar) where main = vw -
-       240 (sidebar) - 48 (padding) falls short of the natural
-       table width with these columns visible. At 1536px viewport
-       exactly the sidebar leaves ~1248px — the table without
-       tier-2 fits in ~1097px and with tier-2 in ~1246px, so
-       <=1535 is the precise edge.
-     - Tier-3 (`.col-tier-3`): hidden at <=1280px. IP / Length /
-       Banned / Started — historical metadata that's nice to glance
-       but cheap to drop on a narrow viewport. The breakpoint
-       matches the smaller "tight" laptop range where even
-       hiding tier-2 leaves the table ~120px wider than the card;
-       dropping tier-3 there brings the visible row down to the
-       five tier-1 columns (Player + SteamID + Reason + Status +
-       Actions ≈ 808px) which fits comfortably with room to spare.
-       Pre-#1359 the breakpoints were <=1100 / <=900 — calibrated
-       for the pre-sidebar / pre-row-action-labels world that no
-       longer matches the chrome's actual horizontal budget.
+     - Tier-3 (`.col-tier-3`): hidden first via `@container` when
+       the card is <=1500px. IP / Length / Banned / Started carry
+       the WIDEST per-row content — Length on the bans list is
+       SecondsToString's "1 mo, 2 wk, 4 d, 8 hr, 19 min, 33 sec"
+       format which alone occupies ~280px (capped to ~160px above
+       via `.col-length`'s max-width / truncate, but still the
+       single biggest contributor to the table min-content). The
+       trio hides ~552px at once; the 1500px threshold catches
+       every desktop card width on a 1400px page-cap (max card
+       ~1352px) so tier-3 is functionally always hidden on those
+       pages. On the bans / comms lists which lifted the page-cap
+       to 1700px (max card ~1652px), tier-3 surfaces at viewports
+       wider than ~1788px (card width = viewport - 240px sidebar -
+       48px padding > 1500). The data still reaches the moderator
+       via the player drawer (one click) and the mobile `.ban-cards`
+       chrome at <=768px regardless of which page is active.
+     - Tier-2 (`.col-tier-2`): hidden at <=1200px container. Server
+       and Admin — useful but not essential for moderation triage;
+       both surface on the player drawer / card detail anyway.
+       1200px catches the 1280-viewport laptop case (card ~975px),
+       so at the smallest desktop the table drops to its tier-1
+       core. Pre-#1363 tier-2 hid FIRST at <=1535 viewport — that
+       priority was inverted because the actual width contribution
+       of tier-2 (Server + Admin ≈ 219px) is much smaller than
+       tier-3 (~552px). Dropping the wider trio first is what
+       actually reclaims room.
 
-   The mobile card layout (`.ban-cards`) takes over completely at
-   <=768px (theme.css `.table { display: none }`), so the tier
-   classes are never the visible chrome at mobile widths. They only
-   collapse the desktop table at intermediate viewports.
+   `.table-scroll` carries the `container-type: inline-size`
+   container context (above) so these `@container` rules see the
+   ACTUAL painted width of the table card, not the viewport. Pages
+   with a 1400px page-cap have a fixed ~1352px card on every viewport
+   wide enough to hit it; the viewport-based predecessors couldn't
+   see that, so a 1920px monitor and a 1535px laptop both fell into
+   the "all tiers visible" arm even though the painted card was
+   identical. `.table-scroll` is a sibling of `.card`'s padding
+   boundary, so its inline-size IS the card's content width.
 
-   `.table-scroll` stays wrapped around the table as a defensive
-   safety net — if a row's content (long player name + long reason)
-   still exceeds the panel after tier-3 hiding, it scrolls instead
-   of clipping. The `flex-wrap: wrap` on `.table .row-actions`
-   above is the sister-guard that keeps the row-action cell itself
-   from being the single column that blows the budget. */
-@media (max-width: 1535px) {
-  .table .col-tier-2 { display: none; }
-}
-@media (max-width: 1280px) {
+   The mobile card layout (`.ban-cards` for bans, the comm-list's
+   own mobile rendering) takes over completely at <=768px (theme.css
+   `.table { display: none }`), so these tier classes never apply to
+   mobile chrome. They only collapse the desktop table at
+   intermediate viewports.
+
+   `.table-scroll` is also the runtime escape hatch — if a row's
+   content (long player name + long reason) still exceeds the card
+   after tier-3 hiding, it scrolls horizontally inside the card
+   rather than clipping the rightmost cell. The `flex-wrap: wrap`
+   on `.table .row-actions` above is the sister-guard that keeps
+   the row-action cell itself from being the single column that
+   blows the budget. */
+@container tablescroll (max-width: 1500px) {
   .table .col-tier-3 { display: none; }
+}
+@container tablescroll (max-width: 1200px) {
+  .table .col-tier-2 { display: none; }
 }
 
 /* ---- Avatar ---- */

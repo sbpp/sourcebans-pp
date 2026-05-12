@@ -1308,6 +1308,89 @@ audit (#1207) locked in. New CTAs:
   snapshot) so a user without the relevant `ADMIN_*` flag sees the
   body copy without the link they couldn't follow.
 
+### Responsive desktop-table chrome (container queries + tiered column hiding)
+
+The bans / comms desktop tables ship 9-10 columns. The sidebar
+collapses at `<=1023px` so above that it eats 15rem (240px) of
+horizontal real estate before the table sees any pixels; add the
+p-6 page padding (48px) and even a 1280px viewport leaves the card
+with ~975px to paint a row whose natural sum-of-columns is ~1247px.
+The shared chrome that handles this:
+
+- **`.table-scroll` wrapper** around every desktop-table list page
+  (`page_bans.tpl` / `page_comms.tpl` / admin-side `mod` / `group` /
+  `server` lists). Provides `overflow-x: auto` as the runtime
+  escape hatch when a row genuinely exceeds the card after every
+  other reduction has run, and (post-#1363) the
+  `container-type: inline-size; container-name: tablescroll;`
+  context that the column-tier rules below key off.
+- **Tiered column-hiding classes** on every `<th>` AND matching
+  `<td>` so the column hides as a unit (otherwise rows go out of
+  alignment):
+  - Tier-1 (always visible): the minimum row that answers
+    "who, why, what state, what can I do" — Player, SteamID,
+    Reason (banlist) / Type+Player (commslist), Status, Actions.
+  - **`.col-tier-3`** hides at `@container tablescroll (max-width:
+    1500px)`. The wider trio (IP / Length / Banned / Started;
+    ~552px combined).
+  - **`.col-tier-2`** hides at `@container tablescroll (max-width:
+    1200px)`. Server / Admin (~219px combined).
+  - Tier-3 hides FIRST despite the lower tier-number because the
+    wider trio reclaims more room than tier-2; dropping it first
+    is what actually buys back the table's natural width.
+- **`.col-length` width cap** (`max-width: 10rem;
+  overflow: hidden; text-overflow: ellipsis;`) because
+  `SecondsToString()` builds long strings like
+  `"1 mo, 2 wk, 4 d, 8 hr, 19 min, 33 sec"` — six units of
+  granularity for one cell. Pair the cap with a `title="…"`
+  attribute on the `<td>` so hover / long-press still surfaces
+  the full string. The `col-banned` / `col-started` columns
+  carry fixed-width ISO timestamps that don't vary per row, so
+  they don't need the cap — capping would just emit ellipsis on
+  every row without trimming anything meaningful.
+- **Page-cap differentiation**: most list pages cap their outer
+  wrapper at `max-width: 1400px` (max card ~1352px → tier-3
+  always hidden there). Bans / comms specifically lift the cap to
+  `max-width: 1700px` (max card ~1652px) so wide-monitor users
+  actually see tier-3 columns at viewport `>=1788px`.
+
+Container queries are load-bearing here. Pre-#1363 the tier
+breakpoints were viewport-keyed (`@media (max-width: 1535px)`)
+and missed the page-cap entirely — a 1920px monitor saw the same
+scroll-required layout as a 1535px laptop because both fell into
+the "all tiers visible" arm even though the painted card was
+identical (1352px, capped by `max-width: 1400px`). Container
+queries on `.table-scroll` see the actual painted width of the
+card regardless of viewport.
+
+When adding a new desktop-table list page that should ride this
+chrome:
+
+1. Wrap the `<table>` in `<div class="table-scroll">`.
+2. Tag every column's `<th>` AND matching `<td>` with the right
+   tier class — no class means tier-1 always-visible. Be
+   conservative: the default is "show everything" and you opt
+   in to hiding.
+3. If a column's content varies wildly per row (the Length column
+   is the canonical example), cap its width with a `.col-<name>`
+   rule alongside `text-overflow: ellipsis` and pair with a
+   `title="..."` attribute on the cell so the full value stays
+   reachable on hover / long-press.
+4. The mobile card layout (`.ban-cards` for bans, the comms-list
+   equivalent) takes over completely at `<=768px` (`theme.css`
+   `.table { display: none }`), so these tier classes only
+   collapse the desktop table at intermediate viewports.
+
+Regression guards: `web/tests/e2e/specs/flows/banlist-table-columns.spec.ts`
+(STATUS / BANNED layout, `.table-scroll` wrapper presence, Remove
+button reachability across 1280 / 1440 / 1920px viewports — the
+1280 / 1440 cases land in the "tiers hidden" arm and 1920 lands in
+the "tiers visible" arm) and
+`web/tests/e2e/specs/flows/banlist-ip-column.spec.ts` (which runs
+at 1920px so the IP column — tier-3 — is visible). When you add a
+new tier-3 column to either list and it relies on visibility for
+the spec, target a 1920px viewport, not 1440px.
+
 ## Anti-patterns (do NOT reintroduce)
 
 - `btn.disabled = true` (or any other manual `disabled` flip) inside
@@ -1751,6 +1834,44 @@ audit (#1207) locked in. New CTAs:
   every keyboard / screen-reader user. New surfaces add visible
   buttons in the same shape as `.queue-row` (admin moderation
   queue) or the comms-list desktop table (`web/themes/default/page_comms.tpl`).
+- Viewport-based `@media` queries for hiding `.table` columns
+  (`@media (max-width: 1535px) { .col-tier-2 { display: none; } }`
+  shape) → use `@container tablescroll (max-width: …)` rules
+  against the container context `.table-scroll` carries (post-#1363
+  it ships `container-type: inline-size; container-name: tablescroll;`).
+  The viewport-keyed predecessors silently missed the page-cap on
+  every list page — bans / comms cap their outer wrapper at 1700px,
+  most other list pages cap at 1400px, and at viewport `>=1688px` the
+  painted card is the same fixed width regardless of how wide the
+  screen is. A 1920px monitor saw the same scroll-required layout as
+  a 1535px laptop because the viewport breakpoint kept tier-2 / tier-3
+  visible at both even though the painted card was identical (1352px
+  on the 1400px-capped pages). Container queries on `.table-scroll`
+  see the actual painted width and react accordingly. See
+  "Responsive desktop-table chrome" in Conventions for the full
+  contract; the regression guards are
+  `web/tests/e2e/specs/flows/banlist-table-columns.spec.ts` (asserts
+  Remove button reachability at 1280 / 1440 / 1920px) and
+  `web/tests/e2e/specs/flows/banlist-ip-column.spec.ts` (asserts the
+  IP column — tier-3 — is visible at 1920px).
+- Lifting an arbitrary list page's outer-wrapper `max-width` past
+  1400px without auditing every column's per-row content cost →
+  bans / comms specifically lifted to 1700px at #1363 because (a)
+  the columns include the row-actions cell which can't shrink past
+  the action-button text labels, and (b) the SecondsToString-built
+  Length column is the single biggest contributor to the table
+  min-content. The lift only paid off because the column-tier
+  hiding migrated to container queries in the same commit so the
+  wider card actually surfaces tier-3 columns at viewport
+  `>=1788px`. A naive "raise the cap on every list page so users
+  with wide monitors see more" loses the value the cap provides
+  (line lengths in cell content stay readable; page chrome doesn't
+  feel windswept on ultrawide monitors) AND, on pages where the
+  column-tier classes were never added (admin reports, audit log,
+  etc.), exposes the row to clipping or the in-card horizontal
+  scroll the wrapper was supposed to be a safety net for, not a
+  primary scrolling surface. The 1700px cap is justified per page;
+  most list pages should stay at 1400px.
 - Non-wrapping `display: flex` on `.table .row-actions` (the
   pre-#1359 shape: `display: flex; gap: 0.25rem; justify-content:
   flex-end` with NO `flex-wrap: wrap`) → with 3+ buttons carrying
@@ -2000,7 +2121,7 @@ audit (#1207) locked in. New CTAs:
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
 | Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / comms / settings / admins / bans) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |
-| Hide non-essential desktop-table columns at narrow viewports (intermediate 769–1100px zone where the natural sum of column widths exceeds the panel and `.table-scroll` falls back to horizontal scroll inside the card) | `.col-tier-2` (hide at `<=1100px`) and `.col-tier-3` (hide at `<=900px`) classes in `web/themes/default/css/theme.css` (next to `.table-scroll`). Apply to BOTH the `<th>` AND the matching `<td>` so the column hides as a unit (otherwise rows go out of alignment). Tier-1 columns are always visible — Player, SteamID, Reason (banlist) / Type (commslist), Status, Actions; the minimum row still answers "who, why, what state, what can I do". `.table-scroll` stays wrapped around the table as a defensive safety net. The mobile card layout (`.ban-cards`) takes over at `<=768px`, so the tier classes only collapse the desktop table at intermediate viewports. Reference: banlist `<th>` row in `page_bans.tpl` (Server / Admin → tier-2; IP / Length / Banned → tier-3); commslist row in `page_comms.tpl` (Server / Admin → tier-2; Length / Started → tier-3). |
+| Hide non-essential desktop-table columns when the card is too narrow to fit every cell without horizontal scroll | `.col-tier-2` (hide via `@container tablescroll (max-width: 1200px)`) and `.col-tier-3` (hide via `@container tablescroll (max-width: 1500px)`) in `web/themes/default/css/theme.css` (next to `.table-scroll`). Apply to BOTH the `<th>` AND the matching `<td>` so the column hides as a unit. Tier-3 hides FIRST despite the lower tier-number because the wider trio (IP / Length / Banned / Started, ~552px) reclaims more room than tier-2 (Server / Admin, ~219px). Tier-1 columns are always visible — Player, SteamID, Reason (banlist) / Type+Player (commslist), Status, Actions; the minimum row still answers "who, why, what state, what can I do". The breakpoints are `@container tablescroll (...)` rules — they react to the painted width of `.table-scroll` (which carries `container-type: inline-size; container-name: tablescroll;`), NOT the viewport. This lets the breakpoints see the page-cap (1400px on most lists, 1700px on bans / comms post-#1363) — pre-#1363 the predecessors were viewport-keyed (`@media (max-width: 1535px)`) and a 1920px monitor saw the same scroll-required layout as a 1535px laptop because both painted an identical 1352px card under the 1400px page-cap. `.table-scroll` stays wrapped around the table as the runtime overflow safety net. The mobile card layout (`.ban-cards`) takes over at `<=768px`, so the tier classes only collapse the desktop table at intermediate viewports. Reference: banlist `<th>` row in `page_bans.tpl` (Server / Admin → tier-2; IP / Length / Banned → tier-3); commslist row in `page_comms.tpl` (Server / Admin → tier-2; Length / Started → tier-3). See "Responsive desktop-table chrome" in Conventions for the full pattern. |
 | Surface the full reason on a truncated row (banlist Reason column / mobile card reason line / unban-reason inline span) | `title="…"` attribute on the truncated element. The browser's native tooltip fires on hover (desktop) / long-press (mobile) and exposes the un-truncated text; no JS needed. Reference: `page_bans.tpl` desktop reason `<td>` (gates on `!empty($ban.reason)` so empty rows don't get a useless empty `title=""`), the mobile-card reason line, the `[data-testid="ban-unban-reason"]` span, the Server cell, and the matching `[data-testid="comm-unban-reason"]` span on `page_comms.tpl`. Don't use `title=""` empty-string fallbacks — the conditional gate is the contract. |
 | Stop mobile browsers auto-linking SteamIDs / IPs as phone numbers | `web/themes/default/core/header.tpl` (`<meta name="format-detection" content="telephone=no…">` + `<meta name="x-apple-data-detectors">`) and the defensive `.drawer a[href^="tel:"]` reset in `theme.css` |
 | Lock page scroll while a modal-style chrome is open | `web/themes/default/css/theme.css` (`html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }` — pure-CSS, gates on the same `data-drawer-open` mirror theme.js sets, applies at every viewport so the drawer-open contract is symmetric desktop/mobile per the Linear/Vercel/Notion modal idiom) |

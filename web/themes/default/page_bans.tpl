@@ -60,7 +60,7 @@
 </div>
 {else}
 
-<div id="banlist-root" class="p-6 space-y-4" style="max-width:1400px;margin:0 auto" data-loading="false">
+<div id="banlist-root" class="p-6 space-y-4" style="max-width:1700px;margin:0 auto" data-loading="false">
   <div class="flex items-center justify-between gap-3" style="flex-wrap:wrap">
     <div>
       <h1 style="font-size:var(--fs-2xl);font-weight:600;margin:0">Ban list</h1>
@@ -430,7 +430,13 @@
             {if empty($ban.aname)}<i class="text-faint">deleted</i>{else}{$ban.aname|escape}{/if}
           </td>
           {/if}
-          <td class="col-length col-tier-3 tabular-nums text-muted">{if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</td>
+          {* #1363: title= surfaces the full SecondsToString breakdown
+             ("1 mo, 2 wk, 4 d, 8 hr, 19 min, 33 sec") when the cell's
+             max-width truncates a long ban length to fit the tier-3
+             column budget. Same shape as the Reason / Server cells'
+             title= treatment. *}
+          <td class="col-length col-tier-3 tabular-nums text-muted"
+              {if $ban.length != 0}title="{$ban.length_human|escape}"{/if}>{if $ban.length == 0}Permanent{else}{$ban.length_human|escape}{/if}</td>
           <td class="col-banned col-tier-3 text-muted text-xs"><time datetime="{$ban.banned_iso}">{$ban.banned_human|escape}</time></td>
           <td class="col-status">
             {assign var=_pill_label value=$ban.state|capitalize}
