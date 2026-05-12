@@ -45,6 +45,17 @@
 Database hDatabase = null;
 ArrayList g_hAllowedArray = null;
 
+enum DatabaseState /* Database connection state */
+{
+	DatabaseState_None = 0,
+	DatabaseState_Wait,
+	DatabaseState_Connecting,
+	DatabaseState_Connected,
+}
+DatabaseState g_DatabaseState;
+int g_iSequence = 0;
+int g_iConnectLock = 0;
+
 //- ConVars -//
 ConVar g_cVar_actions;
 ConVar g_cVar_banduration;
@@ -86,11 +97,33 @@ public void OnPluginStart()
 
 	AutoExecConfig(true, "Sm_SourceSleuth");
 
-	Database.Connect(SQL_OnConnect, "sourcebans");
+	DB_Connect();
 
 	RegAdminCmd("sm_sleuth_reloadlist", ReloadListCallBack, ADMFLAG_ROOT);
 
 	LoadWhiteList();
+}
+
+stock bool DB_Connect()
+{
+	if (hDatabase)
+	{
+		return true;
+	}
+
+	if (g_DatabaseState == DatabaseState_Wait)
+	{
+		return false;
+	}
+
+	if (g_DatabaseState != DatabaseState_Connecting)
+	{
+		g_DatabaseState = DatabaseState_Connecting;
+		g_iConnectLock = ++g_iSequence;
+		Database.Connect(SQL_OnConnect, "sourcebans", g_iConnectLock);
+	}
+
+	return false;
 }
 
 public void OnAllPluginsLoaded()
@@ -116,14 +149,24 @@ public void OnLibraryRemoved(const char[] name)
 
 public void SQL_OnConnect(Database db, const char[] error, any data)
 {
+	if (data != g_iConnectLock || hDatabase)
+	{
+		if (db)
+			delete db;
+		return;
+	}
+
+	g_iConnectLock = 0;
+
 	if (db == null)
 	{
+		g_DatabaseState = DatabaseState_None;
 		LogError("SourceSleuth: Database connection error: %s", error);
+		return;
 	}
-	else
-	{
-		hDatabase = db;
-	}
+
+	g_DatabaseState = DatabaseState_Connected;
+	hDatabase = db;
 }
 
 public Action ReloadListCallBack(int client, int args)
@@ -298,7 +341,8 @@ public void LoadWhiteList()
 
 public Action Timer_ReconnectDB(Handle timer)
 {
-	Database.Connect(SQL_OnConnect, "sourcebans");
+	g_DatabaseState = DatabaseState_None;
+	DB_Connect();
 	return Plugin_Continue;
 }
 
@@ -310,6 +354,11 @@ void CheckDBConnection(const char[] error)
 		{
 			delete hDatabase;
 			hDatabase = null;
+		}
+
+		if (g_DatabaseState != DatabaseState_Wait)
+		{
+			g_DatabaseState = DatabaseState_Wait;
 			CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
 		}
 	}
