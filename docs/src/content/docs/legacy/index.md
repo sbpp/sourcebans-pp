@@ -1,51 +1,48 @@
 ---
 title: Legacy
-description: Soft-archived documentation for legacy SourceBans++ versions.
+description: Documentation for older SourceBans++ versions and one-off upgrade quirks.
 sidebar:
   order: 1
 ---
 
 :::caution
-Documentation in this section refers to versions that are no longer
-maintained. The information may be inaccurate or out of date.
+The pages in this section cover SourceBans++ versions that are no
+longer maintained. Some content may be inaccurate or out of date.
 :::
 
 ## What lives here
 
-This section is the soft archive — historical material that no longer
-fits the supported flow but that someone running an old version may
-still need. Content lands here when:
+This section is the soft archive — historical material that no
+longer fits the supported flow but that someone running an old
+version may still need. Content lands here when:
 
-- It documents a setup that the current panel doesn't support
+- It documents a setup the current panel no longer supports
   (e.g. PHP < 8.5, SourceMod < 1.11).
-- It documents a one-off upgrade quirk between two specific old
-  releases (e.g. "upgrading from 1.5.x to 1.6.x") that doesn't apply
-  to anyone landing on the current panel today.
-- The current docs cover the same material more comprehensively for
-  the current panel, but the legacy phrasing is still cited
-  externally and we don't want to break those inbound links.
+- It documents a one-off upgrade between two old releases that
+  doesn't apply to anyone landing on the current panel.
+- The current docs cover the same material better, but the legacy
+  phrasing is still cited externally and we don't want to break
+  inbound links.
 
-## What lives elsewhere
-
-For the **current** install / upgrade / troubleshooting flow:
+If you're on a current install, you almost certainly want one of
+these instead:
 
 - [Quickstart](/getting-started/quickstart/) — fresh install on a
   current PHP / SourceMod / DB stack.
-- [Updating](/updating/) — upgrade path for any panel from 1.6.x or
-  later. The 1.6.x → 1.7.0 → 1.8.x sections cover the
-  `SB_SECRET_KEY` and Smarty 5 transitions explicitly.
-- [Troubleshooting](/troubleshooting/database-errors/) — the
-  catalog of common error messages and fixes.
+- [Updating SourceBans++](/updating/) — upgrade path for any panel
+  from 1.6.x or later. The intermediate version notes (1.6.x → 1.7.0,
+  1.7.x → 1.8.x, 1.8.x → 2.0.x) live there.
+- [Troubleshooting](/troubleshooting/panel-not-loading/) — the
+  catalog of common errors and fixes.
 
-## Pages
+## Pages in this section
 
-- [Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/) — the
-  one-off cleanup pass when migrating the SourceMod plugin half off a
-  pre-1.6 install (delete the old `sourcebans.smx` / `sourcecomms.smx`
-  / etc., let the new `sbpp_*.smx` consolidated plugins take over).
+- [Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/) —
+  one-off cleanup steps for the SourceMod plugin half when migrating
+  from a pre-1.6 install.
 
 If you're trying to upgrade an install older than 1.6.x and nothing
-in [Updating](/updating/) or the page above covers your starting
-point, drop into our [Discord](https://discord.gg/tzqYqmAtF5)
-`#help-support` channel — we'll walk you through it and add a page
-here if your situation is likely to recur.
+here or in [Updating](/updating/) covers your starting point, drop
+into our [Discord](https://discord.gg/tzqYqmAtF5) `#help-support`
+channel — we'll walk you through it and add a page here if your
+situation is likely to recur for someone else.

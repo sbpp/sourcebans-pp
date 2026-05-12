@@ -1,102 +1,162 @@
 ---
 title: Updating SourceBans++
-description: How to upgrade an existing SourceBans++ install — web panel and plugin.
+description: Safely upgrade an existing SourceBans++ install — web panel and plugin.
 sidebar:
   order: 1
 ---
 
-A simple guide to upgrading SourceBans++. Always **back up your
-database** before starting — the updater scripts are idempotent, but a
-failed upload halfway through is much easier to recover from when you
-have a snapshot to roll back to.
+Upgrades are routine: drop in the new release, visit the updater
+URL, and SourceBans++ migrates any database schema changes for you.
+This page covers the safe upgrade path for both halves.
 
 :::tip
 Upgrading from **1.8.x to 2.0.x**? Read
 [Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/) first — v2.0
-introduces new PHP dependencies, resets the theme, and ships default-on
-anonymous telemetry.
+raises the PHP version floor, resets the active theme, and ships
+default-on anonymous telemetry.
 :::
 
-## Downloading
+## Before you start
+
+**Always back up your database** before an upgrade. The updater
+scripts are idempotent (re-running them is safe), but a half-completed
+upload or a fatal PHP error mid-migration is much easier to recover
+from when you have a snapshot.
+
+A simple `mysqldump` or your hosting control panel's "Backup database"
+button is enough. Don't skip this step.
+
+## Download
 
 Grab the latest release zip from the
-[releases page](https://github.com/sbpp/sourcebans-pp/releases).
+[Releases page](https://github.com/sbpp/sourcebans-pp/releases). You
+want the `sourcebans-pp-X.Y.Z.webpanel-only.zip` for the web side and
+`sourcebans-pp-X.Y.Z.plugin-only.zip` for the game side.
 
-## Web panel
+## Upgrade the web panel
 
-1. **Back up your database** in case of corruption.
+1. **Back up your database.** (Last reminder.)
 
-2. Switch back to the **default theme** if you haven't already — custom
-   themes can lag the panel's template / Smarty version and break the
-   first paint after upgrade.
+2. **Switch back to the default theme** if you've been running a
+   custom one. Custom themes often lag the panel's template version
+   and can break the first paint after upgrade.
 
-3. Upload and overwrite all contents of the `web` folder onto your
-   SourceBans++ installation.
+   Navigate to **Admin Panel → Settings → Themes** and select
+   "default" before uploading.
 
-4. Delete the `install` directory if it's still around from a previous
-   install.
+3. **Upload and overwrite** all contents of the new `web/` folder
+   onto your existing SourceBans++ installation.
 
-5. Navigate to your panel and append `updater` to the URL — e.g.
-   `example.com/updater` or `example.com/sb/updater`.
+4. **Delete the `install/` directory** if it's still there from a
+   previous install. The panel actively refuses to boot while it
+   exists.
 
-6. When the updater displays **`Installation up-to-date.`**, delete the
-   `updater` directory and you're done.
+5. **Visit the updater URL** in your browser:
+
+   ```
+   https://example.com/updater/
+   ```
+
+   (or `/sb/updater/` if you installed into a subfolder.)
+
+   The updater walks through each pending database migration. When
+   it prints **`Installation up-to-date.`**, the schema is current.
+
+6. **Delete the `updater/` directory** when it's done.
 
 :::caution
-Leaving `install/` or `updater/` accessible after the run is a
-foot-gun: anyone who can reach the panel can re-run them. The panel's
-`init.php` actively refuses to boot while `install/` exists; the
-`updater/` directory has no such guard, so it's on you to remove it.
+Leaving `install/` or `updater/` accessible after an upgrade is a
+foot-gun — anyone who can reach the panel can re-run them. The
+panel guards against `install/` automatically; the `updater/`
+directory has no such guard, so it's on you to remove it.
 :::
 
-## Web panel — upgrading from 1.6.x or 1.7.0 to 1.8.x
+## Upgrade the plugin
 
-1.7.0+ requires PHP **>= 8.5** (see
-[Prerequisites](/getting-started/prerequisites/)) and adds an
-`SB_SECRET_KEY` value in `config.php` used by the JWT-based session
-manager. Existing installs need to populate it before logging in.
+1. **Upload and overwrite** all contents of the new `game/` folder
+   to your game server's root.
 
-1. Make sure your host is on PHP >= 8.5 before uploading the new files.
+2. **Review the plugin config files** at
+   `addons/sourcemod/configs/sourcebans/` — new versions sometimes
+   add new options. Defaults are sensible if you don't touch them.
 
-2. Follow the regular [Web panel](#web-panel) steps above.
+3. **Reload the map or restart the game server** so SourceMod picks
+   up the new plugin versions.
 
-3. Navigate to `example.com/upgrade.php` in your browser. The script
-   will append `SB_SECRET_KEY` to `config.php` and confirm with
+4. Tail `addons/sourcemod/logs/` after the restart and confirm the
+   plugins loaded cleanly.
+
+## Version-specific notes
+
+### Upgrading from 1.8.x to 2.0.x
+
+The biggest jump SourceBans++ has shipped — PHP 8.5 requirement,
+chrome rewrite, default-on telemetry. The full breakdown lives in
+[Upgrading from 1.8.x to 2.0.x](/updating/1-8-to-2-0/).
+
+### Upgrading from 1.6.x or 1.7.0 to 1.8.x
+
+1.7.0+ requires **PHP >= 8.5** and added an `SB_SECRET_KEY` value to
+`config.php` used by the JWT-based session manager. Existing installs
+need that value generated before they can log in.
+
+1. **Upgrade PHP to >= 8.5** before uploading the new panel files.
+
+2. Follow the regular [web panel upgrade steps](#upgrade-the-web-panel)
+   above.
+
+3. Visit `https://example.com/upgrade.php` in your browser. The
+   script appends `SB_SECRET_KEY` to `config.php` and prints
    **`config.php updated correctly.`**
 
 4. **Delete `upgrade.php` from your server when done** — it can leak
-   sensitive information if left exposed.
+   sensitive info if left exposed.
 
-5. If you use a custom theme, note that **Smarty 5 dropped the `{php}`
-   tag** — switch to the
+5. If you use a custom theme, note that **Smarty 5 (which 1.7.0+
+   uses) dropped the `{php}` tag**. Custom themes that relied on
+   `{php}` need to switch to the
    [`{load_template}`](https://github.com/sbpp/sourcebans-pp/blob/main/web/includes/SmartyCustomFunctions.php)
    tag instead.
 
-:::tip
-A clean re-test after upgrade: log out, log back in (this exercises
-the JWT path), open `?p=admin&c=settings`, and walk one of the admin
-sub-pages (e.g. `?p=admin&c=admins`). If the chrome paints and the
-sidebar lights up, the upgrade landed.
-:::
+### Upgrading the plugin from <= 1.5.4.7
 
-## Plugin
+Pre-1.6 plugin installs shipped multiple separate `.smx` files
+(`sourcebans.smx`, `sourcecomms.smx`, …) that need to be deleted
+during the upgrade so the new consolidated `sbpp_*.smx` plugins
+take over cleanly. The cleanup list is in
+[Legacy → Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/).
 
-1. Upload and overwrite all contents in `game` to your root game
-   directory (`tf`, `cs`, etc).
+### Anything older
 
-2. Reconfigure the config files in `addons/sourcemod/configs/sourcebans/`
-   if you've changed any defaults.
+If you're on an install older than 1.6.x and the pages above don't
+cover your starting point, drop into our
+[Discord](https://discord.gg/tzqYqmAtF5) `#help-support` channel —
+we'll walk you through it and add a page to the
+[Legacy](/legacy/) section if your situation is likely to recur.
 
-3. Reload the map / restart the server and tail
-   `addons/sourcemod/logs/` to confirm the plugin loaded cleanly.
+## After the upgrade
 
-## Plugin — upgrading from version <= 1.5.4.7
+A quick smoke test once everything's uploaded:
 
-Pre-1.6 plugin installs need a one-off cleanup pass to remove the
-legacy `sourcebans.smx` / `sourcecomms.smx` / `sbchecker.smx` /
-`sb_admcfg.smx` / `SourceSleuth.smx` files before the new
-`sbpp_*.smx` consolidated plugins take over. The full step-by-step
-lives in [Legacy → Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/).
+1. **Log out and back in.** This exercises the session path; if
+   the JWT secret or session storage is misconfigured you'll catch
+   it here.
 
-If you're upgrading across multiple major versions, the
-[Legacy](/legacy/) section catalogs the older one-off upgrade quirks.
+2. **Visit `?p=admin&c=settings`.** This is one of the heavier admin
+   surfaces; if it paints cleanly, the chrome is healthy.
+
+3. **Visit a game server's row.** If the panel can reach it (player
+   list, map, online indicator), the cross-component plumbing
+   survived.
+
+4. **Apply and lift a test ban.** Confirms the write path through
+   to the SourceMod plugin still works.
+
+If anything looks off, the most useful starting points are:
+
+- [Panel not loading](/troubleshooting/panel-not-loading/) — blank
+  page or hanging tab after upgrade.
+- [Database errors](/troubleshooting/database-errors/) — if the
+  panel reports a SQL or table error.
+- [Driver not found](/troubleshooting/could-not-find-driver/) — if
+  the plugin can't talk to the DB after the plugin upgrade.

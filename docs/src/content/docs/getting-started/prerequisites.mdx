@@ -1,111 +1,120 @@
 ---
-title: Prerequisites
-description: What you need on the web and game side before installing SourceBans++.
+title: Requirements
+description: What you need on the web side and the game side before installing SourceBans++.
 sidebar:
   order: 2
+  label: Requirements
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-:::note
-This page is **new content authored for the docs migration** (#1333) —
-the legacy `sbpp.github.io` site folded prerequisites into the
-Quickstart instead of breaking them out. The version / extension list
-below is sourced from the live install wizard
-(`web/install/pages/page.3.php`) and `web/composer.json`.
-:::
+A single-page list of what your host needs to provide before you can
+install SourceBans++. If anything below is unfamiliar, ask your host's
+support team — most shared and dedicated hosts can confirm or enable
+these in a few clicks.
 
-A standalone version of the requirements list that ships at the top of
-the [Quickstart](/getting-started/quickstart/) — useful as a single-page
-reference when you're checking a host before committing.
+## Web side
 
-## Web
+The web panel runs on PHP and stores its data in a MySQL- or
+MariaDB-compatible database.
 
 ### Database
 
-Either MySQL or MariaDB is fine; SB++ uses standard SQL plus a couple
-of MySQL-flavoured idioms that both engines support.
+Either MySQL or MariaDB works. They're SQL-compatible engines and
+SourceBans++ has supported both since the project started.
 
 <Tabs syncKey="db">
   <TabItem label="MariaDB" icon="seti:db">
-    **>= 10.0** (the [MariaDB setup
-    guide](/setup/mariadb/) targets the current Ubuntu LTS series and
-    installs MariaDB 10.11).
-
-    Recommended for new installs — it's the engine the dev stack and
-    CI use.
+    **>= 10.0** is the floor. We recommend MariaDB for new installs —
+    it's what the dev stack and CI use, and the
+    [Database setup](/setup/mariadb/) guide targets it directly.
   </TabItem>
 
   <TabItem label="MySQL" icon="seti:db">
-    **>= 5.6** (8.0 is supported and recommended). Note that the
-    `GRANT ... IDENTIFIED BY ...` shorthand was removed in MySQL 8;
-    create the user first and grant privileges in a second
-    statement. See the [MariaDB granting section](/setup/mariadb/#granting-permission)
-    for the canonical syntax — it works identically on MySQL 8.
+    **>= 5.6** is the floor (8.0+ is fine and recommended). MySQL 8
+    dropped the combined `GRANT … IDENTIFIED BY` syntax — use the
+    two-statement form shown in
+    [Database setup → Granting permission](/setup/mariadb/#granting-permission).
   </TabItem>
 </Tabs>
 
-The `utf8mb4` charset is required (not the 3-byte `utf8` alias). Player
-names with emoji or 4-byte CJK characters otherwise fail to insert.
+The character set must be **`utf8mb4`** (the real 4-byte UTF-8, not
+the 3-byte `utf8` alias). Without it, player names with emoji or
+some CJK characters fail to insert and the plugin logs a SQL error.
 
 ### PHP
 
-- **PHP >= 8.5** (enforced by `web/composer.json` and re-checked in
-  the install wizard's "System check" step)
-- `memory_limit` >= 64M (a sensible recommendation; not enforced by
-  the wizard, but the panel will hit OOM on large ban-list paginations
-  below this)
-- Required extensions (all five checked by the install wizard):
-  - `gmp`
-  - `pdo_mysql`
-  - `openssl`
+- **PHP 8.5 or newer.** This is checked by the install wizard's
+  "System check" step.
+- **64 MB memory limit minimum.** The wizard doesn't enforce this,
+  but the panel can run out of memory on large ban-list pages below
+  64 MB.
+- These PHP extensions must be loaded:
+  - `gmp` — large-integer math (for Steam ID conversion)
+  - `pdo_mysql` — MySQL/MariaDB driver
+  - `openssl` — TLS for SMTP and the panel's session tokens
   - `xml`
   - `mbstring`
 
-A quick check:
+You can confirm them all in one command:
 
 ```sh
 php -m | grep -E '^(gmp|pdo_mysql|openssl|xml|mbstring)$'
 ```
 
-You should see all five printed back. If `pdo_mysql` is missing, see
-[Could not find driver](/troubleshooting/could-not-find-driver/).
+You should see all five printed back. If any are missing, install
+your distro's `php-<name>` package for that version (e.g.
+`php8.5-gmp`). If `pdo_mysql` is the missing one,
+[Driver not found](/troubleshooting/could-not-find-driver/) has the
+fix.
 
 ### Composer (only when installing from `main`)
 
-Release archives bundle the `vendor/` directory, so a fresh tarball
-needs no Composer step. If you're checking out the `main` branch
-directly (development install), pull deps with:
+The release zip on the GitHub Releases page bundles everything
+already — **a normal install needs no Composer step.**
+
+You only need Composer if you're installing from a `git clone` of
+the `main` branch (development install). In that case:
 
 ```sh
 cd web && composer install
 ```
 
-The install wizard ships a recovery surface (`web/install/recovery.php`)
-that detects a missing `vendor/` and prints recovery instructions —
-useful when an FTP upload silently skipped the directory or when
-you're running off a fresh git clone. The cleaner story for a
-production install is "use a release tarball unless you're hacking on
-the panel itself".
+If you skip this on a `main` checkout, the install wizard surfaces a
+recovery page (`/install/recovery.php`) that explains the fix.
 
-## Game
+## Game side
 
-- **SourceMod >= 1.11** (1.12 stable recommended)
-- **Metamod: Source**
+The SourceMod plugins are what runs on your game servers:
 
-The game-side plugin needs SourceMod's `dbi.mysql` extension as well —
-on Linux this is usually pulled in automatically with SourceMod, but
-see [Could not find driver](/troubleshooting/could-not-find-driver/)
-if the plugin reports it can't connect.
+- **SourceMod 1.11 or newer** — 1.12 stable recommended.
+- **Metamod: Source** — SourceMod's loader.
+
+Most game-server hosts ship SourceMod 1.11+ by default; if yours
+doesn't, you can install it from
+[sourcemod.net](https://www.sourcemod.net/).
+
+The plugin also needs SourceMod's `dbi.mysql` extension to talk to
+the database. On Linux this is bundled with SourceMod itself; on
+exotic setups it may need to be enabled explicitly — see
+[Driver not found](/troubleshooting/could-not-find-driver/) if the
+plugin logs a connection error.
 
 ## Networking
 
-The panel reaches out to your game servers over UDP (server query) and
-TCP (RCON). See [Ports](/setup/ports/) for the firewall list and
-[Debugging connection](/troubleshooting/debugging-connection/) if
-something doesn't show up.
+The web panel reaches your game servers over the network:
 
-## When you're ready
+- It sends UDP queries to read map name + player list.
+- It opens TCP connections for RCON to push commands.
 
-Head to the [Quickstart](/getting-started/quickstart/) and walk through
-the install in order.
+If the panel and game servers are behind firewalls (typically: yes),
+both protocols need to reach the game server's listening port from
+the panel's host. The full firewall checklist is in
+[Network ports](/setup/ports/) and the diagnostic flow if the panel
+can't reach a server lives in
+[Server connection issues](/troubleshooting/debugging-connection/).
+
+## Ready to install?
+
+When the boxes above are ticked, head to the
+[Quickstart](/getting-started/quickstart/) and follow it end-to-end.

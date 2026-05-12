@@ -1,41 +1,60 @@
 ---
-title: Plugin — upgrading from version <= 1.5.4.7
-description: One-off cleanup steps when upgrading the SourceMod plugin half from a pre-1.6 SourceBans++ install.
-# Astro 5 strips dots from filename-derived slugs (the canonical path
-# would otherwise be `/legacy/plugin-pre-1547/`, which loses the
-# version intent). Pin the slug explicitly so the URL reads naturally.
+title: Plugin upgrade from <= 1.5.4.7
+description: One-off cleanup steps when upgrading the SourceMod plugin from a pre-1.6 SourceBans++ install.
 slug: legacy/plugin-pre-1.5.4.7
 sidebar:
   order: 2
 ---
 
 :::caution
-This page covers an upgrade pathway for **legacy** SourceBans++ versions
-(pre-1.6 plugin). The information may be inaccurate or out of date.
-Modern installs follow [Updating → Plugin](/updating/#plugin) instead.
+This page covers an upgrade path for **legacy** SourceBans++
+plugins (pre-1.6). Modern installs follow
+[Updating → Upgrade the plugin](/updating/#upgrade-the-plugin)
+instead.
 :::
 
-The pre-1.6 plugin shipped multiple separate `.smx` files; current
-releases consolidate them under the `sbpp_*` prefix. Clean those up
-during the upgrade:
+The pre-1.6 plugin shipped as several separate `.smx` files. Current
+releases consolidate them under the `sbpp_*` prefix. If you're
+upgrading from a pre-1.6 install, you need to remove the old files
+manually so SourceMod doesn't try to load both halves at once.
 
-1. Upload and overwrite all contents in `game` to your root game
-   directory.
+## Steps
 
-2. Reconfigure the config files in
-   `addons/sourcemod/configs/sourcebans/`.
+1. **Upload and overwrite** all contents of the new `game/` folder
+   onto your game server's root.
 
-3. **Delete the legacy plugins**:
+2. **Update the plugin config files** in
+   `addons/sourcemod/configs/sourcebans/` — the v1.6+ format may
+   have new fields. The defaults are sensible if you're not sure.
+
+3. **Delete the old plugin files** from `addons/sourcemod/plugins/`:
+
    - `sourcebans.smx`
    - `sourcecomms.smx`
    - `sbchecker.smx`
    - `sb_admcfg.smx`
    - `SourceSleuth.smx`
 
-4. Restart the server and verify the new `sbpp_*.smx` plugins are
-   loaded via `sm plugins list`.
+   The new consolidated plugins (`sbpp_main.smx`, `sbpp_comms.smx`,
+   `sbpp_checker.smx`, `sbpp_admcfg.smx`, `sbpp_sleuth.smx`)
+   replace all of them.
 
-If the plugin doesn't load cleanly after the swap, see
-[Could not find driver](/troubleshooting/could-not-find-driver/) and
-[Database errors](/troubleshooting/database-errors/) — the same
-diagnostic paths apply to legacy and current plugin builds.
+4. **Restart the game server** so SourceMod loads the new plugin
+   set cleanly.
+
+5. **Verify** with `sm plugins list` — you should see the new
+   `sbpp_*` entries loaded and no errors about the old plugins.
+
+## If something doesn't load
+
+If a plugin fails to load after the swap, the most likely causes
+are the same ones the current install can hit:
+
+- [Driver not found](/troubleshooting/could-not-find-driver/) —
+  the SourceMod-side MySQL extension isn't available.
+- [Database errors](/troubleshooting/database-errors/) — the
+  database is reachable but the queries themselves fail.
+
+If neither of those covers it, share the SourceMod log entry from
+`addons/sourcemod/logs/` in our
+[Discord](https://discord.gg/tzqYqmAtF5) `#help-support` channel.

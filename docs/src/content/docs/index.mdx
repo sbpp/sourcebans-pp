@@ -4,13 +4,13 @@ description: Self-hostable ban management for Source-engine game servers — ins
 template: splash
 hero:
   tagline: |
-    Self-hostable ban management for Source-engine game servers.
+    Self-hosted ban management for Source-engine game servers.
     Install in minutes, upgrade safely, troubleshoot fast.
   image:
     file: ../../assets/logo.svg
   actions:
-    - text: Quickstart
-      link: /getting-started/quickstart/
+    - text: Get started
+      link: /getting-started/overview/
       icon: right-arrow
       variant: primary
     - text: View on GitHub
@@ -19,29 +19,56 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from '@astrojs/starlight/components';
+import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+SourceBans++ is a free, open-source admin and ban-management system
+for Source-engine games (Team Fortress 2, Counter-Strike, Garry's Mod,
+and friends). It has two halves that talk to each other:
+
+- A **web panel** your admins use to manage bans, mutes, server access,
+  and admin permissions.
+- A set of **SourceMod plugins** running on your game servers that
+  enforce those bans in-game and report new admin actions back to the
+  panel.
+
+You install both, point them at the same database, and the rest is
+day-to-day moderation work.
 
 ## Where to start
 
 <CardGrid stagger>
-  <Card title="Get up and running" icon="rocket">
-    Walk through a fresh install — DB setup, web upload, plugin
-    config — in the [Quickstart](/getting-started/quickstart/).
+  <Card title="New here?" icon="information">
+    Read the [Overview](/getting-started/overview/) for a quick map of
+    how the panel and plugin halves fit together, then move on to the
+    install guide.
   </Card>
 
-  <Card title="Hook up your servers" icon="setting">
-    Once the panel is live, [add your game servers](/setup/adding-server/)
-    and wire the SourceMod plugin's `ServerID`.
+  <Card title="Install it" icon="rocket">
+    The [Quickstart](/getting-started/quickstart/) walks you through a
+    fresh install end-to-end: database, web panel, plugin, and your
+    first server.
   </Card>
 
-  <Card title="Common errors" icon="warning">
-    Database error, missing PDO driver, blank page? The
-    [Troubleshooting](/troubleshooting/database-errors/) section
-    catalogs the usual suspects.
+  <Card title="Connect your servers" icon="setting">
+    Once the panel is live, [add a game server](/setup/adding-server/)
+    and wire its `ServerID` into the SourceMod plugin's config.
   </Card>
 
-  <Card title="Stay current" icon="approve-check">
-    Already running an older release? See
-    [Updating](/updating/) for the safe upgrade path.
+  <Card title="Already running it?" icon="approve-check">
+    See [Updating](/updating/) for the safe upgrade path — and the
+    dedicated [1.8.x → 2.0.x guide](/updating/1-8-to-2-0/) if you're
+    crossing the v2.0 boundary.
+  </Card>
+
+  <Card title="Something broken?" icon="warning">
+    The [Troubleshooting](/troubleshooting/panel-not-loading/)
+    section catalogs the usual culprits — database errors, missing
+    PHP extensions, blank pages, and server-connection issues.
+  </Card>
+
+  <Card title="Need a hand?" icon="comment">
+    Drop into our [Discord](https://discord.gg/tzqYqmAtF5) and ask in
+    `#help-support`. The [FAQ](/faq/) covers the questions we answer
+    most often.
   </Card>
 </CardGrid>

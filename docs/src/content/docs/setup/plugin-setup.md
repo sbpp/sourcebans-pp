@@ -1,94 +1,112 @@
 ---
 title: Plugin setup
-description: Wiring the SourceMod side of SourceBans++ — databases.cfg, sourcebans.cfg, and the optional companion plugins.
+description: Wire up the SourceMod side of SourceBans++ — databases.cfg, sourcebans.cfg, and the optional companion plugins.
 sidebar:
   order: 2
 ---
 
-:::note
-This page is **new content authored for the docs migration** (#1333) —
-the legacy `sbpp.github.io` site never had a dedicated plugin-setup
-page. The configs and plugin list below are sourced from the live
-`game/addons/sourcemod/scripting/` tree and should be verifiable
-against your release zip; if you spot a divergence, please open a PR
-or drop a note in `#help-support` on Discord.
-:::
+The SourceMod plugins are what actually enforce bans, mutes, and gags
+in-game and report new admin actions back to the panel. This page
+covers the two config files every install needs, and the optional
+companion plugins that round out the experience.
 
-The plugin half of SourceBans++ is what actually applies bans /
-mutes / gags in-game and reports new admin actions back to the panel.
-This page covers the two config files the plugin needs and the
-optional companion plugins that round out the experience.
+If you're installing for the first time, the
+[Quickstart](/getting-started/quickstart/) covers this in context. If
+you've already got the panel running and you're rolling out the plugin
+to a new server, this is the page you want.
 
 ## Required configs
 
+The plugin needs two config files filled in: one to tell SourceMod how
+to reach the database, and one to tell SourceBans++ which server it's
+running on.
+
 ### `databases.cfg`
 
-Edit `addons/sourcemod/configs/databases.cfg` and add a `sourcebans`
-section pointing at the same database the panel uses:
+`addons/sourcemod/configs/databases.cfg` is a SourceMod-wide file that
+lists every database any plugin on the server can talk to. Add a
+`sourcebans` block pointing at the same database your web panel uses:
 
 ```ini
 "sourcebans"
 {
     "driver"        "default"
-    "host"          "EDITME_DATABASE_HOST_EDITME"
-    "database"      "EDITME_DATABASE_EDITME"
-    "user"          "EDITME_USERNAME_EDITME"
-    "pass"          "EDITME_PASSWORD_EDITME"
-    "port"          "3306" // EDIT IF NEEDED
+    "host"          "EDITME_DATABASE_HOST"
+    "database"      "EDITME_DATABASE_NAME"
+    "user"          "EDITME_DATABASE_USER"
+    "pass"          "EDITME_DATABASE_PASSWORD"
+    "port"          "3306"
 }
 ```
 
 :::caution
-The web panel will offer to generate this section for you, but it's a
-best-effort suggestion — review the values before pasting. If the
-panel and the game server are on different hosts, double-check the
-`host` is reachable from the game server's network and that your DB
-is configured to allow remote connections.
+The web panel offers to generate this block for you, but treat it as
+a starting point — review every value before pasting. The panel
+guesses based on its own config, which is often wrong for game
+servers on a different host.
+
+If the panel and the game server live on **different networks**,
+your DB will also need to allow the game server's IP in the user
+grant — see
+[Database setup → Granting permission](/setup/mariadb/#granting-permission).
 :::
 
 ### `sourcebans.cfg`
 
-`addons/sourcemod/configs/sourcebans/sourcebans.cfg` carries
-per-server tunables. The most important field is **`ServerID`** — the
-numeric ID the panel assigns when you
-[add the server](/setup/adding-server/). Without it, the plugin can
-record bans against the wrong server (or no server at all).
+`addons/sourcemod/configs/sourcebans/sourcebans.cfg` is the per-server
+config. The single most important field is **`ServerID`** — the
+numeric ID the panel assigned when you
+[added the server](/setup/adding-server/). Without a correct
+`ServerID`, bans applied from in-game won't show up against the right
+server in the panel.
 
-After editing, reload the map or restart the game server so the
-plugin re-reads the config.
+The rest of the file controls in-game admin menu behaviour (ban
+durations, default reasons, immunity flags, …). The defaults are
+sensible; tweak as you go.
 
-## Common companion plugins
+After editing either file, **reload the map or restart the game
+server** so SourceMod re-reads the configs.
 
-These ship in the same release as the core plugin (one `.sp` source
-per plugin under `game/addons/sourcemod/scripting/`); load only what
-you need.
+## Companion plugins
 
-- **`sbpp_main.smx`** — the core plugin. Required.
-- **`sbpp_comms.smx`** — communication blocks (mute / gag).
-- **`sbpp_checker.smx`** — checks newly-connected clients against
-  the panel's ban list (catches bans applied while the player was
-  offline).
-- **`sbpp_report.smx`** — in-game `!report` command.
-- **`sbpp_sleuth.smx`** — alt-account detection helper.
-- **`sbpp_admcfg.smx`** — admin-config loader. Reads admin / group /
-  override files from the panel into SourceMod (replaces SourceMod's
-  stock `admin-flatfile.smx` + `sb_admcfg.smx` from older builds).
+A SourceBans++ release ships several `.smx` files. Only `sbpp_main.smx`
+is mandatory; the others are opt-in based on what you want:
 
-Plus the standalone Discord forwarder shipped from
-[`sbpp/discord-forward`](https://github.com/sbpp/discord-forward) —
-see [Discord forward setup](/integrations/discord-forward-setup/).
+| Plugin                | What it does | Most installs want it? |
+| --------------------- | ------------ | ---------------------- |
+| `sbpp_main.smx`       | The core. Ban / unban, in-game admin menu, panel write-back. | **Yes** — required. |
+| `sbpp_comms.smx`      | Communication blocks (mute / gag). | Yes if you care about voice / text moderation. |
+| `sbpp_checker.smx`    | Re-checks every connecting client against the panel's ban list — catches bans issued while the player was offline. | Yes — closes a real loophole. |
+| `sbpp_report.smx`     | In-game `!report` command for players. | Up to you. |
+| `sbpp_sleuth.smx`     | Detects alt accounts by recording IP / SteamID associations. | Useful for larger communities. |
+| `sbpp_admcfg.smx`     | Loads admin / group / override definitions from the panel into SourceMod. Replaces SourceMod's stock `admin-flatfile.smx` and pre-1.6 `sb_admcfg.smx`. | Yes if you want panel-managed admins. |
+
+Drop the plugins you want into `addons/sourcemod/plugins/` and remove
+the ones you don't (SourceMod loads everything it finds, so an unused
+plugin still consumes a server slot).
+
+### Discord notifications
+
+For a Discord-channel forwarder, install the separate
+[`sbpp/discord-forward`](https://github.com/sbpp/discord-forward)
+plugin. Setup is in
+[Discord notifications](/integrations/discord-forward-setup/).
 
 ## Verifying
 
-After your first ban via the panel or in-game, the
-`addons/sourcemod/logs/sourcebans/` directory should grow a new log
-entry. If it doesn't, the plugin can't reach the database — see:
+After your first ban from in-game (or from the panel), check:
 
-- [Could not find driver](/troubleshooting/could-not-find-driver/) —
-  the SourceMod-side `dbi.mysql.ext.so` extension is missing or
-  failing to load.
-- [Database errors](/troubleshooting/database-errors/) — the
-  database is reachable but the queries themselves fail.
-- [Debugging connection](/troubleshooting/debugging-connection/) —
-  the panel can't reach the game server (server-list / RCON
-  failures).
+- `addons/sourcemod/logs/sourcebans/` should grow a log entry.
+- The new ban should appear in the panel's **Bans** page within a
+  few seconds.
+- A subsequent connection attempt by the banned player should be
+  rejected with the ban message.
+
+If any of these don't happen:
+
+- **Plugin can't reach the database** — see
+  [Driver not found](/troubleshooting/could-not-find-driver/).
+- **Database is reachable but queries fail** — see
+  [Database errors](/troubleshooting/database-errors/).
+- **Panel doesn't show the server's player list** — see
+  [Server connection issues](/troubleshooting/debugging-connection/).

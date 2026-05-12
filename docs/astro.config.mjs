@@ -86,8 +86,9 @@ export default defineConfig({
         {
           label: 'Getting Started',
           items: [
+            { label: 'Overview', slug: 'getting-started/overview' },
+            { label: 'Requirements', slug: 'getting-started/prerequisites' },
             { label: 'Quickstart', slug: 'getting-started/quickstart' },
-            { label: 'Prerequisites', slug: 'getting-started/prerequisites' },
           ],
         },
         {
@@ -95,8 +96,9 @@ export default defineConfig({
           items: [
             { label: 'Adding a server', slug: 'setup/adding-server' },
             { label: 'Plugin setup', slug: 'setup/plugin-setup' },
-            { label: 'Ports', slug: 'setup/ports' },
-            { label: 'MariaDB', slug: 'setup/mariadb' },
+            { label: 'Admins & groups', slug: 'setup/admins-and-groups' },
+            { label: 'Network ports', slug: 'setup/ports' },
+            { label: 'Database setup', slug: 'setup/mariadb' },
           ],
         },
         {
@@ -109,14 +111,14 @@ export default defineConfig({
         {
           label: 'Troubleshooting',
           items: [
-            { label: 'Browser freeze', slug: 'troubleshooting/browser-freeze' },
+            { label: "Panel won't load", slug: 'troubleshooting/panel-not-loading' },
             {
-              label: 'Could not find driver',
+              label: 'Driver not found',
               slug: 'troubleshooting/could-not-find-driver',
             },
             { label: 'Database errors', slug: 'troubleshooting/database-errors' },
             {
-              label: 'Debugging connection',
+              label: 'Server connection',
               slug: 'troubleshooting/debugging-connection',
             },
           ],
@@ -125,7 +127,7 @@ export default defineConfig({
           label: 'Integrations',
           items: [
             {
-              label: 'Discord forward',
+              label: 'Discord notifications',
               slug: 'integrations/discord-forward-setup',
             },
           ],
@@ -134,7 +136,7 @@ export default defineConfig({
           label: 'Customization',
           items: [
             {
-              label: 'Removing default message',
+              label: 'Dashboard intro',
               slug: 'customization/removing-default-message',
             },
             { label: 'Translating', slug: 'customization/translating' },
@@ -142,10 +144,7 @@ export default defineConfig({
         },
         {
           label: 'FAQ',
-          items: [
-            { label: 'Frequently asked questions', slug: 'faq' },
-            { label: 'Common inquiries', slug: 'faq/inquiries' },
-          ],
+          link: '/faq/',
         },
         // Legacy section deliberately omitted from the main sidebar per
         // #1333 §5 — content is unmaintained and discovery happens via

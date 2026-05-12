@@ -1,0 +1,122 @@
+---
+title: Overview
+description: How SourceBans++ is structured — the web panel, the SourceMod plugins, the shared database, and how they fit together.
+sidebar:
+  order: 1
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+This page is a quick mental model of how SourceBans++ is put together,
+so the rest of the guide reads as "wire up these named pieces" rather
+than a wall of commands. Skip ahead if you already run an ops-grade
+SourceMod stack.
+
+## The big picture
+
+SourceBans++ has two halves that share a single database:
+
+```
+                    +-------------------------+
+                    |     Web panel (PHP)     |
+                    |  /var/www/sourcebans/   |
+                    +-----------+-------------+
+                                |
+                                |  reads & writes
+                                v
+                       +--------+--------+
+                       |    Database     |
+                       | MySQL / MariaDB |
+                       +--------+--------+
+                                ^
+                                |  reads & writes
+                                |
+                    +-----------+-------------+
+                    | SourceMod plugins (.smx)|
+                    |   on each game server   |
+                    +-------------------------+
+```
+
+The **web panel** is what your admins log into. It's a PHP app that
+talks to the database directly. You install it once, on any host that
+can run PHP and reach the database (typically the same host).
+
+The **SourceMod plugins** run on each of your game servers (one
+install per game server). They enforce bans in-game — disconnecting
+banned players, muting players in comm blocks — and write new
+admin actions back to the database so the panel sees them too.
+
+Both halves share **one database**. There is no API contract between
+the plugin and the panel; they coordinate through shared SQL tables.
+This matters because:
+
+- The plugin and panel can run on **different hosts**, as long as
+  both can reach the database.
+- Adding a new game server is a database row, not a network handshake.
+- A short database outage is the only thing that can desync them.
+
+## Things you'll set up
+
+A first-time install walks through, in order:
+
+1. **A database** — MariaDB or MySQL, hosted wherever's convenient.
+   See [Database setup](/setup/mariadb/).
+2. **The web panel** — Upload, run the install wizard, log in.
+   See [Quickstart](/getting-started/quickstart/).
+3. **One or more game servers** — Add each to the panel to get a
+   `ServerID`. See [Adding a server](/setup/adding-server/).
+4. **The SourceMod plugins** — Drop them onto each game server, edit
+   two config files (`databases.cfg` and `sourcebans.cfg`), restart
+   the server. See [Plugin setup](/setup/plugin-setup/).
+5. **Your admin team** — Create admins, group them, hand out
+   permissions. See [Admins & groups](/setup/admins-and-groups/).
+
+After that you're in day-to-day operation: people get banned, you
+review appeals, you tune permissions.
+
+## Key concepts
+
+A handful of terms come up over and over in the panel and in this
+guide.
+
+**Admin** — a panel user with a Steam ID, an email, and a set of
+permission flags. Admins also exist server-side (the plugin reads them
+from the panel into SourceMod), so a panel admin with the right flags
+is automatically an in-game admin too.
+
+**Group** — a named bundle of permission flags. Most installs assign
+permissions to groups (e.g. "Moderators", "Senior admins") and then
+assign admins to groups, instead of granting permissions per-admin.
+
+**Server** — a single game-server instance registered in the panel.
+Each one has an `IP:port`, an RCON password, and a numeric `ServerID`
+that the SourceMod plugin uses to tag its writes.
+
+**Ban** — a Steam ID or IP record with a duration, reason, and the
+admin who issued it. Permanent bans have no expiry. Temporary bans
+expire on their own.
+
+**Comm block** — a mute or gag. Mutes silence voice; gags silence
+text chat. Same concept as a ban, applied to communication rather
+than connection.
+
+**RCON** — Source's remote-control protocol. The panel uses it to
+push commands (kick, ban, reload) to a running game server. The
+password lives in the panel and in the game server's config; getting
+them out of sync is the most common "panel can't talk to the server"
+cause.
+
+## What's next
+
+<CardGrid>
+  <LinkCard
+    title="Check the requirements"
+    href="/getting-started/prerequisites/"
+    description="PHP version, DB engine, SourceMod version, and what extensions you need before installing."
+  />
+  <LinkCard
+    title="Install SourceBans++"
+    href="/getting-started/quickstart/"
+    description="End-to-end fresh install — database, web upload, wizard, plugin config."
+  />
+</CardGrid>

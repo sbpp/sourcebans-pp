@@ -1,26 +1,45 @@
 ---
-title: MariaDB
-description: Setting up a MariaDB (or MySQL) server for SourceBans++ on Ubuntu LTS.
+title: Database setup
+description: Install and configure MariaDB (or MySQL) for SourceBans++.
 sidebar:
-  order: 4
+  order: 5
+  label: Database
 ---
 
 import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
-SourceBans++ requires **MariaDB >= 10.0** or **MySQL >= 5.6**. The
-instructions below target current Ubuntu LTS releases (22.04 / 24.04)
-and install the **MariaDB 10.11 LTS** series.
+SourceBans++ needs a MySQL- or MariaDB-compatible database. This page
+walks through installing **MariaDB on Ubuntu** (the most common
+self-host path) and creating the user and database the panel will use.
 
-If you're already comfortable installing MariaDB or MySQL on your own
-distro, skip to [Granting permission](#granting-permission) — the
-`CREATE USER` / `GRANT` syntax is the only SB++-specific bit.
+If you already run MySQL or MariaDB and just need the user / grant
+syntax, jump straight to [Granting permission](#granting-permission).
+
+If you're on **shared hosting** (cPanel, Plesk, DirectAdmin, …) you
+don't need any of this — your control panel has a "Create database"
+wizard that gives you the host, name, user, and password. Use those
+values directly in the SourceBans++ install wizard.
+
+## Why MariaDB?
+
+MariaDB is a drop-in MySQL replacement maintained by the original
+MySQL authors. SourceBans++ supports both engines equally — we just
+recommend MariaDB by default because:
+
+- It's what our dev stack and CI run against.
+- It's available in every major distro's package repo at a recent
+  enough version.
+- Its licence is permissive (GPL), so most hosts ship it without the
+  Oracle / Sun licensing constraints that wrap MySQL.
+
+If your host already provides MySQL, that's perfectly fine.
 
 ## Install
 
 <Tabs syncKey="db">
   <TabItem label="MariaDB (Ubuntu repo)" icon="seti:db">
-    The simplest path on a recent Ubuntu LTS — the distro repo carries
-    a recent enough MariaDB:
+    The simplest path on Ubuntu 22.04 / 24.04 — the distro repo
+    carries a recent enough MariaDB:
 
     ```sh
     sudo apt update
@@ -29,9 +48,7 @@ distro, skip to [Granting permission](#granting-permission) — the
   </TabItem>
 
   <TabItem label="MariaDB (official repo)" icon="seti:db">
-    Use this if you want a newer release than your distro provides.
-    The legacy `apt-key adv` approach is deprecated; use `signed-by`
-    instead.
+    Use this if you want a newer release than your distro ships.
 
     ```sh
     sudo apt install curl gnupg ca-certificates apt-transport-https
@@ -44,9 +61,10 @@ distro, skip to [Granting permission](#granting-permission) — the
     sudo apt install mariadb-server
     ```
 
-    The official
+    The
     [MariaDB Repository Configuration Tool](https://mariadb.org/download/?t=repo-config)
-    can generate the equivalent snippet for any distro / version.
+    generates the equivalent snippet for any distro / version
+    combination.
   </TabItem>
 
   <TabItem label="MySQL (Ubuntu repo)" icon="seti:db">
@@ -57,31 +75,43 @@ distro, skip to [Granting permission](#granting-permission) — the
     sudo apt install mysql-server
     ```
 
-    Note the [Granting permission](#granting-permission) syntax differs
-    slightly between MariaDB and MySQL 8 — see the tabs in that
-    section.
+    The [Granting permission](#granting-permission) syntax differs
+    slightly on MySQL 8+ — see the tabs in that section.
   </TabItem>
 </Tabs>
 
-## Setup
+## Secure the install
 
-Run the secure-install wizard once after install — it sets the root
-password, removes anonymous users, and disallows remote root login:
+Run the secure-install wizard once. It sets the root password,
+removes anonymous users, and disallows remote root login:
 
 ```sh
 sudo mysql_secure_installation
 ```
 
-## Configuring
+Accept the defaults unless you have a specific reason not to. The
+root password it sets is for the **database root account**, not your
+OS root — pick something different from your sudo password.
 
-Skip this section if your web panel and game servers connect to the
-database from the **same host** (`localhost`).
+## Configure for remote connections
 
-1. Open your MariaDB / MySQL config — for MariaDB on Ubuntu this is
-   typically `/etc/mysql/mariadb.conf.d/50-server.cnf`.
+**Skip this section** if the web panel and game servers all connect
+to the database from the **same host** (`localhost`). The defaults
+work as-is.
 
-2. Either comment out `bind-address` (prefix with `#`), or set it to
-   `0.0.0.0` (IPv4) or `::` (IPv4 + IPv6) to listen on all interfaces.
+If the panel and / or game servers are on a different host:
+
+1. Open the MariaDB config. On Ubuntu this is typically:
+
+   ```
+   /etc/mysql/mariadb.conf.d/50-server.cnf
+   ```
+
+2. Find the `bind-address` line. Either:
+
+   - Comment it out by prefixing with `#`, or
+   - Set it to `0.0.0.0` (IPv4) or `::` (IPv4 + IPv6) to listen on
+     all interfaces.
 
 3. Restart the service:
 
@@ -91,58 +121,91 @@ database from the **same host** (`localhost`).
    sudo systemctl restart mysql
    ```
 
-:::caution
+<Aside type="caution">
 Listening on all interfaces opens the DB to anything that can reach
-the host on port 3306. Pair this with a firewall rule that only
-allows your panel + game server hosts in (or use a private network /
-VPN), and make sure your DB user is locked to specific source hosts
-in the [grant statement](#granting-permission) below.
-:::
+the host on port 3306. **Always** pair this with:
+
+- A firewall rule that only allows the panel and game server hosts
+  in (or a private network / VPN).
+- A DB user grant scoped to those specific source hosts (see below).
+
+Never expose the database to the public internet without both
+of these in place.
+</Aside>
 
 ## Granting permission
 
-Sign into the DB shell — `sudo mariadb -u root -p` for MariaDB,
-`sudo mysql -u root -p` for MySQL — and enter the root password.
+Sign into the database shell to create a user and database for
+SourceBans++:
 
-The grant has three placeholders:
+```sh
+# MariaDB:
+sudo mariadb -u root -p
 
-- `USERNAME` — the user you wish to create.
-- `HOST` — the host you wish to whitelist (`localhost`, an IP, or `%`
-  for any host).
-- `PASSWORD` — the password to use for the new user.
+# or MySQL:
+sudo mysql -u root -p
+```
+
+Enter the root password you set during `mysql_secure_installation`.
+
+Decide on three values:
+
+- A **username** — by convention, `sourcebans`.
+- A **password** — pick a strong one; the panel saves it in
+  `config.php` and the SourceMod plugins save it in `databases.cfg`.
+- A **source host** — `localhost` if everything's on the same
+  machine, the IP of the other host, or `%` to allow any source IP
+  (paired with a firewall rule, please).
+
+Then create the database, the user, and grant access:
 
 <Tabs syncKey="db">
   <TabItem label="MariaDB / MySQL 8+" icon="seti:db">
-    The combined `GRANT ... IDENTIFIED BY ...` syntax was removed in
-    MariaDB 10.4+ and MySQL 8+, so create the user first and grant
-    privileges in a second statement. Granting on a specific
-    database (rather than `*.*`) keeps the principle of least
-    privilege.
+    Modern MariaDB and MySQL 8 dropped the combined
+    `GRANT … IDENTIFIED BY` syntax. Use two statements:
 
     ```sql
+    CREATE DATABASE IF NOT EXISTS `sourcebans`
+      CHARACTER SET utf8mb4
+      COLLATE utf8mb4_unicode_ci;
+
     CREATE USER 'USERNAME'@'HOST' IDENTIFIED BY 'PASSWORD';
-    GRANT ALL PRIVILEGES ON `DATABASENAME`.* TO 'USERNAME'@'HOST';
+
+    GRANT ALL PRIVILEGES ON `sourcebans`.* TO 'USERNAME'@'HOST';
+
     FLUSH PRIVILEGES;
     ```
+
+    Replace `USERNAME`, `HOST`, and `PASSWORD` with your three
+    chosen values. If you picked a different database name, swap
+    `sourcebans` for it on both the `CREATE DATABASE` and `GRANT`
+    lines.
   </TabItem>
 
   <TabItem label="MySQL 5.x (legacy)" icon="seti:db">
-    Older MySQL still accepts the combined form. If you're on a
-    legacy install:
+    Older MySQL still accepts the combined form:
 
     ```sql
-    GRANT ALL PRIVILEGES ON `DATABASENAME`.* TO 'USERNAME'@'HOST'
+    CREATE DATABASE IF NOT EXISTS `sourcebans`
+      CHARACTER SET utf8mb4
+      COLLATE utf8mb4_unicode_ci;
+
+    GRANT ALL PRIVILEGES ON `sourcebans`.* TO 'USERNAME'@'HOST'
       IDENTIFIED BY 'PASSWORD';
+
     FLUSH PRIVILEGES;
     ```
 
-    Migrate to the two-statement form when you upgrade to MySQL 8.
+    Migrate to the two-statement form whenever you upgrade past
+    MySQL 5.7.
   </TabItem>
 </Tabs>
 
+The `utf8mb4` charset is required — SourceBans++ won't insert player
+names with emoji or some CJK characters into a 3-byte `utf8` table.
+
 ## Done
 
-You're ready to point the SourceBans++ install wizard at this DB.
-Hop back to the [Quickstart](/getting-started/quickstart/#web-installation)
-and fill in the install form with the user / database / host you set
-up here.
+You now have a database, a user, and a password. Head back to the
+[Quickstart](/getting-started/quickstart/#step-3--run-the-install-wizard)
+and fill in the install wizard with those values.
