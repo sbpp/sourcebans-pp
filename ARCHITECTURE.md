@@ -94,7 +94,7 @@ web/
 │   ├── View/                 Sbpp\View\* — typed Smarty view-model DTOs
 │   ├── View/Install/         Sbpp\View\Install\* — install-wizard step DTOs (#1332)
 │   ├── Markup/               Sbpp\Markup\IntroRenderer — admin Markdown -> safe HTML
-│   ├── Servers/              Sbpp\Servers\SourceQueryCache — per-(ip, port) cache around the xPaw A2S probe (#1311)
+│   ├── Servers/              Sbpp\Servers\{SourceQueryCache, RconStatusCache} — per-(ip, port) cache around the xPaw A2S probe (#1311) + per-sid cache around the RCON `status` command (#PLAYER_CTX_MENU)
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
 │   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
@@ -687,6 +687,30 @@ back-to-back panel hits coalesce at the cache boundary; the matching
 client-side debounce on the public servers page (`page_servers.tpl`'s
 `loadTile()` flips `tile.__sbppLoading` + the Re-query button's
 `disabled` attr while a probe is in flight) closes the UX vector.
+
+`Sbpp\Servers\RconStatusCache::fetch($sid, $ttl=30)` is the sibling
+cache for the RCON `status` round-trip — needed because A2S
+`GetPlayers` does NOT carry SteamIDs. Same on-disk shape
+(`SB_CACHE/srvstatus/<sha1(sid)>.json`, tempfile + `rename` atomic
+writes, success and failure both cached for ~30s), keyed by `sid`
+instead of `(ip, port)` because the cache value depends on the
+server's stored RCON password and only the panel's `:prefix_servers`
+row carries it. The cache exists to feed the restored right-click
+context menu on player rows (#PLAYER_CTX_MENU); `api_servers_host_players`
+attaches the per-player `steamid` field by matching A2S-reported
+names against the RCON-reported `status` output, ONLY when the
+caller holds `WebPermission::Owner | WebPermission::AddBan` AND has
+per-server RCON access via `_api_servers_admin_can_rcon`. The handler
+itself is the load-bearing permission gate; the cache stays
+user-agnostic.
+
+The cache probes via `rcon($cmd, $sid, silent: true)` rather than the
+default audit-logging shape (the third parameter on the global
+`rcon()` helper in `web/includes/system-functions.php` defaults to
+`false` everywhere else — only the cache opts in). Without the
+silent flag every page hit on `?p=servers` from an admin would emit
+a "RCON Sent" entry per server, drowning out the legitimate
+RCON-from-the-RCON-panel entries the audit log exists to surface.
 
 ### Logging (`includes/Log.php`)
 
