@@ -161,6 +161,11 @@ public void OnClientAuthorized(int client, const char[] auth)
 
 public void OnConnectBanCheck(Database db, DBResultSet results, const char[] error, any userid)
 {
+	if (results == null)
+	{
+		CheckDBConnection(error);
+	}
+
 	int client = GetClientOfUserId(userid);
 	if (!client || results == null || !results.FetchRow())
 		return;
@@ -267,6 +272,7 @@ public void OnListBans(Database db, DBResultSet results, const char[] error, Dat
 
 	if (results == null)
 	{
+		CheckDBConnection(error);
 		PrintListResponse(clientuid, client, "%sDB error while retrieving bans for %s:\n%s", Prefix, targetName, error);
 		return;
 	}
@@ -432,6 +438,7 @@ public void OnListComms(Database db, DBResultSet results, const char[] error, Da
 
 	if (results == null)
 	{
+		CheckDBConnection(error);
 		PrintListResponse(clientuid, client, "%sDB error while retrieving comms for %s:\n%s", Prefix, targetName, error);
 		return;
 	}
@@ -654,5 +661,22 @@ stock void LateLoading()
 		
 		GetClientAuthId(i, AuthId_Steam2, sSteam32ID, sizeof(sSteam32ID));
 		OnClientAuthorized(i, sSteam32ID);
+	}
+}
+
+public Action Timer_ReconnectDB(Handle timer)
+{
+	Database.Connect(OnDatabaseConnected, "sourcebans");
+	return Plugin_Continue;
+}
+
+void CheckDBConnection(const char[] error)
+{
+	if (g_DB != null && (StrContains(error, "Lost connection", false) != -1 || StrContains(error, "gone away", false) != -1))
+	{
+		LogError("SourceChecker: Lost connection to DB. Reconnect after delay.");
+		delete g_DB;
+		g_DB = null;
+		CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
 	}
 }

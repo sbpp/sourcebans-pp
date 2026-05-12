@@ -189,7 +189,7 @@ public void SQL_CheckHim(Database db, DBResultSet results, const char[] error, D
 
 	if (results == null)
 	{
-		LogError("SourceSleuth: Database query error: %s", error);
+		CheckDBConnection(error);
 		return;
 	}
 
@@ -287,4 +287,21 @@ public void LoadWhiteList()
 	}
 
 	delete fileHandle;
+}
+
+public Action Timer_ReconnectDB(Handle timer)
+{
+	Database.Connect(SQL_OnConnect, "sourcebans");
+	return Plugin_Continue;
+}
+
+void CheckDBConnection(const char[] error)
+{
+	if (hDatabase != null && (StrContains(error, "Lost connection", false) != -1 || StrContains(error, "gone away", false) != -1))
+	{
+		LogError("SourceSleuth: Lost connection to DB. Reconnect after delay.");
+		delete hDatabase;
+		hDatabase = null;
+		CreateTimer(2.0, Timer_ReconnectDB, _, TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
