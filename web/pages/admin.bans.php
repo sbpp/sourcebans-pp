@@ -288,9 +288,42 @@ if ($section === 'add-ban') {
         ? unserialize((string) Config::get('bans.customreasons'))
         : false;
     /** @var false|list<string> $customReason */
+
+    /*
+     * Smart-default pre-fill for SteamID / IP via `?steam=…&type=…`
+     * (mirrors the existing `?rebanid=…` / `?action=pasteBan` shapes
+     * a few lines above). The public servers list's right-click
+     * context menu (restored after #1306) drops admins on
+     * `?p=admin&c=bans&section=add-ban&steam=STEAM_…&type=0` to
+     * pre-populate the form without firing a JSON action — the form
+     * has to be usable on the no-JS path on this surface, so the
+     * pre-fill happens server-side via the View DTO rather than
+     * through `__sbppApplyBanFields`. Allowed type values are 0
+     * (Steam ID) and 1 (IP); anything else falls back to 0 to match
+     * the form's default <select> option.
+     */
+    $prefillSteamRaw = isset($_GET['steam']) ? trim((string) $_GET['steam']) : '';
+    $prefillTypeRaw  = isset($_GET['type']) ? (int) $_GET['type'] : 0;
+    $prefillSteam    = '';
+    $prefillType     = 0;
+    if ($prefillSteamRaw !== '') {
+        // Allowlist the inbound shape to STEAM_X:Y:Z / [U:1:N] /
+        // SteamID64 / dotted IPv4. Anything else is dropped so a
+        // hostile / malformed referrer can't smuggle arbitrary text
+        // into the form's hidden value before the admin clicks Add.
+        // The actual ban validation runs server-side on submit via
+        // `Actions.BansAdd`; this is just the pre-fill filter.
+        if (preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}|\d{1,3}(?:\.\d{1,3}){3})$/', $prefillSteamRaw) === 1) {
+            $prefillSteam = $prefillSteamRaw;
+            $prefillType  = ($prefillTypeRaw === 1) ? 1 : 0;
+        }
+    }
+
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminBansAddView(
         permission_addban: $canAddBan,
         customreason: $customReason,
+        prefill_steam: $prefillSteam,
+        prefill_type: $prefillType,
     ));
 
     // Tail script: defines `__sbppApplyBanFields` (used by the prefill

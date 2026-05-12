@@ -10,48 +10,55 @@ use Sbpp\Tests\Fixture;
 use Smarty\Smarty;
 
 /**
- * Issue #1306: the public servers page (`?p=servers`) used to render
- * a help hint ("Right-click a player on an expanded card to kick, ban,
- * or message them.") to admins with `ADMIN_OWNER | ADMIN_ADD_BAN`.
- * The hint promised a right-click context menu that no longer ships —
- * the supporting JS lived in `web/scripts/sourcebans.js`'s
- * `LoadServerHost(...)` helper which was deleted with the rest of the
- * file at #1123 D1, and the v2.0.0 `page_servers.tpl` rewrite never
- * re-registered the menu.
+ * Player context-menu restoration — supersedes the #1306 hint-removal
+ * contract.
  *
- * The fix dropped the hint markup, the dead context-menu helpers
- * (`web/scripts/contextMenoo.js`, `sb.contextMenu`, the legacy global
- * `AddContextMenu`), and the `IN_SERVERS_PAGE` / `access_bans` View
- * props that gated the hint visibility on `Sbpp\View\ServersView`
- * (they were only consumed by the hint conditional in the template).
+ * Pre-v2.0.0 the public servers page (`?p=servers`) rendered a help
+ * hint ("Right-click a player on an expanded card to kick, ban, or
+ * message them.") promising a right-click context menu on player
+ * rows. That menu's supporting JS lived in
+ * `web/scripts/sourcebans.js`'s `LoadServerHost(...)` helper which
+ * was deleted at #1123 D1, and the v2.0.0 `page_servers.tpl` rewrite
+ * never re-registered it. Issue #1306 dropped the misleading hint
+ * + the dead context-menu helpers (`web/scripts/contextMenoo.js`,
+ * `sb.contextMenu`, the legacy global `AddContextMenu`) and locked
+ * the no-hint contract here. The pre-restoration test pinned three
+ * invariants:
  *
- * This test pins three invariants:
+ *   1. The rendered HTML for `?p=servers` did NOT contain
+ *      `data-testid="servers-rcon-hint"`.
+ *   2. The server tile DID render (proving the assertion above
+ *      wasn't a false negative caused by an empty render).
+ *   3. `Sbpp\View\ServersView` did not accept `IN_SERVERS_PAGE` or
+ *      `access_bans` named parameters (they were only consumed by
+ *      the hint's `{if …}` conditional in `page_servers.tpl`).
  *
- * 1. The rendered HTML for `?p=servers`, when an admin with the gating
- *    flags is logged in AND at least one server row is present in
- *    `:prefix_servers`, does NOT contain the
- *    `data-testid="servers-rcon-hint"` element. The bug only manifested
- *    when servers > 0, so the seeded row is load-bearing for the
- *    regression assertion — without it the hint was already hidden by
- *    the empty-state branch and a "no hint" assertion would falsely
- *    pass even on the buggy code.
- * 2. The same render still emits the server tile for the seeded row
- *    (`data-testid="server-tile"`), proving the assertion above isn't
- *    a false negative caused by a render failure that emitted no
- *    output at all.
- * 3. The `Sbpp\View\ServersView` constructor no longer accepts the
- *    `IN_SERVERS_PAGE` or `access_bans` named parameters. The View is
- *    the production source of truth for the template's variable
- *    surface; if a future contributor re-adds the props to support
- *    a new feature, this assertion fires first and they have to
- *    update the test deliberately. SmartyTemplateRule (PHPStan) is
- *    the static gate that catches the inverse direction (re-adding
- *    the hint markup without the props), but the static gate doesn't
- *    run in this test suite, so this case stands alone.
+ * This PR restores the feature under a NEW contract documented in
+ * AGENTS.md ("Anti-patterns") and at the top of
+ * `web/scripts/server-context-menu.js`:
  *
- * Mirrors the per-page integration shape from
- * `AdminAdminsSearchTest::renderAdminsPage()` (real Smarty +
- * `ob_start` capture against the production page handler).
+ *   - The menu is built from scratch against the current
+ *     event-delegate pattern — single
+ *     `document.addEventListener('contextmenu', …)` filtered by
+ *     `closest('[data-context-menu="server-player"]')`. The legacy
+ *     MooTools-era `sb.contextMenu` / `AddContextMenu` /
+ *     `contextMenoo.js` helpers stay deleted; reintroducing them
+ *     remains an anti-pattern.
+ *   - The SteamIDs the menu reads come from a NEW extension to
+ *     `api_servers_host_players` that pairs the A2S response with
+ *     a cached RCON `status` round-trip (`Sbpp\Servers\RconStatusCache`).
+ *     The handler is the load-bearing gate; anonymous and
+ *     partial-permission callers never receive SteamIDs.
+ *   - The admin hint copy returns, gated on
+ *     `can_use_context_menu` (the `can_add_ban` slot of
+ *     `Sbpp\View\Perms::for($userbank)`). Anonymous viewers see
+ *     no hint. Pre-restoration this test pinned `assertStringNotContainsString`
+ *     for the same testid; the assertions are inverted here on
+ *     purpose.
+ *
+ * The class name stays the same so `git log -- ServerListHintRegressionTest`
+ * surfaces both the original #1306 lock and this restoration in
+ * one place.
  */
 final class ServerListHintRegressionTest extends ApiTestCase
 {
@@ -60,7 +67,6 @@ final class ServerListHintRegressionTest extends ApiTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->loginAsAdmin();
         $this->seedSingleServer();
         $this->bootstrapSmartyTheme();
     }
@@ -73,14 +79,16 @@ final class ServerListHintRegressionTest extends ApiTestCase
     }
 
     /**
-     * #1306 headline assertion: render `?p=servers` as an admin who
-     * holds `ADMIN_OWNER | ADMIN_ADD_BAN` (the gating flags the
-     * pre-fix hint conditional asked for) with at least one server
-     * configured. The seeded server tile must render, but the
-     * misleading right-click hint must NOT.
+     * An admin with `ADMIN_OWNER | ADMIN_ADD_BAN` (the gating
+     * permission for the restored context menu) MUST see the hint
+     * copy AND the server tile. The pre-restoration test pinned the
+     * opposite — the hint MUST NOT render. The post-restoration
+     * contract inverts both assertions; see the class docblock for
+     * the lineage.
      */
-    public function testServersPageDoesNotRenderRightClickHint(): void
+    public function testAdminSeesContextMenuHintWhenServerConfigured(): void
     {
+        $this->loginAsAdmin();
         $_GET = ['p' => 'servers'];
 
         $html = $this->renderServersPage();
@@ -88,31 +96,66 @@ final class ServerListHintRegressionTest extends ApiTestCase
         $this->assertStringContainsString(
             'data-testid="server-tile"',
             $html,
-            'The seeded server row must render — otherwise the hint absence below could be a false negative caused by an empty render.',
+            'The seeded server row must render — otherwise the hint presence assertion below could be a false positive caused by a render with stale chrome and no body.',
         );
 
-        $this->assertStringNotContainsString(
+        $this->assertStringContainsString(
             'data-testid="servers-rcon-hint"',
             $html,
-            '#1306: the misleading "Right-click a player on an expanded card to kick, ban, or message them" hint must not render — the right-click context menu the hint described was removed at #1123 D1 and the supporting `api_servers_host_players` response does not carry the SteamIDs the menu would need.',
+            'The right-click context menu hint must render for admins with ADMIN_OWNER | ADMIN_ADD_BAN — restored after #1306 superseded the no-hint contract.',
         );
-        $this->assertStringNotContainsString(
-            'Right-click a player on an expanded card',
+        $this->assertStringContainsString(
+            'Right-click a player',
             $html,
-            'Belt-and-braces text-level guard against a future contributor re-adding the hint copy under a different testid.',
+            'Belt-and-braces text-level assertion: the visible copy describes the feature the menu now ships.',
+        );
+
+        // Paired script include — restoration ships both halves
+        // together (so a fork that strips the JS in a future branch
+        // also drops the hint and the chrome stays self-consistent).
+        $this->assertStringContainsString(
+            'server-context-menu.js',
+            $html,
+            'The page must include server-context-menu.js for admin viewers — the menu is the load-bearing affordance the hint describes.',
         );
     }
 
     /**
-     * Constructor-shape guard. `Sbpp\View\ServersView` no longer
-     * accepts `IN_SERVERS_PAGE` or `access_bans` named parameters
-     * — both were only consumed by the hint's `{if …}` conditional
-     * in `page_servers.tpl` and PHP 8.1's "Unknown named parameter"
-     * error would surface a re-add at runtime. Lock the contract
-     * here so a future refactor either re-introduces the props
-     * deliberately AND updates this test, or stays clear.
+     * Anonymous viewers (logged-out) MUST NOT see the hint copy or
+     * the JS include — the SteamID side-channel `api_servers_host_players`
+     * surfaces is server-side gated on the same permission, so a
+     * logged-out caller can't use the menu anyway. Same shape as
+     * #1304's filtered chrome navigation principle.
      */
-    public function testServersViewDoesNotAcceptHintProps(): void
+    public function testAnonymousDoesNotSeeContextMenuHint(): void
+    {
+        // No login — bootstrapped with anonymous $userbank.
+        $_GET = ['p' => 'servers'];
+
+        $html = $this->renderServersPage();
+
+        $this->assertStringNotContainsString(
+            'data-testid="servers-rcon-hint"',
+            $html,
+            'Anonymous viewers must NOT see the hint copy — they have no path to use the menu.',
+        );
+        $this->assertStringNotContainsString(
+            'server-context-menu.js',
+            $html,
+            'Anonymous viewers must NOT load the context-menu JS — loading would be a wasted byte and a no-op since the JSON handler refuses SteamIDs to them.',
+        );
+    }
+
+    /**
+     * Constructor-shape guard. `Sbpp\View\ServersView` accepts a
+     * `can_use_context_menu` named parameter that the pre-#1306
+     * `IN_SERVERS_PAGE` / `access_bans` props used to gate. The
+     * new prop is a single bool splatted from
+     * `Sbpp\View\Perms::for($userbank)`'s `can_add_ban` slot, and
+     * SmartyTemplateRule cross-checks the property against the
+     * template's `{if $can_use_context_menu}` conditional.
+     */
+    public function testServersViewAcceptsContextMenuProp(): void
     {
         $reflection = new ReflectionClass(\Sbpp\View\ServersView::class);
         $constructor = $reflection->getConstructor();
@@ -123,10 +166,17 @@ final class ServerListHintRegressionTest extends ApiTestCase
             $constructor->getParameters(),
         );
 
+        $this->assertContains('can_use_context_menu', $paramNames,
+            'ServersView must accept `can_use_context_menu` so page.servers.php can gate the hint + JS include on the caller\'s permission.');
+
+        // The pre-restoration props stay gone — they were specific
+        // to the hint's `{if (IN_SERVERS_PAGE && $access_bans)}`
+        // conditional, which the post-restoration template replaces
+        // with a simpler `{if $can_use_context_menu}` guard.
         $this->assertNotContains('IN_SERVERS_PAGE', $paramNames,
-            'IN_SERVERS_PAGE was only consumed by the #1306 hint; re-adding it without re-adding the hint risks orphaning the prop.');
+            'IN_SERVERS_PAGE belonged to the pre-#1306 hint shape; the new gate uses `can_use_context_menu`.');
         $this->assertNotContains('access_bans', $paramNames,
-            'access_bans was only consumed by the #1306 hint; re-adding it without re-adding the hint risks orphaning the prop.');
+            'access_bans belonged to the pre-#1306 hint shape; the new gate uses `can_use_context_menu`.');
     }
 
     private function seedSingleServer(): void

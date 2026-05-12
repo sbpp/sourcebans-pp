@@ -92,6 +92,17 @@ $serversView = new \Sbpp\View\ServersView(
     server_list: $servers,
     opened_server: $number,
     can_add_server: $serversPerms['can_add_server'],
+    // Right-click context-menu hint + JS include are gated on
+    // ADMIN_OWNER | ADMIN_ADD_BAN (the `can_add_ban` slot in the
+    // Perms::for() snapshot). The SteamID side-channel the menu
+    // reads off `Actions.ServersHostPlayers` is independently
+    // server-side gated on the same permission AND per-server RCON
+    // access, so a partial-permission caller without the second
+    // check still only sees rows that have no `steamid` field
+    // (`renderPlayers` skips the menu wiring on those). Mirroring
+    // the gate here keeps the chrome consistent with what the
+    // backend actually surfaces.
+    can_use_context_menu: $serversPerms['can_add_ban'],
 );
 
 if (!defined('IN_HOME')) {

@@ -85,22 +85,30 @@
             </p>
         </div>
         {*
-            #1306 — the pre-#1306 hint copy here promised a right-click
-            kick/ban/message context menu on player rows that no longer
-            ships. The supporting JS (web/scripts/sourcebans.js's
-            `LoadServerHost` -> `AddContextMenu` chain) was deleted at
-            #1123 D1 and the new `renderPlayers(tile)` below never
-            re-registered it, so the help text described a feature that
-            never landed in v2.0.0. Restoring the menu would need a
-            paired RCON `status` round-trip per server (SteamIDs aren't
-            in the SourceQuery `GetPlayers` UDP response) which doubles
-            the per-card latency and only works for admins mapped to
-            servers with rcon — out of scope for this surface. The
-            kick/ban/mute UX is reachable from `?p=admin&c=kickit`,
-            `?p=admin&c=blockit`, and the row affordances on the public
-            ban / comm lists. Don't reintroduce the hint without also
-            shipping the menu.
+            Admin right-click context-menu hint. Restored after the
+            #1306 removal — the supporting JS now lives at
+            `web/scripts/server-context-menu.js` (event-delegate
+            pattern, NOT a port of the legacy MooTools `sb.contextMenu`
+            helpers), and the SteamIDs the menu keys off come from an
+            extension to `api_servers_host_players` that does a
+            cached RCON `status` round-trip per server (see
+            `Sbpp\Servers\RconStatusCache`). Gated on
+            `can_use_context_menu` so anonymous viewers and admins
+            without `ADMIN_OWNER | ADMIN_ADD_BAN` don't see hint
+            copy describing a feature they can't reach. See
+            `web/scripts/server-context-menu.js` for the menu's full
+            data-attribute contract.
         *}
+        {if $can_use_context_menu}
+            <p class="text-xs text-muted m-0"
+               data-testid="servers-rcon-hint"
+               style="max-width:24rem;text-align:right">
+                Right-click a player on an expanded card to view their
+                profile, copy their SteamID, or kick / ban / block them.
+                Kick / ban / block actions only show on servers you have
+                RCON access to.
+            </p>
+        {/if}
     </header>
 
     {if $server_list|@count == 0}
@@ -296,3 +304,13 @@
     pull the same helper without copy-pasting ~200 lines of JS.
 *}
 <script src="./scripts/server-tile-hydrate.js" defer></script>
+{*
+    Right-click context menu on player rows in expanded server cards.
+    Only loaded when the viewer can actually use the menu — anonymous
+    visitors and admins without ADMIN_OWNER | ADMIN_ADD_BAN don't
+    get the SteamID side-channel from the JSON handler either, so
+    loading the script for them would be a no-op + a wasted byte.
+*}
+{if $can_use_context_menu}
+<script src="./scripts/server-context-menu.js" defer></script>
+{/if}

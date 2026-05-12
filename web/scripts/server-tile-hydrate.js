@@ -102,7 +102,8 @@
      * @property {number} [maxplayers]
      * @property {string} [map]
      * @property {string} [mapimg]
-     * @property {Array<{ id?: number, name: string, frags: number, time?: number, time_f: string }>} [player_list]
+     * @property {Array<{ id?: number, name: string, frags: number, time?: number, time_f: string, steamid?: string }>} [player_list]
+     * @property {boolean} [can_ban_player]
      * @property {string} [error]
      * @property {string} [ip]
      * @property {string|number} [port]
@@ -172,6 +173,32 @@
      * tiles without a `[data-testid="server-players-panel"]` child (e.g.
      * the admin list).
      *
+     * Each `<li data-testid="server-player">` carries the per-row data
+     * attributes that the right-click context menu (`server-context-menu.js`)
+     * keys off:
+     *
+     *   data-context-menu="server-player"   marker for the document-level
+     *                                       contextmenu delegate
+     *   data-steamid="<value>"              SteamID2 / SteamID3 string
+     *                                       from the API's RCON-fronted
+     *                                       lookup (only when present —
+     *                                       bots / unmatched names skip)
+     *   data-name="<player name>"           UI label for the menu header
+     *   data-server-sid="<sid>"             parent tile's data-id (used
+     *                                       to build the per-server
+     *                                       kick / block URLs)
+     *   data-can-ban-player="true|false"    server-side gate result; the
+     *                                       menu skips kick/ban/block
+     *                                       items when "false" (anonymous
+     *                                       viewer, partial-permission
+     *                                       admin, admin without per-
+     *                                       server RCON access)
+     *
+     * The visual `cursor: context-menu` is applied via a CSS class
+     * (`.context-menu-target`) keyed on `[data-context-menu]` rather
+     * than inline styles so dark-mode / responsive tweaks live in
+     * theme.css next to the menu's own rules.
+     *
      * @param {HTMLElement} tile
      */
     function renderPlayers(tile) {
@@ -180,6 +207,8 @@
         var ul = panel.querySelector('[data-player-list]');
         var empty = panel.querySelector('[data-empty-message]');
         var list = (/** @type {any} */ (tile).__sbppPlayers || []);
+        var canBanPlayer = (/** @type {any} */ (tile).__sbppCanBanPlayer === true);
+        var sid = tile.getAttribute('data-id') || '';
         if (!ul) return;
         if (!list.length) {
             /** @type {HTMLElement} */ (ul).style.display = 'none';
@@ -190,7 +219,7 @@
         var ulEl = /** @type {HTMLElement} */ (ul);
         ulEl.style.display = '';
         ulEl.innerHTML = '';
-        list.forEach(function (/** @type {{ name: string, frags?: number, time_f?: string }} */ p) {
+        list.forEach(function (/** @type {{ name: string, frags?: number, time_f?: string, steamid?: string }} */ p) {
             var li = document.createElement('li');
             li.style.display = 'flex';
             li.style.alignItems = 'center';
@@ -199,6 +228,20 @@
             li.style.padding = '0.25rem 0';
             li.style.borderBottom = '1px solid var(--border)';
             li.setAttribute('data-testid', 'server-player');
+
+            // Wire the context-menu hooks only when a SteamID is
+            // present. Bots and players whose A2S name didn't match
+            // the RCON status output stay un-marked; the document
+            // delegate filters by `closest('[data-context-menu]')`
+            // so the native context menu fires on those rows.
+            if (p.steamid) {
+                li.setAttribute('data-context-menu', 'server-player');
+                li.setAttribute('data-steamid', String(p.steamid));
+                li.setAttribute('data-name', String(p.name || ''));
+                li.setAttribute('data-server-sid', sid);
+                li.setAttribute('data-can-ban-player', canBanPlayer ? 'true' : 'false');
+                li.classList.add('context-menu-target');
+            }
 
             var name = document.createElement('span');
             name.className = 'truncate text-sm';
@@ -315,8 +358,13 @@
         if (refreshOn instanceof HTMLButtonElement) refreshOn.disabled = false;
 
         // Cache the player list on the tile for cheap re-render on toggle.
+        // The `can_ban_player` flag drives the context-menu visibility
+        // for each player row (see `renderPlayers`); cache it on the
+        // tile so a subsequent expand/collapse cycle doesn't have to
+        // re-derive it from the in-flight response.
         if (Array.isArray(d.player_list)) {
             /** @type {any} */ (tile).__sbppPlayers = d.player_list;
+            /** @type {any} */ (tile).__sbppCanBanPlayer = d.can_ban_player === true;
             renderPlayers(tile);
         }
     }

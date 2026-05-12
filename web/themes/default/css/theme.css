@@ -2081,3 +2081,80 @@ details.queue-row > summary > .row-actions {
    rules + the desktop grid layout were deleted alongside `page_toc.tpl`.
    The `.admin-sidebar*` rules above (themselves a sibling of
    `.admin-sidebar-shell`) cover every remaining sub-paged admin route. */
+
+/* ---- Player right-click context menu ----
+   Restored pre-v2.0.0 right-click menu on player rows in the public
+   servers list (see web/scripts/server-context-menu.js for the JS
+   contract). Visually a floating panel anchored at the cursor; opens
+   on contextmenu, closes on outside-click / Escape / scroll / resize.
+
+   `.context-menu-target` is applied to `<li data-testid="server-player">`
+   rows that carry SteamID + the rest of the data-attribute hooks the
+   menu needs; the cursor-shape change is the visible affordance that
+   tells admins "right-click does something here". Rows without the
+   class fall back to the native browser context menu.
+
+   The slide-in animation is `motion-of-state` (the menu IS the state),
+   not essential feedback like the busy spinner / skeleton shimmer, so
+   the global `prefers-reduced-motion: reduce` reset is the right
+   behaviour — under reduced motion the menu paints instantly with no
+   slide-in. No per-rule override here (cf. `.btn[data-loading="true"]::after`
+   and `.skel` above for the documented exceptions). */
+.context-menu-target { cursor: context-menu; }
+.context-menu {
+    position: fixed;
+    z-index: 90;
+    min-width: 12rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 0.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    animation: context-menu-in 0.12s ease-out;
+    font-size: var(--fs-sm);
+}
+.context-menu__header {
+    padding: 0.375rem 0.625rem 0.25rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.125rem;
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 18rem;
+}
+.context-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.625rem;
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    text-decoration: none;
+    text-align: left;
+    font: inherit;
+}
+.context-menu__item:hover,
+.context-menu__item:focus,
+.context-menu__item:focus-visible {
+    background: var(--bg-muted);
+    color: var(--text);
+    outline: none;
+}
+.context-menu__item:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent);
+}
+@keyframes context-menu-in {
+    from { opacity: 0; transform: translateY(-2px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

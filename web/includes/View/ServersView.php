@@ -50,6 +50,18 @@ final class ServersView extends View
         // only references it inside the empty branch). Splatted from
         // `Perms::for($userbank)` in `web/pages/page.servers.php`.
         public readonly bool $can_add_server,
+        // Right-click context-menu (the v1.x-era kick/ban/block
+        // affordance on player rows, restored after #1306). Gates
+        // both the in-template admin hint copy AND the
+        // `<script src="./scripts/server-context-menu.js">` include
+        // — anonymous viewers don't need the JS or the hint, and
+        // the SteamID side-channel the menu reads off the JSON
+        // response is server-side gated on the same permission +
+        // per-server RCON access. Mirrors `can_add_server` shape
+        // (single bool splatted from `Perms::for($userbank)` —
+        // specifically the `can_add_ban` key — in
+        // `web/pages/page.servers.php`).
+        public readonly bool $can_use_context_menu = false,
     ) {
     }
 }
