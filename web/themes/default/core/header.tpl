@@ -62,6 +62,55 @@
     <link rel="manifest" href="{$theme_url}/images/site.webmanifest">
     <meta name="theme-color" content="#ea580c">
     <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)">
+    {*
+        Anti-FOUC bootloader (#1367). theme.js (loaded from footer.tpl,
+        the document tail) runs `applyTheme(currentTheme())` on boot to
+        flip <html> into the user's persisted theme — but by then the
+        body has already painted in light mode (the :root tokens default
+        to light), and theme.js's class flip triggers a full repaint
+        the user perceives as a white flash + content flicker on every
+        page navigation. The reporter's exact symptom: "When navigating
+        between pages while using dark mode, the page briefly renders in
+        light mode for a split second before switching back to dark."
+
+        The inline script below is byte-equivalent to theme.js's
+        `applyTheme(currentTheme())` minus the localStorage write
+        (theme.js still owns persistence): same THEME_KEY ('sbpp-theme'),
+        same default ('system'), same dark-resolution logic. It runs
+        synchronously before <body> parses, so the very first paint
+        lands in the user's chosen mode. theme.js still runs on boot —
+        its `applyTheme(currentTheme())` is now a no-op when the class
+        is already correct (toggle(true) on a set class, toggle(false)
+        on an unset class — both no-ops), and it stays the load-bearing
+        path for the click + matchMedia handlers below it.
+
+        Wrapped in IIFE + try/catch because `localStorage` throws on
+        private-mode iframes / SecurityError, and `matchMedia` is
+        missing on very old browsers; in either failure mode we
+        silently fall through to light, matching theme.js's
+        defensiveness. The logic also only ADDS the dark class — never
+        removes — because :root defaults to light, so removing would
+        be a no-op anyway, and not removing means we don't have to
+        repeatedly clear before-checking.
+
+        Placement: BEFORE the <link rel="stylesheet"> below. The script
+        is parser-blocking + synchronous, so anywhere in <head> works
+        in principle, but pinning it just above the stylesheet makes
+        the "this resolves the CSS cascade for dark vs light tokens"
+        intent obvious to future readers. Regression guard:
+        web/tests/e2e/specs/flows/theme-fouc.spec.ts (stalls theme.js
+        via page.route, asserts <html class="dark"> is present anyway).
+    *}
+    <script>
+    (function () {
+        try {
+            var m = localStorage.getItem('sbpp-theme') || 'system';
+            var d = m === 'dark' || (m === 'system' && window.matchMedia
+                && matchMedia('(prefers-color-scheme: dark)').matches);
+            if (d) document.documentElement.classList.add('dark');
+        } catch (e) { /* localStorage / matchMedia unavailable; default to light */ }
+    })();
+    </script>
     <link rel="stylesheet" href="{$theme_url}/css/theme.css">
     <script src="./scripts/api-contract.js"></script>
     <script src="./scripts/sb.js"></script>

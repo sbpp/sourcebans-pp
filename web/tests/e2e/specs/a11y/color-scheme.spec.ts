@@ -19,17 +19,24 @@
  *   html.dark  → color-scheme: dark;
  *
  * We assert via `expect(locator).toHaveCSS('color-scheme', …)` rather
- * than a one-shot `getComputedStyle()` read because theme.js applies
- * `<html class="dark">` after the first paint (the script loads from
- * the document tail, not <head>) and the resolved color-scheme value
- * follows. `toHaveCSS` polls so we land on the settled value without
- * a hand-rolled `setTimeout` (forbidden by AGENTS.md).
+ * than a one-shot `getComputedStyle()` read for robustness against
+ * any pre-paint resolution noise — `toHaveCSS` polls so we land on
+ * the settled value without a hand-rolled `setTimeout` (forbidden by
+ * AGENTS.md).
+ *
+ * Note (#1367): post-fix, `<html class="dark">` is set by an inline
+ * bootloader in `<head>` BEFORE the body parses (regression-guarded
+ * by `flows/theme-fouc.spec.ts`), so the dark class — and therefore
+ * the resolved `color-scheme` — is settled on the very first paint.
+ * Pre-fix the class was only set after theme.js (loaded from the
+ * document tail) ran, so the resolved color-scheme value transitioned
+ * through light → dark on every navigation. Either shape passes this
+ * spec; the polling assertion stays as defensive shape, not because
+ * it's load-bearing here.
  *
  * Theme pinning mirrors `a11y/dark-theme-contrast.spec.ts` /
  * `_screenshots.spec.ts`: write `localStorage['sbpp-theme']` on `/`,
- * then navigate to the target route, then wait on `<html class="dark">`
- * so theme.js's boot-time `applyTheme()` has resolved before the
- * assertion runs.
+ * then navigate to the target route, then wait on `<html class="dark">`.
  *
  * Project filter: chromium-only. The fix is a token-block change in
  * `theme.css`; the computed value of `color-scheme` does not depend on

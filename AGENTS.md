@@ -870,6 +870,87 @@ drawer flips to `renderDrawerBody`. The second test stalls
 `bans.player_history` and asserts the History pane's
 `renderPaneSkeleton()` paints the same shimmer rows.
 
+### Anti-FOUC theme bootloader (`core/header.tpl` `<head>` script)
+
+Light/dark theme is keyed off the `dark` class on `<html>`, with
+`:root` declaring the light tokens and `html.dark` overriding to the
+dark tokens. The persisted preference lives in
+`localStorage['sbpp-theme']` (the `THEME_KEY` in `theme.js`); values
+are `'light'` / `'dark'` / `'system'`, and `'system'` resolves
+against `prefers-color-scheme: dark` at boot.
+
+`theme.js` (loaded from the document tail via `core/footer.tpl`) is
+the load-bearing path for user interactions — the toggle click and
+the matchMedia listener for OS-preference changes mid-session. But
+its boot-time `applyTheme(currentTheme())` is NOT what should land
+the dark class on first paint: by the time `theme.js` executes, the
+parser has finished `<body>` and the browser has already painted the
+entire body in light mode (the `:root` defaults). The class flip
+then triggers a full repaint the user perceives as a white flash +
+content flicker on every page navigation (#1367).
+
+The fix is a tiny inline blocking `<script>` in `<head>` of
+`core/header.tpl`, ABOVE the `<link rel="stylesheet">`, that mirrors
+`applyTheme(currentTheme())`'s dark-resolution logic: same
+`THEME_KEY`, same default (`'system'`), same `mode === 'dark' || (mode
+=== 'system' && matchMedia(...).matches)` predicate, and only ADDS
+the class (light is the `:root` default, so removing would be a no-op
+anyway). It runs synchronously before the body parses, so the very
+first paint lands in the user's chosen mode.
+
+The contract:
+
+- The bootloader lives in `web/themes/default/core/header.tpl`
+  inside `<head>`, immediately above the stylesheet link. The
+  script is parser-blocking + synchronous, so the class is
+  guaranteed to be set before `<body>` parses regardless of where
+  in `<head>` it lives, but pinning it just above the stylesheet
+  makes the "this resolves the CSS cascade" intent obvious.
+- The script is a self-contained IIFE wrapped in `try/catch`:
+  `localStorage` throws on private-mode iframes / SecurityError,
+  and `matchMedia` is missing on very old browsers. In either
+  failure mode the bootloader silently falls through to light
+  (matching `theme.js`'s defensiveness).
+- The bootloader does NOT write to `localStorage` — `theme.js`
+  still owns persistence (its boot-time `applyTheme()` writes the
+  resolved mode back). The bootloader is read-only on the
+  persisted state.
+- The bootloader uses `var` (not `let`/`const`) and avoids
+  optional chaining / nullish coalescing. The script runs in the
+  earliest realm setup phase; any syntax error means the whole
+  body would paint in light first. Strict ES5 keeps the surface
+  area defensive (theme.js itself uses ES6+, but theme.js failing
+  is recoverable — the bootloader failing is the FOUC bug).
+- Logic must stay byte-equivalent to `applyTheme(currentTheme())`
+  in `theme.js` minus the `localStorage.setItem(...)` write. If
+  `theme.js` ever changes the resolution rule (e.g., adds a
+  `'high-contrast'` mode), the bootloader has to mirror the
+  change in the same PR or the first paint silently desyncs from
+  the user's persisted preference.
+
+Regression guard: `web/tests/e2e/specs/flows/theme-fouc.spec.ts`.
+The spec uses `page.route` to intercept and STALL the `theme.js`
+network request, then asserts the state of `<html>`'s class list
+WHILE theme.js is held — i.e. the bootloader is the only thing
+that could have set the class. The contract: dark-pinned mode
+must read `class="dark"`, light-pinned mode must NOT, and system
++ emulated OS-dark (via `colorScheme: 'dark'` on a fresh
+`chromium.newContext()`) must read `class="dark"` via the
+matchMedia branch. Releasing the route then lets theme.js boot
+normally so the post-load shape is asserted too. This is the
+only Playwright-tractable way to prove "the bootloader did it,
+not theme.js" — checking `readyState === 'loading'` was tried
+and fails because `addInitScript` runs before
+`document.documentElement` exists.
+
+The install wizard (`web/install/_chrome.tpl`) does NOT carry the
+bootloader. It runs against an unconfigured panel with no
+logged-in user and no `theme.js` chrome at all — there's no theme
+toggle to gate, so `localStorage['sbpp-theme']` is never set
+during install. The wizard inherits the `:root` light defaults,
+which is the documented behavior; do NOT add the bootloader there
+without a paired theme toggle in the wizard chrome.
+
 ### Templates + View DTOs
 
 - Pages are rendered via typed view-model DTOs in `Sbpp\View\*`
@@ -1519,6 +1600,53 @@ the spec, target a 1920px viewport, not 1440px.
  default `none`). Same shape applies to any new skeleton surface:
  reuse the `.skel` class from `theme.css`; don't roll a new
  `.skeleton-*` rule.
+- Removing the inline anti-FOUC bootloader from `<head>` of
+ `web/themes/default/core/header.tpl` ("theme.js already does this
+ on boot, why does it have to be inline?") → theme.js loads from
+ `core/footer.tpl` (the document tail), so its boot-time
+ `applyTheme(currentTheme())` runs AFTER the parser reaches `</body>`.
+ By that point the browser has already painted the entire body in
+ light mode (the `:root` tokens default to light), and theme.js's
+ class flip triggers a full repaint the user perceives as a white
+ flash + content flicker on every page navigation (#1367 — the
+ reporter's exact symptom: "the page briefly renders in light mode
+ for a split second before switching back to dark"). The bootloader
+ is the inline-script-in-`<head>` pattern every modern theme-toggle
+ implementation uses (Tailwind docs, Next.js docs, GitHub, Vercel)
+ — it has to run BEFORE the body parses, which means it has to be
+ inline (no external `<script src=…>` because the network round-trip
+ would defeat the point) and it has to be in `<head>` (so the parser
+ reaches it before the body tags). Regression guard:
+ `web/tests/e2e/specs/flows/theme-fouc.spec.ts` uses `page.route`
+ to stall the `theme.js` network request, then asserts the `dark`
+ class is present (or absent, in light mode) on `<html>` WHILE
+ theme.js is held — proving the bootloader, not theme.js, did
+ the class flip. Pre-fix the dark / system arms read `false` (no
+ class because theme.js was stalled and was the only path); post-fix
+ they read `true` because the inline bootloader runs in `<head>`
+ long before the parser reaches `<script src="theme.js">`.
+- Letting the inline bootloader's resolution logic drift from
+ `theme.js`'s `applyTheme(currentTheme())` (e.g., adding a new
+ `'high-contrast'` mode to theme.js without mirroring in the
+ bootloader, or vice versa) → the first paint resolves to one
+ mode, theme.js's boot-time call resolves to a different mode,
+ the user sees a flicker on every navigation. The bootloader is
+ the read-only mirror of `applyTheme()`'s resolution rule — same
+ `THEME_KEY` ('sbpp-theme'), same default ('system'), same
+ dark-resolution predicate. The bootloader's only difference is
+ it doesn't `localStorage.setItem(...)` (theme.js still owns
+ persistence). Any change to theme.js's resolution logic has
+ to land a paired bootloader update in the same PR.
+- Moving the bootloader to an external `<script src="…">` ("inline
+ scripts are smelly, let's externalize") → an external script adds
+ a network round-trip BEFORE the bootloader can run, and the
+ browser will paint in light mode in the meantime. The whole point
+ of the inline shape is that the script's execution is bound to
+ parse time, not to network completion. Same reason `<head>` is
+ the load-bearing location: a `<script>` at the bottom of `<body>`
+ (or `defer`/`async`) wouldn't help. The script is ~10 lines of
+ ES5 — well under any "inline scripts are bad for caching"
+ threshold.
 - `[data-skeleton]` on a placeholder block nested inside a `hidden`
  ancestor (lazy tabpanels, off-screen drawers, collapsed
  `<details>`) → the `_base.ts` page-load waiter blocks until
@@ -2226,6 +2354,7 @@ the spec, target a 1920px viewport, not 1440px.
 | Keep the main sidebar sticky-pinned across the full document scroll (`<aside class="sidebar">`) | The structural half of #1271 lives in `web/themes/default/core/footer.tpl`: `<footer class="app-footer">` is rendered as the LAST flex column item of `<div class="main">`, INSIDE `<div class="app">`. `.sidebar`'s sticky containing block is `.app`; if the footer were a body-level sibling of `.app` (the pre-fix shape), `.app`'s height would fall short of the document by `footerHeight` and the sidebar would release at the bottom — brand cut off, on barely-tall pages (`docHeight - viewport ≤ footerHeight`, e.g. `?p=admin&c=audit` on the bare e2e seed) the entire scroll range would be in the release phase and the sidebar would track the scroll. Keeping the footer inside `.app` makes the sticky CB extend to the full document. The CSS half (`.sidebar { align-self: flex-start; }` from #1278) is defensive parity with `.admin-sidebar` and is RETAINED but not load-bearing on its own. The footer's `margin-top: auto` (`.app-footer` rule in `theme.css`) is the classic "sticky footer" pattern — pushes the footer to the bottom of `.main`'s flex column on short pages so the credit doesn't float halfway up the viewport. Regression guard: `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts` asserts strict `top===0` at scroll=`document.scrollHeight` on `?p=admin&c=bans` (the canonical tall page) AND on `?p=admin&c=audit` (the barely-tall page that historically presented the bug most visibly). |
 | Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions). The block applies universally to `*, *::before, *::after` and is the right shape for *motion-of-state* (drawer slide-in, toast slide-in, chevron rotation). Two documented exceptions live next to their rules: the busy-button spinner (`.btn[data-loading="true"]::after`) and the skeleton shimmer (`.skel`), both essential feedback per WCAG 2.3.3 — without rotation the donut reads as a decorative ring, without sliding the gradient reads as a permanent placeholder. Each rule carries its own per-rule `@media (prefers-reduced-motion: reduce)` override that re-enables the animation with `!important` longhands so specificity wins over the universal `*::after` / `*` reset (#1362). If you ship a new animation, default to honouring the global reset; the per-rule exception only applies to motion that is itself the load-bearing feedback (without it, the affordance is silently broken — not just less lively). Regression guard for both exceptions: `web/tests/e2e/specs/flows/loading-animations.spec.ts`. |
 | Tell the browser to paint native UA surfaces (`<select>` dropdown panels, native scrollbars, `<input type="date|time|color">` pickers, autofill highlighting) in the matching scheme | `web/themes/default/css/theme.css` — the two `color-scheme` declarations on `:root` (`light`) and `html.dark` (`dark`) (#1309). Without these the chrome's dark tokens swap correctly for DOM-rendered surfaces, but anything painted in the browser's top-layer system UI ignores `html.dark` and renders light — most jarring on mobile where the native `<select>` picker full-screens. Regression guard: `web/tests/e2e/specs/a11y/color-scheme.spec.ts`. |
+| Apply the persisted theme to `<html>` BEFORE first paint (no FOUC on every page navigation) | `web/themes/default/core/header.tpl` — the inline `<script>` block in `<head>`, immediately above `<link rel="stylesheet">` (#1367). Reads `localStorage['sbpp-theme']` (mirror of `THEME_KEY` in `theme.js`), resolves dark via the same predicate as `applyTheme(currentTheme())`, adds `class="dark"` to `<html>` synchronously before `<body>` parses. Pre-fix theme.js (loaded from the document tail via `core/footer.tpl`) was the only thing flipping the class — by then the body had already painted in light mode and the class flip triggered a full repaint the user perceived as a white flash + content flicker on every page navigation (the reporter's exact symptom on #1367). The bootloader's resolution logic must stay byte-equivalent to `theme.js`'s `applyTheme(currentTheme())` minus the `localStorage.setItem(...)` write — drift between the two means the first paint resolves to one theme, theme.js's boot-time call resolves to another, and the user sees flicker even with the bootloader present. See "Anti-FOUC theme bootloader" in Conventions. Regression guard: `web/tests/e2e/specs/flows/theme-fouc.spec.ts` uses `page.route` to stall the `theme.js` network request and asserts the state of `<html>`'s class list WHILE theme.js is held — proving the bootloader, not theme.js, did the class flip. Three arms cover the three branches of the resolution logic (dark-pinned must read `class="dark"`, light-pinned must NOT, system + emulated OS-dark via `colorScheme: 'dark'` on a fresh `chromium.newContext()` must read `class="dark"` via the matchMedia branch). Releasing the route then lets theme.js boot normally so the post-load shape is asserted too. |
 | Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=license, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. Shared step-handler helpers (prefix validation, raw-PDO probe before instantiating `\Database`, KeyValues quoting, friendly PDO error translation, filesystem-check detail strings) live in `web/install/includes/helpers.php` (`sbpp_install_validate_prefix` / `sbpp_install_open_db` / `sbpp_install_kv_escape` / `sbpp_install_translate_pdo_error` / `sbpp_install_describe_filesystem_check`) — required eagerly from `web/install/bootstrap.php` so every step page has them in scope without its own require. Every step (3-6) re-runs `sbpp_install_validate_prefix` at the top of its handler before any SQL substitution; step 6 also validates `amx_prefix` (operator input on that page itself). The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Steps with per-page tail scripts: step 1 (vanilla JS validating the license-accept checkbox), step 5 (#1335 M3: client-side validation for SteamID format + email shape + password match — saves the round-trip-with-wiped-passwords path on the common form-error case); the handoff template carries an inline auto-submit script. Navigation is plain HTML `<form action="?step=N">` everywhere else. Test-IDs follow `install-<step>-<field>` consistently (#1335 m3 standardised step 2's `install-db-*` shape onto the wider `install-database-*` pattern). Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
 | Recover from a missing `web/includes/vendor/` at install time | `web/install/recovery.php` is the self-contained "vendor/ missing" surface — pure inline HTML + CSS, NO Composer / Smarty / `Sbpp\…` dependency (#1332 C3). `web/install/index.php`'s lifecycle is paths-init (`init.php`) → C2 already-installed guard (`already-installed.php`, #1335) → vendor/-check (short-circuit to `recovery.php` if missing) → composer + Smarty bootstrap (`bootstrap.php`) → step dispatch (`includes/routing.php` → `pages/page.<N>.php`). The recovery surface is gated by `file_exists(PANEL_INCLUDES_PATH . '/vendor/autoload.php')` BEFORE any namespaced class is referenced. Direct visits with vendor present 302 to `/install/` instead of always emitting the 503 page (#1335 m1). The release artifact (post-#1332 Workstream A) bundles `vendor/` so this surface is the safety net for git checkouts and partial uploads, never the happy path. |
 | Display a friendly error page when the panel boots with `install/` still present, `updater/` still present, or `vendor/` missing | `web/init-recovery.php` (`sbpp_check_install_guard()` + `sbpp_render_install_blocked_page()`, #1335 M1). Pure inline HTML + CSS like `recovery.php`, runs upstream of Composer / Smarty. `web/init.php` calls the helper for all three scenarios; the missing-`config.php` case redirects to `/install/` instead of dying. Pre-#1335 these were three bare `die('plain text')` calls that read like a server crash to a non-technical operator who clicked the wizard's "Open the panel" CTA before completing post-install cleanup. Regression test: `web/tests/integration/InstallGuardTest.php`. |
