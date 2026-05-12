@@ -120,19 +120,29 @@ need that value generated before they can log in.
 
 ### Upgrading the plugin from <= 1.5.4.7
 
-Pre-1.6 plugin installs shipped multiple separate `.smx` files
-(`sourcebans.smx`, `sourcecomms.smx`, …) that need to be deleted
-during the upgrade so the new consolidated `sbpp_*.smx` plugins
-take over cleanly. The cleanup list is in
-[Legacy → Plugin upgrade from <= 1.5.4.7](/legacy/plugin-pre-1.5.4.7/).
+Pre-1.6 plugin installs shipped multiple separate `.smx` files;
+current releases consolidate them under the `sbpp_*` prefix. If
+you're crossing this boundary, after uploading the new `game/`
+contents, **delete the legacy plugin files** from
+`addons/sourcemod/plugins/`:
+
+- `sourcebans.smx`
+- `sourcecomms.smx`
+- `sbchecker.smx`
+- `sb_admcfg.smx`
+- `SourceSleuth.smx`
+
+The new `sbpp_main.smx`, `sbpp_comms.smx`, `sbpp_checker.smx`,
+`sbpp_admcfg.smx`, and `sbpp_sleuth.smx` replace them. Restart the
+game server and run `sm plugins list` to confirm the new set loaded
+cleanly.
 
 ### Anything older
 
 If you're on an install older than 1.6.x and the pages above don't
 cover your starting point, drop into our
 [Discord](https://discord.gg/tzqYqmAtF5) `#help-support` channel —
-we'll walk you through it and add a page to the
-[Legacy](/legacy/) section if your situation is likely to recur.
+we'll walk you through it.
 
 ## After the upgrade
 

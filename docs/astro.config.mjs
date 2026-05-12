@@ -44,13 +44,8 @@ export default defineConfig({
       // Component overrides:
       //   - ThemeProvider: matches the panel's "default to system, paint
       //     light when JS isn't available" first-paint contract.
-      //   - Footer: appends a "Legacy docs" affordance below Starlight's
-      //     stock per-page footer chrome. The legacy section is
-      //     intentionally excluded from the main sidebar (#1333 §5);
-      //     the footer link is the chrome-level discovery hook.
       components: {
         ThemeProvider: './src/components/ThemeProvider.astro',
-        Footer: './src/components/Footer.astro',
       },
       head: [
         {
@@ -146,10 +141,6 @@ export default defineConfig({
           label: 'FAQ',
           link: '/faq/',
         },
-        // Legacy section deliberately omitted from the main sidebar per
-        // #1333 §5 — content is unmaintained and discovery happens via
-        // the Footer override (src/components/Footer.astro) plus the
-        // inline link from the Updating page.
       ],
     }),
   ],
