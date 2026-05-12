@@ -723,10 +723,28 @@ The contract:
  that strip `theme.js`; the spinner naturally disappears with the
  missing CSS, which is the right degradation (no fake spinner on a
  theme that hasn't opted in).
-- `prefers-reduced-motion: reduce` is handled by the global
- reset in `theme.css` (pins every `animation-duration` to ~0ms).
- The spinner sits still for reduced-motion users; they still see
- the donut shape + `cursor: progress` + the disabled state.
+- `prefers-reduced-motion: reduce` is the documented exception to
+ the chrome's global animation reset (#1362). The reset in `theme.css`
+ (the `*, *::before, *::after` block — see the matching note under
+ "Disable the chrome's slide-in / fade animations" in "Where to find
+ what") still pins every `animation-duration` to ~0ms for the chrome
+ surfaces where motion-of-state is the contract (drawer slide-in,
+ toast slide-in, chevron rotation). The spinner is the load-bearing
+ exception: it's essential feedback — without rotation the donut
+ reads as a decorative ring, not as in-progress feedback — and WCAG
+ 2.3.3 Animation from Interactions explicitly exempts essential
+ motion. The CSS rule next to the spinner declaration carries a
+ paired `@media (prefers-reduced-motion: reduce) { .btn[data-loading="true"]::after { animation-duration: 0.6s !important; animation-iteration-count: infinite !important; } }`
+ block that wins on specificity over the universal `*::after`
+ reset. Pre-#1362 the spinner froze under reduced motion (the v2.0
+ RC1 regression that motivated the per-rule override); don't
+ reintroduce the freeze. The regression guard in
+ `web/tests/e2e/specs/flows/loading-animations.spec.ts`
+ launches a fresh context with `reducedMotion: 'reduce'`, samples the
+ rendered `transform` of `.btn[data-loading="true"]::after` at multiple
+ frame boundaries, and asserts the matrix VALUE CHANGES across samples
+ (the only Playwright-tractable way to assert a CSS animation is
+ actually running).
 
 Adding a new action button that fires `sb.api.call`:
 
@@ -743,13 +761,31 @@ Adding a new action button that fires `sb.api.call`:
  reach for the module-scope `setBusy(...)` directly — same
  helper, no wrapper needed.
 
-The regression guard is `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts`:
-it stalls the `Actions.CommsUnblock` route via `page.route`, asserts
-`data-loading="true"` + `aria-busy="true"` + `disabled` on the submit
-button during the in-flight window, releases the route, and confirms
-the row flips in-place. The second test in the file proves the
-disabled gate blocks a double-click by counting the number of
-`Comms.Unblock` requests that reach the stall (exactly one).
+The regression guards are paired:
+
+- `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts` stalls
+ the `Actions.CommsUnblock` route via `page.route`, asserts
+ `data-loading="true"` + `aria-busy="true"` + `disabled` on the
+ submit button during the in-flight window, releases the route,
+ and confirms the row flips in-place. The second test in the file
+ proves the disabled gate blocks a double-click by counting the
+ number of `Comms.Unblock` requests that reach the stall (exactly
+ one).
+- `web/tests/e2e/specs/flows/loading-animations.spec.ts`
+ (#1362) launches a fresh browser context with
+ `reducedMotion: 'reduce'` (so the suite's global
+ `contextOptions: { reducedMotion: 'reduce' }` doesn't mask the
+ spec — the project default already runs with reduce, so we need
+ a control case too), and a sibling context with
+ `reducedMotion: 'no-preference'`. Each context injects a
+ `[data-loading="true"]` button into a panel page, samples
+ `getComputedStyle(btn, '::after').transform` at multiple frame
+ boundaries, and asserts the matrix VALUES CHANGE across samples.
+ This is the only Playwright-tractable way to assert "the
+ animation is actually running" — checking
+ `animationDuration === "0.6s"` would catch the CSS-rule
+ regression but not, say, a future `animation-play-state: paused`
+ sneaking in via a parent rule.
 
 ### Loading state on drawers + lazy panes (`.skel` shimmer)
 
@@ -784,10 +820,29 @@ The contract:
   matching rule, so the shimmer divs rendered with zero background
   and the drawer read as "just blank" for the entire `bans.detail`
   window.
-- `prefers-reduced-motion: reduce` is handled by the global reset
-  in `theme.css` (pins every `animation-duration` to ~0ms). The
-  shimmer freezes for reduced-motion users; they still see the
-  static gradient colour as a "something's loading" affordance.
+- `prefers-reduced-motion: reduce` is the documented exception
+  for the shimmer (#1362, same shape as the spinner). The global
+  reset in `theme.css` would otherwise pin
+  `animation-duration: 0.001ms !important` +
+  `animation-iteration-count: 1 !important` on every selector,
+  freezing the shimmer at its 100% keyframe and leaving a static
+  gradient that reads as a permanent layout placeholder — not as
+  "loading". The shimmer is essential feedback (WCAG 2.3.3
+  Animation from Interactions); the `.skel` rule in `theme.css`
+  carries a paired
+  `@media (prefers-reduced-motion: reduce) { .skel { animation-duration: 1.4s !important; animation-iteration-count: infinite !important; } }`
+  block that wins on specificity over the universal `*` reset. The
+  regression guard
+  (`web/tests/e2e/specs/flows/loading-animations.spec.ts`)
+  samples `getComputedStyle(.skel).backgroundPositionX` at multiple
+  frame boundaries and asserts the values change across samples —
+  the only Playwright-tractable way to prove "the shimmer is
+  actually sliding". Pre-#1362 the shimmer froze under reduced
+  motion (the v2.0 RC1 sister regression to the spinner's freeze);
+  don't reintroduce the freeze. The chrome's *motion-of-state*
+  surfaces (drawer slide-in, toast slide-in, chevron rotations)
+  continue to honour the global reset correctly — only essential
+  motion (spinner + shimmer) is exempt.
 - The drawer header skeleton blocks carry `[data-skeleton]`
   (terminal marker for the page-level waiter — they live under
   `#drawer-root[data-loading="true"]`, so they cycle in/out
@@ -1334,6 +1389,39 @@ audit (#1207) locked in. New CTAs:
  local wrapper that delegates to it). Hand-rolling one of the three
  silently drops one of: the spinner visual, the AT announcement, or
  the double-click gate. The contract is single-source for a reason.
+- Removing the `@media (prefers-reduced-motion: reduce)` per-rule
+ override that re-enables the spinner's rotation (the rule next to
+ `.btn[data-loading="true"]::after`) OR the matching one on `.skel`
+ that re-enables the skeleton shimmer → the global
+ `*, *::before, *::after` reset further down in `theme.css` would
+ otherwise pin `animation-duration: 0.001ms` +
+ `animation-iteration-count: 1` on both selectors and the
+ animations silently freeze. That's the v2.0 RC1 paired regression
+ that motivated #1362: #1361 shipped the busy contract + the
+ `.skel` shimmer surfaces but both inherited the freeze from the
+ global reset, so users on Windows 11 with "Show animation effects"
+ toggled off — or any other path to a `prefers-reduced-motion:
+ reduce` CSS resolution — saw a static donut instead of a spinner
+ AND a static gradient instead of a sliding shimmer. Loading
+ spinners and skeleton shimmers are both essential feedback: WCAG
+ 2.3.3 Animation from Interactions explicitly exempts essential
+ motion (motion that conveys functionality or information from
+ stops being communicated without it), and every major design
+ system (GitHub Primer, Adobe Spectrum, Material UI, Bootstrap, …)
+ keeps loading indicators animating regardless of motion
+ preference. The chrome's *motion-of-state* (drawer slide-in,
+ toast slide-in, chevron rotations) honours the global reset
+ correctly — the busy spinner and the skeleton shimmer are the
+ documented exceptions. Regression guard:
+ `web/tests/e2e/specs/flows/loading-animations.spec.ts`
+ samples both the spinner's `getComputedStyle(::after).transform`
+ AND the shimmer's
+ `getComputedStyle(.skel).backgroundPositionX` at multiple frame
+ boundaries under `reducedMotion: 'reduce'` and asserts the
+ values change across samples (the only Playwright-tractable way
+ to assert "the animation is actually running" — checking
+ `animationDuration` would catch the specific CSS regression but
+ miss future `animation-play-state: paused` overrides).
 - `class="skeleton"` (singular `.skeleton`) on a drawer / lazy-pane
  placeholder block → the CSS rule has always been `.skel`. Pre-fix
  `renderDrawerLoading()` in `theme.js` emitted `class="skeleton"`,
@@ -1953,8 +2041,8 @@ audit (#1207) locked in. New CTAs:
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. The public banlist (`web/themes/default/page_bans.tpl`) follows the same shape — same chrome (Lucide icon + visible text label inside `.btn--ghost` / `.btn--secondary btn--sm`), same `.ban-card__actions` mobile row, same `data-action` / `data-fallback-href` wiring (`bans-unban` / `bans-delete`). The Remove affordance points at the legacy GET handler (`?p=banlist&a=delete&id=…&key=…` at the top of `page.banlist.php`) because no JSON `bans.delete` action exists yet — the inline JS `confirm()`-prompts then navigates, mirroring commslist's flow without adding a new handler / snapshot / permission-matrix entry. |
 | Add a confirm + reason modal for an irreversible row-level action (unban, lift comm block, delete admin, …) | `web/themes/default/page_bans.tpl` (`#bans-unban-dialog`, `Actions.BansUnban`) and `web/themes/default/page_comms.tpl` (`#comms-unblock-dialog`, `Actions.CommsUnblock`) are the canonical reference (#1301), with `web/themes/default/page_admin_admins_list.tpl` (`#admins-delete-dialog`, `Actions.AdminsRemove`, #1352) as the third reference for the optional-reason variant. Shape: a `<dialog hidden>` with a `<form method="dialog">` carrying a `<textarea aria-required="true">` (or `aria-required="false"` for the optional-reason variant — see admins-delete) (NOT the native `required` — that lets the browser block the form submit before our handler runs, swallowing the inline-error UX), a Cancel button, and a Confirm submit button. The page-tail JS opens the dialog via `showModal()` on `[data-action]` clicks, validates the trimmed reason on submit (load-bearing gate is server-side), forwards `ureason` to the JSON action, and on success flips the row in place via the same `flipRowToUnbanned`/`flipRowToUnmuted` helper the legacy single-click flow used (or removes the row outright + decrements the count badge for the admins-delete variant where there's no "now-unbanned" state to render). The legacy GET fallback (`?p=banlist&a=unban&id=…&key=…&ureason=…` / `?p=commslist&a=ungag…&ureason=…`) is the no-JS / hand-edited-URL path; both halves now reject empty `ureason` server-side so the audit log carries the *why*. The admins-delete variant has no legacy GET handler — `RemoveAdmin()` always went through the JSON dispatcher pre-#1123 D1 — so its `data-fallback-href` lands the operator back at the admins list as a graceful no-op when the JSON dispatcher is missing entirely (third-party theme stripping `api.js`); the audit-log "Reason: …" suffix is only emitted when `ureason` is non-empty (vs always-emitted on the bans / comms variants where reason is required). **Do not** put `onclick="event.stopPropagation()"` on the trigger button — `document.addEventListener('click')` is how the dialog opener picks the click up, and stopPropagation would silently swallow it (the action button isn't inside any `[data-drawer-href]` ancestor anyway, so the defensiveness was a copy-paste from the row-name anchor that doesn't apply here). The submit button MUST flip through `setBusy(submitBtn, true)` BEFORE `sb.api.call(...)` leaves the page and clear via `setBusy(submitBtn, false)` on every non-navigating response branch — see "Loading state on action buttons" in Conventions for the contract, the inline-script local wrapper shape, and the regression guard. |
-| Add a loading indicator to an action button that fires `sb.api.call(...)` without a page refresh | `window.SBPP.setBusy(btn, busy)` (`web/themes/default/js/theme.js`) writes the `data-loading="true"` + `aria-busy="true"` + `disabled` triple atomically; the CSS spinner lives in `web/themes/default/css/theme.css` under `.btn[data-loading="true"]` + the `sbpp-btn-spin` keyframe. Inline page-tail scripts inside `.tpl` files define a local `setBusy(btn, busy)` wrapper that delegates to `window.SBPP.setBusy` when present and falls back to `btn.disabled = busy` so third-party themes that strip `theme.js` still gate against double-clicks. Canonical reference shapes: the three confirm-dialog flows (`page_comms.tpl` / `page_bans.tpl` / `page_admin_admins_list.tpl`), the form-submit flows (`page_admin_groups_list.tpl` / `page_admin_groups_add.tpl` / `page_admin_bans_add.tpl` / `page_admin_bans_email.tpl` / `page_youraccount.tpl` / `page_lostpassword.tpl` / `page_login.tpl`), the row-action flows (`page_admin_servers_list.tpl` / `page_admin_bans_protests.tpl` / `page_admin_bans_protests_archiv.tpl` / `page_admin_bans_submissions.tpl` / `page_admin_bans_submissions_archiv.tpl`), and the drawer Notes paths (`theme.js`'s `submitNoteForm` / `deleteNote`). Comment edit on the banlist (`web/scripts/banlist.js`) carries the same pattern for the `sb.api.call(BansEditComment)` round-trip. Regression guard: `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts` (stalls `Actions.CommsUnblock` via `page.route`, asserts the busy-attribute triple on the submit button while in flight, releases the route, and confirms the row flips in-place; the second test counts requests to prove the disabled gate blocks a double-click). |
-| Add a loading indicator to the player drawer or one of its lazy panes (so the chrome doesn't read as blank while the JSON action is in flight) | `renderDrawerLoading()` (header skeleton for the in-flight `bans.detail`) and `renderPaneSkeleton()` (placeholder for History / Comms / Notes activation) in `web/themes/default/js/theme.js`. Both lean on the `.skel` CSS rule in `theme.css` (linear-gradient + `shimmer` keyframe + dark-mode override; `prefers-reduced-motion: reduce` freezes the shimmer via the global reset). The header skeleton carries `[data-testid="drawer-loading"]` + `aria-busy="true"` + per-block `[data-skeleton]` (terminal markers under `#drawer-root[data-loading="true"]`); the lazy-pane skeleton carries `[data-pane-empty]` + `aria-busy="true"` and deliberately omits `[data-skeleton]` because the panel parent's `hidden` attribute doesn't compose into `[data-skeleton]:not([hidden])` and a nested marker would stall every page-load waiter that runs after the drawer opens. Class name is `.skel` (singular) — NOT `.skeleton`; the pre-fix `class="skeleton"` typo had no matching rule and the shimmer rows rendered as transparent zero-background divs (the user-visible "drawer is blank" regression). Regression guard: `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts` (stalls `bans.detail` then `bans.player_history` via `page.route`, asserts the skeleton header is visible + the `.skel` block paints a `linear-gradient` background via `getComputedStyle(el).backgroundImage`, releases the routes, and confirms the drawer flips to `renderDrawerBody` / the pane fills with content). |
+| Add a loading indicator to an action button that fires `sb.api.call(...)` without a page refresh | `window.SBPP.setBusy(btn, busy)` (`web/themes/default/js/theme.js`) writes the `data-loading="true"` + `aria-busy="true"` + `disabled` triple atomically; the CSS spinner lives in `web/themes/default/css/theme.css` under `.btn[data-loading="true"]` + the `sbpp-btn-spin` keyframe. Inline page-tail scripts inside `.tpl` files define a local `setBusy(btn, busy)` wrapper that delegates to `window.SBPP.setBusy` when present and falls back to `btn.disabled = busy` so third-party themes that strip `theme.js` still gate against double-clicks. Canonical reference shapes: the three confirm-dialog flows (`page_comms.tpl` / `page_bans.tpl` / `page_admin_admins_list.tpl`), the form-submit flows (`page_admin_groups_list.tpl` / `page_admin_groups_add.tpl` / `page_admin_bans_add.tpl` / `page_admin_bans_email.tpl` / `page_youraccount.tpl` / `page_lostpassword.tpl` / `page_login.tpl`), the row-action flows (`page_admin_servers_list.tpl` / `page_admin_bans_protests.tpl` / `page_admin_bans_protests_archiv.tpl` / `page_admin_bans_submissions.tpl` / `page_admin_bans_submissions_archiv.tpl`), and the drawer Notes paths (`theme.js`'s `submitNoteForm` / `deleteNote`). Comment edit on the banlist (`web/scripts/banlist.js`) carries the same pattern for the `sb.api.call(BansEditComment)` round-trip. Regression guards: `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts` (stalls `Actions.CommsUnblock` via `page.route`, asserts the busy-attribute triple on the submit button while in flight, releases the route, and confirms the row flips in-place; the second test counts requests to prove the disabled gate blocks a double-click) **plus** `web/tests/e2e/specs/flows/loading-animations.spec.ts` (#1362 — samples `getComputedStyle(::after).transform` at multiple frame boundaries under both `reducedMotion: 'reduce'` AND `'no-preference'`, asserts the matrix values change across samples; catches the v2.0 RC1 regression where the global `prefers-reduced-motion: reduce` reset froze the spinner under reduced motion). |
+| Add a loading indicator to the player drawer or one of its lazy panes (so the chrome doesn't read as blank while the JSON action is in flight) | `renderDrawerLoading()` (header skeleton for the in-flight `bans.detail`) and `renderPaneSkeleton()` (placeholder for History / Comms / Notes activation) in `web/themes/default/js/theme.js`. Both lean on the `.skel` CSS rule in `theme.css` (linear-gradient + `shimmer` keyframe + dark-mode override + the `@media (prefers-reduced-motion: reduce)` per-rule override that keeps the shimmer sliding even under reduced motion, #1362). The header skeleton carries `[data-testid="drawer-loading"]` + `aria-busy="true"` + per-block `[data-skeleton]` (terminal markers under `#drawer-root[data-loading="true"]`); the lazy-pane skeleton carries `[data-pane-empty]` + `aria-busy="true"` and deliberately omits `[data-skeleton]` because the panel parent's `hidden` attribute doesn't compose into `[data-skeleton]:not([hidden])` and a nested marker would stall every page-load waiter that runs after the drawer opens. Class name is `.skel` (singular) — NOT `.skeleton`; the pre-fix `class="skeleton"` typo had no matching rule and the shimmer rows rendered as transparent zero-background divs (the user-visible "drawer is blank" regression). Regression guards: `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts` (stalls `bans.detail` then `bans.player_history` via `page.route`, asserts the skeleton header is visible + the `.skel` block paints a `linear-gradient` background via `getComputedStyle(el).backgroundImage`, releases the routes, and confirms the drawer flips to `renderDrawerBody` / the pane fills with content) **plus** `web/tests/e2e/specs/flows/loading-animations.spec.ts` (#1362 — samples `getComputedStyle(.skel).backgroundPositionX` at multiple frame boundaries under both `reducedMotion: 'reduce'` AND `'no-preference'`, asserts the values change across samples; catches the v2.0 RC1 regression where the global reset froze the shimmer alongside the spinner). |
 | Surface unban-reason / removed-by inline on a public-list row (admin-lifted bans / comms — banlist-ureason or commslist-ureason inline) | `web/themes/default/page_bans.tpl` + `web/themes/default/page_comms.tpl` (#1315). Reason cell on the desktop table emits a `<div class="text-xs text-faint mt-1" data-testid="ban-unban-meta">` (or `comm-unban-meta` for comms) with "Unbanned by `<admin>`: `<reason>`" when `$ban.state == 'unbanned'` (or `$comm.state == 'unmuted'`); mobile cards mirror with the `-mobile` testid suffix. Always gated on `!$hideadminname` so anonymous viewers under a hidden-admins config don't get the admin name leaked. The `ureason` / `removedby` row fields come from the page handler's existing data path (`page.banlist.php` lines 635-643, `page.commslist.php` lines 626-635) — read-only render, no write-side overlap with #1301 / #1323's unban-reason flow. The commslist surface is higher-priority than the banlist (no drawer fallback on `<tr data-testid="comm-row">`); banlist users have the drawer as the canonical detail view. |
 | Re-apply (Reban) affordance on the public banlist for expired / unbanned rows | `web/themes/default/page_bans.tpl`. The desktop row-actions cell emits `<a class="btn btn--secondary btn--sm" data-testid="row-action-reapply" href="index.php?p=admin&c=bans&section=add-ban&rebanid={$ban.bid}&key={$admin_postkey}">…<i data-lucide="rotate-ccw">…Re-apply</a>` when `$can_add_ban && ($ban.state == 'expired' \|\| $ban.state == 'unbanned')`. The smart-default block on `admin.bans.php`'s `add-ban` section detects `?rebanid=…` and pre-populates the form via `BansPrepareReban`. Mobile parity (this PR) — the mobile card was restructured from a single wrapping `<a>` to the `page_comms.tpl` shape (`<div data-testid="ban-card">` wrapping `<a class="ban-card__summary" data-testid="drawer-trigger">` + a sibling `<div class="row-actions ban-card__actions">`), so the same Re-apply button surfaces under `data-testid="row-action-reapply-mobile"`. The drawer trigger stays the inner anchor's `data-drawer-href` + `data-testid="drawer-trigger"` so the existing responsive spec selector keeps working. |
 | Wrap a public-list legacy advanced-search form (banlist / commslist) in a default-collapsed `<details class="filters-details">` disclosure | `web/themes/default/page_bans.tpl` + `web/themes/default/page_comms.tpl` (#1315). The same `.filters-details` rules in `web/themes/default/css/theme.css` cover the chrome (summary chevron, `[open]` state, hover bg, focus ring, count badge); the public-list usage adds a `.filters-details__body > form.card` rule that suppresses the inner card framing because the disclosure body wraps a `{load_template file="admin.bans.search"}` (or `…comms.search`) — i.e. a sibling page-render that emits its own `<form class="card">`. The View DTO (`Sbpp\View\BanListView` / `Sbpp\View\CommsListView`) carries a `bool $is_advanced_search_open` set by the page handler from `isset($_GET['advSearch']) && (string) $_GET['advSearch'] !== ''` so the legacy `?advSearch=…&advType=…` URL shim auto-opens the disclosure. Bare `?p=banlist` / `?p=commslist` and simple-bar filters (`?searchText=` / `?server=` / `?time=`) leave it closed so the unfiltered list reaches above the fold. Selectors anchor on `[data-testid="banlist-advsearch-disclosure"]` / `[data-testid="commslist-advsearch-disclosure"]` (the `<details>`) + the `…-toggle` (the `<summary>`) + the `…-active` count badge. The same `.filters-details` chrome was introduced for admin-admins by #1303 — both surfaces share the CSS so a future tweak is single-source. |
@@ -2005,7 +2093,7 @@ audit (#1207) locked in. New CTAs:
 | Stop mobile browsers auto-linking SteamIDs / IPs as phone numbers | `web/themes/default/core/header.tpl` (`<meta name="format-detection" content="telephone=no…">` + `<meta name="x-apple-data-detectors">`) and the defensive `.drawer a[href^="tel:"]` reset in `theme.css` |
 | Lock page scroll while a modal-style chrome is open | `web/themes/default/css/theme.css` (`html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }` — pure-CSS, gates on the same `data-drawer-open` mirror theme.js sets, applies at every viewport so the drawer-open contract is symmetric desktop/mobile per the Linear/Vercel/Notion modal idiom) |
 | Keep the main sidebar sticky-pinned across the full document scroll (`<aside class="sidebar">`) | The structural half of #1271 lives in `web/themes/default/core/footer.tpl`: `<footer class="app-footer">` is rendered as the LAST flex column item of `<div class="main">`, INSIDE `<div class="app">`. `.sidebar`'s sticky containing block is `.app`; if the footer were a body-level sibling of `.app` (the pre-fix shape), `.app`'s height would fall short of the document by `footerHeight` and the sidebar would release at the bottom — brand cut off, on barely-tall pages (`docHeight - viewport ≤ footerHeight`, e.g. `?p=admin&c=audit` on the bare e2e seed) the entire scroll range would be in the release phase and the sidebar would track the scroll. Keeping the footer inside `.app` makes the sticky CB extend to the full document. The CSS half (`.sidebar { align-self: flex-start; }` from #1278) is defensive parity with `.admin-sidebar` and is RETAINED but not load-bearing on its own. The footer's `margin-top: auto` (`.app-footer` rule in `theme.css`) is the classic "sticky footer" pattern — pushes the footer to the bottom of `.main`'s flex column on short pages so the credit doesn't float halfway up the viewport. Regression guard: `web/tests/e2e/specs/responsive/sidebar-sticky.spec.ts` asserts strict `top===0` at scroll=`document.scrollHeight` on `?p=admin&c=bans` (the canonical tall page) AND on `?p=admin&c=audit` (the barely-tall page that historically presented the bug most visibly). |
-| Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions) |
+| Disable the chrome's slide-in / fade animations for `prefers-reduced-motion` users | `web/themes/default/css/theme.css` (`@media (prefers-reduced-motion: reduce)` global block — see the matching note in "Playwright E2E specifics" / Conventions). The block applies universally to `*, *::before, *::after` and is the right shape for *motion-of-state* (drawer slide-in, toast slide-in, chevron rotation). Two documented exceptions live next to their rules: the busy-button spinner (`.btn[data-loading="true"]::after`) and the skeleton shimmer (`.skel`), both essential feedback per WCAG 2.3.3 — without rotation the donut reads as a decorative ring, without sliding the gradient reads as a permanent placeholder. Each rule carries its own per-rule `@media (prefers-reduced-motion: reduce)` override that re-enables the animation with `!important` longhands so specificity wins over the universal `*::after` / `*` reset (#1362). If you ship a new animation, default to honouring the global reset; the per-rule exception only applies to motion that is itself the load-bearing feedback (without it, the affordance is silently broken — not just less lively). Regression guard for both exceptions: `web/tests/e2e/specs/flows/loading-animations.spec.ts`. |
 | Tell the browser to paint native UA surfaces (`<select>` dropdown panels, native scrollbars, `<input type="date|time|color">` pickers, autofill highlighting) in the matching scheme | `web/themes/default/css/theme.css` — the two `color-scheme` declarations on `:root` (`light`) and `html.dark` (`dark`) (#1309). Without these the chrome's dark tokens swap correctly for DOM-rendered surfaces, but anything painted in the browser's top-layer system UI ignores `html.dark` and renders light — most jarring on mobile where the native `<select>` picker full-screens. Regression guard: `web/tests/e2e/specs/a11y/color-scheme.spec.ts`. |
 | Edit a step of the install wizard (chrome, form, schema-apply, admin-create, AMXBans import) | Page handlers under `web/install/pages/page.<N>.php` (1=license, 2=DB details, 3=requirements, 4=schema apply, 5=admin form + final config write, 6=optional AMXBans import). Each handler builds a `Sbpp\View\Install\Install*View` DTO from `web/includes/View/Install/` and renders the matching template under `web/themes/default/install/`. Shared step-handler helpers (prefix validation, raw-PDO probe before instantiating `\Database`, KeyValues quoting, friendly PDO error translation, filesystem-check detail strings) live in `web/install/includes/helpers.php` (`sbpp_install_validate_prefix` / `sbpp_install_open_db` / `sbpp_install_kv_escape` / `sbpp_install_translate_pdo_error` / `sbpp_install_describe_filesystem_check`) — required eagerly from `web/install/bootstrap.php` so every step page has them in scope without its own require. Every step (3-6) re-runs `sbpp_install_validate_prefix` at the top of its handler before any SQL substitution; step 6 also validates `amx_prefix` (operator input on that page itself). The `_chrome.tpl` / `_chrome_close.tpl` partials wrap every step (header + progress stepper + footer); they own the install-only inline CSS (`.install-shell`, `.install-alert`, `.install-pill`, `.install-grid`) since the wizard reuses the panel's `theme.css` design tokens but doesn't pull in the panel's chrome JS (`theme.js`, `lucide.min.js`, command palette, etc. — the wizard has no logged-in user / no Config / no `$userbank`). Steps with per-page tail scripts: step 1 (vanilla JS validating the license-accept checkbox), step 5 (#1335 M3: client-side validation for SteamID format + email shape + password match — saves the round-trip-with-wiped-passwords path on the common form-error case); the handoff template carries an inline auto-submit script. Navigation is plain HTML `<form action="?step=N">` everywhere else. Test-IDs follow `install-<step>-<field>` consistently (#1335 m3 standardised step 2's `install-db-*` shape onto the wider `install-database-*` pattern). Anti-pattern: reintroducing MooTools / `web/install/scripts/sourcebans.js` / `ShowBox()` / `$E()` / inline `onclick="next()"` — every legacy hook is dead post-#1123 D1, the rewrite at #1332 dropped them all (#1332). |
 | Recover from a missing `web/includes/vendor/` at install time | `web/install/recovery.php` is the self-contained "vendor/ missing" surface — pure inline HTML + CSS, NO Composer / Smarty / `Sbpp\…` dependency (#1332 C3). `web/install/index.php`'s lifecycle is paths-init (`init.php`) → C2 already-installed guard (`already-installed.php`, #1335) → vendor/-check (short-circuit to `recovery.php` if missing) → composer + Smarty bootstrap (`bootstrap.php`) → step dispatch (`includes/routing.php` → `pages/page.<N>.php`). The recovery surface is gated by `file_exists(PANEL_INCLUDES_PATH . '/vendor/autoload.php')` BEFORE any namespaced class is referenced. Direct visits with vendor present 302 to `/install/` instead of always emitting the 503 page (#1335 m1). The release artifact (post-#1332 Workstream A) bundles `vendor/` so this surface is the safety net for git checkouts and partial uploads, never the happy path. |

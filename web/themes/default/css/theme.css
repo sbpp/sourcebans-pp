@@ -401,14 +401,28 @@ html.dark .btn--secondary[aria-pressed="true"] {
 
    Reduced motion
    --------------
+   The spinner is essential feedback — without rotation it loses its
+   meaning entirely (a stationary donut reads as a decorative ring,
+   not as in-progress feedback). WCAG 2.3.3 Animation from Interactions
+   exempts essential motion (motion that conveys functionality or
+   information) from the reduced-motion contract, and every major
+   design system (GitHub Primer, Adobe Spectrum, Material UI,
+   Bootstrap, …) keeps loading spinners rotating regardless of the
+   user's motion preference for exactly this reason.
+
    The global `prefers-reduced-motion: reduce` block (later in this
-   file) already pins `animation-duration` to 0.001ms on every
-   `::after`, so the spinner sits still for reduced-motion users.
-   They still see the donut shape + `cursor: progress` + the
-   disabled button state, which is enough to convey "in flight"
-   without the rotation. Don't add a per-rule override that
-   pre-empts the global reset — that's the anti-pattern called out
-   in the matching `@keyframes slide-in` block. */
+   file) pins `animation-duration: 0.001ms !important` and
+   `animation-iteration-count: 1 !important` on every selector. The
+   override directly below this rule re-enables the rotation with
+   explicit `!important` on the same two longhands so that
+   `.btn[data-loading="true"]::after`'s higher specificity wins over
+   the universal `*::after` rule. Do NOT remove the per-longhand
+   override "for symmetry with the rest of the chrome" — pre-#1362
+   the spinner sat still under reduced motion (1361 RC1) and read as
+   a frozen UI, which is exactly the regression that motivated this
+   block. Honouring reduced motion for *animations of state* (the
+   drawer slide-in, the toast slide-in, the chevron rotation) stays
+   correct; spinners are the documented exception. */
 .btn[data-loading="true"] {
   position: relative;
   cursor: progress;
@@ -429,7 +443,24 @@ html.dark .btn--secondary[aria-pressed="true"] {
   border-top-color: transparent;
   animation: sbpp-btn-spin 0.6s linear infinite;
 }
-@keyframes sbpp-btn-spin { to { transform: rotate(360deg); } }
+/* Explicit `from` so the interpolation isn't relying on `transform: none`
+   composing cleanly with `rotate(360deg)`; functionally identical in modern
+   browsers but reads as obviously-a-spin to the next person who opens this
+   file. */
+@keyframes sbpp-btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+/* Per the long comment above the spinner rule: spinners are essential
+   feedback and stay rotating even when the user requests reduced motion.
+   The `*::after` global reset further down would otherwise freeze the
+   rotation; the per-longhand `!important` here wins on specificity. */
+@media (prefers-reduced-motion: reduce) {
+  .btn[data-loading="true"]::after {
+    animation-duration: 0.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
 
 /* #1207 AUTH-2 — "Continue with Steam" contrast in dark theme. The
    button is rendered as `.btn--secondary` (page_login.tpl), which in
@@ -1397,10 +1428,36 @@ html:has(#drawer-root[data-drawer-open="true"]) { overflow: hidden; }
   .palette__row-hint-label { display: none; }
 }
 
-/* ---- Skeleton ---- */
+/* ---- Skeleton ----
+   `.skel` is the loading-placeholder visual used in two surfaces today
+   (#1361): the drawer's `renderDrawerLoading()` header skeleton blocks
+   and the lazy-pane `renderPaneSkeleton()` body blocks. The shimmer
+   sliding across the gradient IS the affordance — the gray rectangles
+   alone read as a layout placeholder / broken UI, not as
+   "in-flight, please wait".
+
+   The reduced-motion contract here matches the spinner's
+   (`.btn[data-loading="true"]::after`, far above): per WCAG 2.3.3
+   Animation from Interactions, essential motion (motion that conveys
+   functionality) is exempt from the reduced-motion preference. The
+   `*, *::before, *::after` global reset further up would otherwise pin
+   `animation-duration: 0.001ms` + `animation-iteration-count: 1` and
+   freeze the shimmer at its 100% keyframe — leaving a static gradient
+   that reads as a permanent placeholder (the v2.0 RC1 regression that
+   motivated this block alongside the spinner's). The per-longhand
+   `!important` override below the rule wins on specificity. Honouring
+   reduced motion for *motion-of-state* (drawer slide-in, toast
+   slide-in, chevron rotation) stays correct; the skeleton shimmer is
+   a documented exception for the same reason the spinner is. */
 @keyframes shimmer { 0% { background-position: -200px 0; } 100% { background-position: calc(200px + 100%) 0; } }
 .skel { background: linear-gradient(90deg, var(--zinc-100) 0, var(--zinc-200) 40px, var(--zinc-100) 80px); background-size: 200px 100%; animation: shimmer 1.4s linear infinite; border-radius: var(--radius-sm); }
 html.dark .skel { background: linear-gradient(90deg, var(--zinc-800) 0, var(--zinc-700) 40px, var(--zinc-800) 80px); background-size: 200px 100%; }
+@media (prefers-reduced-motion: reduce) {
+  .skel {
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
 
 /* ---- Queue rows (admin submissions / protests) ----
    PUB-2 (#1207): the admin moderation queues (page_admin_bans_*.tpl)
