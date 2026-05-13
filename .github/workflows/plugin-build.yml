@@ -1,0 +1,57 @@
+name: Plugin build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'game/addons/sourcemod/scripting/**'
+      - '.github/workflows/plugin-build.yml'
+  pull_request:
+    paths:
+      - 'game/addons/sourcemod/scripting/**'
+      - '.github/workflows/plugin-build.yml'
+
+# Compile every top-level `.sp` plugin with `spcomp` so a PR that breaks a
+# plugin (#1378's auto-DB-reconnection rewrite of sbpp_sleuth.sp /
+# sbpp_checker.sp is the canonical motivating example) fails the gate
+# instead of waiting for a release tag to surface the breakage. Mirrors
+# `release.yml`'s build-plugin step exactly — same compiler version, same
+# `-i include` invocation, same shallow `*.sp` glob (nested sub-files like
+# sbpp_admcfg/sbpp_admin_groups.sp are `#include`d by their parent and
+# don't compile standalone).
+jobs:
+  plugin-build:
+    name: Compile SourceMod plugins
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SourcePawn compiler
+        uses: rumblefrog/setup-sp@master
+        with:
+          version: '1.12.x'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Loop continues on individual failures so a PR that breaks more than
+      # one plugin sees every error in one CI run instead of having to fix-
+      # push-fix-push for each. The `::error file=…::` annotation surfaces
+      # each failure inline on the PR's Files Changed view; `::group::`
+      # collapses per-plugin spcomp output so the log stays scannable.
+      - name: Compile plugins
+        working-directory: game/addons/sourcemod/scripting
+        run: |
+          mkdir -p ../plugins
+          failed=0
+          for src in *.sp; do
+            echo "::group::Compiling $src"
+            if ! spcomp -i include -o "../plugins/${src%.sp}.smx" "$src"; then
+              echo "::error file=game/addons/sourcemod/scripting/$src::Failed to compile $src"
+              failed=$((failed + 1))
+            fi
+            echo "::endgroup::"
+          done
+          if [ "$failed" -gt 0 ]; then
+            echo "::error::$failed plugin(s) failed to compile"
+            exit 1
+          fi

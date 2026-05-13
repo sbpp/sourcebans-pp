@@ -968,7 +968,7 @@ dev-only and documented as such in `docker-compose.yml`.
 
 ## Quality gates
 
-Five CI jobs run on every PR (`.github/workflows/`):
+Six CI jobs run on every PR (`.github/workflows/`):
 
 | Gate           | Workflow              | Local command                | What it covers                                |
 | -------------- | --------------------- | ---------------------------- | --------------------------------------------- |
@@ -977,6 +977,7 @@ Five CI jobs run on every PR (`.github/workflows/`):
 | ts-check       | `ts-check.yml`        | `./sbpp.sh ts-check`         | `tsc --checkJs` over `web/scripts/`.          |
 | API contract   | `api-contract.yml`    | `./sbpp.sh composer api-contract` | Regenerates `scripts/api-contract.js` and fails on diff. |
 | Playwright E2E | `e2e.yml`             | `./sbpp.sh e2e`              | Browser-level smoke / flows / a11y against the dev stack (chromium + mobile-chromium). |
+| Plugin build   | `plugin-build.yml`    | `(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)` | Compiles every top-level `.sp` plugin with `spcomp` (1.12.x, mirroring `release.yml`). Path-filtered to `game/addons/sourcemod/scripting/**` — only fires when a PR touches plugin sources. |
 
 PHPStan is at level 5 (bumped from 4 in #1101); raise one step at a
 time, never jump 5→7. The baseline at `web/phpstan-baseline.neon`

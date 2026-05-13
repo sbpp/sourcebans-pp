@@ -179,7 +179,7 @@ services:
 
 ## Quality gates
 
-CI runs five gates on every PR. Match them locally before opening one.
+CI runs six gates on every PR. Match them locally before opening one.
 
 | Gate           | Local                                | CI workflow            |
 | -------------- | ------------------------------------ | ---------------------- |
@@ -188,6 +188,7 @@ CI runs five gates on every PR. Match them locally before opening one.
 | ts-check       | `./sbpp.sh ts-check`                 | `ts-check.yml`         |
 | API contract   | `./sbpp.sh composer api-contract`    | `api-contract.yml`     |
 | Playwright E2E | `./sbpp.sh e2e`                      | `e2e.yml`              |
+| Plugin build   | `(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)` | `plugin-build.yml`     |
 
 PHPStan specifics:
 
@@ -305,6 +306,34 @@ Playwright E2E specifics:
   `web/tests/e2e/scripts/upload-screenshots.sh` wrapper pushes the
   PNGs to the `screenshots-archive` orphan branch under a per-PR
   subdirectory and prints the markdown table to comment on the PR.
+
+Plugin build specifics:
+
+- Path-filtered to `game/addons/sourcemod/scripting/**` plus the
+  workflow file itself, so a PR that only touches `web/` or docs
+  doesn't pay for a SourcePawn round-trip. PRs that touch a plugin
+  source — `.sp`, `.inc`, or anything nested like
+  `sbpp_admcfg/sbpp_admin_groups.sp` — fire the gate.
+- Compiles **only the top-level `.sp` files** (shallow `*.sp` glob
+  in `scripting/`). Sub-files like `sbpp_admcfg/sbpp_admin_groups.sp`
+  and `sbpp_admcfg/sbpp_admin_users.sp` are `#include`d by their
+  parent (`sbpp_admcfg.sp` line 49-50) and don't compile standalone;
+  using a recursive `**/*.sp` glob would surface phantom failures.
+- Pinned to SourcePawn `1.12.x` via `rumblefrog/setup-sp@master` —
+  same compiler version `release.yml`'s build-plugin step uses, so
+  the gate exercises exactly what the next release tag will
+  compile. Bumping the floor (e.g. to 1.13.x) requires updating
+  `release.yml` in the same PR; the two must stay in lockstep.
+- Loop continues on individual failures and emits one
+  `::error file=…::` annotation per broken plugin so a PR that
+  breaks more than one (#1378's auto-DB-reconnection rewrite of
+  `sbpp_sleuth.sp` AND `sbpp_checker.sp` together is the canonical
+  multi-file shape) sees every error in one CI run instead of
+  fix-push-fix-push round-trips.
+- No local `./sbpp.sh` wrapper. The dev stack doesn't ship spcomp
+  (it's not relevant to panel work), so plugin contributors install
+  spcomp themselves and run the literal command from the table
+  above. Untouched-plugin PRs: trust the gate.
 
 ## Conventions
 

@@ -99,7 +99,9 @@ again with `admin` / `admin`.
 
 ## Quality gates
 
-Five gates run in CI on every PR; each has a one-shot wrapper for local runs.
+Six gates run in CI on every PR; the first five each have a one-shot
+wrapper for local runs. The sixth (plugin compile) is CI-only — the
+dev stack ships no spcomp, and panel-only PRs never trigger it.
 
 ```sh
 ./sbpp.sh phpstan                 # static analysis (web/phpstan.neon, baseline at web/phpstan-baseline.neon)
@@ -107,6 +109,9 @@ Five gates run in CI on every PR; each has a one-shot wrapper for local runs.
 ./sbpp.sh ts-check                # tsc --checkJs over web/scripts (#1098)
 ./sbpp.sh composer api-contract   # regenerate web/scripts/api-contract.js (#1112)
 ./sbpp.sh e2e                     # Playwright + axe against the dev stack (#1124)
+
+# Plugin compile (no sbpp.sh wrapper — install spcomp locally if you want to mirror it)
+(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)
 ```
 
 `ts-check` runs the TypeScript compiler in `--checkJs` mode against the
