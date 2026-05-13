@@ -81,7 +81,7 @@ if (!$fileUploads) {
     $errors++;
 }
 
-foreach (['openssl', 'xml', 'gmp', 'pdo_mysql', 'mbstring'] as $ext) {
+foreach (['openssl', 'xml', 'pdo_mysql', 'mbstring'] as $ext) {
     $loaded = extension_loaded($ext);
     $phpRows[] = [
         'label'    => $ext . ' extension',

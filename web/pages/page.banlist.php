@@ -451,7 +451,6 @@ if (isset($_GET['searchText'])) {
     $authidPattern = SteamID::toSearchPattern($searchText);
 
     try {
-        SteamID::init();
         if (SteamID::isValidID($searchText)) {
             $conversionResult = SteamID::toSteam2($searchText);
 
@@ -538,7 +537,6 @@ if (isset($_GET['advSearch'])) {
     $value = trim((string) $_GET['advSearch']);
 
     try {
-        SteamID::init();
         if (SteamID::isValidID($value)) {
             $conversionResult = SteamID::toSteam2($value);
 

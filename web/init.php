@@ -170,7 +170,6 @@ require_once(INCLUDES_PATH.'/Db/Database.php');
 $GLOBALS['PDO'] = new Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
 require_once(INCLUDES_PATH.'/SteamID/bootstrap.php');
-\SteamID\SteamID::init($GLOBALS['PDO']);
 
 require_once(INCLUDES_PATH.'/Config.php');
 Config::init($GLOBALS['PDO']);

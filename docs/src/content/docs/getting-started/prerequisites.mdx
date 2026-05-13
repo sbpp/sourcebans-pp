@@ -50,7 +50,6 @@ some CJK characters fail to insert and the plugin logs a SQL error.
   but the panel can run out of memory on large ban-list pages below
   64 MB.
 - These PHP extensions must be loaded:
-  - `gmp` — large-integer math (for Steam ID conversion)
   - `pdo_mysql` — MySQL/MariaDB driver
   - `openssl` — TLS for SMTP and the panel's session tokens
   - `xml`
@@ -59,12 +58,12 @@ some CJK characters fail to insert and the plugin logs a SQL error.
 You can confirm them all in one command:
 
 ```sh
-php -m | grep -E '^(gmp|pdo_mysql|openssl|xml|mbstring)$'
+php -m | grep -E '^(pdo_mysql|openssl|xml|mbstring)$'
 ```
 
-You should see all five printed back. If any are missing, install
+You should see all four printed back. If any are missing, install
 your distro's `php-<name>` package for that version (e.g.
-`php8.5-gmp`). If `pdo_mysql` is the missing one,
+`php8.5-mbstring`). If `pdo_mysql` is the missing one,
 [Driver not found](/troubleshooting/could-not-find-driver/) has the
 fix.
 

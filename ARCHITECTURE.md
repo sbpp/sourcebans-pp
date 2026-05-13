@@ -47,7 +47,7 @@ plugins are stable and updated less often.
 
 ### Stack
 
-- **PHP 8.5** with `pdo`, `pdo_mysql`, `gmp`, `intl`, `mbstring`, `openssl`,
+- **PHP 8.5** with `pdo`, `pdo_mysql`, `intl`, `mbstring`, `openssl`,
   `sodium`. Composer manages dependencies into `web/includes/vendor/`
   (note the non-default `vendor-dir`, set in `composer.json`).
 - **MariaDB 10.11** in dev (MySQL 5.6+ supported in production).

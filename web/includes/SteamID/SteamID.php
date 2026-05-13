@@ -1,12 +1,7 @@
 <?php
 namespace SteamID;
 
-use Database;
 use Exception;
-
-// Require the calculation classes
-require_once __DIR__ . '/calc/GMP.php';
-require_once __DIR__ . '/calc/BCMATH.php';
 
 /**
  * Class SteamID
@@ -15,25 +10,7 @@ require_once __DIR__ . '/calc/BCMATH.php';
  */
 class SteamID
 {
-    private static ?string $calcMethod = null;
-
     private static array $validFormat = ['Steam2', 'Steam3', 'Steam64'];
-
-    /**
-     * @param  Database|null $dbs
-     * @throws Exception
-     */
-    public static function init(?Database $dbs = null)
-    {
-        self::$calcMethod = self::getCalcMethod();
-
-        if (self::$calcMethod === 'SQL') {
-            if ($dbs === null) {
-                throw new Exception('No suitable calculation Method found!');
-            }
-            calc\SQL::setDB($dbs);
-        }
-    }
 
     /**
      * @param  $steamid
@@ -80,13 +57,30 @@ class SteamID
         if (!in_array($format, self::$validFormat)) {
             throw new Exception("Invalid input format!");
         }
+
+        self::assertSixtyFourBit();
+
         $from = self::resolveInputID($steamid);
 
         if ($from === $format) {
             return str_replace("STEAM_1", "STEAM_0", $steamid);
         }
 
-        return call_user_func("SteamID\calc\\".self::$calcMethod.'::'.$from.'to'.$format, $steamid);
+        return match ($from . '->' . $format) {
+            'Steam2->Steam3'  => self::Steam2toSteam3($steamid),
+            'Steam2->Steam64' => self::Steam2toSteam64($steamid),
+            'Steam3->Steam2'  => self::Steam3toSteam2($steamid),
+            'Steam3->Steam64' => self::Steam3toSteam64($steamid),
+            'Steam64->Steam2' => self::Steam64toSteam2($steamid),
+            'Steam64->Steam3' => self::Steam64toSteam3($steamid),
+            // Unreachable — `$from` is constrained to one of three by
+            // `resolveInputID()` (throws otherwise), `$format` to one
+            // of three by the `in_array($validFormat)` guard above,
+            // and the `$from === $format` branch handles the diagonal.
+            // The default exists so PHPStan's match-exhaustiveness
+            // check sees a covered string-valued pivot.
+            default => throw new Exception("Unreachable conversion: $from -> $format"),
+        };
     }
 
     /**
@@ -163,7 +157,6 @@ class SteamID
             return null;
         }
         try {
-            self::init();
             if (!self::isValidID($value)) {
                 return null;
             }
@@ -178,17 +171,71 @@ class SteamID
     }
 
     /**
-     * @return string
+     * Native-int math is correct on any 64-bit PHP (`PHP_INT_MAX` is
+     * 9.22e18, ~120x the largest plausible Steam64 ~7.66e16). The
+     * project's PHP floor is 8.5, which on every supported distro
+     * ships 64-bit; the guard exists so the vanishingly rare
+     * self-compiled-32-bit holdout (Pi Zero / armhf / a custom build)
+     * fails loudly with a clear message instead of silently overflowing.
      */
-    private static function getCalcMethod()
+    private static function assertSixtyFourBit(): void
     {
-        switch (true) {
-            case extension_loaded('gmp'):
-                return 'GMP';
-            case extension_loaded('bcmath'):
-                return 'BCMATH';
-            default:
-                return 'SQL';
+        if (PHP_INT_SIZE !== 8) {
+            throw new \RuntimeException(
+                "SourceBans++ requires a 64-bit PHP build for Steam ID conversion; detected PHP_INT_SIZE=" . PHP_INT_SIZE
+            );
         }
+    }
+
+    private static function Steam2toSteam3(string $steamid): string
+    {
+        $parts = explode(':', $steamid);
+        $sid = (int) $parts[2] * 2 + (int) $parts[1];
+        return "[U:1:$sid]";
+    }
+
+    /**
+     * Returns the Steam64 as a decimal string. The previous GMP backend
+     * returned a `\GMP` object that stringified to the digits via
+     * `__toString()`, so callers concatenating into URLs or binding into
+     * SQL relied on the string shape. Returning a native `int` here
+     * would break those call sites silently (e.g. PDO binding the value
+     * as `PDO::PARAM_INT` instead of `PARAM_STR` and triggering a
+     * different prepared-statement path). Keep the string return.
+     */
+    private static function Steam2toSteam64(string $steamid): string
+    {
+        $parts = explode(':', $steamid);
+        $sid = (int) $parts[2] * 2 + 76561197960265728 + (int) $parts[1];
+        return (string) $sid;
+    }
+
+    private static function Steam3toSteam2(string $steamid): string
+    {
+        $parts = explode(':', trim($steamid, '[]'));
+        $idy = (int) $parts[2] % 2;
+        $idz = intdiv((int) $parts[2], 2);
+        return "STEAM_0:$idy:$idz";
+    }
+
+    private static function Steam3toSteam64(string $steamid): string
+    {
+        $parts = explode(':', trim($steamid, '[]'));
+        $sid = (int) $parts[2] + 76561197960265728;
+        return (string) $sid;
+    }
+
+    private static function Steam64toSteam2(int|string $steamid): string
+    {
+        $steamid = (int) $steamid;
+        $idy = $steamid % 2;
+        $idz = intdiv($steamid - 76561197960265728, 2);
+        return "STEAM_0:$idy:$idz";
+    }
+
+    private static function Steam64toSteam3(int|string $steamid): string
+    {
+        $idz = (int) $steamid - 76561197960265728;
+        return "[U:1:$idz]";
     }
 }

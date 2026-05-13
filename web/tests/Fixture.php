@@ -45,7 +45,6 @@ class Fixture
         $GLOBALS['PDO'] = new \Database(DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_PREFIX, DB_CHARSET);
 
         \Config::init($GLOBALS['PDO']);
-        \SteamID\SteamID::init($GLOBALS['PDO']);
         \Auth::init($GLOBALS['PDO']);
         \Log::init($GLOBALS['PDO'], new \CUserManager(null));
 

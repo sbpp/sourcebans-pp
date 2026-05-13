@@ -13,7 +13,6 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         git \
         unzip \
-        libgmp-dev \
         libicu-dev \
         libzip-dev \
         libonig-dev \
@@ -23,7 +22,6 @@ RUN apt-get update \
         npm \
  && docker-php-ext-install -j"$(nproc)" \
         pdo_mysql \
-        gmp \
         intl \
         zip \
         mbstring \

@@ -82,8 +82,10 @@ hosts, which is the most common stumbling block — see
 
 Yes, with two caveats:
 
-- The host must run **PHP >= 8.5** with `pdo_mysql`, `gmp`,
-  `openssl`, `xml`, and `mbstring`. Most modern shared hosts do.
+- The host must run **PHP >= 8.5** with `pdo_mysql`, `openssl`,
+  `xml`, and `mbstring`. Most modern shared hosts do. (Older 1.x
+  installs also required `gmp`; not needed since 2.x — native
+  64-bit `int` math handles Steam ID conversion.)
 - The host must allow **remote database connections** if your
   game servers aren't on the same host. Many shared hosts
   disable this by default; check the control panel for a
