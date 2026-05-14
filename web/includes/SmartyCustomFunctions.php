@@ -1,48 +1,30 @@
 <?php
-/**
- * Smarty {help_icon title="gaben" message="hello"} function plugin
- *
- * Type:     function<br>
- * Name:     help tip<br>
- * Purpose:  show help tip
- * @link http://www.sourcebans.net
- * @author  SourceBans Development Team
- */
-function smarty_function_help_icon(array $params, \Smarty\Template $template): string
-{
-	 return '<img border="0" align="absbottom" src="images/help.png" class="tip" title="' .  $params['title'] . ' :: ' .  $params['message'] . '">&nbsp;&nbsp;';
-}
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+
+declare(strict_types=1);
 
 /**
- * Smarty {sb_button text="Login" onclick=$redir class="ok" id="alogin" submit=false} function plugin
+ * Custom Smarty plugins for the SourceBans++ panel.
  *
- * Type:     function<br>
- * Name:     help tip<br>
- * Purpose:  show help tip
- * @link http://www.sourcebans.net
- * @author  SourceBans Development Team
+ * Most templates reach for the standard Smarty toolbox plus the helpers
+ * registered here. The two surviving "raw HTML emitter" plugins
+ * (`{help_icon}`, `{sb_button}`) were dropped at issue #5 — they were
+ * 1.4.x carry-overs with zero live `.tpl` call sites, and the v2.0
+ * chrome (Lucide icons + the `.btn` class chain in `theme.css`)
+ * supersedes both. The remaining plugins below are all in active use.
+ *
+ * Note: `{help_icon}` and `{sb_button}` have NO migration path because
+ * their last call sites were already gone in v2.0; if a fork relied on
+ * either, the right shape post-#5 is a Lucide `<i data-lucide=…>` glyph
+ * for help icons and a vanilla `<button class="btn …">` for buttons.
  */
-function smarty_function_sb_button(array $params, \Smarty\Template $template): string //$text, $click, $class, $id="", $submit=false
-{
-	$text = $params['text'] ?? "";
-	$click = $params['onclick'] ?? "";
-	$class = $params['class'] ?? "";
-	$id = $params['id'] ?? "";
-	$submit = $params['submit'] ?? "";
-	
-	$type = $submit ? "submit" : "button";
-	$button = "<input type='$type' onclick=\"$click\" name='$id' class='btn $class' onmouseover='ButtonOver(\"$id\")' onmouseout='ButtonOver(\"$id\")' id='$id' value='$text' />";
-	return $button;
-}
 
 /**
- * Smarty {load_template file="pages.file"} without the `.php` extension. Function plugin.
- *
- * Type:     function<br>
- * Name:     Load template
- * Purpose:  Load template files
- * @link http://www.sourcebans.net
- * @author  SourceBans Development Team
+ * Smarty {load_template file="pages.file"} — load a `.php` partial from
+ * the configured templates dir. Used by the install wizard router and a
+ * handful of legacy admin partials.
  */
 function smarty_function_load_template(array $params): void
 {
@@ -50,30 +32,24 @@ function smarty_function_load_template(array $params): void
 }
 
 /**
- *  Smarty {smarty_stripslashes} function plugin
- * 
- * Type:     function<br>
- * Name:     smarty_stripslashes<br>
- * Purpose:  custom stripslashes function
- * @link https://github.com/lechuga16/sourcebans-pp/tree/smarty_stripslashes
- * @author  Lechuga
- * @version 1.0
+ * Stripslashes modifier — exposes PHP's `stripslashes()` to templates.
  */
 function smarty_stripslashes(string $string): string
 {
-	return stripslashes($string);
+    return stripslashes($string);
 }
 
 /**
- *  Smarty {smarty_htmlspecialchars} function plugin
- *
- * Type:     function<br>
- * Name:     smarty_htmlspecialchars<br>
- * Purpose:  custom htmlspecialchars function
- * @link https://github.com/lechuga16/sourcebans-pp/tree/smarty_stripslashes
- * @author  Lechuga
+ * HtmlSpecialchars modifier — wraps PHP's `htmlspecialchars()` so a
+ * template that needs an explicit one-off escape (e.g. when global
+ * auto-escape was disabled with `nocache`) can reach for it directly.
  */
-function smarty_htmlspecialchars(string $string, int $flags = ENT_COMPAT | ENT_HTML401, string $encoding = 'UTF-8', bool $double_encode = true): string {
+function smarty_htmlspecialchars(
+    string $string,
+    int $flags = ENT_COMPAT | ENT_HTML401,
+    string $encoding = 'UTF-8',
+    bool $double_encode = true,
+): string {
     return htmlspecialchars($string, $flags, $encoding, $double_encode);
 }
 

@@ -101,7 +101,7 @@ web/
 │   ├── PHPStan/              Sbpp\PHPStan\* — custom PHPStan rules (Smarty + SQL prefix)
 │   ├── page-builder.php      route() + build() (the page router; procedural)
 │   ├── system-functions.php  Legacy helpers shared across pages (procedural)
-│   ├── SmartyCustomFunctions.php  {help_icon} / {csrf_field} / {load_template}
+│   ├── SmartyCustomFunctions.php  {csrf_field} / {load_template} / {has_access}
 │   └── vendor/               Composer artifacts (gitignored)
 ├── scripts/              Browser JS (// @ts-check + JSDoc, no bundler)
 │   ├── sb.js                 DOM helpers + sb namespace
@@ -185,7 +185,7 @@ Both scripts include `init.php` first, which performs identical bootstrap.
 6. Reads `configs/permissions/web.json` + `sourcemod.json` and `define()`s
    each flag as a global PHP constant (`ADMIN_OWNER`, `ADMIN_ADD_BAN`, …).
 7. Constructs the global `$theme` (Smarty) with the configured theme dir,
-   registers custom functions (`{csrf_field}`, `{help_icon}`, …), and
+   registers custom functions (`{csrf_field}`, `{load_template}`, `{has_access}`), and
    assigns `csrf_token` / `csrf_field_name` so every rendered page has
    them available.
 
