@@ -48,6 +48,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Add or rename a DB table, or change the schema substantively | `ARCHITECTURE.md` (Database schema table) + ensure `install/includes/sql/struc.sql` is the source of truth + paired `web/updater/data/<N>.php` registered in `store.json` |
 | Add or change a row in `install/includes/sql/data.sql` (e.g. new `sb_settings` key) | Paired migration in `web/updater/data/<N>.php` + register in `web/updater/store.json` (see "Updater migrations") |
 | Add or remove a quality gate / CI workflow                  | `ARCHITECTURE.md` (Quality gates) **and** `AGENTS.md` (Quality gates) |
+| Change the CLA text, the `web/**` paths filter on the CLA workflow, the allowlist, or the sign-comment phrase | `CLA.md` + `.github/workflows/cla.yml` + `CONTRIBUTING.md` (rationale / how-to-sign) + the "Contributor License Agreement gate" Conventions block in `AGENTS.md`. Sign-comment phrase is duplicated in three places (workflow `if:`, `custom-pr-sign-comment`, CLA.md §10) — keep them byte-identical. |
 | Change a `./sbpp.sh` command surface                        | `AGENTS.md` (Dev commands) + `docker/README.md`       |
 | Introduce a new convention or pattern (e.g. View DTOs)      | `AGENTS.md` (Conventions) + `ARCHITECTURE.md` if it's an architectural shift |
 | Remove a legacy pattern                                     | `AGENTS.md` (Anti-patterns) + `ARCHITECTURE.md` (Legacy patterns being phased out) |
@@ -1557,6 +1558,58 @@ at 1920px so the IP column — tier-3 — is visible). When you add a
 new tier-3 column to either list and it relies on visibility for
 the spec, target a 1920px viewport, not 1440px.
 
+### Contributor License Agreement gate (`web/**`)
+
+Pull requests that touch `web/**` are gated on a signed Contributor
+License Agreement. The web panel is dual-licensable (free for hobby /
+community use under CC BY-SA 4.0; separate commercial licence for
+production use by hosting providers), and the CLA is the mechanism
+that lets the maintainer relicense future contributions without
+contacting every contributor individually.
+
+- Agreement text: [`CLA.md`](CLA.md). Ten sections, ~1 page. Contributor
+  keeps copyright; maintainer gets a perpetual, irrevocable, worldwide,
+  royalty-free, sublicensable licence with the **explicit right to
+  relicense under any terms, including proprietary or commercial**
+  (§3(b)). Same legal shape as GitLab / Discourse / Plex.
+- Workflow: [`.github/workflows/cla.yml`](.github/workflows/cla.yml).
+  Uses `contributor-assistant/github-action@v2.6.1`. Triggers:
+  `pull_request_target` with `paths: ['web/**', 'CLA.md',
+  '.github/workflows/cla.yml']`, plus `issue_comment` for the
+  "I have read the CLA Document and I hereby sign the CLA" sign flow.
+  Job-level `if:` gates execution so unrelated comments / non-web PRs
+  don't burn action minutes. Permissions: `actions: write`,
+  `contents: write`, `pull-requests: write`, `statuses: write` — all
+  load-bearing for writing to the signatures branch and posting the
+  PR comment / status check.
+- Signature storage: orphan branch `cla-signatures` in this repo at
+  `signatures/cla.json`. The action creates the branch on its first
+  successful run; do NOT precreate it manually. Each entry pins the
+  contributor's GitHub login, ID, the PR that recorded the signature,
+  and a timestamp.
+- Allowlist: the maintainer (`rumblefrog`) plus `*[bot]` (covers
+  Dependabot and any future GitHub App bot). The allowlist lives in
+  the workflow file's `allowlist:` field — single source of truth.
+  Onboarding an additional maintainer means adding their login there
+  in the same PR as any docs update naming them.
+- Scope is `web/**`. Plugin-only PRs (`game/addons/sourcemod/**`)
+  stay GPLv3 and intentionally skip the gate — copyleft already
+  blocks quiet relicensing, so layering a CLA on top would only add
+  friction. Mixed PRs (web/ + plugins) trigger the gate because of
+  the web/ half; one signature unblocks both.
+- The sign phrase ("I have read the CLA Document and I hereby sign
+  the CLA") is duplicated in three places: the workflow's job-level
+  `if:`, the workflow's `custom-pr-sign-comment:` field, and the
+  CLA.md §10 acceptance section. Keep all three byte-identical — the
+  action matches the contributor's comment against
+  `custom-pr-sign-comment`, the `if:` matches against the same string
+  to gate execution, and CLA.md §10 is what the contributor is told
+  to type. Drift between any two silently breaks the signing flow.
+- Historical contributors haven't signed; their pre-CLA web-panel
+  contributions aren't covered by the new grant. Retroactive sign-off
+  is a separate piece of work (opt-in follow-up) and isn't blocked
+  by the workflow being in place.
+
 ## Anti-patterns (do NOT reintroduce)
 
 - `btn.disabled = true` (or any other manual `disabled` flip) inside
@@ -2391,3 +2444,4 @@ the spec, target a 1920px viewport, not 1440px.
 | Translate raw `PDOException` connect errors into operator-friendly messages on the wizard's database step | `sbpp_install_translate_pdo_error()` in `web/install/includes/helpers.php` (#1335 m4). Pattern-matches the four error codes a non-technical operator is most likely to hit — 1045 (access denied), 2002 (host unreachable), 1049 (unknown database), 1044 (denied for user on database) — and emits a friendlier translation; falls back to the raw message for unrecognised codes so debugging stays possible. Pre-fix the wizard surfaced `SQLSTATE[HY000] [1045] Access denied for user 'sourcebans'@'192.168.96.5' (using password: YES)` verbatim, which is gibberish to non-DBAs and includes the panel-as-seen-by-DB internal IP (minor information disclosure). Regression test: `web/tests/integration/InstallGuardTest.php::testPdoErrorTranslationCoversCommonCodes`. |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
+| Change the Contributor License Agreement (text, scope, allowlist) or how the CLA bot gates `web/**` PRs | `CLA.md` (the agreement text — 10 sections, web/-scoped, explicit relicensing right in §3(b)) + `.github/workflows/cla.yml` (the `contributor-assistant/github-action` workflow — paths filter, allowlist, sign-comment text, custom not-signed PR comment) + `CONTRIBUTING.md` (rationale + how-to-sign for contributors). Signatures land on the orphan branch `cla-signatures` under `signatures/cla.json`; the action creates the branch on its first successful run. The maintainer plus all `*[bot]` accounts are allowlisted by default. See "Contributor License Agreement gate" in Conventions. |

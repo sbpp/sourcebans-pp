@@ -40,14 +40,44 @@ the upgrade path for each major version boundary.
 
 ## Contributing
 
-Pull requests welcome. Conventions and the local Docker dev stack
-live in [`AGENTS.md`](AGENTS.md); the codebase tour is in
-[`ARCHITECTURE.md`](ARCHITECTURE.md).
+Pull requests welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the
+guide, [`AGENTS.md`](AGENTS.md) for conventions and the local Docker
+dev stack, and [`ARCHITECTURE.md`](ARCHITECTURE.md) for the codebase
+tour.
+
+PRs that touch the web panel (`web/**`) are covered by a Contributor
+License Agreement — see [`CLA.md`](CLA.md). The CLA bot leaves
+one-line sign instructions on your first such PR; you only need to
+sign once. Plugin-only PRs (`game/addons/sourcemod/**`) stay under
+GPLv3 and don't need a signature.
 
 Security issues: please open an issue with reproduction details, or
 contact a maintainer on Discord if the report needs to be private.
+
+## Sponsors
+
+SourceBans++ is built and maintained on volunteer time. If your
+community, server network, or hosting business depends on it,
+sponsoring development helps keep the panel healthy &mdash; and
+funds the modernization work that's been landing across v2.x.
+
+[![Sponsor on GitHub](https://img.shields.io/github/sponsors/rumblefrog?style=flat-square&logo=github&label=Sponsor%20on%20GitHub)](https://github.com/sponsors/rumblefrog)
+
+**Game-server hosts and SourceBans++-as-a-feature providers** &mdash;
+production / commercial use of the web panel is covered by a
+separate commercial license; see **License** below.
+
+<!-- sponsors:start -->
+<!-- Corporate sponsor logos land here once the corporate tier ships. -->
+<!-- sponsors:end -->
 
 ## License
 
 - **SourceMod plugins:** [GPLv3](https://raw.githubusercontent.com/sbpp/sourcebans-pp/v1.x/.github/GPLv3).
 - **Web panel:** [CC BY-NC-SA 3.0](LICENSE.md).
+  Hobby / community use is free under the linked terms; for
+  production / commercial use (e.g. game-server hosting companies
+  bundling SourceBans++ as a paid feature), a separate commercial
+  license is available &mdash; reach out via the contact link on
+  [GitHub Sponsors](https://github.com/sponsors/rumblefrog) or
+  Discord.
