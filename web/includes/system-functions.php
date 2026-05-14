@@ -1,233 +1,392 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
- *************************************************************************/
+/**
+ * Procedural helpers used across the panel.
+ *
+ * Most helpers in here are conceptually the same handful of operations
+ * the legacy SourceBans 1.4.x panel exposed (build a ban-table link,
+ * humanize a duration, fan a permission bitmask back to display labels,
+ * walk an upload directory, rcon a server, …). The function names are
+ * preserved for theme-fork compatibility; the bodies were rewritten
+ * for PHP 8.5 idioms during the v2.0 cleanup. New code prefers the
+ * `Sbpp\…` namespaced surfaces (`Sbpp\Db\Database`, `Sbpp\View\*`,
+ * `Sbpp\Auth\*`); these globals exist for surfaces still wired
+ * through the procedural entry points.
+ */
 
 use MaxMind\Db\Reader;
 use xPaw\SourceQuery\SourceQuery;
 
-if (!defined("IN_SB")) {
-    die("You should not be here. Only follow links!");
+if (!defined('IN_SB')) {
+    die('You should not be here. Only follow links!');
+}
+
+// ---------------------------------------------------------------------
+// Anchor / display helpers
+// ---------------------------------------------------------------------
+
+/**
+ * Build an `<a>` tag with optional tooltip + click hook. Used by the
+ * legacy default theme's table-row links and the few admin panes that
+ * still build link strings server-side.
+ *
+ * NOTE: the `$tooltip`-bearing arm picks up the `tip` / `perm` CSS
+ * class (legacy default theme); the bare arm has no class. The HTML
+ * is whitespace-padded between the opening and closing tag for
+ * legacy-template compatibility — the v1.x consumer relied on the
+ * leading + trailing space when concatenating links inline.
+ */
+function CreateLinkR(string $title, string $url, string $tooltip = '', string $target = '_self', bool $wide = false, string $onclick = ''): string
+{
+    $hasTooltip = $tooltip !== '';
+    $attrs      = [
+        'href'   => $url,
+        'target' => $target,
+    ];
+    if ($hasTooltip) {
+        $attrs['class'] = $wide ? 'perm' : 'tip';
+        $attrs['title'] = $tooltip;
+    } else {
+        $attrs['onclick'] = $onclick;
+    }
+
+    $rendered = '';
+    foreach ($attrs as $name => $value) {
+        $rendered .= sprintf(" %s='%s'", $name, $value);
+    }
+
+    return "<a{$rendered}> {$title} </a>";
 }
 
 /**
- * Creates an anchor tag, and adds tooltip code if needed.
+ * Map a web permission bitmask to a list of display labels. Returns
+ * `false` if the mask is empty (kept for legacy callers that branch
+ * on truthy falsy).
+ *
+ * `ADMIN_OWNER` short-circuits the per-flag check so an owner sees
+ * every flag's display label (the legacy semantic).
+ *
+ * @return list<string>|false
  */
-function CreateLinkR(string $title, string $url, string $tooltip = "", string $target = "_self", bool $wide = false, string $onclick = ""): string
-{
-    $class = ($wide) ? "perm" : "tip";
-
-    if (strlen((string) $tooltip) == 0) {
-        return "<a href='{$url}' onclick=\"{$onclick}\" target='{$target}'> {$title} </a>";
-    }
-    return "<a href='{$url}' class='{$class}' title='{$tooltip}' target='{$target}'> {$title} </a>";
-}
-
 function BitToString(int $mask): array|false
 {
-    $perms = json_decode(file_get_contents(ROOT.'/configs/permissions/web.json'), true);
-
-    if ($mask == 0) {
+    if ($mask === 0) {
         return false;
     }
 
+    $perms = json_decode((string) file_get_contents(ROOT . '/configs/permissions/web.json'), true);
+    if (!is_array($perms)) {
+        return false;
+    }
+
+    $isOwner = ($mask & ADMIN_OWNER) !== 0;
+    $out     = [];
     foreach ($perms as $perm) {
-        if (($mask & $perm['value']) != 0 || ($mask & ADMIN_OWNER) != 0) {
-            if ($perm['value'] != ALL_WEB) {
-                $out[] = $perm['display'];
-            }
+        $value = (int) $perm['value'];
+        if ($value === ALL_WEB) {
+            continue;
+        }
+        if ($isOwner || ($mask & $value) !== 0) {
+            $out[] = (string) $perm['display'];
         }
     }
 
-    return isset($out) ? $out : false;
+    return $out !== [] ? $out : false;
 }
 
+/**
+ * Map a SourceMod char-flag string (`'abc'`, `'z'`, …) to the
+ * corresponding human-readable labels. The `'z'` (root) flag
+ * expands to every label. Returns `false` for an empty input.
+ *
+ * @return list<string>|false
+ */
 function SmFlagsToSb(string $flagstring): array|false
 {
-    $flags = json_decode(file_get_contents(ROOT.'/configs/permissions/sourcemod.json'), true);
-
-    if (empty($flagstring)) {
+    if ($flagstring === '') {
         return false;
     }
 
+    $flags = json_decode((string) file_get_contents(ROOT . '/configs/permissions/sourcemod.json'), true);
+    if (!is_array($flags)) {
+        return false;
+    }
+
+    $isRoot = str_contains($flagstring, 'z');
+    $out    = [];
     foreach ($flags as $flag) {
-        if (str_contains($flagstring, $flag['value']) || str_contains($flagstring, 'z')) {
-            $out[] = $flag['display'];
+        $char = (string) $flag['value'];
+        if ($isRoot || str_contains($flagstring, $char)) {
+            $out[] = (string) $flag['display'];
         }
     }
 
-    return isset($out) ? $out : false;
+    return $out !== [] ? $out : false;
 }
 
+// ---------------------------------------------------------------------
+// `:prefix_*` ID allocation
+// ---------------------------------------------------------------------
+
+/**
+ * Returns the next available `:prefix_servers.sid` slot. The actual
+ * INSERT is done by the caller — this is a defensive pre-check used
+ * by some admin pages to render the id alongside the form.
+ */
 function NextSid(): int
 {
-    $sid = $GLOBALS['PDO']->query("SELECT MAX(sid) AS next_sid FROM `:prefix_servers`")->single();
-    return ($sid['next_sid'] + 1);
+    $row = $GLOBALS['PDO']->query('SELECT MAX(sid) AS next_sid FROM `:prefix_servers`')->single();
+    return ((int) ($row['next_sid'] ?? 0)) + 1;
 }
 
+/**
+ * Returns the next available `:prefix_admins.aid` slot. Same shape as
+ * {@see NextSid()}.
+ */
 function NextAid(): int
 {
-    $aid = $GLOBALS['PDO']->query("SELECT MAX(aid) AS next_aid FROM `:prefix_admins`")->single();
-    return ($aid['next_aid'] + 1);
+    $row = $GLOBALS['PDO']->query('SELECT MAX(aid) AS next_aid FROM `:prefix_admins`')->single();
+    return ((int) ($row['next_aid'] ?? 0)) + 1;
 }
 
+// ---------------------------------------------------------------------
+// Misc string helpers
+// ---------------------------------------------------------------------
+
+/**
+ * Truncate `$text` to `$len` characters with a trailing `...`. Reads
+ * the byte length, not the multibyte codepoint length — kept that way
+ * for byte-budget callers that pass an actual byte limit (e.g. SQL
+ * column max size).
+ */
 function trunc(string $text, int $len): string
 {
-    return (strlen($text) > $len) ? substr($text, 0, $len).'...' : $text;
+    return strlen($text) > $len ? substr($text, 0, $len) . '...' : $text;
 }
 
+/**
+ * Bounce the caller back to the login screen with the `no_access`
+ * marker if `$mask` isn't satisfied. Wraps `$userbank->HasAccess()`
+ * for the procedural admin pages that gate at the top of the file.
+ */
 function CheckAdminAccess(int $mask): void
 {
     global $userbank;
-    if (!$userbank->HasAccess($mask)) {
-        header("Location: index.php?p=login&m=no_access");
-        die();
+    if ($userbank->HasAccess($mask)) {
+        return;
     }
+    header('Location: index.php?p=login&m=no_access');
+    exit;
 }
 
+/**
+ * Render a duration in seconds as a human-readable string.
+ *
+ * `$textual = true` emits the multi-unit shape "1 mo, 2 wk, 4 d" used
+ * across the banlist Length column. `$textual = false` emits the
+ * compact "h:m:s" shape. Negative seconds are the legacy "session"
+ * sentinel.
+ */
 function SecondsToString(int $sec, bool $textual = true): string
 {
     if ($sec < 0) {
         return 'Session';
     }
-    if ($textual) {
-        $div = [2592000, 604800, 86400, 3600, 60, 1];
-        $desc = ['mo', 'wk', 'd', 'hr', 'min', 'sec'];
-        $ret = null;
-        foreach ($div as $index => $value) {
-            $quotent = floor($sec / $value); //greatest whole integer
-            if ($quotent > 0) {
-                $ret .= "$quotent {$desc[$index]}, ";
-                $sec %= $value;
-            }
-        }
-        return substr($ret, 0, -2);
-    } else {
-        $hours = floor($sec / 3600);
-        $sec -= $hours * 3600;
-        $mins = floor($sec / 60);
-        $secs = $sec % 60;
-        return "$hours:$mins:$secs";
+
+    if (!$textual) {
+        $hours = intdiv($sec, 3600);
+        $rest  = $sec - ($hours * 3600);
+        $mins  = intdiv($rest, 60);
+        $secs  = $rest % 60;
+        return "{$hours}:{$mins}:{$secs}";
     }
-}
 
-function FetchIp(string $ip): mixed
-{
-    try {
-        $reader = new Reader(MMDB_PATH);
-        return $reader->get($ip)["country"]["iso_code"];
-    }catch (Exception $e){
-        return "zz";
+    static $units = [
+        ['mo',  2592000],
+        ['wk',  604800],
+        ['d',   86400],
+        ['hr',  3600],
+        ['min', 60],
+        ['sec', 1],
+    ];
+
+    $parts = [];
+    foreach ($units as [$label, $size]) {
+        if ($sec < $size) {
+            continue;
+        }
+        $count = intdiv($sec, $size);
+        $sec   = $sec - ($count * $size);
+        $parts[] = "{$count} {$label}";
     }
-}
 
-function PageDie(): never
-{
-    include_once TEMPLATES_PATH.'/core/footer.php';
-    die();
-}
-
-function GetMapImage(string $map): string
-{
-    $map = (@file_exists(SB_MAP_LOCATION."/$map.jpg")) ? $map : 'nomap';
-    return SB_MAP_LOCATION."/$map.jpg";
-}
-
-function checkExtension(string $file, array $validExts): bool
-{
-    $file = pathinfo($file, PATHINFO_EXTENSION);
-    return in_array(strtolower($file), $validExts);
-}
-
-
-function PruneBans(): void
-{
-    global $userbank;
-    $adminId = $userbank->GetAid() < 0 ? 0 : $userbank->GetAid();
-    $GLOBALS['PDO']->query(
-        "UPDATE `:prefix_bans` SET `RemovedBy` = 0, `RemoveType` = 'E', `RemovedOn` = UNIX_TIMESTAMP()
-        WHERE `length` != 0 AND `ends` < UNIX_TIMESTAMP() AND `RemoveType` IS NULL"
-    );
-    $GLOBALS['PDO']->execute();
-    $GLOBALS['PDO']->query(
-        "UPDATE `:prefix_protests` SET `archiv` = 3, `archivedby` = :id
-        WHERE `archiv` = 0 AND bid IN(SELECT bid FROM `:prefix_bans` WHERE `RemoveType` = 'E')"
-    );
-    $GLOBALS['PDO']->bind(':id', $adminId);
-    $GLOBALS['PDO']->execute();
-
-    // Break subqueries into individual selects to improve speed.
-    $steamIDs = $GLOBALS['PDO']
-        ->query('SELECT DISTINCT authid FROM `:prefix_bans` WHERE `type` = 0 AND `RemoveType` IS NULL')
-        ->resultset(null, PDO::FETCH_COLUMN);
-    $banIPs = $GLOBALS['PDO']
-        ->query('SELECT ip FROM `:prefix_bans` WHERE type = 1 AND RemoveType IS NULL')
-        ->resultset(null, PDO::FETCH_COLUMN);
-
-    // If we have active steamid bans or ip bans, see if any non-archived submissions exist that
-    // we can expire due to the user having been banned.
-    if ($steamIDs || $banIPs) {
-        $subsets = [];
-        // Only include IN() statements if there are values
-        if ($steamIDs) {
-            $subsets[] = "SteamId IN(" . implode(',', array_fill(0, count($steamIDs), '?')) . ")";
-        }
-        if ($banIPs) {
-            $subsets[] = "sip IN(" . implode(',', array_fill(0, count($banIPs), '?')) . ")";
-        }
-        // We don't actually want to run the UPDATE on this data, because UPDATE WHERE locks every row
-        // it encounters during the WHERE check, not just the rows it needs to update.  Instead,
-        // let's select a list of IDs to update.
-        $query = "SELECT `subid` FROM `:prefix_submissions` WHERE `archiv` = 0 AND (" . implode(" OR ", $subsets) . ")";
-        $subIds = $GLOBALS['PDO']->query($query)->resultset(array_merge($steamIDs, $banIPs), PDO::FETCH_COLUMN);
-
-        if ($subIds) {
-            // This can lock the whole table only if we have more results than the mysql query optimizer decides
-            // it's worth using the index for.  From my experience, anything under 15000 results is never an issue.
-            $query = "UPDATE `:prefix_submissions` SET `archiv` = 3, `archivedby` = ? WHERE `subid` IN("
-                . implode(',', array_fill(0, count($subIds), '?'))
-                . ")";
-
-            $GLOBALS['PDO']->query($query)->execute(array_merge([$adminId], $subIds));
-        }
-    }
-}
-
-
-function PruneComms(): void
-{
-    $GLOBALS['PDO']->query(
-        "UPDATE `:prefix_comms` SET `RemovedBy` = 0, `RemoveType` = 'E', `RemovedOn` = UNIX_TIMESTAMP()
-        WHERE `length` != 0 AND `ends` < UNIX_TIMESTAMP() AND `RemoveType` IS NULL"
-    );
-    $GLOBALS['PDO']->execute();
+    return $parts !== [] ? implode(', ', $parts) : '0 sec';
 }
 
 /**
- * Human-readable size of every file under `$dir`, recursively.
+ * Look up the ISO country code for `$ip` against the bundled MaxMind
+ * country DB. Returns the placeholder `"zz"` on any failure (missing
+ * DB, malformed IP, MaxMind exception).
+ */
+function FetchIp(string $ip): string
+{
+    try {
+        $reader = new Reader(MMDB_PATH);
+        $row    = $reader->get($ip);
+        return is_array($row) ? (string) ($row['country']['iso_code'] ?? 'zz') : 'zz';
+    } catch (Exception) {
+        return 'zz';
+    }
+}
+
+/**
+ * Render the chrome footer + stop. Used by the legacy admin pages
+ * that gate at the top with `if (...) { echo '...'; PageDie(); }`.
+ */
+function PageDie(): never
+{
+    include_once TEMPLATES_PATH . '/core/footer.php';
+    exit;
+}
+
+/**
+ * Resolve the per-server map thumbnail URL. Falls back to the bundled
+ * `nomap.jpg` placeholder when the per-map asset is missing.
+ */
+function GetMapImage(string $map): string
+{
+    $candidate = SB_MAP_LOCATION . "/{$map}.jpg";
+    return is_file($candidate) ? $candidate : SB_MAP_LOCATION . '/nomap.jpg';
+}
+
+/**
+ * Case-insensitive extension allowlist check. `$validExts` is the
+ * lowercased extension list (no leading dot).
+ */
+function checkExtension(string $file, array $validExts): bool
+{
+    $ext = strtolower((string) pathinfo($file, PATHINFO_EXTENSION));
+    return in_array($ext, $validExts, true);
+}
+
+// ---------------------------------------------------------------------
+// Cron-style maintenance writers
+// ---------------------------------------------------------------------
+
+/**
+ * Sweep expired bans into the `RemoveType = 'E'` (Expired) terminal
+ * state and archive the matching protests + submissions. Idempotent.
+ */
+function PruneBans(): void
+{
+    global $userbank;
+    $pdo     = $GLOBALS['PDO'];
+    $adminId = max(0, $userbank?->GetAid() ?? 0);
+
+    $pdo->query(
+        'UPDATE `:prefix_bans`
+            SET `RemovedBy` = 0,
+                `RemoveType` = \'E\',
+                `RemovedOn` = UNIX_TIMESTAMP()
+          WHERE `length` != 0
+            AND `ends` < UNIX_TIMESTAMP()
+            AND `RemoveType` IS NULL'
+    );
+    $pdo->execute();
+
+    $pdo->query(
+        'UPDATE `:prefix_protests`
+            SET `archiv` = 3,
+                `archivedby` = :id
+          WHERE `archiv` = 0
+            AND bid IN (
+                SELECT bid FROM `:prefix_bans` WHERE `RemoveType` = \'E\'
+            )'
+    );
+    $pdo->bind(':id', $adminId);
+    $pdo->execute();
+
+    // Two single-column SELECTs are intentionally separate from the
+    // composite UPDATE below: `UPDATE … WHERE` locks every row it
+    // examines for the predicate, not just the rows it changes. We
+    // surface the candidate `subid`s with a SELECT first so the
+    // UPDATE only locks rows it'll mutate.
+    $steamIds = $pdo
+        ->query('SELECT DISTINCT authid FROM `:prefix_bans` WHERE `type` = 0 AND `RemoveType` IS NULL')
+        ->resultset(null, PDO::FETCH_COLUMN);
+    $banIps = $pdo
+        ->query('SELECT ip FROM `:prefix_bans` WHERE type = 1 AND RemoveType IS NULL')
+        ->resultset(null, PDO::FETCH_COLUMN);
+
+    if ($steamIds === [] && $banIps === []) {
+        return;
+    }
+
+    $clauses = [];
+    $args    = [];
+    if ($steamIds !== []) {
+        $clauses[] = 'SteamId IN (' . implode(',', array_fill(0, count($steamIds), '?')) . ')';
+        array_push($args, ...$steamIds);
+    }
+    if ($banIps !== []) {
+        $clauses[] = 'sip IN (' . implode(',', array_fill(0, count($banIps), '?')) . ')';
+        array_push($args, ...$banIps);
+    }
+
+    $subIds = $pdo
+        ->query('SELECT `subid` FROM `:prefix_submissions` WHERE `archiv` = 0 AND (' . implode(' OR ', $clauses) . ')')
+        ->resultset($args, PDO::FETCH_COLUMN);
+
+    if ($subIds === []) {
+        return;
+    }
+
+    $pdo
+        ->query('UPDATE `:prefix_submissions`
+                    SET `archiv` = 3,
+                        `archivedby` = ?
+                  WHERE `subid` IN (' . implode(',', array_fill(0, count($subIds), '?')) . ')')
+        ->execute([$adminId, ...$subIds]);
+}
+
+/**
+ * Sweep expired comm blocks into the `RemoveType = 'E'` terminal
+ * state. Idempotent.
+ */
+function PruneComms(): void
+{
+    $GLOBALS['PDO']->query(
+        'UPDATE `:prefix_comms`
+            SET `RemovedBy` = 0,
+                `RemoveType` = \'E\',
+                `RemovedOn` = UNIX_TIMESTAMP()
+          WHERE `length` != 0
+            AND `ends` < UNIX_TIMESTAMP()
+            AND `RemoveType` IS NULL'
+    );
+    $GLOBALS['PDO']->execute();
+}
+
+// ---------------------------------------------------------------------
+// Filesystem stats
+// ---------------------------------------------------------------------
+
+/**
+ * Human-readable total size of every file under `$dir`, recursively.
  *
- * The actual byte-count traversal lives in {@see getDirSizeBytes()};
- * this thin wrapper formats the total via {@see sizeFormat()}. Keeping
- * the recursion in a typed-int helper avoids the legacy bug where the
- * inner recursive call returned a `sizeFormat()` string and `+=`'d it
- * back into `$size` (PHP 8 warned "non-numeric value encountered"
- * and undercounted any tree with nested subdirectories — e.g. a
- * `web/demos/<server>/<demo>.dem` layout would lose the per-server
- * subtotals).
+ * The byte-count traversal lives in {@see getDirSizeBytes()}; this
+ * thin wrapper formats the total via {@see sizeFormat()}. Keeping the
+ * recursion in a typed-int helper avoids the legacy bug where the
+ * inner recursive call returned a `sizeFormat()` string and `+=`'d
+ * it back into the running total — PHP 8 warned "non-numeric value
+ * encountered" and undercounted any tree with nested subdirectories
+ * (the canonical `web/demos/<server>/<demo>.dem` layout would lose
+ * its per-server subtotals).
  */
 function getDirSize(string $dir): string
 {
@@ -236,52 +395,75 @@ function getDirSize(string $dir): string
 
 /**
  * Recursive byte-count of every file under `$dir`. Returns a strict
- * int so callers can `+=` it without tripping PHP 8's
- * "non-numeric value encountered" warning. {@see getDirSize()} wraps
- * this with {@see sizeFormat()} for the user-visible string.
+ * int so callers can `+=` the result without tripping PHP 8's
+ * "non-numeric value encountered" warning.
  */
 function getDirSizeBytes(string $dir): int
 {
-    $size = 0;
-    foreach (glob(rtrim($dir, '/').'/*', GLOB_NOSORT) as $object) {
-        $size += is_file($object) ? (int) filesize($object) : getDirSizeBytes($object);
+    $bytes   = 0;
+    $entries = glob(rtrim($dir, '/') . '/*', GLOB_NOSORT);
+    if ($entries === false) {
+        return 0;
     }
-    return $size;
+    foreach ($entries as $entry) {
+        if (is_file($entry)) {
+            $bytes += (int) filesize($entry);
+            continue;
+        }
+        if (is_dir($entry)) {
+            $bytes += getDirSizeBytes($entry);
+        }
+    }
+    return $bytes;
 }
 
+/**
+ * Format a byte-count as a human-readable string with binary
+ * (`1024`-base) units. Uses 0 decimal places below MB and 2-3
+ * decimals beyond, matching the precision the legacy `Statistics`
+ * card on the admin home renders.
+ */
 function sizeFormat(int $bytes): string
 {
     if ($bytes <= 0) {
         return '0 B';
     }
-    $i = floor(log($bytes, 1024));
-    return round($bytes / pow(1024, $i), [0, 0, 2, 2, 3][$i]).[' B', ' kB', ' MB', ' GB', ' TB'][$i];
+    $exp        = (int) floor(log($bytes, 1024));
+    $exp        = max(0, min(4, $exp));
+    $precision  = [0, 0, 2, 2, 3][$exp];
+    $unitLabel  = [' B', ' kB', ' MB', ' GB', ' TB'][$exp];
+    return round($bytes / (1024 ** $exp), $precision) . $unitLabel;
 }
 
+// ---------------------------------------------------------------------
+// RCON / SourceQuery helpers
+// ---------------------------------------------------------------------
+
 /**
- * Check for multiple steamids on one server. The returned array is keyed by
- * STEAM_ID and each row carries `name`, `steam`, `ip` (and historically
- * `time`, `ping` — only the first three are populated by the rcon parser).
+ * For each Steam ID in `$steamids`, return the player record for the
+ * matching slot on server `$sid` if they're connected. Used by the
+ * "find this player on a live server" shortcut on a few admin
+ * surfaces.
  *
- * @return array<string, array{name: string, steam: string, ip: string}> Keyed by Steam2 id, e.g. ['STEAM_0:0:1' => ['name' => …, 'steam' => …, 'ip' => …], …].
+ * @param list<string> $steamids Each entry is a Steam2 / Steam3 / Steam64 string.
+ * @return array<string, array{name: string, steam: string, ip: string}> Keyed by Steam2 id.
  */
 function checkMultiplePlayers(int $sid, array $steamids): array
 {
-    $ret = rcon('status', $sid);
-
-    if (!$ret) {
+    $status = rcon('status', $sid);
+    if ($status === false || $status === '') {
         return [];
     }
 
     $players = [];
-    foreach (parseRconStatus($ret) as $player) {
-        foreach ($steamids as $steam) {
-            if (\SteamID\SteamID::compare($player['steamid'], $steam)) {
-                $steamid = \SteamID\SteamID::toSteam2($player['steamid']);
-                $players[$steamid] = [
-                    'name' => $player['name'],
-                    'steam' => $steamid,
-                    'ip' => $player['ip']
+    foreach (parseRconStatus($status) as $player) {
+        foreach ($steamids as $needle) {
+            if (\SteamID\SteamID::compare($player['steamid'], $needle)) {
+                $steam2 = \SteamID\SteamID::toSteam2($player['steamid']);
+                $players[$steam2] = [
+                    'name'  => $player['name'],
+                    'steam' => $steam2,
+                    'ip'    => $player['ip'],
                 ];
             }
         }
@@ -289,11 +471,25 @@ function checkMultiplePlayers(int $sid, array $steamids): array
     return $players;
 }
 
+/**
+ * Resolve the persona name for `$steamid` via Steam's WebAPI. Returns
+ * an empty string on any failure (missing API key, network error,
+ * unexpected payload shape).
+ */
 function GetCommunityName(string $steamid): string
 {
-    $endpoint = "http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=".STEAMAPIKEY.'&steamids='.\SteamID\SteamID::toSteam64($steamid);
-    $data = json_decode(file_get_contents($endpoint), true);
-    return (isset($data['response']['players'][0]['personaname'])) ? $data['response']['players'][0]['personaname'] : '';
+    $endpoint = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?'
+        . http_build_query([
+            'key'      => STEAMAPIKEY,
+            'steamids' => \SteamID\SteamID::toSteam64($steamid),
+        ]);
+
+    $body = @file_get_contents($endpoint);
+    if ($body === false) {
+        return '';
+    }
+    $data = json_decode($body, true);
+    return is_array($data) ? (string) ($data['response']['players'][0]['personaname'] ?? '') : '';
 }
 
 /**
@@ -322,72 +518,87 @@ function GetCommunityName(string $steamid): string
  */
 function rcon(string $cmd, int $sid, bool $silent = false): false|string
 {
-    $GLOBALS['PDO']->query("SELECT ip, port, rcon FROM `:prefix_servers` WHERE sid = :sid");
-    $GLOBALS['PDO']->bind(':sid', $sid);
-    $server = $GLOBALS['PDO']->single();
+    $pdo = $GLOBALS['PDO'];
+    $pdo->query('SELECT ip, port, rcon FROM `:prefix_servers` WHERE sid = :sid');
+    $pdo->bind(':sid', $sid);
+    $server = $pdo->single();
 
-    if (empty($server['rcon'])) {
+    if (!$server || ($server['rcon'] ?? '') === '') {
         return false;
     }
 
-    $output = "";
-    $rcon = new SourceQuery();
+    $sourceQuery = new SourceQuery();
     try {
-        $rcon->Connect($server['ip'], $server['port'], 1, SourceQuery::SOURCE);
-        $rcon->setRconPassword($server['rcon']);
+        $sourceQuery->Connect($server['ip'], (int) $server['port'], 1, SourceQuery::SOURCE);
+        $sourceQuery->setRconPassword($server['rcon']);
+        $output = $sourceQuery->Rcon($cmd);
 
-        $output = $rcon->Rcon($cmd);
         if (!$silent) {
-            Log::add(LogType::Message, "RCON Sent", sprintf("RCON Command (%s) was sent to server (%s:%d)", $cmd, $server['ip'], $server['port']));
+            Log::add(
+                LogType::Message,
+                'RCON Sent',
+                sprintf('RCON Command (%s) was sent to server (%s:%d)', $cmd, $server['ip'], $server['port']),
+            );
         }
+        return $output;
     } catch (\xPaw\SourceQuery\Exception\AuthenticationException $e) {
-        $GLOBALS['PDO']->query("UPDATE `:prefix_servers` SET rcon = '' WHERE sid = :sid");
-        $GLOBALS['PDO']->bind(':sid', $sid);
-        $GLOBALS['PDO']->execute();
+        $pdo->query("UPDATE `:prefix_servers` SET rcon = '' WHERE sid = :sid");
+        $pdo->bind(':sid', $sid);
+        $pdo->execute();
 
-        Log::add(LogType::Error, "Rcon Password Error [ServerID: $sid]", $e->getMessage());
+        Log::add(LogType::Error, "Rcon Password Error [ServerID: {$sid}]", $e->getMessage());
         return false;
     } catch (Exception $e) {
-        Log::add(LogType::Error, "Rcon Error [ServerID: $sid]", $e->getMessage());
+        Log::add(LogType::Error, "Rcon Error [ServerID: {$sid}]", $e->getMessage());
         return false;
     } finally {
-        $rcon->Disconnect();
+        $sourceQuery->Disconnect();
     }
-    return $output;
 }
 
+/**
+ * Parse the `rcon status` payload into a list of player records.
+ *
+ * @return list<array{id: string, name: string, steamid: string, ip: string}>
+ */
 function parseRconStatus(string $status): array
 {
     $regex = '/#\s*(\d+)(?>\s|\d)*"(.*)"\s*(STEAM_[01]:[01]:\d+|\[U:1:\d+\])(?>\s|:|\d)*[a-zA-Z]*\s*\d*\s([0-9.]+)/';
-    $players = [];
-
-    $result = [];
-    preg_match_all($regex, $status, $result, PREG_SET_ORDER);
-
-    foreach ($result as $player) {
-        $players[] = [
-            'id' => $player[1],
-            'name' => $player[2],
-            'steamid' => $player[3],
-            'ip' => $player[4]
-        ];
+    if (preg_match_all($regex, $status, $matches, PREG_SET_ORDER) === false) {
+        return [];
     }
 
+    $players = [];
+    foreach ($matches as $match) {
+        $players[] = [
+            'id'      => $match[1],
+            'name'    => $match[2],
+            'steamid' => $match[3],
+            'ip'      => $match[4],
+        ];
+    }
     return $players;
 }
 
-function encodePreservingBr(string $text): string {
-    // Split the text at <br> tags, preserving the tags in the result
-    $parts = preg_split('/(<br\s*\/?>)/i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
-    $result = '';
-    
-    foreach ($parts as $part) {
-        if (preg_match('/^<br\s*\/?>$/i', $part)) {
-            $result .= "\n"; // Replace <br /> with newline
-        } else {
-            $result .= htmlspecialchars($part, ENT_QUOTES, 'UTF-8'); // Encode the rest
-        }
+/**
+ * Encode `$text` for HTML output while preserving any `<br>` /
+ * `<br/>` tags as literal line breaks (the comment-store format
+ * pre-#1113 wraps newlines in `<br/>`s; we want to escape every other
+ * fragment but emit the line breaks back as `<br/>` after `nl2br()`).
+ */
+function encodePreservingBr(string $text): string
+{
+    $segments = preg_split('/(<br\s*\/?>)/i', $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+    if ($segments === false) {
+        return htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
     }
-    
-    return nl2br($result);  // Convert newlines back to <br /> for HTML
+
+    $rendered = '';
+    foreach ($segments as $segment) {
+        $rendered .= preg_match('/^<br\s*\/?>$/i', $segment)
+            ? "\n"
+            : htmlspecialchars($segment, ENT_QUOTES, 'UTF-8');
+    }
+
+    return nl2br($rendered);
 }
