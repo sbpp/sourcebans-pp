@@ -1,10 +1,22 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Offset ''ip'' on array\{id\: string, name\: string, steamid\: string, ip\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: api/handlers/bans.php
+
+		-
 			message: '#^Parameter \#2 \$associative of function get_headers expects bool, int given\.$#'
 			identifier: argument.type
 			count: 1
 			path: api/handlers/bans.php
+
+		-
+			message: '#^Offset ''ip'' on array\{id\: string, name\: string, steamid\: string, ip\: string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: api/handlers/kickit.php
 
 		-
 			message: '#^Variable \$userbank might not be defined\.$#'
@@ -145,88 +157,10 @@ parameters:
 			path: includes/page-builder.php
 
 		-
-			message: '#^Invalid array key type float\.$#'
-			identifier: offsetAccess.invalidOffset
-			count: 2
-			path: includes/system-functions.php
-
-		-
 			message: '#^Path in include_once\(\) "config\.php" is not a file or it does not exist\.$#'
 			identifier: includeOnce.fileNotFound
 			count: 1
 			path: index.php
-
-		-
-			message: '#^Result of \|\| is always true\.$#'
-			identifier: booleanOr.alwaysTrue
-			count: 1
-			path: pages/admin.edit.admindetails.php
-
-		-
-			message: '#^Right side of \|\| is always true\.$#'
-			identifier: booleanOr.rightAlwaysTrue
-			count: 1
-			path: pages/admin.edit.admindetails.php
-
-		-
-			message: '#^Variable \$allservers might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/admin.edit.admindetails.php
-
-		-
-			message: '#^Variable \$name might not be defined\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: pages/admin.edit.admindetails.php
-
-		-
-			message: '#^Offset ''sg'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
-			identifier: isset.offset
-			count: 1
-			path: pages/admin.edit.admingroup.php
-
-		-
-			message: '#^Offset ''wg'' on non\-empty\-array\<mixed\> in isset\(\) always exists and is not nullable\.$#'
-			identifier: isset.offset
-			count: 1
-			path: pages/admin.edit.admingroup.php
-
-		-
-			message: '#^Parameter \#1 \$string of function urlencode expects string, int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: pages/admin.edit.admingroup.php
-
-		-
-			message: '#^Variable \$theme might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/admin.edit.adminperms.php
-
-		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 5
-			path: pages/admin.edit.adminservers.php
-
-		-
-			message: '#^Variable \$theme might not be defined\.$#'
-			identifier: variable.undefined
-			count: 1
-			path: pages/admin.edit.group.php
-
-		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 3
-			path: pages/admin.edit.group.php
-
-		-
-			message: '#^Variable \$userbank might not be defined\.$#'
-			identifier: variable.undefined
-			count: 2
-			path: pages/admin.edit.server.php
 
 		-
 			message: '#^Constant SB_THEME not found\.$#'

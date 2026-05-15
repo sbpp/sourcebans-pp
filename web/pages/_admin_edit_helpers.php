@@ -94,7 +94,7 @@ if (!function_exists('sbpp_admin_edit_emit_tail_script')) {
         $titleJs    = json_encode($successTitle,    $jsFlags);
         $bodyJs     = json_encode($successBody,     $jsFlags);
         $redirectJs = json_encode($successRedirect, $jsFlags);
-        $sidsJs     = json_encode(array_values(array_map('intval', $rehashSids)), $jsFlags);
+        $sidsJs     = json_encode(array_map('intval', $rehashSids), $jsFlags);
         $successFlag = $postSuccess ? 'true' : 'false';
 
         echo <<<HTML

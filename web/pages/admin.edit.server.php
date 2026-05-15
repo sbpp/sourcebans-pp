@@ -67,7 +67,7 @@ $postSuccess      = false;
 if (isset($_POST['address'])) {
     \CSRF::rejectIfInvalid();
 
-    $rawAddress = trim((string) ($_POST['address'] ?? ''));
+    $rawAddress = trim((string) $_POST['address']);
     $rawPort    = trim((string) ($_POST['port']    ?? ''));
     $rawMod     = (int)   ($_POST['mod']     ?? 0);
     $rawRcon    =        (string) ($_POST['rcon']  ?? '');

@@ -62,7 +62,7 @@ $postRehashSids   = [];
 if (isset($_POST['adminname'])) {
     \CSRF::rejectIfInvalid();
 
-    $rawName       = trim((string) ($_POST['adminname'] ?? ''));
+    $rawName       = trim((string) $_POST['adminname']);
     $rawSteamInput = trim((string) ($_POST['steam'] ?? ''));
     $resolvedSteam = \SteamID\SteamID::toSteam2($rawSteamInput);
     $rawEmail      = trim((string) ($_POST['email'] ?? ''));

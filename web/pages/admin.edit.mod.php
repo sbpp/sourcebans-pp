@@ -60,7 +60,7 @@ $postSuccess      = false;
 if (isset($_POST['name'])) {
     \CSRF::rejectIfInvalid();
 
-    $rawName    = trim((string) ($_POST['name']     ?? ''));
+    $rawName    = trim((string) $_POST['name']);
     $rawFolder  = trim((string) ($_POST['folder']   ?? ''));
     $rawIcon    = trim((string) ($_POST['icon_hid'] ?? ''));
     $enabled    = isset($_POST['enabled']) && $_POST['enabled'] === '1';
