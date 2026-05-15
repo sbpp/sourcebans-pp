@@ -1,54 +1,36 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+include_once __DIR__ . '/../init.php';
+include_once __DIR__ . '/../includes/system-functions.php';
 
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
+global $userbank, $theme;
 
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-include_once("../init.php");
-include_once("../includes/system-functions.php");
-global $theme, $userbank;
-
-// See admin.kickit.php for why this chdir() is needed.
 chdir(ROOT);
 
-if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditMods, WebPermission::AddMods))) {
-    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty('user')." tried to upload a mod icon, but doesn't have access.");
-    die("You don't have access to this!");
-}
-
-$message = "";
-if (isset($_POST['upload'])) {
-    CSRF::rejectIfInvalid();
-    if (checkExtension($_FILES['icon_file']['name'], ['gif', 'jpg', 'png'])) {
-        move_uploaded_file($_FILES['icon_file']['tmp_name'], SB_ICONS . "/" . $_FILES['icon_file']['name']);
-        // Issue #1113: filename is admin-controlled; see admin.uploaddemo.php
-        // for the rationale behind json_encode + HEX flags.
-        $jsFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT | JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES;
-        $jsName = json_encode((string) $_FILES['icon_file']['name'], $jsFlags);
-        $message = "<script>window.opener.icon($jsName);self.close()</script>";
-        Log::add(LogType::Message, "Mod Icon Uploaded", "A new mod icon has been uploaded: $_FILES[icon_file][name]");
-    } else {
-        $message = "<b> File must be gif, jpg or png filetype.</b><br><br>";
-    }
-}
-
-\Sbpp\View\Renderer::render($theme, new \Sbpp\View\UploadFileView(
-    title: 'Upload Icon',
-    message: $message,
-    input_name: 'icon_file',
-    form_name: 'iconup',
-    formats: 'a GIF, PNG or JPG',
-));
+\Sbpp\Upload\UploadHandler::handle(
+    userbank: $userbank,
+    theme:    $theme,
+    permission: \WebPermission::mask(
+        \WebPermission::Owner,
+        \WebPermission::EditMods,
+        \WebPermission::AddMods,
+    ),
+    deniedAuditMsg: $userbank->GetProperty('user') . " tried to upload a mod icon, but doesn't have access.",
+    deniedUserMsg:  "You don't have access to this!",
+    field:    'icon_file',
+    allowed:  ['gif', 'jpg', 'png'],
+    destDir:  SB_ICONS,
+    callback: 'icon',
+    renameToHash: false,
+    auditOk:  'Mod Icon Uploaded',
+    auditFmt: 'A new mod icon has been uploaded: %s',
+    errorMsg: '<b>File must be GIF, JPG or PNG filetype.</b><br><br>',
+    title:    'Upload Icon',
+    formName: 'iconup',
+    formats:  'a GIF, PNG or JPG',
+);
