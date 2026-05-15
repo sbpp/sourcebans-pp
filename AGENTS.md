@@ -1562,7 +1562,7 @@ the spec, target a 1920px viewport, not 1440px.
 
 Pull requests that touch `web/**` are gated on a signed Contributor
 License Agreement. The web panel is dual-licensable (free for hobby /
-community use under CC BY-SA 4.0; separate commercial licence for
+community use under CC BY-NC-SA 3.0; separate commercial licence for
 production use by hosting providers), and the CLA is the mechanism
 that lets the maintainer relicense future contributions without
 contacting every contributor individually.

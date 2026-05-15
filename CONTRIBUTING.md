@@ -21,7 +21,7 @@ the project's developer guides.
 
 The SourceBans++ **web panel** (everything under
 [`web/`](web/)) is offered under a dual-licence model: free for hobby
-and community use under [CC BY-SA 4.0](LICENSE.md), and under a
+and community use under [CC BY-NC-SA 3.0](LICENSE.md), and under a
 separate commercial licence for production use by game-server hosting
 companies that bundle SourceBans++ as a paid feature (see
 [README.md](README.md#license) for the commercial-licence contact).

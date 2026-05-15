@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/sbpp/sourcebans-pp/releases"><img src="https://img.shields.io/github/release/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub release"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-CC_BY--SA_4.0-blue.svg" alt="License: CC BY-SA 4.0"></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-CC_BY--NC--SA_3.0-blue.svg" alt="License: CC BY-NC-SA 3.0"></a>
   <a href="https://github.com/sbpp/sourcebans-pp/issues"><img src="https://img.shields.io/github/issues/sbpp/sourcebans-pp.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub issues"></a>
   <a href="https://github.com/sbpp/sourcebans-pp/releases"><img src="https://img.shields.io/github/downloads/sbpp/sourcebans-pp/total.svg?style=flat-square&logo=github&logoColor=white" alt="GitHub All Releases"></a>
   <a href="https://discord.gg/tzqYqmAtF5"><img src="https://img.shields.io/discord/298914017135689728.svg?style=flat-square&logo=discord&label=discord" alt="Discord"></a>
