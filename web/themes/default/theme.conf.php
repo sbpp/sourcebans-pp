@@ -1,36 +1,33 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+//
+// Theme metadata file. Theme forks should copy this shape verbatim
+// and overwrite the five `define()` values below; the panel reads
+// the constants out of the global namespace at boot.
+//
+// The default theme's chrome was originally authored by InterWave
+// Studios Development Team in SourceBans 1.4.x and has since been
+// rewritten in SourceBans++ v2.0.0 (#1123). The InterWave attribution
+// is preserved in THIRD-PARTY-NOTICES.txt per CC BY-NC-SA 3.0 §4(c).
 
-SourceBans++ (c) 2014-2026 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
+// Theme display name — shown in the admin Themes picker.
+define('theme_name', 'SourceBans++ Default');
 
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
+// Author byline — shown next to the screenshot in the picker.
+define('theme_author', 'SourceBans++ Dev Team');
 
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
+// Theme version — independent of the panel's `SB_VERSION`. Bump
+// when the theme's chrome / tokens change in a way fork maintainers
+// should know about.
+define('theme_version', '2.0.0');
 
-*************************************************************************/
+// Upstream link for the picker's "more info" affordance.
+define('theme_link', 'https://github.com/sbpp/sourcebans-pp');
 
-// Set the name of this theme here
-define('theme_name', "SourceBans++ Default");
-
-// Set the author of this theme here
-define('theme_author', "SourceBans++ Dev Team");
-
-// Set the version of the theme here
-define('theme_version', "2.0.0");
-
-// Set the link of the theme here
-define('theme_link', "https://github.com/sbpp/sourcebans-pp");
-
-// Set the screenshot filename for your theme (must be inside your theme folder)
-// Must be 250×170 ratio (e.g. 640×435 at 2x).
-define('theme_screenshot', "screenshot.jpg");
-?>
+// Preview thumbnail — must live inside this theme's directory and
+// render at a 250×170 aspect ratio (e.g. 640×435 at 2× DPI).
+define('theme_screenshot', 'screenshot.jpg');
