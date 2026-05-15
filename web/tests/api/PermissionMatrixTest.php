@@ -54,7 +54,6 @@ final class PermissionMatrixTest extends TestCase
             'admins.add'                  => ['perm' => ADMIN_OWNER | ADMIN_ADD_ADMINS,    'requireAdmin' => false, 'public' => false],
             'admins.remove'               => ['perm' => ADMIN_OWNER | ADMIN_DELETE_ADMINS, 'requireAdmin' => false, 'public' => false],
             'admins.edit_perms'           => ['perm' => ADMIN_OWNER | ADMIN_EDIT_ADMINS,   'requireAdmin' => false, 'public' => false],
-            'admins.update_perms'         => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
             'admins.generate_password'    => ['perm' => 0, 'requireAdmin' => true,  'public' => false],
 
             // -- auth (only public surface).
@@ -129,8 +128,6 @@ final class PermissionMatrixTest extends TestCase
             'groups.add'                      => ['perm' => ADMIN_OWNER | ADMIN_ADD_GROUP,    'requireAdmin' => false, 'public' => false],
             'groups.remove'                   => ['perm' => ADMIN_OWNER | ADMIN_DELETE_GROUPS,'requireAdmin' => false, 'public' => false],
             'groups.edit'                     => ['perm' => ADMIN_OWNER | ADMIN_EDIT_GROUPS,  'requireAdmin' => false, 'public' => false],
-            'groups.update_perms'             => ['perm' => 0, 'requireAdmin' => true, 'public' => false],
-            'groups.add_server_group_name'    => ['perm' => ADMIN_OWNER | ADMIN_EDIT_GROUPS,  'requireAdmin' => false, 'public' => false],
 
             // -- kickit.
             'kickit.load_servers'             => ['perm' => ADMIN_OWNER | ADMIN_ADD_BAN, 'requireAdmin' => false, 'public' => false],

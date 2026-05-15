@@ -67,7 +67,6 @@ Api::register('account.change_email',       'api_account_change_email');
 Api::register('admins.add',               'api_admins_add',               ADMIN_OWNER | ADMIN_ADD_ADMINS);
 Api::register('admins.remove',            'api_admins_remove',            ADMIN_OWNER | ADMIN_DELETE_ADMINS);
 Api::register('admins.edit_perms',        'api_admins_edit_perms',        ADMIN_OWNER | ADMIN_EDIT_ADMINS);
-Api::register('admins.update_perms',      'api_admins_update_perms',      0, true);
 Api::register('admins.generate_password', 'api_admins_generate_password', 0, true);
 
 // ---- auth groups (SteamCommunity ban features) ------------------------
@@ -112,8 +111,6 @@ Api::register('comms.delete',  'api_comms_delete',  ADMIN_OWNER | ADMIN_DELETE_B
 Api::register('groups.add',                   'api_groups_add',                   ADMIN_OWNER | ADMIN_ADD_GROUP);
 Api::register('groups.remove',                'api_groups_remove',                ADMIN_OWNER | ADMIN_DELETE_GROUPS);
 Api::register('groups.edit',                  'api_groups_edit',                  ADMIN_OWNER | ADMIN_EDIT_GROUPS);
-Api::register('groups.update_perms',          'api_groups_update_perms',          0, true);
-Api::register('groups.add_server_group_name', 'api_groups_add_server_group_name', ADMIN_OWNER | ADMIN_EDIT_GROUPS);
 
 // ---- kickit (single-page admin.kickit.php iframe) --------------------
 Api::register('kickit.load_servers', 'api_kickit_load_servers', ADMIN_OWNER | ADMIN_ADD_BAN);

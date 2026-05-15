@@ -63,10 +63,6 @@
  * @typedef {{ remove: string, counter: { admincount: number }, rehash: string|null, message: { title: string, body: string, kind: string, redir: string } }} ApiAdminsRemoveResponse
  */
 /**
- * @typedef {Object} ApiAdminsUpdatePermsRequest
- * @typedef {Object} ApiAdminsUpdatePermsResponse
- */
-/**
  * @typedef {Object} ApiAuthLoginRequest
  * @typedef {Object} ApiAuthLoginResponse
  */
@@ -346,20 +342,12 @@
  * @typedef {Object} ApiGroupsAddResponse
  */
 /**
- * @typedef {Object} ApiGroupsAddServerGroupNameRequest
- * @typedef {Object} ApiGroupsAddServerGroupNameResponse
- */
-/**
  * @typedef {Object} ApiGroupsEditRequest
  * @typedef {Object} ApiGroupsEditResponse
  */
 /**
  * @typedef {Object} ApiGroupsRemoveRequest
  * @typedef {Object} ApiGroupsRemoveResponse
- */
-/**
- * @typedef {Object} ApiGroupsUpdatePermsRequest
- * @typedef {Object} ApiGroupsUpdatePermsResponse
  */
 /**
  * Try to kick a single player on a single server. Used per-row by the iframe's
@@ -543,7 +531,6 @@ var Actions = Object.freeze({
     AdminsEditPerms: 'admins.edit_perms',
     AdminsGeneratePassword: 'admins.generate_password',
     AdminsRemove: 'admins.remove',
-    AdminsUpdatePerms: 'admins.update_perms',
     AuthLogin: 'auth.login',
     AuthLostPassword: 'auth.lost_password',
     BansAdd: 'bans.add',
@@ -575,10 +562,8 @@ var Actions = Object.freeze({
     CommsPrepareReblock: 'comms.prepare_reblock',
     CommsUnblock: 'comms.unblock',
     GroupsAdd: 'groups.add',
-    GroupsAddServerGroupName: 'groups.add_server_group_name',
     GroupsEdit: 'groups.edit',
     GroupsRemove: 'groups.remove',
-    GroupsUpdatePerms: 'groups.update_perms',
     KickitKickPlayer: 'kickit.kick_player',
     KickitLoadServers: 'kickit.load_servers',
     ModsAdd: 'mods.add',

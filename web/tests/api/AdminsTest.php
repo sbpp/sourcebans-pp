@@ -9,7 +9,7 @@ use Sbpp\Tests\Fixture;
  * Per-handler coverage for web/api/handlers/admins.php. End-to-end
  * add+remove of an admin lives in tests/integration/AdminFlowTest;
  * here we lock validation paths, the perm-edit handler, and the
- * stateless update_perms / generate_password helpers.
+ * stateless generate_password helper.
  */
 final class AdminsTest extends ApiTestCase
 {
@@ -293,33 +293,6 @@ final class AdminsTest extends ApiTestCase
         // The handler returns Api::redirect on the OWNER escalation attempt.
         $this->assertFalse($env['ok'] ?? true);
         $this->assertSame('index.php?p=login&m=no_access', $env['redirect'] ?? null);
-    }
-
-    public function testUpdatePermsReturnsTemplateBlobForWebGroup(): void
-    {
-        $this->loginAsAdmin();
-        $env = $this->api('admins.update_perms', ['type' => 1, 'value' => 'c']);
-        $this->assertTrue($env['ok']);
-        $this->assertSame('web', $env['data']['id']);
-        $this->assertNotEmpty($env['data']['permissions']);
-        $this->assertTrue($env['data']['is_owner']);
-        $this->assertSnapshot('admins/update_perms_web', $env, ['data.permissions']);
-    }
-
-    public function testUpdatePermsReturnsTemplateBlobForServerGroup(): void
-    {
-        $this->loginAsAdmin();
-        $env = $this->api('admins.update_perms', ['type' => 2, 'value' => 'c']);
-        $this->assertTrue($env['ok']);
-        $this->assertSame('server', $env['data']['id']);
-        $this->assertNotEmpty($env['data']['permissions']);
-    }
-
-    public function testUpdatePermsRejectsAnonymous(): void
-    {
-        // requireAdmin=true → dispatcher rejects non-admins.
-        $env = $this->api('admins.update_perms', ['type' => 1, 'value' => 'c']);
-        $this->assertEnvelopeError($env, 'forbidden');
     }
 
     public function testGeneratePasswordReturnsString(): void

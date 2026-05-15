@@ -285,7 +285,7 @@ is reviewable in one place:
 Api::register('bans.add',          'api_bans_add',          ADMIN_OWNER | ADMIN_ADD_BAN);
 Api::register('account.change_email', 'api_account_change_email');  // logged-in only
 Api::register('auth.login',        'api_auth_login',        0, false, true);  // public
-Api::register('admins.update_perms', 'api_admins_update_perms', 0, true);  // any admin
+Api::register('admins.generate_password', 'api_admins_generate_password', 0, true);  // any admin
 ```
 
 Handler functions live in topic-grouped files

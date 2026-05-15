@@ -366,44 +366,6 @@ function api_admins_edit_perms(array $params): array
     ];
 }
 
-function api_admins_update_perms(array $params): array
-{
-    global $userbank;
-    $type = (int)($params['type'] ?? 0);
-    $value = (string)($params['value'] ?? '');
-
-    $permissions = '';
-    $id = '';
-    if ($type === 1) {
-        $id = 'web';
-        if ($value === 'c') {
-            $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/groups.web.perm.php');
-            $permissions = str_replace('{title}', 'Web Admin Permissions', $permissions);
-        } elseif ($value === 'n') {
-            $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/group.name.php')
-                . (string)@file_get_contents(TEMPLATES_PATH . '/groups.web.perm.php');
-            $permissions = str_replace(['{name}', '{title}'], ['webname', 'New Group Permissions'], $permissions);
-        }
-    }
-    if ($type === 2) {
-        $id = 'server';
-        if ($value === 'c') {
-            $permissions = (string)file_get_contents(TEMPLATES_PATH . '/groups.server.perm.php');
-            $permissions = str_replace('{title}', 'Server Admin Permissions', $permissions);
-        } elseif ($value === 'n') {
-            $permissions = (string)@file_get_contents(TEMPLATES_PATH . '/group.name.php')
-                . (string)@file_get_contents(TEMPLATES_PATH . '/groups.server.perm.php');
-            $permissions = str_replace(['{name}', '{title}'], ['servername', 'New Group Permissions'], $permissions);
-        }
-    }
-
-    return [
-        'id'          => $id,
-        'permissions' => $permissions,
-        'is_owner'    => $userbank->HasAccess(WebPermission::Owner),
-    ];
-}
-
 function api_admins_generate_password(array $params): array
 {
     return ['password' => Crypto::genPassword()];

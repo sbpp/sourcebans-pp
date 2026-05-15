@@ -9,8 +9,7 @@ use Sbpp\Tests\Fixture;
 /**
  * Per-handler coverage for web/api/handlers/groups.php. Covers the
  * three create paths (web, server-mod, web-only-no-perms), delete +
- * cleanup, edit (including override CRUD), and the stateless
- * update_perms / add_server_group_name HTML helpers.
+ * cleanup, and edit (including override CRUD).
  */
 final class GroupsTest extends ApiTestCase
 {
@@ -326,32 +325,5 @@ final class GroupsTest extends ApiTestCase
         ]);
         $this->assertEnvelopeError($env, 'duplicate_override');
         $this->assertSnapshot('groups/edit_duplicate_override', $env);
-    }
-
-    public function testUpdatePermsHonorsGidContextSwitch(): void
-    {
-        $this->loginAsAdmin();
-        $env = $this->api('groups.update_perms', ['gid' => 1]);
-        $this->assertTrue($env['ok']);
-        $this->assertNotEmpty($env['data']['permissions']);
-        $this->assertTrue($env['data']['is_owner']);
-        $this->assertSnapshot('groups/update_perms_web', $env, ['data.permissions']);
-    }
-
-    public function testUpdatePermsRejectsAnonymous(): void
-    {
-        $env = $this->api('groups.update_perms', ['gid' => 1]);
-        $this->assertEnvelopeError($env, 'forbidden');
-    }
-
-    public function testAddServerGroupNameReturnsHtmlBlob(): void
-    {
-        $this->loginAsAdmin();
-        $env = $this->api('groups.add_server_group_name', []);
-        $this->assertTrue($env['ok']);
-        // The blob is an HTML fragment for the legacy form. We only lock
-        // its presence + general shape, not the exact bytes.
-        $this->assertNotEmpty($env['data']['html']);
-        $this->assertStringContainsString('id="sgroup"', $env['data']['html']);
     }
 }
