@@ -363,6 +363,7 @@ matching its directory. PSR-4 autoloads from `web/includes/` →
 | `Sbpp\View\*`                            | view DTOs (page-level + partials)     |
 | `Sbpp\Servers\SourceQueryCache`          | per-`(ip, port)` on-disk cache around the xPaw A2S probe (#1311) |
 | `Sbpp\Servers\RconStatusCache`           | per-`sid` on-disk cache around the RCON `status` command (#PLAYER_CTX_MENU) |
+| `Sbpp\Upload\UploadHandler`              | shared file-upload handler (size + extension allowlist + filename sanitiser) for the three popup upload pages — see `goals#5` |
 | `Sbpp\Markup\IntroRenderer`              | admin-authored Markdown renderer      |
 | `Sbpp\Mail\Mail` / `Sbpp\Mail\Mailer` / `Sbpp\Mail\EmailType` | `Mail::send(...)` entry point + Symfony Mailer SMTP wrapper + email-type enum |
 | `Sbpp\Version`                           | three-tier `SB_VERSION` resolver (tarball JSON → git → `'dev'`) |
@@ -1611,6 +1612,126 @@ contacting every contributor individually.
 
 ## Anti-patterns (do NOT reintroduce)
 
+- The 17-line legacy SourceBans 1.4.11 attribution header at the
+ top of every PHP / Smarty file (the
+ `/*****…  Copyright © 2007-2014 SourceBans Team … *****/` block)
+ → use the 4-line v2.0 header instead:
+
+ ```php
+ <?php
+ // SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+ // Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+ // See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+ ```
+
+ Smarty `.tpl` files use the `{* … *}` shape with the same three
+ lines. The 17-line block conflated three problems: it inflated
+ per-file overlap percentages in audit tooling (every file looked
+ like a 35% match against a 1.4.11 source-tree even when the body
+ was 100% v2.0 expression), it shipped two parallel year ranges
+ (`2014-2024` and `2014-2026`) with no automated drift gate, and
+ it pointed at `creativecommons.org/licenses/by-nc-sa/3.0/` for
+ the licence text but `LICENSE.md` is the actual licence. The
+ source-of-truth attribution surface for upstream lineage
+ (SourceBans 1.4.x, SourceComms, InterWave Studios theme.conf,
+ LightOpenID, TinyMCE) is `THIRD-PARTY-NOTICES.txt`. Issue
+ `goals#5` swept all 36 files; new files take the 4-line shape
+ from day one. Files with their own licence (`web/includes/Auth/openid.php`,
+ `web/includes/tinymce/`) keep their original headers.
+- Inline `echo '<form action="…">'` HTML blobs at the top of
+ admin page handlers (`web/pages/admin.edit.<x>.php`) → build a
+ typed `Sbpp\View\AdminEdit<X>View` DTO + `Renderer::render()` a
+ Smarty template under `web/themes/default/page_admin_edit_<x>.tpl`.
+ The legacy shape interleaved PHP control flow, raw HTML, and
+ Smarty expressions in one file (`echo "<form action='?p=admin&c=…'>";`
+ followed by `echo '<input ' . $is_owner . '>';`) and silently
+ reintroduced XSS surfaces every time a developer forgot to
+ `htmlspecialchars()` a user-controlled value. The View DTO →
+ template path is auto-escaped by Smarty (`$theme->setEscapeHtml(true)`
+ is set in `init.php`); the only escape hatch is `nofilter` which
+ carries its own annotation rule (see "`nofilter` discipline" in
+ Conventions). The `admin.edit.*` cluster was migrated wholesale
+ in `goals#5`; new edit pages follow the same shape from day one.
+- `echo '<div id="msg-red">…';` / `echo '<div id="msg-green">…';`
+ inline-PHP error / success banners → use Smarty's
+ `{if $error}<div class="alert alert--error">{$error|escape}</div>{/if}`
+ pattern in the template + a `?string $error` property on the
+ View DTO, OR (for form-submission feedback) the page-tail
+ `sbpp_admin_edit_emit_tail_script()` helper from
+ `web/pages/_admin_edit_helpers.php`, which writes errors into
+ named `<id>.msg` divs and fires `window.SBPP.showToast()` on
+ success. The legacy `<div id="msg-red">` markup relied on JS
+ listeners (`ShowBox()`, `setStyle('display','block')`) deleted
+ with sourcebans.js at #1123 D1, so the banner painted as a
+ silent invisible div forever. The legacy markup also escaped
+ nothing — `echo '<div id="msg-red">' . $username . ' is taken</div>'`
+ was a stored-XSS surface for any field that survives validation.
+ Migrated wholesale in `goals#5`. Search anchor for any future
+ sweep: `rg "msg-(red|green)" web/`.
+- Legacy 1.4.11 JS handler names — `ButtonOver(…)`,
+ `ProcessEditAdminPermissions(…)`, `ProcessEditGroup(…)`,
+ `ProcessEditMod(…)`, `ProcessEditServer(…)`, `errorScript(…)`
+ — referenced from inline `onmouseover="…"` / `onclick="…"`
+ attributes on edit-page form inputs → the JS that defined these
+ handlers (`web/scripts/sourcebans.js`) was deleted at #1123 D1.
+ Every `onclick="ProcessEditAdminPermissions();"` / `onmouseover="ButtonOver('p1')"`
+ attribute that survived the deletion was a silent no-op (the
+ page rendered, the button looked clickable, the click did
+ nothing — not even a console error). The legacy handler names
+ are documented here defensively because `rg` searches against
+ third-party theme forks may still surface them; the
+ `goals#5` sweep removed every reference under `web/themes/default/`,
+ but a fork that copy-pasted the templates pre-#1123 D1 will
+ still carry them. Wire to `sb.api.call(Actions.PascalName, …)`
+ via `data-action` + a page-tail vanilla-JS dispatcher per the
+ canonical confirm-modal shape under "Add a confirm + reason
+ modal" in "Where to find what".
+- MooTools `$('id').value` / `$('id').checked` / `$('id').setStyle(…)`
+ idioms in inline page-tail scripts → MooTools is gone (deleted
+ with sourcebans.js at #1123 D1). Use vanilla DOM:
+ `document.getElementById('id').value` /
+ `document.getElementById('id').checked` /
+ `el.style.display = 'block'`. The `$()` shim happened to no-op
+ silently because nothing defined it post-#1123, so old `$('id').value`
+ reads returned `undefined.value` → `TypeError`. Page-tail
+ scripts inside templates use plain DOM access plus the
+ `window.SBPP.showToast` / `setBusy` chrome helpers. The
+ `goals#5` admin.edit.* sweep removed every surviving call site;
+ don't reintroduce. (The `sb.$id` / `sb.$idRequired` helpers in
+ `web/scripts/sb.js` are the canonical shape for code that ships
+ with the panel; inline page-tail scripts can use either shape.)
+- The DELETE-then-INSERT loop on
+ `:prefix_admins_servers_groups` (and the parallel one on
+ `:prefix_servers_groups`) without a transaction wrapper → wrap
+ in `Sbpp\Db\Database::beginTransaction()` /
+ `endTransaction()` / `cancelTransaction()`. The legacy shape
+ (delete every existing row, then insert each new row in a
+ separate `execute()`) was non-atomic — a connection drop or
+ PHP fatal between the DELETE and the last INSERT would leave
+ the admin partially de-assigned, the server partially de-grouped,
+ etc. The schema doesn't carry a UNIQUE on the (admin_id,
+ server_group_id) / (server_id, group_id) pairs, so collapsing
+ to `INSERT … ON DUPLICATE KEY UPDATE` would need a paired
+ schema migration (out of `goals#5`'s scope; tracked as a
+ follow-up). Until then, transactions are the contract — see
+ `web/pages/admin.edit.adminservers.php` and
+ `web/pages/admin.edit.server.php` for the canonical shape.
+- Hand-rolled per-page upload handling — `move_uploaded_file($_FILES['x']['tmp_name'], $dst)`
+ with manual extension checks, manual `Log::add()` calls, and
+ manual `<script>window.opener.<callback>(...)</script>` blob
+ emission → use `Sbpp\Upload\UploadHandler::handle()`. The class
+ wraps every step (CSRF, permission gate, extension allowlist,
+ filename sanitisation via `sanitiseName()`, the `move_uploaded_file()`
+ call, the audit-log entry, the success / error popup chrome).
+ The pre-`goals#5` shape duplicated all of this across the three
+ popup upload pages (`admin.uploaddemo.php`, `admin.uploadicon.php`,
+ `admin.uploadmapimg.php`) and trusted `$_FILES[…]['name']`
+ verbatim — so a `name=../../etc/passwd` upload could escape
+ the destination directory on the icon and mapimage paths. The
+ sanitiser basenames + strips backslashes + trims leading dots
+ to defend the path. New popup-upload surfaces wire through
+ `UploadHandler::handle()`; never `move_uploaded_file()`
+ directly.
 - `btn.disabled = true` (or any other manual `disabled` flip) inside
  a confirm-modal submit handler or any other action button that
  fires `sb.api.call(...)` from a click handler without an immediate
@@ -2374,6 +2495,8 @@ contacting every contributor individually.
 | Add a JSON action                      | `web/api/handlers/_register.php` + `web/api/handlers/<topic>.php` |
 | Add or rename a permission             | `web/configs/permissions/web.json`, then regen contract  |
 | Render a page                          | `web/pages/<page>.php` + `web/includes/View/*View.php`   |
+| Add a new edit page in the admin.edit.* cluster (e.g. `admin.edit.<x>.php`) | `web/pages/admin.edit.<x>.php` (the page handler — thin "validate input, build View, render" shape) + `web/includes/View/AdminEdit<X>View.php` (typed View DTO) + `web/themes/default/page_admin_edit_<x>.tpl` (template). Shared helpers live in `web/pages/_admin_edit_helpers.php` (`sbpp_admin_edit_die_with_toast()` for permission / not-found guards, `sbpp_admin_edit_emit_tail_script()` for form-success / validation-error feedback that fires `window.SBPP.showToast()` and writes errors into `<id>.msg` divs, `sbpp_admin_edit_collect_rehash_sids()` for the post-save Rehash Admins step). Anti-patterns to avoid: inline `echo '<form>...'` blocks, `echo '<div id="msg-red">…'` banners, MooTools `$('id').value` reads, legacy JS handler names (`ButtonOver`, `ProcessEditAdminPermissions`, etc.) — all swept as part of `goals#5`. CSRF gate every POST via `\CSRF::rejectIfInvalid();` after the `isset($_POST['<sentinel>'])` arm. |
+| Add a popup file-upload page (demo / icon / mapimage / new asset type) | `Sbpp\Upload\UploadHandler::handle()` (`web/includes/Upload/UploadHandler.php`). The page handler at `web/pages/admin.upload<x>.php` is a thin wrapper passing the per-page knobs (`permission` mask, `field` `$_FILES` key, `allowed` extensions, `destDir`, `callback` JS function name on `window.opener`, `auditOk` / `auditFmt` / `errorMsg` / `title` / `formName` / `formats` strings, optional `renameToHash` for demo-style randomised filenames). The handler runs CSRF + permission check, sanitises `$_FILES[…]['name']` via `sanitiseName()` (basename + strip backslashes + trim leading dots — defends LFI on the icon / mapimage paths where the filename hits disk), `move_uploaded_file()`s to the destination, calls `Log::add(LogType::Message, …)`, and on success emits the `<script>window.opener.<callback>(...)</script>` blob the parent page picks up. The three reference call sites (`admin.uploaddemo.php`, `admin.uploadicon.php`, `admin.uploadmapimg.php`) are 30-line wrappers; new asset types should match that line budget. Anti-pattern: hand-rolling the move / log / popup-emission sequence per page (the pre-`goals#5` shape). |
 | Edit a template                        | `web/themes/default/*.tpl`                               |
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. The public banlist (`web/themes/default/page_bans.tpl`) follows the same shape — same chrome (Lucide icon + visible text label inside `.btn--ghost` / `.btn--secondary btn--sm`), same `.ban-card__actions` mobile row, same `data-action` / `data-fallback-href` wiring (`bans-unban` / `bans-delete`). The Remove affordance points at the legacy GET handler (`?p=banlist&a=delete&id=…&key=…` at the top of `page.banlist.php`) because no JSON `bans.delete` action exists yet — the inline JS `confirm()`-prompts then navigates, mirroring commslist's flow without adding a new handler / snapshot / permission-matrix entry. |
