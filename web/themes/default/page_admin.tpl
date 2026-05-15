@@ -151,25 +151,6 @@
     </ul>
 </section>
 
-{*
-    Parity block - references the legacy default-theme variables that
-    AdminHomeView still declares so SmartyTemplateRule's "unused
-    property" check stays green for the sbpp2026 PHPStan leg without a
-    bespoke baseline entry. The if-false branch is unreachable at
-    render time, so the new theme never visibly renders the legacy
-    counts. Mirrors the unreachable parity reference HomeDashboardView
-    established (#1123 B3) using IN_SERVERS_PAGE. D1 deletes the legacy
-    theme + the matching props on AdminHomeView; this block leaves
-    with them.
-*}
-{if false}
-    {$access_admins}{$access_bans}{$access_groups}{$access_mods}
-    {$access_servers}{$access_settings}{$archived_protests}
-    {$archived_submissions}{$demosize}{$total_admins}
-    {$total_bans}{$total_blocks}{$total_comms}{$total_protests}
-    {$total_servers}{$total_submissions}
-{/if}
-
 {literal}
 <style>
     .admin-home { max-width: 1400px; padding: 1rem; }
