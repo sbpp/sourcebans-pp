@@ -1,0 +1,171 @@
+SourceBans++ Third-Party Notices
+================================
+
+The SourceBans++ panel (the `web/` subdirectory) is licensed under the
+Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported
+License — see `LICENSE.md` for the full text.
+
+This file lists upstream projects whose code, schema, or other works
+are present in this distribution and the attributions owed to their
+authors per their respective licences.
+
+If you are a downstream consumer (theme fork, distribution
+maintainer, vendor) and notice an attribution missing here, please
+open an issue at https://github.com/sbpp/sourcebans-pp/issues — we
+treat attribution drift as a bug.
+
+--------------------------------------------------------------------
+1. SourceBans (1.4.x and earlier)
+--------------------------------------------------------------------
+
+  Copyright (C) 2007-2014 SourceBans Team — Part of GameConnect
+  Project URL: http://www.sourcebans.net/
+  GameConnect: http://www.gameconnect.net/
+  Licensed under: Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported
+                  (https://creativecommons.org/licenses/by-nc-sa/3.0/)
+
+SourceBans++ originated as a community fork of SourceBans 1.4.11 in
+2014 and has since been substantially rewritten — see issue #3 in
+https://github.com/sbpp/goals for a per-file audit confirming that
+the surviving v2.0 panel carries no substantive 1.4.11 source
+expression. However, the project's continuous-through-line traces
+back to that codebase in a number of structural ways:
+
+  - The MariaDB schema layout (`web/install/includes/sql/struc.sql`)
+    inherits its table names, column names, and column types from
+    the 1.4.11 schema. Schema layouts are factual rather than
+    expressive, but the lineage is documented here defensively.
+  - The web-permission flag bitmask values (`web/configs/permissions/web.json`,
+    mirrored as `ADMIN_*` `define`d constants in `web/init.php`) are
+    continuous with the 1.4.x bitmasks so existing admin-row data
+    upgrades cleanly.
+  - The audit-log letter codes (`enum('m','w','e')` in `:prefix_log`,
+    surfaced as `LogType::Message` / `Warning` / `Error`) are
+    inherited from the 1.4.x letter-code convention.
+  - Function names of helpers in `web/includes/system-functions.php`
+    are preserved (`CreateLinkR`, `BitToString`, `SmFlagsToSb`,
+    `NextSid`, `PruneBans`, `GetMapImage`, etc.) so theme forks
+    that load the panel's helper surface keep working. The function
+    bodies have been rewritten in v2.0 idioms.
+
+The original SourceBans Team is acknowledged here as a courtesy and
+to honour the spirit of CC BY-NC-SA 3.0 §4(c).
+
+--------------------------------------------------------------------
+2. SourceComms (0.9.266)
+--------------------------------------------------------------------
+
+  Copyright (C) 2013-2014 Alexandr Duplishchev (a.k.a. d-ai)
+  Forum thread:  https://forums.alliedmods.net/showthread.php?p=1883705
+  GitHub:        https://github.com/d-ai/SourceComms
+  Licensed under: GNU General Public License version 3 or later
+
+The communications-management surfaces of the panel — the public
+`?p=commslist` page, the admin `?p=admin&c=comms` moderation queue,
+the `?p=admin&c=comms&section=search` advanced filter, and the
+`:prefix_comms` schema — descend from Alexandr Duplishchev's
+SourceComms plugin (a SourceBans 1.4.11 sister-plugin that added
+mute / gag / silence tracking to the panel's ban-management UI).
+
+The PHP surfaces have been rewritten in v2.0 idioms (typed View
+DTOs, JSON API actions, vanilla JS chrome) but the data model and
+the filter semantics descend from SourceComms.
+
+--------------------------------------------------------------------
+3. InterWave Studios — default theme chrome (origin)
+--------------------------------------------------------------------
+
+  Copyright (C) 2007-2014 InterWave Studios Development Team
+  Originally authored as part of: SourceBans 1.4.x
+  Licensed under: CC BY-NC-SA 3.0 Unported (as part of SourceBans 1.4.x)
+
+The metadata file `web/themes/default/theme.conf.php` was originally
+authored by InterWave Studios Development Team for SourceBans 1.4.x;
+the format (five `define()` constants the panel reads at boot) is
+preserved so theme forks do not break at upgrade time.
+
+The visual chrome the v2.0 default theme presents was rewritten from
+scratch in #1123 (`web/themes/default/css/theme.css`,
+`web/themes/default/js/theme.js`, the per-page `*.tpl` templates) and
+no InterWave Studios source survives in the rendered chrome. Only
+the `theme.conf.php` shape is continuous; the attribution here
+honours that origin per CC BY-NC-SA 3.0 §4(c).
+
+--------------------------------------------------------------------
+4. LightOpenID (`web/includes/Auth/openid.php`)
+--------------------------------------------------------------------
+
+  Copyright (C) 2013 Mewp <mewp151 at gmail dot com>
+  Project URL:    https://code.google.com/p/lightopenid/  (archived)
+  GitHub mirror:  https://github.com/iignatov/LightOpenID
+  Version:        v1.3.1 (2016-03-04)
+  Licensed under: MIT License (https://opensource.org/licenses/mit-license.php)
+
+LightOpenID is the third-party OpenID 1.1/2.0 authentication client
+that powers the panel's "Login with Steam" flow (Steam exposes its
+account-id surface as an OpenID provider). The file is vendored
+verbatim under `web/includes/Auth/openid.php`; it is excluded from
+PHPStan analysis (see `phpstan.neon`'s `excludePaths`) and is the
+sole intentional global-namespace class allowed in
+`web/includes/`.
+
+The MIT license terms apply only to the LightOpenID file itself; the
+rest of the panel is governed by `LICENSE.md`.
+
+  MIT License
+  -----------
+  Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation
+  files (the "Software"), to deal in the Software without
+  restriction, including without limitation the rights to use,
+  copy, modify, merge, publish, distribute, sublicense, and/or
+  sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following
+  conditions:
+
+  The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------
+5. TinyMCE (`web/includes/tinymce/`)
+--------------------------------------------------------------------
+
+  Copyright (C) Tiny Technologies, Inc. All rights reserved.
+  Project URL:  https://www.tiny.cloud/
+  Version:      5.4.2 (2020-08-17)
+  Licensed under: GNU Lesser General Public License v2.1
+                  (the LGPL or a commercial Tiny licence)
+
+TinyMCE is a third-party rich-text editor vendored under
+`web/includes/tinymce/`. The verbatim LGPL v2.1 text is preserved
+under `web/includes/tinymce/license.txt`.
+
+TinyMCE is no longer reachable from the panel's UI (the v2.0
+rewrite migrated admin-authored display text to plain `<textarea>`
++ Markdown via `Sbpp\Markup\IntroRenderer` — see "Anti-patterns" /
+WYSIWYG in `AGENTS.md` for the rationale, which traces back to
+the stored-XSS vector in #1113). The directory is retained for
+self-hosters running custom theme forks that still wire the
+editor in. A future PR will remove the directory once the
+fork-fallout window has elapsed.
+
+--------------------------------------------------------------------
+6. Composer dependencies (`web/composer.json`)
+--------------------------------------------------------------------
+
+The panel's runtime PHP dependencies (`smarty/smarty`, `lcobucci/jwt`,
+`league/commonmark`, `maxmind-db/reader`, `xpaw/php-source-query-class`,
+`symfony/mailer`) are declared in `web/composer.json` and resolved
+via Composer at install time. Each retains its upstream licence
+under `web/includes/vendor/<package>/LICENSE.md` (or equivalent).
+This file does not duplicate those licences; consult the vendored
+packages directly.
