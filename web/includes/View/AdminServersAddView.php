@@ -15,6 +15,9 @@ final class AdminServersAddView extends View
     /**
      * @param list<array{mid: int|string, name: string}> $modlist
      * @param list<array{gid: int|string, name: string}> $grouplist
+     * @param list<int> $assigned_groups Group ids the server already
+     *   belongs to (empty for the add flow). Used to pre-check the
+     *   relevant `<input id="g_<gid>">` checkboxes server-side.
      */
     public function __construct(
         public readonly bool $permission_addserver,
@@ -26,6 +29,8 @@ final class AdminServersAddView extends View
         public readonly array $modlist,
         public readonly array $grouplist,
         public readonly string $submit_text,
+        public readonly bool $enabled = true,
+        public readonly array $assigned_groups = [],
     ) {
     }
 }

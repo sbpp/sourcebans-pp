@@ -1,40 +1,24 @@
 {*
-    SourceBans++ 2026 — page / page_admin_edit_mod.tpl
+    SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+    Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+    See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-    Edit form for a single mod. Pair: Sbpp\View\AdminEditModView +
-    web/pages/admin.edit.mod.php (the latter is intentionally NOT in
-    this PR's scope — see AdminEditModView's docblock for why).
+    "Edit mod" — pair: web/pages/admin.edit.mod.php +
+    web/includes/View/AdminEditModView.php (issue sbpp/goals#5,
+    Phase 2.5g).
 
-    Variable contract (matches the $theme->assign() calls in
-    web/pages/admin.edit.mod.php):
-        - $name           — current mod name
-        - $folder         — current mod folder
-        - $mod_icon       — current icon filename
-        - $steam_universe — int-as-string from PDO
+    Submission stays form-POST (admin.edit.mod.php still owns the
+    UPDATE round-trip) but error display is now server-side: empty
+    `<div id="<field>.msg">` slots paint visible text only when the
+    page handler hands a non-empty entry to
+    `sbpp_admin_edit_emit_tail_script()`. The icon-picker still pops
+    `pages/admin.uploadicon.php`; that handler has been rewritten to
+    emit a CSP-friendly inline script that calls `window.opener.icon()`
+    via the modernised UploadHandler chrome.
 
-    Submission flow:
-        - <form method="post" action=""> POSTs back to the same page.
-          admin.edit.mod.php inspects $_POST['name'] to decide whether
-          to validate + UPDATE the row.
-        - {csrf_field} is required; admin.edit.mod.php currently
-          relies on the existing page-level CSRF middleware, so the
-          field doubles as the explicit token for any future direct
-          POST handler.
-        - The icon picker pops pages/admin.uploadicon.php which calls
-          window.opener.icon('<filename>') on success; that wires the
-          filename into the hidden #icon_hid input that the page
-          handler reads as $_POST['icon_hid'].
-        - The "Enabled" checkbox is rendered without a `checked`
-          attribute on purpose: admin.edit.mod.php emits an inline
-          <script> AFTER this template that sets
-          $('enabled').checked from the row's `enabled` column. That
-          keeps the page handler out of this Phase B PR's scope.
-
-    Testability hooks: every interactive control carries
-    data-testid="editmod-<field>" so end-to-end tests can address it.
-    HTML form ids stay intact because admin.edit.mod.php's inline
-    error-handling script targets them by id (legacy MooTools-style
-    `$('name.msg')`).
+    Initial checkbox state is server-rendered via the new `$enabled`
+    template variable — no MooTools-era `$('enabled').checked = …`
+    re-paint script.
 *}
 <div class="page-section">
 <form method="post"
@@ -110,7 +94,8 @@
                            id="enabled"
                            name="enabled"
                            data-testid="editmod-enabled"
-                           value="1">
+                           value="1"
+                           {if $enabled}checked{/if}>
                     <span class="text-sm">Enabled — assignable to bans and servers.</span>
                 </label>
             </div>

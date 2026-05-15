@@ -1,4 +1,8 @@
 <?php
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
+
 declare(strict_types=1);
 
 namespace Sbpp\View;
@@ -6,25 +10,18 @@ namespace Sbpp\View;
 /**
  * Edit form for a single mod — binds to `page_admin_edit_mod.tpl`.
  *
- * `web/pages/admin.edit.mod.php` still drives this template via direct
- * `$theme->assign()` calls (the page handler is out of scope for this
- * Phase B ticket). The variable contract preserved here mirrors what
- * that page assigns:
- *
- *   - `name`           — current mod name (post-store htmlspecialchars'd
- *                        in admin.edit.mod.php; see #1113 audit).
+ * Variable contract:
+ *   - `name`           — current mod name (htmlspecialchars'd before
+ *                        UPDATE in `admin.edit.mod.php`; see #1113
+ *                        audit).
  *   - `folder`         — current mod folder (same caveat).
  *   - `mod_icon`       — current icon filename (same caveat).
- *   - `steam_universe` — first digit of STEAM_X:Y:Z (PDO returns an
- *                        int-as-string by default; see Database.php).
- *
- * The `enabled` checkbox is intentionally NOT a template variable: the
- * legacy page handler emits an inline `<script>` after the template
- * that sets `$('enabled').checked` from the row's `enabled` column,
- * because the .tpl is rendered before the row's checkbox state is
- * known to Smarty. Preserving that path keeps admin.edit.mod.php out
- * of this PR's scope; D-series can fold it in once it migrates to
- * `Renderer::render`.
+ *   - `steam_universe` — first digit of `STEAM_X:Y:Z`.
+ *   - `enabled`        — current "Enabled" flag, server-rendered as
+ *                        the checkbox's `checked` attribute. Pre-#5
+ *                        the page handler emitted an inline
+ *                        `$('enabled').checked = …` script after the
+ *                        template; the legacy shim is gone now.
  */
 final class AdminEditModView extends View
 {
@@ -35,6 +32,7 @@ final class AdminEditModView extends View
         public readonly string $folder,
         public readonly string $mod_icon,
         public readonly int|string $steam_universe,
+        public readonly bool $enabled,
     ) {
     }
 }

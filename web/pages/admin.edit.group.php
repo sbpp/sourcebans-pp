@@ -1,251 +1,307 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
+if (!defined('IN_SB')) {
+    echo 'You should not be here. Only follow links!';
     die();
 }
 
-new AdminTabs([], $userbank, $theme);
+global $userbank, $theme;
 
-if (!isset($_GET['id'])) {
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	No server id specified. Please only follow links
-</div>';
-    die();
+new \Sbpp\View\AdminTabs([], $userbank, $theme);
+
+require_once __DIR__ . '/_admin_edit_helpers.php';
+
+$groupId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+if ($groupId <= 0) {
+    sbpp_admin_edit_die_with_toast(
+        'No group id specified. Please only follow links.',
+        'index.php?p=admin&c=groups',
+    );
+    return;
 }
 
-if (!isset($_GET['type']) || ($_GET['type'] != 'web' && $_GET['type'] != 'srv' && $_GET['type'] != 'server')) {
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	No valid group type specified. Please only follow links
-</div>';
-    die();
+$rawType = (string) ($_GET['type'] ?? '');
+$type = match ($rawType) {
+    'web', 'server' => 'web',
+    'srv'           => 'srv',
+    default         => '',
+};
+if ($type === '') {
+    sbpp_admin_edit_die_with_toast(
+        'No valid group type specified. Please only follow links.',
+        'index.php?p=admin&c=groups',
+    );
+    return;
 }
 
-$_GET['id'] = (int) $_GET['id'];
+$pdo = $GLOBALS['PDO'];
 
-$GLOBALS['PDO']->query("SELECT flags, name FROM `:prefix_groups` WHERE gid = :id");
-$GLOBALS['PDO']->bind(':id', $_GET['id']);
-$web_group = $GLOBALS['PDO']->single();
+$groupName = '';
+$webFlags  = 0;
+$srvFlags  = '';
+$immunity  = 0;
+/** @var list<array{id:int,type:string,name:string,access:string}> $overrides */
+$overrides = [];
 
-$GLOBALS['PDO']->query("SELECT flags, name, immunity FROM `:prefix_srvgroups` WHERE id = :id");
-$GLOBALS['PDO']->bind(':id', $_GET['id']);
-$srv_group = $GLOBALS['PDO']->single();
+if ($type === 'web') {
+    $row = $pdo->query('SELECT flags, name FROM `:prefix_groups` WHERE gid = :id')
+        ->single([':id' => $groupId]);
+    if (!$row) {
+        sbpp_admin_edit_die_with_toast('Group not found.', 'index.php?p=admin&c=groups');
+        return;
+    }
+    $groupName = (string) ($row['name']  ?? '');
+    $webFlags  = (int)    ($row['flags'] ?? 0);
+} else {
+    $row = $pdo->query('SELECT flags, name, immunity FROM `:prefix_srvgroups` WHERE id = :id')
+        ->single([':id' => $groupId]);
+    if (!$row) {
+        sbpp_admin_edit_die_with_toast('Group not found.', 'index.php?p=admin&c=groups');
+        return;
+    }
+    $groupName = (string) ($row['name']     ?? '');
+    $srvFlags  = (string) ($row['flags']    ?? '');
+    $immunity  = (int)    ($row['immunity'] ?? 0);
 
-$web_flags = (int) ($web_group['flags'] ?? null);
-$srv_flags = $srv_group['flags'] ?? '';
-
-$name = $userbank->GetProperty("user", $_GET['id'])?>
-<div id="admin-page-content">
-<div id="add-group">
-<h3> Edit Group</h3><br />
-<input type="hidden" id="group_id" value=<?=$_GET['id']?>>
-<table width="90%" style="border-collapse:collapse;" id="group.details" cellpadding="3">
-  <tr>
-    <td valign="top" width="35%"><div class="rowdesc">
-        <img align='absbottom' src='images/help.png' class='tip' title='Group Name::Type the name of the new group you want to create.'/>
-        Group Name </div></td>
-    <td><div align="left">
-      <input type="text" TABINDEX=1 class="inputbox" id="groupname" name="groupname" />
-    </div><div id="groupname.msg" style="color:#CC0000;"></div></td>
-  </tr>
-</table>
-<?php
-if ($_GET['type'] == "web") {
-?>
-<h3>Web Admin Permissions</h3>
-<?=str_replace("{title}", $name, @file_get_contents(TEMPLATES_PATH . "/groups.web.perm.php"))?>
-<br /><?php
-} elseif ($_GET['type'] == "srv") {
-?>
-<h3>Server Admin Permissions</h3>
-<?php
-    $permissions = str_replace("{title}", $name, @file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php"));
-    echo $permissions;
-    // Group overrides
-    // ALERT >>> GROSS CODE MIX <<<
-    // I'm far to lazy to rewrite this to use smarty right now.
-    $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid");
-    $GLOBALS['PDO']->bind(':gid', $_GET['id']);
-    $overrides_list = $GLOBALS['PDO']->resultset();
-?>
-<br />
-<form action="" method="post" name="group_overrides_form">
-<div class="rowdesc">Group Overrides</div>
-Group Overrides allow specific commands or groups of commands to be completely allowed or denied to members of the group.<br />
-<i>Read about <b><a href="http://wiki.alliedmods.net/Adding_Groups_%28SourceMod%29" title="Adding Groups (SourceMod)" target="_blank">group overrides</a></b> in the AlliedModders Wiki!</i><br /><br />
-Blanking out an overrides' name will delete it.<br /><br />
-<table align="center" cellspacing="0" cellpadding="4" id="overrides" width="90%">
-    <tr>
-        <td class="tablerow4">Type</td>
-        <td class="tablerow4">Name</td>
-        <td class="tablerow4">Access</td>
-    </tr>
-<?php
-foreach ($overrides_list as $override) {
-?>
-    <tr>
-        <td class="tablerow1">
-            <select name="override_type[]">
-                <option value="command" <?=$override['type'] == "command" ? "selected=\"selected\"" : ""?>>Command</option>
-                <option value="group"<?=$override['type'] == "group" ? "selected=\"selected\"" : ""?>>Group</option>
-            </select>
-                    <input type="hidden" name="override_id[]" value="<?=$override['id']?>" />
-            </td>
-            <td class="tablerow1"><input name="override_name[]" value="<?=htmlspecialchars($override['name'])?>" /></td>
-            <td class="tablerow1">
-                <select name="override_access[]">
-                    <option value="allow"<?=$override['access'] == "allow" ? "selected=\"selected\"" : ""?>>Allow</option>
-                    <option value="deny"<?=$override['access'] == "deny" ? "selected=\"selected\"" : ""?>>Deny</option>
-                </select>
-            </td>
-    </tr>
-<?php
+    $overrideRows = $pdo->query(
+        'SELECT id, type, name, access FROM `:prefix_srvgroups_overrides` WHERE group_id = :gid'
+    )->resultset([':gid' => $groupId]);
+    foreach ($overrideRows as $or) {
+        $overrides[] = [
+            'id'     => (int)    ($or['id']     ?? 0),
+            'type'   => (string) ($or['type']   ?? 'command'),
+            'name'   => (string) ($or['name']   ?? ''),
+            'access' => (string) ($or['access'] ?? 'allow'),
+        ];
+    }
 }
+
+$has = static fn(int $bit): bool => ($webFlags & $bit) !== 0;
+$smHas = static fn(string $flag): bool => str_contains($srvFlags, $flag);
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\EditGroupView(
+    group_id:        $groupId,
+    type:            $type,
+    group_name:      $groupName,
+    is_owner_editor: $userbank->HasAccess(\WebPermission::Owner),
+
+    web_owner:           $has(ADMIN_OWNER),
+    web_list_admins:     $has(ADMIN_LIST_ADMINS),
+    web_add_admins:      $has(ADMIN_ADD_ADMINS),
+    web_edit_admins:     $has(ADMIN_EDIT_ADMINS),
+    web_delete_admins:   $has(ADMIN_DELETE_ADMINS),
+    web_list_servers:    $has(ADMIN_LIST_SERVERS),
+    web_add_server:      $has(ADMIN_ADD_SERVER),
+    web_edit_servers:    $has(ADMIN_EDIT_SERVERS),
+    web_delete_servers:  $has(ADMIN_DELETE_SERVERS),
+    web_add_ban:         $has(ADMIN_ADD_BAN),
+    web_edit_own_bans:   $has(ADMIN_EDIT_OWN_BANS),
+    web_edit_group_bans: $has(ADMIN_EDIT_GROUP_BANS),
+    web_edit_all_bans:   $has(ADMIN_EDIT_ALL_BANS),
+    web_ban_protests:    $has(ADMIN_BAN_PROTESTS),
+    web_ban_submissions: $has(ADMIN_BAN_SUBMISSIONS),
+    web_unban_own_bans:  $has(ADMIN_UNBAN_OWN_BANS),
+    web_unban_group_bans: $has(ADMIN_UNBAN_GROUP_BANS),
+    web_unban:           $has(ADMIN_UNBAN),
+    web_delete_ban:      $has(ADMIN_DELETE_BAN),
+    web_ban_import:      $has(ADMIN_BAN_IMPORT),
+    web_list_groups:     $has(ADMIN_LIST_GROUPS),
+    web_add_group:       $has(ADMIN_ADD_GROUP),
+    web_edit_groups:     $has(ADMIN_EDIT_GROUPS),
+    web_delete_groups:   $has(ADMIN_DELETE_GROUPS),
+    web_settings:        $has(ADMIN_WEB_SETTINGS),
+    web_list_mods:       $has(ADMIN_LIST_MODS),
+    web_add_mods:        $has(ADMIN_ADD_MODS),
+    web_edit_mods:       $has(ADMIN_EDIT_MODS),
+    web_delete_mods:     $has(ADMIN_DELETE_MODS),
+    web_notify_sub:      $has(ADMIN_NOTIFY_SUB),
+    web_notify_protest:  $has(ADMIN_NOTIFY_PROTEST),
+
+    sm_root:          $smHas(SM_ROOT),
+    sm_reserved_slot: $smHas(SM_RESERVED_SLOT),
+    sm_generic:       $smHas(SM_GENERIC),
+    sm_kick:          $smHas(SM_KICK),
+    sm_ban:           $smHas(SM_BAN),
+    sm_unban:         $smHas(SM_UNBAN),
+    sm_slay:          $smHas(SM_SLAY),
+    sm_map:           $smHas(SM_MAP),
+    sm_cvar:          $smHas(SM_CVAR),
+    sm_config:        $smHas(SM_CONFIG),
+    sm_chat:          $smHas(SM_CHAT),
+    sm_vote:          $smHas(SM_VOTE),
+    sm_password:      $smHas(SM_PASSWORD),
+    sm_rcon:          $smHas(SM_RCON),
+    sm_cheats:        $smHas(SM_CHEATS),
+    sm_custom1:       $smHas(SM_CUSTOM1),
+    sm_custom2:       $smHas(SM_CUSTOM2),
+    sm_custom3:       $smHas(SM_CUSTOM3),
+    sm_custom4:       $smHas(SM_CUSTOM4),
+    sm_custom5:       $smHas(SM_CUSTOM5),
+    sm_custom6:       $smHas(SM_CUSTOM6),
+    immunity:         $immunity,
+    overrides:        $overrides,
+));
+
+// Page-tail vanilla JS: composite-toggle behaviour (replaces
+// `UpdateCheckBox`), submission via `Actions.GroupsEdit` (replaces
+// `ProcessEditGroup`), and the dynamic overrides editor.
 ?>
-    <tr>
-        <td class="tablerow1">
-            <select id="new_override_type">
-                <option value="command">Command</option>
-                <option value="group">Group</option>
-            </select>
-        </td>
-        <td class="tablerow1"><input id="new_override_name" /></td>
-        <td class="tablerow1">
-            <select id="new_override_access">
-                <option value="allow">Allow</option>
-                <option value="deny">Deny</option>
-            </select>
-        </td>
-    </tr>
-</table>
-</form>
-<?php
-}
-?>
-<table width="100%">
-    <tr><td>&nbsp;</td>
-    </tr>
-    <tr align="center">
-        <td>&nbsp;</td>
-        <td>
-            <div align="center">
-                <input type='submit' onclick="ProcessEditGroup('<?=  $_GET['type'];?>', $('groupname').value);" name='editgroup' class='btn ok' onmouseover='ButtonOver("editgroup")' onmouseout='ButtonOver("editgroup")' id='editgroup' value='Save Changes' />
-                <input type='button' onclick="history.go(-1);" name='back' class='btn cancel' onmouseover='ButtonOver("back")' onmouseout='ButtonOver("back")' id='back' value='Back' />
-            </div>
-        </td>
-    </tr>
-</table>
 <script>
-<?php
-if ($_GET['type'] == "web" || $_GET['type'] == "server") {
-?>
-    $('groupname').value = "<?=$web_group['name']?>";
-<?php
-}
-if (!$userbank->HasAccess(WebPermission::Owner)) {
-?>
-    if($("wrootcheckbox")) {
-        $("wrootcheckbox").setStyle('display', 'none');
+(function () {
+    'use strict';
+    var form = document.getElementById('edit-group-form');
+    if (!form) return;
+    var type = form.getAttribute('data-type');
+    var gid  = parseInt(form.getAttribute('data-gid'), 10) || 0;
+
+    function setBusy(btn, busy) {
+        if (window.SBPP && typeof window.SBPP.setBusy === 'function') {
+            window.SBPP.setBusy(btn, busy);
+        } else {
+            btn.disabled = !!busy;
+        }
     }
-    if($("srootcheckbox")) {
-        $("srootcheckbox").setStyle('display', 'none');
+
+    function setMsg(field, text) {
+        var el = document.getElementById(field + '.msg');
+        if (!el) return;
+        el.textContent = text || '';
+        el.style.display = text ? 'block' : 'none';
     }
-<?php
-}
-if ($_GET['type'] == "web") {
-?>
-$('p2').checked = <?=(($web_flags & ADMIN_OWNER) != 0) ? "true" : "false"?>;
 
-$('p4').checked = <?=(($web_flags & ADMIN_LIST_ADMINS) != 0) ? "true" : "false"?>;
-$('p5').checked = <?=(($web_flags & ADMIN_ADD_ADMINS) != 0) ? "true" : "false"?>;
-$('p6').checked = <?=(($web_flags & ADMIN_EDIT_ADMINS) != 0) ? "true" : "false"?>;
-$('p7').checked = <?=(($web_flags & ADMIN_DELETE_ADMINS) != 0) ? "true" : "false"?>;
+    // Composite parent / child toggles (web mode only)
+    form.querySelectorAll('input[data-parent]').forEach(function (parent) {
+        var name = parent.getAttribute('data-parent');
+        var children = form.querySelectorAll('input[data-child="' + name + '"]');
+        function syncParent() {
+            var anyOn = false;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].checked) { anyOn = true; break; }
+            }
+            parent.checked = anyOn;
+        }
+        parent.addEventListener('change', function () {
+            children.forEach(function (c) { c.checked = parent.checked; });
+        });
+        children.forEach(function (c) { c.addEventListener('change', syncParent); });
+        syncParent();
+    });
 
-$('p9').checked = <?=(($web_flags & ADMIN_LIST_SERVERS) != 0) ? "true" : "false"?>;
-$('p10').checked = <?=(($web_flags & ADMIN_ADD_SERVER) != 0) ? "true" : "false"?>;
-$('p11').checked = <?=(($web_flags & ADMIN_EDIT_SERVERS) != 0) ? "true" : "false"?>;
-$('p12').checked = <?=(($web_flags & ADMIN_DELETE_SERVERS) != 0) ? "true" : "false"?>;
+    var ownerCb = document.getElementById('p2');
+    if (ownerCb) {
+        ownerCb.addEventListener('change', function () {
+            if (!ownerCb.checked) return;
+            form.querySelectorAll('input[data-child], input[data-parent]').forEach(function (c) {
+                c.checked = true;
+            });
+        });
+    }
 
-$('p14').checked = <?=(($web_flags & ADMIN_ADD_BAN) != 0) ? "true" : "false"?>;
-$('p16').checked = <?=(($web_flags & ADMIN_EDIT_OWN_BANS) != 0) ? "true" : "false"?>;
-$('p17').checked = <?=(($web_flags & ADMIN_EDIT_GROUP_BANS) != 0) ? "true" : "false"?>;
-$('p18').checked = <?=(($web_flags & ADMIN_EDIT_ALL_BANS) != 0) ? "true" : "false"?>;
-$('p19').checked = <?=(($web_flags & ADMIN_BAN_PROTESTS) != 0) ? "true" : "false"?>;
-$('p20').checked = <?=(($web_flags & ADMIN_BAN_SUBMISSIONS) != 0) ? "true" : "false"?>;
-$('p33').checked = <?=(($web_flags & ADMIN_DELETE_BAN) != 0) ? "true" : "false"?>;
-$('p32').checked = <?=(($web_flags & ADMIN_UNBAN) != 0) ? "true" : "false"?>;
-$('p34').checked = <?=(($web_flags & ADMIN_BAN_IMPORT) != 0) ? "true" : "false"?>;
-$('p38').checked = <?=(($web_flags & ADMIN_UNBAN_OWN_BANS) != 0) ? "true" : "false"?>;
-$('p39').checked = <?=(($web_flags & ADMIN_UNBAN_GROUP_BANS) != 0) ? "true" : "false"?>;
+    var smRootCb = document.getElementById('s14');
+    if (smRootCb) {
+        smRootCb.addEventListener('change', function () {
+            if (!smRootCb.checked) return;
+            form.querySelectorAll('input[data-sm-flag]').forEach(function (c) {
+                if (c !== smRootCb) c.checked = true;
+            });
+        });
+    }
 
-$('p36').checked = <?=(($web_flags & ADMIN_NOTIFY_SUB) != 0) ? "true" : "false"?>;
-$('p37').checked = <?=(($web_flags & ADMIN_NOTIFY_PROTEST) != 0) ? "true" : "false"?>;
+    var WEB_BITS = {
+        p2:  16777216,    p4:  1,           p5:  2,           p6:  4,
+        p7:  8,           p9:  16,          p10: 32,          p11: 64,
+        p12: 128,         p14: 256,         p16: 1024,        p17: 2048,
+        p18: 4096,        p19: 8192,        p20: 16384,       p22: 32768,
+        p23: 65536,       p24: 131072,      p25: 262144,      p26: 524288,
+        p28: 1048576,     p29: 2097152,     p30: 4194304,     p31: 8388608,
+        p32: 67108864,    p33: 33554432,    p34: 134217728,   p36: 268435456,
+        p37: 536870912,   p38: 1073741824,  p39: 2147483648
+    };
 
-$('p22').checked = <?=(($web_flags & ADMIN_LIST_GROUPS) != 0) ? "true" : "false"?>;
-$('p23').checked = <?=(($web_flags & ADMIN_ADD_GROUP) != 0) ? "true" : "false"?>;
-$('p24').checked = <?=(($web_flags & ADMIN_EDIT_GROUPS) != 0) ? "true" : "false"?>;
-$('p25').checked = <?=(($web_flags & ADMIN_DELETE_GROUPS) != 0) ? "true" : "false"?>;
+    function collectWebFlags() {
+        var mask = 0;
+        Object.keys(WEB_BITS).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && el.checked) mask += WEB_BITS[id];
+        });
+        return mask;
+    }
 
-$('p26').checked = <?=(($web_flags & ADMIN_WEB_SETTINGS) != 0) ? "true" : "false"?>;
+    function collectSrvFlags() {
+        var letters = '';
+        form.querySelectorAll('input[data-sm-flag]').forEach(function (c) {
+            if (c.checked) letters += c.getAttribute('data-sm-flag');
+        });
+        var im = parseInt(document.getElementById('immunity').value, 10);
+        if (isNaN(im) || im < 0) im = 0;
+        return letters + '#' + im;
+    }
 
-$('p28').checked = <?=(($web_flags & ADMIN_LIST_MODS) != 0) ? "true" : "false"?>;
-$('p29').checked = <?=(($web_flags & ADMIN_ADD_MODS) != 0) ? "true" : "false"?>;
-$('p30').checked = <?=(($web_flags & ADMIN_EDIT_MODS) != 0) ? "true" : "false"?>;
-$('p31').checked = <?=(($web_flags & ADMIN_DELETE_MODS) != 0) ? "true" : "false"?>;
+    function collectOverrides() {
+        var list = [];
+        form.querySelectorAll('[data-override-row]').forEach(function (row) {
+            list.push({
+                id:     parseInt(row.getAttribute('data-override-id'), 10) || 0,
+                type:   row.querySelector('[data-override-field="type"]').value,
+                name:   row.querySelector('[data-override-field="name"]').value,
+                access: row.querySelector('[data-override-field="access"]').value
+            });
+        });
+        return list;
+    }
 
-<?php
-} elseif ($_GET['type'] == "srv") {
-?>
-$('groupname').value = "<?=$srv_group['name']?>";
-$('s14').checked = <?=str_contains($srv_flags, SM_ROOT) ? "true" : "false"?>;
-$('s1').checked = <?=str_contains($srv_flags, SM_RESERVED_SLOT) ? "true" : "false"?>;
-$('s23').checked = <?=str_contains($srv_flags, SM_GENERIC) ? "true" : "false"?>;
-$('s2').checked = <?=str_contains($srv_flags, SM_KICK) ? "true" : "false"?>;
-$('s3').checked = <?=str_contains($srv_flags, SM_BAN) ? "true" : "false"?>;
-$('s4').checked = <?=str_contains($srv_flags, SM_UNBAN) ? "true" : "false"?>;
-$('s5').checked = <?=str_contains($srv_flags, SM_SLAY) ? "true" : "false"?>;
-$('s6').checked = <?=str_contains($srv_flags, SM_MAP) ? "true" : "false"?>;
-$('s7').checked = <?=str_contains($srv_flags, SM_CVAR) ? "true" : "false"?>;
-$('s8').checked = <?=str_contains($srv_flags, SM_CONFIG) ? "true" : "false"?>;
-$('s9').checked = <?=str_contains($srv_flags, SM_CHAT) ? "true" : "false"?>;
-$('s10').checked = <?=str_contains($srv_flags, SM_VOTE) ? "true" : "false"?>;
-$('s11').checked = <?=str_contains($srv_flags, SM_PASSWORD) ? "true" : "false"?>;
-$('s12').checked = <?=str_contains($srv_flags, SM_RCON) ? "true" : "false"?>;
-$('s13').checked = <?=str_contains($srv_flags, SM_CHEATS) ? "true" : "false"?>;
+    function collectNewOverride() {
+        var n = document.getElementById('new_override_name');
+        if (!n || !n.value.trim()) return null;
+        return {
+            type:   document.getElementById('new_override_type').value,
+            name:   n.value,
+            access: document.getElementById('new_override_access').value
+        };
+    }
 
-$('s17').checked = <?=str_contains($srv_flags, SM_CUSTOM1) ? "true" : "false"?>;
-$('s18').checked = <?=str_contains($srv_flags, SM_CUSTOM2) ? "true" : "false"?>;
-$('s19').checked = <?=str_contains($srv_flags, SM_CUSTOM3) ? "true" : "false"?>;
-$('s20').checked = <?=str_contains($srv_flags, SM_CUSTOM4) ? "true" : "false"?>;
-$('s21').checked = <?=str_contains($srv_flags, SM_CUSTOM5) ? "true" : "false"?>;
-$('s22').checked = <?=str_contains($srv_flags, SM_CUSTOM6) ? "true" : "false"?>;
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        setMsg('groupname', '');
 
-$('immunity').value = <?=$srv_group['immunity'] ? (int) $srv_group['immunity'] : "0"?>;
-<?php
-}
-?>
+        var name = document.getElementById('groupname').value.trim();
+        if (!name) {
+            setMsg('groupname', 'Group name is required.');
+            return;
+        }
+
+        var btn = form.querySelector('[data-testid="admin-edit-group-save"]');
+        if (btn) setBusy(btn, true);
+
+        var params = {
+            gid: gid, type: type, name: name,
+            web_flags: type === 'web' ? collectWebFlags() : 0,
+            srv_flags: type === 'srv' ? collectSrvFlags() : ''
+        };
+        if (type === 'srv') {
+            params.overrides    = JSON.stringify(collectOverrides());
+            var fresh = collectNewOverride();
+            params.new_override = fresh ? JSON.stringify(fresh) : '';
+        }
+
+        window.sb.api.call(window.Actions.GroupsEdit, params).then(function (r) {
+            window.SBPP.showToast({
+                kind: 'success',
+                title: 'Group updated',
+                body: 'The group has been updated successfully.'
+            });
+            setTimeout(function () {
+                window.location.href = 'index.php?p=admin&c=groups';
+            }, 1500);
+        }).catch(function (err) {
+            if (btn) setBusy(btn, false);
+            if (err && err.field) setMsg(err.field, err.msg || 'Validation error');
+        });
+    });
+})();
 </script>
-</div></div>

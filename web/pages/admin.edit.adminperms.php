@@ -1,175 +1,267 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
+if (!defined('IN_SB')) {
+    echo 'You should not be here. Only follow links!';
     die();
 }
-global $userbank;
 
-new AdminTabs([], $userbank, $theme);
+global $userbank, $theme;
 
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	No admin id specified. Please only follow links
-</div>';
-    PageDie();
-}
-$_GET['id'] = (int) $_GET['id'];
-$GLOBALS['PDO']->query("SELECT * FROM `:prefix_admins` WHERE aid = :aid");
-$GLOBALS['PDO']->bind(':aid', $_GET['id']);
-$admin = $GLOBALS['PDO']->single();
+new \Sbpp\View\AdminTabs([], $userbank, $theme);
 
+require_once __DIR__ . '/_admin_edit_helpers.php';
 
-if (!$userbank->GetProperty("user", $_GET['id'])) {
-    Log::add(LogType::Error, "Getting admin data failed", "Can't find data for admin with id $_GET[id].");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	Error getting current data.
-</div>';
-    PageDie();
+$adminId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+if ($adminId <= 0) {
+    sbpp_admin_edit_die_with_toast(
+        'No admin id specified. Please only follow links.',
+        'index.php?p=admin&c=admins',
+    );
+    return;
 }
 
-if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAdmins))) {
-    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit ".$userbank->GetProperty('user', $_GET['id'])."'s permissions, but doesn't have access.");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	You are not allowed to edit other permissions.
-</div>';
-    PageDie();
+if (!$userbank->HasAccess(\WebPermission::mask(\WebPermission::Owner, \WebPermission::EditAdmins))) {
+    \Sbpp\Log::add(
+        \LogType::Warning,
+        'Hacking Attempt',
+        $userbank->GetProperty('user') . ' tried to edit '
+        . $userbank->GetProperty('user', $adminId) . "'s permissions, but doesn't have access.",
+    );
+    sbpp_admin_edit_die_with_toast(
+        "You aren't allowed to edit other admin's permissions.",
+        'index.php?p=admin&c=admins',
+    );
+    return;
 }
 
-$web_root  = $userbank->HasAccess(WebPermission::Owner, $_GET['id']);
-$steam     = trim((string) $userbank->GetProperty("authid", $_GET['id']));
-$web_flags = (int) $userbank->GetProperty("extraflags", $_GET['id']);
-$name      = $userbank->GetProperty("user", $_GET['id'])?>
-<div id="admin-page-content">
-<div id="add-group">
-<h3>Web Admin Permissions</h3>
-<input type="hidden" id="admin_id" value=<?=$_GET['id']?>>
-<?=str_replace("{title}", $name, file_get_contents(TEMPLATES_PATH . "/groups.web.perm.php"))?>
-<br />
-<h3>Server Admin Permissions</h3>
+$adminRow = $GLOBALS['PDO']->query('SELECT * FROM `:prefix_admins` WHERE aid = :aid')
+    ->single([':aid' => $adminId]);
 
-<?=str_replace("{title}", $name, file_get_contents(TEMPLATES_PATH . "/groups.server.perm.php"))?>
+if (!$adminRow) {
+    \Sbpp\Log::add(
+        \LogType::Error,
+        'Getting admin data failed',
+        "Can't find data for admin with id {$adminId}.",
+    );
+    sbpp_admin_edit_die_with_toast('Error getting current data.', 'index.php?p=admin&c=admins');
+    return;
+}
 
-<table width="100%">
-<tr><td>&nbsp;</td>
-</tr>
-<tr align="center">
-    <td>&nbsp;</td>
-    <td>
-    <div align="center">
-        <input type='button' onclick="ProcessEditAdminPermissions();" name='editadmingroup' class='btn ok' onmouseover='ButtonOver("editadmingroup")' onmouseout='ButtonOver("editadmingroup")' id='editadmingroup' value='Save Changes' />
-        <input type='button' onclick="history.go(-1);" name='back' class='btn cancel' onmouseover='ButtonOver("back")' onmouseout='ButtonOver("back")' id='back' value='Back' />
-    </div>
-    </td>
-  </tr>
-</table>
+$srvFlags = (string) ($adminRow['srv_flags'] ?? '');
+$smHas = static fn(string $flag): bool => str_contains($srvFlags, $flag);
 
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\EditAdminPermsView(
+    admin_id:        $adminId,
+    admin_name:      (string) ($adminRow['user'] ?? ''),
+    is_owner_editor: $userbank->HasAccess(\WebPermission::Owner),
 
+    web_owner:           $userbank->HasAccess(\WebPermission::Owner,        $adminId),
+    web_list_admins:     $userbank->HasAccess(\WebPermission::ListAdmins,   $adminId),
+    web_add_admins:      $userbank->HasAccess(\WebPermission::AddAdmins,    $adminId),
+    web_edit_admins:     $userbank->HasAccess(\WebPermission::EditAdmins,   $adminId),
+    web_delete_admins:   $userbank->HasAccess(\WebPermission::DeleteAdmins, $adminId),
+    web_list_servers:    $userbank->HasAccess(\WebPermission::ListServers,  $adminId),
+    web_add_server:      $userbank->HasAccess(\WebPermission::AddServer,    $adminId),
+    web_edit_servers:    $userbank->HasAccess(\WebPermission::EditServers,  $adminId),
+    web_delete_servers:  $userbank->HasAccess(\WebPermission::DeleteServers, $adminId),
+    web_add_ban:         $userbank->HasAccess(\WebPermission::AddBan,        $adminId),
+    web_edit_own_bans:   $userbank->HasAccess(\WebPermission::EditOwnBans,   $adminId),
+    web_edit_group_bans: $userbank->HasAccess(\WebPermission::EditGroupBans, $adminId),
+    web_edit_all_bans:   $userbank->HasAccess(\WebPermission::EditAllBans,   $adminId),
+    web_ban_protests:    $userbank->HasAccess(\WebPermission::BanProtests,   $adminId),
+    web_ban_submissions: $userbank->HasAccess(\WebPermission::BanSubmissions, $adminId),
+    web_unban_own_bans:  $userbank->HasAccess(\WebPermission::UnbanOwnBans,   $adminId),
+    web_unban_group_bans: $userbank->HasAccess(\WebPermission::UnbanGroupBans, $adminId),
+    web_unban:           $userbank->HasAccess(\WebPermission::Unban,         $adminId),
+    web_delete_ban:      $userbank->HasAccess(\WebPermission::DeleteBan,     $adminId),
+    web_ban_import:      $userbank->HasAccess(\WebPermission::BanImport,     $adminId),
+    web_list_groups:     $userbank->HasAccess(\WebPermission::ListGroups,    $adminId),
+    web_add_group:       $userbank->HasAccess(\WebPermission::AddGroup,      $adminId),
+    web_edit_groups:     $userbank->HasAccess(\WebPermission::EditGroups,    $adminId),
+    web_delete_groups:   $userbank->HasAccess(\WebPermission::DeleteGroups,  $adminId),
+    web_settings:        $userbank->HasAccess(\WebPermission::WebSettings,   $adminId),
+    web_list_mods:       $userbank->HasAccess(\WebPermission::ListMods,      $adminId),
+    web_add_mods:        $userbank->HasAccess(\WebPermission::AddMods,       $adminId),
+    web_edit_mods:       $userbank->HasAccess(\WebPermission::EditMods,      $adminId),
+    web_delete_mods:     $userbank->HasAccess(\WebPermission::DeleteMods,    $adminId),
+    web_notify_sub:      $userbank->HasAccess(\WebPermission::NotifySub,     $adminId),
+    web_notify_protest:  $userbank->HasAccess(\WebPermission::NotifyProtest, $adminId),
 
+    sm_root:          $userbank->HasAccess(SM_ROOT,          $adminId),
+    sm_reserved_slot: $userbank->HasAccess(SM_RESERVED_SLOT, $adminId),
+    sm_generic:       $userbank->HasAccess(SM_GENERIC,       $adminId),
+    sm_kick:          $userbank->HasAccess(SM_KICK,          $adminId),
+    sm_ban:           $userbank->HasAccess(SM_BAN,           $adminId),
+    sm_unban:         $userbank->HasAccess(SM_UNBAN,         $adminId),
+    sm_slay:          $userbank->HasAccess(SM_SLAY,          $adminId),
+    sm_map:           $userbank->HasAccess(SM_MAP,           $adminId),
+    sm_cvar:          $userbank->HasAccess(SM_CVAR,          $adminId),
+    sm_config:        $userbank->HasAccess(SM_CONFIG,        $adminId),
+    sm_chat:          $userbank->HasAccess(SM_CHAT,          $adminId),
+    sm_vote:          $userbank->HasAccess(SM_VOTE,          $adminId),
+    sm_password:      $userbank->HasAccess(SM_PASSWORD,      $adminId),
+    sm_rcon:          $userbank->HasAccess(SM_RCON,          $adminId),
+    sm_cheats:        $userbank->HasAccess(SM_CHEATS,        $adminId),
+    sm_custom1:       $userbank->HasAccess(SM_CUSTOM1,       $adminId),
+    sm_custom2:       $userbank->HasAccess(SM_CUSTOM2,       $adminId),
+    sm_custom3:       $userbank->HasAccess(SM_CUSTOM3,       $adminId),
+    sm_custom4:       $userbank->HasAccess(SM_CUSTOM4,       $adminId),
+    sm_custom5:       $userbank->HasAccess(SM_CUSTOM5,       $adminId),
+    sm_custom6:       $userbank->HasAccess(SM_CUSTOM6,       $adminId),
+    immunity:         (int) ($adminRow['immunity'] ?? 0),
+));
 
+// Page-tail vanilla JS: parent / child composite-toggle behaviour
+// (replaces UpdateCheckBox 1.4.11 helper) and form submit through
+// `Actions.AdminsEditPerms` (replaces `ProcessEditAdminPermissions`).
+?>
 <script>
-<?php
-if (!$userbank->HasAccess(WebPermission::Owner)) {
-?>
-    if($("wrootcheckbox")) {
-        $("wrootcheckbox").setStyle('display', 'none');
+(function () {
+    'use strict';
+    var form = document.getElementById('edit-perms-form');
+    if (!form) return;
+
+    function setBusy(btn, busy) {
+        if (window.SBPP && typeof window.SBPP.setBusy === 'function') {
+            window.SBPP.setBusy(btn, busy);
+        } else {
+            btn.disabled = !!busy;
+        }
     }
-    if($("srootcheckbox")) {
-        $("srootcheckbox").setStyle('display', 'none');
+
+    // Parent → children: ticking the parent ticks every matching
+    // [data-child=name]; unticking the parent unticks them all.
+    form.querySelectorAll('input[data-parent]').forEach(function (parent) {
+        var name = parent.getAttribute('data-parent');
+        var children = form.querySelectorAll('input[data-child="' + name + '"]');
+
+        function syncParentFromChildren() {
+            var anyOn = false;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].checked) { anyOn = true; break; }
+            }
+            parent.checked = anyOn;
+        }
+
+        parent.addEventListener('change', function () {
+            children.forEach(function (c) { c.checked = parent.checked; });
+        });
+
+        children.forEach(function (c) {
+            c.addEventListener('change', syncParentFromChildren);
+        });
+
+        syncParentFromChildren();
+    });
+
+    // OWNER tick implies every other web flag — keep this passive
+    // visual hint (the server still trusts the bitmask we send).
+    var ownerCb = document.getElementById('p2');
+    if (ownerCb) {
+        ownerCb.addEventListener('change', function () {
+            if (!ownerCb.checked) return;
+            form.querySelectorAll('input[data-child], input[data-parent]').forEach(function (c) {
+                c.checked = true;
+            });
+        });
     }
-<?php
-}
-?>
-$('p2').checked = <?=$userbank->HasAccess(WebPermission::Owner, $_GET['id']) ? "true" : "false"?>;
 
-$('p4').checked = <?=$userbank->HasAccess(WebPermission::ListAdmins, $_GET['id']) ? "true" : "false"?>;
-$('p5').checked = <?=$userbank->HasAccess(WebPermission::AddAdmins, $_GET['id']) ? "true" : "false"?>;
-$('p6').checked = <?=$userbank->HasAccess(WebPermission::EditAdmins, $_GET['id']) ? "true" : "false"?>;
-$('p7').checked = <?=$userbank->HasAccess(WebPermission::DeleteAdmins, $_GET['id']) ? "true" : "false"?>;
+    // SM_ROOT (z) implies every other server flag — same passive
+    // visual.
+    var smRootCb = document.getElementById('s14');
+    if (smRootCb) {
+        smRootCb.addEventListener('change', function () {
+            if (!smRootCb.checked) return;
+            form.querySelectorAll('input[data-sm-flag]').forEach(function (c) {
+                if (c !== smRootCb) c.checked = true;
+            });
+        });
+    }
 
-$('p9').checked = <?=$userbank->HasAccess(WebPermission::ListServers, $_GET['id']) ? "true" : "false"?>;
-$('p10').checked = <?=$userbank->HasAccess(WebPermission::AddServer, $_GET['id']) ? "true" : "false"?>;
-$('p11').checked = <?=$userbank->HasAccess(WebPermission::EditServers, $_GET['id']) ? "true" : "false"?>;
-$('p12').checked = <?=$userbank->HasAccess(WebPermission::DeleteServers, $_GET['id']) ? "true" : "false"?>;
+    // Each field's id (`pNN`) lines up with a `WebPermission::*`
+    // bit; the API expects the OR'd integer mask. Values match
+    // `web/configs/permissions/web.json`. JS doubles cover the
+    // 32-bit unsigned bits cleanly with `+=` (avoid `|=`, which
+    // would promote to 32-bit signed and lose the high bits).
+    var WEB_BITS = {
+        p2:  16777216,    // OWNER
+        p4:  1,           // LIST_ADMINS
+        p5:  2,           // ADD_ADMINS
+        p6:  4,           // EDIT_ADMINS
+        p7:  8,           // DELETE_ADMINS
+        p9:  16,          // LIST_SERVERS
+        p10: 32,          // ADD_SERVER
+        p11: 64,          // EDIT_SERVERS
+        p12: 128,         // DELETE_SERVERS
+        p14: 256,         // ADD_BAN
+        p16: 1024,        // EDIT_OWN_BANS
+        p17: 2048,        // EDIT_GROUP_BANS
+        p18: 4096,        // EDIT_ALL_BANS
+        p19: 8192,        // BAN_PROTESTS
+        p20: 16384,       // BAN_SUBMISSIONS
+        p22: 32768,       // LIST_GROUPS
+        p23: 65536,       // ADD_GROUP
+        p24: 131072,      // EDIT_GROUPS
+        p25: 262144,      // DELETE_GROUPS
+        p26: 524288,      // WEB_SETTINGS
+        p28: 1048576,     // LIST_MODS
+        p29: 2097152,     // ADD_MODS
+        p30: 4194304,     // EDIT_MODS
+        p31: 8388608,     // DELETE_MODS
+        p32: 67108864,    // UNBAN
+        p33: 33554432,    // DELETE_BAN
+        p34: 134217728,   // BAN_IMPORT
+        p36: 268435456,   // NOTIFY_SUB
+        p37: 536870912,   // NOTIFY_PROTEST
+        p38: 1073741824,  // UNBAN_OWN_BANS
+        p39: 2147483648   // UNBAN_GROUP_BANS
+    };
 
-$('p14').checked = <?=$userbank->HasAccess(WebPermission::AddBan, $_GET['id']) ? "true" : "false"?>;
-$('p16').checked = <?=$userbank->HasAccess(WebPermission::EditOwnBans, $_GET['id']) ? "true" : "false"?>;
-$('p17').checked = <?=$userbank->HasAccess(WebPermission::EditGroupBans, $_GET['id']) ? "true" : "false"?>;
-$('p18').checked = <?=$userbank->HasAccess(WebPermission::EditAllBans, $_GET['id']) ? "true" : "false"?>;
-$('p19').checked = <?=$userbank->HasAccess(WebPermission::BanProtests, $_GET['id']) ? "true" : "false"?>;
-$('p20').checked = <?=$userbank->HasAccess(WebPermission::BanSubmissions, $_GET['id']) ? "true" : "false"?>;
-$('p33').checked = <?=$userbank->HasAccess(WebPermission::DeleteBan, $_GET['id']) ? "true" : "false"?>;
-$('p32').checked = <?=$userbank->HasAccess(WebPermission::Unban, $_GET['id']) ? "true" : "false"?>;
-$('p34').checked = <?=$userbank->HasAccess(WebPermission::BanImport, $_GET['id']) ? "true" : "false"?>;
-$('p38').checked = <?=$userbank->HasAccess(WebPermission::UnbanOwnBans, $_GET['id']) ? "true" : "false"?>;
-$('p39').checked = <?=$userbank->HasAccess(WebPermission::UnbanGroupBans, $_GET['id']) ? "true" : "false"?>;
+    function collectWebFlags() {
+        var mask = 0;
+        Object.keys(WEB_BITS).forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el && el.checked) mask += WEB_BITS[id];
+        });
+        return mask;
+    }
 
-$('p36').checked = <?=$userbank->HasAccess(WebPermission::NotifySub, $_GET['id']) ? "true" : "false"?>;
-$('p37').checked = <?=$userbank->HasAccess(WebPermission::NotifyProtest, $_GET['id']) ? "true" : "false"?>;
+    function collectSrvFlags() {
+        var letters = '';
+        form.querySelectorAll('input[data-sm-flag]').forEach(function (c) {
+            if (c.checked) letters += c.getAttribute('data-sm-flag');
+        });
+        var im = parseInt(document.getElementById('immunity').value, 10);
+        if (isNaN(im) || im < 0) im = 0;
+        return letters + '#' + im;
+    }
 
-$('p22').checked = <?=$userbank->HasAccess(WebPermission::ListGroups, $_GET['id']) ? "true" : "false"?>;
-$('p23').checked = <?=$userbank->HasAccess(WebPermission::AddGroup, $_GET['id']) ? "true" : "false"?>;
-$('p24').checked = <?=$userbank->HasAccess(WebPermission::EditGroups, $_GET['id']) ? "true" : "false"?>;
-$('p25').checked = <?=$userbank->HasAccess(WebPermission::DeleteGroups, $_GET['id']) ? "true" : "false"?>;
-
-$('p26').checked = <?=$userbank->HasAccess(WebPermission::WebSettings, $_GET['id']) ? "true" : "false"?>;
-
-$('p28').checked = <?=$userbank->HasAccess(WebPermission::ListMods, $_GET['id']) ? "true" : "false"?>;
-$('p29').checked = <?=$userbank->HasAccess(WebPermission::AddMods, $_GET['id']) ? "true" : "false"?>;
-$('p30').checked = <?=$userbank->HasAccess(WebPermission::EditMods, $_GET['id']) ? "true" : "false"?>;
-$('p31').checked = <?=$userbank->HasAccess(WebPermission::DeleteMods, $_GET['id']) ? "true" : "false"?>;
-
-
-$('s14').checked = <?=$userbank->HasAccess(SM_ROOT, $_GET['id']) ? "true" : "false"?>;
-$('s1').checked = <?=$userbank->HasAccess(SM_RESERVED_SLOT, $_GET['id']) ? "true" : "false"?>;
-$('s23').checked = <?=$userbank->HasAccess(SM_GENERIC, $_GET['id']) ? "true" : "false"?>;
-$('s2').checked = <?=$userbank->HasAccess(SM_KICK, $_GET['id']) ? "true" : "false"?>;
-$('s3').checked = <?=$userbank->HasAccess(SM_BAN, $_GET['id']) ? "true" : "false"?>;
-$('s4').checked = <?=$userbank->HasAccess(SM_UNBAN, $_GET['id']) ? "true" : "false"?>;
-$('s5').checked = <?=$userbank->HasAccess(SM_SLAY, $_GET['id']) ? "true" : "false"?>;
-$('s6').checked = <?=$userbank->HasAccess(SM_MAP, $_GET['id']) ? "true" : "false"?>;
-$('s7').checked = <?=$userbank->HasAccess(SM_CVAR, $_GET['id']) ? "true" : "false"?>;
-$('s8').checked = <?=$userbank->HasAccess(SM_CONFIG, $_GET['id']) ? "true" : "false"?>;
-$('s9').checked = <?=$userbank->HasAccess(SM_CHAT, $_GET['id']) ? "true" : "false"?>;
-$('s10').checked = <?=$userbank->HasAccess(SM_VOTE, $_GET['id']) ? "true" : "false"?>;
-$('s11').checked = <?=$userbank->HasAccess(SM_PASSWORD, $_GET['id']) ? "true" : "false"?>;
-$('s12').checked = <?=$userbank->HasAccess(SM_RCON, $_GET['id']) ? "true" : "false"?>;
-$('s13').checked = <?=$userbank->HasAccess(SM_CHEATS, $_GET['id']) ? "true" : "false"?>;
-
-$('s17').checked = <?=$userbank->HasAccess(SM_CUSTOM1, $_GET['id']) ? "true" : "false"?>;
-$('s18').checked = <?=$userbank->HasAccess(SM_CUSTOM2, $_GET['id']) ? "true" : "false"?>;
-$('s19').checked = <?=$userbank->HasAccess(SM_CUSTOM3, $_GET['id']) ? "true" : "false"?>;
-$('s20').checked = <?=$userbank->HasAccess(SM_CUSTOM4, $_GET['id']) ? "true" : "false"?>;
-$('s21').checked = <?=$userbank->HasAccess(SM_CUSTOM5, $_GET['id']) ? "true" : "false"?>;
-$('s22').checked = <?=$userbank->HasAccess(SM_CUSTOM6, $_GET['id']) ? "true" : "false"?>;
-
-$('immunity').value = <?=$admin['immunity'] ? $admin['immunity'] : "0"?>;
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var btn = form.querySelector('[data-testid="admin-edit-perms-save"]');
+        if (btn) setBusy(btn, true);
+        var aid = parseInt(form.getAttribute('data-aid'), 10) || 0;
+        window.sb.api.call(window.Actions.AdminsEditPerms, {
+            aid: aid,
+            web_flags: collectWebFlags(),
+            srv_flags: collectSrvFlags()
+        }).then(function () {
+            window.SBPP.showToast({
+                kind: 'success',
+                title: 'Permissions updated',
+                body: "The user's permissions have been updated successfully"
+            });
+            setTimeout(function () {
+                window.location.href = 'index.php?p=admin&c=admins';
+            }, 1500);
+        }).catch(function () {
+            if (btn) setBusy(btn, false);
+        });
+    });
+})();
 </script>
-</div>
-</div>

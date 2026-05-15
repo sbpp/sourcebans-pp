@@ -1,147 +1,148 @@
 <?php
-/*************************************************************************
-This file is part of SourceBans++
+// SourceBans++ (c) 2014-2026 SourceBans++ Dev Team
+// Licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0.
+// See LICENSE.md for the full license text and THIRD-PARTY-NOTICES.txt for attributions.
 
-SourceBans++ (c) 2014-2024 by SourceBans++ Dev Team
+declare(strict_types=1);
 
-The SourceBans++ Web panel is licensed under a
-Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.
-
-You should have received a copy of the license along with this
-work.  If not, see <http://creativecommons.org/licenses/by-nc-sa/3.0/>.
-
-This program is based off work covered by the following copyright(s):
-SourceBans 1.4.11
-Copyright © 2007-2014 SourceBans Team - Part of GameConnect
-Licensed under CC-BY-NC-SA 3.0
-Page: <http://www.sourcebans.net/> - <http://www.gameconnect.net/>
-*************************************************************************/
-
-if (!defined("IN_SB")) {
-    echo "You should not be here. Only follow links!";
+if (!defined('IN_SB')) {
+    echo 'You should not be here. Only follow links!';
     die();
 }
-global $theme, $userbank;
 
-new AdminTabs([], $userbank, $theme);
+global $userbank, $theme;
 
-if (!isset($_GET['id'])) {
-    echo '<script>ShowBox("Error", "No mod ID set. Only follow links", "red", "", true);</script>';
-    PageDie();
-}
-if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditMods))) {
-    Log::add(LogType::Warning, "Hacking Attempt", $userbank->GetProperty("user")." tried to edit a mod, but doesnt have access.");
-    echo '<div id="msg-red" >
-	<i class="fas fa-times fa-2x"></i>
-	<b>Error</b>
-	<br />
-	You are not allowed to edit mods.
-</div>';
-    PageDie();
+new \Sbpp\View\AdminTabs([], $userbank, $theme);
+
+require_once __DIR__ . '/_admin_edit_helpers.php';
+
+$modId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+if ($modId <= 0) {
+    sbpp_admin_edit_die_with_toast(
+        'No mod id specified. Please only follow links.',
+        'index.php?p=admin&c=mods',
+    );
+    return;
 }
 
-$_GET['id'] = (int) $_GET['id'];
-$GLOBALS['PDO']->query("
-    				SELECT name, modfolder, icon, enabled, steam_universe
-    				FROM `:prefix_mods`
-    				WHERE mid = :mid");
-$GLOBALS['PDO']->bind(':mid', $_GET['id']);
-$res = $GLOBALS['PDO']->single();
+if (!$userbank->HasAccess(\WebPermission::mask(\WebPermission::Owner, \WebPermission::EditMods))) {
+    \Sbpp\Log::add(
+        \LogType::Warning,
+        'Hacking Attempt',
+        $userbank->GetProperty('user') . " tried to edit a mod, but doesn't have access.",
+    );
+    sbpp_admin_edit_die_with_toast(
+        "You aren't allowed to edit mods.",
+        'index.php?p=admin&c=mods',
+    );
+    return;
+}
 
-$errorScript = "";
+$pdo = $GLOBALS['PDO'];
+
+$modRow = $pdo->query(
+    'SELECT name, modfolder, icon, enabled, steam_universe
+        FROM `:prefix_mods` WHERE mid = :mid'
+)->single([':mid' => $modId]);
+
+if (!$modRow) {
+    sbpp_admin_edit_die_with_toast(
+        'There was an error getting details. Maybe the mod was deleted?',
+        'index.php?p=admin&c=mods',
+    );
+    return;
+}
+
+/** @var array<string,string> $validationErrors */
+$validationErrors = [];
+$postSuccess      = false;
 
 if (isset($_POST['name'])) {
-    // Form validation
-    $error = 0;
+    \CSRF::rejectIfInvalid();
 
-    if (empty($_POST['name'])) {
-        $error++;
-        $errorScript .= "$('name.msg').innerHTML = 'You must type a name for the mod.';";
-        $errorScript .= "$('name.msg').setStyle('display', 'block');";
+    $rawName    = trim((string) ($_POST['name']     ?? ''));
+    $rawFolder  = trim((string) ($_POST['folder']   ?? ''));
+    $rawIcon    = trim((string) ($_POST['icon_hid'] ?? ''));
+    $enabled    = isset($_POST['enabled']) && $_POST['enabled'] === '1';
+    $universe   = (int) ($_POST['steam_universe'] ?? 0);
+
+    if ($rawName === '') {
+        $validationErrors['name'] = 'You must type a name for the mod.';
     } else {
-        // Already there?
-        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE name = :name AND mid != :mid");
-        $GLOBALS['PDO']->bindMultiple([
-            ':name' => $_POST['name'],
-            ':mid'  => $_GET['id'],
-        ]);
-        $check = $GLOBALS['PDO']->single();
-        if (!empty($check)) {
-            $error++;
-            $errorScript .= "$('name.msg').innerHTML = 'A mod with that name already exists.';";
-            $errorScript .= "$('name.msg').setStyle('display', 'block');";
-        }
-    }
-    if (empty($_POST['folder'])) {
-        $error++;
-        $errorScript .= "$('folder.msg').innerHTML = 'You must enter mod\'s folder name.';";
-        $errorScript .= "$('folder.msg').setStyle('display', 'block');";
-    } else {
-        // Already there?
-        $GLOBALS['PDO']->query("SELECT * FROM `:prefix_mods` WHERE modfolder = :folder AND mid != :mid");
-        $GLOBALS['PDO']->bindMultiple([
-            ':folder' => $_POST['folder'],
-            ':mid'    => $_GET['id'],
-        ]);
-        $check = $GLOBALS['PDO']->single();
-        if (!empty($check)) {
-            $error++;
-            $errorScript .= "$('folder.msg').innerHTML = 'A mod using that folder already exists.';";
-            $errorScript .= "$('folder.msg').setStyle('display', 'block');";
+        $clash = $pdo->query('SELECT mid FROM `:prefix_mods` WHERE name = :name AND mid != :mid')
+            ->single([':name' => $rawName, ':mid' => $modId]);
+        if ($clash) {
+            $validationErrors['name'] = 'A mod with that name already exists.';
         }
     }
 
-    $name           = htmlspecialchars(strip_tags($_POST['name'])); //don't want to addslashes because execute will automatically do it
-    $icon           = htmlspecialchars(strip_tags($_POST['icon_hid']));
-    $folder         = htmlspecialchars(strip_tags($_POST['folder']));
-    $enabled        = ($_POST['enabled'] == '1' ? 1 : 0);
-    $steam_universe = (int) $_POST['steam_universe'];
+    if ($rawFolder === '') {
+        $validationErrors['folder'] = "You must enter the mod's folder name.";
+    } else {
+        $clash = $pdo->query('SELECT mid FROM `:prefix_mods` WHERE modfolder = :folder AND mid != :mid')
+            ->single([':folder' => $rawFolder, ':mid' => $modId]);
+        if ($clash) {
+            $validationErrors['folder'] = 'A mod using that folder already exists.';
+        }
+    }
 
-    if ($error == 0) {
-        if ($res['icon'] != $_POST['icon_hid']) {
-            @unlink(SB_ICONS . "/" . $res['icon']);
+    $name   = htmlspecialchars(strip_tags($rawName));
+    $folder = htmlspecialchars(strip_tags($rawFolder));
+    $icon   = htmlspecialchars(strip_tags($rawIcon));
+
+    if ($validationErrors === []) {
+        if (((string) $modRow['icon']) !== $rawIcon) {
+            @unlink(SB_ICONS . '/' . (string) $modRow['icon']);
         }
 
-        $GLOBALS['PDO']->query(
-            "UPDATE `:prefix_mods` SET
-            `name` = :name, `modfolder` = :folder, `icon` = :icon, `enabled` = :enabled, `steam_universe` = :steam_universe
-            WHERE `mid` = :mid"
+        $pdo->query(
+            'UPDATE `:prefix_mods`
+                SET name = :name, modfolder = :folder, icon = :icon,
+                    enabled = :enabled, steam_universe = :steam_universe
+                WHERE mid = :mid'
         );
-        $GLOBALS['PDO']->bindMultiple([
+        $pdo->bindMultiple([
             ':name'           => $name,
             ':folder'         => $folder,
             ':icon'           => $icon,
-            ':enabled'        => $enabled,
-            ':steam_universe' => $steam_universe,
-            ':mid'            => $_GET['id'],
+            ':enabled'        => $enabled ? 1 : 0,
+            ':steam_universe' => $universe,
+            ':mid'            => $modId,
         ]);
-        $GLOBALS['PDO']->execute();
-        echo '<script>ShowBox("Mod updated", "The mod has been updated successfully", "green", "index.php?p=admin&c=mods");</script>';
+        $pdo->execute();
+
+        \Sbpp\Log::add(
+            \LogType::Message,
+            'Mod Updated',
+            "Mod ($name) has been updated.",
+        );
+        $postSuccess = true;
     }
-    // put into array to display new values after submit
-    $res['name']           = $name;
-    $res['modfolder']      = $folder;
-    $res['icon']           = $icon;
-    $res['enabled']        = $enabled;
-    $res['steam_universe'] = $steam_universe;
+
+    // Reflect submitted values back into the form (validation may
+    // have failed for a reason other than the value the operator
+    // typed — e.g. duplicate folder — so they shouldn't lose the
+    // edit on re-render).
+    $modRow['name']           = $name;
+    $modRow['modfolder']      = $folder;
+    $modRow['icon']           = $icon;
+    $modRow['enabled']        = $enabled ? 1 : 0;
+    $modRow['steam_universe'] = $universe;
 }
-if (!$res) {
-    echo '<script>ShowBox("Error", "There was an error getting details. Maybe the mod has been deleted?", "red", "index.php?p=admin&c=mod");</script>';
-}
-$theme->assign('mod_icon', $res['icon']);
-$theme->assign('folder', $res['modfolder']);
-$theme->assign('name', $res['name']);
-$theme->assign('steam_universe', $res['steam_universe']);
-?>
-<div id="admin-page-content">
-<div id="1">
-<?php $theme->display('page_admin_edit_mod.tpl');?>
-<script>
-$('enabled').checked = <?=(int) $res['enabled']?>;
-</script>
-</div>
-</div>
-<script type="text/javascript">window.addEvent('domready', function(){
-<?=$errorScript?>
-});
-</script>
+
+\Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminEditModView(
+    name:           (string) ($modRow['name']           ?? ''),
+    folder:         (string) ($modRow['modfolder']      ?? ''),
+    mod_icon:       (string) ($modRow['icon']           ?? ''),
+    steam_universe: (int)    ($modRow['steam_universe'] ?? 0),
+    enabled:        (bool)   ($modRow['enabled']        ?? false),
+));
+
+sbpp_admin_edit_emit_tail_script(
+    successTitle:    'Mod updated',
+    successBody:     'The mod has been updated successfully.',
+    successRedirect: 'index.php?p=admin&c=mods',
+    postSuccess:     $postSuccess,
+    rehashSids:      [],
+    validationErrors:$validationErrors,
+);
