@@ -5,6 +5,17 @@ PHP/Apache, MariaDB, Adminer, and Mailpit, seeds the database, and creates a
 ready-to-use admin login. Source under `web/` is bind-mounted, so edits show
 up on the next request — no rebuilds needed.
 
+> **Dev or prod?** This page documents the **development** stack. For
+> the **production** install path (immutable image pulled from GHCR,
+> hardened entrypoint, no install wizard, multi-arch / cosign-signed)
+> see the
+> [Docker quickstart](https://sbpp.github.io/getting-started/quickstart-docker/)
+> docs page plus `docker-compose.prod.yml` + `.env.example.prod` at the
+> repo root. The two stacks are deliberately separate — the dev stack
+> ships `admin/admin`, bind-mounts the worktree, defines
+> `SBPP_DEV_KEEP_INSTALL` (a panel-takeover guard bypass), and exposes
+> the DB to host. None of that is safe outside a developer's laptop.
+
 ## Prerequisites
 
 - Docker 24+ with the Compose plugin (`docker compose`, not `docker-compose`)

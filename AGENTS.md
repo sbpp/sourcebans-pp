@@ -55,8 +55,9 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change auth, CSRF, or permissions semantics                 | `ARCHITECTURE.md` (the relevant subsystem) + `AGENTS.md` (Conventions) if the rule changes |
 | Add a new permission flag                                   | `web/configs/permissions/web.json`, regen API contract; doc only if the **role** of the flag affects conventions |
 | Change the local dev stack (Docker, db-init, env vars)      | `docker/README.md` first, link from `ARCHITECTURE.md` if it changes the dev mental model |
-| Edit user-facing install/quickstart                         | `docs/src/content/docs/getting-started/quickstart.mdx` (the README is a tiny landing page that links to docs — don't grow it back into a manual) |
+| Edit user-facing install/quickstart                         | `docs/src/content/docs/getting-started/quickstart.mdx` (tarball flow) OR `quickstart-docker.mdx` (Docker flow). Keep the `<Tabs syncKey="install-path">` arms in `overview.mdx` + `prerequisites.mdx` consistent across the two paths (the README is a tiny landing page that links to docs — don't grow it back into a manual). |
 | Add or change a wizard step (page handler / View / template / shared helper) | `AGENTS.md` (Install wizard convention block) + the "Edit a step of the install wizard" row in "Where to find what" |
+| Touch `docker/Dockerfile.prod`, `docker/php/prod-*`, `docker/apache/sbpp-prod.conf`, `docker-compose.prod.yml`, `.env.example.prod`, `docker/caddy/Caddyfile.example`, or `web/health.php` | `AGENTS.md` (Quality gates: `docker-image.yml` row; "Where to find what": the "Build / extend the production Docker image" + "Deploy / configure the production Docker stack" rows) + `docs/src/content/docs/getting-started/quickstart-docker.mdx` (the operator-facing doc) + `docker/README.md` (dev-vs-prod pointer). The `Plugin build specifics` block in AGENTS.md has a sibling `Prod Docker image specifics` block — keep them in sync with the workflow's path filter / tag mapping / sign step. |
 | Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
 | Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus the matching `docs/src/content/docs/updating/*.mdx` page if it's a breaking change between releases |
 | Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
@@ -180,7 +181,7 @@ services:
 
 ## Quality gates
 
-CI runs six gates on every PR. Match them locally before opening one.
+CI runs seven gates on every PR. Match them locally before opening one.
 
 | Gate           | Local                                | CI workflow            |
 | -------------- | ------------------------------------ | ---------------------- |
@@ -190,6 +191,7 @@ CI runs six gates on every PR. Match them locally before opening one.
 | API contract   | `./sbpp.sh composer api-contract`    | `api-contract.yml`     |
 | Playwright E2E | `./sbpp.sh e2e`                      | `e2e.yml`              |
 | Plugin build   | `(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)` | `plugin-build.yml`     |
+| Prod Docker image | `docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .` | `docker-image.yml` |
 
 PHPStan specifics:
 
@@ -335,6 +337,44 @@ Plugin build specifics:
   (it's not relevant to panel work), so plugin contributors install
   spcomp themselves and run the literal command from the table
   above. Untouched-plugin PRs: trust the gate.
+
+Prod Docker image specifics:
+
+- Path-filtered to `docker/Dockerfile.prod`, `docker/php/prod-*`,
+  `docker/apache/sbpp-prod.conf`, `web/composer.{json,lock}`,
+  `web/health.php`, `web/init.php`, `web/init-recovery.php`, and
+  the workflow file itself. A web/-only PR that doesn't touch those
+  files skips the gate (the surface changes constantly; rebuilding
+  the prod image on every PR would burn action minutes for changes
+  the next release cycle picks up anyway). Main and tag pushes
+  always rebuild.
+- Multi-arch (linux/amd64 + linux/arm64) via `docker/setup-qemu-action@v3`
+  + `docker/setup-buildx-action@v3`. The arm64 leg runs under qemu
+  on the amd64 GitHub-hosted runner — roughly 2x build time vs
+  native, acceptable for the publish cadence.
+- PR builds are **verify-only** — `push: ${{ github.event_name != 'pull_request' }}`
+  in `build-push-action` runs the build to verify-it-builds without
+  pushing to GHCR. Main / tag / dispatch pushes publish + sign.
+- Tag mapping via `docker/metadata-action@v5`: `main` push →
+  `:main` + `:sha-<short>`; `X.Y.Z` tag → `:X.Y.Z` + `:X.Y` + `:X`
+  + `:latest`. `:latest` is gated on `startsWith(github.ref, 'refs/tags/')`
+  so main pushes can't accidentally claim it.
+- Sigstore cosign signs each tag against the immutable digest
+  (`<image>@<digest>`, not the mutable `<image>:<tag>`) in keyless
+  / OIDC mode. The job-level `id-token: write` permission is what
+  enables the OIDC token request; without it cosign can't get a
+  Fulcio cert and signing fails closed. Verifiers pin both the
+  identity (workflow path) and the issuer (GitHub Actions OIDC
+  endpoint) — see `docs/src/content/docs/getting-started/quickstart-docker.mdx`
+  for the canonical `cosign verify` command.
+- The cosign step is gated on `github.event_name != 'pull_request'`
+  for the same reason as the push step — PR builds never publish,
+  so there's nothing to sign.
+- No local `./sbpp.sh` wrapper. The dev stack doesn't ship a way
+  to invoke `docker buildx` from inside the dev container itself
+  (no Docker-in-Docker), and the prod image build is a host-side
+  workflow. Contributors who want to verify a local build run the
+  literal command from the gates table.
 
 ## Conventions
 
@@ -2565,4 +2605,7 @@ contacting every contributor individually.
 | Translate raw `PDOException` connect errors into operator-friendly messages on the wizard's database step | `sbpp_install_translate_pdo_error()` in `web/install/includes/helpers.php` (#1335 m4). Pattern-matches the four error codes a non-technical operator is most likely to hit — 1045 (access denied), 2002 (host unreachable), 1049 (unknown database), 1044 (denied for user on database) — and emits a friendlier translation; falls back to the raw message for unrecognised codes so debugging stays possible. Pre-fix the wizard surfaced `SQLSTATE[HY000] [1045] Access denied for user 'sourcebans'@'192.168.96.5' (using password: YES)` verbatim, which is gibberish to non-DBAs and includes the panel-as-seen-by-DB internal IP (minor information disclosure). Regression test: `web/tests/integration/InstallGuardTest.php::testPdoErrorTranslationCoversCommonCodes`. |
 | Run a stack in parallel with another worktree | Worktree-local `docker-compose.override.yml` (see "Parallel stacks") |
 | Local dev stack details                | `docker/README.md`                                       |
+| Build / extend the production Docker image (multi-stage build, hardened runtime, entrypoint state machine, healthcheck) | `docker/Dockerfile.prod` (multi-stage: `builder` runs `composer install --no-dev` against `web/`; `runtime` carries pdo_mysql + intl + zip + mbstring + gmp ONLY — no nodejs / npm / git / dev-prepend) + `docker/php/prod-entrypoint.sh` (pure POSIX shell state machine: `*_FILE` secret resolution → DATABASE_URL parse → defaults → Apache config (PORT + mod_remoteip from `SBPP_TRUSTED_PROXIES`) → wait-for-DB → render config.php (only when missing) → first-boot install (schema + data + seed admin from `INITIAL_ADMIN_*` env vars) → headless updater migrations → strip install/ + updater/ from writable layer → ensure writable cache/templates_c/demos → `exec apache2-foreground`) + `docker/php/prod-php.ini` (production OPcache: `validate_timestamps=0`, `display_errors=Off`, `log_errors=On`, errors → `/dev/stderr`, UTC default, `expose_php=Off`) + `docker/apache/sbpp-prod.conf` (denies dotfiles + vendor/ + configs/ + includes/ + install/ + updater/ + cache/ + templates_c/ + config.php + composer.{json,lock}; `RemoteIPHeader X-Forwarded-For` for the trusted-proxy chain) + `web/health.php` (DB-aware unauthenticated healthcheck — `init.php` bootstraps the panel; `$GLOBALS['PDO']->query('SELECT 1')` returns 200 OK or 503 + plain-text reason; Cache-Control: no-store + X-Robots-Tag: noindex). The production image MUST NOT define `SBPP_DEV_KEEP_INSTALL`; the entrypoint's `strip_install_dirs` step is what makes the panel-runtime guard pass instead (#1381). |
+| Deploy / configure the production Docker stack (compose, env vars, reverse-proxy) | `docker-compose.prod.yml` (pulls `ghcr.io/sbpp/sourcebans-pp:${SBPP_IMAGE_TAG:-latest}` — NOT a build context; DB port NOT exposed by default; commented `caddy:` service block for opt-in TLS) + `.env.example.prod` (every supported env var grouped by required / recommended / first-boot / optional / advanced; documents the `*_FILE` Docker-secret pattern and the `SBPP_CONFIG_PATH` Docker-secret-mount pattern; uses `${VAR:?...}` compose syntax for required vars so a fresh-deploy operator who forgot `SB_SECRET_KEY` / `DB_PASS` / `DB_ROOT_PASS` gets a useful container-startup error) + `docker/caddy/Caddyfile.example` (one-line `reverse_proxy web:80` + zstd/gzip encode + static-asset cache headers). Three persistent volumes: `dbdata` + `demos` (MUST persist — DB rows + uploaded ban-evidence); `cache` + `smarty` (CAN be ephemeral — rebuild on demand). Operators run `docker compose -f docker-compose.prod.yml up -d` from a directory carrying both files; upgrades are `docker compose pull && up -d` (image is immutable, entrypoint runs idempotent migrations on every boot, named volumes survive the swap) (#1381). |
+| Honour `SBPP_CONFIG_PATH` so config.php can live outside the panel root (Docker-secret mount) | `sbpp_resolve_config_path()` in `web/init-recovery.php` is the single source of truth; `web/init.php` calls it to resolve the require-site. `web/install/already-installed.php`'s `sbpp_install_is_already_installed()` re-implements the env-var read inline (per its self-contained no-Composer docblock) so the wizard-side and runtime-side guards agree on the install-state sentinel path. Pre-#1381 both halves hard-coded the panel-root path; with a Docker-secret-mounted config the runtime would 302-to-/install/ while the wizard would happily start over. Regression tests: `testResolveConfigPathHonorsEnvVar` + `testWizardGuardHonorsConfigPathEnvVar` in `web/tests/integration/InstallGuardTest.php`. |
 | Change the Contributor License Agreement (text, scope, allowlist) or how the CLA bot gates `web/**` PRs | `CLA.md` (the agreement text — 10 sections, web/-scoped, explicit relicensing right in §3(b)) + `.github/workflows/cla.yml` (the `contributor-assistant/github-action` workflow — paths filter, allowlist, sign-comment text, custom not-signed PR comment) + `CONTRIBUTING.md` (rationale + how-to-sign for contributors). Signatures land on the orphan branch `cla-signatures` under `signatures/cla.json`; the action creates the branch on its first successful run. The maintainer plus all `*[bot]` accounts are allowlisted by default. See "Contributor License Agreement gate" in Conventions. |

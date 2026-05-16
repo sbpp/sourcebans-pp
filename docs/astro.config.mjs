@@ -97,6 +97,7 @@ export default defineConfig({
             { label: 'Overview', slug: 'getting-started/overview' },
             { label: 'Requirements', slug: 'getting-started/prerequisites' },
             { label: 'Quickstart', slug: 'getting-started/quickstart' },
+            { label: 'Quickstart (Docker)', slug: 'getting-started/quickstart-docker' },
           ],
         },
         {

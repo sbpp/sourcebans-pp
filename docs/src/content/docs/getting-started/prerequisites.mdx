@@ -15,8 +15,48 @@ these in a few clicks.
 
 ## Web side
 
-The web panel runs on PHP and stores its data in a MySQL- or
-MariaDB-compatible database.
+How you stand up the web panel decides which prerequisites apply.
+Pick the path you'll use:
+
+<Tabs syncKey="install-path">
+  <TabItem label="Tarball / shared hosting" icon="cloud-download">
+    The web panel runs on PHP and stores its data in a MySQL- or
+    MariaDB-compatible database. See the **Database**, **PHP**, and
+    **Composer** sections below for the per-component versions and
+    extensions you need.
+  </TabItem>
+
+  <TabItem label="Docker" icon="seti:docker">
+    You need:
+
+    - **Docker 24+** — `docker --version` should print `24.x` or
+      newer. Docker Desktop ships a current version; Docker Engine
+      on Linux can be upgraded via the [official install
+      instructions](https://docs.docker.com/engine/install/).
+    - **Docker Compose v2** — `docker compose version` should
+      print `v2.x` or newer. v2 ships as a Docker CLI plugin (built
+      into Docker Desktop; available as `docker-compose-plugin` on
+      Debian/Ubuntu, `docker-compose` on RHEL/Fedora).
+    - **At least 512 MB of free RAM** on the host. The panel itself
+      idles around 150 MB; MariaDB takes the rest.
+
+    You do NOT need PHP, Composer, MariaDB, or a webserver installed
+    on the host — the image bundles all four. The **Database** /
+    **PHP** sections below are informational only for the Docker
+    install path.
+
+    Step it out in the [Docker quickstart](/getting-started/quickstart-docker/).
+  </TabItem>
+
+  <TabItem label="App platform (one click)" icon="rocket">
+    The app-platform deploys (DigitalOcean / Railway / Render /
+    Fly.io) run the same image as the Docker install path. The
+    platform itself handles provisioning the host, the database,
+    and TLS termination; your prerequisites are an account on the
+    platform and your panel's env vars (the **Docker quickstart**'s
+    section on env vars applies identically).
+  </TabItem>
+</Tabs>
 
 ### Database
 
@@ -115,5 +155,22 @@ can't reach a server lives in
 
 ## Ready to install?
 
-When the boxes above are ticked, head to the
-[Quickstart](/getting-started/quickstart/) and follow it end-to-end.
+When the boxes above are ticked, head to the install path you
+picked at the top of this page:
+
+<Tabs syncKey="install-path">
+  <TabItem label="Tarball / shared hosting" icon="cloud-download">
+    [Tarball quickstart](/getting-started/quickstart/) — unzip,
+    upload, run the wizard.
+  </TabItem>
+
+  <TabItem label="Docker" icon="seti:docker">
+    [Docker quickstart](/getting-started/quickstart-docker/) —
+    `docker compose up -d` to a fully running panel.
+  </TabItem>
+
+  <TabItem label="App platform (one click)" icon="rocket">
+    [Docker quickstart](/getting-started/quickstart-docker/) — the
+    "Deploy with one click" section covers the per-platform shape.
+  </TabItem>
+</Tabs>

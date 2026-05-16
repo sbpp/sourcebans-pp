@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import { CardGrid, LinkCard, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
 
 This page is a quick mental model of how SourceBans++ is put together,
 so the rest of the guide reads as "wire up these named pieces" rather
@@ -61,8 +61,7 @@ A first-time install walks through, in order:
 
 1. **A database** — MariaDB or MySQL, hosted wherever's convenient.
    See [Database setup](/setup/mariadb/).
-2. **The web panel** — Upload, run the install wizard, log in.
-   See [Quickstart](/getting-started/quickstart/).
+2. **The web panel** — Pick an install path below.
 3. **One or more game servers** — Add each to the panel to get a
    `ServerID`. See [Adding a server](/setup/adding-server/).
 4. **The SourceMod plugins** — Drop them onto each game server, edit
@@ -73,6 +72,49 @@ A first-time install walks through, in order:
 
 After that you're in day-to-day operation: people get banned, you
 review appeals, you tune permissions.
+
+## Pick an install path
+
+We ship three install paths for the panel. The plugin side is the
+same regardless of which one you pick — these only differ in how
+the **web panel** gets stood up.
+
+<Tabs syncKey="install-path">
+  <TabItem label="Tarball / shared hosting" icon="cloud-download">
+    **Best when:** you already run a webserver, share hosting with
+    other apps, or want maximum control over PHP / Apache / nginx
+    config. The traditional install path: download a release zip,
+    upload via FTP / cPanel / SSH, walk the install wizard once.
+
+    Step it out with the **[tarball quickstart](/getting-started/quickstart/)**.
+  </TabItem>
+
+  <TabItem label="Docker" icon="seti:docker">
+    **Best when:** you own the host, want one-command upgrades
+    (`docker compose pull && up -d`), zero-touch TLS, or
+    reproducible deploys across machines. Ships a hardened
+    multi-arch image (`ghcr.io/sbpp/sourcebans-pp`) signed with
+    Sigstore cosign.
+
+    Step it out with the **[Docker quickstart](/getting-started/quickstart-docker/)**.
+  </TabItem>
+
+  <TabItem label="App platform (one click)" icon="rocket">
+    **Best when:** you don't want to manage a host at all and your
+    panel doesn't need exotic customisation. Deploy buttons for
+    DigitalOcean App Platform, Railway, Render, and Fly.io are
+    tracked in [issue #1382](https://github.com/sbpp/sourcebans-pp/issues/1382).
+
+    <Aside type="note">
+      The image already speaks every platform-conventional knob —
+      `PORT` injection, `DATABASE_URL` parsing, `/health.php` probes,
+      `*_FILE` secrets. Until the deploy buttons land, point any
+      platform that runs container images at
+      `ghcr.io/sbpp/sourcebans-pp:latest` and set the env vars from
+      the **[Docker quickstart](/getting-started/quickstart-docker/)**.
+    </Aside>
+  </TabItem>
+</Tabs>
 
 ## Key concepts
 
@@ -112,11 +154,16 @@ cause.
   <LinkCard
     title="Check the requirements"
     href="/getting-started/prerequisites/"
-    description="PHP version, DB engine, SourceMod version, and what extensions you need before installing."
+    description="PHP version, DB engine, SourceMod version, Docker version — whichever path you picked above."
   />
   <LinkCard
-    title="Install SourceBans++"
+    title="Tarball quickstart"
     href="/getting-started/quickstart/"
-    description="End-to-end fresh install — database, web upload, wizard, plugin config."
+    description="Fresh tarball install — database, web upload, wizard, plugin config."
+  />
+  <LinkCard
+    title="Docker quickstart"
+    href="/getting-started/quickstart-docker/"
+    description="docker compose up to a fully running panel with persistent volumes and automatic TLS."
   />
 </CardGrid>
