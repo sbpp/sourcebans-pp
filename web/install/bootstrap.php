@@ -38,6 +38,16 @@ require_once PANEL_INCLUDES_PATH . '/vendor/autoload.php';
 //     2 onward instantiates one against the operator-supplied creds.
 require_once PANEL_INCLUDES_PATH . '/Db/Database.php';
 
+// HIGH-2 of the #1381 review: page 5 writes the final config.php and
+// MUST honour `SBPP_CONFIG_PATH` so an operator running the wizard
+// manually (e.g. `SBPP_AUTO_INSTALL=0` on the prod Docker image with
+// a Docker-secret-mounted config) lands the file at the path the
+// panel runtime will actually read at boot. `sbpp_resolve_config_path`
+// is the shared helper in `web/init-recovery.php` — pure PHP, zero
+// Composer dependencies — so we can pull it in without disturbing
+// the wizard's "no Sbpp\… chrome" contract.
+require_once PANEL_ROOT . 'init-recovery.php';
+
 // Shared step-handler helpers (prefix validation, DB-open with raw
 // PDO probe, KeyValues escaping). Required after Database.php so
 // sbpp_install_open_db() can reference \Database. See helpers.php

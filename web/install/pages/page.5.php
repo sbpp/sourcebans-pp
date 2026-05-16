@@ -112,13 +112,30 @@ if ($posted) {
             }
 
             // 3) Build + write config.php (best-effort).
+            //
+            // HIGH-2 of the #1381 review: pre-fix the wizard wrote
+            // verbatim to `PANEL_ROOT . 'config.php'`, ignoring the
+            // `SBPP_CONFIG_PATH` env var the prod entrypoint sets
+            // for Docker-secret mounts. An operator running the
+            // wizard manually (`SBPP_AUTO_INSTALL=0`) with
+            // `SBPP_CONFIG_PATH=/run/secrets/sbpp-config` would see
+            // the wizard's "config.php written successfully" green
+            // light, restart the panel, and faceplant because the
+            // panel reads from the secret path while the wizard
+            // wrote to the writable layer.
+            //
+            // `sbpp_resolve_config_path()` is the helper added in
+            // #1381 deliverable 4d (live at `web/init-recovery.php`);
+            // it honours the env var with a `PANEL_ROOT . 'config.php'`
+            // fallback so non-Docker installs are unchanged.
             $configText = sbpp_install_render_config(
                 $server, $port, $username, $password, $database,
                 $prefix, $charset, $apikey, $sbEmail
             );
-            $configPath = PANEL_ROOT . 'config.php';
+            $configPath = sbpp_resolve_config_path(PANEL_ROOT . 'config.php');
+            $configDir  = dirname($configPath);
             $configWritable = is_writable($configPath)
-                || (is_writable(PANEL_ROOT) && !file_exists($configPath));
+                || (is_dir($configDir) && is_writable($configDir) && !file_exists($configPath));
             if ($configWritable) {
                 file_put_contents($configPath, $configText);
             }

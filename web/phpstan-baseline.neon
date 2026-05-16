@@ -157,12 +157,6 @@ parameters:
 			path: includes/page-builder.php
 
 		-
-			message: '#^Path in include_once\(\) "config\.php" is not a file or it does not exist\.$#'
-			identifier: includeOnce.fileNotFound
-			count: 1
-			path: index.php
-
-		-
 			message: '#^Constant SB_THEME not found\.$#'
 			identifier: constant.notFound
 			count: 7
