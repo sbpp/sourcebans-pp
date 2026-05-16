@@ -49,7 +49,24 @@ declare(strict_types=1);
  */
 function sbpp_install_is_already_installed(string $panelRoot): bool
 {
-    return file_exists($panelRoot . 'config.php');
+    // #1381 deliverable 4d: when the production Docker image is
+    // configured with `SBPP_CONFIG_PATH=/run/secrets/...` (or any
+    // other path outside the panel root), the wizard's
+    // already-installed guard must check the SAME path that
+    // `web/init.php`'s loader checks — otherwise an operator
+    // running the production image with a Docker-secret-mounted
+    // config could still hit the wizard with their panel intact.
+    //
+    // We deliberately re-implement the env-var read inline (rather
+    // than `require_once`-ing init-recovery.php) to keep this file
+    // self-contained per its docblock — the C2 guard runs upstream
+    // of Composer autoload + Smarty for the same defensiveness
+    // reasons as `recovery.php`.
+    $envPath = getenv('SBPP_CONFIG_PATH');
+    $configPath = (is_string($envPath) && $envPath !== '')
+        ? $envPath
+        : $panelRoot . 'config.php';
+    return file_exists($configPath);
 }
 
 /**

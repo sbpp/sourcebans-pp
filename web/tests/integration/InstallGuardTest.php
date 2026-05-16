@@ -275,6 +275,91 @@ final class InstallGuardTest extends TestCase
     }
 
     /**
+     * Issue #1381 deliverable 4d: production Docker deploys can mount
+     * config.php from a path outside the read-only image layer (Docker
+     * secret, k8s-mounted secret, etc.) by setting the
+     * `SBPP_CONFIG_PATH` env var. Both halves of the panel — the
+     * runtime loader (`init.php`) and the wizard's already-installed
+     * guard (`already-installed.php`) — must honour the same env var
+     * so the install-state sentinel is checked at the right path.
+     *
+     * Pre-#1381 both halves hard-coded the panel-root path. With a
+     * Docker-secret-mounted config, the runtime loader would fail to
+     * find config.php (and redirect to /install/), while the wizard
+     * would happily start over and overwrite the panel's setup.
+     *
+     * The shared helper `sbpp_resolve_config_path()` lives in
+     * `init-recovery.php` and is the single source of truth for the
+     * env-var read; the wizard's
+     * `sbpp_install_is_already_installed()` re-implements the same
+     * check inline (the wizard's pre-vendor stage deliberately can't
+     * reach for `init-recovery.php` per its self-contained docblock).
+     */
+    public function testResolveConfigPathHonorsEnvVar(): void
+    {
+        $this->loadInitRecovery();
+
+        // Default: env var unset, returns the fallback path.
+        putenv('SBPP_CONFIG_PATH');
+        $this->assertSame(
+            '/some/panel/config.php',
+            sbpp_resolve_config_path('/some/panel/config.php'),
+            'sbpp_resolve_config_path() must return the default path when ' .
+            'SBPP_CONFIG_PATH is unset (the tarball / wizard install path).'
+        );
+
+        // Set: returns the env value, ignoring the default.
+        putenv('SBPP_CONFIG_PATH=/run/secrets/sbpp-config.php');
+        try {
+            $this->assertSame(
+                '/run/secrets/sbpp-config.php',
+                sbpp_resolve_config_path('/some/panel/config.php'),
+                'sbpp_resolve_config_path() must honour SBPP_CONFIG_PATH for ' .
+                'production Docker deploys that mount config.php from a Docker ' .
+                'secret path outside the read-only image layer.'
+            );
+        } finally {
+            putenv('SBPP_CONFIG_PATH');
+        }
+    }
+
+    /**
+     * Sister-test to {@see testResolveConfigPathHonorsEnvVar}: the
+     * wizard's already-installed guard must read the same env var
+     * inline (the wizard's pre-vendor stage can't reach
+     * init-recovery.php per its self-contained docblock).
+     */
+    public function testWizardGuardHonorsConfigPathEnvVar(): void
+    {
+        $this->loadAlreadyInstalled();
+        $tmp = $this->makeTempPanelRoot();
+        $configPath = $tmp['root'] . '/secret-config.php';
+        try {
+            // No env var, no default-path config.php — guard returns false.
+            putenv('SBPP_CONFIG_PATH');
+            $this->assertFalse(
+                sbpp_install_is_already_installed($tmp['root'] . '/'),
+                'No config.php anywhere — wizard guard should not fire.'
+            );
+
+            // Custom path, file exists at custom path: guard fires.
+            putenv('SBPP_CONFIG_PATH=' . $configPath);
+            file_put_contents($configPath, '<?php // stub');
+            $this->assertTrue(
+                sbpp_install_is_already_installed($tmp['root'] . '/'),
+                '#1381 regression: the wizard guard must honour SBPP_CONFIG_PATH ' .
+                'so a panel deployed via the production Docker image (with config ' .
+                'mounted from a Docker secret outside the panel root) cannot be ' .
+                'wizard-attacked just because the default panel-root path is empty.'
+            );
+        } finally {
+            putenv('SBPP_CONFIG_PATH');
+            @unlink($configPath);
+            $this->rmTempRoot($tmp['root']);
+        }
+    }
+
+    /**
      * Issue #1335 m4: the step-2 PDOException translator emits
      * friendlier messages for the connect-error codes
      * non-technical operators are most likely to hit. Pre-fix the

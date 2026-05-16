@@ -30,6 +30,44 @@ declare(strict_types=1);
 // just assert the verdict, not the rendered HTML.
 
 /**
+ * Resolve the runtime path of `config.php`.
+ *
+ * Default: `<panel-root>/config.php` (same path the install wizard
+ * writes to and `web/init.php` historically required). Operators
+ * deploying via the production Docker image (#1381) can set the
+ * `SBPP_CONFIG_PATH` env var to point at a path outside the
+ * read-only image layer — e.g. a Docker secret mounted at
+ * `/run/secrets/sbpp-config.php`. The entrypoint reads the same env
+ * var when rendering config.php on first boot, so the two halves
+ * agree on where the file lives.
+ *
+ * Env-var-driven (not constant-driven) because the lookup runs
+ * BEFORE config.php is loaded — and the recovery surface (this
+ * file) deliberately has zero Composer dependencies, so we can't
+ * reach for `Sbpp\…` config plumbing here. `getenv()` is the
+ * portable, dependency-free way to read deployment env without
+ * also pulling in `$_ENV` / `$_SERVER` polluted-superglobal
+ * concerns.
+ *
+ * Self-hoster contract: setting `SBPP_CONFIG_PATH` in the panel's
+ * environment ALSO requires the wizard / entrypoint to write to the
+ * same path. The default-tarball install path doesn't set the env
+ * var, so there's no confusion for the 99% of self-hosters who
+ * don't customise this.
+ *
+ * @param string $defaultPath The fallback path (typically `ROOT . 'config.php'`).
+ * @return string Absolute path to config.php.
+ */
+function sbpp_resolve_config_path(string $defaultPath): string
+{
+    $envPath = getenv('SBPP_CONFIG_PATH');
+    if (is_string($envPath) && $envPath !== '') {
+        return $envPath;
+    }
+    return $defaultPath;
+}
+
+/**
  * Decide whether the panel runtime should refuse to boot.
  *
  * Issue #1335 C1: pre-fix, `web/init.php` exempted `HTTP_HOST ==
