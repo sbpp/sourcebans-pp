@@ -57,7 +57,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change the local dev stack (Docker, db-init, env vars)      | `docker/README.md` first, link from `ARCHITECTURE.md` if it changes the dev mental model |
 | Edit user-facing install/quickstart                         | `docs/src/content/docs/getting-started/quickstart.mdx` (tarball flow) OR `quickstart-docker.mdx` (Docker flow). Keep the `<Tabs syncKey="install-path">` arms in `overview.mdx` + `prerequisites.mdx` consistent across the two paths (the README is a tiny landing page that links to docs — don't grow it back into a manual). |
 | Add or change a wizard step (page handler / View / template / shared helper) | `AGENTS.md` (Install wizard convention block) + the "Edit a step of the install wizard" row in "Where to find what" |
-| Touch `docker/Dockerfile.prod`, `docker/php/prod-*`, `docker/apache/sbpp-prod.conf`, `docker-compose.prod.yml`, `.env.example.prod`, `docker/caddy/Caddyfile.example`, or `web/health.php` | `AGENTS.md` (Quality gates: `docker-image.yml` row; "Where to find what": the "Build / extend the production Docker image" + "Deploy / configure the production Docker stack" rows) + `docs/src/content/docs/getting-started/quickstart-docker.mdx` (the operator-facing doc) + `docker/README.md` (dev-vs-prod pointer). The `Plugin build specifics` block in AGENTS.md has a sibling `Prod Docker image specifics` block — keep them in sync with the workflow's path filter / tag mapping / sign step. |
+| Touch `docker/Dockerfile.prod`, `docker/php/prod-*`, `docker/apache/sbpp-prod.conf`, `docker-compose.prod.yml`, `.env.example.prod`, `docker/caddy/Caddyfile.example`, or `web/health.php` | `AGENTS.md` (Quality gates: `docker-image.yml` row; "Where to find what": the "Build / extend the production Docker image" + "Deploy / configure the production Docker stack" rows) + `docs/src/content/docs/getting-started/quickstart-docker.mdx` (the operator-facing doc) + `docker/README.md` (dev-vs-prod pointer). The `Plugin build specifics` block in AGENTS.md has a sibling `Prod Docker image specifics` block — keep them in sync with the workflow's tag mapping / sign step. The Docker-image gate is **release-only** (fires on `*.*.*` tag pushes + manual `workflow_dispatch` reruns); contributors who edit the Dockerfile / entrypoint MUST run the `docker buildx build` command from the Quality gates row locally before opening the PR — there is no per-PR CI gate to catch a broken image build. |
 | Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
 | Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus the matching `docs/src/content/docs/updating/*.mdx` page if it's a breaking change between releases |
 | Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
@@ -181,7 +181,10 @@ services:
 
 ## Quality gates
 
-CI runs seven gates on every PR. Match them locally before opening one.
+CI runs six gates on every PR. Match them locally before opening one.
+A seventh gate (the production Docker image) runs **only on release
+tag pushes** — see the row's note + the `Prod Docker image specifics`
+block below for the rationale and the contributor-side responsibility.
 
 | Gate           | Local                                | CI workflow            |
 | -------------- | ------------------------------------ | ---------------------- |
@@ -191,7 +194,7 @@ CI runs seven gates on every PR. Match them locally before opening one.
 | API contract   | `./sbpp.sh composer api-contract`    | `api-contract.yml`     |
 | Playwright E2E | `./sbpp.sh e2e`                      | `e2e.yml`              |
 | Plugin build   | `(cd game/addons/sourcemod/scripting && spcomp -i include sbpp_*.sp)` | `plugin-build.yml`     |
-| Prod Docker image | `docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .` | `docker-image.yml` |
+| Prod Docker image (release-only) | `docker buildx build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .` | `docker-image.yml` (tag pushes + `workflow_dispatch` only — no per-PR run; contributor MUST run the local command before merging Dockerfile / entrypoint changes) |
 
 PHPStan specifics:
 
@@ -340,25 +343,42 @@ Plugin build specifics:
 
 Prod Docker image specifics:
 
-- Path-filtered to `docker/Dockerfile.prod`, `docker/php/prod-*`,
-  `docker/apache/sbpp-prod.conf`, `web/composer.{json,lock}`,
-  `web/health.php`, `web/init.php`, `web/init-recovery.php`, and
-  the workflow file itself. A web/-only PR that doesn't touch those
-  files skips the gate (the surface changes constantly; rebuilding
-  the prod image on every PR would burn action minutes for changes
-  the next release cycle picks up anyway). Main and tag pushes
-  always rebuild.
+- **Trigger surface is deliberately narrow: tag pushes + manual
+  `workflow_dispatch` only.** No `push: branches: [main]`, no
+  `pull_request:`. A multi-arch (amd64 + qemu-emulated arm64) build
+  is the most expensive job in this repo's CI matrix (~8-15 minutes
+  per run); pre-narrow this workflow ran on every push to main AND
+  every PR touching a long path filter, burning a disproportionate
+  share of the project's free Actions minutes for floating `:main` /
+  `:sha-<short>` tags that nobody pulls (self-hosters all pin to
+  released semver tags per the docs). The image surface is small +
+  stable — runtime-affecting changes (Dockerfile, entrypoint, schema
+  files, init bootstrap, health.php, trust-proxy + telemetry hooks)
+  always ship behind a release tag, so verifying-at-tag is sufficient
+  AND well-aligned with when self-hosters actually pull a new image.
+  The trade-off the project explicitly accepts: a Dockerfile /
+  entrypoint regression that landed via a green PR isn't caught by
+  CI until the next `*.*.*` tag push. **Contributors who edit any
+  file the runtime image bakes in (Dockerfile, entrypoint, php.ini,
+  Apache conf, sb-db.php, health.php, schema files, init bootstrap,
+  Auth/Host.php, Telemetry.php) MUST run the literal `docker buildx
+  build --platform linux/amd64,linux/arm64 -f docker/Dockerfile.prod .`
+  command from the Quality gates table locally before opening the
+  PR — the local command IS the per-PR gate.**
 - Multi-arch (linux/amd64 + linux/arm64) via `docker/setup-qemu-action@v3`
   + `docker/setup-buildx-action@v3`. The arm64 leg runs under qemu
   on the amd64 GitHub-hosted runner — roughly 2x build time vs
-  native, acceptable for the publish cadence.
-- PR builds are **verify-only** — `push: ${{ github.event_name != 'pull_request' }}`
-  in `build-push-action` runs the build to verify-it-builds without
-  pushing to GHCR. Main / tag / dispatch pushes publish + sign.
-- Tag mapping via `docker/metadata-action@v5`: `main` push →
-  `:main` + `:sha-<short>`; `X.Y.Z` tag → `:X.Y.Z` + `:X.Y` + `:X`
-  + `:latest`. `:latest` is gated on `startsWith(github.ref, 'refs/tags/')`
-  so main pushes can't accidentally claim it.
+  native, acceptable for the release-only publish cadence.
+- Tag mapping via `docker/metadata-action@v5`: `X.Y.Z` tag → `:X.Y.Z`
+  + `:X.Y` + `:X` + `:latest`. `:latest` is gated on
+  `startsWith(github.ref, 'refs/tags/')` so a `workflow_dispatch`
+  from a non-tag ref can't accidentally claim it. There are no
+  rolling `:main` / `:sha-<short>` tags — see the table in
+  `docs/src/content/docs/getting-started/quickstart-docker.mdx`
+  for the operator-facing tag list. A `workflow_dispatch` from a
+  non-tag ref produces an empty tag set and `docker push` fails
+  loudly (the documented "rebuilding a non-released ref isn't a
+  meaningful operation" gate).
 - Sigstore cosign signs each tag against the immutable digest
   (`<image>@<digest>`, not the mutable `<image>:<tag>`) in keyless
   / OIDC mode. The job-level `id-token: write` permission is what
@@ -366,15 +386,14 @@ Prod Docker image specifics:
   Fulcio cert and signing fails closed. Verifiers pin both the
   identity (workflow path) and the issuer (GitHub Actions OIDC
   endpoint) — see `docs/src/content/docs/getting-started/quickstart-docker.mdx`
-  for the canonical `cosign verify` command.
-- The cosign step is gated on `github.event_name != 'pull_request'`
-  for the same reason as the push step — PR builds never publish,
-  so there's nothing to sign.
+  for the canonical `cosign verify` command. The cosign step is
+  always-on (no PR exemption is needed — PRs don't trigger the
+  workflow at all under the tag-only contract).
 - No local `./sbpp.sh` wrapper. The dev stack doesn't ship a way
   to invoke `docker buildx` from inside the dev container itself
   (no Docker-in-Docker), and the prod image build is a host-side
-  workflow. Contributors who want to verify a local build run the
-  literal command from the gates table.
+  workflow. Contributors verify a local build with the literal
+  command from the gates table.
 
 ## Conventions
 

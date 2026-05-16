@@ -289,8 +289,12 @@ Image tags:
 | `X.Y.Z` | A specific version. Recommended for production. |
 | `X.Y` | Floats forward across patch releases of `X.Y.*`. |
 | `X` | Floats forward across minor releases of `X.*.*`. |
-| `main` | Built from every commit to `main` — bleeding-edge, **not for production**. |
-| `sha-<short>` | Pinned to a specific commit on `main`. |
+
+Only tagged release builds are published — there is no rolling
+`:main` or per-commit `:sha-<short>` tag. Self-hosters who want to
+test a yet-unreleased fix should `git checkout` the relevant ref and
+build the image locally with
+`docker buildx build -f docker/Dockerfile.prod -t sbpp:dev .`.
 
 Every published tag is signed with Sigstore cosign in keyless mode.
 Verify the signature with:

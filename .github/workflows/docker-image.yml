@@ -2,11 +2,16 @@ name: Docker image
 
 # Build + publish the production image to GHCR (#1381 deliverable 3).
 #
-# Triggers:
-#   - push to main             → :main + :sha-<short>
+# Triggers (deliberately tag-only — see "Why no main / PR triggers"
+# below):
 #   - push to *.*.* tag        → :<version> + :latest + :<major> + :<major>.<minor>
-#   - workflow_dispatch        → manual rerun (same tagging logic; useful
-#                                if a release publish failed midway)
+#   - workflow_dispatch        → manual rerun, dispatched against a tag
+#                                ref to rebuild a published release
+#                                (e.g. if a publish failed midway).
+#                                Dispatching from a non-tag ref is a
+#                                no-op for tagging — metadata-action
+#                                emits an empty tag set and the publish
+#                                step fails loudly.
 #
 # Multi-arch build via docker/build-push-action + buildx + qemu. Both
 # linux/amd64 and linux/arm64 are produced and pushed under a single
@@ -24,61 +29,29 @@ name: Docker image
 # --certificate-oidc-issuer=https://token.actions.githubusercontent.com`
 # without any pre-shared key.
 #
-# Path filter scope (PR trigger only — see MED-6 below for the
-# push-trigger rationale):
-#   - docker/Dockerfile.prod, docker/php/prod-*, docker/apache/sbpp-prod.conf,
-#     docker/php/sb-db.php — every file the runtime image bakes in
-#   - web/health.php — the file the HEALTHCHECK pings
-#   - web/init.php / web/init-recovery.php — the SBPP_CONFIG_PATH
-#     plumbing + install-guard contract the entrypoint relies on
-#   - web/install/includes/sql/** — schema and seed data the entrypoint
-#     loads on first-boot install
-#   - web/includes/Auth/Host.php — the SBPP_TRUSTED_PROXIES gate the
-#     entrypoint's Apache config feeds (CRIT-4)
-#   - web/includes/Telemetry/Telemetry.php — the SBPP_SKIP_TELEMETRY
-#     hook health.php depends on (MED-4)
-#   - composer.json/lock under web/ — vendor dependency churn
-#   - .github/workflows/docker-image.yml — touch-the-workflow trigger
-#
-# MED-6 of the #1381 review: pre-fix, the `push:` block specified
-# `branches`, `tags`, AND `paths` at the same level. GitHub Actions
-# AND-combines them — a tag push only fires when the underlying
-# commit ALSO touches one of the listed paths. Release tags are
-# typically attached to commits that already shipped through `main`
-# (so the paths filter masked the prod-image surface change), which
-# means a release-tag push could silently NOT build the image and
-# `:latest` would lag behind `:main` indefinitely.
-#
-# Fix: drop the `paths` filter from `push:` entirely. Every push to
-# `main` AND every release-tag push triggers a full multi-arch build.
-# Action minutes for tag pushes are unconditional (correct for a
-# release surface); main pushes are rare (PRs aggregate via squash
-# merges) so the per-merge cost is acceptable. The `pull_request:`
-# block keeps its paths filter — PRs that don't touch the image
-# surface still don't rebuild, preserving the per-PR action-minute
-# optimisation that originally motivated the path filter.
+# Why no main / PR triggers:
+# Multi-arch (amd64 + qemu-emulated arm64) image builds are the most
+# expensive job in this repo's CI matrix — roughly 8-15 minutes per
+# run. Pre-fix this workflow ran on every push to main AND every PR
+# touching a long path filter, which on a busy week burned through a
+# disproportionate share of the project's free Actions minutes for
+# images that nobody pulls (the floating `:main` and per-commit
+# `:sha-<short>` tags were nominally documented as "bleeding edge"
+# but had no real consumers; self-hosters all pin to released semver
+# tags per the docs). The image surface is small + stable: changes
+# that affect the runtime contract (Dockerfile, entrypoint, schema
+# files, init bootstrap, health.php, trust-proxy + telemetry hooks)
+# are always shipped behind a release tag, so verifying-at-tag is
+# both sufficient and well-aligned with when self-hosters actually
+# pull a new image. Contributors who edit the Dockerfile / entrypoint
+# locally are expected to run the literal `docker buildx build`
+# command from the AGENTS.md "Quality gates" table to verify before
+# opening a PR.
 
 on:
   push:
-    branches:
-      - main
     tags:
       - '*.*.*'
-  pull_request:
-    paths:
-      - 'docker/Dockerfile.prod'
-      - 'docker/php/prod-*'
-      - 'docker/php/sb-db.php'
-      - 'docker/apache/sbpp-prod.conf'
-      - 'web/composer.json'
-      - 'web/composer.lock'
-      - 'web/health.php'
-      - 'web/init.php'
-      - 'web/init-recovery.php'
-      - 'web/install/includes/sql/**'
-      - 'web/includes/Auth/Host.php'
-      - 'web/includes/Telemetry/Telemetry.php'
-      - '.github/workflows/docker-image.yml'
   workflow_dispatch:
 
 # `packages: write`  — push to GHCR.
@@ -103,8 +76,7 @@ jobs:
       # buildx is the multi-platform driver. qemu provides the cross-arch
       # emulation that lets the amd64 GitHub-hosted runner produce an
       # arm64 image. The cost is roughly +2x build time on the arm64
-      # leg vs native; acceptable for the publish cadence (per-tag +
-      # main pushes only).
+      # leg vs native; acceptable for the release-only publish cadence.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
         with:
@@ -115,10 +87,8 @@ jobs:
 
       # GHCR push needs the actor's PAT — for actions/github-token, the
       # token's `packages: write` permission is granted by the job-level
-      # `permissions:` block above. Pull-request builds (which never push)
-      # skip login.
+      # `permissions:` block above.
       - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -126,26 +96,26 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # docker/metadata-action computes the tag set from the trigger:
-      #   - main push           → :main, :sha-<short>
       #   - X.Y.Z tag           → :X.Y.Z, :X.Y, :X, :latest
-      #   - PR                  → :pr-<num> (kept locally; not pushed)
-      #   - workflow_dispatch   → :main (treated like a main rerun)
+      #   - workflow_dispatch   → mirrors whatever ref it was dispatched
+      #                            against (typically a tag ref to
+      #                            rebuild a published release; a non-tag
+      #                            dispatch produces an empty tag set
+      #                            and the publish step fails loudly).
       #
-      # The `:latest` tag is gated on `type=semver,pattern={{version}}`
-      # so PR / main / dispatch builds don't accidentally claim it.
+      # The `:latest` tag is gated on `startsWith(github.ref, 'refs/tags/')`
+      # — a workflow_dispatch from a non-tag ref can't accidentally
+      # claim it.
       - name: Compute image metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/') }}
-            type=sha,prefix=sha-,format=short
           labels: |
             org.opencontainers.image.title=SourceBans++
             org.opencontainers.image.description=Self-hostable admin / ban / comms management for the Source engine — production image.
@@ -160,12 +130,10 @@ jobs:
       # are persisted in the GitHub Actions cache between runs — buildx
       # keys the cache by the Dockerfile + the build context's hash, so
       # a Composer-only change won't bust the apt-install layer of the
-      # builder stage.
-      #
-      # `push: ${{ github.event_name != 'pull_request' }}` means PR
-      # builds verify-build-only (build runs, but the image stays local
-      # to the runner — no GHCR write). Main / tag / dispatch builds
-      # publish.
+      # builder stage. (Cache hit rate is naturally low on the tag-only
+      # trigger — release tags are rare — but the cost of populating
+      # the cache on a release build is amortised across the next
+      # workflow_dispatch rerun for that tag.)
       - name: Build + push
         id: build
         uses: docker/build-push-action@v6
@@ -173,7 +141,7 @@ jobs:
           context: .
           file: docker/Dockerfile.prod
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -181,20 +149,17 @@ jobs:
           provenance: true
           sbom: true
 
-      # Cosign keyless signing — runs only when we actually pushed.
-      # Each tag the manifest carries gets its own signature recorded
-      # into Rekor. The `cosign sign --yes <ref>@<digest>` form is the
-      # documented best-practice (signs the immutable digest, not the
-      # mutable tag — so a future re-tag doesn't invalidate the
+      # Cosign keyless signing. Each tag the manifest carries gets its
+      # own signature recorded into Rekor. The `cosign sign --yes <ref>@<digest>`
+      # form is the documented best-practice (signs the immutable digest,
+      # not the mutable tag — so a future re-tag doesn't invalidate the
       # signature).
       - name: Install cosign
-        if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3
         with:
           cosign-release: 'v2.4.1'
 
       - name: Sign image with cosign (keyless)
-        if: github.event_name != 'pull_request'
         env:
           # NIT-1 of the #1381 review: `COSIGN_EXPERIMENTAL=1` was the
           # gate for keyless signing back when it was experimental

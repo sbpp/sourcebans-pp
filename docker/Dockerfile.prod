@@ -250,7 +250,10 @@ RUN apt-get update \
 # OCI labels — populate GHCR's UI panel + give `docker inspect` a useful
 # provenance trail. The release workflow overrides `revision` + `version`
 # at build time via `--label`; the static labels here are the defaults
-# for non-release builds (e.g. `:main` and `:sha-<short>`).
+# for the rare local `docker buildx build` invocation (the contributor
+# pre-PR smoke check). The CI workflow only fires on release tags + on
+# manual workflow_dispatch reruns of an existing release tag, so the
+# overridden labels carry the real provenance for every published image.
 LABEL org.opencontainers.image.title="SourceBans++" \
       org.opencontainers.image.description="Self-hostable admin / ban / comms management for the Source engine — production image." \
       org.opencontainers.image.url="https://sbpp.github.io" \
