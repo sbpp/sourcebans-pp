@@ -352,6 +352,16 @@ platform-conventional knobs:
 - **`PORT`** — the entrypoint rewrites Apache's `Listen` directive
   to match. Render / Fly / Heroku-style injection works out of the
   box.
+
+  :::caution[Don't set `PORT` on the docker-compose deploy above]
+  The `docker-compose.prod.yml` shipped in this repo hardcodes
+  `${SBPP_HOST_PORT}:80` — host port to container port 80. Setting
+  `PORT=8000` in `.env` would rewrite Apache's listen to `8000`
+  but compose would still map the host port to the container's
+  port `80` (which nothing is listening on), making the panel
+  unreachable. `PORT` is exclusively for the app-platform shape
+  above; on compose deploys, `SBPP_HOST_PORT` is the host-side knob.
+  :::
 - **`DATABASE_URL`** — parsed before the split `DB_*` vars get
   applied. Railway / Render / Fly's "attached database" pattern
   works without extra config.
