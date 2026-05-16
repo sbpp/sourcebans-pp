@@ -37,14 +37,34 @@
 #     session. We need install/ gone before Apache binds — the
 #     post-#1335 panel-runtime guard refuses to boot otherwise.
 
-set -eu
+# `pipefail` ensures a failure midway through a `foo | bar` pipeline
+# propagates the failure rather than being masked by the trailing
+# command's exit (LOW-1 of the #1381 review). The first_boot_install
+# pass pipes a `sed | run_sql` heredoc; without pipefail, a sed
+# failure (e.g. corrupted struc.sql) would be silently masked by the
+# run_sql success on an empty stream, and we'd boot against an
+# half-loaded schema.
+#
+# `pipefail` is a POSIX-2024 addition that the surrounding image's
+# shell (Debian dash 0.5.11+ and Alpine busybox ash 1.31+) both
+# support — the "no bash-isms" promise above still holds in
+# practice. shellcheck doesn't know that yet, hence the disable.
+# shellcheck disable=SC3040
+set -euo pipefail
 
 WEB_ROOT="/var/www/html/web"
 LOG_PREFIX="[prod-entrypoint]"
 SBPP_AUTO_INSTALL="${SBPP_AUTO_INSTALL:-1}"
 
-log() { printf '%s %s\n' "$LOG_PREFIX" "$*" >&2; }
-die() { printf '%s ERROR: %s\n' "$LOG_PREFIX" "$*" >&2; exit 1; }
+# Path to the bundled PHP helpers (sb-db.php). Ships under
+# /usr/local/lib/sbpp/ from the Dockerfile so the entrypoint can
+# reach them without taking a dependency on the panel's WEB_ROOT
+# (which gets a `rm -rf install/+updater/` halfway through boot).
+SBPP_LIB_DIR="${SBPP_LIB_DIR:-/usr/local/lib/sbpp}"
+
+log()  { printf '%s %s\n' "$LOG_PREFIX" "$*" >&2; }
+warn() { printf '%s WARN: %s\n'  "$LOG_PREFIX" "$*" >&2; }
+die()  { printf '%s ERROR: %s\n' "$LOG_PREFIX" "$*" >&2; exit 1; }
 
 # ---------------------------------------------------------------------------
 # *_FILE secret resolution (Docker Swarm + k8s + many app platforms)
@@ -64,7 +84,24 @@ resolve_file_secret() {
     file_var="${name}_FILE"
     eval "file_path=\${$file_var:-}"
     if [ -n "$file_path" ] && [ -f "$file_path" ]; then
-        eval "$name=\$(cat \"\$file_path\")"
+        # Read the file, then strip trailing CR/LF from the LAST line
+        # only. Operators routinely create secret files with
+        # `echo "value" > /run/secrets/foo` which appends a `\n`, and
+        # Docker Desktop on Windows often serialises secrets with CRLF
+        # line endings — neither byte belongs in the secret. NIT-2 of
+        # the #1381 review. We use `printf '%s'` (no newline) around
+        # `tr` instead of stripping in the eval below so a secret that
+        # legitimately ends in whitespace on an inner line survives.
+        eval "$name=\$(printf '%s' \"\$(cat \"\$file_path\")\" | tr -d '\r\n')"
+        # MED-1 of the #1381 review: an empty *_FILE points at the
+        # wrong path (typo, missing volume mount, secret not synced
+        # yet) and silently leaves the var at its old / default value
+        # — which for DB_PASS is "" and silently weakens the panel's
+        # auth surface. Refuse to start instead.
+        eval "_value=\${$name}"
+        if [ -z "$_value" ]; then
+            die "${file_var}=${file_path} resolved to an empty value (file missing trailing newline OK; truly empty file is not). Fix the secret payload or unset ${file_var} to fall back to ${name}."
+        fi
         # `export "$name"` works (POSIX `export` accepts an expanded
         # variable name as an arg), but shellcheck flags it as SC2163
         # because the static analysis can't see the deferred expansion.
@@ -147,11 +184,26 @@ parse_database_url() {
                 ;;
         esac
         # URL-decode percent-escapes (a password with `@` arrives as
-        # `%40`). Defensive — `printf '%b'` interprets the printf-style
-        # escape sequences and the substitution converts URL escapes
-        # to those.
-        DB_USER="$(printf '%b' "$(echo "$_DB_USER" | sed 's/%/\\x/g')")"
-        DB_PASS="$(printf '%b' "$(echo "$_DB_PASS" | sed 's/%/\\x/g')")"
+        # `%40`, a space as `%20`, etc.). The previous shape was
+        # `printf '%b' "$(echo "$value" | sed 's/%/\\x/g')"` — that's
+        # a no-op on Debian's dash (CRIT-1 of the #1381 review): only
+        # bash's builtin `printf` expands `\xHH` sequences. Every DB
+        # password with URL-reserved chars (`@`, `:`, `/`, `?`, `#`,
+        # `&`, `%`, `+`, space) was silently mangled — the panel
+        # ended up authenticating against `p\x40ssword` instead of
+        # `p@ssword`.
+        #
+        # PHP is already in the runtime image; `urldecode()` is its
+        # one-liner. The `--` separator tells PHP's option parser
+        # that the values that follow are positional argv, not PHP
+        # options — important when the user/pass starts with a dash.
+        # shellcheck disable=SC2016
+        # ^ single-quote intentional — `$argv[1]` is PHP's argv,
+        #   not a shell variable; double-quoting would let the shell
+        #   try (and fail) to expand it before php sees the string.
+        DB_USER="$(php -r 'echo urldecode((string) ($argv[1] ?? ""));' -- "$_DB_USER")"
+        # shellcheck disable=SC2016
+        DB_PASS="$(php -r 'echo urldecode((string) ($argv[1] ?? ""));' -- "$_DB_PASS")"
         export DB_USER DB_PASS
     fi
 
@@ -252,6 +304,66 @@ apply_defaults() {
 }
 
 # ---------------------------------------------------------------------------
+# CRIT-6: identifier validation
+# ---------------------------------------------------------------------------
+#
+# Several env vars flow into shell `sed` substitutions, SQL string
+# literals, and SQL identifiers (the bareword between backticks in
+# `:prefix_admins`). A value with `/`, `&`, `\n`, `'`, `;`, `"`, or a
+# backtick would either break the sed expression's delimiter or escape
+# SQL string context — depending on the call site, that's a syntax
+# error at best and a SQL-injection vector at worst.
+#
+# The wizard's `sbpp_install_validate_prefix()` already pins the
+# `prefix` shape to `^[A-Za-z0-9_]+$`. We mirror the contract here so
+# the entrypoint path has the same guarantee BEFORE any substitution
+# runs. The shapes:
+#
+#   - DB_PREFIX, DB_NAME, DB_USER — SQL identifiers (DB_NAME is the
+#     name of the database between `USE` / `mysql --database` /
+#     `dbname=` in the DSN; DB_USER is the auth user). Allow
+#     `[A-Za-z0-9_]+`.
+#   - DB_HOST — hostname or IPv4 literal. Allow `[A-Za-z0-9._-]+`.
+#     (IPv6 isn't supported by the URL parser yet; operators using
+#     IPv6 set DB_HOST + DB_PORT directly and the literal
+#     `2001:db8::1` form would tickle the colon delimiter — for now
+#     we reject it loud rather than silently mis-parse.)
+validate_identifiers() {
+    # Allow this function to "fail" via the regex case-statement
+    # without nuking the shell under `set -e`.
+    case "${DB_PREFIX:-}" in
+        ''|*[!A-Za-z0-9_]*)
+            die "DB_PREFIX='${DB_PREFIX:-}' must match [A-Za-z0-9_]+ — used as the literal table-name prefix in SQL identifiers."
+            ;;
+    esac
+    case "${DB_NAME:-}" in
+        ''|*[!A-Za-z0-9_]*)
+            die "DB_NAME='${DB_NAME:-}' must match [A-Za-z0-9_]+ — used as the SQL database name in DDL."
+            ;;
+    esac
+    case "${DB_USER:-}" in
+        ''|*[!A-Za-z0-9_]*)
+            die "DB_USER='${DB_USER:-}' must match [A-Za-z0-9_]+."
+            ;;
+    esac
+    case "${DB_HOST:-}" in
+        ''|*[!A-Za-z0-9._-]*)
+            die "DB_HOST='${DB_HOST:-}' must match [A-Za-z0-9._-]+ (hostnames + IPv4; IPv6 literals not supported here — set DB_HOST + DB_PORT explicitly without the bracketed form)."
+            ;;
+    esac
+    case "${DB_PORT:-}" in
+        ''|*[!0-9]*)
+            die "DB_PORT='${DB_PORT:-}' must be numeric."
+            ;;
+    esac
+    case "${DB_CHARSET:-}" in
+        ''|*[!A-Za-z0-9_]*)
+            die "DB_CHARSET='${DB_CHARSET:-}' must match [A-Za-z0-9_]+."
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
 # Step 2: Apache config (PORT + mod_remoteip)
 # ---------------------------------------------------------------------------
 configure_apache() {
@@ -308,14 +420,20 @@ CONF
 # ---------------------------------------------------------------------------
 # Step 3: wait for DB
 # ---------------------------------------------------------------------------
+#
+# HIGH-3 of the #1381 review: the spec explicitly forbids shipping
+# `default-mysql-client` in the runtime image. Pre-fix the entrypoint
+# reached for `mysqladmin ping` here and `mysql < schema.sql` in
+# `first_boot_install` — both removed. The PHP-side replacement is
+# `docker/php/sb-db.php`, copied into the image at
+# /usr/local/lib/sbpp/sb-db.php (see Dockerfile.prod for the COPY
+# line) and called with the `ping` / `exec` / `has-version-row`
+# subcommands.
 wait_for_db() {
     log "step 3: waiting for DB at ${DB_HOST}:${DB_PORT} (user=${DB_USER}) ..."
     tries=60
     while [ "$tries" -gt 0 ]; do
-        if mysqladmin ping \
-                -h"${DB_HOST}" -P"${DB_PORT}" \
-                -u"${DB_USER}" -p"${DB_PASS}" \
-                --skip-ssl --silent 2>/dev/null; then
+        if php "${SBPP_LIB_DIR}/sb-db.php" ping 2>/dev/null; then
             log "step 3: DB is up"
             return
         fi
@@ -325,15 +443,10 @@ wait_for_db() {
     die "DB at ${DB_HOST}:${DB_PORT} never came up — giving up after 60s"
 }
 
-# Run a SQL command via the panel's DB user. Honours the connection
-# settings configured above; reads its body from stdin.
+# Run a SQL command via the panel's DB user. Reads its body from
+# stdin. Replaces the legacy `mysql < … `-shaped helper.
 run_sql() {
-    mysql \
-        -h"${DB_HOST}" -P"${DB_PORT}" \
-        -u"${DB_USER}" -p"${DB_PASS}" \
-        --skip-ssl --silent --skip-column-names \
-        --default-character-set="${DB_CHARSET}" \
-        "${DB_NAME}"
+    php "${SBPP_LIB_DIR}/sb-db.php" exec
 }
 
 # ---------------------------------------------------------------------------
@@ -341,6 +454,17 @@ run_sql() {
 # ---------------------------------------------------------------------------
 render_config() {
     if [ -s "${SBPP_CONFIG_PATH}" ]; then
+        # MED-2 of the #1381 review: a partial / corrupted config.php
+        # left over from a crashed render run would otherwise propagate
+        # to every subsequent boot as a fatal at request time (Apache
+        # children syntax-error on every page load). Catching the
+        # syntax error here surfaces the failure in the boot logs the
+        # operator is already watching, and `die` triggers the
+        # orchestrator's restart loop with a clear message — better
+        # than a panel that returns 500 on every request.
+        if ! php -l "${SBPP_CONFIG_PATH}" >/dev/null 2>&1; then
+            die "${SBPP_CONFIG_PATH} exists but has a PHP syntax error (corrupted? hand-edited?). Delete it to let the entrypoint regenerate, or fix the syntax. \`php -l ${SBPP_CONFIG_PATH}\` shows the line."
+        fi
         log "step 4: ${SBPP_CONFIG_PATH} already present — leaving alone (config.php is the install-state sentinel)"
         return
     fi
@@ -356,7 +480,39 @@ render_config() {
     # PHP file from values that might break out of the literal. Mirror
     # the wizard's `sbpp_install_render_config()` shape (page.5.php).
     cfg_dir="$(dirname "$SBPP_CONFIG_PATH")"
-    [ -d "$cfg_dir" ] || mkdir -p "$cfg_dir"
+
+    # MED-5 of the #1381 review: if the operator set SBPP_CONFIG_PATH
+    # to a path whose parent directory isn't mounted (typo in the
+    # bind-mount target, a Docker secret that didn't sync, etc.),
+    # mkdir -p will silently create the dir on the container's
+    # writable layer and the freshly-rendered config.php will vanish
+    # the next time the operator recreates the container — a subtle
+    # "why does my panel keep losing its config?" trap. Detect the
+    # two pathologies and surface them loud:
+    #
+    #   1. Parent dir missing when SBPP_CONFIG_PATH was explicitly
+    #      set: die — refuse to create a config the operator expected
+    #      to land on a volume that isn't there.
+    #
+    #   2. Parent dir on the same st_dev as `/` when SBPP_CONFIG_PATH
+    #      was explicitly set: warn — heuristic check that the path
+    #      isn't a mount. Common false-positive: the operator
+    #      intentionally writes config.php into the writable layer
+    #      and pairs that with an explicit SB_SECRET_KEY in env. So
+    #      this stays a warn, not a die.
+    #
+    # The default case (SBPP_CONFIG_PATH unset → ${WEB_ROOT}/config.php)
+    # is on the writable layer by design; skip the check.
+    if [ "${SBPP_CONFIG_PATH}" != "${WEB_ROOT}/config.php" ]; then
+        if [ ! -d "$cfg_dir" ]; then
+            die "SBPP_CONFIG_PATH=${SBPP_CONFIG_PATH} but its parent directory ${cfg_dir} does not exist. Mount the directory (or its containing volume / secret), or unset SBPP_CONFIG_PATH to write config.php into the image's writable layer."
+        fi
+        if [ "$(stat -c %d "$cfg_dir" 2>/dev/null)" = "$(stat -c %d / 2>/dev/null)" ]; then
+            warn "SBPP_CONFIG_PATH=${SBPP_CONFIG_PATH} is on the container's writable layer (same st_dev as /). config.php will NOT persist across container recreations. If this is intentional, also set SB_SECRET_KEY explicitly so JWT cookies survive."
+        fi
+    else
+        [ -d "$cfg_dir" ] || mkdir -p "$cfg_dir"
+    fi
 
     sb_esc() {
         printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e "s/'/\\\\'/g"
@@ -411,24 +567,40 @@ PHP
 # Step 5: first-boot install (schema + seed admin)
 # ---------------------------------------------------------------------------
 #
-# Fresh DBs (no `:prefix_admins` table) get the schema + seed pass
-# below. Existing DBs (table present) skip — even if INITIAL_ADMIN_*
-# env vars are set, we never re-create the admin (would clobber the
-# existing one's password / Steam ID and silently lock the operator
-# out of their own panel).
+# Fresh DBs get the schema + seed pass below. Existing DBs (sentinel
+# present) skip — even if INITIAL_ADMIN_* env vars are set, we never
+# re-create the admin (would clobber the existing one's password /
+# Steam ID and silently lock the operator out of their own panel).
 #
-# `SBPP_AUTO_INSTALL=0` opts OUT of this entirely (e.g. for an operator
-# pointing the panel at a managed DB they've already populated by hand).
+# `SBPP_AUTO_INSTALL=0` opts OUT of this entirely (e.g. for an
+# operator pointing the panel at a managed DB they've already
+# populated by hand, OR for the operator who wants to run the
+# install wizard manually). In that mode we also SKIP the
+# install/+updater/ strip in step 7 so the wizard surface stays
+# reachable — see strip_install_dirs.
 first_boot_install() {
     if [ "$SBPP_AUTO_INSTALL" != "1" ]; then
         log "step 5: SBPP_AUTO_INSTALL=0 — skipping first-boot install (operator opted out)"
+        log "step 5: install/ + updater/ will NOT be stripped in step 7 either — the wizard is reachable at /install/"
         return
     fi
 
-    table="${DB_PREFIX}_admins"
-    exists="$(echo "SELECT 1 FROM information_schema.tables WHERE table_schema='${DB_NAME}' AND table_name='${table}' LIMIT 1;" | run_sql 2>/dev/null || true)"
-    if [ -n "$exists" ]; then
-        log "step 5: ${table} already exists — skipping first-boot install"
+    # MED-3 of the #1381 review: pre-fix the sentinel was "does the
+    # {prefix}_admins table exist?". That created a first-boot install
+    # race: struc.sql creates :prefix_admins *before* :prefix_settings
+    # is fully seeded by data.sql. If the entrypoint crashed mid-
+    # `data.sql` (e.g. an OOM), a restart would see the admins table
+    # present, skip the install pass, and the panel would boot against
+    # a half-seeded :prefix_settings — every Config::get(...) lookup
+    # returning the schema's column default.
+    #
+    # The correct sentinel is the `:prefix_settings.config.version`
+    # row, which is the second-to-last INSERT in data.sql — its
+    # presence means data.sql ran to completion. sb-db.php has-version-row
+    # treats a missing table (PDOException 42S02) as "not present" so
+    # a truly fresh DB still triggers the install pass.
+    if php "${SBPP_LIB_DIR}/sb-db.php" has-version-row "${DB_PREFIX}" 2>/dev/null; then
+        log "step 5: :${DB_PREFIX}_settings.config.version row exists — panel already installed, skipping schema bootstrap"
         return
     fi
     log "step 5: first-boot install (schema + data + seed admin)"
@@ -438,23 +610,30 @@ first_boot_install() {
         die "first-boot install requested but schema files missing under ${schema_dir} — image is broken?"
     fi
 
+    # HIGH-5 of the #1381 review: pre-fix this was a soft `log` line
+    # ("log in as the CONSOLE row only") that left the operator
+    # locked out — the CONSOLE row carries an empty password and
+    # NormalAuthHandler rejects empty auth, so the "log in as CONSOLE"
+    # nudge was impossible to follow. With SBPP_AUTO_INSTALL=1, the
+    # operator opted INTO headless install — refuse to bring the
+    # panel up half-installed.
+    if [ -z "$INITIAL_ADMIN_NAME" ] \
+       || [ -z "$INITIAL_ADMIN_STEAM" ] \
+       || [ -z "$INITIAL_ADMIN_EMAIL" ] \
+       || [ -z "$INITIAL_ADMIN_PASSWORD" ]; then
+        die "SBPP_AUTO_INSTALL=1 requires all four INITIAL_ADMIN_{NAME,STEAM,EMAIL,PASSWORD} env vars to be set so a headless install can seed an Owner-flagged admin. Either set them in your deploy env, or set SBPP_AUTO_INSTALL=0 to skip the headless install and run the wizard manually at /install/."
+    fi
+
     # Pipe schema with substitutions (mirror docker/db-init/00-render-schema.sh
-    # exactly — same prefix, same charset, same render order).
+    # exactly — same prefix, same charset, same render order). The
+    # `validate_identifiers` call at boot already restricted DB_PREFIX +
+    # DB_CHARSET to [A-Za-z0-9_]+, so the sed replacement can't break
+    # the schema's grammar.
     log "step 5: loading schema (prefix=${DB_PREFIX}, charset=${DB_CHARSET})"
     sed -e "s/{prefix}/${DB_PREFIX}/g" -e "s/{charset}/${DB_CHARSET}/g" \
         "${schema_dir}/struc.sql" | run_sql
     sed -e "s/{prefix}/${DB_PREFIX}/g" -e "s/{charset}/${DB_CHARSET}/g" \
         "${schema_dir}/data.sql"  | run_sql
-
-    # Seed initial admin (or skip with a clear next-step nudge).
-    if [ -z "$INITIAL_ADMIN_NAME" ] \
-       || [ -z "$INITIAL_ADMIN_STEAM" ] \
-       || [ -z "$INITIAL_ADMIN_EMAIL" ] \
-       || [ -z "$INITIAL_ADMIN_PASSWORD" ]; then
-        log "step 5: INITIAL_ADMIN_{NAME,STEAM,EMAIL,PASSWORD} not all set — admin row not seeded"
-        log "step 5: log in as the CONSOLE row only; seed an admin manually via the panel before going live"
-        return
-    fi
 
     seed_initial_admin
 }
@@ -486,13 +665,13 @@ seed_initial_admin() {
     # gid=-1, extraflags=16777216 (1<<24 = ADMIN_OWNER), immunity=100.
     # Same shape as page.5.php's INSERT.
     #
-    # The mysql client connects via the panel's runtime user/pass which
-    # was already verified by wait_for_db. Quoting: we pass values via
-    # `printf %q` shell-escape into a single-string SQL stmt; since the
-    # password hash and the admin name come from operator env vars,
-    # they're trusted by definition (the operator set them). The
-    # authid is regex-validated above. The email is validated by the
-    # panel UI later but here we just splat it in.
+    # sb-db.php exec connects via the panel's runtime user/pass that
+    # was already verified by wait_for_db. The password hash and the
+    # admin name come from operator env vars, so they're trusted by
+    # definition (the operator set them). The authid is regex-
+    # normalised above. The email is validated by the panel UI later
+    # but here we just splat it in. The single-quote escape in
+    # `sql_escape` defends the string literal against `'` / `\`.
     sql_escape() {
         # MySQL string-literal escape: backslash + single-quote.
         printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e "s/'/\\\\'/g"
@@ -539,6 +718,21 @@ run_pending_migrations() {
     # the migration runner. This re-uses the panel's autoload + the
     # existing Updater class, so the codepath is byte-identical to the
     # /updater/ web entrypoint minus the HTML render.
+    #
+    # CRIT-5 of the #1381 review: pre-fix the inline PHP script
+    # ALWAYS returned exit 0 even when a migration failed midway.
+    # Updater::update() records "Error executing: /updater/data/<N>.php.
+    # Stopping Update!" / "Update <b>Failed</b>!" into its message
+    # stack but never throws — and the surrounding script didn't
+    # inspect the stack, so the shell-side `if [ "$rc" -ne 0 ]`
+    # check was dead code. Result: a half-migrated schema booted
+    # silently, and the panel's first request hit a column that
+    # didn't yet exist.
+    #
+    # Post-fix: after the `Updater::update()` call returns, inspect
+    # the message-stack lines for either marker and `exit(1)` if any
+    # match. The shell `die` below now actually fires when the PHP
+    # detects a failure.
     php <<'PHP'
 <?php
 declare(strict_types=1);
@@ -585,15 +779,39 @@ $pdo = new \Sbpp\Db\Database(DB_HOST, (int) DB_PORT, DB_NAME, DB_USER, DB_PASS, 
 chdir($root . '/updater');
 require_once $root . '/updater/Updater.php';
 
-$updater = new \Updater($pdo);
+try {
+    $updater = new \Updater($pdo);
+} catch (\Throwable $e) {
+    fwrite(STDERR, "[prod-entrypoint][step 6] Updater constructor threw: " . $e->getMessage() . "\n");
+    exit(1);
+}
+
+$failed = false;
 foreach ($updater->getMessageStack() as $line) {
-    fwrite(STDERR, "[prod-entrypoint][step 6] " . strip_tags((string) $line) . "\n");
+    $text = strip_tags((string) $line);
+    fwrite(STDERR, "[prod-entrypoint][step 6] " . $text . "\n");
+    // Updater::update() emits one of these two markers when a
+    // per-script require returns falsy or a file is missing on
+    // disk. Substring-match both because the upstream stack
+    // strings include `<b>...</b>` formatting we already stripped.
+    //
+    // Source-of-truth: web/updater/Updater.php's `update()` method
+    // — search for "Error executing" and "Update Failed!".
+    if (str_contains($text, 'Error executing:')
+        || str_contains($text, 'Update Failed!')) {
+        $failed = true;
+    }
+}
+
+if ($failed) {
+    fwrite(STDERR, "[prod-entrypoint][step 6] one or more migrations failed — refusing to continue with a partially-upgraded schema\n");
+    exit(1);
 }
 PHP
 
     rc=$?
     if [ "$rc" -ne 0 ]; then
-        die "updater run failed (exit $rc) — refusing to start panel"
+        die "updater run failed (exit $rc) — refusing to start panel against a partially-upgraded schema"
     fi
 }
 
@@ -615,6 +833,26 @@ PHP
 # install-blocked recovery page, which is the wrong UX for a
 # production deploy).
 strip_install_dirs() {
+    # HIGH-5 partner: when SBPP_AUTO_INSTALL=0, the operator opted
+    # OUT of the headless install in step 5 — typically because they
+    # want to drive the wizard manually OR because they're pointing
+    # at a pre-populated managed DB and the wizard's already-installed
+    # guard will refuse to start once their config.php lands. In
+    # either case, install/ MUST stay on disk for the wizard to be
+    # reachable.
+    #
+    # The panel-runtime install/-presence guard is the friction
+    # surface that keeps the operator honest: hitting `/` lands on
+    # the recovery page that tells them to delete install/ once
+    # post-install cleanup is done. We deliberately don't reach for
+    # SBPP_DEV_KEEP_INSTALL here — that constant is named loudly so
+    # it's visibly wrong in production, and we want the operator to
+    # SEE the guard fire (and the friendly recovery copy) until they
+    # complete the wizard and clean up.
+    if [ "$SBPP_AUTO_INSTALL" != "1" ]; then
+        log "step 7: SBPP_AUTO_INSTALL=0 — leaving install/ + updater/ in place (wizard reachable at /install/)"
+        return
+    fi
     log "step 7: removing install/ + updater/ from writable layer (panel-runtime guard contract)"
     rm -rf "${WEB_ROOT}/install" "${WEB_ROOT}/updater" || die "couldn't strip install/+updater/ — see error above"
 }
@@ -646,6 +884,7 @@ main() {
     resolve_secrets         # step 1a
     parse_database_url      # step 1b
     apply_defaults          # step 1c
+    validate_identifiers    # step 1d  (CRIT-6: identifier shapes)
     configure_apache        # step 2
     wait_for_db             # step 3
     render_config           # step 4
@@ -653,6 +892,43 @@ main() {
     run_pending_migrations  # step 6
     strip_install_dirs      # step 7
     ensure_writable         # step 8
+
+    # CRIT-2 of the #1381 review: every env var that carries a
+    # secret (DB password, JWT signing key, the initial-admin
+    # password seed) MUST be unset BEFORE `exec apache2-foreground`.
+    # The exec'd process inherits the entrypoint's environment, and
+    # every Apache child PHP request can read those values through
+    # `$_ENV` / `$_SERVER` / `getenv()` / `phpinfo()` — a stored
+    # `<?php phpinfo();` upload or any debug surface would leak the
+    # cleartext to anyone with `?p=phpinfo` access.
+    #
+    # config.php is the canonical source of truth for these values
+    # at request time (the panel reads them as `const DB_PASS` /
+    # `const SB_SECRET_KEY`). The env vars are scaffolding only; we
+    # rendered them into config.php in step 4 and the runtime no
+    # longer needs them.
+    #
+    # Why this list:
+    #   - INITIAL_ADMIN_*: only consumed by step 5; never persists.
+    #     A stored phpinfo with these visible is a credential leak.
+    #   - DB_PASS / DB_PASS_FILE: in config.php, exposed in env was
+    #     redundant.
+    #   - SB_SECRET_KEY / SB_SECRET_KEY_FILE: in config.php; the JWT
+    #     signing secret.
+    #   - DATABASE_URL: carries DB_PASS embedded as a userinfo
+    #     component (`mysql://user:PASS@host/db`).
+    #   - STEAMAPIKEY: in config.php; the Steam Web API key.
+    #
+    # We deliberately keep the non-secret connection knobs
+    # (DB_HOST/PORT/NAME/USER, PORT, SBPP_TRUSTED_PROXIES) in the
+    # env — they're either in config.php anyway (DB_*) or used by
+    # Apache's own env-var substitution (PORT, RemoteIPInternalProxy).
+    unset INITIAL_ADMIN_NAME INITIAL_ADMIN_STEAM INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD \
+          INITIAL_ADMIN_NAME_FILE INITIAL_ADMIN_STEAM_FILE INITIAL_ADMIN_EMAIL_FILE INITIAL_ADMIN_PASSWORD_FILE \
+          DB_PASS DB_PASS_FILE \
+          SB_SECRET_KEY SB_SECRET_KEY_FILE \
+          STEAMAPIKEY STEAMAPIKEY_FILE \
+          DATABASE_URL
 
     log "boot complete — handing off to: $*"
     exec "$@"
