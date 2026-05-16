@@ -60,6 +60,21 @@ export default defineConfig({
           tag: 'meta',
           attrs: { name: 'theme-color', content: '#ea580c' },
         },
+        // Cloudflare Web Analytics — privacy-friendly traffic stats
+        // for sbpp.github.io. No cookies, no fingerprinting, no
+        // cross-site tracking; the beacon just POSTs an anonymised
+        // page-view ping per navigation. The `data-cf-beacon` token
+        // is a public site identifier (it has to ship in the HTML
+        // for the beacon to work) — it's not a credential and can't
+        // be used to read the analytics dashboard.
+        {
+          tag: 'script',
+          attrs: {
+            defer: true,
+            src: 'https://static.cloudflareinsights.com/beacon.min.js',
+            'data-cf-beacon': '{"token": "900ab004c40747e099a22fa226b7fb29"}',
+          },
+        },
       ],
       // Starlight 0.33 changed `social` from a `Record<KnownPlatform, url>`
       // map to a `[{icon, label, href}]` array (see the changelog at
