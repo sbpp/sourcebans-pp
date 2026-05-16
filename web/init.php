@@ -68,6 +68,27 @@ if (!file_exists($sbppConfigPath)) {
 }
 require_once($sbppConfigPath);
 
+// SBPP_TRUSTED_PROXIES (#1381 CRIT-4): operator-defined list of
+// CIDR ranges whose `X-Forwarded-Proto` / `X-Forwarded-For` the
+// panel will trust. Format: whitespace-separated list of IP
+// literals or CIDR ranges (IPv4 + IPv6), e.g.
+// `'10.0.0.0/8 192.168.0.0/16 ::1'`. Empty / undefined disables
+// XFP / XFF consultation entirely.
+//
+// Resolution order:
+//   1. `config.php` `define('SBPP_TRUSTED_PROXIES', ...)` — wins.
+//   2. `SBPP_TRUSTED_PROXIES` env var (the Docker prod image
+//      exports this in `configure_apache`).
+//   3. Empty string — the secure default; `Host::isSecure()`
+//      ignores `X-Forwarded-Proto` and trusts only the
+//      authoritative `$_SERVER['HTTPS']` (which `mod_remoteip`
+//      + `SetEnvIfExpr` populate server-side after the proxy
+//      hop is validated by Apache).
+if (!defined('SBPP_TRUSTED_PROXIES')) {
+    $envProxies = getenv('SBPP_TRUSTED_PROXIES');
+    define('SBPP_TRUSTED_PROXIES', is_string($envProxies) ? $envProxies : '');
+}
+
 // Issue #1335 C1: pre-fix this guard exempted `HTTP_HOST ==
 // "localhost"`, which was a panel-takeover path on any panel
 // reachable via a `localhost` Host header (port-forward, SSH
