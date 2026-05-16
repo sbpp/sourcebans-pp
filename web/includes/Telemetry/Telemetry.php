@@ -87,9 +87,21 @@ final class Telemetry
      * defensive (early-return on opt-out, atomic reservation,
      * silent cURL), but the outer `try/catch` is the
      * never-fail-the-request guarantee.
+     *
+     * Callers that want to opt OUT of telemetry for a single
+     * request (e.g. the `/health.php` probe, which the orchestrator
+     * hits every ~30s — MED-4 of the #1381 review) `define`
+     * `SBPP_SKIP_TELEMETRY` before requiring `init.php`. The
+     * rate-limit guard further down would already prevent a real
+     * cURL POST on every probe, but the per-tick slot-reservation
+     * `UPDATE` on `:prefix_settings.last_ping` is still pure noise
+     * we'd rather not pay on a 2880-probe-per-day endpoint.
      */
     public static function tickIfDue(): void
     {
+        if (defined('SBPP_SKIP_TELEMETRY')) {
+            return;
+        }
         try {
             self::run();
         } catch (Throwable) {

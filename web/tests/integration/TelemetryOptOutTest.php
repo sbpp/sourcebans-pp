@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sbpp\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Sbpp\Config;
 use Sbpp\Telemetry\Telemetry;
 use Sbpp\Tests\ApiTestCase;
@@ -97,6 +98,41 @@ final class TelemetryOptOutTest extends ApiTestCase
             (string) $now,
             $this->fetchSetting('telemetry.last_ping'),
             'A within-cooldown tick must leave last_ping untouched.'
+        );
+    }
+
+    /**
+     * MED-4 of the #1381 review — `/health.php` defines
+     * `SBPP_SKIP_TELEMETRY` BEFORE `require_once 'init.php'`, so
+     * the shutdown function `init.php` registers
+     * (`Telemetry::tickIfDue`) early-returns without touching the
+     * `:prefix_settings.last_ping` reservation row. The
+     * orchestrator hits the healthcheck every ~30s in production,
+     * so the per-tick `UPDATE` would otherwise be ~2880 writes/day
+     * of pure noise.
+     *
+     * Process-isolated because `define()` is process-global; once
+     * set, the rest of the suite would silently inherit the
+     * opt-out and the other tests in this class would lose their
+     * gate.
+     */
+    #[RunInSeparateProcess]
+    public function testTickIfDueShortCircuitsWhenSbppSkipTelemetryDefined(): void
+    {
+        $this->setTelemetryEnabled(true);
+        define('SBPP_SKIP_TELEMETRY', true);
+
+        Telemetry::tickIfDue();
+
+        $this->assertSame(
+            '0',
+            $this->fetchSetting('telemetry.last_ping'),
+            'SBPP_SKIP_TELEMETRY must short-circuit tickIfDue before any DB write.'
+        );
+        $this->assertSame(
+            '',
+            $this->fetchSetting('telemetry.instance_id'),
+            'SBPP_SKIP_TELEMETRY must short-circuit tickIfDue before the instance ID mint.'
         );
     }
 
