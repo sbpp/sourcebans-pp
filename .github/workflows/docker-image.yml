@@ -24,40 +24,60 @@ name: Docker image
 # --certificate-oidc-issuer=https://token.actions.githubusercontent.com`
 # without any pre-shared key.
 #
-# Path filter scope:
-#   - docker/Dockerfile.prod, docker/php/prod-*, docker/apache/sbpp-prod.conf
+# Path filter scope (PR trigger only — see MED-6 below for the
+# push-trigger rationale):
+#   - docker/Dockerfile.prod, docker/php/prod-*, docker/apache/sbpp-prod.conf,
+#     docker/php/sb-db.php — every file the runtime image bakes in
 #   - web/health.php — the file the HEALTHCHECK pings
-#   - web/init.php / init-recovery.php — the SBPP_CONFIG_PATH plumbing
-#     that the entrypoint relies on
-#   - .github/workflows/docker-image.yml — touch-the-workflow trigger
+#   - web/init.php / web/init-recovery.php — the SBPP_CONFIG_PATH
+#     plumbing + install-guard contract the entrypoint relies on
+#   - web/install/includes/sql/** — schema and seed data the entrypoint
+#     loads on first-boot install
+#   - web/includes/Auth/Host.php — the SBPP_TRUSTED_PROXIES gate the
+#     entrypoint's Apache config feeds (CRIT-4)
+#   - web/includes/Telemetry/Telemetry.php — the SBPP_SKIP_TELEMETRY
+#     hook health.php depends on (MED-4)
 #   - composer.json/lock under web/ — vendor dependency churn
+#   - .github/workflows/docker-image.yml — touch-the-workflow trigger
 #
-# We deliberately don't trigger on every web/** edit (the panel surface
-# changes constantly; rebuilding the prod image on every PR would burn
-# action minutes for changes the next release cycle picks up anyway).
-# `main` and tag pushes always rebuild.
+# MED-6 of the #1381 review: pre-fix, the `push:` block specified
+# `branches`, `tags`, AND `paths` at the same level. GitHub Actions
+# AND-combines them — a tag push only fires when the underlying
+# commit ALSO touches one of the listed paths. Release tags are
+# typically attached to commits that already shipped through `main`
+# (so the paths filter masked the prod-image surface change), which
+# means a release-tag push could silently NOT build the image and
+# `:latest` would lag behind `:main` indefinitely.
+#
+# Fix: drop the `paths` filter from `push:` entirely. Every push to
+# `main` AND every release-tag push triggers a full multi-arch build.
+# Action minutes for tag pushes are unconditional (correct for a
+# release surface); main pushes are rare (PRs aggregate via squash
+# merges) so the per-merge cost is acceptable. The `pull_request:`
+# block keeps its paths filter — PRs that don't touch the image
+# surface still don't rebuild, preserving the per-PR action-minute
+# optimisation that originally motivated the path filter.
 
 on:
   push:
     branches:
       - main
-    paths:
-      - 'docker/Dockerfile.prod'
-      - 'docker/php/prod-*'
-      - 'docker/apache/sbpp-prod.conf'
-      - 'web/composer.json'
-      - 'web/composer.lock'
-      - 'web/health.php'
-      - 'web/init.php'
-      - 'web/init-recovery.php'
-      - '.github/workflows/docker-image.yml'
     tags:
       - '*.*.*'
   pull_request:
     paths:
       - 'docker/Dockerfile.prod'
       - 'docker/php/prod-*'
+      - 'docker/php/sb-db.php'
       - 'docker/apache/sbpp-prod.conf'
+      - 'web/composer.json'
+      - 'web/composer.lock'
+      - 'web/health.php'
+      - 'web/init.php'
+      - 'web/init-recovery.php'
+      - 'web/install/includes/sql/**'
+      - 'web/includes/Auth/Host.php'
+      - 'web/includes/Telemetry/Telemetry.php'
       - '.github/workflows/docker-image.yml'
   workflow_dispatch:
 
@@ -176,7 +196,12 @@ jobs:
       - name: Sign image with cosign (keyless)
         if: github.event_name != 'pull_request'
         env:
-          COSIGN_EXPERIMENTAL: '1'
+          # NIT-1 of the #1381 review: `COSIGN_EXPERIMENTAL=1` was the
+          # gate for keyless signing back when it was experimental
+          # (cosign 1.x). Cosign 2.0+ promoted keyless / OIDC to the
+          # default behaviour and 2.4.x silently ignores the env var;
+          # carrying it ~suggests there's still an experimental flag
+          # in play here when there isn't.
           IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
