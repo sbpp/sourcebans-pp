@@ -101,6 +101,17 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # GeoLite2 country lookups efficient. `gettext-base` is brought in
 # solely for `envsubst`, which the entrypoint uses for safe variable
 # substitution in the rendered config.php.
+#
+# HIGH-3 of the #1381 review: pre-fix the runtime image carried
+# `default-mysql-client` (~22 MB) so the entrypoint could shell out to
+# `mysqladmin ping` for the wait-for-DB loop and `mysql` for the
+# schema bootstrap. The spec explicitly excluded it ("No mysql-client
+# tooling in the runtime image"). The entrypoint now drives both
+# paths through the bundled `docker/php/sb-db.php` PDO helper — same
+# pdo_mysql extension every panel request already uses — and the
+# apt line shrinks by one package. Don't reintroduce
+# `default-mysql-client` here; see `sb-db.php` for the operations it
+# replaced.
 # (see the builder stage above for the apt-pinning rationale)
 # hadolint ignore=DL3008
 RUN apt-get update \
@@ -111,7 +122,6 @@ RUN apt-get update \
         libzip-dev \
         libonig-dev \
         libgmp-dev \
-        default-mysql-client \
         tzdata \
  && docker-php-ext-install -j"$(nproc)" \
         pdo_mysql \
@@ -121,12 +131,6 @@ RUN apt-get update \
         gmp \
  && a2enmod rewrite headers remoteip setenvif \
  && rm -rf /var/lib/apt/lists/*
-
-# `default-mysql-client` is in the runtime image ONLY for the entrypoint's
-# `mysqladmin ping` wait-for-DB loop. The 22 MB cost is worth not
-# re-implementing the wait loop in PHP (which would need a temporary
-# script staged before init.php is reachable). The client is unused at
-# request time and never exposed to the panel.
 
 # Production PHP tuning. `display_errors=Off` + `log_errors=On` follows
 # 12-factor (errors to stderr; the orchestrator captures them).
@@ -200,6 +204,14 @@ RUN mkdir -p \
         /var/www/html/web/cache \
         /var/www/html/web/templates_c \
         /var/www/html/web/demos
+
+# Bundled PHP CLI helper the entrypoint shells out to for DB ops
+# (HIGH-3: replaces the previous `mysqladmin ping` + `mysql <
+# schema.sql` calls that drove the `default-mysql-client` apt
+# dependency above). Lives under /usr/local/lib/sbpp/ — outside
+# /var/www/html/web/ — so it stays reachable after the entrypoint
+# `rm -rf`s install/ + updater/ in step 7.
+COPY docker/php/sb-db.php /usr/local/lib/sbpp/sb-db.php
 
 # Production entrypoint: drives the install + migrate state machine,
 # strips install/ + updater/ from the writable layer, then execs
