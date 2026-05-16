@@ -65,7 +65,13 @@ resolve_file_secret() {
     eval "file_path=\${$file_var:-}"
     if [ -n "$file_path" ] && [ -f "$file_path" ]; then
         eval "$name=\$(cat \"\$file_path\")"
-        export "$name"
+        # `export "$name"` works (POSIX `export` accepts an expanded
+        # variable name as an arg), but shellcheck flags it as SC2163
+        # because the static analysis can't see the deferred expansion.
+        # Wrapping the value in `${var?}` is the documented silencing
+        # shape and also gates against `$name` being unset, so the
+        # behaviour is strictly tighter than the bare form.
+        export "${name?refusing to export an unnamed secret}"
     fi
 }
 
@@ -464,6 +470,14 @@ seed_initial_admin() {
     # get STEAM_0 from OpenID anyway.
     authid="$(printf '%s' "$INITIAL_ADMIN_STEAM" | sed 's/^STEAM_1/STEAM_0/')"
 
+    # shellcheck disable=SC2016
+    # ^ the single-quoted body is intentional — `$argv[1]` is PHP's
+    #   argv, not a shell variable. Wrapping in single quotes keeps
+    #   the shell from rewriting the literal `$argv` before php sees
+    #   it. The password itself is passed as a CLI argument
+    #   (`"$INITIAL_ADMIN_PASSWORD"`), so it never reaches the shell's
+    #   word-splitting / glob phases — `password_hash()` receives the
+    #   literal byte sequence the operator set.
     pwhash="$(php -r 'echo password_hash($argv[1], PASSWORD_BCRYPT);' "$INITIAL_ADMIN_PASSWORD")"
     if [ -z "$pwhash" ]; then
         die "password_hash() returned empty for INITIAL_ADMIN_PASSWORD — refusing to seed admin"

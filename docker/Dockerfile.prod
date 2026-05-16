@@ -45,6 +45,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     COMPOSER_ALLOW_SUPERUSER=1 \
     COMPOSER_NO_INTERACTION=1
 
+# Debian-base apt packages don't pin cleanly across releases; the
+# project pins the BASE IMAGE tag instead (`php:8.5-cli`) which gives
+# reproducible Debian release / apt snapshot. Pinning individual apt
+# packages would force a coupled bump every time the base image rolls
+# forward.
+# hadolint ignore=DL3008
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         git \
@@ -87,12 +93,16 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Runtime extensions only. The dev image carries `default-mysql-client`,
 # `nodejs`, `npm`, `git`, `gettext-base`, `unzip` — all developer-side
-# helpers the prod image has no business shipping. `gmp` is required by
-# `Sbpp\SteamID` (the SteamID2/3/64 math layer) post-#1385's drop of the
-# BCMath fallback. `intl`, `zip`, `mbstring` mirror dev. `pdo_mysql` is
-# the panel's only DB driver. `gettext-base` is brought in solely for
-# `envsubst`, which the entrypoint uses for safe variable substitution
-# in the rendered config.php.
+# helpers the prod image has no business shipping. `pdo_mysql` is the
+# panel's only DB driver. `intl`, `zip`, `mbstring` mirror dev. `gmp`
+# is on the spec'd runtime-extension list (#1381 deliverable 1) — it's
+# also the soft-dependency `maxmind-db/reader` suggests for large
+# integer decoding via the pure-PHP MMDB path, so shipping it keeps
+# GeoLite2 country lookups efficient. `gettext-base` is brought in
+# solely for `envsubst`, which the entrypoint uses for safe variable
+# substitution in the rendered config.php.
+# (see the builder stage above for the apt-pinning rationale)
+# hadolint ignore=DL3008
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         ca-certificates \
@@ -130,6 +140,14 @@ COPY docker/php/prod-php.ini /usr/local/etc/php/conf.d/zz-sbpp-prod.ini
 
 # Apache: serve from /var/www/html/web (the panel lives under web/ in
 # the repo, mirrored into the image at /var/www/html/web).
+#
+# The `${APACHE_DOCUMENT_ROOT}` inside the single-quoted sed expression
+# below is INTENTIONAL. The expansion happens at Apache startup time
+# (via Apache's own env-var support, not the shell), so we want sed
+# to substitute the literal characters `${APACHE_DOCUMENT_ROOT}` into
+# the conf files. Letting the shell pre-expand would bake the build-
+# time value in and lose the runtime-overridability of the env var.
+# hadolint ignore=SC2016
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
         /etc/apache2/sites-available/*.conf \
         /etc/apache2/apache2.conf \
@@ -211,6 +229,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
 
 # `curl` is needed by HEALTHCHECK above; install lazily so apt cache stays
 # in the previous RUN's layer.
+# (see the builder-stage apt block for the apt-pinning rationale)
+# hadolint ignore=DL3008
 RUN apt-get update \
  && apt-get install -y --no-install-recommends curl \
  && rm -rf /var/lib/apt/lists/*
