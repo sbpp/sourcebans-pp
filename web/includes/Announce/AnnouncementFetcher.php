@@ -112,6 +112,16 @@ final class AnnouncementFetcher
     private static $httpFetcher = null;
 
     /**
+     * Optional override for the upstream URL. Constants are
+     * write-once at runtime, so a test that wants to drive the
+     * `resolveUpstreamUrl()` branches (empty-air-gap, non-http
+     * scheme, valid URL) without redefining `SB_ANNOUNCEMENTS_URL`
+     * sets this string instead. Production never sets it. The
+     * `?string` shape mirrors {@see $httpFetcher} above.
+     */
+    private static ?string $upstreamUrlOverride = null;
+
+    /**
      * Test-only knob to drive the fetcher with a deterministic
      * response. Pass `null` to clear. The override is invoked with
      * the upstream URL and must return either the raw body string
@@ -124,6 +134,18 @@ final class AnnouncementFetcher
     public static function _setHttpFetcherForTests(?callable $fetcher): void
     {
         self::$httpFetcher = $fetcher;
+    }
+
+    /**
+     * Test-only knob to drive `resolveUpstreamUrl()` with a
+     * deterministic value. Pass `null` to clear (which falls back
+     * to the `SB_ANNOUNCEMENTS_URL` constant). The empty string
+     * exercises the air-gap branch; a `file://` / `php://` / etc.
+     * value exercises the scheme guard. Production never sets it.
+     */
+    public static function _setUpstreamUrlForTests(?string $url): void
+    {
+        self::$upstreamUrlOverride = $url;
     }
 
     /**
@@ -230,18 +252,58 @@ final class AnnouncementFetcher
      * Resolve the configured upstream URL. The
      * `SB_ANNOUNCEMENTS_URL` constant is set in `init.php` (with a
      * `defined()` guard so `config.php` can override) and the empty
-     * string is the documented air-gap escape hatch. Anything else
-     * is returned verbatim — the URL is hardcoded to https:// in the
-     * default define, and operators who change it are responsible
-     * for the egress destination.
+     * string is the documented air-gap escape hatch.
+     *
+     * Defence-in-depth scheme guard: even though the operator owns
+     * `config.php` and could in principle put anything in there,
+     * `file_get_contents` happily honours every PHP stream wrapper
+     * (`file://`, `php://`, `phar://`, `data://`, `ftp://`, …). A
+     * misconfiguration (or a typo, or compromised config.php) that
+     * pointed at `file:///etc/passwd` would land that file's contents
+     * inside `SB_CACHE/announcements.json` — useless to the dashboard
+     * (the parser would reject the non-JSON body), but still a
+     * surprising side effect to land on disk. Restricting to http(s)
+     * shrinks the operator-misconfiguration blast radius to "the
+     * panel hits some HTTP endpoint" instead of "the panel reads
+     * arbitrary files via stream wrappers". Same shape
+     * `_api_system_release_fetch_upstream` relies on (the upstream
+     * URL is hardcoded https there; here we lean on the same
+     * assumption but with the gate explicit because the constant
+     * IS operator-overridable).
      */
     private static function resolveUpstreamUrl(): string
     {
+        // Test-only override path — see `_setUpstreamUrlForTests`.
+        // Production callers never reach this branch (the override
+        // is null by default). When set, the override is the only
+        // input considered (so a test can exercise the scheme-guard
+        // branch with `file://` etc. without redefining the
+        // write-once `SB_ANNOUNCEMENTS_URL` constant).
+        if (self::$upstreamUrlOverride !== null) {
+            $raw = self::$upstreamUrlOverride;
+            if ($raw === '' || preg_match('~^https?://~i', $raw) !== 1) {
+                return '';
+            }
+            return $raw;
+        }
         if (!defined('SB_ANNOUNCEMENTS_URL')) {
             return '';
         }
-        $url = (string) constant('SB_ANNOUNCEMENTS_URL');
-        return $url;
+        // Read through `mixed` so PHPStan doesn't narrow to the
+        // init.php compile-time literal — operators MAY redefine the
+        // constant in `config.php` to either the empty string (the
+        // air-gap escape hatch) or another http(s) URL (a self-hosted
+        // mirror). Both branches need to be reachable from the
+        // analyser's perspective.
+        /** @var mixed $raw */
+        $raw = constant('SB_ANNOUNCEMENTS_URL');
+        if (!is_string($raw) || $raw === '') {
+            return '';
+        }
+        if (preg_match('~^https?://~i', $raw) !== 1) {
+            return '';
+        }
+        return $raw;
     }
 
     /**
@@ -418,7 +480,17 @@ final class AnnouncementFetcher
         if (!is_file($file)) {
             return [];
         }
-        $raw = @file_get_contents($file);
+        // Cap the read at MAX_BODY_BYTES + 1 so a hand-edited / hostile
+        // cache file (e.g. an attacker who landed a 1 GiB JSON blob via
+        // a misconfigured SB_ANNOUNCEMENTS_URL pointing at file://, or a
+        // genuinely confused operator) can NEVER OOM the worker before
+        // the post-read size check below fires. The post-read check
+        // catches the exact-cap-and-one-over case (anything strictly
+        // larger than MAX_BODY_BYTES means the upstream / source served
+        // > 256 KiB; reject) — symmetric with `fetchUpstream`'s read
+        // cap so the parse boundary is identical regardless of which
+        // way the bytes got onto disk.
+        $raw = @file_get_contents($file, false, null, 0, self::MAX_BODY_BYTES + 1);
         if ($raw === false || $raw === '') {
             return [];
         }
