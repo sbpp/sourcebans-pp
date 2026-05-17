@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sbpp\Tests\Integration;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Sbpp\Announce\Announcement;
 use Sbpp\Announce\AnnouncementFetcher;
@@ -39,14 +40,15 @@ final class AnnouncementFetcherTest extends TestCase
             @unlink($tmp);
         }
         AnnouncementFetcher::_setHttpFetcherForTests(null);
+        AnnouncementFetcher::_setUpstreamUrlForTests(null);
 
         // Default the URL constant to a non-empty placeholder so
         // `tickIfDue()`'s air-gap branch doesn't short-circuit
-        // every test. Individual tests that exercise the air-gap
-        // path override this via runkit-free re-define would be
-        // impossible (constants are write-once); they instead
-        // assert by leaving `_setHttpFetcherForTests` set to a
-        // sentinel that fails the test if invoked.
+        // every test. The constant is write-once, so individual
+        // tests that need to drive the air-gap / scheme-guard
+        // branches override the URL via `_setUpstreamUrlForTests`
+        // instead — see `testEmptyAirGapUrlShortCircuitsTheFetcher`
+        // and `testNonHttpUrlSchemeShortCircuitsTheFetcher`.
         if (!defined('SB_ANNOUNCEMENTS_URL')) {
             // The bootstrap doesn't define this (init.php does at
             // runtime), so the test harness owns the default.
@@ -57,6 +59,7 @@ final class AnnouncementFetcherTest extends TestCase
     protected function tearDown(): void
     {
         AnnouncementFetcher::_setHttpFetcherForTests(null);
+        AnnouncementFetcher::_setUpstreamUrlForTests(null);
         @unlink($this->cacheFile);
         parent::tearDown();
     }
@@ -383,23 +386,104 @@ final class AnnouncementFetcherTest extends TestCase
 
     public function testEmptyAirGapUrlShortCircuitsTheFetcher(): void
     {
-        // The `_setHttpFetcherForTests` override is a sentinel — if
-        // the fetcher is called when SB_ANNOUNCEMENTS_URL is empty,
-        // the test fails. We can't redefine the constant at runtime
-        // (defines are write-once), so this test exercises the
-        // resolveUpstreamUrl() branch indirectly: when the constant
-        // is non-empty (the suite's default) AND the cache is fresh,
-        // the fetcher is also not called. The "constant empty"
-        // scenario is the same code path with a different gate.
-        // The concrete coverage we get here is "fresh cache + null
-        // URL would also gate, but only one of those gates needs to
-        // fire to skip the fetcher."
-        //
-        // Rather than mirror this gate twice, just rely on the
-        // testTickIfDueIsNoopWhenCacheIsFresh assertion above and
-        // pin the parse-side documentation here.
-        $this->assertSame('', '',
-            'documented: SB_ANNOUNCEMENTS_URL = "" short-circuits tickIfDue — see resolveUpstreamUrl()');
+        // Empty URL = the documented air-gap escape hatch. The
+        // shutdown hook MUST NOT touch the network on this branch.
+        // Drive the override via `_setUpstreamUrlForTests` since the
+        // constant itself is write-once at runtime.
+        AnnouncementFetcher::_setUpstreamUrlForTests('');
+
+        $callCount = 0;
+        AnnouncementFetcher::_setHttpFetcherForTests(static function () use (&$callCount): ?string {
+            $callCount++;
+            return null;
+        });
+
+        AnnouncementFetcher::tickIfDue();
+
+        $this->assertSame(0, $callCount,
+            'air-gap (empty URL) MUST NOT invoke the upstream fetcher');
+        $this->assertFileDoesNotExist($this->cacheFile,
+            'air-gap path MUST NOT touch the cache file');
+    }
+
+    #[DataProvider('nonHttpSchemeProvider')]
+    public function testNonHttpUrlSchemeShortCircuitsTheFetcher(string $url): void
+    {
+        // Defence-in-depth against SSRF: if `config.php` is
+        // misconfigured (or compromised) and points
+        // `SB_ANNOUNCEMENTS_URL` at any non-http(s) stream wrapper,
+        // the resolver MUST drop to the air-gap branch. Without
+        // this guard, `file://` would let arbitrary local files
+        // land in the cache, `php://input` would echo the request
+        // body, etc.
+        AnnouncementFetcher::_setUpstreamUrlForTests($url);
+
+        $callCount = 0;
+        AnnouncementFetcher::_setHttpFetcherForTests(static function () use (&$callCount): ?string {
+            $callCount++;
+            return null;
+        });
+
+        AnnouncementFetcher::tickIfDue();
+
+        $this->assertSame(0, $callCount,
+            "non-http(s) URL ({$url}) MUST NOT invoke the upstream fetcher");
+        $this->assertFileDoesNotExist($this->cacheFile,
+            "non-http(s) URL ({$url}) MUST NOT touch the cache file");
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function nonHttpSchemeProvider(): iterable
+    {
+        yield 'file scheme'  => ['file:///etc/passwd'];
+        yield 'php scheme'   => ['php://filter/read=convert.base64-encode/resource=/etc/passwd'];
+        yield 'phar scheme'  => ['phar:///tmp/x.phar'];
+        yield 'data scheme'  => ['data:text/plain,malicious'];
+        yield 'ftp scheme'   => ['ftp://example.com/feed.json'];
+        yield 'gopher scheme'=> ['gopher://example.com/'];
+    }
+
+    public function testHttpsUrlIsAccepted(): void
+    {
+        // The positive arm: a plain `https://` URL flows through
+        // `resolveUpstreamUrl()` to the fetcher unchanged. Pinning
+        // this so a future tightening of the regex (e.g. requiring
+        // `https://` only, dropping `http://`) doesn't silently
+        // break self-hosted mirrors.
+        AnnouncementFetcher::_setUpstreamUrlForTests('https://mirror.example.com/announcements.json');
+
+        $receivedUrl = null;
+        AnnouncementFetcher::_setHttpFetcherForTests(static function (string $url) use (&$receivedUrl): ?string {
+            $receivedUrl = $url;
+            return '[]';
+        });
+
+        AnnouncementFetcher::tickIfDue();
+
+        $this->assertSame('https://mirror.example.com/announcements.json', $receivedUrl,
+            'http(s) URL MUST be passed verbatim to the fetcher');
+    }
+
+    public function testHttpUrlIsAccepted(): void
+    {
+        // Plain `http://` is also legal — operators on intranet
+        // mirrors without TLS shouldn't be forced into a custom
+        // CA story. The scheme guard's job is to reject stream
+        // wrappers, not enforce HTTPS.
+        AnnouncementFetcher::_setUpstreamUrlForTests('http://mirror.example.lan/announcements.json');
+
+        $callCount = 0;
+        AnnouncementFetcher::_setHttpFetcherForTests(static function () use (&$callCount): ?string {
+            $callCount++;
+            return '[]';
+        });
+
+        AnnouncementFetcher::tickIfDue();
+
+        $this->assertSame(1, $callCount,
+            'plain http:// URL MUST reach the fetcher');
     }
 
     public function testIsoTimestampAndIntegerTimestampBothParse(): void
