@@ -1462,10 +1462,10 @@
 
   // ---- PENDING-TOAST BOOTSTRAP -----------------------------
   // Drain queued toasts emitted by `Sbpp\View\Toast::emit` (PHP). Each
-  // payload rides a `<script type="application/json" class="sbpp-pending-toast"
-  // data-testid="pending-toast">{kind,title,body,redirect?}</script>` block
-  // the page handler `echo`'d mid-body, before this file even mounted —
-  // see `web/includes/View/Toast.php` for the full rationale and the
+  // payload rides a `<script type="application/json" class="sbpp-pending-toast">
+  // {kind,title,body,redirect?}</script>` block the page handler
+  // `echo`'d mid-body, before this file even mounted — see
+  // `web/includes/View/Toast.php` for the full rationale and the
   // wire-format contract.
   //
   // The lift (#1403) replaces every legacy `<script>ShowBox(...)</script>`
@@ -1481,12 +1481,19 @@
   //   - `class` not `id`: a single request can emit several toasts
   //     (validation-error spray, success + diagnostic warning, …)
   //     without selector conflicts.
-  //   - `data-testid="pending-toast"` is the E2E hook the regression
-  //     guards under `web/tests/e2e/specs/flows/` anchor on.
+  //   - No `data-testid` on the wire-format `<script>` block — E2E
+  //     specs anchor on the painted `[data-testid="toast"]` element
+  //     (set by `showToast` below) or on `[role="status"]`. A
+  //     wire-format testid would collide across multi-emit responses
+  //     because Playwright's `getByTestId(...)` strict mode rejects
+  //     multi-match — the rendered toast is the right anchor.
   //   - JSON is consumed via `textContent` not the JS parser — the
   //     server-side encoder uses `JSON_HEX_TAG | JSON_HEX_AMP |
-  //     JSON_HEX_APOS | JSON_HEX_QUOT` so the blob can't escape its
-  //     `<script>` wrapper regardless of caller payload.
+  //     JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE`
+  //     so the blob can't escape its `<script>` wrapper regardless of
+  //     caller payload, and malformed UTF-8 in player names (the
+  //     #1108 / #765 Latin-1-on-utf8 truncation shape) substitutes
+  //     to U+FFFD rather than throwing.
   //
   // Redirect semantics: when one or more entries carry `redirect`,
   // the FIRST non-empty URL wins (the rest are dropped silently — a

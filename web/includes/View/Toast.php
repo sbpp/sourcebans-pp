@@ -30,8 +30,8 @@ namespace Sbpp\View;
  * # Wire format
  *
  * The payload is emitted as a `<script type="application/json"
- * class="sbpp-pending-toast" data-testid="pending-toast">` block,
- * NOT an executable inline script. Three reasons:
+ * class="sbpp-pending-toast">` block, NOT an executable inline
+ * script. Three reasons:
  *
  *   1. **Order-of-operations safety.** Page handlers run in the
  *      middle of `build()` — `core/header.tpl`, `core/navbar.tpl`,
@@ -56,10 +56,13 @@ namespace Sbpp\View;
  *      pattern.
  *   3. **Multi-toast support.** Using a class (not an id) means a
  *      page handler can emit several toasts in one request without
- *      conflicting; `theme.js` iterates the full set. The
- *      `data-testid="pending-toast"` hook is for E2E specs to
- *      anchor on (matches the cross-cutting AGENTS.md "Testability
- *      hooks" rule from #1123).
+ *      conflicting; `theme.js` iterates the full set. E2E specs
+ *      anchor on the *rendered* `[data-testid="toast"]` element
+ *      (set by `showToast` in `theme.js`) or `[role="status"]`
+ *      — NOT on the wire-format `<script>` block, because we may
+ *      emit several blocks per response and a wire-format testid
+ *      would collide. Wire-layer specs probe the response body
+ *      directly for `class="sbpp-pending-toast"`.
  *
  * Payload shape (post-`json_encode`):
  *
@@ -91,6 +94,25 @@ namespace Sbpp\View;
  * `JSON_THROW_ON_ERROR` surfaces malformed input loudly instead of
  * silently emitting `false` (which `echo` would render as the
  * empty string).
+ *
+ * `JSON_INVALID_UTF8_SUBSTITUTE` is the load-bearing flag for
+ * fault tolerance. Player names on `:prefix_bans.name` /
+ * `:prefix_comms.name` (interpolated into the toast body on the
+ * GET-fallback unban / unmute / delete paths in `page.banlist.php`
+ * / `page.commslist.php`) CAN carry malformed UTF-8 — historical
+ * Latin-1-on-utf8 truncation shape from pre-#1108 (#765) installs
+ * whose plugin-side insert path wrote bytes that the post-#1108
+ * utf8mb4 migration did not retroactively repair. Without this
+ * flag `JSON_THROW_ON_ERROR` raises `JsonException` on every such
+ * row and the user gets a 500 instead of the unban confirmation
+ * — and worse, the unban / delete SQL has already committed by
+ * the time `Toast::emit` fires, so the audit log shows the action
+ * succeeded while the operator sees a server error. With this
+ * flag the offending bytes substitute to U+FFFD (the Unicode
+ * REPLACEMENT CHARACTER) and the toast paints. Same fault-
+ * tolerance shape every modern JSON API uses; the substitute
+ * fires only on the genuinely broken path so well-formed payloads
+ * are unaffected.
  *
  * # Body is plain text
  *
@@ -156,13 +178,14 @@ final class Toast
         $json = json_encode(
             $payload,
             JSON_THROW_ON_ERROR
+            | JSON_INVALID_UTF8_SUBSTITUTE
             | JSON_HEX_TAG
             | JSON_HEX_AMP
             | JSON_HEX_APOS
             | JSON_HEX_QUOT,
         );
 
-        echo '<script type="application/json" class="sbpp-pending-toast" data-testid="pending-toast">'
+        echo '<script type="application/json" class="sbpp-pending-toast">'
             . $json
             . '</script>';
     }

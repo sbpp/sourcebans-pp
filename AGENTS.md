@@ -420,6 +420,7 @@ matching its directory. PSR-4 autoloads from `web/includes/` →
 | `Sbpp\Api\Api`                           | JSON API dispatcher                   |
 | `Sbpp\Api\ApiError`                      | structured API error                  |
 | `Sbpp\View\AdminTabs`                    | admin sub-route sidebar mounter       |
+| `Sbpp\View\Toast`                        | server-side toast emitter (`emit(kind, title, body, ?redirect)` — replaces v1.x `ShowBox(...)`) |
 | `Sbpp\View\*`                            | view DTOs (page-level + partials)     |
 | `Sbpp\Servers\SourceQueryCache`          | per-`(ip, port)` on-disk cache around the xPaw A2S probe (#1311) |
 | `Sbpp\Servers\RconStatusCache`           | per-`sid` on-disk cache around the RCON `status` command (#PLAYER_CTX_MENU) |
@@ -877,6 +878,156 @@ The regression guards are paired:
  `animationDuration === "0.6s"` would catch the CSS-rule
  regression but not, say, a future `animation-play-state: paused`
  sneaking in via a parent rule.
+
+### Server-side toast emission (`Sbpp\View\Toast::emit`)
+
+PHP page handlers that need to surface a toast (success / error
+confirmation) to the user — either as the only signal on a
+GET-fallback path or alongside a `PageDie()`-rendered chrome
+footer — emit through `Sbpp\View\Toast::emit($kind, $title, $body,
+?$redirect)`. Single source for the wire format the chrome's
+`flushPendingToasts` consumer in `web/themes/default/js/theme.js`
+reads on `DOMContentLoaded`.
+
+Lifted at #1403 from the inline `emitSubmitToast()` helper in
+`page.submit.php` after an audit found six PHP page handlers
+(35 sites total) still echoing raw `<script>ShowBox(...)</script>`
+blobs from server-side branches. `ShowBox` lived in
+`web/scripts/sourcebans.js`, deleted at #1123 D1 (v2.0.0) — every
+legacy caller silently threw `ReferenceError` and (worse, when the
+handler ran upstream of `PageDie()`) suppressed the template body
+too, leaving the user on a literally blank white page. The
+marquee user-reported regression: `?p=lostpassword` success path
+silently emailed the new password while showing nothing to the
+user, leading to "I clicked Reset Password three times because
+nothing happened" double-submits that burned three validation
+tokens. See the matching Anti-patterns entry for the full repro.
+
+Wire format (`$kind` ∈ `'info' | 'success' | 'warn' | 'error'`):
+
+```html
+<script type="application/json" class="sbpp-pending-toast">
+{"kind":"success","title":"Password reset","body":"...","redirect":"?p=login"}
+</script>
+```
+
+- `<script type="application/json">` is parsed as text content;
+  the browser does NOT execute it. CSP-friendly (a future
+  `script-src 'self'` policy would reject inline executable
+  shapes outright). Sibling pattern to the `palette-actions`
+  blob in `core/footer.tpl` (#1304); single source for "embed
+  structured data the chrome consumes at boot".
+- Class, not id: multiple `Toast::emit(...)` calls in the same
+  response stack cleanly — the chrome iterates the full set.
+  No `data-testid` on the wire-format block by design — a
+  multi-emit response would emit several blocks with the same
+  testid and Playwright's `getByTestId(...)` strict mode rejects
+  multi-match. E2E specs anchor on the painted
+  `[data-testid="toast"]` element (set by `showToast` after the
+  chrome JS picks up the blob) or `[role="status"]`; wire-layer
+  specs probe the response body directly for
+  `class="sbpp-pending-toast"`.
+- `body` is plain text — `theme.js`'s `escapeHtml` escapes it
+  before inserting into the DOM. HTML tags surface as visible
+  literal text; convert at the call site with the canonical
+  `preg_replace` shape (see `page.protest.php` /
+  `page.submit.php` for the reference). NEVER reach for `nofilter`
+  on a `Toast::emit` body — the chrome side is the single
+  escape contract, and the wire-format JSON encoder is the
+  load-bearing escape for everything else.
+
+Encoder flags (`Sbpp\View\Toast::emit`'s `json_encode` call):
+
+```
+JSON_THROW_ON_ERROR
+| JSON_INVALID_UTF8_SUBSTITUTE
+| JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+```
+
+- The four `JSON_HEX_*` flags hex-escape every `<>&'"` so the
+  blob cannot break out of its `<script>` wrapper regardless of
+  caller payload (a `</script>` in `body` is encoded as
+  `\u003C/script\u003E`).
+- `JSON_INVALID_UTF8_SUBSTITUTE` is the load-bearing
+  fault-tolerance flag. Player names on `:prefix_bans.name` /
+  `:prefix_comms.name` (interpolated into the toast body on the
+  GET-fallback unban / unmute / delete paths in `page.banlist.php`
+  / `page.commslist.php`) CAN carry malformed UTF-8 — historical
+  Latin-1-on-utf8 truncation shape from pre-#1108 / #765 installs
+  whose plugin-side insert path wrote bytes the post-#1108
+  utf8mb4 migration did not retroactively repair. Without this
+  flag `JSON_THROW_ON_ERROR` raises `JsonException` on every such
+  row and the user gets a 500 instead of the unban confirmation
+  — and worse, the unban / delete SQL has ALREADY committed by
+  the time `Toast::emit` fires, so the audit log shows the action
+  succeeded while the operator sees a server error. With this
+  flag the offending bytes substitute to U+FFFD (the Unicode
+  REPLACEMENT CHARACTER) and the toast paints. Well-formed
+  payloads are unaffected.
+- `JSON_THROW_ON_ERROR` surfaces other malformed input loudly
+  instead of silently emitting `false` (which `echo` would
+  render as the empty string — invisible regression vector).
+
+Redirect coalescing (FIRST wins):
+
+`$redirect` is optional. When passed, `theme.js`'s
+`flushPendingToasts` honours it AFTER the toasts paint, with a
+~1500ms post-paint settle delay so the user can read what just
+happened before the navigation lands. If several `Toast::emit`
+calls in the same response carry a redirect, the FIRST one wins
+(`if (redirectTo === null && typeof data.redirect === 'string'
+&& data.redirect !== '') redirectTo = data.redirect;`). In
+practice a single request never emits more than one redirect —
+the GET-fallback paths in `page.banlist.php` / `page.commslist.php`
+/ `admin.edit.comms.php` all bounce back to the same list page
+regardless of the success/error branch — but FIRST-wins is the
+safer default if a future caller emits a sibling toast first.
+The 1500ms settle is a fixed constant in `theme.js`'s
+`flushPendingToasts`; long-form bodies that need more reading
+time should NOT carry a redirect (the user is leaving the page
+anyway, the post-redirect surface can re-surface the same toast
+if persistent).
+
+PHP-side call site:
+
+```php
+\Sbpp\View\Toast::emit('success', 'Password reset', 'Email sent.', '?p=login');
+PageDie();
+```
+
+Always FQN — no `use Sbpp\View\Toast;` shim per call site, no
+`class_alias` to a global name. The FQN call shape is what the
+`ToastEmitRegressionTest` static gate keys on; legacy procedural
+code adopts the FQN at the same time it adopts every other
+`Sbpp\...` namespaced API.
+
+Always pair with `PageDie()` (or `exit`) when the handler's
+"render the page body" path is no longer meaningful (e.g. the
+form's input failed validation; a "not found" SELECT returned
+no row). Pre-#1403 the legacy `<script>ShowBox(...)</script>`
+shape carried its own `window.location` navigation that beat
+the page render to the user's eyeballs; post-lift the toast
+honours the redirect via the helper's 4th arg + the 1500ms
+settle, so a "the SELECT returned no row, the form template
+will dereference false" branch MUST `PageDie()` to cut the
+render before the borked form skeleton paints. See the
+`admin.edit.comms.php` "block not found" branch for the
+canonical reference shape.
+
+Regression guards:
+- `web/tests/integration/ToastEmitRegressionTest.php` — static
+  grep against `web/pages/*.php` (PHP page handlers only; the
+  template-side `<script>ShowBox(...)` regression is sister
+  #1402's surface), wire-format contract, JSON-escape contract,
+  UTF-8-substitute contract, FIRST-wins-redirect contract,
+  "every audited page still calls Toast::emit" call-site
+  contract.
+- `web/tests/e2e/specs/flows/lostpassword-toast.spec.ts` (the
+  marquee user-reported regression — drives the success +
+  error branches end-to-end, asserts the password-reset email
+  lands in mailpit AND the chrome footer renders AND the toast
+  paints), `protest-toast.spec.ts`, `banlist-getfallback-toast.spec.ts`,
+  `commslist-getfallback-toast.spec.ts`, `admin-edit-comms-toast.spec.ts`.
 
 ### Loading state on drawers + lazy panes (`.skel` shimmer)
 
@@ -2139,6 +2290,70 @@ contacting every contributor individually.
   self-contained vanilla JS per page (see `web/pages/admin.edit.ban.php`
   / `admin.edit.comms.php` for canonical examples); toasts go through
   `window.SBPP.showToast` from the theme JS.
+- Raw `<script>ShowBox(...)</script>` (or `<script>showBox(...)</script>` /
+  `<script type="text/javascript">ShowBox(...)`) blobs echoed from a
+  PHP page handler → use `\Sbpp\View\Toast::emit($kind, $title,
+  $body, ?$redirect)`. `ShowBox` was deleted at #1123 D1 (v2.0.0)
+  — every legacy caller silently threw `ReferenceError: ShowBox is
+  not defined` in the modern chrome. Worse, several callers ran
+  upstream of `PageDie()` (which renders the chrome footer +
+  `exit`s), so the template body was suppressed and the user saw a
+  literally blank white page on top of the dropped toast. The
+  marquee user-reported regression: an admin requested a password
+  reset, the success path silently emailed the new password while
+  showing nothing to the user, and the user clicked Reset Password
+  three times "to make it work" — burning three validation tokens
+  while the actual email already landed in their inbox the first
+  time (issue #1403, audit follow-up to #1176). 35 sites swept at
+  #1403 across `page.lostpassword.php` / `page.protest.php` /
+  `page.banlist.php` / `page.commslist.php` / `admin.edit.comms.php`
+  / `page.submit.php` (the lift source). `page.home.php`'s
+  `$info['popup']` field is the one intentional survivor at the
+  PHP layer (dead data; sister #1404 owns the cleanup). The new
+  helper stashes the payload in a `<script type="application/json"
+  class="sbpp-pending-toast">` blob the chrome consumes on
+  `DOMContentLoaded` — see the "Server-side toast emission" block
+  in Conventions for the full contract. Regression guards:
+  `web/tests/integration/ToastEmitRegressionTest.php` (static
+  grep against `web/pages/*.php` — three variant shapes including
+  the `<script type="text/javascript">` form, wire-format / JSON-
+  escape / UTF-8-substitute / FIRST-wins-redirect contracts, and
+  the "every audited page still calls `Toast::emit`" call-site
+  contract) plus the five marquee E2E specs under
+  `web/tests/e2e/specs/flows/*-toast.spec.ts`. The
+  `lostpassword-toast.spec.ts` happy-path test seeds the dev
+  stack's mailpit and asserts the password-reset email lands at
+  the right address as well as the toast painting.
+- Removing `JSON_INVALID_UTF8_SUBSTITUTE` from `Sbpp\View\Toast`'s
+  `json_encode` flags ("we never see malformed UTF-8 in practice")
+  → player names on `:prefix_bans.name` / `:prefix_comms.name`
+  CAN carry malformed UTF-8 from the pre-#1108 / #765 Latin-1-on-utf8
+  truncation shape. The GET-fallback unban / delete paths in
+  `page.banlist.php` / `page.commslist.php` interpolate
+  `$row['name']` directly into the toast body. Without the
+  substitute flag `JSON_THROW_ON_ERROR` raises `JsonException`
+  and the user gets a 500 instead of the unban confirmation —
+  worse, the unban / delete SQL has ALREADY committed by the time
+  `Toast::emit` fires, so the audit log shows the action
+  succeeded while the operator sees a server error. Substituting
+  to U+FFFD is the correct shape; well-formed payloads are
+  unaffected. Regression guard:
+  `ToastEmitRegressionTest::testToastEmitSubstitutesMalformedUtf8InsteadOfThrowing`.
+- Adding `data-testid="pending-toast"` (or any other `data-testid`)
+  to the `<script type="application/json" class="sbpp-pending-toast">`
+  wire-format block → `Sbpp\View\Toast::emit` is allowed to be
+  called multiple times per response (validation-error spray,
+  success + diagnostic warning, …). A wire-format testid would
+  collide across emit calls and Playwright's `getByTestId(...)`
+  strict mode rejects multi-match. E2E specs anchor on the
+  *painted* `[data-testid="toast"]` element (chrome-rendered by
+  `showToast` after picking up the blob) or `[role="status"]`;
+  wire-layer specs probe the response body directly for
+  `class="sbpp-pending-toast"`. The class is the consumer
+  selector; no additional hooks needed. Regression guard:
+  `ToastEmitRegressionTest::testToastEmitWireFormatStaysStable`
+  explicitly asserts the wire-format block carries NO
+  `data-testid` attribute.
 - `onclick="if (typeof <Helper> === 'function') <Helper>(...)"`
   legacy-helper presence guards in templates (the v1.x sourcebans.js
   defensiveness pattern that survived the #1123 D1 deletion of the
@@ -2777,6 +2992,7 @@ contacting every contributor individually.
 | Reuse the moderation-queue card layout (admin submissions / protests, mobile-stacked summary rows) | `web/themes/default/css/theme.css` (`.queue-row`, `.queue-row__body`, `.queue-row__date` — #1207 PUB-2). Apply by adding `class="queue-row …"` to the outer `<details>` and dropping the inline `flex` / `flex-shrink:0` styles from the summary children. |
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. The public banlist (`web/themes/default/page_bans.tpl`) follows the same shape — same chrome (Lucide icon + visible text label inside `.btn--ghost` / `.btn--secondary btn--sm`), same `.ban-card__actions` mobile row, same `data-action` / `data-fallback-href` wiring (`bans-unban` / `bans-delete`). The Remove affordance points at the legacy GET handler (`?p=banlist&a=delete&id=…&key=…` at the top of `page.banlist.php`) because no JSON `bans.delete` action exists yet — the inline JS `confirm()`-prompts then navigates, mirroring commslist's flow without adding a new handler / snapshot / permission-matrix entry. |
 | Add a confirm + reason modal for an irreversible row-level action (unban, lift comm block, delete admin, delete mod, …) | `web/themes/default/page_bans.tpl` (`#bans-unban-dialog`, `Actions.BansUnban`) and `web/themes/default/page_comms.tpl` (`#comms-unblock-dialog`, `Actions.CommsUnblock`) are the canonical reference (#1301), with `web/themes/default/page_admin_admins_list.tpl` (`#admins-delete-dialog`, `Actions.AdminsRemove`, #1352) and `web/themes/default/page_admin_mods_list.tpl` (`#mod-delete-dialog`, `Actions.ModsRemove`, #1397) as the third and fourth references for the optional-reason variant. Shape: a `<dialog hidden>` with a `<form method="dialog">` carrying a `<textarea aria-required="true">` (or `aria-required="false"` for the optional-reason variant — see admins-delete / mod-delete) (NOT the native `required` — that lets the browser block the form submit before our handler runs, swallowing the inline-error UX), a Cancel button, and a Confirm submit button. The page-tail JS opens the dialog via `showModal()` on `[data-action]` clicks, validates the trimmed reason on submit (load-bearing gate is server-side), forwards `ureason` to the JSON action, and on success flips the row in place via the same `flipRowToUnbanned`/`flipRowToUnmuted` helper the legacy single-click flow used (or removes the row outright + decrements the count badge for the admins-delete / mod-delete variants where there's no "now-unbanned" state to render). The legacy GET fallback (`?p=banlist&a=unban&id=…&key=…&ureason=…` / `?p=commslist&a=ungag…&ureason=…`) is the no-JS / hand-edited-URL path; both halves now reject empty `ureason` server-side so the audit log carries the *why*. The admins-delete and mod-delete variants have no legacy GET handler — `RemoveAdmin()` / `RemoveMod()` always went through the JSON dispatcher pre-#1123 D1 — so their `data-fallback-href` lands the operator back at the list page as a graceful no-op when the JSON dispatcher is missing entirely (third-party theme stripping `api.js`); the audit-log "Reason: …" suffix is only emitted when `ureason` is non-empty (vs always-emitted on the bans / comms variants where reason is required). **Do not** put `onclick="event.stopPropagation()"` on the trigger button — `document.addEventListener('click')` is how the dialog opener picks the click up, and stopPropagation would silently swallow it (the action button isn't inside any `[data-drawer-href]` ancestor anyway, so the defensiveness was a copy-paste from the row-name anchor that doesn't apply here). The submit button MUST flip through `setBusy(submitBtn, true)` BEFORE `sb.api.call(...)` leaves the page and clear via `setBusy(submitBtn, false)` on every non-navigating response branch — see "Loading state on action buttons" in Conventions for the contract, the inline-script local wrapper shape, and the regression guard. |
+| Emit a toast from a server-side branch (lostpassword reset success, banlist GET-fallback unban result, admin.edit.* not-found guard, …) | `\Sbpp\View\Toast::emit($kind, $title, $body, ?$redirect)` (`web/includes/View/Toast.php`). Stashes the payload in a `<script type="application/json" class="sbpp-pending-toast">…</script>` block that `theme.js`'s `flushPendingToasts` picks up on `DOMContentLoaded`. Always FQN at call sites (no `use Sbpp\View\Toast;` shim). The chrome JS renders the body through `escapeHtml`; the PHP JSON encoder uses `JSON_HEX_TAG \| JSON_HEX_AMP \| JSON_HEX_APOS \| JSON_HEX_QUOT \| JSON_INVALID_UTF8_SUBSTITUTE \| JSON_THROW_ON_ERROR` so a `</script>` in body cannot break out AND malformed UTF-8 in player names (the #1108 / #765 Latin-1-on-utf8 shape) substitutes to U+FFFD instead of throwing. Multi-toast safe: emit calls stack cleanly; the first non-empty `$redirect` wins (chrome navigates ~1500ms after the toast paints so the user can read it). Pair with `PageDie()` (or `exit`) whenever the handler's "render the page body" path is no longer meaningful — pre-#1403 the legacy `<script>ShowBox(...)</script>` shape carried its own `window.location` and beat the page render to the user; the lifted helper relies on the explicit redirect + the 1500ms settle. See "Server-side toast emission" in Conventions for the full contract. Pinned by `web/tests/integration/ToastEmitRegressionTest.php` (static grep + wire-format + JSON-escape + UTF-8-substitute + FIRST-wins-redirect + call-site contract) and the five marquee E2E specs (`lostpassword-toast.spec.ts`, `protest-toast.spec.ts`, `banlist-getfallback-toast.spec.ts`, `commslist-getfallback-toast.spec.ts`, `admin-edit-comms-toast.spec.ts`). The lostpassword spec seeds the dev stack's mailpit and asserts the password-reset email lands at the right address — the marquee user-reported regression from the audit. |
 | Add a loading indicator to an action button that fires `sb.api.call(...)` without a page refresh | `window.SBPP.setBusy(btn, busy)` (`web/themes/default/js/theme.js`) writes the `data-loading="true"` + `aria-busy="true"` + `disabled` triple atomically; the CSS spinner lives in `web/themes/default/css/theme.css` under `.btn[data-loading="true"]` + the `sbpp-btn-spin` keyframe. Inline page-tail scripts inside `.tpl` files define a local `setBusy(btn, busy)` wrapper that delegates to `window.SBPP.setBusy` when present and falls back to `btn.disabled = busy` so third-party themes that strip `theme.js` still gate against double-clicks. Canonical reference shapes: the three confirm-dialog flows (`page_comms.tpl` / `page_bans.tpl` / `page_admin_admins_list.tpl`), the form-submit flows (`page_admin_groups_list.tpl` / `page_admin_groups_add.tpl` / `page_admin_bans_add.tpl` / `page_admin_bans_email.tpl` / `page_youraccount.tpl` / `page_lostpassword.tpl` / `page_login.tpl`), the row-action flows (`page_admin_servers_list.tpl` / `page_admin_bans_protests.tpl` / `page_admin_bans_protests_archiv.tpl` / `page_admin_bans_submissions.tpl` / `page_admin_bans_submissions_archiv.tpl`), and the drawer Notes paths (`theme.js`'s `submitNoteForm` / `deleteNote`). Comment edit on the banlist (`web/scripts/banlist.js`) carries the same pattern for the `sb.api.call(BansEditComment)` round-trip. Regression guards: `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts` (stalls `Actions.CommsUnblock` via `page.route`, asserts the busy-attribute triple on the submit button while in flight, releases the route, and confirms the row flips in-place; the second test counts requests to prove the disabled gate blocks a double-click) **plus** `web/tests/e2e/specs/flows/loading-animations.spec.ts` (#1362 — samples `getComputedStyle(::after).transform` at multiple frame boundaries under both `reducedMotion: 'reduce'` AND `'no-preference'`, asserts the matrix values change across samples; catches the v2.0 RC1 regression where the global `prefers-reduced-motion: reduce` reset froze the spinner under reduced motion). |
 | Add a loading indicator to the player drawer or one of its lazy panes (so the chrome doesn't read as blank while the JSON action is in flight) | `renderDrawerLoading()` (header skeleton for the in-flight `bans.detail`) and `renderPaneSkeleton()` (placeholder for History / Comms / Notes activation) in `web/themes/default/js/theme.js`. Both lean on the `.skel` CSS rule in `theme.css` (linear-gradient + `shimmer` keyframe + dark-mode override + the `@media (prefers-reduced-motion: reduce)` per-rule override that keeps the shimmer sliding even under reduced motion, #1362). The header skeleton carries `[data-testid="drawer-loading"]` + `aria-busy="true"` + per-block `[data-skeleton]` (terminal markers under `#drawer-root[data-loading="true"]`); the lazy-pane skeleton carries `[data-pane-empty]` + `aria-busy="true"` and deliberately omits `[data-skeleton]` because the panel parent's `hidden` attribute doesn't compose into `[data-skeleton]:not([hidden])` and a nested marker would stall every page-load waiter that runs after the drawer opens. Class name is `.skel` (singular) — NOT `.skeleton`; the pre-fix `class="skeleton"` typo had no matching rule and the shimmer rows rendered as transparent zero-background divs (the user-visible "drawer is blank" regression). Regression guards: `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts` (stalls `bans.detail` then `bans.player_history` via `page.route`, asserts the skeleton header is visible + the `.skel` block paints a `linear-gradient` background via `getComputedStyle(el).backgroundImage`, releases the routes, and confirms the drawer flips to `renderDrawerBody` / the pane fills with content) **plus** `web/tests/e2e/specs/flows/loading-animations.spec.ts` (#1362 — samples `getComputedStyle(.skel).backgroundPositionX` at multiple frame boundaries under both `reducedMotion: 'reduce'` AND `'no-preference'`, asserts the values change across samples; catches the v2.0 RC1 regression where the global reset froze the shimmer alongside the spinner). |
 | Surface unban-reason / removed-by inline on a public-list row (admin-lifted bans / comms — banlist-ureason or commslist-ureason inline) | `web/themes/default/page_bans.tpl` + `web/themes/default/page_comms.tpl` (#1315). Reason cell on the desktop table emits a `<div class="text-xs text-faint mt-1" data-testid="ban-unban-meta">` (or `comm-unban-meta` for comms) with "Unbanned by `<admin>`: `<reason>`" when `$ban.state == 'unbanned'` (or `$comm.state == 'unmuted'`); mobile cards mirror with the `-mobile` testid suffix. Always gated on `!$hideadminname` so anonymous viewers under a hidden-admins config don't get the admin name leaked. The `ureason` / `removedby` row fields come from the page handler's existing data path (`page.banlist.php` lines 635-643, `page.commslist.php` lines 626-635) — read-only render, no write-side overlap with #1301 / #1323's unban-reason flow. The commslist surface is higher-priority than the banlist (no drawer fallback on `<tr data-testid="comm-row">`); banlist users have the drawer as the canonical detail view. |

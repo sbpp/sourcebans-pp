@@ -18,13 +18,12 @@
  *
  * The fix routes every site through `Sbpp\View\Toast::emit(...)`,
  * which writes a `<script type="application/json"
- * class="sbpp-pending-toast" data-testid="pending-toast">…</script>`
- * payload that the chrome (`web/themes/default/js/theme.js`'s
- * `flushPendingToasts` drain in the chrome IIFE) consumes on
- * `DOMContentLoaded`. The footer is now reliably included by
- * `PageDie()` (its `include_once TEMPLATES_PATH . '/core/footer.php'`
- * was always there — what changed is the toast no longer crashes
- * mid-output, so the body and footer both render).
+ * class="sbpp-pending-toast">…</script>` payload that the chrome
+ * (`web/themes/default/js/theme.js`'s `flushPendingToasts` drain in
+ * the chrome IIFE) consumes on `DOMContentLoaded`. The footer is now
+ * reliably included by `PageDie()` (its `include_once TEMPLATES_PATH
+ * . '/core/footer.php'` was always there — what changed is the toast
+ * no longer crashes mid-output, so the body and footer both render).
  *
  * The two test cases below cover the two server-side branches the
  * lift converted that have no DB seed dependency:
@@ -43,7 +42,7 @@
  *      attacker testing for valid emails would hit, and the case
  *      where the user-perceived "blank page" regression was worst.
  *
- * Both cases assert the same three terminal properties:
+ * The two error branches assert the same three terminal properties:
  *
  *   - The chrome footer (`footer.sbpp-footer`) IS attached — proves
  *     `PageDie()` rendered the chrome (the v2.0 blank-page regression
@@ -58,16 +57,21 @@
  *     today; this assertion gates against a future "let's drop
  *     the try/catch" change).
  *
- * The successful "password reset and sent to email" branch (lines
- * 104-110, the marquee good-case from the issue body) requires a
- * working SMTP path, a real `:prefix_admins.validate` token seeded
- * for an email we know, and mailpit-side assertion that the email
- * landed. The setup overhead is non-trivial (mailpit isn't wired
- * into any e2e fixture today and the SMTP defaults in
- * `data.sql` are blank) and the toast-emission code path is
- * structurally identical to the error branches above. Keeping the
- * spec light avoids the mailpit-config plumbing while still gating
- * the specific regression #1403 caught.
+ * The third test (`Happy path: …`) is the marquee user-reported
+ * regression from the issue body: an admin requests a password
+ * reset, sees a blank white page, clicks Reset Password three
+ * times "to make it work" while the actual reset email already
+ * landed in their inbox the first time. The test seeds the SMTP
+ * config (pointed at the dev stack's mailpit container), a known
+ * `:prefix_admins.validate` token, and a `config.mail.from_email`,
+ * then drives the success branch and asserts BOTH (a) the
+ * "Password Reset" toast paints and (b) the password-reset email
+ * lands in mailpit's inbox. The mailpit HTTP API
+ * (`http://mailpit:8025` from inside the web container; the
+ * worktree-local override remaps the host-published port to
+ * `:10191` but the in-network service alias stays the same)
+ * exposes a deterministic, queryable inbox so the test doesn't
+ * depend on parsing arbitrary message-id strings.
  *
  * Logged-out viewport — `page.lostpassword.php:28-31` redirects any
  * logged-in visitor to `index.php` before the GET-validation branch
@@ -77,9 +81,25 @@
  */
 
 import { expect, test } from '../../fixtures/auth.ts';
+import { seedLostpasswordE2e } from '../../fixtures/db.ts';
 
 const SHORT_TOKEN = 'short';
 const MISMATCH_TOKEN = '0000000000000000aaaa'; // 20 chars; the SELECT will not find a matching admin row.
+
+/**
+ * Mailpit HTTP API root. Inside the web container it's reachable as
+ * `http://mailpit:8025` (the docker-compose service alias — same
+ * whether the parent stack or the worktree-local parallel stack is
+ * running, because the override only renames containers + remaps
+ * host-published ports, NOT the service alias). The env override
+ * is the host-mode escape hatch — the worktree-local
+ * `docker-compose.override.yml` publishes mailpit's UI on
+ * `:10191` for direct browsing, so a developer running
+ * `npx playwright test` from the host (E2E_IN_CONTAINER unset)
+ * can point at `http://localhost:10191`.
+ */
+const MAILPIT_BASE_URL = process.env.E2E_MAILPIT_BASE_URL
+    ?? 'http://mailpit:8025';
 
 test.describe('flow: lostpassword toast (#1403 ShowBox → Toast::emit)', () => {
     // Per-describe override: log out for this whole block. The form
@@ -152,6 +172,101 @@ test.describe('flow: lostpassword toast (#1403 ShowBox → Toast::emit)', () => 
         await expect(toast).toBeVisible();
         await expect(toast).toContainText('reset request');
 
+        expect(
+            consoleErrors,
+            `unexpected console errors:\n${consoleErrors.join('\n')}`,
+        ).toEqual([]);
+    });
+
+    test('Happy path: password reset → "Password Reset" toast + chrome footer + email lands in mailpit (marquee #1403 user-reported regression)', async ({ page, request }) => {
+        const consoleErrors: string[] = [];
+        page.on('pageerror', (err) => consoleErrors.push(err.message));
+
+        // ---- 0. Set up the SMTP / from-address config and a known
+        //         validate token. The seeder is idempotent so re-runs
+        //         (and CI's `retries: 1`) work even after a previous
+        //         success consumed the validate token. -----------
+        const { email, token } = await seedLostpasswordE2e();
+
+        // Clear mailpit's inbox so the post-request assertion is
+        // unambiguous. The DELETE endpoint is documented at
+        // https://mailpit.axllent.org/docs/api-v1/messages — pre-fix
+        // any prior test's mail would still be in the inbox and the
+        // count check would have to skip the first N messages.
+        const purge = await request.delete(`${MAILPIT_BASE_URL}/api/v1/messages`);
+        expect(
+            purge.ok(),
+            `mailpit purge failed (status ${purge.status()}): ${await purge.text()}`,
+        ).toBe(true);
+
+        // ---- 1. Drive the success branch ------------------------------
+        // Same shape the user hits when they click the "Reset password"
+        // link in their inbox: the URL the email's
+        // PasswordReset / PasswordResetSuccess templates build is
+        // `?p=lostpassword&email=…&validation=<token>`. The page
+        // handler rolls a new password, sends it via SMTP, then
+        // (now) emits a `Toast::emit('info', 'Password Reset', …)`
+        // and `PageDie()`s into the footer. Pre-fix the success
+        // branch echoed `<script>ShowBox(...)</script>` and the
+        // user got a blank page.
+        await page.goto(
+            `/index.php?p=lostpassword&email=${encodeURIComponent(email)}&validation=${token}`,
+        );
+
+        // ---- 2. Chrome footer is attached ----------------------------
+        await expect(page.locator('footer.sbpp-footer')).toBeAttached();
+
+        // ---- 3. Success toast paints with the expected copy ---------
+        // The lift kept the legacy `'blue'` background-class fidelity
+        // by mapping to `kind=info` (the rationale: this is a
+        // confirmation, not a "yay it worked" — the user is being
+        // told what to do next). A future ticket may flip this to
+        // `kind=success`; either is acceptable here as the user-
+        // visible signal is identical.
+        const toast = page
+            .locator('.toast[data-kind="info"], .toast[data-kind="success"]')
+            .filter({ hasText: 'Password Reset' });
+        await expect(toast).toBeVisible();
+        await expect(toast).toContainText(/reset and sent to your email/i);
+
+        // ---- 4. Email landed in mailpit ----------------------------
+        // The mailer is asynchronous in the abstract, but the panel
+        // calls `Mail::send` synchronously before emitting the toast
+        // (`page.lostpassword.php` line 81 — the send call is
+        // BEFORE the toast emit, and a send-failure branches into the
+        // error toast at line 88 instead of falling through). So by
+        // the time we see the success toast the SMTP transaction has
+        // completed; mailpit holds the message in-memory and the
+        // HTTP API returns it on the next request. We poll for ~5s
+        // just in case mailpit's accept-to-list latency surprises.
+        let landedTo: string | null = null;
+        for (let attempt = 0; attempt < 10; attempt += 1) {
+            const resp = await request.get(
+                `${MAILPIT_BASE_URL}/api/v1/messages?limit=50`,
+            );
+            expect(resp.ok(), `mailpit list failed (${resp.status()})`).toBe(true);
+            const body = await resp.json() as {
+                messages?: Array<{ To?: Array<{ Address?: string }> }>;
+            };
+            const found = (body.messages ?? []).find((msg) =>
+                (msg.To ?? []).some((addr) => addr.Address === email),
+            );
+            if (found) {
+                landedTo = email;
+                break;
+            }
+            await page.waitForTimeout(500);
+        }
+        expect(
+            landedTo,
+            `mailpit never received an email to ${email} within 5s — the panel handler's `
+                + `\`Mail::send\` path did not actually land in the SMTP transport. `
+                + `Either (a) \`Mailer::create()\` short-circuited (smtp.host/user/pass empty), `
+                + `(b) the success branch failed silently, or (c) mailpit isn't reachable as `
+                + `${MAILPIT_BASE_URL} from this test environment.`,
+        ).toBe(email);
+
+        // ---- 5. NO uncaught console errors --------------------------
         expect(
             consoleErrors,
             `unexpected console errors:\n${consoleErrors.join('\n')}`,

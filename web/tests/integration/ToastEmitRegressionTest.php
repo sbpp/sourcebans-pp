@@ -27,9 +27,27 @@ use Sbpp\View\Toast;
  * `DOMContentLoaded`. This test is the **static regression guard** that
  * no future PR re-introduces a raw `<script>ShowBox(...)</script>` (or
  * `<script>showBox(...)</script>` — the variant casing the issue body
- * also called out) into the in-scope page handlers. It also pins the
- * helper's wire format so a future "we'll switch to a different JSON
- * shape" PR has to update the consumer in the same commit.
+ * also called out) into the in-scope PHP page handlers. It also pins
+ * the helper's wire format so a future "we'll switch to a different
+ * JSON shape" PR has to update the consumer in the same commit.
+ *
+ * # Scope: PHP page handlers only
+ *
+ * The scan walks `web/pages/` (recursively, every `.php` file).
+ * Template-side `<script>ShowBox(...)</script>` blobs — including the
+ * AGENTS.md-anti-pattern shape
+ * `onclick="if (typeof ShowBox === 'function') ShowBox(...)"` —
+ * are out of scope here. Those live under `web/themes/<x>/templates/`
+ * and the inline page-tail scripts and are sister #1402's surface
+ * (the "rewire dead JS click handlers" sweep that owns the
+ * template-side cleanup); the AGENTS.md "Legacy 1.4.11 JS
+ * handler names" Anti-patterns entry is the documented contract
+ * for that surface. Keeping this gate scoped to PHP handlers
+ * keeps the test purpose obvious: it guards the new
+ * `Sbpp\View\Toast::emit` contract, not every conceivable
+ * `ShowBox` regression vector across the panel. A future audit
+ * pass that catches the template surface should land its own
+ * regression guard tracked against the relevant issue.
  *
  * Three intentional exceptions stay legal:
  *
@@ -60,13 +78,14 @@ use Sbpp\View\Toast;
  * gate.
  *
  * The companion runtime tests (`web/tests/e2e/specs/flows/*-toast.spec.ts`)
- * cover the consumer side end-to-end: each spec asserts the
- * `[data-testid="pending-toast"]` script blob appears, the chrome
- * picks it up, and the visible toast paints with the expected
- * kind + title. This static gate is the "before runtime" half — a
- * raw `<script>ShowBox(...)</script>` reintroduction would still pass
- * the runtime gate (the chrome would silently fail; the spec would
- * timeout looking for the pending-toast block) but fails this gate
+ * cover the consumer side end-to-end: each spec probes the response
+ * body for the `class="sbpp-pending-toast"` blob (the wire-layer
+ * contract), then asserts the visible toast paints via
+ * `[data-testid="toast"]` (the rendered chrome element). This static
+ * gate is the "before runtime" half — a raw
+ * `<script>ShowBox(...)</script>` reintroduction would still pass the
+ * runtime gate (the chrome would silently fail; the spec would
+ * timeout looking for the pending-toast blob) but fails this gate
  * loudly with the exact file + line.
  */
 final class ToastEmitRegressionTest extends ApiTestCase
@@ -100,9 +119,15 @@ final class ToastEmitRegressionTest extends ApiTestCase
     }
 
     /**
-     * The headline assertion: every page handler under `web/pages/`
-     * that's NOT on the legal-legacy list contains no live
-     * `<script>ShowBox(` blob.
+     * The headline assertion: every PHP page handler under
+     * `web/pages/` that's NOT on the legal-legacy list contains no
+     * live `<script>ShowBox(` blob.
+     *
+     * **Scope is PHP page handlers only** (see file docblock for
+     * the rationale). Template-side `<script>ShowBox(...)</script>`
+     * blobs under `web/themes/<x>/templates/` are out of scope here
+     * — that surface is sister #1402's, gated by the AGENTS.md
+     * "Legacy 1.4.11 JS handler names" anti-pattern entry.
      *
      * The scan looks at three variants to stay symmetric with the
      * audit grep that produced #1403's site count (35 across 6
@@ -124,7 +149,7 @@ final class ToastEmitRegressionTest extends ApiTestCase
      * is the same shape `PaletteActionsTest.php` uses for its
      * "legacy hardcoded NAV_ITEMS" scan.
      */
-    public function testNoRawShowBoxBlobsRemainInPageHandlers(): void
+    public function testNoRawShowBoxBlobsRemainInPhpPageHandlers(): void
     {
         $offenders = [];
         $legal = $this->legalLegacyShowBoxFiles();
@@ -174,9 +199,14 @@ final class ToastEmitRegressionTest extends ApiTestCase
         $out = (string) ob_get_clean();
 
         $this->assertStringContainsString(
-            '<script type="application/json" class="sbpp-pending-toast" data-testid="pending-toast">',
+            '<script type="application/json" class="sbpp-pending-toast">',
             $out,
             'Wire format changed: the chrome JS consumer (theme.js `flushPendingToasts`) selects on `script[type="application/json"].sbpp-pending-toast`. Drift either side breaks the contract.',
+        );
+        $this->assertStringNotContainsString(
+            'data-testid=',
+            $out,
+            'Wire-format `<script>` blob must NOT carry a `data-testid` attribute: a multi-emit response would emit several blocks with the same testid and `getByTestId(...)` strict mode would reject the match. E2E specs should anchor on the painted `[data-testid="toast"]` (chrome-rendered) or `[role="status"]` — NOT on the wire-format block.',
         );
         $this->assertStringContainsString('</script>', $out, 'Script element must close.');
 
@@ -250,6 +280,128 @@ final class ToastEmitRegressionTest extends ApiTestCase
             '\u003C',
             $out,
             'Encoder must hex-escape `<` characters via JSON_HEX_TAG so a hostile payload cannot end the script element.',
+        );
+    }
+
+    /**
+     * Pin the fault-tolerance contract: malformed UTF-8 in the body
+     * (the historical Latin-1-on-utf8 truncation shape from
+     * pre-#1108 / #765 installs whose plugin-side insert path wrote
+     * bytes the post-#1108 migration did not retroactively repair)
+     * must NOT raise `JsonException`. Pre-fix the encoder was
+     * `JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP |
+     * JSON_HEX_APOS | JSON_HEX_QUOT`; the GET-fallback unban / delete
+     * paths in `page.banlist.php` / `page.commslist.php` interpolate
+     * `$row['name']` into the toast body, so a single row carrying a
+     * truncated multi-byte sequence (`"Mc" . "\xC3"` shape — a `\xC3`
+     * lead byte with no continuation) would throw — and the unban /
+     * delete SQL has ALREADY committed by that point, so the audit
+     * log shows the action succeeded while the operator sees a 500.
+     * Worse failure mode than the pre-#1403 silent ShowBox throw.
+     *
+     * With `JSON_INVALID_UTF8_SUBSTITUTE` the offending bytes
+     * substitute to U+FFFD (the Unicode REPLACEMENT CHARACTER, JSON-
+     * encoded as `\uFFFD`) and the toast paints. Well-formed
+     * payloads are unaffected; the substitute fires only on the
+     * genuinely broken path.
+     *
+     * Two probes:
+     *   1. The helper does NOT throw on a malformed-UTF-8 body.
+     *   2. The encoded output carries the `\uFFFD` substitution
+     *      marker (so a downstream JSON parser sees a valid string,
+     *      not the raw bytes).
+     */
+    public function testToastEmitSubstitutesMalformedUtf8InsteadOfThrowing(): void
+    {
+        $malformed = "Mc\xC3broken\xFFname"; // truncated UTF-8 lead bytes
+        ob_start();
+        try {
+            Toast::emit('error', 'Unban failed', $malformed);
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            $this->fail(
+                'Toast::emit raised an exception on malformed UTF-8: '
+                . get_class($e) . ': ' . $e->getMessage()
+                . "\nThis regression would 500 the GET-fallback unban / delete paths on `page.banlist.php` / `page.commslist.php` when interpolating a `:prefix_bans.name` row carrying the historical Latin-1-on-utf8 truncation shape (#1108 / #765). Add `JSON_INVALID_UTF8_SUBSTITUTE` to the encoder flags.",
+            );
+        }
+        $out = (string) ob_get_clean();
+
+        // PHP's `json_encode` emits the `\uFFFD` escape in lowercase
+        // (`\ufffd`); both spellings are valid JSON, the test asserts
+        // either case-form to stay PHP-version-stable.
+        $this->assertMatchesRegularExpression(
+            '/\\\\u(?:FFFD|fffd)/',
+            $out,
+            'Encoder must substitute malformed UTF-8 to U+FFFD via JSON_INVALID_UTF8_SUBSTITUTE — the body must be a valid JSON string downstream parsers can decode.',
+        );
+
+        // Belt-and-braces: the encoded JSON parses cleanly.
+        $start = strpos($out, '">') + 2;
+        $end = strrpos($out, '</script>');
+        $this->assertNotFalse($end);
+        $json = substr($out, $start, $end - $start);
+        $data = json_decode($json, true);
+        $this->assertIsArray($data, "Encoded JSON does not parse: $json");
+        $this->assertSame('error', $data['kind'] ?? null);
+        $this->assertSame('Unban failed', $data['title'] ?? null);
+        $this->assertIsString($data['body'] ?? null);
+        $this->assertStringContainsString(
+            "\u{FFFD}",
+            (string) $data['body'],
+            'Decoded body must carry the U+FFFD replacement character substituted for the malformed UTF-8 sequence.',
+        );
+    }
+
+    /**
+     * Pin the redirect-coalescing contract: when several emits in
+     * the same response carry a `redirect`, the FIRST one wins.
+     * This is the consumer-side contract `theme.js`'s
+     * `flushPendingToasts` enforces (`if (redirectTo === null
+     * && typeof data.redirect === 'string' && data.redirect !==
+     * '') redirectTo = data.redirect;`). Documenting it on the
+     * encoder side too keeps the contract single-source.
+     *
+     * Why FIRST not LAST: a single request never emits more than
+     * one redirect in practice (the GET fallback paths bounce
+     * back to the same list page regardless of the success/error
+     * branch — so there's no actual collision), but FIRST is the
+     * safer default if a future caller emits a redirect with a
+     * sibling toast first. Reordering the emits is also less
+     * likely to be a regression than swapping a "the LAST emit
+     * is what runs" assumption.
+     */
+    public function testToastEmitRedirectFirstWinsContract(): void
+    {
+        ob_start();
+        Toast::emit('info', 'First', 'msg', 'index.php?p=first');
+        Toast::emit('error', 'Second', 'msg', 'index.php?p=second');
+        Toast::emit('warn', 'Third', 'msg'); // no redirect
+        $out = (string) ob_get_clean();
+
+        // Parse every emitted payload and assert the two redirect-
+        // carrying ones BOTH appear (so the chrome can iterate them
+        // and pick its own winner — the encoder is not allowed to
+        // pre-collapse the queue).
+        preg_match_all(
+            '#<script[^>]*class="sbpp-pending-toast"[^>]*>(.*?)</script>#s',
+            $out,
+            $matches,
+        );
+        $payloads = array_map(
+            fn (string $json): array => (array) json_decode($json, true),
+            $matches[1],
+        );
+        $this->assertCount(3, $payloads, 'Three Toast::emit calls should emit three wire blocks.');
+
+        $redirects = array_values(array_filter(array_map(
+            fn (array $p): ?string => isset($p['redirect']) ? (string) $p['redirect'] : null,
+            $payloads,
+        )));
+        $this->assertSame(
+            ['index.php?p=first', 'index.php?p=second'],
+            $redirects,
+            'Encoder must emit redirects in call order; the chrome consumer picks FIRST wins. Pre-collapsing here would change which URL the chrome navigates to.',
         );
     }
 

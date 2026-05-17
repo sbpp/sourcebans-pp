@@ -8,8 +8,8 @@
  * / 203 / 206 in the issue body) all riding the removed-at-#1123-D1
  * `ShowBox` helper. The fix routes every site through
  * `Sbpp\View\Toast::emit(...)`, which writes a
- * `<script type="application/json" class="sbpp-pending-toast"
- * data-testid="pending-toast">…</script>` payload the chrome
+ * `<script type="application/json" class="sbpp-pending-toast">
+ * …</script>` payload the chrome
  * (`web/themes/default/js/theme.js`'s `flushPendingToasts` drain in
  * the chrome IIFE) consumes on `DOMContentLoaded`.
  *

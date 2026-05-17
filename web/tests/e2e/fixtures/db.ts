@@ -33,6 +33,8 @@ const SEED_COMMENTS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-comments-e2e.php';
 const SEED_ANNOUNCEMENTS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-announcements-e2e.php';
+const SEED_LOSTPASSWORD_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-lostpassword-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -240,6 +242,58 @@ export async function seedAnnouncementsE2e(rows: AnnouncementSeedRow[]): Promise
  */
 export async function clearAnnouncementsCacheE2e(): Promise<void> {
     await runAnnouncementsHelper(null, ['--clear']);
+}
+
+/**
+ * Pre-seeded state for the lostpassword happy-path spec (#1403):
+ *   - `email` is the seeded admin's address.
+ *   - `token` is the `:prefix_admins.validate` value the spec must
+ *     pass in `?validation=<token>` so the success branch fires.
+ */
+export interface LostpasswordSeed {
+    email: string;
+    token: string;
+}
+
+/**
+ * Seed the SMTP config (pointing at the dev stack's mailpit) and
+ * write a known `:prefix_admins.validate` token for the seeded
+ * admin row. Returns `{email, token}` so the spec can drive the
+ * `?p=lostpassword&email=…&validation=…` URL deterministically.
+ *
+ * Mirrors `seedAnnouncementsE2e` / `seedCommsRawE2e`: shells out to
+ * `web/tests/e2e/scripts/seed-lostpassword-e2e.php` which is the
+ * single source of truth for which settings the happy-path requires
+ * (kept out of the TS side so the schema-shape of `:prefix_settings`
+ * stays Python-style invisible to the spec author).
+ */
+export async function seedLostpasswordE2e(): Promise<LostpasswordSeed> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_LOSTPASSWORD_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_LOSTPASSWORD_INSIDE_CONTAINER];
+
+    const { stdout, stderr } = await execFileP(cmd, cmdArgs, {
+        maxBuffer: 1 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+    const trimmed = stdout.trim();
+    if (trimmed === '') {
+        throw new Error(`seed-lostpassword-e2e.php: empty stdout\nstderr:\n${stderr}`);
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as LostpasswordSeed;
+        if (typeof parsed.email !== 'string' || typeof parsed.token !== 'string') {
+            throw new Error('missing email/token keys');
+        }
+        return parsed;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+            `seed-lostpassword-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
+        );
+    }
 }
 
 async function runAnnouncementsHelper(
