@@ -98,8 +98,11 @@ test.describe('flow: admin bans group-ban dispatcher (#1402 — LoadGroupBan zom
         await expect(errSlot).toBeVisible();
         await expect(errSlot).toContainText(/group link/i);
 
-        // Brief settle window so a stray API call would surface.
-        await page.waitForTimeout(200);
+        // The inline error renders synchronously inside the click
+        // handler — once `errSlot` is visible we know the dispatcher
+        // already short-circuited. No need for a settle timer (which
+        // is the canonical Playwright anti-pattern flagged by
+        // AGENTS.md "Playwright E2E specifics").
         expect(apiCalls, 'empty URL submit must NOT call the API').toBe(0);
 
         expect(

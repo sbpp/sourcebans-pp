@@ -69,7 +69,6 @@
                 <form id="groupban-form"
                       class="card p-6 space-y-4"
                       data-testid="groupban-form"
-                      data-action="groupban-submit-form"
                       onsubmit="event.preventDefault(); return false;">
                     {csrf_field}
                     <div>

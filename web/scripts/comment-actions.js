@@ -126,6 +126,18 @@
                 if (msg.redir) window.location.href = msg.redir;
                 else window.location.reload();
             }, 1200);
+        }).catch(function (err) {
+            // #1402 adversarial review MEDIUM 4: defensive .catch() arm
+            // so a throw inside the success callback (or a sb.api.call
+            // internal failure) doesn't leave the trash-can stuck in
+            // its busy state. The trash-can appears in dense threads
+            // (potentially 10+ per page) and a stuck row reads as a
+            // broken affordance — the operator clicks again, gets the
+            // confirm prompt, and the second click stays no-op'd
+            // because the bubble-phase delegate sees `aria-busy` and
+            // the dispatch silently re-fires.
+            setBusy(trigger, false);
+            toast('error', 'Delete failed', String(err && err.message ? err.message : err));
         });
     });
 })();

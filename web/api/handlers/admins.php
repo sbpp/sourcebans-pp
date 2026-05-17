@@ -134,6 +134,29 @@ function api_admins_add(array $params): array
 
     if ($serverName === '0' || $serverName === '') $serverName = null;
 
+    // #1402 (adversarial review HIGH 1) — OWNER-flag privilege-escalation
+    // guard. Mirrors api_admins_edit_perms's check (see below in this
+    // file). Two ways an attacker could land `ADMIN_OWNER` on disk via
+    // this handler:
+    //   1. `web_group === 'c'` (Custom permissions) + `mask & ADMIN_OWNER`
+    //      → goes straight onto `:prefix_admins.extraflags`.
+    //   2. `web_group === 'n'` (New admin group) + `mask & ADMIN_OWNER`
+    //      → baked into the new `:prefix_groups.flags`, after which any
+    //      future admin assigned to that group inherits it.
+    // Both shapes carry the OWNER bit in the inbound `mask` param, so a
+    // single check on `$mask & ADMIN_OWNER` covers both. The bare check
+    // does NOT close the existing-group escalation surface (assigning a
+    // pre-existing OWNER-bearing group to a new admin via `web_group` =
+    // an integer > 0); that path was pre-existing pre-#1402 and is
+    // tracked separately. The UI side mirrors this by gating the OWNER
+    // checkbox itself on `can_grant_owner` so non-owners don't see the
+    // affordance — defense in depth.
+    if (!$userbank->HasAccess(WebPermission::Owner) && ($mask & ADMIN_OWNER)) {
+        Log::add(LogType::Warning, 'Hacking Attempt',
+            $userbank->GetProperty('user') . ' tried to grant OWNER while adding an admin, but doesnt have access.');
+        return Api::redirect('index.php?p=login&m=no_access');
+    }
+
     // Validation -------------------------------------------------------
     if (empty($name)) {
         throw new ApiError('validation', 'You must type a name for the admin.', 'name');

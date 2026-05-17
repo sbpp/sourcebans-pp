@@ -185,7 +185,11 @@
     `ReferenceError: RemoveComment is not defined` (the helper lived
     in the deleted sourcebans.js at #1123 D1).
 *}
-<script src="./scripts/comment-actions.js" defer></script>
+{* `defer` would be a no-op here since the script lives at the body
+   tail and the parser is already past the body. Drop it so the
+   markup matches the runtime behaviour (#1402 adversarial review
+   LOW 8). *}
+<script src="./scripts/comment-actions.js"></script>
 
 </body>
 </html>

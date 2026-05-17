@@ -322,6 +322,16 @@
                 setTimeout(function () {
                     window.location.href = (msg.redir || 'index.php?p=admin&c=mods&section=list');
                 }, 800);
+            }).catch(function (err) {
+                // #1402 adversarial review MEDIUM 4: defensive .catch()
+                // arm so a throw escaping the success callback (or a
+                // sb.api.call internal failure) doesn't leave the
+                // submit button busy forever. Per AGENTS.md "Loading
+                // state on action buttons" — setBusy(btn, false) on
+                // every non-navigating response branch.
+                setBusy(submitBtn, false);
+                showMsg('name.msg', String(err && err.message ? err.message : err));
+                toast('error', 'Add mod failed', String(err && err.message ? err.message : err));
             });
         });
     })();

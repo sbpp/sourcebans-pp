@@ -973,6 +973,13 @@ echo <<<'JS'
     function loadGroupBan(groupuri, isgrpurl, queue, reason, last, submitBtn) {
         var a = api(), A = actions();
         if (!a || !A) return Promise.resolve();
+        // #1402 adversarial review MEDIUM 4: defensive .catch() arms on
+        // BOTH the outer Actions.BansGroupBan and inner
+        // Actions.BansBanMemberOfGroup chains so a throw inside either
+        // success callback (or a sb.api.call internal failure) doesn't
+        // leave the submit button busy forever. The legacy single-URL
+        // path and the bulk-from-friends loop both share this helper,
+        // so a flaky branch in either path is silently captured here.
         return a.call(A.BansGroupBan, {
             groupuri: groupuri,
             isgrpurl: isgrpurl,
@@ -1023,7 +1030,19 @@ echo <<<'JS'
                     toast('success', 'Group banned', body, 'index.php?p=banlist');
                     status('<strong>' + body + '</strong>');
                 }
+            }).catch(function (err2) {
+                // Inner-call defensive: release the button + surface
+                // the error so a bulk loop doesn't silently stall
+                // after one row throws.
+                setBusy(submitBtn, false);
+                toast('error', 'Group ban failed', String(err2 && err2.message ? err2.message : err2));
+                status('');
             });
+        }).catch(function (err) {
+            // Outer-call defensive: same shape as the inner catch.
+            setBusy(submitBtn, false);
+            toast('error', 'Group ban failed', String(err && err.message ? err.message : err));
+            status('');
         });
     }
 

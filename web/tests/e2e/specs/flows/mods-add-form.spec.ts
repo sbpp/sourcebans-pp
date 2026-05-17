@@ -130,12 +130,15 @@ test.describe('flow: admin mods add form (#1402 — ProcessMod zombie)', () => {
         await page.locator('[data-testid="addmod-submit"]').click();
 
         // Inline error slot lights up (the page-tail script writes
-        // into the `.msg` div next to the icon field).
+        // into the `.msg` div next to the icon field). Once the
+        // error is visible, the JS gate has already returned and
+        // the dispatcher never reached the API — no settle timer
+        // needed (AGENTS.md "Playwright E2E specifics" flags
+        // `waitForTimeout` for negative assertions as an
+        // anti-pattern).
         const iconError = page.locator('#icon\\.msg');
         await expect(iconError).toContainText(/icon/i);
 
-        // Brief settle window so a stray API call would surface.
-        await page.waitForTimeout(200);
         expect(apiCalls, 'invalid form must NOT POST to the API').toBe(0);
     });
 });

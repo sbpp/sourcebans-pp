@@ -170,10 +170,13 @@ test.describe('flow: comment-delete dispatcher (#1402 — RemoveComment zombie)'
 
         await page.locator('[data-testid="synth-delcomlink-cancel"]').click();
 
-        // Give the dispatcher a moment to fire (or not). The
-        // dismiss path runs synchronously after the confirm
-        // resolves, so 300ms is plenty.
-        await page.waitForTimeout(300);
+        // The cancelled-confirm path returns synchronously from the
+        // dispatcher (window.confirm → false → return without
+        // touching the API). Playwright's click() awaits the click
+        // event's handlers, so by the time the awaited click resolves
+        // the dispatcher has already early-returned. No settle timer
+        // needed (AGENTS.md "Playwright E2E specifics" flags
+        // `waitForTimeout` for negative assertions as an anti-pattern).
         expect(apiCalls, 'cancelled confirm must NOT call the API').toBe(0);
     });
 

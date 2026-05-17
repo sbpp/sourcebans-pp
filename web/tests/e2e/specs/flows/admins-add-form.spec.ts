@@ -152,10 +152,15 @@ test.describe('flow: admin admins add form (#1402 — ProcessAddAdmin zombie)', 
         const pw2 = await page.locator('[data-testid="admin-add-password2"]').inputValue();
         expect(pw1).toBe(env.data.password);
         expect(pw2).toBe(env.data.password);
-        // The page-tail script flips the type from "password" to
-        // "text" so the operator can read what was generated.
+        // #1402 adversarial review MEDIUM 5: the input types must
+        // stay as `password` — the legacy `LoadGeneratePassword`
+        // helper never flipped `.type`, and leaving the generated
+        // value visible indefinitely is a privacy / shoulder-surf /
+        // screenshot leak.
         expect(await page.locator('[data-testid="admin-add-password"]').getAttribute('type'))
-            .toBe('text');
+            .toBe('password');
+        expect(await page.locator('[data-testid="admin-add-password2"]').getAttribute('type'))
+            .toBe('password');
     });
 
     test('Server-group "New admin group" reveals new-name + SM flags inputs', async ({ page }) => {
@@ -199,5 +204,180 @@ test.describe('flow: admin admins add form (#1402 — ProcessAddAdmin zombie)', 
         await page.locator('[data-testid="admin-add-webg"]').selectOption('n');
         await expect(webNewName).toBeVisible();
         await expect(ownerFlagCb).toBeVisible();
+    });
+
+    /**
+     * #1402 adversarial review HIGH 3 (stale-flags ride-through).
+     *
+     * Pre-fix `updateServer` / `updateWeb` only toggled the `hidden`
+     * attribute on the dependent blocks — the checkbox values + text
+     * inputs survived a dropdown flip. `collectWebFlags()` walked
+     * the unscoped `#web-flags-block input[data-flag]` and the
+     * submit handler read `#server-flags` / `#*-new-name`
+     * unconditionally. The repro:
+     *   1. Select "Custom permissions" → reveals the flag picker.
+     *   2. Tick "Owner" (or any other ADMIN_* checkbox).
+     *   3. Flip dropdown back to "No permissions" → block hides.
+     *   4. Submit → API call ships `mask: ADMIN_OWNER` despite the
+     *      final UI saying "no permissions".
+     * Two routes to accidental OWNER grant (the other being HIGH 1's
+     * uncondionally-rendered checkbox).
+     *
+     * Post-fix the helpers clear the dependent inputs AND the
+     * collectors are scoped to `:not([hidden])` so even if the
+     * clear ever stops firing, a hidden checkbox can't ride into
+     * the mask.
+     */
+    test('Dropdown flip → "Custom permissions" → tick OWNER → "No permissions" → submit ships mask: 0', async ({ page }) => {
+        // Intercept the AdminsAdd request so we can inspect the
+        // serialised mask without needing to stub it (we still want
+        // to hit the real handler to assert end-to-end).
+        let lastMask: number | null = null;
+        await page.route('**/api.php', async (route) => {
+            try {
+                const body = JSON.parse(route.request().postData() || '{}');
+                if (body?.action === 'admins.add') {
+                    lastMask = Number(body?.params?.mask ?? -1);
+                }
+            } catch {
+                /* swallow JSON parse errors on non-admins.add calls */
+            }
+            await route.continue();
+        });
+
+        await page.goto(ADMIN_ADMINS_ADD_ROUTE);
+
+        await page.locator('[data-testid="admin-add-name"]').fill('stale-flag-victim');
+        await page.locator('[data-testid="admin-add-steam"]').fill('STEAM_0:0:88008800');
+        await page.locator('[data-testid="admin-add-email"]').fill('stale@flag.test');
+        await page.locator('[data-testid="admin-add-password"]').fill('somepassword');
+        await page.locator('[data-testid="admin-add-password2"]').fill('somepassword');
+        await page.locator('[data-testid="admin-add-serverg"]').selectOption('-3');
+
+        // Walk the trap: reveal flag picker, tick OWNER, hide flag
+        // picker. The post-fix updateWeb() clears the checkbox AND
+        // the collector skips hidden ancestors — both pin the mask
+        // at 0 regardless of which guard fires first.
+        await page.locator('[data-testid="admin-add-webg"]').selectOption('c');
+        const ownerCb = page.locator('[data-testid="admin-add-flag-owner"]');
+        await expect(ownerCb).toBeVisible();
+        await ownerCb.check();
+        // Now flip back to "No permissions" — the checkbox should be
+        // cleared AND the block re-hidden.
+        await page.locator('[data-testid="admin-add-webg"]').selectOption('-3');
+        await expect(ownerCb).toBeHidden();
+
+        const responsePromise = page.waitForResponse(
+            (r) =>
+                r.url().includes('api.php') &&
+                r.request().method() === 'POST' &&
+                r.status() === 200,
+        );
+        await page.locator('[data-testid="admin-add-submit"]').click();
+        const env = await (await responsePromise).json();
+
+        // The mask shipped to the API must be 0 — neither path
+        // (clearWebFlags clears the checkbox, collectWebFlags skips
+        // hidden ancestors) should let the OWNER bit slip through.
+        expect(lastMask, 'submit must NOT smuggle stale OWNER bit').toBe(0);
+        // The handler validation succeeded so the new admin landed
+        // with no extra flags.
+        expect(env.ok, JSON.stringify(env)).toBe(true);
+    });
+
+    /**
+     * #1402 adversarial review HIGH 2 (rehash silently dropped).
+     *
+     * The legacy ProcessAddAdmin consumed `data.rehash` from
+     * api_admins_add's envelope and fired `Actions.SystemRehashAdmins`
+     * so the SourceMod plugins on the relevant game servers reloaded
+     * their admin lists. The rewrite's first cut read `data.message`
+     * only and navigated away. config.enableadminrehashing defaults
+     * to '1' in data.sql, so the rehash is the expected default —
+     * without it, a brand-new admin can log in to the panel but
+     * can't moderate on game servers until the next server restart.
+     *
+     * Test shape: stub both API calls so we can verify the chain
+     * without needing real `:prefix_servers` rows that the new
+     * admin has access to (the seeded DB's admin holds no per-
+     * server group memberships, so the natural `rehash` from a
+     * real call is null).
+     */
+    test('Success path → chains Actions.SystemRehashAdmins when handler returns rehash sids', async ({ page }) => {
+        /** @type {{action?:string,params?:Record<string,unknown>}[]} */
+        const apiCalls: { action?: string; params?: Record<string, unknown> }[] = [];
+        await page.route('**/api.php', async (route) => {
+            let body: { action?: string; params?: Record<string, unknown> } | null = null;
+            try {
+                body = JSON.parse(route.request().postData() || '{}');
+            } catch {
+                body = null;
+            }
+            if (!body || !body.action) {
+                await route.continue();
+                return;
+            }
+            apiCalls.push(body);
+            if (body.action === 'admins.add') {
+                // Synthesise a rehash payload — two server ids. The
+                // wire envelope matches `Api::dispatch`'s shape:
+                // `{ok: true, data: <handler-return>}`. Without this
+                // wrapping the dispatcher's success branch reads
+                // `r.data.rehash` as `undefined` and the rehash chain
+                // never fires.
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({
+                        ok: true,
+                        data: {
+                            aid: 4242,
+                            reload: true,
+                            rehash: '1,2',
+                            message: {
+                                title: 'Admin Added',
+                                body: 'The admin has been added successfully',
+                                kind: 'green',
+                                redir: 'index.php?p=admin&c=admins',
+                            },
+                        },
+                    }),
+                });
+                return;
+            }
+            if (body.action === 'system.rehash_admins') {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json',
+                    body: JSON.stringify({ ok: true, data: { rehashed: 2 } }),
+                });
+                return;
+            }
+            await route.continue();
+        });
+
+        await page.goto(ADMIN_ADMINS_ADD_ROUTE);
+
+        await page.locator('[data-testid="admin-add-name"]').fill('rehash-target');
+        await page.locator('[data-testid="admin-add-steam"]').fill('STEAM_0:0:7777');
+        await page.locator('[data-testid="admin-add-email"]').fill('rehash@target.test');
+        await page.locator('[data-testid="admin-add-password"]').fill('somepassword');
+        await page.locator('[data-testid="admin-add-password2"]').fill('somepassword');
+        await page.locator('[data-testid="admin-add-serverg"]').selectOption('-3');
+        await page.locator('[data-testid="admin-add-webg"]').selectOption('-3');
+
+        await page.locator('[data-testid="admin-add-submit"]').click();
+
+        // Wait for the chained call. The dispatcher fires
+        // AdminsAdd → SystemRehashAdmins → navigate; the rehash
+        // arm must land before the 1200ms navigation timeout.
+        await expect.poll(() => apiCalls
+            .map((c) => c.action)
+            .filter((a) => a === 'admins.add' || a === 'system.rehash_admins'),
+        ).toEqual(['admins.add', 'system.rehash_admins']);
+
+        const rehashCall = apiCalls.find((c) => c.action === 'system.rehash_admins');
+        expect(rehashCall?.params?.servers, 'rehash call must carry the sids the handler emitted')
+            .toBe('1,2');
     });
 });

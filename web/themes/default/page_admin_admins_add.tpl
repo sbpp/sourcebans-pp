@@ -276,7 +276,15 @@
 
                                            data-flag values map to ADMIN_* names so the
                                            JS dispatcher can OR them with Perms.ADMIN_*. *}
-                                        <label class="flex items-center gap-2"><input type="checkbox" data-flag="ADMIN_OWNER" data-testid="admin-add-flag-owner"> <span class="text-sm">Owner</span></label>
+                                        {if $can_grant_owner}
+                                            {* #1402 adversarial review HIGH 1: OWNER is gated.
+                                               A non-owner with ADMIN_ADD_ADMINS otherwise sees
+                                               the checkbox and can grant OWNER (full panel
+                                               takeover). Server-side guard in api_admins_add
+                                               is the load-bearing pair; this is the visible-
+                                               affordance half. *}
+                                            <label class="flex items-center gap-2"><input type="checkbox" data-flag="ADMIN_OWNER" data-testid="admin-add-flag-owner"> <span class="text-sm">Owner</span></label>
+                                        {/if}
                                         <label class="flex items-center gap-2"><input type="checkbox" data-flag="ADMIN_LIST_ADMINS"> <span class="text-sm">View Admins</span></label>
                                         <label class="flex items-center gap-2"><input type="checkbox" data-flag="ADMIN_ADD_ADMINS"> <span class="text-sm">Add Admins</span></label>
                                         <label class="flex items-center gap-2"><input type="checkbox" data-flag="ADMIN_EDIT_ADMINS"> <span class="text-sm">Edit Admins</span></label>
@@ -402,8 +410,42 @@
             }
 
             /**
+             * Clear every web-flag checkbox inside #web-flags-block and
+             * the SourceMod flags / new-group name text inputs. Called
+             * by updateServer() / updateWeb() when the dropdown swings
+             * back to a value that hides the dependent block. Pre-fix
+             * (#1402 adversarial review HIGH 3), the helpers only
+             * toggled the `hidden` attribute and left the inputs'
+             * values intact, so an operator who ticked Owner under
+             * "Custom permissions" and then flipped the dropdown to
+             * "No permissions" still submitted `mask = ADMIN_OWNER`
+             * (silent OWNER grant). Mirrored on both the web + server
+             * sides.
+             */
+            function clearWebFlags() {
+                document.querySelectorAll('#web-flags-block input[data-flag]').forEach(function (cb) {
+                    /** @type {HTMLInputElement} */ (cb).checked = false;
+                });
+            }
+            function clearServerFlags() {
+                var srvFlags = /** @type {HTMLInputElement|null} */ (document.getElementById('server-flags'));
+                if (srvFlags) srvFlags.value = '';
+            }
+            function clearWebNewName() {
+                var el = /** @type {HTMLInputElement|null} */ (document.getElementById('web-new-name'));
+                if (el) el.value = '';
+            }
+            function clearServerNewName() {
+                var el = /** @type {HTMLInputElement|null} */ (document.getElementById('server-new-name'));
+                if (el) el.value = '';
+            }
+
+            /**
              * update_server() replacement: react to #serverg change and
-             * reveal the matching conditional inputs.
+             * reveal the matching conditional inputs. Clears the
+             * dependent blocks' values when the dropdown swings back
+             * to a value that hides them (#1402 adversarial review
+             * HIGH 3 — stale-flags ride-through fix).
              */
             function updateServer() {
                 var sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('serverg'));
@@ -417,14 +459,21 @@
                 } else if (v === 'c') {
                     nameBlock.setAttribute('hidden', '');
                     flagsBlock.removeAttribute('hidden');
+                    clearServerNewName();
                 } else {
                     nameBlock.setAttribute('hidden', '');
                     flagsBlock.setAttribute('hidden', '');
+                    clearServerNewName();
+                    clearServerFlags();
                 }
             }
             /**
              * update_web() replacement: react to #webg change and reveal
-             * the matching conditional inputs.
+             * the matching conditional inputs. Clears the dependent
+             * blocks' values when the dropdown swings back to a value
+             * that hides them (#1402 adversarial review HIGH 3 —
+             * stale-flags ride-through fix; particularly important
+             * because the OWNER bit lives here).
              */
             function updateWeb() {
                 var sel = /** @type {HTMLSelectElement|null} */ (document.getElementById('webg'));
@@ -438,9 +487,12 @@
                 } else if (v === 'c') {
                     nameBlock.setAttribute('hidden', '');
                     flagsBlock.removeAttribute('hidden');
+                    clearWebNewName();
                 } else {
                     nameBlock.setAttribute('hidden', '');
                     flagsBlock.setAttribute('hidden', '');
+                    clearWebNewName();
+                    clearWebFlags();
                 }
             }
 
@@ -450,13 +502,20 @@
              * integer mask. We use `+=` rather than `|=` to keep the
              * 32-bit-unsigned high bits intact (JS bitwise ops promote
              * to signed int32, which drops bits above 2^31).
+             *
+             * Defensively scopes to `#web-flags-block:not([hidden])`
+             * so a checkbox the operator ticked under "Custom
+             * permissions" and then re-hid by flipping the dropdown
+             * back to "No permissions" can't ride into the mask even
+             * if `clearWebFlags()` ever stops firing (#1402 adversarial
+             * review HIGH 3 — belt + suspenders on top of the clear).
              * @returns {number}
              */
             function collectWebFlags() {
                 var P = perms();
                 if (!P) return 0;
                 var mask = 0;
-                document.querySelectorAll('#web-flags-block input[data-flag]').forEach(function (cb) {
+                document.querySelectorAll('#web-flags-block:not([hidden]) input[data-flag]').forEach(function (cb) {
                     var el = /** @type {HTMLInputElement} */ (cb);
                     if (!el.checked) return;
                     var flagName = el.getAttribute('data-flag') || '';
@@ -466,6 +525,36 @@
                     }
                 });
                 return mask;
+            }
+            /**
+             * Mirror of `collectWebFlags`'s defensive hidden-scoping
+             * for the SourceMod flags string. Returns '' when the
+             * server flags block is hidden so a stale value can't
+             * ride into `srv_mask` after a dropdown flip.
+             * @returns {string}
+             */
+            function collectServerFlags() {
+                var flagsBlock = document.getElementById('server-flags-block');
+                if (!flagsBlock || flagsBlock.hasAttribute('hidden')) return '';
+                var el = /** @type {HTMLInputElement|null} */ (document.getElementById('server-flags'));
+                return el ? el.value.trim() : '';
+            }
+            /**
+             * Mirror of `collectWebFlags`'s defensive hidden-scoping
+             * for the new-group name inputs.
+             * @returns {string}
+             */
+            function collectWebNewName() {
+                var block = document.getElementById('web-new-name-block');
+                if (!block || block.hasAttribute('hidden')) return '';
+                var el = /** @type {HTMLInputElement|null} */ (document.getElementById('web-new-name'));
+                return el ? el.value.trim() : '';
+            }
+            function collectServerNewName() {
+                var block = document.getElementById('server-new-name-block');
+                if (!block || block.hasAttribute('hidden')) return '';
+                var el = /** @type {HTMLInputElement|null} */ (document.getElementById('server-new-name'));
+                return el ? el.value.trim() : '';
             }
 
             /**
@@ -515,10 +604,30 @@
                     var p2 = /** @type {HTMLInputElement|null} */ (document.getElementById('password2'));
                     if (p1) p1.value = String(r.data.password);
                     if (p2) p2.value = String(r.data.password);
-                    // Flip both fields to type=text briefly so the operator
-                    // can see what was generated (matches v1.x UX).
-                    if (p1) p1.type = 'text';
-                    if (p2) p2.type = 'text';
+                    // #1402 adversarial review MEDIUM 5: leave the input
+                    // types as `password` (matches v1.x `LoadGeneratePassword`
+                    // — the legacy helper never flipped .type either).
+                    // The pre-fix `type='text'` change was a privacy /
+                    // shoulder-surf / screenshot leak: the freshly-
+                    // generated password sat in plaintext on the operator's
+                    // screen indefinitely after the click, even after the
+                    // operator left the field. Operators who genuinely
+                    // need to see the value can copy it into their
+                    // password manager from the password field's clipboard
+                    // (browsers + extensions both support this) or use
+                    // their browser's "show password" toggle on a per-
+                    // field basis.
+                }).catch(function (err) {
+                    // sb.api.call only rejects on internal failures (it
+                    // catches fetch / json errors and synthesises an
+                    // error envelope), but defensive .catch() ensures the
+                    // button doesn't stay busy if a throw escapes the
+                    // success callback (e.g., DOM nodes vanished mid-
+                    // request). Per the AGENTS.md "Loading state on
+                    // action buttons" rule, setBusy(btn, false) must
+                    // fire on every non-navigating response branch.
+                    setBusy(btn, false);
+                    toast('error', 'Generate password failed', String(err && err.message ? err.message : err));
                 });
             });
 
@@ -551,9 +660,16 @@
                 var serverPassword = useSrvPass ? srvPassEl.value : '-1';
                 var sg = (/** @type {HTMLSelectElement} */ (document.getElementById('serverg'))).value;
                 var wg = (/** @type {HTMLSelectElement} */ (document.getElementById('webg'))).value;
-                var serverNewName = (/** @type {HTMLInputElement} */ (document.getElementById('server-new-name'))).value.trim();
-                var webNewName = (/** @type {HTMLInputElement} */ (document.getElementById('web-new-name'))).value.trim();
-                var srvFlags = (/** @type {HTMLInputElement} */ (document.getElementById('server-flags'))).value.trim();
+                // #1402 adversarial review HIGH 3: collect via the
+                // hidden-scoped helpers so a value left over from a
+                // previously-revealed block can't ride into the API
+                // call after the dropdown swung to "No permissions".
+                // Both updateServer/updateWeb clear the inputs AND
+                // these collectors fall through to '' when the parent
+                // block is hidden — belt + suspenders.
+                var serverNewName = collectServerNewName();
+                var webNewName = collectWebNewName();
+                var srvFlags = collectServerFlags();
                 var webMask = collectWebFlags();
 
                 var submitBtn = /** @type {HTMLButtonElement|null} */ (form.querySelector('[data-testid="admin-add-submit"]'));
@@ -611,11 +727,45 @@
                     // was unreachable from a dead submit handler).
                     var green = document.getElementById('msg-green');
                     if (green) green.style.display = '';
-                    // Leave the button busy across the navigation so the form
-                    // can't be re-submitted while the redirect resolves.
-                    setTimeout(function () {
-                        window.location.href = (msg.redir || 'index.php?p=admin&c=admins');
-                    }, 1200);
+
+                    // #1402 adversarial review HIGH 2: chain
+                    // `Actions.SystemRehashAdmins` when the handler tells
+                    // us the new admin's per-server access requires a
+                    // rehash. The legacy ProcessAddAdmin path consumed
+                    // `data.rehash`; the rewrite silently dropped it,
+                    // which meant new admins could log in to the panel
+                    // but couldn't moderate on game servers until the
+                    // next server restart (config.enableadminrehashing
+                    // defaults to '1' in data.sql — the rehash is the
+                    // expected default behaviour). Mirrors the
+                    // _admin_edit_helpers.php:fireRehash shape (same
+                    // catch arm so a flaky rehash endpoint still resolves
+                    // the navigation).
+                    var rehashSids = (data.rehash || '').toString();
+                    var navigate = function () {
+                        // Leave the button busy across the navigation so
+                        // the form can't be re-submitted while the redirect
+                        // resolves.
+                        setTimeout(function () {
+                            window.location.href = (msg.redir || 'index.php?p=admin&c=admins');
+                        }, 1200);
+                    };
+                    if (rehashSids && A.SystemRehashAdmins) {
+                        a.call(A.SystemRehashAdmins, { servers: rehashSids })
+                            .then(navigate)
+                            .catch(navigate);
+                        return;
+                    }
+                    navigate();
+                }).catch(function (err) {
+                    // Defensive: sb.api.call doesn't reject on network
+                    // errors (it returns a synthetic envelope), but a
+                    // throw escaping the success callback would otherwise
+                    // leave the submit button busy forever. Per AGENTS.md
+                    // "Loading state on action buttons" — setBusy(btn,
+                    // false) on every non-navigating response branch.
+                    setBusy(submitBtn, false);
+                    toast('error', 'Add admin failed', String(err && err.message ? err.message : err));
                 });
             });
 
