@@ -38,7 +38,6 @@ final class AdminAdminsAddView extends View
         public readonly array $server_list,
         public readonly array $server_admin_group_list,
         public readonly array $server_group_list,
-        public readonly string $server_script,
         public readonly bool $can_grant_owner,
     ) {
     }

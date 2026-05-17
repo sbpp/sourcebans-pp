@@ -674,18 +674,14 @@ foreach ($res as $row) {
 
     $data['edit_link'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=comms&o=edit" . $pagelink . "&id=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
 
-    switch ($data['type']) {
-        case 2:
-            $data['unban_link'] = CreateLinkR('<i class="fas fa-undo fa-lg"></i> UnGag', "#", "", "_self", false, "UnGag('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
-            break;
-        case 1:
-            $data['unban_link'] = CreateLinkR('<i class="fas fa-undo fa-lg"></i> UnMute', "#", "", "_self", false, "UnMute('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1);return false;");
-            break;
-        default:
-            break;
-    }
-
-    $data['delete_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Delete Block', "#", "", "_self", false, "RemoveBlock('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0);return false;");
+    // #1404 — the `unban_link` (UnGag/UnMute switch arms) and
+    // `delete_link` fields were `CreateLinkR`-built `UnGag` / `UnMute`
+    // / `RemoveBlock` `<a onclick=…>` blobs; the helpers were deleted
+    // with `sourcebans.js` at #1123 D1 and no v2.0+ template ever
+    // consumed the fields. Modern unmute / delete affordances live on
+    // the `.row-actions` cell in `page_comms.tpl`
+    // (`data-action="comms-unblock"` / `data-action="comms-delete"`).
+    // Pinned by `DeadJsCallSitesTest`.
 
     $data['server_id'] = $row['ban_server'];
 

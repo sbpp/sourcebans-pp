@@ -338,10 +338,18 @@
                                 {/if}
                             </div>
                         </div>
-                        <div class="card__body">
-                            <div class="text-xs text-muted">Servers populate via the legacy <code>LoadServerHostPlayersList</code> hook.</div>
-                            <div id="servers_{$group.gid}" class="text-xs mt-2"></div>
-                        </div>
+                        {* #1404 — pre-fix this card body carried a
+                           "Servers populate via the legacy
+                           LoadServerHostPlayersList hook." placeholder
+                           plus a sibling `<div id="servers_{gid}">`
+                           that admin.groups.php tried to async-hydrate.
+                           The helper was deleted with sourcebans.js at
+                           #1123 D1, so the placeholder copy was
+                           admin-facing forever. The body now collapses
+                           to the master-detail flag grid + member count
+                           up top — per-group server-card hydration is
+                           the next step (follow-up ticket tracked off
+                           #1404). *}
                     </article>
                 {/foreach}
             </div>

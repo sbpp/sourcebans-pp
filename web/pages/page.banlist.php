@@ -855,11 +855,14 @@ foreach ($res as $row) {
     // automatically (see the smarter-default block in admin.bans.php),
     // but we make it explicit + drop the dead fragment.
     $data['groups_link']     = CreateLinkR('<i class="fas fa-users fa-lg"></i> Show Groups', "index.php?p=admin&c=bans&section=group-ban&fid=" . urlencode($data['communityid']));
-    $data['friend_ban_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Ban Friends', '#', '', '_self', false, "BanFriendsProcess('" . $data['communityid'] . "','" . $data['player'] . "');return false;");
+    // #1404 — `friend_ban_link`, `unban_link`, and `delete_link` were
+    // v1.x `CreateLinkR`-built `BanFriendsProcess` / `UnbanBan` /
+    // `RemoveBan` `<a onclick=…>` blobs; the helpers were deleted with
+    // `sourcebans.js` at #1123 D1 and no v2.0+ template ever consumed
+    // the fields. Modern unban / delete affordances live on the
+    // `.row-actions` cell in `page_bans.tpl` (`data-action="bans-unban"`
+    // / `data-action="bans-delete"`). Pinned by `DeadJsCallSitesTest`.
     $data['edit_link']       = CreateLinkR('<i class="fas fa-edit fa-lg"></i> Edit Details', "index.php?p=admin&c=bans&o=edit" . $pagelink . "&id=" . $row['ban_id'] . "&key=" . $_SESSION['banlist_postkey']);
-
-    $data['unban_link']  = CreateLinkR('<i class="fas fa-undo fa-lg"></i> Unban', "#", "", "_self", false, "UnbanBan('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 1, false);return false;");
-    $data['delete_link'] = CreateLinkR('<i class="fas fa-trash fa-lg"></i> Delete Ban', "#", "", "_self", false, "RemoveBan('" . $row['ban_id'] . "', '" . $_SESSION['banlist_postkey'] . "', '" . $pagelink . "', '" . $data['player'] . "', 0, false);return false;");
 
 
     $data['server_id'] = $row['ban_server'];

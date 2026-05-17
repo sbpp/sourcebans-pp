@@ -137,12 +137,20 @@ $server_admin_group_count = count($server_group_list);
 // ------------------------------------------------------------------
 // Server groups (`:prefix_groups` WHERE type = 3).
 //
-// `LoadServerHostPlayersList(...)` inline scripts are still emitted
-// for any third-party theme that forked the pre-v2.0.0 default and
-// renders an accordion-revealed server list per row. The shipped
-// template omits the accordion entirely (the marquee surface is the
-// master-detail flag grid above, not these server-of-servers
-// groupings) and ignores the script tags.
+// #1404 — the pre-fix loop also echoed a per-row
+// `<script>LoadServerHostPlayersList('<sids>', 'id', 'servers_<gid>')</script>`
+// blob meant to async-hydrate the per-group server list into the
+// matching `<div id="servers_{gid}">` slot. The helper was deleted
+// with `sourcebans.js` at #1123 D1, so every page load raised
+// `ReferenceError: LoadServerHostPlayersList is not defined` once
+// per server group AND left the slot showing the literal "Servers
+// populate via the legacy LoadServerHostPlayersList hook." copy
+// admin-facing forever. The echo + the slot + the placeholder copy
+// all went together; the `:prefix_servers_groups` lookup that fed
+// the SID list went too (nothing else read it). Hydration to per-
+// group server cards is the next step — tracked as a follow-up
+// ticket; see AGENTS.md "Anti-patterns" for the matching
+// `LoadServerHostPlayersList` entry.
 // ------------------------------------------------------------------
 $server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
 $server_list   = [];
@@ -154,18 +162,6 @@ foreach ($server_group_rows as $row) {
     $GLOBALS['PDO']->bind(':gid', $row['gid']);
     $cnt = $GLOBALS['PDO']->single();
     $row['server_count'] = (int) $cnt['cnt'];
-
-    $GLOBALS['PDO']->query("SELECT server_id FROM `:prefix_servers_groups` WHERE group_id = :gid");
-    $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $servers_in_group = $GLOBALS['PDO']->resultset();
-
-    $server_arr = "";
-    foreach ($servers_in_group as $server) {
-        $server_arr .= $server['server_id'] . ";";
-    }
-    echo "<script>";
-    echo "LoadServerHostPlayersList('" . $server_arr . "', 'id', 'servers_" . $row['gid'] . "');";
-    echo "</script>";
 
     $server_list[]   = $row;
     $server_counts[] = $row['server_count'];
