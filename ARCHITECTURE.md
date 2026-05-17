@@ -98,6 +98,7 @@ web/
 │   ├── Upload/               Sbpp\Upload\UploadHandler — shared file-upload handler (perm + CSRF + extension allowlist + filename sanitiser + popup chrome) for the demo / icon / mapimage popup pages (goals#5)
 │   ├── Mail/                 Sbpp\Mail\{Mail,Mailer,EmailType} — Symfony Mailer wrapper + enum
 │   ├── Telemetry/            Sbpp\Telemetry\{Telemetry,Schema1} — anonymous opt-out daily ping (#1126); schema-1.lock.json is the vendored cross-repo contract
+│   ├── Announce/             Sbpp\Announce\{AnnouncementFetcher,Announcement} — anonymous opt-out daily fetch of project news / security advisories from https://sbpp.github.io/announcements.json (source of truth: docs/public/announcements.json); admin-only banner on the home dashboard
 │   ├── SteamID/              SteamID parsing / vanity-URL resolution
 │   ├── PHPStan/              Sbpp\PHPStan\* — custom PHPStan rules (Smarty + SQL prefix)
 │   ├── page-builder.php      route() + build() (the page router; procedural)

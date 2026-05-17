@@ -102,6 +102,40 @@
 
     </div>
 
+    {* -- Admins-only project announcement strip ----------------------
+        Sourced from the daily fetch into `SB_CACHE/announcements.json`
+        (see `Sbpp\Announce\AnnouncementFetcher`). The page handler in
+        `web/pages/page.home.php` short-circuits `$announcement` to
+        null for anonymous + non-admin viewers, so this entire block
+        only paints for logged-in admins. Cache miss / empty feed /
+        all-expired entries also resolve to null and the strip stays
+        hidden. *}
+    {if $announcement}
+    <aside class="announcement-strip" data-testid="dashboard-announcement" aria-label="Latest announcement">
+        <details>
+            <summary>
+                <i data-lucide="megaphone" aria-hidden="true" style="width:14px;height:14px;flex-shrink:0"></i>
+                <span class="announcement-strip__title">{$announcement.title}</span>
+                {if $announcement.published_human}
+                <span class="announcement-strip__date text-faint" data-testid="dashboard-announcement-date">{$announcement.published_human}</span>
+                {/if}
+            </summary>
+            {if $announcement.body_html}
+            <div class="announcement-strip__body" data-testid="dashboard-announcement-body">
+                {* nofilter: rendered by IntroRenderer (CommonMark, html_input=escape, allow_unsafe_links=false); never raw user input *}
+                {$announcement.body_html nofilter}
+            </div>
+            {/if}
+            {if $announcement.url}
+            <a class="announcement-strip__link" data-testid="dashboard-announcement-link"
+               href="{$announcement.url}" target="_blank" rel="noopener noreferrer">
+                Read more <i data-lucide="external-link" aria-hidden="true" style="width:13px;height:13px"></i>
+            </a>
+            {/if}
+        </details>
+    </aside>
+    {/if}
+
     {* -- Recent bans + Servers (2-col on desktop, collapses to 1-col below ~320px+gap per card; #1188) *}
     <div class="grid gap-4" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))">
 

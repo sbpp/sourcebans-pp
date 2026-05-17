@@ -2076,6 +2076,101 @@ details.queue-row > summary > .row-actions {
   .dash-intro-preview { min-height: 8rem; }
 }
 
+/* ---- Dashboard announcement strip (#announcements-feed) ----
+   Slim, admin-only banner sourced from
+   `https://sbpp.github.io/announcements.json` (see
+   `Sbpp\Announce\AnnouncementFetcher` + `docs/public/announcements.json`).
+   Lives between the stat-card grid and the recent-activity columns
+   on `page_dashboard.tpl` so it's visible without crowding the
+   `.card` chrome on either side.
+
+   Visual weight matches the existing `.card` / `.empty-state`
+   surfaces — `var(--bg-muted)` background, `1px solid var(--border)`,
+   `var(--radius-md)` corners — so it reads as part of the dashboard
+   chrome rather than a separate notification surface. The native
+   `<details>` / `<summary>` shape is the same disclosure idiom used
+   by `.filters-details` (admin advanced search) and the inline
+   per-row comment disclosures on the banlist; collapsed-by-default
+   keeps the page scroll budget unchanged for operators who don't
+   need the body. The chevron rotation honours the global
+   `prefers-reduced-motion: reduce` reset (motion-of-state, not
+   essential feedback) — no per-rule override here, parity with
+   the chrome's other disclosure surfaces. */
+.announcement-strip {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.announcement-strip > details > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--fs-sm);
+  user-select: none;
+}
+.announcement-strip > details > summary::-webkit-details-marker { display: none; }
+.announcement-strip > details > summary::marker { content: ''; }
+.announcement-strip__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.announcement-strip__date {
+  flex: 0 0 auto;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.announcement-strip > details > summary::after {
+  content: '';
+  flex: 0 0 auto;
+  width: 0; height: 0;
+  margin-left: 0.25rem;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text-faint);
+  transform: rotate(-90deg);
+  transition: transform 150ms ease;
+}
+.announcement-strip > details[open] > summary::after { transform: rotate(0deg); }
+.announcement-strip > details > summary:hover .announcement-strip__title {
+  color: var(--text);
+}
+.announcement-strip > details > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+.announcement-strip__body {
+  padding: 0 0.875rem 0.75rem;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.announcement-strip__body > :first-child { margin-top: 0; }
+.announcement-strip__body > :last-child  { margin-bottom: 0; }
+.announcement-strip__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0.875rem 0.75rem;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  text-decoration: none;
+}
+.announcement-strip__link:hover { text-decoration: underline; }
+.announcement-strip__link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 /* #1275 — page-level ToC pattern (#1207 ADM-3 / #1239 / #1266) is
    gone. The two consumers (admin-admins, admin-bans) migrated to
    Pattern A (`?section=…`), so the cross-template `.page-toc-shell`

@@ -32,6 +32,14 @@ final class HomeDashboardView extends View
      * @param list<array<string,mixed>> $players_banned
      * @param list<array<string,mixed>> $players_commed
      * @param list<array<string,mixed>> $server_list
+     * @param array{
+     *     id: string,
+     *     title: string,
+     *     body_html: string,
+     *     url: string,
+     *     published_at: ?int,
+     *     published_human: ?string,
+     * }|null $announcement
      */
     public function __construct(
         public readonly string $dashboard_title,
@@ -57,6 +65,17 @@ final class HomeDashboardView extends View
         // `Perms::for($userbank)` in `web/pages/page.home.php`.
         public readonly bool $can_add_ban,
         public readonly bool $can_add_server,
+        // Admins-only project announcement. `null` when:
+        //   - The viewer is anonymous or non-admin (the gate is
+        //     in `web/pages/page.home.php` — the home page handler
+        //     short-circuits to null before calling
+        //     `AnnouncementFetcher::latest()`).
+        //   - The cache is cold / empty / all-expired.
+        // The template (`page_dashboard.tpl`) renders the strip
+        // only when this is truthy. `body_html` is pre-rendered
+        // through `Sbpp\Markup\IntroRenderer`; the template emits
+        // it with `{nofilter}` per the documented contract.
+        public readonly ?array $announcement,
     ) {
     }
 }

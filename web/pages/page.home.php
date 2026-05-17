@@ -254,6 +254,30 @@ require(TEMPLATES_PATH . "/page.servers.php"); //populates $serversView
 // See page.servers.php / admin.settings.php for the rationale on
 // pulling `$perms['can_*']` keys by name rather than splatting whole.
 $homePerms = \Sbpp\View\Perms::for($userbank);
+
+// Announcements feed: admins-only banner sourced from the daily
+// fetch into `SB_CACHE/announcements.json`. Anonymous + non-admin
+// callers get `null` so the feed never paints for visitors who
+// can't act on the content. Cache miss / empty feed / all-expired
+// also return null — the template gates the entire strip on a
+// truthy `$announcement`. Convert the typed DTO to a Smarty array
+// so the template reads `{$announcement.title}` etc. with global
+// auto-escape; `body_html` carries `{nofilter}` because it's
+// already IntroRenderer output (the only safe-HTML exit point on
+// the panel — see AGENTS.md "`nofilter` discipline").
+$announcement      = null;
+$announcementEntry = $userbank->is_admin() ? \Sbpp\Announce\AnnouncementFetcher::latest() : null;
+if ($announcementEntry !== null) {
+    $announcement = [
+        'id'              => $announcementEntry->id,
+        'title'           => $announcementEntry->title,
+        'body_html'       => $announcementEntry->body_html,
+        'url'             => $announcementEntry->url,
+        'published_at'    => $announcementEntry->published_at,
+        'published_human' => $announcementEntry->published_human,
+    ];
+}
+
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\HomeDashboardView(
     dashboard_title: (string) (Config::get('dash.intro.title') ?? ''),
     // #1290 phase K.4 — PHP 8.5 pipe operator. Reads left-to-right
@@ -279,4 +303,5 @@ $homePerms = \Sbpp\View\Perms::for($userbank);
     opened_server: $serversView->opened_server,
     can_add_ban:    $homePerms['can_add_ban'],
     can_add_server: $homePerms['can_add_server'],
+    announcement:   $announcement,
 ));

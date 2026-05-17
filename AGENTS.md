@@ -61,6 +61,7 @@ code change — never as a follow-up. CI doesn't gate this; it's on you.
 | Change a user-facing install / upgrade / troubleshooting flow (PHP or SourceMod version requirements, installer wizard steps, `config.php` behavior, `web/updater/` runner output, plugin `databases.cfg` / `sourcebans.cfg` shape, error messages a self-hoster will see) | The relevant page under `docs/src/content/docs/` (the Starlight site published at sbpp.github.io). |
 | Add or remove a config knob a self-hoster sets (`config.php` keys, `databases.cfg` fields, plugin convars users tune) | `docs/` page that documents that knob, plus the matching `docs/src/content/docs/updating/*.mdx` page if it's a breaking change between releases |
 | Ship a new feature with a self-hoster-visible setup step (Discord forwarder, demos, theming, etc.) | New page or section under the right `docs/` group + sidebar entry in `docs/astro.config.mjs` |
+| Publish or amend a project announcement (the admin-only home-dashboard banner) | `docs/public/announcements.json` (Astro publishes it as a static asset at `https://sbpp.github.io/announcements.json`). One-file source of truth — don't reach for an admin endpoint, an in-panel composer, or a separate git repo. Schema + sort + expiry rules are in `docs/src/content/docs/configuring/announcements.mdx` (operator-facing) and the "Project announcements feed" Conventions block in `AGENTS.md` (agent-facing). The starter file is `[]` (empty array); the deploy chain (`docs-deploy-trigger.yml`) ships the updated file within minutes of merge to `main`. |
 | Touch any UI under `web/install/` or the panel chrome that's screenshotted in docs | Run `npm run capture` in `docs/` locally and commit the PNG diff. Maintainers can alternatively apply the `safe-to-screenshot` label after reviewing the PR diff so `docs-screenshots-capture.yml` regenerates the captures (see `docs/README.md` for the security model + label-strip-on-push contract) |
 | Change panel theme tokens — palette, geometry, semantic colors — in `web/themes/default/css/theme.css` (the `:root` block or `html.dark` overrides) | Mirror the change in `docs/src/styles/sbpp.css` so the docs site stays visually consistent with the panel. Same PR. (Fonts intentionally not mirrored — see #2.) |
 
@@ -1341,6 +1342,124 @@ When a future subsystem grows a similar cross-repo JSON contract,
 follow this shape: vendored Draft-7 JSON Schema lock file + reader
 class + extractor parity + manual `make sync-…` target.
 
+### Project announcements feed (`Sbpp\Announce\AnnouncementFetcher`)
+
+Anonymous, opt-out-by-default daily fetch of project news + security
+advisories from a JSON file the maintainers publish at
+`https://sbpp.github.io/announcements.json`. The dashboard renders
+the freshest non-expired entry as a slim disclosure strip between
+the stat cards and the recent-activity panels — visible only to
+logged-in admins. Same opt-out shape, lifecycle, and never-fail-the-
+request contract as `Sbpp\Telemetry\Telemetry` — the two share the
+"daily background tick fired from `register_shutdown_function` after
+the response flushes" pattern.
+
+The contract:
+
+- **Source of truth** is in this repo at
+  `docs/public/announcements.json` (a JSON array sorted newest-first;
+  Astro publishes everything under `docs/public/` as a static asset
+  at the docs site root, proven by `favicon.svg`). Maintainers ship
+  announcements via PRs against this file — full review, full git
+  history, no separate CMS or admin endpoint. The
+  `.github/workflows/docs-deploy-trigger.yml` workflow lands the
+  updated file at `https://sbpp.github.io/announcements.json` within
+  a few minutes of merge to `main`.
+- **Schema** per entry: `id` (string ≤64 chars, **required**),
+  `title` (string, **required**), `body_md` (optional CommonMark),
+  `url` (optional `http(s)://` only — javascript:/data: are rejected
+  at the parser), `published_at` (optional ISO-8601 or unix int —
+  drives sort order), `expires_at` (optional, drops the entry from
+  the cache once past). The parser drops malformed / expired /
+  duplicate-id entries and surfaces the first valid one to the
+  dashboard.
+- **Lifecycle** (mirrors `Telemetry::tickIfDue`): page render reads
+  the cache only — never blocks on the network. A
+  `register_shutdown_function([AnnouncementFetcher::class, 'tickIfDue'])`
+  registered at the tail of `init.php` fires on every panel + JSON
+  API request; the 24h TTL gate inside the body keeps the actual
+  outbound call to at most one per install per day. On FPM,
+  `fastcgi_finish_request()` flushes the response BEFORE the
+  upstream call so the user's TCP socket closes first.
+- **Cache shape** (mirrors `system.check_version`'s
+  `_api_system_release_save_cache`): atomic tempfile + `rename()`
+  write under `SB_CACHE/announcements.json`, persisted as the raw
+  upstream body verbatim (parsing happens at read time so the
+  on-disk file is byte-identical to what the upstream served — easier
+  to triage a "wrong content rendered" report). Stale-while-error:
+  if the upstream call fails, the previous cache stays served
+  indefinitely until a successful fetch overwrites it. The cache
+  mtime is the TTL anchor, so a flapping upstream costs one fetch
+  attempt per 24h regardless of request volume.
+- **Wire layer**: 5s timeout, 3s connect timeout, 256 KiB hard cap
+  on the response body (enforced by the stream wrapper's `length`
+  parameter AND re-asserted post-read so a future swap of the read
+  layer doesn't bypass the limit), `User-Agent: SourceBans++/<ver>
+  (announcements)` mirroring `system.check_version`. No query
+  parameters, no cookies, no tracking pixels — the GET is a plain
+  static-file fetch.
+- **Air-gap escape hatch**: `define('SB_ANNOUNCEMENTS_URL', '')` in
+  `config.php`. The `if (!defined(...))` gate in `init.php` lets the
+  operator override before the default fires; an empty string short-
+  circuits `tickIfDue()` before it flushes the response or touches
+  the network. There is no in-panel toggle by design — the JSON
+  feed is intentionally low-frequency + audit-friendly, so the only
+  sensible "off" position is the documented config.php-side
+  escape hatch in `docs/src/content/docs/configuring/announcements.mdx`.
+- **Surface gating**: the page handler in `web/pages/page.home.php`
+  short-circuits to `null` for anonymous + non-admin viewers
+  (`$userbank->is_admin() ? AnnouncementFetcher::latest() : null`);
+  the template (`page_dashboard.tpl`) gates the entire `<aside>`
+  block on a truthy `$announcement` so the strip never paints for
+  visitors who can't act on the content.
+- **Markdown rendering**: `body_md` goes through
+  `Sbpp\Markup\IntroRenderer::renderIntroText()` (CommonMark with
+  `html_input: 'escape'` + `allow_unsafe_links: false`). The
+  rendered HTML lands on the `Announcement` DTO as `body_html` and
+  the template emits it with `{nofilter}` — the only "this is
+  already safe HTML" exit point the panel supports. Reach for any
+  other Markdown renderer here and you re-open the #1113-class
+  stored-XSS vector. See "Admin-authored display text" below for
+  the contract this inherits.
+- **Test override**: `AnnouncementFetcher::_setHttpFetcherForTests`
+  swaps the upstream call with a closure that returns the canned
+  body (or `null` to simulate failure). Mirrors
+  `Sbpp\Servers\SourceQueryCache::setProbeOverrideForTesting`.
+  Production never sets it.
+
+Regression guards:
+
+- `web/tests/integration/AnnouncementFetcherTest.php` — cache shape,
+  atomic write, stale-while-error, body-cap enforcement, TTL gate,
+  expired-entry filter, malformed-JSON rejection, IntroRenderer
+  integration (literal `<script>` in body_md is escaped), URL
+  scheme rejection (javascript: dropped), duplicate-id de-dup,
+  newest-by-published_at sort.
+- `web/tests/integration/HomeDashboardAnnouncementTest.php` — the
+  page handler's gate. Three tests: admin + populated cache yields
+  the announcement, anonymous + populated cache yields null,
+  admin + cold cache yields null. Process-isolated render with
+  a stub Smarty (mirrors `Php82DeprecationsTest`) so the
+  `HomeDashboardView`'s `announcement` property gets captured
+  without rendering the actual `.tpl`.
+- `web/tests/e2e/specs/flows/dashboard-announcement.spec.ts` —
+  end-to-end: `[data-testid="dashboard-announcement"]` mounts when
+  the cache is seeded, the disclosure expands on click, the body
+  paints the IntroRenderer-rendered HTML, the external link carries
+  `target="_blank" rel="noopener noreferrer"`, axe-core passes.
+  Anonymous-storage-state arm asserts the strip never paints. The
+  cache-seeding shim is `web/tests/e2e/scripts/seed-announcements-e2e.php`
+  (shell-out via `seedAnnouncementsE2e` in `fixtures/db.ts`); each
+  test cleans up via `clearAnnouncementsCacheE2e` in `afterEach` so
+  sibling specs don't bleed.
+
+The starter `docs/public/announcements.json` ships as `[]` (empty
+array) so the panel renders "no announcement" until the maintainers
+land an entry. This validates the deploy chain end-to-end before
+any real content goes out — same shape `Sbpp\Telemetry\Schema1`'s
+lock file uses (file shape pinned by tests, content can change
+freely).
+
 ### Admin-authored display text (`Sbpp\Markup\IntroRenderer`)
 
 - Anything an admin types in the panel that we render to other users
@@ -2234,6 +2353,68 @@ contacting every contributor individually.
   server-side `system.preview_intro_text` action (same `IntroRenderer`
   the public dashboard uses). A bundled JS Markdown library would
   diverge from the safe-on-render contract.
+- Adding an in-panel toggle to disable the project announcements
+  feed (`?p=admin&c=settings` checkbox, an `admin_announcements`
+  permission flag, etc.) → the surface is intentionally narrow
+  enough that the only sensible "off" position is the air-gap
+  escape hatch (`define('SB_ANNOUNCEMENTS_URL', '')` in
+  `config.php`, documented in
+  `docs/src/content/docs/configuring/announcements.mdx`). An
+  in-panel toggle would suggest the feed is per-instance
+  configurable in a way that pairs with admin-authored content; it
+  isn't. The maintainers ship the JSON, every operator audits it
+  via the public diff history of `docs/public/announcements.json`,
+  and the only legitimate per-install knob is "off entirely vs. on".
+  See "Project announcements feed" under Conventions for the full
+  threat model.
+- Reaching for `league/commonmark` (or any other Markdown library)
+  directly to render announcement bodies → `body_md` MUST go
+  through `Sbpp\Markup\IntroRenderer::renderIntroText()`. The
+  renderer wraps CommonMark with `html_input: 'escape'` +
+  `allow_unsafe_links: false`, so inline HTML lands as visible
+  escaped text and `javascript:` / `data:` / `vbscript:` URLs are
+  stripped. A bare `CommonMarkConverter` call would re-open the
+  #1113-class stored-XSS surface — admin-authored display text and
+  upstream-authored display text both ride the same renderer for
+  exactly this reason. The `Sbpp\Announce\AnnouncementFetcher::buildAnnouncement`
+  call site is the load-bearing one; never sidestep it.
+- Editing announcements anywhere other than
+  `docs/public/announcements.json` (an admin endpoint, an
+  in-panel composer, a separate `sbpp.github.io` repo PR, a
+  hand-edited `SB_CACHE/announcements.json` on a deployed panel)
+  → there is exactly one source of truth, and it's the file in this
+  repo. The deploy chain
+  (`.github/workflows/docs-deploy-trigger.yml`) lands the file at
+  `https://sbpp.github.io/announcements.json` within minutes of
+  merge; the panel's `Sbpp\Announce\AnnouncementFetcher::tickIfDue`
+  pulls it once per install per day. Hand-editing the cache file on
+  a deployed panel is also wrong: the next shutdown hook would
+  overwrite it, and the operator's locally-pinned content would
+  silently vanish. The single-file shape is the load-bearing
+  audit property — every operator can read every announcement that
+  has ever been pushed before it lands on their dashboard.
+- Removing the eager `register_shutdown_function([\Sbpp\Announce\AnnouncementFetcher::class, 'tickIfDue'])`
+  call at the tail of `init.php` "now that the page handler reads
+  the cache directly" → the page handler's `latest()` only reads
+  the cache; without the shutdown hook nothing ever populates it.
+  The two halves are the same contract: one reads, the other
+  writes. Sister anti-pattern to "Removing the eager
+  `require_once` chain" — the shutdown hook is the live ledger of
+  every background tick the panel runs, and a future reader needs
+  to find both halves co-located.
+- Discarding the `?array $announcement` property on
+  `Sbpp\View\HomeDashboardView` → `SmartyTemplateRule` would
+  flag the unused property at static-analysis time, but the
+  procedural-handler side (where `Sbpp\View\Renderer::render(...)`
+  drops the property onto the Smarty engine) doesn't have a
+  static gate — the runtime test
+  (`HomeDashboardAnnouncementTest::testHomeDashboardViewCarriesTheAnnouncementProperty`)
+  pins the contract for both halves. The dashboard's announcement
+  strip gates the entire `<aside>` block on `{if $announcement}`,
+  so dropping the View property would silently disable the
+  surface without obvious symptoms (the strip just stops
+  appearing on every install, including ones with a populated
+  cache).
 - Unannotated `{$foo nofilter}` → every `nofilter` is an assertion the
   value is safe HTML; without a `{* nofilter: <why> *}` comment above
   it, future readers can't tell whether it's a real escape hatch or a
@@ -2580,6 +2761,8 @@ contacting every contributor individually.
 | Cache an A2S `GetInfo + GetPlayers` round-trip / add another public server-query handler | `web/includes/Servers/SourceQueryCache.php` (`Sbpp\Servers\SourceQueryCache::fetch($ip, $port, $ttl=30)` — per-`(ip, port)` on-disk cache under `SB_CACHE/srvquery/`, atomic tempfile + `rename()` writes mirroring `system.check_version`'s release cache; both success and failure cache so an unreachable server costs ONE A2S probe per ~30s window). The sibling `Sbpp\Servers\RconStatusCache` (`SB_CACHE/srvstatus/`) follows the same shape for RCON `status` round-trips — used by `api_servers_host_players` to surface per-player SteamIDs to admins (see the context-menu row above). Every public handler under `web/api/handlers/servers.php` (`api_servers_host_players` / `host_property` / `host_players_list` / `players`) goes through this — never call `new SourceQuery()` directly from a handler. The cache stamps user-agnostic data only; the handler stamps per-caller fields (`is_owner`, `can_ban`, the per-call `trunchostname`) on top. Per-tile JS debounce on the public servers page lives in `web/themes/default/page_servers.tpl` (`loadTile()` flips `tile.__sbppLoading` + the Re-query button's `disabled` attr while a probe is in flight, releases both in the success / error tails). The matching JS gate on the toggle button has been the precedent since v2.0.0; #1311 brought the refresh button onto the same shape. Tests: `web/tests/integration/SourceQueryCacheTest.php` (cache shape + coalescing + TTL + invalidation, drives `setProbeOverrideForTesting()` so the assertion is deterministic without UDP) + `testHostPlayersCoalescesRapidRepeatCallsViaCache` / `testHostPlayersNegativeCachesUnreachableServers` in `web/tests/api/ServersTest.php` (handler-shape coverage). E2E: `web/tests/e2e/specs/flows/server-refresh-debounce.spec.ts`. |
 | Render admin-authored Markdown to safe HTML | `web/includes/Markup/IntroRenderer.php` (`Sbpp\Markup`) |
 | Build / extend the anonymous opt-out daily telemetry payload (#1126) | `web/includes/Telemetry/Telemetry.php` (`Sbpp\Telemetry\Telemetry` — `tickIfDue`, `collect`, `send`) + `web/includes/Telemetry/Schema1.php` (`Sbpp\Telemetry\Schema1::payloadFieldNames()`, drives the extractor parity test) + `web/includes/Telemetry/schema-1.lock.json` (vendored from [sbpp/cf-analytics](https://github.com/sbpp/cf-analytics) — manual sync via `make sync-telemetry-schema`). Tick is registered at the tail of `init.php` via `register_shutdown_function`; on FPM, `fastcgi_finish_request()` flushes the response BEFORE the cURL POST so telemetry never delays a panel page. Slot reservation is atomic (`UPDATE :prefix_settings WHERE CAST(value AS UNSIGNED) <= :threshold`) at the START of the attempt, so a flapping endpoint costs one ping/day, not one ping/request. Audit-log only enable/disable transitions, never individual pings. The in-panel disclosure surface is the help-icon copy in `page_admin_settings_features.tpl`; the upgrade-time disclosure lives in `docs/src/content/docs/updating/1.8-to-2.0.mdx` (no first-login modal). |
+| Add or edit a project announcement (the admin-only banner on the home dashboard) | Edit `docs/public/announcements.json` (the source of truth — Astro publishes it as a static asset at `https://sbpp.github.io/announcements.json`). Each entry: `id` (≤64 chars, **required**), `title` (**required**), `body_md` (CommonMark, optional — rendered through `Sbpp\Markup\IntroRenderer` so raw HTML is escaped + `javascript:` / `data:` URLs are stripped), `url` (optional `http(s)://` only — non-http schemes rejected at the parser), `published_at` (optional ISO-8601 or unix int — drives the sort order; entries without it sort below dated entries), `expires_at` (optional — the parser drops entries past this timestamp). Sorted newest-first by the panel; convention is to also place the newest entry at the top of the array so reviewers see the most relevant change first. The deploy chain is automatic: a push to `main` that touches `docs/` fires `.github/workflows/docs-deploy-trigger.yml` which lands the file at `https://sbpp.github.io/announcements.json` within minutes. The starter file ships as `[]` (empty array). NEVER write to the cache file (`SB_CACHE/announcements.json`) directly — the panel's shutdown hook owns that path. |
+| Build / extend the daily project-announcements feed (banner-side wiring; mirror of telemetry) | `web/includes/Announce/AnnouncementFetcher.php` (`Sbpp\Announce\AnnouncementFetcher` — `latest()`, `tickIfDue()`, `_setHttpFetcherForTests()`) + `web/includes/Announce/Announcement.php` (the readonly DTO). Tick is registered at the tail of `init.php` via `register_shutdown_function`, gated on a non-empty `SB_ANNOUNCEMENTS_URL` constant (with the `if (!defined(...))` shape so `config.php` can override — empty string is the documented air-gap escape hatch). Cache shape mirrors `system.check_version`'s `_api_system_release_save_cache` (atomic tempfile + rename under `SB_CACHE/announcements.json`, persisted as the upstream body verbatim). Wire layer mirrors `system.check_version`'s fetch helper: 5s total / 3s connect timeouts, `User-Agent: SourceBans++/<ver> (announcements)`, 256 KiB body cap. The page handler in `web/pages/page.home.php` short-circuits to `null` for anonymous + non-admin viewers; the View DTO `HomeDashboardView` carries `?array $announcement`; the template (`page_dashboard.tpl`) gates the entire `<aside>` block on truthy. Markdown rendering goes through `Sbpp\Markup\IntroRenderer::renderIntroText()` and lands as `body_html` on the DTO — the template emits it with `{nofilter}` per the documented contract. Test override: `_setHttpFetcherForTests(?callable)` mirrors `Sbpp\Servers\SourceQueryCache::setProbeOverrideForTesting`. Regression guards: `web/tests/integration/AnnouncementFetcherTest.php` (cache shape, atomic write, stale-while-error, body-cap, expired-entry filter, malformed JSON, IntroRenderer integration, URL-scheme rejection, dedup, sort), `web/tests/integration/HomeDashboardAnnouncementTest.php` (admin sees / anonymous doesn't / cold cache yields null — process-isolated render with stub Smarty), `web/tests/e2e/specs/flows/dashboard-announcement.spec.ts` (end-to-end mount + disclosure expand + `rel="noopener noreferrer"` + axe-clean + anonymous-storage-state arm). E2E cache seeding shim: `web/tests/e2e/scripts/seed-announcements-e2e.php` + `seedAnnouncementsE2e` / `clearAnnouncementsCacheE2e` in `fixtures/db.ts`. See "Project announcements feed" under Conventions. |
 | Add a cross-repo JSON contract (vendored schema lock + reader + extractor parity test) | `web/includes/Telemetry/Schema1.php` is the reference shape (`payloadFieldNames(): list<string>` over a Draft-7 JSON Schema lock file). Pair with one PHPUnit extractor parity test (collect() vs. lock file in both directions). The schema lock file is the single source of truth — don't mirror the field list into a markdown doc paired with a separate parity test, that pattern was tried for telemetry and removed because the duplication paid for the drift risk it created. Sync via a manual `make sync-<subsystem>-schema` target — no scheduled auto-PR. See "Cross-repo JSON contracts" under Conventions. |
 | Display a user's own permission flags grouped by category | `Sbpp\View\PermissionCatalog::groupedDisplayFromMask($mask)` (`web/includes/View/PermissionCatalog.php`). Adding a new flag to `web/configs/permissions/web.json` requires a paired entry in `WEB_CATEGORIES`; `PermissionCatalogTest` enforces it. |
 | Live-preview Markdown in a settings textarea | `system.preview_intro_text` JSON action + `web/themes/default/page_admin_settings_settings.tpl` (`.dash-intro-editor` / `.dash-intro-preview`) |

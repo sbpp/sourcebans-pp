@@ -328,3 +328,28 @@ if ((isset($_GET['debug']) && $_GET['debug'] == 1) || DEBUG_MODE) {
 // POST so the user's TCP socket closes first; non-FPM SAPIs fall
 // back to ob_end_flush + flush.
 register_shutdown_function([\Sbpp\Telemetry\Telemetry::class, 'tickIfDue']);
+
+// Daily project-announcements feed (admins-only banner on the home
+// dashboard). Source of truth: `docs/public/announcements.json` in
+// this repo, deployed to https://sbpp.github.io/announcements.json
+// on every push to main.
+//
+// `SB_ANNOUNCEMENTS_URL` is the operator-overridable destination —
+// the `if (!defined(...))` gate lets `config.php` win, including
+// the "" empty-string air-gap escape hatch documented in
+// `docs/src/content/docs/configuring/announcements.mdx`. Empty
+// short-circuits every fetch before flushing the response, so
+// disabling the feed costs nothing.
+//
+// Same shutdown-hook contract as Telemetry above: 24h TTL gate
+// inside tickIfDue() means at most one outbound fetch per install
+// per day regardless of request volume; outer try/catch(\Throwable)
+// guarantees a page render or JSON API call NEVER fails because
+// the upstream is flapping; fastcgi_finish_request() flushes the
+// response before the network round-trip on FPM. See
+// AnnouncementFetcher.php for the full lifecycle. Page renders
+// read the cache only — never block on the network.
+if (!defined('SB_ANNOUNCEMENTS_URL')) {
+    define('SB_ANNOUNCEMENTS_URL', 'https://sbpp.github.io/announcements.json');
+}
+register_shutdown_function([\Sbpp\Announce\AnnouncementFetcher::class, 'tickIfDue']);

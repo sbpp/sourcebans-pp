@@ -126,6 +126,12 @@ export default defineConfig({
           ],
         },
         {
+          label: 'Configuring',
+          items: [
+            { label: 'Project announcements', slug: 'configuring/announcements' },
+          ],
+        },
+        {
           label: 'Updating',
           items: [
             { label: 'Updating SourceBans++', slug: 'updating' },

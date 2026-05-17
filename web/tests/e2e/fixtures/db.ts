@@ -31,6 +31,8 @@ const SEED_COMMS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-comms-e2e.php';
 const SEED_COMMENTS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-comments-e2e.php';
+const SEED_ANNOUNCEMENTS_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-announcements-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -201,6 +203,79 @@ export async function seedCommentsRawE2e(rows: CommentSeedRow[]): Promise<void> 
             }
             reject(new Error(
                 `seed-comments-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+}
+
+/**
+ * Per-row shape consumed by `seedAnnouncementsE2e`. Mirrors the
+ * `docs/public/announcements.json` schema that
+ * `Sbpp\Announce\AnnouncementFetcher::parseEntries` validates.
+ */
+export interface AnnouncementSeedRow {
+    id: string;
+    title: string;
+    body_md?: string;
+    url?: string;
+    published_at?: string;
+    expires_at?: string;
+}
+
+/**
+ * Write an announcements cache file directly to `SB_CACHE` so the
+ * dashboard renders the strip without doing the upstream HTTPS
+ * fetch. Call `clearAnnouncementsCacheE2e()` in the spec's `afterAll`
+ * (or `afterEach`) to undo. The cache file is shared between specs
+ * (single SB_CACHE inside the dev container), so a spec that seeds
+ * an announcement must clean up afterwards.
+ */
+export async function seedAnnouncementsE2e(rows: AnnouncementSeedRow[]): Promise<void> {
+    await runAnnouncementsHelper(JSON.stringify(rows), []);
+}
+
+/**
+ * Drop the announcements cache file. Idempotent.
+ */
+export async function clearAnnouncementsCacheE2e(): Promise<void> {
+    await runAnnouncementsHelper(null, ['--clear']);
+}
+
+async function runAnnouncementsHelper(
+    stdin: string | null,
+    extraArgs: string[],
+): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_ANNOUNCEMENTS_INSIDE_CONTAINER, ...extraArgs]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_ANNOUNCEMENTS_INSIDE_CONTAINER, ...extraArgs];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    if (stdin !== null) {
+        child.stdin?.write(stdin);
+    }
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `seed-announcements-e2e.php exited ${code}\n`
                 + `stdout:\n${stdout}\nstderr:\n${stderr}`,
             ));
         });
