@@ -220,7 +220,13 @@
             </div>
         </form>
 
-        {* nofilter: server-built `<script>LoadServerHost('SID', 'id', 'saSID');…</script>` from `:prefix_servers.sid` integer column, no user input — see admin.admins.php. *}
-        {$server_script nofilter}
+        {* #1404 — the `{$server_script nofilter}` tail used to emit a
+            server-built `<script>LoadServerHost('SID', 'id', 'saSID');…</script>`
+            blob; the helper was deleted with `sourcebans.js` at #1123 D1
+            so every page load raised `ReferenceError: LoadServerHost is
+            not defined` once per server. Each `#sa<SID>` <span> renders
+            bare `{$server.ip}:{$server.port}` per row above. Hydration to
+            the live hostname is the next step — see the follow-up ticket
+            tracked off #1404. *}
     {/if}
 </div>
