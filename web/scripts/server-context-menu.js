@@ -344,12 +344,43 @@
         }));
 
         if (canBan && sid !== '') {
-            // Kick / Block target the per-server iframe surfaces under
-            // /pages/admin.kickit.php / admin.blockit.php — these are
-            // NOT routed through `?p=admin&c=...`; they're stand-alone
-            // pages by design (they iframe a per-server card grid that
-            // fires kick / block JSON actions). The legacy v1.x menu
-            // used the same URLs.
+            // Kick is the one remaining iframe-routed item — it targets
+            // `pages/admin.kickit.php` (a chromeless per-server-card
+            // grid that fires the kick RCON command). It legitimately
+            // belongs on the iframe path because kick is a one-shot
+            // RCON command with no persistent panel surface to land
+            // the operator on after the action fires; the page-chrome
+            // sidebar / breadcrumb / topbar would be visual noise
+            // around what's effectively a "fan a single command out
+            // to every enabled server and close" interaction.
+            //
+            // Ban / Block both route through the panel-chromed
+            // smart-default URLs (`?p=admin&c=bans&section=add-ban&steam=…&type=0`
+            // / `?p=admin&c=comms&steam=…&type=0`) because they
+            // populate a multi-field form the admin reviews and
+            // submits — that form is a panel surface in its own
+            // right (admin.bans.php's `add-ban` section,
+            // admin.comms.php's only section). The admin.bans.php /
+            // admin.comms.php handlers each carry a smart-default
+            // block that allowlists the inbound SteamID/IP shape and
+            // pre-populates the View DTO; see
+            // `Sbpp\View\AdminBansAddView::prefill_steam` /
+            // `Sbpp\View\AdminCommsAddView::prefill_steam`.
+            //
+            // Pre-#1395 Block routed to the same iframe surface as
+            // Kick (`pages/admin.blockit.php?check=…&type=0`), which
+            // wasn't the right shape: admin.blockit.php is the
+            // post-`Actions.CommsAdd` rcon fan-out iframe (loaded via
+            // `<iframe src="pages/admin.blockit.php?…">` inside the
+            // Block-Added success message), not a stand-alone
+            // operator surface. Hitting it directly rendered the
+            // chromeless full-page version and POSTed to a relative
+            // `api.php` that resolves to `/pages/api.php` → 404
+            // (#1395 reproduction). admin.blockit.php's surviving
+            // role is the iframe target — `page_admin_comms_add.tpl`
+            // still iframes it from the Block-Added success branch,
+            // same as `pages/admin.kickit.php` for the post-BansAdd
+            // fan-out.
             menu.appendChild(buildRow({
                 label: 'Kick player',
                 icon: 'log-out',
@@ -357,12 +388,6 @@
                 testid: 'context-menu-kick',
             }));
 
-            // Ban routes through the smart-default `?steam=…&type=0`
-            // surface admin.bans.php's add-ban section consumes via
-            // AdminBansAddView — see the matching block above the
-            // Renderer::render call. Type 0 = Steam ID; type 1 = IP
-            // (we don't surface IP-targeted bans through the menu
-            // because the player rows don't carry IPs).
             menu.appendChild(buildRow({
                 label: 'Ban player',
                 icon: 'gavel',
@@ -370,10 +395,19 @@
                 testid: 'context-menu-ban',
             }));
 
+            // admin.comms.php is a single-section page (no
+            // `?section=…` slug — see the page handler's docblock).
+            // The `&type=0` parameter is the bridging value from the
+            // sibling Ban URL shape (where 0 = Steam ID); for comms
+            // the handler reads 0 as "no pre-selection" and lets the
+            // form land on its native first-option default (Mute).
+            // Valid block types (1=Mute, 2=Gag, 3=Silence) would
+            // pre-select the matching option if a future surface
+            // ever supplies them.
             menu.appendChild(buildRow({
                 label: 'Block comms',
                 icon: 'mic-off',
-                href: 'pages/admin.blockit.php?check=' + encodeURIComponent(steamid) + '&type=0',
+                href: 'index.php?p=admin&c=comms&steam=' + encodeURIComponent(steamid) + '&type=0',
                 testid: 'context-menu-block',
             }));
         }
