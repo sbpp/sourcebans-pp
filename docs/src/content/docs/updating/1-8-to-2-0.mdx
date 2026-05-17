@@ -13,12 +13,14 @@ changes between 1.8.x and 2.0.x and the prep work an admin should do
 (back up, upload, visit `/updater/`) is the same as any other version —
 see [Updating SourceBans++](/updating/) for that.
 
-The three things to know about the v2.0 upgrade:
+The four things to know about the v2.0 upgrade:
 
 1. The **PHP version floor moves up** to 8.5. Check your host first.
 2. The **active theme resets** to default. Custom themes need
    porting before re-enabling.
 3. **Anonymous telemetry ships on by default.** Opt-out is one click.
+4. A **daily project-announcements feed** also ships on by default
+   for logged-in admins. Opt-out is a one-line `config.php` define.
 
 <Aside type="caution" title="Back up your database first">
 The updater scripts are idempotent, but a half-completed upload is
@@ -177,3 +179,69 @@ N ms remains N ms regardless of telemetry. The cURL call has
 3-second connect / 5-second total timeouts and is silent on
 failure — telemetry can never hard-fail a panel page or a JSON
 API request.
+
+## Project announcements feed
+
+SourceBans++ 2.0.0 also adds a small **admin-only announcements
+strip** to the home dashboard. Once a day per install, the panel
+fetches `https://sbpp.github.io/announcements.json` (a static file
+the maintainers publish from this repo's `docs/public/` directory)
+and renders the freshest non-expired entry as a slim
+`<details>` strip between the dashboard's stat cards and activity
+panels. Anonymous viewers and non-admin users never see the strip.
+
+This is a **second always-on outbound channel** in addition to
+telemetry. Like telemetry, it ships on by default and is
+opt-out-by-config. The two channels are intentionally separate:
+telemetry is a write-only push (panel → collector), announcements
+is a read-only pull (panel ← static JSON). Neither can affect the
+other; opting out of one leaves the other running.
+
+### What's sent
+
+The GET request carries:
+
+- `User-Agent: SourceBans++/<version> (announcements)` — same
+  shape as the existing `system.check_version` release-check
+  fetch.
+- Standard HTTP headers added by PHP's stream wrapper.
+
+Specifically **not** sent:
+
+- No instance ID, no per-install random.
+- No cookies, no `Referer`, no query string, no POST body.
+- Nothing the panel pulls from `sb_settings` or any other table.
+
+The audit trail is the file in this repo at
+[`docs/public/announcements.json`](https://github.com/sbpp/sourcebans-pp/blob/main/docs/public/announcements.json).
+Every announcement is a git commit before it lands on your
+dashboard, so operators can review the full history before the
+deploy chain ships it to `sbpp.github.io`.
+
+### How to opt out
+
+There's no in-panel toggle. Add this line to your
+`web/config.php`:
+
+```php
+define('SB_ANNOUNCEMENTS_URL', '');
+```
+
+The empty string is the documented air-gap escape hatch. The
+panel skips the daily fetch entirely and the dashboard renders
+without the strip. See the
+[announcements feature page](/configuring/announcements/) for
+the full reference (self-hosted mirror, scheme guard, cache
+behaviour).
+
+### Performance impact
+
+Same shape as telemetry: zero on PHP-FPM.
+
+The announcements tick runs in `register_shutdown_function`.
+`fastcgi_finish_request()` closes the user's TCP socket before
+the upstream fetch runs, so the user-perceived response time
+is unaffected. The fetch has a 5-second total timeout, a 256 KiB
+hard cap on the response body, stale-while-error caching, and
+is silent on failure — a flapping `sbpp.github.io` can never
+hard-fail a panel page.
