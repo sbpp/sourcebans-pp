@@ -296,6 +296,83 @@ test.describe('flow: server-player right-click context menu (#PLAYER_CTX_MENU)',
         await expect(menu.locator('[data-testid="context-menu-block"]')).toHaveCount(0);
     });
 
+    /**
+     * #1396 — When the API stops carrying empty-name entries (the
+     * server-side filter the fix lands), the JS must render the
+     * remaining named players without a phantom row at the top.
+     * The visually-first player gets a `data-context-menu` `<li>`
+     * at index 0 and right-click on it opens the menu.
+     *
+     * Stubbing the API at the contract boundary (post-fix shape):
+     * caller never receives the empty-name entry. Pre-fix this
+     * spec would still pass because the JS happily renders the
+     * filtered list; the load-bearing regression coverage for the
+     * filter itself is in `web/tests/api/ServersTest.php`
+     * (`testHostPlayersFiltersEmptyNameEntries`). This spec pins
+     * the END-USER outcome — right-click on the first named player
+     * opens the menu — so future regressions either in the
+     * filter OR in the JS rendering surface here.
+     */
+    test('first named player accepts right-click (#1396 end-to-end)', async ({ page }) => {
+        await truncateE2eDb();
+        const seeded = await seedServerViaApi(page);
+        await stubHostPlayers(
+            page,
+            seeded,
+            [
+                // Three real players — no empty-name phantom (the
+                // post-fix shape the handler emits). The first row
+                // is the one the user reported as "impossible to
+                // open the menu on" — the regression guard is that
+                // right-clicking it opens the menu just like every
+                // other row.
+                { name: 'Fletcher', steamid: 'STEAM_0:0:1234', frags: 12, time_f: '20:00' },
+                { name: 'kovka',    steamid: 'STEAM_0:0:5678', frags: 7,  time_f: '06:40' },
+                { name: 'Charlie',  steamid: '[U:1:99999]',    frags: 3,  time_f: '02:13' },
+            ],
+            /* canBanPlayer */ true,
+        );
+
+        await page.goto('/index.php?p=servers&s=0');
+
+        const tile = page.locator('[data-testid="server-tile"]').first();
+        await expect(tile).toHaveAttribute('data-status', 'online');
+        await expect(tile).toHaveAttribute('data-expanded', 'true');
+
+        // The list must render exactly three rows — no phantom
+        // entry above the first named player (the bug shape was
+        // the visually-first named row sitting at index 1 with a
+        // ~27px empty-name `<li>` above it that lacked
+        // `data-context-menu` and silently swallowed right-clicks
+        // landed in its area).
+        const rows = tile.locator('[data-testid="server-player"]');
+        await expect(rows).toHaveCount(3);
+
+        const firstRow = rows.first();
+        await expect(firstRow).toHaveAttribute('data-context-menu', 'server-player');
+        await expect(firstRow).toHaveAttribute('data-name', 'Fletcher');
+
+        // Use real `mouse.click({ button: 'right' })` against the
+        // visual centre of the first row, not just `dispatchEvent` —
+        // the goal is to mirror what the user does in their
+        // browser and prove the hit-test resolves to the named
+        // row (not to a phantom row above it).
+        const box = await firstRow.boundingBox();
+        if (!box) throw new Error('first row has no bounding box');
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2, { button: 'right' });
+
+        const menu = page.locator('[data-testid="server-context-menu"]');
+        await expect(menu).toBeVisible();
+        await expect(menu.locator('.context-menu__header')).toHaveText('Fletcher');
+        // The menu should target THIS player — kick / ban URLs
+        // carry Fletcher's SteamID, not the second player's.
+        await expect(menu.locator('[data-testid="context-menu-kick"]'))
+            .toHaveAttribute('href', /check=STEAM_0%3A0%3A1234/);
+
+        await page.keyboard.press('Escape');
+        await expect(menu).toHaveCount(0);
+    });
+
     test('does NOT open on player rows without a steamid attribute', async ({ page }) => {
         await truncateE2eDb();
         const seeded = await seedServerViaApi(page);

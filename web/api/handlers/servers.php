@@ -298,9 +298,28 @@ function api_servers_host_players(array $params): array
         }
     }
 
+    // Build the public player list. Empty-name A2S entries are
+    // filtered out (#1396): some Source-engine variants and
+    // SourceMod plugins emit a "host slot" / "console" entry at
+    // the start of `GetPlayers` with an empty Name, zero Frags,
+    // and zero Time. Pre-fix the entry flowed through verbatim
+    // and the JS rendered it as a phantom `<li>` (an invisible
+    // thin row with a misleading "0 · " meta on the right and no
+    // `data-context-menu` hooks, because the empty name fails
+    // the SteamID match gate above). Users perceiving the next
+    // real player as "the first player of the list" and
+    // right-clicking near the top would land on the phantom
+    // row instead and the menu silently no-op'd. Filtering the
+    // entry out here matches the same `name === ''` skip the
+    // SteamID-by-name lookup above already applies, so the JS
+    // contract stays simple: every row in `player_list` has a
+    // displayable name.
     $playerList = [];
     foreach ($players as $p) {
         $name = (string) ($p['Name'] ?? '');
+        if ($name === '') {
+            continue;
+        }
         $row  = [
             'id'     => $p['Id']    ?? null,
             'name'   => $name,
@@ -310,7 +329,6 @@ function api_servers_host_players(array $params): array
         ];
         if (
             $canBanPlayer
-            && $name !== ''
             && isset($steamidByName[$name])
             && ($rconNameCount[$name] ?? 0) === 1
             && ($sqNameCount[$name] ?? 0) === 1

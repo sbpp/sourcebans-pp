@@ -738,4 +738,133 @@ final class ServersTest extends ApiTestCase
             'sanity check: the hostile name is in the response body',
         );
     }
+
+    /**
+     * #1396 — Some Source-engine variants and SourceMod plugins return
+     * an A2S `GetPlayers` entry with an empty `Name` field (the
+     * "host slot" / "console" stub). Pre-fix the handler passed
+     * these through verbatim to `player_list`, so the client
+     * rendered a phantom `<li data-testid="server-player">` with
+     * an empty name span + a meta span like "0 · ". Two failure
+     * modes:
+     *
+     *   1. The phantom row has no `steamid` (the matcher gate
+     *      filters empty names out of `$steamidByName` and
+     *      `$rconNameCount`), so `web/scripts/server-tile-hydrate.js`
+     *      renderPlayers() also skips the `data-context-menu`
+     *      hooks on it. Right-clicking the row does nothing.
+     *   2. Visually the empty row is a thin border-bottom strip
+     *      directly above the first named player; users perceive
+     *      the next real player ("Fletcher" in the user's report)
+     *      as "the first player of the list" — and when their
+     *      right-click lands on the phantom row above instead of
+     *      the named row, the menu silently fails to open.
+     *
+     * The fix: empty-name A2S entries are filtered out of
+     * `$playerList` at the same gate that already skips them from
+     * the steamid-by-name lookup (web/api/handlers/servers.php).
+     * The contract: `player_list` only contains rows with a
+     * non-empty `name`. Bots, real players whose A2S name didn't
+     * match the RCON status output, and admin-without-rcon callers
+     * all still render — the gate is strictly "name === ''".
+     */
+    public function testHostPlayersFiltersEmptyNameEntries(): void
+    {
+        Fixture::rawPdo()->prepare(sprintf(
+            "UPDATE `%s_admins` SET srv_flags = 'mz' WHERE aid = ?",
+            DB_PREFIX
+        ))->execute([Fixture::adminAid()]);
+        $sid = $this->seedServer(220, 'r1');
+        Fixture::rawPdo()->prepare(sprintf(
+            'INSERT INTO `%s_admins_servers_groups` (admin_id, group_id, srv_group_id, server_id)
+             VALUES (?, 0, -1, ?)',
+            DB_PREFIX
+        ))->execute([Fixture::adminAid(), $sid]);
+
+        $this->loginAsAdmin();
+
+        // A2S response with an empty-name entry first (the "host
+        // slot" quirk) — index 1 onwards are real players the
+        // user perceives as "the first / second / third player".
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => [
+                'HostName'   => 'Phantom-Row Server',
+                'Players'    => 3,
+                'MaxPlayers' => 24,
+                'Map'        => 'cp_dustbowl',
+                'Os'         => 'l',
+                'Secure'     => true,
+            ],
+            'players' => [
+                ['Id' => 0, 'Name' => '',         'Frags' => 0,  'Time' => 0,    'TimeF' => '00:00'],
+                ['Id' => 1, 'Name' => 'Fletcher', 'Frags' => 12, 'Time' => 1200, 'TimeF' => '20:00'],
+                ['Id' => 2, 'Name' => 'kovka',    'Frags' => 7,  'Time' => 400,  'TimeF' => '06:40'],
+            ],
+        ]);
+        RconStatusCache::setProbeOverrideForTesting(static fn(): array => [
+            ['id' => 1, 'name' => 'Fletcher', 'steamid' => 'STEAM_0:0:1234', 'ip' => '203.0.113.10'],
+            ['id' => 2, 'name' => 'kovka',    'steamid' => 'STEAM_0:0:5678', 'ip' => '203.0.113.11'],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok'], json_encode($env));
+        $list = $env['data']['player_list'];
+
+        // The empty-name entry must NOT be in the response. The
+        // pre-#1396 shape would carry 3 rows; the fix drops it to 2.
+        $this->assertCount(2, $list,
+            'empty-name A2S entries must be filtered out of player_list (#1396)',
+        );
+        // The visually-first player (Fletcher) is now at index 0
+        // with the steamid the menu needs.
+        $this->assertSame('Fletcher', $list[0]['name']);
+        $this->assertSame('STEAM_0:0:1234', $list[0]['steamid']);
+        $this->assertSame('kovka', $list[1]['name']);
+        $this->assertSame('STEAM_0:0:5678', $list[1]['steamid']);
+        // Defensive: no entry should have an empty name.
+        foreach ($list as $row) {
+            $this->assertNotSame('', $row['name'],
+                'no player_list row should have an empty name post-#1396',
+            );
+        }
+    }
+
+    /**
+     * #1396 — Defensive sibling of the test above. If the entire
+     * A2S response is empty-name garbage, `player_list` should be
+     * empty (the JS then renders its `[data-empty-message]`
+     * placeholder instead of a wall of phantom rows). The
+     * `players` count from the A2S info block stays as-is — that
+     * field is the server-reported player count, not the rendered
+     * list length, and the two can legitimately diverge (e.g. a
+     * SourceMod plugin inflating the public count).
+     */
+    public function testHostPlayersFiltersAllEmptyNameEntries(): void
+    {
+        $sid = $this->seedServer(221, 'r1');
+        SourceQueryCache::setProbeOverrideForTesting(static fn(): array => [
+            'info'    => [
+                'HostName'   => 'All-Empty Server',
+                'Players'    => 3,
+                'MaxPlayers' => 24,
+                'Map'        => 'cp_dustbowl',
+                'Os'         => 'l',
+                'Secure'     => true,
+            ],
+            'players' => [
+                ['Id' => 0, 'Name' => '', 'Frags' => 0, 'Time' => 0, 'TimeF' => '00:00'],
+                ['Id' => 1, 'Name' => '', 'Frags' => 0, 'Time' => 0, 'TimeF' => '00:00'],
+                ['Id' => 2, 'Name' => '', 'Frags' => 0, 'Time' => 0, 'TimeF' => '00:00'],
+            ],
+        ]);
+
+        $env = $this->api('servers.host_players', ['sid' => $sid]);
+        $this->assertTrue($env['ok']);
+        $this->assertCount(0, $env['data']['player_list'],
+            'all-empty-name A2S response must yield an empty player_list (#1396)',
+        );
+        $this->assertSame(3, $env['data']['players'],
+            'A2S-reported player count is independent of the rendered list — the inflated count stays as-is',
+        );
+    }
 }
