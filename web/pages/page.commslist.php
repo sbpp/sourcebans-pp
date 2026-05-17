@@ -12,7 +12,7 @@ if (!defined("IN_SB")) {
     die();
 }
 if (!Config::getBool('config.enablecomms')) {
-    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
+    \Sbpp\View\Toast::emit('error', 'Error', 'This page is disabled. You should not be here.');
     PageDie();
 }
 $BansPerPage = SB_BANS_PER_PAGE;
@@ -50,7 +50,12 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     // *why* behind every block lift, restoring v1.x parity.
     $unbanReasonRaw = trim((string) ($_GET['ureason'] ?? ''));
     if ($unbanReasonRaw === '') {
-        echo "<script>ShowBox('Unblock Reason Required', 'You must supply a reason when ungagging a player.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Unblock Reason Required',
+            'You must supply a reason when ungagging a player.',
+            "index.php?p=commslist$pagelink",
+        );
         PageDie();
     }
     //we have a multiple unban asking
@@ -69,7 +74,12 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $GLOBALS['PDO']->bind(':bid', $bid);
     $row = $GLOBALS['PDO']->single();
     if (empty($row) || !$row) {
-        echo "<script>ShowBox('Player Not UnGagged', 'The player was not ungagged, either already ungagged or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Player Not UnGagged',
+            'The player was not ungagged, either already ungagged or not a valid block.',
+            "index.php?p=commslist$pagelink",
+        );
         PageDie();
     }
 
@@ -94,10 +104,20 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Player UnGagged', '" . $row['name'] . " (" . $row['authid'] . ") has been ungagged from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'success',
+            'Player UnGagged',
+            $row['name'] . ' (' . $row['authid'] . ') has been ungagged from SourceBans.',
+            "index.php?p=commslist$pagelink",
+        );
         Log::add(LogType::Message, "Player UnGagged", "$row[name] ($row[authid]) has been ungagged. Reason: $unbanReason");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error ungagging " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Player NOT UnGagged',
+            'There was an error ungagging ' . $row['name'],
+            "index.php?p=commslist$pagelink",
+        );
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "unmute" && isset($_GET['id'])) {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -106,7 +126,12 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     // #1301: see ungag branch above for rationale.
     $unbanReasonRaw = trim((string) ($_GET['ureason'] ?? ''));
     if ($unbanReasonRaw === '') {
-        echo "<script>ShowBox('Unblock Reason Required', 'You must supply a reason when unmuting a player.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Unblock Reason Required',
+            'You must supply a reason when unmuting a player.',
+            "index.php?p=commslist$pagelink",
+        );
         PageDie();
     }
     //we have a multiple unban asking
@@ -125,7 +150,17 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     $GLOBALS['PDO']->bind(':bid', $bid);
     $row = $GLOBALS['PDO']->single();
     if (empty($row) || !$row) {
-        echo "<script>ShowBox('Player Not UnGagged', 'The player was not unmuted, either already unmuted or not a valid block.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        // Title says "UnGagged" — pre-#1403 copy-paste typo from the
+        // sister branch above (the message body correctly says
+        // "unmuted"). Preserved verbatim to keep this PR's scope to
+        // the mechanical ShowBox → Toast::emit lift; the title-vs-body
+        // mismatch is a separate UX bug.
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Player Not UnGagged',
+            'The player was not unmuted, either already unmuted or not a valid block.',
+            "index.php?p=commslist$pagelink",
+        );
         PageDie();
     }
 
@@ -150,10 +185,27 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Player UnMuted', '" . $row['name'] . " (" . $row['authid'] . ") has been unmuted from SourceBans.', 'green', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'success',
+            'Player UnMuted',
+            $row['name'] . ' (' . $row['authid'] . ') has been unmuted from SourceBans.',
+            "index.php?p=commslist$pagelink",
+        );
         Log::add(LogType::Message, "Player UnMuted", "$row[name] ($row[authid]) has been unmuted. Reason: $unbanReason");
     } else {
-        echo "<script>ShowBox('Player NOT UnGagged', 'There was an error unmuted " . $row['name'] . "', 'red', 'index.php?p=commsist$pagelink', true);</script>";
+        // Title says "UnGagged" + body says "unmuted" — pre-#1403
+        // copy-paste typo from the sister ungag branch. Preserved
+        // verbatim to keep this PR's scope to the mechanical
+        // ShowBox → Toast::emit lift; the title-vs-body mismatch and
+        // the original "?p=commsist" redirect typo (now corrected to
+        // "?p=commslist" since landing the user on a 404 made the
+        // toast pointless) are separate UX bugs worth a follow-up.
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Player NOT UnGagged',
+            'There was an error unmuted ' . $row['name'],
+            "index.php?p=commslist$pagelink",
+        );
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "delete") {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -161,7 +213,12 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteBan))) {
-        echo "<script>ShowBox('Error', 'You do not have access to this.', 'red', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Error',
+            'You do not have access to this.',
+            "index.php?p=commslist$pagelink",
+        );
         PageDie();
     }
 
@@ -200,10 +257,20 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
     }
 
     if ($res) {
-        echo "<script>ShowBox('Block Deleted', 'The block for \'" . $steam['name'] . "\' (" . $steam['authid'] . ") has been deleted from SourceBans', 'green', 'index.php?p=commslist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'success',
+            'Block Deleted',
+            "The block for '" . $steam['name'] . "' (" . $steam['authid'] . ') has been deleted from SourceBans',
+            "index.php?p=commslist$pagelink",
+        );
         Log::add(LogType::Message, "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
-        echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=commslist$pagelink', true);</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Ban NOT Deleted',
+            "The ban for '" . $steam['name'] . "' had an error while being removed.",
+            "index.php?p=commslist$pagelink",
+        );
     }
 }
 

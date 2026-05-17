@@ -15,69 +15,19 @@ if (!defined("IN_SB")) {
     die();
 }
 
-/**
- * Emits an inline `<script>` that surfaces a toast via
- * `window.SBPP.showToast` (theme.js) on the current response, with
- * `sb.message.*` (sb.js) as a fallback. Replaces the v1.x-era
- * `<script>ShowBox(…)</script>` calls — `ShowBox` shipped in
- * `web/scripts/sourcebans.js`, which was deleted in #1123 D1 / #1160,
- * so the legacy callsite throws ReferenceError and silently swallows
- * the message in the sbpp2026 chrome (#1176).
- *
- * No redirect: the submit page re-renders its own form on the same URL
- * (validation-error replay or post-success reset to empty values), so
- * the toast fires inline on whichever response the browser is already
- * loading. The helper waits for `DOMContentLoaded` before calling
- * `window.SBPP.showToast` because page handlers emit this `<script>`
- * mid-body, before `core/footer.tpl` includes `theme.js` — the IIFE
- * runs synchronously during parse, when `window.SBPP` is still
- * undefined.
- *
- * `$kind` is one of `'info' | 'success' | 'warn' | 'error'`, matching
- * the `ToastOpts.kind` typedef in `web/themes/default/js/theme.js`.
- *
- * Strings are JSON-encoded with the same flag set as the canonical
- * helper in `web/pages/admin.edit.ban.php` so embedded quotes /
- * newlines / non-ASCII bytes survive the round-trip into the script
- * body without further escaping.
- */
-function emitSubmitToast(string $kind, string $title, string $body): void
-{
-    $flags = JSON_THROW_ON_ERROR | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
-    $kindJs = json_encode($kind, $flags);
-    $titleJs = json_encode($title, $flags);
-    $bodyJs = json_encode($body, $flags);
-    echo <<<HTML
-<script>
-(function () {
-    var kind = {$kindJs};
-    var title = {$titleJs};
-    var body = {$bodyJs};
-    function show() {
-        var SBPP = window.SBPP;
-        if (SBPP && typeof SBPP.showToast === 'function') {
-            SBPP.showToast({ kind: kind, title: title, body: body });
-            return;
-        }
-        if (window.sb && window.sb.message) {
-            var fn = (kind === 'error') ? window.sb.message.error
-                : (kind === 'success') ? window.sb.message.success
-                : window.sb.message.info;
-            if (typeof fn === 'function') fn(title, body || '');
-        }
-    }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', show);
-    } else {
-        show();
-    }
-})();
-</script>
-HTML;
-}
+// Toast emission consolidated onto `Sbpp\View\Toast::emit` (#1403). The
+// previous local `emitSubmitToast()` helper was the prototype shape this
+// surface used to work around the v1.x `<script>ShowBox(…)</script>`
+// blobs throwing `ReferenceError` after #1123 D1 deleted
+// `web/scripts/sourcebans.js`. The lift unifies that pattern with the
+// five sister pages the #1403 audit caught still emitting raw
+// `<script>ShowBox(...)</script>` (lostpassword / protest / banlist /
+// commslist / admin.edit.comms) so every chrome-toast emission goes
+// through one helper + one wire format. See `web/includes/View/Toast.php`
+// for the contract.
 
 if (!Config::getBool('config.enablesubmit')) {
-    emitSubmitToast('error', 'Submissions disabled', 'This page is disabled. You should not be here.');
+    \Sbpp\View\Toast::emit('error', 'Submissions disabled', 'This page is disabled. You should not be here.');
     PageDie();
 }
 if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
@@ -155,10 +105,10 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
         // fragments (legacy ShowBox markup). Convert <br> separators
         // to plain spaces so the toast `body` (rendered as text via
         // theme.js's escapeHtml) reads as a single line per error.
-        emitSubmitToast(
+        \Sbpp\View\Toast::emit(
             'error',
             'Please fix the following',
-            (string) preg_replace('#<br\s*/?>#i', ' ', $errors)
+            (string) preg_replace('#<br\s*/?>#i', ' ', $errors),
         );
     }
 
@@ -261,16 +211,16 @@ if (!isset($_POST['subban']) || $_POST['subban'] != 1) {
                 ]);
             }
 
-            emitSubmitToast(
+            \Sbpp\View\Toast::emit(
                 'success',
                 'Submitted',
-                'Your submission has been added into the database, and will be reviewed by one of our admins.'
+                'Your submission has been added into the database, and will be reviewed by one of our admins.',
             );
         } else {
-            emitSubmitToast(
+            \Sbpp\View\Toast::emit(
                 'error',
                 'Upload failed',
-                'There was an error uploading your demo to the server. Please try again later.'
+                'There was an error uploading your demo to the server. Please try again later.',
             );
             Log::add(LogType::Error, "Demo Upload Failed", "A demo failed to upload for a submission from ($Email)");
         }

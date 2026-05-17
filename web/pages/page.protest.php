@@ -10,7 +10,7 @@ use Sbpp\Mail\Mailer;
 global $userbank, $theme;
 
 if (!Config::getBool('config.enableprotest')) {
-    print "<script>ShowBox('Error', 'This page is disabled. You should not be here.', 'red');</script>";
+    \Sbpp\View\Toast::emit('error', 'Error', 'This page is disabled. You should not be here.');
     PageDie();
 }
 if (!defined("IN_SB")) {
@@ -91,7 +91,17 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
     }
 
     if (!$validsubmit) {
-        print "<script>ShowBox('Error', '$errors', 'red');</script>";
+        // Validation errors are accumulated as `* msg<br>` HTML
+        // fragments (legacy ShowBox markup, same shape page.submit.php
+        // uses). Convert `<br>` separators to plain spaces so the
+        // toast body reads as a single line per error — `showToast`
+        // (theme.js) `escapeHtml`s the value so raw tags would
+        // surface as visible literal text.
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Please fix the following',
+            (string) preg_replace('#<br\s*/?>#i', ' ', $errors),
+        );
     }
 
     if ($validsubmit && $BanId != -1) {
@@ -162,7 +172,7 @@ if (!isset($_POST['subprotest']) || $_POST['subprotest'] != 1) {
             ]);
         }
 
-        echo "<script>ShowBox('Successful', 'Your protest has been sent.', 'green');</script>";
+        \Sbpp\View\Toast::emit('success', 'Successful', 'Your protest has been sent.');
     }
 }
 

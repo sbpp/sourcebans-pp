@@ -51,7 +51,12 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     // consistent across both entry points.
     $unbanReasonRaw = trim((string) ($_GET['ureason'] ?? ''));
     if ($unbanReasonRaw === '') {
-        echo "<script>ShowBox('Unban Reason Required', 'You must supply a reason when unbanning a player.', 'red', 'index.php?p=banlist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Unban Reason Required',
+            'You must supply a reason when unbanning a player.',
+            "index.php?p=banlist$pagelink",
+        );
         PageDie();
     }
     //we have a multiple unban asking
@@ -86,7 +91,12 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         if (empty($row) || !$row) {
             $fail++;
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player Not Unbanned', 'The player was not unbanned, either already unbanned or not a valid ban.', 'red', 'index.php?p=banlist$pagelink');</script>";
+                \Sbpp\View\Toast::emit(
+                    'error',
+                    'Player Not Unbanned',
+                    'The player was not unbanned, either already unbanned or not a valid ban.',
+                    "index.php?p=banlist$pagelink",
+                );
                 PageDie();
             }
             continue;
@@ -124,19 +134,34 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         if ($res) {
             $type = $rowBanType === BanType::Steam ? $row['authid'] : $row['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player Unbanned', '" . $row['name'] . " ($type) has been unbanned from SourceBans.', 'green', 'index.php?p=banlist$pagelink');</script>";
+                \Sbpp\View\Toast::emit(
+                    'success',
+                    'Player Unbanned',
+                    $row['name'] . " ($type) has been unbanned from SourceBans.",
+                    "index.php?p=banlist$pagelink",
+                );
             }
             Log::add(LogType::Message, "Player Unbanned", "$row[name] ($type) has been unbanned. Reason: $unbanReason");
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Player NOT Unbanned', 'There was an error unbanning " . $row['name'] . "', 'red', 'index.php?p=banlist$pagelink', true);</script>";
+                \Sbpp\View\Toast::emit(
+                    'error',
+                    'Player NOT Unbanned',
+                    'There was an error unbanning ' . $row['name'],
+                    "index.php?p=banlist$pagelink",
+                );
             }
             $fail++;
         }
     }
     if (isset($_GET['bulk'])) {
-        echo "<script>ShowBox('Players Unbanned', '$ucount players has been unbanned from SourceBans.<br>$fail failed.', 'green', 'index.php?p=banlist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'success',
+            'Players Unbanned',
+            "$ucount players has been unbanned from SourceBans. $fail failed.",
+            "index.php?p=banlist$pagelink",
+        );
     }
 } elseif (isset($_GET['a']) && $_GET['a'] == "delete") {
     if ($_GET['key'] != $_SESSION['banlist_postkey']) {
@@ -144,7 +169,12 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
     }
 
     if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::DeleteBan))) {
-        echo "<script>ShowBox('Error', 'You do not have access to this.', 'red', 'index.php?p=banlist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Error',
+            'You do not have access to this.',
+            "index.php?p=banlist$pagelink",
+        );
         PageDie();
     }
     //we have a multiple ban delete asking
@@ -192,19 +222,34 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
         if ($res) {
             $type = $steamBanType === BanType::Steam ? $steam['authid'] : $steam['ip'];
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban Deleted', 'The ban for \'" . $steam['name'] . "\' ($type) has been deleted from SourceBans', 'green', 'index.php?p=banlist$pagelink');</script>";
+                \Sbpp\View\Toast::emit(
+                    'success',
+                    'Ban Deleted',
+                    "The ban for '" . $steam['name'] . "' ($type) has been deleted from SourceBans",
+                    "index.php?p=banlist$pagelink",
+                );
             }
             Log::add(LogType::Message, "Ban Deleted", "Ban $steam[name] ($type) has been deleted.");
             $dcount++;
         } else {
             if (!isset($_GET['bulk'])) {
-                echo "<script>ShowBox('Ban NOT Deleted', 'The ban for \'" . $steam['name'] . "\' had an error while being removed.', 'red', 'index.php?p=banlist$pagelink', true);</script>";
+                \Sbpp\View\Toast::emit(
+                    'error',
+                    'Ban NOT Deleted',
+                    "The ban for '" . $steam['name'] . "' had an error while being removed.",
+                    "index.php?p=banlist$pagelink",
+                );
             }
             $fail++;
         }
     }
     if (isset($_GET['bulk'])) {
-        echo "<script>ShowBox('Players Deleted', '$dcount players has been deleted from SourceBans.<br>$fail failed.', 'green', 'index.php?p=banlist$pagelink');</script>";
+        \Sbpp\View\Toast::emit(
+            'success',
+            'Players Deleted',
+            "$dcount players has been deleted from SourceBans. $fail failed.",
+            "index.php?p=banlist$pagelink",
+        );
     }
 }
 

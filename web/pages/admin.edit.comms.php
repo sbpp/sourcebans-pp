@@ -13,11 +13,21 @@ global $userbank, $theme;
 new AdminTabs([], $userbank, $theme);
 
 if ($_GET['key'] != $_SESSION['banlist_postkey']) {
-    echo '<script>ShowBox("Error", "Possible hacking attempt (URL Key mismatch)!", "red", "index.php?p=admin&c=comms");</script>';
+    \Sbpp\View\Toast::emit(
+        'error',
+        'Error',
+        'Possible hacking attempt (URL Key mismatch)!',
+        'index.php?p=admin&c=comms',
+    );
     PageDie();
 }
 if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    echo '<script>ShowBox("Error", "No block id specified. Please only follow links!", "red", "index.php?p=admin&c=comms");</script>';
+    \Sbpp\View\Toast::emit(
+        'error',
+        'Error',
+        'No block id specified. Please only follow links!',
+        'index.php?p=admin&c=comms',
+    );
     PageDie();
 }
 $_GET['id'] = (int) $_GET['id'];
@@ -30,7 +40,12 @@ $GLOBALS['PDO']->bind(':bid', $_GET['id']);
 $res = $GLOBALS['PDO']->single();
 
 if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans)) && (!$userbank->HasAccess(WebPermission::EditOwnBans) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(WebPermission::EditGroupBans) && $res['gid'] != $userbank->GetProperty('gid'))) {
-    echo '<script>ShowBox("Error", "You don\'t have access to this!", "red", "index.php?p=admin&c=comms");</script>';
+    \Sbpp\View\Toast::emit(
+        'error',
+        'Error',
+        "You don't have access to this!",
+        'index.php?p=admin&c=comms',
+    );
     PageDie();
 }
 
@@ -140,12 +155,45 @@ if (isset($_POST['name'])) {
                 . " Before: length ({$lengthrev['length']}), type ({$lengthrev['type']});"
                 . " Now: length ({$_POST['banlength']}), type ({$_POST['type']}).");
         }
-        echo '<script>ShowBox("Block updated", "The block has been updated successfully", "green", "index.php?p=commslist' . $pagelink . '");</script>';
+        \Sbpp\View\Toast::emit(
+            'success',
+            'Block updated',
+            'The block has been updated successfully',
+            'index.php?p=commslist' . $pagelink,
+        );
     }
 }
 
 if (!$res) {
-    echo '<script>ShowBox("Error", "There was an error getting details. Maybe the block has been deleted?", "red", "index.php?p=commslist' . $pagelink . '");</script>';
+    \Sbpp\View\Toast::emit(
+        'error',
+        'Error',
+        'There was an error getting details. Maybe the block has been deleted?',
+        'index.php?p=commslist' . $pagelink,
+    );
+    // PageDie after the toast emit (parity with every OTHER
+    // Toast::emit branch in this file — L22 / L31 / L49 all
+    // PageDie after their respective emits). Pre-#1403 this
+    // branch didn't terminate because the legacy `ShowBox` call
+    // didn't either: ShowBox itself navigated the browser, so
+    // letting the rest of the page render was harmless even
+    // though the SELECT had returned no row (the navigation
+    // beat the render to the user's eyeballs). Post-lift the
+    // toast carries the redirect explicitly via the helper's
+    // 4th arg + theme.js's 1500ms post-paint settle, so the
+    // user sees the toast, the chrome footer, and then bounces
+    // to commslist — but they MUST NOT see the borked form
+    // skeleton in between. Dereferencing $res (false at this
+    // point because the SELECT returned no row) in
+    // `Renderer::render` and the inline `<script>` further down
+    // emits PHP warnings under `display_errors=On`, and those
+    // warnings land literally inside the script's string
+    // literals (the selectLengthTypeReason short-echo block
+    // that builds JS string args from the row fields) — every
+    // warning is plain text appearing INSIDE quoted JS strings,
+    // which is a JavaScript `Invalid or unexpected token` parse
+    // error. PageDie cuts the render before any of that runs.
+    PageDie();
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsEditView(

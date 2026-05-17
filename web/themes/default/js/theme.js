@@ -1460,6 +1460,86 @@
     }
   });
 
+  // ---- PENDING-TOAST BOOTSTRAP -----------------------------
+  // Drain queued toasts emitted by `Sbpp\View\Toast::emit` (PHP). Each
+  // payload rides a `<script type="application/json" class="sbpp-pending-toast"
+  // data-testid="pending-toast">{kind,title,body,redirect?}</script>` block
+  // the page handler `echo`'d mid-body, before this file even mounted —
+  // see `web/includes/View/Toast.php` for the full rationale and the
+  // wire-format contract.
+  //
+  // The lift (#1403) replaces every legacy `<script>ShowBox(...)</script>`
+  // blob. `ShowBox` shipped in `web/scripts/sourcebans.js`, deleted at
+  // #1123 D1 (v2.0.0), so every legacy caller silently threw
+  // `ReferenceError`; the new chrome silently swallowed the user's
+  // confirmation (#1176, audit #1403). Worse, several callers run
+  // upstream of `PageDie()` which renders the chrome footer + `exit`s,
+  // so the template body was suppressed and the user saw a literally
+  // blank page on top of the dropped toast.
+  //
+  // Wire-format choices (mirror palette-actions, #1304):
+  //   - `class` not `id`: a single request can emit several toasts
+  //     (validation-error spray, success + diagnostic warning, …)
+  //     without selector conflicts.
+  //   - `data-testid="pending-toast"` is the E2E hook the regression
+  //     guards under `web/tests/e2e/specs/flows/` anchor on.
+  //   - JSON is consumed via `textContent` not the JS parser — the
+  //     server-side encoder uses `JSON_HEX_TAG | JSON_HEX_AMP |
+  //     JSON_HEX_APOS | JSON_HEX_QUOT` so the blob can't escape its
+  //     `<script>` wrapper regardless of caller payload.
+  //
+  // Redirect semantics: when one or more entries carry `redirect`,
+  // the FIRST non-empty URL wins (the rest are dropped silently — a
+  // single request never redirects twice in practice). The
+  // navigation runs ~1500ms after the toast renders so the user has
+  // time to read what just happened; without the settle delay the
+  // browser would tear down the toast container before paint on a
+  // same-origin navigation. Drained `<script>` nodes are removed
+  // from the DOM so a hypothetical re-run of this drainer (e.g. an
+  // HMR refresh in dev) doesn't double-fire.
+  //
+  // Malformed JSON is logged and skipped — a single broken entry
+  // can't take down the rest of the queue. Empty queue is a no-op
+  // (the overwhelming majority of requests).
+  /** @returns {void} */
+  function flushPendingToasts() {
+    const blocks = document.querySelectorAll(
+      'script[type="application/json"].sbpp-pending-toast'
+    );
+    if (!blocks.length) return;
+    /** @type {string | null} */
+    let redirectTo = null;
+    blocks.forEach((/** @type {Element} */ blob) => {
+      try {
+        const raw = blob.textContent || '{}';
+        const data = /** @type {{kind?: string, title?: string, body?: string, redirect?: string}} */ (
+          JSON.parse(raw)
+        );
+        showToast({
+          kind: /** @type {any} */ (data.kind || 'info'),
+          title: data.title || '',
+          body: data.body || '',
+        });
+        if (
+          redirectTo === null
+          && typeof data.redirect === 'string'
+          && data.redirect !== ''
+        ) {
+          redirectTo = data.redirect;
+        }
+      } catch (_e) {
+        // Skip malformed entries; never block the rest of the queue.
+      }
+      blob.remove();
+    });
+    if (redirectTo !== null) {
+      const target = redirectTo;
+      setTimeout(() => { window.location.href = target; }, 1500);
+    }
+  }
+  if (document.readyState !== 'loading') flushPendingToasts();
+  else document.addEventListener('DOMContentLoaded', flushPendingToasts);
+
   // ---- ACTION-BUTTON BUSY STATE ----------------------------
   // Inline page-tail scripts that fire `sb.api.call(…)` from a click
   // handler call this on submit and again from the .then tail to

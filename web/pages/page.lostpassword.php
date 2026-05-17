@@ -45,13 +45,13 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $validation = $_GET['validation'];
 
     if (is_array($email) || is_array($validation)) {
-        print "<script>ShowBox('Error', 'Invalid request.', 'red');</script>";
+        \Sbpp\View\Toast::emit('error', 'Error', 'Invalid request.');
         Log::add(LogType::Warning, "Hacking attempt", "Attempted SQL-Injection.");
         PageDie();
     }
 
     if (strlen((string) $validation) < 10) {
-        print "<script>ShowBox('Error', 'Invalid validation string.', 'red');</script>";
+        \Sbpp\View\Toast::emit('error', 'Error', 'Invalid validation string.');
         PageDie();
     }
 
@@ -61,7 +61,7 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $result = $GLOBALS['PDO']->single();
 
     if (empty($result['aid'])) {
-        print "<script>ShowBox('Error', 'The validation string does not match the email for this reset request.', 'red');</script>";
+        \Sbpp\View\Toast::emit('error', 'Error', 'The validation string does not match the email for this reset request.');
         PageDie();
     }
 
@@ -85,7 +85,11 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     ]);
 
     if (!$isEmailSent) {
-        print "<script>ShowBox('Error', 'Could not send the new password by email. Your old password is still active. Please contact an administrator if this persists.', 'red');</script>";
+        \Sbpp\View\Toast::emit(
+            'error',
+            'Error',
+            'Could not send the new password by email. Your old password is still active. Please contact an administrator if this persists.',
+        );
         PageDie();
     }
 
@@ -94,7 +98,16 @@ if (isset($_GET['email'], $_GET['validation']) && (!empty($_GET['email']) || !em
     $GLOBALS['PDO']->bind(':aid', $result['aid']);
     $GLOBALS['PDO']->execute();
 
-    print "<script>ShowBox('Password Reset', 'Your password has been reset and sent to your email.<br />Please check your spam folder too.<br />Please login using this password, <br />then use the change password link in Your Account.', 'blue');</script>";
+    // Body line-breaks (`<br />`) converted to spaces so the body reads
+    // as a single line — `showToast` (theme.js) `escapeHtml`s the value
+    // so raw tags surface as visible literal text.
+    \Sbpp\View\Toast::emit(
+        'info',
+        'Password Reset',
+        'Your password has been reset and sent to your email. '
+            . 'Please check your spam folder too. '
+            . 'Please login using this password, then use the change password link in Your Account.',
+    );
     PageDie();
 } else {
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\LostPasswordView());
