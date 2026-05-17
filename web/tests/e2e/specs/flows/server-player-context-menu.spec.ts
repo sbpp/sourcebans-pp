@@ -238,12 +238,31 @@ test.describe('flow: server-player right-click context menu (#PLAYER_CTX_MENU)',
 
         // The kick / ban / block hrefs must carry the actual SteamID
         // — the menu's load-bearing payload.
+        //
+        // The Ban href rides the panel-chromed smart-default URL
+        // (`?p=admin&c=bans&section=add-ban&steam=…`) consumed by
+        // `Sbpp\View\AdminBansAddView::prefill_steam` server-side.
+        // #1395 unified Block onto the same panel-route shape
+        // (`?p=admin&c=comms&steam=…`) — pre-fix it pointed at
+        // `pages/admin.blockit.php?check=…` which is the
+        // post-`Actions.CommsAdd` rcon-fan-out iframe target, not a
+        // stand-alone operator surface; hitting it directly rendered
+        // chromeless and POSTed to a 404. The integration tests
+        // (`AdminBansAddSmartDefaultTest` /
+        // `AdminCommsAddSmartDefaultTest`) cover the prefill
+        // allowlist + form-input round-trip; this assertion is the
+        // wire-level contract that the menu actually emits the URL
+        // shape those handlers consume.
+        //
+        // Kick stays on the iframe path (`pages/admin.kickit.php`)
+        // because it's a one-shot RCON command with no persistent
+        // panel surface to anchor on after firing.
         await expect(menu.locator('[data-testid="context-menu-kick"]'))
-            .toHaveAttribute('href', /check=STEAM_0%3A0%3A1234/);
+            .toHaveAttribute('href', /^pages\/admin\.kickit\.php\?check=STEAM_0%3A0%3A1234&type=0$/);
         await expect(menu.locator('[data-testid="context-menu-ban"]'))
-            .toHaveAttribute('href', /steam=STEAM_0%3A0%3A1234/);
+            .toHaveAttribute('href', /^index\.php\?p=admin&c=bans&section=add-ban&steam=STEAM_0%3A0%3A1234&type=0$/);
         await expect(menu.locator('[data-testid="context-menu-block"]'))
-            .toHaveAttribute('href', /check=STEAM_0%3A0%3A1234/);
+            .toHaveAttribute('href', /^index\.php\?p=admin&c=comms&steam=STEAM_0%3A0%3A1234&type=0$/);
 
         // View profile builds a SteamID64 from the SteamID2:
         // `76561197960265728 + 2*Z + Y` -> 76561197960268196 for

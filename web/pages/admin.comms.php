@@ -46,6 +46,48 @@ if (isset($_GET["rebanid"])) {
     echo "<script type=\"text/javascript\">sb.ready(function(){sb.message.show('Loading..','<b>Loading...</b><br><i>Please Wait!</i>','blue','',true);sb.hide('dialog-control');sb.api.call(Actions.CommsPaste,{sid:" . (int) $_GET['sid'] . ",name:" . $pNameJs . ",type:0}).then(function(r){if(r&&r.ok&&r.data){if(typeof window.__sbppApplyBlockFields==='function')window.__sbppApplyBlockFields(r.data);sb.show('dialog-control');sb.hide('dialog-placement');}else if(r&&r.ok===false&&r.error){sb.message.error('Error',r.error.message);sb.show('dialog-control');}});});</script>";
 }
 
+/*
+ * Smart-default pre-fill for SteamID via `?steam=…&type=…`
+ * (mirrors `admin.bans.php`'s sibling block for the "Ban player"
+ * menu item — see #PLAYER_CTX_MENU / #1395). The public servers
+ * list's right-click context menu's "Block comms" item lands
+ * admins on `?p=admin&c=comms&steam=STEAM_…&type=0` to pre-populate
+ * the form without firing a JSON action — the form has to be
+ * usable on the no-JS path (every other approach taken by the
+ * legacy `pages/admin.blockit.php?check=…&type=0` URL routed to a
+ * chromeless iframe page whose relative POST hit `/pages/api.php`
+ * → 404). The pre-fill happens server-side via the View DTO
+ * rather than through `__sbppApplyBlockFields` so the surface
+ * works pre-JS-boot.
+ *
+ * Allowed shapes (mirrors admin.bans.php's allowlist verbatim so
+ * the menu's URL contract is symmetric across the two
+ * affordances): STEAM_X:Y:Z / [U:1:N] / 17-digit SteamID64 /
+ * dotted IPv4. Comms doesn't actually ban by IP, but keeping the
+ * regex symmetric with bans means a future menu / deep-link
+ * change only has to touch one allowlist. An IPv4 value lands in
+ * the steam input and will fail server-side validation on submit
+ * via `Actions.CommsAdd`; that's the right behaviour (loud
+ * failure) vs. silently dropping a value the user can see.
+ *
+ * Allowed `type` values are 1 (Mute), 2 (Gag), 3 (Silence) — the
+ * `:prefix_comms.type tinyint` column's domain. Anything else
+ * (including the menu's `?type=0` bridging value, which is
+ * sourced from the bans-menu URL shape where 0=Steam ID) falls
+ * back to 0 (no pre-selection) and the form's `<select id="type">`
+ * lands on the native first-option default (Mute).
+ */
+$prefillSteamRaw = isset($_GET['steam']) ? trim((string) $_GET['steam']) : '';
+$prefillTypeRaw  = isset($_GET['type']) ? (int) $_GET['type'] : 0;
+$prefillSteam    = '';
+$prefillType     = 0;
+if ($prefillSteamRaw !== '') {
+    if (preg_match('/^(?:STEAM_[01]:[01]:\d+|\[U:1:\d+\]|\d{17}|\d{1,3}(?:\.\d{1,3}){3})$/', $prefillSteamRaw) === 1) {
+        $prefillSteam = $prefillSteamRaw;
+        $prefillType  = in_array($prefillTypeRaw, [1, 2, 3], true) ? $prefillTypeRaw : 0;
+    }
+}
+
 // SourceComms reuses the bans permission set: there is no
 // ADMIN_ADD_COMM flag, so the gate uses ADMIN_OWNER|ADMIN_ADD_BAN.
 // Splatting Perms::for(...) into the View pulls `can_add_ban` (and
@@ -56,6 +98,8 @@ if (isset($_GET["rebanid"])) {
 $perms = \Sbpp\View\Perms::for($userbank);
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsAddView(
     permission_addban: $perms['can_add_ban'],
+    prefill_steam: $prefillSteam,
+    prefill_type: $prefillType,
 ));
 ?>
 <script type="text/javascript">

@@ -8,6 +8,17 @@
     Variable contract matches the legacy default theme:
       - $permission_addban — gate; ADMIN_OWNER|ADMIN_ADD_BAN
         (precomputed in admin.comms.php via Perms::for($userbank)).
+      - $prefill_steam     — server-side smart-default for the
+        SteamID input, populated by `?p=admin&c=comms&steam=…`
+        (used by the public servers list's right-click context
+        menu's "Block comms" item; admin.comms.php allowlists
+        STEAM_X:Y:Z / [U:1:N] / SteamID64 / IPv4 before this
+        value reaches the template). Empty string when no smart
+        default is on the URL. #1395.
+      - $prefill_type      — 0 (no pre-selection) / 1 (Mute) /
+        2 (Gag) / 3 (Silence). The form's first option (Mute)
+        is the implicit native default when no `selected`
+        attribute fires. #1395.
 
     Submission goes through sb.api.call(Actions.CommsAdd) — the same
     JSON action the legacy theme uses, see
@@ -59,12 +70,20 @@
 
             <div>
                 <label class="label" for="steam">Steam ID / Community ID</label>
+                {* Smart-default SteamID via `?steam=…` (admin.comms.php
+                   allowlists STEAM_X:Y:Z / [U:1:N] / SteamID64 / IPv4
+                   before this value reaches the template, so the
+                   auto-escape is the belt-and-braces). Used by the
+                   public servers list's right-click context menu's
+                   "Block comms" item — see web/scripts/server-context-menu.js
+                   and admin.bans.php's mirror block. #1395 *}
                 <input type="text"
                        class="input font-mono"
                        id="steam"
                        name="steam"
                        autocomplete="off"
                        data-testid="addcomm-steam"
+                       value="{$prefill_steam}"
                        placeholder="STEAM_0:1:23498765">
                 <div class="text-xs mt-2" id="steam.msg" style="color:var(--danger);display:none"></div>
             </div>
@@ -72,10 +91,16 @@
             <div class="grid gap-4" style="grid-template-columns:1fr 1fr">
                 <div>
                     <label class="label" for="type">Block type</label>
+                    {* Smart-default Block type via `?type=…` (paired with
+                       `?steam=…` — see admin.comms.php for the allowlist).
+                       Valid values are 1 (Mute), 2 (Gag), 3 (Silence);
+                       anything else (including the menu's `?type=0`
+                       bridging value) lands `$prefill_type == 0` and the
+                       browser defaults to the first option (Mute). #1395 *}
                     <select class="select" id="type" name="type" data-testid="addcomm-type">
-                        <option value="1">Mute (voice)</option>
-                        <option value="2">Gag (chat)</option>
-                        <option value="3">Silence (chat &amp; voice)</option>
+                        <option value="1"{if $prefill_type == 1} selected{/if}>Mute (voice)</option>
+                        <option value="2"{if $prefill_type == 2} selected{/if}>Gag (chat)</option>
+                        <option value="3"{if $prefill_type == 3} selected{/if}>Silence (chat &amp; voice)</option>
                     </select>
                 </div>
                 <div>
