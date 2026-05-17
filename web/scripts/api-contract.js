@@ -368,8 +368,22 @@
  * @typedef {Object} ApiModsAddResponse
  */
 /**
+ * Delete a mod row + its on-disk icon (#1397).  Modern JSON twin of the v1.x
+ * sourcebans.js `RemoveMod()` helper (deleted at #1123 D1) —
+ * `page_admin_mods_list.tpl` wires the trash-can button through
+ * `Actions.ModsRemove` via the `#mod-delete-dialog` confirm + reason modal.
+ * There is no legacy GET fallback for `o=remove` here (the v1.x JS helper went
+ * straight to xajax then to this handler), so this is the single delete path;
+ * the modal's no-JS / no-dispatcher fallback just lands the operator back on
+ * the mods list.  Inputs: - `mid`     (int, required)    — the mod id to
+ * remove. - `ureason` (string, optional) — admin-supplied reason. We trim it
+ * and append `Reason: …` to the audit-log entry when non-empty. Empty /
+ * omitted is allowed (the modal carries `aria-required="false"`); mod deletion
+ * is a lifecycle action, not a moderation flip, so we don't gate the call on
+ * it the way `bans.unban` / `comms.unblock` do.
+ *
  * @typedef {Object} ApiModsRemoveRequest
- * @typedef {Object} ApiModsRemoveResponse
+ * @typedef {{ remove: string, message: { title: string, body: string, kind: string, redir: string } }} ApiModsRemoveResponse
  */
 /**
  * Add a note for the given Steam ID. The current admin's `aid` is recorded as
