@@ -2138,7 +2138,22 @@ contacting every contributor individually.
   → removed at v2.0.0 (#1123 D1). Page-tail helpers are inlined as
   self-contained vanilla JS per page (see `web/pages/admin.edit.ban.php`
   / `admin.edit.comms.php` for canonical examples); toasts go through
-  `window.SBPP.showToast` from the theme JS.
+  `window.SBPP.showToast` from the theme JS. The trailing per-row
+  `<script>LoadServerHost('SID', …)</script>` echo on the Add Admin
+  form (`admin.admins.php`) and the per-group
+  `<script>LoadServerHostPlayersList('<sids>', …)</script>` echo on
+  the Server Groups list (`admin.groups.php`) survived the v2.0
+  cutover and raised one `ReferenceError` per server / per server
+  group on every page load with no visible effect (the static `<span
+  id="saSID">IP:port</span>` fallback / the literal "Servers populate
+  via the legacy LoadServerHostPlayersList hook." placeholder masked
+  the symptom). Both went at #1404 along with the orphan
+  `AdminAdminsAddView::server_script` ctor param and the
+  `<div id="servers_{gid}">` hydration slot; `DeadJsCallSitesTest` is
+  the per-file forbidden-substring gate so a fork pasting back the
+  v1.x shape gets caught at PR time. Hydration follow-ups tracked at
+  #1405 (Add Admin per-server access list) / #1406 (Server Groups
+  per-group server cards).
 - `onclick="if (typeof <Helper> === 'function') <Helper>(...)"`
   legacy-helper presence guards in templates (the v1.x sourcebans.js
   defensiveness pattern that survived the #1123 D1 deletion of the
@@ -2825,6 +2840,7 @@ contacting every contributor individually.
 | Action -> permission lock              | `web/tests/api/PermissionMatrixTest.php`                 |
 | Trap PHP 8.1 null-into-scalar deprecations at runtime (the bits PHPStan can't see) | `web/tests/integration/Php82DeprecationsTest.php` (#1273) — process-isolated render harness with a stub Smarty + `set_error_handler` that promotes `E_DEPRECATED` / `E_USER_DEPRECATED` to `\ErrorException`. Mirrors the LostPasswordChromeTest stub-Smarty pattern; each test method runs in a separate process because the page handlers declare top-level helpers (`setPostKey()` etc.) that PHP can't redeclare in one process. Add a marquee route here whenever a new high-traffic page handler ships, especially if it reads nullable `:prefix_*` columns or `$_POST` / `$_GET` lookups. |
 | Pin the "every `:name` PDO placeholder needs as many `bind()` calls as occurrences" contract under native prepares | `web/tests/integration/SrvAdminsPdoParamTest.php` (#1314) — two methods. `testReusedNamedPlaceholderUnderNativePreparesIsRejected` issues a tiny `SELECT 1 ... WHERE aid = :sid OR aid = :sid` against `Sbpp\Db\Database` with one `bind()` and asserts it throws `HY093`; this is the contract pin (also a regression guard if anyone re-flips `EMULATE_PREPARES` back to `true`). `testAdminSrvadminsPageRendersWithoutPdoException` is the page-level regression guard for the actual #1314 fatal — process-isolated `require` of `pages/admin.srvadmins.php` with `?id=0` asserting no `PDOException` escapes. Mirrors the Php82DeprecationsTest stub-Smarty + process-isolation shape. |
+| Pin "dead v1.x JS call sites + their server-side feeders stay deleted" (the `<script>LoadServerHost(...)</script>` / `$data['unban_link']` / `$info['popup']` shapes the v2.0.0 `sourcebans.js` cutover left without a JS landing site) | `web/tests/integration/DeadJsCallSitesTest.php` (#1404) — three methods, 12 assertions. Per-file forbidden-substring map (`page.banlist.php` / `page.commslist.php` / `page.home.php` / `admin.admins.php` / `admin.groups.php`) scanned against the **comment-stripped** source of each handler via `php_strip_whitespace()`, so the cleanup's own `// #1404 — ...` explanatory comments (and pre-existing historical-context comments that name the dead helpers in passing) don't false-fire the gate. The Smarty half (`{$server_script nofilter}`, the `<div id="servers_{$group.gid}">` hydration slot, the "Servers populate via the legacy LoadServerHostPlayersList hook." placeholder copy) is pinned by `testDeadTemplateSidesStayDropped` (also comment-stripped via `{* *}`-regex). The View-DTO side (`Sbpp\View\AdminAdminsAddView::server_script` orphan property) is pinned independently by `testAdminAdminsAddViewDoesNotCarryServerScriptProperty` so the failure points at the View directly instead of cascading through SmartyTemplateRule. Pure file scanning — extends `PHPUnit\Framework\TestCase` (no DB / session / Smarty bring-up). Sister #1402 (rewire dead JS handlers) and #1403 (ShowBox→`window.SBPP.showToast` rewrite) extend the per-file forbidden-substring map as their PRs land. |
 | Add an E2E spec                        | `web/tests/e2e/specs/<smoke|flows|a11y|responsive>/...` + `web/tests/e2e/pages/...` |
 | Add a route to the screenshot gallery  | `web/tests/e2e/specs/_screenshots.spec.ts` (`ROUTES` array) |
 | Tweak mobile (<=768px) chrome layout   | `web/themes/default/css/theme.css` — see the `#1207` `@media (max-width: 768px)` blocks for the canonical shapes (icon-only topbar search, full-width drawer + scroll lock). Sub-paged admin routes (servers / mods / groups / comms / settings / admins / bans) use the `<details open>` accordion in the `#1259` `@media (min-width: 1024px)` block (sidebar inline at `<1024px`, sticky 14rem rail at `>=1024px`); see "Sub-paged admin routes" in Conventions. |

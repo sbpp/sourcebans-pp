@@ -140,7 +140,6 @@ if ($section === 'add-admin') {
     // matching `LoadServerHost` entry.
     $server_list = [];
     foreach ($servers as $server) {
-        $info         = [];
         $info['sid']  = $server['sid'];
         $info['ip']   = $server['ip'];
         $info['port'] = $server['port'];
