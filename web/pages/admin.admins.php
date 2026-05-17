@@ -153,6 +153,11 @@ if ($section === 'add-admin') {
         server_list: $server_list,
         server_admin_group_list: $server_admin_group_list,
         server_group_list: $server_group_list,
+        // #1402 adversarial review HIGH 1: gate the OWNER checkbox so a
+        // non-owner with ADMIN_ADD_ADMINS can't see/tick it. Paired with
+        // the server-side guard in api_admins_add (the load-bearing
+        // half; this is the visible-affordance half).
+        can_grant_owner: $userbank->HasAccess(WebPermission::Owner),
     ));
     echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;

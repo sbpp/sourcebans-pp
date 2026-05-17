@@ -891,6 +891,11 @@
    the listing branch silently broke comment save (no submit handler
    attached, native form submission to action-less URL no-ops). *}
 <script src="./scripts/banlist.js" defer></script>
+{* #1402: trash-can-on-a-comment triggers (`data-action="comment-delete"`)
+   on the comment-edit branch are handled by the global comment-actions.js
+   dispatcher loaded from core/footer.tpl — single mount point shared
+   with the admin moderation queues (protests / submissions) and the
+   commslist comment-edit branch. *}
 
 {* ============================================================
    #1301 — banlist row-action wiring (inline page-tail JS).

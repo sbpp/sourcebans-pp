@@ -804,7 +804,13 @@ foreach ($res as $row) {
                 if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(WebPermission::Owner)) {
                     $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=commslist&comment=' . $data['ban_id'] . '&ctype=C&cid=' . $crow['cid'] . $pagelink, 'Edit Comment');
                     if ($userbank->HasAccess(WebPermission::Owner)) {
-                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'C'," . (isset($_GET["page"]) ? $_GET["page"] : -1) . ");\"><i class='fas fa-trash fa-lg'></i></a>";
+                        // #1402: see web/scripts/comment-actions.js for the dispatcher.
+                        $cdata['delcomlink'] = '<a href="#" class="tip" title="Delete Comment" target="_self"'
+                            . ' data-action="comment-delete"'
+                            . ' data-cid="' . (int) $crow['cid'] . '"'
+                            . ' data-ctype="C"'
+                            . ' data-page="' . (isset($_GET["page"]) ? (int) $_GET["page"] : -1) . '"'
+                            . '><i class="fas fa-trash fa-lg"></i></a>';
                     }
                 } else {
                     $cdata['editcomlink'] = "";

@@ -25,6 +25,12 @@ final class AdminAdminsAddView extends View
      *     rows for the SourceMod admin-group dropdown.
      * @param list<array<string,mixed>> $server_group_list `:prefix_groups`
      *     rows (type != 3) for the web admin-group dropdown.
+     * @param bool $can_grant_owner Mirrors `$userbank->HasAccess(WebPermission::Owner)`
+     *     — gates the OWNER web-flag checkbox so a non-owner with
+     *     `ADMIN_ADD_ADMINS` can't see/tick it (the server-side check in
+     *     `api_admins_add` is the load-bearing gate; this is the
+     *     visible-affordance half of the defense-in-depth pair from
+     *     #1402's adversarial review).
      */
     public function __construct(
         public readonly bool $can_add_admins,
@@ -32,6 +38,7 @@ final class AdminAdminsAddView extends View
         public readonly array $server_list,
         public readonly array $server_admin_group_list,
         public readonly array $server_group_list,
+        public readonly bool $can_grant_owner,
     ) {
     }
 }

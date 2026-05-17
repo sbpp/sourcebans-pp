@@ -295,6 +295,63 @@ final class AdminsTest extends ApiTestCase
         $this->assertSame('index.php?p=login&m=no_access', $env['redirect'] ?? null);
     }
 
+    /**
+     * #1402 adversarial review HIGH 1 — `api_admins_add` must reject
+     * `mask & ADMIN_OWNER` when the caller doesn't hold OWNER. Mirrors
+     * the existing `testEditPermsBlocksGrantingOwnerWithoutOwner` shape
+     * because the two handlers share the same escalation surface
+     * (set web flags on an admin row).
+     *
+     * Pre-fix `api_admins_add` had no such check — a non-owner with
+     * `ADMIN_ADD_ADMINS` (a common delegation level) could create a
+     * brand-new admin with the OWNER bit set on their `extraflags`,
+     * full panel takeover. The UI side gates the OWNER checkbox on
+     * `can_grant_owner`; the server-side check below is the
+     * load-bearing half (UI gate is defense-in-depth).
+     */
+    public function testAddBlocksGrantingOwnerWithoutOwner(): void
+    {
+        // Seed a non-owner admin with ADMIN_ADD_ADMINS (the registry-
+        // declared perm for `admins.add`) and log in as them.
+        $pdo  = Fixture::rawPdo();
+        $hash = password_hash('admin', PASSWORD_BCRYPT);
+        $pdo->prepare(sprintf(
+            'INSERT INTO `%s_admins` (user, authid, password, gid, email, validate, extraflags, immunity)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            DB_PREFIX
+        ))->execute(['nonowner-add', 'STEAM_0:0:111', $hash, -1, 'noown-add@own.test', null, ADMIN_ADD_ADMINS, 0]);
+        $nonOwnerAid = (int)$pdo->lastInsertId();
+
+        $this->loginAs($nonOwnerAid);
+        $env = $this->api('admins.add', $this->adminParams([
+            'name'  => 'TargetOwner',
+            'steam' => 'STEAM_0:0:9001',
+            'mask'  => ADMIN_OWNER,
+        ]));
+        // The handler returns Api::redirect on the OWNER escalation attempt.
+        $this->assertFalse($env['ok'] ?? true);
+        $this->assertSame('index.php?p=login&m=no_access', $env['redirect'] ?? null);
+        // And no row landed on disk.
+        $this->assertNull($this->row('admins', ['authid' => 'STEAM_0:0:9001']));
+    }
+
+    /**
+     * Sibling positive case: an owner can still create OWNER admins.
+     * Locks in that the new guard isn't over-zealous on the happy path
+     * (an owner-only operation that legitimately needs the bit).
+     */
+    public function testAddAllowsGrantingOwnerForOwner(): void
+    {
+        $this->loginAsAdmin(); // The seeded admin holds ADMIN_OWNER.
+        $env = $this->api('admins.add', $this->adminParams([
+            'name'  => 'AnotherOwner',
+            'steam' => 'STEAM_0:0:9002',
+            'mask'  => ADMIN_OWNER,
+        ]));
+        $this->assertTrue($env['ok'], json_encode($env));
+        $this->assertNotNull($this->row('admins', ['authid' => 'STEAM_0:0:9002']));
+    }
+
     public function testGeneratePasswordReturnsString(): void
     {
         $this->loginAsAdmin();

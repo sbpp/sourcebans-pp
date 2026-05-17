@@ -35,6 +35,8 @@ const SEED_ANNOUNCEMENTS_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-announcements-e2e.php';
 const SEED_LOSTPASSWORD_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-lostpassword-e2e.php';
+const SET_SETTING_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/set-setting-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -294,6 +296,50 @@ export async function seedLostpasswordE2e(): Promise<LostpasswordSeed> {
             `seed-lostpassword-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
         );
     }
+}
+
+/**
+ * Set a single `:prefix_settings` row in the e2e DB. Useful for
+ * feature toggles that ship disabled in `data.sql` but need to be
+ * on for a spec (e.g. `config.enablegroupbanning` for the
+ * group-ban dispatcher regression in #1402). Mirrors the
+ * `REPLACE INTO sb_settings` shape that `BansTest.php` uses for the
+ * same reason. Caller is responsible for reverting in afterEach;
+ * the e2e DB is shared between specs.
+ */
+export async function setSettingE2e(setting: string, value: string): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SET_SETTING_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SET_SETTING_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify({ setting, value }));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `set-setting-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
 }
 
 async function runAnnouncementsHelper(

@@ -895,44 +895,228 @@ if (!$canGroupBan) {
     // template can render the placeholder when wired up.
     player_name: '',
 ));
-// Tail script: defines the legacy `ProcessGroupBan()` and
-// `CheckGroupBan()` globals that `page_admin_bans_groups.tpl`
-// binds via `onclick=`. Other supporting globals (`LoadGroupBan`,
-// `TickSelectAll`) used to live in `web/scripts/sourcebans.js`,
-// deleted at #1123 D1; the buttons reference them too. The
-// group-ban surface is therefore partially-broken on default
-// (the 'ban URL' submit calls into LoadGroupBan which is undefined)
-// — this is a pre-existing #1123 follow-up, tracked separately
-// from #1275. We preserve the legacy globals here so the
-// remaining flows (e.g. an external theme that ships LoadGroupBan)
-// keep working.
+// #1402: page-tail dispatcher for the group-ban surface. Replaces
+// the dead `ProcessGroupBan` / `CheckGroupBan` / `LoadGroupBan` /
+// `TickSelectAll` globals (the v1.x sourcebans.js helpers, deleted
+// at #1123 D1). The pre-fix `<script>` block here defined
+// `ProcessGroupBan` + `CheckGroupBan` but BOTH still called
+// `LoadGroupBan(...)` — which lived in the deleted sourcebans.js —
+// so every "Add group ban" click threw
+// `ReferenceError: LoadGroupBan is not defined`. Same shape on the
+// "Tick all" button (`TickSelectAll` was also in sourcebans.js).
+//
+// The replacement uses the existing `Actions.BansGroupBan` +
+// `Actions.BansBanMemberOfGroup` API pair (both already registered
+// in `_register.php`; the issue body's suggestion to ship a new
+// `Actions.GroupbanCheck` is unnecessary — the existing
+// `bans.group_ban` IS the URL-parse step the legacy `LoadGroupBan`
+// performed first, and `bans.ban_member_of_group` is the bulk
+// banning step it chained to). The page-tail dispatcher binds via
+// `data-action="groupban-*"` per the canonical-shape rule from
+// AGENTS.md "Add a confirm + reason modal …" — no more legacy
+// global helpers in scope.
 echo <<<'JS'
 <script type="text/javascript">
-function ProcessGroupBan()
-{
-    if (!$('groupurl').value) {
-        $('groupurl.msg').setHTML('You must enter the group link of the group you are banning');
-        $('groupurl.msg').setStyle('display', 'block');
-    } else {
-        $('groupurl.msg').setHTML('');
-        $('groupurl.msg').setStyle('display', 'none');
-        LoadGroupBan($('groupurl').value, "no", "no", $('groupreason').value, "");
+(function () {
+    'use strict';
+
+    function api()     { return (window.sb && window.sb.api) || null; }
+    function actions() { return window.Actions || null; }
+    /**
+     * Local wrapper around window.SBPP.setBusy with a `disabled`-only
+     * fallback (mirror of SbppGroupsAddSetBusy in page_admin_groups_add.tpl).
+     */
+    function setBusy(btn, busy) {
+        if (!btn) return;
+        var S = window.SBPP;
+        if (S && typeof S.setBusy === 'function') S.setBusy(btn, busy);
+        else btn.disabled = busy === undefined ? true : !!busy;
     }
-}
-function CheckGroupBan()
-{
-    var last = 0;
-    for (var i=0;$('chkb_' + i);i++) {
-        if($('chkb_' + i).checked == true) {
-            last = $('chkb_' + i).value;
+    function toast(kind, title, body, redir) {
+        var S = window.SBPP;
+        if (S && typeof S.showToast === 'function') {
+            S.showToast({ kind: kind, title: title, body: body || '' });
+        }
+        if (redir) {
+            // Match the v1.x post-success redirect: the operator wants to
+            // see the freshly-populated banlist, not the now-empty form.
+            setTimeout(function () { window.location.href = redir; }, 1500);
         }
     }
-    for (var i=0;$('chkb_' + i);i++) {
-        if($('chkb_' + i).checked == true) {
-            LoadGroupBan($('chkb_' + i).value, "yes", "yes", $('groupreason').value, last);
-        }
+    function showMsg(id, msg, show) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.style.display = show ? 'block' : 'none';
     }
-}
+    /**
+     * Status indicator for the bulk-from-friends path: surfaces the
+     * "Banning all members of <grp>" intermediate state while the API
+     * fans out across multiple groups. Falls through to a no-op if the
+     * #steamGroupStatus div is absent (single-URL submit path).
+     */
+    function status(html) {
+        var el = document.getElementById('steamGroupStatus');
+        if (el) el.innerHTML = html;
+    }
+
+    /**
+     * Wraps the two-step chain that the v1.x `LoadGroupBan(uri, isgrp,
+     * queue, reason, last)` helper performed: first parse the URL into
+     * a group name (Actions.BansGroupBan), then enumerate + ban the
+     * members (Actions.BansBanMemberOfGroup). The `queue` and `last`
+     * args drive the post-bulk success toast — `queue==="yes" &&
+     * grpurl===last` is the final tick of the bulk loop, so we redirect
+     * the operator to the banlist; otherwise we just append to the
+     * status panel and let the loop keep firing.
+     */
+    function loadGroupBan(groupuri, isgrpurl, queue, reason, last, submitBtn) {
+        var a = api(), A = actions();
+        if (!a || !A) return Promise.resolve();
+        // #1402 adversarial review MEDIUM 4: defensive .catch() arms on
+        // BOTH the outer Actions.BansGroupBan and inner
+        // Actions.BansBanMemberOfGroup chains so a throw inside either
+        // success callback (or a sb.api.call internal failure) doesn't
+        // leave the submit button busy forever. The legacy single-URL
+        // path and the bulk-from-friends loop both share this helper,
+        // so a flaky branch in either path is silently captured here.
+        return a.call(A.BansGroupBan, {
+            groupuri: groupuri,
+            isgrpurl: isgrpurl,
+            queue:    queue,
+            reason:   reason,
+            last:     last,
+        }).then(function (r) {
+            if (!r || r.ok === false || !r.data || !r.data.grpname) {
+                setBusy(submitBtn, false);
+                var em = (r && r.error && r.error.message) || 'Error parsing the group url.';
+                showMsg('groupurl.msg', em, true);
+                toast('error', 'Group ban failed', em);
+                return;
+            }
+            var d = r.data;
+            // Surface the "Please wait…" toast the legacy helper used
+            // to render via $('steamGroupStatus').setHTML(...).
+            status('<em>Banning all members of <strong>' +
+                String(d.grpname).replace(/[<>&"]/g, function (c) {
+                    return { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c] || c;
+                }) + '</strong>&hellip;</em>');
+
+            return a.call(A.BansBanMemberOfGroup, {
+                grpurl: d.grpname,
+                queue:  d.queue,
+                reason: d.reason,
+                last:   d.last,
+            }).then(function (r2) {
+                if (!r2 || r2.ok === false || !r2.data) {
+                    setBusy(submitBtn, false);
+                    var em2 = (r2 && r2.error && r2.error.message) || 'Failed to ban group members.';
+                    toast('error', 'Group ban failed', em2);
+                    status('');
+                    return;
+                }
+                var d2 = r2.data;
+                var amt = d2.amount || { total: 0, banned: 0, before: 0, failed: 0 };
+                // The legacy helper only emitted a final success toast on
+                // the last iteration of the bulk loop (and always on the
+                // single-URL path). Mirror that contract: queue==='no'
+                // is the single-URL path; queue==='yes' && grpurl===last
+                // is the final tick.
+                if (d2.queue === 'no' || (d2.queue === 'yes' && String(d2.grpurl) === String(d2.last))) {
+                    setBusy(submitBtn, false);
+                    var body = 'Banned ' + (amt.total - amt.before - amt.failed) + '/' +
+                                amt.total + ' players. ' + amt.before +
+                                ' were already banned, ' + amt.failed + ' failed.';
+                    toast('success', 'Group banned', body, 'index.php?p=banlist');
+                    status('<strong>' + body + '</strong>');
+                }
+            }).catch(function (err2) {
+                // Inner-call defensive: release the button + surface
+                // the error so a bulk loop doesn't silently stall
+                // after one row throws.
+                setBusy(submitBtn, false);
+                toast('error', 'Group ban failed', String(err2 && err2.message ? err2.message : err2));
+                status('');
+            });
+        }).catch(function (err) {
+            // Outer-call defensive: same shape as the inner catch.
+            setBusy(submitBtn, false);
+            toast('error', 'Group ban failed', String(err && err.message ? err.message : err));
+            status('');
+        });
+    }
+
+    // ---- single-URL submit ----
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var btn = t.closest('[data-action="groupban-submit"]');
+        if (!btn) return;
+        e.preventDefault();
+        var urlEl = document.getElementById('groupurl');
+        var reasonEl = document.getElementById('groupreason');
+        if (!urlEl || !urlEl.value.trim()) {
+            showMsg('groupurl.msg', 'You must enter the group link of the group you are banning', true);
+            return;
+        }
+        showMsg('groupurl.msg', '', false);
+        setBusy(btn, true);
+        loadGroupBan(urlEl.value.trim(), 'no', 'no', reasonEl ? reasonEl.value : '', '', btn);
+    });
+
+    // ---- bulk-from-friends submit ----
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var btn = t.closest('[data-action="groupban-bulk-submit"]');
+        if (!btn) return;
+        e.preventDefault();
+        var reasonEl = document.getElementById('groupreason');
+        var reason = reasonEl ? reasonEl.value : '';
+        // Find the last-ticked checkbox; the legacy helper used this
+        // sentinel to know which API response should trigger the final
+        // success toast (so a 20-group bulk-ban doesn't fire 20 toasts).
+        var last = '';
+        for (var i = 0; document.getElementById('chkb_' + i); i++) {
+            var cb = document.getElementById('chkb_' + i);
+            if (cb.checked) last = cb.value;
+        }
+        if (!last) {
+            toast('error', 'No groups selected', 'Tick at least one group to ban.');
+            return;
+        }
+        setBusy(btn, true);
+        for (var j = 0; document.getElementById('chkb_' + j); j++) {
+            var cb2 = document.getElementById('chkb_' + j);
+            if (cb2.checked) {
+                loadGroupBan(cb2.value, 'yes', 'yes', reason, last, btn);
+            }
+        }
+    });
+
+    // ---- select-all toggle ----
+    document.addEventListener('click', function (e) {
+        var t = e.target;
+        if (!t || !t.closest) return;
+        var btn = t.closest('[data-action="groupban-select-all"]');
+        if (!btn) return;
+        e.preventDefault();
+        var allChecked = true;
+        var any = false;
+        for (var i = 0; document.getElementById('chkb_' + i); i++) {
+            any = true;
+            if (!document.getElementById('chkb_' + i).checked) { allChecked = false; break; }
+        }
+        if (!any) return;
+        for (var j = 0; document.getElementById('chkb_' + j); j++) {
+            document.getElementById('chkb_' + j).checked = !allChecked;
+        }
+        var tickBtn = document.getElementById('tickswitch');
+        var tickLink = document.getElementById('tickswitchlink');
+        if (tickBtn) tickBtn.textContent = allChecked ? '+' : '\u2212';
+        if (tickLink) tickLink.textContent = allChecked ? 'Select all' : 'Deselect all';
+    });
+})();
 </script>
 JS;
 echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell -->';
@@ -964,7 +1148,16 @@ function bansBuildComments(array $commentres, $userbank, int $rowId, string $typ
         if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(WebPermission::Owner)) {
             $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . $rowId . '&ctype=' . $type . '&cid=' . $crow['cid'], 'Edit Comment');
             if ($userbank->HasAccess(WebPermission::Owner)) {
-                $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'" . $type . "',-1);\"><i class='fas fa-trash fa-lg'></i></a>";
+                // #1402: see web/scripts/comment-actions.js for the dispatcher.
+            // $type is the literal letter 'P' (protests) or 'S' (submissions);
+            // the api handler's `ctype` arm consumes both. No paginator on the
+            // moderation queues, so data-page is the sentinel -1.
+            $cdata['delcomlink'] = '<a href="#" class="tip" title="Delete Comment" target="_self"'
+                . ' data-action="comment-delete"'
+                . ' data-cid="' . (int) $crow['cid'] . '"'
+                . ' data-ctype="' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '"'
+                . ' data-page="-1"'
+                . '><i class="fas fa-trash fa-lg"></i></a>';
             }
         } else {
             $cdata['editcomlink'] = "";

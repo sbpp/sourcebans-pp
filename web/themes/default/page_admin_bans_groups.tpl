@@ -4,22 +4,32 @@
 
     "Group ban" tab on the admin bans page. Two modes share this surface:
       - Default: a small form to ban a Steam community group by URL.
-        Submission goes through the legacy ProcessGroupBan() helper in
-        admin.bans.php's tail script (which dispatches to
-        Actions.GroupbanCheck via sb.api.call).
-      - "From player" mode (?fid=STEAMID): the legacy LoadGetGroups()
-        helper enumerates the player's group memberships into the
-        #steamGroupsTable list; ticking groups + clicking "Add Group Ban"
-        runs CheckGroupBan() to issue Actions.GroupbanCheck for each
-        selected group.
+        Submission goes through the page-tail JS in admin.bans.php
+        (event-delegated `data-action="groupban-*"` dispatcher → chains
+        `Actions.BansGroupBan` + `Actions.BansBanMemberOfGroup`).
+      - "From player" mode (?fid=STEAMID): the inline LoadGetGroups
+        helper below enumerates the player's group memberships into
+        the #steamGroupsTable list; ticking groups + clicking
+        "Add Group Ban" runs the bulk dispatch (one BansGroupBan +
+        BansBanMemberOfGroup pair per selected group).
 
-    Both helpers (LoadGetGroups, TickSelectAll, CheckGroupBan) live in
-    web/scripts/sourcebans.js and aren't loaded by the sbpp2026 chrome;
-    that flow remains a default-theme feature for the rollout window.
+    #1402 — Migrated `onclick="ProcessGroupBan();"` /
+    `onclick="CheckGroupBan();"` / `onclick="TickSelectAll();"`
+    bindings to `data-action="…"` attributes per AGENTS.md
+    "Add a confirm + reason modal …" (the canonical-shape rule for
+    rewiring dead sourcebans.js helpers). The three globals lived
+    in web/scripts/sourcebans.js (deleted at #1123 D1); every click
+    was a `ReferenceError: ProcessGroupBan is not defined` (loud
+    sister-shape of the #1397 / #1352 trash-can bug). The new
+    dispatcher in admin.bans.php's tail script binds against the
+    data-attributes and uses sb.api.call → window.SBPP.setBusy /
+    showToast for the loading state + final feedback.
+
     DOM ids (groupurl, groupreason, *.msg, agban, aback, gban,
     tickswitch, tickswitchlink, steamGroups, steamGroupsText,
-    steamGroupsTable, steamGroupStatus) are preserved so legacy callers
-    continue to find them on default.
+    steamGroupsTable, steamGroupStatus) are preserved so existing
+    LoadGetGroups inline script + any third-party theme that wired
+    extra behaviour on top still finds them.
 
     `$player_name` is rendered above the group list when reaching this
     tab from a banlist row (?fid=STEAMID&player=…). admin.bans.php
@@ -59,7 +69,7 @@
                 <form id="groupban-form"
                       class="card p-6 space-y-4"
                       data-testid="groupban-form"
-                      onsubmit="return false;">
+                      onsubmit="event.preventDefault(); return false;">
                     {csrf_field}
                     <div>
                         <label class="label" for="groupurl">Steam community group URL</label>
@@ -88,11 +98,16 @@
                                 id="aback"
                                 data-testid="groupban-back"
                                 onclick="history.go(-1);">Back</button>
+                        {* #1402: was `onclick="ProcessGroupBan();"` which threw
+                           ReferenceError post-#1123 D1 (the helper lived in the
+                           deleted sourcebans.js). The page-tail dispatcher in
+                           admin.bans.php picks up data-action="groupban-submit"
+                           and chains Actions.BansGroupBan → BansBanMemberOfGroup. *}
                         <button type="button"
                                 class="btn btn--primary"
                                 id="agban"
                                 data-testid="groupban-submit"
-                                onclick="ProcessGroupBan();">
+                                data-action="groupban-submit">
                             Add group ban
                         </button>
                     </div>
@@ -122,20 +137,22 @@
                             <thead>
                                 <tr>
                                     <th style="width:2.5rem">
+                                        {* #1402: was `onclick="TickSelectAll();"` (dead since #1123 D1). *}
                                         <button type="button"
                                                 id="tickswitch"
                                                 name="tickswitch"
                                                 class="btn btn--secondary btn--sm btn--icon"
-                                                onclick="TickSelectAll();"
+                                                data-action="groupban-select-all"
                                                 title="Select all">+</button>
                                     </th>
                                     <th>Group</th>
                                 </tr>
                             </thead>
                         </table>
+                        {* #1402: was `onclick="TickSelectAll();return false;"`. *}
                         <a class="btn btn--ghost btn--sm"
                            href="#"
-                           onclick="TickSelectAll();return false;"
+                           data-action="groupban-select-all"
                            name="tickswitchlink"
                            id="tickswitchlink">Select all</a>
 
@@ -151,12 +168,16 @@
                         </div>
 
                         <div class="flex justify-end gap-2 mt-4">
+                            {* #1402: was `onclick="CheckGroupBan();"` which threw
+                               ReferenceError. The page-tail dispatcher in
+                               admin.bans.php picks up data-action="groupban-bulk-submit"
+                               and iterates ticked rows through the same chain. *}
                             <button type="button"
                                     class="btn btn--primary"
                                     id="gban"
                                     name="gban"
                                     data-testid="groupban-bulk-submit"
-                                    onclick="CheckGroupBan();">
+                                    data-action="groupban-bulk-submit">
                                 Add group ban
                             </button>
                         </div>

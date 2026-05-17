@@ -989,7 +989,21 @@ foreach ($res as $row) {
                 if ($crow['aid'] == $userbank->GetAid() || $userbank->HasAccess(WebPermission::Owner)) {
                     $cdata['editcomlink'] = CreateLinkR('<i class="fas fa-edit fa-lg"></i>', 'index.php?p=banlist&comment=' . $data['ban_id'] . '&ctype=B&cid=' . $crow['cid'] . $pagelink, 'Edit Comment');
                     if ($userbank->HasAccess(WebPermission::Owner)) {
-                        $cdata['delcomlink'] = "<a href=\"#\" class=\"tip\" title=\"Delete Comment\" target=\"_self\" onclick=\"RemoveComment(" . $crow['cid'] . ",'B'," . (isset($_GET["page"]) ? $page : -1) . ");\"><i class='fas fa-trash fa-lg'></i></a>";
+                        // #1402: `onclick="RemoveComment(...)"` was the v1.x bridge into
+                        // the deleted sourcebans.js helper — every click threw
+                        // `ReferenceError: RemoveComment is not defined`. We now emit
+                        // `data-action="comment-delete"` + the per-comment context;
+                        // the document-level dispatcher in web/scripts/comment-actions.js
+                        // handles the confirm + JSON API round-trip uniformly across all
+                        // four comment-thread surfaces (banlist / commslist / protests
+                        // / submissions). data-page lets the handler land the operator
+                        // back on the same paginated banlist view post-delete.
+                        $cdata['delcomlink'] = '<a href="#" class="tip" title="Delete Comment" target="_self"'
+                            . ' data-action="comment-delete"'
+                            . ' data-cid="' . (int) $crow['cid'] . '"'
+                            . ' data-ctype="B"'
+                            . ' data-page="' . (isset($_GET["page"]) ? (int) $page : -1) . '"'
+                            . '><i class="fas fa-trash fa-lg"></i></a>';
                     }
                 } else {
                     $cdata['editcomlink'] = "";
