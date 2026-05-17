@@ -36,7 +36,19 @@ if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermissio
 
 isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
 
-$errorScript = "";
+// #1402: per-field inline-error setters now emit vanilla DOM calls
+// instead of the MooTools `$('id').setStyle('display', 'block')` shape
+// that died with sourcebans.js at #1123 D1. Each error tuple becomes
+// `document.getElementById(id).textContent = msg; …style.display='block'`
+// in the page-tail `<script>` block. We JSON-encode both the id and
+// the message so a dynamic value (admin name, conflicting bid) can't
+// break out of the string literal — pre-fix `$admin['user']` was
+// concatenated verbatim, so an admin renamed `O'Reilly` would have
+// produced unparseable JS and the entire error display would silently
+// no-op (the broader page would still render, but the operator would
+// see no feedback at all about *why* the save failed).
+/** @var list<array{string, string}> */
+$errorFields = [];
 
 if (isset($_POST['name'])) {
     $_POST['steam'] = \SteamID\SteamID::toSteam2(trim((string) ($_POST['steam'] ?? '')));
@@ -47,19 +59,16 @@ if (isset($_POST['name'])) {
     // If they didn't type a steamid
     if (empty($_POST['steam'])) {
         $error++;
-        $errorScript .= "$('steam.msg').innerHTML = 'You must type a Steam ID or Community ID';";
-        $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+        $errorFields[] = ['steam.msg', 'You must type a Steam ID or Community ID'];
     } elseif (!\SteamID\SteamID::isValidID($_POST['steam'])) {
         $error++;
-        $errorScript .= "$('steam.msg').innerHTML = 'Please enter a valid Steam ID or Community ID';";
-        $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+        $errorFields[] = ['steam.msg', 'Please enter a valid Steam ID or Community ID'];
     }
 
     // Didn't type a custom reason
     if ($_POST['listReason'] == "other" && empty($_POST['txtReason'])) {
         $error++;
-        $errorScript .= "$('reason.msg').innerHTML = 'You must type a reason';";
-        $errorScript .= "$('reason.msg').setStyle('display', 'block');";
+        $errorFields[] = ['reason.msg', 'You must type a reason'];
     }
 
     // prune any old bans
@@ -80,16 +89,14 @@ if (isset($_POST['name'])) {
         if ($chk) {
             $error++;
             $existingBid = (int) $chk['bid'];
-            $errorScript .= "$('steam.msg').innerHTML = 'This SteamID is already blocked by block #" . $existingBid . "';";
-            $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+            $errorFields[] = ['steam.msg', 'This SteamID is already blocked by block #' . $existingBid];
         } else {
             // Check if player is immune
             $admchk = $userbank->GetAllAdmins();
             foreach ($admchk as $admin) {
                 if ($admin['authid'] == $_POST['steam'] && $userbank->GetProperty('srv_immunity') < $admin['srv_immunity']) {
                     $error++;
-                    $errorScript .= "$('steam.msg').innerHTML = 'Admin " . $admin['user'] . " is immune';";
-                    $errorScript .= "$('steam.msg').setStyle('display', 'block');";
+                    $errorFields[] = ['steam.msg', 'Admin ' . (string) $admin['user'] . ' is immune'];
                     break;
                 }
             }
@@ -152,13 +159,33 @@ if (!$res) {
     ban_name: (string) $res['name'],
     ban_authid: trim((string) $res['authid']),
 ));
+
+// #1402: page-tail JS — vanilla DOM, no MooTools.
+// Pre-fix this block was wrapped in MooTools' `window.addEvent('domready',
+// function(){...})` and used `$('id').innerHTML = …; $('id').setStyle(...)`
+// — every one of those calls failed with `ReferenceError: $ is not
+// defined` since MooTools / sourcebans.js died at #1123 D1. Now: the
+// page-tail script runs on DOMContentLoaded, uses
+// `document.getElementById(...)` to flip per-field error containers,
+// and `changeReason` reaches for the modern API too.
+$errorScriptParts = [];
+foreach ($errorFields as [$id, $msg]) {
+    $idJson  = json_encode($id);
+    $msgJson = json_encode($msg);
+    $errorScriptParts[] = "var el = document.getElementById($idJson); if (el) { el.textContent = $msgJson; el.style.display = 'block'; }";
+}
+$errorScript = implode("\n", $errorScriptParts);
 ?>
-<script type="text/javascript">window.addEvent('domready', function(){
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function () {
 <?=$errorScript?>
+
 });
-function changeReason(szListValue)
-{
-    $('dreason').style.display = (szListValue == "other" ? "block" : "none");
+function changeReason(szListValue) {
+    var dreason = document.getElementById('dreason');
+    if (dreason) {
+        dreason.style.display = (szListValue == "other") ? "block" : "none";
+    }
 }
 // `selectLengthTypeReason` is the post-mount hydrator that picks the
 // existing block's type / length / reason on the <select>s. Inlined as

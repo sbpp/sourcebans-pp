@@ -16,6 +16,14 @@
     emit a CSP-friendly inline script that calls `window.opener.icon()`
     via the modernised UploadHandler chrome.
 
+    #1402: the page-tail script below wires `window.opener.icon` so
+    the popup's success callback (UploadHandler.php line 187, calling
+    `window.opener.icon(<json filename>)`) actually has somewhere
+    to land — pre-fix the parent window had no `icon` function
+    defined, so the upload popup threw `TypeError: window.opener.icon
+    is not a function`, stayed open, and the chosen icon never
+    reached the form's hidden `#icon_hid` input.
+
     Initial checkbox state is server-rendered via the new `$enabled`
     template variable — no MooTools-era `$('enabled').checked = …`
     re-paint script.
@@ -139,4 +147,36 @@
         </div>
     </div>
 </form>
+
+{* #1402: wire `window.opener.icon` so admin.uploadicon.php's success
+   blob (emitted by Sbpp\Upload\UploadHandler::handle with
+   `callback: 'icon'`) can write the filename back into this form. The
+   pre-fix shape relied on a `window.icon` definition that lived in the
+   pre-v2.0.0 sourcebans.js bulk file (#1123 D1 deleted it), so the
+   popup's `window.opener.icon(<filename>)` call threw `TypeError:
+   window.opener.icon is not a function`, the popup stayed open, and
+   the chosen icon never propagated. The handler also patches the
+   visible "Current: …" preview chip so the operator sees what's been
+   picked. *}
+{literal}
+<script>
+(function () {
+    'use strict';
+
+    // @ts-expect-error - window.icon is the call target for admin.uploadicon.php's
+    // window.opener.<cb>() success blob; intentionally untyped on the global.
+    window.icon = function (filename) {
+        var hid = /** @type {HTMLInputElement|null} */ (document.getElementById('icon_hid'));
+        if (hid) hid.value = String(filename || '');
+        // Patch the current-icon chip so the operator gets visible feedback
+        // without a full form re-render. The chip is rendered conditionally
+        // server-side ({if $mod_icon}) so it may not exist on a first-upload;
+        // fall through quietly in that case (the hidden input is the
+        // load-bearing carrier).
+        var label = document.querySelector('[data-testid="editmod-current-icon"]');
+        if (label) label.textContent = String(filename || '');
+    };
+})();
+</script>
+{/literal}
 </div>
