@@ -128,16 +128,23 @@ if ($section === 'add-admin') {
     $servers                 = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_servers`")->resultset();
     $server_admin_group_list = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_srvgroups`")->resultset();
     $server_group_list       = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type != 3")->resultset();
-    $server_list             = [];
-    $serverscript            = "<script type=\"text/javascript\">";
+    // #1404 — the pre-fix loop also built a `$serverscript` `<script>`
+    // blob that emitted `LoadServerHost('sid', 'id', 'saSID');` per
+    // server. The `LoadServerHost` helper was deleted with
+    // `sourcebans.js` at #1123 D1, so every page load raised
+    // `ReferenceError: LoadServerHost is not defined` once per
+    // configured server with no visible effect (the `sa<SID>` <span>
+    // already renders bare `IP:port` text from `$server_list`).
+    // Hydration to per-server hostnames is the next step — tracked as
+    // a follow-up ticket; see AGENTS.md "Anti-patterns" for the
+    // matching `LoadServerHost` entry.
+    $server_list = [];
     foreach ($servers as $server) {
-        $serverscript .= "LoadServerHost('" . $server['sid'] . "', 'id', 'sa" . $server['sid'] . "');";
         $info['sid']  = $server['sid'];
         $info['ip']   = $server['ip'];
         $info['port'] = $server['port'];
         array_push($server_list, $info);
     }
-    $serverscript .= "</script>";
 
     \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminAdminsAddView(
         // See AdminAdminsListView for why we don't splat Perms::for().
@@ -146,7 +153,6 @@ if ($section === 'add-admin') {
         server_list: $server_list,
         server_admin_group_list: $server_admin_group_list,
         server_group_list: $server_group_list,
-        server_script: $serverscript,
     ));
     echo '</div></div><!-- /.admin-sidebar-content + /.admin-sidebar-shell — opened by new AdminTabs(...) above -->';
     return;

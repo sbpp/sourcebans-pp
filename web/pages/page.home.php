@@ -66,11 +66,16 @@ foreach ($rows as $row) {
     }
     $info['link_url'] = "window.location = '" . $info['search_link'] . "';";
 
-    // To print a name in the popup instead an empty string
-    if (empty($cleaned_name)) {
-        $cleaned_name = "<i>No nickname present</i>";
-    }
-    $info['popup']    = "ShowBox('Blocked player: " . $cleaned_name . "', '" . $cleaned_name . " tried to enter<br />' + document.getElementById('" . $info['server'] . "').title + '<br />at " . $info['date'] . "<br /><div align=middle><a href=" . $info['search_link'] . ">Click here for ban details.</a></div>', 'red', '', true);";
+    // #1404 — `$info['popup']` carried a `ShowBox(...)` `<script>`
+    // blob that v1.x stitched into each row's onclick. `ShowBox`
+    // was deleted with `sourcebans.js` at #1123 D1 and no v2.0+
+    // template ever consumed `{$player.popup}` (the dashboard
+    // reads `short_name` / `search_link` / `bid` / `sname` /
+    // `blocked_human` instead). The no-nickname placeholder
+    // (`<i>No nickname present</i>`) that fed the popup string
+    // went with it; the dashboard's `{if $p.short_name}…{else}no
+    // nickname{/if}` arm renders the empty-name fallback. Pinned
+    // by `DeadJsCallSitesTest`.
 
     $GLOBALS['server_qry'] .= "__sbppLoadServerHostProperty(" . (int) $row['sid'] . ", 'block_" . (int) $row['sid'] . "_$blcount', 'title');";
 
