@@ -26,6 +26,25 @@ import {
 } from '../../fixtures/db.ts';
 import { expectNoCriticalA11y } from '../../fixtures/axe.ts';
 
+// Every test in this file mutates the SAME `SB_CACHE/announcements.json`
+// file (the dev container has one panel root, one cache dir). With the
+// suite's default `fullyParallel: true`, sibling tests in this file run
+// across multiple workers and race against each other's `beforeEach`
+// seed + `afterEach` clear:
+//
+//   - Worker A's `renders the strip` test seeds the cache, navigates,
+//     and expects the strip to be visible.
+//   - Worker B's `strip is absent when the cache is cleared mid-test`
+//     test seeds, clears, and expects no strip.
+//
+// If B's clear lands between A's seed and A's page load, A renders an
+// empty strip and the test fails. File-scope `mode: 'serial'` pins all
+// tests in this file to one worker so the cache file only ever has one
+// owner at a time. Other specs continue to run in parallel — only this
+// file's intra-file ordering is constrained. Same shape `_screenshots.spec.ts`
+// uses for the per-route DB seed/restore loop.
+test.describe.configure({ mode: 'serial' });
+
 test.describe('dashboard announcement strip', () => {
     test.beforeEach(async () => {
         await seedAnnouncementsE2e([
