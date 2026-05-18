@@ -885,9 +885,9 @@ PHP page handlers that need to surface a toast (success / error
 confirmation) to the user — either as the only signal on a
 GET-fallback path or alongside a `PageDie()`-rendered chrome
 footer — emit through `Sbpp\View\Toast::emit($kind, $title, $body,
-?$redirect)`. Single source for the wire format the chrome's
-`flushPendingToasts` consumer in `web/themes/default/js/theme.js`
-reads on `DOMContentLoaded`.
+?$redirect, ?$duration_ms)`. Single source for the wire format the
+chrome's `flushPendingToasts` consumer in
+`web/themes/default/js/theme.js` reads on `DOMContentLoaded`.
 
 Lifted at #1403 from the inline `emitSubmitToast()` helper in
 `page.submit.php` after an audit found six PHP page handlers
@@ -903,11 +903,16 @@ user, leading to "I clicked Reset Password three times because
 nothing happened" double-submits that burned three validation
 tokens. See the matching Anti-patterns entry for the full repro.
 
-Wire format (`$kind` ∈ `'info' | 'success' | 'warn' | 'error'`):
+Wire format (`$kind` ∈ `'info' | 'success' | 'warn' | 'error'`;
+`redirect` and `duration_ms` are both optional — see "Redirect
+coalescing" and "Duration semantics" below for the contract on each):
 
 ```html
 <script type="application/json" class="sbpp-pending-toast">
 {"kind":"success","title":"Password reset","body":"...","redirect":"?p=login"}
+</script>
+<script type="application/json" class="sbpp-pending-toast">
+{"kind":"error","title":"Ban NOT Deleted","body":"...","duration_ms":0}
 </script>
 ```
 
@@ -968,7 +973,7 @@ JSON_THROW_ON_ERROR
   instead of silently emitting `false` (which `echo` would
   render as the empty string — invisible regression vector).
 
-Redirect coalescing (FIRST wins):
+Redirect coalescing (FIRST wins; suppressed by persistent toasts):
 
 `$redirect` is optional. When passed, `theme.js`'s
 `flushPendingToasts` honours it AFTER the toasts paint, with a
@@ -988,11 +993,99 @@ time should NOT carry a redirect (the user is leaving the page
 anyway, the post-redirect surface can re-surface the same toast
 if persistent).
 
+Persistent + redirect mutual exclusion (#1409): when ANY toast in
+the drained queue carries `duration_ms: 0` (persistent), the
+chrome SUPPRESSES the redirect setTimeout entirely — the
+auto-navigation would otherwise tear down the toast ~1500ms after
+paint, defeating the whole point of the persistent semantic
+(operator never gets to read or dismiss it). The call-site
+contract is to pass `null` for `$redirect` when emitting
+`duration_ms: 0`; the chrome's whole-drain inhibit is
+defence-in-depth so a future caller forgetting that rule
+doesn't silently regress to broken UX. Both halves of the
+contract ship together (the static gate in
+`ToastEmitRegressionTest::testNotStarBranchesPassPersistentDurationMs`
+asserts the call-site half; the chrome-side inhibit is exercised
+end-to-end by `toast-persistent-duration.spec.ts`); neither half
+is sufficient on its own. Whole-drain (not per-block) inhibit:
+if a mixed queue carries persistent + non-persistent toasts, the
+non-persistent toasts still paint with their auto-dismiss
+timers, but the redirect is gated on the user's explicit X-click
+on the persistent toast. (No in-tree caller emits a mixed queue
+today; the contract is conservative for future surfaces.)
+
+Duration semantics (#1409):
+
+`$duration_ms` is optional and OMITTED from the wire format when
+the caller didn't pass an override — the chrome's `showToast`
+falls through to its `SHOWTOAST_DEFAULT_DURATION` constant
+(`4000` in `theme.js`). Three values are meaningful:
+
+- `null` (default) — omit the field. The toast auto-dismisses
+  after `SHOWTOAST_DEFAULT_DURATION` (~4000ms). The right
+  choice for every routine info / success / warn confirmation.
+- `0` — persistent. The chrome does NOT schedule an auto-dismiss
+  timer at all; the only way the toast disappears is the user
+  clicking the X button. Reserved for severe-error
+  "this destructive operation FAILED and the operator must
+  acknowledge before moving on" branches. The five canonical
+  call sites are the NOT-* (capital NOT) branches in
+  `page.banlist.php` / `page.commslist.php`:
+  - `page.banlist.php` — "Player NOT Unbanned", "Ban NOT Deleted"
+  - `page.commslist.php` — "Player NOT UnGagged" (ungag failure),
+    "Player NOT UnGagged" (unmute failure), "Ban NOT Deleted"
+- `> 0` — explicit override in milliseconds. Currently no in-tree
+  caller uses this; the contract exists so a future surface
+  (e.g. a long-form Markdown-rendered toast) can lengthen the
+  read window without resorting to persistent display.
+
+Negative values are programmer error — the helper throws
+`\InvalidArgumentException` rather than silently coercing.
+The "Fail closed" instinct applies: a negative arrival means
+the caller's arithmetic is broken; coercion would mask the
+bug AND silently flip the toast to persistent (the
+worst-of-both outcome).
+
+`SHOWTOAST_DEFAULT_DURATION` lives in `theme.js`'s TOASTS
+block — single source for the chrome-side default. Don't
+mirror the literal `4000` into other tests or call sites;
+reference the PHP-side `null` default and trust the chrome.
+The 4000ms default is itself a constant the project doesn't
+tune lightly — see the "Passing duration_ms = 0 for routine
+info / success toasts" Anti-patterns entry for the
+counter-direction (don't reach for `0` to dodge the timer
+on casual confirmations).
+
+The consumer-side gate in `flushPendingToasts` is
+`typeof data.duration_ms === 'number'`. A hostile / malformed
+payload sending a string or boolean must NOT pass through
+unchecked — `showToast` would then schedule
+`setTimeout(..., "0")` (Number-coerced to 0, auto-dismisses
+immediately) or `setTimeout(..., true)` (coerced to 1ms).
+The typeof gate keeps the chrome's behaviour deterministic
+regardless of upstream noise; the encoder side already
+enforces an `int|null` PHP type so the only way a non-number
+lands on the wire is a hand-rolled malformed payload.
+
 PHP-side call site:
 
 ```php
 \Sbpp\View\Toast::emit('success', 'Password reset', 'Email sent.', '?p=login');
 PageDie();
+
+// Severe-error: persistent toast (`duration_ms: 0`) so the
+// operator has to acknowledge before it disappears. `$redirect`
+// MUST be `null` — persistent + redirect are mutually exclusive
+// per "Redirect coalescing" above. The page handler continues
+// rendering the underlying surface (no PageDie() here) so the
+// operator stays on a valid page while reading the toast.
+\Sbpp\View\Toast::emit(
+    'error',
+    'Ban NOT Deleted',
+    "The ban for '" . $name . "' had an error while being removed.",
+    null,
+    0,
+);
 ```
 
 Always FQN — no `use Sbpp\View\Toast;` shim per call site, no
@@ -1020,6 +1113,10 @@ Regression guards:
   template-side `<script>ShowBox(...)` regression is sister
   #1402's surface), wire-format contract, JSON-escape contract,
   UTF-8-substitute contract, FIRST-wins-redirect contract,
+  `duration_ms` contract (omitted by default, included when set,
+  rejects negatives, JSON-escape guarantees preserved when
+  present, the 5 NOT-* call sites in `page.banlist.php` /
+  `page.commslist.php` still pass `duration_ms: 0`),
   "every audited page still calls Toast::emit" call-site
   contract.
 - `web/tests/e2e/specs/flows/lostpassword-toast.spec.ts` (the
@@ -1027,7 +1124,11 @@ Regression guards:
   error branches end-to-end, asserts the password-reset email
   lands in mailpit AND the chrome footer renders AND the toast
   paints), `protest-toast.spec.ts`, `banlist-getfallback-toast.spec.ts`,
-  `commslist-getfallback-toast.spec.ts`, `admin-edit-comms-toast.spec.ts`.
+  `commslist-getfallback-toast.spec.ts`, `admin-edit-comms-toast.spec.ts`,
+  `toast-persistent-duration.spec.ts` (#1409 — drives a NOT-*
+  branch's wire-format payload through the chrome and asserts
+  the toast is STILL visible past the default ~4000ms window;
+  the X-button dismiss is the only way out).
 
 ### Loading state on drawers + lazy panes (`.skel` shimmer)
 
@@ -2369,6 +2470,102 @@ contacting every contributor individually.
   `ToastEmitRegressionTest::testToastEmitWireFormatStaysStable`
   explicitly asserts the wire-format block carries NO
   `data-testid` attribute.
+- Passing `duration_ms = 0` to `\Sbpp\View\Toast::emit` for routine
+  info / success toasts → the persistent flag is for severe-error
+  "this destructive operation FAILED and the operator MUST
+  acknowledge before moving on" branches (the 5 NOT-* sites in
+  `page.banlist.php` / `page.commslist.php` are the canonical
+  reference shape). Using it for casual confirmations
+  ("Password reset email sent", "Ban added", "Settings saved",
+  etc.) creates UI clutter — the user has to click the X button
+  on every toast — and trains operators to dismiss reflexively
+  without reading, which DEFEATS the purpose of the persistent
+  flag the next time it actually matters (operator hits
+  "Ban NOT Deleted", reflex-dismisses without reading, and the
+  audit-log search five minutes later for "what just happened?"
+  comes up empty because the read-the-message-first contract
+  was burned through routine overuse). The contract:
+  - **Default** (no 5th arg): chrome's `SHOWTOAST_DEFAULT_DURATION`
+    (~4000ms). The right choice for every routine path.
+  - `0`: severe-error branches ONLY. The five NOT-* sites today
+    are the entire set; adding a sixth requires the same
+    "destructive operation failed mid-flight, audit log already
+    committed, operator needs the *why* before the toast
+    disappears" justification.
+  - `> 0`: explicit override (no in-tree caller today).
+  Negative values throw `\InvalidArgumentException` — the
+  "Fail closed" pattern AGENTS.md applies elsewhere. Don't
+  silently coerce; surface the programmer error.
+  Pinned by `ToastEmitRegressionTest::testToastEmitOmitsDurationMsByDefault`
+  / `testToastEmitIncludesDurationMsWhenSet`
+  / `testToastEmitRejectsNegativeDuration`
+  / `testNotStarBranchesPassPersistentDurationMs` plus the
+  `toast-persistent-duration.spec.ts` E2E that asserts the
+  NOT-* toast survives past `SHOWTOAST_DEFAULT_DURATION`.
+- Mirroring the literal `4000` into a new caller or test
+  ("the default is 4 seconds, let me hard-code it") → the
+  default lives in `theme.js`'s `SHOWTOAST_DEFAULT_DURATION`
+  constant — single source. Reference it as `null` on the
+  PHP side (`Toast::emit(...)` with no 5th arg) and trust the
+  chrome to fill in the value. The 4000ms number is one
+  reduce-this-to-3000ms tweak away from desynchronising every
+  hard-coded mirror; the chrome's constant + omission-on-wire
+  is what keeps the contract single-source. The matching
+  consumer-side gate
+  (`if (typeof data.duration_ms === 'number') opts.durationMs = data.duration_ms;`)
+  is what makes "field absent → use default" work — a future
+  refactor that always serialises `duration_ms` (even when
+  null) would silently disable the default fall-through path
+  on every install whose chrome is still on the typeof-number
+  gate.
+- Reading `data.duration_ms` from a `<script class="sbpp-pending-toast">`
+  block without the `typeof data.duration_ms === 'number'`
+  gate (e.g. truthy check `if (data.duration_ms)` or
+  unconditional assignment `opts.durationMs = data.duration_ms`)
+  → a hostile / malformed payload sending a string or boolean
+  must NOT pass through unchecked. `showToast` would then
+  schedule `setTimeout(..., "0")` (Number-coerced to 0,
+  auto-dismisses immediately) or `setTimeout(..., true)`
+  (coerced to 1ms). The typeof gate keeps the chrome's
+  behaviour deterministic regardless of upstream noise. The
+  encoder side already enforces an `int|null` PHP type, but
+  the chrome can't trust the server in this defence-in-depth
+  sense; the gate is the contract.
+- `setTimeout(() => el.remove(), 0)` instead of skipping the
+  timer entirely when `durationMs === 0` → `setTimeout(fn, 0)`
+  schedules the callback for the NEXT tick of the event loop,
+  not "never". The persistent toast would auto-dismiss after
+  ~4ms (the browser-clamped minimum), which is the OPPOSITE
+  of what `0` means in this contract. The chrome-side guard
+  is `if (durationMs > 0) setTimeout(...)` — `=== undefined`
+  arms have already been resolved to `SHOWTOAST_DEFAULT_DURATION`
+  by the time the guard runs, so the only path that hits
+  `setTimeout` is the explicit positive case.
+- Pairing `duration_ms: 0` with a non-null `$redirect` on a
+  `\Sbpp\View\Toast::emit(...)` call → persistent + redirect
+  are mutually exclusive (#1409). The chrome's
+  `flushPendingToasts` honours the redirect ~1500ms after
+  paint; that auto-navigation tears down the persistent toast
+  before the operator can read or dismiss it, defeating the
+  whole "needs acknowledgement" semantic the persistent flag
+  exists for. The call-site contract is to pass `null` for
+  `$redirect` when emitting `duration_ms: 0`; the page
+  handler's normal "render the body after the foreach loop"
+  flow keeps the operator on a valid surface (no `PageDie()`
+  before the toast persists). The chrome ALSO carries a
+  defence-in-depth inhibit (`flushPendingToasts` skips the
+  redirect setTimeout entirely if any drained block had
+  `duration_ms: 0`) so a future caller forgetting the rule
+  doesn't silently regress, but the call-site half is the
+  primary contract — relying on the chrome inhibit alone
+  leaves the wire payload carrying a redirect URL the chrome
+  silently throws away, which a code reader would flag as a
+  bug (and rightly so). Pinned by
+  `ToastEmitRegressionTest::testNotStarBranchesPassPersistentDurationMs`
+  (strict regex requires the 4th arg to be the literal
+  `null`) and exercised end-to-end by
+  `web/tests/e2e/specs/flows/toast-persistent-duration.spec.ts`
+  (the toast outlasts SHOWTOAST_DEFAULT_DURATION).
 - `onclick="if (typeof <Helper> === 'function') <Helper>(...)"`
   legacy-helper presence guards in templates (the v1.x sourcebans.js
   defensiveness pattern that survived the #1123 D1 deletion of the
@@ -3054,7 +3251,7 @@ contacting every contributor individually.
 | Add visible row actions to a table-rendered admin list (Edit / Unmute / Remove buttons + responsive mobile-card mirror) | `web/themes/default/page_comms.tpl` (#1207 ADM-5) is the canonical reference: `<button class="btn btn--secondary btn--sm">` / `<a class="btn btn--ghost btn--sm">` inside a `.row-actions` cell, plus `.ban-card__actions` row of identical-data-action buttons in the mobile card. Wire destructive / state-changing buttons via `data-action="…"` + `data-bid` + `data-fallback-href`; the inline page-tail JS calls `sb.api.call(Actions.PascalName)` and falls back to the GET URL if the JSON dispatcher is absent. The public banlist (`web/themes/default/page_bans.tpl`) follows the same shape — same chrome (Lucide icon + visible text label inside `.btn--ghost` / `.btn--secondary btn--sm`), same `.ban-card__actions` mobile row, same `data-action` / `data-fallback-href` wiring (`bans-unban` / `bans-delete`). The Remove affordance points at the legacy GET handler (`?p=banlist&a=delete&id=…&key=…` at the top of `page.banlist.php`) because no JSON `bans.delete` action exists yet — the inline JS `confirm()`-prompts then navigates, mirroring commslist's flow without adding a new handler / snapshot / permission-matrix entry. |
 | Wire a comment-delete trash icon on any of the four comment-rendering surfaces (banlist, commslist, admin.bans protests, admin.bans submissions) | `web/scripts/comment-actions.js` (#1402). Single document-level dispatcher loaded from `core/footer.tpl` (`<script src="./scripts/comment-actions.js" defer>`) that picks up every `[data-action="comment-delete"]` click, `window.confirm`s the destructive intent, then `sb.api.call(Actions.BansRemoveComment, { cid, ctype, page })`. The four call sites emit the trigger with `data-cid="<int>"` + `data-ctype="<B|C|S|P>"` + `data-page="<int>"` (the page number for client-side row-hide / paginator-aware redirect; `data-page="-1"` is the sentinel for unpaginated moderation queues). The `ctype` letter matches `:prefix_comments.type` (B=ban, C=comm-block, S=submission, P=protest); `api_bans_remove_comment`'s `ctype` arm consumes all four. Don't duplicate the dispatcher inline per page — the single mount point is the contract, otherwise a future bug-fix has to land in four places. |
 | Add a confirm + reason modal for an irreversible row-level action (unban, lift comm block, delete admin, delete mod, …) | `web/themes/default/page_bans.tpl` (`#bans-unban-dialog`, `Actions.BansUnban`) and `web/themes/default/page_comms.tpl` (`#comms-unblock-dialog`, `Actions.CommsUnblock`) are the canonical reference (#1301), with `web/themes/default/page_admin_admins_list.tpl` (`#admins-delete-dialog`, `Actions.AdminsRemove`, #1352) and `web/themes/default/page_admin_mods_list.tpl` (`#mod-delete-dialog`, `Actions.ModsRemove`, #1397) as the third and fourth references for the optional-reason variant. Shape: a `<dialog hidden>` with a `<form method="dialog">` carrying a `<textarea aria-required="true">` (or `aria-required="false"` for the optional-reason variant — see admins-delete / mod-delete) (NOT the native `required` — that lets the browser block the form submit before our handler runs, swallowing the inline-error UX), a Cancel button, and a Confirm submit button. The page-tail JS opens the dialog via `showModal()` on `[data-action]` clicks, validates the trimmed reason on submit (load-bearing gate is server-side), forwards `ureason` to the JSON action, and on success flips the row in place via the same `flipRowToUnbanned`/`flipRowToUnmuted` helper the legacy single-click flow used (or removes the row outright + decrements the count badge for the admins-delete / mod-delete variants where there's no "now-unbanned" state to render). The legacy GET fallback (`?p=banlist&a=unban&id=…&key=…&ureason=…` / `?p=commslist&a=ungag…&ureason=…`) is the no-JS / hand-edited-URL path; both halves now reject empty `ureason` server-side so the audit log carries the *why*. The admins-delete and mod-delete variants have no legacy GET handler — `RemoveAdmin()` / `RemoveMod()` always went through the JSON dispatcher pre-#1123 D1 — so their `data-fallback-href` lands the operator back at the list page as a graceful no-op when the JSON dispatcher is missing entirely (third-party theme stripping `api.js`); the audit-log "Reason: …" suffix is only emitted when `ureason` is non-empty (vs always-emitted on the bans / comms variants where reason is required). **Do not** put `onclick="event.stopPropagation()"` on the trigger button — `document.addEventListener('click')` is how the dialog opener picks the click up, and stopPropagation would silently swallow it (the action button isn't inside any `[data-drawer-href]` ancestor anyway, so the defensiveness was a copy-paste from the row-name anchor that doesn't apply here). The submit button MUST flip through `setBusy(submitBtn, true)` BEFORE `sb.api.call(...)` leaves the page and clear via `setBusy(submitBtn, false)` on every non-navigating response branch — see "Loading state on action buttons" in Conventions for the contract, the inline-script local wrapper shape, and the regression guard. |
-| Emit a toast from a server-side branch (lostpassword reset success, banlist GET-fallback unban result, admin.edit.* not-found guard, …) | `\Sbpp\View\Toast::emit($kind, $title, $body, ?$redirect)` (`web/includes/View/Toast.php`). Stashes the payload in a `<script type="application/json" class="sbpp-pending-toast">…</script>` block that `theme.js`'s `flushPendingToasts` picks up on `DOMContentLoaded`. Always FQN at call sites (no `use Sbpp\View\Toast;` shim). The chrome JS renders the body through `escapeHtml`; the PHP JSON encoder uses `JSON_HEX_TAG \| JSON_HEX_AMP \| JSON_HEX_APOS \| JSON_HEX_QUOT \| JSON_INVALID_UTF8_SUBSTITUTE \| JSON_THROW_ON_ERROR` so a `</script>` in body cannot break out AND malformed UTF-8 in player names (the #1108 / #765 Latin-1-on-utf8 shape) substitutes to U+FFFD instead of throwing. Multi-toast safe: emit calls stack cleanly; the first non-empty `$redirect` wins (chrome navigates ~1500ms after the toast paints so the user can read it). Pair with `PageDie()` (or `exit`) whenever the handler's "render the page body" path is no longer meaningful — pre-#1403 the legacy `<script>ShowBox(...)</script>` shape carried its own `window.location` and beat the page render to the user; the lifted helper relies on the explicit redirect + the 1500ms settle. See "Server-side toast emission" in Conventions for the full contract. Pinned by `web/tests/integration/ToastEmitRegressionTest.php` (static grep + wire-format + JSON-escape + UTF-8-substitute + FIRST-wins-redirect + call-site contract) and the five marquee E2E specs (`lostpassword-toast.spec.ts`, `protest-toast.spec.ts`, `banlist-getfallback-toast.spec.ts`, `commslist-getfallback-toast.spec.ts`, `admin-edit-comms-toast.spec.ts`). The lostpassword spec seeds the dev stack's mailpit and asserts the password-reset email lands at the right address — the marquee user-reported regression from the audit. |
+| Emit a toast from a server-side branch (lostpassword reset success, banlist GET-fallback unban result, admin.edit.* not-found guard, …) | `\Sbpp\View\Toast::emit($kind, $title, $body, ?$redirect, ?$duration_ms)` (`web/includes/View/Toast.php`). Stashes the payload in a `<script type="application/json" class="sbpp-pending-toast">…</script>` block that `theme.js`'s `flushPendingToasts` picks up on `DOMContentLoaded`. Always FQN at call sites (no `use Sbpp\View\Toast;` shim). The chrome JS renders the body through `escapeHtml`; the PHP JSON encoder uses `JSON_HEX_TAG \| JSON_HEX_AMP \| JSON_HEX_APOS \| JSON_HEX_QUOT \| JSON_INVALID_UTF8_SUBSTITUTE \| JSON_THROW_ON_ERROR` so a `</script>` in body cannot break out AND malformed UTF-8 in player names (the #1108 / #765 Latin-1-on-utf8 shape) substitutes to U+FFFD instead of throwing. Multi-toast safe: emit calls stack cleanly; the first non-empty `$redirect` wins (chrome navigates ~1500ms after the toast paints so the user can read it). The optional 5th arg `$duration_ms` (#1409) overrides the chrome's `SHOWTOAST_DEFAULT_DURATION` (~4000ms) — `null` (default) keeps the chrome timing, `0` makes the toast persistent (no auto-dismiss; user must click the X button), `> 0` is an explicit ms override. The 5 NOT-* destructive-action-failed branches in `page.banlist.php` / `page.commslist.php` ("Player NOT Unbanned", "Ban NOT Deleted", "Player NOT UnGagged" × 2, "Ban NOT Deleted") pass `0` so severe-error confirmations don't auto-dismiss before the operator finishes reading. Negative `$duration_ms` throws `\InvalidArgumentException` (Fail closed; see "Duration semantics" in Conventions). Persistent + redirect are mutually exclusive (#1409): pass `null` for `$redirect` when emitting `duration_ms: 0` — the chrome's auto-redirect would otherwise navigate ~1500ms after paint, tearing down the persistent toast before the operator can acknowledge it. The chrome ALSO carries a whole-drain inhibit (`flushPendingToasts` skips the redirect setTimeout entirely when any block had `duration_ms: 0`) as defence-in-depth, but the call-site half (`$redirect=null`) is the primary contract pinned by `testNotStarBranchesPassPersistentDurationMs`'s strict regex. Pair with `PageDie()` (or `exit`) whenever the handler's "render the page body" path is no longer meaningful — pre-#1403 the legacy `<script>ShowBox(...)</script>` shape carried its own `window.location` and beat the page render to the user; the lifted helper relies on the explicit redirect + the 1500ms settle. See "Server-side toast emission" in Conventions for the full contract. Pinned by `web/tests/integration/ToastEmitRegressionTest.php` (static grep + wire-format + JSON-escape + UTF-8-substitute + FIRST-wins-redirect + `duration_ms` omitted/set/negative/escape contracts + the 5 NOT-* call sites pass `duration_ms: 0` AND `$redirect=null` + call-site contract) and the six marquee E2E specs (`lostpassword-toast.spec.ts`, `protest-toast.spec.ts`, `banlist-getfallback-toast.spec.ts`, `commslist-getfallback-toast.spec.ts`, `admin-edit-comms-toast.spec.ts`, `toast-persistent-duration.spec.ts`). The lostpassword spec seeds the dev stack's mailpit and asserts the password-reset email lands at the right address — the marquee user-reported regression from the audit. The persistent-duration spec (#1409) drives a NOT-* branch payload and asserts the toast is STILL visible past the default ~4000ms window. |
 | Add a loading indicator to an action button that fires `sb.api.call(...)` without a page refresh | `window.SBPP.setBusy(btn, busy)` (`web/themes/default/js/theme.js`) writes the `data-loading="true"` + `aria-busy="true"` + `disabled` triple atomically; the CSS spinner lives in `web/themes/default/css/theme.css` under `.btn[data-loading="true"]` + the `sbpp-btn-spin` keyframe. Inline page-tail scripts inside `.tpl` files define a local `setBusy(btn, busy)` wrapper that delegates to `window.SBPP.setBusy` when present and falls back to `btn.disabled = busy` so third-party themes that strip `theme.js` still gate against double-clicks. Canonical reference shapes: the three confirm-dialog flows (`page_comms.tpl` / `page_bans.tpl` / `page_admin_admins_list.tpl`), the form-submit flows (`page_admin_groups_list.tpl` / `page_admin_groups_add.tpl` / `page_admin_bans_add.tpl` / `page_admin_bans_email.tpl` / `page_youraccount.tpl` / `page_lostpassword.tpl` / `page_login.tpl`), the row-action flows (`page_admin_servers_list.tpl` / `page_admin_bans_protests.tpl` / `page_admin_bans_protests_archiv.tpl` / `page_admin_bans_submissions.tpl` / `page_admin_bans_submissions_archiv.tpl`), and the drawer Notes paths (`theme.js`'s `submitNoteForm` / `deleteNote`). Comment edit on the banlist (`web/scripts/banlist.js`) carries the same pattern for the `sb.api.call(BansEditComment)` round-trip. Regression guards: `web/tests/e2e/specs/flows/action-loading-indicator.spec.ts` (stalls `Actions.CommsUnblock` via `page.route`, asserts the busy-attribute triple on the submit button while in flight, releases the route, and confirms the row flips in-place; the second test counts requests to prove the disabled gate blocks a double-click) **plus** `web/tests/e2e/specs/flows/loading-animations.spec.ts` (#1362 — samples `getComputedStyle(::after).transform` at multiple frame boundaries under both `reducedMotion: 'reduce'` AND `'no-preference'`, asserts the matrix values change across samples; catches the v2.0 RC1 regression where the global `prefers-reduced-motion: reduce` reset froze the spinner under reduced motion). |
 | Add a loading indicator to the player drawer or one of its lazy panes (so the chrome doesn't read as blank while the JSON action is in flight) | `renderDrawerLoading()` (header skeleton for the in-flight `bans.detail`) and `renderPaneSkeleton()` (placeholder for History / Comms / Notes activation) in `web/themes/default/js/theme.js`. Both lean on the `.skel` CSS rule in `theme.css` (linear-gradient + `shimmer` keyframe + dark-mode override + the `@media (prefers-reduced-motion: reduce)` per-rule override that keeps the shimmer sliding even under reduced motion, #1362). The header skeleton carries `[data-testid="drawer-loading"]` + `aria-busy="true"` + per-block `[data-skeleton]` (terminal markers under `#drawer-root[data-loading="true"]`); the lazy-pane skeleton carries `[data-pane-empty]` + `aria-busy="true"` and deliberately omits `[data-skeleton]` because the panel parent's `hidden` attribute doesn't compose into `[data-skeleton]:not([hidden])` and a nested marker would stall every page-load waiter that runs after the drawer opens. Class name is `.skel` (singular) — NOT `.skeleton`; the pre-fix `class="skeleton"` typo had no matching rule and the shimmer rows rendered as transparent zero-background divs (the user-visible "drawer is blank" regression). Regression guards: `web/tests/e2e/specs/flows/drawer-loading-indicator.spec.ts` (stalls `bans.detail` then `bans.player_history` via `page.route`, asserts the skeleton header is visible + the `.skel` block paints a `linear-gradient` background via `getComputedStyle(el).backgroundImage`, releases the routes, and confirms the drawer flips to `renderDrawerBody` / the pane fills with content) **plus** `web/tests/e2e/specs/flows/loading-animations.spec.ts` (#1362 — samples `getComputedStyle(.skel).backgroundPositionX` at multiple frame boundaries under both `reducedMotion: 'reduce'` AND `'no-preference'`, asserts the values change across samples; catches the v2.0 RC1 regression where the global reset froze the shimmer alongside the spinner). |
 | Surface unban-reason / removed-by inline on a public-list row (admin-lifted bans / comms — banlist-ureason or commslist-ureason inline) | `web/themes/default/page_bans.tpl` + `web/themes/default/page_comms.tpl` (#1315). Reason cell on the desktop table emits a `<div class="text-xs text-faint mt-1" data-testid="ban-unban-meta">` (or `comm-unban-meta` for comms) with "Unbanned by `<admin>`: `<reason>`" when `$ban.state == 'unbanned'` (or `$comm.state == 'unmuted'`); mobile cards mirror with the `-mobile` testid suffix. Always gated on `!$hideadminname` so anonymous viewers under a hidden-admins config don't get the admin name leaked. The `ureason` / `removedby` row fields come from the page handler's existing data path (`page.banlist.php` lines 635-643, `page.commslist.php` lines 626-635) — read-only render, no write-side overlap with #1301 / #1323's unban-reason flow. The commslist surface is higher-priority than the banlist (no drawer fallback on `<tr data-testid="comm-row">`); banlist users have the drawer as the canonical detail view. |

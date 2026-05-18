@@ -145,11 +145,33 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             $ucount++;
         } else {
             if (!isset($_GET['bulk'])) {
+                // #1409: persistent toast (`duration_ms: 0`) on the
+                // severe-error "destructive action FAILED" branch.
+                // The unban operation didn't complete; the operator
+                // needs to read this before it auto-dismisses. v1.x
+                // shipped the same semantic via
+                // `ShowBox(..., sticky=true)`; the #1403 mechanical
+                // lift dropped it for fidelity and this restores it.
+                //
+                // The 4th `$redirect` argument is `null` (not the
+                // sibling success branch's `"index.php?p=banlist"`)
+                // because persistent + redirect are mutually
+                // exclusive: the chrome's `flushPendingToasts` would
+                // otherwise navigate ~1500ms after paint, tearing
+                // the toast down before the operator can read or
+                // dismiss it — exactly the regression #1409 closes.
+                // The page handler continues rendering the banlist
+                // body after this branch (no `PageDie()` here), so
+                // the operator stays on a valid surface; the toast
+                // persists until the user clicks the X button. See
+                // AGENTS.md "Server-side toast emission" →
+                // "Duration semantics" for the full contract.
                 \Sbpp\View\Toast::emit(
                     'error',
                     'Player NOT Unbanned',
                     'There was an error unbanning ' . $row['name'],
-                    "index.php?p=banlist$pagelink",
+                    null,
+                    0,
                 );
             }
             $fail++;
@@ -233,11 +255,22 @@ if (isset($_GET['a']) && $_GET['a'] == "unban" && isset($_GET['id'])) {
             $dcount++;
         } else {
             if (!isset($_GET['bulk'])) {
+                // #1409: persistent toast (`duration_ms: 0`) — same
+                // contract as the sibling "Player NOT Unbanned"
+                // branch above. The DELETE didn't complete; the
+                // operator needs to see this and acknowledge before
+                // it disappears. Redirect is intentionally `null` —
+                // see the sibling branch above for the rationale
+                // (chrome's auto-redirect would tear down the toast
+                // before the user can read it). AGENTS.md
+                // "Server-side toast emission" → "Duration
+                // semantics" carries the full contract.
                 \Sbpp\View\Toast::emit(
                     'error',
                     'Ban NOT Deleted',
                     "The ban for '" . $steam['name'] . "' had an error while being removed.",
-                    "index.php?p=banlist$pagelink",
+                    null,
+                    0,
                 );
             }
             $fail++;

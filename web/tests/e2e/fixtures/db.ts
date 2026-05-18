@@ -37,6 +37,8 @@ const SEED_LOSTPASSWORD_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-lostpassword-e2e.php';
 const SET_SETTING_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/set-setting-e2e.php';
+const ORPHAN_BAN_AID_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/orphan-ban-aid-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -336,6 +338,61 @@ export async function setSettingE2e(setting: string, value: string): Promise<voi
             }
             reject(new Error(
                 `set-setting-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+}
+
+/**
+ * Orphan a `:prefix_bans` row by UPDATE-ing its `aid` to a value that
+ * doesn't exist in `:prefix_admins`. Triggers the `page.banlist.php`
+ * capital-NOT branch (`'Player NOT Unbanned'`, L159 post-#1409) which
+ * fires when the admin INNER JOIN at L72 returns empty even though the
+ * bans row itself still exists — the documented "destructive action
+ * FAILED" branch the #1409 follow-up converts to a persistent toast
+ * (`duration_ms: 0`).
+ *
+ * Caller responsibility: pass a `bid` returned from `seedBanViaApi` so
+ * the underlying bans row has the right shape for the L83 SELECT to
+ * resolve; `new_aid` defaults to 99999 (well outside any realistic
+ * admin-id sequence — matches the `NONEXISTENT_BID` convention in
+ * `banlist-getfallback-toast.spec.ts`). The shim refuses to overwrite
+ * with an aid that DOES exist in `:prefix_admins` so a future change
+ * to the seed admin layout doesn't silently degrade the scenario.
+ *
+ * Used by `toast-persistent-duration.spec.ts`. Mirrors the shape of
+ * `setSettingE2e`'s shell-out + stdin-JSON pattern.
+ */
+export async function orphanBanAidE2e(bid: number, newAid = 99999): Promise<void> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [ORPHAN_BAN_AID_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', ORPHAN_BAN_AID_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify({ bid, new_aid: newAid }));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `orphan-ban-aid-e2e.php exited ${code}\n`
                 + `stdout:\n${stdout}\nstderr:\n${stderr}`,
             ));
         });

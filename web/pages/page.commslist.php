@@ -112,11 +112,26 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         );
         Log::add(LogType::Message, "Player UnGagged", "$row[name] ($row[authid]) has been ungagged. Reason: $unbanReason");
     } else {
+        // #1409: persistent toast (`duration_ms: 0`) on the severe-
+        // error "destructive action FAILED" branch. The ungag SQL
+        // didn't complete; the operator needs to read this before
+        // it disappears. Mirrors the sibling banlist NOT-* branches.
+        //
+        // Redirect is intentionally `null`: persistent + redirect
+        // are mutually exclusive (the chrome's `flushPendingToasts`
+        // would otherwise navigate ~1500ms after paint, tearing the
+        // toast down before the operator can read or dismiss it).
+        // The page handler continues rendering the commslist body
+        // after this branch (no `PageDie()`), so the operator stays
+        // on a valid surface; the toast persists until the user
+        // clicks the X button. See AGENTS.md "Server-side toast
+        // emission" → "Duration semantics" for the full contract.
         \Sbpp\View\Toast::emit(
             'error',
             'Player NOT UnGagged',
             'There was an error ungagging ' . $row['name'],
-            "index.php?p=commslist$pagelink",
+            null,
+            0,
         );
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "unmute" && isset($_GET['id'])) {
@@ -200,11 +215,19 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         // the original "?p=commsist" redirect typo (now corrected to
         // "?p=commslist" since landing the user on a 404 made the
         // toast pointless) are separate UX bugs worth a follow-up.
+        //
+        // #1409: persistent toast (`duration_ms: 0`) — same severe-
+        // error "destructive action FAILED" semantic as the sibling
+        // ungag NOT-* branch above and the banlist NOT-* branches.
+        // Redirect is intentionally `null` — see the ungag branch
+        // above for the rationale. AGENTS.md "Server-side toast
+        // emission" → "Duration semantics" carries the contract.
         \Sbpp\View\Toast::emit(
             'error',
             'Player NOT UnGagged',
             'There was an error unmuted ' . $row['name'],
-            "index.php?p=commslist$pagelink",
+            null,
+            0,
         );
     }
 } else if (isset($_GET['a']) && $_GET['a'] == "delete") {
@@ -265,11 +288,20 @@ if (isset($_GET['a']) && $_GET['a'] == "ungag" && isset($_GET['id'])) {
         );
         Log::add(LogType::Message, "Block Deleted", "Block $steam[name] ($steam[authid]) has been deleted.");
     } else {
+        // #1409: persistent toast (`duration_ms: 0`) — same severe-
+        // error "destructive action FAILED" semantic as the sibling
+        // banlist "Ban NOT Deleted" branch. The DELETE didn't
+        // complete; the operator needs to see this and acknowledge
+        // before it disappears. Redirect is intentionally `null` —
+        // see the sibling ungag branch above for the rationale.
+        // AGENTS.md "Server-side toast emission" → "Duration
+        // semantics" carries the contract.
         \Sbpp\View\Toast::emit(
             'error',
             'Ban NOT Deleted',
             "The ban for '" . $steam['name'] . "' had an error while being removed.",
-            "index.php?p=commslist$pagelink",
+            null,
+            0,
         );
     }
 }

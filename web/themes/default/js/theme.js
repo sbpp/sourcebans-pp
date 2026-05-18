@@ -1414,11 +1414,30 @@
 
   // ---- TOASTS ----------------------------------------------
   /**
+   * Default auto-dismiss window in milliseconds. Mirrors the
+   * `Sbpp\View\Toast::emit` PHP-side contract: a `null` /
+   * missing `duration_ms` field on the wire payload means
+   * "use this default". The constant is named (not inlined as
+   * a `4000` literal) so a future tweak / theme override lands
+   * in one place. Don't reach for this from outside the toast
+   * pathway — `showToast({durationMs: SHOWTOAST_DEFAULT_DURATION})`
+   * is identical to the default and noisier than just omitting
+   * the option.
+   */
+  const SHOWTOAST_DEFAULT_DURATION = 4000;
+
+  /**
    * @typedef {Object} ToastOpts
-   * @property {string} [kind]      'info' | 'success' | 'warn' | 'error'
+   * @property {string} [kind]        'info' | 'success' | 'warn' | 'error'
    * @property {string} title
    * @property {string} [body]
-   * @property {number} [duration]  ms before auto-dismiss; default 4000
+   * @property {number} [durationMs]  Auto-dismiss timer in ms. Three values are meaningful:
+   *   - `undefined` (default): the chrome uses `SHOWTOAST_DEFAULT_DURATION` (~4000ms).
+   *   - `0`: persistent — the toast does NOT auto-dismiss; user must click the X button.
+   *   - `> 0`: explicit override in ms.
+   *   Mirrors the `duration_ms` field on `Sbpp\View\Toast::emit`'s
+   *   wire format; the chrome's `flushPendingToasts` drain forwards
+   *   the value verbatim when the server included it.
    */
 
   /**
@@ -1429,7 +1448,12 @@
     const kind = opts.kind || 'info';
     const title = opts.title;
     const body = opts.body;
-    const duration = opts.duration === undefined ? 4000 : opts.duration;
+    // `durationMs === 0` is a documented, load-bearing value (the
+    // persistent shape). The `=== undefined` check is what's used
+    // for the default fall-through; `!opts.durationMs` would
+    // collapse `0` into the default branch and silently disable
+    // the persistent semantic.
+    const durationMs = opts.durationMs === undefined ? SHOWTOAST_DEFAULT_DURATION : opts.durationMs;
     let stack = document.getElementById('toast-stack');
     if (!stack) {
       stack = document.createElement('div');
@@ -1440,15 +1464,38 @@
     const el = document.createElement('div');
     el.className = 'toast';
     el.dataset.kind = kind;
+    // Bring the painted element in line with the documented
+    // contract in AGENTS.md "Server-side toast emission" /
+    // "Anti-patterns" — wire-format `<script>` blocks
+    // deliberately carry NO `data-testid` (multi-emit responses
+    // would collide on the testid and Playwright's `getByTestId`
+    // strict mode rejects multi-match), but the painted toast is
+    // the canonical anchor for E2E specs. The `data-testid` lets
+    // suites use `[data-testid="toast"]`; `role="status"` gives
+    // assistive-tech callers an announcement target and is the
+    // documented alternative anchor a future a11y-focused spec
+    // can key on. Pre-#1409 the chrome emitted neither — every
+    // existing spec keyed on `.toast[data-kind="..."]`, which
+    // still works (CSS class + dataset attribute) but is not the
+    // documented contract.
+    el.setAttribute('data-testid', 'toast');
+    el.setAttribute('role', 'status');
     const icon = kind === 'error' ? 'circle-x' : kind === 'warn' ? 'triangle-alert' : kind === 'success' ? 'circle-check' : 'info';
     el.innerHTML = '<i data-lucide="' + icon + '" style="color:var(--' + kind + ')"></i>'
       + '<div style="flex:1;min-width:0"><div class="font-semibold text-sm">' + escapeHtml(title) + '</div>'
       + (body ? '<div class="text-xs text-muted" style="margin-top:2px">' + escapeHtml(body) + '</div>' : '')
       + '</div>'
-      + '<button class="btn btn--ghost btn--icon" data-toast-close><i data-lucide="x"></i></button>';
+      + '<button class="btn btn--ghost btn--icon" data-toast-close aria-label="Dismiss"><i data-lucide="x"></i></button>';
     stack.appendChild(el);
     if (window.lucide) window.lucide.createIcons();
-    setTimeout(() => el.remove(), duration);
+    // `durationMs > 0` is the only path that schedules the
+    // auto-dismiss timer. `durationMs === 0` is the persistent
+    // shape (no timer; user must click the X button). A naive
+    // `setTimeout(..., 0)` would auto-dismiss IMMEDIATELY on the
+    // next tick — exactly the opposite of what `0` means here.
+    if (durationMs > 0) {
+      setTimeout(() => el.remove(), durationMs);
+    }
   }
 
   document.addEventListener('click', (/** @type {MouseEvent} */ e) => {
@@ -1505,6 +1552,33 @@
   // from the DOM so a hypothetical re-run of this drainer (e.g. an
   // HMR refresh in dev) doesn't double-fire.
   //
+  // Duration override: optional `duration_ms` field on the wire
+  // payload forwards to `showToast({durationMs})`. Three values are
+  // meaningful (mirror of the PHP-side `Sbpp\View\Toast::emit`
+  // contract): missing / non-numeric → chrome uses
+  // `SHOWTOAST_DEFAULT_DURATION`; `0` → persistent (no auto-dismiss
+  // timer; user must click the X button); `> 0` → explicit ms
+  // override. The `typeof data.duration_ms === 'number'` guard is
+  // load-bearing: a hostile / malformed payload sending a string
+  // or boolean must NOT pass through unchecked — `showToast` would
+  // then schedule `setTimeout(..., "0")` (Number-coerced to 0,
+  // auto-dismisses immediately) or `setTimeout(..., true)` (Number-
+  // coerced to 1, dismisses after 1ms). The typeof gate keeps the
+  // chrome's behaviour deterministic regardless of upstream noise.
+  //
+  // Persistent + redirect interaction (#1409): when ANY toast in
+  // the drained queue carries `duration_ms: 0`, the redirect
+  // setTimeout below is SUPPRESSED — persistent + redirect are
+  // mutually exclusive (the redirect would otherwise navigate
+  // ~1500ms after paint, tearing down the toast before the
+  // operator can read or dismiss it). The call-site contract is
+  // "don't pass a redirect when emitting `duration_ms: 0`" (per
+  // AGENTS.md "Server-side toast emission" → "Duration semantics"),
+  // and the chrome's inhibit is defence-in-depth so a future
+  // caller forgetting that rule doesn't silently produce broken
+  // UX. Both halves ship together; neither is sufficient on its
+  // own.
+  //
   // Malformed JSON is logged and skipped — a single broken entry
   // can't take down the rest of the queue. Empty queue is a no-op
   // (the overwhelming majority of requests).
@@ -1516,17 +1590,53 @@
     if (!blocks.length) return;
     /** @type {string | null} */
     let redirectTo = null;
+    // #1409: track whether ANY toast in this drain is persistent
+    // (`duration_ms === 0`). If so, the redirect setTimeout below
+    // is suppressed entirely — persistent + redirect are mutually
+    // exclusive (the redirect would navigate ~1500ms after paint,
+    // tearing down the toast before the operator can read or
+    // dismiss it, defeating the entire point of the persistent
+    // semantic). Call sites that pair `duration_ms: 0` with a
+    // redirect produce broken UX in two halves: the call site
+    // SHOULD pass `null` for `$redirect` when emitting persistent
+    // (the documented contract in AGENTS.md "Duration semantics"),
+    // and the chrome SHOULD inhibit the redirect as defence-in-
+    // depth if a future caller forgets. Both halves ship together.
+    //
+    // Whole-drain inhibit (not per-block): if the queue carries a
+    // mix of persistent + non-persistent toasts, the persistent
+    // one's needs-acknowledgement semantic wins. The non-persistent
+    // toasts still paint with their auto-dismiss timers — they
+    // disappear normally on their own clocks — but the redirect
+    // is gated on the user's explicit X-click on the persistent
+    // toast. (In practice no in-tree caller emits a mixed queue
+    // today; the contract is conservative for future surfaces.)
+    let hasPersistentToast = false;
     blocks.forEach((/** @type {Element} */ blob) => {
       try {
         const raw = blob.textContent || '{}';
-        const data = /** @type {{kind?: string, title?: string, body?: string, redirect?: string}} */ (
+        const data = /** @type {{kind?: string, title?: string, body?: string, redirect?: string, duration_ms?: number}} */ (
           JSON.parse(raw)
         );
-        showToast({
+        /** @type {ToastOpts} */
+        const opts = {
           kind: /** @type {any} */ (data.kind || 'info'),
           title: data.title || '',
           body: data.body || '',
-        });
+        };
+        // Forward `duration_ms` only when the server explicitly
+        // sent a numeric value. `undefined` (key absent) falls
+        // through to `showToast`'s `SHOWTOAST_DEFAULT_DURATION`
+        // branch via the `=== undefined` check in showToast itself
+        // — we deliberately don't assign here so the property
+        // stays absent on `opts` for the common case.
+        if (typeof data.duration_ms === 'number') {
+          opts.durationMs = data.duration_ms;
+          if (data.duration_ms === 0) {
+            hasPersistentToast = true;
+          }
+        }
+        showToast(opts);
         if (
           redirectTo === null
           && typeof data.redirect === 'string'
@@ -1539,7 +1649,7 @@
       }
       blob.remove();
     });
-    if (redirectTo !== null) {
+    if (redirectTo !== null && !hasPersistentToast) {
       const target = redirectTo;
       setTimeout(() => { window.location.href = target; }, 1500);
     }

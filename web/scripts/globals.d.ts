@@ -180,7 +180,22 @@ interface Window {
      * narrow with `if (window.SBPP && window.SBPP.foo) …`.
      */
     SBPP?: {
-        showToast?: (msg: string, kind?: string) => void;
+        /**
+         * Render a toast in the chrome's toast stack. Accepts the
+         * `ToastOpts` object documented inline in `theme.js`:
+         * `{kind?, title, body?, durationMs?}`. `durationMs` is the
+         * #1409 follow-up to `Sbpp\View\Toast::emit`'s `duration_ms`
+         * wire-format field — `undefined` falls through to
+         * `SHOWTOAST_DEFAULT_DURATION` (~4000ms), `0` is persistent
+         * (user must click the X button), `> 0` is an explicit
+         * override in milliseconds.
+         */
+        showToast?: (opts: {
+            kind?: 'info' | 'success' | 'warn' | 'error';
+            title: string;
+            body?: string;
+            durationMs?: number;
+        }) => void;
         openDrawer?: (bid: number | string) => void;
         /**
          * Hydrate every `[data-testid="server-tile"]` inside a

@@ -71,7 +71,8 @@ namespace Sbpp\View;
  *     "kind":  "info" | "success" | "warn" | "error",
  *     "title": "Title text",
  *     "body":  "Body text (plain text — escapeHtml'd at render)",
- *     "redirect": "?p=banlist&page=2"   // optional
+ *     "redirect":    "?p=banlist&page=2",   // optional
+ *     "duration_ms": 0                       // optional
  * }
  * ```
  *
@@ -83,6 +84,26 @@ namespace Sbpp\View;
  * fallback paths in `page.banlist.php` / `page.commslist.php` /
  * `admin.edit.comms.php` all bounce back to the same list page
  * regardless of the success/error branch).
+ *
+ * `duration_ms` is also optional and OMITTED from the payload when
+ * the caller didn't pass an override — the chrome consumer's
+ * `flushPendingToasts` reads `data.duration_ms` only when present
+ * and otherwise falls through to `showToast`'s
+ * `SHOWTOAST_DEFAULT_DURATION` (~4000ms). Three values are
+ * meaningful: `null` (omit the field, default chrome timing — the
+ * common case for routine info / success / warn toasts), `0`
+ * (persistent — the toast does NOT auto-dismiss; the user has to
+ * click the X button), and `> 0` (explicit override in
+ * milliseconds). The persistent shape is for severe-error
+ * confirmations the operator MUST acknowledge — the v1.x
+ * `ShowBox(text, title, redirect, bg, sticky=true)` 5-arg helper
+ * carried the same semantic for the destructive-action-failed
+ * branches (Ban NOT Deleted / Player NOT Unbanned / Player NOT
+ * UnGagged); the lift in #1403 dropped it for fidelity and #1409
+ * restored it under a cleaner contract. Don't reach for `0` on
+ * routine confirmations — see the "Passing duration_ms = 0 for
+ * routine info / success toasts" Anti-patterns entry in AGENTS.md
+ * for the rationale.
  *
  * # Encoding
  *
@@ -156,6 +177,39 @@ final class Toast
      * re-renders its own form on the same URL — the toast then fires
      * inline on whichever response the browser is already loading.
      *
+     * `$duration_ms` is the optional auto-dismiss duration in
+     * milliseconds. Three values are meaningful:
+     *
+     *   - `null` (default) — omit the field from the wire format;
+     *     the chrome consumer falls through to
+     *     `SHOWTOAST_DEFAULT_DURATION` in `theme.js` (~4000ms).
+     *     The right choice for every routine info / success / warn
+     *     confirmation.
+     *   - `0` — persistent. The chrome does NOT schedule an
+     *     auto-dismiss timer; the only way the toast disappears is
+     *     the user clicking the X button. Reserve for severe-error
+     *     "this destructive operation FAILED and the operator must
+     *     acknowledge before moving on" branches (the
+     *     `Ban NOT Deleted` / `Player NOT Unbanned` /
+     *     `Player NOT UnGagged` shapes in `page.banlist.php` /
+     *     `page.commslist.php`; #1409 restored the v1.x
+     *     `ShowBox(..., sticky=true)` semantic the #1403 lift
+     *     dropped). Don't reach for `0` on casual confirmations —
+     *     persistent toasts create UI clutter and train users to
+     *     dismiss without reading; see the matching anti-pattern
+     *     entry in AGENTS.md.
+     *   - `> 0` — explicit override. Currently no in-tree caller
+     *     uses this; the contract exists so a future surface (e.g.
+     *     a long-form Markdown-rendered toast) can lengthen the
+     *     read window without resorting to persistent display.
+     *
+     * Negative values are programmer error — the helper throws
+     * `\InvalidArgumentException` rather than silently coercing to
+     * `max(0, $duration_ms)`. A negative arrival means the caller's
+     * own arithmetic is broken; coercion would mask the bug and
+     * silently flip the toast to persistent (the worst-of-both
+     * outcome). Fail closed.
+     *
      * Echoes the JSON blob directly to the response. No return
      * value — the meaningful output IS the side effect, mirroring
      * the pre-#1403 `emitSubmitToast` shape.
@@ -165,7 +219,20 @@ final class Toast
         string $title,
         string $body,
         ?string $redirect = null,
+        ?int $duration_ms = null,
     ): void {
+        if ($duration_ms !== null && $duration_ms < 0) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Toast::emit: $duration_ms must be null, 0, or a positive integer; got %d. '
+                    . 'Pass null for the chrome\'s default ~4000ms timer, 0 for a persistent '
+                    . 'toast (user must dismiss via the X button), or a positive ms count for '
+                    . 'an explicit override.',
+                    $duration_ms,
+                ),
+            );
+        }
+
         $payload = [
             'kind'  => $kind,
             'title' => $title,
@@ -173,6 +240,9 @@ final class Toast
         ];
         if ($redirect !== null && $redirect !== '') {
             $payload['redirect'] = $redirect;
+        }
+        if ($duration_ms !== null) {
+            $payload['duration_ms'] = $duration_ms;
         }
 
         $json = json_encode(
