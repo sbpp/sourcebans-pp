@@ -172,13 +172,81 @@
                         {/if}
                         {if $server_list}
                             <div class="text-xs text-faint" style="text-transform:uppercase;letter-spacing:0.06em;font-weight:600;margin-top:0.5rem">Individual servers</div>
-                            <div class="grid gap-2" style="grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))">
+                            {*
+                                #1405 — per-row hostname hydration. The
+                                `data-server-hydrate="auto"` wrapper opts
+                                this grid into the shared
+                                `web/scripts/server-tile-hydrate.js`
+                                helper (the same one driving
+                                `page_servers.tpl` / `page_admin_servers_list.tpl`
+                                / `page_dashboard.tpl`'s Servers widget).
+                                The helper auto-runs on first paint,
+                                walks every `[data-testid="server-tile"]`
+                                child, and fires
+                                `Actions.ServersHostPlayers` per row to
+                                patch the live hostname into the inner
+                                `[data-testid="server-host"]` slot via
+                                `sb.setHTML`. SourceQueryCache (~30s TTL
+                                per `(ip, port)`) coalesces back-to-back
+                                probes server-side.
+
+                                Mirrors the dashboard widget's minimal-
+                                integration shape: the only optional
+                                testid we ship is `server-host` — every
+                                other cell hook (`server-status` /
+                                `server-map` / `server-players` /
+                                `server-players-bar` / `server-map-img`)
+                                is intentionally omitted, and the
+                                helper's feature-detection branches
+                                no-op for the missing ones. The Add
+                                Admin form is the editor for per-server
+                                access, not a player-row table; status
+                                pills / player counts would only add
+                                visual noise to the checkbox grid.
+
+                                `data-trunchostname="40"` matches the
+                                dashboard widget's cramped-column hint:
+                                the per-row card is ~18rem wide and a
+                                long hostname would trip `truncate`'s
+                                ellipsis prematurely. The number
+                                forwards to `api_servers_host_players`
+                                as the SourceQuery truncation hint
+                                (cheaper server-side than a JS-side
+                                trim because the handler also
+                                htmlspecialchars()'s the truncated
+                                string for `sb.setHTML`).
+
+                                Pre-#1405 (post-#1404 cleanup) the row
+                                shipped `<span id="sa{$server.sid}">IP:port</span>`
+                                with the legacy v1.4.11 `<script>LoadServerHost(...)</script>`
+                                feeder. `LoadServerHost` was deleted
+                                with `sourcebans.js` at #1123 D1; #1404
+                                dropped the dead feeder + the orphan
+                                `$server_script` View property. This is
+                                the additive replacement that restores
+                                live hostname hydration without
+                                reintroducing any of the deleted
+                                helpers. The bare `IP:port` text inside
+                                the `[data-testid="server-host"]` span
+                                stays as the no-JS / cache-cold
+                                fallback; `data-fallback` lets the
+                                helper re-paint it after a UDP probe
+                                failure so the row never goes blank.
+                            *}
+                            <div class="grid gap-2"
+                                 style="grid-template-columns:repeat(auto-fill,minmax(18rem,1fr))"
+                                 data-server-hydrate="auto"
+                                 data-trunchostname="40">
                                 {foreach $server_list as $server}
                                     <label class="flex items-center gap-2 p-3"
-                                           style="border:1px solid var(--border);border-radius:var(--radius-md)">
+                                           style="border:1px solid var(--border);border-radius:var(--radius-md)"
+                                           data-testid="server-tile"
+                                           data-id="{$server.sid}">
                                         <input type="checkbox" id="servers[]" name="servers[]" value="s{$server.sid}"
                                                data-testid="admin-add-server">
-                                        <span class="text-sm font-mono" id="sa{$server.sid}">{$server.ip|escape}:{$server.port|escape}</span>
+                                        <span class="text-sm font-mono"
+                                              data-testid="server-host"
+                                              data-fallback="{$server.ip|escape}:{$server.port|escape}">{$server.ip|escape}:{$server.port|escape}</span>
                                     </label>
                                 {/foreach}
                             </div>
@@ -335,10 +403,20 @@
             server-built `<script>LoadServerHost('SID', 'id', 'saSID');…</script>`
             blob; the helper was deleted with `sourcebans.js` at #1123 D1
             so every page load raised `ReferenceError: LoadServerHost is
-            not defined` once per server. Each `#sa<SID>` <span> renders
-            bare `{$server.ip}:{$server.port}` per row above. Hydration to
-            the live hostname is the next step — see the follow-up ticket
-            tracked off #1404. *}
+            not defined` once per server. #1404 dropped the dead blob +
+            the orphan `$server_script` View property + the per-row
+            `id="sa{$server.sid}"` span hook it targeted.
+
+            #1405 — additive replacement: the per-row span above carries
+            `[data-testid="server-host"]` + `data-fallback="<ip>:<port>"`
+            and the wrapping grid div opts in via
+            `data-server-hydrate="auto"` + `data-trunchostname="40"`. The
+            shared helper (`<script src>` below, same one driving the
+            public servers list / admin Server Management list / dashboard
+            Servers widget) fires `Actions.ServersHostPlayers` per row
+            and patches the live hostname via `sb.setHTML`. SourceQueryCache
+            (~30s TTL per `(ip, port)`) coalesces the per-row probes
+            server-side. *}
 
         {* ============================================================
            #1402 — Add-admin constructive form wiring.
@@ -782,5 +860,28 @@
         })();
         </script>
         {/literal}
+
+        {*
+            #1405 — per-tile A2S hydration for the "Individual servers"
+            grid above. The shared helper auto-runs on first paint for
+            every `[data-server-hydrate="auto"]` container, fires
+            `Actions.ServersHostPlayers` per tile, and patches the live
+            hostname into the row's `[data-testid="server-host"]` slot.
+            This template only consumes the hostname cell — the rest of
+            the helper's hydration surface (status pill / map / players
+            bar / map-img / refresh / toggle / players panel) is
+            feature-detected and silently no-ops on tiles that don't
+            ship those testid hooks. Same mounting shape as
+            `page_dashboard.tpl`'s Servers widget.
+
+            `defer` lets the rest of the page paint before the helper
+            boots; auto-run still fires once it does (the helper
+            branches on `document.readyState`). The script ships under
+            web/scripts/ so all four surfaces (public servers list,
+            admin Server Management list, dashboard Servers widget, this
+            Add Admin per-server access grid) share one helper file —
+            never copy-paste the hydration code into a new template.
+        *}
+        <script src="./scripts/server-tile-hydrate.js" defer></script>
     {/if}
 </div>
