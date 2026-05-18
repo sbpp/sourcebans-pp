@@ -39,6 +39,40 @@ $GLOBALS['PDO']->query("SELECT bid, ba.type, ba.authid, ba.name, created, ends, 
 $GLOBALS['PDO']->bind(':bid', $_GET['id']);
 $res = $GLOBALS['PDO']->single();
 
+isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
+
+// Not-found guard MUST come BEFORE the permission check (#1410). On a
+// request for a non-existent cid `$res` is false; the perm check below
+// then reads `$res['aid']` / `$res['gid']` which PHP 8.x evaluates to
+// `null` while emitting an `E_WARNING: Trying to access array offset on
+// value of type bool`. The `null != $userbank->GetAid()` comparison
+// then trips the deny-access branch, so the user sees the misleading
+// "You don't have access to this!" toast for what's actually a stale
+// link / typo'd cid (and incidentally a side-channel for "does this
+// cid exist" enumeration). Running the existence check first surfaces
+// the correct "block has been deleted" toast AND clears the warning.
+//
+// PageDie after the toast emit (parity with every OTHER Toast::emit
+// branch in this file — L22 / L31 / the perm check below). Without
+// terminating here the perm check would still dereference `$res`
+// (false) and emit the warning; and the Renderer::render + the inline
+// `<script>` further down dereference `$res` too, where the warning
+// lands literally inside the script's string literals (the
+// `selectLengthTypeReason` short-echo block that builds JS string
+// args from the row fields) — every warning is plain text appearing
+// INSIDE quoted JS strings, which is a JavaScript "Invalid or
+// unexpected token" parse error. PageDie cuts the render before any
+// of that runs.
+if (!$res) {
+    \Sbpp\View\Toast::emit(
+        'error',
+        'Error',
+        'There was an error getting details. Maybe the block has been deleted?',
+        'index.php?p=commslist' . $pagelink,
+    );
+    PageDie();
+}
+
 if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermission::EditAllBans)) && (!$userbank->HasAccess(WebPermission::EditOwnBans) && $res['aid'] != $userbank->GetAid()) && (!$userbank->HasAccess(WebPermission::EditGroupBans) && $res['gid'] != $userbank->GetProperty('gid'))) {
     \Sbpp\View\Toast::emit(
         'error',
@@ -48,8 +82,6 @@ if (!$userbank->HasAccess(WebPermission::mask(WebPermission::Owner, WebPermissio
     );
     PageDie();
 }
-
-isset($_GET["page"]) ? $pagelink = "&page=" . urlencode($_GET["page"]) : $pagelink = "";
 
 // #1402: per-field inline-error setters now emit vanilla DOM calls
 // instead of the MooTools `$('id').setStyle('display', 'block')` shape
@@ -169,38 +201,6 @@ if (isset($_POST['name'])) {
             'index.php?p=commslist' . $pagelink,
         );
     }
-}
-
-if (!$res) {
-    \Sbpp\View\Toast::emit(
-        'error',
-        'Error',
-        'There was an error getting details. Maybe the block has been deleted?',
-        'index.php?p=commslist' . $pagelink,
-    );
-    // PageDie after the toast emit (parity with every OTHER
-    // Toast::emit branch in this file — L22 / L31 / L49 all
-    // PageDie after their respective emits). Pre-#1403 this
-    // branch didn't terminate because the legacy `ShowBox` call
-    // didn't either: ShowBox itself navigated the browser, so
-    // letting the rest of the page render was harmless even
-    // though the SELECT had returned no row (the navigation
-    // beat the render to the user's eyeballs). Post-lift the
-    // toast carries the redirect explicitly via the helper's
-    // 4th arg + theme.js's 1500ms post-paint settle, so the
-    // user sees the toast, the chrome footer, and then bounces
-    // to commslist — but they MUST NOT see the borked form
-    // skeleton in between. Dereferencing $res (false at this
-    // point because the SELECT returned no row) in
-    // `Renderer::render` and the inline `<script>` further down
-    // emits PHP warnings under `display_errors=On`, and those
-    // warnings land literally inside the script's string
-    // literals (the selectLengthTypeReason short-echo block
-    // that builds JS string args from the row fields) — every
-    // warning is plain text appearing INSIDE quoted JS strings,
-    // which is a JavaScript `Invalid or unexpected token` parse
-    // error. PageDie cuts the render before any of that runs.
-    PageDie();
 }
 
 \Sbpp\View\Renderer::render($theme, new \Sbpp\View\AdminCommsEditView(
