@@ -338,21 +338,91 @@
                                 {/if}
                             </div>
                         </div>
-                        {* #1404 — pre-fix this card body carried a
-                           "Servers populate via the legacy
-                           LoadServerHostPlayersList hook." placeholder
-                           plus a sibling `<div id="servers_{gid}">`
-                           that admin.groups.php tried to async-hydrate.
-                           The helper was deleted with sourcebans.js at
-                           #1123 D1, so the placeholder copy was
-                           admin-facing forever. The body now collapses
-                           to the master-detail flag grid + member count
-                           up top — per-group server-card hydration is
-                           the next step (follow-up ticket tracked off
-                           #1404). *}
+                        {*
+                            #1406: per-group server-card stack. Re-introduces
+                            the per-card hydration surface dropped at #1404
+                            (which removed the literal "Servers populate via
+                            the legacy LoadServerHostPlayersList hook."
+                            placeholder + the sibling `<div id="servers_{gid}">`
+                            slot fed by a dead `<script>` echo). The modern
+                            shape ships one `[data-testid="server-tile"]` per
+                            bound server inside a `[data-server-hydrate="auto"]`
+                            container; the shared
+                            `web/scripts/server-tile-hydrate.js` helper
+                            auto-runs on first paint, fires
+                            `Actions.ServersHostPlayers` per tile, and patches
+                            the live hostname into the inner
+                            `[data-testid="server-host"]` slot via
+                            `sb.setHTML`. The bare `IP:port` stays as the SSR
+                            / cache-cold / no-JS fallback (also the
+                            `data-fallback` attribute the helper re-paints on
+                            probe failure).
+
+                            Minimal-integration shape (mirror of the dashboard
+                            widget #1375): the card body only ships the
+                            hostname slot — the rest of the helper's surface
+                            (status pill / map / players / players bar /
+                            map-img / refresh / toggle / players panel) is
+                            feature-detected and silently no-ops on tiles
+                            that don't ship those testid hooks. SourceQueryCache
+                            on the server side coalesces back-to-back probes
+                            per (ip, port) for ~30s, so the extra per-card
+                            round-trips are absorbed cheaply even on a panel
+                            with many groups.
+
+                            `data-trunchostname="40"` keeps the live hostname
+                            short enough to fit the cramped per-group card
+                            body (matches the dashboard widget; the public
+                            servers list runs at 70).
+                        *}
+                        <div class="card__body">
+                            {if empty($group.servers)}
+                                <p class="text-xs text-muted m-0" data-testid="server-group-empty">
+                                    <em>No servers bound to this group yet.</em>
+                                </p>
+                            {else}
+                                <ul class="space-y-2"
+                                    style="list-style:none;padding:0;margin:0"
+                                    data-testid="server-group-server-list"
+                                    data-server-hydrate="auto"
+                                    data-trunchostname="40">
+                                    {foreach from=$group.servers item="server"}
+                                        <li class="flex items-center gap-2"
+                                            data-testid="server-tile"
+                                            data-id="{$server.sid}"
+                                            style="padding:0.375rem 0.5rem;border-radius:var(--radius-md);background:var(--bg-muted);min-width:0">
+                                            <i data-lucide="server" aria-hidden="true" style="width:14px;height:14px;flex-shrink:0;color:var(--text-faint)"></i>
+                                            <div class="flex-1" style="min-width:0">
+                                                <div class="font-medium text-sm truncate"
+                                                     data-testid="server-host"
+                                                     data-fallback="{$server.ip|escape}:{$server.port}">{$server.ip|escape}:{$server.port}</div>
+                                                <div class="text-xs text-faint font-mono truncate">{$server.ip|escape}:{$server.port}</div>
+                                            </div>
+                                        </li>
+                                    {/foreach}
+                                </ul>
+                            {/if}
+                        </div>
                     </article>
                 {/foreach}
             </div>
+            {*
+                #1406: per-tile A2S hydration for the Server Groups
+                card stacks. The shared helper auto-runs on first
+                paint for every `[data-server-hydrate="auto"]`
+                container above, fires `Actions.ServersHostPlayers`
+                per tile, and patches the live hostname into each
+                row's `[data-testid="server-host"]` slot. The helper
+                feature-detects every optional `[data-testid]` cell,
+                so a tile that only ships the hostname slot silently
+                hydrates that one cell (same minimal-integration
+                shape the dashboard Servers widget rides — see
+                page_dashboard.tpl for the precedent). `defer` lets
+                the rest of the page paint before the helper boots;
+                auto-run still fires once it does (the helper branches
+                on document.readyState).
+            *}
+            <script src="./scripts/server-tile-hydrate.js" defer></script>
         {/if}
     </section>
 </div>

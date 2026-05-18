@@ -39,6 +39,8 @@ const SET_SETTING_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/set-setting-e2e.php';
 const ORPHAN_BAN_AID_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/orphan-ban-aid-e2e.php';
+const SEED_SERVER_GROUP_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/seed-server-group-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -397,6 +399,103 @@ export async function orphanBanAidE2e(bid: number, newAid = 99999): Promise<void
             ));
         });
     });
+}
+
+/**
+ * Per-server seed row consumed by `seedServerGroupWithServersE2e`.
+ * RFC 5737 documentation IPs (203.0.113.0/24, 198.51.100.0/24,
+ * 192.0.2.0/24) are recommended so a real Source server can't ever
+ * answer the A2S probe; the spec stubs `Actions.ServersHostPlayers`
+ * via `page.route` anyway, but the IPs show up in the SSR fallback.
+ */
+export interface ServerGroupSeedServer {
+    ip: string;
+    port: number;
+}
+
+/**
+ * Shape returned by `seedServerGroupWithServersE2e`. `gid` is the
+ * server-group's `:prefix_groups.gid`; `sids` mirrors the per-server
+ * `:prefix_servers.sid` list in insert order so the spec can keyword
+ * each `page.route` stub by sid.
+ */
+export interface ServerGroupSeedResult {
+    gid: number;
+    sids: number[];
+    servers: Array<{ sid: number; ip: string; port: number }>;
+}
+
+/**
+ * Seed a `:prefix_groups (type=3)` server group with N bound
+ * `:prefix_servers` rows wired through `:prefix_servers_groups`.
+ * Used by the admin Server Groups card-hydration spec (#1406) because
+ * there is no JSON action that wires a server into a server group's
+ * membership — the legacy master-detail UI write path is the only
+ * existing surface, and driving an HTML form post through Playwright
+ * would couple the spec to the master-detail chrome (unrelated to
+ * what we're verifying: each per-group card carries the hydration
+ * testids + the live hostname patches in over the SSR IP:port).
+ *
+ * Mirrors the `seedCommsRawE2e` / `seedLostpasswordE2e` shape:
+ * shells out to a PHP shim that runs against the e2e DB and refuses
+ * any other.
+ */
+export async function seedServerGroupWithServersE2e(
+    groupName: string,
+    servers: ServerGroupSeedServer[],
+): Promise<ServerGroupSeedResult> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [SEED_SERVER_GROUP_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', SEED_SERVER_GROUP_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify({
+        group: { name: groupName },
+        servers,
+    }));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `seed-server-group-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+
+    const trimmed = stdout.trim();
+    if (trimmed === '') {
+        throw new Error(`seed-server-group-e2e.php: empty stdout\nstderr:\n${stderr}`);
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as ServerGroupSeedResult;
+        if (typeof parsed.gid !== 'number' || !Array.isArray(parsed.sids) || !Array.isArray(parsed.servers)) {
+            throw new Error('missing gid/sids/servers keys');
+        }
+        return parsed;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+            `seed-server-group-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
+        );
+    }
 }
 
 async function runAnnouncementsHelper(

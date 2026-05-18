@@ -137,20 +137,20 @@ $server_admin_group_count = count($server_group_list);
 // ------------------------------------------------------------------
 // Server groups (`:prefix_groups` WHERE type = 3).
 //
-// #1404 — the pre-fix loop also echoed a per-row
-// `<script>LoadServerHostPlayersList('<sids>', 'id', 'servers_<gid>')</script>`
-// blob meant to async-hydrate the per-group server list into the
-// matching `<div id="servers_{gid}">` slot. The helper was deleted
-// with `sourcebans.js` at #1123 D1, so every page load raised
-// `ReferenceError: LoadServerHostPlayersList is not defined` once
-// per server group AND left the slot showing the literal "Servers
-// populate via the legacy LoadServerHostPlayersList hook." copy
-// admin-facing forever. The echo + the slot + the placeholder copy
-// all went together; the `:prefix_servers_groups` lookup that fed
-// the SID list went too (nothing else read it). Hydration to per-
-// group server cards is the next step — tracked as a follow-up
-// ticket; see AGENTS.md "Anti-patterns" for the matching
-// `LoadServerHostPlayersList` entry.
+// #1404 dropped the pre-fix `<script>LoadServerHostPlayersList(...)`
+// echo + the literal "Servers populate via the legacy ... hook."
+// placeholder + the `<div id="servers_{gid}">` slot. #1406 is the
+// additive replacement: the per-group `servers` array (sid / ip /
+// port) we load here drives a vertical stack of
+// `[data-testid="server-tile"]` cards in the template, hydrated
+// client-side via the shared `web/scripts/server-tile-hydrate.js`
+// helper that already powers the public Server List + admin Server
+// Management + dashboard widget. The bare `IP:port` per row stays
+// as the SSR / cache-cold / no-JS fallback inside
+// `[data-testid="server-host"]`. The hydration helper auto-runs on
+// first paint for every `[data-server-hydrate="auto"]` container
+// and fires `Actions.ServersHostPlayers` per tile, so no new JSON
+// action is registered for this surface.
 // ------------------------------------------------------------------
 $server_group_rows = $GLOBALS['PDO']->query("SELECT * FROM `:prefix_groups` WHERE type = '3'")->resultset();
 $server_list   = [];
@@ -158,10 +158,30 @@ $server_counts = [];
 foreach ($server_group_rows as $row) {
     $row['gid'] = (int) $row['gid'];
 
-    $GLOBALS['PDO']->query("SELECT COUNT(server_id) AS cnt FROM `:prefix_servers_groups` WHERE `group_id` = :gid");
+    // INNER JOIN against `:prefix_servers` so groups that retain
+    // dangling `:prefix_servers_groups` rows from a deleted server
+    // (the schema has no cascade) silently drop those rows from
+    // the card list — there's nothing useful to render for a sid
+    // that no longer exists, and the hydration helper would hit
+    // the "server not found" arm of `api_servers_host_players` on
+    // every page load. ORDER BY S.sid keeps the render order stable
+    // across page loads so a refresh doesn't shuffle the cards.
+    $GLOBALS['PDO']->query(
+        "SELECT S.sid, S.ip, S.port
+         FROM `:prefix_servers_groups` AS SG
+         INNER JOIN `:prefix_servers` AS S ON S.sid = SG.server_id
+         WHERE SG.group_id = :gid
+         ORDER BY S.sid ASC"
+    );
     $GLOBALS['PDO']->bind(':gid', $row['gid']);
-    $cnt = $GLOBALS['PDO']->single();
-    $row['server_count'] = (int) $cnt['cnt'];
+    $serverRows = $GLOBALS['PDO']->resultset();
+
+    $row['servers'] = array_map(static fn (array $s): array => [
+        'sid'  => (int)    $s['sid'],
+        'ip'   => (string) $s['ip'],
+        'port' => (int)    $s['port'],
+    ], $serverRows);
+    $row['server_count'] = count($row['servers']);
 
     $server_list[]   = $row;
     $server_counts[] = $row['server_count'];
