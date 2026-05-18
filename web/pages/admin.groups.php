@@ -166,8 +166,19 @@ foreach ($server_group_rows as $row) {
     // the "server not found" arm of `api_servers_host_players` on
     // every page load. ORDER BY S.sid keeps the render order stable
     // across page loads so a refresh doesn't shuffle the cards.
+    //
+    // `S.enabled` rides the projection (post-review): disabled
+    // servers should STILL surface ("this group is bound to N
+    // servers, here are their addresses" stays useful even when
+    // some are disabled — silently filtering them out would hide
+    // the bound-but-disabled relationship from the admin), but
+    // the template tags each `<li>` with `data-server-skip="1"`
+    // so `server-tile-hydrate.js` short-circuits before firing
+    // `Actions.ServersHostPlayers` against a server the panel
+    // already knows is offline by config. Mirrors the sibling
+    // contract in `page_admin_servers_list.tpl`.
     $GLOBALS['PDO']->query(
-        "SELECT S.sid, S.ip, S.port
+        "SELECT S.sid, S.ip, S.port, S.enabled
          FROM `:prefix_servers_groups` AS SG
          INNER JOIN `:prefix_servers` AS S ON S.sid = SG.server_id
          WHERE SG.group_id = :gid
@@ -177,9 +188,13 @@ foreach ($server_group_rows as $row) {
     $serverRows = $GLOBALS['PDO']->resultset();
 
     $row['servers'] = array_map(static fn (array $s): array => [
-        'sid'  => (int)    $s['sid'],
-        'ip'   => (string) $s['ip'],
-        'port' => (int)    $s['port'],
+        'sid'     => (int)    $s['sid'],
+        'ip'      => (string) $s['ip'],
+        'port'    => (int)    $s['port'],
+        // `:prefix_servers.enabled` is `TINYINT NOT NULL DEFAULT '1'`
+        // — cast to bool here so the template's `{if !$server.enabled}`
+        // gate doesn't have to know the on-disk shape.
+        'enabled' => (bool)   $s['enabled'],
     ], $serverRows);
     $row['server_count'] = count($row['servers']);
 

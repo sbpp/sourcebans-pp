@@ -37,14 +37,20 @@
  *
  *   echo '{"group":{"name":"alpha"},
  *          "servers":[{"ip":"203.0.113.1","port":27015},
- *                     {"ip":"203.0.113.2","port":27016}]}' \
+ *                     {"ip":"203.0.113.2","port":27016,"enabled":false}]}' \
  *     | php seed-server-group-e2e.php
  *
  * Output on stdout (single JSON line):
  *
  *   {"gid":42,"sids":[7,8],
- *    "servers":[{"sid":7,"ip":"203.0.113.1","port":27015},
- *               {"sid":8,"ip":"203.0.113.2","port":27016}]}
+ *    "servers":[{"sid":7,"ip":"203.0.113.1","port":27015,"enabled":true},
+ *               {"sid":8,"ip":"203.0.113.2","port":27016,"enabled":false}]}
+ *
+ * `enabled` defaults to `true` per server (matches the schema's
+ * `:prefix_servers.enabled TINYINT NOT NULL DEFAULT '1'`). Pass
+ * `"enabled": false` to seed a server that the admin Server Groups
+ * card stack will tag with `data-server-skip="1"` + the visible
+ * "Disabled" pill (#1406 post-review).
  *
  * IPs SHOULD be in the RFC 5737 documentation range (203.0.113.0/24,
  * 198.51.100.0/24, 192.0.2.0/24) so no real Source server can ever
@@ -135,6 +141,11 @@ foreach ($servers as $i => $s) {
     }
     $ip   = (string)($s['ip']   ?? '');
     $port = (int)   ($s['port'] ?? 0);
+    // `enabled` defaults to true (matches the schema default); pass
+    // `false` to seed a server the admin Server Groups card stack
+    // surfaces with `data-server-skip="1"` + the "Disabled" pill so
+    // server-tile-hydrate.js short-circuits the per-tile probe.
+    $enabled = !array_key_exists('enabled', $s) || (bool) $s['enabled'];
 
     if ($ip === '' || $port <= 0) {
         fwrite(STDERR, "seed-server-group-e2e.php: servers[$i] missing ip/port.\n");
@@ -147,8 +158,8 @@ foreach ($servers as $i => $s) {
     // without surfacing the NOT NULL constraints in the test
     // output.
     $GLOBALS['PDO']->query(
-        "INSERT INTO `:prefix_servers` (`ip`, `port`, `rcon`, `modid`, `enabled`) VALUES (?, ?, ?, ?, 1)"
-    )->execute([$ip, $port, '', 1]);
+        "INSERT INTO `:prefix_servers` (`ip`, `port`, `rcon`, `modid`, `enabled`) VALUES (?, ?, ?, ?, ?)"
+    )->execute([$ip, $port, '', 1, $enabled ? 1 : 0]);
 
     // PDO::lastInsertId() against the panel's `Database` wrapper —
     // the wrapper exposes the underlying lastInsertId via the
@@ -160,7 +171,7 @@ foreach ($servers as $i => $s) {
         exit(2);
     }
 
-    $seededServers[] = ['sid' => $sid, 'ip' => $ip, 'port' => $port];
+    $seededServers[] = ['sid' => $sid, 'ip' => $ip, 'port' => $port, 'enabled' => $enabled];
 }
 
 // ---------------------------------------------------------------

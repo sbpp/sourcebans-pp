@@ -53,13 +53,17 @@ final class AdminGroupsListView extends View
      * @param list<array<string,mixed>>      $server_list              Server group rows
      *     (`:prefix_groups` WHERE type = 3). Same naming-clash caveat
      *     as `$server_group_list` above. Each row carries a `servers`
-     *     key — a `list<array{sid: int, ip: string, port: int}>` of
-     *     the bound `:prefix_servers` records — that drives the
+     *     key — a `list<array{sid: int, ip: string, port: int, enabled: bool}>`
+     *     of the bound `:prefix_servers` records — that drives the
      *     per-group `[data-testid="server-tile"]` card stack in
      *     `page_admin_groups_list.tpl`. The shared hydration helper
      *     (`web/scripts/server-tile-hydrate.js`) picks up each tile
      *     and fires `Actions.ServersHostPlayers` to replace the SSR
-     *     `IP:port` fallback with the live hostname. #1406.
+     *     `IP:port` fallback with the live hostname. Disabled servers
+     *     stay visible (the bound-but-disabled relationship is the
+     *     useful operator context) but the template gates the
+     *     hydration probe on `enabled` via `data-server-skip="1"`
+     *     (mirror of `page_admin_servers_list.tpl`). #1406.
      * @param list<int>                      $server_counts            Per-group server counts, indexed
      *     parallel to `$server_list`.
      * @param list<array{name: string, value: int, label: string}> $all_flags Web-permission flag

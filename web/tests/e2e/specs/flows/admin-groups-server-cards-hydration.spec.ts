@@ -56,6 +56,7 @@
 
 import { expect, test } from '../../fixtures/auth.ts';
 import {
+    deleteServerE2e,
     seedServerGroupWithServersE2e,
     truncateE2eDb,
     type ServerGroupSeedResult,
@@ -252,5 +253,244 @@ test.describe('flow: admin Server Groups per-card server tiles (#1406)', () => {
 
         await expect(firstHost,  'first tile must flip to live hostname').toHaveText(STUB_HOSTNAMES[firstSeeded.sid]);
         await expect(secondHost, 'second tile must flip to live hostname').toHaveText(STUB_HOSTNAMES[secondSeeded.sid]);
+    });
+
+    test('a disabled server still renders as a tile (with the Disabled pill) but is skipped by the hydration probe', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'desktop is the canonical surface; the data-server-skip gate is shape-agnostic');
+
+        await truncateE2eDb();
+
+        // Seed one enabled + one disabled server bound to the same
+        // group. The disabled server should still render (the
+        // bound-but-disabled relationship is useful operator context)
+        // but ride the `data-server-skip="1"` short-circuit so the
+        // helper's loadTile() returns early before firing the per-tile
+        // probe. Mirrors the sibling contract in
+        // `page_admin_servers_list.tpl`.
+        const seed: ServerGroupSeedResult = await seedServerGroupWithServersE2e(
+            'e2e-admin-groups-1406-disabled',
+            [
+                { ip: '203.0.113.30', port: 27015 /* enabled defaults true */ },
+                { ip: '203.0.113.40', port: 27016, enabled: false },
+            ],
+        );
+        expect(seed.servers, 'shim must return both seeded servers').toHaveLength(2);
+        const [enabledSeeded, disabledSeeded] = seed.servers;
+        expect(enabledSeeded.enabled,  'first seeded server must be enabled').toBe(true);
+        expect(disabledSeeded.enabled, 'second seeded server must be disabled').toBe(false);
+
+        // Count `servers.host_players` requests per sid so we can
+        // prove the probe fires exactly once (for the enabled tile)
+        // and NEVER for the disabled tile. The hostname stub also
+        // gates the assertions on a deterministic envelope so the
+        // enabled tile's hostname flip is verifiable.
+        const probeCallsBySid: Record<number, number> = {};
+        const probedHostname = 'alpha-zero (live)';
+        await page.route((url) => url.pathname.endsWith('/api.php'), async (route) => {
+            const req = route.request();
+            if (req.method() !== 'POST') {
+                await route.continue();
+                return;
+            }
+            let payload: { action?: string; params?: { sid?: number } } = {};
+            try {
+                payload = JSON.parse(req.postData() ?? '{}');
+            } catch {
+                await route.continue();
+                return;
+            }
+            if (payload.action !== 'servers.host_players') {
+                await route.continue();
+                return;
+            }
+            const sid = Number(payload.params?.sid ?? 0);
+            probeCallsBySid[sid] = (probeCallsBySid[sid] ?? 0) + 1;
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ok: true,
+                    data: {
+                        sid, ip: '203.0.113.99', port: 27015,
+                        hostname: probedHostname,
+                        players: 0, maxplayers: 24,
+                        map: '', mapfull: '', mapimg: '',
+                        os_class: 'fab fa-linux', secure: true,
+                        player_list: [], can_ban: false,
+                    },
+                }),
+            });
+        });
+
+        await page.goto(ADMIN_GROUPS_ROUTE);
+
+        const groupRow = page.locator(`[data-testid="server-group-row"][data-id="${seed.gid}"]`);
+        await expect(groupRow, 'seeded group row must mount').toBeVisible();
+
+        // Both tiles must surface in the DOM — disabled servers stay
+        // visible per the documented operator-context contract.
+        const tiles = groupRow.locator('[data-testid="server-tile"]');
+        await expect(tiles, 'both seeded servers must render as tiles (the disabled one is not silently dropped)').toHaveCount(2);
+
+        const enabledTile  = groupRow.locator(`[data-testid="server-tile"][data-id="${enabledSeeded.sid}"]`);
+        const disabledTile = groupRow.locator(`[data-testid="server-tile"][data-id="${disabledSeeded.sid}"]`);
+
+        // The disabled tile must carry `data-server-skip="1"` — this
+        // is the load-bearing gate the hydration helper short-circuits
+        // on. Without it the helper would fire a pointless probe
+        // against a server the panel knows is offline by config.
+        await expect(disabledTile, 'disabled tile must carry data-server-skip="1" so the helper skips it').toHaveAttribute('data-server-skip', '1');
+        // The enabled tile must NOT carry the skip attribute — pin
+        // both halves so a regression that emits skip="1" unconditionally
+        // (and breaks hydration entirely) fails fast.
+        await expect(enabledTile, 'enabled tile must NOT carry data-server-skip').not.toHaveAttribute('data-server-skip', '1');
+
+        // Visible "Disabled" pill — the affordance that explains
+        // WHY the disabled row stays at the SSR IP:port. Without
+        // this an admin would reasonably wonder if the probe failed.
+        const disabledPill = disabledTile.locator('[data-testid="server-disabled-tag"]');
+        await expect(disabledPill, 'disabled tile must surface the Disabled pill').toBeVisible();
+        await expect(disabledPill, 'pill copy must read "Disabled"').toHaveText('Disabled');
+        // The enabled tile must NOT carry the pill.
+        await expect(
+            enabledTile.locator('[data-testid="server-disabled-tag"]'),
+            'enabled tile must NOT carry the Disabled pill',
+        ).toHaveCount(0);
+
+        // The enabled tile's host slot must flip to the live hostname
+        // — proves the helper DID fire for the enabled tile (and
+        // implicitly that the disabled tile's skip didn't break the
+        // enabled tile's hydration).
+        await expect(
+            enabledTile.locator('[data-testid="server-host"]'),
+            'enabled tile must flip to live hostname',
+        ).toHaveText(probedHostname);
+
+        // The disabled tile's host slot must stay at the SSR IP:port
+        // forever — the helper short-circuited before firing the
+        // probe so nothing patched the inner-text.
+        await expect(
+            disabledTile.locator('[data-testid="server-host"]'),
+            'disabled tile must stay at the SSR IP:port (helper skipped the probe)',
+        ).toHaveText(`${disabledSeeded.ip}:${disabledSeeded.port}`);
+
+        // Probe-call gate: exactly ONE `servers.host_players` POST
+        // landed on the route, and it was for the enabled sid. The
+        // disabled sid must have zero probes. This is the contract
+        // that the `data-server-skip="1"` gate ACTUALLY saves
+        // round-trips — without it the count would be 2.
+        expect(
+            probeCallsBySid[enabledSeeded.sid] ?? 0,
+            'enabled tile should produce exactly one Actions.ServersHostPlayers probe',
+        ).toBe(1);
+        expect(
+            probeCallsBySid[disabledSeeded.sid] ?? 0,
+            'disabled tile MUST NOT trigger any Actions.ServersHostPlayers probe (data-server-skip gate)',
+        ).toBe(0);
+    });
+
+    test('a dangling :prefix_servers_groups row pointing at a deleted server is silently dropped (INNER JOIN contract)', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'desktop is the canonical surface; the SQL contract is shape-agnostic');
+
+        await truncateE2eDb();
+
+        // Seed two servers bound to the group, then DELETE one via
+        // the dedicated shim that bypasses `api_servers_remove`'s
+        // cleanup cascade. The shim writes a raw
+        // `DELETE FROM :prefix_servers WHERE sid = ?` and leaves
+        // the `:prefix_servers_groups` row in place — which is what
+        // produces the orphan condition the admin Server Groups
+        // page's INNER JOIN is supposed to swallow.
+        const seed: ServerGroupSeedResult = await seedServerGroupWithServersE2e(
+            'e2e-admin-groups-1406-dangling',
+            [
+                { ip: '203.0.113.50', port: 27015 },
+                { ip: '203.0.113.60', port: 27016 },
+            ],
+        );
+        expect(seed.servers, 'shim must return both seeded servers').toHaveLength(2);
+        const [doomedSeeded, survivingSeeded] = seed.servers;
+
+        // Delete the first server. The `:prefix_servers_groups` row
+        // pointing at its sid stays in place — the schema has no
+        // ON DELETE CASCADE and the dispatcher's cleanup is the
+        // ONLY production path that removes the membership row.
+        const deleteResult = await deleteServerE2e(doomedSeeded.sid);
+        expect(deleteResult.deleted, 'doomed server must have actually been deleted').toBe(1);
+
+        // Stub `Actions.ServersHostPlayers` so the surviving tile's
+        // probe gets a deterministic envelope — not the assertion
+        // target here, but keeps the chrome quiet (no error toast
+        // surfacing in the run).
+        await page.route((url) => url.pathname.endsWith('/api.php'), async (route) => {
+            const req = route.request();
+            if (req.method() !== 'POST') {
+                await route.continue();
+                return;
+            }
+            let payload: { action?: string; params?: { sid?: number } } = {};
+            try {
+                payload = JSON.parse(req.postData() ?? '{}');
+            } catch {
+                await route.continue();
+                return;
+            }
+            if (payload.action !== 'servers.host_players') {
+                await route.continue();
+                return;
+            }
+            const sid = Number(payload.params?.sid ?? 0);
+            await route.fulfill({
+                status: 200,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    ok: true,
+                    data: {
+                        sid, ip: '203.0.113.99', port: 27015,
+                        hostname: 'surviving-server (live)',
+                        players: 0, maxplayers: 24,
+                        map: '', mapfull: '', mapimg: '',
+                        os_class: 'fab fa-linux', secure: true,
+                        player_list: [], can_ban: false,
+                    },
+                }),
+            });
+        });
+
+        await page.goto(ADMIN_GROUPS_ROUTE);
+
+        const groupRow = page.locator(`[data-testid="server-group-row"][data-id="${seed.gid}"]`);
+        await expect(groupRow, 'seeded group row must mount').toBeVisible();
+
+        // Contract: the INNER JOIN against `:prefix_servers` drops
+        // the dangling membership row, so the card body should
+        // render EXACTLY ONE tile (the surviving server) — not the
+        // orphan, not nothing, not a broken empty tile. The
+        // doomed sid's tile MUST NOT mount because there is no
+        // matching `:prefix_servers` row for the JOIN to resolve.
+        const tiles = groupRow.locator('[data-testid="server-tile"]');
+        await expect(
+            tiles,
+            'the dangling membership row must be silently dropped by the INNER JOIN — only the surviving server renders',
+        ).toHaveCount(1);
+        await expect(
+            groupRow.locator(`[data-testid="server-tile"][data-id="${doomedSeeded.sid}"]`),
+            'the deleted server must NOT surface as a tile (no orphan tile)',
+        ).toHaveCount(0);
+        await expect(
+            groupRow.locator(`[data-testid="server-tile"][data-id="${survivingSeeded.sid}"]`),
+            'the surviving server must render as the one remaining tile',
+        ).toHaveCount(1);
+
+        // The surviving tile's host slot still flips to the live
+        // hostname — proves the JOIN's filter didn't accidentally
+        // also drop the surviving server (a regression that
+        // swapped INNER JOIN for an over-eager LEFT JOIN + WHERE
+        // condition that nulled both rows would fail here).
+        await expect(
+            groupRow.locator(`[data-testid="server-tile"][data-id="${survivingSeeded.sid}"]`)
+                    .locator('[data-testid="server-host"]'),
+            'surviving tile must flip to live hostname (proves the JOIN kept the right row)',
+        ).toHaveText('surviving-server (live)');
     });
 });

@@ -115,12 +115,14 @@ final class AdminServerGroupsServerCardsRenderTest extends TestCase
         );
 
         $this->assertMatchesRegularExpression(
-            '/SELECT\s+S\.sid,\s*S\.ip,\s*S\.port/i',
+            '/SELECT\s+S\.sid,\s*S\.ip,\s*S\.port,\s*S\.enabled/i',
             $this->handler,
-            'admin.groups.php must SELECT sid / ip / port so the template has the canonical '
-            . '(sid, ip, port) triple to render one `[data-testid="server-tile"] data-id="{sid}"` '
-            . 'per server with the bare `IP:port` SSR fallback inside `[data-testid="server-host"]` '
-            . '(#1406).',
+            'admin.groups.php must SELECT sid / ip / port / enabled so the template has the '
+            . 'canonical (sid, ip, port, enabled) quadruple to render one '
+            . '`[data-testid="server-tile"] data-id="{sid}"` per server with the bare `IP:port` SSR '
+            . 'fallback inside `[data-testid="server-host"]` AND emit `data-server-skip="1"` on '
+            . 'disabled rows so `server-tile-hydrate.js` short-circuits the per-tile probe '
+            . '(#1406, post-review).',
         );
 
         $this->assertMatchesRegularExpression(
@@ -129,6 +131,21 @@ final class AdminServerGroupsServerCardsRenderTest extends TestCase
             'admin.groups.php must write the bound-server list to $row[\'servers\'] so the View DTO '
             . 'forwards it to the template — without this assignment the {foreach from=$group.servers} '
             . 'block has nothing to iterate (#1406).',
+        );
+
+        // The handler maps the raw row through `array_map` and the
+        // shape needs to carry `enabled` so the template's
+        // `{if !$server.enabled}` branch sees a truthy/falsy value. A
+        // future refactor that drops the `enabled` key from the
+        // composed shape would silently re-enable probing on
+        // disabled servers — pin the key here.
+        $this->assertMatchesRegularExpression(
+            '/[\'"]enabled[\'"]\s*=>\s*\(bool\)/i',
+            $this->handler,
+            'admin.groups.php must propagate the cast `enabled` flag into the per-server array so '
+            . 'the template\'s `data-server-skip` gate has a bool to branch on. Casting at the '
+            . 'handler keeps the on-disk TINYINT shape an implementation detail the template '
+            . 'doesn\'t need to know about (#1406, post-review).',
         );
     }
 
@@ -237,6 +254,80 @@ final class AdminServerGroupsServerCardsRenderTest extends TestCase
             'The `[data-testid="server-host"]` slot must SSR-render `{$server.ip|escape}:{$server.port}` '
             . 'as its inner-text so the no-JS path stays informative (#1406 issue body: "the fallback '
             . '(no JS / hydration disabled / cache cold) is the bare IP:port list").',
+        );
+    }
+
+    /**
+     * Disabled servers stay visible (the bound-but-disabled
+     * relationship is the useful operator context) but ride the
+     * `data-server-skip="1"` short-circuit so
+     * `server-tile-hydrate.js`'s `loadTile()` returns early instead
+     * of firing `Actions.ServersHostPlayers` against a server the
+     * panel already knows is offline by config. Mirror of the sibling
+     * contract in `page_admin_servers_list.tpl` (single-source the
+     * `pill--offline` "Disabled" affordance + the `data-server-skip`
+     * gate).
+     *
+     * Pin BOTH halves: the structural gate (`data-server-skip="1"`
+     * conditional on `!$server.enabled`) AND the visible affordance
+     * (`[data-testid="server-disabled-tag"]` pill). Without the
+     * pill the row would silently stay at the SSR `IP:port`
+     * fallback and an admin would reasonably wonder whether the
+     * probe failed; without the `data-server-skip` the helper would
+     * fire a pointless `Actions.ServersHostPlayers` round-trip
+     * against a server the panel already knows is offline.
+     */
+    public function testTemplateGatesDisabledServersOutOfTheHydrationProbe(): void
+    {
+        // The conditional must key on `!$server.enabled` (the cast
+        // handler-side flag — see `testHandlerJoinsServersGroupsAgainstServersForEachRow`
+        // above) and emit `data-server-skip="1"` on the per-server
+        // `<li>` so the helper's `loadTile()` early-returns. A regex
+        // here so a future re-indent doesn't false-fire the gate.
+        $this->assertMatchesRegularExpression(
+            '/\{if\s+!\$server\.enabled\}data-server-skip="1"\{\/if\}/',
+            $this->template,
+            'page_admin_groups_list.tpl must emit `{if !$server.enabled}data-server-skip="1"{/if}` on '
+            . 'each per-server `<li>` so server-tile-hydrate.js\'s loadTile() short-circuits on '
+            . 'disabled servers — without this gate the helper fires a pointless '
+            . 'Actions.ServersHostPlayers round-trip against every disabled server every page load '
+            . '(#1406, post-review).',
+        );
+
+        // The visible "Disabled" pill — `[data-testid="server-disabled-tag"]`
+        // for E2E + integration test anchoring. The `pill pill--offline`
+        // class chain matches the sibling contract in
+        // `page_admin_servers_list.tpl` (same single-source affordance).
+        $this->assertStringContainsString(
+            'data-testid="server-disabled-tag"',
+            $this->template,
+            'page_admin_groups_list.tpl must surface a `[data-testid="server-disabled-tag"]` pill '
+            . 'on disabled rows so the admin sees WHY the row stays at the SSR IP:port — without '
+            . 'the affordance the row reads as "the probe just hasn\'t resolved yet" and an admin '
+            . 'would reasonably wonder if the network failed (#1406, post-review).',
+        );
+
+        // The pill must live INSIDE the per-server foreach so it
+        // renders per disabled row, not as a sibling above/below the
+        // server-list. Cheap proximity check: the disabled-tag string
+        // appears AFTER the foreach opener and BEFORE the foreach closer.
+        $foreachOpenAt  = strpos($this->template, '{foreach from=$group.servers item="server"}');
+        $foreachCloseAt = strrpos($this->template, '{/foreach}');
+        $pillAt         = strpos($this->template, 'data-testid="server-disabled-tag"');
+        $this->assertNotFalse($foreachOpenAt,  'per-server foreach opener must exist');
+        $this->assertNotFalse($foreachCloseAt, 'per-server foreach closer must exist');
+        $this->assertNotFalse($pillAt,         'disabled-tag pill must exist');
+        $this->assertGreaterThan(
+            $foreachOpenAt,
+            $pillAt,
+            'The `server-disabled-tag` pill must live inside the per-server foreach so it renders '
+            . 'per disabled row, not as a sibling block (#1406, post-review).',
+        );
+        $this->assertLessThan(
+            $foreachCloseAt,
+            $pillAt,
+            'The `server-disabled-tag` pill must live inside the per-server foreach so it renders '
+            . 'per disabled row, not as a sibling block (#1406, post-review).',
         );
     }
 

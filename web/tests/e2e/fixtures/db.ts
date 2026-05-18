@@ -41,6 +41,8 @@ const ORPHAN_BAN_AID_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/orphan-ban-aid-e2e.php';
 const SEED_SERVER_GROUP_INSIDE_CONTAINER =
     '/var/www/html/web/tests/e2e/scripts/seed-server-group-e2e.php';
+const DELETE_SERVER_INSIDE_CONTAINER =
+    '/var/www/html/web/tests/e2e/scripts/delete-server-e2e.php';
 
 /**
  * Run the PHP shim that drives `Sbpp\Tests\Fixture` against
@@ -407,22 +409,32 @@ export async function orphanBanAidE2e(bid: number, newAid = 99999): Promise<void
  * 192.0.2.0/24) are recommended so a real Source server can't ever
  * answer the A2S probe; the spec stubs `Actions.ServersHostPlayers`
  * via `page.route` anyway, but the IPs show up in the SSR fallback.
+ *
+ * `enabled` defaults to `true` (matches the schema's
+ * `:prefix_servers.enabled TINYINT NOT NULL DEFAULT '1'`). Pass
+ * `false` to seed a server the admin Server Groups card stack will
+ * tag with `data-server-skip="1"` + the visible "Disabled" pill so
+ * `server-tile-hydrate.js` short-circuits the per-tile probe
+ * (#1406 post-review).
  */
 export interface ServerGroupSeedServer {
     ip: string;
     port: number;
+    enabled?: boolean;
 }
 
 /**
  * Shape returned by `seedServerGroupWithServersE2e`. `gid` is the
  * server-group's `:prefix_groups.gid`; `sids` mirrors the per-server
  * `:prefix_servers.sid` list in insert order so the spec can keyword
- * each `page.route` stub by sid.
+ * each `page.route` stub by sid. `enabled` flows through verbatim so
+ * specs covering the disabled-server arm can assert against the
+ * canonical value the shim wrote without re-deriving it.
  */
 export interface ServerGroupSeedResult {
     gid: number;
     sids: number[];
-    servers: Array<{ sid: number; ip: string; port: number }>;
+    servers: Array<{ sid: number; ip: string; port: number; enabled: boolean }>;
 }
 
 /**
@@ -494,6 +506,76 @@ export async function seedServerGroupWithServersE2e(
         const msg = err instanceof Error ? err.message : String(err);
         throw new Error(
             `seed-server-group-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
+        );
+    }
+}
+
+/**
+ * Delete a `:prefix_servers` row by `sid` via the dedicated e2e shim
+ * that **bypasses `api_servers_remove`**'s cleanup cascade. The
+ * dispatcher action runs a paired
+ * `DELETE FROM :prefix_servers_groups WHERE server_id = ?` (plus
+ * sibling cascades on `:prefix_admins_servers_groups`, etc.) which
+ * defeats the test purpose of the dangling-membership-row spec arm
+ * in `admin-groups-server-cards-hydration.spec.ts`.
+ *
+ * The whole point of that spec arm is to prove the admin Server
+ * Groups page's INNER JOIN (added in #1406) silently drops orphaned
+ * `:prefix_servers_groups` rows; the orphan only exists if the
+ * server delete LEAVES the membership row in place. The raw SQL
+ * shim is the narrow shape that produces the test condition.
+ *
+ * Idempotent: deleting an already-deleted sid is a no-op and the
+ * shim returns `{deleted: 0}` so the caller can sanity-check.
+ */
+export async function deleteServerE2e(sid: number): Promise<{ sid: number; deleted: number }> {
+    const inContainer = process.env.E2E_IN_CONTAINER === '1';
+    const cmd = inContainer ? 'php' : 'docker';
+    const cmdArgs = inContainer
+        ? [DELETE_SERVER_INSIDE_CONTAINER]
+        : ['compose', 'exec', '-T', 'web', 'php', DELETE_SERVER_INSIDE_CONTAINER];
+
+    const child = execFile(cmd, cmdArgs, {
+        maxBuffer: 8 * 1024 * 1024,
+        cwd: inContainer ? undefined : process.cwd(),
+    });
+
+    let stdout = '';
+    let stderr = '';
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString('utf8'); });
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString('utf8'); });
+
+    child.stdin?.write(JSON.stringify({ sid }));
+    child.stdin?.end();
+
+    await new Promise<void>((resolve, reject) => {
+        child.on('error', reject);
+        child.on('exit', (code) => {
+            if (code === 0) {
+                resolve();
+                return;
+            }
+            reject(new Error(
+                `delete-server-e2e.php exited ${code}\n`
+                + `stdout:\n${stdout}\nstderr:\n${stderr}`,
+            ));
+        });
+    });
+
+    const trimmed = stdout.trim();
+    if (trimmed === '') {
+        throw new Error(`delete-server-e2e.php: empty stdout\nstderr:\n${stderr}`);
+    }
+    try {
+        const parsed = JSON.parse(trimmed) as { sid: number; deleted: number };
+        if (typeof parsed.sid !== 'number' || typeof parsed.deleted !== 'number') {
+            throw new Error('missing sid/deleted keys');
+        }
+        return parsed;
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        throw new Error(
+            `delete-server-e2e.php: malformed stdout (${msg})\nstdout:\n${trimmed}\nstderr:\n${stderr}`,
         );
     }
 }

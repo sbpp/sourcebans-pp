@@ -376,6 +376,13 @@
                             servers list runs at 70).
                         *}
                         <div class="card__body">
+                            {* Deliberate deviation from the shared `.empty-state` chrome
+                               documented under "Empty states" in AGENTS.md: the cramped
+                               per-card body (this lives inside a 20rem-min grid column,
+                               not a full-width page region) doesn't have the vertical
+                               room for the icon + title + body + CTA stack. The shared
+                               chrome is right for page-level empties; an inline one-liner
+                               is right for an empty CELL inside a populated card. #1406. *}
                             {if empty($group.servers)}
                                 <p class="text-xs text-muted m-0" data-testid="server-group-empty">
                                     <em>No servers bound to this group yet.</em>
@@ -386,11 +393,29 @@
                                     data-testid="server-group-server-list"
                                     data-server-hydrate="auto"
                                     data-trunchostname="40">
+                                    {*
+                                        Disabled servers stay visible — the bound-but-disabled
+                                        relationship is useful operator context — but ride the
+                                        `data-server-skip="1"` short-circuit so the shared
+                                        hydration helper's `loadTile()` returns early instead of
+                                        firing a pointless `Actions.ServersHostPlayers` round-trip
+                                        against a server the panel already knows is offline by
+                                        config. Mirrors `page_admin_servers_list.tpl`'s contract.
+                                        The visible "Disabled" pill (testid
+                                        `server-disabled-tag`) is the affordance that explains
+                                        why no hostname appears on the row — without it the row
+                                        would silently stay at the SSR `IP:port` fallback and an
+                                        admin would reasonably wonder whether the probe failed.
+                                        The pill is also gated server-side, NOT a CSS-only badge
+                                        — a third-party theme stripping the rule still surfaces
+                                        the affordance because the markup is in the DOM.
+                                    *}
                                     {foreach from=$group.servers item="server"}
                                         <li class="flex items-center gap-2"
                                             data-testid="server-tile"
                                             data-id="{$server.sid}"
-                                            style="padding:0.375rem 0.5rem;border-radius:var(--radius-md);background:var(--bg-muted);min-width:0">
+                                            {if !$server.enabled}data-server-skip="1"{/if}
+                                            style="padding:0.375rem 0.5rem;border-radius:var(--radius-md);background:var(--bg-muted);min-width:0{if !$server.enabled};opacity:0.65{/if}">
                                             <i data-lucide="server" aria-hidden="true" style="width:14px;height:14px;flex-shrink:0;color:var(--text-faint)"></i>
                                             <div class="flex-1" style="min-width:0">
                                                 <div class="font-medium text-sm truncate"
@@ -398,6 +423,12 @@
                                                      data-fallback="{$server.ip|escape}:{$server.port}">{$server.ip|escape}:{$server.port}</div>
                                                 <div class="text-xs text-faint font-mono truncate">{$server.ip|escape}:{$server.port}</div>
                                             </div>
+                                            {if !$server.enabled}
+                                                <span class="pill pill--offline"
+                                                      data-testid="server-disabled-tag"
+                                                      title="Disabled — hidden from public lists and skipped by the per-card hydration probe"
+                                                      style="flex-shrink:0">Disabled</span>
+                                            {/if}
                                         </li>
                                     {/foreach}
                                 </ul>
