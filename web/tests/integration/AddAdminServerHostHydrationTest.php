@@ -199,18 +199,27 @@ final class AddAdminServerHostHydrationTest extends TestCase
     public function testRowsCarryHostnameSlotWithFallback(): void
     {
         // The hostname `<span>` must carry BOTH the testid AND
-        // `data-fallback="{$server.ip|escape}:{$server.port|escape}"`.
-        // The literal Smarty interpolation survives in the template
-        // source.
+        // `data-fallback="{$server.ip}:{$server.port}"`. The literal
+        // Smarty interpolation survives in the template source.
+        //
+        // No explicit `|escape` filter — Smarty's global
+        // `setEscapeHtml(true)` (web/init.php) auto-escapes every
+        // interpolation, and the sibling canonical minimal-integration
+        // surface `page_dashboard.tpl` ships the same shape. Adding an
+        // explicit `|escape` here would double-escape (no harm for
+        // IP/port which carry no HTML-special chars, but the drift
+        // hides the auto-escape contract).
         $this->assertMatchesRegularExpression(
-            '/<span\b[^>]*\bdata-testid="server-host"[^>]*\bdata-fallback="\{\$server\.ip\|escape\}:\{\$server\.port\|escape\}"/',
+            '/<span\b[^>]*\bdata-testid="server-host"[^>]*\bdata-fallback="\{\$server\.ip\}:\{\$server\.port\}"/',
             $this->template,
             'Each per-server row must ship a `<span data-testid="server-host" '
-            . 'data-fallback="{$server.ip|escape}:{$server.port|escape}">` slot so the shared '
+            . 'data-fallback="{$server.ip}:{$server.port}">` slot so the shared '
             . 'hydration helper has a target for `sb.setHTML(d.hostname)` and a fallback to '
             . 'repaint when the UDP probe fails (#1405). The bare IP:port stays as the inner '
             . 'text so the no-JS / cache-cold path renders the same address the helper would '
-            . 'eventually paint via `data-fallback`.',
+            . 'eventually paint via `data-fallback`. The interpolation rides Smarty\'s global '
+            . 'auto-escape (no explicit `|escape` filter) to stay byte-symmetric with the '
+            . 'sibling minimal-integration surface `page_dashboard.tpl`.',
         );
     }
 

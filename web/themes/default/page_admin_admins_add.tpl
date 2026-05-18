@@ -246,7 +246,7 @@
                                                data-testid="admin-add-server">
                                         <span class="text-sm font-mono"
                                               data-testid="server-host"
-                                              data-fallback="{$server.ip|escape}:{$server.port|escape}">{$server.ip|escape}:{$server.port|escape}</span>
+                                              data-fallback="{$server.ip}:{$server.port}">{$server.ip}:{$server.port}</span>
                                     </label>
                                 {/foreach}
                             </div>

@@ -2,21 +2,55 @@
 /* ============================================================
    server-tile-hydrate.js — per-tile UDP-probe hydration
 
-   Shared hydration helper for the two card-grid surfaces that
-   render `:prefix_servers` rows and want live A2S data:
+   Shared hydration helper for every panel surface that renders
+   `:prefix_servers` rows and wants live A2S data. AGENTS.md
+   "Where to find what" → "Hydrate server-tile cards…" is the
+   prose source of truth; this block mirrors it so the per-surface
+   testid count is discoverable from the file itself.
 
-     - public servers list (page_servers.tpl)
-     - admin Server Management list (page_admin_servers_list.tpl, #1313)
+   Four consuming surfaces, in order of how much of the optional
+   testid surface they opt into:
 
-   Both surfaces emit `[data-testid="server-tile"]` cards with
-   placeholder values for map / players / hostname; this helper
+     - page_servers.tpl                  public Server List
+         9 hydration testids (tile + status + map + players + host
+         + refresh + toggle + players-panel + map-img) plus the
+         non-testid `[data-players-bar]` progress fill. The auto-
+         expand index + the right-click context-menu integration
+         are exclusive to this surface.
+
+     - page_admin_servers_list.tpl       admin Server Management
+         (#1313) 6 hydration testids (tile + status + map +
+         players + host + refresh). No toggle / players-panel /
+         map-img — admins drill into a server via the per-card
+         Edit / Rcon / Admins affordances instead, so the chrome
+         skips the expand-to-player-list mechanic.
+
+     - page_dashboard.tpl                dashboard Servers widget
+         (#1375) minimal-integration shape: 2 hydration testids
+         (tile + host). The widget shares column width with the
+         Latest Bans card and trims the per-row affordances to
+         the hostname swap only.
+
+     - page_admin_admins_add.tpl         Add Admin per-server
+         access checkbox grid (#1405) — same minimal shape as
+         the dashboard widget (2 hydration testids, tile +
+         host). The grid is an EDITOR for per-server access, not
+         a player-row table, so status pills / player counts
+         would only add visual noise to the checkbox column.
+
+   Every surface emits `[data-testid="server-tile"]` cards with
+   placeholder values for the cells they opt into; this helper
    walks the cards, fires `Actions.ServersHostPlayers` per tile,
    and patches the response into the testid'd cells. The admin
    list's pre-#1313 markup carried `[data-hydrate="map"]` /
    `[data-hydrate="players"]` placeholders with no script behind
    them and the tile values stayed at the em-dash forever; #1313
    renamed those hooks to match the public surface and routed
-   the call here so both surfaces share the contract.
+   the call here so both surfaces share the contract. The
+   dashboard + Add Admin minimal surfaces ride the same call
+   site — every cell beyond `[data-testid="server-host"]` is
+   feature-detected against the optional table below and silently
+   no-ops on the two minimal surfaces.
 
    ----------------------------------------------------------------
    Selector contract per tile
@@ -77,9 +111,11 @@
 
    The helper is feature-detected for every optional element, so a tile
    that doesn't carry (e.g.) `[data-players-bar]` still hydrates the cells
-   it does carry. That's how one helper covers both the public surface
-   (which has player-list expansion + an auto-expand index) and the admin
-   surface (which has neither).
+   it does carry. That's how one helper covers all four surfaces above:
+   the public list (player-list expansion + an auto-expand index +
+   map-thumbnail + right-click context menu), the admin list (none of
+   the above — only the live cells), and the two minimal surfaces
+   (dashboard widget + Add Admin grid — host slot only).
 
    Per AGENTS.md "Frontend": vanilla JS only, no bundler, `// @ts-check`
    + JSDoc on every public function. The helper depends on api.js (sb.api)
