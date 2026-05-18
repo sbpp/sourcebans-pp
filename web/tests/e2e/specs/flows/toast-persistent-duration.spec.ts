@@ -90,12 +90,16 @@ import { seedBanViaApi } from '../../fixtures/seeds.ts';
 // worker doesn't double-stomp the previous run's ban. The `seedBanViaApi`
 // tolerance for `already_banned` keeps a single retry working but a
 // shared steam id would coalesce two tests into the same bid.
+//
+// Two seeded sites, not three: the routine-toast test (reviewer
+// Suggested #2) was reshaped to drive `window.SBPP.showToast(...)`
+// directly from a stable panel surface instead of triggering a
+// page-flow that carries a redirect, so it no longer needs a
+// seeded ban / orphan-aid setup.
 const STEAM_A = 'STEAM_0:0:14091409'; // mnemonic: 1409 for the issue number
-const STEAM_B = 'STEAM_0:0:14091410'; // sibling, unique-per-test
 const STEAM_C = 'STEAM_0:0:14091411';
 
 const NICK_A  = '1409-persist-1';
-const NICK_B  = '1409-persist-2';
 const NICK_C  = '1409-persist-wire';
 
 const NONEXISTENT_AID = 99999; // matches the orphan-ban-aid-e2e.php convention
@@ -256,44 +260,126 @@ test.describe('flow: persistent toast on NOT-* branch (#1409 `duration_ms: 0`)',
         // regression because every routine info / success surface
         // would suddenly require manual dismissal.
         //
-        // Drive the L94 lowercase-Not branch (`'Player Not Unbanned'`)
-        // — explicitly NOT converted in #1409 (it's the "ban
-        // doesn't exist or already unbanned" message, not a
-        // destructive-action-failed branch). It rides the default
-        // duration with no 5th argument.
+        // **Why we don't drive a page-flow route here**: the obvious
+        // shape (hit a 404-shaped GET-fallback like
+        // `?p=banlist&a=unban&id=99999` that fires the lowercase-Not
+        // branch) carries a non-null `$redirect`, so the chrome's
+        // `flushPendingToasts` schedules a `window.location.href`
+        // navigation ~1500ms after paint. The toast disappears
+        // because the PAGE TEARS DOWN, not because the 4000ms timer
+        // fired — a regression that bumped `SHOWTOAST_DEFAULT_DURATION`
+        // to 10000ms would still silently pass that test because
+        // the navigation happens well before the (broken) timer
+        // would have. Reviewer Suggested #2 (post-PR #1414) caught
+        // this: the test was nominally green but proved nothing
+        // about the timer contract.
+        //
+        // The replacement isolates the contract under test. We:
+        //   1. Navigate to a panel page that has no pending toasts
+        //      and no pending redirects (the home dashboard with
+        //      `?p=home` is the simplest stable surface — the
+        //      seeded admin's storage state lands there directly).
+        //   2. Drive `window.SBPP.showToast(...)` directly from the
+        //      page, with NO `durationMs` option, so the chrome
+        //      falls through to its `SHOWTOAST_DEFAULT_DURATION`
+        //      default. (`window.SBPP.showToast` is the
+        //      chrome-exposed wrapper documented in
+        //      `web/scripts/globals.d.ts`; it's the same code path
+        //      `flushPendingToasts` uses internally.)
+        //   3. Assert the toast paints immediately.
+        //   4. Wait ~3500ms — STILL inside the default ~4000ms
+        //      window — and assert the toast is still visible.
+        //      Catches a regression where `SHOWTOAST_DEFAULT_DURATION`
+        //      was accidentally LOWERED to ~3000ms.
+        //   5. Wait another ~1500ms (total 5000ms — well past the
+        //      default 4000ms + a generous margin for slow CI
+        //      runners) and assert the toast is GONE. Catches the
+        //      "every toast is now persistent" regression (the
+        //      worst case the contract guards against) AND the
+        //      "default duration was bumped past 5000ms" regression.
+        //
+        // The test proves ONLY the timer contract: no page-flow
+        // dependency, no redirect interference, no orphan-ban
+        // setup. The single load-bearing `waitForTimeout` is the
+        // 3500ms / 5000ms pair documented above; AGENTS.md
+        // "Playwright E2E specifics" notes the auto-dismiss
+        // timing assertion is the canonical case where a timer
+        // wait is legitimate (along with the persistent-toast
+        // sister assertion in the test above).
         const consoleErrors: string[] = [];
         page.on('pageerror', (err) => consoleErrors.push(err.message));
 
-        try {
-            await seedBanViaApi(page, { nickname: NICK_B, steam: STEAM_B });
-        } catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            if (!msg.includes('already_banned')) throw err;
-        }
-        const { postkey } = await extractFreshPostkeyAndBid(page, NICK_B);
+        // Land on a stable panel surface with no pending toasts /
+        // redirects. The home dashboard renders for any logged-in
+        // user; the seeded admin storage state takes us straight
+        // through the login redirect on first visit.
+        await page.goto('/index.php?p=home');
 
-        // Bid 99999 doesn't exist → L91 empty-row branch fires →
-        // "Player Not Unbanned" (lowercase Not) with no 5th arg →
-        // default 4000ms timer.
-        await page.goto(
-            `/index.php?p=banlist&a=unban&id=99999&key=${postkey}&ureason=1409-routine-regression-guard`,
-        );
+        // Pre-check: no toast on the page before we fire one.
+        await expect(
+            page.locator('[data-testid="toast"]'),
+            'precondition: home dashboard should have no pending toasts before the manual `showToast` call'
+            + ' — if there are leftover toasts here, the test environment is dirty and the timer'
+            + ' assertion below is meaningless',
+        ).toHaveCount(0);
+
+        // Fire a routine toast directly through the chrome's
+        // exposed API. `window.SBPP.showToast` is the documented
+        // entry point (see `web/scripts/globals.d.ts`); calling
+        // it with NO `durationMs` exercises the `=== undefined`
+        // fall-through to `SHOWTOAST_DEFAULT_DURATION`. The
+        // `evaluate` runs in the page context, so the chrome's
+        // `theme.js` (already loaded by the home page) handles
+        // the toast natively.
+        await page.evaluate(() => {
+            const sbpp = (window as unknown as { SBPP?: { showToast?: (opts: unknown) => void } }).SBPP;
+            if (!sbpp || !sbpp.showToast) {
+                throw new Error('window.SBPP.showToast is not exposed — chrome JS did not boot');
+            }
+            sbpp.showToast({
+                kind: 'info',
+                title: '1409 routine timer probe',
+                body: 'This toast must auto-dismiss after the default 4000ms.',
+            });
+        });
 
         const toast = page
             .locator('[data-testid="toast"]')
-            .filter({ hasText: 'Player Not Unbanned' });
+            .filter({ hasText: '1409 routine timer probe' });
         await expect(toast).toBeVisible({ timeout: 1500 });
 
-        // Wait past the default duration + the ~500ms safety margin.
+        // Wait ~3500ms — still well inside the default 4000ms
+        // window with a ~500ms safety margin. The toast MUST
+        // still be visible. Catches a regression that lowered
+        // `SHOWTOAST_DEFAULT_DURATION` (e.g. to 3000ms during a
+        // "make toasts disappear faster" tweak).
         // eslint-disable-next-line playwright/no-wait-for-timeout
-        await page.waitForTimeout(4500);
-
-        // The toast should be GONE — the default-duration contract
-        // is preserved.
+        await page.waitForTimeout(3500);
         await expect(
             toast,
-            'routine toast (no duration_ms override) MUST auto-dismiss after SHOWTOAST_DEFAULT_DURATION'
-            + ' — a regression here would make every panel toast persistent and force users to click X on every confirmation',
+            'routine toast must still be visible at ~3500ms (well within the SHOWTOAST_DEFAULT_DURATION ~4000ms'
+            + ' window) — a regression that lowered the default below ~3500ms would fail HERE',
+        ).toBeVisible();
+
+        // Wait another ~1500ms (total ~5000ms post-paint), then
+        // assert the toast has been removed by the auto-dismiss
+        // timer. Total wait is ~1000ms past the default 4000ms
+        // window — generous margin for slow CI runners but
+        // tight enough that a regression bumping the default to
+        // 6000ms+ fails here. A regression that disabled the
+        // auto-dismiss timer entirely (e.g. dropped the
+        // `if (durationMs > 0)` guard's `setTimeout` call when
+        // `durationMs` is `undefined`) would ALSO fail here:
+        // the toast would still be visible at 5000ms because
+        // nothing schedules its removal.
+        // eslint-disable-next-line playwright/no-wait-for-timeout
+        await page.waitForTimeout(1500);
+        await expect(
+            toast,
+            'routine toast (no `durationMs` option) MUST auto-dismiss within'
+            + ' SHOWTOAST_DEFAULT_DURATION + a safety margin — a regression that disabled the timer'
+            + ' for the undefined-durationMs case would make EVERY panel toast persistent and force'
+            + ' users to click X on every routine info / success / warn confirmation',
         ).toHaveCount(0);
 
         expect(

@@ -849,13 +849,48 @@ final class ToastEmitRegressionTest extends ApiTestCase
      * lift preserved the casing verbatim; #1409 restores the
      * sticky semantic under a cleaner contract.
      *
-     * Each entry is `[relPath, titlePrefix]` — we grep the file
-     * for `Toast::emit('error', '<titlePrefix>'` and assert the
-     * call site passes a 5th positional argument (whose value is
-     * `0`). Pattern is `/Toast::emit\(\s*'error',\s*'<title>',\s*[^,]+,\s*[^,]+,\s*0\s*,?\s*\)/`
-     * — five comma-separated args, the last one is the literal
-     * `0`. The trailing `,?` accepts the PSR-12-style trailing-
-     * comma shape some files use and some don't.
+     * Each entry is keyed by `'<relPath> — <descriptor>'` and
+     * carries:
+     *   - `file`            absolute path to the PHP page handler
+     *   - `title`           the exact toast title literal
+     *   - `body_substring`  a substring of the toast body that
+     *                       disambiguates this site from any sibling
+     *                       site in the same file sharing the same
+     *                       title (the canonical case is
+     *                       `page.commslist.php`'s two "Player NOT
+     *                       UnGagged" sites — ungag at L131 carries
+     *                       "There was an error ungagging", unmute
+     *                       at L227 carries "There was an error
+     *                       unmuted". Both lift the v1.x
+     *                       `ShowBox(..., sticky=true)` semantic and
+     *                       both need the persistent contract pinned
+     *                       independently — a regression dropping
+     *                       just one would silently pass an
+     *                       `assertGreaterThan(0)` gate.)
+     *   - `expected_count`  the exact number of times the (title,
+     *                       body_substring) tuple should appear with
+     *                       the `duration_ms: 0` shape. Today every
+     *                       audited NOT-* call site is unique (1
+     *                       call per tuple); the field is explicit
+     *                       so a future PR that intentionally splits
+     *                       or merges a branch has to update the
+     *                       expected count rather than tripping a
+     *                       loose `>= 1` assertion that no longer
+     *                       reflects reality.
+     *
+     * We grep the file for `Toast::emit('error', '<title>', '...body_substring...'`
+     * shape and assert the call site passes a 5th positional argument
+     * (whose value is `0`) AND a 4th positional argument that's the
+     * literal `null` (persistent + redirect are mutually exclusive —
+     * the chrome's `flushPendingToasts` would otherwise navigate
+     * ~1500ms after paint, tearing down the persistent toast before
+     * the operator can read or dismiss it).
+     *
+     * Pattern is `/Toast::emit\(\s*'error',\s*'<title>',\s*'<body_substring_anchored>...,\s*null,\s*0\s*,?\s*\)/`
+     * — five comma-separated args, the last one is literal `0`, the
+     * redirect is literal `null`. The trailing `,?` accepts the
+     * PSR-12-style trailing-comma shape some files use and some
+     * don't.
      *
      * Future refactors that move the call sites to a helper that
      * defaults to `duration_ms: 0` (so the literal arg goes
@@ -864,77 +899,214 @@ final class ToastEmitRegressionTest extends ApiTestCase
      * call would satisfy that even though the static grep no
      * longer matches.
      *
-     * @return list<array{0: string, 1: string}>
+     * @return array<string, array{file: string, title: string, body_substring: string, expected_count: int}>
      */
     public static function notStarBranches(): array
     {
+        $pagesRoot = dirname(__DIR__, 2) . '/pages';
         return [
-            ['pages/page.banlist.php',   'Player NOT Unbanned'],
-            ['pages/page.banlist.php',   'Ban NOT Deleted'],
-            ['pages/page.commslist.php', 'Player NOT UnGagged'], // matches two sites in this file (ungag + unmute branches); the assertion below tolerates multi-match
-            ['pages/page.commslist.php', 'Ban NOT Deleted'],
+            'page.banlist.php — Player NOT Unbanned' => [
+                'file' => $pagesRoot . '/page.banlist.php',
+                'title' => 'Player NOT Unbanned',
+                'body_substring' => 'There was an error unbanning',
+                'expected_count' => 1,
+            ],
+            'page.banlist.php — Ban NOT Deleted' => [
+                'file' => $pagesRoot . '/page.banlist.php',
+                'title' => 'Ban NOT Deleted',
+                // page.banlist.php L235 builds the body as
+                // "The ban for '$row[name]' had an error while being removed."
+                // — the "had an error while being removed" phrase
+                // is the disambiguating shape (vs. page.commslist.php's
+                // own "Ban NOT Deleted" body which carries the
+                // sister phrase but for the `$row['name']`-built
+                // comm block, not a ban).
+                'body_substring' => 'had an error while being removed',
+                'expected_count' => 1,
+            ],
+            'page.commslist.php — Player NOT UnGagged (ungag failure)' => [
+                'file' => $pagesRoot . '/page.commslist.php',
+                'title' => 'Player NOT UnGagged',
+                // Disambiguator: this site is the gag-removal
+                // failure branch at L131. The sibling site at L227
+                // shares the title but carries "ungagging" → "unmuted"
+                // (the legacy copy mismatch is documented in #1409
+                // review NIT 2 as a separate cleanup).
+                'body_substring' => 'There was an error ungagging',
+                'expected_count' => 1,
+            ],
+            'page.commslist.php — Player NOT UnGagged (unmute failure)' => [
+                'file' => $pagesRoot . '/page.commslist.php',
+                'title' => 'Player NOT UnGagged',
+                // Disambiguator: this site is the mute-removal
+                // failure branch at L227, paired with the ungag
+                // failure branch above. The "unmuted" word in the
+                // body is the legacy copy from the v1.x
+                // `ShowBox(..., sticky=true)` lift; #1409 review
+                // NIT 2 tracks the eventual rewording to
+                // "There was an error unmuting".
+                'body_substring' => 'There was an error unmuted',
+                'expected_count' => 1,
+            ],
+            'page.commslist.php — Ban NOT Deleted' => [
+                'file' => $pagesRoot . '/page.commslist.php',
+                // The commslist's "Ban NOT Deleted" body builds the
+                // same "had an error while being removed" phrasing
+                // for a comm-block row; the file context (different
+                // page handler from the banlist's homonym) is what
+                // disambiguates, not the body — but we still anchor
+                // on the substring so a future cleanup that
+                // re-words the body forces an explicit update.
+                'title' => 'Ban NOT Deleted',
+                'body_substring' => 'had an error while being removed',
+                'expected_count' => 1,
+            ],
         ];
     }
 
+    /**
+     * Pin the (title, body, $redirect=null, $duration_ms=0) call
+     * shape for each NOT-* site identified in {@see notStarBranches}.
+     *
+     * **Why disambiguate by body substring + assert an exact count**:
+     * `page.commslist.php` carries two sites with the title literal
+     * `'Player NOT UnGagged'` (the ungag failure at L131 + the unmute
+     * failure at L227; the duplicated title is legacy copy that
+     * #1409 review NIT 2 tracks for a separate rewording pass). A
+     * loose `assertGreaterThan(0, $found)` against the title alone
+     * would silently pass if a future regression dropped just ONE
+     * of the two sites back to non-persistent — the surviving site
+     * would still satisfy the gate. The data provider keys each row
+     * by `(title, body_substring)` so each site is asserted
+     * independently, and `assertSame($expected_count, $found)`
+     * catches both directions of drift (a site dropped silently AND
+     * a duplicate that crept in via copy-paste).
+     *
+     * Reviewer Suggested #1 (post-PR #1414). Pre-fix the assertion
+     * was `assertGreaterThan(0, $found, ...)` keyed only on the
+     * title; the new shape encodes the body substring + expected
+     * count in the data provider so each site has its own dedicated
+     * fail message.
+     *
+     * @param string $file           Absolute path to the page handler.
+     * @param string $title          The exact title literal on the wire.
+     * @param string $body_substring A substring of the body that
+     *                               disambiguates this site from any
+     *                               sibling sharing the same title.
+     * @param int    $expected_count The number of times the call shape
+     *                               must appear (currently always 1).
+     */
     #[DataProvider('notStarBranches')]
-    public function testNotStarBranchesPassPersistentDurationMs(string $rel, string $titlePrefix): void
-    {
-        $abs = ROOT . $rel;
+    public function testNotStarBranchesPassPersistentDurationMs(
+        string $file,
+        string $title,
+        string $body_substring,
+        int $expected_count,
+    ): void {
         $this->assertFileExists(
-            $abs,
-            "NOT-* branch source $rel was renamed or removed — update notStarBranches() above.",
+            $file,
+            "NOT-* branch source $file was renamed or removed — update notStarBranches() above.",
         );
-        $contents = (string) file_get_contents($abs);
+        $contents = (string) file_get_contents($file);
+        $rel = substr($file, strlen(ROOT));
 
         // Five-arg pattern: kind, title, body, redirect, duration_ms.
-        // The body / redirect / first-4-arg shape is intentionally
-        // loose — we only care that the 5th arg is `0`. The pattern
-        // tolerates multi-line emit calls (most of them ARE multi-
-        // line per the codebase's style); `s` flag is mandatory.
-        // The title literal is anchored with surrounding quotes so
-        // a partial-match like "Player NOT UnGagged" doesn't pick
-        // up a hypothetical "Player NOT UnGagged Successfully" too.
-        $titleQuoted = preg_quote($titlePrefix, '#');
-        $pattern = '#\\\\?Sbpp\\\\View\\\\Toast::emit\\(\\s*'
-            . "'error',\\s*"            // kind
-            . "'{$titleQuoted}',\\s*"  // title (anchored, exact)
-            . '[^,]+?,\\s*'             // body (one comma-free chunk)
-            . '[^,]+?,\\s*'             // redirect (one comma-free chunk)
-            . '0\\s*,?\\s*\\)#s';        // duration_ms (literal 0, optional trailing comma)
-
-        $found = preg_match_all($pattern, $contents, $matches);
-        $this->assertGreaterThan(
-            0,
-            $found,
-            "Call site $rel:'$titlePrefix' does not pass `duration_ms: 0` as the 5th positional arg to `\\Sbpp\\View\\Toast::emit(...)`. The severe-error toast would auto-dismiss after ~4000ms and the operator would miss the failure confirmation — exactly the v1.x `ShowBox(..., sticky=true)` semantic #1409 restored. If the call site was migrated to a helper that defaults to `duration_ms: 0`, update `notStarBranches()` above to remove this branch from the static gate.",
-        );
-
-        // Belt-and-braces companion: every NOT-* match must pass
-        // `null` for the 4th `$redirect` arg. Persistent +
-        // redirect are mutually exclusive — the chrome's
-        // `flushPendingToasts` would otherwise navigate ~1500ms
-        // after paint, tearing down the toast before the operator
-        // can read or dismiss it (defeating the persistent
-        // semantic). Pin the call-site half of the contract here;
-        // the chrome's defence-in-depth inhibit is exercised
-        // end-to-end by
-        // `web/tests/e2e/specs/flows/toast-persistent-duration.spec.ts`.
+        // - `kind`            must be literal `'error'`
+        // - `title`           must match the exact provider literal
+        //                     (surrounding quotes anchor it)
+        // - `body`            captured as a non-greedy `.*?` window
+        //                     between the title comma and the
+        //                     `, null, 0,` tail. The body span has
+        //                     to contain the disambiguating
+        //                     substring — checked as a separate
+        //                     `str_contains` after the regex
+        //                     matches, which is robust against
+        //                     every body shape the codebase
+        //                     produces: single-quoted concat
+        //                     (`'There was an error ungagging ' . $row['name']`,
+        //                     L131 / L227), double-quoted concat
+        //                     (`"The ban for '" . $steam['name'] . "' had an error while being removed."`,
+        //                     L271), heredoc, etc. A regex
+        //                     attempting to parse the body shape
+        //                     directly fights PHP's quoting rules
+        //                     for no payoff; the
+        //                     "what's between title and redirect"
+        //                     definition is unambiguous.
+        // - `redirect`        MUST be literal `null` (the call-site half
+        //                     of the persistent+redirect mutual-exclusion
+        //                     contract — see AGENTS.md "Server-side
+        //                     toast emission" → "Redirect coalescing").
+        //                     A string here ('null' or any URL) would
+        //                     re-introduce the chrome's redirect
+        //                     setTimeout and tear down the persistent
+        //                     toast ~1500ms after paint.
+        // - `duration_ms`     MUST be literal `0`. The optional `,?`
+        //                     accepts both PSR-12 trailing-comma and
+        //                     legacy-no-trailing-comma shapes.
         //
-        // The tighter check pins specifically the literal `null`
-        // 4th argument (`'null'` would NOT satisfy — that's a
-        // string "null" which the chrome would treat as a real
-        // redirect target).
-        $strictPattern = '#\\\\?Sbpp\\\\View\\\\Toast::emit\\(\\s*'
-            . "'error',\\s*"
-            . "'{$titleQuoted}',\\s*"
-            . '[^,]+?,\\s*'            // body
-            . 'null\\s*,\\s*'           // redirect MUST be the literal `null`
-            . '0\\s*,?\\s*\\)#s';
-        $strictFound = preg_match_all($strictPattern, $contents, $strictMatches);
-        $this->assertGreaterThan(
-            0,
-            $strictFound,
-            "Call site $rel:'$titlePrefix' passes `duration_ms: 0` but ALSO passes a non-null `\$redirect` — the two are mutually exclusive per AGENTS.md \"Server-side toast emission\" → \"Duration semantics\". The chrome's `flushPendingToasts` redirect coalescing would navigate ~1500ms after paint, tearing down the persistent toast before the operator can read or dismiss it (the exact #1409 regression vector). Drop the redirect to `null` so the operator stays on the rendered surface and acknowledges the failure via the X button.",
+        // The `s` flag is mandatory — the call sites are multi-line
+        // per the codebase's style.
+        // The body capture is `((?:(?!\);).)*?)` — a lazy match
+        // that explicitly REJECTS the `);` statement terminator
+        // (`\)` close-paren followed by `;` semi). Without that
+        // guard, a regressed call site that drops the 5th arg (e.g.
+        // `Toast::emit('error', 'Player NOT UnGagged', $body);`)
+        // would let the body capture extend across the `);` into
+        // the next `Toast::emit(...)` block and match its `, null,
+        // 0,` tail — silently passing the gate while the regressed
+        // site has neither the null redirect nor the persistent
+        // duration. The negative lookahead pins the body to the
+        // current statement only. (No body in the codebase
+        // currently contains a literal `);` substring — bodies
+        // are concatenations like `'msg ' . $row['name']`; the
+        // closing `]` of `$row['name']` is harmless.)
+        $titleQuoted = preg_quote($title, '#');
+        $pattern = '#\\\\?Sbpp\\\\View\\\\Toast::emit\\(\\s*'
+            . "'error',\\s*"                  // kind
+            . "'{$titleQuoted}',\\s*"        // title (exact)
+            . '((?:(?!\\);).)*?)'             // body capture (lazy; statement-bounded)
+            . ',\\s*null\\s*,\\s*'             // redirect MUST be literal null
+            . '0\\s*,?\\s*\\)#s';              // duration_ms = 0
+
+        // Count only matches whose captured body span contains the
+        // disambiguating substring. Two sibling sites with the same
+        // title (the canonical `Player NOT UnGagged` × 2 shape in
+        // commslist) would both match the title-anchored pattern;
+        // the body-substring filter is what keeps the count
+        // per-site rather than per-title.
+        $matchCount = preg_match_all($pattern, $contents, $matches);
+        $found = 0;
+        if ($matchCount > 0) {
+            foreach ($matches[1] as $bodySpan) {
+                if (str_contains((string) $bodySpan, $body_substring)) {
+                    $found++;
+                }
+            }
+        }
+        $this->assertSame(
+            $expected_count,
+            $found,
+            sprintf(
+                "Call site %s:'%s' (body containing \"%s\") does not match the persistent+null-redirect shape exactly %d time(s); got %d match(es). "
+                . "The required call shape is:\n"
+                . "    \\Sbpp\\View\\Toast::emit(\n"
+                . "        'error',\n"
+                . "        '%s',\n"
+                . "        '...%s...' . \$row['name'],   // (or sibling body shape)\n"
+                . "        null,                           // \$redirect MUST be null (persistent+redirect mutex)\n"
+                . "        0,                              // \$duration_ms MUST be 0 (persistent)\n"
+                . "    );\n"
+                . "A drop to non-persistent (5th arg removed or non-zero) re-enables the chrome's ~4000ms auto-dismiss timer — the operator misses the severe-error confirmation and the v1.x `ShowBox(..., sticky=true)` semantic #1409 restored is gone again. "
+                . "A non-null \$redirect re-introduces the chrome's `flushPendingToasts` redirect setTimeout, which navigates ~1500ms after paint and tears down the persistent toast (the chrome's whole-drain inhibit is defence-in-depth but the call-site half is the primary contract). "
+                . "If you intentionally split or merged a NOT-* branch, update `notStarBranches()` above with the new expected count or remove the entry entirely.",
+                $rel,
+                $title,
+                $body_substring,
+                $expected_count,
+                $found,
+                $title,
+                $body_substring,
+            ),
         );
     }
 

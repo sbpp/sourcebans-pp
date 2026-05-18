@@ -1471,15 +1471,27 @@
     // would collide on the testid and Playwright's `getByTestId`
     // strict mode rejects multi-match), but the painted toast is
     // the canonical anchor for E2E specs. The `data-testid` lets
-    // suites use `[data-testid="toast"]`; `role="status"` gives
-    // assistive-tech callers an announcement target and is the
-    // documented alternative anchor a future a11y-focused spec
-    // can key on. Pre-#1409 the chrome emitted neither — every
-    // existing spec keyed on `.toast[data-kind="..."]`, which
-    // still works (CSS class + dataset attribute) but is not the
-    // documented contract.
+    // suites use `[data-testid="toast"]`; the role attribute
+    // gives assistive-tech callers an announcement target.
+    // Pre-#1409 the chrome emitted neither — every existing
+    // spec keyed on `.toast[data-kind="..."]`, which still works
+    // (CSS class + dataset attribute) but is not the documented
+    // contract.
     el.setAttribute('data-testid', 'toast');
-    el.setAttribute('role', 'status');
+    // Kind-aware ARIA role (#1409 review Suggested #3): error
+    // toasts get `role="alert"` (assertive — screen readers
+    // interrupt the current announcement to surface this);
+    // every other kind gets `role="status"` (polite — waits
+    // for the user to finish what they're listening to). The
+    // distinction matters most for persistent error toasts
+    // (`duration_ms: 0`): a polite announcement that the
+    // screen-reader user might never hear because they're
+    // focused elsewhere defeats the entire "operator must
+    // acknowledge before moving on" semantic. Apple HIG,
+    // Material Design, and Bootstrap all converge on
+    // `alert` for errors + `status` for info/success;
+    // ARIA spec authors picked the same split.
+    el.setAttribute('role', kind === 'error' ? 'alert' : 'status');
     const icon = kind === 'error' ? 'circle-x' : kind === 'warn' ? 'triangle-alert' : kind === 'success' ? 'circle-check' : 'info';
     el.innerHTML = '<i data-lucide="' + icon + '" style="color:var(--' + kind + ')"></i>'
       + '<div style="flex:1;min-width:0"><div class="font-semibold text-sm">' + escapeHtml(title) + '</div>'
