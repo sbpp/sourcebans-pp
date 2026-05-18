@@ -31,13 +31,8 @@
 
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
-#tryinclude <updater>
 
 #pragma newdecls required
-
-#if defined _updater_included
-#define UPDATE_URL "https://sbpp.github.io/updater/updatefile.txt"
-#endif
 
 //GLOBAL DEFINES
 #define DISABLE_ADDBAN		1
@@ -237,24 +232,7 @@ public void OnPluginStart()
 	{
 		AccountForLateLoading();
 	}
-
-	#if defined _updater_included
-	if (LibraryExists("updater"))
-	{
-		Updater_AddPlugin(UPDATE_URL);
-	}
-	#endif
 }
-
-#if defined _updater_included
-public void OnLibraryAdded(const char[] name)
-{
-	if (strcmp(name, "updater", false) == 0)
-	{
-		Updater_AddPlugin(UPDATE_URL);
-	}
-}
-#endif
 
 public void OnAllPluginsLoaded()
 {
@@ -1673,7 +1651,6 @@ public void ServerInfoCallback(Database db, DBResultSet results, const char[] er
 
 		db.Escape(desc, descEscaped, sizeof(descEscaped));
 		db.Escape(rcon, rconEscaped, sizeof(rconEscaped));
-
 		FormatEx(query, sizeof(query), "INSERT INTO %s_servers (ip, port, rcon, modid) VALUES ('%s', '%s', '%s', (SELECT mid FROM %s_mods WHERE modfolder = '%s'))", DatabasePrefix, ServerIp, ServerPort, rconEscaped, DatabasePrefix, descEscaped);
 		db.Query(ErrorCheckCallback, query);
 	}
